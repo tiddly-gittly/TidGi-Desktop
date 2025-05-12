@@ -3,16 +3,15 @@ import PersonIcon from '@mui/icons-material/Person';
 import SendIcon from '@mui/icons-material/Send';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import TuneIcon from '@mui/icons-material/Tune';
-import { Avatar, Box, Button, IconButton, TextField, Tooltip, Typography } from '@mui/material';
-import { nanoid } from 'nanoid';
+import { Avatar, Box, Button, CircularProgress, IconButton, TextField, Tooltip, Typography } from '@mui/material';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
 import { ModelParametersDialog } from '@/pages/Preferences/sections/ExternalAPI/components/ModelParametersDialog';
 import { useTaskConfigManagement } from '@/pages/Preferences/sections/ExternalAPI/useAIConfigManagement';
-import { useTabStore } from '../../../store/tabStore';
 import { IChatTab } from '../../../types/tab';
+import { useAgentChat } from '../hooks/useAgentChat';
 
 interface ChatTabContentProps {
   tab: IChatTab;
@@ -86,14 +85,17 @@ const InputField = styled(TextField)`
 
 export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
   const { t } = useTranslation('agent');
-  const { updateTabData } = useTabStore();
   const [inputMessage, setInputMessage] = useState('');
   const [parametersDialogOpen, setParametersDialogOpen] = useState(false);
   const agentId = tab.agentId;
   const agentDefId = tab.agentDefId;
+  
+  // 使用自定义 hook 获取和管理 Agent 数据
+  const { messages, loading, error, sendMessage, agent } = useAgentChat(agentId, agentDefId);
+  
   const { config, handleConfigChange } = useTaskConfigManagement({
-    agentId,
-    agentDefId,
+    agentId: agent?.id,
+    agentDefId: agent?.agentDefId,
   });
 
   const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,45 +110,30 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     setParametersDialogOpen(false);
   }, []);
 
-  const handleSendMessage = useCallback(() => {
+  const handleSendMessage = useCallback(async () => {
     if (!inputMessage.trim()) return;
 
-    const newMessage = {
-      id: nanoid(),
-      role: 'user' as const,
-      content: inputMessage,
-      timestamp: Date.now(),
-    };
-
-    const updatedMessages = [...tab.messages, newMessage];
-
-    // Add a simple AI reply
-    const aiReply = {
-      id: nanoid(),
-      role: 'assistant' as const,
-      content: t('Chat.AiReplyPlaceholder'),
-      timestamp: Date.now() + 1,
-    };
-
-    updateTabData(tab.id, {
-      messages: [...updatedMessages, aiReply],
-    });
-
-    setInputMessage('');
-  }, [inputMessage, tab.messages, tab.id, updateTabData, t]);
+    try {
+      await sendMessage(inputMessage);
+      setInputMessage('');
+    } catch (err) {
+      console.error('Error sending message:', err);
+    }
+  }, [inputMessage, sendMessage]);
 
   const handleKeyPress = useCallback((event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      handleSendMessage();
+      void handleSendMessage();
     }
   }, [handleSendMessage]);
 
   return (
     <Container>
       <ChatHeader>
-        <Title variant='h6'>{t(tab.title)}</Title>
+        <Title variant='h6'>{agent?.name || t(tab.title)}</Title>
         <Box sx={{ display: 'flex', gap: 1 }}>
+          {loading && <CircularProgress size={20} sx={{ mr: 1 }} />}
           <Tooltip title={t('Preference.ModelParameters', { ns: 'agent' })}>
             <IconButton onClick={openParametersDialog} size='small'>
               <TuneIcon />
@@ -156,27 +143,38 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
       </ChatHeader>
 
       <MessagesContainer>
-        {tab.messages.length === 0
-          ? (
-            <Box sx={{ textAlign: 'center', color: 'text.secondary', mt: 4 }}>
-              <SmartToyIcon sx={{ fontSize: 48, opacity: 0.5 }} />
-              <Typography variant='body1' sx={{ mt: 2 }}>
-                {t('Chat.StartConversation')}
-              </Typography>
-            </Box>
-          )
-          : (
-            tab.messages.map(message => (
-              <MessageBubble key={message.id} $isUser={message.role === 'user'}>
-                <MessageAvatar $isUser={message.role === 'user'}>
-                  {message.role === 'user' ? <PersonIcon /> : <SmartToyIcon />}
-                </MessageAvatar>
-                <MessageContent $isUser={message.role === 'user'}>
-                  <Typography variant='body1'>{message.content}</Typography>
-                </MessageContent>
-              </MessageBubble>
-            ))
-          )}
+        {loading && messages.length === 0 ? (
+          <Box sx={{ textAlign: 'center', mt: 4 }}>
+            <CircularProgress size={40} />
+            <Typography variant='body1' sx={{ mt: 2 }}>
+              {t('Chat.Loading')}
+            </Typography>
+          </Box>
+        ) : error ? (
+          <Box sx={{ textAlign: 'center', color: 'error.main', mt: 4 }}>
+            <Typography variant='body1'>
+              {t('Chat.Error')}: {error.message}
+            </Typography>
+          </Box>
+        ) : messages.length === 0 ? (
+          <Box sx={{ textAlign: 'center', color: 'text.secondary', mt: 4 }}>
+            <SmartToyIcon sx={{ fontSize: 48, opacity: 0.5 }} />
+            <Typography variant='body1' sx={{ mt: 2 }}>
+              {t('Chat.StartConversation')}
+            </Typography>
+          </Box>
+        ) : (
+          messages.map(message => (
+            <MessageBubble key={message.id} $isUser={message.role === 'user'}>
+              <MessageAvatar $isUser={message.role === 'user'}>
+                {message.role === 'user' ? <PersonIcon /> : <SmartToyIcon />}
+              </MessageAvatar>
+              <MessageContent $isUser={message.role === 'user'}>
+                <Typography variant='body1'>{message.content}</Typography>
+              </MessageContent>
+            </MessageBubble>
+          ))
+        )}
       </MessagesContainer>
 
       <InputContainer>
@@ -194,7 +192,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
               endAdornment: (
                 <Button
                   color='primary'
-                  disabled={!inputMessage.trim()}
+                  disabled={!inputMessage.trim() || loading}
                   onClick={handleSendMessage}
                   sx={{ minWidth: 'auto' }}
                 >

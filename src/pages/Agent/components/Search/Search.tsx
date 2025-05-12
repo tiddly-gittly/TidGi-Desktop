@@ -49,7 +49,7 @@ export function Search({ placeholder }: SearchProps) {
       plugins: [
         createOpenTabsPlugin(),
         createClosedTabsPlugin(),
-        createAgentsPlugin({ onAgentSelect: addTab }),
+        createAgentsPlugin(),
       ],
     });
 

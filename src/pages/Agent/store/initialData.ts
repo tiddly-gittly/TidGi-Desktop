@@ -36,30 +36,5 @@ export const createInitialTabs = (): TabItem[] => {
       url: 'https://www.google.com',
       favicon: 'G',
     },
-
-    // Chat tab
-    {
-      id: nanoid(),
-      type: TabType.CHAT,
-      title: 'Default Chat Tab Test',
-      state: TabState.INACTIVE,
-      isPinned: false,
-      createdAt: timestamp - 2000,
-      updatedAt: timestamp - 500,
-      messages: [
-        {
-          id: nanoid(),
-          role: 'user',
-          content: 'Default user message',
-          timestamp: timestamp - 2000,
-        },
-        {
-          id: nanoid(),
-          role: 'assistant',
-          content: 'Default AI message',
-          timestamp: timestamp - 1800,
-        },
-      ],
-    },
   ];
 };

@@ -44,12 +44,6 @@ export interface IWebTab extends ITab {
  */
 export interface IChatTab extends ITab {
   type: TabType.CHAT;
-  messages: Array<{
-    id: string;
-    role: 'user' | 'assistant' | 'system';
-    content: string;
-    timestamp: number;
-  }>;
   agentId?: string;
   agentDefId?: string;
 }

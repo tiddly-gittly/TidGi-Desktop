@@ -19,6 +19,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 import { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { IAgentInstanceService } from '@services/agentInstance/interface';
 import { IDatabaseService } from '@services/database/interface';
 import { IDeepLinkService } from '@services/deepLink/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
@@ -61,6 +62,7 @@ const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentif
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
 const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
+const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
 app.on('second-instance', async () => {
   // see also src/helpers/singleInstance.ts
   // Someone tried to run a second instance, for example, when `runOnBackground` is true, we should focus our window.
@@ -94,6 +96,7 @@ const commonInit = async (): Promise<void> => {
     }),
     databaseService.initializeForApp().then(async () => {
       await agentDefinitionService.initialize();
+      await agentInstanceService.initialize();
     }),
   ]);
   initializeObservables();
@@ -109,7 +112,6 @@ const commonInit = async (): Promise<void> => {
   // before the workspaces's WebContentsView fully loaded
   // error will occur
   // see https://github.com/atomery/webcatalog/issues/637
-  // eslint-disable-next-line promise/always-return
   if (isLinux) {
     const mainWindow = windowService.get(WindowNames.main);
     if (mainWindow !== undefined) {
@@ -136,11 +138,10 @@ const commonInit = async (): Promise<void> => {
  * // TODO: ask user upload certificate to be used by browser view
  * @url https://stackoverflow.com/questions/44658269/electron-how-to-allow-insecure-https
  */
-app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+app.on('certificate-error', (event, _webContents, _url, _error, _certificate, callback) => {
   // Prevent having error
   event.preventDefault();
   // and continue
-  // eslint-disable-next-line n/no-callback-literal
   callback(true);
 });
 app.on('ready', async () => {
@@ -193,6 +194,7 @@ if (!isTest) {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 if (require('electron-squirrel-startup')) {
   app.quit();
 }

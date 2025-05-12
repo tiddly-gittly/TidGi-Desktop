@@ -1,14 +1,10 @@
 import { AutocompletePlugin } from '@algolia/autocomplete-js';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
-import { nanoid } from 'nanoid';
 import { getI18n } from 'react-i18next';
-import { TabItem, TabType } from '../../../types/tab';
+import { useTabStore } from '../../../store/tabStore';
+import { TabType } from '../../../types/tab';
 
-interface AgentsPluginProps {
-  onAgentSelect: (tabType: TabType, initialData?: Partial<TabItem> & { insertPosition?: number | undefined }) => TabItem;
-}
-
-export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): AutocompletePlugin<AgentDefinition & Record<string, unknown>, unknown> => {
+export const createAgentsPlugin = (): AutocompletePlugin<AgentDefinition & Record<string, unknown>, unknown> => {
   const { t } = getI18n();
   const plugin = {
     getSources({ query }) {
@@ -111,28 +107,27 @@ export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): Autoco
           },
           onSelect: async ({ item }) => {
             try {
+              const tabStore = useTabStore.getState();
+              const { activeTabId, transformTabType, addTab } = tabStore;
+
+              // Create agent instance
               const agent = await window.service.agentInstance.createAgent(item.id);
-              const messages = (agent.messages || []).map(message => {
-                const textContent = message.content;
-
-                // Map message roles
-                let role: 'user' | 'assistant' | 'system';
-                if (message.role === 'agent') role = 'assistant';
-                else if (message.role === 'user') role = 'user';
-                else role = 'system';
-
-                const id = message.metadata?.id && typeof message.metadata.id === 'string'
-                  ? message.metadata.id
-                  : nanoid();
-
-                const timestamp = message.metadata?.created && typeof message.metadata.created === 'string'
-                  ? new Date(message.metadata.created).getTime()
-                  : Date.now();
-
-                return { id, role, content: textContent, timestamp };
-              });
-
-              onAgentSelect(TabType.CHAT, { title: item.name, messages });
+              // Check if we have an active tab
+              if (activeTabId) {
+                // Transform the current active tab to chat type
+                transformTabType(activeTabId, TabType.CHAT, {
+                  title: item.name,
+                  agentId: agent.id,
+                  agentDefId: agent.agentDefId,
+                });
+              } else {
+                // If no active tab, create a new one
+                await addTab(TabType.CHAT, {
+                  title: item.name,
+                  agentId: agent.id,
+                  agentDefId: agent.agentDefId,
+                });
+              }
             } catch (error) {
               console.error(t('Search.FailedToCreateChatWithAgent', { ns: 'agent' }), error);
             }

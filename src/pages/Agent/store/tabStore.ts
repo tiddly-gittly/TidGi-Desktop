@@ -18,7 +18,7 @@ interface TabsState {
   closedTabs: TabItem[];
 
   // Operation methods
-  addTab: (tabType: TabType, initialData?: Partial<TabItem> & { insertPosition?: number }) => TabItem;
+  addTab: (tabType: TabType, initialData?: Partial<TabItem> & { insertPosition?: number }) => Promise<TabItem>;
   closeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
   pinTab: (tabId: string, isPinned: boolean) => void;
@@ -55,7 +55,7 @@ export const useTabStore = create<TabsState>((set, get) => ({
   closedTabs: [], // Closed tabs
 
   // Add new tab
-  addTab: (tabType: TabType, initialData = {}) => {
+  addTab: async (tabType: TabType, initialData = {}) => {
     const timestamp = Date.now();
     const { insertPosition } = initialData;
     delete initialData.insertPosition; // Remove from data passed to tab
@@ -71,38 +71,35 @@ export const useTabStore = create<TabsState>((set, get) => ({
       ...initialData,
     };
 
-    switch (tabType) {
-      case TabType.WEB:
-        newTab = {
-          ...tabBase,
-          type: TabType.WEB,
-          title: initialData.title || 'agent.tabTitle.newWeb',
-          url: (initialData as Partial<IWebTab>).url || 'about:blank',
-        } as IWebTab;
-        break;
-
-      case TabType.CHAT:
-        newTab = {
-          ...tabBase,
-          type: TabType.CHAT,
-          title: initialData.title || 'agent.tabTitle.newChat',
-          messages: (initialData as Partial<IChatTab>).messages || [],
-        } as IChatTab;
-        break;
-
-      case TabType.NEW_TAB:
-      default:
-        newTab = {
-          ...tabBase,
-          type: TabType.NEW_TAB,
-          title: initialData.title || 'agent.tabTitle.newTab',
-          favorites: (initialData as Partial<INewTab>).favorites || [],
-        } as INewTab;
-        break;
+    // 如果是聊天类型的标签页，需要先创建 agent 实例
+    if (tabType === TabType.CHAT) {
+      const agent = await window.service.agentInstance.createAgent(
+        (initialData as Partial<IChatTab>).agentDefId,
+      );
+      newTab = {
+        ...tabBase,
+        type: TabType.CHAT,
+        title: initialData.title || agent.name,
+        agentDefId: agent.agentDefId,
+        agentId: agent.id,
+      } as IChatTab;
+    } else if (tabType === TabType.WEB) {
+      newTab = {
+        ...tabBase,
+        type: TabType.WEB,
+        title: initialData.title || 'agent.tabTitle.newWeb',
+        url: (initialData as Partial<IWebTab>).url || 'about:blank',
+      } as IWebTab;
+    } else {
+      newTab = {
+        ...tabBase,
+        type: TabType.NEW_TAB,
+        title: initialData.title || 'agent.tabTitle.newTab',
+        favorites: (initialData as Partial<INewTab>).favorites || [],
+      } as INewTab;
     }
 
     set(state => {
-      // 将所有标签页设为非活动状态
       const updatedTabs = state.tabs.map(tab => ({
         ...tab,
         state: TabState.INACTIVE,
@@ -112,11 +109,7 @@ export const useTabStore = create<TabsState>((set, get) => ({
       if (insertPosition !== undefined && Number.isInteger(insertPosition)) {
         // 考虑固定标签页的存在，计算实际插入位置
         const pinnedTabsCount = updatedTabs.filter(tab => tab.isPinned).length;
-        const actualPosition = Math.max(
-          pinnedTabsCount, // 不能插入到固定标签页之前
-          Math.min(insertPosition, updatedTabs.length), // 不能超出数组长度
-        );
-
+        const actualPosition = Math.max(pinnedTabsCount, Math.min(insertPosition, updatedTabs.length));
         updatedTabs.splice(actualPosition, 0, newTab);
         return {
           tabs: updatedTabs,
@@ -325,37 +318,50 @@ export const useTabStore = create<TabsState>((set, get) => ({
   },
 
   // 更新标签页数据
-  updateTabData: (tabId: string, data: Partial<TabItem>) => {
-    set((state: TabsState): TabsState => {
-      const tabs = state.tabs.map(tab => {
+  updateTabData: async (tabId: string, data: Partial<TabItem>) => {
+    set(state => {
+      const timestamp = Date.now();
+      const updatedTabs = state.tabs.map(tab => {
         if (tab.id === tabId) {
-          // 根据不同标签页类型进行处理
-          if (tab.type === TabType.WEB) {
-            return { ...tab, ...data, updatedAt: Date.now() } as IWebTab;
-          } else if (tab.type === TabType.CHAT) {
-            return { ...tab, ...data, updatedAt: Date.now() } as IChatTab;
-          } else {
-            return { ...tab, ...data, updatedAt: Date.now() } as INewTab;
+          switch (tab.type) {
+            case TabType.WEB:
+              return { ...tab, ...data, updatedAt: timestamp } as IWebTab;
+            case TabType.CHAT:
+              return { ...tab, ...data, updatedAt: timestamp } as IChatTab;
+            case TabType.NEW_TAB:
+              return { ...tab, ...data, updatedAt: timestamp } as INewTab;
+            default:
+              return tab;
           }
         }
         return tab;
       });
-
       return {
         ...state,
-        tabs,
+        tabs: updatedTabs,
       };
     });
   },
 
-  transformTabType: (tabId: string, newType: TabType, initialData: Record<string, unknown> = {}) => {
-    set((state: TabsState): TabsState => {
+  transformTabType: async (tabId: string, newType: TabType, initialData: Record<string, unknown> = {}) => {
+    // 如果要转换为 CHAT 类型，需要先创建 agent
+    if (newType === TabType.CHAT) {
+      const agent = await window.service.agentInstance.createAgent(initialData.agentDefId as string);
+      initialData = {
+        ...initialData,
+        agentId: agent.id,
+        agentDefId: agent.agentDefId,
+        title: initialData.title || agent.name,
+      };
+    }
+
+    set(state => {
       const tabIndex = state.tabs.findIndex(tab => tab.id === tabId);
       if (tabIndex === -1) return state;
 
       const oldTab = state.tabs[tabIndex];
       const timestamp = Date.now();
-
+      
       // 创建新标签页的通用基础属性
       const baseProps = {
         id: oldTab.id,
@@ -386,7 +392,8 @@ export const useTabStore = create<TabsState>((set, get) => ({
           ...baseProps,
           type: TabType.CHAT,
           title: getInitialValue<string>('title', 'agent.tabTitle.newChat'),
-          messages: getInitialValue<Array<{ id: string; role: 'user' | 'assistant' | 'system'; content: string; timestamp: number }>>('messages', []),
+          agentId: getInitialValue<string>('agentId', ''),
+          agentDefId: getInitialValue<string>('agentDefId', ''),
         };
         newTabs[tabIndex] = chatTab;
       } else {

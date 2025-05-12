@@ -131,7 +131,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         avatarUrl,
         aiApiConfig,
         messages: [],
-        closed: false, // New agent instances are not closed by default
+        closed: false,
       };
 
       // Create and save entity

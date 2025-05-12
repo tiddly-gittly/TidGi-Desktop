@@ -4,6 +4,7 @@ import { pick } from 'lodash';
 import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
 
+import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
@@ -120,13 +121,61 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         };
       }
 
-      const agentDefs = await this.agentDefRepository!.find(queryOptions);
-      return agentDefs.map(entity => {
-        return {
+      // Get agent definitions from database
+      const agentDefsFromDB = await this.agentDefRepository!.find(queryOptions);
+
+      // Convert entities to agent definitions and create a map for quick lookup
+      const agentDefsMap = new Map<string, AgentDefinition>();
+      agentDefsFromDB.forEach(entity => {
+        agentDefsMap.set(entity.id, {
           ...pick(entity, ['id', 'description', 'avatarUrl', 'handlerID', 'handlerConfig', 'aiApiConfig']),
           name: entity.name || '',
-        };
+        });
       });
+
+      // Default agents to be added to database
+      const defaultAgentsToSave = [];
+
+      // Add default agents if they don't exist in the database
+      const defaultAgentsList = defaultAgents as AgentDefinition[];
+      for (const defaultAgent of defaultAgentsList) {
+        // Skip if this agent exists in the database (user might have customized it)
+        if (agentDefsMap.has(defaultAgent.id)) {
+          continue;
+        }
+
+        // If searchName is provided, filter default agents by name
+        if (options?.searchName && !defaultAgent.name.toLowerCase().includes(options.searchName.toLowerCase())) {
+          continue;
+        }
+
+        // Add default agent to the map and to the save list
+        agentDefsMap.set(defaultAgent.id, defaultAgent);
+        defaultAgentsToSave.push(defaultAgent);
+      }
+
+      // Save default agents to database in bulk if any were found
+      // This ensures that foreign key constraints are satisfied when creating agent instances
+      if (defaultAgentsToSave.length > 0) {
+        try {
+          // Create agent definition entities
+          const agentDefEntities = defaultAgentsToSave.map(agent =>
+            this.agentDefRepository!.create({
+              ...agent,
+            })
+          );
+
+          // Save all at once
+          await this.agentDefRepository!.save(agentDefEntities);
+          logger.info(`Saved ${defaultAgentsToSave.length} default agents to database`);
+        } catch (saveError) {
+          logger.error(`Failed to save default agents to database: ${saveError as Error}`);
+          // Continue even if save fails, we'll still return the agents from memory
+        }
+      }
+
+      // Return combined list of agents
+      return Array.from(agentDefsMap.values());
     } catch (error) {
       logger.error(`Failed to get agent definitions: ${error as Error}`);
       throw error;
@@ -148,18 +197,42 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         return agents.length > 0 ? agents[0] : undefined;
       }
 
+      // Try to find agent in database first
       const entity = await this.agentDefRepository!.findOne({
         where: { id: defId },
       });
 
-      if (!entity) {
-        return undefined;
+      // If found in database, return it
+      if (entity) {
+        return {
+          ...pick(entity, ['id', 'description', 'avatarUrl', 'handlerID', 'handlerConfig', 'aiApiConfig']),
+          name: entity.name || '',
+        };
       }
 
-      return {
-        ...pick(entity, ['id', 'description', 'avatarUrl', 'handlerID', 'handlerConfig', 'aiApiConfig']),
-        name: entity.name || '',
-      };
+      // If not found in database, check default agents
+      const defaultAgentsList = defaultAgents as AgentDefinition[];
+      const defaultAgent = defaultAgentsList.find(agent => agent.id === defId);
+
+      // If found in default agents, save to database first to satisfy foreign key constraints
+      if (defaultAgent) {
+        logger.info(`Default agent "${defaultAgent.name}" (${defId}) not found in database, creating it`);
+        try {
+          // Create agent definition in database
+          const agentDefEntity = this.agentDefRepository!.create({
+            ...defaultAgent,
+          });
+          await this.agentDefRepository!.save(agentDefEntity);
+          logger.info(`Created default agent definition in database: ${defId}`);
+        } catch (saveError) {
+          logger.error(`Failed to save default agent to database: ${saveError as Error}`);
+          // Continue and return the default agent even if save fails
+          // This might lead to foreign key constraint errors later,
+          // but at least we tried to save it
+        }
+      }
+
+      return defaultAgent;
     } catch (error) {
       logger.error(`Failed to get agent definition: ${error as Error}`);
       throw error;

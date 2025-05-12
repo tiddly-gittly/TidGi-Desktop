@@ -5,27 +5,6 @@
     "description": "Example agent with prompt processing",
     "avatarUrl": "https://example.com/example-agent.png",
     "handlerID": "basicPromptConcatHandler",
-    "api": {
-      "provider": "siliconflow",
-      "model": "Qwen/Qwen2.5-7B-Instruct"
-    },
-    "modelParameters": {
-      "temperature": 0.85,
-      "frequency_penalty": 0.5,
-      "presence_penalty": 0.65,
-      "top_p": 0.9,
-      "top_k": 0,
-      "top_a": 0,
-      "min_p": 0,
-      "repetition_penalty": 1,
-      "max_context": 65535,
-      "max_tokens": 3000,
-      "stream": true,
-      "function_calling": false,
-      "show_thoughts": true,
-      "reasoning_effort": "medium",
-      "seed": -1
-    },
     "handlerConfig": {
       "prompts": [
         {
