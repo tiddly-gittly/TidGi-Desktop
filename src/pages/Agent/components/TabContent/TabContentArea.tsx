@@ -63,13 +63,13 @@ export const TabContentArea: React.FC = () => {
   const containerReference = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // 获取当前活动的标签页
+  // Get the current active tab
   const activeTab = activeTabId ? tabs.find(tab => tab.id === activeTabId) : null;
 
-  // 获取并排显示的标签页
+  // Get the tabs to be displayed in split view
   const splitTabs = splitViewIds.map(id => tabs.find(tab => tab.id === id)).filter(Boolean);
 
-  // 处理分隔线拖拽
+  // Handle divider drag
   useEffect(() => {
     const dividerElement = dividerReference.current;
     const containerElement = containerReference.current;
@@ -114,7 +114,7 @@ export const TabContentArea: React.FC = () => {
     };
   }, [isDragging, splitRatio, updateSplitRatio]);
 
-  // 如果有并排显示的标签，则显示并排视图
+  // if there are split tabs, render them in split view
   if (splitTabs.length > 0) {
     return (
       <ContentContainer>
@@ -143,7 +143,7 @@ export const TabContentArea: React.FC = () => {
     );
   }
 
-  // 普通视图 - 显示当前活动的标签页
+  // normal view - render the active tab
   return (
     <ContentContainer>
       {activeTab ? <TabContentView tab={activeTab} /> : (
