@@ -50,6 +50,8 @@ export interface IChatTab extends ITab {
     content: string;
     timestamp: number;
   }>;
+  agentId?: string;
+  agentDefId?: string;
 }
 
 /**

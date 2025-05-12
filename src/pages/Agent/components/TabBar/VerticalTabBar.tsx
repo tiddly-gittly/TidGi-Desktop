@@ -49,23 +49,23 @@ export const VerticalTabBar = () => {
 
   return (
     <TabBarContainer>
-      <TabContextMenu />
-
       {/* 固定的标签页 */}
       {pinnedTabs.length > 0 && (
         <>
-          <TabsSection>
-            {pinnedTabs.map(tab => (
-              <TabItem
-                key={tab.id}
-                tab={tab}
-                isActive={tab.id === activeTabId}
-                onClick={() => {
-                  setActiveTab(tab.id);
-                }}
-              />
-            ))}
-          </TabsSection>
+          <TabContextMenu>
+            <TabsSection>
+              {pinnedTabs.map(tab => (
+                <TabItem
+                  key={tab.id}
+                  tab={tab}
+                  isActive={tab.id === activeTabId}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                  }}
+                />
+              ))}
+            </TabsSection>
+          </TabContextMenu>
           <StyledDivider />
         </>
       )}
@@ -79,19 +79,20 @@ export const VerticalTabBar = () => {
           isNewTabButton={true}
         />
       </NewTabButton>
-      {/* 非固定的标签页 - 按时间排序 */}
-      <TabsSection>
-        {sortedUnpinnedTabs.map(tab => (
-          <TabItem
-            key={tab.id}
-            tab={tab}
-            isActive={tab.id === activeTabId}
-            onClick={() => {
-              setActiveTab(tab.id);
-            }}
-          />
-        ))}
-      </TabsSection>
+      <TabContextMenu>
+        <TabsSection>
+          {sortedUnpinnedTabs.map(tab => (
+            <TabItem
+              key={tab.id}
+              tab={tab}
+              isActive={tab.id === activeTabId}
+              onClick={() => {
+                setActiveTab(tab.id);
+              }}
+            />
+          ))}
+        </TabsSection>
+      </TabContextMenu>
     </TabBarContainer>
   );
 };

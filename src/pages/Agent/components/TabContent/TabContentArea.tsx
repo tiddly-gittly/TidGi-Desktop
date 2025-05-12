@@ -29,7 +29,7 @@ const SplitViewPane = styled(Box)`
   padding: 4px;
 `;
 
-const Divider = styled(Box)`
+const Divider = styled(Box)<{ $left: number }>`
   position: absolute;
   top: 0;
   bottom: 0;
@@ -37,7 +37,7 @@ const Divider = styled(Box)`
   background-color: ${props => props.theme.palette.divider};
   cursor: col-resize;
   z-index: 10;
-  left: calc(${props => props.left}% - 3px);
+  left: calc(${props => props.$left}% - 3px);
   
   &:hover, &.dragging {
     background-color: ${props => props.theme.palette.primary.main};
@@ -135,7 +135,7 @@ export const TabContentArea: React.FC = () => {
             <Divider
               ref={dividerReference}
               className={isDragging ? 'dragging' : ''}
-              left={splitRatio}
+              $left={splitRatio}
             />
           )}
         </SplitViewContainer>

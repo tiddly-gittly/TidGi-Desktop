@@ -91,6 +91,7 @@
     "BaseURLRequired": "Базовый URL API обязателен",
     "Cancel": "Отмена",
     "CancelAddProvider": "Отменить добавление",
+    "ConfigureModelParameters": "параметры конфигурации",
     "ConfigureProvider": "Настроить {{provider}}",
     "CreateCustomModel": "Создать пользовательскую модель",
     "Custom": "Пользовательский интерфейс",
@@ -107,6 +108,8 @@
     "FailedToSaveSettings": "Не удалось сохранить настройки",
     "FailedToUpdateProviderConfig": "Не удалось обновить конфигурацию поставщика",
     "FailedToUpdateProviderStatus": "Не удалось обновить статус поставщика",
+    "MaxTokens": "максимальная длина генерации",
+    "MaxTokensDescription": "Максимальное количество символов (в токенах), которое модель может сгенерировать в одном запросе.",
     "ModelAddedSuccessfully": "Модель успешно добавлена",
     "ModelAlreadyExists": "Модель уже существует",
     "ModelCaption": "Название модели для отображения",
@@ -115,6 +118,8 @@
     "ModelFeatures": "Возможности модели",
     "ModelName": "Имя модели",
     "ModelNameRequired": "Имя модели обязательно",
+    "ModelParameters": "параметры модели",
+    "ModelParametersDescription": "Настройка параметров поведения генеративных моделей ИИ, таких как температура, ограничение токенов и другие.",
     "ModelRemovedSuccessfully": "Модель успешно удалена",
     "Models": "Доступные модели",
     "NoPresetSelected": "Нет выбранной предустановленной модели",
@@ -145,6 +150,19 @@
     "SettingsSaved": "Настройки сохранены",
     "SystemPrompt": "Системная подсказка",
     "SystemPromptDescription": "Установите системную инструкцию, отправляемую AI, определяющую его поведение и возможности",
-    "Temperature": "Температура"
+    "Temperature": "Температура",
+    "TemperatureDescription": "Низкие значения приводят к более детерминированным и сфокусированным ответам, а высокие — к более разнообразным и творческим.",
+    "TopP": "Топ P",
+    "TopPDescription": "Управление случайностью ответов. Низкие значения делают ответы более предсказуемыми, а высокие — допускают больше вариантов."
+  },
+  "Search": {
+    "AvailableAgents": "доступные агенты",
+    "FailedToCreateChatWithAgent": "Не удалось создать диалог с агентом.",
+    "FailedToFetchAgents": "Не удалось получить список агентов",
+    "NoAgentsFound": "Агент не найден",
+    "NoClosedTabsFound": "Нет недавно закрытых вкладок",
+    "NoTabsFound": "Вкладка не найдена.",
+    "OpenTabs": "открытые вкладки",
+    "RecentlyClosedTabs": "Недавно закрытые вкладки"
   }
 }

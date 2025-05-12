@@ -9,7 +9,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import RestoreIcon from '@mui/icons-material/Restore';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import { Collapse, Divider, List, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
-import React, { useState } from 'react';
+import { PropsWithChildren, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useTabStore } from '../../store/tabStore';
@@ -22,7 +22,7 @@ interface TabContextMenuState {
   targetTabId: string | null;
 }
 
-export const TabContextMenu = () => {
+export const TabContextMenu = ({ children }: PropsWithChildren) => {
   const { t } = useTranslation('agent');
   const {
     tabs,
@@ -37,6 +37,8 @@ export const TabContextMenu = () => {
     hasClosedTabs,
   } = useTabStore();
 
+  const tabContainerReference = useRef<HTMLDivElement>(null);
+
   // Nested menu state
   const [closeMenuOpen, setCloseMenuOpen] = useState(false);
 
@@ -47,8 +49,115 @@ export const TabContextMenu = () => {
     targetTabId: null,
   });
 
-  // Register global right-click event
-  React.useEffect(() => {
+  // Get current target tab
+  const targetTab = contextMenu.targetTabId
+    ? tabs.find(tab => tab.id === contextMenu.targetTabId)
+    : null;
+
+  // Determine if tab can be added to split view
+  const canAddToSplitView = targetTab 
+    ? splitViewIds.length < 2 && !splitViewIds.includes(targetTab.id)
+    : false;
+
+  // Close context menu
+  const handleClose = useCallback(() => {
+    setContextMenu(previous => ({ ...previous, isOpen: false }));
+    setCloseMenuOpen(false);
+  }, []);
+
+  // Handle pin/unpin tab
+  const handlePinTab = useCallback(() => {
+    if (contextMenu.targetTabId && targetTab) {
+      pinTab(contextMenu.targetTabId, !targetTab.isPinned);
+      handleClose();
+    }
+  }, [contextMenu.targetTabId, pinTab, handleClose, targetTab]);
+
+  // Handle closing tab
+  const handleCloseTab = useCallback(() => {
+    if (contextMenu.targetTabId) {
+      closeTab(contextMenu.targetTabId);
+      handleClose();
+    }
+  }, [contextMenu.targetTabId, closeTab, handleClose]);
+
+  // Duplicate current tab
+  const handleDuplicateTab = useCallback(() => {
+    if (!targetTab) return;
+    switch (targetTab.type) {
+      case TabType.WEB:
+        addTab(TabType.WEB, {
+          url: (targetTab).url,
+          title: targetTab.title,
+        });
+        break;
+      case TabType.CHAT:
+        addTab(TabType.CHAT, {
+          title: targetTab.title,
+        });
+        break;
+      case TabType.NEW_TAB:
+        addTab(TabType.NEW_TAB);
+        break;
+    }
+    handleClose();
+  }, [targetTab, addTab, handleClose]);
+
+  // Handle add to split view
+  const handleAddToSplitView = useCallback(() => {
+    if (contextMenu.targetTabId) {
+      addToSplitView(contextMenu.targetTabId);
+      handleClose();
+    }
+  }, [contextMenu.targetTabId, addToSplitView, handleClose]);
+
+  // Create new tab below
+  const handleNewTabBelow = useCallback(() => {
+    if (targetTab) {
+      const currentTabIndex = getTabIndex(targetTab.id);
+      addTab(TabType.NEW_TAB, { insertPosition: currentTabIndex + 1 });
+      handleClose();
+    }
+  }, [targetTab, getTabIndex, addTab, handleClose]);
+
+  // Restore recently closed tab
+  const handleRestoreClosedTab = useCallback(() => {
+    restoreClosedTab();
+    handleClose();
+  }, [restoreClosedTab, handleClose]);
+
+  // Batch close tabs
+  const handleCloseAboveTabs = useCallback(() => {
+    if (contextMenu.targetTabId) {
+      closeTabs('above', contextMenu.targetTabId);
+      handleClose();
+    }
+  }, [contextMenu.targetTabId, closeTabs, handleClose]);
+
+  const handleCloseBelowTabs = useCallback(() => {
+    if (contextMenu.targetTabId) {
+      closeTabs('below', contextMenu.targetTabId);
+      handleClose();
+    }
+  }, [contextMenu.targetTabId, closeTabs, handleClose]);
+
+  const handleCloseOtherTabs = useCallback(() => {
+    if (contextMenu.targetTabId) {
+      closeTabs('other', contextMenu.targetTabId);
+      handleClose();
+    }
+  }, [contextMenu.targetTabId, closeTabs, handleClose]);
+
+  // Toggle close tabs nested menu
+  const handleCloseMenuToggle = useCallback(() => {
+    setCloseMenuOpen(previous => !previous);
+  }, []);
+
+  // Register context menu event only for tab container
+  useEffect(() => {
+    const container = tabContainerReference.current;
+    if (!container) return;
+
     // Listen for right-click events on tab items
     const handleContextMenu = (event: MouseEvent) => {
       event.preventDefault();
@@ -68,197 +177,114 @@ export const TabContextMenu = () => {
         // Reset nested menu state
         setCloseMenuOpen(false);
       }
-    };            // Add context menu event listener
-    document.addEventListener('contextmenu', handleContextMenu);
+    };
+
+    // Add context menu event listener to tab container only
+    container.addEventListener('contextmenu', handleContextMenu);
 
     // Cleanup function
     return () => {
-      document.removeEventListener('contextmenu', handleContextMenu);
+      container.removeEventListener('contextmenu', handleContextMenu);
     };
   }, []);
 
-  // Close context menu
-  const handleClose = () => {
-    setContextMenu({ ...contextMenu, isOpen: false });
-    setCloseMenuOpen(false);
-  };
-
-  // Get current target tab
-  const targetTab = contextMenu.targetTabId
-    ? tabs.find(tab => tab.id === contextMenu.targetTabId)
-    : null;
-
   if (!targetTab) {
-    return null;
+    return <div ref={tabContainerReference}>{children}</div>;
   }
 
-  // Get tab position in the list
-  const tabIndex = getTabIndex(targetTab.id);
-
-  // Handle pin/unpin tab
-  const handlePinTab = () => {
-    pinTab(targetTab.id, !targetTab.isPinned);
-    handleClose();
-  };
-
-  // Handle closing tab
-  const handleCloseTab = () => {
-    closeTab(targetTab.id);
-    handleClose();
-  };
-
-  // Duplicate current tab
-  const handleDuplicateTab = () => {
-    switch (targetTab.type) {
-      case TabType.WEB:
-        addTab(TabType.WEB, {
-          url: (targetTab).url,
-          title: targetTab.title,
-        });
-        break;
-      case TabType.CHAT:
-        addTab(TabType.CHAT, {
-          title: targetTab.title,
-        });
-        break;
-      case TabType.NEW_TAB:
-        addTab(TabType.NEW_TAB);
-        break;
-    }
-    handleClose();
-  };
-
-  // Handle add to split view
-  const handleAddToSplitView = () => {
-    addToSplitView(targetTab.id);
-    handleClose();
-  };
-
-  // Create new tab below
-  const handleNewTabBelow = () => {
-    addTab(TabType.NEW_TAB, { insertPosition: tabIndex + 1 });
-    handleClose();
-  };
-
-  // Restore recently closed tab
-  const handleRestoreClosedTab = () => {
-    restoreClosedTab();
-    handleClose();
-  };
-
-  // Batch close tabs
-  const handleCloseAboveTabs = () => {
-    closeTabs('above', targetTab.id);
-    handleClose();
-  };
-
-  const handleCloseBelowTabs = () => {
-    closeTabs('below', targetTab.id);
-    handleClose();
-  };
-
-  const handleCloseOtherTabs = () => {
-    closeTabs('other', targetTab.id);
-    handleClose();
-  };
-
-  // Determine if tab can be added to split view
-  const canAddToSplitView = splitViewIds.length < 2 && !splitViewIds.includes(targetTab.id);
-
-  // Toggle close tabs nested menu
-  const handleCloseMenuToggle = () => {
-    setCloseMenuOpen(!closeMenuOpen);
-  };
-
   return (
-    <Menu
-      open={contextMenu.isOpen}
-      onClose={handleClose}
-      anchorReference='anchorPosition'
-      anchorPosition={contextMenu.isOpen
-        ? { top: contextMenu.position.top, left: contextMenu.position.left }
-        : undefined}
-    >
-      <MenuItem onClick={handlePinTab}>
-        <ListItemIcon>
-          {targetTab.isPinned ? <PushPinOutlinedIcon fontSize='small' /> : <PushPinIcon fontSize='small' />}
-        </ListItemIcon>
-        <ListItemText>
-          {targetTab.isPinned ? t('ContextMenu.Unpin') : t('ContextMenu.Pin')}
-        </ListItemText>
-      </MenuItem>
+    <>
+      <div ref={tabContainerReference}>{children}</div>
 
-      <MenuItem onClick={handleNewTabBelow}>
-        <ListItemIcon>
-          <AddIcon fontSize='small' />
-        </ListItemIcon>
-        <ListItemText>{t('ContextMenu.NewTabBelow')}</ListItemText>
-      </MenuItem>
-
-      {canAddToSplitView && (
-        <MenuItem onClick={handleAddToSplitView}>
+      <Menu
+        open={contextMenu.isOpen}
+        onClose={handleClose}
+        anchorReference='anchorPosition'
+        anchorPosition={contextMenu.isOpen
+          ? { top: contextMenu.position.top, left: contextMenu.position.left }
+          : undefined}
+      >
+        <MenuItem onClick={handlePinTab}>
           <ListItemIcon>
-            <SplitscreenIcon fontSize='small' />
+            {targetTab.isPinned ? <PushPinOutlinedIcon fontSize='small' /> : <PushPinIcon fontSize='small' />}
           </ListItemIcon>
-          <ListItemText>{t('ContextMenu.AddToSplitView')}</ListItemText>
+          <ListItemText>
+            {targetTab.isPinned ? t('ContextMenu.Unpin') : t('ContextMenu.Pin')}
+          </ListItemText>
         </MenuItem>
-      )}
 
-      {targetTab.type === TabType.WEB && (
-        <MenuItem>
+        <MenuItem onClick={handleNewTabBelow}>
           <ListItemIcon>
-            <RefreshIcon fontSize='small' />
+            <AddIcon fontSize='small' />
           </ListItemIcon>
-          <ListItemText>{t('ContextMenu.Refresh')}</ListItemText>
+          <ListItemText>{t('ContextMenu.NewTabBelow')}</ListItemText>
         </MenuItem>
-      )}
 
-      <MenuItem onClick={handleDuplicateTab}>
-        <ListItemIcon>
-          <ContentCopyIcon fontSize='small' />
-        </ListItemIcon>
-        <ListItemText>{t('ContextMenu.Duplicate')}</ListItemText>
-      </MenuItem>
-
-      <Divider />
-
-      <MenuItem onClick={handleCloseTab}>
-        <ListItemIcon>
-          <CloseIcon fontSize='small' />
-        </ListItemIcon>
-        <ListItemText>{t('ContextMenu.Close')}</ListItemText>
-      </MenuItem>
-
-      <MenuItem onClick={handleCloseMenuToggle}>
-        <ListItemIcon>
-          <CloseIcon fontSize='small' />
-        </ListItemIcon>
-        <ListItemText>{t('ContextMenu.CloseTabs')}</ListItemText>
-        {closeMenuOpen ? <ExpandLessIcon fontSize='small' /> : <ExpandMoreIcon fontSize='small' />}
-      </MenuItem>
-
-      <Collapse in={closeMenuOpen} timeout='auto' unmountOnExit>
-        <List disablePadding sx={{ pl: 2 }}>
-          <MenuItem onClick={handleCloseAboveTabs}>
-            <ListItemText sx={{ pl: 2 }}>{t('ContextMenu.CloseAbove')}</ListItemText>
+        {canAddToSplitView && (
+          <MenuItem onClick={handleAddToSplitView}>
+            <ListItemIcon>
+              <SplitscreenIcon fontSize='small' />
+            </ListItemIcon>
+            <ListItemText>{t('ContextMenu.AddToSplitView')}</ListItemText>
           </MenuItem>
-          <MenuItem onClick={handleCloseBelowTabs}>
-            <ListItemText sx={{ pl: 2 }}>{t('ContextMenu.CloseBelow')}</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={handleCloseOtherTabs}>
-            <ListItemText sx={{ pl: 2 }}>{t('ContextMenu.CloseOther')}</ListItemText>
-          </MenuItem>
-        </List>
-      </Collapse>
+        )}
 
-      {hasClosedTabs() && (
-        <MenuItem onClick={handleRestoreClosedTab}>
+        {targetTab.type === TabType.WEB && (
+          <MenuItem>
+            <ListItemIcon>
+              <RefreshIcon fontSize='small' />
+            </ListItemIcon>
+            <ListItemText>{t('ContextMenu.Refresh')}</ListItemText>
+          </MenuItem>
+        )}
+
+        <MenuItem onClick={handleDuplicateTab}>
           <ListItemIcon>
-            <RestoreIcon fontSize='small' />
+            <ContentCopyIcon fontSize='small' />
           </ListItemIcon>
-          <ListItemText>{t('ContextMenu.RestoreClosed')}</ListItemText>
+          <ListItemText>{t('ContextMenu.Duplicate')}</ListItemText>
         </MenuItem>
-      )}
-    </Menu>
+
+        <Divider />
+
+        <MenuItem onClick={handleCloseTab}>
+          <ListItemIcon>
+            <CloseIcon fontSize='small' />
+          </ListItemIcon>
+          <ListItemText>{t('ContextMenu.Close')}</ListItemText>
+        </MenuItem>
+
+        <MenuItem onClick={handleCloseMenuToggle}>
+          <ListItemIcon>
+            <CloseIcon fontSize='small' />
+          </ListItemIcon>
+          <ListItemText>{t('ContextMenu.CloseTabs')}</ListItemText>
+          {closeMenuOpen ? <ExpandLessIcon fontSize='small' /> : <ExpandMoreIcon fontSize='small' />}
+        </MenuItem>
+
+        <Collapse in={closeMenuOpen} timeout='auto' unmountOnExit>
+          <List disablePadding sx={{ pl: 2 }}>
+            <MenuItem onClick={handleCloseAboveTabs}>
+              <ListItemText sx={{ pl: 2 }}>{t('ContextMenu.CloseAbove')}</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={handleCloseBelowTabs}>
+              <ListItemText sx={{ pl: 2 }}>{t('ContextMenu.CloseBelow')}</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={handleCloseOtherTabs}>
+              <ListItemText sx={{ pl: 2 }}>{t('ContextMenu.CloseOther')}</ListItemText>
+            </MenuItem>
+          </List>
+        </Collapse>
+
+        {hasClosedTabs() && (
+          <MenuItem onClick={handleRestoreClosedTab}>
+            <ListItemIcon>
+              <RestoreIcon fontSize='small' />
+            </ListItemIcon>
+            <ListItemText>{t('ContextMenu.RestoreClosed')}</ListItemText>
+          </MenuItem>
+        )}
+      </Menu>
+    </>
   );
 };

@@ -90,6 +90,7 @@
     "BaseURLRequired": "L'URL de base de l'API est requise",
     "Cancel": "Annuler",
     "CancelAddProvider": "Annuler l'ajout",
+    "ConfigureModelParameters": "paramètres de configuration",
     "ConfigureProvider": "Configurer {{provider}}",
     "CreateCustomModel": "Créer un modèle personnalisé",
     "Custom": "Interface personnalisée",
@@ -106,6 +107,8 @@
     "FailedToSaveSettings": "Échec de l'enregistrement des paramètres",
     "FailedToUpdateProviderConfig": "Échec de la mise à jour de la configuration du fournisseur",
     "FailedToUpdateProviderStatus": "Échec de la mise à jour du statut du fournisseur",
+    "MaxTokens": "longueur maximale de génération",
+    "MaxTokensDescription": "Le nombre maximum de caractères (calculé en tokens) qu'un modèle peut générer en une seule requête.",
     "ModelAddedSuccessfully": "Modèle ajouté avec succès",
     "ModelAlreadyExists": "Le modèle existe déjà",
     "ModelCaption": "Nom d'affichage du modèle",
@@ -114,6 +117,8 @@
     "ModelFeatures": "Fonctionnalités du modèle",
     "ModelName": "Nom du modèle",
     "ModelNameRequired": "Le nom du modèle est requis",
+    "ModelParameters": "paramètres du modèle",
+    "ModelParametersDescription": "Configurer les paramètres de comportement des modèles d'IA générative, tels que la température et les limites de tokens.",
     "ModelRemovedSuccessfully": "Modèle supprimé avec succès",
     "Models": "Modèles disponibles",
     "NoPresetSelected": "Aucun modèle prédéfini sélectionné",
@@ -144,6 +149,19 @@
     "SettingsSaved": "Paramètres enregistrés",
     "SystemPrompt": "Invite système",
     "SystemPromptDescription": "Définissez les instructions système envoyées à l'AI pour définir son comportement et ses capacités",
-    "Temperature": "Température"
+    "Temperature": "Température",
+    "TemperatureDescription": "Une valeur plus faible produit une réponse plus déterministe et concentrée, tandis qu'une valeur plus élevée génère une réponse plus diversifiée et créative.",
+    "TopP": "Top P",
+    "TopPDescription": "Contrôler l'aléatoire des réponses. Une valeur plus faible rend la réponse plus déterminée, tandis qu'une valeur plus élevée permet davantage de possibilités."
+  },
+  "Search": {
+    "AvailableAgents": "agents intelligents disponibles",
+    "FailedToCreateChatWithAgent": "Impossible de créer une conversation avec l'agent intelligent.",
+    "FailedToFetchAgents": "Échec de l'obtention de la liste des agents intelligents",
+    "NoAgentsFound": "Agent non trouvé",
+    "NoClosedTabsFound": "Aucun onglet récemment fermé",
+    "NoTabsFound": "Aucun onglet trouvé",
+    "OpenTabs": "onglets ouverts",
+    "RecentlyClosedTabs": "Onglets récemment fermés"
   }
 }

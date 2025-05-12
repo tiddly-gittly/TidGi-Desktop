@@ -91,6 +91,7 @@
     "BaseURLRequired": "API Base URL is required",
     "Cancel": "Cancel",
     "CancelAddProvider": "Cancel Adding",
+    "ConfigureModelParameters": "configuration parameters",
     "ConfigureProvider": "Configure {{provider}}",
     "CreateCustomModel": "Create Custom Model",
     "Custom": "Custom Interface",
@@ -107,6 +108,8 @@
     "FailedToSaveSettings": "Failed to save settings",
     "FailedToUpdateProviderConfig": "Failed to update provider configuration",
     "FailedToUpdateProviderStatus": "Failed to update provider status",
+    "MaxTokens": "Maximum generation length",
+    "MaxTokensDescription": "The maximum number of characters (measured in tokens) that the model can generate in a single request.",
     "ModelAddedSuccessfully": "Model added successfully",
     "ModelAlreadyExists": "Model already exists",
     "ModelCaption": "Model Display Name",
@@ -115,6 +118,8 @@
     "ModelFeatures": "Model Features",
     "ModelName": "Model Name",
     "ModelNameRequired": "Model name is required",
+    "ModelParameters": "model parameters",
+    "ModelParametersDescription": "Configure the behavior parameters of generative AI models, such as temperature and token limits.",
     "ModelRemovedSuccessfully": "Model removed successfully",
     "Models": "Available Models",
     "NoPresetSelected": "No preset model selected",
@@ -145,6 +150,19 @@
     "SettingsSaved": "Settings saved",
     "SystemPrompt": "System Prompt",
     "SystemPromptDescription": "Set the system instructions sent to the AI to define its behavior and capabilities",
-    "Temperature": "Temperature"
+    "Temperature": "Temperature",
+    "TemperatureDescription": "Lower values produce more deterministic and focused responses, while higher values yield more diverse and creative responses.",
+    "TopP": "Top P",
+    "TopPDescription": "Control the randomness of responses. Lower values make responses more deterministic, while higher values allow for greater variability."
+  },
+  "Search": {
+    "AvailableAgents": "Available Agents",
+    "FailedToCreateChatWithAgent": "Unable to create a conversation with the agent.",
+    "FailedToFetchAgents": "Failed to retrieve the agent list",
+    "NoAgentsFound": "Agent not found",
+    "NoClosedTabsFound": "No recently closed tabs",
+    "NoTabsFound": "No tabs found",
+    "OpenTabs": "Open tabs",
+    "RecentlyClosedTabs": "Recently closed tabs"
   }
 }

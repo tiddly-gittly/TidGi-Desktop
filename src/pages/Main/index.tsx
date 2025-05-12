@@ -48,14 +48,12 @@ const ContentRoot = styled.div<{ $sidebar: boolean }>`
   display: flex;
   flex-direction: column;
 
-  padding-right: 20px;
   ${is('$sidebar')`
     width: calc(100% - ${({ theme }: { theme: DefaultTheme }) => theme.sidebar.width}px);
     max-width: calc(100% - ${({ theme }: { theme: DefaultTheme }) => theme.sidebar.width}px);
   `}
   ${isNot('$sidebar')`
     width: 100%;
-    padding-left: 20px;
   `}
   height: 100%;
 `;

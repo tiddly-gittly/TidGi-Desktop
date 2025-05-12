@@ -91,6 +91,7 @@
     "BaseURLRequired": "APIベースURLは必須です",
     "Cancel": "キャンセル",
     "CancelAddProvider": "追加をキャンセル",
+    "ConfigureModelParameters": "設定パラメータ",
     "ConfigureProvider": "{{provider}}を設定",
     "CreateCustomModel": "カスタムモデルを作成",
     "Custom": "カスタムインターフェース",
@@ -107,6 +108,8 @@
     "FailedToSaveSettings": "設定の保存に失敗しました",
     "FailedToUpdateProviderConfig": "プロバイダー設定の更新に失敗しました",
     "FailedToUpdateProviderStatus": "プロバイダーのステータス更新に失敗しました",
+    "MaxTokens": "最大生成長さ",
+    "MaxTokensDescription": "モデルが1回のリクエストで生成できる最大文字数（トークン単位）",
     "ModelAddedSuccessfully": "モデルが正常に追加されました",
     "ModelAlreadyExists": "モデルは既に存在します",
     "ModelCaption": "モデル表示名",
@@ -115,6 +118,8 @@
     "ModelFeatures": "モデル機能",
     "ModelName": "モデル名",
     "ModelNameRequired": "モデル名は必須です",
+    "ModelParameters": "モデルパラメータ",
+    "ModelParametersDescription": "生成AIモデルの動作パラメータ（温度、トークン制限など）を設定する",
     "ModelRemovedSuccessfully": "モデルが正常に削除されました",
     "Models": "利用可能なモデル",
     "NoPresetSelected": "プリセットモデルが選択されていません",
@@ -145,6 +150,19 @@
     "SettingsSaved": "設定が保存されました",
     "SystemPrompt": "システムプロンプト",
     "SystemPromptDescription": "AIに送信されるシステム命令を設定し、その動作と機能を定義します",
-    "Temperature": "温度"
+    "Temperature": "温度",
+    "TemperatureDescription": "低い値はより確定的で集中した応答を生成し、高い値はより多様で創造的な応答を生成します。",
+    "TopP": "トップP",
+    "TopPDescription": "応答のランダム性を制御します。低い値は応答をより確定的にし、高い値はより多くの可能性を許容します。"
+  },
+  "Search": {
+    "AvailableAgents": "利用可能なインテリジェントエージェント",
+    "FailedToCreateChatWithAgent": "スマートエージェントとの対話を作成できません",
+    "FailedToFetchAgents": "インテリジェントエージェントリストの取得に失敗しました",
+    "NoAgentsFound": "エージェントが見つかりません",
+    "NoClosedTabsFound": "最近閉じたタブはありません",
+    "NoTabsFound": "タブが見つかりません",
+    "OpenTabs": "開いているタブ",
+    "RecentlyClosedTabs": "最近閉じたタブ"
   }
 }

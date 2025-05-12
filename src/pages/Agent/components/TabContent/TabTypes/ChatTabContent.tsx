@@ -1,13 +1,16 @@
-import DeleteIcon from '@mui/icons-material/Delete';
+/* eslint-disable unicorn/prevent-abbreviations */
 import PersonIcon from '@mui/icons-material/Person';
 import SendIcon from '@mui/icons-material/Send';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
-import { Avatar, Box, Button, IconButton, TextField, Typography } from '@mui/material';
+import TuneIcon from '@mui/icons-material/Tune';
+import { Avatar, Box, Button, IconButton, TextField, Tooltip, Typography } from '@mui/material';
 import { nanoid } from 'nanoid';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
+import { ModelParametersDialog } from '@/pages/Preferences/sections/ExternalAPI/components/ModelParametersDialog';
+import { useTaskConfigManagement } from '@/pages/Preferences/sections/ExternalAPI/useAIConfigManagement';
 import { useTabStore } from '../../../store/tabStore';
 import { IChatTab } from '../../../types/tab';
 
@@ -81,20 +84,31 @@ const InputField = styled(TextField)`
   }
 `;
 
-const ClearButton = styled(IconButton)`
-  align-self: flex-end;
-`;
-
 export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
   const { t } = useTranslation('agent');
   const { updateTabData } = useTabStore();
   const [inputMessage, setInputMessage] = useState('');
+  const [parametersDialogOpen, setParametersDialogOpen] = useState(false);
+  const agentId = tab.agentId;
+  const agentDefId = tab.agentDefId;
+  const { config, handleConfigChange } = useTaskConfigManagement({
+    agentId,
+    agentDefId,
+  });
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setInputMessage(event.target.value);
-  };
+  }, []);
 
-  const handleSendMessage = () => {
+  const openParametersDialog = useCallback(() => {
+    setParametersDialogOpen(true);
+  }, []);
+
+  const closeParametersDialog = useCallback(() => {
+    setParametersDialogOpen(false);
+  }, []);
+
+  const handleSendMessage = useCallback(() => {
     if (!inputMessage.trim()) return;
 
     const newMessage = {
@@ -119,26 +133,26 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     });
 
     setInputMessage('');
-  };
+  }, [inputMessage, tab.messages, tab.id, updateTabData, t]);
 
-  const handleKeyPress = (event: React.KeyboardEvent) => {
+  const handleKeyPress = useCallback((event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       handleSendMessage();
     }
-  };
-
-  const handleClearChat = () => {
-    updateTabData(tab.id, { messages: [] });
-  };
+  }, [handleSendMessage]);
 
   return (
     <Container>
       <ChatHeader>
         <Title variant='h6'>{t(tab.title)}</Title>
-        <ClearButton onClick={handleClearChat} size='small'>
-          <DeleteIcon />
-        </ClearButton>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Tooltip title={t('Preference.ModelParameters', { ns: 'agent' })}>
+            <IconButton onClick={openParametersDialog} size='small'>
+              <TuneIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </ChatHeader>
 
       <MessagesContainer>
@@ -191,6 +205,12 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
           }}
         />
       </InputContainer>
+      <ModelParametersDialog
+        open={parametersDialogOpen}
+        onClose={closeParametersDialog}
+        config={config}
+        onSave={handleConfigChange}
+      />
     </Container>
   );
 };

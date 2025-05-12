@@ -1,19 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { List } from '@mui/material';
+import TuneIcon from '@mui/icons-material/Tune';
+import { Button, List } from '@mui/material';
 
 import { ListItemText } from '@/components/ListItem';
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import { ListItemVertical, Paper, SectionTitle } from '../../PreferenceComponents';
 import type { ISectionProps } from '../../useSections';
+import { ModelParametersDialog } from './components/ModelParametersDialog';
 import { ModelSelector } from './components/ModelSelector';
 import { ProviderConfig } from './components/ProviderConfig';
 import { useTaskConfigManagement } from './useAIConfigManagement';
 
 export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
   const { t } = useTranslation('agent');
-  const { loading, config, providers, setProviders, handleModelChange } = useTaskConfigManagement();
+  const { loading, config, providers, setProviders, handleModelChange, handleConfigChange } = useTaskConfigManagement();
+  const [parametersDialogOpen, setParametersDialogOpen] = useState(false);
+
+  const openParametersDialog = () => {
+    setParametersDialogOpen(true);
+  };
+
+  const closeParametersDialog = () => {
+    setParametersDialogOpen(false);
+  };
+
   return (
     <>
       <SectionTitle ref={props.sections?.externalAPI.ref}>{t('Preference.ExternalAPI')}</SectionTitle>
@@ -33,6 +45,24 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
                 />
               </ListItemVertical>
 
+              {/* 单独的模型参数设置项 */}
+              <ListItemVertical>
+                <ListItemText
+                  primary={t('Preference.ModelParameters', { ns: 'agent' })}
+                  secondary={t('Preference.ModelParametersDescription', { ns: 'agent' })}
+                />
+                <Button
+                  variant='outlined'
+                  color='primary'
+                  startIcon={<TuneIcon />}
+                  onClick={openParametersDialog}
+                  disabled={!config}
+                  sx={{ alignSelf: 'flex-start' }}
+                >
+                  {t('Preference.ConfigureModelParameters', { ns: 'agent' })}
+                </Button>
+              </ListItemVertical>
+
               <ProviderConfig
                 providers={providers}
                 changeDefaultModel={handleModelChange}
@@ -42,6 +72,14 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
           )}
         </List>
       </Paper>
+
+      {/* 模型参数设置对话框 */}
+      <ModelParametersDialog
+        open={parametersDialogOpen}
+        onClose={closeParametersDialog}
+        config={config}
+        onSave={handleConfigChange}
+      />
     </>
   );
 }
