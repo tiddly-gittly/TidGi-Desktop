@@ -26,7 +26,9 @@
       "Title": "配置问题"
     },
     "EmptyStateDescription": "创建一个新会话或者从左侧选择一个已有会话来开始对话。",
+    "Error": "对话错误",
     "InputPlaceholder": "输入消息，Ctrl+Enter 发送",
+    "Loading": "对话加载中",
     "NewSession": "新建会话",
     "OpenInWorkspaceTiddler": "在{{workspace}}工作区中打开{{title}}",
     "Send": "发送",
@@ -76,16 +78,6 @@
     "QuickAccess": "快速访问",
     "SearchPlaceholder": "搜索标签页或智能体..."
   },
-  "Search": {
-    "AvailableAgents": "可用的智能体",
-    "FailedToCreateChatWithAgent": "无法创建与智能体的对话",
-    "FailedToFetchAgents": "获取智能体列表失败",
-    "NoAgentsFound": "未找到智能体",
-    "NoClosedTabsFound": "没有最近关闭的标签页",
-    "NoTabsFound": "没有找到标签页",
-    "OpenTabs": "打开的标签页",
-    "RecentlyClosedTabs": "最近关闭的标签页"
-  },
   "Preference": {
     "AIModelSelection": "AI 模型选择",
     "AIModelSelectionDescription": "选择您想要使用的 AI 提供商和模型",
@@ -101,8 +93,8 @@
     "BaseURLRequired": "API 地址为必填项",
     "Cancel": "取消",
     "CancelAddProvider": "取消添加",
-    "ConfigureProvider": "配置 {{provider}}",
     "ConfigureModelParameters": "配置参数",
+    "ConfigureProvider": "配置 {{provider}}",
     "CreateCustomModel": "创建自定义模型",
     "Custom": "自定义接口",
     "CustomProvider": "自定义提供方",
@@ -164,5 +156,15 @@
     "TemperatureDescription": "较低的值会产生更确定性、更集中的响应，较高的值会产生更多样化、更创造性的响应",
     "TopP": "Top P",
     "TopPDescription": "控制响应的随机性。较低的值使响应更确定，较高的值允许更多的可能性"
+  },
+  "Search": {
+    "AvailableAgents": "可用的智能体",
+    "FailedToCreateChatWithAgent": "无法创建与智能体的对话",
+    "FailedToFetchAgents": "获取智能体列表失败",
+    "NoAgentsFound": "未找到智能体",
+    "NoClosedTabsFound": "没有最近关闭的标签页",
+    "NoTabsFound": "没有找到标签页",
+    "OpenTabs": "打开的标签页",
+    "RecentlyClosedTabs": "最近关闭的标签页"
   }
 }

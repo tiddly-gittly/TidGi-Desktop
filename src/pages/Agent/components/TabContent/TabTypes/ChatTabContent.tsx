@@ -4,14 +4,14 @@ import SendIcon from '@mui/icons-material/Send';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import TuneIcon from '@mui/icons-material/Tune';
 import { Avatar, Box, Button, CircularProgress, IconButton, TextField, Tooltip, Typography } from '@mui/material';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
 import { ModelParametersDialog } from '@/pages/Preferences/sections/ExternalAPI/components/ModelParametersDialog';
 import { useTaskConfigManagement } from '@/pages/Preferences/sections/ExternalAPI/useAIConfigManagement';
+import { useAgentChatStore } from '../../../store/agentChatStore';
 import { IChatTab } from '../../../types/tab';
-import { useAgentChat } from '../hooks/useAgentChat';
 
 interface ChatTabContentProps {
   tab: IChatTab;
@@ -89,10 +89,29 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
   const [parametersDialogOpen, setParametersDialogOpen] = useState(false);
   const agentId = tab.agentId;
   const agentDefId = tab.agentDefId;
-  
-  // 使用自定义 hook 获取和管理 Agent 数据
-  const { messages, loading, error, sendMessage, agent } = useAgentChat(agentId, agentDefId);
-  
+
+  // Use store to get and manage Agent data
+  const { messages, loading, error, agent, fetchAgent, subscribeToUpdates, sendMessage, createAgent } = useAgentChatStore();
+
+  // Initialize and subscribe to updates
+  useEffect(() => {
+    let cleanupSubscription: (() => void) | undefined;
+    
+    if (agentId) {
+      // If we have agentId, fetch and subscribe to updates
+      void fetchAgent(agentId);
+      cleanupSubscription = subscribeToUpdates(agentId);
+    } else if (agentDefId) {
+      // If we don't have agentId but have agentDefId, create a new Agent
+      void createAgent(agentDefId);
+    }
+
+    // Cleanup subscription when component unmounts
+    return () => {
+      if (cleanupSubscription) cleanupSubscription();
+    };
+  }, [agentId, agentDefId, fetchAgent, subscribeToUpdates, createAgent]);
+
   const { config, handleConfigChange } = useTaskConfigManagement({
     agentId: agent?.id,
     agentDefId: agent?.agentDefId,
@@ -111,15 +130,15 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
   }, []);
 
   const handleSendMessage = useCallback(async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || !agentId) return;
 
     try {
-      await sendMessage(inputMessage);
+      await sendMessage(agentId, inputMessage);
       setInputMessage('');
     } catch (err) {
       console.error('Error sending message:', err);
     }
-  }, [inputMessage, sendMessage]);
+  }, [inputMessage, sendMessage, agentId]);
 
   const handleKeyPress = useCallback((event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -133,7 +152,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
       <ChatHeader>
         <Title variant='h6'>{agent?.name || t(tab.title)}</Title>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          {loading && <CircularProgress size={20} sx={{ mr: 1 }} />}
+          {loading && <CircularProgress size={20} sx={{ mr: 1 }} color='primary' />}
           <Tooltip title={t('Preference.ModelParameters', { ns: 'agent' })}>
             <IconButton onClick={openParametersDialog} size='small'>
               <TuneIcon />
@@ -143,38 +162,44 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
       </ChatHeader>
 
       <MessagesContainer>
-        {loading && messages.length === 0 ? (
-          <Box sx={{ textAlign: 'center', mt: 4 }}>
-            <CircularProgress size={40} />
-            <Typography variant='body1' sx={{ mt: 2 }}>
-              {t('Chat.Loading')}
-            </Typography>
-          </Box>
-        ) : error ? (
-          <Box sx={{ textAlign: 'center', color: 'error.main', mt: 4 }}>
-            <Typography variant='body1'>
-              {t('Chat.Error')}: {error.message}
-            </Typography>
-          </Box>
-        ) : messages.length === 0 ? (
-          <Box sx={{ textAlign: 'center', color: 'text.secondary', mt: 4 }}>
-            <SmartToyIcon sx={{ fontSize: 48, opacity: 0.5 }} />
-            <Typography variant='body1' sx={{ mt: 2 }}>
-              {t('Chat.StartConversation')}
-            </Typography>
-          </Box>
-        ) : (
-          messages.map(message => (
-            <MessageBubble key={message.id} $isUser={message.role === 'user'}>
-              <MessageAvatar $isUser={message.role === 'user'}>
-                {message.role === 'user' ? <PersonIcon /> : <SmartToyIcon />}
-              </MessageAvatar>
-              <MessageContent $isUser={message.role === 'user'}>
-                <Typography variant='body1'>{message.content}</Typography>
-              </MessageContent>
-            </MessageBubble>
-          ))
-        )}
+        {loading && messages.length === 0
+          ? (
+            <Box sx={{ textAlign: 'center', mt: 4 }}>
+              <CircularProgress size={40} color='primary' />
+              <Typography variant='body1' sx={{ mt: 2 }}>
+                {t('Chat.Loading')}
+              </Typography>
+            </Box>
+          )
+          : error
+          ? (
+            <Box sx={{ textAlign: 'center', color: 'error.main', mt: 4 }}>
+              <Typography variant='body1'>
+                {t('Chat.Error')}: {error.message}
+              </Typography>
+            </Box>
+          )
+          : messages.length === 0
+          ? (
+            <Box sx={{ textAlign: 'center', color: 'text.secondary', mt: 4 }}>
+              <SmartToyIcon sx={{ fontSize: 48, opacity: 0.5 }} />
+              <Typography variant='body1' sx={{ mt: 2 }}>
+                {t('Chat.StartConversation')}
+              </Typography>
+            </Box>
+          )
+          : (
+            messages.map(message => (
+              <MessageBubble key={message.id} $isUser={message.role === 'user'}>
+                <MessageAvatar $isUser={message.role === 'user'}>
+                  {message.role === 'user' ? <PersonIcon /> : <SmartToyIcon />}
+                </MessageAvatar>
+                <MessageContent $isUser={message.role === 'user'}>
+                  <Typography variant='body1'>{message.content}</Typography>
+                </MessageContent>
+              </MessageBubble>
+            ))
+          )}
       </MessagesContainer>
 
       <InputContainer>

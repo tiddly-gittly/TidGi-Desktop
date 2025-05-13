@@ -25,7 +25,9 @@
       "Title": "Problème de configuration"
     },
     "EmptyStateDescription": "Créez une nouvelle session ou sélectionnez-en une existante à gauche pour commencer à discuter.",
+    "Error": "Erreur de dialogue",
     "InputPlaceholder": "Tapez un message, Ctrl+Entrée pour envoyer",
+    "Loading": "Chargement de la conversation en cours",
     "NewSession": "Nouvelle session",
     "OpenInWorkspaceTiddler": "Ouvrir {{title}} dans l'espace de travail {{workspace}}",
     "Send": "Envoyer",

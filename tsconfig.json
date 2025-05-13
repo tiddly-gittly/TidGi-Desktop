@@ -1,5 +1,5 @@
 {
-  "exclude": ["template/**/*.js"],
+  "exclude": ["template/**/*.js", "src/services/wiki/plugin/**/*.js"],
   "include": ["src"],
   "ts-node": {
     "files": true,

@@ -1,64 +1,20 @@
 import { nanoid } from 'nanoid';
-import { create } from 'zustand';
-import { IChatTab, INewTab, IWebTab, TabItem, TabState, TabType } from '../types/tab';
-import { createInitialTabs } from './initialData';
+import { StateCreator } from 'zustand';
+import { IChatTab, INewTab, IWebTab, TabItem, TabState, TabType } from '../../../types/tab';
+import { MAX_CLOSED_TABS, TabsState } from '../types';
 
-type TabCloseDirection = 'above' | 'below' | 'other';
-
-interface TabsState {
-  // All tabs
-  tabs: TabItem[];
-  // ID of the currently active tab
-  activeTabId: string | null;
-  // IDs of tabs displayed side by side
-  splitViewIds: string[];
-  // Split ratio for side-by-side view (20-80)
-  splitRatio: number;
-  // Recently closed tabs (for restoration)
-  closedTabs: TabItem[];
-
-  // Operation methods
-  addTab: (tabType: TabType, initialData?: Partial<TabItem> & { insertPosition?: number }) => Promise<TabItem>;
-  closeTab: (tabId: string) => void;
-  setActiveTab: (tabId: string) => void;
-  pinTab: (tabId: string, isPinned: boolean) => void;
-  updateTabData: (tabId: string, data: Partial<TabItem>) => void;
-  transformTabType: (tabId: string, newType: TabType, initialData?: Record<string, unknown>) => void;
-
-  // Side-by-side tabs related
-  addToSplitView: (tabId: string) => void;
-  removeFromSplitView: (tabId: string) => void;
-  clearSplitView: () => void;
-  updateSplitRatio: (ratio: number) => void;
-
-  // Batch close and restore tab functions
-  closeTabs: (direction: TabCloseDirection, fromTabId: string) => void;
-  restoreClosedTab: () => void;
-  hasClosedTabs: () => boolean;
-
-  // Utility methods
-  getTabIndex: (tabId: string) => number;
-}
-
-// Initialize tab data
-const initialTabs = createInitialTabs();
-const firstActiveTab = initialTabs.find(tab => tab.state === TabState.ACTIVE);
-
-// Maximum number of closed tabs to save
-const MAX_CLOSED_TABS = 10;
-
-export const useTabStore = create<TabsState>((set, get) => ({
-  tabs: initialTabs,
-  activeTabId: firstActiveTab?.id || null,
-  splitViewIds: [],
-  splitRatio: 50, // Default 50%/50% split ratio
-  closedTabs: [], // Closed tabs
-
-  // Add new tab
+/**
+ * 创建标签页基础操作
+ */
+export const createBasicActions = (): Pick<
+  TabsState,
+  'addTab' | 'closeTab' | 'setActiveTab' | 'pinTab' | 'updateTabData' | 'transformTabType'
+> => ({
+  // 添加新标签页
   addTab: async (tabType: TabType, initialData = {}) => {
     const timestamp = Date.now();
-    const { insertPosition } = initialData;
-    delete initialData.insertPosition; // Remove from data passed to tab
+    const dataWithoutPosition = { ...initialData };
+    delete dataWithoutPosition.insertPosition;
 
     let newTab: TabItem;
 
@@ -68,18 +24,18 @@ export const useTabStore = create<TabsState>((set, get) => ({
       isPinned: false,
       createdAt: timestamp,
       updatedAt: timestamp,
-      ...initialData,
+      ...dataWithoutPosition,
     };
 
     // 如果是聊天类型的标签页，需要先创建 agent 实例
     if (tabType === TabType.CHAT) {
       const agent = await window.service.agentInstance.createAgent(
-        (initialData as Partial<IChatTab>).agentDefId,
+        (dataWithoutPosition as Partial<IChatTab>).agentDefId,
       );
       newTab = {
         ...tabBase,
         type: TabType.CHAT,
-        title: initialData.title || agent.name,
+        title: dataWithoutPosition.title || agent.name,
         agentDefId: agent.agentDefId,
         agentId: agent.id,
       } as IChatTab;
@@ -87,17 +43,50 @@ export const useTabStore = create<TabsState>((set, get) => ({
       newTab = {
         ...tabBase,
         type: TabType.WEB,
-        title: initialData.title || 'agent.tabTitle.newWeb',
-        url: (initialData as Partial<IWebTab>).url || 'about:blank',
+        title: dataWithoutPosition.title || 'agent.tabTitle.newWeb',
+        url: (dataWithoutPosition as Partial<IWebTab>).url || 'about:blank',
       } as IWebTab;
     } else {
       newTab = {
         ...tabBase,
         type: TabType.NEW_TAB,
-        title: initialData.title || 'agent.tabTitle.newTab',
-        favorites: (initialData as Partial<INewTab>).favorites || [],
+        title: dataWithoutPosition.title || 'agent.tabTitle.newTab',
+        favorites: (dataWithoutPosition as Partial<INewTab>).favorites || [],
       } as INewTab;
     }
+
+    return newTab;
+  },
+
+  // 关闭标签页
+  closeTab: () => {},
+
+  // 设置激活的标签页
+  setActiveTab: () => {},
+
+  // 固定/取消固定标签页
+  pinTab: () => {},
+
+  // 更新标签页数据
+  updateTabData: async () => {},
+
+  // 转换标签页类型
+  transformTabType: async () => {},
+});
+
+/**
+ * 标签页基础操作中间件
+ */
+export const basicActionsMiddleware: StateCreator<
+  TabsState,
+  [],
+  [],
+  Pick<TabsState, 'addTab' | 'closeTab' | 'setActiveTab' | 'pinTab' | 'updateTabData' | 'transformTabType'>
+> = (set, _get) => ({
+  // 添加新标签页
+  addTab: async (tabType: TabType, initialData = {}) => {
+    const newTab = await createBasicActions().addTab(tabType, initialData);
+    const { insertPosition } = initialData;
 
     set(state => {
       const updatedTabs = state.tabs.map(tab => ({
@@ -173,119 +162,6 @@ export const useTabStore = create<TabsState>((set, get) => ({
     });
   },
 
-  // 批量关闭标签页
-  closeTabs: (direction: TabCloseDirection, fromTabId: string) => {
-    set(state => {
-      const tabIndex = state.tabs.findIndex(tab => tab.id === fromTabId);
-      if (tabIndex === -1) return state;
-
-      // 获取要保留的标签页ID列表
-      const tabsToKeep: TabItem[] = [];
-      const tabsToClose: TabItem[] = [];
-
-      // 根据不同方向，确定要关闭的标签页
-      state.tabs.forEach((tab, index) => {
-        // 固定的标签页永远不关闭
-        if (tab.isPinned) {
-          tabsToKeep.push(tab);
-          return;
-        }
-
-        switch (direction) {
-          case 'above':
-            if (index <= tabIndex) {
-              tabsToKeep.push(tab);
-            } else {
-              tabsToClose.push(tab);
-            }
-            break;
-          case 'below':
-            if (index >= tabIndex || index < state.tabs.findIndex(t => !t.isPinned)) {
-              tabsToKeep.push(tab);
-            } else {
-              tabsToClose.push(tab);
-            }
-            break;
-          case 'other':
-            if (index === tabIndex || tab.isPinned) {
-              tabsToKeep.push(tab);
-            } else {
-              tabsToClose.push(tab);
-            }
-            break;
-        }
-      });
-
-      // 更新激活的标签页ID
-      let newActiveTabId = state.activeTabId;
-      if (!tabsToKeep.some(tab => tab.id === newActiveTabId)) {
-        const targetTab = tabsToKeep.find(tab => tab.id === fromTabId);
-        if (targetTab) {
-          newActiveTabId = targetTab.id;
-
-          // 设置新激活标签页的状态
-          tabsToKeep.forEach(tab => {
-            tab.state = tab.id === newActiveTabId ? TabState.ACTIVE : TabState.INACTIVE;
-          });
-        } else {
-          newActiveTabId = tabsToKeep.length > 0 ? tabsToKeep[0].id : null;
-        }
-      }
-
-      // 从并排视图中移除已关闭的标签页
-      const newSplitViewIds = state.splitViewIds.filter(id => tabsToKeep.some(tab => tab.id === id));
-
-      // 添加到关闭标签页历史
-      const newClosedTabs = [...tabsToClose, ...state.closedTabs].slice(0, MAX_CLOSED_TABS);
-
-      return {
-        tabs: tabsToKeep,
-        activeTabId: newActiveTabId,
-        splitViewIds: newSplitViewIds,
-        closedTabs: newClosedTabs,
-      };
-    });
-  },
-
-  // 恢复最近关闭的标签页
-  restoreClosedTab: () => {
-    set(state => {
-      if (state.closedTabs.length === 0) return state;
-
-      const [tabToRestore, ...remainingClosedTabs] = state.closedTabs;
-
-      // 设置所有标签页为非活动状态
-      const updatedTabs = state.tabs.map(tab => ({
-        ...tab,
-        state: TabState.INACTIVE,
-      }));
-
-      // 恢复标签页为活动状态
-      const restoredTab = {
-        ...tabToRestore,
-        state: TabState.ACTIVE,
-        createdAt: Date.now(), // 更新创建时间，让它排序在前面
-      };
-
-      return {
-        tabs: [...updatedTabs, restoredTab],
-        activeTabId: restoredTab.id,
-        closedTabs: remainingClosedTabs,
-      };
-    });
-  },
-
-  // 检查是否有已关闭的标签页
-  hasClosedTabs: () => {
-    return get().closedTabs.length > 0;
-  },
-
-  // 获取标签页在列表中的索引
-  getTabIndex: (tabId: string) => {
-    const state = get();
-    return state.tabs.findIndex(tab => tab.id === tabId);
-  },
-
   // 设置激活的标签页
   setActiveTab: (tabId: string) => {
     set(state => {
@@ -318,7 +194,7 @@ export const useTabStore = create<TabsState>((set, get) => ({
   },
 
   // 更新标签页数据
-  updateTabData: async (tabId: string, data: Partial<TabItem>) => {
+  updateTabData: (tabId: string, data: Partial<TabItem>) => {
     set(state => {
       const timestamp = Date.now();
       const updatedTabs = state.tabs.map(tab => {
@@ -343,6 +219,7 @@ export const useTabStore = create<TabsState>((set, get) => ({
     });
   },
 
+  // 转换标签页类型
   transformTabType: async (tabId: string, newType: TabType, initialData: Record<string, unknown> = {}) => {
     // 如果要转换为 CHAT 类型，需要先创建 agent
     if (newType === TabType.CHAT) {
@@ -361,7 +238,7 @@ export const useTabStore = create<TabsState>((set, get) => ({
 
       const oldTab = state.tabs[tabIndex];
       const timestamp = Date.now();
-      
+
       // 创建新标签页的通用基础属性
       const baseProps = {
         id: oldTab.id,
@@ -412,39 +289,4 @@ export const useTabStore = create<TabsState>((set, get) => ({
       };
     });
   },
-
-  // 添加到并排视图
-  addToSplitView: (tabId: string) => {
-    set(state => {
-      // 最多同时显示两个并排标签页
-      if (state.splitViewIds.includes(tabId) || state.splitViewIds.length >= 2) {
-        return state;
-      }
-
-      return {
-        splitViewIds: [...state.splitViewIds, tabId],
-      };
-    });
-  },
-
-  // 从并排视图中移除
-  removeFromSplitView: (tabId: string) => {
-    set(state => ({
-      splitViewIds: state.splitViewIds.filter(id => id !== tabId),
-    }));
-  },
-
-  // 清空并排视图
-  clearSplitView: () => {
-    set(() => ({
-      splitViewIds: [],
-    }));
-  },
-
-  // 更新分割比例
-  updateSplitRatio: (ratio: number) => {
-    set(() => ({
-      splitRatio: Math.max(20, Math.min(80, ratio)),
-    }));
-  },
-}));
+});

@@ -26,7 +26,9 @@
       "Title": "Configuration Issue"
     },
     "EmptyStateDescription": "Create a new session or select an existing one from the left to start chatting.",
+    "Error": "Dialogue error",
     "InputPlaceholder": "Type a message, Ctrl+Enter to send",
+    "Loading": "Dialogue loading",
     "NewSession": "New Session",
     "OpenInWorkspaceTiddler": "Open {{title}} in {{workspace}} workspace",
     "Send": "Send",
