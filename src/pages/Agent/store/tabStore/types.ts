@@ -19,6 +19,7 @@ export interface TabsState {
   splitRatio: number;
   // Recently closed tabs (for restoration)
   closedTabs: TabItem[];
+  initialize: () => Promise<void>;
 
   // 基础操作方法
   addTab: (tabType: TabType, initialData?: Partial<TabItem> & { insertPosition?: number }) => Promise<TabItem>;

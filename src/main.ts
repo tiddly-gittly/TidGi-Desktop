@@ -96,7 +96,6 @@ const commonInit = async (): Promise<void> => {
     }),
     databaseService.initializeForApp().then(async () => {
       await agentDefinitionService.initialize();
-      await agentInstanceService.initialize();
     }),
   ]);
   initializeObservables();

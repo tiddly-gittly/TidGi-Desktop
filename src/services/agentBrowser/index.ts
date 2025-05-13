@@ -1,0 +1,564 @@
+import { injectable } from 'inversify';
+import { pick } from 'lodash';
+
+import { DataSource, Equal, Not, Repository } from 'typeorm';
+
+import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
+import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
+import { lazyInject } from '@services/container';
+import { logger } from '@services/libs/log';
+import { nanoid } from 'nanoid';
+import { ITab, TabItem, TabState, TabType } from '../../pages/Agent/types/tab';
+import { IDatabaseService } from '../database/interface';
+import { AgentBrowserTabEntity } from '../database/schema/agentBrowser';
+import serviceIdentifier from '../serviceIdentifier';
+import { IAgentBrowserService } from './interface';
+
+const MAX_CLOSED_TABS = 10;
+
+@injectable()
+export class AgentBrowserService implements IAgentBrowserService {
+  @lazyInject(serviceIdentifier.Database)
+  private readonly databaseService!: IDatabaseService;
+
+  private dataSource: DataSource | null = null;
+  private tabRepository: Repository<AgentBrowserTabEntity> | null = null;
+
+  /**
+   * Initialize the service on application startup
+   */
+  public async initialize(): Promise<void> {
+    try {
+      // Get repositories
+      this.dataSource = await this.databaseService.getDatabase('agent-default');
+      this.tabRepository = this.dataSource.getRepository(AgentBrowserTabEntity);
+      logger.debug('Agent browser repository initialized');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`Failed to initialize agent browser service: ${errorMessage}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Ensure repository is initialized
+   */
+  private ensureRepositories(): void {
+    if (!this.tabRepository) {
+      throw new Error('Agent browser repository not initialized');
+    }
+  }
+
+  /**
+   * Convert database entity to TabItem
+   */
+  private entityToTabItem(entity: AgentBrowserTabEntity): TabItem {
+    const baseTab: ITab = {
+      id: entity.id,
+      type: entity.tabType,
+      title: entity.title,
+      state: entity.state,
+      isPinned: entity.isPinned,
+      createdAt: new Date(entity.created).getTime(),
+      updatedAt: new Date(entity.modified).getTime(),
+    };
+
+    // Add type-specific data from the data JSON field
+    const data = entity.data || {};
+
+    switch (entity.tabType) {
+      case TabType.WEB:
+        return {
+          ...baseTab,
+          type: TabType.WEB,
+          url: data.url as string || 'about:blank',
+          favicon: data.favicon as string | undefined,
+        };
+      case TabType.CHAT:
+        return {
+          ...baseTab,
+          type: TabType.CHAT,
+          agentId: data.agentId as string | undefined,
+          agentDefId: data.agentDefId as string | undefined,
+        };
+      case TabType.NEW_TAB:
+        return {
+          ...baseTab,
+          type: TabType.NEW_TAB,
+          favorites: data.favorites as Array<{
+            id: string;
+            title: string;
+            url: string;
+            favicon?: string;
+          }> || [],
+        };
+      default:
+        return baseTab as TabItem;
+    }
+  }
+
+  /**
+   * Convert TabItem to database entity
+   */
+  private tabItemToEntity(tab: TabItem, position?: number): AgentBrowserTabEntity {
+    const entity = new AgentBrowserTabEntity();
+    entity.id = tab.id || nanoid();
+    entity.tabType = tab.type;
+    entity.title = tab.title;
+    entity.state = tab.state;
+    entity.isPinned = tab.isPinned;
+    entity.position = position ?? 0;
+    entity.opened = true; // New tabs are always opened by default
+
+    // Extract type-specific data into the data JSON field
+    switch (tab.type) {
+      case TabType.WEB: {
+        const webTab = tab as { url: string; favicon?: string };
+        entity.data = {
+          url: webTab.url,
+          favicon: webTab.favicon,
+        };
+        break;
+      }
+      case TabType.CHAT: {
+        const chatTab = tab as { agentId?: string; agentDefId?: string };
+        entity.data = {
+          agentId: chatTab.agentId,
+          agentDefId: chatTab.agentDefId,
+        };
+        break;
+      }
+      case TabType.NEW_TAB: {
+        const newTab = tab as { favorites?: Array<{ id: string; title: string; url: string; favicon?: string }> };
+        entity.data = {
+          favorites: newTab.favorites || [],
+        };
+        break;
+      }
+    }
+
+    return entity;
+  }
+
+  /**
+   * Get all open tabs
+   */
+  public async getAllTabs(): Promise<TabItem[]> {
+    this.ensureRepositories();
+
+    try {
+      // Get all open tabs ordered by position
+      const entities = await this.tabRepository!.find({
+        where: { opened: true },
+        order: { position: 'ASC' },
+      });
+
+      // Convert entities to TabItems
+      return entities.map(entity => this.entityToTabItem(entity));
+    } catch (error) {
+      logger.error(`Failed to get tabs: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get active tab ID
+   */
+  public async getActiveTabId(): Promise<string | null> {
+    this.ensureRepositories();
+
+    try {
+      // Find tab with active state among opened tabs
+      const activeTab = await this.tabRepository!.findOne({
+        where: { state: TabState.ACTIVE, opened: true },
+      });
+
+      return activeTab?.id || null;
+    } catch (error) {
+      logger.error(`Failed to get active tab: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Set active tab
+   */
+  public async setActiveTab(tabId: string): Promise<void> {
+    this.ensureRepositories();
+
+    try {
+      // Check if tab exists and is open
+      const tabToActivate = await this.tabRepository!.findOne({
+        where: { id: tabId, opened: true },
+      });
+
+      // If tab doesn't exist or isn't open, log and return
+      if (!tabToActivate) {
+        logger.warn(`Cannot activate tab ${tabId}: tab not found or not open`);
+        return;
+      }
+      
+      // Set all open tabs to inactive
+      await this.tabRepository!.update({ opened: true }, { state: TabState.INACTIVE });
+
+      // Set the specified tab to active
+      await this.tabRepository!.update({ id: tabId, opened: true }, { state: TabState.ACTIVE });
+      
+      logger.debug(`Activated tab ${tabId}`);
+    } catch (error) {
+      logger.error(`Failed to set active tab: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Add new tab
+   */
+  public async addTab(tab: TabItem, position?: number): Promise<TabItem> {
+    this.ensureRepositories();
+
+    try {
+      // Check if this is replacing a temporary tab
+      const isReplacingTemp = tab.id?.startsWith(TEMP_TAB_ID_PREFIX);
+      
+      // If adding an active tab, deactivate all other tabs
+      if (tab.state === TabState.ACTIVE) {
+        await this.tabRepository!.update({ opened: true }, { state: TabState.INACTIVE });
+      }
+
+      // Find the highest position for insertion if not specified
+      let finalPosition = position;
+      if (finalPosition === undefined) {
+        const lastTab = await this.tabRepository!.findOne({
+          where: { opened: true },
+          order: { position: 'DESC' },
+        });
+        finalPosition = lastTab ? lastTab.position + 1 : 0;
+      }
+
+      // If this is meant to replace a temp tab but the temp tab wasn't properly closed
+      // we'll attempt to clean up any existing temp tabs to avoid duplicates
+      if (isReplacingTemp) {
+        logger.debug(`Cleaning up any existing temp tabs before adding: ${tab.id}`);
+        // Find and force delete any existing temp tabs that might not have been properly closed
+        const existingTempTabs = await this.tabRepository!.find({
+          where: { id: tab.id, opened: true }
+        });
+        
+        if (existingTempTabs.length > 0) {
+          logger.debug(`Found ${existingTempTabs.length} temp tabs to clean up`);
+          await this.tabRepository!.remove(existingTempTabs);
+        }
+      }
+
+      // Convert tab to entity and save
+      const entity = this.tabItemToEntity(tab, finalPosition);
+      await this.tabRepository!.save(entity);
+
+      // Return the saved tab
+      return this.entityToTabItem(entity);
+    } catch (error) {
+      logger.error(`Failed to add tab: ${error as Error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Update tab data
+   */
+  public async updateTab(tabId: string, data: Partial<TabItem>): Promise<void> {
+    this.ensureRepositories();
+
+    try {
+      // Get existing tab (only open tabs can be updated)
+      const existingTab = await this.tabRepository!.findOne({
+        where: { id: tabId, opened: true },
+      });
+
+      if (!existingTab) {
+        throw new Error(`Tab not found: ${tabId}`);
+      }
+
+      // Handle changing state to active
+      if (data.state === TabState.ACTIVE) {
+        await this.tabRepository!.update({ opened: true }, { state: TabState.INACTIVE });
+      }
+
+      // Update base tab properties
+      const baseProperties = pick(data, ['title', 'state', 'isPinned']);
+      Object.assign(existingTab, baseProperties);
+
+      // Update type-specific data in the data JSON field
+      if (existingTab.data === undefined) {
+        existingTab.data = {};
+      }
+
+      switch (existingTab.tabType) {
+        case TabType.WEB: {
+          const webData = pick(data, ['url', 'favicon']);
+          Object.assign(existingTab.data, webData);
+          break;
+        }
+        case TabType.CHAT: {
+          const chatData = pick(data, ['agentId', 'agentDefId']);
+          Object.assign(existingTab.data, chatData);
+          break;
+        }
+        case TabType.NEW_TAB: {
+          const newTabData = pick(data, ['favorites']);
+          Object.assign(existingTab.data, newTabData);
+          break;
+        }
+      }
+
+      await this.tabRepository!.save(existingTab);
+    } catch (error) {
+      logger.error(`Failed to update tab: ${error as Error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Close tab by ID
+   */
+  public async closeTab(tabId: string): Promise<void> {
+    this.ensureRepositories();
+
+    try {
+      // Get tab to close
+      const tabToClose = await this.tabRepository!.findOne({
+        where: { id: tabId, opened: true },
+      });
+
+      if (!tabToClose) {
+        return;
+      }
+      
+      // Special handling for temporary tabs - if it's a temp tab, we might want to fully delete it
+      // rather than just marking it closed, since temp tabs don't need to be in history
+      const isTemporaryTab = tabId.startsWith(TEMP_TAB_ID_PREFIX);
+      
+      if (isTemporaryTab) {
+        // For temporary tabs, we just remove them completely
+        logger.debug(`Removing temporary tab: ${tabId}`);
+        await this.tabRepository!.remove(tabToClose);
+      } else {
+        // For regular tabs, mark as closed and keep in history
+        tabToClose.opened = false;
+        tabToClose.closedAt = new Date();
+        await this.tabRepository!.save(tabToClose);
+  
+        // Limit closed tabs history size
+        const closedTabsCount = await this.tabRepository!.count({ where: { opened: false } });
+        if (closedTabsCount > MAX_CLOSED_TABS) {
+          // Find the oldest closed tabs that exceed the limit
+          const excessTabs = await this.tabRepository!.find({
+            where: { opened: false },
+            order: { closedAt: 'ASC' },
+            take: closedTabsCount - MAX_CLOSED_TABS,
+          });
+  
+          if (excessTabs.length > 0) {
+            // Actually delete these tabs that are too old
+            await this.tabRepository!.remove(excessTabs);
+          }
+        }
+      }
+
+      // If the closed tab was active, make another tab active
+      if (tabToClose.state === TabState.ACTIVE) {
+        // Try to activate another open tab
+        const nextTab = await this.tabRepository!.findOne({
+          where: { opened: true },
+          order: { position: 'ASC' },
+        });
+
+        if (nextTab) {
+          await this.tabRepository!.update({ id: nextTab.id }, { state: TabState.ACTIVE });
+        }
+      }
+
+      // Reindex positions to ensure consistency for open tabs
+      await this.reindexTabPositions();
+    } catch (error) {
+      logger.error(`Failed to close tab: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Close multiple tabs based on direction
+   */
+  public async closeTabs(direction: TabCloseDirection, fromTabId: string): Promise<void> {
+    this.ensureRepositories();
+
+    try {
+      // Get reference tab
+      const referenceTab = await this.tabRepository!.findOne({
+        where: { id: fromTabId, opened: true },
+      });
+
+      if (!referenceTab) {
+        return;
+      }
+
+      // Get all open tabs ordered by position
+      const allTabs = await this.tabRepository!.find({
+        where: { opened: true },
+        order: { position: 'ASC' },
+      });
+
+      // Find index of reference tab
+      const referenceIndex = allTabs.findIndex(tab => tab.id === fromTabId);
+      if (referenceIndex === -1) return;
+
+      // Determine tabs to close based on direction
+      const tabsToClose: AgentBrowserTabEntity[] = [];
+
+      allTabs.forEach((tab, index) => {
+        // Never close pinned tabs
+        if (tab.isPinned) {
+          return;
+        }
+
+        switch (direction) {
+          case 'above':
+            if (index < referenceIndex) {
+              tabsToClose.push(tab);
+            }
+            break;
+          case 'below':
+            if (index > referenceIndex) {
+              tabsToClose.push(tab);
+            }
+            break;
+          case 'other':
+            if (index !== referenceIndex) {
+              tabsToClose.push(tab);
+            }
+            break;
+        }
+      });
+
+      // Close each tab
+      for (const tab of tabsToClose) {
+        await this.closeTab(tab.id);
+      }
+    } catch (error) {
+      logger.error(`Failed to close tabs: ${error as Error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Pin or unpin tab
+   */
+  public async pinTab(tabId: string, isPinned: boolean): Promise<void> {
+    this.ensureRepositories();
+
+    try {
+      await this.tabRepository!.update({ id: tabId, opened: true }, { isPinned });
+      await this.reindexTabPositions();
+    } catch (error) {
+      logger.error(`Failed to pin tab: ${error as Error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get closed tabs
+   */
+  public async getClosedTabs(limit = MAX_CLOSED_TABS): Promise<TabItem[]> {
+    this.ensureRepositories();
+
+    try {
+      const closedTabs = await this.tabRepository!.find({
+        where: { opened: false },
+        order: { closedAt: 'DESC' },
+        take: limit,
+      });
+
+      return closedTabs.map(entity => this.entityToTabItem(entity));
+    } catch (error) {
+      logger.error(`Failed to get closed tabs: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Restore the most recently closed tab
+   */
+  public async restoreClosedTab(): Promise<TabItem | null> {
+    this.ensureRepositories();
+
+    try {
+      // Get most recently closed tab
+      const closedTab = await this.tabRepository!.findOne({
+        where: { opened: false },
+        order: { closedAt: 'DESC' },
+      });
+
+      if (!closedTab) {
+        return null;
+      }
+
+      // Reopen the tab by setting opened flag to true
+      closedTab.opened = true;
+      closedTab.closedAt = undefined; // Clear the closed timestamp
+      closedTab.state = TabState.ACTIVE; // Make the tab active
+
+      // Deactivate all other tabs
+      await this.tabRepository!.update(
+        { id: Not(Equal(closedTab.id)), opened: true },
+        { state: TabState.INACTIVE },
+      );
+
+      // Save the reopened tab
+      await this.tabRepository!.save(closedTab);
+
+      // Reindex positions
+      await this.reindexTabPositions();
+
+      // Return the restored tab item
+      return this.entityToTabItem(closedTab);
+    } catch (error) {
+      logger.error(`Failed to restore closed tab: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Reindex tab positions to ensure consistency
+   * Pinned tabs come first, followed by unpinned tabs
+   */
+  private async reindexTabPositions(): Promise<void> {
+    try {
+      // Get only open tabs
+      const allTabs = await this.tabRepository!.find({
+        where: { opened: true },
+      });
+
+      // Separate pinned and unpinned tabs
+      const pinnedTabs = allTabs.filter(tab => tab.isPinned);
+      const unpinnedTabs = allTabs.filter(tab => !tab.isPinned);
+
+      // Update positions
+      let position = 0;
+
+      // Update pinned tabs first
+      for (const tab of pinnedTabs) {
+        tab.position = position++;
+      }
+
+      // Then update unpinned tabs
+      for (const tab of unpinnedTabs) {
+        tab.position = position++;
+      }
+
+      // Save all tabs
+      await this.tabRepository!.save([...pinnedTabs, ...unpinnedTabs]);
+    } catch (error) {
+      logger.error(`Failed to reindex tab positions: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+}

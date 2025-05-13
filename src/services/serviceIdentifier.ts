@@ -1,4 +1,5 @@
 export default {
+  AgentBrowser: Symbol.for('AgentBrowser'),
   AgentDefinition: Symbol.for('AgentDefinition'),
   Authentication: Symbol.for('Authentication'),
   Context: Symbol.for('Context'),

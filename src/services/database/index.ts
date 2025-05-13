@@ -14,6 +14,7 @@ import { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions
 import { ensureSettingFolderExist, fixSettingFileWhenError } from './configSetting';
 import { IDatabaseService, ISettingFile } from './interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from './schema/agent';
+import { AgentBrowserTabEntity } from './schema/agentBrowser';
 import { WikiTiddler } from './schema/wiki';
 
 // Schema config interface
@@ -76,6 +77,7 @@ export class DatabaseService implements IDatabaseService {
         AgentDefinitionEntity,
         AgentInstanceEntity,
         AgentInstanceMessageEntity,
+        AgentBrowserTabEntity,
       ],
       synchronize: true,
       migrationsRun: false,

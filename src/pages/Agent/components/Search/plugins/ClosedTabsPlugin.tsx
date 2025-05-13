@@ -1,5 +1,6 @@
 import { AutocompletePlugin } from '@algolia/autocomplete-js';
 import { getI18n } from 'react-i18next';
+import { TEMP_TAB_ID_PREFIX } from '../../../constants/tab';
 import { useTabStore } from '../../../store/tabStore';
 import { TabType } from '../../../types/tab';
 
@@ -110,10 +111,26 @@ export const createClosedTabsPlugin = (): AutocompletePlugin<TabSource, unknown>
               );
             },
           },
-          onSelect() {
-            // Restore closed tab
-            const { restoreClosedTab } = useTabStore.getState();
-            restoreClosedTab();
+          onSelect: async () => {
+            try {
+              // Get current state
+              const tabStore = useTabStore.getState();
+              const { activeTabId } = tabStore;
+
+              // Close temporary tab if current active tab has an ID that starts with temp prefix
+              if (activeTabId && activeTabId.startsWith(TEMP_TAB_ID_PREFIX)) {
+                // Close directly through service
+                await window.service.agentBrowser.closeTab(activeTabId);
+              }
+
+              // Restore the closed tab directly through service
+              await window.service.agentBrowser.restoreClosedTab();
+
+              // Refresh tab store to reflect changes
+              tabStore.initialize();
+            } catch (error) {
+              console.error('Failed to restore closed tab from search:', error);
+            }
           },
         },
       ];

@@ -96,7 +96,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
   // Initialize and subscribe to updates
   useEffect(() => {
     let cleanupSubscription: (() => void) | undefined;
-    
+
     if (agentId) {
       // If we have agentId, fetch and subscribe to updates
       void fetchAgent(agentId);

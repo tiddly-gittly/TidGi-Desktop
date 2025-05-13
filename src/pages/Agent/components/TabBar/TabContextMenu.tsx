@@ -55,7 +55,7 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
     : null;
 
   // Determine if tab can be added to split view
-  const canAddToSplitView = targetTab 
+  const canAddToSplitView = targetTab
     ? splitViewIds.length < 2 && !splitViewIds.includes(targetTab.id)
     : false;
 
@@ -82,22 +82,22 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
   }, [contextMenu.targetTabId, closeTab, handleClose]);
 
   // Duplicate current tab
-  const handleDuplicateTab = useCallback(() => {
+  const handleDuplicateTab = useCallback(async () => {
     if (!targetTab) return;
     switch (targetTab.type) {
       case TabType.WEB:
-        addTab(TabType.WEB, {
+        await addTab(TabType.WEB, {
           url: (targetTab).url,
           title: targetTab.title,
         });
         break;
       case TabType.CHAT:
-        addTab(TabType.CHAT, {
+        await addTab(TabType.CHAT, {
           title: targetTab.title,
         });
         break;
       case TabType.NEW_TAB:
-        addTab(TabType.NEW_TAB);
+        await addTab(TabType.NEW_TAB);
         break;
     }
     handleClose();
@@ -112,10 +112,10 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
   }, [contextMenu.targetTabId, addToSplitView, handleClose]);
 
   // Create new tab below
-  const handleNewTabBelow = useCallback(() => {
+  const handleNewTabBelow = useCallback(async () => {
     if (targetTab) {
       const currentTabIndex = getTabIndex(targetTab.id);
-      addTab(TabType.NEW_TAB, { insertPosition: currentTabIndex + 1 });
+      await addTab(TabType.NEW_TAB, { insertPosition: currentTabIndex + 1 });
       handleClose();
     }
   }, [targetTab, getTabIndex, addTab, handleClose]);

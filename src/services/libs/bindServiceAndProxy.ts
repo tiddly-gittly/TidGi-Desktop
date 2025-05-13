@@ -6,6 +6,7 @@ import { registerProxy } from 'electron-ipc-cat/server';
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 
+import { AgentBrowserService } from '@services/agentBrowser';
 import { AgentDefinitionService } from '@services/agentDefinition';
 import { AgentInstanceService } from '@services/agentInstance';
 import { Authentication } from '@services/auth';
@@ -29,6 +30,7 @@ import { Window } from '@services/windows';
 import { Workspace } from '@services/workspaces';
 import { WorkspaceView } from '@services/workspacesView';
 
+import { AgentBrowserServiceIPCDescriptor, IAgentBrowserService } from '@services/agentBrowser/interface';
 import { AgentDefinitionServiceIPCDescriptor, IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { AgentInstanceServiceIPCDescriptor, IAgentInstanceService } from '@services/agentInstance/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
@@ -75,6 +77,7 @@ import { ExternalAPIService } from '../externalAPI';
 import { ExternalAPIServiceIPCDescriptor, IExternalAPIService } from '../externalAPI/interface';
 
 export function bindServiceAndProxy(): void {
+  container.bind<IAgentBrowserService>(serviceIdentifier.AgentBrowser).to(AgentBrowserService).inSingletonScope();
   container.bind<IAgentDefinitionService>(serviceIdentifier.AgentDefinition).to(AgentDefinitionService).inSingletonScope();
   container.bind<IAgentInstanceService>(serviceIdentifier.AgentInstance).to(AgentInstanceService).inSingletonScope();
   container.bind<IAuthenticationService>(serviceIdentifier.Authentication).to(Authentication).inSingletonScope();
@@ -99,6 +102,7 @@ export function bindServiceAndProxy(): void {
   container.bind<IWorkspaceService>(serviceIdentifier.Workspace).to(Workspace).inSingletonScope();
   container.bind<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).to(WorkspaceView).inSingletonScope();
 
+  const agentBrowserService = container.get<IAgentBrowserService>(serviceIdentifier.AgentBrowser);
   const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
   const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
@@ -123,6 +127,7 @@ export function bindServiceAndProxy(): void {
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 
+  registerProxy(agentBrowserService, AgentBrowserServiceIPCDescriptor);
   registerProxy(agentDefinitionService, AgentDefinitionServiceIPCDescriptor);
   registerProxy(agentInstanceService, AgentInstanceServiceIPCDescriptor);
   registerProxy(authService, AuthenticationServiceIPCDescriptor);

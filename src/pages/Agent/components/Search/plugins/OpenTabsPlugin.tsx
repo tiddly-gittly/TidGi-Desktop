@@ -1,6 +1,7 @@
 import { AutocompletePlugin } from '@algolia/autocomplete-js';
 import { getI18n } from 'react-i18next';
 
+import { TEMP_TAB_ID_PREFIX } from '../../../constants/tab';
 import { useTabStore } from '../../../store/tabStore';
 import { TabState, TabType } from '../../../types/tab';
 
@@ -116,9 +117,25 @@ export const createOpenTabsPlugin = (): AutocompletePlugin<TabSource, unknown> =
               );
             },
           },
-          onSelect({ item }) {
-            const { setActiveTab } = useTabStore.getState();
-            setActiveTab(item.id);
+          onSelect: async ({ item }) => {
+            try {
+              const tabStore = useTabStore.getState();
+              const { activeTabId } = tabStore;
+
+              // First handle the temporary tab if needed
+              if (activeTabId && activeTabId.startsWith(TEMP_TAB_ID_PREFIX)) {
+                // Close temporary tab directly through service
+                await window.service.agentBrowser.closeTab(activeTabId);
+              }
+
+              // Directly activate the selected tab through service
+              await window.service.agentBrowser.setActiveTab(item.id);
+
+              // Refresh tab store to reflect the changes
+              tabStore.initialize();
+            } catch (error) {
+              console.error('Failed to select tab in search:', error);
+            }
           },
         },
       ];

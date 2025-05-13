@@ -11,12 +11,17 @@ import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 
+import { IAgentBrowserService } from '@services/agentBrowser/interface';
 import { AgentDefinition, IAgentDefinitionService } from './interface';
 
 @injectable()
 export class AgentDefinitionService implements IAgentDefinitionService {
   @lazyInject(serviceIdentifier.Database)
   private readonly databaseService!: IDatabaseService;
+  @lazyInject(serviceIdentifier.AgentInstance)
+  private readonly agentInstanceService!: IAgentDefinitionService;
+  @lazyInject(serviceIdentifier.AgentBrowser)
+  private readonly agentBrowserService!: IAgentBrowserService;
 
   private dataSource: DataSource | null = null;
   private agentDefRepository: Repository<AgentDefinitionEntity> | null = null;
@@ -30,6 +35,8 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       this.agentDefRepository = this.dataSource.getRepository(AgentDefinitionEntity);
       logger.debug('Agent repositories initialized');
       logger.debug('Agent handlers registered');
+      await this.agentInstanceService.initialize();
+      await this.agentBrowserService.initialize();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Failed to initialize agent service: ${errorMessage}`);

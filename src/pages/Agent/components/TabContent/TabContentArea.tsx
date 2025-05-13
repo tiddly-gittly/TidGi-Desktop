@@ -1,10 +1,12 @@
 import { Box } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
+import { TEMP_TAB_ID_PREFIX } from '../../constants/tab';
 import { useTabStore } from '../../store/tabStore';
+import { TabState, TabType } from '../../types/tab';
 
-import { EmptyState } from '../UI/EmptyState';
 import { TabContentView } from './TabContentView';
+import { NewTabContent } from './TabTypes/NewTabContent';
 
 const ContentContainer = styled(Box)`
   flex: 1;
@@ -143,14 +145,20 @@ export const TabContentArea: React.FC = () => {
     );
   }
 
-  // normal view - render the active tab
+  // normal view - render the active tab or a new tab page when no active tab
   return (
     <ContentContainer>
       {activeTab ? <TabContentView tab={activeTab} /> : (
-        <EmptyState
-          title='agent.emptyState.noTabsTitle'
-          description='agent.emptyState.noTabsDescription'
-          actionLabel='agent.emptyState.openNewTab'
+        <NewTabContent
+          tab={{
+            id: `${TEMP_TAB_ID_PREFIX}new-tab`,
+            type: TabType.NEW_TAB,
+            title: '',
+            state: TabState.INACTIVE,
+            isPinned: false,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          }}
         />
       )}
     </ContentContainer>
