@@ -1,10 +1,6 @@
 import { AutocompletePlugin } from '@algolia/autocomplete-js';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
-import { nanoid } from 'nanoid';
 import { getI18n } from 'react-i18next';
-import { TEMP_TAB_ID_PREFIX } from '../../../constants/tab';
-import { useTabStore } from '../../../store/tabStore';
-import { IChatTab, TabState, TabType } from '../../../types/tab';
 
 export const createAgentsPlugin = (): AutocompletePlugin<AgentDefinition & Record<string, unknown>, unknown> => {
   const { t } = getI18n();
@@ -107,71 +103,20 @@ export const createAgentsPlugin = (): AutocompletePlugin<AgentDefinition & Recor
               );
             },
           },
-          onSelect: async ({ item }) => {
+          onSelect: async ({ item, state, navigator }) => {
             try {
-              const tabStore = useTabStore.getState();
-              const { activeTabId, transformTabType } = tabStore;
-
-              // Create agent instance
-              const agent = await window.service.agentInstance.createAgent(item.id);
-
-              // Check if there is an active tab
-              if (activeTabId) {
-                // If it's a temporary new tab, close it and create a new chat tab
-                if (activeTabId.startsWith(TEMP_TAB_ID_PREFIX)) {
-                  // First close the temporary tab directly via service
-                  await window.service.agentBrowser.closeTab(activeTabId);
-
-                  // Create a chat tab directly using backend service
-                  const chatTab: IChatTab = {
-                    id: nanoid(),
-                    type: TabType.CHAT,
-                    title: item.name,
-                    state: TabState.ACTIVE,
-                    isPinned: false,
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                    agentId: agent.id,
-                    agentDefId: agent.agentDefId,
-                  };
-
-                  // Add the new tab via service
-                  await window.service.agentBrowser.addTab(chatTab);
-
-                  // Refresh store
-                  void tabStore.initialize();
-                } else {
-                  // Transform current active tab to chat tab
-                  await window.service.agentBrowser.updateTab(activeTabId, {
-                    type: TabType.CHAT,
-                    title: item.name,
-                    agentId: agent.id,
-                    agentDefId: agent.agentDefId,
-                  });
-
-                  // Refresh store
-                  void tabStore.initialize();
-                }
-              } else {
-                // If no active tab exists, create a new chat tab directly
-                const chatTab: IChatTab = {
-                  id: nanoid(),
-                  type: TabType.CHAT,
-                  title: item.name,
-                  state: TabState.ACTIVE,
-                  isPinned: false,
-                  createdAt: Date.now(),
-                  updatedAt: Date.now(),
-                  agentId: agent.id,
-                  agentDefId: agent.agentDefId,
-                };
-
-                // Add new tab via service
-                await window.service.agentBrowser.addTab(chatTab);
-
-                // Refresh store
-                void tabStore.initialize();
-              }
+              // Pass sourceId in context to help navigator identify source type
+              navigator.navigate({
+                item,
+                itemUrl: item.name,
+                state: {
+                  ...state,
+                  context: {
+                    ...state.context,
+                    sourceId: 'agentsSource',
+                  },
+                },
+              });
             } catch (error) {
               console.error(t('Search.FailedToCreateChatWithAgent', { ns: 'agent' }), error);
             }
