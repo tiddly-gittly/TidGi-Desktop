@@ -2,7 +2,7 @@
 import { TabContext, TabPanel as TabPanelRaw } from '@mui/lab';
 import { Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
 import { SupportedStorageServices } from '@services/types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme, keyframes } from 'styled-components';
 

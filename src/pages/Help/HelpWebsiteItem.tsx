@@ -6,7 +6,7 @@ import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Button, Card, CardActions, CardContent, Chip, ListItemIcon, ListItemText, Menu, MenuItem, Typography } from '@mui/material';
 import { WindowNames } from '@services/windows/WindowProperties';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
 import { type useLoadHelpPagesList } from './useLoadHelpPagesList';

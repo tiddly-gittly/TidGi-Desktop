@@ -1,7 +1,7 @@
 import '@algolia/autocomplete-theme-classic';
 import { autocomplete } from '@algolia/autocomplete-js';
 import { Box } from '@mui/material';
-import React, { createElement, Fragment, useEffect, useRef } from 'react';
+import { createElement, Fragment, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import styled from 'styled-components';
 

@@ -1,6 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import { Alert, Box, Button, Snackbar, Tab, Tabs } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, SyntheticEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
@@ -15,7 +15,7 @@ import { a11yProps, TabPanel } from './TabPanel';
 
 interface ProviderConfigProps {
   providers: AIProviderConfig[];
-  setProviders: React.Dispatch<React.SetStateAction<AIProviderConfig[]>>;
+  setProviders: Dispatch<SetStateAction<AIProviderConfig[]>>;
   changeDefaultModel?: (provider: string, model: string) => Promise<void>;
 }
 
@@ -89,12 +89,12 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
     setSnackbarOpen(true);
   };
 
-  const handleSnackbarClose = (_event?: React.SyntheticEvent | Event, reason?: string) => {
+  const handleSnackbarClose = (_event?: SyntheticEvent | Event, reason?: string) => {
     if (reason === 'clickaway') return;
     setSnackbarOpen(false);
   };
 
-  const providerClasses = React.useMemo(() => {
+  const providerClasses = useMemo(() => {
     const classes = new Set<string>();
     defaultProvidersConfig.providers.forEach(p => {
       if (p.providerClass) classes.add(p.providerClass);
@@ -102,7 +102,7 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
     return Array.from(classes);
   }, []);
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: SyntheticEvent, newValue: number) => {
     setSelectedTabIndex(newValue);
   };
 

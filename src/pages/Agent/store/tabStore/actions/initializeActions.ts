@@ -24,10 +24,10 @@ export const initializeActionsMiddleware: StateCreator<
         state._tabsSubscription$.unsubscribe();
       }
 
-      // 获取关闭的标签页
+      // Get closed tabs
       const closedTabs = await window.service.agentBrowser.getClosedTabs();
 
-      // 初始化标签页，同时订阅 tabs$ 流以获取实时更新
+      // Initialize tabs and subscribe to tabs$ stream for real-time updates
       const tabs = await window.service.agentBrowser.getAllTabs();
       const activeTab = tabs.find(tab => tab.state === TabState.ACTIVE);
 
@@ -41,7 +41,7 @@ export const initializeActionsMiddleware: StateCreator<
         });
       });
 
-      // 更新 store 状态
+      // Update store state
       set({
         tabs,
         activeTabId: activeTab?.id || null,
@@ -51,7 +51,7 @@ export const initializeActionsMiddleware: StateCreator<
     } catch (error) {
       console.error('Failed to initialize tab store:', error);
 
-      // 初始化失败时，设置空状态以避免 UI 错误
+      // Set empty state on initialization failure to prevent UI errors
       set({
         tabs: [],
         activeTabId: null,

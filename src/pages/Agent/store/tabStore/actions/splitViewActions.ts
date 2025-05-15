@@ -2,7 +2,7 @@ import { StateCreator } from 'zustand';
 import { TabsState } from '../types';
 
 /**
- * 并排视图操作中间件
+ * Split view operations middleware
  */
 export const splitViewActionsMiddleware: StateCreator<
   TabsState,
@@ -10,10 +10,10 @@ export const splitViewActionsMiddleware: StateCreator<
   [],
   Pick<TabsState, 'addToSplitView' | 'removeFromSplitView' | 'clearSplitView' | 'updateSplitRatio'>
 > = (set) => ({
-  // 添加到并排视图
+  // Add to split view
   addToSplitView: (tabId: string) => {
     set(state => {
-      // 最多同时显示两个并排标签页
+      // Maximum of two tabs can be displayed side by side
       if (state.splitViewIds.includes(tabId) || state.splitViewIds.length >= 2) {
         return state;
       }
@@ -24,21 +24,21 @@ export const splitViewActionsMiddleware: StateCreator<
     });
   },
 
-  // 从并排视图中移除
+  // Remove from split view
   removeFromSplitView: (tabId: string) => {
     set(state => ({
       splitViewIds: state.splitViewIds.filter(id => id !== tabId),
     }));
   },
 
-  // 清空并排视图
+  // Clear split view
   clearSplitView: () => {
     set(() => ({
       splitViewIds: [],
     }));
   },
 
-  // 更新分割比例
+  // Update split ratio
   updateSplitRatio: (ratio: number) => {
     set(() => ({
       splitRatio: Math.max(20, Math.min(80, ratio)),

@@ -2,7 +2,7 @@ import { StateCreator } from 'zustand';
 import { TabsState } from '../types';
 
 /**
- * 标签页工具函数中间件
+ * Tab utility functions middleware
  */
 export const utilityActionsMiddleware: StateCreator<
   TabsState,
@@ -10,7 +10,7 @@ export const utilityActionsMiddleware: StateCreator<
   [],
   Pick<TabsState, 'getTabIndex'>
 > = (_set, get) => ({
-  // 获取标签页在列表中的索引
+  // Get the index of a tab in the list
   getTabIndex: (tabId: string) => {
     const state = get();
     return state.tabs.findIndex(tab => tab.id === tabId);

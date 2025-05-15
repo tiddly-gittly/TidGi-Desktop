@@ -2,7 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl,
 import { AiAPIConfig } from '@services/agentInstance/buildInAgentHandlers/promptConcatUtils/promptConcatSchema';
 import { ModelParameters } from '@services/agentInstance/buildInAgentHandlers/promptConcatUtils/promptConcatSchema/modelParameters';
 import { cloneDeep } from 'lodash';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface ModelParametersDialogProps {

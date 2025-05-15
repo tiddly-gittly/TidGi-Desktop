@@ -1,5 +1,5 @@
 import { Box } from '@mui/material';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { TEMP_TAB_ID_PREFIX } from '../../constants/tab';
 import { useTabStore } from '../../store/tabStore';

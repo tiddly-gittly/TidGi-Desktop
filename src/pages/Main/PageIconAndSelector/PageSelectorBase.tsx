@@ -1,7 +1,7 @@
 import BadgeRaw from '@mui/material/Badge';
 import { PageType } from '@services/pages/interface';
 import Promise from 'bluebird';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { keyframes, styled } from 'styled-components';
 import is from 'typescript-styled-is';

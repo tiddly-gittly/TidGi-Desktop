@@ -2,7 +2,7 @@ import { StateCreator } from 'zustand';
 import { TabCloseDirection, TabsState } from '../types';
 
 /**
- * 批量关闭标签页的中间件
+ * Middleware for closing multiple tabs
  */
 export const closeTabsActionsMiddleware: StateCreator<
   TabsState,
@@ -11,16 +11,16 @@ export const closeTabsActionsMiddleware: StateCreator<
   Pick<TabsState, 'closeTabs'>
 > = (set, _get) => ({
   /**
-   * 批量关闭标签页
-   * @param direction 关闭的方向：above（上方）、below（下方）或 other（其他）
-   * @param fromTabId 参考标签页的ID
+   * Close multiple tabs
+   * @param direction Direction to close tabs: above, below, or other
+   * @param fromTabId Reference tab ID
    */
   closeTabs: async (direction: TabCloseDirection, fromTabId: string) => {
     try {
-      // 调用后端服务关闭标签页
+      // Call backend service to close tabs
       await window.service.agentBrowser.closeTabs(direction, fromTabId);
 
-      // 更新本地状态
+      // Update local state
       const tabs = await window.service.agentBrowser.getAllTabs();
       const activeTabId = await window.service.agentBrowser.getActiveTabId();
       const closedTabs = await window.service.agentBrowser.getClosedTabs();

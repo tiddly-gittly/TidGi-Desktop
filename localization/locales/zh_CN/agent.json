@@ -78,6 +78,12 @@
     "QuickAccess": "快速访问",
     "SearchPlaceholder": "搜索标签页或智能体..."
   },
+  "Tab": {
+    "Title": {
+      "NewTab": "新建标签页",
+      "NewWeb": "新建网页"
+    }
+  },
   "Preference": {
     "AIModelSelection": "AI 模型选择",
     "AIModelSelectionDescription": "选择您想要使用的 AI 提供商和模型",

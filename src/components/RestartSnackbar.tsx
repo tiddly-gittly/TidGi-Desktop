@@ -2,7 +2,7 @@ import { Close as CloseIcon } from '@mui/icons-material';
 import { Button, IconButton, Snackbar, Tooltip } from '@mui/material';
 import { IWorkspace } from '@services/workspaces/interface';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled, { keyframes } from 'styled-components';
 

@@ -1,7 +1,7 @@
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { TabContext, TabPanel as TabPanelRaw } from '@mui/lab';
 import { Accordion as AccordionRaw, AccordionDetails, AccordionSummary, AppBar, Paper as PaperRaw, Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';

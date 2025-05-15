@@ -1,16 +1,17 @@
+import i18next from 'i18next';
 import { nanoid } from 'nanoid';
 import { StateCreator } from 'zustand';
 import { IChatTab, INewTab, IWebTab, TabItem, TabState, TabType } from '../../../types/tab';
 import { TabsState } from '../types';
 
 /**
- * 创建标签页基础操作
+ * Create basic tab operations
  */
 export const createBasicActions = (): Pick<
   TabsState,
   'addTab' | 'closeTab' | 'setActiveTab' | 'pinTab' | 'updateTabData' | 'transformTabType'
 > => ({
-  // 添加新标签页
+  // Add new tab
   addTab: async (tabType: TabType, initialData = {}) => {
     const timestamp = Date.now();
     const dataWithoutPosition = { ...initialData };
@@ -27,7 +28,7 @@ export const createBasicActions = (): Pick<
       ...dataWithoutPosition,
     };
 
-    // 如果是聊天类型的标签页，需要先创建 agent 实例
+    // For chat tab type, we need to create an agent instance first
     if (tabType === TabType.CHAT) {
       const agent = await window.service.agentInstance.createAgent(
         (dataWithoutPosition as Partial<IChatTab>).agentDefId,
@@ -43,14 +44,14 @@ export const createBasicActions = (): Pick<
       newTab = {
         ...tabBase,
         type: TabType.WEB,
-        title: dataWithoutPosition.title || 'agent.tabTitle.newWeb',
+        title: dataWithoutPosition.title || i18next.t('Tab.Title.NewWeb'),
         url: (dataWithoutPosition as Partial<IWebTab>).url || 'about:blank',
       } as IWebTab;
     } else {
       newTab = {
         ...tabBase,
         type: TabType.NEW_TAB,
-        title: dataWithoutPosition.title || 'agent.tabTitle.newTab',
+        title: dataWithoutPosition.title || i18next.t('Tab.Title.NewTab'),
         favorites: (dataWithoutPosition as Partial<INewTab>).favorites || [],
       } as INewTab;
     }
@@ -58,7 +59,7 @@ export const createBasicActions = (): Pick<
     return newTab;
   },
 
-  // 关闭标签页
+  // Close tab
   closeTab: async (tabId) => {
     try {
       await window.service.agentBrowser.closeTab(tabId);
@@ -69,7 +70,7 @@ export const createBasicActions = (): Pick<
     }
   },
 
-  // 设置激活的标签页
+  // Set active tab
   setActiveTab: async (tabId) => {
     try {
       await window.service.agentBrowser.setActiveTab(tabId);
@@ -80,7 +81,7 @@ export const createBasicActions = (): Pick<
     }
   },
 
-  // 固定/取消固定标签页
+  // Pin/unpin tab
   pinTab: async (tabId, isPinned) => {
     try {
       await window.service.agentBrowser.pinTab(tabId, isPinned);
@@ -91,7 +92,7 @@ export const createBasicActions = (): Pick<
     }
   },
 
-  // 更新标签页数据
+  // Update tab data
   updateTabData: async (tabId, data) => {
     try {
       await window.service.agentBrowser.updateTab(tabId, data);
@@ -102,7 +103,7 @@ export const createBasicActions = (): Pick<
     }
   },
 
-  // 转换标签页类型
+  // Transform tab type
   transformTabType: async (tabId, newType, initialData = {}) => {
     try {
       // 获取现有标签

@@ -3,7 +3,7 @@ import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import Promise from 'bluebird';
 import { ClientContext, GraphQLClient, useMutation, useQuery } from 'graphql-hooks';
 import { trim } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
 

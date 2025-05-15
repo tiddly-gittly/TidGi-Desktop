@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import defaultProvidersConfig from '@services/externalAPI/defaultProviders.json';
 import { ModelFeature, ModelInfo } from '@services/externalAPI/interface';
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface ModelDialogProps {
