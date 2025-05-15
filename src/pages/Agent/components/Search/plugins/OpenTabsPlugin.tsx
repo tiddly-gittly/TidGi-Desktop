@@ -1,8 +1,10 @@
 import { AutocompletePlugin } from '@algolia/autocomplete-js';
 import { getI18n } from 'react-i18next';
 
+import { TEMP_TAB_ID_PREFIX } from '../../../constants/tab';
 import { useTabStore } from '../../../store/tabStore';
 import { TabState, TabType } from '../../../types/tab';
+import { getTabTypeIcon, highlightHits } from '../styles';
 
 type TabSource = {
   id: string;
@@ -116,20 +118,24 @@ export const createOpenTabsPlugin = (): AutocompletePlugin<TabSource, unknown> =
               );
             },
           },
-          onSelect: async ({ item, state, navigator }) => {
+          onSelect: async ({ item }) => {
             try {
-              // Pass sourceId in context to help navigator identify source type
-              navigator.navigate({
-                item,
-                itemUrl: item.title,
-                state: {
-                  ...state,
-                  context: {
-                    ...state.context,
-                    sourceId: 'openTabsSource',
-                  },
-                },
-              });
+              const tabStore = useTabStore.getState();
+              const { activeTabId, tabs } = tabStore;
+
+              // Handle current active tab
+              if (activeTabId) {
+                const activeTab = tabs.find(tab => tab.id === activeTabId);
+                // Always close temp tabs or NEW_TAB type tabs when selecting from search
+                if (activeTab && (activeTab.id.startsWith(TEMP_TAB_ID_PREFIX) || activeTab.type === TabType.NEW_TAB)) {
+                  // Use tabStore method instead of direct service call
+                  tabStore.closeTab(activeTabId);
+                }
+              }
+
+              // Use the tabStore's setActiveTab method which will handle the backend service call
+              // and update the store state at the same time
+              tabStore.setActiveTab(item.id);
             } catch (error) {
               console.error('Failed to select tab in search:', error);
             }
@@ -141,43 +147,3 @@ export const createOpenTabsPlugin = (): AutocompletePlugin<TabSource, unknown> =
 
   return plugin;
 };
-
-function getTabTypeIcon(type: TabType): string {
-  switch (type) {
-    case TabType.CHAT:
-      return '💬';
-    case TabType.WEB:
-      return '🌐';
-    case TabType.NEW_TAB:
-      return '➕';
-    default:
-      return '📄';
-  }
-}
-
-function highlightHits({
-  hit,
-  attribute,
-  query,
-}: {
-  hit: { [key: string]: string };
-  attribute: string;
-  query: string;
-}): string {
-  const value = hit[attribute] || '';
-  if (!query) return value;
-
-  const lowerCaseValue = value.toLowerCase();
-  const lowerCaseQuery = query.toLowerCase();
-  const startIndex = lowerCaseValue.indexOf(lowerCaseQuery);
-
-  if (startIndex === -1) return value;
-
-  const endIndex = startIndex + lowerCaseQuery.length;
-
-  return (
-    value.substring(0, startIndex) +
-    `<mark>${value.substring(startIndex, endIndex)}</mark>` +
-    value.substring(endIndex)
-  );
-}

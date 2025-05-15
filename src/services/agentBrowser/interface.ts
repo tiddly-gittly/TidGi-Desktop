@@ -2,6 +2,7 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 import { AgentChannel } from '@/constants/channels';
 import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
+import { BehaviorSubject } from 'rxjs';
 import { TabItem } from '../../pages/Agent/types/tab';
 
 /**
@@ -9,6 +10,7 @@ import { TabItem } from '../../pages/Agent/types/tab';
  * Handles persistent tab management for the agent browser
  */
 export interface IAgentBrowserService {
+  tabs$: BehaviorSubject<TabItem[]>;
   /**
    * Initialize the service on application startup
    */
@@ -86,6 +88,7 @@ export interface IAgentBrowserService {
 export const AgentBrowserServiceIPCDescriptor = {
   channel: AgentChannel.browser,
   properties: {
+    tabs$: ProxyPropertyType.Value$,
     getAllTabs: ProxyPropertyType.Function,
     getActiveTabId: ProxyPropertyType.Function,
     setActiveTab: ProxyPropertyType.Function,

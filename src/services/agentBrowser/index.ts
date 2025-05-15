@@ -3,11 +3,12 @@ import { pick } from 'lodash';
 
 import { DataSource, Equal, Not, Repository } from 'typeorm';
 
-import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
 import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
+import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
 import { lazyInject } from '@services/container';
 import { logger } from '@services/libs/log';
 import { nanoid } from 'nanoid';
+import { BehaviorSubject } from 'rxjs';
 import { ITab, TabItem, TabState, TabType } from '../../pages/Agent/types/tab';
 import { IDatabaseService } from '../database/interface';
 import { AgentBrowserTabEntity } from '../database/schema/agentBrowser';
@@ -18,11 +19,25 @@ const MAX_CLOSED_TABS = 10;
 
 @injectable()
 export class AgentBrowserService implements IAgentBrowserService {
+  /**
+   * Observable stream of tabs data that can be used by UI components
+   */
+  public tabs$ = new BehaviorSubject<TabItem[]>([]);
+
   @lazyInject(serviceIdentifier.Database)
   private readonly databaseService!: IDatabaseService;
 
   private dataSource: DataSource | null = null;
   private tabRepository: Repository<AgentBrowserTabEntity> | null = null;
+
+  /**
+   * Update the tabs$ BehaviorSubject with the latest tabs from the database
+   * This method is called after any operation that modifies tabs
+   */
+  private async updateTabsObservable(): Promise<void> {
+    const tabs = await this.getAllTabs();
+    this.tabs$.next(tabs);
+  }
 
   /**
    * Initialize the service on application startup
@@ -32,6 +47,10 @@ export class AgentBrowserService implements IAgentBrowserService {
       // Get repositories
       this.dataSource = await this.databaseService.getDatabase('agent-default');
       this.tabRepository = this.dataSource.getRepository(AgentBrowserTabEntity);
+
+      // Initialize tabs$ BehaviorSubject with current tabs
+      await this.updateTabsObservable();
+
       logger.debug('Agent browser repository initialized');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -197,13 +216,14 @@ export class AgentBrowserService implements IAgentBrowserService {
         logger.warn(`Cannot activate tab ${tabId}: tab not found or not open`);
         return;
       }
-      
+
       // Set all open tabs to inactive
       await this.tabRepository!.update({ opened: true }, { state: TabState.INACTIVE });
 
       // Set the specified tab to active
       await this.tabRepository!.update({ id: tabId, opened: true }, { state: TabState.ACTIVE });
-      
+      await this.updateTabsObservable();
+
       logger.debug(`Activated tab ${tabId}`);
     } catch (error) {
       logger.error(`Failed to set active tab: ${error instanceof Error ? error.message : String(error)}`);
@@ -218,9 +238,12 @@ export class AgentBrowserService implements IAgentBrowserService {
     this.ensureRepositories();
 
     try {
-      // Check if this is replacing a temporary tab
-      const isReplacingTemp = tab.id?.startsWith(TEMP_TAB_ID_PREFIX);
-      
+      // Check if this is a temporary tab, ignore it because temporary tabs only exists on frontend.
+      const isTemporary = tab.id.startsWith(TEMP_TAB_ID_PREFIX);
+      if (isTemporary) {
+        return tab;
+      }
+
       // If adding an active tab, deactivate all other tabs
       if (tab.state === TabState.ACTIVE) {
         await this.tabRepository!.update({ opened: true }, { state: TabState.INACTIVE });
@@ -236,27 +259,15 @@ export class AgentBrowserService implements IAgentBrowserService {
         finalPosition = lastTab ? lastTab.position + 1 : 0;
       }
 
-      // If this is meant to replace a temp tab but the temp tab wasn't properly closed
-      // we'll attempt to clean up any existing temp tabs to avoid duplicates
-      if (isReplacingTemp) {
-        logger.debug(`Cleaning up any existing temp tabs before adding: ${tab.id}`);
-        // Find and force delete any existing temp tabs that might not have been properly closed
-        const existingTempTabs = await this.tabRepository!.find({
-          where: { id: tab.id, opened: true }
-        });
-        
-        if (existingTempTabs.length > 0) {
-          logger.debug(`Found ${existingTempTabs.length} temp tabs to clean up`);
-          await this.tabRepository!.remove(existingTempTabs);
-        }
-      }
-
       // Convert tab to entity and save
       const entity = this.tabItemToEntity(tab, finalPosition);
       await this.tabRepository!.save(entity);
 
-      // Return the saved tab
-      return this.entityToTabItem(entity);
+      // Get the saved tab
+      const savedTab = this.entityToTabItem(entity);
+      await this.updateTabsObservable();
+
+      return savedTab;
     } catch (error) {
       logger.error(`Failed to add tab: ${error as Error}`);
       throw error;
@@ -312,6 +323,7 @@ export class AgentBrowserService implements IAgentBrowserService {
       }
 
       await this.tabRepository!.save(existingTab);
+      await this.updateTabsObservable();
     } catch (error) {
       logger.error(`Failed to update tab: ${error as Error}`);
       throw error;
@@ -325,63 +337,50 @@ export class AgentBrowserService implements IAgentBrowserService {
     this.ensureRepositories();
 
     try {
-      // Get tab to close
       const tabToClose = await this.tabRepository!.findOne({
         where: { id: tabId, opened: true },
       });
-
       if (!tabToClose) {
         return;
       }
-      
-      // Special handling for temporary tabs - if it's a temp tab, we might want to fully delete it
-      // rather than just marking it closed, since temp tabs don't need to be in history
+
+      // Special handling for temporary tabs - if it's a temp tab, we might want to fully delete it, because it is a mistake that save it to the db.
       const isTemporaryTab = tabId.startsWith(TEMP_TAB_ID_PREFIX);
-      
-      if (isTemporaryTab) {
-        // For temporary tabs, we just remove them completely
-        logger.debug(`Removing temporary tab: ${tabId}`);
+
+      /** New tab when closed, delete it from the database, because it could be created via new tab button at any time, not much value */
+      const isNewTab = tabToClose.tabType === TabType.NEW_TAB;
+
+      if (isTemporaryTab || isNewTab) {
+        // For temporary tabs or NEW_TAB type, we just remove them completely
+        logger.debug(`Removing tab: ${tabId} (${isTemporaryTab ? 'temporary' : 'new tab'})`);
         await this.tabRepository!.remove(tabToClose);
       } else {
         // For regular tabs, mark as closed and keep in history
         tabToClose.opened = false;
         tabToClose.closedAt = new Date();
         await this.tabRepository!.save(tabToClose);
-  
-        // Limit closed tabs history size
-        const closedTabsCount = await this.tabRepository!.count({ where: { opened: false } });
-        if (closedTabsCount > MAX_CLOSED_TABS) {
-          // Find the oldest closed tabs that exceed the limit
-          const excessTabs = await this.tabRepository!.find({
-            where: { opened: false },
-            order: { closedAt: 'ASC' },
-            take: closedTabsCount - MAX_CLOSED_TABS,
+
+        // If the closed tab was active, make another tab active
+        if (tabToClose.state === TabState.ACTIVE) {
+          tabToClose.state = TabState.INACTIVE;
+          await this.tabRepository!.save(tabToClose);
+          // Try to activate another open tab
+          const nextTab = await this.tabRepository!.findOne({
+            where: { opened: true },
+            order: { position: 'ASC' },
           });
-  
-          if (excessTabs.length > 0) {
-            // Actually delete these tabs that are too old
-            await this.tabRepository!.remove(excessTabs);
+
+          if (nextTab) {
+            await this.tabRepository!.update({ id: nextTab.id }, { state: TabState.ACTIVE });
           }
-        }
-      }
-
-      // If the closed tab was active, make another tab active
-      if (tabToClose.state === TabState.ACTIVE) {
-        // Try to activate another open tab
-        const nextTab = await this.tabRepository!.findOne({
-          where: { opened: true },
-          order: { position: 'ASC' },
-        });
-
-        if (nextTab) {
-          await this.tabRepository!.update({ id: nextTab.id }, { state: TabState.ACTIVE });
         }
       }
 
       // Reindex positions to ensure consistency for open tabs
       await this.reindexTabPositions();
+      await this.updateTabsObservable();
     } catch (error) {
-      logger.error(`Failed to close tab: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error(`Failed to close tab: ${error instanceof Error ? `${error.message} ${error.stack}` : String(error)}`);
       throw error;
     }
   }
@@ -459,6 +458,7 @@ export class AgentBrowserService implements IAgentBrowserService {
     try {
       await this.tabRepository!.update({ id: tabId, opened: true }, { isPinned });
       await this.reindexTabPositions();
+      await this.updateTabsObservable();
     } catch (error) {
       logger.error(`Failed to pin tab: ${error as Error}`);
       throw error;
@@ -518,6 +518,7 @@ export class AgentBrowserService implements IAgentBrowserService {
 
       // Reindex positions
       await this.reindexTabPositions();
+      await this.updateTabsObservable();
 
       // Return the restored tab item
       return this.entityToTabItem(closedTab);
@@ -557,6 +558,9 @@ export class AgentBrowserService implements IAgentBrowserService {
 
       // Save all tabs
       await this.tabRepository!.save([...pinnedTabs, ...unpinnedTabs]);
+
+      // Note: We don't need to update tabs$ here because this is a private method,
+      // and all public methods that call this already update tabs$ afterwards
     } catch (error) {
       logger.error(`Failed to reindex tab positions: ${error instanceof Error ? error.message : String(error)}`);
     }

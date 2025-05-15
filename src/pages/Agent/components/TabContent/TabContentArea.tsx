@@ -145,7 +145,7 @@ export const TabContentArea: React.FC = () => {
     );
   }
 
-  // normal view - render the active tab or a new tab page when no active tab
+  // normal view - render the active tab or a new tab page with TEMP_TAB_ID_PREFIX as id when no active tab
   return (
     <ContentContainer>
       {activeTab ? <TabContentView tab={activeTab} /> : (

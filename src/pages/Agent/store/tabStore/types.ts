@@ -1,12 +1,13 @@
+import { Subscription } from 'rxjs';
 import { TabItem, TabType } from '../../types/tab';
 
 /**
- * 标签页关闭方向
+ * Tab close direction
  */
 export type TabCloseDirection = 'above' | 'below' | 'other';
 
 /**
- * 标签页 Store 的状态接口
+ * TabStore state interface
  */
 export interface TabsState {
   // All tabs
@@ -19,6 +20,8 @@ export interface TabsState {
   splitRatio: number;
   // Recently closed tabs (for restoration)
   closedTabs: TabItem[];
+  // Internal RXJS subscription object
+  _tabsSubscription$?: Subscription;
   initialize: () => Promise<void>;
 
   // 基础操作方法

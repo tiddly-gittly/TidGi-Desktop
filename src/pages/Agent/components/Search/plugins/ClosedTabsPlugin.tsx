@@ -1,7 +1,9 @@
 import { AutocompletePlugin } from '@algolia/autocomplete-js';
 import { getI18n } from 'react-i18next';
+
 import { useTabStore } from '../../../store/tabStore';
 import { TabType } from '../../../types/tab';
+import { getTabTypeIcon, highlightHits } from '../styles';
 
 type TabSource = {
   id: string;
@@ -110,20 +112,30 @@ export const createClosedTabsPlugin = (): AutocompletePlugin<TabSource, unknown>
               );
             },
           },
-          onSelect: async ({ item, state, navigator }) => {
+          onSelect: async ({ item: _item }) => {
             try {
-              // Pass sourceId in context to help navigator identify source type
-              navigator.navigate({
-                item,
-                itemUrl: item.title,
-                state: {
-                  ...state,
-                  context: {
-                    ...state.context,
-                    sourceId: 'closedTabsSource',
-                  },
-                },
-              });
+              const tabStore = useTabStore.getState();
+              const { activeTabId, tabs } = tabStore;
+
+              // Handle current active tab
+              if (activeTabId) {
+                const activeTab = tabs.find(tab => tab.id === activeTabId);
+                // Always close NEW_TAB type tabs when selecting from search
+                if (activeTab && activeTab.type === TabType.NEW_TAB) {
+                  // await is needed because closeTab returns a Promise
+                  await window.service.agentBrowser.closeTab(activeTabId);
+                }
+              }
+
+              // Restore recently closed tab using the service directly
+              const restoredTab = await window.service.agentBrowser.restoreClosedTab();
+
+              // For tabs restored via the API, the tab is already added to the store
+              // Just activate the tab if it was successfully restored
+              if (restoredTab && restoredTab.id) {
+                // Let the tabStore handle this instead of directly calling the service
+                void tabStore.initialize();
+              }
             } catch (error) {
               console.error('Failed to restore closed tab from search:', error);
             }
@@ -135,45 +147,3 @@ export const createClosedTabsPlugin = (): AutocompletePlugin<TabSource, unknown>
 
   return plugin;
 };
-
-// Helper function to get icon based on tab type
-function getTabTypeIcon(type: TabType): string {
-  switch (type) {
-    case TabType.CHAT:
-      return '💬';
-    case TabType.WEB:
-      return '🌐';
-    case TabType.NEW_TAB:
-      return '➕';
-    default:
-      return '📄';
-  }
-}
-
-// Helper function to highlight search matches
-function highlightHits({
-  hit,
-  attribute,
-  query,
-}: {
-  hit: { [key: string]: string };
-  attribute: string;
-  query: string;
-}): string {
-  const value = hit[attribute] || '';
-  if (!query) return value;
-
-  const lowerCaseValue = value.toLowerCase();
-  const lowerCaseQuery = query.toLowerCase();
-  const startIndex = lowerCaseValue.indexOf(lowerCaseQuery);
-
-  if (startIndex === -1) return value;
-
-  const endIndex = startIndex + lowerCaseQuery.length;
-
-  return (
-    value.substring(0, startIndex) +
-    `<mark>${value.substring(startIndex, endIndex)}</mark>` +
-    value.substring(endIndex)
-  );
-}
