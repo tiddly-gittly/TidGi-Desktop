@@ -3,6 +3,7 @@ import AppsIcon from '@mui/icons-material/Apps';
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
 import PushPinIcon from '@mui/icons-material/PushPin';
+import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import WebIcon from '@mui/icons-material/Web';
 import { ButtonBase, Tooltip, Typography } from '@mui/material';
 import React from 'react';
@@ -120,9 +121,9 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewT
   };
 
   /** Handle tab click event - create new tab if new tab button, otherwise switch to tab */
-  const handleClick = () => {
+  const handleClick = async () => {
     if (isNewTabButton) {
-      addTab(TabType.NEW_TAB);
+      await addTab(TabType.NEW_TAB);
     } else {
       onClick();
     }
@@ -140,6 +141,8 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewT
         return <ChatIcon fontSize='inherit' />;
       case TabType.NEW_TAB:
         return <AppsIcon fontSize='inherit' />;
+      case TabType.SPLIT_VIEW:
+        return <SplitscreenIcon fontSize='inherit' />;
       default:
         return <AppsIcon fontSize='inherit' />;
     }

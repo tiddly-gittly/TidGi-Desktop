@@ -14,8 +14,6 @@ import { TabsState } from './types';
 export const useTabStore = create<TabsState>()((...api) => ({
   tabs: [], // Will be populated with tabs from the service
   activeTabId: null, // Will be set from the service
-  splitViewIds: [],
-  splitRatio: 50, // Default 50%/50% split ratio
   closedTabs: [], // Will be populated with closed tabs from the service
 
   // Combine all middlewares

@@ -7,6 +7,7 @@ import { useTabStore } from '../../store/tabStore';
 import { TabItem, TabType } from '../../types/tab';
 import { ChatTabContent } from './TabTypes/ChatTabContent';
 import { NewTabContent } from './TabTypes/NewTabContent';
+import { SplitViewTabContent } from './TabTypes/SplitViewTabContent';
 import { WebTabContent } from './TabTypes/WebTabContent';
 
 /** Props interface for tab content view component */
@@ -54,14 +55,16 @@ export const TabContentView: React.FC<TabContentViewProps> = ({ tab, isSplitView
         return <ChatTabContent tab={tab} />;
       case TabType.NEW_TAB:
         return <NewTabContent tab={tab} />;
+      case TabType.SPLIT_VIEW:
+        return <SplitViewTabContent tab={tab} />;
       default:
         return null;
     }
   };
 
   /** Handle removing tab from split view mode */
-  const handleRemoveFromSplitView = () => {
-    removeFromSplitView(tab.id);
+  const handleRemoveFromSplitView = async () => {
+    await removeFromSplitView(tab.id);
   };
 
   return (

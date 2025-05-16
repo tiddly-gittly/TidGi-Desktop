@@ -5,6 +5,7 @@ export enum TabType {
   WEB = 'web', // Web page type tab
   CHAT = 'chat', // AI chat type tab
   NEW_TAB = 'new_tab', // New tab
+  SPLIT_VIEW = 'split_view', // Split view container tab
 }
 
 /**
@@ -61,6 +62,16 @@ export interface INewTab extends ITab {
   }>;
 }
 
+/**
+ * Split view tab type
+ * Contains child tabs that will be displayed side by side
+ */
+export interface ISplitViewTab extends ITab {
+  type: TabType.SPLIT_VIEW;
+  childTabs: TabItem[];
+  splitRatio: number;
+}
+
 export type INewTabButton = {
   id: string;
   title: string;
@@ -70,4 +81,4 @@ export type INewTabButton = {
 /**
  * Union type for any type of tab
  */
-export type TabItem = IWebTab | IChatTab | INewTab;
+export type TabItem = IWebTab | IChatTab | INewTab | ISplitViewTab;

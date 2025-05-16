@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import { injectable } from 'inversify';
 import { pick } from 'lodash';
 
@@ -111,6 +112,13 @@ export class AgentBrowserService implements IAgentBrowserService {
             favicon?: string;
           }> || [],
         };
+      case TabType.SPLIT_VIEW:
+        return {
+          ...baseTab,
+          type: TabType.SPLIT_VIEW,
+          childTabs: data.childTabs as TabItem[] || [],
+          splitRatio: data.splitRatio as number || 50,
+        };
       default:
         return baseTab as TabItem;
     }
@@ -151,6 +159,14 @@ export class AgentBrowserService implements IAgentBrowserService {
         const newTab = tab as { favorites?: Array<{ id: string; title: string; url: string; favicon?: string }> };
         entity.data = {
           favorites: newTab.favorites || [],
+        };
+        break;
+      }
+      case TabType.SPLIT_VIEW: {
+        const splitViewTab = tab as { childTabs: TabItem[]; splitRatio: number };
+        entity.data = {
+          childTabs: splitViewTab.childTabs || [],
+          splitRatio: splitViewTab.splitRatio || 50,
         };
         break;
       }
@@ -320,6 +336,11 @@ export class AgentBrowserService implements IAgentBrowserService {
           Object.assign(existingTab.data, newTabData);
           break;
         }
+        case TabType.SPLIT_VIEW: {
+          const splitViewData = pick(data, ['childTabs', 'splitRatio']);
+          Object.assign(existingTab.data, splitViewData);
+          break;
+        }
       }
 
       await this.tabRepository!.save(existingTab);
@@ -350,9 +371,16 @@ export class AgentBrowserService implements IAgentBrowserService {
       /** New tab when closed, delete it from the database, because it could be created via new tab button at any time, not much value */
       const isNewTab = tabToClose.tabType === TabType.NEW_TAB;
 
-      if (isTemporaryTab || isNewTab) {
-        // For temporary tabs or NEW_TAB type, we just remove them completely
-        logger.debug(`Removing tab: ${tabId} (${isTemporaryTab ? 'temporary' : 'new tab'})`);
+      const isSplitView = tabToClose.tabType === TabType.SPLIT_VIEW;
+      const isEmptySplitView = isSplitView &&
+        tabToClose.data &&
+        Array.isArray(tabToClose.data.childTabs) &&
+        tabToClose.data.childTabs.length === 0;
+
+      if (isTemporaryTab || isNewTab || isEmptySplitView) {
+        // For tabs that are easy to create, useless for closed-tab-history, like NEW_TAB type, or empty split views, we just remove them completely
+        const tabTypeLog = isTemporaryTab ? 'temporary' : isNewTab ? 'new tab' : 'empty split view';
+        logger.debug(`Removing tab: ${tabId} (${tabTypeLog})`);
         await this.tabRepository!.remove(tabToClose);
       } else {
         // For regular tabs, mark as closed and keep in history

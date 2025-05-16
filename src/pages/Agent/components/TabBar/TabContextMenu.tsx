@@ -26,11 +26,12 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
   const { t } = useTranslation('agent');
   const {
     tabs,
+    activeTabId,
     closeTab,
     pinTab,
     addTab,
-    addToSplitView,
-    splitViewIds,
+    convertToSplitView,
+    addTabToSplitView,
     closeTabs,
     getTabIndex,
     restoreClosedTab,
@@ -54,10 +55,12 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
     ? tabs.find(tab => tab.id === contextMenu.targetTabId)
     : null;
 
-  // Determine if tab can be added to split view
-  const canAddToSplitView = targetTab
-    ? splitViewIds.length < 2 && !splitViewIds.includes(targetTab.id)
-    : false;
+  // Get the currently active tab
+  const activeTab = tabs.find(tab => tab.id === activeTabId);
+
+  // Check if active tab is a split view
+  const isActiveSplitViewTab = activeTab?.type === TabType.SPLIT_VIEW;
+  const activeSplitViewTab = isActiveSplitViewTab ? (activeTab) : undefined;
 
   // Close context menu
   const handleClose = useCallback(() => {
@@ -103,13 +106,23 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
     handleClose();
   }, [targetTab, addTab, handleClose]);
 
-  // Handle add to split view
-  const handleAddToSplitView = useCallback(() => {
+  // Legacy split view handler removed
+
+  // Handle converting tab to split view
+  const handleConvertToSplitView = useCallback(async () => {
     if (contextMenu.targetTabId) {
-      addToSplitView(contextMenu.targetTabId);
+      await convertToSplitView(contextMenu.targetTabId);
       handleClose();
     }
-  }, [contextMenu.targetTabId, addToSplitView, handleClose]);
+  }, [contextMenu.targetTabId, convertToSplitView, handleClose]);
+
+  // Handle adding tab to existing split view tab
+  const handleAddTabToSplitView = useCallback(async () => {
+    if (contextMenu.targetTabId && activeTabId) {
+      await addTabToSplitView(activeTabId, contextMenu.targetTabId);
+      handleClose();
+    }
+  }, [contextMenu.targetTabId, activeTabId, addTabToSplitView, handleClose]);
 
   // Create new tab below
   const handleNewTabBelow = useCallback(async () => {
@@ -220,12 +233,28 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
           <ListItemText>{t('ContextMenu.NewTabBelow')}</ListItemText>
         </MenuItem>
 
-        {canAddToSplitView && (
-          <MenuItem onClick={handleAddToSplitView}>
+        {/* Create split view from active tab */}
+        {targetTab.id === activeTabId && targetTab.type !== TabType.SPLIT_VIEW && (
+          <MenuItem onClick={handleConvertToSplitView}>
             <ListItemIcon>
               <SplitscreenIcon fontSize='small' />
             </ListItemIcon>
-            <ListItemText>{t('ContextMenu.AddToSplitView')}</ListItemText>
+            <ListItemText>{t('ContextMenu.ConvertToSplitView')}</ListItemText>
+          </MenuItem>
+        )}
+
+        {/* Add to existing active split view */}
+        {activeTab?.type === TabType.SPLIT_VIEW &&
+          targetTab.id !== activeTab.id &&
+          targetTab.type !== TabType.SPLIT_VIEW &&
+          activeSplitViewTab &&
+          !activeSplitViewTab.childTabs.some(child => child.id === targetTab.id) &&
+          activeSplitViewTab.childTabs.length < 2 && (
+          <MenuItem onClick={handleAddTabToSplitView}>
+            <ListItemIcon>
+              <SplitscreenIcon fontSize='small' />
+            </ListItemIcon>
+            <ListItemText>{t('ContextMenu.AddToCurrentSplitView')}</ListItemText>
           </MenuItem>
         )}
 

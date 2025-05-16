@@ -1,11 +1,12 @@
 import i18next from 'i18next';
 import { nanoid } from 'nanoid';
 import { StateCreator } from 'zustand';
-import { IChatTab, INewTab, IWebTab, TabItem, TabState, TabType } from '../../../types/tab';
+import { IChatTab, INewTab, ISplitViewTab, IWebTab, TabItem, TabState, TabType } from '../../../types/tab';
 import { TabsState } from '../types';
 
 /**
- * Create basic tab operations
+ * Create basic tab operations - helper function implementation
+ * Used both directly by main middleware and as a standalone function
  */
 export const createBasicActions = (): Pick<
   TabsState,
@@ -47,12 +48,24 @@ export const createBasicActions = (): Pick<
         title: dataWithoutPosition.title || i18next.t('Tab.Title.NewWeb'),
         url: (dataWithoutPosition as Partial<IWebTab>).url || 'about:blank',
       } as IWebTab;
+    } else if (tabType === TabType.SPLIT_VIEW) {
+      // Properly handle SPLIT_VIEW type
+      const splitViewData = dataWithoutPosition as Partial<ISplitViewTab>;
+      newTab = {
+        ...tabBase,
+        type: TabType.SPLIT_VIEW,
+        title: dataWithoutPosition.title || i18next.t('Tab.Title.SplitView'),
+        childTabs: splitViewData.childTabs ? [...splitViewData.childTabs] : [],
+        splitRatio: splitViewData.splitRatio ?? 50,
+      } as ISplitViewTab;
     } else {
       newTab = {
         ...tabBase,
         type: TabType.NEW_TAB,
         title: dataWithoutPosition.title || i18next.t('Tab.Title.NewTab'),
-        favorites: (dataWithoutPosition as Partial<INewTab>).favorites || [],
+        favorites: (dataWithoutPosition as Partial<INewTab>).favorites
+          ? [...(dataWithoutPosition as Partial<INewTab>).favorites!]
+          : [],
       } as INewTab;
     }
 
@@ -106,7 +119,7 @@ export const createBasicActions = (): Pick<
   // Transform tab type
   transformTabType: async (tabId, newType, initialData = {}) => {
     try {
-      // 获取现有标签
+      // First check if tab exists and get its current data
       const tabs = await window.service.agentBrowser.getAllTabs();
       const oldTab = tabs.find(tab => tab.id === tabId);
       if (!oldTab) {
@@ -114,7 +127,7 @@ export const createBasicActions = (): Pick<
         return false;
       }
 
-      // 如果转换为聊天标签，需要创建 agent
+      // If converting to CHAT type, need to create an agent first
       if (newType === TabType.CHAT) {
         const agent = await window.service.agentInstance.createAgent(initialData.agentDefId as string);
         initialData = {
@@ -125,7 +138,7 @@ export const createBasicActions = (): Pick<
         };
       }
 
-      // 创建新标签的基础属性
+      // Create base properties for the new tab
       const baseProps = {
         id: oldTab.id,
         state: oldTab.state,
@@ -133,7 +146,7 @@ export const createBasicActions = (): Pick<
         type: newType,
       };
 
-      // 根据类型添加特定属性
+      // Add specific properties based on tab type
       let newTabData: Partial<TabItem>;
       if (newType === TabType.WEB) {
         newTabData = {
@@ -148,20 +161,33 @@ export const createBasicActions = (): Pick<
           agentId: initialData.agentId as string,
           agentDefId: initialData.agentDefId as string,
         };
+      } else if (newType === TabType.SPLIT_VIEW) {
+        const childTabsData = initialData.childTabs as TabItem[] | undefined;
+        const splitRatioValue = initialData.splitRatio as number | undefined;
+
+        newTabData = {
+          ...baseProps,
+          title: initialData.title as string || 'agent.tabTitle.splitView',
+          childTabs: childTabsData ?? [],
+          splitRatio: splitRatioValue ?? 50,
+        };
       } else {
+        // Default to NEW_TAB
+        const favoritesData = initialData.favorites as Array<{
+          id: string;
+          title: string;
+          url: string;
+          favicon?: string;
+        }>;
+
         newTabData = {
           ...baseProps,
           title: initialData.title as string || 'agent.tabTitle.newTab',
-          favorites: initialData.favorites as Array<{
-            id: string;
-            title: string;
-            url: string;
-            favicon?: string;
-          }> || [],
+          favorites: favoritesData ? [...favoritesData] : [],
         };
       }
 
-      // 更新标签
+      // Update the tab in the backend
       await window.service.agentBrowser.updateTab(tabId, newTabData);
       return true;
     } catch (error) {
@@ -179,124 +205,208 @@ export const basicActionsMiddleware: StateCreator<
   [],
   [],
   Pick<TabsState, 'addTab' | 'closeTab' | 'setActiveTab' | 'pinTab' | 'updateTabData' | 'transformTabType'>
-> = (set, _get) => ({
-  // Add new tab
-  addTab: async (tabType: TabType, initialData = {}) => {
-    // First create the tab using the existing function
-    const newTab = await createBasicActions().addTab(tabType, initialData);
-    const { insertPosition } = initialData;
+> = (set, _get) => {
+  // Create a single instance of basicActions for reuse
+  const basicActions = createBasicActions();
 
-    try {
-      // Save to the backend service
-      await window.service.agentBrowser.addTab(newTab, insertPosition);
+  return {
+    // Add new tab
+    addTab: async (tabType: TabType, initialData = {}) => {
+      // First create the tab using the existing function
+      const newTab = await basicActions.addTab(tabType, initialData);
+      const { insertPosition } = initialData;
 
-      // Update the local state by fetching all tabs from backend
-      const tabs = await window.service.agentBrowser.getAllTabs();
-      const activeTabId = await window.service.agentBrowser.getActiveTabId();
+      try {
+        // Save to the backend service
+        await window.service.agentBrowser.addTab(newTab, insertPosition);
 
-      set({
-        tabs,
-        activeTabId,
-      });
-    } catch (error) {
-      console.error('Failed to add tab:', error);
-    }
+        // Update the local state by fetching all tabs from backend
+        const tabs = await window.service.agentBrowser.getAllTabs();
+        const activeTabId = await window.service.agentBrowser.getActiveTabId();
 
-    return newTab;
-  },
+        set({
+          tabs,
+          activeTabId,
+        });
+      } catch (error) {
+        console.error('Failed to add tab:', error);
+      }
 
-  // Close tab
-  closeTab: async (tabId: string) => {
-    try {
-      // Close tab in backend first
-      await window.service.agentBrowser.closeTab(tabId);
+      return newTab;
+    },
 
-      // Update local state by fetching from backend
-      const tabs = await window.service.agentBrowser.getAllTabs();
-      const activeTabId = await window.service.agentBrowser.getActiveTabId();
-      const closedTabs = await window.service.agentBrowser.getClosedTabs();
+    // Close tab
+    closeTab: async (tabId: string) => {
+      try {
+        // Close tab in backend first
+        await window.service.agentBrowser.closeTab(tabId);
 
-      // Remove from split view if needed
-      set(state => {
-        const newSplitViewIds = state.splitViewIds.filter(id => id !== tabId);
-        return {
+        // Update local state by fetching from backend
+        const tabs = await window.service.agentBrowser.getAllTabs();
+        const activeTabId = await window.service.agentBrowser.getActiveTabId();
+        const closedTabs = await window.service.agentBrowser.getClosedTabs();
+
+        // Update state with new data
+        set(() => ({
           tabs,
           activeTabId,
           closedTabs,
-          splitViewIds: newSplitViewIds,
+        }));
+      } catch (error) {
+        console.error('Failed to close tab:', error);
+      }
+    },
+
+    // Set active tab
+    setActiveTab: async (tabId: string) => {
+      try {
+        // Set active tab in backend
+        await window.service.agentBrowser.setActiveTab(tabId);
+
+        // Update local state by fetching from backend
+        const tabs = await window.service.agentBrowser.getAllTabs();
+
+        set({
+          tabs,
+          activeTabId: tabId,
+        });
+      } catch (error) {
+        console.error('Failed to set active tab:', error);
+      }
+    },
+
+    // Pin/unpin tab
+    pinTab: async (tabId: string, isPinned: boolean) => {
+      try {
+        // Pin/unpin tab in backend
+        await window.service.agentBrowser.pinTab(tabId, isPinned);
+
+        // Update local state by fetching from backend
+        const tabs = await window.service.agentBrowser.getAllTabs();
+
+        set({
+          tabs,
+        });
+      } catch (error) {
+        console.error('Failed to pin/unpin tab:', error);
+      }
+    },
+
+    // Update tab data
+    updateTabData: async (tabId: string, data: Partial<TabItem>) => {
+      try {
+        // Update tab in backend
+        await window.service.agentBrowser.updateTab(tabId, data);
+
+        // Update local state by fetching from backend
+        const tabs = await window.service.agentBrowser.getAllTabs();
+
+        set({
+          tabs,
+        });
+      } catch (error) {
+        console.error('Failed to update tab data:', error);
+      }
+    },
+
+    // Transform tab type
+    transformTabType: async (tabId: string, newType: TabType, initialData: Record<string, unknown> = {}) => {
+      try {
+        // Call the implementation directly rather than through basicActions
+        // First check if tab exists and get its current data
+        const tabs = await window.service.agentBrowser.getAllTabs();
+        const oldTab = tabs.find(tab => tab.id === tabId);
+
+        if (!oldTab) {
+          console.error('Tab not found for transformation:', tabId);
+          return;
+        }
+
+        // If converting to CHAT type, need to create an agent first
+        if (newType === TabType.CHAT) {
+          const agent = await window.service.agentInstance.createAgent(initialData.agentDefId as string);
+          initialData = {
+            ...initialData,
+            agentId: agent.id,
+            agentDefId: agent.agentDefId,
+            title: initialData.title || agent.name,
+          };
+        }
+
+        // Create base properties for the new tab
+        const baseProps = {
+          id: oldTab.id,
+          state: oldTab.state,
+          isPinned: oldTab.isPinned,
+          type: newType,
         };
-      });
-    } catch (error) {
-      console.error('Failed to close tab:', error);
-    }
-  },
 
-  // Set active tab
-  setActiveTab: async (tabId: string) => {
-    try {
-      // Set active tab in backend
-      await window.service.agentBrowser.setActiveTab(tabId);
+        // Add specific properties based on tab type
+        let newTabData: Partial<TabItem>;
 
-      // Update local state by fetching from backend
-      const tabs = await window.service.agentBrowser.getAllTabs();
+        if (newType === TabType.WEB) {
+          const titleValue = initialData.title as string || 'agent.tabTitle.newWeb';
+          const urlValue = initialData.url as string || 'about:blank';
 
-      set({
-        tabs,
-        activeTabId: tabId,
-      });
-    } catch (error) {
-      console.error('Failed to set active tab:', error);
-    }
-  },
+          newTabData = {
+            ...baseProps,
+            title: titleValue,
+            url: urlValue,
+          };
+        } else if (newType === TabType.CHAT) {
+          const titleValue = initialData.title as string || 'agent.tabTitle.newChat';
+          const agentIdValue = initialData.agentId as string;
+          // eslint-disable-next-line unicorn/prevent-abbreviations
+          const agentDefIdValue = initialData.agentDefId as string;
 
-  // Pin/unpin tab
-  pinTab: async (tabId: string, isPinned: boolean) => {
-    try {
-      // Pin/unpin tab in backend
-      await window.service.agentBrowser.pinTab(tabId, isPinned);
+          newTabData = {
+            ...baseProps,
+            title: titleValue,
+            agentId: agentIdValue,
+            agentDefId: agentDefIdValue,
+          };
+        } else if (newType === TabType.SPLIT_VIEW) {
+          const titleValue = initialData.title as string || 'agent.tabTitle.splitView';
+          const childTabsValue = initialData.childTabs as TabItem[] | undefined;
+          const splitRatioValue = initialData.splitRatio as number | undefined;
 
-      // Update local state by fetching from backend
-      const tabs = await window.service.agentBrowser.getAllTabs();
+          newTabData = {
+            ...baseProps,
+            title: titleValue,
+            childTabs: childTabsValue ?? [],
+            splitRatio: splitRatioValue ?? 50,
+          };
+        } else {
+          // Default to NEW_TAB
+          const titleValue = initialData.title as string || 'agent.tabTitle.newTab';
+          const favoritesValue = initialData.favorites as
+            | Array<{
+              id: string;
+              title: string;
+              url: string;
+              favicon?: string;
+            }>
+            | undefined;
 
-      set({
-        tabs,
-      });
-    } catch (error) {
-      console.error('Failed to pin/unpin tab:', error);
-    }
-  },
+          newTabData = {
+            ...baseProps,
+            title: titleValue,
+            favorites: favoritesValue ? [...favoritesValue] : [],
+          };
+        }
 
-  // Update tab data
-  updateTabData: async (tabId: string, data: Partial<TabItem>) => {
-    try {
-      // Update tab in backend
-      await window.service.agentBrowser.updateTab(tabId, data);
+        // Update the tab in the backend
+        await window.service.agentBrowser.updateTab(tabId, newTabData);
 
-      // Update local state by fetching from backend
-      const tabs = await window.service.agentBrowser.getAllTabs();
+        // Update local state by fetching from backend
+        const updatedTabs = await window.service.agentBrowser.getAllTabs();
 
-      set({
-        tabs,
-      });
-    } catch (error) {
-      console.error('Failed to update tab data:', error);
-    }
-  },
-
-  // Transform tab type
-  transformTabType: async (tabId: string, newType: TabType, initialData: Record<string, unknown> = {}) => {
-    try {
-      const basicActions = createBasicActions();
-      basicActions.transformTabType(tabId, newType, initialData);
-
-      // Update local state by fetching from backend
-      const tabs = await window.service.agentBrowser.getAllTabs();
-
-      set({
-        tabs,
-      });
-    } catch (error) {
-      console.error('Failed to transform tab type:', error);
-    }
-  },
-});
+        set({
+          tabs: updatedTabs,
+        });
+      } catch (error) {
+        console.error('Failed to transform tab type:', error);
+      }
+    },
+  };
+};
