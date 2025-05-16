@@ -11,11 +11,11 @@ import type { ISectionProps } from '../../useSections';
 import { ModelParametersDialog } from './components/ModelParametersDialog';
 import { ModelSelector } from './components/ModelSelector';
 import { ProviderConfig } from './components/ProviderConfig';
-import { useTaskConfigManagement } from './useAIConfigManagement';
+import { useAIConfigManagement } from './useAIConfigManagement';
 
 export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
   const { t } = useTranslation('agent');
-  const { loading, config, providers, setProviders, handleModelChange, handleConfigChange } = useTaskConfigManagement();
+  const { loading, config, providers, setProviders, handleModelChange, handleConfigChange } = useAIConfigManagement();
   const [parametersDialogOpen, setParametersDialogOpen] = useState(false);
 
   const openParametersDialog = () => {

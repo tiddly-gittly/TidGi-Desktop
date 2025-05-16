@@ -9,9 +9,9 @@ import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
 import { ModelParametersDialog } from '@/pages/Preferences/sections/ExternalAPI/components/ModelParametersDialog';
-import { useTaskConfigManagement } from '@/pages/Preferences/sections/ExternalAPI/useAIConfigManagement';
-import { useAgentChatStore } from '../../../store/agentChatStore';
-import { IChatTab } from '../../../types/tab';
+import { useAIConfigManagement } from '@/pages/Preferences/sections/ExternalAPI/useAIConfigManagement';
+import { useAgentChatStore } from '../../../../store/agentChatStore';
+import { IChatTab } from '../../../../types/tab';
 
 interface ChatTabContentProps {
   tab: IChatTab;
@@ -112,7 +112,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     };
   }, [agentId, agentDefId, fetchAgent, subscribeToUpdates, createAgent]);
 
-  const { config, handleConfigChange } = useTaskConfigManagement({
+  const { config, handleConfigChange } = useAIConfigManagement({
     agentId: agent?.id,
     agentDefId: agent?.agentDefId,
   });

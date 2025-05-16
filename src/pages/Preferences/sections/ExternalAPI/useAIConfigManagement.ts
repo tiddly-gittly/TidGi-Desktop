@@ -55,7 +55,7 @@ export const mergeConfigs = <T extends Record<string, unknown>>(...configs: (T |
   return base;
 };
 
-export const useTaskConfigManagement = ({ agentDefId, agentId }: UseAIConfigManagementProps = {}): UseAIConfigManagementResult => {
+export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManagementProps = {}): UseAIConfigManagementResult => {
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<AiAPIConfig | null>(null);
   const [providers, setProviders] = useState<AIProviderConfig[]>([]);
