@@ -46,12 +46,15 @@
     "WaitingForResponse": "En attente de réponse..."
   },
   "ContextMenu": {
+    "AddToCurrentSplitView": "ajouter à la division d'écran actuelle",
     "AddToSplitView": "Ajouter à la vue côte à côte",
     "Close": "fermer",
     "CloseAbove": "Fermer l'onglet ci-dessus",
     "CloseBelow": "Fermer l'onglet ci-dessous",
     "CloseOther": "Fermer les autres onglets",
     "CloseTabs": "Fermer plusieurs onglets",
+    "ConvertToSplitView": "passer en vue partagée",
+    "CreateSplitViewWithActive": "créer un écran partagé avec l'onglet actuel",
     "Duplicate": "copier",
     "NewTabBelow": "ouvrir un nouvel onglet ci-dessous",
     "Pin": "Onglet fixe",
@@ -165,5 +168,15 @@
     "NoTabsFound": "Aucun onglet trouvé",
     "OpenTabs": "onglets ouverts",
     "RecentlyClosedTabs": "Onglets récemment fermés"
+  },
+  "SplitView": {
+    "NoTabs": "Aucun onglet dans la vue fractionnée.",
+    "RemoveFromSplitView": "retirer de la vue fractionnée"
+  },
+  "Tab": {
+    "Title": {
+      "NewTab": "Nouvel onglet",
+      "NewWeb": "nouvelle page web"
+    }
   }
 }

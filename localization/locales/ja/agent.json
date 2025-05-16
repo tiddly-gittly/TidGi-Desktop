@@ -47,12 +47,15 @@
     "WaitingForResponse": "応答を待っています..."
   },
   "ContextMenu": {
+    "AddToCurrentSplitView": "現在の分割画面に追加",
     "AddToSplitView": "サイドバイサイドビューに追加",
     "Close": "閉じる",
     "CloseAbove": "上のタブを閉じる",
     "CloseBelow": "下のタブを閉じる",
     "CloseOther": "他のタブを閉じる",
     "CloseTabs": "複数のタブを閉じる",
+    "ConvertToSplitView": "分割ビューに切り替える",
+    "CreateSplitViewWithActive": "現在のタブで分割画面を作成",
     "Duplicate": "コピー",
     "NewTabBelow": "下に新しいタブを作成",
     "Pin": "固定タブ",
@@ -166,5 +169,15 @@
     "NoTabsFound": "タブが見つかりません",
     "OpenTabs": "開いているタブ",
     "RecentlyClosedTabs": "最近閉じたタブ"
+  },
+  "SplitView": {
+    "NoTabs": "分割ビューにタグがありません",
+    "RemoveFromSplitView": "分割ビューから削除"
+  },
+  "Tab": {
+    "Title": {
+      "NewTab": "新しいタブ",
+      "NewWeb": "新しいウェブページを作成"
+    }
   }
 }

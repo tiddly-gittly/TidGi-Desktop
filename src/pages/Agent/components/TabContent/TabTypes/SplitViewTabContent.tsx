@@ -113,6 +113,9 @@ export const SplitViewTabContent: React.FC<SplitViewTabContentProps> = ({ tab })
 
   const { t } = useTranslation('agent');
 
+  // When there are no child tabs, this component shouldn't render at all
+  // The parent component should detect this and close the split view tab
+  // This is a fallback in case the tab somehow persists with no children
   if (childTabs.length === 0) {
     return (
       <Container>

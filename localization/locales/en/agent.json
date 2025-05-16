@@ -47,12 +47,15 @@
     "WaitingForResponse": "Waiting for response..."
   },
   "ContextMenu": {
+    "AddToCurrentSplitView": "Add to current split view",
     "AddToSplitView": "Add to side-by-side view",
     "Close": "Close",
     "CloseAbove": "Close the tab above",
     "CloseBelow": "Close the tab below",
     "CloseOther": "Close other tabs",
     "CloseTabs": "Close multiple tabs",
+    "ConvertToSplitView": "Convert to split view",
+    "CreateSplitViewWithActive": "Create split view with active tab",
     "Duplicate": "copy",
     "NewTabBelow": "Open a new tab below",
     "Pin": "Pinned Tab",
@@ -166,5 +169,15 @@
     "NoTabsFound": "No tabs found",
     "OpenTabs": "Open tabs",
     "RecentlyClosedTabs": "Recently closed tabs"
+  },
+  "SplitView": {
+    "NoTabs": "No tabs in split-screen view",
+    "RemoveFromSplitView": "Remove from split-screen view"
+  },
+  "Tab": {
+    "Title": {
+      "NewTab": "New Tab",
+      "NewWeb": "Create a new webpage"
+    }
   }
 }

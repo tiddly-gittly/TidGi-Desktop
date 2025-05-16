@@ -49,6 +49,7 @@
   "ContextMenu": {
     "AddToCurrentSplitView": "添加到当前分屏",
     "AddToSplitView": "添加到并排视图",
+    "CreateSplitViewWithActive": "和当前标签页创建分屏",
     "Close": "关闭",
     "CloseAbove": "关闭上方标签页",
     "CloseBelow": "关闭下方标签页",

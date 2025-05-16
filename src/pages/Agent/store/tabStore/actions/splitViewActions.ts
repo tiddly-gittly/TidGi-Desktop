@@ -102,17 +102,29 @@ export const splitViewActionsMiddleware: StateCreator<
         // Create a standalone tab for the removed one (but don't activate it)
         const removedTabCopy = createTabCopy(tabToRemove);
 
-        // First, directly update the split view tab in the backend
-        await window.service.agentBrowser.updateTab(splitViewTab.id, {
-          childTabs: remainingTabs,
-          title: remainingTabs.map(tab => tab.title).join(' | '),
-        });
-
         // Add the removed tab as a standalone tab, but don't make it active
         await window.service.agentBrowser.addTab(removedTabCopy);
 
-        // Make sure the split view tab stays active
-        await window.service.agentBrowser.setActiveTab(splitViewTab.id);
+        // Check if this was the last tab in the split view
+        if (remainingTabs.length === 0) {
+          // If no tabs remain, close the split view tab entirely
+          await window.service.agentBrowser.closeTab(splitViewTab.id);
+
+          // Find another tab to activate if available
+          const allTabs = await window.service.agentBrowser.getAllTabs();
+          if (allTabs.length > 0) {
+            await window.service.agentBrowser.setActiveTab(allTabs[0].id);
+          }
+        } else {
+          // Otherwise, update the split view with remaining tabs
+          await window.service.agentBrowser.updateTab(splitViewTab.id, {
+            childTabs: remainingTabs,
+            title: remainingTabs.map(tab => tab.title).join(' | '),
+          });
+
+          // Make sure the split view tab stays active
+          await window.service.agentBrowser.setActiveTab(splitViewTab.id);
+        }
 
         // Update the zustand store with the latest data from the backend
         const tabs = await window.service.agentBrowser.getAllTabs();

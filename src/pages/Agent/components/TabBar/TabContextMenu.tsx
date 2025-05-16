@@ -36,6 +36,7 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
     getTabIndex,
     restoreClosedTab,
     hasClosedTabs,
+    createSplitViewFromTabs,
   } = useTabStore();
 
   const tabContainerReference = useRef<HTMLDivElement>(null);
@@ -106,7 +107,14 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
     handleClose();
   }, [targetTab, addTab, handleClose]);
 
-  // Legacy split view handler removed
+  // Handle creating split view with active tab and target tab
+  const handleCreateSplitViewWithActiveTab = useCallback(async () => {
+    if (contextMenu.targetTabId && activeTabId) {
+      // createSplitViewFromTabs expects the second tab ID (which will be combined with the active tab)
+      await createSplitViewFromTabs(contextMenu.targetTabId);
+      handleClose();
+    }
+  }, [contextMenu.targetTabId, activeTabId, createSplitViewFromTabs, handleClose]);
 
   // Handle converting tab to split view
   const handleConvertToSplitView = useCallback(async () => {
@@ -240,6 +248,20 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
               <SplitscreenIcon fontSize='small' />
             </ListItemIcon>
             <ListItemText>{t('ContextMenu.ConvertToSplitView')}</ListItemText>
+          </MenuItem>
+        )}
+
+        {/* Create split view with active tab and this tab */}
+        {activeTabId &&
+          targetTab.id !== activeTabId &&
+          (targetTab.type === TabType.WEB || targetTab.type === TabType.CHAT) &&
+          activeTab &&
+          activeTab.type !== TabType.SPLIT_VIEW && (
+          <MenuItem onClick={handleCreateSplitViewWithActiveTab}>
+            <ListItemIcon>
+              <SplitscreenIcon fontSize='small' />
+            </ListItemIcon>
+            <ListItemText>{t('ContextMenu.CreateSplitViewWithActive')}</ListItemText>
           </MenuItem>
         )}
 
