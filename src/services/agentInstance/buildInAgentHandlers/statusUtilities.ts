@@ -55,3 +55,36 @@ export function completed(
 export function canceled(): AgentInstanceLatestStatus {
   return { state: 'canceled' };
 }
+
+/**
+ * Creates a completed status with error information
+ * @param content Error message content
+ * @param errorDetail Error detail object
+ * @param context Agent handler context
+ * @param messageId Optional message ID, if not provided, a new ID will be generated
+ * @returns AgentInstanceLatestStatus with completed state and error metadata
+ */
+export function error(
+  content: string,
+  errorDetail: {
+    name: string;
+    code: string;
+    provider: string;
+    message?: string;
+  } | undefined,
+  context: AgentHandlerContext,
+  messageId?: string,
+): AgentInstanceLatestStatus {
+  return {
+    state: 'completed',
+    message: {
+      id: messageId || nanoid(),
+      agentId: context.agent.id,
+      role: 'agent',
+      content,
+      metadata: {
+        errorDetail,
+      },
+    },
+  };
+}

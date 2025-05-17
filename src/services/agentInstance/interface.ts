@@ -82,6 +82,11 @@ export interface AgentInstanceMessage {
   role: 'user' | 'assistant' | 'agent';
   /** Message content */
   content: string;
+  /**
+   * Reasoning or thinking content, separated from main content
+   * Primarily used with DeepSeek which returns reasoning content separately
+   */
+  reasoning_content?: string;
   contentType?: string; // 'text/plain' | 'text/markdown' | 'text/html' | 'application/json' | 'application/json+ndjson';
   /** Last update time (converted from ISO string) */
   modified?: Date;

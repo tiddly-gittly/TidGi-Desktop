@@ -1,9 +1,10 @@
 import { container } from '@services/container';
 import { IExternalAPIService } from '@services/externalAPI/interface';
+import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { promptConcat } from './promptConcatUtils/promptConcat';
 import { AiAPIConfig } from './promptConcatUtils/promptConcatSchema';
-import { canceled, completed, working } from './statusUtilities';
+import { canceled, completed, error, working } from './statusUtilities';
 import { AgentHandlerContext } from './type';
 
 /**
@@ -13,9 +14,6 @@ import { AgentHandlerContext } from './type';
  * @param context - Agent handling context
  */
 export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
-  // Send working status first
-  yield working('Processing your message...', context);
-
   // Get service instances
   const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
 
@@ -74,6 +72,9 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
           return;
         }
 
+        // Log response content for debugging
+        logger.debug(`Response content from AI`, { method: 'basicPromptConcatHandler', response });
+
         if (response.status === 'update' || response.status === 'done') {
           const state = response.status === 'done' ? 'completed' : 'working';
           if (state === 'completed') {
@@ -82,7 +83,9 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
             yield working(response.content, context, currentRequestId);
           }
         } else if (response.status === 'error') {
-          yield completed(`Error: ${response.errorDetail?.message || 'Unknown error'}`, context);
+          // Create message with error details in metadata
+          const errorMessage = `Error: ${response.errorDetail?.message || 'Unknown error'}`;
+          yield error(errorMessage, response.errorDetail, context, currentRequestId);
           return;
         }
       }

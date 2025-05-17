@@ -1,5 +1,8 @@
 {
   "Add": "添加",
+  "Agent": {
+    "ChatInputPlaceholder": "输入你的回应"
+  },
   "Browser": {
     "Back": "后退",
     "Bookmark": "收藏",
@@ -20,6 +23,7 @@
       "GoToSettings": "前往设置",
       "MissingAPIKey": "需要设置 {{provider}} 的 API 密钥才能使用此功能。",
       "MissingBaseURL": "需要设置 {{provider}} 的服务器地址(Base URL)才能使用此功能。",
+      "MissingProviderError": "缺少提供商配置，请检查设置。",
       "ModelNotFound": "找不到指定的 {{provider}} 模型，请检查设置。",
       "ProviderNotFound": "找不到 {{provider}} 提供商，请检查设置。",
       "RateLimitExceeded": "{{provider}} 的调用频率限制已超出，请稍后再试。",
@@ -49,23 +53,19 @@
   "ContextMenu": {
     "AddToCurrentSplitView": "添加到当前分屏",
     "AddToSplitView": "添加到并排视图",
-    "CreateSplitViewWithActive": "和当前标签页创建分屏",
     "Close": "关闭",
     "CloseAbove": "关闭上方标签页",
     "CloseBelow": "关闭下方标签页",
     "CloseOther": "关闭其他标签页",
     "CloseTabs": "关闭多个标签页",
     "ConvertToSplitView": "转为分屏视图",
+    "CreateSplitViewWithActive": "和当前标签页创建分屏",
     "Duplicate": "复制",
     "NewTabBelow": "在下方新建标签页",
     "Pin": "固定标签页",
     "Refresh": "刷新",
     "RestoreClosed": "恢复关闭的标签页",
     "Unpin": "取消固定"
-  },
-  "SplitView": {
-    "NoTabs": "分屏视图中没有标签",
-    "RemoveFromSplitView": "从分屏视图中移除"
   },
   "ModelFeature": {
     "Embedding": "嵌入",
@@ -84,12 +84,6 @@
     "NewWebTab": "新建网页",
     "QuickAccess": "快速访问",
     "SearchPlaceholder": "搜索标签页或智能体..."
-  },
-  "Tab": {
-    "Title": {
-      "NewTab": "新建标签页",
-      "NewWeb": "新建网页"
-    }
   },
   "Preference": {
     "AIModelSelection": "AI 模型选择",
@@ -179,5 +173,15 @@
     "NoTabsFound": "没有找到标签页",
     "OpenTabs": "打开的标签页",
     "RecentlyClosedTabs": "最近关闭的标签页"
+  },
+  "SplitView": {
+    "NoTabs": "分屏视图中没有标签",
+    "RemoveFromSplitView": "从分屏视图中移除"
+  },
+  "Tab": {
+    "Title": {
+      "NewTab": "新建标签页",
+      "NewWeb": "新建网页"
+    }
   }
 }

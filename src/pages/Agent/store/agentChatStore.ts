@@ -1,4 +1,4 @@
-import { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
+import { AgentInstance } from '@services/agentInstance/interface';
 import { create } from 'zustand';
 
 interface AgentChatState {
@@ -6,7 +6,6 @@ interface AgentChatState {
   loading: boolean;
   error: Error | null;
   agent: AgentInstance | null;
-  messages: AgentInstanceMessage[];
 
   // Actions
   fetchAgent: (agentId: string) => Promise<void>;
@@ -23,7 +22,6 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
   loading: false,
   error: null,
   agent: null,
-  messages: [],
 
   // Fetch agent instance
   fetchAgent: async (agentId: string) => {
@@ -31,9 +29,9 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
 
     try {
       set({ loading: true, error: null });
-      const result = await window.service.agentInstance.getAgent(agentId);
-      if (result) {
-        set({ agent: result, messages: result.messages });
+      const agent = await window.service.agentInstance.getAgent(agentId);
+      if (agent) {
+        set({ agent });
       }
     } catch (error) {
       set({ error: error instanceof Error ? error : new Error(String(error)) });
@@ -49,9 +47,9 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
 
     try {
       const subscription = window.observables.agentInstance.subscribeToAgentUpdates(agentId).subscribe({
-        next: (updatedAgent) => {
-          if (updatedAgent) {
-            set({ agent: updatedAgent, messages: updatedAgent.messages });
+        next: (agent) => {
+          if (agent) {
+            set({ agent });
           }
         },
         error: (error) => {
@@ -96,7 +94,6 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
       const newAgent = await window.service.agentInstance.createAgent(agentDefinitionId);
       set({
         agent: newAgent,
-        messages: newAgent.messages,
         error: null,
       });
       return newAgent;
@@ -121,7 +118,6 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
       const updatedAgent = await window.service.agentInstance.updateAgent(agentId, data);
       set({
         agent: updatedAgent,
-        messages: updatedAgent.messages,
         error: null,
       });
       return updatedAgent;

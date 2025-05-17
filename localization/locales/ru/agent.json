@@ -1,5 +1,8 @@
 {
   "Add": "Добавить",
+  "Agent": {
+    "ChatInputPlaceholder": ""
+  },
   "Browser": {
     "Back": "назад",
     "Bookmark": "коллекционировать",
@@ -20,6 +23,7 @@
       "GoToSettings": "Перейти к настройкам",
       "MissingAPIKey": "Для использования этой функции требуется ключ API для {{provider}}.",
       "MissingBaseURL": "Для использования этой функции требуется базовый URL для {{provider}}.",
+      "MissingProviderError": "",
       "ModelNotFound": "Не удалось найти модель для {{provider}}, пожалуйста, проверьте настройки.",
       "ProviderNotFound": "Провайдер {{provider}} не найден, пожалуйста, проверьте настройки.",
       "RateLimitExceeded": "Превышен лимит запросов для {{provider}}, пожалуйста, повторите попытку позже.",

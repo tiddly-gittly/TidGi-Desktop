@@ -1,4 +1,7 @@
 {
+  "Agent": {
+    "ChatInputPlaceholder": ""
+  },
   "Browser": {
     "Back": "reculer",
     "Bookmark": "collection",
@@ -19,6 +22,7 @@
       "GoToSettings": "Aller aux paramètres",
       "MissingAPIKey": "La clé API pour {{provider}} est requise pour utiliser cette fonctionnalité.",
       "MissingBaseURL": "L'URL de base pour {{provider}} est requise pour utiliser cette fonctionnalité.",
+      "MissingProviderError": "",
       "ModelNotFound": "Modèle non trouvé pour {{provider}}, veuillez vérifier vos paramètres.",
       "ProviderNotFound": "Fournisseur {{provider}} introuvable, veuillez vérifier vos paramètres.",
       "RateLimitExceeded": "Limite de débit dépassée pour {{provider}}, veuillez réessayer plus tard.",

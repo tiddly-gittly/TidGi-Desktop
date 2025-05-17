@@ -1,5 +1,8 @@
 {
   "Add": "追加",
+  "Agent": {
+    "ChatInputPlaceholder": ""
+  },
   "Browser": {
     "Back": "後退",
     "Bookmark": "コレクション",
@@ -20,6 +23,7 @@
       "GoToSettings": "設定へ移動",
       "MissingAPIKey": "この機能を使用するには{{provider}}のAPIキーが必要です。",
       "MissingBaseURL": "この機能を使用するには{{provider}}のベースURLが必要です。",
+      "MissingProviderError": "",
       "ModelNotFound": "{{provider}}のモデルが見つかりません。設定を確認してください。",
       "ProviderNotFound": "プロバイダー{{provider}}が見つかりません。設定を確認してください。",
       "RateLimitExceeded": "{{provider}}のレート制限を超過しました。後でもう一度お試しください。",

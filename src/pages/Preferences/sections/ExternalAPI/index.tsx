@@ -33,35 +33,38 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
         <List dense disablePadding>
           {loading ? <ListItemVertical>{t('Loading')}</ListItemVertical> : (
             <>
-              <ListItemVertical>
-                <ListItemText
-                  primary={t('Preference.DefaultAIModelSelection')}
-                  secondary={t('Preference.DefaultAIModelSelectionDescription')}
-                />
-                <ModelSelector
-                  selectedConfig={config}
-                  modelOptions={providers.flatMap(provider => provider.models.map(model => [provider, model] as [AIProviderConfig, ModelInfo]))}
-                  onChange={handleModelChange}
-                />
-              </ListItemVertical>
+              {providers.length > 0 && (
+                <>
+                  <ListItemVertical>
+                    <ListItemText
+                      primary={t('Preference.DefaultAIModelSelection')}
+                      secondary={t('Preference.DefaultAIModelSelectionDescription')}
+                    />
+                    <ModelSelector
+                      selectedConfig={config}
+                      modelOptions={providers.flatMap(provider => provider.models.map(model => [provider, model] as [AIProviderConfig, ModelInfo]))}
+                      onChange={handleModelChange}
+                    />
+                  </ListItemVertical>
 
-              {/* 单独的模型参数设置项 */}
-              <ListItemVertical>
-                <ListItemText
-                  primary={t('Preference.ModelParameters', { ns: 'agent' })}
-                  secondary={t('Preference.ModelParametersDescription', { ns: 'agent' })}
-                />
-                <Button
-                  variant='outlined'
-                  color='primary'
-                  startIcon={<TuneIcon />}
-                  onClick={openParametersDialog}
-                  disabled={!config}
-                  sx={{ alignSelf: 'flex-start' }}
-                >
-                  {t('Preference.ConfigureModelParameters', { ns: 'agent' })}
-                </Button>
-              </ListItemVertical>
+                  <ListItemVertical>
+                    <ListItemText
+                      primary={t('Preference.ModelParameters', { ns: 'agent' })}
+                      secondary={t('Preference.ModelParametersDescription', { ns: 'agent' })}
+                    />
+                    <Button
+                      variant='outlined'
+                      color='primary'
+                      startIcon={<TuneIcon />}
+                      onClick={openParametersDialog}
+                      disabled={!config}
+                      sx={{ alignSelf: 'flex-start' }}
+                    >
+                      {t('Preference.ConfigureModelParameters', { ns: 'agent' })}
+                    </Button>
+                  </ListItemVertical>
+                </>
+              )}
 
               <ProviderConfig
                 providers={providers}

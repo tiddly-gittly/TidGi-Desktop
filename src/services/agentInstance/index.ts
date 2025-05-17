@@ -159,16 +159,21 @@ export class AgentInstanceService implements IAgentInstanceService {
     this.ensureRepositories();
 
     try {
-      // Query agent instance with messages in reverse chronological order
+      // Query agent instance with messages in chronological order (oldest first)
       const instanceEntity = await this.agentInstanceRepository!.findOne({
         where: { id: agentId },
         relations: ['messages'],
         order: {
           messages: {
-            modified: 'DESC',
+            modified: 'ASC', // Ensure messages are sorted in ascending order by modified time
           },
         },
       });
+
+      // Debug log to trace message ordering issues if they occur
+      if (instanceEntity?.messages?.length) {
+        logger.debug(`Messages loaded for agent ${agentId}: ${instanceEntity.messages.length} messages, ordered by time ASC`, { method: 'getAgent' });
+      }
 
       if (!instanceEntity) {
         return undefined;
@@ -243,7 +248,12 @@ export class AgentInstanceService implements IAgentInstanceService {
       }
 
       // Reload complete instance data
-      return await this.getAgent(agentId) as AgentInstance;
+      const updatedAgent = await this.getAgent(agentId) as AgentInstance;
+
+      // Notify subscribers about the updates
+      await this.notifyAgentUpdate(agentId);
+
+      return updatedAgent;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Failed to update agent instance: ${errorMessage}`);
@@ -357,12 +367,14 @@ export class AgentInstanceService implements IAgentInstanceService {
       await this.agentMessageRepository!.save(messageEntity);
 
       // Update agent status to "working"
+      logger.debug(`Sending message to agent ${agentId}, appending user message to ${agentInstance.messages.length} existing messages`, { method: 'sendMsgToAgent' });
+
       await this.updateAgent(agentId, {
         status: {
           state: 'working',
           modified: now,
         },
-        messages: [userMessage, ...agentInstance.messages],
+        messages: [...agentInstance.messages, userMessage], // Append message at the end to maintain chronological order (ASC)
       });
 
       // Get agent configuration
@@ -585,6 +597,34 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   /**
+   * Notify agent subscription of updates
+   * When called with only agentId, it will fetch the agent data from database before notifying
+   * When called with agentData, it will use the provided data for immediate notification without database query
+   * @param agentId Agent ID
+   * @param agentData Optional in-memory agent data to use for immediate notification
+   */
+  private async notifyAgentUpdate(agentId: string, agentData?: AgentInstance): Promise<void> {
+    try {
+      // Only notify if there are active subscriptions
+      if (this.agentInstanceSubjects.has(agentId)) {
+        if (agentData) {
+          // Immediate notification with provided data (no database query)
+          this.agentInstanceSubjects.get(agentId)?.next(agentData);
+          logger.debug(`Real-time notification for agent ${agentId}`, { method: 'notifyAgentUpdate', immediate: true });
+        } else {
+          // Fetch data from database before notification
+          const agent = await this.getAgent(agentId);
+          this.agentInstanceSubjects.get(agentId)?.next(agent);
+          logger.debug(`Notified subscribers for agent ${agentId}`, { method: 'notifyAgentUpdate', immediate: false });
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`Failed to notify agent update: ${errorMessage}`);
+    }
+  }
+
+  /**
    * Debounced message update to reduce database writes
    */
   private debounceUpdateMessage(
@@ -593,6 +633,51 @@ export class AgentInstanceService implements IAgentInstanceService {
     debounceMs = 300,
   ): void {
     const messageId = message.id;
+
+    logger.debug(`Updating message ${messageId} with content length: ${message.content.length}`, {
+      method: 'debounceUpdateMessage',
+      agentId,
+      contentPreview: message.content.substring(0, 50),
+    });
+
+    // If we have an agent ID, immediately notify the frontend with the updated message
+    // This provides real-time streaming updates without waiting for database writes
+    if (agentId && this.agentInstanceSubjects.has(agentId)) {
+      try {
+        // Get current agent state (but don't await a database call)
+        const currentSubject = this.agentInstanceSubjects.get(agentId);
+        if (currentSubject) {
+          const currentAgent = currentSubject.getValue();
+
+          if (currentAgent) {
+            // Create an updated version of the agent with the latest message content
+            const updatedAgent = { ...currentAgent };
+
+            // Find and update the message in the local copy
+            const messageIndex = updatedAgent.messages.findIndex(msg => msg.id === messageId);
+            if (messageIndex >= 0) {
+              // Update existing message
+              updatedAgent.messages[messageIndex] = {
+                ...updatedAgent.messages[messageIndex],
+                content: message.content,
+                ...(message.contentType && { contentType: message.contentType }),
+                ...(message.metadata && { metadata: message.metadata }),
+                ...(message.reasoning_content && { reasoning_content: message.reasoning_content }),
+              };
+            } else {
+              // Add new message if it doesn't exist yet
+              updatedAgent.messages = [...updatedAgent.messages, message];
+            }
+
+            // Use immediate update with in-memory data without DB query
+            void this.notifyAgentUpdate(agentId, updatedAgent);
+          }
+        }
+      } catch (error) {
+        logger.error(`Failed to send real-time update: ${error instanceof Error ? error.message : String(error)}`);
+        // Continue with database update even if real-time update fails
+      }
+    }
 
     // Lazy load or get existing debounced function
     if (!this.debouncedUpdateFunctions.has(messageId)) {
@@ -617,13 +702,18 @@ export class AgentInstanceService implements IAgentInstanceService {
                   messageEntity.modified = new Date();
 
                   await messageRepo.save(messageEntity);
+
+                  // Database is now updated, but we don't need to notify again here
+                  // since we've already sent real-time updates before the database operation
+                  // This prevents duplicate notifications and keeps UI responsive
                 } else if (aid) {
                   // Create new message if it doesn't exist and agentId provided
                   const now = new Date();
                   const newMessage = messageRepo.create({
                     id: messageId,
                     agentId: aid,
-                    role: msgData.role || 'assistant',
+                    // Use destructuring with default value to handle undefined case
+                    role: msgData.role,
                     content: msgData.content,
                     contentType: msgData.contentType || 'text/plain',
                     modified: now,
@@ -635,8 +725,20 @@ export class AgentInstanceService implements IAgentInstanceService {
                   // Update agent instance message list
                   const agentInstance = await this.getAgent(aid);
                   if (agentInstance) {
+                    logger.debug(`Creating new message and appending to ${agentInstance.messages.length} existing messages`, {
+                      method: 'debounceUpdateMessage',
+                      messageId,
+                      agentId: aid,
+                    });
+
                     await this.updateAgent(aid, {
-                      messages: [newMessage, ...agentInstance.messages],
+                      messages: [...agentInstance.messages, newMessage], // Append message at the end to maintain chronological order (ASC)
+                    });
+
+                    // For new messages, we need to notify after database is updated
+                    // as this is the first time the message exists in the database
+                    setImmediate(() => {
+                      void this.notifyAgentUpdate(aid);
                     });
                   }
                 } else {

@@ -1,5 +1,8 @@
 {
   "Add": "Add",
+  "Agent": {
+    "ChatInputPlaceholder": ""
+  },
   "Browser": {
     "Back": "Step back",
     "Bookmark": "Collection",
@@ -20,6 +23,7 @@
       "GoToSettings": "Go to Settings",
       "MissingAPIKey": "API key for {{provider}} is required to use this feature.",
       "MissingBaseURL": "Base URL for {{provider}} is required to use this feature.",
+      "MissingProviderError": "",
       "ModelNotFound": "Model not found for {{provider}}, please check your settings.",
       "ProviderNotFound": "Provider {{provider}} not found, please check your settings.",
       "RateLimitExceeded": "Rate limit exceeded for {{provider}}, please try again later.",
