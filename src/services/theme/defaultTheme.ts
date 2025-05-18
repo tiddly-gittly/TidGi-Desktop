@@ -44,6 +44,7 @@ export const darkTheme = merge(
           default: '#212121',
         },
         text: { primary: 'rgba(255, 255, 255, 0.87)', secondary: 'rgba(255, 255, 255, 0.6)', disabled: 'rgba(255, 255, 255, 0.35)' },
+        primary: { main: '#3f51b5', light: '#757de8', dark: '#002984', contrastText: '#fff' },
       },
       sidebar: lightTheme.sidebar,
       searchBar: lightTheme.searchBar,

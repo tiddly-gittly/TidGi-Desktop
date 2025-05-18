@@ -400,9 +400,6 @@ export class AgentInstanceService implements IAgentInstanceService {
         let lastResult: AgentInstanceLatestStatus | undefined;
 
         for await (const result of generator) {
-          // Store the last result for completion handling
-          lastResult = result;
-
           if (result.message?.content) {
             // Ensure message has correct modification timestamp
             if (!result.message.modified) {
@@ -416,20 +413,37 @@ export class AgentInstanceService implements IAgentInstanceService {
 
             // Update status subscribers
             const statusKey = `${agentId}:${result.message.id}`;
-            // DEBUG: console statusKey
-            console.log(`statusKey`, statusKey, this.statusSubjects.has(statusKey));
             if (this.statusSubjects.has(statusKey)) {
               this.statusSubjects.get(statusKey)?.next(result);
             }
           }
 
-          // Update agent status
-          await this.updateAgent(agentId, {
-            status: {
-              state: result.state,
-              modified: new Date(),
-            },
-          });
+          // Update agent status only when state changes or on first message
+          const isFirstMessage = !lastResult;
+          if (isFirstMessage || lastResult?.state !== result.state) {
+            // For the first message, include the message itself in the update
+            // This ensures the UI immediately gets the message without waiting for debounced updates
+            const updateData: Partial<AgentInstance> = {
+              status: {
+                state: result.state,
+                modified: new Date(),
+              },
+            };
+
+            // Include message on first update to ensure immediate UI feedback
+            if (isFirstMessage && result.message) {
+              // Get the current agent to append the new message
+              const currentAgent = await this.getAgent(agentId);
+              if (currentAgent) {
+                updateData.messages = [...currentAgent.messages, result.message];
+              }
+            }
+
+            await this.updateAgent(agentId, updateData);
+          }
+
+          // Store the last result for completion handling. Also used for check if this is first message
+          lastResult = result;
         }
 
         // Handle stream completion without fetching agent again
@@ -575,8 +589,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     // If messageId provided, subscribe to specific message status updates
     if (messageId) {
       const statusKey = `${agentId}:${messageId}`;
-      // DEBUG: console statusKey
-      console.log(`subscribeToAgentUpdates statusKey`, statusKey);
       if (!this.statusSubjects.has(statusKey)) {
         this.statusSubjects.set(statusKey, new BehaviorSubject<AgentInstanceLatestStatus | undefined>(undefined));
 

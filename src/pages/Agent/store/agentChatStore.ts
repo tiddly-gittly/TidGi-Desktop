@@ -127,14 +127,10 @@ export const useAgentChatStore = create<AgentChatState>((set, get) => ({
                 get().setMessageStreaming(message.id, true);
 
                 // Create message-specific subscription
-                // DEBUG: console agentId, message.id
-                console.log(`agentId, message.id`, agentId, message.id);
                 messageSubscriptions.set(
                   message.id,
                   window.observables.agentInstance.subscribeToAgentUpdates(agentId, message.id).subscribe({
                     next: (status) => {
-                      // DEBUG: console status.message
-                      console.log(`status.message`, status?.state, status?.message?.content);
                       if (status?.message) {
                         // Update the message in our map
                         get().messages.set(status.message.id, status.message);
