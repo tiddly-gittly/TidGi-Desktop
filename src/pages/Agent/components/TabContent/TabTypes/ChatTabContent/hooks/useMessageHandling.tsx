@@ -1,6 +1,6 @@
 // Message handling hook for chat component
-import { AgentInstance } from '@services/agentInstance/interface';
 import { KeyboardEvent, useCallback, useState } from 'react';
+import { AgentWithoutMessages } from '../../../../../store/agentChatStore';
 
 interface UseMessageHandlingProps {
   agentId: string | undefined;
@@ -8,7 +8,7 @@ interface UseMessageHandlingProps {
   isUserAtBottom: () => boolean;
   isUserAtBottomReference: React.RefObject<boolean>;
   debouncedScrollToBottom: () => void;
-  agent: AgentInstance | null; // Using the proper AgentInstance type from the AgentChatStore
+  agent: AgentWithoutMessages | null; // Updated to use AgentWithoutMessages type
 }
 
 /**

@@ -1,7 +1,7 @@
 // Chat tab content component - Modular version with message rendering system
 
 import { Box, CircularProgress, Typography } from '@mui/material';
-import { AgentInstanceMessage } from '@services/agentInstance/interface';
+// Import services and hooks
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -20,7 +20,7 @@ import { useScrollHandling } from './hooks/useScrollHandling';
 import { isChatTab } from './utils/tabTypeGuards';
 
 // Import store hooks to fetch agent data
-import { useAgentChatStore } from '../../../../store/agentChatStore';
+import { AgentWithoutMessages, useAgentChatStore } from '../../../../store/agentChatStore';
 import { TabItem } from '../../../../types/tab';
 
 /**
@@ -36,7 +36,7 @@ interface ChatTabContentProps {
  * Displays a chat interface for interacting with an AI agent
  * Only works with IChatTab objects
  */
-const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
+export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
   const { t } = useTranslation('agent');
 
   // Type checking
@@ -106,13 +106,15 @@ const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
       if (unsub) unsub();
     };
   }, [tab.agentId, fetchAgent, subscribeToUpdates]);
+  const orderedMessageIds = useAgentChatStore(state => state.orderedMessageIds);
 
   // Effect to handle initial scroll when agent is first loaded
   useEffect(() => {
     // Only scroll to bottom on initial agent load, not on every agent update
-    if (agent && !loading && agent.messages.length > 0) {
+    const currentAgent: AgentWithoutMessages | null = agent;
+    if (currentAgent && !loading && orderedMessageIds.length > 0) {
       // Use a ref to track if initial scroll has happened for this agent
-      const agentId = agent.id;
+      const agentId = currentAgent.id;
 
       // Check if we've already scrolled for this agent
       if (!hasInitialScrollBeenDone(agentId)) {
@@ -122,20 +124,18 @@ const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
         markInitialScrollAsDone(agentId);
       }
     }
-  }, [agent?.id, loading, debouncedScrollToBottom, hasInitialScrollBeenDone, markInitialScrollAsDone]);
+  }, [agent?.id, loading, debouncedScrollToBottom, hasInitialScrollBeenDone, markInitialScrollAsDone, orderedMessageIds]);
+
 
   // Effect to scroll to bottom when messages change
   useEffect(() => {
-    if (!agent?.messages.length) return;
+    if (!orderedMessageIds.length) return;
 
     // Always use debounced scroll to prevent UI jumping for all message updates
     if (isUserAtBottomReference.current) {
       debouncedScrollToBottom();
     }
-  }, [agent?.messages, isUserAtBottomReference, debouncedScrollToBottom]);
-
-  // Organize messages for display
-  const messages: AgentInstanceMessage[] = agent?.messages || [];
+  }, [orderedMessageIds.length, isUserAtBottomReference, debouncedScrollToBottom]);
   const isWorking = loading || agent?.status.state === 'working';
 
   return (
@@ -158,7 +158,7 @@ const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
 
       {/* Messages container with all chat bubbles */}
       <Box sx={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
-        <MessagesContainer messages={messages}>
+        <MessagesContainer messageIds={orderedMessageIds}>
           {/* Error state */}
           {error && (
             <Box sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
@@ -167,14 +167,14 @@ const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
           )}
 
           {/* Empty state */}
-          {!loading && !error && messages.length === 0 && (
+          {!loading && !error && orderedMessageIds.length === 0 && (
             <Box sx={{ textAlign: 'center', p: 4, color: 'text.secondary' }}>
               <Typography>{t('Agent.StartConversation')}</Typography>
             </Box>
           )}
 
           {/* Loading state - when first loading the agent */}
-          {loading && messages.length === 0 && (
+          {loading && orderedMessageIds.length === 0 && (
             <Box sx={{ textAlign: 'center', p: 4 }}>
               <CircularProgress size={24} />
               <Typography sx={{ mt: 2 }}>{t('Agent.LoadingChat')}</Typography>
@@ -204,5 +204,3 @@ const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     </Box>
   );
 };
-
-export { ChatTabContent };

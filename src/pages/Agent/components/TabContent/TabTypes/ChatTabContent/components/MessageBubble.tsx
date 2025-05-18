@@ -1,11 +1,11 @@
 // Message bubble component with avatar and content
 
-import { AgentInstanceMessage } from '@/services/agentInstance/interface';
 import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { Avatar, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useAgentChatStore } from '../../../../../store/agentChatStore';
 import { MessageRenderer } from './MessageRenderer';
 
 const BubbleContainer = styled(Box)<{ $isUser: boolean }>`
@@ -61,57 +61,19 @@ const MessageContent = styled(Box)<{ $isUser: boolean; $isStreaming?: boolean }>
 `;
 
 interface MessageBubbleProps {
-  message: AgentInstanceMessage;
-  isUser: boolean;
+  messageId: string; // 只接收消息ID
 }
 
 /**
  * Message bubble component with avatar and content
  */
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isUser }) => {
-  // Track if the message is streaming (being generated)
-  const [isStreaming, setIsStreaming] = useState(false);
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
+  const message = useAgentChatStore(state => state.getMessageById(messageId));
+  const isStreaming = useAgentChatStore(state => state.isMessageStreaming(messageId));
 
-  // Monitor the message for streaming state
-  useEffect(() => {
-    // Message is streaming if it's from the assistant/agent and meets streaming criteria
-    const streamingState = !isUser &&
-      (message.role === 'agent' || message.role === 'assistant') &&
-      (
-        // Check explicit streaming flag if available
-        message.metadata?.isStreaming === true ||
-        // Check agent working state via the message
-        message.metadata?.agentState === 'working' ||
-        // Check if message is incomplete (missing completion flag)
-        (message.metadata?.isComplete !== true && message.metadata?.isComplete !== undefined)
-      );
-    // DEBUG: console streamingState
-    console.log(`streamingState`, streamingState);
+  if (!message) return null;
 
-    // Only update streaming state when necessary to avoid re-renders
-    setIsStreaming(streamingState);
-
-    // Add cleanup timer to ensure animation stops even if metadata doesn't update properly
-    let animationTimeout: NodeJS.Timeout | null = null;
-
-    // If streaming, set a timeout to eventually stop animation if no further updates occur
-    if (streamingState) {
-      // After 15 seconds, assume message is complete even if metadata doesn't update
-      // This prevents animations from running indefinitely
-      animationTimeout = setTimeout(() => {
-        setIsStreaming(false);
-      }, 15000); // 15 seconds timeout (reduced from 30s to prevent longer animations)
-    } else {
-      // If message is no longer streaming, ensure we update state immediately
-      setIsStreaming(false);
-    }
-
-    return () => {
-      if (animationTimeout) {
-        clearTimeout(animationTimeout);
-      }
-    };
-  }, [message, isUser]);
+  const isUser = message.role === 'user';
 
   return (
     <BubbleContainer $isUser={isUser}>

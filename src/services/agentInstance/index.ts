@@ -18,6 +18,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
 
 import { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from './interface';
+import { AGENT_INSTANCE_FIELDS, createAgentInstanceData, createAgentMessage, MESSAGE_FIELDS } from './utilities';
 
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {
@@ -110,29 +111,8 @@ export class AgentInstanceService implements IAgentInstanceService {
         throw new Error(`Agent definition not found: ${agentDefinitionID}`);
       }
 
-      // Create new agent instance
-      const instanceId = nanoid();
-      const now = new Date();
-
-      // Initialize agent status
-      const initialStatus: AgentInstanceLatestStatus = {
-        state: 'completed',
-        modified: now,
-      };
-
-      // Extract necessary fields from agentDef
-      const { avatarUrl, aiApiConfig } = agentDef;
-
-      const instanceData = {
-        id: instanceId,
-        agentDefId: agentDef.id,
-        name: `${agentDef.name} - ${new Date().toLocaleString()}`,
-        status: initialStatus,
-        avatarUrl,
-        aiApiConfig,
-        messages: [],
-        closed: false,
-      };
+      // Create new agent instance using utility function
+      const { instanceData, instanceId, now } = createAgentInstanceData(agentDef);
 
       // Create and save entity
       const instanceEntity = this.agentInstanceRepository!.create(instanceData);
@@ -180,7 +160,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       }
 
       return {
-        ...pick(instanceEntity, ['id', 'agentDefId', 'name', 'status', 'created', 'modified', 'avatarUrl', 'aiApiConfig', 'closed']),
+        ...pick(instanceEntity, AGENT_INSTANCE_FIELDS),
         messages: instanceEntity.messages || [],
       };
     } catch (error) {
@@ -197,10 +177,15 @@ export class AgentInstanceService implements IAgentInstanceService {
     this.ensureRepositories();
 
     try {
-      // Get existing instance
+      // Get existing instance with messages
       const instanceEntity = await this.agentInstanceRepository!.findOne({
         where: { id: agentId },
         relations: ['messages'],
+        order: {
+          messages: {
+            modified: 'ASC', // Ensure messages are sorted in ascending order by modified time
+          },
+        },
       });
 
       if (!instanceEntity) {
@@ -234,24 +219,30 @@ export class AgentInstanceService implements IAgentInstanceService {
         });
 
         for (const message of newMessages) {
-          const messageEntity = this.agentMessageRepository!.create({
-            id: message.id,
-            agentId: agentId,
-            role: message.role,
-            content: message.content,
-            contentType: message.contentType,
-            metadata: message.metadata,
-          });
+          const messageEntity = this.agentMessageRepository!.create(
+            pick(message, MESSAGE_FIELDS) as AgentInstanceMessage,
+          );
 
           await this.agentMessageRepository!.save(messageEntity);
+
+          // Add new message to the instance entity
+          if (!instanceEntity.messages) {
+            instanceEntity.messages = [];
+          }
+          instanceEntity.messages.push(messageEntity);
         }
       }
 
-      // Reload complete instance data
-      const updatedAgent = await this.getAgent(agentId) as AgentInstance;
+      // Construct the response object directly from the entity
+      // This avoids an additional database query with getAgent()
+      const updatedAgent: AgentInstance = {
+        ...pick(instanceEntity, AGENT_INSTANCE_FIELDS),
+        messages: instanceEntity.messages || [],
+      };
 
-      // Notify subscribers about the updates
-      await this.notifyAgentUpdate(agentId);
+      // Notify subscribers about the updates with the already available data
+      // This avoids another database query within notifyAgentUpdate
+      await this.notifyAgentUpdate(agentId, updatedAgent);
 
       return updatedAgent;
     } catch (error) {
@@ -325,7 +316,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       return instances.map(entity => {
         return {
-          ...pick(entity, ['id', 'agentDefId', 'name', 'status', 'created', 'modified', 'avatarUrl', 'aiApiConfig', 'closed']),
+          ...pick(entity, AGENT_INSTANCE_FIELDS),
           messages: entity.messages || [],
         };
       });
@@ -352,15 +343,13 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Create user message
       const messageId = nanoid();
       const now = new Date();
-      const userMessage: AgentInstanceMessage = {
-        id: messageId,
-        agentId,
+      // Use helper function to create message with proper structure
+      const userMessage = createAgentMessage(messageId, agentId, {
         role: 'user',
         content: content.text,
         contentType: 'text/plain',
-        modified: now,
-        ...(content.file ? { metadata: { file: content.file } } : {}),
-      };
+        metadata: content.file ? { file: content.file } : undefined,
+      });
 
       // Save user message
       const messageEntity = this.agentMessageRepository!.create(userMessage);
@@ -369,7 +358,8 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Update agent status to "working"
       logger.debug(`Sending message to agent ${agentId}, appending user message to ${agentInstance.messages.length} existing messages`, { method: 'sendMsgToAgent' });
 
-      await this.updateAgent(agentId, {
+      // Update agent and use the returned value directly instead of querying again
+      const updatedAgent = await this.updateAgent(agentId, {
         status: {
           state: 'working',
           modified: now,
@@ -381,12 +371,6 @@ export class AgentInstanceService implements IAgentInstanceService {
       const agentDefinition = await this.agentDefinitionService.getAgentDef(agentInstance.agentDefId);
       if (!agentDefinition) {
         throw new Error(`Agent definition not found: ${agentInstance.agentDefId}`);
-      }
-
-      // Get updated agent instance
-      const updatedAgent = await this.getAgent(agentId);
-      if (!updatedAgent) {
-        throw new Error(`Failed to get updated agent instance: ${agentId}`);
       }
 
       // Get appropriate handler
@@ -403,7 +387,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       const cancelToken = { value: false };
       this.cancelTokenMap.set(agentId, cancelToken);
       const handlerContext: AgentHandlerContext = {
-        agent: updatedAgent,
+        agent: updatedAgent, // 直接使用updateAgent返回的结果
         agentDef: agentDefinition,
         isCancelled: () => cancelToken.value,
       };
@@ -412,8 +396,19 @@ export class AgentInstanceService implements IAgentInstanceService {
         // Create async generator
         const generator = handler(handlerContext);
 
+        // Track the last message for completion handling
+        let lastResult: AgentInstanceLatestStatus | undefined;
+
         for await (const result of generator) {
+          // Store the last result for completion handling
+          lastResult = result;
+
           if (result.message?.content) {
+            // Ensure message has correct modification timestamp
+            if (!result.message.modified) {
+              result.message.modified = new Date();
+            }
+
             this.debounceUpdateMessage(
               result.message,
               agentId,
@@ -421,6 +416,8 @@ export class AgentInstanceService implements IAgentInstanceService {
 
             // Update status subscribers
             const statusKey = `${agentId}:${result.message.id}`;
+            // DEBUG: console statusKey
+            console.log(`statusKey`, statusKey, this.statusSubjects.has(statusKey));
             if (this.statusSubjects.has(statusKey)) {
               this.statusSubjects.get(statusKey)?.next(result);
             }
@@ -433,6 +430,26 @@ export class AgentInstanceService implements IAgentInstanceService {
               modified: new Date(),
             },
           });
+        }
+
+        // Handle stream completion without fetching agent again
+        if (lastResult?.message) {
+          // Complete the message stream directly using the last message from the generator
+          const statusKey = `${agentId}:${lastResult.message.id}`;
+          if (this.statusSubjects.has(statusKey)) {
+            const subject = this.statusSubjects.get(statusKey);
+            if (subject) {
+              // Send final update with completed state
+              subject.next({
+                state: 'completed',
+                message: lastResult.message,
+                modified: new Date(),
+              });
+              // Complete the Observable and remove the subject
+              subject.complete();
+              this.statusSubjects.delete(statusKey);
+            }
+          }
         }
 
         // Remove cancel token after generator completes
@@ -558,6 +575,8 @@ export class AgentInstanceService implements IAgentInstanceService {
     // If messageId provided, subscribe to specific message status updates
     if (messageId) {
       const statusKey = `${agentId}:${messageId}`;
+      // DEBUG: console statusKey
+      console.log(`subscribeToAgentUpdates statusKey`, statusKey);
       if (!this.statusSubjects.has(statusKey)) {
         this.statusSubjects.set(statusKey, new BehaviorSubject<AgentInstanceLatestStatus | undefined>(undefined));
 
@@ -566,11 +585,14 @@ export class AgentInstanceService implements IAgentInstanceService {
           if (agent) {
             const message = agent.messages.find(m => m.id === messageId);
             if (message) {
-              this.statusSubjects.get(statusKey)?.next({
+              // 创建状态对象，注意不再检查 isComplete
+              const status: AgentInstanceLatestStatus = {
                 state: agent.status.state,
                 message,
                 modified: message.modified,
-              });
+              };
+
+              this.statusSubjects.get(statusKey)?.next(status);
             }
           }
         }).catch(error => {
@@ -598,25 +620,16 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   /**
    * Notify agent subscription of updates
-   * When called with only agentId, it will fetch the agent data from database before notifying
-   * When called with agentData, it will use the provided data for immediate notification without database query
    * @param agentId Agent ID
-   * @param agentData Optional in-memory agent data to use for immediate notification
+   * @param agentData Agent data to use for notification
    */
-  private async notifyAgentUpdate(agentId: string, agentData?: AgentInstance): Promise<void> {
+  private async notifyAgentUpdate(agentId: string, agentData: AgentInstance): Promise<void> {
     try {
       // Only notify if there are active subscriptions
       if (this.agentInstanceSubjects.has(agentId)) {
-        if (agentData) {
-          // Immediate notification with provided data (no database query)
-          this.agentInstanceSubjects.get(agentId)?.next(agentData);
-          logger.debug(`Real-time notification for agent ${agentId}`, { method: 'notifyAgentUpdate', immediate: true });
-        } else {
-          // Fetch data from database before notification
-          const agent = await this.getAgent(agentId);
-          this.agentInstanceSubjects.get(agentId)?.next(agent);
-          logger.debug(`Notified subscribers for agent ${agentId}`, { method: 'notifyAgentUpdate', immediate: false });
-        }
+        // Use the provided data for notification (no database query)
+        this.agentInstanceSubjects.get(agentId)?.next(agentData);
+        logger.debug(`Notified subscribers for agent ${agentId}`, { method: 'notifyAgentUpdate' });
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -640,42 +653,15 @@ export class AgentInstanceService implements IAgentInstanceService {
       contentPreview: message.content.substring(0, 50),
     });
 
-    // If we have an agent ID, immediately notify the frontend with the updated message
-    // This provides real-time streaming updates without waiting for database writes
-    if (agentId && this.agentInstanceSubjects.has(agentId)) {
-      try {
-        // Get current agent state (but don't await a database call)
-        const currentSubject = this.agentInstanceSubjects.get(agentId);
-        if (currentSubject) {
-          const currentAgent = currentSubject.getValue();
-
-          if (currentAgent) {
-            // Create an updated version of the agent with the latest message content
-            const updatedAgent = { ...currentAgent };
-
-            // Find and update the message in the local copy
-            const messageIndex = updatedAgent.messages.findIndex(msg => msg.id === messageId);
-            if (messageIndex >= 0) {
-              // Update existing message
-              updatedAgent.messages[messageIndex] = {
-                ...updatedAgent.messages[messageIndex],
-                content: message.content,
-                ...(message.contentType && { contentType: message.contentType }),
-                ...(message.metadata && { metadata: message.metadata }),
-                ...(message.reasoning_content && { reasoning_content: message.reasoning_content }),
-              };
-            } else {
-              // Add new message if it doesn't exist yet
-              updatedAgent.messages = [...updatedAgent.messages, message];
-            }
-
-            // Use immediate update with in-memory data without DB query
-            void this.notifyAgentUpdate(agentId, updatedAgent);
-          }
-        }
-      } catch (error) {
-        logger.error(`Failed to send real-time update: ${error instanceof Error ? error.message : String(error)}`);
-        // Continue with database update even if real-time update fails
+    // Update status subscribers for specific message if available
+    if (agentId) {
+      const statusKey = `${agentId}:${messageId}`;
+      if (this.statusSubjects.has(statusKey)) {
+        this.statusSubjects.get(statusKey)?.next({
+          state: 'working',
+          message,
+          modified: message.modified ?? new Date(),
+        });
       }
     }
 
@@ -686,66 +672,75 @@ export class AgentInstanceService implements IAgentInstanceService {
         async (msgData: AgentInstanceMessage, aid?: string) => {
           try {
             this.ensureRepositories();
-            if (this.dataSource) {
-              // Use ORM transaction
-              await this.dataSource.transaction(async transaction => {
-                const messageRepo = transaction.getRepository(AgentInstanceMessageEntity);
-                const messageEntity = await messageRepo.findOne({
-                  where: { id: messageId },
-                });
+            // ensureRepositories guarantees dataSource is available
+            await this.dataSource!.transaction(async transaction => {
+              const messageRepo = transaction.getRepository(AgentInstanceMessageEntity);
+              const messageEntity = await messageRepo.findOne({
+                where: { id: messageId },
+              });
 
-                if (messageEntity) {
-                  // Update message content
-                  messageEntity.content = msgData.content;
-                  if (msgData.contentType) messageEntity.contentType = msgData.contentType;
-                  if (msgData.metadata) messageEntity.metadata = msgData.metadata;
-                  messageEntity.modified = new Date();
+              if (messageEntity) {
+                // Update message content
+                messageEntity.content = msgData.content;
+                if (msgData.contentType) messageEntity.contentType = msgData.contentType;
+                if (msgData.metadata) messageEntity.metadata = msgData.metadata;
+                messageEntity.modified = new Date();
 
-                  await messageRepo.save(messageEntity);
-
-                  // Database is now updated, but we don't need to notify again here
-                  // since we've already sent real-time updates before the database operation
-                  // This prevents duplicate notifications and keeps UI responsive
-                } else if (aid) {
-                  // Create new message if it doesn't exist and agentId provided
-                  const now = new Date();
-                  const newMessage = messageRepo.create({
-                    id: messageId,
-                    agentId: aid,
-                    // Use destructuring with default value to handle undefined case
+                await messageRepo.save(messageEntity);
+              } else if (aid) {
+                // Create new message if it doesn't exist and agentId provided
+                // Create message using utility function
+                const newMessage = messageRepo.create(
+                  createAgentMessage(messageId, aid, {
                     role: msgData.role,
                     content: msgData.content,
-                    contentType: msgData.contentType || 'text/plain',
-                    modified: now,
+                    contentType: msgData.contentType,
                     metadata: msgData.metadata,
-                  });
+                  }),
+                );
 
-                  await messageRepo.save(newMessage);
+                await messageRepo.save(newMessage);
 
-                  // Update agent instance message list
-                  const agentInstance = await this.getAgent(aid);
-                  if (agentInstance) {
-                    logger.debug(`Creating new message and appending to ${agentInstance.messages.length} existing messages`, {
+                // Get agent instance repository for transaction
+                const agentRepo = transaction.getRepository(AgentInstanceEntity);
+
+                // Get agent instance within the current transaction
+                const agentEntity = await agentRepo.findOne({
+                  where: { id: aid },
+                  relations: ['messages'],
+                });
+
+                if (agentEntity) {
+                  // Add the new message to the agent entity
+                  if (!agentEntity.messages) {
+                    agentEntity.messages = [];
+                  }
+                  agentEntity.messages.push(newMessage);
+
+                  // Save the updated agent entity
+                  await agentRepo.save(agentEntity);
+
+                  // Construct agent data from entity directly without additional query
+                  const updatedAgent: AgentInstance = {
+                    ...pick(agentEntity, AGENT_INSTANCE_FIELDS),
+                    messages: agentEntity.messages || [],
+                  };
+
+                  // Notify subscribers directly without additional queries
+                  if (this.agentInstanceSubjects.has(aid)) {
+                    this.agentInstanceSubjects.get(aid)?.next(updatedAgent);
+                    logger.debug(`Notified agent subscribers of new message: ${messageId}`, {
                       method: 'debounceUpdateMessage',
-                      messageId,
                       agentId: aid,
-                    });
-
-                    await this.updateAgent(aid, {
-                      messages: [...agentInstance.messages, newMessage], // Append message at the end to maintain chronological order (ASC)
-                    });
-
-                    // For new messages, we need to notify after database is updated
-                    // as this is the first time the message exists in the database
-                    setImmediate(() => {
-                      void this.notifyAgentUpdate(aid);
                     });
                   }
                 } else {
-                  logger.warn(`Cannot create message: missing agent ID for message ID: ${messageId}`);
+                  logger.warn(`Agent instance not found for message: ${messageId}`);
                 }
-              });
-            }
+              } else {
+                logger.warn(`Cannot create message: missing agent ID for message ID: ${messageId}`);
+              }
+            });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             logger.error(`Failed to update/create message content: ${errorMessage}`);

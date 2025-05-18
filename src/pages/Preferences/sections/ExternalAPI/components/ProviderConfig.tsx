@@ -54,7 +54,7 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
   const [availableDefaultProviders, setAvailableDefaultProviders] = useState<AIProviderConfig[]>([]);
   const [selectedDefaultProvider, setSelectedDefaultProvider] = useState('');
 
-  const [providerForms, setProviderForms] = useState<Record<string, ProviderFormState>>({});
+  const [providerForms, setProviderForms] = useState<Record<string, ProviderFormState | undefined>>({});
   const [modelDialogOpen, setModelDialogOpen] = useState(false);
   const [currentProvider, setCurrentProvider] = useState<string | null>(null);
   const [selectedDefaultModel, setSelectedDefaultModel] = useState('');
@@ -108,10 +108,18 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
 
   const handleFormChange = async (providerName: string, field: keyof AIProviderConfig, value: string) => {
     try {
-      setProviderForms(previous => ({
-        ...previous,
-        [providerName]: { ...previous[providerName], [field]: value },
-      }));
+      setProviderForms(previous => {
+        const currentForm = previous[providerName];
+        if (!currentForm) return previous;
+
+        return {
+          ...previous,
+          [providerName]: {
+            ...currentForm,
+            [field]: value,
+          } as ProviderFormState,
+        };
+      });
       await window.service.externalAPI.updateProvider(providerName, { [field]: value });
       showMessage(t('Preference.SettingsSaved'), 'success');
     } catch (error) {
@@ -134,8 +142,8 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
   const openAddModelDialog = (providerName: string) => {
     setCurrentProvider(providerName);
     const provider = defaultProvidersConfig.providers.find(p => p.provider === providerName) as AIProviderConfig | undefined;
-    const currentModels = providerForms[providerName].models || [];
-    const currentModelNames = new Set(currentModels.map(m => m.name));
+    const currentModels = providerForms[providerName]?.models;
+    const currentModelNames = new Set(currentModels?.map(m => m.name));
 
     if (provider) {
       setAvailableDefaultModels(provider.models.filter(m => !currentModelNames.has(m.name)));
@@ -167,21 +175,28 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
   };
 
   const handleModelFormChange = (providerName: string, field: string, value: string | ModelFeature[]) => {
-    setProviderForms(previous => ({
-      ...previous,
-      [providerName]: {
-        ...previous[providerName],
-        newModel: {
-          ...previous[providerName].newModel,
-          [field]: value,
-        },
-      },
-    }));
-  };
+    setProviderForms(previous => {
+      const currentForm = previous[providerName];
+      if (!currentForm) return previous;
 
+      return {
+        ...previous,
+        [providerName]: {
+          ...currentForm,
+          newModel: {
+            ...currentForm.newModel,
+            [field]: value,
+          },
+        } as ProviderFormState,
+      };
+    });
+  };
   const handleFeatureChange = (providerName: string, feature: ModelFeature, checked: boolean) => {
     setProviderForms(previous => {
-      const newFeatures = [...previous[providerName].newModel.features];
+      const currentForm = previous[providerName];
+      if (!currentForm) return previous;
+
+      const newFeatures = [...currentForm.newModel.features];
 
       if (checked && !newFeatures.includes(feature)) {
         newFeatures.push(feature);
@@ -195,12 +210,16 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
       return {
         ...previous,
         [providerName]: {
-          ...previous[providerName],
+          ...currentForm,
           newModel: {
-            ...previous[providerName].newModel,
+            ...currentForm.newModel,
             features: newFeatures,
+          } satisfies {
+            name: string;
+            caption: string;
+            features: ModelFeature[];
           },
-        },
+        } as ProviderFormState,
       };
     });
   };
@@ -210,11 +229,17 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
 
     try {
       const form = providerForms[currentProvider];
-      const newModel: ModelInfo = {
+      if (!form) {
+        showMessage(t('Preference.FailedToAddModel'), 'error');
+        return;
+      }
+
+      // Create model with proper type checking using satisfies
+      const newModel = {
         name: form.newModel.name,
         caption: form.newModel.caption || undefined,
         features: form.newModel.features,
-      };
+      } satisfies ModelInfo;
 
       if (!newModel.name) {
         showMessage(t('Preference.ModelNameRequired'), 'error');
@@ -227,18 +252,23 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
       }
 
       const updatedModels = [...form.models, newModel];
-      setProviderForms(previous => ({
-        ...previous,
-        [currentProvider]: {
-          ...previous[currentProvider],
-          models: updatedModels,
-          newModel: {
-            name: '',
-            caption: '',
-            features: ['language' as ModelFeature],
-          },
-        },
-      }));
+      setProviderForms(previous => {
+        const currentForm = previous[currentProvider];
+        if (!currentForm) return previous;
+
+        return {
+          ...previous,
+          [currentProvider]: {
+            ...currentForm,
+            models: updatedModels,
+            newModel: {
+              name: '',
+              caption: '',
+              features: ['language' as ModelFeature],
+            },
+          } as ProviderFormState,
+        };
+      });
 
       const provider = providers.find(p => p.provider === currentProvider);
       if (provider) {
@@ -272,15 +302,25 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
   const removeModel = async (providerName: string, modelName: string) => {
     try {
       const form = providerForms[providerName];
+      if (!form) {
+        showMessage(t('Preference.FailedToRemoveModel'), 'error');
+        return;
+      }
+
       const updatedModels = form.models.filter(m => m.name !== modelName);
 
-      setProviderForms(previous => ({
-        ...previous,
-        [providerName]: {
-          ...previous[providerName],
-          models: updatedModels,
-        },
-      }));
+      setProviderForms(previous => {
+        const currentForm = previous[providerName];
+        if (!currentForm) return previous;
+
+        return {
+          ...previous,
+          [providerName]: {
+            ...currentForm,
+            models: updatedModels,
+          } as ProviderFormState,
+        };
+      });
 
       await window.service.externalAPI.updateProvider(providerName, {
         models: updatedModels,
@@ -312,14 +352,44 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
         return;
       }
 
-      const newProvider: AIProviderConfig = {
+      // Find similar preset provider to get appropriate default model
+      let defaultModel: ModelInfo | undefined;
+      const similarPresetProvider = defaultProvidersConfig.providers.find(
+        p => p.providerClass === newProviderForm.providerClass,
+      );
+
+      // If there's a similar provider, use its first model as the default
+      if (similarPresetProvider && similarPresetProvider.models.length > 0) {
+        // Clone the first model from the similar provider using explicit typing for features
+        const baseModel = similarPresetProvider.models[0];
+
+        // Ensure features are properly typed as ModelFeature[]
+        const typedFeatures = baseModel.features.map(feature => feature as ModelFeature);
+
+        // Create the default model with proper type safety
+        defaultModel = {
+          name: baseModel.name,
+          caption: `${baseModel.caption || baseModel.name} (${newProviderForm.provider})`,
+          features: typedFeatures,
+        } satisfies ModelInfo;
+
+        // Safely handle metadata if it exists using in operator for type checking
+        if ('metadata' in baseModel && baseModel.metadata) {
+          // Using type assertion after checking existence with 'in' operator
+          defaultModel.metadata = { ...baseModel.metadata };
+        }
+      }
+      // If no similar provider found, don't create a default model
+
+      // Create new provider configuration with type checking using satisfies
+      const newProvider = {
         provider: newProviderForm.provider,
         providerClass: newProviderForm.providerClass,
         baseURL: newProviderForm.baseURL,
-        models: [],
+        models: defaultModel ? [defaultModel] : [], // Only add model if one was found
         isPreset: false,
         enabled: true,
-      };
+      } satisfies AIProviderConfig;
 
       await window.service.externalAPI.updateProvider(newProviderForm.provider, newProvider);
       const updatedProviders = [...providers, newProvider];
@@ -329,7 +399,7 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
         [newProvider.provider]: {
           apiKey: '',
           baseURL: newProvider.baseURL || '',
-          models: [],
+          models: newProvider.models,
           newModel: {
             name: '',
             caption: '',
@@ -339,6 +409,15 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
       }));
       setSelectedTabIndex(updatedProviders.length - 1);
       setNewProviderForm({ provider: '', providerClass: 'openAICompatible', baseURL: '' });
+
+      // Set the new provider and default model as the default selection if a model was found
+      if (changeDefaultModel && defaultModel) {
+        try {
+          await changeDefaultModel(newProvider.provider, defaultModel.name);
+        } catch (error) {
+          console.error('Failed to set default model for new provider:', error);
+        }
+      }
       setShowAddProviderForm(false);
       showMessage(t('Preference.ProviderAddedSuccessfully'), 'success');
     } catch (error) {
@@ -465,9 +544,9 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
         onClose={closeModelDialog}
         onAddModel={handleAddModel}
         currentProvider={currentProvider}
-        newModelForm={(currentProvider && providerForms[currentProvider])
+        newModelForm={currentProvider && providerForms[currentProvider]
           ? providerForms[currentProvider].newModel
-          : { name: '', caption: '', features: ['language'] }}
+          : { name: '', caption: '', features: ['language' as ModelFeature] }}
         availableDefaultModels={availableDefaultModels}
         selectedDefaultModel={selectedDefaultModel}
         onSelectDefaultModel={setSelectedDefaultModel}

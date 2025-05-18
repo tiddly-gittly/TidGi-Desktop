@@ -1,6 +1,5 @@
 // Messages container component
 
-import { AgentInstanceMessage } from '@/services/agentInstance/interface';
 import { Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React, { ReactNode } from 'react';
@@ -18,23 +17,23 @@ const Container = styled(Box)`
 `;
 
 interface MessagesContainerProps {
-  messages: AgentInstanceMessage[];
+  messageIds: string[];
   children?: ReactNode;
 }
 
 /**
  * Container component for all chat messages
  * Displays messages as message bubbles and can render additional content (loading states, errors, etc.)
+ * 使用消息 ID 来减少不必要的重渲染
  */
-export const MessagesContainer: React.FC<MessagesContainerProps> = ({ messages, children }) => {
+export const MessagesContainer: React.FC<MessagesContainerProps> = ({ messageIds, children }) => {
   return (
     <Container id='messages-container'>
-      {/* Render messages as message bubbles */}
-      {messages.map((message) => (
+      {/* 只传递消息 ID 给子组件 */}
+      {messageIds.map((messageId) => (
         <MessageBubble
-          key={message.id}
-          message={message}
-          isUser={message.role === 'user'}
+          key={messageId}
+          messageId={messageId}
         />
       ))}
 
