@@ -1,7 +1,4 @@
 {
-  "Agent": {
-    "ChatInputPlaceholder": ""
-  },
   "Browser": {
     "Back": "reculer",
     "Bookmark": "collection",

@@ -54,10 +54,12 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
   const {
     fetchAgent,
     sendMessage: storeSendMessage,
+    cancelAgent, // Add cancelAgent function
     subscribeToUpdates,
     loading,
     error,
     agent,
+    streamingMessageIds, // Add streaming state to detect active generation
   } = useAgentChatStore();
 
   // Initialize scroll handling
@@ -126,7 +128,6 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     }
   }, [agent?.id, loading, debouncedScrollToBottom, hasInitialScrollBeenDone, markInitialScrollAsDone, orderedMessageIds]);
 
-
   // Effect to scroll to bottom when messages change
   useEffect(() => {
     if (!orderedMessageIds.length) return;
@@ -136,7 +137,23 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
       debouncedScrollToBottom();
     }
   }, [orderedMessageIds.length, isUserAtBottomReference, debouncedScrollToBottom]);
-  const isWorking = loading || agent?.status.state === 'working';
+  const isWorking = loading || agent?.status.state === 'working'; /**
+   * Check if any messages are currently streaming by examining the streamingMessageIds Set
+   * When Set size > 0, it means there's at least one message being streamed from the AI
+   */
+
+  const isStreaming = streamingMessageIds.size > 0;
+
+  /**
+   * Handler for canceling a streaming response
+   * This transforms the Send button into a Stop button during streaming
+   * When clicked, it calls the cancelAgent method from the store to stop generation
+   */
+  const handleCancelGeneration = async () => {
+    if (tab.agentId) {
+      await cancelAgent(tab.agentId);
+    }
+  };
 
   return (
     <Box
@@ -191,9 +208,10 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
         value={message}
         onChange={handleMessageChange}
         onSend={handleSendMessage}
+        onCancel={handleCancelGeneration}
         onKeyPress={handleKeyPress}
-        onOpenParameters={handleOpenParameters}
         disabled={!agent || isWorking}
+        isStreaming={isStreaming}
       />
 
       {/* Model parameter dialog - Would be implemented in a separate component */}

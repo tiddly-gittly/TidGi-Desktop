@@ -2,6 +2,7 @@
 
 import SendIcon from '@mui/icons-material/Send';
 import SettingsIcon from '@mui/icons-material/Settings';
+import CancelIcon from '@mui/icons-material/StopCircle';
 import { Box, IconButton, TextField } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';
@@ -27,21 +28,24 @@ interface InputContainerProps {
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSend: () => void;
+  onCancel: () => void;
   onKeyPress: (event: React.KeyboardEvent) => void;
-  onOpenParameters: () => void;
   disabled?: boolean;
+  isStreaming?: boolean;
 }
 
 /**
  * Input container component for message entry
+ * Displays a send button that changes to cancel button during streaming
  */
 export const InputContainer: React.FC<InputContainerProps> = ({
   value,
   onChange,
   onSend,
+  onCancel,
   onKeyPress,
-  onOpenParameters,
   disabled = false,
+  isStreaming = false,
 }) => {
   const { t } = useTranslation('agent');
 
@@ -51,7 +55,7 @@ export const InputContainer: React.FC<InputContainerProps> = ({
         value={value}
         onChange={onChange}
         onKeyDown={onKeyPress}
-        placeholder={t('Agent.ChatInputPlaceholder')}
+        placeholder={t('Chat.InputPlaceholder')}
         variant='outlined'
         fullWidth
         multiline
@@ -61,23 +65,19 @@ export const InputContainer: React.FC<InputContainerProps> = ({
           input: {
             endAdornment: (
               <IconButton
-                onClick={onSend}
-                disabled={disabled || !value.trim()}
-                color='primary'
+                onClick={isStreaming ? onCancel : onSend}
+                // During streaming, cancel button should always be enabled
+                // Only disable the button when not streaming and the input is empty
+                disabled={isStreaming ? false : (disabled || !value.trim())}
+                color={isStreaming ? 'error' : 'primary'}
+                title={isStreaming ? t('Chat.Cancel') : t('Chat.Send')}
               >
-                <SendIcon />
+                {isStreaming ? <CancelIcon /> : <SendIcon />}
               </IconButton>
             ),
           },
         }}
       />
-
-      <IconButton
-        onClick={onOpenParameters}
-        title={t('Preference.ModelParameters')}
-      >
-        <SettingsIcon />
-      </IconButton>
     </Container>
   );
 };
