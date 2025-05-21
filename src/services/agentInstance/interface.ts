@@ -1,8 +1,9 @@
+import { CoreMessage } from 'ai';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { Observable } from 'rxjs';
 
 import { AgentChannel } from '@/constants/channels';
-import { AiAPIConfig } from '@services/agentInstance/buildInAgentHandlers/promptConcatUtils/promptConcatSchema';
+import { AgentPromptDescription, AiAPIConfig, Prompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
 
 /**
  * Content of a session instance that user chat with an agent.
@@ -163,19 +164,32 @@ export interface IAgentInstanceService {
    * @param agentId Agent instance ID
    */
   closeAgent(agentId: string): Promise<void>;
+
+  /**
+   * Pure function to concatenate prompts with given prompt description and messages
+   * This is useful for front-end to generate prompts from configurations.
+   * @param promptDescription Configuration for prompt generation
+   * @param messages Messages to be included in prompt generation
+   * @returns Processed flat array of prompts and processed prompt tree
+   */
+  concatPrompt(promptDescription: AgentPromptDescription, messages: AgentInstanceMessage[]): Promise<{
+    flatPrompts: CoreMessage[];
+    processedPrompts: Prompt[];
+  }>;
 }
 
 export const AgentInstanceServiceIPCDescriptor = {
   channel: AgentChannel.instance,
   properties: {
+    cancelAgent: ProxyPropertyType.Function,
+    closeAgent: ProxyPropertyType.Function,
+    concatPrompt: ProxyPropertyType.Function,
     createAgent: ProxyPropertyType.Function,
+    deleteAgent: ProxyPropertyType.Function,
+    getAgent: ProxyPropertyType.Function,
+    getAgents: ProxyPropertyType.Function,
     sendMsgToAgent: ProxyPropertyType.Function,
     subscribeToAgentUpdates: ProxyPropertyType.Function$,
-    getAgent: ProxyPropertyType.Function,
     updateAgent: ProxyPropertyType.Function,
-    deleteAgent: ProxyPropertyType.Function,
-    cancelAgent: ProxyPropertyType.Function,
-    getAgents: ProxyPropertyType.Function,
-    closeAgent: ProxyPropertyType.Function,
   },
 };

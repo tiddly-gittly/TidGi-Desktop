@@ -1,11 +1,13 @@
-// Chat header component with title and model selector
-
 import SettingsIcon from '@mui/icons-material/Settings';
+import PreviewIcon from '@mui/icons-material/Visibility';
 import { Box, CircularProgress, IconButton, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
+import { useAgentChatStore } from '../../../../../store/agentChatStore/index';
 import { CompactModelSelector } from './CompactModelSelector';
+import { PromptPreviewDialog } from './PromptPreviewDialog';
 
 const Header = styled(Box)`
   display: flex;
@@ -32,6 +34,7 @@ interface ChatHeaderProps {
   agentId?: string;
   agentDefId?: string;
   onOpenParameters: () => void;
+  inputText?: string;
 }
 
 /**
@@ -43,18 +46,30 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   agentId,
   agentDefId,
   onOpenParameters,
+  inputText,
 }) => {
   const { t } = useTranslation('agent');
+  const { previewDialogOpen, openPreviewDialog, closePreviewDialog } = useAgentChatStore(
+    useShallow((state) => ({
+      previewDialogOpen: state.previewDialogOpen,
+      openPreviewDialog: state.openPreviewDialog,
+      closePreviewDialog: state.closePreviewDialog,
+    })),
+  );
 
   return (
     <Header>
       <Title variant='h6'>{title || t('Agent.Untitled', 'Untitled Agent')}</Title>
-
       <ControlsContainer>
+        <IconButton
+          size='small'
+          onClick={openPreviewDialog}
+          title={t('Prompt.Preview', 'Prompt Preview')}
+        >
+          <PreviewIcon />
+        </IconButton>
         {loading && <CircularProgress size={20} sx={{ mr: 1 }} color='primary' />}
-
         <CompactModelSelector agentId={agentId} agentDefId={agentDefId} />
-
         <IconButton
           size='small'
           onClick={onOpenParameters}
@@ -63,6 +78,13 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           <SettingsIcon />
         </IconButton>
       </ControlsContainer>
+      <PromptPreviewDialog
+        open={previewDialogOpen}
+        onClose={closePreviewDialog}
+        agentId={agentId}
+        agentDefId={agentDefId}
+        inputText={inputText}
+      />
     </Header>
   );
 };

@@ -1,5 +1,5 @@
 /* eslint-disable unicorn/prevent-abbreviations */
-import { AiAPIConfig } from '@services/agentInstance/buildInAgentHandlers/promptConcatUtils/promptConcatSchema';
+import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { getDiffConfig } from '@services/externalAPI/getDiffConfig';
 import { AIProviderConfig } from '@services/externalAPI/interface';
 import { cloneDeep, isUndefined, mergeWith } from 'lodash';

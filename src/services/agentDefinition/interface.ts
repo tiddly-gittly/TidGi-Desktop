@@ -1,7 +1,7 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 import { AgentChannel } from '@/constants/channels';
-import { AiAPIConfig } from '../agentInstance/buildInAgentHandlers/promptConcatUtils/promptConcatSchema';
+import { AiAPIConfig } from '../agentInstance/promptConcat/promptConcatSchema';
 
 /**
  * Agent definition, including basic information and processing logic

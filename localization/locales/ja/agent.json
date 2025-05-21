@@ -20,7 +20,7 @@
       "GoToSettings": "設定へ移動",
       "MissingAPIKey": "この機能を使用するには{{provider}}のAPIキーが必要です。",
       "MissingBaseURL": "この機能を使用するには{{provider}}のベースURLが必要です。",
-      "MissingProviderError": "",
+      "MissingProviderError": "プロバイダー設定が不足しています。設定を確認してください。",
       "ModelNotFound": "{{provider}}のモデルが見つかりません。設定を確認してください。",
       "ProviderNotFound": "プロバイダー{{provider}}が見つかりません。設定を確認してください。",
       "RateLimitExceeded": "{{provider}}のレート制限を超過しました。後でもう一度お試しください。",
@@ -160,6 +160,174 @@
     "TemperatureDescription": "低い値はより確定的で集中した応答を生成し、高い値はより多様で創造的な応答を生成します。",
     "TopP": "トップP",
     "TopPDescription": "応答のランダム性を制御します。低い値は応答をより確定的にし、高い値はより多くの可能性を許容します。"
+  },
+  "Schema": {
+    "AIConfig": {
+      "Description": "AI 会話設定の構成"
+    },
+    "AgentConfig": {
+      "Description": "エージェント設定",
+      "Id": "エージェント一意識別子",
+      "PromptConfig": {
+        "Description": "プロンプト設定",
+        "PromptDynamicModification": "プロンプトワード動的修正設定リスト",
+        "Prompts": "プロンプト設定リスト",
+        "Response": "応答設定リスト",
+        "ResponseDynamicModification": "動的に構成リストを変更するように応答"
+      }
+    },
+    "AutoReply": {
+      "Description": "自動返信パラメータ設定",
+      "MaxAutoReply": "最大自動返信回数",
+      "TargetId": "ターゲット要素ID",
+      "Text": "返信テキスト",
+      "Trigger": "トリガー条件"
+    },
+    "AutoReroll": {
+      "Description": "自動再生成パラメータ設定",
+      "MaxRetry": "最大再試行回数",
+      "Search": "検索キーワード",
+      "TargetId": "ターゲット要素ID"
+    },
+    "BaseAPIConfig": {
+      "API": "APIプロバイダーとモデル設定",
+      "Description": "基本API設定",
+      "ModelParameters": "モデルパラメータ設定"
+    },
+    "DefaultAgents": {
+      "Description": "デフォルトのインテリジェントエージェント設定リスト"
+    },
+    "DynamicPosition": {
+      "Description": "動的位置パラメータ設定"
+    },
+    "FullReplacement": {
+      "Description": "完全置換パラメータ設定",
+      "SourceType": "ソースタイプ",
+      "TargetId": "ターゲット要素ID"
+    },
+    "Function": {
+      "Description": "関数パラメータ設定",
+      "FunctionId": "関数ID",
+      "TimeoutMessage": "タイムアウトメッセージ",
+      "TimeoutSecond": "タイムアウト時間（秒）",
+      "Trigger": "トリガー条件"
+    },
+    "JavascriptTool": {
+      "Description": "JavaScript ツールパラメータ設定",
+      "URI": "JavaScript ツール URI"
+    },
+    "MCP": {
+      "Description": "モデルコンテキストプロトコルパラメータ設定",
+      "Id": "MCP サーバー ID",
+      "ResponseProcessing": {
+        "Description": "応答処理設定",
+        "Id": "レスポンスハンドラID"
+      },
+      "TimeoutMessage": "タイムアウトメッセージ",
+      "TimeoutSecond": "タイムアウト時間（秒）",
+      "Trigger": "トリガー条件"
+    },
+    "ModelParameters": {
+      "Description": "モデルパラメータ設定",
+      "MaxTokens": "生成される最大トークン数",
+      "SystemPrompt": "モデルシステムプロンプト",
+      "Temperature": "応答生成温度（高いほど創造的）",
+      "TopP": "Top P サンプリングパラメータ"
+    },
+    "Position": {
+      "Bottom": "下部から数件のメッセージをオフセット",
+      "Description": "位置パラメータ設定",
+      "TargetId": "ターゲット要素ID",
+      "Top": "上部から数件のメッセージをオフセット",
+      "Type": "位置タイプ"
+    },
+    "Prompt": {
+      "Caption": "簡単な説明",
+      "Children": "サブプロンプトのリストは、上から下へ、外から内へと順に結合され、最終的なプロンプトテキストとなります。",
+      "Description": "完全なプロンプト設定、タイプと内容を含む",
+      "Enabled": "このプロンプトを有効にするかどうか、有効にしたものだけが最終的なプロンプトに組み込まれます。",
+      "Id": "プロンプト設定の一意の識別子。PromptDynamicModificationでtargetIdを介して参照するのに便利です。",
+      "Role": "OpenAI互換インターフェースのプロンプトロール",
+      "Tags": "タグリスト",
+      "Text": "プロンプトの内容には、<<変数名>>などのウィキテキストでサポートされている構文を含めることができます。"
+    },
+    "PromptDynamicModification": {
+      "Caption": "簡単な説明",
+      "Content": "内容",
+      "Description": "詳細に説明する",
+      "DynamicModificationType": "動的に型を変更する",
+      "DynamicPositionParam": "動的位置パラメータ",
+      "ForbidOverrides": "上書きを禁止しますか",
+      "FullReplacementParam": "完全置換パラメータ",
+      "FunctionParam": "関数の引数",
+      "Id": "一意の識別子",
+      "JavascriptToolParam": "JavaScript ツールパラメータ",
+      "MCPParam": "モデルコンテキストプロトコルパラメータ",
+      "RAGParam": "検索拡張生成パラメータ",
+      "SchemaDescription": "プロンプトワード動的修正設定"
+    },
+    "PromptPart": {
+      "Caption": "プロンプトの簡単な説明",
+      "Children": "サブプロンプトのリストは、上から下へ、外から内へと結合され、最終的なプロンプトテキストとなります。",
+      "Description": "プロンプトの一部を表し、テキストまたはネスト構造にすることができます",
+      "Id": "一意の識別子。PromptDynamicModification内でtargetIdを介して参照するのに便利です。",
+      "Name": "名称、特定のシナリオでの参照に使用されます",
+      "Tags": "タグリスト、分類と参照用",
+      "Text": "プロンプトテキストの内容には、<<変数名>>などのウィキテキストでサポートされている構文を含めることができます。"
+    },
+    "ProviderModel": {
+      "Description": "プロバイダーとモデル設定",
+      "Model": "AIモデル名",
+      "Provider": "AIプロバイダー名"
+    },
+    "RAG": {
+      "Description": "検索拡張生成パラメータ設定",
+      "Removal": {
+        "CoolDownChatRound": "前回の展示後の冷却ラウンド数",
+        "Description": "条件を削除",
+        "ExpireAfterChatRound": "何回の対話後に期限切れになりますか"
+      },
+      "SourceType": "ソースタイプ",
+      "Trigger": "トリガー条件",
+      "WikiParam": "Wiki パラメータ"
+    },
+    "Response": {
+      "Description": "外部APIのレスポンスは、通常、動的に変更される対象として応答され、その構造はプロンプトと同じです。プリセット内容を記入することもできますし、プレースホルダーやコンテナとして機能させ、ResponseDynamicModificationによって外部APIのレスポンスの具体的な内容が入力されることもあります。"
+    },
+    "ResponseDynamicModification": {
+      "AutoReplyParam": "自動返信パラメータ",
+      "AutoRerollParam": "自動再生成パラメータ",
+      "Caption": "簡単な説明",
+      "Description": "動的な設定変更に対応",
+      "DynamicModificationType": "動的に型を変更する",
+      "ForbidOverrides": "上書きを禁止しますか",
+      "FullReplacementParam": "パラメータを完全に置換",
+      "Id": "一意の識別子",
+      "ResponseProcessingType": "応答処理タイプ",
+      "ToolCallingParam": "ツール呼び出しパラメータ"
+    },
+    "ToolCalling": {
+      "Description": "ツール呼び出しパラメータ設定",
+      "Match": "マッチングモード",
+      "TargetId": "ターゲット要素ID"
+    },
+    "Trigger": {
+      "Description": "トリガー条件の設定",
+      "Filter": "フィルター条件",
+      "Model": {
+        "Description": "モデルに基づく判断のトリガー条件",
+        "Preset": "プリセットモデル",
+        "System": "システムプロンプト",
+        "User": "ユーザープロンプト"
+      },
+      "RandomChance": "ランダム発動確率",
+      "Search": "検索キーワード"
+    },
+    "Wiki": {
+      "Description": "Wiki パラメータ設定",
+      "Filter": "フィルター式では、TiddlyWikiがサポートするフィルターを使用して、ナレッジベースからデータを抽出できます。",
+      "WorkspaceName": "ワークスペース名"
+    }
   },
   "Search": {
     "AvailableAgents": "利用可能なインテリジェントエージェント",

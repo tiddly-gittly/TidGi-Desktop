@@ -1,3 +1,4 @@
+import { i18n } from '@services/libs/i18n';
 import { z } from 'zod';
 
 /**
@@ -36,13 +37,13 @@ export interface IPromptPart {
  */
 const PromptPartSchema: z.ZodType<IPromptPart> = z.lazy(() =>
   z.object({
-    id: z.string().describe('唯一标识符，方便在 PromptDynamicModification 里通过 targetId 引用。'),
-    text: z.string().optional().describe('提示词文本内容，可以包含维基文本支持的语法，例如<<变量名>>。'),
-    tags: z.array(z.string()).optional().describe('标签列表，用于分类和引用'),
-    caption: z.string().optional().describe('提示词的简短描述'),
-    name: z.string().optional().describe('名称，用于特定场景的引用'),
-    children: z.array(PromptPartSchema).optional().describe('子提示词列表，将从上到下，从外到里地拼接为最终的提示词文本。'),
-  }).describe('表示提示词的一部分，可以是文本或嵌套结构')
+    id: z.string().describe(i18n.t('Schema.PromptPart.Id')),
+    text: z.string().optional().describe(i18n.t('Schema.PromptPart.Text')),
+    tags: z.array(z.string()).optional().describe(i18n.t('Schema.PromptPart.Tags')),
+    caption: z.string().optional().describe(i18n.t('Schema.PromptPart.Caption')),
+    name: z.string().optional().describe(i18n.t('Schema.PromptPart.Name')),
+    children: z.array(PromptPartSchema).optional().describe(i18n.t('Schema.PromptPart.Children')),
+  }).describe(i18n.t('Schema.PromptPart.Description'))
 );
 
 /**
@@ -67,14 +68,14 @@ const PromptPartSchema: z.ZodType<IPromptPart> = z.lazy(() =>
  * ```
  */
 export const PromptSchema = z.object({
-  id: z.string().describe('提示词配置的唯一标识符，方便在 PromptDynamicModification 里通过 targetId 引用。'),
-  caption: z.string().describe('简短描述'),
-  enabled: z.boolean().optional().default(true).describe('是否启用此提示词，启用的才会拼入到最终的提示词中'),
-  role: z.enum(['system', 'user', 'assistant']).optional().describe('OpenAI 兼容接口的提示词角色'),
-  tags: z.array(z.string()).optional().describe('标签列表'),
-  text: z.string().optional().describe('提示词内容，可以包含维基文本支持的语法，例如<<变量名>>。'),
-  children: z.array(PromptPartSchema).optional().describe('子提示词列表，将从上到下，从外到里地拼接为最终的提示词文本。'),
-}).describe('完整的提示词配置，包含类型和内容');
+  id: z.string().describe(i18n.t('Schema.Prompt.Id')),
+  caption: z.string().describe(i18n.t('Schema.Prompt.Caption')),
+  enabled: z.boolean().optional().default(true).describe(i18n.t('Schema.Prompt.Enabled')),
+  role: z.enum(['system', 'user', 'assistant']).optional().describe(i18n.t('Schema.Prompt.Role')),
+  tags: z.array(z.string()).optional().describe(i18n.t('Schema.Prompt.Tags')),
+  text: z.string().optional().describe(i18n.t('Schema.Prompt.Text')),
+  children: z.array(PromptPartSchema).optional().describe(i18n.t('Schema.Prompt.Children')),
+}).describe(i18n.t('Schema.Prompt.Description'));
 
 export { PromptPartSchema };
 export type Prompt = z.infer<typeof PromptSchema>;

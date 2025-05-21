@@ -9,6 +9,9 @@ import { DataSource, Repository } from 'typeorm';
 import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { basicPromptConcatHandler } from '@services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler';
 import { AgentHandler, AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
+import { registerAllPromptHandlers } from '@services/agentInstance/promptConcat/handlers/promptHandlers/index';
+import { promptConcat } from '@services/agentInstance/promptConcat/promptConcat';
+import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
@@ -67,10 +70,11 @@ export class AgentInstanceService implements IAgentInstanceService {
    * Register built-in agent handlers
    */
   private registerBuiltinHandlers(): void {
+    // Register all prompt handlers from promptConcatUtils/handlers/promptHandlers/index.ts
+    registerAllPromptHandlers();
+
     // Register basic prompt concatenation handler
     this.agentHandlers.set('basicPromptConcatHandler', basicPromptConcatHandler);
-
-    // Additional handlers can be registered here
   }
 
   /**
@@ -769,5 +773,9 @@ export class AgentInstanceService implements IAgentInstanceService {
     if (debouncedFn) {
       debouncedFn(message, agentId);
     }
+  }
+
+  public async concatPrompt(promptDescription: AgentPromptDescription, messages: AgentInstanceMessage[]) {
+    return await promptConcat(promptDescription, messages);
   }
 }

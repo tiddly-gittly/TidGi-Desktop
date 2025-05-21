@@ -1,6 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, InputAdornment, Slider, TextField } from '@mui/material';
-import { AiAPIConfig } from '@services/agentInstance/buildInAgentHandlers/promptConcatUtils/promptConcatSchema';
-import { ModelParameters } from '@services/agentInstance/buildInAgentHandlers/promptConcatUtils/promptConcatSchema/modelParameters';
+import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { ModelParameters } from '@services/agentInstance/promptConcat/promptConcatSchema/modelParameters';
 import { cloneDeep } from 'lodash';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';

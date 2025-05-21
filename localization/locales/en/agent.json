@@ -20,7 +20,7 @@
       "GoToSettings": "Go to Settings",
       "MissingAPIKey": "API key for {{provider}} is required to use this feature.",
       "MissingBaseURL": "Base URL for {{provider}} is required to use this feature.",
-      "MissingProviderError": "",
+      "MissingProviderError": "Missing provider configuration, please check the settings.",
       "ModelNotFound": "Model not found for {{provider}}, please check your settings.",
       "ProviderNotFound": "Provider {{provider}} not found, please check your settings.",
       "RateLimitExceeded": "Rate limit exceeded for {{provider}}, please try again later.",
@@ -160,6 +160,174 @@
     "TemperatureDescription": "Lower values produce more deterministic and focused responses, while higher values yield more diverse and creative responses.",
     "TopP": "Top P",
     "TopPDescription": "Control the randomness of responses. Lower values make responses more deterministic, while higher values allow for greater variability."
+  },
+  "Schema": {
+    "AIConfig": {
+      "Description": "AI Conversation Settings Configuration"
+    },
+    "AgentConfig": {
+      "Description": "Agent Configuration",
+      "Id": "Agent Unique Identifier",
+      "PromptConfig": {
+        "Description": "Prompt configuration",
+        "PromptDynamicModification": "Dynamic Modification Configuration List for Prompt Words",
+        "Prompts": "Prompt Configuration List",
+        "Response": "Response Configuration List",
+        "ResponseDynamicModification": "Dynamically modify the configuration list in response"
+      }
+    },
+    "AutoReply": {
+      "Description": "Auto-reply parameter configuration",
+      "MaxAutoReply": "Maximum number of automatic replies",
+      "TargetId": "Target element ID",
+      "Text": "Reply text",
+      "Trigger": "Trigger condition"
+    },
+    "AutoReroll": {
+      "Description": "Automatically regenerate parameter configuration",
+      "MaxRetry": "Maximum retry attempts",
+      "Search": "search keywords",
+      "TargetId": "Target element ID"
+    },
+    "BaseAPIConfig": {
+      "API": "API providers and model configurations",
+      "Description": "Basic API Configuration",
+      "ModelParameters": "Model parameter configuration"
+    },
+    "DefaultAgents": {
+      "Description": "Default Agent Configuration List"
+    },
+    "DynamicPosition": {
+      "Description": "Dynamic Position Parameter Configuration"
+    },
+    "FullReplacement": {
+      "Description": "Complete replacement of parameter configuration",
+      "SourceType": "source type",
+      "TargetId": "Target Element ID"
+    },
+    "Function": {
+      "Description": "Function parameter configuration",
+      "FunctionId": "Function ID",
+      "TimeoutMessage": "timeout message",
+      "TimeoutSecond": "Timeout (seconds)",
+      "Trigger": "Trigger condition"
+    },
+    "JavascriptTool": {
+      "Description": "JavaScript tool parameter configuration",
+      "URI": "JavaScript Tool URI"
+    },
+    "MCP": {
+      "Description": "Model Context Protocol Parameter Configuration",
+      "Id": "MCP Server ID",
+      "ResponseProcessing": {
+        "Description": "Response Handling Configuration",
+        "Id": "Response Handler ID"
+      },
+      "TimeoutMessage": "timeout message",
+      "TimeoutSecond": "Timeout (seconds)",
+      "Trigger": "Trigger condition"
+    },
+    "ModelParameters": {
+      "Description": "Model parameter configuration",
+      "MaxTokens": "Maximum number of tokens generated",
+      "SystemPrompt": "Model system prompt words",
+      "Temperature": "Response generation temperature (higher = more creative)",
+      "TopP": "Top P sampling parameter"
+    },
+    "Position": {
+      "Bottom": "Offset a few messages from the bottom",
+      "Description": "Position Parameter Configuration",
+      "TargetId": "target element ID",
+      "Top": "Offset a few messages from the top",
+      "Type": "Location Type"
+    },
+    "Prompt": {
+      "Caption": "brief description",
+      "Children": "The sub-prompt list will be concatenated from top to bottom, and from outer to inner, to form the final prompt text.",
+      "Description": "Complete prompt configuration, including type and content",
+      "Enabled": "Whether to enable this prompt, only enabled ones will be incorporated into the final prompt.",
+      "Id": "The unique identifier for the prompt configuration, facilitating reference via targetId in PromptDynamicModification.",
+      "Role": "Prompt role for OpenAI-compatible interface",
+      "Tags": "Tag List",
+      "Text": "The prompt content can include syntax supported by wiki text, such as <<variable name>>."
+    },
+    "PromptDynamicModification": {
+      "Caption": "brief description",
+      "Content": "content",
+      "Description": "detailed description",
+      "DynamicModificationType": "Dynamically modify types",
+      "DynamicPositionParam": "Dynamic Position Parameters",
+      "ForbidOverrides": "Is overwriting prohibited?",
+      "FullReplacementParam": "completely replace parameters",
+      "FunctionParam": "function parameters",
+      "Id": "unique identifier",
+      "JavascriptToolParam": "JavaScript tool parameters",
+      "MCPParam": "Model Context Protocol Parameters",
+      "RAGParam": "Retrieval-Augmented Generation Parameters",
+      "SchemaDescription": "Dynamic Modification Configuration for Prompt Words"
+    },
+    "PromptPart": {
+      "Caption": "A brief description of the prompt",
+      "Children": "The list of sub-prompts will be concatenated from top to bottom and from outside to inside to form the final prompt text.",
+      "Description": "Represents a part of the prompt, which can be text or a nested structure.",
+      "Id": "Unique identifier, convenient for referencing via targetId in PromptDynamicModification.",
+      "Name": "Name, used for referencing in specific contexts",
+      "Tags": "Tag list, used for classification and referencing",
+      "Text": "The prompt text content can include syntax supported by wiki text, such as <<variable name>>."
+    },
+    "ProviderModel": {
+      "Description": "Provider and Model Configuration",
+      "Model": "AI model name",
+      "Provider": "AI provider name"
+    },
+    "RAG": {
+      "Description": "Retrieval-Augmented Generation Parameter Configuration",
+      "Removal": {
+        "CoolDownChatRound": "Number of cooling rounds since last display",
+        "Description": "Remove condition",
+        "ExpireAfterChatRound": "After how many rounds of conversation does it expire"
+      },
+      "SourceType": "source type",
+      "Trigger": "Trigger condition",
+      "WikiParam": "Wiki parameters"
+    },
+    "Response": {
+      "Description": "The response from an external API, typically used as the target for dynamic modifications in responses, shares the same structure as the prompt. It can be filled with preset content or serve as a placeholder or container, where ResponseDynamicModification injects the specific content from the external API's response."
+    },
+    "ResponseDynamicModification": {
+      "AutoReplyParam": "auto-reply parameters",
+      "AutoRerollParam": "Automatically regenerate parameters",
+      "Caption": "brief description",
+      "Description": "Dynamic Configuration Modification Response",
+      "DynamicModificationType": "Dynamically modify types",
+      "ForbidOverrides": "Is overwriting prohibited?",
+      "FullReplacementParam": "completely replace parameters",
+      "Id": "unique identifier",
+      "ResponseProcessingType": "Response Processing Type",
+      "ToolCallingParam": "Tool invocation parameters"
+    },
+    "ToolCalling": {
+      "Description": "Tool Invocation Parameter Configuration",
+      "Match": "match pattern",
+      "TargetId": "target element ID"
+    },
+    "Trigger": {
+      "Description": "Trigger Condition Configuration",
+      "Filter": "Filter criteria",
+      "Model": {
+        "Description": "Trigger condition based on model judgment",
+        "Preset": "preset model",
+        "System": "System prompt",
+        "User": "User prompt"
+      },
+      "RandomChance": "Random trigger probability",
+      "Search": "search keywords"
+    },
+    "Wiki": {
+      "Description": "Wiki parameter configuration",
+      "Filter": "Filter expressions can utilize the filters supported by TiddlyWiki to extract data from the knowledge base.",
+      "WorkspaceName": "Workspace name"
+    }
   },
   "Search": {
     "AvailableAgents": "Available Agents",

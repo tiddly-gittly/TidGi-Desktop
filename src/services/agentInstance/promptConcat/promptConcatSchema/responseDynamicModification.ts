@@ -1,3 +1,4 @@
+import { i18n } from '@services/libs/i18n';
 import { z } from 'zod';
 import { FullReplacementParameterSchema, TriggerSchema } from './promptDynamicModification';
 
@@ -13,9 +14,9 @@ import { FullReplacementParameterSchema, TriggerSchema } from './promptDynamicMo
  * ```
  */
 const ToolCallingParameterSchema = z.object({
-  targetId: z.string().describe('目标元素ID'),
-  match: z.string().describe('匹配模式'),
-}).describe('工具调用参数配置');
+  targetId: z.string().describe(i18n.t('Schema.ToolCalling.TargetId')),
+  match: z.string().describe(i18n.t('Schema.ToolCalling.Match')),
+}).describe(i18n.t('Schema.ToolCalling.Description'));
 
 /**
  * Parameters for responseProcessingType: "autoReroll"
@@ -30,10 +31,10 @@ const ToolCallingParameterSchema = z.object({
  * ```
  */
 const AutoRerollParameterSchema = z.object({
-  targetId: z.string().describe('目标元素ID'),
-  search: z.string().describe('搜索关键词'),
-  maxRetry: z.number().describe('最大重试次数'),
-}).describe('自动重新生成参数配置');
+  targetId: z.string().describe(i18n.t('Schema.AutoReroll.TargetId')),
+  search: z.string().describe(i18n.t('Schema.AutoReroll.Search')),
+  maxRetry: z.number().describe(i18n.t('Schema.AutoReroll.MaxRetry')),
+}).describe(i18n.t('Schema.AutoReroll.Description'));
 
 /**
  * Parameters for responseType: "autoReply"
@@ -55,11 +56,11 @@ const AutoRerollParameterSchema = z.object({
  * ```
  */
 const AutoReplyParameterSchema = z.object({
-  targetId: z.string().describe('目标元素ID'),
-  text: z.string().describe('回复文本'),
-  trigger: TriggerSchema.describe('触发条件'),
-  maxAutoReply: z.number().describe('最大自动回复次数'),
-}).describe('自动回复参数配置');
+  targetId: z.string().describe(i18n.t('Schema.AutoReply.TargetId')),
+  text: z.string().describe(i18n.t('Schema.AutoReply.Text')),
+  trigger: TriggerSchema.describe(i18n.t('Schema.AutoReply.Trigger')),
+  maxAutoReply: z.number().describe(i18n.t('Schema.AutoReply.MaxAutoReply')),
+}).describe(i18n.t('Schema.AutoReply.Description'));
 
 /**
  * Main schema for response dynamic modifications
@@ -82,20 +83,20 @@ const AutoReplyParameterSchema = z.object({
  * ```
  */
 export const ResponseDynamicModificationSchema = z.object({
-  id: z.string().describe('唯一标识符'),
-  caption: z.string().optional().describe('简短描述'),
+  id: z.string().describe(i18n.t('Schema.ResponseDynamicModification.Id')),
+  caption: z.string().optional().describe(i18n.t('Schema.ResponseDynamicModification.Caption')),
 
   // 对响应内容做修改的过程
-  dynamicModificationType: z.enum(['fullReplacement']).optional().describe('动态修改类型'),
-  fullReplacementParam: FullReplacementParameterSchema.optional().describe('完全替换参数'),
-  forbidOverrides: z.boolean().optional().default(false).describe('是否禁止覆盖'),
+  dynamicModificationType: z.enum(['fullReplacement']).optional().describe(i18n.t('Schema.ResponseDynamicModification.DynamicModificationType')),
+  fullReplacementParam: FullReplacementParameterSchema.optional().describe(i18n.t('Schema.ResponseDynamicModification.FullReplacementParam')),
+  forbidOverrides: z.boolean().optional().default(false).describe(i18n.t('Schema.ResponseDynamicModification.ForbidOverrides')),
 
   // 基于响应结果，调用程序做额外处理的过程
-  responseProcessingType: z.enum(['toolCalling', 'autoReroll', 'autoReply']).optional().describe('响应处理类型'),
-  toolCallingParam: ToolCallingParameterSchema.optional().describe('工具调用参数'),
-  autoRerollParam: AutoRerollParameterSchema.optional().describe('自动重新生成参数'),
-  autoReplyParam: AutoReplyParameterSchema.optional().describe('自动回复参数'),
-}).describe('响应动态修改配置');
+  responseProcessingType: z.enum(['toolCalling', 'autoReroll', 'autoReply']).optional().describe(i18n.t('Schema.ResponseDynamicModification.ResponseProcessingType')),
+  toolCallingParam: ToolCallingParameterSchema.optional().describe(i18n.t('Schema.ResponseDynamicModification.ToolCallingParam')),
+  autoRerollParam: AutoRerollParameterSchema.optional().describe(i18n.t('Schema.ResponseDynamicModification.AutoRerollParam')),
+  autoReplyParam: AutoReplyParameterSchema.optional().describe(i18n.t('Schema.ResponseDynamicModification.AutoReplyParam')),
+}).describe(i18n.t('Schema.ResponseDynamicModification.Description'));
 
 export { AutoReplyParameterSchema, AutoRerollParameterSchema, ToolCallingParameterSchema };
 

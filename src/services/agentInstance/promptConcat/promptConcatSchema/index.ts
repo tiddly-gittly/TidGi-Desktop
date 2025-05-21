@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { i18n } from '@services/libs/i18n';
 import { ModelParametersSchema, ProviderModelSchema } from './modelParameters';
 import { PromptDynamicModificationSchema } from './promptDynamicModification';
 import { PromptSchema } from './prompts';
@@ -10,15 +11,15 @@ import { ResponseDynamicModificationSchema } from './responseDynamicModification
  * Contains common fields shared between AIConfigSchema and AgentConfigSchema
  */
 export const BaseAPIConfigSchema = z.object({
-  api: ProviderModelSchema.describe('API provider and model configuration'),
-  modelParameters: ModelParametersSchema.describe('Model parameters configuration'),
-}).describe('Base API configuration');
+  api: ProviderModelSchema.describe(i18n.t('Schema.BaseAPIConfig.API')),
+  modelParameters: ModelParametersSchema.describe(i18n.t('Schema.BaseAPIConfig.ModelParameters')),
+}).describe(i18n.t('Schema.BaseAPIConfig.Description'));
 
 /**
  * AI configuration schema for session settings
  */
 export const AIConfigSchema = BaseAPIConfigSchema
-  .describe('AI configuration');
+  .describe(i18n.t('Schema.AIConfig.Description'));
 
 /**
  * Agent configuration schema
@@ -41,20 +42,20 @@ export const AIConfigSchema = BaseAPIConfigSchema
  * ```
  */
 export const AgentConfigSchema = BaseAPIConfigSchema.extend({
-  id: z.string().describe('Agent unique identifier'),
+  id: z.string().describe(i18n.t('Schema.AgentConfig.Id')),
   promptConfig: z.object({
-    prompts: z.array(PromptSchema).describe('List of prompt configurations'),
-    promptDynamicModification: z.array(PromptDynamicModificationSchema).describe('List of prompt dynamic modification configurations'),
-    response: z.array(ResponseSchema).describe('List of response configurations'),
-    responseDynamicModification: z.array(ResponseDynamicModificationSchema).describe('List of response dynamic modification configurations'),
-  }).describe('Prompt configuration'),
-}).describe('Agent configuration');
+    prompts: z.array(PromptSchema).describe(i18n.t('Schema.AgentConfig.PromptConfig.Prompts')),
+    promptDynamicModification: z.array(PromptDynamicModificationSchema).describe(i18n.t('Schema.AgentConfig.PromptConfig.PromptDynamicModification')),
+    response: z.array(ResponseSchema).describe(i18n.t('Schema.AgentConfig.PromptConfig.Response')),
+    responseDynamicModification: z.array(ResponseDynamicModificationSchema).describe(i18n.t('Schema.AgentConfig.PromptConfig.ResponseDynamicModification')),
+  }).describe(i18n.t('Schema.AgentConfig.PromptConfig.Description')),
+}).describe(i18n.t('Schema.AgentConfig.Description'));
 
 /**
  * Default agents list schema
  * Contains an array of agent configurations
  */
-export const DefaultAgentsSchema = z.array(AgentConfigSchema).describe('List of default agent configurations');
+export const DefaultAgentsSchema = z.array(AgentConfigSchema).describe(i18n.t('Schema.DefaultAgents.Description'));
 
 export type DefaultAgents = z.infer<typeof DefaultAgentsSchema>;
 export type AgentPromptDescription = z.infer<typeof AgentConfigSchema>;

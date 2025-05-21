@@ -20,7 +20,8 @@ import { useScrollHandling } from './hooks/useScrollHandling';
 import { isChatTab } from './utils/tabTypeGuards';
 
 // Import store hooks to fetch agent data
-import { AgentWithoutMessages, useAgentChatStore } from '../../../../store/agentChatStore';
+import { AgentWithoutMessages } from '../../../../store/agentChatStore/types';
+import { useAgentChatStore } from '../../../../store/agentChatStore/index';
 import { TabItem } from '../../../../types/tab';
 
 /**

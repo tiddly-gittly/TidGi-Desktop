@@ -1,66 +1,25 @@
-import { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
+import { AgentInstance } from '@services/agentInstance/interface';
 import { Subscription } from 'rxjs';
-import { create } from 'zustand';
+import { StateCreator } from 'zustand';
+import { AgentChatState, BasicActions } from '../types';
 
-// Type for agent data without messages - exported for use in other components
-export type AgentWithoutMessages = Omit<AgentInstance, 'messages'>;
-
-interface AgentChatState {
-  // State
-  loading: boolean;
-  error: Error | null;
-  agent: AgentWithoutMessages | null;
-  // Store messages separately in a Map for more efficient updates
-  messages: Map<string, AgentInstanceMessage>;
-  // Store message IDs in order to maintain backend's message ordering
-  orderedMessageIds: string[];
-  // Track which messages are currently streaming
-  streamingMessageIds: Set<string>;
-
-  // Helper method to process agent data
-  processAgentData: (fullAgent: AgentInstance) => {
-    agent: AgentWithoutMessages;
-    messages: Map<string, AgentInstanceMessage>;
-    orderedMessageIds: string[];
-  };
-
-  // Actions
-  fetchAgent: (agentId: string) => Promise<void>;
-  subscribeToUpdates: (agentId: string) => (() => void) | undefined;
-  sendMessage: (agentId: string, content: string) => Promise<void>;
-  createAgent: (agentDefinitionId?: string) => Promise<AgentWithoutMessages | null>;
-  updateAgent: (agentId: string, data: Partial<AgentInstance>) => Promise<AgentWithoutMessages | null>;
-  cancelAgent: (agentId: string) => Promise<void>;
-  clearError: () => void;
-
-  // Message-specific actions
-  setMessageStreaming: (messageId: string, isStreaming: boolean) => void;
-  isMessageStreaming: (messageId: string) => boolean;
-  getMessageById: (messageId: string) => AgentInstanceMessage | undefined;
-}
-
-export const useAgentChatStore = create<AgentChatState>((set, get) => ({
-  // Initial state
-  loading: false,
-  error: null,
-  agent: null,
-  messages: new Map<string, AgentInstanceMessage>(),
-  orderedMessageIds: [],
-  streamingMessageIds: new Set<string>(),
-
-  // Helper to process agent data and update store
-  // This centralizes the logic for extracting messages from a full agent instance
-  // and preparing the data structure for the store
+/**
+ * Basic agent chat store actions
+ * Handles core agent operations like fetching, creating, updating and messaging
+ */
+export const basicActionsMiddleware: StateCreator<AgentChatState, [], [], BasicActions> = (
+  set,
+  get,
+) => ({
   processAgentData: (fullAgent: AgentInstance) => {
     // Create a messages map for efficient lookup
-    const messagesMap = new Map<string, AgentInstanceMessage>();
+    const messagesMap = new Map(
+      fullAgent.messages.map(message => [message.id, message]),
+    );
 
     // Messages are already sorted by the backend in ascending order by modified time
     // Just map them to maintain that order in our orderedIds array
-    const orderedIds = fullAgent.messages.map(message => {
-      messagesMap.set(message.id, message);
-      return message.id;
-    });
+    const orderedIds = fullAgent.messages.map(message => message.id);
 
     // Separate agent data from messages
     const { messages: _, ...agentWithoutMessages } = fullAgent;
@@ -72,7 +31,6 @@ export const useAgentChatStore = create<AgentChatState>((set, get) => ({
     };
   },
 
-  // Fetch agent instance
   fetchAgent: async (agentId: string) => {
     if (!agentId) return;
 
@@ -93,7 +51,6 @@ export const useAgentChatStore = create<AgentChatState>((set, get) => ({
     }
   },
 
-  // Subscribe to agent updates
   subscribeToUpdates: (agentId: string) => {
     if (!agentId) return undefined;
 
@@ -177,7 +134,7 @@ export const useAgentChatStore = create<AgentChatState>((set, get) => ({
       // Return cleanup function
       return () => {
         agentSubscription.unsubscribe();
-        messageSubscriptions.forEach(subscription => {
+        messageSubscriptions.forEach((subscription) => {
           subscription.unsubscribe();
         });
       };
@@ -188,7 +145,6 @@ export const useAgentChatStore = create<AgentChatState>((set, get) => ({
     }
   },
 
-  // Send message to agent
   sendMessage: async (agentId: string, content: string) => {
     if (!agentId) {
       set({ error: new Error('No agent ID provided') });
@@ -253,7 +209,6 @@ export const useAgentChatStore = create<AgentChatState>((set, get) => ({
     }
   },
 
-  // Cancel current operation
   cancelAgent: async (agentId: string) => {
     if (!agentId) return;
 
@@ -274,25 +229,4 @@ export const useAgentChatStore = create<AgentChatState>((set, get) => ({
   clearError: () => {
     set({ error: null });
   },
-
-  setMessageStreaming: (messageId: string, isStreaming: boolean) => {
-    const { streamingMessageIds } = get();
-    const newStreamingIds = new Set(streamingMessageIds);
-
-    if (isStreaming) {
-      newStreamingIds.add(messageId);
-    } else {
-      newStreamingIds.delete(messageId);
-    }
-
-    set({ streamingMessageIds: newStreamingIds });
-  },
-
-  isMessageStreaming: (messageId: string) => {
-    return get().streamingMessageIds.has(messageId);
-  },
-
-  getMessageById: (messageId: string) => {
-    return get().messages.get(messageId);
-  },
-}));
+});

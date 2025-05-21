@@ -180,5 +180,173 @@
       "NewTab": "新建标签页",
       "NewWeb": "新建网页"
     }
+  },
+  "Schema": {
+    "Wiki": {
+      "WorkspaceName": "工作区名称",
+      "Filter": "筛选器表达式，可以使用 TiddlyWiki 支持的筛选器，从知识库中提取数据",
+      "Description": "Wiki 参数配置"
+    },
+    "Trigger": {
+      "Search": "搜索关键词",
+      "RandomChance": "随机触发概率",
+      "Filter": "筛选条件",
+      "Model": {
+        "Preset": "预设模型",
+        "System": "系统提示词",
+        "User": "用户提示词",
+        "Description": "基于模型判断的触发条件"
+      },
+      "Description": "触发条件配置"
+    },
+    "Position": {
+      "Type": "位置类型",
+      "TargetId": "目标元素ID",
+      "Bottom": "自底部偏移几条消息",
+      "Top": "自顶部偏移几条消息",
+      "Description": "位置参数配置"
+    },
+    "FullReplacement": {
+      "TargetId": "目标元素ID",
+      "SourceType": "源类型",
+      "Description": "完全替换参数配置"
+    },
+    "DynamicPosition": {
+      "Description": "动态位置参数配置"
+    },
+    "ToolCalling": {
+      "TargetId": "目标元素ID",
+      "Match": "匹配模式",
+      "Description": "工具调用参数配置"
+    },
+    "AutoReroll": {
+      "TargetId": "目标元素ID",
+      "Search": "搜索关键词",
+      "MaxRetry": "最大重试次数",
+      "Description": "自动重新生成参数配置"
+    },
+    "AutoReply": {
+      "TargetId": "目标元素ID",
+      "Text": "回复文本",
+      "Trigger": "触发条件",
+      "MaxAutoReply": "最大自动回复次数",
+      "Description": "自动回复参数配置"
+    },
+    "ResponseDynamicModification": {
+      "Id": "唯一标识符",
+      "Caption": "简短描述",
+      "DynamicModificationType": "动态修改类型",
+      "FullReplacementParam": "完全替换参数",
+      "ForbidOverrides": "是否禁止覆盖",
+      "ResponseProcessingType": "响应处理类型",
+      "ToolCallingParam": "工具调用参数",
+      "AutoRerollParam": "自动重新生成参数",
+      "AutoReplyParam": "自动回复参数",
+      "Description": "响应动态修改配置"
+    },
+    "RAG": {
+      "SourceType": "源类型",
+      "WikiParam": "Wiki 参数",
+      "Trigger": "触发条件",
+      "Removal": {
+        "ExpireAfterChatRound": "多少轮对话后过期",
+        "CoolDownChatRound": "上次展示后冷却轮数",
+        "Description": "移除条件"
+      },
+      "Description": "检索增强生成参数配置"
+    },
+    "Function": {
+      "FunctionId": "函数ID",
+      "TimeoutSecond": "超时时间（秒）",
+      "TimeoutMessage": "超时消息",
+      "Trigger": "触发条件",
+      "Description": "函数参数配置"
+    },
+    "JavascriptTool": {
+      "URI": "JavaScript 工具 URI",
+      "Description": "JavaScript 工具参数配置"
+    },
+    "MCP": {
+      "Id": "MCP 服务器 ID",
+      "TimeoutSecond": "超时时间（秒）",
+      "TimeoutMessage": "超时消息",
+      "ResponseProcessing": {
+        "Id": "响应处理器 ID",
+        "Description": "响应处理配置"
+      },
+      "Trigger": "触发条件",
+      "Description": "模型上下文协议参数配置"
+    },
+    "PromptDynamicModification": {
+      "Id": "唯一标识符",
+      "Caption": "简短描述",
+      "Description": "详细描述",
+      "Content": "内容",
+      "ForbidOverrides": "是否禁止覆盖",
+      "DynamicModificationType": "动态修改类型",
+      "FullReplacementParam": "完全替换参数",
+      "DynamicPositionParam": "动态位置参数",
+      "RAGParam": "检索增强生成参数",
+      "FunctionParam": "函数参数",
+      "JavascriptToolParam": "JavaScript 工具参数",
+      "MCPParam": "模型上下文协议参数",
+      "SchemaDescription": "提示词动态修改配置"
+    },
+    "ProviderModel": {
+      "Provider": "AI 提供商名称",
+      "Model": "AI 模型名称",
+      "Description": "提供商和模型配置"
+    },
+    "ModelParameters": {
+      "Temperature": "响应生成温度（越高=越创造性）",
+      "MaxTokens": "生成的最大令牌数量",
+      "TopP": "Top P 采样参数",
+      "SystemPrompt": "模型系统提示词",
+      "Description": "模型参数配置"
+    },
+    "Response": {
+      "Description": "外部API的响应，通常作为响应动态修改的目标，结构与提示词的一样，可以填写预置内容，也可以作为占位符或容器，由 ResponseDynamicModification 填入外部API的响应的具体内容。"
+    },
+    "PromptPart": {
+      "Id": "唯一标识符，方便在 PromptDynamicModification 里通过 targetId 引用。",
+      "Text": "提示词文本内容，可以包含维基文本支持的语法，例如<<变量名>>。",
+      "Tags": "标签列表，用于分类和引用",
+      "Caption": "提示词的简短描述",
+      "Name": "名称，用于特定场景的引用",
+      "Children": "子提示词列表，将从上到下，从外到里地拼接为最终的提示词文本。",
+      "Description": "表示提示词的一部分，可以是文本或嵌套结构"
+    },
+    "Prompt": {
+      "Id": "提示词配置的唯一标识符，方便在 PromptDynamicModification 里通过 targetId 引用。",
+      "Caption": "简短描述",
+      "Enabled": "是否启用此提示词，启用的才会拼入到最终的提示词中",
+      "Role": "OpenAI 兼容接口的提示词角色",
+      "Tags": "标签列表",
+      "Text": "提示词内容，可以包含维基文本支持的语法，例如<<变量名>>。",
+      "Children": "子提示词列表，将从上到下，从外到里地拼接为最终的提示词文本。",
+      "Description": "完整的提示词配置，包含类型和内容"
+    },
+    "BaseAPIConfig": {
+      "API": "API 提供商和模型配置",
+      "ModelParameters": "模型参数配置",
+      "Description": "基础 API 配置"
+    },
+    "AIConfig": {
+      "Description": "AI 会话设置配置"
+    },
+    "AgentConfig": {
+      "Id": "智能体唯一标识符",
+      "PromptConfig": {
+        "Prompts": "提示词配置列表",
+        "PromptDynamicModification": "提示词动态修改配置列表",
+        "Response": "响应配置列表",
+        "ResponseDynamicModification": "响应动态修改配置列表",
+        "Description": "提示词配置"
+      },
+      "Description": "智能体配置"
+    },
+    "DefaultAgents": {
+      "Description": "默认智能体配置列表"
+    }
   }
 }

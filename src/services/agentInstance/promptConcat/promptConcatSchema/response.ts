@@ -1,3 +1,4 @@
+import { i18n } from '@services/libs/i18n';
 import { z } from 'zod';
 import { PromptSchema } from './prompts';
 
@@ -14,7 +15,7 @@ import { PromptSchema } from './prompts';
  * ```
  */
 export const ResponseSchema = PromptSchema.extend({}).describe(
-  '外部API的响应，通常作为响应动态修改的目标，结构与提示词的一样，可以填写预置内容，也可以作为占位符或容器，由 ResponseDynamicModification 填入外部API的响应的具体内容。',
+  i18n.t('Schema.Response.Description'),
 );
 
 export type Response = z.infer<typeof ResponseSchema>;

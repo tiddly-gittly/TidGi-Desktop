@@ -1,7 +1,6 @@
 // Input container component for message entry
 
 import SendIcon from '@mui/icons-material/Send';
-import SettingsIcon from '@mui/icons-material/Settings';
 import CancelIcon from '@mui/icons-material/StopCircle';
 import { Box, IconButton, TextField } from '@mui/material';
 import { styled } from '@mui/material/styles';

@@ -1,7 +1,7 @@
 // Model parameters dialog component
 
 import { ModelParametersDialog as BaseModelParametersDialog } from '@/pages/Preferences/sections/ExternalAPI/components/ModelParametersDialog';
-import { AiAPIConfig } from '@services/agentInstance/buildInAgentHandlers/promptConcatUtils/promptConcatSchema';
+import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import React from 'react';
 
 interface ModelParametersDialogProps {

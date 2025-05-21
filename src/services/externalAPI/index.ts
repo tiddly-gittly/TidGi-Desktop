@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid';
 import { defer, from, Observable } from 'rxjs';
 import { filter, finalize, startWith } from 'rxjs/operators';
 
-import { AiAPIConfig } from '@services/agentInstance/buildInAgentHandlers/promptConcatUtils/promptConcatSchema';
+import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import { logger } from '@services/libs/log';
