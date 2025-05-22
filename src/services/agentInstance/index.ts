@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable @typescript-eslint/use-unknown-in-catch-callback-variable */
 /* eslint-disable unicorn/prevent-abbreviations */
+import { CoreMessage } from 'ai';
 import { injectable } from 'inversify';
 import { debounce, pick } from 'lodash';
 import { nanoid } from 'nanoid';
@@ -11,7 +13,8 @@ import { basicPromptConcatHandler } from '@services/agentInstance/buildInAgentHa
 import { AgentHandler, AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
 import { registerAllPromptHandlers } from '@services/agentInstance/promptConcat/handlers/promptHandlers/index';
 import { promptConcat } from '@services/agentInstance/promptConcat/promptConcat';
-import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { AgentPromptDescription, Prompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { promptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
@@ -46,6 +49,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   private statusSubjects: Map<string, BehaviorSubject<AgentInstanceLatestStatus | undefined>> = new Map();
 
   private agentHandlers: Map<string, AgentHandler> = new Map();
+  private handlerSchemas: Map<string, Record<string, unknown>> = new Map();
   private cancelTokenMap: Map<string, { value: boolean }> = new Map();
   private debouncedUpdateFunctions: Map<string, (message: AgentInstanceLatestStatus['message'] & { id: string }, agentId?: string) => void> = new Map();
 
@@ -73,8 +77,21 @@ export class AgentInstanceService implements IAgentInstanceService {
     // Register all prompt handlers from promptConcatUtils/handlers/promptHandlers/index.ts
     registerAllPromptHandlers();
 
-    // Register basic prompt concatenation handler
-    this.agentHandlers.set('basicPromptConcatHandler', basicPromptConcatHandler);
+    // Register basic prompt concatenation handler with its schema
+    this.registerHandler('basicPromptConcatHandler', basicPromptConcatHandler, promptConcatHandlerConfigJsonSchema);
+  }
+
+  /**
+   * Register a handler with an optional schema
+   * @param handlerId ID for the handler
+   * @param handler The handler function
+   * @param schema Optional JSON schema for the handler configuration
+   */
+  private registerHandler(handlerId: string, handler: AgentHandler, schema?: Record<string, unknown>): void {
+    this.agentHandlers.set(handlerId, handler);
+    if (schema) {
+      this.handlerSchemas.set(handlerId, schema);
+    }
   }
 
   /**
@@ -202,6 +219,8 @@ export class AgentInstanceService implements IAgentInstanceService {
       if (data.avatarUrl !== undefined) instanceEntity.avatarUrl = data.avatarUrl;
       if (data.aiApiConfig !== undefined) instanceEntity.aiApiConfig = data.aiApiConfig;
       if (data.closed !== undefined) instanceEntity.closed = data.closed;
+      // Handle handlerConfig from AgentDefinition
+      if (data.handlerConfig !== undefined) instanceEntity.handlerConfig = data.handlerConfig;
 
       // Save instance updates
       await this.agentInstanceRepository!.save(instanceEntity);
@@ -775,7 +794,75 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async concatPrompt(promptDescription: AgentPromptDescription, messages: AgentInstanceMessage[]) {
-    return await promptConcat(promptDescription, messages);
+  public async concatPrompt(promptDescription: Pick<AgentPromptDescription, 'promptConfig'>, messages: AgentInstanceMessage[]): Promise<{
+    flatPrompts: CoreMessage[];
+    processedPrompts: Prompt[];
+  }> {
+    try {
+      logger.debug('AgentInstanceService.concatPrompt called', {
+        hasPromptConfig: !!promptDescription.promptConfig,
+        promptConfigKeys: Object.keys(promptDescription.promptConfig || {}),
+        messagesCount: messages.length,
+      });
+
+      // Add a timeout to the promptConcat operation
+      const timeoutPromise = new Promise<null>((resolve) => {
+        setTimeout(() => {
+          logger.warn('AgentInstanceService.concatPrompt: Operation timed out after 20 seconds', { method: 'concatPrompt' });
+          resolve(null);
+        }, 20000); // 20 second timeout
+      });
+
+      const concatPromptPromise = promptConcat(promptDescription as AgentPromptDescription, messages);
+
+      // Race the promises
+      const result = await Promise.race([concatPromptPromise, timeoutPromise]);
+
+      if (result === null) {
+        // Timeout occurred
+        logger.error('AgentInstanceService.concatPrompt timed out', { method: 'concatPrompt' });
+        throw new Error('Prompt generation timed out');
+      }
+
+      logger.debug('AgentInstanceService.concatPrompt completed', {
+        flatPromptsCount: result.flatPrompts.length,
+        processedPromptsCount: result.processedPrompts.length,
+      });
+
+      return result;
+    } catch (error) {
+      logger.error('Error in AgentInstanceService.concatPrompt', {
+        error: error instanceof Error ? error.message : String(error),
+        promptDescriptionId: (promptDescription as AgentPromptDescription).id,
+        messagesCount: messages.length,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get JSON Schema for handler configuration
+   * This allows frontend to generate a form based on the schema for a specific handler
+   * @param handlerId ID of the handler to get schema for
+   * @returns JSON Schema for the handler configuration
+   */
+  public async getHandlerConfigSchema(handlerId: string): Promise<Record<string, unknown>> {
+    try {
+      logger.debug('AgentInstanceService.getHandlerConfigSchema called', { handlerId });
+      // Check if we have a schema for this handler
+      const schema = this.handlerSchemas.get(handlerId);
+      if (schema) {
+        return schema;
+      }
+      // If no schema found, return an empty schema
+      logger.warn(`No schema found for handler: ${handlerId}`);
+      return { type: 'object', properties: {} };
+    } catch (error) {
+      logger.error('Error in AgentInstanceService.getHandlerConfigSchema', {
+        error: error instanceof Error ? error.message : String(error),
+        handlerId,
+      });
+      throw error;
+    }
   }
 }

@@ -82,6 +82,10 @@ export class AgentInstanceEntity implements Partial<AgentInstance> {
   @Column({ nullable: true })
   avatarUrl?: string;
 
+  /** Agent handler configuration parameters, inherited from AgentDefinition */
+  @Column({ type: 'simple-json', nullable: true })
+  handlerConfig?: Record<string, unknown>;
+
   @Column({ default: false })
   closed: boolean = false;
 

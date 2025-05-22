@@ -90,7 +90,7 @@ export async function responseConcat(
   // Get response configuration (ensuring we handle all possible shapes)
   const { promptConfig } = agentConfig;
   // Extract responses with proper type checking
-  const responses = (promptConfig && Array.isArray(promptConfig.response)) ? promptConfig.response : [];
+  const responses = Array.isArray(promptConfig.response) ? promptConfig.response : [];
 
   logger.debug('Response configuration loaded', {
     hasResponses: responses.length > 0,

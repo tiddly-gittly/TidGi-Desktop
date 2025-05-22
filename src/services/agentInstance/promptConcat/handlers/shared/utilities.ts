@@ -6,7 +6,8 @@ import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { Message } from 'ai';
-import { findPromptById, PromptConcatContext } from '../../promptConcat';
+import { PromptConcatContext } from '../../promptConcat';
+import { findPromptById } from '../../promptConcat';
 import { PromptPart } from './types';
 
 /**
@@ -29,7 +30,7 @@ interface TriggerConfig {
  *
  * @param trigger Trigger configuration from schema
  * @param targetText Optional target text to check (for response triggers)
- * @param context Handler context with history and agent info
+ * @param context Context with messages and other required information
  * @returns Whether trigger conditions are met
  */
 export async function shouldTrigger(
@@ -47,7 +48,7 @@ export async function shouldTrigger(
     const searchTerms = trigger.search.split(',');
 
     // Check in user message if available
-    if (userMessage.content) {
+    if (userMessage && userMessage.content) {
       const messageMatches = searchTerms.some((term: string) => userMessage.content.toLowerCase().includes(term.trim().toLowerCase()));
       if (messageMatches) return true;
     }
@@ -66,7 +67,7 @@ export async function shouldTrigger(
 
   // Check filter (simplified implementation)
   if (trigger.filter) {
-    if (userMessage.content && userMessage.content.includes(trigger.filter)) return true;
+    if (userMessage && userMessage.content && userMessage.content.includes(trigger.filter)) return true;
     if (targetText && targetText.includes(trigger.filter)) return true;
   }
 
@@ -75,7 +76,7 @@ export async function shouldTrigger(
     try {
       const result = await evaluateModelTrigger(
         trigger.model,
-        targetText || userMessage.content || '',
+        targetText || (userMessage && userMessage.content) || '',
         context,
       );
       return result;
@@ -95,7 +96,15 @@ export async function shouldTrigger(
  *
  * @param modelConfig Model trigger configuration
  * @param content Content to evaluate
- * @param context Handler context
+ * @param context Base context with messages
+ * @returns Whether the model determined the trigger should activate
+ /**
+ * Evaluates trigger conditions using a model
+ * Uses a lightweight model to determine if the content meets trigger criteria
+ *
+ * @param modelConfig Model trigger configuration
+ * @param content Content to evaluate
+ * @param context Base context with messages
  * @returns Whether the model determined the trigger should activate
  */
 async function evaluateModelTrigger(

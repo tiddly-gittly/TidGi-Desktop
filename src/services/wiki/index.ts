@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
 import { dialog, shell } from 'electron';
 import { backOff } from 'exponential-backoff';
@@ -8,7 +5,6 @@ import { copy, createSymlink, exists, mkdir, mkdirp, mkdirs, pathExists, readFil
 import { injectable } from 'inversify';
 import path from 'path';
 import { ModuleThread, spawn, Thread, Worker } from 'threads';
-import type { WorkerEvent } from 'threads/dist/types/master';
 
 import { WikiChannel } from '@/constants/channels';
 import { TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
@@ -32,7 +28,7 @@ import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
 import type { IpcServerRouteMethods, IpcServerRouteNames } from './wikiWorker/ipcServerRoutes';
 
 // @ts-expect-error it don't want .ts
-// eslint-disable-next-line import/no-webpack-loader-syntax
+
 import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker/index.ts';
 
 import { LOG_FOLDER } from '@/constants/appPaths';
@@ -43,6 +39,7 @@ import { IDatabaseService } from '@services/database/interface';
 import { IPreferenceService } from '@services/preferences/interface';
 import { ISyncService } from '@services/sync/interface';
 import { mapValues } from 'lodash';
+import { WorkerEvent } from 'node_modules/threads/dist/types/master';
 import { wikiWorkerStartedEventName } from './constants';
 import { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
 import { getSendWikiOperationsToBrowser, ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
@@ -208,8 +205,8 @@ export class Wiki implements IWikiService {
                 const portChange = {
                   port: port + 1,
                   homeUrl: homeUrl.replace(`:${port}`, `:${port + 1}`),
-                  // eslint-disable-next-line unicorn/no-null
-                  lastUrl: lastUrl?.replace?.(`:${port}`, `:${port + 1}`) ?? null,
+
+                  lastUrl: lastUrl?.replace(`:${port}`, `:${port + 1}`) ?? null,
                 };
                 await this.workspaceService.update(workspaceID, portChange, true);
                 reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
@@ -278,7 +275,7 @@ export class Wiki implements IWikiService {
     logger.debug(`callWikiIpcServerRoute get ${route}`, { workspaceID });
     const worker = await this.getWorkerEnsure(workspaceID);
     logger.debug(`callWikiIpcServerRoute got worker`);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore Argument of type 'string | string[] | ITiddlerFields | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.ts(2345)
     const response = await worker[route](...arguments_);
     logger.debug(`callWikiIpcServerRoute returning response`, { route, code: response.statusCode });
@@ -601,16 +598,16 @@ export class Wiki implements IWikiService {
         await this.startWiki(id, userName);
         logger.debug('startWiki() done');
       } catch (error) {
-        logger.warn(`Get startWiki() error: ${(error as Error)?.message}`);
+        logger.warn(`Get startWiki() error: ${(error as Error).message}`);
         if (error instanceof WikiRuntimeError && error.retry) {
           logger.warn('Get startWiki() WikiRuntimeError, retrying...');
           // don't want it to throw here again, so no await here.
-          // eslint-disable-next-line @typescript-eslint/return-await
+
           return this.workspaceViewService.restartWorkspaceViewService(id);
         } else if ((error as Error).message.includes('Did not receive an init message from worker after')) {
           // https://github.com/andywer/threads.js/issues/426
           // wait some time and restart the wiki will solve this
-          logger.warn(`Get startWiki() handle "${(error as Error)?.message}", will try restart wiki.`);
+          logger.warn(`Get startWiki() handle "${(error as Error).message}", will try restart wiki.`);
           await this.restartWiki(workspace);
         } else {
           logger.warn('Get startWiki() unexpected error, throw it');
@@ -624,7 +621,7 @@ export class Wiki implements IWikiService {
   public async restartWiki(workspace: IWorkspace): Promise<void> {
     const { id, isSubWiki } = workspace;
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
     const userName = await this.authService.getUserName(workspace);
 
     this.syncService.stopIntervalSync(id);
@@ -653,11 +650,11 @@ export class Wiki implements IWikiService {
     }
     if (!Array.isArray(arguments_)) {
       // TODO: better type handling here
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/restrict-template-expressions
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       throw new TypeError(`${(arguments_ as any) ?? ''} (${typeof arguments_}) is not a good argument array for ${operationType}`);
     }
     // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556) this maybe a bug of ts... try remove this comment after upgrade ts. And the result become void is weird too.
-    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
+
     return await (sendWikiOperationsToBrowser[operationType](...arguments_) as unknown as ReturnType<ISendWikiOperationsToBrowser[OP]>);
   }
 

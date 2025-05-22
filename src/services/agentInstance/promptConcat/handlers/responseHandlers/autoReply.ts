@@ -3,8 +3,8 @@
  *
  * Automatically sends follow-up messages based on trigger conditions
  */
-import { AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
 import { logger } from '@services/libs/log';
+import { AgentHandlerContext } from '../../../buildInAgentHandlers/type';
 import { AgentResponse, ResponseDynamicModification } from '../shared/types';
 import { shouldTrigger } from '../shared/utilities';
 import { findResponseById } from './responseUtilities';
@@ -18,7 +18,7 @@ const autoReplyCountMap = new Map<string, number>();
  *
  * @param responses Current response array
  * @param modification Modification configuration
- * @param context Handler context
+ * @param context Agent handler context
  * @returns Processing result with modified responses and processing flags
  */
 export async function handleAutoReply(
@@ -58,7 +58,7 @@ export async function handleAutoReply(
   const targetText = found.response.text;
 
   // Generate a unique key for tracking auto reply counts
-  const replyKey = context.agent.id;
+  const replyKey = context.agent.id || 'unknown';
 
   // Get current auto reply count or initialize to 0
   const currentReplyCount = autoReplyCountMap.get(replyKey) || 0;
@@ -74,7 +74,9 @@ export async function handleAutoReply(
     return { responses, processed: false };
   }
 
-  const shouldAutoReply = await shouldTrigger(trigger, targetText, context);
+  // Check if auto reply should be triggered
+  const contextBase = { messages: context.agent.messages };
+  const shouldAutoReply = await shouldTrigger(trigger, targetText, contextBase);
 
   if (shouldAutoReply) {
     logger.info('Auto reply triggered - conditions met', {

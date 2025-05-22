@@ -3,16 +3,20 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { Observable } from 'rxjs';
 
 import { AgentChannel } from '@/constants/channels';
-import { AgentPromptDescription, AiAPIConfig, Prompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { AgentDefinition } from '@services/agentDefinition/interface';
+import { AgentPromptDescription, Prompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
 
 /**
  * Content of a session instance that user chat with an agent.
+ * Extends AgentDefinition to inherit properties like handlerConfig,
+ * which allows sharing configuration schema between definitions and instances.
+ * This inheritance ensures that type safety is maintained when passing
+ * handlerConfig between agent definitions and instances.
  */
-export interface AgentInstance {
-  id: string;
+export interface AgentInstance extends Omit<AgentDefinition, 'name'> {
   /** Agent description ID that generates this instance */
   agentDefId: string;
-  /** Session name */
+  /** Session name, optional in instance unlike definition */
   name?: string;
   /**
    * Message history.
@@ -27,15 +31,6 @@ export interface AgentInstance {
    * We don't need `created` for message because it might be stream generated, we only care about its complete time.
    */
   modified?: Date;
-  /**
-   * Overwrite the default AI configuration for this agent instance.
-   * Priority is higher than agent definition, and higher than default agent config.
-   */
-  aiApiConfig?: Partial<AiAPIConfig>;
-  /**
-   * Overwrite the default avatar URL from the agent definition.
-   */
-  avatarUrl?: string;
   /**
    * Indicates whether this agent instance is closed. Closed instances are not deleted from database
    * but are hidden from the default list and don't consume resources.
@@ -172,10 +167,18 @@ export interface IAgentInstanceService {
    * @param messages Messages to be included in prompt generation
    * @returns Processed flat array of prompts and processed prompt tree
    */
-  concatPrompt(promptDescription: AgentPromptDescription, messages: AgentInstanceMessage[]): Promise<{
+  concatPrompt(promptDescription: Pick<AgentPromptDescription, 'promptConfig'>, messages: AgentInstanceMessage[]): Promise<{
     flatPrompts: CoreMessage[];
     processedPrompts: Prompt[];
   }>;
+
+  /**
+   * Get JSON Schema for handler configuration
+   * This allows frontend to generate a form based on the schema for a specific handler
+   * @param handlerId ID of the handler to get schema for
+   * @returns JSON Schema for the handler configuration
+   */
+  getHandlerConfigSchema(handlerId: string): Promise<Record<string, unknown>>;
 }
 
 export const AgentInstanceServiceIPCDescriptor = {
@@ -188,6 +191,7 @@ export const AgentInstanceServiceIPCDescriptor = {
     deleteAgent: ProxyPropertyType.Function,
     getAgent: ProxyPropertyType.Function,
     getAgents: ProxyPropertyType.Function,
+    getHandlerConfigSchema: ProxyPropertyType.Function,
     sendMsgToAgent: ProxyPropertyType.Function,
     subscribeToAgentUpdates: ProxyPropertyType.Function$,
     updateAgent: ProxyPropertyType.Function,

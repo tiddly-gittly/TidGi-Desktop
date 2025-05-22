@@ -1,4 +1,5 @@
 /* eslint-disable unicorn/prevent-abbreviations */
+import { useHandlerConfigManagement } from '@/pages/Preferences/sections/ExternalAPI/useHandlerConfigManagement';
 import CloseIcon from '@mui/icons-material/Close';
 import { TabContext, TabPanel } from '@mui/lab';
 import Box from '@mui/material/Box';
@@ -13,12 +14,13 @@ import { styled } from '@mui/material/styles';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
-import { IPromptPart } from '@services/agentInstance/promptConcat/promptConcatSchema/prompts';
+import { IPromptPart } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { CoreMessage } from 'ai';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { useAgentChatStore } from '../../../../../store/agentChatStore/index';
+import { PromptConfigForm } from './PromptConfigForm';
 
 // Types
 interface PreviewMessage {
@@ -198,19 +200,22 @@ function PromptTreeNode({ node, depth }: { node: IPromptPart; depth: number }): 
 interface PromptPreviewDialogProps {
   open: boolean;
   onClose: () => void;
-  agentId?: string;
-  agentDefId?: string;
   inputText?: string;
 }
 
 export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   open,
   onClose,
-  agentId = '',
-  agentDefId = '',
   inputText = '',
 }) => {
   const { t } = useTranslation('agent');
+  const agent = useAgentChatStore(state => state.agent);
+
+  // Use handler config management hook with available agent info
+  const { loading: handlerConfigLoading, config: handlerConfig } = useHandlerConfigManagement({
+    agentId: agent?.id, // agentId is still used by useHandlerConfigManagement
+    agentDefId: agent?.agentDefId,
+  });
 
   const {
     previewDialogTab: tab,
@@ -224,21 +229,62 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
       previewLoading: state.previewLoading,
       previewResult: state.previewResult,
       setPreviewDialogTab: state.setPreviewDialogTab,
-
       getPreviewPromptResult: state.getPreviewPromptResult,
     })),
   );
 
   useEffect(() => {
+    let isMounted = true; // To prevent setting state after unmounting
+
     const fetchPreview = async () => {
-      if (!agentId && !agentDefId) return;
-      await getPreviewPromptResult(agentId, agentDefId, inputText);
+      if (!agent?.agentDefId) {
+        console.log('PromptPreviewDialog: Missing agentDefId, skipping preview');
+        return;
+      }
+      if (handlerConfigLoading) {
+        console.log('PromptPreviewDialog: Handler config is loading, skipping preview');
+        return;
+      }
+      if (!handlerConfig) {
+        console.log('PromptPreviewDialog: No handler config available, skipping preview');
+        return;
+      }
+
+      console.log('PromptPreviewDialog: Fetching preview with config', {
+        agentDefId: agent.agentDefId, // agent is checked for nullity above
+        inputTextLength: inputText.length,
+        handlerConfigKeys: Object.keys(handlerConfig),
+      });
+
+      try {
+        const result = await getPreviewPromptResult(inputText, handlerConfig);
+        if (isMounted) {
+          console.log('PromptPreviewDialog: Preview result received', { success: !!result, flatPromptsCount: result?.flatPrompts.length });
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('PromptPreviewDialog: Error fetching preview', error);
+          // Even if there's an error, the previewLoading state should be reset in the action
+        }
+      }
     };
-    void fetchPreview();
-  }, [agentId, agentDefId, inputText, getPreviewPromptResult]);
+
+    // Only fetch preview when dialog is open
+    if (open) {
+      console.log('PromptPreviewDialog: Dialog is open, fetching preview...');
+      void fetchPreview();
+    } else {
+      console.log('PromptPreviewDialog: Dialog is closed, skipping preview');
+    }
+
+    // Cleanup function to prevent memory leaks and setting state after unmount
+    return () => {
+      isMounted = false;
+    };
+  }, [agent?.agentDefId, inputText, handlerConfig, handlerConfigLoading, getPreviewPromptResult, open]);
 
   const handleTabChange = (_event: React.SyntheticEvent, value: string): void => {
-    setPreviewDialogTab(value as 'flat' | 'tree');
+    setPreviewDialogTab(value as 'flat' | 'tree' | 'config');
   };
 
   const formattedPreview = previewResult
@@ -268,11 +314,20 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
           ? (
             <Box
               display='flex'
+              flexDirection='column'
               justifyContent='center'
               alignItems='center'
               minHeight={300}
+              gap={2}
             >
               <CircularProgress />
+              <Typography variant='body2' color='text.secondary'>
+                {t('Prompt.Loading', 'Loading preview...')}
+              </Typography>
+              {/* We still want to show the preview is auto-refreshing based on input text */}
+              <Typography variant='caption' color='text.secondary' sx={{ mt: 1, maxWidth: '80%', textAlign: 'center' }}>
+                {t('Prompt.AutoRefresh', 'Preview will automatically refresh when input text changes')}
+              </Typography>
             </Box>
           )
           : (
@@ -293,16 +348,32 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
                   value='tree'
                   sx={{ textTransform: 'none' }}
                 />
+                <Tab
+                  label={t('Prompt.Config', 'Configuration')}
+                  value='config'
+                  sx={{ textTransform: 'none' }}
+                />
               </PreviewTabs>
+
+              {/* Flat Result Tab */}
               <TabPanel value='flat' sx={{ p: 0 }}>
                 <PreviewContent>
                   <FlatPromptList flatPrompts={formattedPreview?.flatPrompts} />
                 </PreviewContent>
               </TabPanel>
+
+              {/* Tree Result Tab */}
               <TabPanel value='tree' sx={{ p: 0 }}>
                 <PreviewContent>
                   <PromptTree prompts={formattedPreview?.processedPrompts} />
                 </PreviewContent>
+              </TabPanel>
+
+              {/* Configuration Tab */}
+              <TabPanel value='config' sx={{ p: 0 }}>
+                <PromptConfigForm
+                  agentDefId={agent?.agentDefId}
+                />
               </TabPanel>
             </TabContext>
           )}

@@ -9,7 +9,14 @@ import { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage } from '
  * @param agentDefinition Agent definition
  * @returns Initial agent instance data
  */
-export function createAgentInstanceData(agentDefinition: { id: string; name: string; avatarUrl?: string; aiApiConfig?: Record<string, unknown> }): {
+export function createAgentInstanceData(agentDefinition: {
+  id: string;
+  name: string;
+  avatarUrl?: string;
+  aiApiConfig?: Record<string, unknown>;
+  handlerConfig?: Record<string, unknown>;
+  handlerID?: string;
+}): {
   instanceData: Omit<AgentInstance, 'created' | 'modified'>;
   instanceId: string;
   now: Date;
@@ -24,7 +31,7 @@ export function createAgentInstanceData(agentDefinition: { id: string; name: str
   };
 
   // Extract necessary fields from agent definition
-  const { avatarUrl, aiApiConfig } = agentDefinition;
+  const { avatarUrl, aiApiConfig, handlerConfig, handlerID } = agentDefinition;
 
   const instanceData = {
     id: instanceId,
@@ -33,6 +40,8 @@ export function createAgentInstanceData(agentDefinition: { id: string; name: str
     status: initialStatus,
     avatarUrl,
     aiApiConfig,
+    handlerConfig,
+    handlerID,
     messages: [],
     closed: false,
   };
@@ -80,5 +89,6 @@ export const AGENT_INSTANCE_FIELDS = [
   'modified',
   'avatarUrl',
   'aiApiConfig',
+  'handlerConfig',
   'closed',
 ] as const;

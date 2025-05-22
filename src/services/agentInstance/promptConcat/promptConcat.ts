@@ -6,8 +6,8 @@ import { AgentInstanceMessage } from '../interface';
 import { AgentPromptDescription, Prompt, PromptDynamicModification, PromptPart } from './promptConcatSchema';
 
 /**
- * Minimal context interface for prompt concat operations
- * Contains only fields actually used by prompt modification handlers
+ * Context type specific for prompt concatenation operations
+ * Contains message history needed for prompt processing
  */
 export interface PromptConcatContext {
   messages: AgentInstanceMessage[];
@@ -15,7 +15,6 @@ export interface PromptConcatContext {
 
 /**
  * Type definition for prompt dynamic modification handlers
- * Supports both synchronous and asynchronous operations
  */
 export type PromptDynamicModificationHandler = (
   prompts: Prompt[],
@@ -139,7 +138,7 @@ export function flattenPrompts(prompts: Prompt[]): CoreMessage[] {
  * @returns Processed prompt array and original prompt tree
  */
 export async function promptConcat(
-  agentConfig: AgentPromptDescription,
+  agentConfig: Pick<AgentPromptDescription, 'promptConfig'>,
   messages: AgentInstanceMessage[],
 ): Promise<{
   flatPrompts: CoreMessage[];
@@ -151,7 +150,6 @@ export async function promptConcat(
   logger.debug('Starting prompt concatenation', {
     method: 'promptConcat',
     messageId,
-    configId: agentConfig.id,
     messageCount: messages.length,
   });
 

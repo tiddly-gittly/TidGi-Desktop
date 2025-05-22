@@ -1,6 +1,6 @@
 // Message handling hook for chat component
+import { AgentWithoutMessages } from '@/pages/Agent/store/agentChatStore/types';
 import { KeyboardEvent, useCallback, useState } from 'react';
-import { AgentWithoutMessages } from '../../../../../store/agentChatStore';
 
 interface UseMessageHandlingProps {
   agentId: string | undefined;

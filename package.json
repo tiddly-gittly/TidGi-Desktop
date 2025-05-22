@@ -37,6 +37,8 @@
     "@ai-sdk/openai-compatible": "^0.2.14",
     "@algolia/autocomplete-js": "^1.19.1",
     "@algolia/autocomplete-theme-classic": "^1.19.1",
+    "@rjsf/core": "6.0.0-beta.8",
+    "@rjsf/validator-ajv8": "6.0.0-beta.8",
     "ai": "^4.3.15",
     "ansi-to-html": "^0.7.2",
     "app-path": "^4.0.0",
@@ -90,7 +92,7 @@
     "winston-daily-rotate-file": "5.0.0",
     "winston-transport": "4.9.0",
     "wouter": "^3.6.0",
-    "zod": "^3.24.3",
+    "zod": "^3.25.20",
     "zustand": "^5.0.4",
     "zx": "8.3.1"
   },

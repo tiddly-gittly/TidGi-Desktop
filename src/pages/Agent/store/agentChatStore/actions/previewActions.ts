@@ -1,4 +1,4 @@
-import type { AgentPromptDescription, AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { StateCreator } from 'zustand';
 import { AgentChatState, PreviewActions } from '../types';
 
@@ -18,52 +18,92 @@ export const previewActionsMiddleware: StateCreator<AgentChatState, [], [], Prev
     set({ previewDialogOpen: false });
   },
 
-  setPreviewDialogTab: (tab: 'flat' | 'tree') => {
+  setPreviewDialogTab: (tab: 'flat' | 'tree' | 'config') => {
     set({ previewDialogTab: tab });
   },
 
   getPreviewPromptResult: async (
-    agentId: string,
-    agentDefinitionId: string,
     inputText: string,
-    aiApiConfig?: AiAPIConfig,
+    promptConfig: AgentPromptDescription['promptConfig'],
   ) => {
     try {
+      console.log('previewActions: Setting previewLoading to true');
       set({ previewLoading: true });
       const messages = Array.from(get().messages.values());
+      console.log('previewActions: Got messages', { count: messages.length });
+
+      // Safety check - if no promptConfig provided, fail early
+      if (!promptConfig || Object.keys(promptConfig).length === 0) {
+        console.error('previewActions: No promptConfig provided');
+        set({ previewLoading: false, previewResult: null });
+        return null;
+      }
 
       if (inputText.trim()) {
+        console.log('previewActions: Adding input text to messages', { textLength: inputText.length });
         messages.push({
           id: 'preview-input',
-          agentId,
+          agentId: 'preview-id',
           role: 'user',
           content: inputText,
           modified: new Date(),
         });
       }
 
-      const promptDescription: AgentPromptDescription = {
-        id: agentDefinitionId,
-        api: aiApiConfig?.api || { provider: '', model: '' },
-        modelParameters: aiApiConfig?.modelParameters || {},
-        promptConfig: {} as AgentPromptDescription['promptConfig'],
-      };
+      // Get preview result
+      console.log('previewActions: Calling concatPrompt', {
+        hasPromptConfig: !!promptConfig,
+        promptConfigKeys: promptConfig ? Object.keys(promptConfig) : [],
+        messagesCount: messages.length,
+      });
 
-      // 获取预览结果
-      const result = await window.service.agentInstance.concatPrompt(promptDescription, messages);
+      // Add a timeout to the concatPrompt call to prevent hanging
+      let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
+      const timeoutPromise = new Promise<null>((resolve) => {
+        timeoutId = setTimeout(() => {
+          console.warn('previewActions: concatPrompt call timed out after 15 seconds');
+          resolve(null);
+        }, 15000); // 15 second timeout - increased from 10s to give more time for processing
+      });
 
-      // 更新状态并返回结果
+      const concatPromptPromise = window.service.agentInstance.concatPrompt({ promptConfig }, messages);
+
+      // Race the promises
+      const result = await Promise.race([concatPromptPromise, timeoutPromise]);
+
+      // Clear the timeout
+      clearTimeout(timeoutId);
+
+      if (result === null) {
+        // Timeout occurred
+        set({
+          previewResult: null,
+          previewLoading: false,
+        });
+        console.error('previewActions: concatPrompt timed out');
+        return null;
+      }
+
+      console.log('previewActions: Got result from concatPrompt', {
+        success: !!result,
+        flatPromptsCount: result.flatPrompts.length,
+        processedPromptsCount: result.processedPrompts.length,
+      });
+
+      // Update state and return result
       set({
         previewResult: result,
         previewLoading: false,
       });
+      console.log('previewActions: Set previewLoading to false');
       return result;
     } catch (error) {
+      console.error('previewActions: Failed to generate preview:', error);
       set({
         previewResult: null,
         previewLoading: false,
       });
-      console.error('Failed to generate preview:', error);
+      console.log('previewActions: Set previewLoading to false after error');
       return null;
     }
   },

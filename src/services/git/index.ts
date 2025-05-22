@@ -5,7 +5,7 @@ import { Observer } from 'rxjs';
 import { ModuleThread, spawn, Worker } from 'threads';
 
 // @ts-expect-error it don't want .ts
-// eslint-disable-next-line import/no-webpack-loader-syntax
+
 import workerURL from 'threads-plugin/dist/loader?name=gitWorker!./gitWorker.ts';
 
 import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
@@ -22,7 +22,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace } from '@services/workspaces/interface';
-import { ObservablePromise } from 'threads/dist/observable-promise';
+import { ObservablePromise } from 'node_modules/threads/dist/observable-promise';
 import { GitWorker } from './gitWorker';
 import { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
 import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
@@ -63,7 +63,6 @@ export class Git implements IGitService {
   }
 
   public async getWorkspacesRemote(wikiFolderPath?: string): Promise<string | undefined> {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!wikiFolderPath) return;
     const branch = (await this.authService.get('git-branch' as ServiceBranchTypes)) ?? 'main';
     const defaultRemoteName = (await getRemoteName(wikiFolderPath, branch)) ?? 'origin';
@@ -169,7 +168,6 @@ export class Git implements IGitService {
   }
 
   public async initWikiGit(wikiFolderPath: string, isSyncedWiki?: boolean, isMainWiki?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const syncImmediately = !!isSyncedWiki && !!isMainWiki;
     await new Promise<void>((resolve, reject) => {
       this.gitWorker
@@ -212,7 +210,7 @@ export class Git implements IGitService {
    * @param observable return by `this.gitWorker`'s methods.
    * @returns the `hasChanges` result.
    */
-  private async getHasChangeHandler(observable: ObservablePromise<IGitLogMessage> | undefined, wikiFolderPath: string, workspaceID?: string | undefined) {
+  private async getHasChangeHandler(observable: ObservablePromise<IGitLogMessage> | undefined, wikiFolderPath: string, workspaceID?: string) {
     // return the `hasChanges` result.
     return await new Promise<boolean>((resolve, reject) => {
       observable?.subscribe(this.getWorkerMessageObserver(wikiFolderPath, () => {}, reject, workspaceID));

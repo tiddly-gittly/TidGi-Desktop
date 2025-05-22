@@ -1,5 +1,5 @@
 import { i18n } from '@services/libs/i18n';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 /**
  * Base interface for prompt parts in the agent configuration

@@ -11,6 +11,9 @@ import { InputContainer } from './components/InputContainer';
 import { MessagesContainer } from './components/MessagesContainer';
 import { ScrollToBottomButton } from './components/ScrollToBottomButton';
 
+// Import AIModelParametersDialog
+import { AIModelParametersDialog } from '@/pages/Preferences/sections/ExternalAPI/components/AIModelParametersDialog';
+
 // Import custom hooks
 import { useMessageHandling } from './hooks/useMessageHandling';
 import { useRegisterMessageRenderers } from './hooks/useMessageRendering';
@@ -20,8 +23,8 @@ import { useScrollHandling } from './hooks/useScrollHandling';
 import { isChatTab } from './utils/tabTypeGuards';
 
 // Import store hooks to fetch agent data
-import { AgentWithoutMessages } from '../../../../store/agentChatStore/types';
 import { useAgentChatStore } from '../../../../store/agentChatStore/index';
+import { AgentWithoutMessages } from '../../../../store/agentChatStore/types';
 import { TabItem } from '../../../../types/tab';
 
 /**
@@ -57,6 +60,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     sendMessage: storeSendMessage,
     cancelAgent, // Add cancelAgent function
     subscribeToUpdates,
+    updateAgent, // Add updateAgent function
     loading,
     error,
     agent,
@@ -77,6 +81,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
   const {
     message,
     parametersOpen,
+    setParametersOpen,
     // Only use the variables that are needed
     handleOpenParameters,
     handleMessageChange,
@@ -215,10 +220,31 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
         isStreaming={isStreaming}
       />
 
-      {/* Model parameter dialog - Would be implemented in a separate component */}
+      {/* Model parameter dialog */}
       {parametersOpen && (
-        /* Placeholder for parameters dialog - Implement or import the dialog component here */
-        <div hidden={false}></div>
+        <AIModelParametersDialog
+          open={parametersOpen}
+          onClose={() => {
+            setParametersOpen(false);
+          }}
+          config={{
+            api: agent?.aiApiConfig?.api || { provider: 'openai', model: 'gpt-3.5-turbo' },
+            modelParameters: agent?.aiApiConfig?.modelParameters || {
+              temperature: 0.7,
+              maxTokens: 1000,
+              topP: 0.95,
+              systemPrompt: '',
+            },
+          }}
+          onSave={async (newConfig) => {
+            if (agent && tab.agentId) {
+              await updateAgent(tab.agentId, {
+                aiApiConfig: newConfig,
+              });
+              setParametersOpen(false);
+            }
+          }}
+        />
       )}
     </Box>
   );

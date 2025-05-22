@@ -30,9 +30,7 @@ const ControlsContainer = styled(Box)`
 
 interface ChatHeaderProps {
   title?: string;
-  loading?: boolean;
-  agentId?: string;
-  agentDefId?: string;
+  loading: boolean;
   onOpenParameters: () => void;
   inputText?: string;
 }
@@ -43,14 +41,13 @@ interface ChatHeaderProps {
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
   title,
   loading,
-  agentId,
-  agentDefId,
   onOpenParameters,
   inputText,
 }) => {
   const { t } = useTranslation('agent');
-  const { previewDialogOpen, openPreviewDialog, closePreviewDialog } = useAgentChatStore(
+  const { agent, previewDialogOpen, openPreviewDialog, closePreviewDialog } = useAgentChatStore(
     useShallow((state) => ({
+      agent: state.agent,
       previewDialogOpen: state.previewDialogOpen,
       openPreviewDialog: state.openPreviewDialog,
       closePreviewDialog: state.closePreviewDialog,
@@ -69,7 +66,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           <PreviewIcon />
         </IconButton>
         {loading && <CircularProgress size={20} sx={{ mr: 1 }} color='primary' />}
-        <CompactModelSelector agentId={agentId} agentDefId={agentDefId} />
+        <CompactModelSelector agentDefId={agent?.agentDefId} />
         <IconButton
           size='small'
           onClick={onOpenParameters}
@@ -81,8 +78,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       <PromptPreviewDialog
         open={previewDialogOpen}
         onClose={closePreviewDialog}
-        agentId={agentId}
-        agentDefId={agentDefId}
         inputText={inputText}
       />
     </Header>

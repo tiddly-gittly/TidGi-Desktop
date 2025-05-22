@@ -1,9 +1,12 @@
-import { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
-import type { AiAPIConfig, Prompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { AgentDefinition } from '@services/agentDefinition/interface';
+import type { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
+import type { AgentPromptDescription, Prompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { CoreMessage } from 'ai';
 
 // Type for agent data without messages - exported for use in other components
-export type AgentWithoutMessages = Omit<AgentInstance, 'messages'>;
+export interface AgentWithoutMessages extends Omit<AgentInstance, 'messages'> {
+  messages?: never;
+}
 
 // Basic agent chat state
 export interface AgentChatBaseState {
@@ -24,7 +27,7 @@ export interface AgentChatBaseState {
 // Preview dialog specific state
 export interface PreviewDialogState {
   previewDialogOpen: boolean;
-  previewDialogTab: 'flat' | 'tree';
+  previewDialogTab: 'flat' | 'tree' | 'config';
   previewLoading: boolean;
   previewResult: {
     flatPrompts: CoreMessage[];
@@ -34,36 +37,33 @@ export interface PreviewDialogState {
 
 // Basic actions interface
 export interface BasicActions {
+  /** Set current agent */
+  setAgent: (agentData: AgentWithoutMessages | null) => void;
+  /** Set messages */
+  setMessages: (messages: AgentInstanceMessage[]) => void;
+  /** Add a new message */
+  addMessage: (message: AgentInstanceMessage) => void;
+  /** Update an existing message */
+  updateMessage: (message: AgentInstanceMessage) => void;
+  /** Start streaming a message */
+  streamMessageStart: (message: AgentInstanceMessage) => void;
+  /** Update streaming message content */
+  streamMessageContent: (content: string, messageId?: string) => void;
+  /** End streaming a message */
+  streamMessageEnd: (messageId?: string) => void;
+  /** Set loading state */
+  setLoading: (loading: boolean) => void;
+  /** Set error state */
+  setError: (error: Error | null) => void;
+  /** Clear error state */
+  clearError: () => void;
+  /** Load an agent by ID */
+  loadAgent: (agentId: string) => Promise<void>;
   /**
-   * Processes a full agent instance and extracts agent data, messages map, and ordered message IDs.
-   * @param fullAgent The complete agent instance including messages
-   * @returns An object with agent data (without messages), messages map, and ordered message IDs
-   */
-  processAgentData: (fullAgent: AgentInstance) => {
-    agent: AgentWithoutMessages;
-    messages: Map<string, AgentInstanceMessage>;
-    orderedMessageIds: string[];
-  };
-
-  /**
-   * Fetches the agent instance data by ID and updates the store.
-   * @param agentId The agent instance ID
-   */
-  fetchAgent: (agentId: string) => Promise<void>;
-
-  /**
-   * Subscribes to agent instance updates and returns a cleanup function.
-   * @param agentId The agent instance ID
-   * @returns Cleanup function or undefined
-   */
-  subscribeToUpdates: (agentId: string) => (() => void) | undefined;
-
-  /**
-   * Sends a message to the agent instance.
-   * @param agentId The agent instance ID
+   * Sends a message from the user to the agent.
    * @param content The message content
    */
-  sendMessage: (agentId: string, content: string) => Promise<void>;
+  sendMessage: (content: string) => Promise<void>;
 
   /**
    * Creates a new agent instance from a definition.
@@ -78,18 +78,23 @@ export interface BasicActions {
    * @param data The partial agent data to update
    * @returns The updated agent data (without messages) or null
    */
-  updateAgent: (agentId: string, data: Partial<AgentInstance>) => Promise<AgentWithoutMessages | null>;
+  updateAgent: (data: Partial<AgentInstance>) => Promise<AgentWithoutMessages | null>;
 
   /**
    * Cancels the current operation for the agent instance.
-   * @param agentId The agent instance ID
    */
-  cancelAgent: (agentId: string) => Promise<void>;
-
-  /**
-   * Clears the current error state.
-   */
-  clearError: () => void;
+  cancelAgent: () => Promise<void>;
+  getHandlerId: () => Promise<string | undefined>;
+  processAgentData: (
+    fullAgent: AgentInstance,
+  ) => Promise<{
+    agent: AgentWithoutMessages;
+    agentDef: AgentDefinition | null;
+    messages: Map<string, AgentInstanceMessage>;
+    orderedMessageIds: string[];
+  }>;
+  fetchAgent: (agentId: string) => Promise<void>;
+  subscribeToUpdates: (agentId: string) => (() => void) | undefined;
 }
 
 // Streaming related actions interface
@@ -128,28 +133,44 @@ export interface PreviewActions {
 
   /**
    * Sets the active tab in the preview dialog
-   * @param tab The tab to switch to ('flat' or 'tree')
+   * @param tab The tab to switch to ('flat', 'tree', or 'config')
    */
-  setPreviewDialogTab: (tab: 'flat' | 'tree') => void;
+  setPreviewDialogTab: (tab: 'flat' | 'tree' | 'config') => void;
 
   /**
    * Generates a preview of prompts for the current agent state
-   * @param agentId The ID of the current agent
-   * @param agentDefinitionId The ID of the agent definition
-   * @param inputText Optional input text to include in preview
-   * @param aiApiConfig Optional AI API configuration
+   * @param inputText Input text to include in the preview
+   * @param promptConfig Prompt configuration to use for preview
    * @returns Promise that resolves when preview is generated and state is updated
    */
   getPreviewPromptResult: (
-    agentId: string,
-    agentDefinitionId: string,
     inputText: string,
-    aiApiConfig?: AiAPIConfig,
-  ) => Promise<{
-    flatPrompts: CoreMessage[];
-    processedPrompts: Prompt[];
-  } | null>;
+    promptConfig: AgentPromptDescription['promptConfig'],
+  ) => Promise<
+    {
+      flatPrompts: CoreMessage[];
+      processedPrompts: Prompt[];
+    } | null
+  >;
 }
 
 // Combine all interfaces into the complete state interface
 export interface AgentChatState extends AgentChatBaseState, PreviewDialogState, BasicActions, StreamingActions, PreviewActions {}
+
+// Agent chat store type with agentDef related properties
+export interface AgentChatStoreType extends BasicActions {
+  /** Loading state */
+  loading: boolean;
+  /** Error state */
+  error: Error | null;
+  /** Active agent data */
+  agent: AgentWithoutMessages | null;
+  /** Agent definition */
+  agentDef: AgentDefinition | null;
+  /** Agent messages, keyed by message ID */
+  messages: Map<string, AgentInstanceMessage>;
+  /** Ordered list of message IDs */
+  orderedMessageIds: string[];
+  /** Set of currently streaming message IDs */
+  streamingMessageIds: Set<string>;
+}

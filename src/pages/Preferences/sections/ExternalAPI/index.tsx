@@ -8,7 +8,7 @@ import { ListItemText } from '@/components/ListItem';
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import { ListItemVertical, Paper, SectionTitle } from '../../PreferenceComponents';
 import type { ISectionProps } from '../../useSections';
-import { ModelParametersDialog } from './components/ModelParametersDialog';
+import { AIModelParametersDialog } from './components/AIModelParametersDialog';
 import { ModelSelector } from './components/ModelSelector';
 import { ProviderConfig } from './components/ProviderConfig';
 import { useAIConfigManagement } from './useAIConfigManagement';
@@ -77,7 +77,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
       </Paper>
 
       {/* 模型参数设置对话框 */}
-      <ModelParametersDialog
+      <AIModelParametersDialog
         open={parametersDialogOpen}
         onClose={closeParametersDialog}
         config={config}

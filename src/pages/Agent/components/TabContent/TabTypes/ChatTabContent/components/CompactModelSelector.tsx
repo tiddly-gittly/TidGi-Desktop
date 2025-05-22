@@ -9,9 +9,10 @@ import { useAIConfigManagement } from '../../../../../../../pages/Preferences/se
 
 // Import from the external component
 import { Autocomplete, TextField } from '@mui/material';
+import { useAgentChatStore } from '../../../../../store/agentChatStore';
+import type { AgentChatState } from '../../../../../store/agentChatStore/types';
 
 interface ModelSelectorProps {
-  agentId?: string;
   agentDefId?: string;
 }
 
@@ -20,15 +21,15 @@ interface ModelSelectorProps {
  * Uses useAIConfigManagement hook to access and update AI configuration
  */
 export const CompactModelSelector: React.FC<ModelSelectorProps> = ({
-  agentId,
   agentDefId,
 }) => {
   const { t } = useTranslation('agent');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const agent = useAgentChatStore((state: AgentChatState) => state.agent);
 
   // Use the AI config management hook with both agent instance ID and definition ID
   const { config, providers, handleModelChange } = useAIConfigManagement({
-    agentId,
+    agentId: agent?.id,
     agentDefId,
   });
 
@@ -37,9 +38,9 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({
 
   // Safely process providers to build model options
   providers.forEach((provider: AIProviderConfig) => {
-    if (provider.enabled && provider.models) {
+    if (provider.models) {
       provider.models.forEach((model: ModelInfo) => {
-        if (model && typeof model === 'object' && 'name' in model) {
+        if ('name' in model) {
           modelOptions.push([provider, model]);
         }
       });
@@ -49,10 +50,7 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({
   // Find the currently selected model for the tooltip display
   const currentModel = config?.api
     ? `${config.api.provider} - ${config.api.model}`
-    : '-';
-
-  // Filter enabled providers
-  const filteredModelOptions = modelOptions.filter(m => m[0] && m[0].enabled);
+    : t('ModelSelector.NoModelSelected');
 
   const handleOpenDialog = () => {
     setDialogOpen(true);
@@ -68,57 +66,43 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({
   };
 
   // Find currently selected model in options
-  const selectedValue = config?.api
-    ? modelOptions.find(m =>
-      m[0] && m[0].provider === config.api.provider &&
-      m[1] && m[1].name === config.api.model
-    ) || null
-    : null;
+  const selectedModel = config?.api
+    ? modelOptions.find(m => m[0].provider === config.api.provider && m[1].name === config.api.model)
+    : undefined;
 
   return (
     <>
-      <Tooltip title={`${t('Preference.EnableProvider')}: ${currentModel}`} arrow>
-        <IconButton
-          size='small'
-          onClick={handleOpenDialog}
-          color='primary'
-        >
-          <TuneIcon />
+      <Tooltip title={currentModel}>
+        <IconButton onClick={handleOpenDialog} aria-label={t('ModelSelector.SelectModel')} size='small'>
+          <TuneIcon fontSize='small' />
         </IconButton>
       </Tooltip>
 
-      <Dialog
-        open={dialogOpen}
-        onClose={handleCloseDialog}
-        maxWidth='sm'
-        fullWidth
-      >
-        <DialogTitle>{t('Preference.DefaultAIModelSelection')}</DialogTitle>
+      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth='sm' fullWidth>
+        <DialogTitle>{t('ModelSelector.Title')}</DialogTitle>
         <DialogContent>
           <Autocomplete
-            value={selectedValue}
-            onChange={(_, value) => {
-              if (value) {
-                void handleModelSelect(value[0].provider, value[1].name);
+            value={selectedModel}
+            onChange={(_, newValue) => {
+              if (newValue) {
+                void handleModelSelect(newValue[0].provider, newValue[1].name);
               }
             }}
-            options={filteredModelOptions}
-            groupBy={(option) => option[0].provider}
-            getOptionLabel={(option) => option[1].name}
-            renderInput={(parameters) => (
+            options={modelOptions}
+            getOptionLabel={option => `${option[0].provider} - ${option[1].name}`}
+            isOptionEqualToValue={(option, value) => option[0].provider === value[0].provider && option[1].name === value[1].name}
+            renderInput={inputParameters => (
               <TextField
-                {...parameters}
-                label={t('Preference.SelectModel')}
+                {...inputParameters}
+                label={t('ModelSelector.Model')}
                 variant='outlined'
                 fullWidth
               />
             )}
-            fullWidth
-            sx={{ mt: 2 }}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>{t('Preference.Cancel')}</Button>
+          <Button onClick={handleCloseDialog}>{t('Common.Cancel')}</Button>
         </DialogActions>
       </Dialog>
     </>

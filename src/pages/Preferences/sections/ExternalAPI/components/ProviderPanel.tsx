@@ -1,6 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import { Box, Button, Chip, FormControlLabel, Switch, Typography } from '@mui/material';
-import { AIProviderConfig, ModelInfo, ModelFeature } from '@services/externalAPI/interface';
+import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextField } from '../../../PreferenceComponents';
@@ -29,7 +29,7 @@ export function ProviderPanel({
   onFormChange,
   onEnabledChange,
   onRemoveModel,
-  onOpenAddModelDialog
+  onOpenAddModelDialog,
 }: ProviderPanelProps) {
   const { t } = useTranslation('agent');
   const isEnabled = provider.enabled !== false;
