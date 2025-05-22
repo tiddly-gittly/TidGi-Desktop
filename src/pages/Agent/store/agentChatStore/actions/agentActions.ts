@@ -1,6 +1,7 @@
 /* eslint-disable unicorn/prevent-abbreviations */
 import { AgentDefinition } from '@services/agentDefinition/interface';
 import type { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
+import { Subscription } from 'rxjs';
 import type { StoreApi } from 'zustand';
 import type { AgentChatStoreType, AgentWithoutMessages } from '../types';
 
@@ -16,28 +17,28 @@ export const agentActions = (
     messages: Map<string, AgentInstanceMessage>;
     orderedMessageIds: string[];
   }> => {
-    // 将消息数组转换为以 ID 为 key 的 Map
+    // Convert message array to a Map with ID as key
     const messagesMap = new Map<string, AgentInstanceMessage>();
-    // 创建一个有序的消息 ID 数组
+    // Create an ordered array of message IDs
     const orderedIds: string[] = [];
-    
-    // 将代理数据分为不含消息的代理数据和消息 Map
+
+    // Split agent data into agent without messages and message Map
     const { messages = [], ...agentWithoutMessages } = fullAgent;
 
-    // 按修改时间升序排序消息
+    // Sort messages by modified time in ascending order
     const sortedMessages = [...messages].sort((a, b) => {
       const dateA = a.modified ? new Date(a.modified).getTime() : 0;
       const dateB = b.modified ? new Date(b.modified).getTime() : 0;
       return dateA - dateB;
     });
 
-    // 填充消息 Map 和有序 ID 数组
+    // Populate message Map and ordered ID array
     sortedMessages.forEach(message => {
       messagesMap.set(message.id, message);
       orderedIds.push(message.id);
     });
 
-    // 如果有 agentDefId,加载 agentDef
+    // If there's an agentDefId, load the agentDef
     let agentDef: AgentDefinition | null = null;
     if (agentWithoutMessages.agentDefId) {
       try {
@@ -66,13 +67,13 @@ export const agentActions = (
     try {
       set({ loading: true, error: null });
       const fullAgent = await window.service.agentInstance.getAgent(agentId);
-      
+
       if (!fullAgent) {
         throw new Error(`Agent not found: ${agentId}`);
       }
 
       const processedData = await get().processAgentData(fullAgent);
-      
+
       set({
         agent: processedData.agent,
         agentDef: processedData.agentDef,
@@ -96,7 +97,7 @@ export const agentActions = (
 
       // Process agent data using our helper method and await agentDef loading
       const processedData = await get().processAgentData(fullAgent);
-      
+
       set({
         agent: processedData.agent,
         agentDef: processedData.agentDef,
@@ -129,7 +130,7 @@ export const agentActions = (
 
       // Process agent data using our helper method
       const processedData = await get().processAgentData(updatedAgent);
-      
+
       set({
         agent: processedData.agent,
         agentDef: processedData.agentDef,
@@ -149,52 +150,162 @@ export const agentActions = (
     }
   },
 
-  cancelAgent: async () => {
-    const storeAgent = get().agent;
-    if (!storeAgent?.id) {
-      set({ error: new Error('No active agent in store') });
-      return;
+  fetchAgent: async (agentId: string) => {
+    try {
+      // Only set loading state on initial call
+      const isInitialCall = !get().agent;
+      if (isInitialCall) {
+        set({ loading: true });
+      }
+
+      const agent = await window.service.agentInstance.getAgent(agentId);
+      if (agent) {
+        const { agent: processedAgent, agentDef, messages, orderedMessageIds } = await get().processAgentData(agent);
+        set({
+          agent: processedAgent,
+          agentDef,
+          messages,
+          orderedMessageIds,
+          ...(isInitialCall ? { loading: false } : {}),
+          error: null,
+        });
+      }
+    } catch (error) {
+      const isInitialCall = !get().agent;
+      set({
+        error: error instanceof Error ? error : new Error(String(error)),
+        ...(isInitialCall ? { loading: false } : {}),
+      });
     }
+  },
+
+  subscribeToUpdates: (agentId: string) => {
+    if (!agentId) return undefined;
 
     try {
-      set({ loading: true });
-      await window.service.agentInstance.cancelAgent(storeAgent.id);
+      // Track message-specific subscriptions for cleanup
+      const messageSubscriptions = new Map<string, Subscription>();
+
+      // Subscribe to overall agent updates (primarily for new messages)
+      const agentSubscription = window.observables.agentInstance.subscribeToAgentUpdates(agentId).subscribe({
+        next: async (fullAgent) => {
+          // Ensure fullAgent exists before processing
+          if (!fullAgent) return;
+
+          // Extract current state
+          const { messages: currentMessages, orderedMessageIds: currentOrderedIds } = get();
+          const newMessageIds: string[] = [];
+
+          // Process new messages - backend already sorts messages by modified time
+          fullAgent.messages.forEach(message => {
+            const existingMessage = currentMessages.get(message.id);
+
+            // If this is a new message
+            if (!existingMessage) {
+              // Add new message to the map
+              currentMessages.set(message.id, message);
+              newMessageIds.push(message.id);
+
+              // Subscribe to AI message updates
+              if ((message.role === 'agent' || message.role === 'assistant') && !messageSubscriptions.has(message.id)) {
+                // Mark as streaming
+                get().setMessageStreaming(message.id, true);
+                // Create message-specific subscription
+                messageSubscriptions.set(
+                  message.id,
+                  window.observables.agentInstance.subscribeToAgentUpdates(agentId, message.id).subscribe({
+                    next: (status) => {
+                      if (status?.message) {
+                        // Update the message in our map
+                        get().messages.set(status.message.id, status.message);
+                        // Check if completed
+                        if (status.state === 'completed') {
+                          get().setMessageStreaming(status.message.id, false);
+                        }
+                      }
+                    },
+                    error: (error) => {
+                      console.error(`Error in message subscription for ${message.id}:`, error);
+                    },
+                    complete: () => {
+                      get().setMessageStreaming(message.id, false);
+                      messageSubscriptions.delete(message.id);
+                    },
+                  }),
+                );
+              }
+            }
+          });
+
+          // Extract agent data without messages
+          const { messages: _, ...agentWithoutMessages } = fullAgent;
+
+          // Update state based on whether we have new messages
+          if (newMessageIds.length > 0) {
+            // Update agent and append new message IDs to maintain order
+            set({
+              agent: agentWithoutMessages,
+              orderedMessageIds: [...currentOrderedIds, ...newMessageIds],
+            });
+          } else {
+            // No new messages, just update agent state
+            set({ agent: agentWithoutMessages });
+          }
+        },
+        error: (error) => {
+          console.error('Error in agent subscription:', error);
+          set({ error: error instanceof Error ? error : new Error(String(error)) });
+        },
+      });
+
+      // Return cleanup function
+      return () => {
+        agentSubscription.unsubscribe();
+        messageSubscriptions.forEach((subscription) => {
+          subscription.unsubscribe();
+        });
+      };
     } catch (error) {
+      console.error('Failed to subscribe to agent updates:', error);
       set({ error: error instanceof Error ? error : new Error(String(error)) });
-      console.error('Failed to cancel agent:', error);
-    } finally {
-      set({ loading: false });
+      return undefined;
     }
   },
 
   getHandlerId: async () => {
     try {
-      set({ loading: true });
-      const storeAgent = get().agent;
-      if (storeAgent?.agentDefId) {
-        // 从缓存的 agentDef 获取 handlerId
-        const agentDef = get().agentDef;
+      const { agent, agentDef } = get();
+      if (agentDef?.handlerID) {
+        return agentDef.handlerID;
+      }
+      if (agent?.agentDefId) {
+        const agentDef = await window.service.agentDefinition.getAgentDef(agent.agentDefId);
         if (agentDef?.handlerID) {
           return agentDef.handlerID;
         }
-        
-        // 如果缓存中没有,则重新加载
-        const agentDef2 = await window.service.agentDefinition.getAgentDef(storeAgent.agentDefId);
-        const handlerId = agentDef2?.handlerID;
-        if (handlerId) {
-          return handlerId;
-        }
-        throw new Error('Handler ID not found in Agent definition.');
-      } else {
-        throw new Error('No active Agent or Agent Definition ID in store, cannot get Handler ID.');
       }
+
+      throw new Error('No active agent in store or handler ID not found');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const finalError = new Error(`Failed to get handler ID: ${errorMessage}`);
       set({ error: finalError });
       throw finalError;
-    } finally {
-      set({ loading: false });
+    }
+  },
+
+  /**
+   * Get handler configuration schema for current handler
+   */
+  getHandlerConfigSchema: async () => {
+    try {
+      const handlerId = await get().getHandlerId();
+      return await window.service.agentInstance.getHandlerConfigSchema(handlerId);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const finalError = new Error(`Failed to get handler schema: ${errorMessage}`);
+      set({ error: finalError });
+      throw finalError;
     }
   },
 });

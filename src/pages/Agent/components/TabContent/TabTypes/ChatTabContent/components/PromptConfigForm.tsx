@@ -12,6 +12,7 @@ import validator from '@rjsf/validator-ajv8';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
 // Define prompt config type alias for easier use
 type PromptConfig = AgentPromptDescription['promptConfig'];
@@ -44,11 +45,12 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
   const { loading, config, handleConfigChange } = useHandlerConfigManagement({
     agentId,
     agentDefId,
-  });  const { getHandlerId, getHandlerConfigSchema } = useAgentChatStore(state => ({
+  });
+  const { getHandlerId, getHandlerConfigSchema } = useAgentChatStore(useShallow(state => ({
     getHandlerId: state.getHandlerId,
     getHandlerConfigSchema: state.getHandlerConfigSchema,
-  }));
-  
+  })));
+
   const [handlerId, setHandlerId] = useState<string | undefined>();
   const [formData, setFormData] = useState<PromptConfig | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,7 +62,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
   useEffect(() => {
     const fetchHandlerId = async () => {
       try {
-        const id = await getHandlerId({ agentId, agentDefId });
+        const id = await getHandlerId();
         setHandlerId(id);
         setHandlerError(null);
       } catch (error) {
@@ -70,7 +72,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
     };
 
     void fetchHandlerId();
-  }, [agentDefId, agentId, getHandlerId]);
+  }, [getHandlerId]);
 
   // Update form data when configuration is loaded
   useEffect(() => {
@@ -84,7 +86,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
     const fetchSchema = async () => {
       try {
         setLoadingSchema(true);
-        const schema = await getHandlerConfigSchema(handlerId);
+        const schema = await getHandlerConfigSchema();
         setFormSchema(schema);
       } catch (error) {
         console.error('Failed to fetch schema:', error);
@@ -94,7 +96,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
     };
 
     void fetchSchema();
-  }, [getHandlerConfigSchema, handlerId]);
+  }, [getHandlerConfigSchema]);
 
   // Handle form submission
   const handleSubmit = async (data: PromptConfig): Promise<void> => {

@@ -172,6 +172,12 @@ export type INewWorkspaceConfig = SetOptional<
 export interface IWorkspaceService {
   /** Enter a state that no workspace is active (show welcome page) */
   clearActiveWorkspace(oldActiveWorkspaceID: string | undefined): Promise<void>;
+  /**
+   * Check if a workspace exists by id
+   * @param id workspace id to check
+   * @returns true if workspace exists, false otherwise
+   */
+  exists(id: string): Promise<boolean>;
   countWorkspaces(): Promise<number>;
   create(newWorkspaceConfig: INewWorkspaceConfig): Promise<IWorkspace>;
   get(id: string): Promise<IWorkspace | undefined>;

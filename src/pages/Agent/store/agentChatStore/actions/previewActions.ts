@@ -1,12 +1,12 @@
 import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { StateCreator } from 'zustand';
-import { AgentChatState, PreviewActions } from '../types';
+import { AgentChatStoreType, PreviewActions } from '../types';
 
 /**
  * Preview dialog related actions
  * Handles dialog state and preview generation
  */
-export const previewActionsMiddleware: StateCreator<AgentChatState, [], [], PreviewActions> = (
+export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], PreviewActions> = (
   set,
   get,
 ) => ({
@@ -32,9 +32,9 @@ export const previewActionsMiddleware: StateCreator<AgentChatState, [], [], Prev
       const messages = Array.from(get().messages.values());
       console.log('previewActions: Got messages', { count: messages.length });
 
-      // Safety check - if no promptConfig provided, fail early
-      if (!promptConfig || Object.keys(promptConfig).length === 0) {
-        console.error('previewActions: No promptConfig provided');
+      // Safety check - if promptConfig is empty, fail early
+      if (Object.keys(promptConfig).length === 0) {
+        console.error('previewActions: Empty promptConfig provided');
         set({ previewLoading: false, previewResult: null });
         return null;
       }
@@ -52,9 +52,8 @@ export const previewActionsMiddleware: StateCreator<AgentChatState, [], [], Prev
 
       // Get preview result
       console.log('previewActions: Calling concatPrompt', {
-        hasPromptConfig: !!promptConfig,
-        promptConfigKeys: promptConfig ? Object.keys(promptConfig) : [],
-        messagesCount: messages.length,
+        promptConfigKeys: Object.keys(promptConfig),
+        messages,
       });
 
       // Add a timeout to the concatPrompt call to prevent hanging

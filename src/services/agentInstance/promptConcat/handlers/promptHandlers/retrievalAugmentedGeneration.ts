@@ -1,6 +1,10 @@
 /**
  * Retrieval Augmented Generation handler
- * Integrates with Wiki service to retrieve content from TiddlyWiki
+ * Integrates with Wiki service t    logger.warn('Missing wikiParam in retrievalAugmentedGeneration', { handler: 'retrievalAugmentedGenerationHandler' });
+    return prompts;
+  }
+
+  // Check if trigger condition is metrieve content from TiddlyWiki
  * This handler is registered to process retrievalAugmentedGeneration dynamic modifications
  */
 import { WikiChannel } from '@/constants/channels';
@@ -8,6 +12,7 @@ import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
+import { IWorkspaceService } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { findPromptById, PromptConcatContext } from '../../promptConcat';
 import type { Prompt, PromptDynamicModification, RetrievalAugmentedGenerationParameter } from '../../promptConcatSchema';
@@ -63,7 +68,7 @@ export async function retrievalAugmentedGenerationHandler(
   context: PromptConcatContext,
 ): Promise<Prompt[]> {
   if (!modification.retrievalAugmentedGenerationParam) {
-    logger.warn('retrievalAugmentedGeneration handler called without parameters');
+    logger.warn('retrievalAugmentedGeneration handler called without parameters', { handler: 'retrievalAugmentedGenerationHandler' });
     return prompts;
   }
 
@@ -84,23 +89,25 @@ export async function retrievalAugmentedGenerationHandler(
   try {
     const shouldTrigger = await checkTriggerCondition(trigger, context);
     if (!shouldTrigger) {
-      logger.debug('retrievalAugmentedGeneration trigger condition not met');
+      logger.debug('retrievalAugmentedGeneration trigger condition not met', { handler: 'retrievalAugmentedGenerationHandler' });
       return prompts;
     }
   } catch (error) {
     logger.error('Error checking trigger condition', {
       error: error instanceof Error ? error.message : String(error),
       triggerId: modification.id,
+      handler: 'retrievalAugmentedGenerationHandler',
     });
     return prompts;
   }
 
   // Get Wiki service
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+  const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const { workspaceName, filter } = wikiParam;
 
   if (!workspaceName || !filter) {
-    logger.warn('Missing workspaceName or filter in wikiParam', { wikiParam });
+    logger.warn('Missing workspaceName or filter in wikiParam', { wikiParam, handler: 'retrievalAugmentedGenerationHandler' });
     return prompts;
   }
 
@@ -109,22 +116,28 @@ export async function retrievalAugmentedGenerationHandler(
     // For now, assuming workspaceName is actually the workspaceID
     // In a real implementation, you'd lookup the workspace ID by name
     const workspaceID = workspaceName;
+    if (!await workspaceService.exists(workspaceID)) {
+      logger.warn(`Workspace ${workspaceID} does not exist`, { workspaceID, handler: 'retrievalAugmentedGenerationHandler' });
+      return prompts;
+    }
 
     logger.debug('Retrieving content from Wiki', {
       workspaceID,
       filter,
+      handler: 'retrievalAugmentedGenerationHandler',
     });
 
     // Retrieve tiddlers using the filter expression
     const tiddlers = await wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, [filter]);
 
     if (tiddlers.length === 0) {
-      logger.debug('No tiddlers found with filter', { filter });
+      logger.debug('No tiddlers found with filter', { filter, handler: 'retrievalAugmentedGenerationHandler' });
       return prompts;
     }
 
     logger.debug(`Found ${tiddlers.length} tiddlers`, {
       tiddlerTitles: tiddlers.slice(0, 5), // Log only first 5 titles for brevity
+      handler: 'retrievalAugmentedGenerationHandler',
     });
 
     // Retrieve full tiddler content for each tiddler
@@ -138,12 +151,13 @@ export async function retrievalAugmentedGenerationHandler(
       } catch (error) {
         logger.warn(`Error retrieving tiddler content for ${title}`, {
           error: error instanceof Error ? error.message : String(error),
+          handler: 'retrievalAugmentedGenerationHandler',
         });
       }
     }
 
     if (tiddlerContents.length === 0) {
-      logger.debug('No tiddler contents could be retrieved');
+      logger.debug('No tiddler contents could be retrieved', { handler: 'retrievalAugmentedGenerationHandler' });
       return prompts;
     }
 
@@ -157,7 +171,7 @@ export async function retrievalAugmentedGenerationHandler(
     const target = findPromptById(prompts, targetId);
 
     if (!target) {
-      logger.warn(`Target ${targetId} not found for retrievalAugmentedGeneration`);
+      logger.warn(`Target ${targetId} not found for retrievalAugmentedGeneration`, { handler: 'retrievalAugmentedGenerationHandler' });
       return prompts;
     }
 
@@ -185,6 +199,7 @@ export async function retrievalAugmentedGenerationHandler(
       contentLength: content.length,
       targetId,
       position,
+      handler: 'retrievalAugmentedGenerationHandler',
     });
 
     return prompts;
@@ -193,6 +208,7 @@ export async function retrievalAugmentedGenerationHandler(
       error: error instanceof Error ? error.message : String(error),
       workspaceName,
       filter,
+      handler: 'retrievalAugmentedGenerationHandler',
     });
     return prompts;
   }

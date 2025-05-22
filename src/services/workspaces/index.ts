@@ -510,4 +510,8 @@ export class Workspace implements IWorkspaceService {
       }
     }
   }
+
+  public async exists(id: string): Promise<boolean> {
+    return Boolean(await this.get(id));
+  }
 }

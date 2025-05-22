@@ -300,7 +300,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   return (
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
       <DialogTitle>
-        {t('Prompt.Preview', 'Prompt Preview')}
+        {t('Prompt.Preview')}
         <IconButton
           aria-label='close'
           onClick={onClose}
@@ -322,11 +322,11 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
             >
               <CircularProgress />
               <Typography variant='body2' color='text.secondary'>
-                {t('Prompt.Loading', 'Loading preview...')}
+                {t('Prompt.Loading')}
               </Typography>
               {/* We still want to show the preview is auto-refreshing based on input text */}
               <Typography variant='caption' color='text.secondary' sx={{ mt: 1, maxWidth: '80%', textAlign: 'center' }}>
-                {t('Prompt.AutoRefresh', 'Preview will automatically refresh when input text changes')}
+                {t('Prompt.AutoRefresh')}
               </Typography>
             </Box>
           )
@@ -339,17 +339,17 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
                 variant='fullWidth'
               >
                 <Tab
-                  label={t('Prompt.Flat', 'Flat Result')}
+                  label={t('Prompt.Flat')}
                   value='flat'
                   sx={{ textTransform: 'none' }}
                 />
                 <Tab
-                  label={t('Prompt.Tree', 'Tree Result')}
+                  label={t('Prompt.Tree')}
                   value='tree'
                   sx={{ textTransform: 'none' }}
                 />
                 <Tab
-                  label={t('Prompt.Config', 'Configuration')}
+                  label={t('Prompt.Config')}
                   value='config'
                   sx={{ textTransform: 'none' }}
                 />

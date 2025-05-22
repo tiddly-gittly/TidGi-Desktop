@@ -70,7 +70,7 @@ const PromptPartSchema: z.ZodType<IPromptPart> = z.lazy(() =>
 export const PromptSchema = z.object({
   id: z.string().describe(i18n.t('Schema.Prompt.Id')),
   caption: z.string().describe(i18n.t('Schema.Prompt.Caption')),
-  enabled: z.boolean().optional().default(true).describe(i18n.t('Schema.Prompt.Enabled')),
+  enabled: z.boolean().optional().describe(i18n.t('Schema.Prompt.Enabled')),
   role: z.enum(['system', 'user', 'assistant']).optional().describe(i18n.t('Schema.Prompt.Role')),
   tags: z.array(z.string()).optional().describe(i18n.t('Schema.Prompt.Tags')),
   text: z.string().optional().describe(i18n.t('Schema.Prompt.Text')),

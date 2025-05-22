@@ -29,15 +29,12 @@ interface MessagesContainerProps {
 export const MessagesContainer: React.FC<MessagesContainerProps> = ({ messageIds, children }) => {
   return (
     <Container id='messages-container'>
-      {/* 只传递消息 ID 给子组件 */}
       {messageIds.map((messageId) => (
         <MessageBubble
           key={messageId}
           messageId={messageId}
         />
       ))}
-
-      {/* Render additional content (loading states, errors, empty states) */}
       {children}
     </Container>
   );

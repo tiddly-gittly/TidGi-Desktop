@@ -97,7 +97,7 @@ export function flattenPrompts(prompts: Prompt[]): CoreMessage[] {
 
   // Process each top-level prompt
   for (const prompt of prompts) {
-    if (!prompt.enabled) {
+    if (prompt.enabled === false) {
       logger.debug('Skipping disabled prompt', { id: prompt.id });
       continue;
     }
@@ -159,7 +159,6 @@ export async function promptConcat(
 
   // 1. Clone prompt configuration for modification
   const promptsCopy = cloneDeep(prompts);
-
   // 2. Get list of dynamic modification configurations
   let modifiedPrompts = promptsCopy;
   const promptDynamicModifications = Array.isArray(promptConfig.promptDynamicModification)
@@ -192,7 +191,9 @@ export async function promptConcat(
   });
 
   // 6. Add user messages (if any)
-  const [userMessage] = messages;
+  // Get the last message, which should be the user message
+  const messagesCopy = cloneDeep(messages);
+  const userMessage = messagesCopy.length > 0 ? messagesCopy[messagesCopy.length - 1] : null;
 
   if (userMessage && userMessage.role === 'user') {
     logger.debug('Adding user message to prompts', {

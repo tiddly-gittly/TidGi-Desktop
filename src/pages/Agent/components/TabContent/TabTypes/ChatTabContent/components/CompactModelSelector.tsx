@@ -10,7 +10,6 @@ import { useAIConfigManagement } from '../../../../../../../pages/Preferences/se
 // Import from the external component
 import { Autocomplete, TextField } from '@mui/material';
 import { useAgentChatStore } from '../../../../../store/agentChatStore';
-import type { AgentChatState } from '../../../../../store/agentChatStore/types';
 
 interface ModelSelectorProps {
   agentDefId?: string;
@@ -25,10 +24,10 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({
 }) => {
   const { t } = useTranslation('agent');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const agent = useAgentChatStore((state: AgentChatState) => state.agent);
+  const agent = useAgentChatStore((state) => state.agent);
 
   // Use the AI config management hook with both agent instance ID and definition ID
-  const { config, providers, handleModelChange } = useAIConfigManagement({
+  const { config, providers = [], handleModelChange } = useAIConfigManagement({
     agentId: agent?.id,
     agentDefId,
   });
@@ -37,15 +36,15 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({
   const modelOptions: Array<[AIProviderConfig, ModelInfo]> = [];
 
   // Safely process providers to build model options
-  providers.forEach((provider: AIProviderConfig) => {
+  for (const provider of providers) {
     if (provider.models) {
-      provider.models.forEach((model: ModelInfo) => {
+      for (const model of provider.models) {
         if ('name' in model) {
           modelOptions.push([provider, model]);
         }
-      });
+      }
     }
-  });
+  }
 
   // Find the currently selected model for the tooltip display
   const currentModel = config?.api
@@ -88,6 +87,7 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({
                 void handleModelSelect(newValue[0].provider, newValue[1].name);
               }
             }}
+            style={{ marginTop: 8 }}
             options={modelOptions}
             getOptionLabel={option => `${option[0].provider} - ${option[1].name}`}
             isOptionEqualToValue={(option, value) => option[0].provider === value[0].provider && option[1].name === value[1].name}
@@ -102,7 +102,7 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>{t('Common.Cancel')}</Button>
+          <Button onClick={handleCloseDialog}>{t('Cancel', { ns: 'translation' })}</Button>
         </DialogActions>
       </Dialog>
     </>

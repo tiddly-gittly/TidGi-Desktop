@@ -158,7 +158,6 @@ export class AgentInstanceService implements IAgentInstanceService {
    */
   public async getAgent(agentId: string): Promise<AgentInstance | undefined> {
     this.ensureRepositories();
-
     try {
       // Query agent instance with messages in chronological order (oldest first)
       const instanceEntity = await this.agentInstanceRepository!.findOne({
@@ -170,16 +169,9 @@ export class AgentInstanceService implements IAgentInstanceService {
           },
         },
       });
-
-      // Debug log to trace message ordering issues if they occur
-      if (instanceEntity?.messages?.length) {
-        logger.debug(`Messages loaded for agent ${agentId}: ${instanceEntity.messages.length} messages, ordered by time ASC`, { method: 'getAgent' });
-      }
-
       if (!instanceEntity) {
         return undefined;
       }
-
       return {
         ...pick(instanceEntity, AGENT_INSTANCE_FIELDS),
         messages: instanceEntity.messages || [],
@@ -227,13 +219,6 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       // Handle message updates if provided
       if (data.messages && data.messages.length > 0) {
-        // Sort messages by modified time, newest first
-        data.messages.sort((a, b) => {
-          const dateA = a.modified ? new Date(a.modified).getTime() : 0;
-          const dateB = b.modified ? new Date(b.modified).getTime() : 0;
-          return dateB - dateA; // Descending order, newest first
-        });
-
         // Create entities for new messages
         const newMessages = data.messages.filter(message => {
           // Filter out messages not in database

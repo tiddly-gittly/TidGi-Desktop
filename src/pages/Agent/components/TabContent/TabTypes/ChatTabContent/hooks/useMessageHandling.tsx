@@ -1,27 +1,33 @@
 // Message handling hook for chat component
-import { AgentWithoutMessages } from '@/pages/Agent/store/agentChatStore/types';
+import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
 import { KeyboardEvent, useCallback, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 interface UseMessageHandlingProps {
   agentId: string | undefined;
-  sendMessage: (agentId: string, message: string) => Promise<void>;
   isUserAtBottom: () => boolean;
   isUserAtBottomReference: React.RefObject<boolean>;
   debouncedScrollToBottom: () => void;
-  agent: AgentWithoutMessages | null; // Updated to use AgentWithoutMessages type
 }
 
 /**
  * Custom hook for handling message operations in chat interfaces
+ * Directly uses the agent store to reduce prop drilling and potential bugs
  */
 export function useMessageHandling({
   agentId,
-  sendMessage,
   isUserAtBottom,
   isUserAtBottomReference,
   debouncedScrollToBottom,
-  agent,
 }: UseMessageHandlingProps) {
+  // Get agent and sendMessage function directly from the store using useShallow
+  // to prevent unnecessary re-renders
+  const { sendMessage, agent } = useAgentChatStore(
+    useShallow((state) => ({
+      sendMessage: state.sendMessage,
+      agent: state.agent,
+    })),
+  );
   const [message, setMessage] = useState('');
   const [parametersOpen, setParametersOpen] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
@@ -51,7 +57,7 @@ export function useMessageHandling({
     setSendingMessage(true);
 
     try {
-      await sendMessage(agentId, message);
+      await sendMessage(message);
       setMessage('');
       // After sending, update the scroll position reference to ensure proper scrolling
       isUserAtBottomReference.current = wasAtBottom;

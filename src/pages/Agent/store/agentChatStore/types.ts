@@ -80,11 +80,16 @@ export interface BasicActions {
    */
   updateAgent: (data: Partial<AgentInstance>) => Promise<AgentWithoutMessages | null>;
 
-  /**
-   * Cancels the current operation for the agent instance.
-   */
+  /** Cancels the current operation for the agent instance. */
   cancelAgent: () => Promise<void>;
-  getHandlerId: () => Promise<string | undefined>;
+
+  /** Get the handler ID for the current agent */
+  getHandlerId: () => Promise<string>;
+  
+  /** Get the configuration schema for the current handler */
+  getHandlerConfigSchema: () => Promise<Record<string, unknown>>;
+
+  /** Process raw agent data into store format */
   processAgentData: (
     fullAgent: AgentInstance,
   ) => Promise<{
@@ -93,7 +98,11 @@ export interface BasicActions {
     messages: Map<string, AgentInstanceMessage>;
     orderedMessageIds: string[];
   }>;
+
+  /** Fetch agent data by ID */
   fetchAgent: (agentId: string) => Promise<void>;
+
+  /** Subscribe to agent updates */
   subscribeToUpdates: (agentId: string) => (() => void) | undefined;
 }
 
@@ -155,22 +164,10 @@ export interface PreviewActions {
 }
 
 // Combine all interfaces into the complete state interface
-export interface AgentChatState extends AgentChatBaseState, PreviewDialogState, BasicActions, StreamingActions, PreviewActions {}
+export interface AgentChatState extends AgentChatBaseState, PreviewDialogState {}
 
-// Agent chat store type with agentDef related properties
-export interface AgentChatStoreType extends BasicActions {
-  /** Loading state */
-  loading: boolean;
-  /** Error state */
-  error: Error | null;
-  /** Active agent data */
-  agent: AgentWithoutMessages | null;
+// Agent chat store type with agentDef related properties and all actions
+export interface AgentChatStoreType extends AgentChatBaseState, PreviewDialogState, BasicActions, StreamingActions, PreviewActions {
   /** Agent definition */
   agentDef: AgentDefinition | null;
-  /** Agent messages, keyed by message ID */
-  messages: Map<string, AgentInstanceMessage>;
-  /** Ordered list of message IDs */
-  orderedMessageIds: string[];
-  /** Set of currently streaming message IDs */
-  streamingMessageIds: Set<string>;
 }

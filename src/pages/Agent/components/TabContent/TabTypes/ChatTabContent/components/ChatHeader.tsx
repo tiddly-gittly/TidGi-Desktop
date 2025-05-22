@@ -56,12 +56,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
   return (
     <Header>
-      <Title variant='h6'>{title || t('Agent.Untitled', 'Untitled Agent')}</Title>
+      <Title variant='h6'>{title || t('Agent.Untitled')}</Title>
       <ControlsContainer>
         <IconButton
           size='small'
           onClick={openPreviewDialog}
-          title={t('Prompt.Preview', 'Prompt Preview')}
+          title={t('Prompt.Preview')}
         >
           <PreviewIcon />
         </IconButton>

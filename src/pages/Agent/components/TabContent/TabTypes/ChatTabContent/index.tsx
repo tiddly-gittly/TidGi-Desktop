@@ -23,7 +23,8 @@ import { useScrollHandling } from './hooks/useScrollHandling';
 import { isChatTab } from './utils/tabTypeGuards';
 
 // Import store hooks to fetch agent data
-import { useAgentChatStore } from '../../../../store/agentChatStore/index';
+import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
+import { useShallow } from 'zustand/react/shallow';
 import { AgentWithoutMessages } from '../../../../store/agentChatStore/types';
 import { TabItem } from '../../../../types/tab';
 
@@ -57,15 +58,25 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
   // Get agent store
   const {
     fetchAgent,
-    sendMessage: storeSendMessage,
-    cancelAgent, // Add cancelAgent function
+    cancelAgent,
     subscribeToUpdates,
-    updateAgent, // Add updateAgent function
+    updateAgent,
     loading,
     error,
     agent,
     streamingMessageIds, // Add streaming state to detect active generation
-  } = useAgentChatStore();
+  } = useAgentChatStore(
+    useShallow((state) => ({
+      fetchAgent: state.fetchAgent,
+      cancelAgent: state.cancelAgent,
+      subscribeToUpdates: state.subscribeToUpdates,
+      updateAgent: state.updateAgent,
+      loading: state.loading,
+      error: state.error,
+      agent: state.agent,
+      streamingMessageIds: state.streamingMessageIds,
+    })),
+  );
 
   // Initialize scroll handling
   const {
@@ -89,11 +100,9 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     handleKeyPress,
   } = useMessageHandling({
     agentId: tab.agentId,
-    sendMessage: storeSendMessage,
     isUserAtBottom,
     isUserAtBottomReference,
     debouncedScrollToBottom,
-    agent,
   });
 
   // Register message renderers
@@ -114,7 +123,9 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
       if (unsub) unsub();
     };
   }, [tab.agentId, fetchAgent, subscribeToUpdates]);
-  const orderedMessageIds = useAgentChatStore(state => state.orderedMessageIds);
+  const orderedMessageIds = useAgentChatStore(
+    useShallow((state) => state.orderedMessageIds),
+  );
 
   // Effect to handle initial scroll when agent is first loaded
   useEffect(() => {
@@ -149,18 +160,6 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
    */
 
   const isStreaming = streamingMessageIds.size > 0;
-
-  /**
-   * Handler for canceling a streaming response
-   * This transforms the Send button into a Stop button during streaming
-   * When clicked, it calls the cancelAgent method from the store to stop generation
-   */
-  const handleCancelGeneration = async () => {
-    if (tab.agentId) {
-      await cancelAgent(tab.agentId);
-    }
-  };
-
   return (
     <Box
       sx={{
@@ -172,11 +171,10 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     >
       {/* Chat header with title and model selector */}
       <ChatHeader
-        title={agent?.name}
-        loading={isWorking}
-        agentId={tab.agentId}
-        agentDefId={agent?.agentDefId}
+        title={tab.title}
         onOpenParameters={handleOpenParameters}
+        loading={isWorking}
+        inputText={message}
       />
 
       {/* Messages container with all chat bubbles */}
@@ -214,7 +212,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
         value={message}
         onChange={handleMessageChange}
         onSend={handleSendMessage}
-        onCancel={handleCancelGeneration}
+        onCancel={cancelAgent}
         onKeyPress={handleKeyPress}
         disabled={!agent || isWorking}
         isStreaming={isStreaming}
@@ -238,7 +236,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
           }}
           onSave={async (newConfig) => {
             if (agent && tab.agentId) {
-              await updateAgent(tab.agentId, {
+              await updateAgent({
                 aiApiConfig: newConfig,
               });
               setParametersOpen(false);

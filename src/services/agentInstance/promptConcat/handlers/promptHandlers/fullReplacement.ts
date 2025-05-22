@@ -5,6 +5,7 @@
  */
 import { AgentInstanceMessage } from '@services/agentInstance/interface';
 import { logger } from '@services/libs/log';
+import { cloneDeep } from 'lodash';
 import { findPromptById, PromptConcatContext } from '../../promptConcat';
 import { Prompt, PromptDynamicModification } from '../../promptConcatSchema';
 
@@ -34,9 +35,12 @@ export function fullReplacementHandler(prompts: Prompt[], modification: PromptDy
 
   // Get content based on source type
   let content = '';
-  const [_userMessage, ...history] = context.messages;
+  // Get all messages except the last one which is the user message
+  const messages = cloneDeep(context.messages);
+  const _userMessage = messages.pop(); // Last message is the user message
+  const history = messages; // Remaining messages are history
 
-  if (sourceType === 'historyOfSession' && history) {
+  if (sourceType === 'historyOfSession' && history.length > 0) {
     // Convert history messages to text
     content = history
       .map((message: AgentInstanceMessage) => {

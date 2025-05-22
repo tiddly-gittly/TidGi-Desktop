@@ -91,6 +91,8 @@ export interface IWikiService {
   ): Promise<ReturnType<ISendWikiOperationsToBrowser[OP]>>;
   /**
    * Runs wiki related JS script in nodejs server side.
+   *
+   * This will never await if workspaceID isn't exist in user's workspace list. So prefer to check workspace existence before use this method.
    */
   wikiOperationInServer<OP extends keyof IWorkerWikiOperations>(
     operationType: OP,

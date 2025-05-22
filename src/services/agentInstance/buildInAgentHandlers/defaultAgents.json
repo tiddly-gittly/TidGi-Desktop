@@ -115,7 +115,7 @@
             "bottom": 0,
             "sourceType": "wiki",
             "wikiParam": {
-              "workspaceName": "wiki1",
+              "workspaceName": "wiki",
               "filter": "[[Title1]]"
             },
             "trigger": {

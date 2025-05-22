@@ -663,9 +663,15 @@ export class Wiki implements IWikiService {
     workspaceID: string,
     arguments_: Parameters<IWorkerWikiOperations[OP]>,
   ) {
+    logger.debug(`Get ${operationType}`, { workspaceID, method: 'wikiOperationInServer' });
+    // This will never await if workspaceID isn't exist in user's workspace list. So prefer to check workspace existence before use this method.
     const worker = await this.getWorkerEnsure(workspaceID);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    logger.debug(`Get worker ${operationType}`, { workspaceID, hasWorker: worker !== undefined, method: 'wikiOperationInServer', arguments_ });
     // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556)
-    return await (worker.wikiOperation(operationType, ...arguments_) as unknown as ReturnType<IWorkerWikiOperations[OP]>);
+    const result = await (worker.wikiOperation(operationType, ...arguments_) as unknown as ReturnType<IWorkerWikiOperations[OP]>);
+    logger.debug(`Get result ${operationType}`, { workspaceID, method: 'wikiOperationInServer' });
+    return result;
   }
 
   public async setWikiLanguage(workspaceID: string, tiddlywikiLanguageName: string): Promise<void> {

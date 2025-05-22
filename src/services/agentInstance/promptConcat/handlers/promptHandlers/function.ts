@@ -4,6 +4,7 @@
  * Executes a function and inserts its result at the specified position
  */
 import { logger } from '@services/libs/log';
+import { cloneDeep } from 'lodash';
 import { findPromptById, PromptConcatContext } from '../../promptConcat';
 import { Prompt, PromptDynamicModification, PromptPart } from '../../promptConcatSchema';
 import { insertContent, shouldTrigger } from '../shared/utilities';
@@ -121,8 +122,11 @@ async function executeFunction(functionId: string, context: PromptConcatContext)
 
     // Simulate function execution based on the functionId
     if (functionId === 'default-ai-search-function') {
-      const userMessage = context.messages[0]?.content || '';
-      const keywords = userMessage.split(' ').slice(0, 3).join(', ');
+      // Get all messages except the last one which is the user message
+      const messages = cloneDeep(context.messages);
+      const userMessage = messages.pop(); // Last message is the user message
+      const userContent = userMessage?.content || '';
+      const keywords = userContent.split(' ').slice(0, 3).join(', ');
       return `已进行了一次网络搜索，搜索使用关键词为: ${keywords}。搜索结果为: 这是一个模拟的搜索结果，实际实现中会调用真实的搜索API。`;
     }
 

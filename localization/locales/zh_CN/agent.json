@@ -1,5 +1,11 @@
 {
   "Add": "添加",
+  "Agent": {
+    "InvalidTabType": "无效的标签页类型。需要聊天标签页。",
+    "LoadingChat": "正在加载对话...",
+    "StartConversation": "开始对话",
+    "Untitled": "未命名"
+  },
   "Browser": {
     "Back": "后退",
     "Bookmark": "收藏",
@@ -180,6 +186,30 @@
       "NewTab": "新建标签页",
       "NewWeb": "新建网页"
     }
+  },
+  "ModelSelector": {
+    "SelectModel": "选择模型",
+    "NoModelSelected": "未选择模型",
+    "Title": "模型选择",
+    "Model": "模型"
+  },
+  "Prompt": {
+    "Preview": "提示词预览",
+    "Loading": "加载预览中...",
+    "AutoRefresh": "预览会随输入文本的变化自动刷新",
+    "Flat": "平铺视图",
+    "Tree": "树形视图",
+    "Config": "配置",
+    "NoHandlerFound": "未找到处理程序",
+    "NoConfigFound": "未找到配置",
+    "ConfigurationEditor": "配置编辑器",
+    "ConfigurationDescription": "编辑提示词配置"
+  },
+  "Common": {
+    "Saving": "保存中...",
+    "Save": "保存",
+    "Applying": "应用中...",
+    "Apply": "应用"
   },
   "Schema": {
     "Wiki": {

@@ -2,7 +2,7 @@ import { container } from '@services/container';
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { AgentInstanceLatestStatus, IAgentInstanceService } from '../interface';
+import { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { processResponse } from '../promptConcat/handlers/responseHandler';
 import { AgentPromptDescription, AiAPIConfig } from '../promptConcat/promptConcatSchema';
 import { canceled, completed, error, working } from './statusUtilities';
@@ -19,7 +19,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
   let currentRequestId: string | undefined;
   let retryCount = 0;
   const maxRetries = 3;
-  const lastUserMessage: string | undefined = context.agent.messages[context.agent.messages.length - 1]?.content;
+  const lastUserMessage: AgentInstanceMessage | undefined = context.agent.messages[context.agent.messages.length - 1];
 
   // Log the start of handler execution with context information
   logger.debug('Starting prompt handler execution', {
@@ -34,10 +34,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
   const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
   const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
-  // Get latest user message
-  const messages = context.agent.messages;
-  const [userMessage] = messages;
-  if (messages.length === 0 || !userMessage.content || userMessage.role !== 'user') {
+  if (!lastUserMessage.content || lastUserMessage.role !== 'user') {
     logger.warn('No valid user message found', { method: 'basicPromptConcatHandler' });
     yield completed('No user message found to process.', context);
     return;
@@ -161,7 +158,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                 currentRequestId = undefined;
 
                 // Start new generation with either provided message or last user message
-                const nextUserMessage = processedResult.newUserMessage || lastUserMessage;
+                const nextUserMessage = processedResult.newUserMessage || lastUserMessage?.content;
 
                 // Yield the processed response first
                 yield working(processedResult.processedResponse, context, currentRequestId);
@@ -218,7 +215,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
     }
 
     // Start processing with the initial user message
-    yield* processLLMCall(userMessage.content);
+    yield* processLLMCall(lastUserMessage.content);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('Error processing prompt', {

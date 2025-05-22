@@ -2,15 +2,16 @@ import type { StoreApi } from 'zustand';
 import type { AgentChatStoreType } from '../types';
 import { agentActions } from './agentActions';
 import { messageActions } from './messageActions';
-import { streamActions } from './streamActions';
+import { streamingActionsMiddleware } from './streamingActions';
 
 export const basicActions = (
   set: StoreApi<AgentChatStoreType>['setState'],
   get: StoreApi<AgentChatStoreType>['getState'],
+  api: StoreApi<AgentChatStoreType>,
 ) => ({
   ...agentActions(set, get),
   ...messageActions(set, get),
-  ...streamActions(set, get),
+  ...streamingActionsMiddleware(set, get, api),
 
   setLoading: (loading: boolean) => {
     set({ loading });
