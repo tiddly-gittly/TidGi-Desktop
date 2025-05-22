@@ -9,6 +9,11 @@ overrides:
 
 pnpmfileChecksum: sha256-avmZn8rDPdvrDPy1irtRpETQhUnB6iRqzv3Exga6H1w=
 
+patchedDependencies:
+  threads:
+    hash: cf81af8a8b89a3fdafb8be54d53e8b52d767499a32b0371f1d7393faa75ce2b9
+    path: patches/threads.patch
+
 importers:
 
   .:
@@ -168,7 +173,7 @@ importers:
         version: 7.1.0
       threads:
         specifier: 1.7.0
-        version: 1.7.0
+        version: 1.7.0(patch_hash=cf81af8a8b89a3fdafb8be54d53e8b52d767499a32b0371f1d7393faa75ce2b9)
       tiddlywiki:
         specifier: 5.3.6
         version: 5.3.6
@@ -1003,8 +1008,8 @@ packages:
     resolution: {integrity: sha512-hLv4BYFiyrNRI+U0Mm2X7RxCCdJLkDUn8GCEp9QJzbLpZRko+UaLlCjOMkj6TEtirNLPyBA7y1SeGfnpOB21aQ==}
     engines: {node: '>=14'}
 
-  '@electron/node-gyp@git+https://github.com/electron/node-gyp.git#06b29aafb7708acef8b3669835c8a7857ebc92d2':
-    resolution: {commit: 06b29aafb7708acef8b3669835c8a7857ebc92d2, repo: https://github.com/electron/node-gyp.git, type: git}
+  '@electron/node-gyp@https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2':
+    resolution: {tarball: https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2}
     version: 10.2.0-electron.1
     engines: {node: '>=12.13.0'}
     hasBin: true
@@ -8421,7 +8426,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@electron/node-gyp@git+https://github.com/electron/node-gyp.git#06b29aafb7708acef8b3669835c8a7857ebc92d2(bluebird@3.7.2)':
+  '@electron/node-gyp@https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2(bluebird@3.7.2)':
     dependencies:
       env-paths: 2.2.1
       exponential-backoff: 3.1.1
@@ -8482,7 +8487,7 @@ snapshots:
 
   '@electron/rebuild@3.7.1(bluebird@3.7.2)':
     dependencies:
-      '@electron/node-gyp': git+https://github.com/electron/node-gyp.git#06b29aafb7708acef8b3669835c8a7857ebc92d2(bluebird@3.7.2)
+      '@electron/node-gyp': https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2(bluebird@3.7.2)
       '@malept/cross-spawn-promise': 2.0.0
       chalk: 4.1.2
       debug: 4.3.4(supports-color@8.1.1)
@@ -15032,7 +15037,7 @@ snapshots:
       loader-utils: 1.4.2
       webpack: 5.88.1(esbuild@0.25.2)
 
-  threads@1.7.0:
+  threads@1.7.0(patch_hash=cf81af8a8b89a3fdafb8be54d53e8b52d767499a32b0371f1d7393faa75ce2b9):
     dependencies:
       callsites: 3.1.0
       debug: 4.3.4(supports-color@8.1.1)

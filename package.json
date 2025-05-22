@@ -191,7 +191,10 @@
       "esbuild",
       "better-sqlite3",
       "registry-js"
-    ]
+    ],
+    "patchedDependencies": {
+      "threads": "patches/threads.patch"
+    }
   },
   "private": false
 }

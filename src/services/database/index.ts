@@ -10,7 +10,7 @@ import { CACHE_DATABASE_FOLDER } from '@/constants/appPaths';
 import { DEBOUNCE_SAVE_SETTING_BACKUP_FILE, DEBOUNCE_SAVE_SETTING_FILE } from '@/constants/parameters';
 import { SQLITE_BINARY_PATH } from '@/constants/paths';
 import { logger } from '@services/libs/log';
-import { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions';
+import { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions.js';
 import { ensureSettingFolderExist, fixSettingFileWhenError } from './configSetting';
 import { IDatabaseService, ISettingFile } from './interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from './schema/agent';

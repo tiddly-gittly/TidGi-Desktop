@@ -1,0 +1,30 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+deleted file mode 100644
+index 05ed95f5686c5f7b5754ad02414fe90951036c2d..0000000000000000000000000000000000000000
+diff --git a/package.json b/package.json
+index c4ef12336424053c1d8f921d0366e36e7c12961a..4b29ad3673a5fcb59cf6e180880388fb7137f8e6 100644
+--- a/package.json
++++ b/package.json
+@@ -23,18 +23,22 @@
+   },
+   "exports": {
+     ".": {
++      "types": "./dist/index.d.ts",
+       "require": "./dist/index.js",
+       "default": "./index.mjs"
+     },
+     "./observable": {
++      "types": "./observable.d.ts",
+       "require": "./observable.js",
+       "default": "./observable.mjs"
+     },
+     "./register": {
++      "types": "./register.d.ts",
+       "require": "./register.js",
+       "default": "./register.mjs"
+     },
+     "./worker": {
++      "types": "./worker.d.ts",
+       "require": "./worker.js",
+       "default": "./worker.mjs"
+     }
