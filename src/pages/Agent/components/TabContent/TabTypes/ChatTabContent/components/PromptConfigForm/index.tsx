@@ -1,3 +1,4 @@
+import { AgentWithoutMessages } from '@/pages/Agent/store/agentChatStore/types';
 import SaveIcon from '@mui/icons-material/Save';
 import { Box, Button, CircularProgress, Divider, Paper, Tooltip, Typography } from '@mui/material';
 import type { IChangeEvent } from '@rjsf/core';
@@ -6,7 +7,8 @@ import { ErrorSchema, RJSFValidationError } from '@rjsf/utils';
 import validator from '@rjsf/validator-ajv8';
 import { AgentInstance } from '@services/agentInstance/interface';
 import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import React, { useEffect, useState } from 'react';
+import { isEqual } from 'lodash';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CustomArrayFieldTemplate } from './templates/ArrayFieldTemplate';
 import { CustomFieldTemplate } from './templates/FieldTemplate';
@@ -28,6 +30,8 @@ interface PromptConfigFormProps {
   onError?: (errors: ErrorSchema) => void;
   /** Agent update handler */
   onUpdate?: (data: Partial<AgentInstance>) => Promise<void>;
+  /** Agent instance (without messages) */
+  agent?: AgentWithoutMessages;
   /** Whether the form is disabled */
   disabled?: boolean;
   /** Whether to show the submit button */
@@ -44,8 +48,9 @@ interface PromptConfigFormProps {
  * - Custom widgets and templates for enhanced visual design
  * - Integration with agent update system
  * - Real-time validation and feedback
+ * - Optimized with React.memo to prevent unnecessary re-renders
  */
-export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
+export const PromptConfigForm: React.FC<PromptConfigFormProps> = React.memo(({
   schema,
   uiSchema: uiSchemaOverride = {},
   formData: initialFormData,
@@ -53,93 +58,131 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
   onChange: externalChange,
   onError: externalError,
   onUpdate,
+  agent,
   disabled = false,
   showSubmitButton = true,
   loading = false,
 }) => {
   const { t } = useTranslation('agent');
+
+  // Add debug render tracking in development
+  if (process.env.NODE_ENV === 'development') {
+    React.useEffect(() => {
+      console.log('🔄 PromptConfigForm render with props:', {
+        hasSchema: !!schema && Object.keys(schema).length > 0,
+        hasFormData: !!initialFormData,
+        hasAgent: !!agent,
+        disabled,
+        loading,
+        showSubmitButton,
+      });
+    });
+  }
   const [validationErrors, setValidationErrors] = useState<ErrorSchema[]>([]);
   const [localFormData, setLocalFormData] = useState<HandlerConfig | undefined>(initialFormData);
   const [formKey, setFormKey] = useState<number>(0); // Used to force re-render when schema changes
 
-  // Set form data from initial form data if provided
+  // Use refs to track previous values and prevent unnecessary re-renders
+  const previousFormDataReference = useRef<HandlerConfig | undefined>(undefined);
+  const previousSchemaReference = useRef<Record<string, unknown> | undefined>(undefined);
+
+  // Set form data from initial form data if provided - with deep comparison using lodash
   useEffect(() => {
-    if (initialFormData && initialFormData !== localFormData) {
+    if (initialFormData && !isEqual(initialFormData, previousFormDataReference.current)) {
       setLocalFormData(initialFormData);
-      // Force re-render when data is loaded
-      setFormKey(previous => previous + 1);
+      previousFormDataReference.current = initialFormData;
     }
-  }, [initialFormData, localFormData]);
+  }, [initialFormData]);
+
+  // Force re-render only when schema significantly changes
+  useEffect(() => {
+    if (schema && !isEqual(schema, previousSchemaReference.current)) {
+      setFormKey(previous => previous + 1);
+      previousSchemaReference.current = schema;
+    }
+  }, [schema]);
 
   // Log error if no schema is available
-  if (!schema) {
+  if (!schema || Object.keys(schema).length === 0) {
     console.error('PromptConfigForm: No schema provided or fetched. Form cannot be rendered.');
   }
 
-  // Enhanced UI schema with better layout and grouping
-  const defaultUiSchema = {
-    'ui:title': t('Prompt.Configuration'),
-    'ui:description': t('Prompt.ConfigurationDescription'),
-    'ui:order': ['prompts', 'promptDynamicModification', 'response', 'responseDynamicModification', '*'],
-    prompts: {
-      'ui:title': t('Prompt.PromptsList'),
-      'ui:description': t('Prompt.PromptsDescription'),
-      'ui:options': {
-        orderable: true,
-        variant: 'primary',
-      },
-      items: {
-        'ui:order': ['id', 'caption', 'enabled', 'role', 'text', 'children', '*'],
-        children: {
+  // Enhanced UI schema with better layout and grouping - memoized to prevent recreation
+  // Using useRef to prevent recreation when t function changes
+  const defaultUiSchemaReference = useRef<Record<string, unknown> | null>(null);
+
+  const defaultUiSchema = useMemo(() => {
+    if (!defaultUiSchemaReference.current) {
+      defaultUiSchemaReference.current = {
+        'ui:title': 'Prompt Configuration',
+        'ui:description': 'Configure prompts and response settings',
+        'ui:order': ['prompts', 'promptDynamicModification', 'response', 'responseDynamicModification', '*'],
+        prompts: {
+          'ui:title': 'Prompts List',
+          'ui:description': 'Configure your prompts',
           'ui:options': {
             orderable: true,
+            variant: 'primary',
           },
           items: {
-            'ui:order': ['id', 'text', 'tags', '*'],
+            'ui:order': ['id', 'caption', 'enabled', 'role', 'text', 'children', '*'],
+            children: {
+              'ui:options': {
+                orderable: true,
+              },
+              items: {
+                'ui:order': ['id', 'text', 'tags', '*'],
+              },
+            },
           },
         },
-      },
-    },
-    promptDynamicModification: {
-      'ui:title': t('Prompt.DynamicModifications'),
-      'ui:description': t('Prompt.DynamicModificationsDescription'),
-      'ui:options': {
-        orderable: true,
-        variant: 'info',
-      },
-      items: {
-        'ui:order': ['id', 'enabled', 'sourceTag', 'targetTag', 'action', '*'],
-      },
-    },
-    response: {
-      'ui:title': t('Prompt.ResponseSettings'),
-      'ui:description': t('Prompt.ResponseDescription'),
-      'ui:options': {
-        variant: 'success',
-      },
-      items: {
-        'ui:order': ['id', 'enabled', 'type', 'config', '*'],
-        config: {
+        promptDynamicModification: {
+          'ui:title': 'Dynamic Modifications',
+          'ui:description': 'Configure dynamic prompt modifications',
           'ui:options': {
+            orderable: true,
             variant: 'info',
           },
+          items: {
+            'ui:order': ['id', 'enabled', 'sourceTag', 'targetTag', 'action', '*'],
+          },
         },
-      },
-    },
-    responseDynamicModification: {
-      'ui:title': t('Prompt.ResponseModifications'),
-      'ui:description': t('Prompt.ResponseModificationsDescription'),
-      'ui:options': {
-        orderable: true,
-        variant: 'warning',
-      },
-    },
-  };
+        response: {
+          'ui:title': 'Response Settings',
+          'ui:description': 'Configure response settings',
+          'ui:options': {
+            variant: 'success',
+          },
+          items: {
+            'ui:order': ['id', 'enabled', 'type', 'config', '*'],
+            config: {
+              'ui:options': {
+                variant: 'info',
+              },
+            },
+          },
+        },
+        responseDynamicModification: {
+          'ui:title': 'Response Modifications',
+          'ui:description': 'Configure response modifications',
+          'ui:options': {
+            orderable: true,
+            variant: 'warning',
+          },
+        },
+      };
+    }
+    return defaultUiSchemaReference.current;
+  }, []); // No dependencies to prevent recreation
 
-  // Merge default UI schema with provided override
-  const uiSchema = { ...defaultUiSchema, ...uiSchemaOverride };
+  // Merge default UI schema with provided override - memoized
+  const uiSchema = useMemo(() => ({
+    ...defaultUiSchema,
+    ...uiSchemaOverride,
+  }), [defaultUiSchema, uiSchemaOverride]);
 
-  const handleChange = (event: IChangeEvent<HandlerConfig, Record<string, unknown>, Record<string, unknown>>) => {
+  // Memoized event handlers to prevent unnecessary re-renders
+  const handleChange = useCallback((event: IChangeEvent<HandlerConfig, Record<string, unknown>, Record<string, unknown>>) => {
     // 确保我们有一个有效的表单数据对象
     if (event.formData) {
       // TypeScript 类型安全处理
@@ -150,25 +193,30 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
         externalChange(updatedFormData);
       }
     }
-  };
+  }, [externalChange]);
 
-  const handleError = (errors: RJSFValidationError[]) => {
+  const handleError = useCallback((errors: RJSFValidationError[]) => {
     // 转换错误为统一格式
     const errorSchemas = errors.map(error => {
-      return { [error.property]: { __errors: [error.message] } } as unknown as ErrorSchema;
+      const property = error.property || 'unknown';
+      return { [property]: { __errors: [error.message] } } as ErrorSchema;
     });
     setValidationErrors(errorSchemas);
 
     if (externalError) {
       // 构建一个符合 ErrorSchema 格式的对象
       const combinedErrors = errors.reduce<ErrorSchema>((accumulator, error) => {
-        accumulator[error.property] = { __errors: [error.message] };
+        const property = error.property || 'unknown';
+        accumulator[property] = {
+          __errors: [error.message || 'Unknown error'],
+        } as ErrorSchema;
         return accumulator;
       }, {});
       externalError(combinedErrors);
     }
-  };
-  const handleSubmit = async (event: IChangeEvent<HandlerConfig, Record<string, unknown>, Record<string, unknown>>) => {
+  }, [externalError]);
+
+  const handleSubmit = useCallback(async (event: IChangeEvent<HandlerConfig, Record<string, unknown>, Record<string, unknown>>) => {
     try {
       // 确保我们有一个有效的表单数据对象
       if (event.formData) {
@@ -189,14 +237,14 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('Failed to submit form data:', errorMessage);
     }
-  };
+  }, [externalSubmit, agent?.id, onUpdate]);
 
-  // Custom field templates and widgets
-  const templates = {
+  // Custom field templates and widgets - memoized to prevent recreation
+  const templates = useMemo(() => ({
     ArrayFieldTemplate: CustomArrayFieldTemplate,
     FieldTemplate: CustomFieldTemplate,
     ObjectFieldTemplate: CustomObjectFieldTemplate,
-  };
+  }), []);
 
   // Show loading indicator if in loading state
   if (loading) {
@@ -208,7 +256,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
   }
 
   // Show error message if no schema is available
-  if (!schema) {
+  if (!schema || Object.keys(schema).length === 0) {
     return (
       <Box sx={{ width: '100%' }}>
         <Paper
@@ -299,4 +347,4 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
       </Paper>
     </Box>
   );
-};
+});

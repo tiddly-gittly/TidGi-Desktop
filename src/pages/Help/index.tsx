@@ -33,7 +33,7 @@ export function Help(): React.JSX.Element {
         <StyledDivider>{t('Help.List')}</StyledDivider>
         <Grid container spacing={2}>
           {items.map((item, index) => (
-            <Grid key={index} item xs={12} sm={6} md={4}>
+            <Grid key={index} size={{ xs: 12, sm: 6, md: 4 }}>
               <HelpWebsiteItem item={item} />
             </Grid>
           ))}

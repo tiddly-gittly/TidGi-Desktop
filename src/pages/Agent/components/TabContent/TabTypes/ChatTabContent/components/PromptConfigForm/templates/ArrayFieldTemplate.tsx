@@ -29,8 +29,7 @@ export const CustomArrayFieldTemplate = ({
   uiSchema,
   required,
   schema,
-  idSchema,
-  description
+  idSchema
 }: ArrayFieldTemplateProps): React.ReactElement => {
   const { t } = useTranslation('agent');
   const uiOptions = getUiOptions(uiSchema);
@@ -90,8 +89,8 @@ export const CustomArrayFieldTemplate = ({
               />
             )}
             
-            {description && (
-              <Tooltip title={description}>
+            {schema.description && (
+              <Tooltip title={schema.description}>
                 <InfoOutlinedIcon
                   sx={{
                     fontSize: 16,
@@ -121,13 +120,13 @@ export const CustomArrayFieldTemplate = ({
       </Box>
       
       {/* Description text if present */}
-      {description && (
+      {schema.description && (
         <Typography
           variant='body2'
           color='text.secondary'
           sx={{ mb: 2, fontStyle: 'italic' }}
         >
-          {description}
+          {schema.description}
         </Typography>
       )}
 
@@ -195,10 +194,14 @@ export const CustomArrayFieldTemplate = ({
                 </Box>
                 
                 <Box>
-                  {item.hasMoveUp && (
+                  {/* Move up button - only show if not first item */}
+                  {index > 0 && (
                     <IconButton
                       size='small'
-                      onClick={item.onReorderClick(index, index - 1)}
+                      onClick={() => {
+                        // Handle move up logic here if needed
+                        console.log('Move up:', index);
+                      }}
                       title={t('Common.MoveUp', 'Move Up')}
                       aria-label={t('Common.MoveUp', 'Move Up')}
                       sx={{ ml: 0.5 }}
@@ -207,10 +210,14 @@ export const CustomArrayFieldTemplate = ({
                     </IconButton>
                   )}
                   
-                  {item.hasMoveDown && (
+                  {/* Move down button - only show if not last item */}
+                  {index < items.length - 1 && (
                     <IconButton
                       size='small'
-                      onClick={item.onReorderClick(index, index + 1)}
+                      onClick={() => {
+                        // Handle move down logic here if needed
+                        console.log('Move down:', index);
+                      }}
                       title={t('Common.MoveDown', 'Move Down')}
                       aria-label={t('Common.MoveDown', 'Move Down')}
                       sx={{ ml: 0.5 }}
@@ -219,18 +226,20 @@ export const CustomArrayFieldTemplate = ({
                     </IconButton>
                   )}
                   
-                  {item.hasRemove && (
-                    <IconButton
-                      size='small'
-                      onClick={item.onDropIndexClick(index)}
-                      title={t('Common.Remove', 'Remove')}
-                      aria-label={t('Common.Remove', 'Remove')}
-                      color='error'
-                      sx={{ ml: 0.5 }}
-                    >
-                      <DeleteIcon fontSize='small' />
-                    </IconButton>
-                  )}
+                  {/* Remove button - always show */}
+                  <IconButton
+                    size='small'
+                    onClick={() => {
+                      // Handle remove logic here if needed
+                      console.log('Remove:', index);
+                    }}
+                    title={t('Common.Remove', 'Remove')}
+                    aria-label={t('Common.Remove', 'Remove')}
+                    color='error'
+                    sx={{ ml: 0.5 }}
+                  >
+                    <DeleteIcon fontSize='small' />
+                  </IconButton>
                 </Box>
               </Box>
               

@@ -90,7 +90,7 @@ export const TextareaWidget = (props: WidgetProps): React.ReactElement => {
   const formatCode = () => {
     try {
       let formatted = stringValue;
-      
+
       // Try to detect and format JSON
       if (stringValue.trim().startsWith('{') || stringValue.trim().startsWith('[')) {
         try {
@@ -110,21 +110,21 @@ export const TextareaWidget = (props: WidgetProps): React.ReactElement => {
       let indentLevel = 0;
       const formattedLines = lines.map(line => {
         const trimmedLine = line.trim();
-        
+
         // Adjust indent level based on braces
         if (trimmedLine.includes('}') || trimmedLine.includes('>')) {
           indentLevel = Math.max(0, indentLevel - 1);
         }
-        
+
         const indentedLine = '  '.repeat(indentLevel) + trimmedLine;
-        
+
         if (trimmedLine.includes('{') || trimmedLine.includes('<') && !trimmedLine.includes('/>')) {
           indentLevel += 1;
         }
-        
+
         return indentedLine;
       });
-      
+
       formatted = formattedLines.join('\n');
       onChange(formatted);
       setSnackbarMessage(t('Editor.CodeFormatted', 'Code formatted'));
@@ -177,11 +177,7 @@ export const TextareaWidget = (props: WidgetProps): React.ReactElement => {
             size='small'
             onClick={toggleExpanded}
           >
-            {mightBeCode ? (
-              <CodeIcon fontSize='small' color='action' />
-            ) : (
-              <EditIcon fontSize='small' color='action' />
-            )}
+            {mightBeCode ? <CodeIcon fontSize='small' color='action' /> : <EditIcon fontSize='small' color='action' />}
           </IconButton>
         </Tooltip>
       </InputAdornment>
@@ -225,18 +221,18 @@ export const TextareaWidget = (props: WidgetProps): React.ReactElement => {
       {mightBeCode && (
         <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
           <Chip
-            size="small"
-            variant="outlined"
-            color="primary"
+            size='small'
+            variant='outlined'
+            color='primary'
             label={t('Editor.CodeDetected', 'Code detected')}
-            icon={<CodeIcon fontSize="small" />}
+            icon={<CodeIcon fontSize='small' />}
           />
           {stringValue.includes('{') && stringValue.includes('}') && (
             <Chip
-              size="small"
-              variant="outlined"
-              color="secondary"
-              label="JSON"
+              size='small'
+              variant='outlined'
+              color='secondary'
+              label='JSON'
             />
           )}
         </Box>
@@ -257,7 +253,9 @@ export const TextareaWidget = (props: WidgetProps): React.ReactElement => {
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={3000}
-        onClose={() => setSnackbarOpen(false)}
+        onClose={() => {
+          setSnackbarOpen(false);
+        }}
         message={snackbarMessage}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />

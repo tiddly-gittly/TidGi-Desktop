@@ -65,8 +65,10 @@ export const CustomObjectFieldTemplate = ({
   const filteredProperties = searchTerm
     ? properties.filter(prop => {
         const propName = prop.name ? String(prop.name).toLowerCase() : '';
-        const propTitle = prop.content?.props?.schema?.title 
-          ? String(prop.content.props.schema.title).toLowerCase() 
+        // Safely check for schema property
+        const propContent = prop.content as any;
+        const propTitle = propContent?.props?.schema?.title 
+          ? String(propContent.props.schema.title).toLowerCase() 
           : '';
         return propName.includes(searchTerm.toLowerCase()) || 
                propTitle.includes(searchTerm.toLowerCase());

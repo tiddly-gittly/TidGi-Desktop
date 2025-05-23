@@ -217,7 +217,7 @@ export const CustomFieldTemplate = ({
       )}
 
       {/* Format hint for specific field formats */}
-      {hasFormat && ['date', 'date-time', 'email', 'uri', 'regex'].includes(schema.format) && !errors && (
+      {hasFormat && schema.format && ['date', 'date-time', 'email', 'uri', 'regex'].includes(schema.format) && !errors && (
         <Typography
           variant='caption'
           color='text.secondary'
