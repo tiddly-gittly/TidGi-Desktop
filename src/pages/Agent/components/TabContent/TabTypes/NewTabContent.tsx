@@ -6,7 +6,7 @@ import CodeIcon from '@mui/icons-material/Code';
 import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import WebIcon from '@mui/icons-material/Web';
 import { Box, Card, IconButton, Typography } from '@mui/material';
-import Grid2 from '@mui/material/Grid2';
+import { Grid } from '@mui/material';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
@@ -136,43 +136,43 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
         </SectionTitle>
 
         <QuickAccessGrid>
-          <Grid2 container spacing={3}>
-            <Grid2 width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
+          <Grid container spacing={3}>
+            <Grid width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
               <ShortcutCard onClick={() => transformTabType(tab.id, TabType.WEB)}>
                 <ShortcutIcon>
                   <WebIcon fontSize='inherit' />
                 </ShortcutIcon>
                 <Typography variant='subtitle1'>{t('NewTab.NewWebTab')}</Typography>
               </ShortcutCard>
-            </Grid2>
+            </Grid>
 
-            <Grid2 width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
+            <Grid width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
               <ShortcutCard onClick={handleOpenChatTab}>
                 <ShortcutIcon>
                   <ChatIcon fontSize='inherit' />
                 </ShortcutIcon>
                 <Typography variant='subtitle1'>{t('NewTab.NewChat')}</Typography>
               </ShortcutCard>
-            </Grid2>
+            </Grid>
 
-            <Grid2 width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
+            <Grid width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
               <ShortcutCard>
                 <ShortcutIcon>
                   <TravelExploreIcon fontSize='inherit' />
                 </ShortcutIcon>
                 <Typography variant='subtitle1'>{t('NewTab.Explore')}</Typography>
               </ShortcutCard>
-            </Grid2>
+            </Grid>
 
-            <Grid2 width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
+            <Grid width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
               <ShortcutCard>
                 <ShortcutIcon>
                   <CodeIcon fontSize='inherit' />
                 </ShortcutIcon>
                 <Typography variant='subtitle1'>{t('NewTab.CodeTools')}</Typography>
               </ShortcutCard>
-            </Grid2>
-          </Grid2>
+            </Grid>
+          </Grid>
         </QuickAccessGrid>
       </Box>
 
@@ -188,9 +188,9 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
         </Box>
 
         <FavoriteGrid>
-          <Grid2 container spacing={2}>
+          <Grid container spacing={2}>
             {favorites.map(item => (
-              <Grid2 width={{ xs: '100%', sm: '50%', md: '33.33%' }} key={item.id}>
+              <Grid width={{ xs: '100%', sm: '50%', md: '33.33%' }} key={item.id}>
                 <FavoriteItem
                   onClick={() => {
                     handleOpenWebTab(item.url, item.title);
@@ -208,9 +208,9 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
                     </Typography>
                   </Box>
                 </FavoriteItem>
-              </Grid2>
+              </Grid>
             ))}
-          </Grid2>
+          </Grid>
         </FavoriteGrid>
       </Box>
     </Container>

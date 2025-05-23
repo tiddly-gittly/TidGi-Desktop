@@ -161,6 +161,21 @@
     "TopP": "Top P",
     "TopPDescription": "Control the randomness of responses. Lower values make responses more deterministic, while higher values allow for greater variability."
   },
+  "Prompt": {
+    "Preview": "Prompt Preview",
+    "Loading": "Loading preview...",
+    "AutoRefresh": "Preview auto-refreshes with input text changes",
+    "Flat": "Flat View",
+    "Tree": "Tree View",
+    "Config": "Configuration",
+    "ToggleFullScreen": "Toggle Fullscreen",
+    "EnterFullScreen": "Enter Fullscreen",
+    "ExitFullScreen": "Exit Fullscreen",
+    "NoHandlerFound": "No handler found",
+    "NoConfigFound": "No configuration found",
+    "ConfigurationEditor": "Configuration Editor",
+    "ConfigurationDescription": "Edit prompt configuration"
+  },
   "Schema": {
     "AIConfig": {
       "Description": "AI Conversation Settings Configuration"

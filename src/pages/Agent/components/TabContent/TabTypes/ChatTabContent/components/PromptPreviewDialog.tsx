@@ -1,25 +1,35 @@
 /* eslint-disable unicorn/prevent-abbreviations */
 import { useHandlerConfigManagement } from '@/pages/Preferences/sections/ExternalAPI/useHandlerConfigManagement';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
 import CloseIcon from '@mui/icons-material/Close';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { TabContext, TabPanel } from '@mui/lab';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
 import Paper from '@mui/material/Paper';
 import { styled } from '@mui/material/styles';
+import Switch from '@mui/material/Switch';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import { AgentInstance } from '@services/agentInstance/interface';
 import { IPromptPart } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { CoreMessage } from 'ai';
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { useAgentChatStore } from '../../../../../store/agentChatStore/index';
+import { LastUpdatedIndicator } from './LastUpdatedIndicator';
 import { PromptConfigForm } from './PromptConfigForm';
 
 // Types
@@ -58,12 +68,14 @@ const PreviewTabs = styled(Tabs)(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.divider}`,
 }));
 
-const PreviewContent = styled(Paper)(({ theme }) => ({
+const PreviewContent = styled(Paper, {
+  shouldForwardProp: (property: string) => property !== 'isFullScreen',
+})<{ isFullScreen?: boolean }>(({ theme, isFullScreen }) => ({
   background: theme.palette.background.paper,
   borderRadius: theme.shape.borderRadius,
   padding: theme.spacing(2),
   minHeight: 240,
-  maxHeight: '60vh',
+  maxHeight: isFullScreen ? 'calc(100vh - 150px)' : '60vh',
   overflow: 'auto',
   fontFamily: '"JetBrains Mono", "Fira Mono", "Menlo", "Consolas", monospace',
   fontSize: 14,
@@ -211,18 +223,22 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   const { t } = useTranslation('agent');
   const agent = useAgentChatStore(state => state.agent);
 
-  // Use handler config management hook with available agent info
-  const { loading: handlerConfigLoading, config: handlerConfig } = useHandlerConfigManagement({
-    agentId: agent?.id, // agentId is still used by useHandlerConfigManagement
+  // Use handler config management hook with agent definition ID only - no need for agentId
+  const { 
+    loading: handlerConfigLoading, 
+    config: handlerConfig, 
+    schema: handlerSchema 
+  } = useHandlerConfigManagement({
     agentDefId: agent?.agentDefId,
   });
 
   const {
     previewDialogTab: tab,
-    previewLoading: loading,
+    previewLoading,
     previewResult,
     setPreviewDialogTab,
     getPreviewPromptResult,
+    updateAgent,
   } = useAgentChatStore(
     useShallow((state) => ({
       previewDialogTab: state.previewDialogTab,
@@ -230,8 +246,17 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
       previewResult: state.previewResult,
       setPreviewDialogTab: state.setPreviewDialogTab,
       getPreviewPromptResult: state.getPreviewPromptResult,
+      updateAgent: state.updateAgent,
     })),
   );
+
+  const handleConfigUpdate = async (data: Partial<AgentInstance>) => {
+    try {
+      await updateAgent(data);
+    } catch (error) {
+      console.error('PromptPreviewDialog: Error updating agent config:', error);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true; // To prevent setting state after unmounting
@@ -251,15 +276,24 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
       }
 
       console.log('PromptPreviewDialog: Fetching preview with config', {
-        agentDefId: agent.agentDefId, // agent is checked for nullity above
+        agentDefId: agent.agentDefId,
         inputTextLength: inputText.length,
         handlerConfigKeys: Object.keys(handlerConfig),
+        hasSchema: !!handlerSchema,
       });
 
       try {
         const result = await getPreviewPromptResult(inputText, handlerConfig);
         if (isMounted) {
           console.log('PromptPreviewDialog: Preview result received', { success: !!result, flatPromptsCount: result?.flatPrompts.length });
+
+          // Update initial preview status
+          if (result) {
+            setPreviewStatus({
+              lastUpdated: new Date(),
+              source: 'initial',
+            });
+          }
         }
       } catch (error) {
         if (isMounted) {
@@ -281,10 +315,104 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [agent?.agentDefId, inputText, handlerConfig, handlerConfigLoading, getPreviewPromptResult, open]);
+  }, [agent?.agentDefId, inputText, handlerConfig, handlerConfigLoading, getPreviewPromptResult, open]); // Track preview update status
+  const [previewStatus, setPreviewStatus] = useState<{
+    lastUpdated: Date | null;
+    source: 'auto' | 'manual' | 'initial' | null;
+  }>({
+    lastUpdated: null,
+    source: null,
+  });
 
+  // Reset preview status when dialog closes
+  useEffect(() => {
+    if (!open) {
+      // Reset status if dialog is closed
+      setPreviewStatus({
+        lastUpdated: null,
+        source: null,
+      });
+    }
+  }, [open]);
+
+  // Create manual refresh handler
+  const handleManualRefresh = useCallback(async () => {
+    if (!agent?.agentDefId || !handlerConfig || handlerConfigLoading) {
+      console.log('PromptPreviewDialog: Cannot refresh - missing agentDefId, config, or config is loading');
+      return;
+    }
+
+    try {
+      console.log('PromptPreviewDialog: Manually refreshing preview');
+      const result = await getPreviewPromptResult(inputText, handlerConfig);
+
+      // Update preview status on successful refresh
+      if (result) {
+        setPreviewStatus({
+          lastUpdated: new Date(),
+          source: 'manual',
+        });
+      }
+    } catch (error) {
+      console.error('PromptPreviewDialog: Error during manual refresh:', error);
+    }
+  }, [agent?.agentDefId, handlerConfig, handlerConfigLoading, getPreviewPromptResult, inputText]);
+
+  // Handle form change to optionally update preview in real-time
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
+
+  // Cleanup timeout when component unmounts
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+        debounceTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleFormChange = useCallback((updatedConfig: HandlerConfig) => {
+    // Log changes for debugging
+    console.log('Form data changed', {
+      autoUpdateEnabled,
+      configKeys: Object.keys(updatedConfig || {}),
+    });
+
+    // Use a debounced update to prevent too frequent preview refreshes
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    if (autoUpdateEnabled && agent?.agentDefId && updatedConfig && !handlerConfigLoading) {
+      // Set a timeout to update the preview after user stops typing
+      debounceTimeoutRef.current = setTimeout(async () => {
+        try {
+          console.log('PromptPreviewDialog: Auto-updating preview with new config');
+          const result = await getPreviewPromptResult(inputText, updatedConfig);
+
+          // Update preview status on successful auto-update
+          if (result) {
+            setPreviewStatus({
+              lastUpdated: new Date(),
+              source: 'auto',
+            });
+          }
+        } catch (error) {
+          console.error('PromptPreviewDialog: Error auto-updating preview:', error);
+        }
+      }, 1000); // 1 second debounce delay
+    }
+  }, [autoUpdateEnabled, agent?.agentDefId, getPreviewPromptResult, inputText, handlerConfigLoading]);
+
+  // Handle tab change in the preview dialog
   const handleTabChange = (_event: React.SyntheticEvent, value: string): void => {
     setPreviewDialogTab(value as 'flat' | 'tree' | 'config');
+  };
+
+  const [isFullScreen, setIsFullScreen] = React.useState(false);
+  const handleToggleFullScreen = (): void => {
+    setIsFullScreen(prev => !prev);
   };
 
   const formattedPreview = previewResult
@@ -298,19 +426,48 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
     : null;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth={isFullScreen ? false : 'md'}
+      fullWidth
+      fullScreen={isFullScreen}
+      slotProps={{
+        paper: {
+          sx: {
+            ...(isFullScreen && {
+              m: 0,
+              width: '100%',
+              height: '100%',
+              maxHeight: '100%',
+              maxWidth: '100%',
+              borderRadius: 0,
+            }),
+          },
+        },
+      }}
+    >
       <DialogTitle>
         {t('Prompt.Preview')}
-        <IconButton
-          aria-label='close'
-          onClick={onClose}
-          sx={{ position: 'absolute', right: 8, top: 8 }}
-        >
-          <CloseIcon />
-        </IconButton>
+        <Box sx={{ position: 'absolute', right: 8, top: 8, display: 'flex' }}>
+          <IconButton
+            aria-label='toggle-fullscreen'
+            onClick={handleToggleFullScreen}
+            sx={{ mr: 1 }}
+            title={t(isFullScreen ? 'Prompt.ExitFullScreen' : 'Prompt.EnterFullScreen')}
+          >
+            {isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+          </IconButton>
+          <IconButton
+            aria-label='close'
+            onClick={onClose}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
       </DialogTitle>
       <DialogContent>
-        {loading
+        {previewLoading
           ? (
             <Box
               display='flex'
@@ -332,52 +489,110 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
           )
           : (
             <TabContext value={tab}>
-              <PreviewTabs
-                value={tab}
-                onChange={handleTabChange}
-                aria-label='prompt preview tabs'
-                variant='fullWidth'
-              >
-                <Tab
-                  label={t('Prompt.Flat')}
-                  value='flat'
-                  sx={{ textTransform: 'none' }}
-                />
-                <Tab
-                  label={t('Prompt.Tree')}
-                  value='tree'
-                  sx={{ textTransform: 'none' }}
-                />
-                <Tab
-                  label={t('Prompt.Config')}
-                  value='config'
-                  sx={{ textTransform: 'none' }}
-                />
-              </PreviewTabs>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <PreviewTabs
+                  value={tab}
+                  onChange={handleTabChange}
+                  aria-label='prompt preview tabs'
+                  variant='fullWidth'
+                  sx={{ flex: 1 }}
+                >
+                  <Tab
+                    label={t('Prompt.Flat')}
+                    value='flat'
+                    sx={{ textTransform: 'none' }}
+                  />
+                  <Tab
+                    label={t('Prompt.Tree')}
+                    value='tree'
+                    sx={{ textTransform: 'none' }}
+                  />
+                  <Tab
+                    label={t('Prompt.Config')}
+                    value='config'
+                    sx={{ textTransform: 'none' }}
+                  />
+                </PreviewTabs>
+
+                {tab === 'config' && (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Tooltip title={t('Prompt.RefreshPreview', 'Manually refresh preview')}>
+                      <IconButton
+                        size='small'
+                        onClick={handleManualRefresh}
+                        disabled={previewLoading || handlerConfigLoading}
+                        sx={{ mr: 1 }}
+                      >
+                        <RefreshIcon fontSize='small' />
+                      </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title={t('Prompt.AutoUpdatePreview', 'Auto-update preview on form changes')}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            size='small'
+                            checked={autoUpdateEnabled}
+                            onChange={(e) => {
+                              setAutoUpdateEnabled(e.target.checked);
+                            }}
+                            color='primary'
+                          />
+                        }
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <AutorenewIcon fontSize='small' sx={{ mr: 0.5 }} />
+                            <Typography variant='caption'>{t('Prompt.AutoUpdate', 'Auto')}</Typography>
+                          </Box>
+                        }
+                        labelPlacement='start'
+                        sx={{ mx: 1, my: 0 }}
+                      />
+                    </Tooltip>
+                  </Box>
+                )}
+              </Box>
 
               {/* Flat Result Tab */}
               <TabPanel value='flat' sx={{ p: 0 }}>
-                <PreviewContent>
+                <PreviewContent isFullScreen={isFullScreen}>
                   <FlatPromptList flatPrompts={formattedPreview?.flatPrompts} />
+                  <LastUpdatedIndicator lastUpdated={previewStatus.lastUpdated} source={previewStatus.source} />
                 </PreviewContent>
               </TabPanel>
 
               {/* Tree Result Tab */}
               <TabPanel value='tree' sx={{ p: 0 }}>
-                <PreviewContent>
+                <PreviewContent isFullScreen={isFullScreen}>
                   <PromptTree prompts={formattedPreview?.processedPrompts} />
+                  <LastUpdatedIndicator lastUpdated={previewStatus.lastUpdated} source={previewStatus.source} />
                 </PreviewContent>
               </TabPanel>
-
-              {/* Configuration Tab */}
-              <TabPanel value='config' sx={{ p: 0 }}>
-                <PromptConfigForm
-                  agentDefId={agent?.agentDefId}
-                />
-              </TabPanel>
+              {agent && (
+                <TabPanel value='config' sx={{ p: 0 }}>
+                  <Box
+                    sx={{
+                      maxHeight: isFullScreen ? 'calc(100vh - 150px)' : '60vh',
+                      overflow: 'auto',
+                    }}
+                  >
+                    {/* Pass handler config and schema directly to the form */}
+                    <PromptConfigForm
+                      schema={handlerSchema || {}}
+                      formData={handlerConfig}
+                      onUpdate={handleConfigUpdate}
+                      onChange={handleFormChange}
+                      disabled={previewLoading}
+                      loading={handlerConfigLoading}
+                    />
+                  </Box>
+                </TabPanel>
+              )}
             </TabContext>
           )}
       </DialogContent>
     </Dialog>
   );
 };
+
+
