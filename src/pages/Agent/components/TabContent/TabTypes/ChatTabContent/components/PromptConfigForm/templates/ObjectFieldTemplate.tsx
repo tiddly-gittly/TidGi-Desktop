@@ -1,25 +1,17 @@
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import SearchIcon from '@mui/icons-material/Search';
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  alpha,
-  Badge,
-  Box,
-  Chip,
-  Divider,
-  InputAdornment,
-  Paper,
-  TextField,
-  Tooltip,
-  Typography
-} from '@mui/material';
+import { AccordionDetails, alpha, Box, Divider, InputAdornment } from '@mui/material';
 import { getTemplate, getUiOptions, ObjectFieldTemplateProps } from '@rjsf/utils';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { 
+  StyledAccordion, 
+  StyledAccordionSummary, 
+  StyledTextField, 
+  StyledPaper, 
+  StyledChip, 
+  SectionTitle 
+} from '../components/SharedComponents';
 
 /**
  * Custom object field template that transforms complex objects into collapsible panels
@@ -54,7 +46,6 @@ export const CustomObjectFieldTemplate = ({
   const isPrimary = uiOptions.variant === 'primary' || schema.format === 'primary';
   const isInfo = uiOptions.variant === 'info' || schema.format === 'info';
   const isWarning = uiOptions.variant === 'warning' || schema.format === 'warning';
-  const isSuccess = uiOptions.variant === 'success' || schema.format === 'success';
   
   // Handle search input change
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,16 +54,16 @@ export const CustomObjectFieldTemplate = ({
   
   // Filter properties based on search term
   const filteredProperties = searchTerm
-    ? properties.filter(prop => {
-        const propName = prop.name ? String(prop.name).toLowerCase() : '';
-        // Safely check for schema property
-        const propContent = prop.content as any;
-        const propTitle = propContent?.props?.schema?.title 
-          ? String(propContent.props.schema.title).toLowerCase() 
-          : '';
-        return propName.includes(searchTerm.toLowerCase()) || 
-               propTitle.includes(searchTerm.toLowerCase());
-      })
+    ? properties.filter(property => {
+      const propertyName = property.name ? String(property.name).toLowerCase() : '';
+      // Type-safe check for schema property
+      const propertyContent = property.content as { props?: { schema?: { title?: string } } };
+      const propertyTitle = propertyContent.props?.schema?.title
+        ? String(propertyContent.props.schema.title).toLowerCase()
+        : '';
+      return propertyName.includes(searchTerm.toLowerCase()) ||
+        propertyTitle.includes(searchTerm.toLowerCase());
+    })
     : properties;
   
   // Root level object doesn't use accordion
@@ -81,19 +72,21 @@ export const CustomObjectFieldTemplate = ({
       <Box>
         {properties.length > 5 && (
           <Box sx={{ mb: 2 }}>
-            <TextField
+            <StyledTextField
               placeholder={t('Form.SearchFields', 'Search fields...')}
-              variant="outlined"
-              size="small"
+              variant='outlined'
+              size='small'
               fullWidth
               value={searchTerm}
               onChange={handleSearchChange}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <SearchIcon fontSize='small' />
+                    </InputAdornment>
+                  ),
+                },
               }}
             />
           </Box>
@@ -156,26 +149,28 @@ export const CustomObjectFieldTemplate = ({
 
   // Default behavior - use accordion
   return (
-    <Accordion 
-      expanded={expanded} 
-      onChange={() => setExpanded(!expanded)} 
-      sx={{ 
+    <Accordion
+      expanded={expanded}
+      onChange={() => {
+        setExpanded(!expanded);
+      }}
+      sx={{
         mb: 2,
         border: '1px solid',
-        borderColor: isPrimary 
-          ? 'primary.light' 
-          : isWarning 
-            ? 'warning.light' 
-            : 'divider',
+        borderColor: isPrimary
+          ? 'primary.light'
+          : isWarning
+          ? 'warning.light'
+          : 'divider',
         borderRadius: '4px !important',
         '&::before': {
           display: 'none',
         },
-        backgroundColor: isPrimary 
+        backgroundColor: isPrimary
           ? alpha('#2196f3', 0.03)
           : isWarning
-            ? alpha('#ff9800', 0.03)
-            : 'background.paper',
+          ? alpha('#ff9800', 0.03)
+          : 'background.paper',
       }}
     >
       <AccordionSummary
@@ -183,17 +178,17 @@ export const CustomObjectFieldTemplate = ({
         sx={{
           borderBottom: expanded ? '1px solid' : 'none',
           borderBottomColor: 'divider',
-          backgroundColor: isPrimary 
+          backgroundColor: isPrimary
             ? alpha('#2196f3', 0.05)
             : isWarning
-              ? alpha('#ff9800', 0.05)
-              : 'background.default',
+            ? alpha('#ff9800', 0.05)
+            : 'background.default',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
           {title && (
-            <Typography 
-              variant='subtitle1' 
+            <Typography
+              variant='subtitle1'
               fontWeight='medium'
               color={isPrimary ? 'primary.main' : isWarning ? 'warning.dark' : 'text.primary'}
               sx={{ flex: 1 }}
@@ -206,14 +201,14 @@ export const CustomObjectFieldTemplate = ({
               )}
             </Typography>
           )}
-          
+
           {/* Display property count chip */}
-          <Chip 
-            label={t('Common.ItemCount', '{{count}} items', { count: properties.length })} 
+          <Chip
+            label={t('Common.ItemCount', '{{count}} items', { count: properties.length })}
             size='small'
             color={isPrimary ? 'primary' : isWarning ? 'warning' : 'default'}
             variant='outlined'
-            sx={{ 
+            sx={{
               ml: 1,
               fontSize: '0.7rem',
               height: '20px',
@@ -221,7 +216,7 @@ export const CustomObjectFieldTemplate = ({
           />
           
           {description && (
-            <Tooltip title={description} placement='top'>
+            <Tooltip title={typeof description === 'string' ? t(description) : description} placement='top'>
               <HelpOutlineIcon
                 sx={{
                   fontSize: 16,
@@ -238,14 +233,14 @@ export const CustomObjectFieldTemplate = ({
       <AccordionDetails sx={{ pt: 2 }}>
         {description && (
           <Box sx={{ mb: 2 }}>
-            <Typography 
-              variant='body2' 
-              sx={{ 
+            <Typography
+              variant='body2'
+              sx={{
                 color: 'text.secondary',
                 backgroundColor: alpha('#f5f5f5', 0.5),
                 p: 1,
                 borderRadius: 1,
-                fontStyle: 'italic'
+                fontStyle: 'italic',
               }}
             >
               {description}

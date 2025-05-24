@@ -1,5 +1,5 @@
-import React from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface LoadingViewProps {
@@ -11,7 +11,7 @@ interface LoadingViewProps {
  */
 export const LoadingView: React.FC<LoadingViewProps> = ({ message }) => {
   const { t } = useTranslation('agent');
-  
+
   return (
     <Box
       display='flex'

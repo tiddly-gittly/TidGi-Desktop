@@ -1,4 +1,4 @@
-import { List, Paper, Typography, Box, styled } from '@mui/material';
+import { Box, List, Paper, styled, Typography } from '@mui/material';
 import React from 'react';
 
 export interface PreviewMessage {

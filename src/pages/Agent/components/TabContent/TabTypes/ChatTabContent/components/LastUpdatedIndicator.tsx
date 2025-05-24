@@ -13,9 +13,9 @@ export interface LastUpdatedIndicatorProps {
  */
 export const LastUpdatedIndicator: React.FC<LastUpdatedIndicatorProps> = ({ lastUpdated, source }) => {
   const { t } = useTranslation('agent');
-  
+
   if (!lastUpdated) return null;
-  
+
   return (
     <Box
       sx={{

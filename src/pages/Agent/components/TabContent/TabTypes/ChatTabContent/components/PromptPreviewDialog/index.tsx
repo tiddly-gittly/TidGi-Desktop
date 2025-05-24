@@ -17,12 +17,12 @@ import { CoreMessage } from 'ai';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
-import { useAgentChatStore } from '../../../../../store/agentChatStore/index';
-import { DialogTabTypes } from './PromptPreviewDialog/constants';
-import { LoadingView } from './PromptPreviewDialog/LoadingView';
-import { PreviewTabsView } from './PromptPreviewDialog/PreviewTabsView';
-import { SideBySideEditView } from './PromptPreviewDialog/SideBySideEditView';
-import { getFormattedContent } from './types';
+import { useAgentChatStore } from '../../../../../../store/agentChatStore/index';
+import { getFormattedContent } from '../types';
+import { DialogTabTypes } from './constants';
+import { LoadingView } from './LoadingView';
+import { PreviewTabsView } from './PreviewTabsView';
+import { SideBySideEditView } from './SideBySideEditView';
 
 // Constants
 const DEBOUNCE_DELAY = 500; // ms
@@ -100,6 +100,8 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
         handlerConfigKeys: Object.keys(handlerConfig),
         hasSchema: !!handlerSchema,
       });
+
+      console.log(handlerSchema);
 
       try {
         const result = await getPreviewPromptResult(inputText, handlerConfig);

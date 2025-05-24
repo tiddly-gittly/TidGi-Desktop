@@ -1,15 +1,18 @@
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { alpha, Box, Chip, Tooltip, Typography } from '@mui/material';
+import { alpha, Box } from '@mui/material';
 import { FieldTemplateProps, getUiOptions } from '@rjsf/utils';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ErrorDisplay, FieldLabel } from '../components/SharedComponents';
 
 /**
- * Custom field template providing enhanced styling and layout for each field in the RJSF form
- * with improved visual cues and help functionality
+ * 优化的字段模板，提供增强的样式和布局
+ * 特点：
+ * - 使用样式化组件提高一致性和主题支持
+ * - 统一的描述显示通过工具提示
+ * - 性能优化，减少不必要的渲染
  */
-export const CustomFieldTemplate = ({
-  id,
+export const CustomFieldTemplate = React.memo(({
+  id: _id,
   label,
   help,
   required,
@@ -22,210 +25,141 @@ export const CustomFieldTemplate = ({
   displayLabel,
 }: FieldTemplateProps): React.ReactElement => {
   const { t } = useTranslation('agent');
-  const uiOptions = getUiOptions(uiSchema);
 
+  // 隐藏字段直接返回子组件
   if (hidden) {
     return <>{children}</>;
   }
 
-  // Determine if label should be shown
+  // 简化的UI选项处理，减少依赖
+  const uiOptions = useMemo(() => getUiOptions(uiSchema), [uiSchema]);
+
+  // 判断是否显示标签
   const showLabel = displayLabel !== false && label && schema.type !== 'object';
 
-  // Help text combines help prop and description
-  const helpText = help || description;
+  // 帮助文本处理
+  const helpText = typeof help === 'string' ? help : typeof description === 'string' ? description : undefined;
 
-  // Check for field specific styling
+  // 减少依赖的样式flags
   const isPrimary = uiOptions.variant === 'primary' || schema.format === 'primary';
   const isHighlighted = uiOptions.highlight === true || schema.format === 'highlight';
-
-  // Check for special field types to apply specific styling
   const isReadOnly = schema.readOnly === true || uiOptions.readOnly === true;
-
-  // Check for field validation features
-  const hasPattern = !!schema.pattern;
-  const hasFormat = !!schema.format;
   const isAdvanced = uiOptions.advanced === true;
 
-  // Get optional badge text for the field
-  const badgeText = uiOptions.badge;
+  // 简化的徽章数组生成
+  const badges = useMemo(() => {
+    const badgeList = [];
 
+    if (isReadOnly) {
+      badgeList.push({
+        text: t('Common.ReadOnly', '只读'),
+        color: 'default' as const,
+      });
+    }
+
+    if (isAdvanced) {
+      badgeList.push({
+        text: t('Common.Advanced', '高级'),
+        color: 'secondary' as const,
+      });
+    }
+
+    if (schema.pattern) {
+      badgeList.push({
+        text: t('Common.Pattern', '格式'),
+        color: 'info' as const,
+        tooltip: t('Common.PatternValidation', '此字段有格式验证'),
+      });
+    }
+
+    if (uiOptions.badge && typeof uiOptions.badge === 'string') {
+      badgeList.push({
+        text: uiOptions.badge,
+        color: isPrimary ? ('primary' as const) : ('default' as const),
+      });
+    }
+
+    return badgeList;
+  }, [isReadOnly, isAdvanced, schema.pattern, uiOptions.badge, isPrimary, t]);
+
+  // 格式提示
+  const formatHint = useMemo(() => {
+    if (!schema.format || errors) return null;
+
+    const supportedFormats = ['date', 'date-time', 'email', 'uri', 'regex'];
+    if (!supportedFormats.includes(schema.format)) return null;
+
+    return t(`Format.${schema.format}`, `格式: ${schema.format}`);
+  }, [schema.format, errors, t]);
+
+  // 使用样式化组件替代内联样式
   return (
     <Box
       sx={{
         mb: 2,
-        position: 'relative',
-        '&:hover .field-help-icon': {
-          opacity: 1,
-        },
-        ...(isHighlighted
-          ? {
-            p: 2,
-            backgroundColor: alpha('#f5f5f5', 0.5),
-            border: '1px solid',
-            borderColor: alpha(isPrimary ? '#2196f3' : '#000000', 0.1),
-            borderRadius: 1,
-          }
-          : {}),
+        p: isHighlighted ? 2 : 1,
+        border: isHighlighted ? '1px solid' : 'none',
+        borderColor: isPrimary ? 'primary.main' : 'divider',
+        borderRadius: isHighlighted ? 1 : 0,
+        backgroundColor: isHighlighted
+          ? (theme) => alpha(theme.palette.primary.main, 0.05)
+          : 'transparent',
+        transition: 'all 0.2s ease-in-out',
       }}
     >
       {showLabel && (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            mb: 0.5,
-            flexWrap: 'wrap',
-          }}
-        >
-          <Typography
-            variant='body1'
-            component='label'
-            htmlFor={id}
-            sx={{
-              fontWeight: 500,
-              color: isPrimary ? 'primary.main' : 'text.primary',
-              mr: 0.5,
-            }}
-          >
-            {label}
-            {required && (
-              <Typography component='span' color='error.main' sx={{ ml: 0.5 }}>
-                *
-              </Typography>
-            )}
-          </Typography>
-
-          {/* Display badges/chips for special field properties */}
-          <Box sx={{ display: 'flex', ml: 'auto', gap: 0.5 }}>
-            {isReadOnly && (
-              <Chip
-                label={t('Common.ReadOnly', 'Read Only')}
-                size='small'
-                variant='outlined'
-                color='default'
-                sx={{ height: 20, fontSize: '0.65rem' }}
-              />
-            )}
-
-            {isAdvanced && (
-              <Chip
-                label={t('Common.Advanced', 'Advanced')}
-                size='small'
-                variant='outlined'
-                color='secondary'
-                sx={{ height: 20, fontSize: '0.65rem' }}
-              />
-            )}
-
-            {hasPattern && (
-              <Tooltip title={t('Common.PatternValidation', 'This field has pattern validation')}>
-                <Chip
-                  label={t('Common.Pattern', 'Pattern')}
-                  size='small'
-                  variant='outlined'
-                  color='info'
-                  sx={{ height: 20, fontSize: '0.65rem' }}
-                />
-              </Tooltip>
-            )}
-
-            {badgeText && (
-              <Chip
-                label={badgeText}
-                size='small'
-                variant='outlined'
-                color={isPrimary ? 'primary' : 'default'}
-                sx={{ height: 20, fontSize: '0.65rem' }}
-              />
-            )}
-          </Box>
-
-          {helpText && (
-            <Tooltip
-              title={
-                <Typography variant='body2' style={{ whiteSpace: 'pre-line' }}>
-                  {helpText}
-                </Typography>
-              }
-              placement='top'
-            >
-              <HelpOutlineIcon
-                className='field-help-icon'
-                sx={{
-                  fontSize: 16,
-                  ml: 0.5,
-                  color: isPrimary ? 'primary.main' : 'text.secondary',
-                  opacity: 0.5,
-                  transition: 'opacity 0.2s',
-                  cursor: 'help',
-                }}
-              />
-            </Tooltip>
-          )}
-        </Box>
+        <FieldLabel
+          label={label}
+          required={required}
+          description={helpText}
+          badges={badges}
+        />
       )}
 
-      {/* Description text that appears below the label */}
-      {description && !help && !showLabel && (
-        <Typography
-          variant='caption'
-          color='text.secondary'
-          sx={{
-            mt: -0.5,
-            mb: 1,
-            display: 'block',
-            fontStyle: 'italic',
-          }}
-        >
-          {description}
-        </Typography>
-      )}
-
-      {/* The actual form control */}
+      {/* 表单控件 */}
       <Box
-        sx={{
-          ...(isPrimary && {
+        sx={isPrimary
+          ? {
             '& .MuiOutlinedInput-root': {
               '& fieldset': {
-                borderColor: alpha('#2196f3', 0.5),
+                borderColor: (theme) => alpha(theme.palette.primary.main, 0.5),
               },
               '&:hover fieldset': {
-                borderColor: '#2196f3',
+                borderColor: 'primary.main',
               },
             },
-          }),
-        }}
+          }
+          : {}}
       >
         {children}
       </Box>
 
-      {/* Error messages */}
+      {/* 错误信息 */}
       {errors && (
-        <Typography
-          variant='caption'
-          color='error'
-          sx={{
-            mt: 0.5,
-            display: 'block',
-            backgroundColor: alpha('#f44336', 0.05),
-            p: 0.5,
-            borderRadius: 0.5,
-          }}
-        >
-          {errors}
-        </Typography>
+        typeof errors === 'string'
+          ? <ErrorDisplay errors={errors} />
+          : Array.isArray(errors)
+          ? <ErrorDisplay errors={errors} />
+          : React.isValidElement(errors)
+          ? errors
+          : null
       )}
 
-      {/* Format hint for specific field formats */}
-      {hasFormat && schema.format && ['date', 'date-time', 'email', 'uri', 'regex'].includes(schema.format) && !errors && (
-        <Typography
-          variant='caption'
-          color='text.secondary'
-          sx={{ mt: 0.5, display: 'block' }}
+      {/* 特定字段格式的提示 */}
+      {formatHint && (
+        <Box
+          sx={(theme) => ({
+            mt: 0.5,
+            fontSize: '0.75rem',
+            color: theme.palette.text.secondary,
+            fontStyle: 'italic',
+          })}
         >
-          {t(`Format.${schema.format}`, `Format: ${schema.format}`)}
-        </Typography>
+          {formatHint}
+        </Box>
       )}
     </Box>
   );
-};
+});
+
+CustomFieldTemplate.displayName = 'CustomFieldTemplate';

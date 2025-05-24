@@ -1,7 +1,7 @@
-import React from 'react';
-import { Box } from '@mui/material';
 import Editor from '@monaco-editor/react';
+import { Box } from '@mui/material';
 import type { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import React from 'react';
 
 interface CodeEditorViewProps {
   handlerConfig?: HandlerConfig;
@@ -15,12 +15,12 @@ interface CodeEditorViewProps {
 export const CodeEditorView: React.FC<CodeEditorViewProps> = React.memo(({
   handlerConfig,
   onChange,
-  isFullScreen
+  isFullScreen,
 }) => {
   // 处理代码编辑器内容变化
   const handleEditorChange = (value: string | undefined) => {
     if (!value) return;
-    
+
     try {
       // 尝试解析JSON
       const parsedConfig = JSON.parse(value);
@@ -32,16 +32,18 @@ export const CodeEditorView: React.FC<CodeEditorViewProps> = React.memo(({
   };
 
   return (
-    <Box sx={{ 
-      height: isFullScreen ? 'calc(100vh - 180px)' : '60vh',
-      border: '1px solid',
-      borderColor: 'divider',
-      borderRadius: 1,
-      overflow: 'hidden'
-    }}>
+    <Box
+      sx={{
+        height: isFullScreen ? 'calc(100vh - 180px)' : '60vh',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1,
+        overflow: 'hidden',
+      }}
+    >
       <Editor
-        height="100%"
-        defaultLanguage="json"
+        height='100%'
+        defaultLanguage='json'
         value={handlerConfig ? JSON.stringify(handlerConfig, null, 2) : '{}'}
         onChange={handleEditorChange}
         options={{

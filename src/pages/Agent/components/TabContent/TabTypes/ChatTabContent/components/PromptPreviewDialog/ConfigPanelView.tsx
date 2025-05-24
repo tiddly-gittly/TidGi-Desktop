@@ -1,5 +1,3 @@
-import { AgentInstance } from '@services/agentInstance/interface';
-import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import Box from '@mui/material/Box';
@@ -8,11 +6,13 @@ import IconButton from '@mui/material/IconButton';
 import Switch from '@mui/material/Switch';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import { AgentInstance } from '@services/agentInstance/interface';
+import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { PromptConfigForm } from '../PromptConfigForm';
 import { AgentWithoutMessages } from '@/pages/Agent/store/agentChatStore/types';
+import { PromptConfigForm } from '../PromptConfigForm';
 
 interface ConfigPanelViewProps {
   agent?: AgentWithoutMessages;

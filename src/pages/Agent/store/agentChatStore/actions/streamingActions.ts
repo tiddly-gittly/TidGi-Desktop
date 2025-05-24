@@ -38,8 +38,8 @@ export const streamingActionsMiddleware: StateCreator<AgentChatStoreType, [], []
       const newOrderedIds = [...state.orderedMessageIds, message.id];
       const newStreamingMessageIds = new Set(state.streamingMessageIds);
       newStreamingMessageIds.add(message.id);
-      return { 
-        messages: newMessages, 
+      return {
+        messages: newMessages,
         orderedMessageIds: newOrderedIds,
         streamingMessageIds: newStreamingMessageIds,
       };

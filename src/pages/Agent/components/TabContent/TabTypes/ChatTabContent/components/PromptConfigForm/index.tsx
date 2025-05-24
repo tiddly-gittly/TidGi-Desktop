@@ -17,7 +17,7 @@ import { customWidgets } from './widgets';
 
 interface PromptConfigFormProps {
   /** JSON Schema for form validation and generation */
-  schema: Record<string, unknown>;
+  schema?: Record<string, unknown>;
   /** UI schema for layout customization */
   uiSchema?: Record<string, unknown>;
   /** Initial form data */
@@ -69,7 +69,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = React.memo(({
   if (process.env.NODE_ENV === 'development') {
     React.useEffect(() => {
       console.log('🔄 PromptConfigForm render with props:', {
-        hasSchema: !!schema && Object.keys(schema).length > 0,
+        hasSchema: schema && Object.keys(schema).length > 0,
         hasFormData: !!initialFormData,
         hasAgent: !!agent,
         disabled,
