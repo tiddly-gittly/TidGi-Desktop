@@ -18,7 +18,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
     set({ previewDialogOpen: false });
   },
 
-  setPreviewDialogTab: (tab: 'flat' | 'tree' | 'config') => {
+  setPreviewDialogTab: (tab: 'flat' | 'tree') => {
     set({ previewDialogTab: tab });
   },
 

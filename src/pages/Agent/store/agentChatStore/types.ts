@@ -27,7 +27,7 @@ export interface AgentChatBaseState {
 // Preview dialog specific state
 export interface PreviewDialogState {
   previewDialogOpen: boolean;
-  previewDialogTab: 'flat' | 'tree' | 'config';
+  previewDialogTab: 'flat' | 'tree'; // Only preview modes - edit side has its own tab system
   previewLoading: boolean;
   previewResult: {
     flatPrompts: CoreMessage[];
@@ -85,7 +85,7 @@ export interface BasicActions {
 
   /** Get the handler ID for the current agent */
   getHandlerId: () => Promise<string>;
-  
+
   /** Get the configuration schema for the current handler */
   getHandlerConfigSchema: () => Promise<Record<string, unknown>>;
 
@@ -142,9 +142,9 @@ export interface PreviewActions {
 
   /**
    * Sets the active tab in the preview dialog
-   * @param tab The tab to switch to ('flat', 'tree', or 'config')
+   * @param tab The tab to switch to ('flat' or 'tree')
    */
-  setPreviewDialogTab: (tab: 'flat' | 'tree' | 'config') => void;
+  setPreviewDialogTab: (tab: 'flat' | 'tree') => void;
 
   /**
    * Generates a preview of prompts for the current agent state
