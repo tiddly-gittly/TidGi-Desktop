@@ -1,6 +1,9 @@
-import { i18n } from '@services/libs/i18n';
+import { identity } from 'lodash';
 import { z } from 'zod/v4';
 import { PromptSchema } from './prompts';
+
+/** Placeholder to trigger VSCode i18nAlly extension to show translated text. */
+const t = identity;
 
 /**
  * Basic response configuration schema
@@ -15,7 +18,7 @@ import { PromptSchema } from './prompts';
  * ```
  */
 export const ResponseSchema = PromptSchema.extend({}).describe(
-  i18n.t('Schema.Response.Description'),
+  t('Schema.Response.Description'),
 );
 
 export type Response = z.infer<typeof ResponseSchema>;

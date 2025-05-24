@@ -1,6 +1,9 @@
-import { i18n } from '@services/libs/i18n';
+import { identity } from 'lodash';
 import { z } from 'zod/v4';
 import { FullReplacementParameterSchema, TriggerSchema } from './promptDynamicModification';
+
+/** Placeholder to trigger VSCode i18nAlly extension to show translated text. */
+const t = identity;
 
 /**
  * Parameters for responseProcessingType: "toolCalling"
@@ -14,9 +17,9 @@ import { FullReplacementParameterSchema, TriggerSchema } from './promptDynamicMo
  * ```
  */
 const ToolCallingParameterSchema = z.object({
-  targetId: z.string().describe(i18n.t('Schema.ToolCalling.TargetId')),
-  match: z.string().describe(i18n.t('Schema.ToolCalling.Match')),
-}).describe(i18n.t('Schema.ToolCalling.Description'));
+  targetId: z.string().describe(t('Schema.ToolCalling.TargetId')),
+  match: z.string().describe(t('Schema.ToolCalling.Match')),
+}).describe(t('Schema.ToolCalling.Description'));
 
 /**
  * Parameters for responseProcessingType: "autoReroll"
@@ -31,10 +34,10 @@ const ToolCallingParameterSchema = z.object({
  * ```
  */
 const AutoRerollParameterSchema = z.object({
-  targetId: z.string().describe(i18n.t('Schema.AutoReroll.TargetId')),
-  search: z.string().describe(i18n.t('Schema.AutoReroll.Search')),
-  maxRetry: z.number().describe(i18n.t('Schema.AutoReroll.MaxRetry')),
-}).describe(i18n.t('Schema.AutoReroll.Description'));
+  targetId: z.string().describe(t('Schema.AutoReroll.TargetId')),
+  search: z.string().describe(t('Schema.AutoReroll.Search')),
+  maxRetry: z.number().describe(t('Schema.AutoReroll.MaxRetry')),
+}).describe(t('Schema.AutoReroll.Description'));
 
 /**
  * Parameters for responseType: "autoReply"
@@ -56,11 +59,11 @@ const AutoRerollParameterSchema = z.object({
  * ```
  */
 const AutoReplyParameterSchema = z.object({
-  targetId: z.string().describe(i18n.t('Schema.AutoReply.TargetId')),
-  text: z.string().describe(i18n.t('Schema.AutoReply.Text')),
-  trigger: TriggerSchema.describe(i18n.t('Schema.AutoReply.Trigger')),
-  maxAutoReply: z.number().describe(i18n.t('Schema.AutoReply.MaxAutoReply')),
-}).describe(i18n.t('Schema.AutoReply.Description'));
+  targetId: z.string().describe(t('Schema.AutoReply.TargetId')),
+  text: z.string().describe(t('Schema.AutoReply.Text')),
+  trigger: TriggerSchema.describe(t('Schema.AutoReply.Trigger')),
+  maxAutoReply: z.number().describe(t('Schema.AutoReply.MaxAutoReply')),
+}).describe(t('Schema.AutoReply.Description'));
 
 /**
  * Main schema for response dynamic modifications
@@ -83,20 +86,20 @@ const AutoReplyParameterSchema = z.object({
  * ```
  */
 export const ResponseDynamicModificationSchema = z.object({
-  id: z.string().describe(i18n.t('Schema.ResponseDynamicModification.Id')),
-  caption: z.string().optional().describe(i18n.t('Schema.ResponseDynamicModification.Caption')),
+  id: z.string().describe(t('Schema.ResponseDynamicModification.Id')),
+  caption: z.string().optional().describe(t('Schema.ResponseDynamicModification.Caption')),
 
   // 对响应内容做修改的过程
-  dynamicModificationType: z.enum(['fullReplacement']).optional().describe(i18n.t('Schema.ResponseDynamicModification.DynamicModificationType')),
-  fullReplacementParam: FullReplacementParameterSchema.optional().describe(i18n.t('Schema.ResponseDynamicModification.FullReplacementParam')),
-  forbidOverrides: z.boolean().optional().default(false).describe(i18n.t('Schema.ResponseDynamicModification.ForbidOverrides')),
+  dynamicModificationType: z.enum(['fullReplacement']).optional().describe(t('Schema.ResponseDynamicModification.DynamicModificationType')),
+  fullReplacementParam: FullReplacementParameterSchema.optional().describe(t('Schema.ResponseDynamicModification.FullReplacementParam')),
+  forbidOverrides: z.boolean().optional().default(false).describe(t('Schema.ResponseDynamicModification.ForbidOverrides')),
 
   // 基于响应结果，调用程序做额外处理的过程
-  responseProcessingType: z.enum(['toolCalling', 'autoReroll', 'autoReply']).optional().describe(i18n.t('Schema.ResponseDynamicModification.ResponseProcessingType')),
-  toolCallingParam: ToolCallingParameterSchema.optional().describe(i18n.t('Schema.ResponseDynamicModification.ToolCallingParam')),
-  autoRerollParam: AutoRerollParameterSchema.optional().describe(i18n.t('Schema.ResponseDynamicModification.AutoRerollParam')),
-  autoReplyParam: AutoReplyParameterSchema.optional().describe(i18n.t('Schema.ResponseDynamicModification.AutoReplyParam')),
-}).describe(i18n.t('Schema.ResponseDynamicModification.Description'));
+  responseProcessingType: z.enum(['toolCalling', 'autoReroll', 'autoReply']).optional().describe(t('Schema.ResponseDynamicModification.ResponseProcessingType')),
+  toolCallingParam: ToolCallingParameterSchema.optional().describe(t('Schema.ResponseDynamicModification.ToolCallingParam')),
+  autoRerollParam: AutoRerollParameterSchema.optional().describe(t('Schema.ResponseDynamicModification.AutoRerollParam')),
+  autoReplyParam: AutoReplyParameterSchema.optional().describe(t('Schema.ResponseDynamicModification.AutoReplyParam')),
+}).describe(t('Schema.ResponseDynamicModification.Description'));
 
 export { AutoReplyParameterSchema, AutoRerollParameterSchema, ToolCallingParameterSchema };
 

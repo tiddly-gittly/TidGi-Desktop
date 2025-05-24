@@ -1,4 +1,4 @@
-import { i18n } from '@services/libs/i18n';
+import { identity } from 'lodash';
 import { z } from 'zod/v4';
 import { ModelParametersSchema, ProviderModelSchema } from './modelParameters';
 import { PromptDynamicModificationSchema } from './promptDynamicModification';
@@ -6,31 +6,34 @@ import { PromptSchema } from './prompts';
 import { ResponseSchema } from './response';
 import { ResponseDynamicModificationSchema } from './responseDynamicModification';
 
+/** Placeholder to trigger VSCode i18nAlly extension to show translated text. */
+const t = identity;
+
 /**
  * Base API configuration schema
  * Contains common fields shared between AIConfigSchema and AgentConfigSchema
  */
 export const BaseAPIConfigSchema = z.object({
-  api: ProviderModelSchema.describe(i18n.t('Schema.BaseAPIConfig.API')),
-  modelParameters: ModelParametersSchema.describe(i18n.t('Schema.BaseAPIConfig.ModelParameters')),
-}).describe(i18n.t('Schema.BaseAPIConfig.Description'));
+  api: ProviderModelSchema.describe(t('Schema.BaseAPIConfig.API')),
+  modelParameters: ModelParametersSchema.describe(t('Schema.BaseAPIConfig.ModelParameters')),
+}).describe(t('Schema.BaseAPIConfig.Description'));
 
 /**
  * AI configuration schema for session settings
  */
 export const AIConfigSchema = BaseAPIConfigSchema
-  .describe(i18n.t('Schema.AIConfig.Description'));
+  .describe(t('Schema.AIConfig.Description'));
 
 /**
  * Handler configuration schema
  * Contains the handler-related configuration fields for prompts and responses
  */
 export const HandlerConfigSchema = z.object({
-  prompts: z.array(PromptSchema).describe(i18n.t('Schema.AgentConfig.PromptConfig.Prompts')),
-  promptDynamicModification: z.array(PromptDynamicModificationSchema).describe(i18n.t('Schema.AgentConfig.PromptConfig.PromptDynamicModification')),
-  response: z.array(ResponseSchema).describe(i18n.t('Schema.AgentConfig.PromptConfig.Response')),
-  responseDynamicModification: z.array(ResponseDynamicModificationSchema).describe(i18n.t('Schema.AgentConfig.PromptConfig.ResponseDynamicModification')),
-}).describe(i18n.t('Schema.AgentConfig.PromptConfig.Description'));
+  prompts: z.array(PromptSchema).describe(t('Schema.AgentConfig.PromptConfig.Prompts')),
+  promptDynamicModification: z.array(PromptDynamicModificationSchema).describe(t('Schema.AgentConfig.PromptConfig.PromptDynamicModification')),
+  response: z.array(ResponseSchema).describe(t('Schema.AgentConfig.PromptConfig.Response')),
+  responseDynamicModification: z.array(ResponseDynamicModificationSchema).describe(t('Schema.AgentConfig.PromptConfig.ResponseDynamicModification')),
+}).describe(t('Schema.AgentConfig.PromptConfig.Description'));
 
 /**
  * Agent configuration schema
@@ -53,15 +56,15 @@ export const HandlerConfigSchema = z.object({
  * ```
  */
 export const AgentConfigSchema = BaseAPIConfigSchema.extend({
-  id: z.string().describe(i18n.t('Schema.AgentConfig.Id')),
+  id: z.string().describe(t('Schema.AgentConfig.Id')),
   promptConfig: HandlerConfigSchema,
-}).describe(i18n.t('Schema.AgentConfig.Description'));
+}).describe(t('Schema.AgentConfig.Description'));
 
 /**
  * Default agents list schema
  * Contains an array of agent configurations
  */
-export const DefaultAgentsSchema = z.array(AgentConfigSchema).describe(i18n.t('Schema.DefaultAgents.Description'));
+export const DefaultAgentsSchema = z.array(AgentConfigSchema).describe(t('Schema.DefaultAgents.Description'));
 
 export type DefaultAgents = z.infer<typeof DefaultAgentsSchema>;
 export type AgentPromptDescription = z.infer<typeof AgentConfigSchema>;
