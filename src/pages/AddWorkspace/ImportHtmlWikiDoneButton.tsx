@@ -1,8 +1,5 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import Alert from '@mui/lab/Alert';
 import { useTranslation } from 'react-i18next';
-
-import { LinearProgress, Snackbar, Typography } from '@mui/material';
+import { Alert, LinearProgress, Snackbar, Typography } from '@mui/material';
 import { CloseButton, ReportErrorFabButton, WikiLocation } from './FormComponents';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useImportHtmlWiki, useValidateHtmlWiki } from './useImportHtmlWiki';

@@ -123,7 +123,6 @@
     "@electron/rebuild": "^3.7.1",
     "@fontsource/roboto": "^5.1.1",
     "@mui/icons-material": "^6.4.10",
-    "@mui/lab": "5.0.0-alpha.170",
     "@mui/material": "^7.1.0",
     "@mui/styled-engine-sc": "7.1.0",
     "@mui/x-date-pickers": "^8.4.0",

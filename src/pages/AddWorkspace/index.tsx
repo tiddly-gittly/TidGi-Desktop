@@ -1,6 +1,5 @@
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import { TabContext, TabPanel as TabPanelRaw } from '@mui/lab';
-import { Accordion as AccordionRaw, AccordionDetails, AccordionSummary, AppBar, Paper as PaperRaw, Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
+import { Accordion as AccordionRaw, AccordionDetails, AccordionSummary, AppBar, Box, Paper as PaperRaw, Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +21,6 @@ import { TokenForm } from '@/components/TokenForm';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { CreateWorkspaceTabs } from './constants';
-import { LocationPickerContainer, LocationPickerInput } from './FormComponents';
 import { GitRepoUrlForm } from './GitRepoUrlForm';
 import { ImportHtmlWikiDoneButton } from './ImportHtmlWikiDoneButton';
 import { ImportHtmlWikiForm } from './ImportHtmlWikiForm';
@@ -63,9 +61,9 @@ const Tab = styled(TabRaw)`
   background: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.secondary};
 `;
-const TabPanel = styled(TabPanelRaw)`
+const TabPanel = styled(Box)`
   margin-bottom: 10px;
-  padding: 0 !important;
+  padding: 0;
 `;
 const AdvancedSettingsAccordionSummary = styled(AccordionSummary)`
   margin-top: 10px;
@@ -74,7 +72,7 @@ const AdvancedSettingsAccordionSummary = styled(AccordionSummary)`
 export function AddWorkspace(): React.JSX.Element {
   const { t } = useTranslation();
   const [currentTab, currentTabSetter] = useState<CreateWorkspaceTabs>(
-    (window.meta() as IPossibleWindowMeta<WindowMeta[WindowNames.addWorkspace]>)?.addWorkspaceTab ?? CreateWorkspaceTabs.CreateNewWiki,
+    (window.meta() as IPossibleWindowMeta<WindowMeta[WindowNames.addWorkspace]>).addWorkspaceTab ?? CreateWorkspaceTabs.CreateNewWiki,
   );
   const isCreateSyncedWorkspace = currentTab === CreateWorkspaceTabs.CloneOnlineWiki;
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(true);
@@ -104,7 +102,7 @@ export function AddWorkspace(): React.JSX.Element {
   }
 
   return (
-    <TabContext value={currentTab}>
+    <Box>
       <div id='test' data-usage='For spectron automating testing' />
       <Helmet>
         <title>
@@ -114,7 +112,7 @@ export function AddWorkspace(): React.JSX.Element {
       <AppBar position='static'>
         <Paper square>
           <Tabs
-            onChange={(_event: React.SyntheticEvent<Element, Event>, newValue: CreateWorkspaceTabs) => {
+            onChange={(_event: React.SyntheticEvent, newValue: CreateWorkspaceTabs) => {
               currentTabSetter(newValue);
             }}
             variant='scrollable'
@@ -146,30 +144,38 @@ export function AddWorkspace(): React.JSX.Element {
       )}
       {storageProvider !== SupportedStorageServices.local && <GitRepoUrlForm error={errorInWhichComponent.gitRepoUrl} {...formProps} {...formProps.form} />}
 
-      <TabPanel value={CreateWorkspaceTabs.CreateNewWiki}>
-        <Container>
-          <NewWikiForm {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
-          <NewWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
-        </Container>
-      </TabPanel>
-      <TabPanel value={CreateWorkspaceTabs.CloneOnlineWiki}>
-        <Container>
-          <CloneWikiForm {...formProps} />
-          <CloneWikiDoneButton {...formProps} />
-        </Container>
-      </TabPanel>
-      <TabPanel value={CreateWorkspaceTabs.OpenLocalWiki}>
-        <Container>
-          <ExistedWikiForm {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
-          <ExistedWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
-        </Container>
-      </TabPanel>
-      <TabPanel value={CreateWorkspaceTabs.OpenLocalWikiFromHtml}>
-        <Container>
-          <ImportHtmlWikiForm {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
-          <ImportHtmlWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
-        </Container>
-      </TabPanel>
-    </TabContext>
+      {currentTab === CreateWorkspaceTabs.CreateNewWiki && (
+        <TabPanel>
+          <Container>
+            <NewWikiForm {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+            <NewWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+          </Container>
+        </TabPanel>
+      )}
+      {currentTab === CreateWorkspaceTabs.CloneOnlineWiki && (
+        <TabPanel>
+          <Container>
+            <CloneWikiForm {...formProps} />
+            <CloneWikiDoneButton {...formProps} />
+          </Container>
+        </TabPanel>
+      )}
+      {currentTab === CreateWorkspaceTabs.OpenLocalWiki && (
+        <TabPanel>
+          <Container>
+            <ExistedWikiForm {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+            <ExistedWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+          </Container>
+        </TabPanel>
+      )}
+      {currentTab === CreateWorkspaceTabs.OpenLocalWikiFromHtml && (
+        <TabPanel>
+          <Container>
+            <ImportHtmlWikiForm {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+            <ImportHtmlWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+          </Container>
+        </TabPanel>
+      )}
+    </Box>
   );
 }

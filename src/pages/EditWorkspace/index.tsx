@@ -1,13 +1,9 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable unicorn/no-useless-undefined */
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable unicorn/no-null */
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import { Autocomplete } from '@mui/lab';
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Autocomplete,
   AutocompleteRenderInputParams,
   Button as ButtonRaw,
   Divider,
@@ -315,7 +311,7 @@ export default function EditWorkspace(): React.JSX.Element {
             {isSubWiki && (
               <Autocomplete
                 freeSolo
-                options={fileSystemPaths?.map((fileSystemPath) => fileSystemPath.tagName)}
+                options={fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
                 value={tagName}
                 onInputChange={(event: React.SyntheticEvent, value: string) => {
                   workspaceSetter({ ...workspace, tagName: value }, true);

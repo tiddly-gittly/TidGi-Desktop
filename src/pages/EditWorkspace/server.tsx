@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { CheckBox as CheckBoxIcon, CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import { Autocomplete } from '@mui/lab';
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Autocomplete,
   AutocompleteRenderInputParams,
   Button,
   Checkbox,
@@ -52,7 +51,7 @@ const AuthTokenTextAndButtonContainer = styled.div`
 
 export interface IServerOptionsProps {
   workspace: IWorkspace;
-  workspaceSetter: (newValue: IWorkspace, requestSaveAndRestart?: boolean | undefined) => void;
+  workspaceSetter: (newValue: IWorkspace, requestSaveAndRestart?: boolean) => void;
 }
 export function ServerOptions(props: IServerOptionsProps) {
   const { t } = useTranslation();
@@ -71,7 +70,7 @@ export function ServerOptions(props: IServerOptionsProps) {
   } = (workspace ?? {}) as unknown as IWorkspace;
   const actualIP = useActualIp(getDefaultHTTPServerIP(port), id);
   // some feature need a username to work, so if userName is empty, assign a fallbackUserName DEFAULT_USER_NAME
-  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+
   const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName'))!, '');
   const userNameIsEmpty = !(userName || fallbackUserName);
   const alreadyEnableSomeServerOptions = readOnlyMode;
@@ -84,7 +83,8 @@ export function ServerOptions(props: IServerOptionsProps) {
       </Tooltip>
       <AccordionDetails>
         <List>
-          <ListItem disableGutters
+          <ListItem
+            disableGutters
             secondaryAction={
               <Switch
                 edge='end'
@@ -131,7 +131,8 @@ export function ServerOptions(props: IServerOptionsProps) {
           </ListItem>
 
           <Divider />
-          <ListItem disableGutters
+          <ListItem
+            disableGutters
             secondaryAction={
               <Switch
                 edge='end'
@@ -139,7 +140,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                 checked={tokenAuth}
                 onChange={async () => {
                   const nextTokenAuth = !tokenAuth;
-                  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+
                   const newAuthToken = authToken || await (window.service.auth.generateOneTimeAdminAuthTokenForWorkspace(id));
                   workspaceSetter({
                     ...workspace,
@@ -192,7 +193,6 @@ export function ServerOptions(props: IServerOptionsProps) {
               <ListItem disableGutters>
                 <ListItemText
                   primary={t('EditWorkspace.TokenAuthCurrentHeader')}
-                  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
                   secondary={`"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`}
                 />
               </ListItem>
@@ -207,7 +207,8 @@ export function ServerOptions(props: IServerOptionsProps) {
             </>
           )}
           <Divider />
-          <ListItem disableGutters
+          <ListItem
+            disableGutters
             secondaryAction={
               <Switch
                 edge='end'
@@ -223,7 +224,8 @@ export function ServerOptions(props: IServerOptionsProps) {
           </ListItem>
 
           {workspace !== undefined && readOnlyMode && <ExcludedPluginsAutocomplete workspace={workspace} workspaceSetter={workspaceSetter} />}
-          <ListItem disableGutters
+          <ListItem
+            disableGutters
             secondaryAction={
               <Switch
                 edge='end'
@@ -355,7 +357,7 @@ export function ServerOptions(props: IServerOptionsProps) {
 const autocompleteExcludedPluginsFilter = createFilterOptions<string>();
 const uncheckedIcon = <CheckBoxOutlineBlankIcon fontSize='small' />;
 const checkedIcon = <CheckBoxIcon fontSize='small' />;
-function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSetter: (newValue: IWorkspace, requestSaveAndRestart?: boolean | undefined) => void }) {
+function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSetter: (newValue: IWorkspace, requestSaveAndRestart?: boolean) => void }) {
   const { t } = useTranslation();
   const { workspaceSetter, workspace } = props;
   const {
@@ -408,7 +410,7 @@ function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSe
               // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
               node = node.parentNode;
             }
-            // eslint-disable-next-line unicorn/prefer-dom-node-text-content
+
             const value = (node as HTMLDivElement).innerText;
             workspaceSetter({ ...workspace, excludedPlugins: excludedPlugins.filter(item => item !== value) }, true);
           },

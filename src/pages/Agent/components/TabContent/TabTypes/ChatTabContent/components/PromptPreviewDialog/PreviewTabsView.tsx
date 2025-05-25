@@ -1,4 +1,3 @@
-import { TabContext, TabPanel } from '@mui/lab';
 import { Box, styled } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
@@ -58,7 +57,7 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = React.memo(({
   const { t } = useTranslation('agent');
 
   return (
-    <TabContext value={tab}>
+    <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
         <PreviewTabs
           value={tab}
@@ -81,20 +80,20 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = React.memo(({
       </Box>
 
       {/* Flat Result Tab */}
-      <TabPanel value={DialogTabTypes.FLAT} sx={{ p: 0 }}>
+      {tab === DialogTabTypes.FLAT && (
         <PreviewContent isFullScreen={isFullScreen}>
           <FlatPromptList flatPrompts={flatPrompts} />
           <LastUpdatedIndicator lastUpdated={lastUpdated} source={updateSource} />
         </PreviewContent>
-      </TabPanel>
+      )}
 
       {/* Tree Result Tab */}
-      <TabPanel value={DialogTabTypes.TREE} sx={{ p: 0 }}>
+      {tab === DialogTabTypes.TREE && (
         <PreviewContent isFullScreen={isFullScreen}>
           <PromptTree prompts={processedPrompts} />
           <LastUpdatedIndicator lastUpdated={lastUpdated} source={updateSource} />
         </PreviewContent>
-      </TabPanel>
-    </TabContext>
+      )}
+    </Box>
   );
 });
