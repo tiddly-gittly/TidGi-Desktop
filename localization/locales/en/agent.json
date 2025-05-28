@@ -178,7 +178,10 @@
     "NoHandlerFound": "No handler found",
     "NoConfigFound": "No configuration found",
     "ConfigurationEditor": "Configuration Editor",
-    "ConfigurationDescription": "Edit prompt configuration"
+    "ConfigurationDescription": "Edit prompt configuration",
+    "RefreshPreview": "Manually refresh preview",
+    "AutoUpdatePreview": "Auto-update preview on form changes",
+    "AutoUpdate": "Auto"
   },
   "Schema": {
     "AIConfig": {

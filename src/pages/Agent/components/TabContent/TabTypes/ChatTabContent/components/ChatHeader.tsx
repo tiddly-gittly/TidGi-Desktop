@@ -1,5 +1,5 @@
-import SettingsIcon from '@mui/icons-material/Settings';
-import PreviewIcon from '@mui/icons-material/Visibility';
+import ArticleIcon from '@mui/icons-material/Article';
+import TuneIcon from '@mui/icons-material/Tune';
 import { Box, CircularProgress, IconButton, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';
@@ -63,7 +63,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           onClick={openPreviewDialog}
           title={t('Prompt.Preview')}
         >
-          <PreviewIcon />
+          <ArticleIcon />
         </IconButton>
         {loading && <CircularProgress size={20} sx={{ mr: 1 }} color='primary' />}
         <CompactModelSelector agentDefId={agent?.agentDefId} />
@@ -72,7 +72,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           onClick={onOpenParameters}
           title={t('Preference.ModelParameters')}
         >
-          <SettingsIcon />
+          <TuneIcon />
         </IconButton>
       </ControlsContainer>
       <PromptPreviewDialog

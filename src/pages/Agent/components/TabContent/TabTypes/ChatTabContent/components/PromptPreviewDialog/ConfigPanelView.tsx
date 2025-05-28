@@ -8,14 +8,12 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { AgentInstance } from '@services/agentInstance/interface';
 import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { AgentWithoutMessages } from '@/pages/Agent/store/agentChatStore/types';
 import { PromptConfigForm } from '../PromptConfigForm';
 
 interface ConfigPanelViewProps {
-  agent?: AgentWithoutMessages;
   handlerSchema: Record<string, unknown>;
   handlerConfig?: HandlerConfig;
   handleConfigUpdate: (data: Partial<AgentInstance>) => Promise<void>;
@@ -25,14 +23,12 @@ interface ConfigPanelViewProps {
   handlerConfigLoading: boolean;
   autoUpdateEnabled: boolean;
   handleAutoUpdateToggle: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  showSubmitButton?: boolean;
 }
 
 /**
  * Configuration panel component with form and controls
  */
 export const ConfigPanelView: React.FC<ConfigPanelViewProps> = React.memo(({
-  agent,
   handlerSchema,
   handlerConfig,
   handleConfigUpdate,
@@ -42,18 +38,26 @@ export const ConfigPanelView: React.FC<ConfigPanelViewProps> = React.memo(({
   handlerConfigLoading,
   autoUpdateEnabled,
   handleAutoUpdateToggle,
-  showSubmitButton = true,
 }) => {
   const { t } = useTranslation('agent');
+
+  const handleAutoSaveFormChange = useCallback(async (formData: HandlerConfig) => {
+    handleFormChange(formData);
+
+    try {
+      await handleConfigUpdate({
+        handlerConfig: formData,
+      });
+    } catch (error) {
+      console.error('Failed to auto-save handler config:', error);
+    }
+  }, [handleFormChange, handleConfigUpdate]);
 
   return (
     <Box sx={{ width: '100%' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-        <Typography variant='h6' sx={{ fontSize: '1rem' }}>
-          {t('Prompt.Configuration')}
-        </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Tooltip title={t('Prompt.RefreshPreview', 'Manually refresh preview')}>
+          <Tooltip title={t('Prompt.RefreshPreview')}>
             <IconButton
               size='small'
               onClick={handleManualRefresh}
@@ -64,7 +68,7 @@ export const ConfigPanelView: React.FC<ConfigPanelViewProps> = React.memo(({
             </IconButton>
           </Tooltip>
 
-          <Tooltip title={t('Prompt.AutoUpdatePreview', 'Auto-update preview on form changes')}>
+          <Tooltip title={t('Prompt.AutoUpdatePreview')}>
             <FormControlLabel
               control={
                 <Switch
@@ -77,7 +81,7 @@ export const ConfigPanelView: React.FC<ConfigPanelViewProps> = React.memo(({
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <AutorenewIcon fontSize='small' sx={{ mr: 0.5 }} />
-                  <Typography variant='caption'>{t('Prompt.AutoUpdate', 'Auto')}</Typography>
+                  <Typography variant='caption'>{t('Prompt.AutoUpdate')}</Typography>
                 </Box>
               }
               labelPlacement='start'
@@ -86,18 +90,14 @@ export const ConfigPanelView: React.FC<ConfigPanelViewProps> = React.memo(({
           </Tooltip>
         </Box>
       </Box>
-
-      {agent && (
-        <PromptConfigForm
-          schema={handlerSchema || {}}
-          formData={handlerConfig || undefined}
-          onUpdate={handleConfigUpdate}
-          onChange={handleFormChange}
-          disabled={previewLoading}
-          loading={handlerConfigLoading}
-          showSubmitButton={showSubmitButton}
-        />
-      )}
+      <PromptConfigForm
+        schema={handlerSchema}
+        formData={handlerConfig}
+        onUpdate={handleConfigUpdate}
+        onChange={handleAutoSaveFormChange}
+        disabled={previewLoading}
+        loading={handlerConfigLoading}
+      />
     </Box>
   );
 });

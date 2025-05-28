@@ -210,7 +210,10 @@
     "NoHandlerFound": "未找到处理程序",
     "NoConfigFound": "未找到配置",
     "ConfigurationEditor": "配置编辑器",
-    "ConfigurationDescription": "编辑提示词配置"
+    "ConfigurationDescription": "编辑提示词配置",
+    "RefreshPreview": "手动刷新预览",
+    "AutoUpdatePreview": "表单变化时自动更新预览",
+    "AutoUpdate": "自动"
   },
   "Common": {
     "Saving": "保存中...",
@@ -279,7 +282,8 @@
       "ToolCallingParam": "工具调用参数",
       "AutoRerollParam": "自动重新生成参数",
       "AutoReplyParam": "自动回复参数",
-      "Description": "响应动态修改配置"
+      "Description": "响应动态修改配置",
+      "ResponseModifications": "响应修改配置"
     },
     "RAG": {
       "SourceType": "源类型",
@@ -321,6 +325,7 @@
       "Content": "内容",
       "ForbidOverrides": "是否禁止覆盖",
       "DynamicModificationType": "动态修改类型",
+      "DynamicModifications": "动态修改配置",
       "FullReplacementParam": "完全替换参数",
       "DynamicPositionParam": "动态位置参数",
       "RAGParam": "检索增强生成参数",
@@ -342,10 +347,12 @@
       "Description": "模型参数配置"
     },
     "Response": {
-      "Description": "外部API的响应，通常作为响应动态修改的目标，结构与提示词的一样，可以填写预置内容，也可以作为占位符或容器，由 ResponseDynamicModification 填入外部API的响应的具体内容。"
+      "Description": "外部API的响应，通常作为响应动态修改的目标，结构与提示词的一样，可以填写预置内容，也可以作为占位符或容器，由 ResponseDynamicModification 填入外部API的响应的具体内容。",
+      "ResponseSettings": "响应设置"
     },
     "PromptPart": {
       "Id": "唯一标识符，方便在 PromptDynamicModification 里通过 targetId 引用。",
+      "PromptsList": "提示词列表",
       "Text": "提示词文本内容，可以包含维基文本支持的语法，例如<<变量名>>。",
       "Tags": "标签列表，用于分类和引用",
       "Caption": "提示词的简短描述",

@@ -268,16 +268,11 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
       : null;
   }, [previewResult]);
 
-  /**
-   * 条件渲染函数，根据当前状态返回适当的组件
-   */
   const renderDialogContent = () => {
-    // 如果在加载中，显示加载组件
     if (previewLoading) {
       return <LoadingView />;
     }
 
-    // 如果在编辑模式，显示并排视图
     if (isEditMode) {
       return (
         <SideBySideEditView
@@ -288,7 +283,6 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
           processedPrompts={formattedPreview?.processedPrompts}
           lastUpdated={previewStatus.lastUpdated}
           updateSource={previewStatus.source}
-          agent={agent || undefined}
           handlerSchema={handlerSchema || {}}
           handlerConfig={handlerConfig || undefined}
           handleConfigUpdate={handleConfigUpdate}

@@ -1,262 +1,59 @@
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import SearchIcon from '@mui/icons-material/Search';
-import { AccordionDetails, alpha, Box, Divider, InputAdornment } from '@mui/material';
-import { getTemplate, getUiOptions, ObjectFieldTemplateProps } from '@rjsf/utils';
+import { Box, Typography } from '@mui/material';
+import { ObjectFieldTemplateProps } from '@rjsf/utils';
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { 
-  StyledAccordion, 
-  StyledAccordionSummary, 
-  StyledTextField, 
-  StyledPaper, 
-  StyledChip, 
-  SectionTitle 
-} from '../components/SharedComponents';
+import { CollapseIcon, ExpandIcon, HelpTooltip, StyledCard, StyledCardContent, StyledCollapse, StyledExpandButton } from '../components';
 
-/**
- * Custom object field template that transforms complex objects into collapsible panels
- * with enhanced visual hierarchy and interactive elements
- * Features:
- * - Collapsible sections for better organization
- * - Visual indicators for different section types
- * - Search functionality for finding fields in complex forms
- * - Status badges showing field counts
- */
-export const CustomObjectFieldTemplate = ({
-  description,
-  title,
-  properties,
-  required,
-  uiSchema,
-  idSchema,
-  schema,
-  registry,
-}: ObjectFieldTemplateProps): React.ReactElement => {
-  const { t } = useTranslation('agent');
-  const uiOptions = getUiOptions(uiSchema);
-  const _TitleTemplate = getTemplate('TitleFieldTemplate', registry, uiOptions);
-  const DescriptionTemplate = getTemplate('DescriptionFieldTemplate', registry, uiOptions);
-  
-  // Track expanded state
-  const [expanded, setExpanded] = useState(uiOptions.expandable !== false);
-  // Search term state
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  // Determine panel style based on schema properties or UI options
-  const isPrimary = uiOptions.variant === 'primary' || schema.format === 'primary';
-  const isInfo = uiOptions.variant === 'info' || schema.format === 'info';
-  const isWarning = uiOptions.variant === 'warning' || schema.format === 'warning';
-  
-  // Handle search input change
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
+export const ObjectFieldTemplate: React.FC<ObjectFieldTemplateProps> = (props) => {
+  const { properties, title, schema, uiSchema } = props;
+  const [expanded, setExpanded] = useState(true);
+
+  const isCollapsible = uiSchema?.['ui:collapsible'] !== false;
+  const description = schema.description;
+
+  const handleToggleExpanded = () => {
+    setExpanded(!expanded);
   };
-  
-  // Filter properties based on search term
-  const filteredProperties = searchTerm
-    ? properties.filter(property => {
-      const propertyName = property.name ? String(property.name).toLowerCase() : '';
-      // Type-safe check for schema property
-      const propertyContent = property.content as { props?: { schema?: { title?: string } } };
-      const propertyTitle = propertyContent.props?.schema?.title
-        ? String(propertyContent.props.schema.title).toLowerCase()
-        : '';
-      return propertyName.includes(searchTerm.toLowerCase()) ||
-        propertyTitle.includes(searchTerm.toLowerCase());
-    })
-    : properties;
-  
-  // Root level object doesn't use accordion
-  if (idSchema.$id === 'root') {
+
+  if (!title) {
     return (
-      <Box>
-        {properties.length > 5 && (
-          <Box sx={{ mb: 2 }}>
-            <StyledTextField
-              placeholder={t('Form.SearchFields', 'Search fields...')}
-              variant='outlined'
-              size='small'
-              fullWidth
-              value={searchTerm}
-              onChange={handleSearchChange}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position='start'>
-                      <SearchIcon fontSize='small' />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
+      <Box sx={{ width: '100%' }}>
+        {properties.map((element) => (
+          <Box key={element.name} sx={{ mb: 1 }}>
+            {element.content}
           </Box>
-        )}
-        {filteredProperties.map((property) => property.content)}
+        ))}
       </Box>
     );
   }
 
-  // Custom sections for specific object formats
-  if (isInfo) {
-    return (
-      <Paper
-        elevation={0}
-        sx={{
-          p: 2,
-          mb: 2,
-          backgroundColor: alpha('#2196f3', 0.05),
-          border: '1px solid',
-          borderColor: alpha('#2196f3', 0.2),
-          borderRadius: 1,
-        }}
-      >
-        {title && (
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <InfoOutlinedIcon sx={{ mr: 1, color: 'info.main' }} fontSize='small' />
-            <Typography variant='subtitle1' color='info.main' fontWeight='medium'>
-              {title}
-              {required && (
-                <Typography component='span' color='error.main' sx={{ ml: 0.5 }}>
-                  *
-                </Typography>
-              )}
-            </Typography>
-          </Box>
-        )}
+  const titleWithHelp = (
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Typography variant='subtitle1' component='h3'>
+          {title}
+        </Typography>
+        {typeof description === 'string' && description && <HelpTooltip description={description} />}
+      </Box>
+      {isCollapsible && (
+        <StyledExpandButton onClick={handleToggleExpanded}>
+          {expanded ? <CollapseIcon /> : <ExpandIcon />}
+        </StyledExpandButton>
+      )}
+    </Box>
+  );
 
-        {description && (
-          <Box sx={{ mb: 2 }}>
-            <DescriptionTemplate
-              id={`${idSchema.$id}-description`}
-              description={description}
-              schema={schema}
-              uiSchema={uiSchema}
-              registry={registry}
-            />
-          </Box>
-        )}
-
-        <Box>
-          {properties.map((property) => (
-            <Box key={property.name} sx={{ mb: 2 }}>
-              {property.content}
+  return (
+    <StyledCard variant='outlined'>
+      {titleWithHelp}
+      <StyledCollapse in={expanded} timeout='auto' unmountOnExit>
+        <StyledCardContent>
+          {properties.map((element) => (
+            <Box key={element.name} sx={{ mb: 1 }}>
+              {element.content}
             </Box>
           ))}
-        </Box>
-      </Paper>
-    );
-  }
-
-  // Default behavior - use accordion
-  return (
-    <Accordion
-      expanded={expanded}
-      onChange={() => {
-        setExpanded(!expanded);
-      }}
-      sx={{
-        mb: 2,
-        border: '1px solid',
-        borderColor: isPrimary
-          ? 'primary.light'
-          : isWarning
-          ? 'warning.light'
-          : 'divider',
-        borderRadius: '4px !important',
-        '&::before': {
-          display: 'none',
-        },
-        backgroundColor: isPrimary
-          ? alpha('#2196f3', 0.03)
-          : isWarning
-          ? alpha('#ff9800', 0.03)
-          : 'background.paper',
-      }}
-    >
-      <AccordionSummary
-        expandIcon={<ExpandMoreIcon />}
-        sx={{
-          borderBottom: expanded ? '1px solid' : 'none',
-          borderBottomColor: 'divider',
-          backgroundColor: isPrimary
-            ? alpha('#2196f3', 0.05)
-            : isWarning
-            ? alpha('#ff9800', 0.05)
-            : 'background.default',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-          {title && (
-            <Typography
-              variant='subtitle1'
-              fontWeight='medium'
-              color={isPrimary ? 'primary.main' : isWarning ? 'warning.dark' : 'text.primary'}
-              sx={{ flex: 1 }}
-            >
-              {title}
-              {required && (
-                <Typography component='span' color='error.main' sx={{ ml: 0.5 }}>
-                  *
-                </Typography>
-              )}
-            </Typography>
-          )}
-
-          {/* Display property count chip */}
-          <Chip
-            label={t('Common.ItemCount', '{{count}} items', { count: properties.length })}
-            size='small'
-            color={isPrimary ? 'primary' : isWarning ? 'warning' : 'default'}
-            variant='outlined'
-            sx={{
-              ml: 1,
-              fontSize: '0.7rem',
-              height: '20px',
-            }}
-          />
-          
-          {description && (
-            <Tooltip title={typeof description === 'string' ? t(description) : description} placement='top'>
-              <HelpOutlineIcon
-                sx={{
-                  fontSize: 16,
-                  ml: 1,
-                  color: isPrimary ? 'primary.main' : isWarning ? 'warning.main' : 'text.secondary',
-                  opacity: 0.7,
-                  cursor: 'help',
-                }}
-              />
-            </Tooltip>
-          )}
-        </Box>
-      </AccordionSummary>
-      <AccordionDetails sx={{ pt: 2 }}>
-        {description && (
-          <Box sx={{ mb: 2 }}>
-            <Typography
-              variant='body2'
-              sx={{
-                color: 'text.secondary',
-                backgroundColor: alpha('#f5f5f5', 0.5),
-                p: 1,
-                borderRadius: 1,
-                fontStyle: 'italic',
-              }}
-            >
-              {description}
-            </Typography>
-          </Box>
-        )}
-
-        <Box>
-          {properties.map((property, index) => (
-            <React.Fragment key={property.name}>
-              {property.content}
-              {index < properties.length - 1 && <Divider sx={{ my: 2 }} />}
-            </React.Fragment>
-          ))}
-        </Box>
-      </AccordionDetails>
-    </Accordion>
+        </StyledCardContent>
+      </StyledCollapse>
+    </StyledCard>
   );
 };

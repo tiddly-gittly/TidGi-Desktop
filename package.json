@@ -185,6 +185,7 @@
   },
   "pnpm": {
     "overrides": {
+      "@mui/styled-engine": "npm:@mui/styled-engine-sc@latest",
       "prebuild-install": "latest"
     },
     "onlyBuiltDependencies": [

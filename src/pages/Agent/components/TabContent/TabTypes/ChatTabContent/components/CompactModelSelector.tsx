@@ -1,6 +1,4 @@
-// Model selector with icon and tooltip
-
-import TuneIcon from '@mui/icons-material/Tune';
+import SwitchCameraIcon from '@mui/icons-material/SwitchCamera';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from '@mui/material';
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import React, { useState } from 'react';
@@ -73,7 +71,7 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({
     <>
       <Tooltip title={currentModel}>
         <IconButton onClick={handleOpenDialog} aria-label={t('ModelSelector.SelectModel')} size='small'>
-          <TuneIcon fontSize='small' />
+          <SwitchCameraIcon />
         </IconButton>
       </Tooltip>
 
