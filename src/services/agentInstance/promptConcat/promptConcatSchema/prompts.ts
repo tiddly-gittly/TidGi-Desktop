@@ -28,7 +28,7 @@ export interface IPromptPart {
 
 /**
  * Schema for prompt parts that can be nested within a prompt
- * Supports recursive structures through lazy evaluation
+ * Supports recursive structures using getter for proper JSON schema generation with $ref
  * @example
  * ```json
  * {
@@ -38,16 +38,16 @@ export interface IPromptPart {
  * }
  * ```
  */
-const PromptPartSchema: z.ZodType<IPromptPart> = z.lazy(() =>
-  z.object({
-    id: z.string().describe(t('Schema.PromptPart.Id')),
-    text: z.string().optional().describe(t('Schema.PromptPart.Text')),
-    tags: z.array(z.string()).optional().describe(t('Schema.PromptPart.Tags')),
-    caption: z.string().optional().describe(t('Schema.PromptPart.Caption')),
-    name: z.string().optional().describe(t('Schema.PromptPart.Name')),
-    children: z.array(PromptPartSchema).optional().describe(t('Schema.PromptPart.Children')),
-  }).describe(t('Schema.PromptPart.Description'))
-);
+const PromptPartSchema: z.ZodType<IPromptPart> = z.object({
+  id: z.string().describe(t('Schema.PromptPart.Id')),
+  text: z.string().optional().describe(t('Schema.PromptPart.Text')),
+  tags: z.array(z.string()).optional().describe(t('Schema.PromptPart.Tags')),
+  caption: z.string().optional().describe(t('Schema.PromptPart.Caption')),
+  name: z.string().optional().describe(t('Schema.PromptPart.Name')),
+  get children() {
+    return z.array(PromptPartSchema).optional().describe(t('Schema.PromptPart.Children'));
+  },
+}).describe(t('Schema.PromptPart.Description'));
 
 /**
  * Complete prompt configuration schema

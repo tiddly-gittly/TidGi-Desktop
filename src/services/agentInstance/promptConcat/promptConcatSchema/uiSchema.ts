@@ -1,0 +1,79 @@
+import type { UiSchema } from '@rjsf/utils';
+
+/**
+ * UI Schema for Handler Configuration Form
+ * Defines the layout, widgets, and styling for the prompt configuration form
+ */
+export const HANDLER_CONFIG_UI_SCHEMA: UiSchema = {
+  'ui:order': ['prompts', 'promptDynamicModification', 'response', 'responseDynamicModification', '*'],
+  prompts: {
+    'ui:options': {
+      orderable: true,
+      variant: 'primary',
+    },
+    items: {
+      'ui:order': ['id', 'caption', 'enabled', 'role', 'text', 'children', '*'],
+      'ui:compactFields': ['id', 'caption', 'enabled', 'role'], // Fields to display in 2-column layout
+      text: {
+        'ui:widget': 'textarea',
+        'ui:options': {
+          rows: 4,
+        },
+      },
+      tags: {
+        'ui:widget': 'TagsWidget',
+      },
+      children: {
+        'ui:options': {
+          orderable: true,
+        },
+        items: {
+          'ui:order': ['id', 'text', 'tags', '*'],
+          'ui:compactFields': ['id', 'tags'],
+          text: {
+            'ui:widget': 'textarea',
+            'ui:options': {
+              rows: 4,
+            },
+          },
+          tags: {
+            'ui:widget': 'TagsWidget',
+          },
+        },
+      },
+    },
+  },
+  promptDynamicModification: {
+    'ui:options': {
+      orderable: true,
+      variant: 'info',
+    },
+    items: {
+      'ui:order': ['id', 'enabled', 'sourceTag', 'targetTag', 'action', '*'],
+      'ui:compactFields': ['id', 'enabled', 'sourceTag', 'targetTag'],
+    },
+  },
+  response: {
+    'ui:options': {
+      variant: 'success',
+    },
+    items: {
+      'ui:order': ['id', 'enabled', 'type', 'config', '*'],
+      'ui:compactFields': ['id', 'enabled', 'type'],
+      config: {
+        'ui:options': {
+          variant: 'info',
+        },
+      },
+    },
+  },
+  responseDynamicModification: {
+    'ui:options': {
+      orderable: true,
+      variant: 'warning',
+    },
+    items: {
+      'ui:compactFields': ['id', 'enabled'],
+    },
+  },
+};

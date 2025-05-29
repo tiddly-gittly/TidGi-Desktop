@@ -5,6 +5,7 @@ import { PromptDynamicModificationSchema } from './promptDynamicModification';
 import { PromptSchema } from './prompts';
 import { ResponseSchema } from './response';
 import { ResponseDynamicModificationSchema } from './responseDynamicModification';
+import { HANDLER_CONFIG_UI_SCHEMA } from './uiSchema';
 
 /** Placeholder to trigger VSCode i18nAlly extension to show translated text. */
 const t = identity;
@@ -29,12 +30,21 @@ export const AIConfigSchema = BaseAPIConfigSchema
  * Contains the handler-related configuration fields for prompts and responses
  */
 export const HandlerConfigSchema = z.object({
-  prompts: z.array(PromptSchema).describe(t('Schema.AgentConfig.PromptConfig.Prompts')),
-  promptDynamicModification: z.array(PromptDynamicModificationSchema).describe(t('Schema.AgentConfig.PromptConfig.PromptDynamicModification')),
-  response: z.array(ResponseSchema).describe(t('Schema.AgentConfig.PromptConfig.Response')),
-  responseDynamicModification: z.array(ResponseDynamicModificationSchema).describe(t('Schema.AgentConfig.PromptConfig.ResponseDynamicModification')),
-}).describe(t('Schema.AgentConfig.PromptConfig.Description'));
-
+  prompts: z.array(PromptSchema)
+    .describe(t('Schema.AgentConfig.PromptConfig.Prompts'))
+    .meta({ title: t('PromptConfig.Tabs.Prompts') }),
+  promptDynamicModification: z.array(PromptDynamicModificationSchema)
+    .describe(t('Schema.AgentConfig.PromptConfig.PromptDynamicModification'))
+    .meta({ title: t('PromptConfig.Tabs.PromptDynamicModification') }),
+  response: z.array(ResponseSchema)
+    .describe(t('Schema.AgentConfig.PromptConfig.Response'))
+    .meta({ title: t('PromptConfig.Tabs.Response') }),
+  responseDynamicModification: z.array(ResponseDynamicModificationSchema)
+    .describe(t('Schema.AgentConfig.PromptConfig.ResponseDynamicModification'))
+    .meta({ title: t('PromptConfig.Tabs.ResponseDynamicModification') }),
+}).describe(t('Schema.AgentConfig.PromptConfig.Description')).meta({
+  uiSchema: HANDLER_CONFIG_UI_SCHEMA,
+});
 /**
  * Agent configuration schema
  * @example

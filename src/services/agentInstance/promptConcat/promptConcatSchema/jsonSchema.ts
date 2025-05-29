@@ -8,4 +8,4 @@ import { HandlerConfigSchema } from './index';
  *
  * Description field is i18n key, use i18nAlly extension to see it on VSCode. And use react-i18next to translate it on frontend.
  */
-export const promptConcatHandlerConfigJsonSchema = z.toJSONSchema(HandlerConfigSchema);
+export const promptConcatHandlerConfigJsonSchema = z.toJSONSchema(HandlerConfigSchema, { target: 'draft-7' });

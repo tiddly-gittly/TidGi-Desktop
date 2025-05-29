@@ -1,17 +1,21 @@
 import { RegistryWidgetsType } from '@rjsf/utils';
+import { AutoResizeTextareaWidget } from './AutoResizeTextareaWidget';
 import { CheckboxWidget } from './CheckboxWidget';
 import { SelectWidget } from './SelectWidget';
-import { TextareaWidget } from './TextareaWidget';
+import { TagsWidget } from './TagsWidget';
 import { TextWidget } from './TextWidget';
 
 export const widgets: RegistryWidgetsType = {
   TextWidget,
-  TextareaWidget,
   SelectWidget,
   CheckboxWidget,
+  TagsWidget,
+  // Map textarea to our auto-resize version
+  textarea: AutoResizeTextareaWidget,
 };
 
+export * from './AutoResizeTextareaWidget';
 export * from './CheckboxWidget';
 export * from './SelectWidget';
-export * from './TextareaWidget';
+export * from './TagsWidget';
 export * from './TextWidget';

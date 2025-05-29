@@ -1,22 +1,94 @@
+import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { Box, Typography } from '@mui/material';
 import { ArrayFieldTemplateProps } from '@rjsf/utils';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { ArrayAddButton, ArrayContainer, ArrayHeader, ArrayItemCount, EmptyState, HelpTooltip, SortableArrayItem, StyledFieldLabel } from '../components';
 
+/**
+ * Enhanced Array Field Template with drag-and-drop functionality
+ */
 export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => {
-  const { items, onAddClick, canAdd, title } = props;
+  const { items, onAddClick, canAdd, title, schema } = props;
+  const { t } = useTranslation('agent');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const activeIndex = items.findIndex((item) => item.key === active.id);
+    const overIndex = items.findIndex((item) => item.key === over.id);
+    if (activeIndex !== overIndex && activeIndex !== -1 && overIndex !== -1) {
+      arrayMove(items, activeIndex, overIndex);
+    }
+  };
+
+  const description = schema.description;
+  const itemIds = items.map((item) => item.key);
+
+  // Check if array items should be collapsible
+  // For now, enable collapsible for all array items with object content
+  const isItemsCollapsible = true;
 
   return (
-    <div>
-      {title && <h3>{title}</h3>}
-      {items.map((element) => (
-        <div key={element.key} style={{ marginBottom: '1rem' }}>
-          {element.children}
-        </div>
-      ))}
-      {canAdd && (
-        <button type='button' onClick={onAddClick}>
-          Add Item
-        </button>
+    <ArrayContainer>
+      {title && (
+        <ArrayHeader>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <StyledFieldLabel component='h3' variant='subtitle1'>
+              {t(title)}
+            </StyledFieldLabel>
+            {typeof description === 'string' && description && <HelpTooltip description={description} />}
+          </Box>
+          {items.length > 0 && <ArrayItemCount>{t('PromptConfig.ItemCount', { count: items.length })}</ArrayItemCount>}
+        </ArrayHeader>
       )}
-    </div>
+
+      {canAdd && items.length > 0 && (
+        <ArrayAddButton
+          onAddClick={onAddClick}
+          variant='top'
+        />
+      )}
+
+      {items.length === 0
+        ? (
+          <EmptyState>
+            <Typography variant='body2'>{t('PromptConfig.EmptyArray')}</Typography>
+          </EmptyState>
+        )
+        : (
+          <DndContext
+            sensors={sensors}
+            modifiers={[restrictToVerticalAxis]}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+              {items.map((item, index) => (
+                <SortableArrayItem
+                  key={item.key}
+                  item={item}
+                  index={index}
+                  isCollapsible={isItemsCollapsible}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+        )}
+
+      {canAdd && (
+        <ArrayAddButton
+          onAddClick={onAddClick}
+          variant={items.length === 0 ? 'top' : 'default'}
+        />
+      )}
+    </ArrayContainer>
   );
 };

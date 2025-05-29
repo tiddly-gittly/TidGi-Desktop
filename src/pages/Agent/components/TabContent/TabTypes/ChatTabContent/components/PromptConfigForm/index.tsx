@@ -7,6 +7,7 @@ import { AgentInstance } from '@services/agentInstance/interface';
 import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ArrayItemProvider } from './context/ArrayItemContext';
 import { useDefaultUiSchema } from './defaultUiSchema';
 import { ArrayFieldTemplate, FieldTemplate, ObjectFieldTemplate, RootObjectFieldTemplate } from './templates';
 import { usePromptConfigForm } from './usePromptConfigForm';
@@ -66,7 +67,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = React.memo(({
     });
   }
 
-  const uiSchema = useDefaultUiSchema(uiSchemaOverride);
+  const uiSchema = useDefaultUiSchema(uiSchemaOverride, schema);
 
   const {
     localFormData,
@@ -80,7 +81,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = React.memo(({
     onSubmit: externalSubmit,
     onChange: externalChange,
     onError: externalError,
-      onUpdate,
+    onUpdate,
     agent,
   });
 
@@ -136,24 +137,29 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = React.memo(({
     );
   }
 
+  // DEBUG: console schema
+  console.log(`schema`, schema);
+
   return (
-    <Form
-      key={formKey}
-      schema={schema}
-      uiSchema={uiSchema}
-      formData={localFormData}
-      validator={validator}
-      onChange={handleChange}
-      onSubmit={handleSubmit}
-      onError={handleError}
-      disabled={disabled}
-      templates={templates}
-      widgets={widgets}
-      showErrorList={false}
-      liveValidate
-      noHtml5Validate
-    >
-      <div />
-    </Form>
+    <ArrayItemProvider isInArrayItem={false} arrayItemCollapsible={false}>
+      <Form
+        key={formKey}
+        schema={schema}
+        uiSchema={uiSchema}
+        formData={localFormData}
+        validator={validator}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        onError={handleError}
+        disabled={disabled}
+        templates={templates}
+        widgets={widgets}
+        showErrorList={false}
+        liveValidate
+        noHtml5Validate
+      >
+        <div />
+      </Form>
+    </ArrayItemProvider>
   );
 });

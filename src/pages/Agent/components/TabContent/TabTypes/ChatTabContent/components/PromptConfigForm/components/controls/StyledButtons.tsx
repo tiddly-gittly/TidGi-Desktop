@@ -1,4 +1,4 @@
-import { Button } from '@mui/material';
+import { Button, IconButton } from '@mui/material';
 import styled from 'styled-components';
 
 export const StyledActionButton = styled(Button)`
@@ -29,4 +29,29 @@ export const StyledToggleButton = styled(Button)<{ $enabled?: boolean }>`
     border-color: ${theme.palette.divider};
     color: ${theme.palette.text.disabled};
   `}
+`;
+
+// Array-specific button styles
+export const StyledArrayAddButton = styled(StyledActionButton)`
+  margin: ${({ theme }) => theme.spacing(1, 0)};
+  padding: ${({ theme }) => theme.spacing(1.5, 3)};
+  color: ${({ theme }) => theme.palette.primary.main};
+  border-color: ${({ theme }) => theme.palette.primary.main};
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
+  min-height: 48px;
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.palette.primary.light};
+    color: ${({ theme }) => theme.palette.primary.contrastText};
+  }
+`;
+
+export const StyledDeleteButton = styled(IconButton)`
+  color: ${({ theme }) => theme.palette.error.main};
+  padding: ${({ theme }) => theme.spacing(0.5)};
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.palette.error.light};
+    color: ${({ theme }) => theme.palette.error.contrastText};
+  }
 `;
