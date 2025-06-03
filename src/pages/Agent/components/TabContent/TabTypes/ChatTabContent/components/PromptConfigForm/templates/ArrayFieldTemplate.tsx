@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Box, Typography } from '@mui/material';
 import { ArrayFieldTemplateProps } from '@rjsf/utils';
 import React from 'react';
@@ -27,7 +27,8 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
     const activeIndex = items.findIndex((item) => item.key === active.id);
     const overIndex = items.findIndex((item) => item.key === over.id);
     if (activeIndex !== overIndex && activeIndex !== -1 && overIndex !== -1) {
-      arrayMove(items, activeIndex, overIndex);
+      const activeItem = items[activeIndex];
+      activeItem.buttonsProps.onReorderClick(activeIndex, overIndex)();
     }
   };
 
