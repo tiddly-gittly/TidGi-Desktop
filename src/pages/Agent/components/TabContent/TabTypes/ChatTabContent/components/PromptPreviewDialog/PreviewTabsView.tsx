@@ -21,10 +21,11 @@ const PreviewContent = styled('div', {
   shouldForwardProp: (property: string) => property !== 'isFullScreen',
 })<{ isFullScreen?: boolean }>(({ theme, isFullScreen }) => ({
   background: theme.palette.background.paper,
-  borderRadius: theme.shape.borderRadius,
-  padding: theme.spacing(2),
+  borderRadius: isFullScreen ? 0 : theme.shape.borderRadius,
+  padding: isFullScreen ? theme.spacing(1) : theme.spacing(2),
   minHeight: 240,
-  maxHeight: isFullScreen ? 'calc(100vh - 150px)' : '60vh',
+  maxHeight: isFullScreen ? 'calc(100vh - 120px)' : '60vh',
+  height: isFullScreen ? 'calc(100vh - 120px)' : 'auto',
   overflow: 'auto',
   fontFamily: '"JetBrains Mono", "Fira Mono", "Menlo", "Consolas", monospace',
   fontSize: 14,
@@ -57,7 +58,13 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = React.memo(({
   const { t } = useTranslation('agent');
 
   return (
-    <Box>
+    <Box
+      sx={{
+        height: isFullScreen ? '100%' : 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
         <PreviewTabs
           value={tab}

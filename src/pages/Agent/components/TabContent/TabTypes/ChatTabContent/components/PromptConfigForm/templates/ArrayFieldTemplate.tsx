@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -11,7 +12,7 @@ import { ArrayAddButton, ArrayContainer, ArrayHeader, ArrayItemCount, EmptyState
  * Enhanced Array Field Template with drag-and-drop functionality
  */
 export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => {
-  const { items, onAddClick, canAdd, title, schema } = props;
+  const { items, onAddClick, canAdd, title, schema, formData } = props;
   const { t } = useTranslation('agent');
 
   const sensors = useSensors(
@@ -77,6 +78,7 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
                   item={item}
                   index={index}
                   isCollapsible={isItemsCollapsible}
+                  itemData={Array.isArray(formData) ? formData[index] : undefined}
                 />
               ))}
             </SortableContext>

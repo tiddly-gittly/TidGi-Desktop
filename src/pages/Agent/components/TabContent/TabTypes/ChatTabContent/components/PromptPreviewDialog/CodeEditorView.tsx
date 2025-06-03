@@ -34,7 +34,7 @@ export const CodeEditorView: React.FC<CodeEditorViewProps> = React.memo(({
   return (
     <Box
       sx={{
-        height: isFullScreen ? 'calc(100vh - 180px)' : '60vh',
+        height: isFullScreen ? '100%' : '60vh',
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: 1,

@@ -65,7 +65,7 @@ export const SideBySideEditView: React.FC<SideBySideEditViewProps> = React.memo(
   };
 
   return (
-    <Box sx={{ display: 'flex', gap: 2, height: isFullScreen ? 'calc(100vh - 150px)' : '70vh' }}>
+    <Box sx={{ display: 'flex', gap: 2, height: isFullScreen ? '100%' : '70vh' }}>
       <Box
         sx={{
           flex: '1',

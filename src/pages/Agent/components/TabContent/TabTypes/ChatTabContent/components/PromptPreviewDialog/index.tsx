@@ -334,35 +334,45 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
       }}
     >
       <DialogTitle>
-        {t('Prompt.Preview')}
-        <Box sx={{ position: 'absolute', right: 8, top: 8, display: 'flex' }}>
-          <Tooltip title={t(isEditMode ? 'Prompt.ExitEditMode' : 'Prompt.EnterEditMode', isEditMode ? 'Exit side-by-side editing' : 'Enter side-by-side editing')}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <Box>{t('Prompt.Preview')}</Box>
+          <Box sx={{ display: 'flex' }}>
+            <Tooltip title={t(isEditMode ? 'Prompt.ExitEditMode' : 'Prompt.EnterEditMode', isEditMode ? 'Exit side-by-side editing' : 'Enter side-by-side editing')}>
+              <IconButton
+                aria-label='toggle-edit-mode'
+                onClick={handleToggleEditMode}
+                sx={{ mr: 1 }}
+                color={isEditMode ? 'primary' : 'default'}
+              >
+                {isEditMode ? <ViewSidebarIcon /> : <EditIcon />}
+              </IconButton>
+            </Tooltip>
             <IconButton
-              aria-label='toggle-edit-mode'
-              onClick={handleToggleEditMode}
+              aria-label='toggle-fullscreen'
+              onClick={handleToggleFullScreen}
               sx={{ mr: 1 }}
-              color={isEditMode ? 'primary' : 'default'}
+              title={t(isFullScreen ? 'Prompt.ExitFullScreen' : 'Prompt.EnterFullScreen')}
             >
-              {isEditMode ? <ViewSidebarIcon /> : <EditIcon />}
+              {isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
             </IconButton>
-          </Tooltip>
-          <IconButton
-            aria-label='toggle-fullscreen'
-            onClick={handleToggleFullScreen}
-            sx={{ mr: 1 }}
-            title={t(isFullScreen ? 'Prompt.ExitFullScreen' : 'Prompt.EnterFullScreen')}
-          >
-            {isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
-          </IconButton>
-          <IconButton
-            aria-label='close'
-            onClick={onClose}
-          >
-            <CloseIcon />
-          </IconButton>
+            <IconButton
+              aria-label='close'
+              onClick={onClose}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
         </Box>
       </DialogTitle>
-      <DialogContent>
+      <DialogContent
+        sx={{
+          ...(isFullScreen && {
+            padding: 0,
+            overflow: 'hidden',
+            height: 'calc(100vh - 64px)',
+          }),
+        }}
+      >
         {renderDialogContent()}
       </DialogContent>
     </Dialog>

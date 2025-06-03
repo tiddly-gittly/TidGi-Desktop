@@ -2,7 +2,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
-import { ArrayFieldItemTemplateType } from '@rjsf/utils';
+import { ArrayFieldItemTemplateType, FormContextType, RJSFSchema } from '@rjsf/utils';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrayItemProvider } from '../../context/ArrayItemContext';
@@ -10,13 +10,16 @@ import { StyledDeleteButton } from '../controls';
 import { ArrayItemCard, ArrayItemHeader, ArrayItemTitle, DragHandle, ItemContent } from './StyledArrayContainer';
 import { CollapseIcon, ExpandIcon, StyledCollapse, StyledExpandButton } from './StyledCollapsible';
 
-interface SortableArrayItemProps {
-  /** The array item data from RJSF */
-  item: ArrayFieldItemTemplateType;
-  /** The index of this item in the array */
+/** Interface for sortable array item component props */
+export interface SortableArrayItemProps<T = unknown, S extends RJSFSchema = RJSFSchema, F extends FormContextType = FormContextType> {
+  /** Array item data from RJSF */
+  item: ArrayFieldItemTemplateType<T, S, F>;
+  /** Index of this item in the array */
   index: number;
   /** Whether the item should be collapsible */
   isCollapsible?: boolean;
+  /** Actual form data for this array item */
+  itemData?: unknown;
 }
 
 /**
@@ -28,9 +31,14 @@ interface SortableArrayItemProps {
  * - Collapse/expand toggle (when isCollapsible is true)
  * - Visual feedback when dragging
  */
-export const SortableArrayItem: React.FC<SortableArrayItemProps> = ({ item, index, isCollapsible = true }) => {
+export const SortableArrayItem = <T = unknown, S extends RJSFSchema = RJSFSchema, F extends FormContextType = FormContextType>({
+  item,
+  index,
+  isCollapsible = true,
+  itemData,
+}: SortableArrayItemProps<T, S, F>) => {
   const { t } = useTranslation('agent');
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const {
     attributes,
@@ -56,7 +64,7 @@ export const SortableArrayItem: React.FC<SortableArrayItemProps> = ({ item, inde
     setExpanded(!expanded);
   };
 
-  // DEBUG: console item
+  // Debug: logging item for development purposes
   console.log(`item`, item);
 
   return (
@@ -68,7 +76,7 @@ export const SortableArrayItem: React.FC<SortableArrayItemProps> = ({ item, inde
           </DragHandle>
 
           <ArrayItemTitle>
-            {'caption' in item ? item.caption as string : ''}
+            {itemData && typeof itemData === 'object' && 'caption' in itemData ? (itemData as { caption: string }).caption : ''}
           </ArrayItemTitle>
 
           {isCollapsible && (
@@ -82,7 +90,7 @@ export const SortableArrayItem: React.FC<SortableArrayItemProps> = ({ item, inde
               onClick={item.buttonsProps.onDropIndexClick(item.index)}
               size='small'
               title={t('PromptConfig.RemoveItem', {
-                defaultValue: '删除项目',
+                defaultValue: 'Remove item',
               })}
             >
               <DeleteIcon fontSize='small' />
