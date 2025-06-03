@@ -2,23 +2,21 @@ import { Card, CardContent } from '@mui/material';
 import styled from 'styled-components';
 
 export const StyledCard = styled(Card)`
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
   border: 1px solid ${({ theme }) => theme.palette.divider};
   border-radius: ${({ theme }) => theme.shape.borderRadius}px;
-  box-shadow: ${({ theme }) => theme.shadows[1]};
+  box-shadow: none;
   transition: ${({ theme }) =>
-  theme.transitions.create(['box-shadow', 'border-color'], {
+  theme.transitions.create(['border-color'], {
     duration: theme.transitions.duration.short,
   })};
   
   &:hover {
-    box-shadow: ${({ theme }) => theme.shadows[2]};
     border-color: ${({ theme }) => theme.palette.primary.main};
   }
 `;
 
 export const StyledCardContent = styled(CardContent)`
-  padding: ${({ theme }) => `${theme.spacing(2)} 2`};
+  padding: ${({ theme }) => `${theme.spacing(2)} ${theme.spacing(1)}`};
   
   &:last-child {
     padding-bottom: ${({ theme }) => theme.spacing(2)};

@@ -38,16 +38,15 @@ export interface IPromptPart {
  * }
  * ```
  */
-const PromptPartSchema: z.ZodType<IPromptPart> = z.object({
-  id: z.string().describe(t('Schema.PromptPart.Id')),
-  text: z.string().optional().describe(t('Schema.PromptPart.Text')),
-  tags: z.array(z.string()).optional().describe(t('Schema.PromptPart.Tags')),
-  caption: z.string().optional().describe(t('Schema.PromptPart.Caption')),
-  name: z.string().optional().describe(t('Schema.PromptPart.Name')),
+export const PromptPartSchema: z.ZodType<IPromptPart> = z.object({
+  id: z.string().meta({ description: t('Schema.PromptPart.Id') }),
+  text: z.string().optional().meta({ description: t('Schema.PromptPart.Text') }),
+  tags: z.array(z.string()).optional().meta({ description: t('Schema.PromptPart.Tags') }),
+  caption: z.string().optional().meta({ description: t('Schema.PromptPart.Caption') }),
   get children() {
-    return z.array(PromptPartSchema).optional().describe(t('Schema.PromptPart.Children'));
+    return z.array(PromptPartSchema).optional().meta({ description: t('Schema.PromptPart.Children') });
   },
-}).describe(t('Schema.PromptPart.Description'));
+}).meta({ description: t('Schema.PromptPart.Description') });
 
 /**
  * Complete prompt configuration schema
@@ -71,15 +70,14 @@ const PromptPartSchema: z.ZodType<IPromptPart> = z.object({
  * ```
  */
 export const PromptSchema = z.object({
-  id: z.string().describe(t('Schema.Prompt.Id')),
-  caption: z.string().describe(t('Schema.Prompt.Caption')),
-  enabled: z.boolean().optional().describe(t('Schema.Prompt.Enabled')),
-  role: z.enum(['system', 'user', 'assistant']).optional().describe(t('Schema.Prompt.Role')),
-  tags: z.array(z.string()).optional().describe(t('Schema.Prompt.Tags')),
-  text: z.string().optional().describe(t('Schema.Prompt.Text')),
-  children: z.array(PromptPartSchema).optional().describe(t('Schema.Prompt.Children')),
-}).describe(t('Schema.Prompt.Description'));
+  id: z.string().meta({ description: t('Schema.Prompt.Id') }),
+  caption: z.string().meta({ description: t('Schema.Prompt.Caption') }),
+  enabled: z.boolean().optional().meta({ description: t('Schema.Prompt.Enabled') }),
+  role: z.enum(['system', 'user', 'assistant']).optional().meta({ description: t('Schema.Prompt.Role') }),
+  tags: z.array(z.string()).optional().meta({ description: t('Schema.Prompt.Tags') }),
+  text: z.string().optional().meta({ description: t('Schema.Prompt.Text') }),
+  children: z.array(PromptPartSchema).optional().meta({ description: t('Schema.Prompt.Children') }),
+}).meta({ description: t('Schema.Prompt.Description') });
 
-export { PromptPartSchema };
 export type Prompt = z.infer<typeof PromptSchema>;
 export type PromptPart = z.infer<typeof PromptPartSchema>;

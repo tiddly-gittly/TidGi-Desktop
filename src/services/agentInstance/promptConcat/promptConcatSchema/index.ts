@@ -15,34 +15,39 @@ const t = identity;
  * Contains common fields shared between AIConfigSchema and AgentConfigSchema
  */
 export const BaseAPIConfigSchema = z.object({
-  api: ProviderModelSchema.describe(t('Schema.BaseAPIConfig.API')),
-  modelParameters: ModelParametersSchema.describe(t('Schema.BaseAPIConfig.ModelParameters')),
-}).describe(t('Schema.BaseAPIConfig.Description'));
+  api: ProviderModelSchema.meta({ description: t('Schema.BaseAPIConfig.API') }),
+  modelParameters: ModelParametersSchema.meta({ description: t('Schema.BaseAPIConfig.ModelParameters') }),
+}).meta({ description: t('Schema.BaseAPIConfig.Description') });
 
 /**
  * AI configuration schema for session settings
  */
 export const AIConfigSchema = BaseAPIConfigSchema
-  .describe(t('Schema.AIConfig.Description'));
+  .meta({ description: t('Schema.AIConfig.Description') });
 
 /**
  * Handler configuration schema
  * Contains the handler-related configuration fields for prompts and responses
  */
 export const HandlerConfigSchema = z.object({
-  prompts: z.array(PromptSchema)
-    .describe(t('Schema.AgentConfig.PromptConfig.Prompts'))
-    .meta({ title: t('PromptConfig.Tabs.Prompts') }),
-  promptDynamicModification: z.array(PromptDynamicModificationSchema)
-    .describe(t('Schema.AgentConfig.PromptConfig.PromptDynamicModification'))
-    .meta({ title: t('PromptConfig.Tabs.PromptDynamicModification') }),
-  response: z.array(ResponseSchema)
-    .describe(t('Schema.AgentConfig.PromptConfig.Response'))
-    .meta({ title: t('PromptConfig.Tabs.Response') }),
-  responseDynamicModification: z.array(ResponseDynamicModificationSchema)
-    .describe(t('Schema.AgentConfig.PromptConfig.ResponseDynamicModification'))
-    .meta({ title: t('PromptConfig.Tabs.ResponseDynamicModification') }),
-}).describe(t('Schema.AgentConfig.PromptConfig.Description')).meta({
+  prompts: z.array(PromptSchema).meta({
+    description: t('Schema.AgentConfig.PromptConfig.Prompts'),
+    title: t('PromptConfig.Tabs.Prompts'),
+  }),
+  promptDynamicModification: z.array(PromptDynamicModificationSchema).meta({
+    description: t('Schema.AgentConfig.PromptConfig.PromptDynamicModification'),
+    title: t('PromptConfig.Tabs.PromptDynamicModification'),
+  }),
+  response: z.array(ResponseSchema).meta({
+    description: t('Schema.AgentConfig.PromptConfig.Response'),
+    title: t('PromptConfig.Tabs.Response'),
+  }),
+  responseDynamicModification: z.array(ResponseDynamicModificationSchema).meta({
+    description: t('Schema.AgentConfig.PromptConfig.ResponseDynamicModification'),
+    title: t('PromptConfig.Tabs.ResponseDynamicModification'),
+  }),
+}).meta({
+  description: t('Schema.AgentConfig.PromptConfig.Description'),
   uiSchema: HANDLER_CONFIG_UI_SCHEMA,
 });
 /**
@@ -66,15 +71,15 @@ export const HandlerConfigSchema = z.object({
  * ```
  */
 export const AgentConfigSchema = BaseAPIConfigSchema.extend({
-  id: z.string().describe(t('Schema.AgentConfig.Id')),
+  id: z.string().meta({ description: t('Schema.AgentConfig.Id') }),
   promptConfig: HandlerConfigSchema,
-}).describe(t('Schema.AgentConfig.Description'));
+}).meta({ description: t('Schema.AgentConfig.Description') });
 
 /**
  * Default agents list schema
  * Contains an array of agent configurations
  */
-export const DefaultAgentsSchema = z.array(AgentConfigSchema).describe(t('Schema.DefaultAgents.Description'));
+export const DefaultAgentsSchema = z.array(AgentConfigSchema).meta({ description: t('Schema.DefaultAgents.Description') });
 
 export type DefaultAgents = z.infer<typeof DefaultAgentsSchema>;
 export type AgentPromptDescription = z.infer<typeof AgentConfigSchema>;

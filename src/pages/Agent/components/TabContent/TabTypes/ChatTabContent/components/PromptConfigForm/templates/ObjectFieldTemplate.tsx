@@ -47,7 +47,7 @@ export const ObjectFieldTemplate: React.FC<ObjectFieldTemplateProps> = (props) =
     if (!useCompactLayout) {
       // Default vertical layout
       return properties.map((element) => (
-        <Box key={element.name} sx={{ mb: 1 }}>
+        <Box key={element.name} sx={{ mb: isInArrayItem ? 0.25 : 0.5 }}>
           {element.content}
         </Box>
       ));
@@ -69,7 +69,7 @@ export const ObjectFieldTemplate: React.FC<ObjectFieldTemplateProps> = (props) =
       <>
         {/* Render compact fields in 2-column grid */}
         {compactProps.length > 0 && (
-          <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid container spacing={2} sx={{ mb: 1 }}>
             {compactProps.map((element) => (
               <Grid size={6} key={element.name}>
                 {element.content}
@@ -80,7 +80,7 @@ export const ObjectFieldTemplate: React.FC<ObjectFieldTemplateProps> = (props) =
 
         {/* Render full-width fields */}
         {fullWidthProps.map((element) => (
-          <Box key={element.name} sx={{ mb: 1 }}>
+          <Box key={element.name} sx={{ mb: isInArrayItem ? 0.25 : 0.5 }}>
             {element.content}
           </Box>
         ))}

@@ -17,9 +17,9 @@ const t = identity;
  * ```
  */
 const ToolCallingParameterSchema = z.object({
-  targetId: z.string().describe(t('Schema.ToolCalling.TargetId')),
-  match: z.string().describe(t('Schema.ToolCalling.Match')),
-}).describe(t('Schema.ToolCalling.Description'));
+  targetId: z.string().meta({ description: t('Schema.ToolCalling.TargetId') }),
+  match: z.string().meta({ description: t('Schema.ToolCalling.Match') }),
+}).meta({ description: t('Schema.ToolCalling.Description') });
 
 /**
  * Parameters for responseProcessingType: "autoReroll"
@@ -34,10 +34,10 @@ const ToolCallingParameterSchema = z.object({
  * ```
  */
 const AutoRerollParameterSchema = z.object({
-  targetId: z.string().describe(t('Schema.AutoReroll.TargetId')),
-  search: z.string().describe(t('Schema.AutoReroll.Search')),
-  maxRetry: z.number().describe(t('Schema.AutoReroll.MaxRetry')),
-}).describe(t('Schema.AutoReroll.Description'));
+  targetId: z.string().meta({ description: t('Schema.AutoReroll.TargetId') }),
+  search: z.string().meta({ description: t('Schema.AutoReroll.Search') }),
+  maxRetry: z.number().meta({ description: t('Schema.AutoReroll.MaxRetry') }),
+}).meta({ description: t('Schema.AutoReroll.Description') });
 
 /**
  * Parameters for responseType: "autoReply"
@@ -59,11 +59,11 @@ const AutoRerollParameterSchema = z.object({
  * ```
  */
 const AutoReplyParameterSchema = z.object({
-  targetId: z.string().describe(t('Schema.AutoReply.TargetId')),
-  text: z.string().describe(t('Schema.AutoReply.Text')),
-  trigger: TriggerSchema.describe(t('Schema.AutoReply.Trigger')),
-  maxAutoReply: z.number().describe(t('Schema.AutoReply.MaxAutoReply')),
-}).describe(t('Schema.AutoReply.Description'));
+  targetId: z.string().meta({ description: t('Schema.AutoReply.TargetId') }),
+  text: z.string().meta({ description: t('Schema.AutoReply.Text') }),
+  trigger: TriggerSchema.meta({ description: t('Schema.AutoReply.Trigger') }),
+  maxAutoReply: z.number().meta({ description: t('Schema.AutoReply.MaxAutoReply') }),
+}).meta({ description: t('Schema.AutoReply.Description') });
 
 /**
  * Main schema for response dynamic modifications
@@ -86,20 +86,20 @@ const AutoReplyParameterSchema = z.object({
  * ```
  */
 export const ResponseDynamicModificationSchema = z.object({
-  id: z.string().describe(t('Schema.ResponseDynamicModification.Id')),
-  caption: z.string().optional().describe(t('Schema.ResponseDynamicModification.Caption')),
+  id: z.string().meta({ description: t('Schema.ResponseDynamicModification.Id') }),
+  caption: z.string().optional().meta({ description: t('Schema.ResponseDynamicModification.Caption') }),
 
   // 对响应内容做修改的过程
-  dynamicModificationType: z.enum(['fullReplacement']).optional().describe(t('Schema.ResponseDynamicModification.DynamicModificationType')),
-  fullReplacementParam: FullReplacementParameterSchema.optional().describe(t('Schema.ResponseDynamicModification.FullReplacementParam')),
-  forbidOverrides: z.boolean().optional().default(false).describe(t('Schema.ResponseDynamicModification.ForbidOverrides')),
+  dynamicModificationType: z.enum(['fullReplacement']).optional().meta({ description: t('Schema.ResponseDynamicModification.DynamicModificationType') }),
+  fullReplacementParam: FullReplacementParameterSchema.optional().meta({ description: t('Schema.ResponseDynamicModification.FullReplacementParam') }),
+  forbidOverrides: z.boolean().optional().default(false).meta({ description: t('Schema.ResponseDynamicModification.ForbidOverrides') }),
 
   // 基于响应结果，调用程序做额外处理的过程
-  responseProcessingType: z.enum(['toolCalling', 'autoReroll', 'autoReply']).optional().describe(t('Schema.ResponseDynamicModification.ResponseProcessingType')),
-  toolCallingParam: ToolCallingParameterSchema.optional().describe(t('Schema.ResponseDynamicModification.ToolCallingParam')),
-  autoRerollParam: AutoRerollParameterSchema.optional().describe(t('Schema.ResponseDynamicModification.AutoRerollParam')),
-  autoReplyParam: AutoReplyParameterSchema.optional().describe(t('Schema.ResponseDynamicModification.AutoReplyParam')),
-}).describe(t('Schema.ResponseDynamicModification.Description'));
+  responseProcessingType: z.enum(['toolCalling', 'autoReroll', 'autoReply']).optional().meta({ description: t('Schema.ResponseDynamicModification.ResponseProcessingType') }),
+  toolCallingParam: ToolCallingParameterSchema.optional().meta({ description: t('Schema.ResponseDynamicModification.ToolCallingParam') }),
+  autoRerollParam: AutoRerollParameterSchema.optional().meta({ description: t('Schema.ResponseDynamicModification.AutoRerollParam') }),
+  autoReplyParam: AutoReplyParameterSchema.optional().meta({ description: t('Schema.ResponseDynamicModification.AutoReplyParam') }),
+}).meta({ description: t('Schema.ResponseDynamicModification.Description') });
 
 export { AutoReplyParameterSchema, AutoRerollParameterSchema, ToolCallingParameterSchema };
 

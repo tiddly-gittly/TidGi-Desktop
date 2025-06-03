@@ -270,7 +270,6 @@
       "Children": "Liste des sous-indices, qui seront concaténés de haut en bas et de l'extérieur vers l'intérieur pour former le texte final d'indice.",
       "Description": "représente une partie de l'invite, qui peut être du texte ou une structure imbriquée",
       "Id": "Identifiant unique, pratique pour référencer via targetId dans PromptDynamicModification.",
-      "Name": "Nom, utilisé pour référence dans des scénarios spécifiques",
       "Tags": "Liste d'étiquettes, utilisée pour la classification et la référence",
       "Text": "Le texte de l'invite peut inclure une syntaxe prise en charge par le wiki, comme <<nom_variable>>."
     },

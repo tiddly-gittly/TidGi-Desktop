@@ -17,8 +17,8 @@ const t = identity;
  * }
  * ```
  */
-export const ResponseSchema = PromptSchema.extend({}).describe(
-  t('Schema.Response.Description'),
-);
+export const ResponseSchema = PromptSchema.extend({}).meta({
+  description: t('Schema.Response.Description'),
+});
 
 export type Response = z.infer<typeof ResponseSchema>;

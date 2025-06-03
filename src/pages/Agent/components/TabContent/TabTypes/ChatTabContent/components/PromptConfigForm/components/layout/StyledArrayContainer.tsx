@@ -11,7 +11,7 @@ export const ArrayHeader: typeof Box = styled(Box)`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${({ theme }) => theme.spacing(0.5)};
 `;
 
 export const EmptyState: typeof Box = styled(Box)`
@@ -20,28 +20,28 @@ export const EmptyState: typeof Box = styled(Box)`
   color: ${({ theme }) => theme.palette.text.secondary};
   border: 2px dashed ${({ theme }) => theme.palette.divider};
   border-radius: ${({ theme }) => theme.shape.borderRadius}px;
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${({ theme }) => theme.spacing(0.5)};
 `;
 
 // Array item styles
 export const ArrayItemCard = styled(StyledCard)<{ $isDragging?: boolean }>`
-  margin-bottom: ${({ theme }) => theme.spacing(1.5)};
-  border: 1px solid ${({ theme }) => theme.palette.divider};
+  border: none;
+  padding-left: 0;
+  padding-right: 0;
+  box-shadow: none;
   transition: ${({ theme }) =>
-  theme.transitions.create(['box-shadow', 'border-color', 'transform'], {
+  theme.transitions.create(['border-color', 'transform'], {
     duration: theme.transitions.duration.short,
   })};
 
   ${({ $isDragging, theme }) =>
   $isDragging &&
   `
-    box-shadow: ${theme.shadows[8]};
     border-color: ${theme.palette.primary.main};
     transform: scale(1.02);
   `}
 
   &:hover {
-    box-shadow: ${({ theme }) => theme.shadows[3]};
     border-color: ${({ theme }) => theme.palette.primary.light};
   }
 `;
@@ -56,7 +56,7 @@ export const ArrayItemHeader: typeof Box = styled(Box)`
 `;
 
 export const ItemContent = styled(StyledCardContent)`
-  padding: ${({ theme }) => theme.spacing(2)} !important;
+  padding: 0;
 `;
 
 // Drag handle styles

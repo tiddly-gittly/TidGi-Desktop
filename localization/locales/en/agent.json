@@ -292,7 +292,6 @@
       "Children": "The list of sub-prompts will be concatenated from top to bottom and from outside to inside to form the final prompt text.",
       "Description": "Represents a part of the prompt, which can be text or a nested structure.",
       "Id": "Unique identifier, convenient for referencing via targetId in PromptDynamicModification.",
-      "Name": "Name, used for referencing in specific contexts",
       "Tags": "Tag list, used for classification and referencing",
       "Text": "The prompt text content can include syntax supported by wiki text, such as <<variable name>>."
     },

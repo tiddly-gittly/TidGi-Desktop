@@ -56,6 +56,9 @@ export const SortableArrayItem: React.FC<SortableArrayItemProps> = ({ item, inde
     setExpanded(!expanded);
   };
 
+  // DEBUG: console item
+  console.log(`item`, item);
+
   return (
     <div ref={setNodeRef} style={style}>
       <ArrayItemCard $isDragging={isDragging}>
@@ -65,10 +68,7 @@ export const SortableArrayItem: React.FC<SortableArrayItemProps> = ({ item, inde
           </DragHandle>
 
           <ArrayItemTitle>
-            {t('PromptConfig.ArrayItem', {
-              defaultValue: '项目 {{index}}',
-              index: index + 1,
-            })}
+            {'caption' in item ? item.caption as string : ''}
           </ArrayItemTitle>
 
           {isCollapsible && (

@@ -28,8 +28,8 @@ export const HANDLER_CONFIG_UI_SCHEMA: UiSchema = {
           orderable: true,
         },
         items: {
-          'ui:order': ['id', 'text', 'tags', '*'],
-          'ui:compactFields': ['id', 'tags'],
+          'ui:order': ['id', 'caption', 'enabled', 'role', 'text', 'children', '*'],
+          'ui:compactFields': ['id', 'caption', 'enabled', 'role'],
           text: {
             'ui:widget': 'textarea',
             'ui:options': {
