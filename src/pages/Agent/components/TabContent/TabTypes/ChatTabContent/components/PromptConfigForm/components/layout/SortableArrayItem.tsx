@@ -64,9 +64,6 @@ export const SortableArrayItem = <T = unknown, S extends RJSFSchema = RJSFSchema
     setExpanded(!expanded);
   };
 
-  // Debug: logging item for development purposes
-  console.log(`item`, item);
-
   return (
     <div ref={setNodeRef} style={style}>
       <ArrayItemCard $isDragging={isDragging}>
@@ -89,9 +86,7 @@ export const SortableArrayItem = <T = unknown, S extends RJSFSchema = RJSFSchema
             <StyledDeleteButton
               onClick={item.buttonsProps.onDropIndexClick(item.index)}
               size='small'
-              title={t('PromptConfig.RemoveItem', {
-                defaultValue: 'Remove item',
-              })}
+              title={t('PromptConfig.RemoveItem')}
             >
               <DeleteIcon fontSize='small' />
             </StyledDeleteButton>

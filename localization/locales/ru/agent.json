@@ -1,5 +1,11 @@
 {
   "Add": "Добавить",
+  "Agent": {
+    "InvalidTabType": "",
+    "LoadingChat": "",
+    "StartConversation": "",
+    "Untitled": ""
+  },
   "Browser": {
     "Back": "назад",
     "Bookmark": "коллекционировать",
@@ -47,6 +53,12 @@
     "Use": "Использовать",
     "WaitingForResponse": "Ожидание ответа..."
   },
+  "Common": {
+    "Apply": "",
+    "Applying": "",
+    "Save": "",
+    "Saving": ""
+  },
   "ContextMenu": {
     "AddToCurrentSplitView": "добавить к текущему разделенному экрану",
     "AddToSplitView": "добавить в параллельное представление",
@@ -71,6 +83,12 @@
     "Reasoning": "Рассуждение",
     "ToolCalling": "Вызов инструментов",
     "Vision": "Зрение"
+  },
+  "ModelSelector": {
+    "Model": "",
+    "NoModelSelected": "",
+    "SelectModel": "",
+    "Title": ""
   },
   "NewTab": {
     "CodeTools": "Инструменты кода",
@@ -160,6 +178,44 @@
     "TemperatureDescription": "Низкие значения приводят к более детерминированным и сфокусированным ответам, а высокие — к более разнообразным и творческим.",
     "TopP": "Топ P",
     "TopPDescription": "Управление случайностью ответов. Низкие значения делают ответы более предсказуемыми, а высокие — допускают больше вариантов."
+  },
+  "Prompt": {
+    "AutoRefresh": "",
+    "AutoUpdate": "",
+    "AutoUpdatePreview": "",
+    "CodeEditor": "",
+    "Config": "",
+    "ConfigurationDescription": "",
+    "EnterEditMode": "",
+    "EnterFullScreen": "",
+    "ExitEditMode": "",
+    "ExitFullScreen": "",
+    "Flat": "",
+    "FormEditor": "",
+    "Loading": "",
+    "NoConfigFound": "",
+    "NoHandlerFound": "",
+    "NoMessages": "",
+    "Preview": "",
+    "RefreshPreview": "",
+    "ToggleFullScreen": "",
+    "Tree": ""
+  },
+  "PromptConfig": {
+    "EmptyArray": "",
+    "ItemCount": "",
+    "RemoveItem": "",
+    "Tabs": {
+      "PromptDynamicModification": "",
+      "Prompts": "",
+      "Response": "",
+      "ResponseDynamicModification": ""
+    },
+    "Tags": {
+      "HelperText": "",
+      "NoOptions": "",
+      "Placeholder": ""
+    }
   },
   "Schema": {
     "AIConfig": {

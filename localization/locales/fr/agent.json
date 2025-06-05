@@ -1,4 +1,10 @@
 {
+  "Agent": {
+    "InvalidTabType": "",
+    "LoadingChat": "",
+    "StartConversation": "",
+    "Untitled": ""
+  },
   "Browser": {
     "Back": "reculer",
     "Bookmark": "collection",
@@ -46,6 +52,12 @@
     "Use": "Utiliser",
     "WaitingForResponse": "En attente de réponse..."
   },
+  "Common": {
+    "Apply": "",
+    "Applying": "",
+    "Save": "",
+    "Saving": ""
+  },
   "ContextMenu": {
     "AddToCurrentSplitView": "ajouter à la division d'écran actuelle",
     "AddToSplitView": "Ajouter à la vue côte à côte",
@@ -70,6 +82,12 @@
     "Reasoning": "Raisonnement",
     "ToolCalling": "Appel d'outils",
     "Vision": "Vision"
+  },
+  "ModelSelector": {
+    "Model": "",
+    "NoModelSelected": "",
+    "SelectModel": "",
+    "Title": ""
   },
   "NewTab": {
     "CodeTools": "outil de code",
@@ -159,6 +177,44 @@
     "TemperatureDescription": "Une valeur plus faible produit une réponse plus déterministe et concentrée, tandis qu'une valeur plus élevée génère une réponse plus diversifiée et créative.",
     "TopP": "Top P",
     "TopPDescription": "Contrôler l'aléatoire des réponses. Une valeur plus faible rend la réponse plus déterminée, tandis qu'une valeur plus élevée permet davantage de possibilités."
+  },
+  "Prompt": {
+    "AutoRefresh": "",
+    "AutoUpdate": "",
+    "AutoUpdatePreview": "",
+    "CodeEditor": "",
+    "Config": "",
+    "ConfigurationDescription": "",
+    "EnterEditMode": "",
+    "EnterFullScreen": "",
+    "ExitEditMode": "",
+    "ExitFullScreen": "",
+    "Flat": "",
+    "FormEditor": "",
+    "Loading": "",
+    "NoConfigFound": "",
+    "NoHandlerFound": "",
+    "NoMessages": "",
+    "Preview": "",
+    "RefreshPreview": "",
+    "ToggleFullScreen": "",
+    "Tree": ""
+  },
+  "PromptConfig": {
+    "EmptyArray": "",
+    "ItemCount": "",
+    "RemoveItem": "",
+    "Tabs": {
+      "PromptDynamicModification": "",
+      "Prompts": "",
+      "Response": "",
+      "ResponseDynamicModification": ""
+    },
+    "Tags": {
+      "HelperText": "",
+      "NoOptions": "",
+      "Placeholder": ""
+    }
   },
   "Schema": {
     "AIConfig": {

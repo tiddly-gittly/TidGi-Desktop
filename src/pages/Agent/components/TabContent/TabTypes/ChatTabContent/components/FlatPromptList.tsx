@@ -1,5 +1,6 @@
 import { Box, List, Paper, styled, Typography } from '@mui/material';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface PreviewMessage {
   role: string;
@@ -59,8 +60,10 @@ const EmptyState = styled(Box)(({ theme }) => ({
  * Flat prompt list component
  */
 export const FlatPromptList = React.memo(({ flatPrompts }: { flatPrompts?: PreviewMessage[] }): React.ReactElement => {
+  const { t } = useTranslation('agent');
+
   if (!flatPrompts?.length) {
-    return <EmptyState>No messages to preview</EmptyState>;
+    return <EmptyState>{t('Prompt.NoMessages')}</EmptyState>;
   }
 
   return (

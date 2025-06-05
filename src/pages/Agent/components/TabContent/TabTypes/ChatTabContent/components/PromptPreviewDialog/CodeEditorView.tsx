@@ -1,7 +1,7 @@
 import Editor from '@monaco-editor/react';
 import { Box } from '@mui/material';
 import type { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import React from 'react';
+import React, { useCallback } from 'react';
 
 interface CodeEditorViewProps {
   handlerConfig?: HandlerConfig;
@@ -10,26 +10,22 @@ interface CodeEditorViewProps {
 }
 
 /**
- * JSON代码编辑器组件，使用Monaco编辑器进行JSON配置的高级编辑
+ * JSON Code editor view for editing handler configurations JSON directly and copy & paste full config.
  */
 export const CodeEditorView: React.FC<CodeEditorViewProps> = React.memo(({
   handlerConfig,
   onChange,
   isFullScreen,
 }) => {
-  // 处理代码编辑器内容变化
-  const handleEditorChange = (value: string | undefined) => {
+  const handleEditorChange = useCallback((value: string | undefined) => {
     if (!value) return;
-
     try {
-      // 尝试解析JSON
-      const parsedConfig = JSON.parse(value);
+      const parsedConfig = JSON.parse(value) as HandlerConfig;
       onChange(parsedConfig);
     } catch (error) {
-      // JSON解析错误时不更新配置
       console.error('Invalid JSON in code editor:', error);
     }
-  };
+  }, [onChange]);
 
   return (
     <Box

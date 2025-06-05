@@ -1,5 +1,11 @@
 {
   "Add": "追加",
+  "Agent": {
+    "InvalidTabType": "",
+    "LoadingChat": "",
+    "StartConversation": "",
+    "Untitled": ""
+  },
   "Browser": {
     "Back": "後退",
     "Bookmark": "コレクション",
@@ -47,6 +53,12 @@
     "Use": "使用",
     "WaitingForResponse": "応答を待っています..."
   },
+  "Common": {
+    "Apply": "",
+    "Applying": "",
+    "Save": "",
+    "Saving": ""
+  },
   "ContextMenu": {
     "AddToCurrentSplitView": "現在の分割画面に追加",
     "AddToSplitView": "サイドバイサイドビューに追加",
@@ -71,6 +83,12 @@
     "Reasoning": "推論",
     "ToolCalling": "ツール呼び出し",
     "Vision": "ビジョン"
+  },
+  "ModelSelector": {
+    "Model": "",
+    "NoModelSelected": "",
+    "SelectModel": "",
+    "Title": ""
   },
   "NewTab": {
     "CodeTools": "コードツール",
@@ -160,6 +178,44 @@
     "TemperatureDescription": "低い値はより確定的で集中した応答を生成し、高い値はより多様で創造的な応答を生成します。",
     "TopP": "トップP",
     "TopPDescription": "応答のランダム性を制御します。低い値は応答をより確定的にし、高い値はより多くの可能性を許容します。"
+  },
+  "Prompt": {
+    "AutoRefresh": "",
+    "AutoUpdate": "",
+    "AutoUpdatePreview": "",
+    "CodeEditor": "",
+    "Config": "",
+    "ConfigurationDescription": "",
+    "EnterEditMode": "",
+    "EnterFullScreen": "",
+    "ExitEditMode": "",
+    "ExitFullScreen": "",
+    "Flat": "",
+    "FormEditor": "",
+    "Loading": "",
+    "NoConfigFound": "",
+    "NoHandlerFound": "",
+    "NoMessages": "",
+    "Preview": "",
+    "RefreshPreview": "",
+    "ToggleFullScreen": "",
+    "Tree": ""
+  },
+  "PromptConfig": {
+    "EmptyArray": "",
+    "ItemCount": "",
+    "RemoveItem": "",
+    "Tabs": {
+      "PromptDynamicModification": "",
+      "Prompts": "",
+      "Response": "",
+      "ResponseDynamicModification": ""
+    },
+    "Tags": {
+      "HelperText": "",
+      "NoOptions": "",
+      "Placeholder": ""
+    }
   },
   "Schema": {
     "AIConfig": {

@@ -1,5 +1,11 @@
 {
   "Add": "Add",
+  "Agent": {
+    "InvalidTabType": "",
+    "LoadingChat": "",
+    "StartConversation": "",
+    "Untitled": ""
+  },
   "Browser": {
     "Back": "Step back",
     "Bookmark": "Collection",
@@ -47,6 +53,12 @@
     "Use": "Use",
     "WaitingForResponse": "Waiting for response..."
   },
+  "Common": {
+    "Apply": "",
+    "Applying": "",
+    "Save": "",
+    "Saving": ""
+  },
   "ContextMenu": {
     "AddToCurrentSplitView": "Add to current split view",
     "AddToSplitView": "Add to side-by-side view",
@@ -71,6 +83,12 @@
     "Reasoning": "Reasoning",
     "ToolCalling": "Tool Calling",
     "Vision": "Vision"
+  },
+  "ModelSelector": {
+    "Model": "",
+    "NoModelSelected": "",
+    "SelectModel": "",
+    "Title": ""
   },
   "NewTab": {
     "CodeTools": "code tool",
@@ -162,25 +180,42 @@
     "TopPDescription": "Control the randomness of responses. Lower values make responses more deterministic, while higher values allow for greater variability."
   },
   "Prompt": {
-    "Preview": "Prompt Preview",
-    "Loading": "Loading preview...",
     "AutoRefresh": "Preview auto-refreshes with input text changes",
-    "Flat": "Flat View",
-    "Tree": "Tree View",
-    "Config": "Configuration",
-    "FormEditor": "Form Editor",
-    "CodeEditor": "Code Editor",
-    "ToggleFullScreen": "Toggle Fullscreen",
-    "EnterFullScreen": "Enter Fullscreen",
-    "ExitFullScreen": "Exit Fullscreen",
-    "EnterEditMode": "Enter Edit Mode",
-    "ExitEditMode": "Exit Edit Mode",
-    "NoHandlerFound": "No handler found",
-    "NoConfigFound": "No configuration found",
-    "ConfigurationDescription": "Edit prompt configuration",
-    "RefreshPreview": "Manually refresh preview",
+    "AutoUpdate": "Auto",
     "AutoUpdatePreview": "Auto-update preview on form changes",
-    "AutoUpdate": "Auto"
+    "CodeEditor": "Code Editor",
+    "Config": "Configuration",
+    "ConfigurationDescription": "Edit prompt configuration",
+    "EnterEditMode": "Enter Edit Mode",
+    "EnterFullScreen": "Enter Fullscreen",
+    "ExitEditMode": "Exit Edit Mode",
+    "ExitFullScreen": "Exit Fullscreen",
+    "Flat": "Flat View",
+    "FormEditor": "Form Editor",
+    "Loading": "Loading preview...",
+    "NoConfigFound": "No configuration found",
+    "NoHandlerFound": "No handler found",
+    "NoMessages": "",
+    "Preview": "Prompt Preview",
+    "RefreshPreview": "Manually refresh preview",
+    "ToggleFullScreen": "Toggle Fullscreen",
+    "Tree": "Tree View"
+  },
+  "PromptConfig": {
+    "EmptyArray": "",
+    "ItemCount": "",
+    "RemoveItem": "Remove item",
+    "Tabs": {
+      "PromptDynamicModification": "",
+      "Prompts": "",
+      "Response": "",
+      "ResponseDynamicModification": ""
+    },
+    "Tags": {
+      "HelperText": "",
+      "NoOptions": "",
+      "Placeholder": ""
+    }
   },
   "Schema": {
     "AIConfig": {

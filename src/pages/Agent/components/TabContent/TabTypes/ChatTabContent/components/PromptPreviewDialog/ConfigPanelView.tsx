@@ -6,7 +6,6 @@ import IconButton from '@mui/material/IconButton';
 import Switch from '@mui/material/Switch';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { AgentInstance } from '@services/agentInstance/interface';
 import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +15,7 @@ import { PromptConfigForm } from '../PromptConfigForm';
 interface ConfigPanelViewProps {
   handlerSchema: Record<string, unknown>;
   handlerConfig?: HandlerConfig;
-  handleConfigUpdate: (data: Partial<AgentInstance>) => Promise<void>;
+  handleConfigUpdate: (config: HandlerConfig) => void;
   handleFormChange: (updatedConfig: HandlerConfig) => void;
   handleManualRefresh: () => Promise<void>;
   previewLoading: boolean;
@@ -41,13 +40,13 @@ export const ConfigPanelView: React.FC<ConfigPanelViewProps> = React.memo(({
 }) => {
   const { t } = useTranslation('agent');
 
-  const handleAutoSaveFormChange = useCallback(async (formData: HandlerConfig) => {
+  const handleAutoSaveFormChange = useCallback((formData: HandlerConfig) => {
+    // First update the preview immediately
     handleFormChange(formData);
 
+    // Then save to backend
     try {
-      await handleConfigUpdate({
-        handlerConfig: formData,
-      });
+      handleConfigUpdate(formData);
     } catch (error) {
       console.error('Failed to auto-save handler config:', error);
     }
@@ -93,7 +92,6 @@ export const ConfigPanelView: React.FC<ConfigPanelViewProps> = React.memo(({
       <PromptConfigForm
         schema={handlerSchema}
         formData={handlerConfig}
-        onUpdate={handleConfigUpdate}
         onChange={handleAutoSaveFormChange}
         disabled={previewLoading}
         loading={handlerConfigLoading}

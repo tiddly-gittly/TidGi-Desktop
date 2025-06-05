@@ -4,7 +4,6 @@ import Tabs from '@mui/material/Tabs';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { AgentInstance } from '@services/agentInstance/interface';
 import { IPromptPart } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { PreviewMessage } from '../types';
@@ -27,7 +26,7 @@ interface SideBySideEditViewProps {
   updateSource: 'auto' | 'manual' | 'initial' | null;
   handlerSchema: Record<string, unknown>;
   handlerConfig?: HandlerConfig;
-  handleConfigUpdate: (data: Partial<AgentInstance>) => Promise<void>;
+  handleConfigUpdate: (config: HandlerConfig) => void;
   handleFormChange: (updatedConfig: HandlerConfig) => void;
   handleManualRefresh: () => Promise<void>;
   previewLoading: boolean;
