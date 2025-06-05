@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/promise-function-async */
+import { HelmetProvider } from '@dr.pogodin/react-helmet';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazy, useEffect } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
@@ -17,16 +17,18 @@ export function Pages(): React.JSX.Element {
     setLocation(`/${window.meta().windowName}`);
   }, [setLocation]);
   return (
-    <Switch>
-      <Route path={`/${WindowNames.about}`} component={AboutPage} />
-      <Route path={`/${WindowNames.addWorkspace}`} component={DialogAddWorkspace} />
-      <Route path={`/${WindowNames.editWorkspace}`} component={EditWorkspace} />
-      <Route path={`/${WindowNames.notifications}`} component={DialogNotifications} />
-      <Route path={`/${WindowNames.preferences}`} component={DialogPreferences} />
-      <Route path={`/${WindowNames.spellcheck}`} component={SpellcheckLanguages} />
-      {/* 为主窗口使用 nest 属性创建嵌套路由上下文 */}
-      <Route path={`/${WindowNames.main}`} component={Main} nest />
-      <Route path='/' component={Main} />
-    </Switch>
+    <HelmetProvider>
+      <Switch>
+        <Route path={`/${WindowNames.about}`} component={AboutPage} />
+        <Route path={`/${WindowNames.addWorkspace}`} component={DialogAddWorkspace} />
+        <Route path={`/${WindowNames.editWorkspace}`} component={EditWorkspace} />
+        <Route path={`/${WindowNames.notifications}`} component={DialogNotifications} />
+        <Route path={`/${WindowNames.preferences}`} component={DialogPreferences} />
+        <Route path={`/${WindowNames.spellcheck}`} component={SpellcheckLanguages} />
+        {/* 为主窗口使用 nest 属性创建嵌套路由上下文 */}
+        <Route path={`/${WindowNames.main}`} component={Main} nest />
+        <Route path='/' component={Main} />
+      </Switch>
+    </HelmetProvider>
   );
 }

@@ -14,7 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import React from 'react';
-import { Helmet } from 'react-helmet';
+import { Helmet } from '@dr.pogodin/react-helmet';
 import { useTranslation } from 'react-i18next';
 import { css, styled } from 'styled-components';
 import defaultIcon from '../../images/default-icon.png';

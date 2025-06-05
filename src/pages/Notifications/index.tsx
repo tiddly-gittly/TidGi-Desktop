@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable unicorn/no-useless-undefined */
 import { useState } from 'react';
-import { Helmet } from 'react-helmet';
+import { Helmet } from '@dr.pogodin/react-helmet';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
 

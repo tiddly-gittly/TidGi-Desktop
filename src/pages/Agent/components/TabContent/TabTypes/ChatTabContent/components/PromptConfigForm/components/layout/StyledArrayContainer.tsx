@@ -46,13 +46,18 @@ export const ArrayItemCard = styled(StyledCard)<{ $isDragging?: boolean }>`
   }
 `;
 
-export const ArrayItemHeader: typeof Box = styled(Box)`
+export const ArrayItemHeader = styled(Box)<{ $isCollapsible?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing(1)};
   padding: ${({ theme }) => theme.spacing(1.5, 2)};
   background-color: ${({ theme }) => theme.palette.action.hover};
   border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
+  cursor: ${({ $isCollapsible }) => ($isCollapsible ? 'pointer' : 'default')};
+  
+  &:hover {
+    background-color: ${({ theme, $isCollapsible }) => $isCollapsible ? theme.palette.action.selected : theme.palette.action.hover};
+  }
 `;
 
 export const ItemContent = styled(StyledCardContent)`
@@ -66,7 +71,7 @@ export const DragHandle: typeof Box = styled(Box)`
   cursor: grab;
   color: ${({ theme }) => theme.palette.text.secondary};
   padding: ${({ theme }) => theme.spacing(0.5)};
-  border-radius: ${({ theme }) => theme.shape.borderRadius / 2}px;
+  border-radius: calc(${({ theme }) => theme.shape.borderRadius}px / 2);
   
   &:hover {
     color: ${({ theme }) => theme.palette.primary.main};

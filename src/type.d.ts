@@ -1,4 +1,8 @@
-/* eslint-disable @typescript-eslint/naming-convention */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable unicorn/prevent-abbreviations */
+import type {} from '@mui/system';
+import type {} from '@mui/types';
+
 declare module 'errio' {
   export function parse(error: Error): Error;
   export function stringify(error: Error): string;

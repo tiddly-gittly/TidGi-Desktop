@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable promise/always-return */
 import i18n from 'i18next';
 import React from 'react';
 import { createRoot } from 'react-dom/client';

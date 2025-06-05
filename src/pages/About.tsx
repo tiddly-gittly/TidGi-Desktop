@@ -1,5 +1,5 @@
+import { Helmet } from '@dr.pogodin/react-helmet';
 import React from 'react';
-import { Helmet } from 'react-helmet';
 import { Trans, useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
 

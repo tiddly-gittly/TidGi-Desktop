@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
 import { ArrayFieldItemTemplateType, FormContextType, RJSFSchema } from '@rjsf/utils';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrayItemProvider } from '../../context/ArrayItemContext';
 import { StyledDeleteButton } from '../controls';
@@ -60,19 +60,42 @@ export const SortableArrayItem = <T = unknown, S extends RJSFSchema = RJSFSchema
     transition,
   };
 
-  const handleToggleExpanded = () => {
+  const handleToggleExpanded = useCallback(() => {
     setExpanded(!expanded);
-  };
+  }, [expanded]);
+
+  const handleHeaderClick = useCallback((event: React.MouseEvent) => {
+    // Check if click target is clickable area (exclude buttons and drag handle)
+    const target = event.target as HTMLElement;
+
+    // Skip if clicking buttons or drag handle
+    if (target.closest('button') || target.closest('[data-drag-handle]')) {
+      return;
+    }
+
+    // Only handle click in collapsible mode
+    if (isCollapsible) {
+      handleToggleExpanded();
+    }
+  }, [isCollapsible, handleToggleExpanded]);
+
+  const handleDeleteClick = useCallback((event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent event bubbling to header
+    item.buttonsProps.onDropIndexClick(item.index)();
+  }, [item.buttonsProps, item.index]);
 
   return (
     <div ref={setNodeRef} style={style}>
       <ArrayItemCard $isDragging={isDragging}>
-        <ArrayItemHeader>
-          <DragHandle {...attributes} {...listeners}>
+        <ArrayItemHeader
+          onClick={isCollapsible ? handleHeaderClick : undefined}
+          $isCollapsible={isCollapsible}
+        >
+          <DragHandle {...attributes} {...listeners} data-drag-handle>
             <DragHandleIcon fontSize='small' />
           </DragHandle>
 
-          <ArrayItemTitle>
+          <ArrayItemTitle sx={{ flex: 1 }}>
             {itemData && typeof itemData === 'object' && 'caption' in itemData ? (itemData as { caption: string }).caption : ''}
           </ArrayItemTitle>
 
@@ -84,7 +107,7 @@ export const SortableArrayItem = <T = unknown, S extends RJSFSchema = RJSFSchema
 
           {item.buttonsProps.hasRemove && (
             <StyledDeleteButton
-              onClick={item.buttonsProps.onDropIndexClick(item.index)}
+              onClick={handleDeleteClick}
               size='small'
               title={t('PromptConfig.RemoveItem')}
             >
