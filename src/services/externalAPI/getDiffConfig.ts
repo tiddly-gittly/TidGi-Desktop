@@ -72,8 +72,8 @@ export const getDiffConfig = <T extends Record<string, unknown>>(currentConfig: 
 
       // Values differ
       if (!isEqual(currentValue, baseValue)) {
-        // If both are objects, compare recursively
-        if (isObject(currentValue) && isObject(baseValue)) {
+        // If both are objects (but not arrays), compare recursively
+        if (isObject(currentValue) && isObject(baseValue) && !Array.isArray(currentValue) && !Array.isArray(baseValue)) {
           compareAndExtractDiff(
             currentValue as Record<string, unknown>,
             baseValue as Record<string, unknown>,
@@ -81,7 +81,7 @@ export const getDiffConfig = <T extends Record<string, unknown>>(currentConfig: 
             [...path, key],
           );
         } else {
-          // For primitive types or different types, record difference directly
+          // For primitive types, arrays, or different types, record difference directly
           if (path.length === 0) {
             result[key] = currentValue;
           } else {
