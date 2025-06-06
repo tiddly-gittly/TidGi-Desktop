@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable unicorn/prevent-abbreviations */
+// Fix https://github.com/pnpm/pnpm/issues/6089
 import type {} from '@mui/system';
 import type {} from '@mui/types';
 
