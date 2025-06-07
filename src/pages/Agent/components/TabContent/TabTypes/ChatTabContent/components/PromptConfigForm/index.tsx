@@ -137,9 +137,6 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = React.memo(({
     );
   }
 
-  // DEBUG: console schema
-  console.log(`schema`, schema);
-
   return (
     <ArrayItemProvider isInArrayItem={false} arrayItemCollapsible={false}>
       <Form

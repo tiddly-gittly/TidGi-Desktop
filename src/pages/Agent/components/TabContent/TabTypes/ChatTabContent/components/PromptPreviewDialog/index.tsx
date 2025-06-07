@@ -23,8 +23,7 @@ import { LoadingView } from './LoadingView';
 import { PreviewTabsView } from './PreviewTabsView';
 import { SideBySideEditView } from './SideBySideEditView';
 
-// Constants
-const DEBOUNCE_DELAY = 500; // ms
+
 
 interface PromptPreviewDialogProps {
   open: boolean;
@@ -139,13 +138,6 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
         return;
       }
 
-      console.log('PromptPreviewDialog: Fetching preview with config', {
-        agentDefId: agent.agentDefId,
-        inputTextLength: inputText.length,
-        handlerConfigKeys: Object.keys(localHandlerConfig),
-        hasSchema: !!handlerSchema,
-      });
-
       try {
         const result = await getPreviewPromptResult(inputText, localHandlerConfig);
         if (isMounted) {
@@ -174,7 +166,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
       isMounted = false;
     };
   }, [agent?.agentDefId, inputText, localHandlerConfig, handlerConfigLoading, getPreviewPromptResult, open]);
-
+ 
   // Track preview update status
   const [previewStatus, setPreviewStatus] = useState<{
     lastUpdated: Date | null;
@@ -195,88 +187,27 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
     }
   }, [open]);
 
-  // Create manual refresh handler
-  const handleManualRefresh = useCallback(async () => {
-    if (!agent?.agentDefId || !localHandlerConfig || handlerConfigLoading) {
-      console.log('PromptPreviewDialog: Cannot refresh - missing agentDefId, config, or config is loading');
-      return;
-    }
-
-    try {
-      console.log('PromptPreviewDialog: Manually refreshing preview');
-      const result = await getPreviewPromptResult(inputText, localHandlerConfig);
-
-      // Update preview status on successful refresh
-      if (result) {
-        setPreviewStatus({
-          lastUpdated: new Date(),
-          source: 'manual',
-        });
-      }
-    } catch (error) {
-      console.error('PromptPreviewDialog: Error during manual refresh:', error);
-    }
-  }, [agent?.agentDefId, localHandlerConfig, handlerConfigLoading, getPreviewPromptResult, inputText]);
-
-  // Handle form change to optionally update preview in real-time
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
-
-  // Memoized auto-update toggle handler
-  const handleAutoUpdateToggle = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    setAutoUpdateEnabled(event.target.checked);
-  }, []);
-
-  // Cleanup timeout when component unmounts
-  useEffect(() => {
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-        debounceTimeoutRef.current = null;
-      }
-      // Also clean up save timeout for config persistence
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = null;
-      }
-    };
-  }, []);
-
   const handleFormChange = useCallback((updatedConfig: HandlerConfig) => {
     // Log changes for debugging
     console.log('Form data changed', {
-      autoUpdateEnabled,
       configKeys: Object.keys(updatedConfig),
     });
 
-    // Update local config immediately for UI responsiveness
+    // Update local config and trigger preview update
     handleLocalConfigChange(updatedConfig);
 
-    // Use a debounced update to prevent too frequent preview refreshes
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    if (autoUpdateEnabled && agent?.agentDefId && !handlerConfigLoading) {
-      // Set a timeout to update the preview after user stops typing
-      debounceTimeoutRef.current = setTimeout(async () => {
-        try {
-          console.log('PromptPreviewDialog: Auto-updating preview with new config');
-          const result = await getPreviewPromptResult(inputText, updatedConfig);
-
-          // Update preview status on successful auto-update
-          if (result) {
-            setPreviewStatus({
-              lastUpdated: new Date(),
-              source: 'auto',
-            });
-          }
-        } catch (error) {
-          console.error('PromptPreviewDialog: Error auto-updating preview:', error);
+    // Always update preview with new config
+    if (agent?.agentDefId && !handlerConfigLoading) {
+      void getPreviewPromptResult(inputText, updatedConfig).then(result => {
+        if (result) {
+          setPreviewStatus({
+            lastUpdated: new Date(),
+            source: 'auto',
+          });
         }
-      }, DEBOUNCE_DELAY);
+      });
     }
-  }, [autoUpdateEnabled, agent?.agentDefId, getPreviewPromptResult, inputText, handlerConfigLoading, handleLocalConfigChange]);
+  }, [agent?.agentDefId, getPreviewPromptResult, inputText, handlerConfigLoading, handleLocalConfigChange]);
 
   // Handle tab change in the preview dialog
   const handleTabChange = useCallback((_event: React.SyntheticEvent, value: string): void => {
@@ -329,14 +260,10 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
           lastUpdated={previewStatus.lastUpdated}
           updateSource={previewStatus.source}
           handlerSchema={handlerSchema ?? {}}
-          handlerConfig={localHandlerConfig || undefined}
-          handleConfigUpdate={handleLocalConfigChange}
+          initialHandlerConfig={localHandlerConfig || undefined}
           handleFormChange={handleFormChange}
-          handleManualRefresh={handleManualRefresh}
           previewLoading={previewLoading}
           handlerConfigLoading={handlerConfigLoading}
-          autoUpdateEnabled={autoUpdateEnabled}
-          handleAutoUpdateToggle={handleAutoUpdateToggle}
         />
       );
     }

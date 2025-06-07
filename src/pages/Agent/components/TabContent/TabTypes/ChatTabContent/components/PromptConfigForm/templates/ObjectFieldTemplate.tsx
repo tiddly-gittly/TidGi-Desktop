@@ -24,9 +24,6 @@ export const ObjectFieldTemplate: React.FC<ObjectFieldTemplateProps> = (props) =
     setExpanded(!expanded);
   };
 
-  // DEBUG: console title
-  console.log(`title`, title);
-
   const titleWithHelp = (
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

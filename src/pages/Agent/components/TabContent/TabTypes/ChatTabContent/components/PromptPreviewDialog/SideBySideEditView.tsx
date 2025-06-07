@@ -1,7 +1,7 @@
 import { Box, styled } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { IPromptPart } from '@services/agentInstance/promptConcat/promptConcatSchema';
@@ -25,14 +25,10 @@ interface SideBySideEditViewProps {
   lastUpdated: Date | null;
   updateSource: 'auto' | 'manual' | 'initial' | null;
   handlerSchema: Record<string, unknown>;
-  handlerConfig?: HandlerConfig;
-  handleConfigUpdate: (config: HandlerConfig) => void;
+  initialHandlerConfig?: HandlerConfig;
   handleFormChange: (updatedConfig: HandlerConfig) => void;
-  handleManualRefresh: () => Promise<void>;
   previewLoading: boolean;
   handlerConfigLoading: boolean;
-  autoUpdateEnabled: boolean;
-  handleAutoUpdateToggle: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 /**
@@ -47,21 +43,28 @@ export const SideBySideEditView: React.FC<SideBySideEditViewProps> = React.memo(
   lastUpdated,
   updateSource,
   handlerSchema,
-  handlerConfig,
-  handleConfigUpdate,
+  initialHandlerConfig,
   handleFormChange,
-  handleManualRefresh,
   previewLoading,
   handlerConfigLoading,
-  autoUpdateEnabled,
-  handleAutoUpdateToggle,
 }) => {
   const { t } = useTranslation('agent');
   const [editorMode, setEditorMode] = useState<'form' | 'code'>('form');
+  const [editingConfig, setEditingConfig] = useState<HandlerConfig | undefined>(initialHandlerConfig);
 
-  const handleEditorModeChange = (_event: React.SyntheticEvent, newValue: 'form' | 'code') => {
+  // // Only initialize once when initialHandlerConfig is first available
+  // useEffect(() => {
+  //   if (initialHandlerConfig && !editingConfig) {
+  //     setEditingConfig(initialHandlerConfig);
+  //   }
+  // }, [initialHandlerConfig, editingConfig]);
+
+  const handleEditorModeChange = useCallback((_event: React.SyntheticEvent, newValue: 'form' | 'code') => {
     setEditorMode(newValue);
-  };
+  }, []);
+
+  // DEBUG: console editingConfig
+  console.log(`editingConfig`, editingConfig);
 
   return (
     <Box sx={{ display: 'flex', gap: 2, height: isFullScreen ? '100%' : '70vh' }}>
@@ -119,20 +122,16 @@ export const SideBySideEditView: React.FC<SideBySideEditViewProps> = React.memo(
           {editorMode === 'form' && (
             <ConfigPanelView
               handlerSchema={handlerSchema}
-              handlerConfig={handlerConfig}
-              handleConfigUpdate={handleConfigUpdate}
+              initialHandlerConfig={editingConfig}
               handleFormChange={handleFormChange}
-              handleManualRefresh={handleManualRefresh}
               previewLoading={previewLoading}
               handlerConfigLoading={handlerConfigLoading}
-              autoUpdateEnabled={autoUpdateEnabled}
-              handleAutoUpdateToggle={handleAutoUpdateToggle}
             />
           )}
 
           {editorMode === 'code' && (
             <CodeEditorView
-              handlerConfig={handlerConfig}
+              initialConfig={editingConfig}
               onChange={handleFormChange}
               isFullScreen={isFullScreen}
             />

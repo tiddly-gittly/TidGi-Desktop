@@ -28,6 +28,7 @@ import type { IUpdaterService } from '@services/updater/interface';
 import { IWikiService } from '@services/wiki/interface';
 import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import EventEmitter from 'events';
+import { initDevelopmentExtension } from './debug';
 import { isLinux } from './helpers/system';
 import type { IPreferenceService } from './services/preferences/interface';
 import type { IWindowService } from './services/windows/interface';
@@ -62,7 +63,6 @@ const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentif
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
 const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
-const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
 app.on('second-instance', async () => {
   // see also src/helpers/singleInstance.ts
   // Someone tried to run a second instance, for example, when `runOnBackground` is true, we should focus our window.
@@ -84,6 +84,7 @@ void preferenceService.get('ignoreCertificateErrors').then((ignoreCertificateErr
 });
 const commonInit = async (): Promise<void> => {
   await app.whenReady();
+  await initDevelopmentExtension();
   // if user want a menubar, we create a new window for that
   // handle workspace name + tiddler name in uri https://www.electronjs.org/docs/latest/tutorial/launch-app-from-url-in-another-app
   deepLinkService.initializeDeepLink('tidgi');

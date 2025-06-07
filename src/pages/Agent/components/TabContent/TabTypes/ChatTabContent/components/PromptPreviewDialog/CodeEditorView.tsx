@@ -1,10 +1,10 @@
 import Editor from '@monaco-editor/react';
 import { Box } from '@mui/material';
 import type { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 interface CodeEditorViewProps {
-  handlerConfig?: HandlerConfig;
+  initialConfig?: HandlerConfig;
   onChange: (updatedConfig: HandlerConfig) => void;
   isFullScreen: boolean;
 }
@@ -13,14 +13,21 @@ interface CodeEditorViewProps {
  * JSON Code editor view for editing handler configurations JSON directly and copy & paste full config.
  */
 export const CodeEditorView: React.FC<CodeEditorViewProps> = React.memo(({
-  handlerConfig,
+  initialConfig,
   onChange,
   isFullScreen,
 }) => {
+  const [localConfig, setLocalConfig] = useState<HandlerConfig | undefined>(initialConfig);
+
+  useEffect(() => {
+    setLocalConfig(initialConfig);
+  }, [initialConfig]);
+
   const handleEditorChange = useCallback((value: string | undefined) => {
     if (!value) return;
     try {
       const parsedConfig = JSON.parse(value) as HandlerConfig;
+      setLocalConfig(parsedConfig);
       onChange(parsedConfig);
     } catch (error) {
       console.error('Invalid JSON in code editor:', error);
@@ -40,7 +47,7 @@ export const CodeEditorView: React.FC<CodeEditorViewProps> = React.memo(({
       <Editor
         height='100%'
         defaultLanguage='json'
-        value={handlerConfig ? JSON.stringify(handlerConfig, null, 2) : '{}'}
+        value={localConfig ? JSON.stringify(localConfig, null, 2) : '{}'}
         onChange={handleEditorChange}
         options={{
           minimap: { enabled: true },

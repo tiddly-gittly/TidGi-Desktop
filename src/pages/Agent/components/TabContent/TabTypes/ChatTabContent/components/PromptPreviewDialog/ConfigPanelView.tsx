@@ -1,98 +1,57 @@
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import Box from '@mui/material/Box';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import IconButton from '@mui/material/IconButton';
-import Switch from '@mui/material/Switch';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
 import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import React, { useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+import { debounce } from 'lodash';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { PromptConfigForm } from '../PromptConfigForm';
 
 interface ConfigPanelViewProps {
   handlerSchema: Record<string, unknown>;
-  handlerConfig?: HandlerConfig;
-  handleConfigUpdate: (config: HandlerConfig) => void;
+  initialHandlerConfig?: HandlerConfig;
   handleFormChange: (updatedConfig: HandlerConfig) => void;
-  handleManualRefresh: () => Promise<void>;
   previewLoading: boolean;
   handlerConfigLoading: boolean;
-  autoUpdateEnabled: boolean;
-  handleAutoUpdateToggle: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 /**
  * Configuration panel component with form and controls
+ * Uses local state to manage form data internally without causing unnecessary rerenders
  */
 export const ConfigPanelView: React.FC<ConfigPanelViewProps> = React.memo(({
   handlerSchema,
-  handlerConfig,
-  handleConfigUpdate,
+  initialHandlerConfig,
   handleFormChange,
-  handleManualRefresh,
   previewLoading,
   handlerConfigLoading,
-  autoUpdateEnabled,
-  handleAutoUpdateToggle,
 }) => {
-  const { t } = useTranslation('agent');
+  // Keep form data in local state to prevent unnecessary rerenders
+  const [formData, setFormData] = useState<HandlerConfig | undefined>(initialHandlerConfig);
 
-  const handleAutoSaveFormChange = useCallback((formData: HandlerConfig) => {
-    // First update the preview immediately
-    handleFormChange(formData);
+  // Sync formData with initialHandlerConfig
+  useEffect(() => {
+    setFormData(initialHandlerConfig);
+  }, [initialHandlerConfig]);
 
-    // Then save to backend
-    try {
-      handleConfigUpdate(formData);
-    } catch (error) {
-      console.error('Failed to auto-save handler config:', error);
-    }
-  }, [handleFormChange, handleConfigUpdate]);
+  // Create debounced handler for form updates
+  const debouncedHandlerReference = useCallback(
+    debounce((updatedConfig: HandlerConfig) => {
+      handleFormChange(updatedConfig);
+    }, 300),
+    [handleFormChange]
+  );
+
+  // Handle form changes locally and trigger debounced update
+  const handleLocalFormChange = useCallback((updatedConfig: HandlerConfig): void => {
+    setFormData(updatedConfig);
+    debouncedHandlerReference(updatedConfig);
+  }, [debouncedHandlerReference]);
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Tooltip title={t('Prompt.RefreshPreview')}>
-            <IconButton
-              size='small'
-              onClick={handleManualRefresh}
-              disabled={previewLoading || handlerConfigLoading}
-              sx={{ mr: 1 }}
-            >
-              <RefreshIcon fontSize='small' />
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip title={t('Prompt.AutoUpdatePreview')}>
-            <FormControlLabel
-              control={
-                <Switch
-                  size='small'
-                  checked={autoUpdateEnabled}
-                  onChange={handleAutoUpdateToggle}
-                  color='primary'
-                />
-              }
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <AutorenewIcon fontSize='small' sx={{ mr: 0.5 }} />
-                  <Typography variant='caption'>{t('Prompt.AutoUpdate')}</Typography>
-                </Box>
-              }
-              labelPlacement='start'
-              sx={{ mx: 1, my: 0 }}
-            />
-          </Tooltip>
-        </Box>
-      </Box>
       <PromptConfigForm
         schema={handlerSchema}
-        formData={handlerConfig}
-        onChange={handleAutoSaveFormChange}
+        formData={formData}
+        onChange={handleLocalFormChange}
         disabled={previewLoading}
         loading={handlerConfigLoading}
       />

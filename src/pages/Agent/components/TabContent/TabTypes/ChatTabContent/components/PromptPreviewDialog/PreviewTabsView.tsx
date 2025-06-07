@@ -90,7 +90,7 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = React.memo(({
       {tab === DialogTabTypes.FLAT && (
         <PreviewContent isFullScreen={isFullScreen}>
           <FlatPromptList flatPrompts={flatPrompts} />
-          <LastUpdatedIndicator lastUpdated={lastUpdated} source={updateSource} />
+          <LastUpdatedIndicator lastUpdated={lastUpdated} />
         </PreviewContent>
       )}
 
@@ -98,7 +98,7 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = React.memo(({
       {tab === DialogTabTypes.TREE && (
         <PreviewContent isFullScreen={isFullScreen}>
           <PromptTree prompts={processedPrompts} />
-          <LastUpdatedIndicator lastUpdated={lastUpdated} source={updateSource} />
+          <LastUpdatedIndicator lastUpdated={lastUpdated} />
         </PreviewContent>
       )}
     </Box>

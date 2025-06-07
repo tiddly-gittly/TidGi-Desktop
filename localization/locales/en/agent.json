@@ -192,6 +192,7 @@
     "ExitFullScreen": "Exit Fullscreen",
     "Flat": "Flat View",
     "FormEditor": "Form Editor",
+    "LastUpdated": "Last updated",
     "Loading": "Loading preview...",
     "NoConfigFound": "No configuration found",
     "NoHandlerFound": "No handler found",
@@ -202,6 +203,7 @@
     "Tree": "Tree View"
   },
   "PromptConfig": {
+    "AddItem": "",
     "EmptyArray": "",
     "ItemCount": "",
     "RemoveItem": "Remove item",

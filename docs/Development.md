@@ -127,3 +127,15 @@ and run `node node_modules/electron/install.js` manually.
 Or `[FAILED: ENOENT: no such file or directory, stat 'C:\Users\linonetwo\Documents\repo-c\TidGi-Desktop\node_modules\.pnpm\node_modules\@radix-ui\react-compose-refs']`
 
 Remove it by run `rm 'xxx/node_modules/.pnpm/node_modules/@types/lodash-es'` fixes it. Maybe pnpm install gets interrupted, and make a file-like symlink, get recognized as binary file. Remove it will work.
+
+### An unhandled rejection has occurred inside Forge about node-abi:
+
+Solution: Update `@electron/rebuild` to latest version:
+
+```shell
+pnpm up @electron/rebuild@latest
+```
+
+### Fetch failed at fetchAvailableUpdates
+
+We use [electron-chrome-web-store](https://github.com/samuelmaddock/electron-browser-shell/blob/master/packages/electron-chrome-web-store/README.md) to load react dev tools, so you need to add `https://clients2.google.com/service/update2/crx` to your Clash/Proxifier list. May need to enable system proxy and TUN mode or so.

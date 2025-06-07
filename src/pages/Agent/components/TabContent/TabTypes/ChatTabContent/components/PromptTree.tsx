@@ -9,7 +9,7 @@ const TreeItem = styled(Box, {
   margin: `${depth * 8}px 0 0 ${depth * 16}px`,
   borderLeft: `2px solid ${theme.palette.primary.main}`,
   background: theme.palette.background.default,
-  borderRadius: theme.shape.borderRadius / 2,
+  borderRadius: Number(theme.shape.borderRadius) / 2,
   '&:hover': {
     background: theme.palette.action.hover,
   },

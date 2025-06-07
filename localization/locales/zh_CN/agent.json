@@ -192,6 +192,7 @@
     "ExitFullScreen": "退出全屏",
     "Flat": "平铺视图",
     "FormEditor": "表单编辑器",
+    "LastUpdated": "上次更新时间",
     "Loading": "加载预览中...",
     "NoConfigFound": "未找到配置",
     "NoHandlerFound": "未找到处理程序",
@@ -202,6 +203,7 @@
     "Tree": "树形视图"
   },
   "PromptConfig": {
+    "AddItem": "添加项目",
     "EmptyArray": "还没有添加任何项目。点击下面的按钮添加第一个项目。",
     "ItemCount": "{{count}} 项",
     "RemoveItem": "删除列表项",

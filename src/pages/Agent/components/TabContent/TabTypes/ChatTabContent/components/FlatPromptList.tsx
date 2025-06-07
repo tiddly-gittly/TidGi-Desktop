@@ -23,7 +23,7 @@ const RoleChip = styled(Typography, {
 })<{ role: string }>(({ theme, role }) => ({
   display: 'inline-block',
   padding: theme.spacing(0.5, 1),
-  borderRadius: theme.shape.borderRadius / 2,
+  borderRadius: Number(theme.shape.borderRadius) / 2,
   fontSize: 12,
   fontWeight: 600,
   marginBottom: theme.spacing(1),

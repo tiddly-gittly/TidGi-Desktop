@@ -4,14 +4,13 @@ import { useTranslation } from 'react-i18next';
 
 export interface LastUpdatedIndicatorProps {
   lastUpdated: Date | null;
-  source: 'auto' | 'manual' | 'initial' | null;
 }
 
 /**
  * Component to display when the prompt preview was last updated
  * Shows timestamp and update method (manual, auto, or initial)
  */
-export const LastUpdatedIndicator: React.FC<LastUpdatedIndicatorProps> = ({ lastUpdated, source }) => {
+export const LastUpdatedIndicator: React.FC<LastUpdatedIndicatorProps> = ({ lastUpdated }) => {
   const { t } = useTranslation('agent');
 
   if (!lastUpdated) return null;
@@ -28,9 +27,7 @@ export const LastUpdatedIndicator: React.FC<LastUpdatedIndicatorProps> = ({ last
       }}
     >
       <Typography variant='caption' color='text.secondary'>
-        {t('Prompt.LastUpdated', 'Last updated')}: {lastUpdated.toLocaleTimeString()}
-        {source === 'auto' ? ` (${t('Prompt.AutoRefreshed', 'Auto')})` : ''}
-        {source === 'manual' ? ` (${t('Prompt.ManuallyRefreshed', 'Manual')})` : ''}
+        {t('Prompt.LastUpdated')}: {lastUpdated.toLocaleTimeString()}
       </Typography>
     </Box>
   );

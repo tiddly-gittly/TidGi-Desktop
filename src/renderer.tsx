@@ -5,6 +5,9 @@ import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { ThemeProvider } from 'styled-components';
 import { Router } from 'wouter';
+// Fix https://github.com/pnpm/pnpm/issues/6089
+import type {} from '@mui/system';
+import type {} from '@mui/types';
 
 import CssBaseline from '@mui/material/CssBaseline';
 import { StyledEngineProvider } from '@mui/material/styles';

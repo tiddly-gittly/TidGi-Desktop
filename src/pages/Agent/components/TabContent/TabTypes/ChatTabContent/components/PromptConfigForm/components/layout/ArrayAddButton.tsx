@@ -43,9 +43,7 @@ export const ArrayAddButton: React.FC<ArrayAddButtonProps> = ({
         }),
       }}
     >
-      {t('PromptConfig.AddItem', {
-        defaultValue: '添加项目',
-      })}
+      {t('PromptConfig.AddItem')}
     </StyledArrayAddButton>
   );
 };

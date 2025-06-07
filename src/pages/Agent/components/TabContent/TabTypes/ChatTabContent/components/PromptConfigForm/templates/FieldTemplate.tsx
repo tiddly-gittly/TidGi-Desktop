@@ -26,7 +26,7 @@ export const FieldTemplate: React.FC<FieldTemplateProps> = (props) => {
     <StyledFieldWrapper>
       {displayLabel && label && (
         <Box component='label' htmlFor={id} sx={{ display: 'block', mb: 0.5 }}>
-          <StyledFieldLabel>
+          <StyledFieldLabel component='span'>
             {label}
             {required && <StyledRequiredIndicator>*</StyledRequiredIndicator>}
             {typeof description === 'string' && description && <HelpTooltip description={description} />}

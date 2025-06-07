@@ -191,6 +191,7 @@
     "ExitFullScreen": "",
     "Flat": "",
     "FormEditor": "",
+    "LastUpdated": "",
     "Loading": "",
     "NoConfigFound": "",
     "NoHandlerFound": "",
@@ -201,6 +202,7 @@
     "Tree": ""
   },
   "PromptConfig": {
+    "AddItem": "",
     "EmptyArray": "",
     "ItemCount": "",
     "RemoveItem": "",
