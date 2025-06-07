@@ -32,7 +32,7 @@ const EmptyState = styled(Box)(({ theme }) => ({
 /**
  * Prompt tree node component for nested display
  */
-export const PromptTreeNode = React.memo(({ node, depth }: { node: IPromptPart; depth: number }): React.ReactElement => {
+export const PromptTreeNode = ({ node, depth }: { node: IPromptPart; depth: number }): React.ReactElement => {
   return (
     <TreeItem depth={depth}>
       <Typography variant='subtitle2' color='primary' gutterBottom>
@@ -54,12 +54,12 @@ export const PromptTreeNode = React.memo(({ node, depth }: { node: IPromptPart; 
       {node.children?.length && node.children.map(child => <PromptTreeNode key={child.id} node={child} depth={depth + 1} />)}
     </TreeItem>
   );
-});
+};
 
 /**
  * Prompt tree component
  */
-export const PromptTree = React.memo(({ prompts }: { prompts?: IPromptPart[] }): React.ReactElement => {
+export const PromptTree = ({ prompts }: { prompts?: IPromptPart[] }): React.ReactElement => {
   if (!prompts?.length) {
     return <EmptyState>No prompt tree to display</EmptyState>;
   }
@@ -69,4 +69,4 @@ export const PromptTree = React.memo(({ prompts }: { prompts?: IPromptPart[] }):
       {prompts.map(item => <PromptTreeNode key={item.id} node={item} depth={0} />)}
     </Box>
   );
-});
+};

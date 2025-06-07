@@ -17,7 +17,7 @@ interface ConfigPanelViewProps {
  * Configuration panel component with form and controls
  * Uses local state to manage form data internally without causing unnecessary rerenders
  */
-export const ConfigPanelView: React.FC<ConfigPanelViewProps> = React.memo(({
+export const ConfigPanelView: React.FC<ConfigPanelViewProps> = ({
   handlerSchema,
   initialHandlerConfig,
   handleFormChange,
@@ -57,4 +57,4 @@ export const ConfigPanelView: React.FC<ConfigPanelViewProps> = React.memo(({
       />
     </Box>
   );
-});
+};

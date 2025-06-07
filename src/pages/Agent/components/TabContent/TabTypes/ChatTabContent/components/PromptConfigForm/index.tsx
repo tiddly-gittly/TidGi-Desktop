@@ -40,7 +40,7 @@ interface PromptConfigFormProps {
  * React JSON Schema Form component for prompt configuration
  * Uses custom templates and widgets for better styling and user experience
  */
-export const PromptConfigForm: React.FC<PromptConfigFormProps> = React.memo(({
+export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
   schema,
   uiSchema: uiSchemaOverride = {},
   formData: initialFormData,
@@ -159,4 +159,4 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = React.memo(({
       </Form>
     </ArrayItemProvider>
   );
-});
+};

@@ -59,7 +59,7 @@ const EmptyState = styled(Box)(({ theme }) => ({
 /**
  * Flat prompt list component
  */
-export const FlatPromptList = React.memo(({ flatPrompts }: { flatPrompts?: PreviewMessage[] }): React.ReactElement => {
+export const FlatPromptList = ({ flatPrompts }: { flatPrompts?: PreviewMessage[] }): React.ReactElement => {
   const { t } = useTranslation('agent');
 
   if (!flatPrompts?.length) {
@@ -87,4 +87,4 @@ export const FlatPromptList = React.memo(({ flatPrompts }: { flatPrompts?: Previ
       ))}
     </List>
   );
-});
+};

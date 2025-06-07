@@ -31,7 +31,7 @@ interface PromptPreviewDialogProps {
   inputText?: string;
 }
 
-export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.memo(({
+export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   open,
   onClose,
   inputText = '',
@@ -143,10 +143,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
         if (isMounted) {
           // Update initial preview status
           if (result) {
-            setPreviewStatus({
-              lastUpdated: new Date(),
-              source: 'initial',
-            });
+            setLastUpdated(new Date());
           }
         }
       } catch (error) {
@@ -168,22 +165,13 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
   }, [agent?.agentDefId, inputText, localHandlerConfig, handlerConfigLoading, getPreviewPromptResult, open]);
  
   // Track preview update status
-  const [previewStatus, setPreviewStatus] = useState<{
-    lastUpdated: Date | null;
-    source: 'auto' | 'manual' | 'initial' | null;
-  }>({
-    lastUpdated: null,
-    source: null,
-  });
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Reset preview status when dialog closes
   useEffect(() => {
     if (!open) {
       // Reset status if dialog is closed
-      setPreviewStatus({
-        lastUpdated: null,
-        source: null,
-      });
+      setLastUpdated(null);
     }
   }, [open]);
 
@@ -200,10 +188,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
     if (agent?.agentDefId && !handlerConfigLoading) {
       void getPreviewPromptResult(inputText, updatedConfig).then(result => {
         if (result) {
-          setPreviewStatus({
-            lastUpdated: new Date(),
-            source: 'auto',
-          });
+          setLastUpdated(new Date());
         }
       });
     }
@@ -257,8 +242,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
           isFullScreen={isFullScreen}
           flatPrompts={formattedPreview?.flatPrompts}
           processedPrompts={formattedPreview?.processedPrompts}
-          lastUpdated={previewStatus.lastUpdated}
-          updateSource={previewStatus.source}
+          lastUpdated={lastUpdated}
           handlerSchema={handlerSchema ?? {}}
           initialHandlerConfig={localHandlerConfig || undefined}
           handleFormChange={handleFormChange}
@@ -274,11 +258,9 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
       <PreviewTabsView
         tab={tab}
         handleTabChange={handleTabChange}
-        isFullScreen={isFullScreen}
-        flatPrompts={formattedPreview?.flatPrompts}
-        processedPrompts={formattedPreview?.processedPrompts}
-        lastUpdated={previewStatus.lastUpdated}
-        updateSource={previewStatus.source}
+        isFullScreen={isFullScreen}          flatPrompts={formattedPreview?.flatPrompts}
+          processedPrompts={formattedPreview?.processedPrompts}
+          lastUpdated={lastUpdated}
       />
     );
   };
@@ -349,4 +331,4 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = React.mem
       </DialogContent>
     </Dialog>
   );
-});
+};

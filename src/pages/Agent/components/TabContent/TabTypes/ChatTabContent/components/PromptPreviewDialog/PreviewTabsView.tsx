@@ -40,20 +40,18 @@ interface PreviewTabsViewProps {
   flatPrompts?: PreviewMessage[];
   processedPrompts?: IPromptPart[];
   lastUpdated: Date | null;
-  updateSource: 'auto' | 'manual' | 'initial' | null;
 }
 
 /**
  * Preview tabs component with flat and tree views
  */
-export const PreviewTabsView: React.FC<PreviewTabsViewProps> = React.memo(({
+export const PreviewTabsView: React.FC<PreviewTabsViewProps> = ({
   tab,
   handleTabChange,
   isFullScreen,
   flatPrompts,
   processedPrompts,
   lastUpdated,
-  updateSource,
 }) => {
   const { t } = useTranslation('agent');
 
@@ -103,4 +101,4 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = React.memo(({
       )}
     </Box>
   );
-});
+};

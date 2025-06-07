@@ -12,7 +12,7 @@ interface CodeEditorViewProps {
 /**
  * JSON Code editor view for editing handler configurations JSON directly and copy & paste full config.
  */
-export const CodeEditorView: React.FC<CodeEditorViewProps> = React.memo(({
+export const CodeEditorView: React.FC<CodeEditorViewProps> = ({
   initialConfig,
   onChange,
   isFullScreen,
@@ -61,4 +61,4 @@ export const CodeEditorView: React.FC<CodeEditorViewProps> = React.memo(({
       />
     </Box>
   );
-});
+};
