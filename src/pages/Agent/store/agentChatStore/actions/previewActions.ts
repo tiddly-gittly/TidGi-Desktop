@@ -15,7 +15,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
   },
 
   closePreviewDialog: () => {
-    set({ previewDialogOpen: false });
+    set({ previewDialogOpen: false, lastUpdated: null });
   },
 
   setPreviewDialogTab: (tab: 'flat' | 'tree') => {
@@ -75,6 +75,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
       set({
         previewResult: result,
         previewLoading: false,
+        lastUpdated: new Date(),
       });
       return result;
     } catch (error) {
@@ -85,5 +86,9 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
       });
       return null;
     }
+  },
+
+  resetLastUpdated: () => {
+    set({ lastUpdated: null });
   },
 });

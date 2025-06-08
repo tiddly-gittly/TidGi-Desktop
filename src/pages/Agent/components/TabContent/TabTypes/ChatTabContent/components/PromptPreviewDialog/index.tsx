@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prevent-abbreviations */
 import { useHandlerConfigManagement } from '@/pages/Preferences/sections/ExternalAPI/useHandlerConfigManagement';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
@@ -7,21 +6,16 @@ import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
+import MuiDialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
-import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { CoreMessage } from 'ai';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { useAgentChatStore } from '../../../../../../store/agentChatStore/index';
-import { getFormattedContent } from '../types';
-import { DialogTabTypes } from './constants';
-import { LoadingView } from './LoadingView';
+import { EditView } from './EditView';
 import { PreviewTabsView } from './PreviewTabsView';
-import { SideBySideEditView } from './SideBySideEditView';
 
 interface PromptPreviewDialogProps {
   open: boolean;
@@ -37,178 +31,43 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   const { t } = useTranslation('agent');
   const agent = useAgentChatStore(state => state.agent);
 
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+
   const {
     loading: handlerConfigLoading,
     config: handlerConfig,
-    schema: handlerSchema,
-    handleConfigChange,
   } = useHandlerConfigManagement({
     agentDefId: agent?.agentDefId,
     agentId: agent?.id,
   });
 
-  const {
-    previewDialogTab: tab,
-    previewLoading,
-    previewResult,
-    setPreviewDialogTab,
-    getPreviewPromptResult,
-  } = useAgentChatStore(
+  const { getPreviewPromptResult } = useAgentChatStore(
     useShallow((state) => ({
-      previewDialogTab: state.previewDialogTab,
-      previewLoading: state.previewLoading,
-      previewResult: state.previewResult,
-      setPreviewDialogTab: state.setPreviewDialogTab,
       getPreviewPromptResult: state.getPreviewPromptResult,
     })),
   );
-
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleFormChange = useCallback((updatedConfig: HandlerConfig) => {
-    console.log('Form data changed', {
-      configKeys: Object.keys(updatedConfig),
-    });
-
-    // Clear existing save timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    // Debounced save
-    saveTimeoutRef.current = setTimeout(async () => {
-      try {
-        await handleConfigChange(updatedConfig);
-        // Update preview with new config after save
-        if (agent?.agentDefId) {
-          void getPreviewPromptResult(inputText, updatedConfig).then(result => {
-            if (result) {
-              setLastUpdated(new Date());
-            }
-          });
-        }
-      } catch (error) {
-        console.error('PromptPreviewDialog: Error auto-saving config:', error);
-      }
-    }, 1000);
-  }, [handleConfigChange, agent?.agentDefId, getPreviewPromptResult, inputText]);
-
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchPreview = async () => {
-      if (!agent?.agentDefId) {
-        console.log('PromptPreviewDialog: Missing agentDefId, skipping preview');
+    const fetchInitialPreview = async () => {
+      if (!agent?.agentDefId || handlerConfigLoading || !handlerConfig || !open) {
         return;
       }
-      if (handlerConfigLoading) {
-        console.log('PromptPreviewDialog: Handler config is loading, skipping preview');
-        return;
-      }
-      if (!handlerConfig) {
-        console.log('PromptPreviewDialog: No handler config available, skipping preview');
-        return;
-      }
-
       try {
-        const result = await getPreviewPromptResult(inputText, handlerConfig);
-        if (isMounted && result) {
-          setLastUpdated(new Date());
-        }
+        await getPreviewPromptResult(inputText, handlerConfig);
       } catch (error) {
-        if (isMounted) {
-          console.error('PromptPreviewDialog: Error fetching preview', error);
-        }
+        console.error('PromptPreviewDialog: Error fetching initial preview:', error);
       }
     };
-
-    if (open) {
-      void fetchPreview();
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [agent?.agentDefId, inputText, handlerConfig, handlerConfigLoading, getPreviewPromptResult, open]);
-
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-
-  useEffect(() => {
-    if (!open) {
-      setLastUpdated(null);
-    }
-  }, [open]);
-
-  // Handle tab change in the preview dialog
-  const handleTabChange = useCallback((_event: React.SyntheticEvent, value: string): void => {
-    // Only handle flat and tree tabs for preview - edit mode has its own tab system
-    if (value === DialogTabTypes.FLAT || value === DialogTabTypes.TREE) {
-      setPreviewDialogTab(value);
-    } else {
-      // If invalid tab received, default to flat
-      setPreviewDialogTab(DialogTabTypes.FLAT);
-    }
-  }, [setPreviewDialogTab]);
-
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false); // 并排编辑模式
+    void fetchInitialPreview();
+  }, [agent?.agentDefId, handlerConfig, handlerConfigLoading, getPreviewPromptResult, inputText, open]);
 
   const handleToggleFullScreen = useCallback((): void => {
-    setIsFullScreen(prev => !prev);
+    setIsFullScreen(previous => !previous);
   }, []);
 
   const handleToggleEditMode = useCallback((): void => {
-    setIsEditMode(prev => !prev);
+    setIsEditMode(previous => !previous);
   }, []);
-
-  // Memoize formatted preview to prevent unnecessary recalculations
-  const formattedPreview = useMemo(() => {
-    return previewResult
-      ? {
-        flatPrompts: previewResult.flatPrompts.map((message: CoreMessage) => ({
-          role: String(message.role),
-          content: getFormattedContent(message.content),
-        })),
-        processedPrompts: previewResult.processedPrompts,
-      }
-      : null;
-  }, [previewResult]);
-
-  const renderDialogContent = () => {
-    if (previewLoading) {
-      return <LoadingView />;
-    }
-
-    if (isEditMode) {
-      return (
-        <SideBySideEditView
-          tab={tab}
-          handleTabChange={handleTabChange}
-          isFullScreen={isFullScreen}
-          flatPrompts={formattedPreview?.flatPrompts}
-          processedPrompts={formattedPreview?.processedPrompts}
-          lastUpdated={lastUpdated}
-          handlerSchema={handlerSchema ?? {}}
-          initialConfig={handlerConfig}
-          handleFormChange={handleFormChange}
-          handlerConfigLoading={handlerConfigLoading}
-        />
-      );
-    }
-
-    // Display simplified preview tabs (only flat and tree tabs)
-    // Since store types are constrained to flat|tree, tab is always valid
-    return (
-      <PreviewTabsView
-        tab={tab}
-        handleTabChange={handleTabChange}
-        isFullScreen={isFullScreen}
-        flatPrompts={formattedPreview?.flatPrompts}
-        processedPrompts={formattedPreview?.processedPrompts}
-        lastUpdated={lastUpdated}
-      />
-    );
-  };
 
   return (
     <Dialog
@@ -263,7 +122,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
           </Box>
         </Box>
       </DialogTitle>
-      <DialogContent
+      <MuiDialogContent
         sx={{
           ...(isFullScreen && {
             padding: 0,
@@ -272,8 +131,42 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
           }),
         }}
       >
-        {renderDialogContent()}
-      </DialogContent>
+        {isEditMode
+          ? (
+            <Box sx={{ display: 'flex', gap: 2, height: isFullScreen ? '100%' : '70vh' }}>
+              <Box
+                sx={{
+                  flex: '1',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <PreviewTabsView
+                  isFullScreen={isFullScreen}
+                />
+              </Box>
+              <Box
+                sx={{
+                  flex: '0 0 50%',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <EditView
+                  isFullScreen={isFullScreen}
+                  inputText={inputText}
+                />
+              </Box>
+            </Box>
+          )
+          : (
+            <PreviewTabsView
+              isFullScreen={isFullScreen}
+            />
+          )}
+      </MuiDialogContent>
     </Dialog>
   );
 };

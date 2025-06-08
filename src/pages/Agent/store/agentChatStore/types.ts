@@ -27,12 +27,13 @@ export interface AgentChatBaseState {
 // Preview dialog specific state
 export interface PreviewDialogState {
   previewDialogOpen: boolean;
-  previewDialogTab: 'flat' | 'tree'; // Only preview modes - edit side has its own tab system
+  previewDialogTab: 'flat' | 'tree';
   previewLoading: boolean;
   previewResult: {
     flatPrompts: CoreMessage[];
     processedPrompts: Prompt[];
   } | null;
+  lastUpdated: Date | null; // Track when preview was last updated
 }
 
 // Basic actions interface
@@ -161,6 +162,11 @@ export interface PreviewActions {
       processedPrompts: Prompt[];
     } | null
   >;
+
+  /**
+   * Resets the lastUpdated timestamp, typically called when dialog is closed
+   */
+  resetLastUpdated: () => void;
 }
 
 // Combine all interfaces into the complete state interface

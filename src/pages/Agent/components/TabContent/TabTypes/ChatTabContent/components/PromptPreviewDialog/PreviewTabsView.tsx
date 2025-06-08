@@ -1,59 +1,92 @@
 import { Box, styled } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
-import React from 'react';
+import { CoreMessage } from 'ai';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
-import { IPromptPart } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { useAgentChatStore } from '../../../../../../store/agentChatStore/index';
 import { FlatPromptList } from '../FlatPromptList';
 import { LastUpdatedIndicator } from '../LastUpdatedIndicator';
 import { PromptTree } from '../PromptTree';
-import { PreviewMessage } from '../types';
-import { DialogTabTypes } from './constants';
+import { getFormattedContent } from '../types';
+import { LoadingView } from './LoadingView';
 
 // Styled components
-const PreviewTabs = styled(Tabs)(({ theme }) => ({
-  marginBottom: theme.spacing(2),
-  borderBottom: `1px solid ${theme.palette.divider}`,
-}));
+const PreviewTabs = styled(Tabs)`
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
+`;
 
 const PreviewContent = styled('div', {
   shouldForwardProp: (property: string) => property !== 'isFullScreen',
-})<{ isFullScreen?: boolean }>(({ theme, isFullScreen }) => ({
-  background: theme.palette.background.paper,
-  borderRadius: isFullScreen ? 0 : theme.shape.borderRadius,
-  padding: isFullScreen ? theme.spacing(1) : theme.spacing(2),
-  minHeight: 240,
-  maxHeight: isFullScreen ? 'calc(100vh - 120px)' : '60vh',
-  height: isFullScreen ? 'calc(100vh - 120px)' : 'auto',
-  overflow: 'auto',
-  fontFamily: '"JetBrains Mono", "Fira Mono", "Menlo", "Consolas", monospace',
-  fontSize: 14,
-  lineHeight: 1.7,
-  boxShadow: 'none',
-}));
+})<{ isFullScreen?: boolean }>`
+  background: ${({ theme }) => theme.palette.background.paper};
+  border-radius: ${({ isFullScreen, theme }) => isFullScreen ? 0 : theme.shape.borderRadius};
+  padding: ${({ isFullScreen, theme }) => isFullScreen ? theme.spacing(1) : theme.spacing(2)};
+  min-height: 240px;
+  max-height: ${({ isFullScreen }) => isFullScreen ? 'calc(100vh - 120px)' : '60vh'};
+  height: ${({ isFullScreen }) => isFullScreen ? 'calc(100vh - 120px)' : 'auto'};
+  overflow: auto;
+  font-family: 'Fira Code', 'JetBrains Mono', 'Fira Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  box-shadow: none;
+`;
 
 interface PreviewTabsViewProps {
-  tab: 'flat' | 'tree'; // 严格类型，只支持预览标签
-  handleTabChange: (_event: React.SyntheticEvent, value: string) => void;
   isFullScreen: boolean;
-  flatPrompts?: PreviewMessage[];
-  processedPrompts?: IPromptPart[];
-  lastUpdated: Date | null;
 }
 
 /**
  * Preview tabs component with flat and tree views
  */
 export const PreviewTabsView: React.FC<PreviewTabsViewProps> = ({
-  tab,
-  handleTabChange,
   isFullScreen,
-  flatPrompts,
-  processedPrompts,
-  lastUpdated,
 }) => {
   const { t } = useTranslation('agent');
+
+  const {
+    previewDialogTab: tab,
+    previewLoading,
+    previewResult,
+    lastUpdated,
+    setPreviewDialogTab,
+  } = useAgentChatStore(
+    useShallow((state) => ({
+      previewDialogTab: state.previewDialogTab,
+      previewLoading: state.previewLoading,
+      previewResult: state.previewResult,
+      lastUpdated: state.lastUpdated,
+      setPreviewDialogTab: state.setPreviewDialogTab,
+    })),
+  );
+
+  // Memoize formatted preview to prevent unnecessary recalculations
+  const formattedPreview = useMemo(() => {
+    return previewResult
+      ? {
+        flatPrompts: previewResult.flatPrompts.map((message: CoreMessage) => ({
+          role: String(message.role),
+          content: getFormattedContent(message.content),
+        })),
+        processedPrompts: previewResult.processedPrompts,
+      }
+      : null;
+  }, [previewResult]);
+
+  const handleTabChange = useCallback((_event: React.SyntheticEvent, value: string): void => {
+    if (value === 'flat' || value === 'tree') {
+      setPreviewDialogTab(value);
+    } else {
+      setPreviewDialogTab('flat');
+    }
+  }, [setPreviewDialogTab]);
+
+  if (previewLoading) {
+    return <LoadingView />;
+  }
 
   return (
     <Box
@@ -73,29 +106,29 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = ({
         >
           <Tab
             label={t('Prompt.Flat')}
-            value={DialogTabTypes.FLAT}
+            value={'flat'}
             sx={{ textTransform: 'none' }}
           />
           <Tab
             label={t('Prompt.Tree')}
-            value={DialogTabTypes.TREE}
+            value={'tree'}
             sx={{ textTransform: 'none' }}
           />
         </PreviewTabs>
       </Box>
 
       {/* Flat Result Tab */}
-      {tab === DialogTabTypes.FLAT && (
+      {tab === 'flat' && (
         <PreviewContent isFullScreen={isFullScreen}>
-          <FlatPromptList flatPrompts={flatPrompts} />
+          <FlatPromptList flatPrompts={formattedPreview?.flatPrompts} />
           <LastUpdatedIndicator lastUpdated={lastUpdated} />
         </PreviewContent>
       )}
 
       {/* Tree Result Tab */}
-      {tab === DialogTabTypes.TREE && (
+      {tab === 'tree' && (
         <PreviewContent isFullScreen={isFullScreen}>
-          <PromptTree prompts={processedPrompts} />
+          <PromptTree prompts={formattedPreview?.processedPrompts} />
           <LastUpdatedIndicator lastUpdated={lastUpdated} />
         </PreviewContent>
       )}

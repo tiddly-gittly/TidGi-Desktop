@@ -22,6 +22,7 @@ export const useAgentChatStore = create<AgentChatStoreType>()((set, get, api) =>
     previewDialogTab: 'flat',
     previewLoading: false,
     previewResult: null,
+    lastUpdated: null,
   };
 
   // 合并所有 actions 和初始状态
