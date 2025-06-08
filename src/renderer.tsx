@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import i18n from 'i18next';
-import React from 'react';
+import React, { JSX, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { ThemeProvider } from 'styled-components';
@@ -27,26 +26,28 @@ import { useHashLocation } from 'wouter/use-hash-location';
 import { RootStyle } from './components/RootStyle';
 import { Pages } from './pages';
 
-function App(): React.JSX.Element {
+function App(): JSX.Element {
   const theme = useThemeObservable();
 
   return (
-    <ThemeProvider theme={theme?.shouldUseDarkColors === true ? darkTheme : lightTheme}>
-      <StyledEngineProvider injectFirst>
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <CssBaseline />
-          <React.Suspense fallback={<div />}>
-            <I18nextProvider i18n={i18n}>
-              <RootStyle>
-                <Router hook={useHashLocation}>
-                  <Pages />
-                </Router>
-              </RootStyle>
-            </I18nextProvider>
-          </React.Suspense>
-        </LocalizationProvider>
-      </StyledEngineProvider>
-    </ThemeProvider>
+    <StrictMode>
+      <ThemeProvider theme={theme?.shouldUseDarkColors === true ? darkTheme : lightTheme}>
+        <StyledEngineProvider injectFirst>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <CssBaseline />
+            <Suspense fallback={<div />}>
+              <I18nextProvider i18n={i18n}>
+                <RootStyle>
+                  <Router hook={useHashLocation}>
+                    <Pages />
+                  </Router>
+                </RootStyle>
+              </I18nextProvider>
+            </Suspense>
+          </LocalizationProvider>
+        </StyledEngineProvider>
+      </ThemeProvider>
+    </StrictMode>
   );
 }
 

@@ -127,10 +127,10 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
           }}
         >
           <Typography variant='h6' color='error' gutterBottom>
-            {t('Prompt.SchemaNotProvided', 'Schema Not Provided')}
+            {t('Prompt.SchemaNotProvided')}
           </Typography>
           <Typography variant='body2' color='text.secondary'>
-            {t('Prompt.SchemaNotProvidedDescription', 'No schema was provided or could be fetched. Form cannot be rendered.')}
+            {t('Prompt.SchemaNotProvidedDescription')}
           </Typography>
         </Paper>
       </Box>

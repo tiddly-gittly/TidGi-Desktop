@@ -205,14 +205,9 @@ export class AgentInstanceService implements IAgentInstanceService {
         throw new Error(`Agent instance not found: ${agentId}`);
       }
 
-      // Update fields
-      if (data.name !== undefined) instanceEntity.name = data.name;
-      if (data.status !== undefined) instanceEntity.status = data.status;
-      if (data.avatarUrl !== undefined) instanceEntity.avatarUrl = data.avatarUrl;
-      if (data.aiApiConfig !== undefined) instanceEntity.aiApiConfig = data.aiApiConfig;
-      if (data.closed !== undefined) instanceEntity.closed = data.closed;
-      // Handle handlerConfig from AgentDefinition
-      if (data.handlerConfig !== undefined) instanceEntity.handlerConfig = data.handlerConfig;
+      // Update fields using pick + Object.assign for consistency with updateAgentDef
+      const pickedProperties = pick(data, ['name', 'status', 'avatarUrl', 'aiApiConfig', 'closed', 'handlerConfig']);
+      Object.assign(instanceEntity, pickedProperties);
 
       // Save instance updates
       await this.agentInstanceRepository!.save(instanceEntity);

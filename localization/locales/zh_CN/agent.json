@@ -199,6 +199,8 @@
     "NoMessages": "还没有消息可以预览",
     "Preview": "提示词预览",
     "RefreshPreview": "手动刷新预览",
+    "SchemaNotProvided": "格式未提供",
+    "SchemaNotProvidedDescription": "没有提供 JSON Schema 或无法正确获取到。编辑表单无法展示。",
     "ToggleFullScreen": "切换全屏",
     "Tree": "树形视图"
   },

@@ -23,8 +23,6 @@ import { LoadingView } from './LoadingView';
 import { PreviewTabsView } from './PreviewTabsView';
 import { SideBySideEditView } from './SideBySideEditView';
 
-
-
 interface PromptPreviewDialogProps {
   open: boolean;
   onClose: () => void;
@@ -39,8 +37,6 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   const { t } = useTranslation('agent');
   const agent = useAgentChatStore(state => state.agent);
 
-  // Use handler config management hook with both agent definition ID and agent ID
-  // This ensures we get instance-level config that can be properly updated
   const {
     loading: handlerConfigLoading,
     config: handlerConfig,
@@ -48,34 +44,8 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
     handleConfigChange,
   } = useHandlerConfigManagement({
     agentDefId: agent?.agentDefId,
-    agentId: agent?.id, // Add agent ID to ensure instance-level config consistency
+    agentId: agent?.id,
   });
-
-  // Local config state to prevent form rerender when saving
-  const [localHandlerConfig, setLocalHandlerConfig] = useState<HandlerConfig | undefined>(undefined);
-
-  // Keep local config in sync with remote config but don't update local when it's being edited
-  const isEditingRef = useRef(false);
-  const lastSavedConfigRef = useRef<HandlerConfig | undefined>(undefined);
-
-  useEffect(() => {
-    // Only update local config if we're not currently editing and the config actually changed
-    if (
-      !isEditingRef.current && handlerConfig &&
-      JSON.stringify(handlerConfig) !== JSON.stringify(lastSavedConfigRef.current)
-    ) {
-      setLocalHandlerConfig(handlerConfig);
-      lastSavedConfigRef.current = handlerConfig;
-    }
-  }, [handlerConfig]);
-
-  // Initialize local config when component mounts
-  useEffect(() => {
-    if (handlerConfig && !localHandlerConfig) {
-      setLocalHandlerConfig(handlerConfig);
-      lastSavedConfigRef.current = handlerConfig;
-    }
-  }, [handlerConfig, localHandlerConfig]);
 
   const {
     previewDialogTab: tab,
@@ -93,36 +63,38 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
     })),
   );
 
-  // Debounced save timeout for background persistence
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Handle local config changes (immediate for preview, debounced for persistence)
-  const handleLocalConfigChange = useCallback((newConfig: HandlerConfig) => {
-    // Update local state immediately for UI responsiveness
-    setLocalHandlerConfig(newConfig);
-    isEditingRef.current = true;
+
+  const handleFormChange = useCallback((updatedConfig: HandlerConfig) => {
+    console.log('Form data changed', {
+      configKeys: Object.keys(updatedConfig),
+    });
 
     // Clear existing save timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    // Set new debounced save
+    // Debounced save
     saveTimeoutRef.current = setTimeout(async () => {
       try {
-        await handleConfigChange(newConfig);
-        lastSavedConfigRef.current = newConfig;
+        await handleConfigChange(updatedConfig);
+        // Update preview with new config after save
+        if (agent?.agentDefId) {
+          void getPreviewPromptResult(inputText, updatedConfig).then(result => {
+            if (result) {
+              setLastUpdated(new Date());
+            }
+          });
+        }
       } catch (error) {
         console.error('PromptPreviewDialog: Error auto-saving config:', error);
-      } finally {
-        setTimeout(() => {
-          isEditingRef.current = false;
-        }, 500);
       }
-    }, 1000); // 1 second debounce
-  }, [handleConfigChange]);
+    }, 1000);
+  }, [handleConfigChange, agent?.agentDefId, getPreviewPromptResult, inputText]);
 
   useEffect(() => {
-    let isMounted = true; // To prevent setting state after unmounting
+    let isMounted = true;
 
     const fetchPreview = async () => {
       if (!agent?.agentDefId) {
@@ -133,66 +105,39 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
         console.log('PromptPreviewDialog: Handler config is loading, skipping preview');
         return;
       }
-      if (!localHandlerConfig) {
+      if (!handlerConfig) {
         console.log('PromptPreviewDialog: No handler config available, skipping preview');
         return;
       }
 
       try {
-        const result = await getPreviewPromptResult(inputText, localHandlerConfig);
-        if (isMounted) {
-          // Update initial preview status
-          if (result) {
-            setLastUpdated(new Date());
-          }
+        const result = await getPreviewPromptResult(inputText, handlerConfig);
+        if (isMounted && result) {
+          setLastUpdated(new Date());
         }
       } catch (error) {
         if (isMounted) {
           console.error('PromptPreviewDialog: Error fetching preview', error);
-          // Even if there's an error, the previewLoading state should be reset in the action
         }
       }
     };
 
-    // Only fetch preview when dialog is open
     if (open) {
       void fetchPreview();
     }
-    // Cleanup function to prevent memory leaks and setting state after unmount
+
     return () => {
       isMounted = false;
     };
-  }, [agent?.agentDefId, inputText, localHandlerConfig, handlerConfigLoading, getPreviewPromptResult, open]);
- 
-  // Track preview update status
+  }, [agent?.agentDefId, inputText, handlerConfig, handlerConfigLoading, getPreviewPromptResult, open]);
+
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // Reset preview status when dialog closes
   useEffect(() => {
     if (!open) {
-      // Reset status if dialog is closed
       setLastUpdated(null);
     }
   }, [open]);
-
-  const handleFormChange = useCallback((updatedConfig: HandlerConfig) => {
-    // Log changes for debugging
-    console.log('Form data changed', {
-      configKeys: Object.keys(updatedConfig),
-    });
-
-    // Update local config and trigger preview update
-    handleLocalConfigChange(updatedConfig);
-
-    // Always update preview with new config
-    if (agent?.agentDefId && !handlerConfigLoading) {
-      void getPreviewPromptResult(inputText, updatedConfig).then(result => {
-        if (result) {
-          setLastUpdated(new Date());
-        }
-      });
-    }
-  }, [agent?.agentDefId, getPreviewPromptResult, inputText, handlerConfigLoading, handleLocalConfigChange]);
 
   // Handle tab change in the preview dialog
   const handleTabChange = useCallback((_event: React.SyntheticEvent, value: string): void => {
@@ -244,9 +189,8 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
           processedPrompts={formattedPreview?.processedPrompts}
           lastUpdated={lastUpdated}
           handlerSchema={handlerSchema ?? {}}
-          initialHandlerConfig={localHandlerConfig || undefined}
+          initialConfig={handlerConfig}
           handleFormChange={handleFormChange}
-          previewLoading={previewLoading}
           handlerConfigLoading={handlerConfigLoading}
         />
       );
@@ -258,9 +202,10 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
       <PreviewTabsView
         tab={tab}
         handleTabChange={handleTabChange}
-        isFullScreen={isFullScreen}          flatPrompts={formattedPreview?.flatPrompts}
-          processedPrompts={formattedPreview?.processedPrompts}
-          lastUpdated={lastUpdated}
+        isFullScreen={isFullScreen}
+        flatPrompts={formattedPreview?.flatPrompts}
+        processedPrompts={formattedPreview?.processedPrompts}
+        lastUpdated={lastUpdated}
       />
     );
   };

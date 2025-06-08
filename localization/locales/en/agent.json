@@ -199,6 +199,8 @@
     "NoMessages": "",
     "Preview": "Prompt Preview",
     "RefreshPreview": "Manually refresh preview",
+    "SchemaNotProvided": "Schema Not Provided",
+    "SchemaNotProvidedDescription": "No JSON schema was provided or could be fetched. Form cannot be rendered.",
     "ToggleFullScreen": "Toggle Fullscreen",
     "Tree": "Tree View"
   },

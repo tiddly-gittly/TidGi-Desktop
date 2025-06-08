@@ -82,7 +82,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
   /**
    * Update existing agent definition
    */
-  public async updateAgentDef(agent: AgentDefinition): Promise<AgentDefinition> {
+  public async updateAgentDef(agent: Partial<AgentDefinition> & { id: string }): Promise<AgentDefinition> {
     this.ensureRepositories();
 
     try {
@@ -101,7 +101,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       await this.agentDefRepository!.save(existingAgent);
       logger.info(`Updated agent definition: ${agent.id}`);
 
-      return agent;
+      return existingAgent as AgentDefinition;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Failed to update agent definition: ${errorMessage}`);

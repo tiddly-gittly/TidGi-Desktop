@@ -7,9 +7,8 @@ import { PromptConfigForm } from '../PromptConfigForm';
 
 interface ConfigPanelViewProps {
   handlerSchema: Record<string, unknown>;
-  initialHandlerConfig?: HandlerConfig;
+  initialConfig?: HandlerConfig;
   handleFormChange: (updatedConfig: HandlerConfig) => void;
-  previewLoading: boolean;
   handlerConfigLoading: boolean;
 }
 
@@ -19,30 +18,34 @@ interface ConfigPanelViewProps {
  */
 export const ConfigPanelView: React.FC<ConfigPanelViewProps> = ({
   handlerSchema,
-  initialHandlerConfig,
+  initialConfig,
   handleFormChange,
-  previewLoading,
   handlerConfigLoading,
 }) => {
   // Keep form data in local state to prevent unnecessary rerenders
-  const [formData, setFormData] = useState<HandlerConfig | undefined>(initialHandlerConfig);
+  const [formData, setFormData] = useState<HandlerConfig | undefined>(initialConfig);
+  // DEBUG: console initialConfig
+  console.log(`initialConfig`, initialConfig);
+  // DEBUG: console formData
+  console.log(`formData`, formData);
 
-  // Sync formData with initialHandlerConfig
+  // initialize formData if it hasn't (previous one is undefined)
   useEffect(() => {
-    setFormData(initialHandlerConfig);
-  }, [initialHandlerConfig]);
+    if (formData === undefined && formData !== initialConfig) {
+      setFormData(initialConfig);
+    }
+  }, [initialConfig]);
 
   // Create debounced handler for form updates
   const debouncedHandlerReference = useCallback(
     debounce((updatedConfig: HandlerConfig) => {
       handleFormChange(updatedConfig);
     }, 300),
-    [handleFormChange]
+    [handleFormChange],
   );
 
   // Handle form changes locally and trigger debounced update
   const handleLocalFormChange = useCallback((updatedConfig: HandlerConfig): void => {
-    setFormData(updatedConfig);
     debouncedHandlerReference(updatedConfig);
   }, [debouncedHandlerReference]);
 
@@ -52,7 +55,6 @@ export const ConfigPanelView: React.FC<ConfigPanelViewProps> = ({
         schema={handlerSchema}
         formData={formData}
         onChange={handleLocalFormChange}
-        disabled={previewLoading}
         loading={handlerConfigLoading}
       />
     </Box>

@@ -34,16 +34,18 @@ export function Search({ placeholder }: SearchProps) {
 
     const search = autocomplete({
       container: containerReference.current,
-      renderer: { createElement, Fragment },
-      render({ children }, root) {
-        if (!panelRootReference.current) {
-          panelRootReference.current = createRoot(root);
-        }
-        panelRootReference.current.render(children);
+      renderer: {
+        createElement,
+        Fragment,
+        render(vnode, root) {
+          if (!panelRootReference.current) {
+            panelRootReference.current = createRoot(root);
+          }
+          panelRootReference.current.render(vnode);
+        },
       },
       placeholder,
       openOnFocus: true,
-      // Using simple navigator without custom logic, since logic is now in individual plugins
       navigator: {
         navigate: ({ itemUrl }) => {
           console.log('Default navigation requested to:', itemUrl);

@@ -41,9 +41,9 @@ export interface IAgentDefinitionService {
   createAgentDef(agent: AgentDefinition): Promise<AgentDefinition>;
   /**
    * Update an existing agent
-   * @param agent Agent definition
+   * @param agent Partial agent definition with id required
    */
-  updateAgentDef(agent: AgentDefinition): Promise<AgentDefinition>;
+  updateAgentDef(agent: Partial<AgentDefinition> & { id: string }): Promise<AgentDefinition>;
   /**
    * Get all available agents (simplified, without handler)
    */

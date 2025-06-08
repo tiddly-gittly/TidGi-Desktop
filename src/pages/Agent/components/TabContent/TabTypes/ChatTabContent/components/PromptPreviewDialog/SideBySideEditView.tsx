@@ -24,9 +24,8 @@ interface SideBySideEditViewProps {
   processedPrompts?: IPromptPart[];
   lastUpdated: Date | null;
   handlerSchema: Record<string, unknown>;
-  initialHandlerConfig?: HandlerConfig;
+  initialConfig?: HandlerConfig;
   handleFormChange: (updatedConfig: HandlerConfig) => void;
-  previewLoading: boolean;
   handlerConfigLoading: boolean;
 }
 
@@ -41,9 +40,8 @@ export const SideBySideEditView: React.FC<SideBySideEditViewProps> = ({
   processedPrompts,
   lastUpdated,
   handlerSchema,
-  initialHandlerConfig,
+  initialConfig,
   handleFormChange,
-  previewLoading,
   handlerConfigLoading,
 }) => {
   const { t } = useTranslation('agent');
@@ -108,16 +106,15 @@ export const SideBySideEditView: React.FC<SideBySideEditViewProps> = ({
           {editorMode === 'form' && (
             <ConfigPanelView
               handlerSchema={handlerSchema}
-              initialHandlerConfig={initialHandlerConfig}
+              initialConfig={initialConfig}
               handleFormChange={handleFormChange}
-              previewLoading={previewLoading}
               handlerConfigLoading={handlerConfigLoading}
             />
           )}
 
           {editorMode === 'code' && (
             <CodeEditorView
-              initialConfig={initialHandlerConfig}
+              initialConfig={initialConfig}
               onChange={handleFormChange}
               isFullScreen={isFullScreen}
             />
