@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { WidgetProps } from '@rjsf/utils';
 import React from 'react';
-import { StyledCodeTextField, StyledNumberField, StyledTextField } from '../components';
+import { StyledCodeTextField, StyledTextField } from '../components';
+import { NumberWidget } from './NumberWidget';
 
 export const TextWidget: React.FC<WidgetProps> = (props) => {
   const {
@@ -24,11 +25,7 @@ export const TextWidget: React.FC<WidgetProps> = (props) => {
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
-    if (inputType === 'number') {
-      onChange(newValue === '' ? undefined : Number(newValue));
-    } else {
-      onChange(newValue === '' ? undefined : newValue);
-    }
+    onChange(newValue === '' ? undefined : newValue);
   };
 
   const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
@@ -59,31 +56,14 @@ export const TextWidget: React.FC<WidgetProps> = (props) => {
     );
   }
 
-  if (inputType === 'number') {
-    return (
-      <StyledNumberField
-        id={id}
-        type='number'
-        value={value as string || ''}
-        required={required}
-        disabled={!!disabled || !!readonly}
-        autoFocus={autofocus}
-        placeholder={placeholder}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        onFocus={handleFocus}
-        fullWidth
-        variant='outlined'
-      />
-    );
+  if (inputType === 'number' || inputType === 'integer') {
+    return <NumberWidget {...props} />;
   }
 
   const getInputType = (): React.InputHTMLAttributes<unknown>['type'] => {
     if (typeof inputType === 'string') {
       if (inputType === 'string') {
         return 'text';
-      } else if (inputType === 'integer') {
-        return 'number';
       } else {
         return 'text';
       }

@@ -282,10 +282,14 @@
     "FullReplacement": {
       "Description": "完全替换参数配置",
       "Title": "完全替换参数",
-      "SourceType": "源类型",
+      "SourceType": "数据来源类型，决定用什么内容来替换目标元素",
       "SourceTypeTitle": "源类型",
       "TargetId": "目标元素ID",
-      "TargetIdTitle": "目标ID"
+      "TargetIdTitle": "目标ID",
+      "SourceTypes": {
+        "HistoryOfSession": "会话历史 - 使用当前聊天会话的历史记录作为替换内容",
+        "LlmResponse": "语言模型响应 - 使用AI模型生成的响应作为替换内容"
+      }
     },
     "Function": {
       "Description": "函数参数配置",
@@ -342,14 +346,20 @@
     "Position": {
       "Bottom": "自底部偏移几条消息",
       "BottomTitle": "底部偏移",
-      "Description": "位置参数配置",
+      "Description": "位置参数配置，用于确定内容插入的精确位置。支持相对位置、绝对位置、前置和后置四种定位方式",
       "Title": "位置参数",
       "TargetId": "目标元素ID",
       "TargetIdTitle": "目标ID",
       "Top": "自顶部偏移几条消息",
       "TopTitle": "顶部偏移",
-      "Type": "位置类型",
-      "TypeTitle": "位置类型"
+      "Type": "位置类型，用于确定内容插入的精确位置。支持相对位置、绝对位置、前置和后置四种定位方式",
+      "TypeTitle": "位置类型",
+      "Types": {
+        "Relative": "相对位置 - 在目标元素内部插入内容，使用top/bottom偏移量",
+        "Absolute": "绝对位置 - 在指定的绝对位置插入内容",
+        "Before": "前置 - 在目标元素之前插入内容",
+        "After": "后置 - 在目标元素之后插入内容"
+      }
     },
     "Prompt": {
       "Caption": "简短描述",
@@ -361,8 +371,13 @@
       "EnabledTitle": "启用",
       "Id": "提示词配置的唯一标识符，方便在 PromptDynamicModification 里通过 targetId 引用。",
       "IdTitle": "ID",
-      "Role": "OpenAI 兼容接口的提示词角色",
+      "Role": "OpenAI 兼容接口的提示词角色。system: 定义AI的行为规则和背景设定；user: 模拟用户的输入和请求；assistant: AI的回复和响应内容",
       "RoleTitle": "角色",
+      "RoleType": {
+        "System": "系统 - 定义AI的行为规则和背景设定",
+        "User": "用户 - 模拟用户的输入和请求",
+        "Assistant": "助手 - AI的回复和响应内容"
+      },
       "Tags": "标签列表",
       "Text": "提示词内容，可以包含维基文本支持的语法，例如<<变量名>>。",
       "TextTitle": "文本",
@@ -378,6 +393,14 @@
       "Title": "提示词动态修改",
       "DynamicModificationType": "动态修改类型",
       "DynamicModificationTypeTitle": "修改类型",
+      "DynamicModificationTypes": {
+        "FullReplacement": "完全替换 - 将目标内容完全替换为来源数据",
+        "DynamicPosition": "动态位置 - 在指定位置插入内容",
+        "RetrievalAugmentedGeneration": "检索增强生成 - 从知识库检索相关内容并插入",
+        "Function": "函数调用 - 执行函数并插入其返回结果",
+        "JavascriptTool": "JavaScript工具 - 加载并执行JavaScript工具",
+        "ModelContextProtocol": "模型上下文协议 - 与外部MCP服务器通信"
+      },
       "DynamicPositionParam": "动态位置参数",
       "DynamicPositionParamTitle": "动态位置参数",
       "ForbidOverrides": "是否禁止覆盖",
@@ -431,6 +454,9 @@
       },
       "SourceType": "源类型",
       "SourceTypeTitle": "源类型",
+      "SourceTypes": {
+        "Wiki": "Wiki知识库 - 从TiddlyWiki知识库中检索相关内容"
+      },
       "Trigger": "触发条件",
       "TriggerTitle": "触发条件",
       "WikiParam": "Wiki 参数",
@@ -451,13 +477,21 @@
       "Title": "响应动态修改",
       "DynamicModificationType": "动态修改类型",
       "DynamicModificationTypeTitle": "修改类型",
+      "DynamicModificationTypes": {
+        "FullReplacement": "完全替换 - 将响应内容完全替换为指定来源的内容"
+      },
+      "ResponseProcessingType": "响应处理类型",
+      "ResponseProcessingTypes": {
+        "ToolCalling": "工具调用 - 解析响应中的工具调用并执行",
+        "AutoReroll": "自动重新生成 - 检测到不当内容时自动重新生成",
+        "AutoReply": "自动回复 - 根据条件自动发送后续消息"
+      },
       "ForbidOverrides": "是否禁止覆盖",
       "ForbidOverridesTitle": "禁止覆盖",
       "FullReplacementParam": "完全替换参数",
       "FullReplacementParamTitle": "完全替换参数",
       "Id": "唯一标识符",
       "IdTitle": "ID",
-      "ResponseProcessingType": "响应处理类型",
       "ResponseProcessingTypeTitle": "处理类型",
       "ToolCallingParam": "工具调用参数",
       "ToolCallingParamTitle": "工具调用参数"

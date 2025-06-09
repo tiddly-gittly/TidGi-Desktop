@@ -95,6 +95,12 @@ const PositionParameterSchema = z.object({
   position: z.enum(['relative', 'absolute', 'before', 'after']).meta({
     title: t('Schema.Position.TypeTitle'),
     description: t('Schema.Position.Type'),
+    enumOptions: [
+      { value: 'relative', label: t('Schema.Position.Types.Relative') },
+      { value: 'absolute', label: t('Schema.Position.Types.Absolute') },
+      { value: 'before', label: t('Schema.Position.Types.Before') },
+      { value: 'after', label: t('Schema.Position.Types.After') },
+    ],
   }),
   targetId: z.string().meta({
     title: t('Schema.Position.TargetIdTitle'),
@@ -132,6 +138,10 @@ const FullReplacementParameterSchema = z.object({
   sourceType: z.enum(['historyOfSession', 'llmResponse']).meta({
     title: t('Schema.FullReplacement.SourceTypeTitle'),
     description: t('Schema.FullReplacement.SourceType'),
+    enumOptions: [
+      { value: 'historyOfSession', label: t('Schema.FullReplacement.SourceTypes.HistoryOfSession') },
+      { value: 'llmResponse', label: t('Schema.FullReplacement.SourceTypes.LlmResponse') },
+    ],
   }),
 }).meta({
   title: t('Schema.FullReplacement.Title'),
@@ -179,6 +189,9 @@ const RetrievalAugmentedGenerationParameterSchema = PositionParameterSchema.exte
   sourceType: z.enum(['wiki']).meta({
     title: t('Schema.RAG.SourceTypeTitle'),
     description: t('Schema.RAG.SourceType'),
+    enumOptions: [
+      { value: 'wiki', label: t('Schema.RAG.SourceTypes.Wiki') },
+    ],
   }),
   wikiParam: WikiParameterSchema.optional().meta({
     title: t('Schema.RAG.WikiParamTitle'),
@@ -374,6 +387,14 @@ export const PromptDynamicModificationSchema = z.object({
   ]).meta({
     title: t('Schema.PromptDynamicModification.DynamicModificationTypeTitle'),
     description: t('Schema.PromptDynamicModification.DynamicModificationType'),
+    enumOptions: [
+      { value: 'fullReplacement', label: t('Schema.PromptDynamicModification.FullReplacementParamTitle') },
+      { value: 'dynamicPosition', label: t('Schema.PromptDynamicModification.DynamicPositionParamTitle') },
+      { value: 'retrievalAugmentedGeneration', label: t('Schema.PromptDynamicModification.RAGParamTitle') },
+      { value: 'function', label: t('Schema.PromptDynamicModification.FunctionParamTitle') },
+      { value: 'javascriptTool', label: t('Schema.PromptDynamicModification.JavascriptToolParamTitle') },
+      { value: 'modelContextProtocol', label: t('Schema.PromptDynamicModification.MCPParamTitle') },
+    ],
   }),
 
   // 根据 dynamicModificationType 不同，而使用不同的参数配置

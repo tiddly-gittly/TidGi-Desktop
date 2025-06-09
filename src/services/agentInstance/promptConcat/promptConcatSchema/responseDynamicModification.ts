@@ -135,6 +135,9 @@ export const ResponseDynamicModificationSchema = z.object({
   dynamicModificationType: z.enum(['fullReplacement']).optional().meta({
     title: t('Schema.ResponseDynamicModification.DynamicModificationTypeTitle'),
     description: t('Schema.ResponseDynamicModification.DynamicModificationType'),
+    enumOptions: [
+      { value: 'fullReplacement', label: t('Schema.ResponseDynamicModification.FullReplacementParamTitle') },
+    ],
   }),
   fullReplacementParam: FullReplacementParameterSchema.optional().meta({
     title: t('Schema.ResponseDynamicModification.FullReplacementParamTitle'),
@@ -149,6 +152,11 @@ export const ResponseDynamicModificationSchema = z.object({
   responseProcessingType: z.enum(['toolCalling', 'autoReroll', 'autoReply']).optional().meta({
     title: t('Schema.ResponseDynamicModification.ResponseProcessingTypeTitle'),
     description: t('Schema.ResponseDynamicModification.ResponseProcessingType'),
+    enumOptions: [
+      { value: 'toolCalling', label: t('Schema.ResponseDynamicModification.ToolCallingParamTitle') },
+      { value: 'autoReroll', label: t('Schema.ResponseDynamicModification.AutoRerollParamTitle') },
+      { value: 'autoReply', label: t('Schema.ResponseDynamicModification.AutoReplyParamTitle') },
+    ],
   }),
   toolCallingParam: ToolCallingParameterSchema.optional().meta({
     title: t('Schema.ResponseDynamicModification.ToolCallingParamTitle'),

@@ -51,6 +51,48 @@ export const HANDLER_CONFIG_UI_SCHEMA: UiSchema = {
     items: {
       'ui:order': ['id', 'enabled', 'sourceTag', 'targetTag', 'action', '*'],
       'ui:compactFields': ['id', 'enabled', 'sourceTag', 'targetTag'],
+      fullReplacementParam: {
+        'ui:field': 'ConditionalField',
+        'ui:condition': {
+          dependsOn: 'dynamicModificationType',
+          showWhen: 'fullReplacement',
+        },
+      },
+      dynamicPositionParam: {
+        'ui:field': 'ConditionalField',
+        'ui:condition': {
+          dependsOn: 'dynamicModificationType',
+          showWhen: 'dynamicPosition',
+        },
+      },
+      retrievalAugmentedGenerationParam: {
+        'ui:field': 'ConditionalField',
+        'ui:condition': {
+          dependsOn: 'dynamicModificationType',
+          showWhen: 'retrievalAugmentedGeneration',
+        },
+      },
+      functionParam: {
+        'ui:field': 'ConditionalField',
+        'ui:condition': {
+          dependsOn: 'dynamicModificationType',
+          showWhen: 'function',
+        },
+      },
+      javascriptToolParam: {
+        'ui:field': 'ConditionalField',
+        'ui:condition': {
+          dependsOn: 'dynamicModificationType',
+          showWhen: 'javascriptTool',
+        },
+      },
+      modelContextProtocolParam: {
+        'ui:field': 'ConditionalField',
+        'ui:condition': {
+          dependsOn: 'dynamicModificationType',
+          showWhen: 'modelContextProtocol',
+        },
+      },
     },
   },
   response: {

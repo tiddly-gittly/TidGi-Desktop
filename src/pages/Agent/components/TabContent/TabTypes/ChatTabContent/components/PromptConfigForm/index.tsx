@@ -9,8 +9,27 @@ import { useTranslation } from 'react-i18next';
 import { ErrorDisplay } from './components/ErrorDisplay';
 import { ArrayItemProvider } from './context/ArrayItemContext';
 import { useDefaultUiSchema } from './defaultUiSchema';
+import { fields } from './fields';
 import { ArrayFieldTemplate, FieldTemplate, ObjectFieldTemplate, RootObjectFieldTemplate } from './templates';
 import { widgets } from './widgets';
+
+/**
+ * Extended form context that provides access to root form data
+ * for conditional field logic and cross-field validation
+ */
+export interface ExtendedFormContext {
+  rootFormData?: Record<string, unknown>;
+}
+
+/**
+ * Configuration for conditional field display logic
+ * Used with ConditionalField to show/hide fields based on other field values
+ */
+export interface ConditionalFieldConfig {
+  dependsOn: string;
+  showWhen: string | string[];
+  hideWhen?: boolean;
+}
 
 interface PromptConfigFormProps {
   /** JSON Schema for form validation and generation */
@@ -73,6 +92,10 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
     }
   }, [onChange]);
 
+  const formContext = useMemo((): ExtendedFormContext => ({
+    rootFormData: formData,
+  }), [formData]);
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -113,12 +136,14 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
           schema={schema}
           uiSchema={uiSchema}
           formData={formData}
+          formContext={formContext}
           validator={validator}
           onChange={handleChange}
           onError={handleError}
           disabled={disabled}
           templates={templates}
           widgets={widgets}
+          fields={fields}
           showErrorList={false}
           liveValidate
           noHtml5Validate

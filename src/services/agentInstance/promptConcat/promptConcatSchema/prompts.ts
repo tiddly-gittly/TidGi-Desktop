@@ -103,6 +103,11 @@ export const PromptSchema = z.object({
   role: z.enum(['system', 'user', 'assistant']).optional().meta({
     title: t('Schema.Prompt.RoleTitle'),
     description: t('Schema.Prompt.Role'),
+    enumOptions: [
+      { value: 'system', label: t('Schema.Prompt.RoleType.System') },
+      { value: 'user', label: t('Schema.Prompt.RoleType.User') },
+      { value: 'assistant', label: t('Schema.Prompt.RoleType.Assistant') },
+    ],
   }),
   tags: z.array(z.string()).optional().meta({
     title: t('Schema.Prompt.TagsTitle'),

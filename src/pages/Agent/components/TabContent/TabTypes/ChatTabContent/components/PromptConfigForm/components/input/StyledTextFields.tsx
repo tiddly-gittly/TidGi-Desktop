@@ -40,16 +40,15 @@ export const StyledCodeTextField = styled(StyledMultilineTextField)`
 
 export const StyledNumberField = styled(StyledTextField)`
   & input[type="number"] {
-    -moz-appearance: textfield;
+    /* Show the number input spinner buttons */
+    -moz-appearance: auto;
   }
   
-  & input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  
+  /* Keep the webkit spinner buttons visible and styled */
+  & input[type="number"]::-webkit-outer-spin-button,
   & input[type="number"]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
+    -webkit-appearance: auto;
     margin: 0;
+    opacity: 1;
   }
 `;
