@@ -1,35 +1,28 @@
-import { AgentWithoutMessages } from '@/pages/Agent/store/agentChatStore/types';
 import { Box, CircularProgress, Paper, Typography } from '@mui/material';
+import { IChangeEvent } from '@rjsf/core';
 import Form from '@rjsf/mui';
-import { ErrorSchema, ObjectFieldTemplateProps } from '@rjsf/utils';
+import { ObjectFieldTemplateProps, RJSFSchema, RJSFValidationError } from '@rjsf/utils';
 import validator from '@rjsf/validator-ajv8';
-import { AgentInstance } from '@services/agentInstance/interface';
 import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ErrorDisplay } from './components/ErrorDisplay';
 import { ArrayItemProvider } from './context/ArrayItemContext';
 import { useDefaultUiSchema } from './defaultUiSchema';
 import { ArrayFieldTemplate, FieldTemplate, ObjectFieldTemplate, RootObjectFieldTemplate } from './templates';
-import { usePromptConfigForm } from './usePromptConfigForm';
 import { widgets } from './widgets';
 
 interface PromptConfigFormProps {
   /** JSON Schema for form validation and generation */
-  schema?: Record<string, unknown>;
+  schema?: RJSFSchema;
   /** UI schema for layout customization */
   uiSchema?: Record<string, unknown>;
   /** Initial form data */
   formData?: HandlerConfig;
-  /** Submit handler for form data */
-  onSubmit?: (formData: HandlerConfig) => void;
   /** Change handler for form data */
   onChange?: (formData: HandlerConfig) => void;
-  /** Error handler for validation errors */
-  onError?: (errors: ErrorSchema) => void;
-  /** Agent update handler */
-  onUpdate?: (data: Partial<AgentInstance>) => Promise<void>;
-  /** Agent instance (without messages) */
-  agent?: AgentWithoutMessages;
+  /** Error handler for form validation errors */
+  onError?: (errors: RJSFValidationError[]) => void;
   /** Whether the form is disabled */
   disabled?: boolean;
   /** Whether to show loading indicator */
@@ -42,52 +35,16 @@ interface PromptConfigFormProps {
  */
 export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
   schema,
-  uiSchema: uiSchemaOverride = {},
-  formData: initialFormData,
-  onSubmit: externalSubmit,
-  onChange: externalChange,
-  onError: externalError,
-  onUpdate,
-  agent,
+  uiSchema: uiSchemaOverride,
+  formData,
+  onChange,
+  onError,
   disabled = false,
   loading = false,
 }) => {
   const { t } = useTranslation('agent');
-
-  // Add debug render tracking in development
-  if (process.env.NODE_ENV === 'development') {
-    React.useEffect(() => {
-      console.log('🔄 PromptConfigForm render with props:', {
-        hasSchema: schema && Object.keys(schema).length > 0,
-        hasFormData: !!initialFormData,
-        hasAgent: !!agent,
-        disabled,
-        loading,
-      });
-    });
-  }
-
+  const [validationErrors, setValidationErrors] = useState<RJSFValidationError[]>([]);
   const uiSchema = useDefaultUiSchema(uiSchemaOverride, schema);
-
-  const {
-    localFormData,
-    formKey,
-    handleChange,
-    handleError,
-    handleSubmit,
-  } = usePromptConfigForm({
-    initialFormData,
-    schema,
-    onSubmit: externalSubmit,
-    onChange: externalChange,
-    onError: externalError,
-    onUpdate,
-    agent,
-  });
-
-  if (!schema || Object.keys(schema).length === 0) {
-    console.error('PromptConfigForm: No schema provided or fetched. Form cannot be rendered.');
-  }
 
   const templates = useMemo(() => {
     const rootObjectFieldTemplate = (props: ObjectFieldTemplateProps) => {
@@ -103,6 +60,18 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
       ObjectFieldTemplate: rootObjectFieldTemplate,
     };
   }, []);
+
+  const handleError = useCallback((errors: RJSFValidationError[]) => {
+    setValidationErrors(errors);
+    onError?.(errors);
+  }, [onError]);
+
+  const handleChange = useCallback((changeEvent: IChangeEvent<HandlerConfig>) => {
+    const formData = changeEvent.formData;
+    if (formData) {
+      onChange?.(formData);
+    }
+  }, [onChange]);
 
   if (loading) {
     return (
@@ -139,24 +108,25 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
 
   return (
     <ArrayItemProvider isInArrayItem={false} arrayItemCollapsible={false}>
-      <Form
-        key={formKey}
-        schema={schema}
-        uiSchema={uiSchema}
-        formData={localFormData}
-        validator={validator}
-        onChange={handleChange}
-        onSubmit={handleSubmit}
-        onError={handleError}
-        disabled={disabled}
-        templates={templates}
-        widgets={widgets}
-        showErrorList={false}
-        liveValidate
-        noHtml5Validate
-      >
-        <div />
-      </Form>
+      <Box>
+        <Form
+          schema={schema}
+          uiSchema={uiSchema}
+          formData={formData}
+          validator={validator}
+          onChange={handleChange}
+          onError={handleError}
+          disabled={disabled}
+          templates={templates}
+          widgets={widgets}
+          showErrorList={false}
+          liveValidate
+          noHtml5Validate
+        >
+          <div />
+        </Form>
+        <ErrorDisplay errors={validationErrors} />
+      </Box>
     </ArrayItemProvider>
   );
 };

@@ -202,7 +202,8 @@
     "SchemaNotProvided": "Schema Not Provided",
     "SchemaNotProvidedDescription": "No JSON schema was provided or could be fetched. Form cannot be rendered.",
     "ToggleFullScreen": "Toggle Fullscreen",
-    "Tree": "Tree View"
+    "Tree": "Tree View",
+    "ValidationErrors": "Validation Errors"
   },
   "PromptConfig": {
     "AddItem": "",

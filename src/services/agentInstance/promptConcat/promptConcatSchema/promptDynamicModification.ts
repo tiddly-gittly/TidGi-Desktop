@@ -16,9 +16,18 @@ const t = identity;
  * ```
  */
 const WikiParameterSchema = z.object({
-  workspaceName: z.string().describe(t('Schema.Wiki.WorkspaceName')),
-  filter: z.string().describe(t('Schema.Wiki.Filter')),
-}).describe(t('Schema.Wiki.Description'));
+  workspaceName: z.string().meta({
+    title: t('Schema.Wiki.WorkspaceNameTitle'),
+    description: t('Schema.Wiki.WorkspaceName'),
+  }),
+  filter: z.string().meta({
+    title: t('Schema.Wiki.FilterTitle'),
+    description: t('Schema.Wiki.Filter'),
+  }),
+}).meta({
+  title: t('Schema.Wiki.Title'),
+  description: t('Schema.Wiki.Description'),
+});
 
 /**
  * Trigger conditions that determine when a dynamic modification procedure should be applied to prompt.
@@ -36,15 +45,39 @@ const WikiParameterSchema = z.object({
  * ```
  */
 const TriggerSchema = z.object({
-  search: z.string().optional().meta({ description: t('Schema.Trigger.Search') }),
-  randomChance: z.number().min(0).max(1).optional().meta({ description: t('Schema.Trigger.RandomChance') }),
-  filter: z.string().optional().meta({ description: t('Schema.Trigger.Filter') }),
+  search: z.string().optional().meta({
+    title: t('Schema.Trigger.SearchTitle'),
+    description: t('Schema.Trigger.Search'),
+  }),
+  randomChance: z.number().min(0).max(1).optional().meta({
+    title: t('Schema.Trigger.RandomChanceTitle'),
+    description: t('Schema.Trigger.RandomChance'),
+  }),
+  filter: z.string().optional().meta({
+    title: t('Schema.Trigger.FilterTitle'),
+    description: t('Schema.Trigger.Filter'),
+  }),
   model: z.object({
-    preset: z.string().optional().meta({ description: t('Schema.Trigger.Model.Preset') }),
-    system: z.string().optional().meta({ description: t('Schema.Trigger.Model.System') }),
-    user: z.string().optional().meta({ description: t('Schema.Trigger.Model.User') }),
-  }).optional().meta({ description: t('Schema.Trigger.Model.Description') }),
-}).meta({ description: t('Schema.Trigger.Description') });
+    preset: z.string().optional().meta({
+      title: t('Schema.Trigger.Model.PresetTitle'),
+      description: t('Schema.Trigger.Model.Preset'),
+    }),
+    system: z.string().optional().meta({
+      title: t('Schema.Trigger.Model.SystemTitle'),
+      description: t('Schema.Trigger.Model.System'),
+    }),
+    user: z.string().optional().meta({
+      title: t('Schema.Trigger.Model.UserTitle'),
+      description: t('Schema.Trigger.Model.User'),
+    }),
+  }).optional().meta({
+    title: t('Schema.Trigger.Model.Title'),
+    description: t('Schema.Trigger.Model.Description'),
+  }),
+}).meta({
+  title: t('Schema.Trigger.Title'),
+  description: t('Schema.Trigger.Description'),
+});
 
 /**
  * Base position parameters used by multiple modification types
@@ -59,11 +92,26 @@ const TriggerSchema = z.object({
  * ```
  */
 const PositionParameterSchema = z.object({
-  position: z.enum(['relative', 'absolute', 'before', 'after']).meta({ description: t('Schema.Position.Type') }),
-  targetId: z.string().meta({ description: t('Schema.Position.TargetId') }),
-  bottom: z.number().optional().meta({ description: t('Schema.Position.Bottom') }),
-  top: z.number().optional().meta({ description: t('Schema.Position.Top') }),
-}).meta({ description: t('Schema.Position.Description')});
+  position: z.enum(['relative', 'absolute', 'before', 'after']).meta({
+    title: t('Schema.Position.TypeTitle'),
+    description: t('Schema.Position.Type'),
+  }),
+  targetId: z.string().meta({
+    title: t('Schema.Position.TargetIdTitle'),
+    description: t('Schema.Position.TargetId'),
+  }),
+  bottom: z.number().optional().meta({
+    title: t('Schema.Position.BottomTitle'),
+    description: t('Schema.Position.Bottom'),
+  }),
+  top: z.number().optional().meta({
+    title: t('Schema.Position.TopTitle'),
+    description: t('Schema.Position.Top'),
+  }),
+}).meta({
+  title: t('Schema.Position.Title'),
+  description: t('Schema.Position.Description'),
+});
 
 /**
  * Parameters for dynamicModificationType: "fullReplacement"
@@ -77,9 +125,18 @@ const PositionParameterSchema = z.object({
  * ```
  */
 const FullReplacementParameterSchema = z.object({
-  targetId: z.string().meta({ description: t('Schema.FullReplacement.TargetId') }),
-  sourceType: z.enum(['historyOfSession', 'llmResponse']).meta({ description: t('Schema.FullReplacement.SourceType') }),
-}).meta({ description: t('Schema.FullReplacement.Description')});
+  targetId: z.string().meta({
+    title: t('Schema.FullReplacement.TargetIdTitle'),
+    description: t('Schema.FullReplacement.TargetId'),
+  }),
+  sourceType: z.enum(['historyOfSession', 'llmResponse']).meta({
+    title: t('Schema.FullReplacement.SourceTypeTitle'),
+    description: t('Schema.FullReplacement.SourceType'),
+  }),
+}).meta({
+  title: t('Schema.FullReplacement.Title'),
+  description: t('Schema.FullReplacement.Description'),
+});
 
 /**
  * Parameters for dynamicModificationType: "dynamicPosition"
@@ -93,7 +150,10 @@ const FullReplacementParameterSchema = z.object({
  * }
  * ```
  */
-const DynamicPositionParameterSchema = PositionParameterSchema.extend({}).describe(t('Schema.DynamicPosition.Description'));
+const DynamicPositionParameterSchema = PositionParameterSchema.extend({}).meta({
+  title: t('Schema.DynamicPosition.Title'),
+  description: t('Schema.DynamicPosition.Description'),
+});
 
 /**
  * Parameters for dynamicModificationType: "retrievalAugmentedGeneration"
@@ -116,14 +176,35 @@ const DynamicPositionParameterSchema = PositionParameterSchema.extend({}).descri
  * ```
  */
 const RetrievalAugmentedGenerationParameterSchema = PositionParameterSchema.extend({
-  sourceType: z.enum(['wiki']).meta({ description: t('Schema.RAG.SourceType') }),
-  wikiParam: WikiParameterSchema.optional().meta({ description: t('Schema.RAG.WikiParam') }),
-  trigger: TriggerSchema.optional().meta({ description: t('Schema.RAG.Trigger') }),
+  sourceType: z.enum(['wiki']).meta({
+    title: t('Schema.RAG.SourceTypeTitle'),
+    description: t('Schema.RAG.SourceType'),
+  }),
+  wikiParam: WikiParameterSchema.optional().meta({
+    title: t('Schema.RAG.WikiParamTitle'),
+    description: t('Schema.RAG.WikiParam'),
+  }),
+  trigger: TriggerSchema.optional().meta({
+    title: t('Schema.RAG.TriggerTitle'),
+    description: t('Schema.RAG.Trigger'),
+  }),
   removal: z.object({
-    expireAfterChatRound: z.number().optional().meta({ description: t('Schema.RAG.Removal.ExpireAfterChatRound') }),
-    coolDownChatRoundAfterLastShown: z.number().optional().meta({ description: t('Schema.RAG.Removal.CoolDownChatRound') }),
-  }).optional().meta({ description: t('Schema.RAG.Removal.Description') }),
-}).meta({ description: t('Schema.RAG.Description')});
+    expireAfterChatRound: z.number().optional().meta({
+      title: t('Schema.RAG.Removal.ExpireAfterChatRoundTitle'),
+      description: t('Schema.RAG.Removal.ExpireAfterChatRound'),
+    }),
+    coolDownChatRoundAfterLastShown: z.number().optional().meta({
+      title: t('Schema.RAG.Removal.CoolDownChatRoundTitle'),
+      description: t('Schema.RAG.Removal.CoolDownChatRound'),
+    }),
+  }).optional().meta({
+    title: t('Schema.RAG.Removal.Title'),
+    description: t('Schema.RAG.Removal.Description'),
+  }),
+}).meta({
+  title: t('Schema.RAG.Title'),
+  description: t('Schema.RAG.Description'),
+});
 
 /**
  * Parameters for dynamicModificationType: "function"
@@ -147,11 +228,26 @@ const RetrievalAugmentedGenerationParameterSchema = PositionParameterSchema.exte
  * ```
  */
 const FunctionParameterSchema = PositionParameterSchema.extend({
-  functionId: z.string().meta({ description: t('Schema.Function.FunctionId') }),
-  timeoutSecond: z.number().optional().meta({ description: t('Schema.Function.TimeoutSecond') }),
-  timeoutMessage: z.string().optional().meta({ description: t('Schema.Function.TimeoutMessage') }),
-  trigger: TriggerSchema.optional().meta({ description: t('Schema.Function.Trigger') }),
-}).meta({ description: t('Schema.Function.Description')});
+  functionId: z.string().meta({
+    title: t('Schema.Function.FunctionIdTitle'),
+    description: t('Schema.Function.FunctionId'),
+  }),
+  timeoutSecond: z.number().optional().meta({
+    title: t('Schema.Function.TimeoutSecondTitle'),
+    description: t('Schema.Function.TimeoutSecond'),
+  }),
+  timeoutMessage: z.string().optional().meta({
+    title: t('Schema.Function.TimeoutMessageTitle'),
+    description: t('Schema.Function.TimeoutMessage'),
+  }),
+  trigger: TriggerSchema.optional().meta({
+    title: t('Schema.Function.TriggerTitle'),
+    description: t('Schema.Function.Trigger'),
+  }),
+}).meta({
+  title: t('Schema.Function.Title'),
+  description: t('Schema.Function.Description'),
+});
 
 /**
  * Parameters for dynamicModificationType: "javascriptTool"
@@ -166,8 +262,14 @@ const FunctionParameterSchema = PositionParameterSchema.extend({
  * ```
  */
 const JavascriptToolParameterSchema = PositionParameterSchema.extend({
-  uri: z.string().meta({ description: t('Schema.JavascriptTool.URI') }),
-}).meta({ description: t('Schema.JavascriptTool.Description')});
+  uri: z.string().meta({
+    title: t('Schema.JavascriptTool.URITitle'),
+    description: t('Schema.JavascriptTool.URI'),
+  }),
+}).meta({
+  title: t('Schema.JavascriptTool.Title'),
+  description: t('Schema.JavascriptTool.Description'),
+});
 
 /**
  * Parameters for dynamicModificationType: "modelContextProtocol"
@@ -189,14 +291,35 @@ const JavascriptToolParameterSchema = PositionParameterSchema.extend({
  * ```
  */
 const ModelContextProtocolParameterSchema = PositionParameterSchema.extend({
-  id: z.string().meta({ description: t('Schema.MCP.Id') }),
-  timeoutSecond: z.number().optional().meta({ description: t('Schema.MCP.TimeoutSecond') }),
-  timeoutMessage: z.string().optional().meta({ description: t('Schema.MCP.TimeoutMessage') }),
+  id: z.string().meta({
+    title: t('Schema.MCP.IdTitle'),
+    description: t('Schema.MCP.Id'),
+  }),
+  timeoutSecond: z.number().optional().meta({
+    title: t('Schema.MCP.TimeoutSecondTitle'),
+    description: t('Schema.MCP.TimeoutSecond'),
+  }),
+  timeoutMessage: z.string().optional().meta({
+    title: t('Schema.MCP.TimeoutMessageTitle'),
+    description: t('Schema.MCP.TimeoutMessage'),
+  }),
   responseProcessing: z.object({
-    id: z.array(z.string()).meta({ description: t('Schema.MCP.ResponseProcessing.Id') }),
-  }).optional().meta({ description: t('Schema.MCP.ResponseProcessing.Description') }),
-  trigger: TriggerSchema.optional().meta({ description: t('Schema.MCP.Trigger') }),
-}).meta({ description: t('Schema.MCP.Description')});
+    id: z.array(z.string()).meta({
+      title: t('Schema.MCP.ResponseProcessing.IdTitle'),
+      description: t('Schema.MCP.ResponseProcessing.Id'),
+    }),
+  }).optional().meta({
+    title: t('Schema.MCP.ResponseProcessing.Title'),
+    description: t('Schema.MCP.ResponseProcessing.Description'),
+  }),
+  trigger: TriggerSchema.optional().meta({
+    title: t('Schema.MCP.TriggerTitle'),
+    description: t('Schema.MCP.Trigger'),
+  }),
+}).meta({
+  title: t('Schema.MCP.Title'),
+  description: t('Schema.MCP.Description'),
+});
 
 /**
  * Main schema for prompt dynamic modifications
@@ -223,10 +346,22 @@ const ModelContextProtocolParameterSchema = PositionParameterSchema.extend({
  * ```
  */
 export const PromptDynamicModificationSchema = z.object({
-  id: z.string().meta({ description: t('Schema.PromptDynamicModification.Id') }),
-  caption: z.string().meta({ description: t('Schema.PromptDynamicModification.Caption') }),
-  content: z.string().optional().meta({ description: t('Schema.PromptDynamicModification.Content') }),
-  forbidOverrides: z.boolean().optional().default(false).meta({ description: t('Schema.PromptDynamicModification.ForbidOverrides') }),
+  id: z.string().meta({
+    title: t('Schema.PromptDynamicModification.IdTitle'),
+    description: t('Schema.PromptDynamicModification.Id'),
+  }),
+  caption: z.string().meta({
+    title: t('Schema.PromptDynamicModification.CaptionTitle'),
+    description: t('Schema.PromptDynamicModification.Caption'),
+  }),
+  content: z.string().optional().meta({
+    title: t('Schema.PromptDynamicModification.ContentTitle'),
+    description: t('Schema.PromptDynamicModification.Content'),
+  }),
+  forbidOverrides: z.boolean().optional().default(false).meta({
+    title: t('Schema.PromptDynamicModification.ForbidOverridesTitle'),
+    description: t('Schema.PromptDynamicModification.ForbidOverrides'),
+  }),
 
   // 动态修改过程的类型
   dynamicModificationType: z.enum([
@@ -236,16 +371,40 @@ export const PromptDynamicModificationSchema = z.object({
     'function',
     'javascriptTool',
     'modelContextProtocol',
-  ]).meta({ description: t('Schema.PromptDynamicModification.DynamicModificationType') }),
+  ]).meta({
+    title: t('Schema.PromptDynamicModification.DynamicModificationTypeTitle'),
+    description: t('Schema.PromptDynamicModification.DynamicModificationType'),
+  }),
 
   // 根据 dynamicModificationType 不同，而使用不同的参数配置
-  fullReplacementParam: FullReplacementParameterSchema.optional().meta({ description: t('Schema.PromptDynamicModification.FullReplacementParam') }),
-  dynamicPositionParam: DynamicPositionParameterSchema.optional().meta({ description: t('Schema.PromptDynamicModification.DynamicPositionParam') }),
-  retrievalAugmentedGenerationParam: RetrievalAugmentedGenerationParameterSchema.optional().meta({ description: t('Schema.PromptDynamicModification.RAGParam') }),
-  functionParam: FunctionParameterSchema.optional().meta({ description: t('Schema.PromptDynamicModification.FunctionParam') }),
-  javascriptToolParam: JavascriptToolParameterSchema.optional().meta({ description: t('Schema.PromptDynamicModification.JavascriptToolParam') }),
-  modelContextProtocolParam: ModelContextProtocolParameterSchema.optional().meta({ description: t('Schema.PromptDynamicModification.MCPParam') }),
-}).meta({ description: t('Schema.PromptDynamicModification.SchemaDescription') });
+  fullReplacementParam: FullReplacementParameterSchema.optional().meta({
+    title: t('Schema.PromptDynamicModification.FullReplacementParamTitle'),
+    description: t('Schema.PromptDynamicModification.FullReplacementParam'),
+  }),
+  dynamicPositionParam: DynamicPositionParameterSchema.optional().meta({
+    title: t('Schema.PromptDynamicModification.DynamicPositionParamTitle'),
+    description: t('Schema.PromptDynamicModification.DynamicPositionParam'),
+  }),
+  retrievalAugmentedGenerationParam: RetrievalAugmentedGenerationParameterSchema.optional().meta({
+    title: t('Schema.PromptDynamicModification.RAGParamTitle'),
+    description: t('Schema.PromptDynamicModification.RAGParam'),
+  }),
+  functionParam: FunctionParameterSchema.optional().meta({
+    title: t('Schema.PromptDynamicModification.FunctionParamTitle'),
+    description: t('Schema.PromptDynamicModification.FunctionParam'),
+  }),
+  javascriptToolParam: JavascriptToolParameterSchema.optional().meta({
+    title: t('Schema.PromptDynamicModification.JavascriptToolParamTitle'),
+    description: t('Schema.PromptDynamicModification.JavascriptToolParam'),
+  }),
+  modelContextProtocolParam: ModelContextProtocolParameterSchema.optional().meta({
+    title: t('Schema.PromptDynamicModification.MCPParamTitle'),
+    description: t('Schema.PromptDynamicModification.MCPParam'),
+  }),
+}).meta({
+  title: t('Schema.PromptDynamicModification.Title'),
+  description: t('Schema.PromptDynamicModification.SchemaDescription'),
+});
 
 export {
   DynamicPositionParameterSchema,

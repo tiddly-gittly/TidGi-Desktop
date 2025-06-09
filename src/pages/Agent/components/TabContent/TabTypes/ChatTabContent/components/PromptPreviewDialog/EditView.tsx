@@ -3,8 +3,9 @@ import MonacoEditor from '@monaco-editor/react';
 import { Box, styled } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
+import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -49,18 +50,8 @@ export const EditView: React.FC<EditViewProps> = ({
     })),
   );
 
-  const saveTimeoutReference = useRef<NodeJS.Timeout | null>(null);
-
-  const handleFormChange = useCallback((updatedConfig: HandlerConfig) => {
-    console.log('Form data changed', {
-      configKeys: Object.keys(updatedConfig),
-    });
-
-    if (saveTimeoutReference.current) {
-      clearTimeout(saveTimeoutReference.current);
-    }
-
-    saveTimeoutReference.current = setTimeout(async () => {
+  const handleFormChange = useDebouncedCallback(
+    async (updatedConfig: HandlerConfig) => {
       try {
         await handleConfigChange(updatedConfig);
         if (agent?.agentDefId) {
@@ -69,9 +60,10 @@ export const EditView: React.FC<EditViewProps> = ({
       } catch (error) {
         console.error('EditView: Error auto-saving config:', error);
       }
-    }, 1000);
-  }, [handleConfigChange, agent?.agentDefId, getPreviewPromptResult, inputText]);
-
+    },
+    [handleConfigChange, agent?.agentDefId, getPreviewPromptResult, inputText],
+    1000,
+  );
   const handleEditorModeChange = useCallback((_event: React.SyntheticEvent, newValue: 'form' | 'code') => {
     setEditorMode(newValue);
   }, []);
@@ -80,7 +72,7 @@ export const EditView: React.FC<EditViewProps> = ({
     if (!value) return;
     try {
       const parsedConfig = JSON.parse(value) as HandlerConfig;
-      handleFormChange(parsedConfig);
+      void handleFormChange(parsedConfig);
     } catch (error) {
       console.error('Invalid JSON in code editor:', error);
     }

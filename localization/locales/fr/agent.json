@@ -201,7 +201,8 @@
     "SchemaNotProvided": "",
     "SchemaNotProvidedDescription": "",
     "ToggleFullScreen": "",
-    "Tree": ""
+    "Tree": "",
+    "ValidationErrors": ""
   },
   "PromptConfig": {
     "AddItem": "",

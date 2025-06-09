@@ -18,6 +18,7 @@ const t = identity;
  * ```
  */
 export const ResponseSchema = PromptSchema.extend({}).meta({
+  title: t('Schema.Response.Title'),
   description: t('Schema.Response.Description'),
 });
 

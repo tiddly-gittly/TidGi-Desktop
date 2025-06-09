@@ -16,7 +16,6 @@ export const TagsWidget: React.FC<WidgetProps> = ({
   disabled,
   readonly,
   required,
-  label,
   placeholder,
   _schema,
   _uiSchema,
@@ -81,7 +80,6 @@ export const TagsWidget: React.FC<WidgetProps> = ({
       renderInput={(parameters) => (
         <TextField
           {...parameters}
-          label={label || String(t('Schema.Prompt.Tags'))}
           placeholder={placeholder || String(t('PromptConfig.Tags.Placeholder'))}
           required={required}
           size='small'

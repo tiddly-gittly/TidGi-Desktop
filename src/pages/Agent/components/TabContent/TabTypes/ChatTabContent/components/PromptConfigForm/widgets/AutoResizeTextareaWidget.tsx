@@ -15,7 +15,6 @@ export const AutoResizeTextareaWidget: React.FC<WidgetProps> = ({
   disabled,
   readonly,
   required,
-  label,
   placeholder,
   uiSchema,
 }) => {
@@ -53,7 +52,6 @@ export const AutoResizeTextareaWidget: React.FC<WidgetProps> = ({
         },
       }}
       required={required}
-      label={label}
       placeholder={placeholder}
       multiline
       minRows={minRows}

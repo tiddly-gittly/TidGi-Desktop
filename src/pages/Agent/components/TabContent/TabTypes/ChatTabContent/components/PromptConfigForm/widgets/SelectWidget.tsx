@@ -17,7 +17,6 @@ export const SelectWidget: React.FC<WidgetProps> = (props) => {
     readonly,
     disabled,
     autofocus,
-    label,
     onBlur,
     onFocus,
     onChange,
@@ -41,11 +40,6 @@ export const SelectWidget: React.FC<WidgetProps> = (props) => {
 
   return (
     <StyledSelectFormControl fullWidth>
-      {label && (
-        <StyledInputLabel id={`${id}-label`}>
-          {label}
-        </StyledInputLabel>
-      )}
       <StyledSelect
         labelId={`${id}-label`}
         id={id}
@@ -56,7 +50,6 @@ export const SelectWidget: React.FC<WidgetProps> = (props) => {
         onChange={handleChange}
         onBlur={handleBlur}
         onFocus={handleFocus}
-        label={label}
       >
         {!required && (
           <StyledMenuItem value=''>

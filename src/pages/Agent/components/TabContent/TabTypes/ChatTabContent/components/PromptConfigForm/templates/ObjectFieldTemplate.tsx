@@ -1,44 +1,18 @@
-import { Box, Grid, Typography } from '@mui/material';
+import { Box, Grid } from '@mui/material';
 import { ObjectFieldTemplateProps } from '@rjsf/utils';
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollapseIcon, ExpandIcon, HelpTooltip, StyledCard, StyledCardContent, StyledCollapse, StyledExpandButton } from '../components';
+import { HelpTooltip, StyledCard, StyledCardContent, StyledFieldLabel } from '../components';
 import { useArrayItemContext } from '../context/ArrayItemContext';
 
 export const ObjectFieldTemplate: React.FC<ObjectFieldTemplateProps> = (props) => {
-  const { properties, title, schema, uiSchema } = props;
-  const [expanded, setExpanded] = useState(true);
+  const { properties, schema, uiSchema } = props;
   const { t } = useTranslation('agent');
   const { isInArrayItem } = useArrayItemContext();
-
-  // Only allow collapsing if not in array item (since array item has its own collapse control)
-  const isCollapsible = uiSchema?.['ui:collapsible'] !== false && !isInArrayItem;
-  const description = schema.description;
-
   // Check if this should use compact layout
   const compactFieldsValue = uiSchema?.['ui:compactFields'] as unknown;
   const compactFields = Array.isArray(compactFieldsValue) ? (compactFieldsValue as string[]) : [];
   const useCompactLayout = compactFields.length > 0;
-
-  const handleToggleExpanded = () => {
-    setExpanded(!expanded);
-  };
-
-  const titleWithHelp = (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <Typography variant='subtitle1' component='h3'>
-          {t(title)}
-        </Typography>
-        {typeof description === 'string' && description && <HelpTooltip description={description} />}
-      </Box>
-      {isCollapsible && (
-        <StyledExpandButton onClick={handleToggleExpanded}>
-          {expanded ? <CollapseIcon /> : <ExpandIcon />}
-        </StyledExpandButton>
-      )}
-    </Box>
-  );
 
   const renderProperties = () => {
     if (!useCompactLayout) {
@@ -87,12 +61,24 @@ export const ObjectFieldTemplate: React.FC<ObjectFieldTemplateProps> = (props) =
 
   return (
     <StyledCard variant='outlined'>
-      {titleWithHelp}
-      <StyledCollapse in={expanded} timeout='auto' unmountOnExit>
-        <StyledCardContent>
-          {renderProperties()}
-        </StyledCardContent>
-      </StyledCollapse>
+      <StyledCardContent>
+        {schema.title && (
+          <Box sx={{ mb: 2 }}>
+            <StyledFieldLabel
+              sx={{
+                fontSize: '1.1rem',
+                fontWeight: 'bold',
+                mb: 1,
+                display: 'block',
+              }}
+            >
+              {t(schema.title)}
+              {schema.description && <HelpTooltip description={t(schema.description)} />}
+            </StyledFieldLabel>
+          </Box>
+        )}
+        {renderProperties()}
+      </StyledCardContent>
     </StyledCard>
   );
 };

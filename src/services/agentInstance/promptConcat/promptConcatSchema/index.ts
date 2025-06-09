@@ -15,15 +15,27 @@ const t = identity;
  * Contains common fields shared between AIConfigSchema and AgentConfigSchema
  */
 export const BaseAPIConfigSchema = z.object({
-  api: ProviderModelSchema.meta({ description: t('Schema.BaseAPIConfig.API') }),
-  modelParameters: ModelParametersSchema.meta({ description: t('Schema.BaseAPIConfig.ModelParameters') }),
-}).meta({ description: t('Schema.BaseAPIConfig.Description') });
+  api: ProviderModelSchema.meta({
+    title: t('Schema.BaseAPIConfig.APITitle'),
+    description: t('Schema.BaseAPIConfig.API'),
+  }),
+  modelParameters: ModelParametersSchema.meta({
+    title: t('Schema.BaseAPIConfig.ModelParametersTitle'),
+    description: t('Schema.BaseAPIConfig.ModelParameters'),
+  }),
+}).meta({
+  title: t('Schema.BaseAPIConfig.Title'),
+  description: t('Schema.BaseAPIConfig.Description'),
+});
 
 /**
  * AI configuration schema for session settings
  */
 export const AIConfigSchema = BaseAPIConfigSchema
-  .meta({ description: t('Schema.AIConfig.Description') });
+  .meta({
+    title: t('Schema.AIConfig.Title'),
+    description: t('Schema.AIConfig.Description'),
+  });
 
 /**
  * Handler configuration schema
@@ -47,6 +59,7 @@ export const HandlerConfigSchema = z.object({
     title: t('PromptConfig.Tabs.ResponseDynamicModification'),
   }),
 }).meta({
+  title: t('Schema.AgentConfig.PromptConfig.Title'),
   description: t('Schema.AgentConfig.PromptConfig.Description'),
   uiSchema: HANDLER_CONFIG_UI_SCHEMA,
 });
@@ -71,15 +84,24 @@ export const HandlerConfigSchema = z.object({
  * ```
  */
 export const AgentConfigSchema = BaseAPIConfigSchema.extend({
-  id: z.string().meta({ description: t('Schema.AgentConfig.Id') }),
+  id: z.string().meta({
+    title: t('Schema.AgentConfig.IdTitle'),
+    description: t('Schema.AgentConfig.Id'),
+  }),
   promptConfig: HandlerConfigSchema,
-}).meta({ description: t('Schema.AgentConfig.Description') });
+}).meta({
+  title: t('Schema.AgentConfig.Title'),
+  description: t('Schema.AgentConfig.Description'),
+});
 
 /**
  * Default agents list schema
  * Contains an array of agent configurations
  */
-export const DefaultAgentsSchema = z.array(AgentConfigSchema).meta({ description: t('Schema.DefaultAgents.Description') });
+export const DefaultAgentsSchema = z.array(AgentConfigSchema).meta({
+  title: t('Schema.DefaultAgents.Title'),
+  description: t('Schema.DefaultAgents.Description'),
+});
 
 export type DefaultAgents = z.infer<typeof DefaultAgentsSchema>;
 export type AgentPromptDescription = z.infer<typeof AgentConfigSchema>;

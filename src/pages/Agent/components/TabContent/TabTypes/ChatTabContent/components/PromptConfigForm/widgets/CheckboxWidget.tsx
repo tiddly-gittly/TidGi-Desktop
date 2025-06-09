@@ -2,6 +2,7 @@
 import { Checkbox, FormControlLabel } from '@mui/material';
 import { WidgetProps } from '@rjsf/utils';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
 const StyledFormControlLabel = styled(FormControlLabel)`
@@ -33,12 +34,15 @@ export const CheckboxWidget: React.FC<WidgetProps> = (props) => {
     onFocus,
     onChange,
   } = props;
+  const { t } = useTranslation('agent');
+
+  // Translate the label if it exists
+  const translatedLabel = label ? t(label, label) : undefined;
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.checked);
   };
 
-  // 修改类型以匹配 Checkbox 组件的期望类型
   const handleBlur = () => {
     onBlur(id, value);
   };
@@ -61,7 +65,7 @@ export const CheckboxWidget: React.FC<WidgetProps> = (props) => {
           onFocus={handleFocus}
         />
       }
-      label={label}
+      label={translatedLabel}
     />
   );
 };

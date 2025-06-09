@@ -202,7 +202,8 @@
     "SchemaNotProvided": "格式未提供",
     "SchemaNotProvidedDescription": "没有提供 JSON Schema 或无法正确获取到。编辑表单无法展示。",
     "ToggleFullScreen": "切换全屏",
-    "Tree": "树形视图"
+    "Tree": "树形视图",
+    "ValidationErrors": "发现错误"
   },
   "PromptConfig": {
     "AddItem": "添加项目",
@@ -223,13 +224,17 @@
   },
   "Schema": {
     "AIConfig": {
-      "Description": "AI 会话设置配置"
+      "Description": "AI 会话设置配置",
+      "Title": "AI 配置"
     },
     "AgentConfig": {
       "Description": "智能体配置",
+      "Title": "智能体配置",
       "Id": "智能体唯一标识符",
+      "IdTitle": "智能体 ID",
       "PromptConfig": {
         "Description": "提示词配置",
+        "Title": "提示词配置",
         "PromptDynamicModification": "提示词动态修改配置列表",
         "Prompts": "提示词配置列表",
         "Response": "响应配置列表",
@@ -238,154 +243,260 @@
     },
     "AutoReply": {
       "Description": "自动回复参数配置",
+      "Title": "自动回复参数",
       "MaxAutoReply": "最大自动回复次数",
+      "MaxAutoReplyTitle": "最大回复次数",
       "TargetId": "目标元素ID",
+      "TargetIdTitle": "目标ID",
       "Text": "回复文本",
-      "Trigger": "触发条件"
+      "TextTitle": "回复文本",
+      "Trigger": "触发条件",
+      "TriggerTitle": "触发条件"
     },
     "AutoReroll": {
       "Description": "自动重新生成参数配置",
+      "Title": "自动重新生成参数",
       "MaxRetry": "最大重试次数",
+      "MaxRetryTitle": "最大重试次数",
       "Search": "搜索关键词",
-      "TargetId": "目标元素ID"
+      "SearchTitle": "搜索关键词",
+      "TargetId": "目标元素ID",
+      "TargetIdTitle": "目标ID"
     },
     "BaseAPIConfig": {
       "API": "API 提供商和模型配置",
+      "APITitle": "API 配置",
       "Description": "基础 API 配置",
-      "ModelParameters": "模型参数配置"
+      "ModelParameters": "模型参数配置",
+      "ModelParametersTitle": "模型参数",
+      "Title": "基础 API 配置"
     },
     "DefaultAgents": {
-      "Description": "默认智能体配置列表"
+      "Description": "默认智能体配置列表",
+      "Title": "默认智能体"
     },
     "DynamicPosition": {
-      "Description": "动态位置参数配置"
+      "Description": "动态位置参数配置",
+      "Title": "动态位置参数"
     },
     "FullReplacement": {
       "Description": "完全替换参数配置",
+      "Title": "完全替换参数",
       "SourceType": "源类型",
-      "TargetId": "目标元素ID"
+      "SourceTypeTitle": "源类型",
+      "TargetId": "目标元素ID",
+      "TargetIdTitle": "目标ID"
     },
     "Function": {
       "Description": "函数参数配置",
+      "Title": "函数参数",
       "FunctionId": "函数ID",
+      "FunctionIdTitle": "函数ID",
       "TimeoutMessage": "超时消息",
+      "TimeoutMessageTitle": "超时消息",
       "TimeoutSecond": "超时时间（秒）",
-      "Trigger": "触发条件"
+      "TimeoutSecondTitle": "超时时间",
+      "Trigger": "触发条件",
+      "TriggerTitle": "触发条件"
+    },
+    "HandlerConfig": {
+      "Description": "处理器配置",
+      "Title": "处理器配置"
     },
     "JavascriptTool": {
       "Description": "JavaScript 工具参数配置",
-      "URI": "JavaScript 工具 URI"
+      "Title": "JavaScript 工具参数",
+      "URI": "JavaScript 工具 URI",
+      "URITitle": "工具 URI"
     },
     "MCP": {
       "Description": "模型上下文协议参数配置",
+      "Title": "模型上下文协议参数",
       "Id": "MCP 服务器 ID",
+      "IdTitle": "服务器 ID",
       "ResponseProcessing": {
         "Description": "响应处理配置",
-        "Id": "响应处理器 ID"
+        "Title": "响应处理",
+        "Id": "响应处理器 ID",
+        "IdTitle": "处理器 ID"
       },
       "TimeoutMessage": "超时消息",
+      "TimeoutMessageTitle": "超时消息",
       "TimeoutSecond": "超时时间（秒）",
-      "Trigger": "触发条件"
+      "TimeoutSecondTitle": "超时时间",
+      "Trigger": "触发条件",
+      "TriggerTitle": "触发条件"
     },
     "ModelParameters": {
       "Description": "模型参数配置",
+      "Title": "模型参数",
       "MaxTokens": "生成的最大令牌数量",
+      "MaxTokensTitle": "最大令牌数",
       "SystemPrompt": "模型系统提示词",
+      "SystemPromptTitle": "系统提示词",
       "Temperature": "响应生成温度（越高=越创造性）",
-      "TopP": "Top P 采样参数"
+      "TemperatureTitle": "温度",
+      "TopP": "Top P 采样参数",
+      "TopPTitle": "Top P"
     },
     "Position": {
       "Bottom": "自底部偏移几条消息",
+      "BottomTitle": "底部偏移",
       "Description": "位置参数配置",
+      "Title": "位置参数",
       "TargetId": "目标元素ID",
+      "TargetIdTitle": "目标ID",
       "Top": "自顶部偏移几条消息",
-      "Type": "位置类型"
+      "TopTitle": "顶部偏移",
+      "Type": "位置类型",
+      "TypeTitle": "位置类型"
     },
     "Prompt": {
       "Caption": "简短描述",
+      "CaptionTitle": "描述",
       "Children": "子提示词列表，将从上到下，从外到里地拼接为最终的提示词文本。",
       "Description": "完整的提示词配置，包含类型和内容",
+      "Title": "提示词",
       "Enabled": "是否启用此提示词，启用的才会拼入到最终的提示词中",
+      "EnabledTitle": "启用",
       "Id": "提示词配置的唯一标识符，方便在 PromptDynamicModification 里通过 targetId 引用。",
+      "IdTitle": "ID",
       "Role": "OpenAI 兼容接口的提示词角色",
+      "RoleTitle": "角色",
       "Tags": "标签列表",
-      "Text": "提示词内容，可以包含维基文本支持的语法，例如<<变量名>>。"
+      "Text": "提示词内容，可以包含维基文本支持的语法，例如<<变量名>>。",
+      "TextTitle": "文本",
+      "TagsTitle": "标签",
+      "ChildrenTitle": "子提示词"
     },
     "PromptDynamicModification": {
       "Caption": "简短描述",
+      "CaptionTitle": "描述",
       "Content": "内容",
+      "ContentTitle": "内容",
       "Description": "详细描述",
+      "Title": "提示词动态修改",
       "DynamicModificationType": "动态修改类型",
+      "DynamicModificationTypeTitle": "修改类型",
       "DynamicPositionParam": "动态位置参数",
+      "DynamicPositionParamTitle": "动态位置参数",
       "ForbidOverrides": "是否禁止覆盖",
+      "ForbidOverridesTitle": "禁止覆盖",
       "FullReplacementParam": "完全替换参数",
+      "FullReplacementParamTitle": "完全替换参数",
       "FunctionParam": "函数参数",
+      "FunctionParamTitle": "函数参数",
       "Id": "唯一标识符",
+      "IdTitle": "ID",
       "JavascriptToolParam": "JavaScript 工具参数",
+      "JavascriptToolParamTitle": "JavaScript 工具参数",
       "MCPParam": "模型上下文协议参数",
+      "MCPParamTitle": "MCP 参数",
       "RAGParam": "检索增强生成参数",
+      "RAGParamTitle": "RAG 参数",
       "SchemaDescription": "提示词动态修改配置"
     },
     "PromptPart": {
       "Caption": "提示词的简短描述",
+      "CaptionTitle": "描述",
       "Children": "子提示词列表，将从上到下，从外到里地拼接为最终的提示词文本。",
       "Description": "表示提示词的一部分，可以是文本或嵌套结构",
+      "Title": "提示词片段",
       "Id": "唯一标识符，方便在 PromptDynamicModification 里通过 targetId 引用。",
+      "IdTitle": "ID",
       "Tags": "标签列表，用于分类和引用",
-      "Text": "提示词文本内容，可以包含维基文本支持的语法，例如<<变量名>>。"
+      "Text": "提示词文本内容，可以包含维基文本支持的语法，例如<<变量名>>。",
+      "TextTitle": "文本",
+      "TagsTitle": "标签",
+      "ChildrenTitle": "子提示词"
     },
     "ProviderModel": {
       "Description": "提供商和模型配置",
+      "Title": "提供商模型",
       "Model": "AI 模型名称",
-      "Provider": "AI 提供商名称"
+      "ModelTitle": "模型",
+      "Provider": "AI 提供商名称",
+      "ProviderTitle": "提供商"
     },
     "RAG": {
       "Description": "检索增强生成参数配置",
+      "Title": "检索增强生成参数",
       "Removal": {
         "CoolDownChatRound": "上次展示后冷却轮数",
+        "CoolDownChatRoundTitle": "冷却轮数",
         "Description": "移除条件",
-        "ExpireAfterChatRound": "多少轮对话后过期"
+        "Title": "移除条件",
+        "ExpireAfterChatRound": "多少轮对话后过期",
+        "ExpireAfterChatRoundTitle": "过期轮数"
       },
       "SourceType": "源类型",
+      "SourceTypeTitle": "源类型",
       "Trigger": "触发条件",
-      "WikiParam": "Wiki 参数"
+      "TriggerTitle": "触发条件",
+      "WikiParam": "Wiki 参数",
+      "WikiParamTitle": "Wiki 参数"
     },
     "Response": {
-      "Description": "外部API的响应，通常作为响应动态修改的目标，结构与提示词的一样，可以填写预置内容，也可以作为占位符或容器，由 ResponseDynamicModification 填入外部API的响应的具体内容。"
+      "Description": "外部API的响应，通常作为响应动态修改的目标，结构与提示词的一样，可以填写预置内容，也可以作为占位符或容器，由 ResponseDynamicModification 填入外部API的响应的具体内容。",
+      "Title": "响应"
     },
     "ResponseDynamicModification": {
       "AutoReplyParam": "自动回复参数",
+      "AutoReplyParamTitle": "自动回复参数",
       "AutoRerollParam": "自动重新生成参数",
+      "AutoRerollParamTitle": "自动重新生成参数",
       "Caption": "简短描述",
+      "CaptionTitle": "描述",
       "Description": "响应动态修改配置",
+      "Title": "响应动态修改",
       "DynamicModificationType": "动态修改类型",
+      "DynamicModificationTypeTitle": "修改类型",
       "ForbidOverrides": "是否禁止覆盖",
+      "ForbidOverridesTitle": "禁止覆盖",
       "FullReplacementParam": "完全替换参数",
+      "FullReplacementParamTitle": "完全替换参数",
       "Id": "唯一标识符",
+      "IdTitle": "ID",
       "ResponseProcessingType": "响应处理类型",
-      "ToolCallingParam": "工具调用参数"
+      "ResponseProcessingTypeTitle": "处理类型",
+      "ToolCallingParam": "工具调用参数",
+      "ToolCallingParamTitle": "工具调用参数"
     },
     "ToolCalling": {
       "Description": "工具调用参数配置",
+      "Title": "工具调用参数",
       "Match": "匹配模式",
-      "TargetId": "目标元素ID"
+      "MatchTitle": "匹配模式",
+      "TargetId": "目标元素ID",
+      "TargetIdTitle": "目标ID"
     },
     "Trigger": {
       "Description": "触发条件配置",
+      "Title": "触发条件",
       "Filter": "筛选条件",
+      "FilterTitle": "筛选条件",
       "Model": {
         "Description": "基于模型判断的触发条件",
+        "Title": "模型判断",
         "Preset": "预设模型",
+        "PresetTitle": "预设模型",
         "System": "系统提示词",
-        "User": "用户提示词"
+        "SystemTitle": "系统提示词",
+        "User": "用户提示词",
+        "UserTitle": "用户提示词"
       },
       "RandomChance": "随机触发概率",
-      "Search": "搜索关键词"
+      "RandomChanceTitle": "随机概率",
+      "Search": "搜索关键词",
+      "SearchTitle": "搜索关键词"
     },
     "Wiki": {
       "Description": "Wiki 参数配置",
+      "Title": "Wiki 参数",
       "Filter": "筛选器表达式，可以使用 TiddlyWiki 支持的筛选器，从知识库中提取数据",
-      "WorkspaceName": "工作区名称"
+      "FilterTitle": "筛选器",
+      "WorkspaceName": "工作区名称",
+      "WorkspaceNameTitle": "工作区名称"
     }
   },
   "Search": {
