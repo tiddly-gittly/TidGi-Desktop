@@ -33,7 +33,9 @@ export interface PreviewDialogState {
     flatPrompts: CoreMessage[];
     processedPrompts: Prompt[];
   } | null;
-  lastUpdated: Date | null; // Track when preview was last updated
+  lastUpdated: Date | null;
+  formFieldsToScrollTo: string[];
+  expandedArrayItems: Map<string, boolean>;
 }
 
 // Basic actions interface
@@ -146,6 +148,31 @@ export interface PreviewActions {
    * @param tab The tab to switch to ('flat' or 'tree')
    */
   setPreviewDialogTab: (tab: 'flat' | 'tree') => void;
+
+  /**
+   * Sets the form field paths to scroll to when switching to edit mode
+   * @param fieldPaths Array of field paths - first element indicates tab to switch to
+   */
+  setFormFieldsToScrollTo: (fieldPaths: string[]) => void;
+
+  /**
+   * Toggles the expansion state of a specific array item
+   * @param path The semantic path of the array item
+   * @param expanded Whether the item should be expanded
+   */
+  setArrayItemExpanded: (path: string, expanded: boolean) => void;
+
+  /**
+   * Gets the expansion state of a specific array item
+   * @param path The semantic path of the array item
+   */
+  isArrayItemExpanded: (path: string) => boolean;
+
+  /**
+   * Expands all parent paths leading to a target field
+   * @param targetPath The target field path to expand to
+   */
+  expandPathToTarget: (targetPath: string) => void;
 
   /**
    * Generates a preview of prompts for the current agent state

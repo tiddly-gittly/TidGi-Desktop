@@ -1,12 +1,30 @@
 import { Box, Tab, Tabs } from '@mui/material';
 import { ObjectFieldTemplateProps } from '@rjsf/utils';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
+import { useAgentChatStore } from '../../../../../../../store/agentChatStore/index';
 
 export const RootObjectFieldTemplate: React.FC<ObjectFieldTemplateProps> = (props) => {
   const { properties, schema } = props;
   const [activeTab, setActiveTab] = useState(0);
   const { t } = useTranslation('agent');
+
+  const { formFieldsToScrollTo } = useAgentChatStore(
+    useShallow((state) => ({
+      formFieldsToScrollTo: state.formFieldsToScrollTo,
+    })),
+  );
+
+  useEffect(() => {
+    if (formFieldsToScrollTo.length > 0) {
+      const targetTab = formFieldsToScrollTo[0];
+      const tabIndex = properties.findIndex(property => property.name === targetTab);
+      if (tabIndex !== -1 && tabIndex !== activeTab) {
+        setActiveTab(tabIndex);
+      }
+    }
+  }, [formFieldsToScrollTo, properties, activeTab]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);

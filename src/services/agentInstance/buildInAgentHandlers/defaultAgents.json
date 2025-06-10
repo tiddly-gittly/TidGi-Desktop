@@ -52,9 +52,9 @@
           "tags": ["DynamicModification"]
         },
         {
-          "id": "History",
+          "id": "History Inject",
           "caption": "Inject to History Prompt",
-          "role": "user",
+          "role": "assistant",
           "children": [
             {
               "id": "5eb1c787-2960-4ad1-9c55-1b04dbf0d322",

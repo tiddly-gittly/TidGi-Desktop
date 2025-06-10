@@ -69,6 +69,19 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
     setIsEditMode(previous => !previous);
   }, []);
 
+  // Listen for form field scroll targets to automatically switch to edit mode
+  const { formFieldsToScrollTo } = useAgentChatStore(
+    useShallow((state) => ({
+      formFieldsToScrollTo: state.formFieldsToScrollTo,
+    })),
+  );
+
+  useEffect(() => {
+    if (formFieldsToScrollTo.length > 0) {
+      setIsEditMode(true);
+    }
+  }, [formFieldsToScrollTo]);
+
   return (
     <Dialog
       open={open}

@@ -1,10 +1,12 @@
+import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
 import { ArrayFieldItemTemplateType, FormContextType, RJSFSchema } from '@rjsf/utils';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 import { ArrayItemProvider } from '../../context/ArrayItemContext';
 import { StyledDeleteButton } from '../controls';
 import { ArrayItemCard, ArrayItemHeader, ArrayItemTitle, DragHandle, ItemContent } from './StyledArrayContainer';
@@ -20,6 +22,7 @@ export interface SortableArrayItemProps<T = unknown, S extends RJSFSchema = RJSF
   isCollapsible?: boolean;
   /** Actual form data for this array item */
   itemData?: unknown;
+  semanticPath?: string[];
 }
 
 /**
@@ -36,9 +39,86 @@ export const SortableArrayItem = <T = unknown, S extends RJSFSchema = RJSFSchema
   index,
   isCollapsible = true,
   itemData,
+  semanticPath,
 }: SortableArrayItemProps<T, S, F>) => {
   const { t } = useTranslation('agent');
-  const [expanded, setExpanded] = useState(false);
+
+  const currentPath = semanticPath?.join('_') ?? '';
+  const {
+    formFieldsToScrollTo,
+    setFormFieldsToScrollTo,
+    expanded,
+    setArrayItemExpanded,
+  } = useAgentChatStore(
+    useShallow((state) => ({
+      formFieldsToScrollTo: state.formFieldsToScrollTo,
+      setFormFieldsToScrollTo: state.setFormFieldsToScrollTo,
+      expanded: state.isArrayItemExpanded(currentPath),
+      setArrayItemExpanded: state.setArrayItemExpanded,
+    })),
+  );
+
+  useEffect(() => {
+    if (formFieldsToScrollTo.length > 1 && expanded) {
+      const targetField = formFieldsToScrollTo[1];
+
+      const scrollTimeout = setTimeout(() => {
+        const possibleIds = [
+          `root_${targetField}`,
+          targetField,
+        ];
+
+        let targetElement: HTMLElement | null = null;
+
+        for (const id of possibleIds) {
+          targetElement = document.getElementById(id);
+          if (targetElement) break;
+        }
+
+        if (!targetElement) {
+          const selectors = [
+            `[id*="${targetField}"]`,
+            `[id$="${targetField}"]`,
+            `input[name*="${targetField}"]`,
+            `textarea[name*="${targetField}"]`,
+          ];
+
+          for (const selector of selectors) {
+            try {
+              targetElement = document.querySelector(selector);
+              if (targetElement) break;
+            } catch {
+              // Ignore selector errors
+            }
+          }
+        }
+
+        if (targetElement) {
+          targetElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          });
+
+          const originalOutline = targetElement.style.outline;
+          const originalBackground = targetElement.style.backgroundColor;
+
+          targetElement.style.outline = '2px solid #1976d2';
+          targetElement.style.backgroundColor = 'rgba(25, 118, 210, 0.08)';
+
+          setTimeout(() => {
+            targetElement.style.outline = originalOutline;
+            targetElement.style.backgroundColor = originalBackground;
+          }, 2000);
+
+          setFormFieldsToScrollTo([]);
+        }
+      }, 300);
+
+      return () => {
+        clearTimeout(scrollTimeout);
+      };
+    }
+  }, [formFieldsToScrollTo, expanded, setFormFieldsToScrollTo]);
 
   const {
     attributes,
@@ -61,8 +141,8 @@ export const SortableArrayItem = <T = unknown, S extends RJSFSchema = RJSFSchema
   };
 
   const handleToggleExpanded = useCallback(() => {
-    setExpanded(!expanded);
-  }, [expanded]);
+    setArrayItemExpanded(currentPath, !expanded);
+  }, [currentPath, expanded, setArrayItemExpanded]);
 
   const handleHeaderClick = useCallback((event: React.MouseEvent) => {
     // Check if click target is clickable area (exclude buttons and drag handle)

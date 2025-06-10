@@ -19,10 +19,12 @@ export const useAgentChatStore = create<AgentChatStoreType>()((set, get, api) =>
 
     // Preview dialog state
     previewDialogOpen: false,
-    previewDialogTab: 'flat',
+    previewDialogTab: 'tree',
     previewLoading: false,
     previewResult: null,
     lastUpdated: null,
+    formFieldsToScrollTo: [],
+    expandedArrayItems: new Map(),
   };
 
   // 合并所有 actions 和初始状态

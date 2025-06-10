@@ -12,8 +12,10 @@ import { ArrayAddButton, ArrayContainer, ArrayHeader, ArrayItemCount, EmptyState
  * Enhanced Array Field Template with drag-and-drop functionality
  */
 export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => {
-  const { items, onAddClick, canAdd, title, schema, formData } = props;
+  const { items, onAddClick, canAdd, title, schema, formData, idSchema } = props;
   const { t } = useTranslation('agent');
+
+  const arrayPath = idSchema.$id.replace(/^root_/, '');
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -73,15 +75,19 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-              {items.map((item, index) => (
-                <SortableArrayItem
-                  key={item.key}
-                  item={item}
-                  index={index}
-                  isCollapsible={isItemsCollapsible}
-                  itemData={Array.isArray(formData) ? formData[index] : undefined}
-                />
-              ))}
+              {items.map((item, index) => {
+                const semanticPath = [...arrayPath.split('_'), index.toString()];
+                return (
+                  <SortableArrayItem
+                    key={item.key}
+                    item={item}
+                    index={index}
+                    isCollapsible={isItemsCollapsible}
+                    itemData={Array.isArray(formData) ? formData[index] : undefined}
+                    semanticPath={semanticPath}
+                  />
+                );
+              })}
             </SortableContext>
           </DndContext>
         )}

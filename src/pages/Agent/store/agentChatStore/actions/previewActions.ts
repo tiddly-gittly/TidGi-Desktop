@@ -15,11 +15,48 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
   },
 
   closePreviewDialog: () => {
-    set({ previewDialogOpen: false, lastUpdated: null });
+    set({
+      previewDialogOpen: false,
+      lastUpdated: null,
+      expandedArrayItems: new Map(),
+      formFieldsToScrollTo: [],
+    });
   },
 
   setPreviewDialogTab: (tab: 'flat' | 'tree') => {
     set({ previewDialogTab: tab });
+  },
+
+  setFormFieldsToScrollTo: (fieldPaths: string[]) => {
+    set({ formFieldsToScrollTo: fieldPaths });
+  },
+  setArrayItemExpanded: (path: string, expanded: boolean) => {
+    const { expandedArrayItems } = get();
+    const newMap = new Map(expandedArrayItems);
+    if (expanded) {
+      newMap.set(path, true);
+    } else {
+      newMap.delete(path);
+    }
+    set({ expandedArrayItems: newMap });
+  },
+  isArrayItemExpanded: (path: string) => {
+    const { expandedArrayItems } = get();
+    return expandedArrayItems.get(path) ?? false;
+  },
+  expandPathToTarget: (targetPath: string) => {
+    const { expandedArrayItems } = get();
+    const newMap = new Map(expandedArrayItems);
+
+    const pathParts = targetPath.split('_');
+    for (let index = 0; index < pathParts.length; index += 2) {
+      if (index + 1 < pathParts.length) {
+        const pathSegment = pathParts.slice(0, index + 2).join('_');
+        newMap.set(pathSegment, true);
+      }
+    }
+
+    set({ expandedArrayItems: newMap });
   },
 
   getPreviewPromptResult: async (
@@ -71,7 +108,6 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
         return null;
       }
 
-      // Update state and return result
       set({
         previewResult: result,
         previewLoading: false,

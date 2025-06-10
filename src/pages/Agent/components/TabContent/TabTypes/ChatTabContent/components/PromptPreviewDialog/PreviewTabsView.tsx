@@ -105,30 +105,27 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = ({
           sx={{ flex: 1 }}
         >
           <Tab
-            label={t('Prompt.Flat')}
-            value={'flat'}
+            label={t('Prompt.Tree')}
+            value={'tree'}
             sx={{ textTransform: 'none' }}
           />
           <Tab
-            label={t('Prompt.Tree')}
-            value={'tree'}
+            label={t('Prompt.Flat')}
+            value={'flat'}
             sx={{ textTransform: 'none' }}
           />
         </PreviewTabs>
       </Box>
 
-      {/* Flat Result Tab */}
-      {tab === 'flat' && (
-        <PreviewContent isFullScreen={isFullScreen}>
-          <FlatPromptList flatPrompts={formattedPreview?.flatPrompts} />
-          <LastUpdatedIndicator lastUpdated={lastUpdated} />
-        </PreviewContent>
-      )}
-
-      {/* Tree Result Tab */}
       {tab === 'tree' && (
         <PreviewContent isFullScreen={isFullScreen}>
           <PromptTree prompts={formattedPreview?.processedPrompts} />
+          <LastUpdatedIndicator lastUpdated={lastUpdated} />
+        </PreviewContent>
+      )}
+      {tab === 'flat' && (
+        <PreviewContent isFullScreen={isFullScreen}>
+          <FlatPromptList flatPrompts={formattedPreview?.flatPrompts} />
           <LastUpdatedIndicator lastUpdated={lastUpdated} />
         </PreviewContent>
       )}

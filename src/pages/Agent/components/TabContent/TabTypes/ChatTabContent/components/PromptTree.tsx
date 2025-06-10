@@ -1,6 +1,8 @@
 import { Box, styled, Typography } from '@mui/material';
 import { IPromptPart } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import React from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { useAgentChatStore } from '../../../../../store/agentChatStore/index';
 
 const TreeItem = styled(Box, {
   shouldForwardProp: (property: string) => property !== 'depth',
@@ -10,8 +12,13 @@ const TreeItem = styled(Box, {
   borderLeft: `2px solid ${theme.palette.primary.main}`,
   background: theme.palette.background.default,
   borderRadius: Number(theme.shape.borderRadius) / 2,
-  '&:hover': {
-    background: theme.palette.action.hover,
+  cursor: 'pointer',
+  '&:active': {
+    transform: 'scale(0.98)',
+    background: theme.palette.action.selected,
+    transition: theme.transitions.create(['transform', 'background-color'], {
+      duration: theme.transitions.duration.shorter,
+    }),
   },
 }));
 
@@ -32,9 +39,37 @@ const EmptyState = styled(Box)(({ theme }) => ({
 /**
  * Prompt tree node component for nested display
  */
-export const PromptTreeNode = ({ node, depth }: { node: IPromptPart; depth: number }): React.ReactElement => {
+export const PromptTreeNode = ({
+  node,
+  depth,
+  fieldPath = [],
+}: {
+  node: IPromptPart;
+  depth: number;
+  fieldPath?: string[];
+}): React.ReactElement => {
+  const { setFormFieldsToScrollTo, expandPathToTarget } = useAgentChatStore(
+    useShallow((state) => ({
+      setFormFieldsToScrollTo: state.setFormFieldsToScrollTo,
+      expandPathToTarget: state.expandPathToTarget,
+    })),
+  );
+  const handleNodeClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+
+    const targetFieldPath = fieldPath.length > 0 ? fieldPath : [node.id];
+    const tabName = targetFieldPath[0];
+    const fullPath = targetFieldPath.join('_');
+
+    setFormFieldsToScrollTo([tabName, fullPath]);
+    expandPathToTarget(fullPath);
+  };
+
   return (
-    <TreeItem depth={depth}>
+    <TreeItem
+      depth={depth}
+      onClick={handleNodeClick}
+    >
       <Typography variant='subtitle2' color='primary' gutterBottom>
         {node.caption || node.id || 'Prompt'}
       </Typography>
@@ -51,7 +86,17 @@ export const PromptTreeNode = ({ node, depth }: { node: IPromptPart; depth: numb
           {node.text}
         </Typography>
       )}
-      {node.children?.length && node.children.map(child => <PromptTreeNode key={child.id} node={child} depth={depth + 1} />)}
+      {node.children && node.children.length > 0 && node.children.map((child, childIndex) => {
+        const childFieldPath = [...fieldPath, 'children', childIndex.toString()];
+        return (
+          <PromptTreeNode
+            key={child.id}
+            node={child}
+            depth={depth + 1}
+            fieldPath={childFieldPath}
+          />
+        );
+      })}
     </TreeItem>
   );
 };
@@ -66,7 +111,10 @@ export const PromptTree = ({ prompts }: { prompts?: IPromptPart[] }): React.Reac
 
   return (
     <Box>
-      {prompts.map(item => <PromptTreeNode key={item.id} node={item} depth={0} />)}
+      {prompts.map((item, index) => {
+        const fieldPath = ['prompts', index.toString()];
+        return <PromptTreeNode key={item.id} node={item} depth={0} fieldPath={fieldPath} />;
+      })}
     </Box>
   );
 };
