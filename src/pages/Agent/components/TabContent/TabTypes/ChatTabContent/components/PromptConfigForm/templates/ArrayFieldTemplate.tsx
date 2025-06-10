@@ -12,10 +12,8 @@ import { ArrayAddButton, ArrayContainer, ArrayHeader, ArrayItemCount, EmptyState
  * Enhanced Array Field Template with drag-and-drop functionality
  */
 export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => {
-  const { items, onAddClick, canAdd, title, schema, formData, idSchema } = props;
+  const { items, onAddClick, canAdd, title, schema, formData } = props;
   const { t } = useTranslation('agent');
-
-  const arrayPath = idSchema.$id.replace(/^root_/, '');
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
