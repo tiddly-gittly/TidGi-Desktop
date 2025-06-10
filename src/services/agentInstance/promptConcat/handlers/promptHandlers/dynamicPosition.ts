@@ -11,7 +11,7 @@ import { Prompt, PromptDynamicModification, PromptPart } from '../../promptConca
  * Handler for dynamicModificationType: "dynamicPosition"
  * Inserts content at a specific position relative to a target element
  */
-export function dynamicPositionHandler(prompts: Prompt[], modification: PromptDynamicModification, _context: PromptConcatContext): Prompt[] {
+export function dynamicPositionHandler(prompts: Prompt[], modification: PromptDynamicModification, context: PromptConcatContext): Prompt[] {
   if (!modification.dynamicPositionParam || !modification.content) {
     logger.debug('Missing dynamicPositionParam or content', {
       modificationType: 'dynamicPosition',
@@ -37,6 +37,7 @@ export function dynamicPositionHandler(prompts: Prompt[], modification: PromptDy
   const newPart: PromptPart = {
     id: `dynamic-${Date.now()}`,
     text: modification.content,
+    source: context.sourcePaths?.get(modification.id),
   };
 
   logger.debug('Inserting dynamic content', {

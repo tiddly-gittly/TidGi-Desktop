@@ -59,6 +59,7 @@ export function functionHandler(prompts: Prompt[], modification: PromptDynamicMo
       const newPart: PromptPart = {
         id: `function-${Date.now()}`,
         text: result,
+        source: context.sourcePaths?.get(modification.id),
       };
 
       // Insert content based on position

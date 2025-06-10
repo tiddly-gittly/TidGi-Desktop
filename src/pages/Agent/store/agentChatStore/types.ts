@@ -151,28 +151,28 @@ export interface PreviewActions {
 
   /**
    * Sets the form field paths to scroll to when switching to edit mode
-   * @param fieldPaths Array of field paths - first element indicates tab to switch to
+   * @param fieldPaths [targetTab, ...targetFieldPath] where targetTab is the tab name and targetFieldPath is the field path array
    */
   setFormFieldsToScrollTo: (fieldPaths: string[]) => void;
 
   /**
-   * Toggles the expansion state of a specific array item
-   * @param path The semantic path of the array item
+   * Sets the expansion state of a specific array item by its ID
+   * @param itemId The unique ID of the array item
    * @param expanded Whether the item should be expanded
    */
-  setArrayItemExpanded: (path: string, expanded: boolean) => void;
+  setArrayItemExpanded: (itemId: string, expanded: boolean) => void;
 
   /**
-   * Gets the expansion state of a specific array item
-   * @param path The semantic path of the array item
+   * Checks if a specific array item is expanded by its ID
+   * @param itemId The unique ID of the array item
    */
-  isArrayItemExpanded: (path: string) => boolean;
+  isArrayItemExpanded: (itemId: string) => boolean;
 
   /**
    * Expands all parent paths leading to a target field
    * @param targetPath The target field path to expand to
    */
-  expandPathToTarget: (targetPath: string) => void;
+  expandPathToTarget: (targetPath: string[]) => void;
 
   /**
    * Generates a preview of prompts for the current agent state

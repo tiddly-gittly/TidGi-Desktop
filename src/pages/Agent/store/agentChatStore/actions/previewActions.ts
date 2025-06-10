@@ -30,29 +30,29 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
   setFormFieldsToScrollTo: (fieldPaths: string[]) => {
     set({ formFieldsToScrollTo: fieldPaths });
   },
-  setArrayItemExpanded: (path: string, expanded: boolean) => {
+  setArrayItemExpanded: (itemId: string, expanded: boolean) => {
     const { expandedArrayItems } = get();
     const newMap = new Map(expandedArrayItems);
     if (expanded) {
-      newMap.set(path, true);
+      newMap.set(itemId, true);
     } else {
-      newMap.delete(path);
+      newMap.delete(itemId);
     }
     set({ expandedArrayItems: newMap });
   },
-  isArrayItemExpanded: (path: string) => {
+  isArrayItemExpanded: (itemId: string) => {
     const { expandedArrayItems } = get();
-    return expandedArrayItems.get(path) ?? false;
+    return expandedArrayItems.get(itemId) ?? false;
   },
-  expandPathToTarget: (targetPath: string) => {
+  expandPathToTarget: (targetPath: string[]) => {
     const { expandedArrayItems } = get();
     const newMap = new Map(expandedArrayItems);
 
-    const pathParts = targetPath.split('_');
-    for (let index = 0; index < pathParts.length; index += 2) {
-      if (index + 1 < pathParts.length) {
-        const pathSegment = pathParts.slice(0, index + 2).join('_');
-        newMap.set(pathSegment, true);
+    // For a path like ['prompts', 'system', 'children', 'default-main']
+    // We need to expand each ID that represents an array item: 'system' and 'default-main'
+    for (let index = 1; index < targetPath.length; index += 1) {
+      if (targetPath[index]) {
+        newMap.set(targetPath[index], true);
       }
     }
 

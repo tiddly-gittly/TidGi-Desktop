@@ -56,6 +56,7 @@ export async function modelContextProtocolHandler(prompts: Prompt[], modificatio
       const newPart: PromptPart = {
         id: `mcp-${Date.now()}`,
         text: result,
+        source: context.sourcePaths?.get(modification.id),
       };
 
       // Insert content based on position

@@ -24,6 +24,7 @@ export interface IPromptPart {
   content?: string;
   name?: string;
   children?: IPromptPart[];
+  source?: string[];
 }
 
 /**
@@ -54,6 +55,10 @@ export const PromptPartSchema: z.ZodType<IPromptPart> = z.object({
   caption: z.string().optional().meta({
     title: t('Schema.PromptPart.CaptionTitle'),
     description: t('Schema.PromptPart.Caption'),
+  }),
+  source: z.array(z.string()).optional().meta({
+    title: t('Schema.PromptPart.SourceTitle'),
+    description: t('Schema.PromptPart.Source'),
   }),
   get children() {
     return z.array(PromptPartSchema).optional().meta({
@@ -120,6 +125,10 @@ export const PromptSchema = z.object({
   children: z.array(PromptPartSchema).optional().meta({
     title: t('Schema.Prompt.ChildrenTitle'),
     description: t('Schema.Prompt.Children'),
+  }),
+  source: z.array(z.string()).optional().meta({
+    title: t('Schema.Prompt.SourceTitle'),
+    description: t('Schema.Prompt.Source'),
   }),
 }).meta({
   title: t('Schema.Prompt.Title'),

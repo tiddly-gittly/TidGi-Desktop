@@ -7,10 +7,13 @@ import { AgentPromptDescription, Prompt, PromptDynamicModification, PromptPart }
 
 /**
  * Context type specific for prompt concatenation operations
- * Contains message history needed for prompt processing
+ * Contains message history and source path mapping for form field navigation
  */
 export interface PromptConcatContext {
+  /** Array of agent instance messages for context */
   messages: AgentInstanceMessage[];
+  /** Mapping from prompt/modification IDs to their form field paths for navigation */
+  sourcePaths?: Map<string, string[]>;
 }
 
 /**
@@ -26,6 +29,37 @@ export type PromptDynamicModificationHandler = (
  * Registry for prompt dynamic modification handlers
  */
 const promptDynamicModificationHandlers: Record<string, PromptDynamicModificationHandler | undefined> = {};
+
+/**
+ * Generate ID-based path mapping for prompts to enable source tracking
+ * Uses actual node IDs instead of indices to avoid path conflicts with dynamic content
+ */
+function generateSourcePaths(prompts: Prompt[], promptDynamicModifications: PromptDynamicModification[] = []): Map<string, string[]> {
+  const pathMap = new Map<string, string[]>();
+
+  function traversePrompts(items: Prompt[], currentPath: string[]): void {
+    items.forEach((item) => {
+      const itemPath = [...currentPath, item.id];
+      pathMap.set(item.id, itemPath);
+
+      if (item.children && item.children.length > 0) {
+        traversePrompts(item.children as Prompt[], [...itemPath, 'children']);
+      }
+    });
+  }
+
+  function traverseDynamicModifications(items: PromptDynamicModification[], currentPath: string[]): void {
+    items.forEach((item) => {
+      const itemPath = [...currentPath, item.id];
+      pathMap.set(item.id, itemPath);
+    });
+  }
+
+  traversePrompts(prompts, ['prompts']);
+  traverseDynamicModifications(promptDynamicModifications, ['promptDynamicModification']);
+
+  return pathMap;
+}
 
 /**
  * Register a prompt dynamic modification handler
@@ -159,13 +193,14 @@ export async function promptConcat(
 
   // 1. Clone prompt configuration for modification
   const promptsCopy = cloneDeep(prompts);
-  // 2. Get list of dynamic modification configurations
+
   let modifiedPrompts = promptsCopy;
   const promptDynamicModifications = Array.isArray(promptConfig.promptDynamicModification)
     ? promptConfig.promptDynamicModification
     : [];
 
-  // 3. Apply dynamic modifications
+  const sourcePaths = generateSourcePaths(promptsCopy, promptDynamicModifications);
+
   for (const modification of promptDynamicModifications) {
     const handler = promptDynamicModificationHandlers[modification.dynamicModificationType];
 
@@ -176,7 +211,7 @@ export async function promptConcat(
     });
 
     if (handler) {
-      modifiedPrompts = await Promise.resolve(handler(modifiedPrompts, modification, { messages }));
+      modifiedPrompts = await Promise.resolve(handler(modifiedPrompts, modification, { messages, sourcePaths }));
     } else {
       logger.warn(`No handler found for modification type: ${modification.dynamicModificationType}`);
     }

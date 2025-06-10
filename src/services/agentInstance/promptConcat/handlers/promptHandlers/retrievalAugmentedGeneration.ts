@@ -182,6 +182,7 @@ export async function retrievalAugmentedGenerationHandler(
       tags: ['retrievalAugmentedGeneration'],
       caption: 'Retrieved content',
       enabled: true,
+      source: context.sourcePaths?.get(modification.id),
     };
 
     // Insert the content at the target position

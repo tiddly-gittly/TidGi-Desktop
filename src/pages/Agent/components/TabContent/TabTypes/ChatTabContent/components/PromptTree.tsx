@@ -56,13 +56,17 @@ export const PromptTreeNode = ({
   );
   const handleNodeClick = (event: React.MouseEvent) => {
     event.stopPropagation();
-
-    const targetFieldPath = fieldPath.length > 0 ? fieldPath : [node.id];
-    const tabName = targetFieldPath[0];
-    const fullPath = targetFieldPath.join('_');
-
-    setFormFieldsToScrollTo([tabName, fullPath]);
-    expandPathToTarget(fullPath);
+    let targetFieldPath: string[];
+    if (node.source && node.source.length > 0) {
+      // Use source path if available (for dynamically generated content)
+      targetFieldPath = node.source;
+    } else {
+      targetFieldPath = [...fieldPath, node.id];
+    }
+    if (Array.isArray(targetFieldPath) && targetFieldPath.length > 0) {
+      setFormFieldsToScrollTo(targetFieldPath);
+      expandPathToTarget(targetFieldPath);
+    }
   };
 
   return (
@@ -86,8 +90,8 @@ export const PromptTreeNode = ({
           {node.text}
         </Typography>
       )}
-      {node.children && node.children.length > 0 && node.children.map((child, childIndex) => {
-        const childFieldPath = [...fieldPath, 'children', childIndex.toString()];
+      {node.children && node.children.length > 0 && node.children.map((child) => {
+        const childFieldPath = [...fieldPath, child.id];
         return (
           <PromptTreeNode
             key={child.id}
@@ -111,8 +115,8 @@ export const PromptTree = ({ prompts }: { prompts?: IPromptPart[] }): React.Reac
 
   return (
     <Box>
-      {prompts.map((item, index) => {
-        const fieldPath = ['prompts', index.toString()];
+      {prompts.map((item) => {
+        const fieldPath = ['prompts', item.id];
         return <PromptTreeNode key={item.id} node={item} depth={0} fieldPath={fieldPath} />;
       })}
     </Box>

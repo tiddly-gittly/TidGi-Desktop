@@ -75,7 +75,6 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
       formFieldsToScrollTo: state.formFieldsToScrollTo,
     })),
   );
-
   useEffect(() => {
     if (formFieldsToScrollTo.length > 0) {
       setIsEditMode(true);

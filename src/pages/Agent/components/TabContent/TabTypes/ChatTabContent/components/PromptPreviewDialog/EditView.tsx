@@ -23,9 +23,6 @@ interface EditViewProps {
   inputText: string;
 }
 
-/**
- * Configuration editing component with form and code editor modes
- */
 export const EditView: React.FC<EditViewProps> = ({
   isFullScreen,
   inputText,
@@ -34,10 +31,11 @@ export const EditView: React.FC<EditViewProps> = ({
   const agent = useAgentChatStore(state => state.agent);
   const [editorMode, setEditorMode] = useState<'form' | 'code'>('form');
 
-  const { formFieldsToScrollTo, setFormFieldsToScrollTo } = useAgentChatStore(
+  const { formFieldsToScrollTo, setFormFieldsToScrollTo, expandPathToTarget } = useAgentChatStore(
     useShallow((state) => ({
       formFieldsToScrollTo: state.formFieldsToScrollTo,
       setFormFieldsToScrollTo: state.setFormFieldsToScrollTo,
+      expandPathToTarget: state.expandPathToTarget,
     })),
   );
 
@@ -51,62 +49,66 @@ export const EditView: React.FC<EditViewProps> = ({
     agentId: agent?.id,
   });
 
-  // Effect to handle field scrolling when formFieldsToScrollTo changes
   React.useEffect(() => {
     if (formFieldsToScrollTo.length > 1 && editorMode === 'form') {
-      const formFieldToScrollTo = formFieldsToScrollTo[1]; // Second element is the actual target field
-      // Use setTimeout to ensure the form is rendered before scrolling
+      expandPathToTarget(formFieldsToScrollTo);
+
       const scrollTimeout = setTimeout(() => {
-        // Try multiple possible ID formats for the field
-        const possibleIds = [
-          `root_${formFieldToScrollTo}`,
-          formFieldToScrollTo,
-          `root_prompts_${formFieldToScrollTo}`,
-          `root_promptDynamicModification_${formFieldToScrollTo}`,
-          `root_response_${formFieldToScrollTo}`,
-          `root_responseDynamicModification_${formFieldToScrollTo}`,
-        ];
-
-        // Also try to find nested fields (like children arrays)
-        const fieldParts = formFieldToScrollTo.split('.');
-        if (fieldParts.length > 1) {
-          const [section, ...rest] = fieldParts;
-          const nestedPath = rest.join('_');
-          possibleIds.push(`root_${section}_${nestedPath}`);
-
-          // For array items, try with numeric indices
-          const arrayPattern = /(\w+)\[(\d+)\]/g;
-          let transformedId = `root_${formFieldToScrollTo}`;
-          transformedId = transformedId.replace(arrayPattern, '$1_$2');
-          transformedId = transformedId.replace(/\./g, '_');
-          possibleIds.push(transformedId);
-        }
-
         let targetElement: HTMLElement | null = null;
+        const targetId = formFieldsToScrollTo[formFieldsToScrollTo.length - 1]; // Get the last segment (the actual ID)
 
-        // Try to find the element with any of the possible IDs
-        for (const id of possibleIds) {
-          targetElement = document.getElementById(id);
-          if (targetElement) {
-            console.log(`Found element with ID: ${id}`);
-            break;
+        // Strategy 1: Try to find elements that contain the target ID in their input value or data attributes
+        const candidateElements = Array.from(document.querySelectorAll('input, textarea, select')).filter(element => {
+          const htmlElement = element as HTMLElement;
+          // Check if the element's name, id, or value contains our target ID
+          return htmlElement.id.includes(targetId) ||
+            htmlElement.getAttribute('name')?.includes(targetId) ||
+            (htmlElement as HTMLInputElement).value === targetId;
+        });
+
+        console.log(
+          `Found ${candidateElements.length} candidate elements for ID "${targetId}":`,
+          candidateElements.map(element => ({ id: element.id, name: element.getAttribute('name'), value: (element as HTMLInputElement).value })),
+        );
+
+        // Strategy 2: If we found candidates, pick the most relevant one
+        if (candidateElements.length > 0) {
+          // Prefer elements whose value exactly matches the target ID (for ID fields)
+          const exactMatch = candidateElements.find(element => (element as HTMLInputElement).value === targetId);
+          if (exactMatch) {
+            targetElement = exactMatch as HTMLElement;
+          } else {
+            // If no exact value match, prefer elements whose ID contains the target ID
+            const idMatch = candidateElements.find(element => element.id.includes(targetId));
+            if (idMatch) {
+              targetElement = idMatch as HTMLElement;
+            } else {
+              // Fallback to the first candidate
+              targetElement = candidateElements[0] as HTMLElement;
+            }
           }
         }
 
-        // If direct ID lookup fails, try querySelector with more flexible patterns
+        // Strategy 3: Fallback to broader search if no candidates found
         if (!targetElement) {
           const selectors = [
-            `[id*="${formFieldToScrollTo}"]`,
-            `[data-testid*="${formFieldToScrollTo}"]`,
-            `[aria-label*="${formFieldToScrollTo}"]`,
-            `.field-${formFieldToScrollTo}`,
+            `[id*="${targetId}"]`,
+            `[name*="${targetId}"]`,
+            `[data-testid*="${targetId}"]`,
+            `input[value="${targetId}"]`,
+            `textarea[value="${targetId}"]`,
+            // Look for fieldset or container elements
+            `fieldset[id*="${targetId}"]`,
+            `div[id*="${targetId}"]`,
           ];
 
+          console.log('Trying broader selectors for:', targetId);
           for (const selector of selectors) {
             try {
-              targetElement = document.querySelector(selector);
-              if (targetElement) {
-                console.log(`Found element with selector: ${selector}`);
+              const elements = document.querySelectorAll(selector);
+              if (elements.length > 0) {
+                targetElement = elements[0] as HTMLElement;
+                console.log(`Found element with selector "${selector}":`, targetElement.id);
                 break;
               }
             } catch {
@@ -115,18 +117,34 @@ export const EditView: React.FC<EditViewProps> = ({
           }
         }
 
+        // Strategy 4: If still not found, try to find the parent container by path structure
+        if (!targetElement && formFieldsToScrollTo.length >= 2) {
+          // For prompts path like ['prompts', 'some-id'], look for pattern root_prompts_*_id
+          const pathPattern = formFieldsToScrollTo[0]; // 'prompts'
+          const allInputs = document.querySelectorAll(`input[id^="root_${pathPattern}_"], textarea[id^="root_${pathPattern}_"], select[id^="root_${pathPattern}_"]`);
+
+          console.log(`Found ${allInputs.length} inputs with path pattern "${pathPattern}"`);
+
+          // Check each input to see if its value matches our target ID
+          for (const input of Array.from(allInputs)) {
+            const inputElement = input as HTMLInputElement;
+            if (inputElement.value === targetId) {
+              targetElement = inputElement;
+              console.log(`Found target element by value match:`, targetElement.id);
+              break;
+            }
+          }
+        }
+
         if (targetElement) {
-          // Check if the element is in a collapsed parent (like accordion or tab)
           const expandParents = (element: HTMLElement) => {
             let current = element.parentElement;
             while (current) {
-              // Expand MUI Accordion
               const accordionSummary = current.querySelector('[aria-expanded="false"]');
               if (accordionSummary instanceof HTMLElement) {
                 accordionSummary.click();
               }
 
-              // Switch to correct tab if element is in a hidden tab panel
               const tabPanel = current.closest('[role="tabpanel"][hidden]');
               if (tabPanel) {
                 const tabPanelId = tabPanel.getAttribute('aria-labelledby');
@@ -144,14 +162,12 @@ export const EditView: React.FC<EditViewProps> = ({
 
           expandParents(targetElement);
 
-          // Wait a bit for expansions/tab switches to complete, then scroll
           setTimeout(() => {
             targetElement.scrollIntoView({
               behavior: 'smooth',
               block: 'center',
             });
 
-            // Highlight the element briefly
             const originalStyle = targetElement.style.cssText;
             targetElement.style.cssText += '; outline: 2px solid #1976d2; outline-offset: 2px;';
             setTimeout(() => {
@@ -159,10 +175,17 @@ export const EditView: React.FC<EditViewProps> = ({
             }, 2000);
           }, 300);
 
-          // Clear the field to scroll to after scrolling
           setFormFieldsToScrollTo([]);
         } else {
-          console.warn(`Could not find element for field: ${formFieldToScrollTo}`);
+          console.warn(`Could not find element for field path:`, formFieldsToScrollTo);
+          console.log(
+            'Available form elements:',
+            Array.from(document.querySelectorAll('input, textarea, select')).map(element => ({
+              id: element.id,
+              name: element.getAttribute('name'),
+              value: (element as HTMLInputElement).value,
+            })),
+          );
           setFormFieldsToScrollTo([]);
         }
       }, 100);
@@ -193,6 +216,7 @@ export const EditView: React.FC<EditViewProps> = ({
     [handleConfigChange, agent?.agentDefId, getPreviewPromptResult, inputText],
     1000,
   );
+
   const handleEditorModeChange = useCallback((_event: React.SyntheticEvent, newValue: 'form' | 'code') => {
     setEditorMode(newValue);
   }, []);

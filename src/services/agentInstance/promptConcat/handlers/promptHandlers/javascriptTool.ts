@@ -12,7 +12,7 @@ import { loadContentFromUri } from '../shared/utilities';
  * Handler for dynamicModificationType: "javascriptTool"
  * Loads and executes a JavaScript tool at the specified position
  */
-export function javascriptToolHandler(prompts: Prompt[], modification: PromptDynamicModification, _context: PromptConcatContext): Prompt[] {
+export function javascriptToolHandler(prompts: Prompt[], modification: PromptDynamicModification, context: PromptConcatContext): Prompt[] {
   if (!modification.javascriptToolParam) {
     logger.debug('Missing javascriptToolParam', {
       modificationType: 'javascriptTool',
@@ -50,6 +50,7 @@ export function javascriptToolHandler(prompts: Prompt[], modification: PromptDyn
       const newPart: PromptPart = {
         id: `js-tool-${Date.now()}`,
         text: content,
+        source: context.sourcePaths?.get(modification.id),
       };
 
       // Insert content based on position

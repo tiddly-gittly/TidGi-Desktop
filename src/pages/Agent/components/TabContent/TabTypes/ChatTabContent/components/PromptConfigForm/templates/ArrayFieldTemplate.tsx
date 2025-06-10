@@ -76,15 +76,14 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
           >
             <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
               {items.map((item, index) => {
-                const semanticPath = [...arrayPath.split('_'), index.toString()];
+                const itemData = Array.isArray(formData) ? formData[index] : undefined;
                 return (
                   <SortableArrayItem
                     key={item.key}
                     item={item}
                     index={index}
                     isCollapsible={isItemsCollapsible}
-                    itemData={Array.isArray(formData) ? formData[index] : undefined}
-                    semanticPath={semanticPath}
+                    itemData={itemData}
                   />
                 );
               })}
