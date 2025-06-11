@@ -56,17 +56,11 @@ export const PromptTreeNode = ({
   );
   const handleNodeClick = (event: React.MouseEvent) => {
     event.stopPropagation();
-    let targetFieldPath: string[];
-    if (node.source && node.source.length > 0) {
-      // Use source path if available (for dynamically generated content)
-      targetFieldPath = node.source;
-    } else {
-      targetFieldPath = [...fieldPath, node.id];
-    }
-    if (Array.isArray(targetFieldPath) && targetFieldPath.length > 0) {
-      setFormFieldsToScrollTo(targetFieldPath);
-      expandPathToTarget(targetFieldPath);
-    }
+
+    const targetFieldPath = (node.source && node.source.length > 0) ? node.source : [...fieldPath, node.id];
+
+    setFormFieldsToScrollTo(targetFieldPath);
+    expandPathToTarget(targetFieldPath);
   };
 
   return (

@@ -34,9 +34,6 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
 
   const description = schema.description;
   const itemIds = items.map((item) => item.key);
-
-  // Check if array items should be collapsible
-  // For now, enable collapsible for all array items with object content
   const isItemsCollapsible = true;
 
   return (

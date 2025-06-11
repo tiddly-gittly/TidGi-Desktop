@@ -5,7 +5,7 @@ import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 
-import React, { useCallback, useState } from 'react';
+import React, { FC, SyntheticEvent, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -23,7 +23,7 @@ interface EditViewProps {
   inputText: string;
 }
 
-export const EditView: React.FC<EditViewProps> = ({
+export const EditView: FC<EditViewProps> = ({
   isFullScreen,
   inputText,
 }) => {
@@ -49,7 +49,7 @@ export const EditView: React.FC<EditViewProps> = ({
     agentId: agent?.id,
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (formFieldsToScrollTo.length > 0 && editorMode === 'form') {
       expandPathToTarget(formFieldsToScrollTo);
 
@@ -112,7 +112,7 @@ export const EditView: React.FC<EditViewProps> = ({
     1000,
   );
 
-  const handleEditorModeChange = useCallback((_event: React.SyntheticEvent, newValue: 'form' | 'code') => {
+  const handleEditorModeChange = useCallback((_event: SyntheticEvent, newValue: 'form' | 'code') => {
     setEditorMode(newValue);
   }, []);
 
