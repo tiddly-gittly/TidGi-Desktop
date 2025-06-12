@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/require-await */
-import { After, Before, setWorldConstructor, Then, When } from '@cucumber/cucumber';
+import { After, AfterStep, Before, setWorldConstructor, Then, When } from '@cucumber/cucumber';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
 import { getPackedAppPath } from '../supports/paths';
@@ -13,6 +12,16 @@ setWorldConstructor(ApplicationWorld);
 
 Before(async function(this: ApplicationWorld) {
   console.log('Starting test scenario');
+
+  // Create necessary directories
+  const fs = await import('fs');
+  if (!fs.existsSync('logs')) {
+    fs.mkdirSync('logs', { recursive: true });
+  }
+  // Create screenshots subdirectory in logs
+  if (!fs.existsSync('logs/screenshots')) {
+    fs.mkdirSync('logs/screenshots', { recursive: true });
+  }
 });
 
 After(async function(this: ApplicationWorld) {
@@ -28,9 +37,28 @@ After(async function(this: ApplicationWorld) {
   }
 });
 
+AfterStep(async function(this: ApplicationWorld, { pickleStep }) {
+  // Take screenshot after each step
+  if (this.mainWindow) {
+    try {
+      // Extract step text and clean it for filename
+      const stepText = pickleStep.text || 'unknown-step';
+      const cleanStepText = stepText
+        .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+        .substring(0, 100);
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const screenshotPath = `logs/screenshots/${timestamp}-${cleanStepText}.png`;
+      await this.mainWindow.screenshot({ path: screenshotPath, fullPage: true, quality: 10, type: 'jpeg', scale: 'css', caret: 'initial' });
+      console.log(`Screenshot saved to: ${screenshotPath}`);
+    } catch (screenshotError) {
+      console.warn('Failed to take screenshot:', screenshotError);
+    }
+  }
+});
+
 When('I launch the TidGi application', async function(this: ApplicationWorld) {
   // For E2E tests on dev mode, use the packaged test version with NODE_ENV environment variable baked in
-
   const packedAppPath = getPackedAppPath();
   console.log('Launching packaged test app at:', packedAppPath);
 
@@ -41,7 +69,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
       args: [
         '--no-sandbox',
         '--disable-dev-shm-usage',
-        // Windows CI specific arguments
+        // macOS CI specific arguments
         '--disable-gpu',
         '--disable-software-rasterizer',
         '--disable-background-timer-throttling',
@@ -52,7 +80,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
         '--force-device-scale-factor=1',
         '--high-dpi-support=1',
         '--force-color-profile=srgb',
-        // Additional Windows CI flags
+        // Additional CI flags
         '--disable-extensions',
         '--disable-plugins',
         '--disable-default-apps',
@@ -63,7 +91,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
       env: {
         ...process.env,
         NODE_ENV: 'test',
-        // Force Windows display settings for CI
+        // Force display settings for CI
         ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
         ...(process.env.CI && {
           ELECTRON_ENABLE_LOGGING: 'true',

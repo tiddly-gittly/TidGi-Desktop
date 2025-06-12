@@ -20,7 +20,7 @@ on:
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,8 +38,8 @@ jobs:
         with:
           path: |
             **/node_modules
-            %LOCALAPPDATA%/pnpm/store
-            ~\.npm
+            ~/.pnpm-store
+            ~/.npm
           key: test-${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             test-${{ runner.os }}-node-
@@ -59,33 +59,31 @@ jobs:
       - name: Package for testing
         run: pnpm run package
 
-      # Setup virtual display for Windows GUI testing
-      - name: Setup virtual display for Windows
-        run: |
-          # Enable desktop session for GUI applications
-          $ErrorActionPreference = "SilentlyContinue"
-          
-          # Start necessary services
-          Start-Service -Name "Themes"
-          Start-Service -Name "AudioSrv"
-          
-          # Configure registry for headless GUI
-          $registryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"
-          if (Test-Path $registryPath) {
-            Set-ItemProperty -Path $registryPath -Name "TdrLevel" -Value 0 -Type DWord -Force
-          }
-          
-          # Enable software rendering for Electron
-          $env:ELECTRON_DISABLE_HARDWARE_ACCELERATION = "1"
-          $env:ELECTRON_ENABLE_LOGGING = "1"
-          
-          Write-Output "Virtual display configured for Windows CI"
-
       - name: Run e2e tests
         run: pnpm run test:e2e
         env:
           CI: true
-          # Windows specific display settings
-          ELECTRON_ENABLE_LOGGING: true
-          ELECTRON_DISABLE_SECURITY_WARNINGS: true
-          ELECTRON_DISABLE_HARDWARE_ACCELERATION: true
+        timeout-minutes: 10
+
+      # Upload test artifacts (screenshots, logs)
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts
+          path: |
+            logs/
+            cucumber-report.json
+          retention-days: 7
+
+      # Upload application logs
+      - name: Upload application logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-logs
+          path: |
+            ~/Library/Logs/TidGi/
+            userData-dev/logs/
+          retention-days: 7
+        continue-on-error: true
