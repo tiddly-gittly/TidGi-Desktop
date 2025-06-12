@@ -59,11 +59,88 @@ jobs:
       - name: Package for testing
         run: pnpm run package
 
+      # Debug system and environment
+      - name: Debug system and environment
+        run: |
+          echo "=== System Information ==="
+          uname -a
+          echo "macOS version:"
+          sw_vers
+          echo "Available displays:"
+          system_profiler SPDisplaysDataType
+          echo "Current user and groups:"
+          id
+          echo "Environment variables:"
+          env | grep -E "(DISPLAY|CI|NODE_ENV)" || echo "No relevant env vars found"
+          
+      # Debug packaged application
+      - name: Debug packaged application
+        run: |
+          echo "=== Checking packaged application ==="
+          ls -la out/
+          if [ -d "out/TidGi-darwin-x64" ]; then
+            echo "TidGi-darwin-x64 directory found"
+            ls -la out/TidGi-darwin-x64/
+            echo "Checking executable permissions:"
+            file out/TidGi-darwin-x64/TidGi.app/Contents/MacOS/TidGi
+            ls -la out/TidGi-darwin-x64/TidGi.app/Contents/MacOS/TidGi
+            
+            echo "=== Checking node_modules in packaged app ==="
+            if [ -d "out/TidGi-darwin-x64/TidGi.app/Contents/Resources/app/node_modules" ]; then
+              echo "node_modules directory found in packaged app"
+              ls -la out/TidGi-darwin-x64/TidGi.app/Contents/Resources/app/node_modules/
+              
+              echo "=== Checking for dugite specifically ==="
+              if [ -d "out/TidGi-darwin-x64/TidGi.app/Contents/Resources/app/node_modules/dugite" ]; then
+                echo "✓ dugite found in packaged app"
+                ls -la out/TidGi-darwin-x64/TidGi.app/Contents/Resources/app/node_modules/dugite/
+                echo "dugite contents:"
+                find out/TidGi-darwin-x64/TidGi.app/Contents/Resources/app/node_modules/dugite/ -type f | head -20
+              else
+                echo "✗ dugite NOT found in packaged app"
+              fi
+              
+              echo "=== Checking for other critical dependencies ==="
+              for dep in "better-sqlite3" "tiddlywiki" "electron"; do
+                if [ -d "out/TidGi-darwin-x64/TidGi.app/Contents/Resources/app/node_modules/$dep" ]; then
+                  echo "✓ $dep found"
+                else
+                  echo "✗ $dep NOT found"
+                fi
+              done
+            else
+              echo "✗ node_modules directory NOT found in packaged app"
+              echo "Checking what's in Resources/app:"
+              ls -la out/TidGi-darwin-x64/TidGi.app/Contents/Resources/app/ || echo "Resources/app directory not found"
+            fi
+            
+            echo "=== Checking for resources directory ==="
+            if [ -d "out/TidGi-darwin-x64/TidGi.app/Contents/Resources" ]; then
+              echo "Resources directory contents:"
+              ls -la out/TidGi-darwin-x64/TidGi.app/Contents/Resources/
+              
+              echo "=== Checking app.asar ==="
+              if [ -f "out/TidGi-darwin-x64/TidGi.app/Contents/Resources/app.asar" ]; then
+                echo "✓ app.asar found"
+                ls -la out/TidGi-darwin-x64/TidGi.app/Contents/Resources/app.asar
+              else
+                echo "✗ app.asar NOT found"
+              fi
+            fi
+          else
+            echo "TidGi-darwin-x64 directory not found, checking all directories:"
+            find out/ -name "*TidGi*" 2>/dev/null || echo "No TidGi binaries found"
+          fi
+
       - name: Run e2e tests
         run: pnpm run test:e2e
         env:
           CI: true
-        timeout-minutes: 10
+          # Enable more verbose logging
+          DEBUG: "*"
+          ELECTRON_ENABLE_LOGGING: true
+          ELECTRON_ENABLE_STACK_DUMPING: true
+        timeout-minutes: 15
 
       # Upload test artifacts (screenshots, logs)
       - name: Upload test artifacts

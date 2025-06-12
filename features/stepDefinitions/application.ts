@@ -62,7 +62,52 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
   const packedAppPath = getPackedAppPath();
   console.log('Launching packaged test app at:', packedAppPath);
 
+  if (process.env.CI) {
+    console.log('CI detected, enabling debug logging...');
+    console.log('Environment variables:');
+    console.log('- NODE_ENV:', process.env.NODE_ENV);
+    console.log('- CI:', process.env.CI);
+    console.log('- Platform:', process.platform);
+    console.log('- Architecture:', process.arch);
+    console.log('- DEBUG:', process.env.DEBUG);
+    console.log('- ELECTRON_ENABLE_LOGGING:', process.env.ELECTRON_ENABLE_LOGGING);
+    
+    // Check if the executable exists and is accessible
+    const fs = await import('fs');
+    try {
+      const stats = fs.statSync(packedAppPath);
+      console.log('Executable file info:');
+      console.log('- Path:', packedAppPath);
+      console.log('- Size:', stats.size, 'bytes');
+      console.log('- Is file:', stats.isFile());
+      console.log('- Is executable:', !!(stats.mode & parseInt('111', 8)));
+      console.log('- Mode (octal):', (stats.mode & parseInt('777', 8)).toString(8));
+      console.log('- Modified:', stats.mtime);
+    } catch (fsError) {
+      console.error('Failed to get executable file info:', fsError);
+      console.error('File does not exist or is not accessible:', packedAppPath);
+      // Try to find what actually exists
+      try {
+        const path = await import('path');
+        const outDirectory = path.dirname(packedAppPath);
+        console.log('Contents of parent directory:');
+        const files = fs.readdirSync(outDirectory);
+        files.forEach(file => {
+          const filePath = path.join(outDirectory, file);
+          const stat = fs.statSync(filePath);
+          console.log(`- ${file} (${stat.isDirectory() ? 'dir' : 'file'}, ${stat.size} bytes)`);
+        });
+      } catch (directoryError) {
+        console.error('Failed to list directory contents:', directoryError);
+      }
+    }
+  }
+
   try {
+    if (process.env.CI) {
+      console.log('Creating Electron app instance...');
+    }
+    
     this.app = await electron.launch({
       executablePath: packedAppPath,
       // Add debugging options to prevent app from closing and CI-specific args
@@ -101,11 +146,31 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
       timeout: 60000, // Increase timeout to 60 seconds for CI
     });
 
+    if (process.env.CI) {
+      console.log('Electron app launched successfully, waiting for first window...');
+    }
+
     // Wait longer for window in CI environment
     const windowTimeout = process.env.CI ? 45000 : 10000;
+    if (process.env.CI) {
+      console.log(`Waiting for window with timeout: ${windowTimeout}ms`);
+    }
+    
     this.mainWindow = await this.app.firstWindow({ timeout: windowTimeout });
+    
+    if (process.env.CI) {
+      console.log('First window obtained successfully');
+      const title = await this.mainWindow.title();
+      console.log('Window title:', title);
+    }
   } catch (error) {
-    throw new Error(`Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package:dev\` before running the tests to ensure the app is built.`);
+    if (process.env.CI) {
+      console.error('Detailed error information:');
+      console.error('Error name:', (error as Error).name);
+      console.error('Error message:', (error as Error).message);
+      console.error('Error stack:', (error as Error).stack);
+    }
+    throw new Error(`Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package\` before running the tests to ensure the app is built.`);
   }
 });
 
@@ -114,7 +179,13 @@ When('I wait for {int} seconds', async function(seconds: number) {
 });
 
 When('I wait for the page to load completely', async function(this: ApplicationWorld) {
+  if (process.env.CI) {
+    console.log('Waiting for page to load completely with networkidle state...');
+  }
   await this.mainWindow?.waitForLoadState('networkidle', { timeout: 30000 });
+  if (process.env.CI) {
+    console.log('Page load completed successfully');
+  }
 });
 
 Then('I should see an element with selector {string}', async function(this: ApplicationWorld, selector: string) {
