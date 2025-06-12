@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { After, Before, setWorldConstructor, Then, When } from '@cucumber/cucumber';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
@@ -38,7 +39,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
       executablePath: packedAppPath,
       // Add debugging options to prevent app from closing and CI-specific args
       args: [
-        '--no-sandbox', 
+        '--no-sandbox',
         '--disable-dev-shm-usage',
         // Windows CI specific arguments
         '--disable-gpu',
@@ -71,7 +72,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
       },
       timeout: 60000, // Increase timeout to 60 seconds for CI
     });
-    
+
     // Wait longer for window in CI environment
     const windowTimeout = process.env.CI ? 45000 : 10000;
     this.mainWindow = await this.app.firstWindow({ timeout: windowTimeout });
