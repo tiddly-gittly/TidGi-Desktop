@@ -50,7 +50,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
         ...process.env,
         NODE_ENV: 'test',
         // Force headless mode in CI
-        DISPLAY: process.env.CI ? ':99' : process.env.DISPLAY,
+        DISPLAY: process.env.CI ? ':99' : (process.env.DISPLAY || ':0'),
       },
     });
     this.mainWindow = await this.app.firstWindow();
