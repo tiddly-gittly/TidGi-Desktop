@@ -170,7 +170,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
       console.error('Error message:', (error as Error).message);
       console.error('Error stack:', (error as Error).stack);
     }
-    throw new Error(`Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package\` before running the tests to ensure the app is built.`);
+    throw new Error(`Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package:dev\` before running the tests to ensure the app is built.`);
   }
 });
 
