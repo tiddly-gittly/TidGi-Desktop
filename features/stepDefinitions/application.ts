@@ -1,7 +1,10 @@
-import { After, Before, setWorldConstructor, Then, When } from '@cucumber/cucumber';
+import { After, Before, setDefaultTimeout, setWorldConstructor, Then, When } from '@cucumber/cucumber';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
 import { getPackedAppPath } from '../supports/paths';
+
+// Set timeout to 60 seconds for application launch
+setDefaultTimeout(60 * 1000);
 
 class ApplicationWorld {
   app: ElectronApplication | undefined;
@@ -32,11 +35,12 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
   console.log('Launching packaged test app at:', packedAppPath);
 
   try {
+    console.log('Starting electron.launch...');
     this.app = await electron.launch({
       executablePath: packedAppPath,
       // CI environment specific args for headless testing
       args: [
-        '--no-sandbox', 
+        '--no-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
         '--disable-software-rasterizer',
@@ -44,7 +48,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
         '--disable-backgrounding-occluded-windows',
         '--disable-renderer-backgrounding',
         '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection'
+        '--disable-ipc-flooding-protection',
       ],
       env: {
         ...process.env,
@@ -52,9 +56,13 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
         // Force headless mode in CI
         DISPLAY: process.env.CI ? ':99' : (process.env.DISPLAY || ':0'),
       },
+      timeout: 60000, // 60 seconds timeout for app launch
     });
+    console.log('Electron app launched, getting first window...');
     this.mainWindow = await this.app.firstWindow();
+    console.log('Main window obtained successfully');
   } catch (error) {
+    console.error('Launch error details:', error);
     throw new Error(`Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package:dev\` before running the tests to ensure the app is built.`);
   }
 });

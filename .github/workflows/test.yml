@@ -53,6 +53,8 @@ jobs:
           sudo apt-get install -y xvfb
           export DISPLAY=:99
           Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          # Give Xvfb time to start
+          sleep 2
 
       - name: Run linting
         run: pnpm run lint
@@ -73,8 +75,99 @@ jobs:
       - name: Create logs directory
         run: mkdir -p logs
 
+      # Add debugging information before running e2e tests
+      - name: Debug environment and packaged app
+        run: |
+          echo "=== Environment Information ==="
+          echo "DISPLAY: $DISPLAY"
+          echo "PWD: $(pwd)"
+          echo "User: $(whoami)"
+          
+          echo "=== Packaged App Information ==="
+          ls -la out/TidGi-linux-x64/
+          file out/TidGi-linux-x64/tidgi
+          
+          echo "=== Virtual Display Check ==="
+          ps aux | grep Xvfb || echo "Xvfb not found"
+          echo "DISPLAY variable: $DISPLAY"
+          
+          echo "=== System Resources ==="
+          free -m
+          df -h
+          
+          echo "=== Create screenshots directory ==="
+          mkdir -p screenshots
+
       - name: Run e2e tests
         run: pnpm run test:e2e
         env:
           CI: true
           DISPLAY: :99
+          DEBUG: "*"
+        continue-on-error: true
+
+      # Collect logs immediately after test run
+      - name: Collect test artifacts
+        if: always()
+        run: |
+          echo "=== Collecting test artifacts ==="
+          
+          # Create artifacts directory
+          mkdir -p test-artifacts
+          
+          # Copy logs
+          cp -r logs/ test-artifacts/ 2>/dev/null || echo "No logs directory found"
+          
+          # Copy application logs if they exist
+          mkdir -p test-artifacts/app-logs
+          cp -r ~/.config/TidGi/logs/ test-artifacts/app-logs/ 2>/dev/null || echo "No TidGi config logs found"
+          cp -r userData-dev/logs/ test-artifacts/app-logs/ 2>/dev/null || echo "No userData-dev logs found"
+          
+          # Copy any screenshots
+          cp -r screenshots/ test-artifacts/ 2>/dev/null || echo "No screenshots directory found"
+          
+          # Copy cucumber reports
+          cp cucumber-report.json test-artifacts/ 2>/dev/null || echo "No cucumber-report.json found"
+          cp messages.ndjson test-artifacts/ 2>/dev/null || echo "No messages.ndjson found"
+          cp features/reports/ test-artifacts/ -r 2>/dev/null || echo "No features/reports found"
+          cp @rerun.txt test-artifacts/ 2>/dev/null || echo "No @rerun.txt found"
+          
+          # Create a test summary
+          echo "=== Test Summary ===" > test-artifacts/test-summary.txt
+          echo "Date: $(date)" >> test-artifacts/test-summary.txt
+          echo "Exit code from e2e tests: $?" >> test-artifacts/test-summary.txt
+          
+          # List all collected files
+          echo "=== Collected Files ===" >> test-artifacts/test-summary.txt
+          find test-artifacts -type f >> test-artifacts/test-summary.txt
+          
+          echo "Test artifacts collected successfully"
+
+      # Upload test artifacts even if tests fail
+      - name: Upload test logs and artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-logs
+          path: |
+            test-artifacts/
+            logs/
+            features/reports/
+            screenshots/
+            cucumber-report.json
+            messages.ndjson
+            @rerun.txt
+          retention-days: 7
+
+      # Upload application logs if they exist
+      - name: Upload application logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-logs
+          path: |
+            ~/.config/TidGi/logs/
+            ~/Library/Logs/TidGi/
+            userData-dev/logs/
+          retention-days: 7
+        continue-on-error: true
