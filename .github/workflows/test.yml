@@ -20,7 +20,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,8 +38,8 @@ jobs:
         with:
           path: |
             **/node_modules
-            ~/.pnpm-store
-            ~/.npm
+            %LOCALAPPDATA%/pnpm/store
+            ~\.npm
           key: test-${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             test-${{ runner.os }}-node-
@@ -57,7 +57,9 @@ jobs:
         run: pnpm run build:plugin
 
       - name: Package for testing
-        run: pnpm run package:dev
+        run: pnpm run package
 
       - name: Run e2e tests
         run: pnpm run test:e2e
+        env:
+          CI: true
