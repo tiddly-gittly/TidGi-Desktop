@@ -20,7 +20,7 @@ on:
 
 jobs:
   test:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -83,7 +83,7 @@ jobs:
         with:
           name: application-logs
           path: |
-            ~/Library/Logs/TidGi/
+            ~/.local/share/TidGi/
             userData-dev/logs/
           retention-days: 7
         continue-on-error: true

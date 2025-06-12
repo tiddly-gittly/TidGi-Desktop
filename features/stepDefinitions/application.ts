@@ -105,7 +105,9 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
     const windowTimeout = process.env.CI ? 45000 : 10000;
     this.mainWindow = await this.app.firstWindow({ timeout: windowTimeout });
   } catch (error) {
-    throw new Error(`Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package:dev\` before running the tests to ensure the app is built.`);
+    throw new Error(
+      `Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package\` before running the tests to ensure the app is built, and build with binaries like "dugite" and "tiddlywiki", see scripts/afterPack.js for more details.`,
+    );
   }
 });
 
