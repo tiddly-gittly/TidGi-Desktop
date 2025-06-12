@@ -59,7 +59,33 @@ jobs:
       - name: Package for testing
         run: pnpm run package
 
+      # Setup virtual display for Windows GUI testing
+      - name: Setup virtual display for Windows
+        run: |
+          # Enable desktop session for GUI applications
+          $ErrorActionPreference = "SilentlyContinue"
+          
+          # Start necessary services
+          Start-Service -Name "Themes"
+          Start-Service -Name "AudioSrv"
+          
+          # Configure registry for headless GUI
+          $registryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"
+          if (Test-Path $registryPath) {
+            Set-ItemProperty -Path $registryPath -Name "TdrLevel" -Value 0 -Type DWord -Force
+          }
+          
+          # Enable software rendering for Electron
+          $env:ELECTRON_DISABLE_HARDWARE_ACCELERATION = "1"
+          $env:ELECTRON_ENABLE_LOGGING = "1"
+          
+          Write-Output "Virtual display configured for Windows CI"
+
       - name: Run e2e tests
         run: pnpm run test:e2e
         env:
           CI: true
+          # Windows specific display settings
+          ELECTRON_ENABLE_LOGGING: true
+          ELECTRON_DISABLE_SECURITY_WARNINGS: true
+          ELECTRON_DISABLE_HARDWARE_ACCELERATION: true

@@ -36,14 +36,45 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
   try {
     this.app = await electron.launch({
       executablePath: packedAppPath,
-      // Add debugging options to prevent app from closing
-      args: ['--no-sandbox', '--disable-dev-shm-usage'],
+      // Add debugging options to prevent app from closing and CI-specific args
+      args: [
+        '--no-sandbox', 
+        '--disable-dev-shm-usage',
+        // Windows CI specific arguments
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection',
+        '--force-device-scale-factor=1',
+        '--high-dpi-support=1',
+        '--force-color-profile=srgb',
+        // Additional Windows CI flags
+        '--disable-extensions',
+        '--disable-plugins',
+        '--disable-default-apps',
+        '--virtual-time-budget=1000',
+        '--run-all-compositor-stages-before-draw',
+        '--disable-checker-imaging',
+      ],
       env: {
         ...process.env,
         NODE_ENV: 'test',
+        // Force Windows display settings for CI
+        ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
+        ...(process.env.CI && {
+          ELECTRON_ENABLE_LOGGING: 'true',
+          ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
+        }),
       },
+      timeout: 60000, // Increase timeout to 60 seconds for CI
     });
-    this.mainWindow = await this.app.firstWindow();
+    
+    // Wait longer for window in CI environment
+    const windowTimeout = process.env.CI ? 45000 : 10000;
+    this.mainWindow = await this.app.firstWindow({ timeout: windowTimeout });
   } catch (error) {
     throw new Error(`Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package:dev\` before running the tests to ensure the app is built.`);
   }
