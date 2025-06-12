@@ -1,20 +1,21 @@
 {
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "lib": ["ES2020", "dom"],
-    "outDir": "./stepDefinitions/compiled",
-    "rootDir": "./stepDefinitions",
-    "strict": true,
-    "esModuleInterop": true,
+    "rootDir": ".",
+    "outDir": "../out/features",
+    "noEmit": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "declaration": false,
-    "sourceMap": false,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "moduleResolution": "node"
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true
   },
-  "include": ["stepDefinitions/*.ts"],
-  "exclude": ["stepDefinitions/compiled"]
+  "include": [
+    "**/*.ts",
+    "**/*.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.d.ts"
+  ]
 }

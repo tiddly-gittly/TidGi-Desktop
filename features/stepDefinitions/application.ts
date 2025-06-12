@@ -1,8 +1,7 @@
 import { After, Before, setWorldConstructor, Then, When } from '@cucumber/cucumber';
-import fs from 'fs';
-import path from 'path';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
+import { getPackedAppPath } from '../supports/paths';
 
 class ApplicationWorld {
   app: ElectronApplication | undefined;
@@ -29,15 +28,10 @@ After(async function(this: ApplicationWorld) {
 });
 
 When('I launch the TidGi application', async function(this: ApplicationWorld) {
-  // For E2E tests on dev mode, use the packaged test version with NODE_ENV environment variable baked in, otherwise this will bring up existing production tidgi app on user's computer.
-  const packedAppPath = path.join(process.cwd(), 'out', 'TidGi-win32-x64', 'tidgi.exe');
+  // For E2E tests on dev mode, use the packaged test version with NODE_ENV environment variable baked in
 
+  const packedAppPath = getPackedAppPath();
   console.log('Launching packaged test app at:', packedAppPath);
-
-  // Check if the executable exists before trying to launch
-  if (!fs.existsSync(packedAppPath)) {
-    throw new Error(`TidGi executable not found at ${packedAppPath}. You should run \`pnpm run package:test\` before running the tests to ensure the app is built.`);
-  }
 
   try {
     this.app = await electron.launch({
@@ -51,7 +45,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
     });
     this.mainWindow = await this.app.firstWindow();
   } catch (error) {
-    throw new Error(`Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package:test\` before running the tests to ensure the app is built.`);
+    throw new Error(`Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package:dev\` before running the tests to ensure the app is built.`);
   }
 });
 

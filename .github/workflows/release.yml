@@ -22,47 +22,7 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 'latest'
-          run_install: false
-
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            **/node_modules
-            ~/.pnpm-store
-            ~/.npm
-          key: test-${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            test-${{ runner.os }}-node-
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Run unit tests
-        run: pnpm run test:unit
-
-      - name: Build plugins
-        run: pnpm run build:plugin
-
-      - name: Package for testing
-        run: pnpm run package:dev
-
-      - name: Run e2e tests
-        run: pnpm run test:e2e
+    uses: ./.github/workflows/test.yml
 
   build:
     needs: test
