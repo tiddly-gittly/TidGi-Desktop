@@ -139,3 +139,15 @@ pnpm up @electron/rebuild@latest
 ### Fetch failed at fetchAvailableUpdates
 
 We use [electron-chrome-web-store](https://github.com/samuelmaddock/electron-browser-shell/blob/master/packages/electron-chrome-web-store/README.md) to load react dev tools, so you need to add `https://clients2.google.com/service/update2/crx` to your Clash/Proxifier list. May need to enable system proxy and TUN mode or so.
+
+### Finalizing package postPackage error
+
+Add `DEBUG=electron-packager` to package, like:
+
+`cross-env NODE_ENV=production DEBUG=electron-packager electron-forge make --platform=win32 --arch=x64`
+
+<https://github.com/electron/forge/issues/3645>
+
+Usually you need to fix [scripts\afterPack.js](../scripts/afterPack.js)
+
+If use pnpm, need to copy dependency binary from `.pnpm` folder, but if add `node-linker=hoisted` to [.npmrc](../.npmrc) then we can simply copy from node_modules folder.

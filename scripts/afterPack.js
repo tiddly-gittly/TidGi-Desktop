@@ -118,13 +118,9 @@ exports.default = async (
     }
     console.log('Copy dugite');
     // it has things like `git/bin/libexec/git-core/git-add` link to `git/bin/libexec/git-core/git`, to reduce size, so can't use `dereference: true, recursive: true` here.
-    // And pnpm will have node_modules/dugite to be a shortcut, can't just copy it with `dereference: false`, have to copy from .pnpm folder
     fs.copySync(
       path.join(
         sourceNodeModulesFolder,
-        '.pnpm',
-        `dugite@${packageJSON.dependencies.dugite}`,
-        'node_modules',
         'dugite',
       ),
       path.join(cwd, 'node_modules', 'dugite'),
