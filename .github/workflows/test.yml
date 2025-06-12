@@ -44,11 +44,18 @@ jobs:
       - name: Package for testing
         run: pnpm run package
 
+      # Install minimal Linux dependencies for Electron GUI testing https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci
+      - name: Install Linux GUI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
       - name: Run e2e tests
-        run: pnpm run test:e2e
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" pnpm run test:e2e
         env:
           CI: true
-        timeout-minutes: 10
+          DISPLAY: :99
+        timeout-minutes: 15
 
       # Upload test artifacts (screenshots, logs)
       - name: Upload test artifacts

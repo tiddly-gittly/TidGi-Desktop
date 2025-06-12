@@ -69,7 +69,6 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
       args: [
         '--no-sandbox',
         '--disable-dev-shm-usage',
-        // macOS CI specific arguments
         '--disable-gpu',
         '--disable-software-rasterizer',
         '--disable-background-timer-throttling',
@@ -80,13 +79,22 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
         '--force-device-scale-factor=1',
         '--high-dpi-support=1',
         '--force-color-profile=srgb',
-        // Additional CI flags
         '--disable-extensions',
         '--disable-plugins',
         '--disable-default-apps',
         '--virtual-time-budget=1000',
         '--run-all-compositor-stages-before-draw',
         '--disable-checker-imaging',
+        // Linux CI specific arguments
+        ...(process.env.CI && process.platform === 'linux' ? [
+          '--disable-background-mode',
+          '--disable-features=VizDisplayCompositor',
+          '--use-gl=swiftshader',
+          '--disable-accelerated-2d-canvas',
+          '--disable-accelerated-jpeg-decoding',
+          '--disable-accelerated-mjpeg-decode',
+          '--disable-accelerated-video-decode',
+        ] : []),
       ],
       env: {
         ...process.env,
