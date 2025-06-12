@@ -1,5 +1,52 @@
 # Deal with error when pnpm start
 
+## `Uncaught ReferenceError: require is not defined`
+
+Or `Uncaught TypeError: Cannot read properties of undefined (reading 'call')    at __webpack_require__ (index.js:4317:33)`
+
+`pnpm run clean:cache` can fix this.
+
+## Electron download slow
+
+Add `.npmrc` on this project (sometimes the one at home folder is not working).
+
+```npmrc
+electron-mirror=https://registry.npmmirror.com/-/binary/electron/
+electron_custom_dir={{ version }}
+```
+
+and run `node node_modules/electron/install.js` manually.
+
+## Preparing native dependencies `Error: ENOENT: no such file or directory, stat 'xxx/node_modules/.pnpm/node_modules/@types/lodash-es'`
+
+Or `[FAILED: ENOENT: no such file or directory, stat 'C:\Users\linonetwo\Documents\repo-c\TidGi-Desktop\node_modules\.pnpm\node_modules\@radix-ui\react-compose-refs']`
+
+Remove it by run `rm 'xxx/node_modules/.pnpm/node_modules/@types/lodash-es'` fixes it. Maybe pnpm install gets interrupted, and make a file-like symlink, get recognized as binary file. Remove it will work.
+
+## An unhandled rejection has occurred inside Forge about node-abi:
+
+Solution: Update `@electron/rebuild` to latest version:
+
+```shell
+pnpm up @electron/rebuild@latest
+```
+
+## Fetch failed at fetchAvailableUpdates
+
+We use [electron-chrome-web-store](https://github.com/samuelmaddock/electron-browser-shell/blob/master/packages/electron-chrome-web-store/README.md) to load react dev tools, so you need to add `https://clients2.google.com/service/update2/crx` to your Clash/Proxifier list. May need to enable system proxy and TUN mode or so.
+
+## Finalizing package postPackage error
+
+Add `DEBUG=electron-packager` to package, like:
+
+`cross-env NODE_ENV=production DEBUG=electron-packager electron-forge make --platform=win32 --arch=x64`
+
+<https://github.com/electron/forge/issues/3645>
+
+Usually you need to fix [scripts\afterPack.js](../scripts/afterPack.js)
+
+If use pnpm, need to copy dependency binary from `.pnpm` folder, but if add `node-linker=hoisted` to [.npmrc](../.npmrc) then we can simply copy from node_modules folder.
+
 ## no such file or directory dprint
 
 > no such file or directory, stat 'TiddlyGit-Desktop/node_modules/.pnpm/node_modules/@dprint/darwin-arm64'
@@ -45,3 +92,15 @@ Solution:
 ```sh
 node_modules/.bin/electron-rebuild -f -w better-sqlite3
 ```
+
+## Error: The module '/Users/linonetwo/Desktop/repo/TidGi-Desktop/node_modules/opencv4nodejs-prebuilt/build/Release/opencv4nodejs.node'
+
+was compiled against a different Node.js version using
+
+NODE_MODULE_VERSION 88. This version of Node.js requires
+
+NODE_MODULE_VERSION 93. Please try re-compiling or re-installing
+
+the module (for instance, using `npm rebuild` or `npm install`).
+
+See <https://github.com/justadudewhohacks/opencv4nodejs/issues/401#issuecomment-463434713> if you still have problem rebuild opencv for @nut-tree/nut-js

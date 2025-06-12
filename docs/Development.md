@@ -10,58 +10,108 @@ Explanation of our code can be found in the [Wiki](https://github.com/tiddly-git
 
 <summary>To contribute, fork this repo, then clone it and setup development environment</summary>
 
+First-Time Setup Commands
+
 ```shell
-# First, clone the project:
+# Clone the project that you forked
 git clone https://github.com/YOUR_ACCOUNT/TidGi-Desktop.git
 cd TidGi-Desktop
-# Or maybe you are just using Github Desktop
-# or GitKraken to clone this repo,
-# and open it in your favorite code editor and terminal app
 
-# switch to the nodejs version same as electron used version, other wise you may get
-
-# Error: The module '/Users/linonetwo/Desktop/repo/TidGi-Desktop/node_modules/opencv4nodejs-prebuilt/build/Release/opencv4nodejs.node'
-
-# was compiled against a different Node.js version using
-
-# NODE_MODULE_VERSION 88. This version of Node.js requires
-
-# NODE_MODULE_VERSION 93. Please try re-compiling or re-installing
-
-# the module (for instance, using `npm rebuild` or `npm install`).
-
-# See https://github.com/justadudewhohacks/opencv4nodejs/issues/401#issuecomment-463434713 if you still have problem rebuild opencv for @nut-tree/nut-js
-
+# Switch to the correct Node.js version (recommended)
 nvm use
 
-# install the dependencies
+# Install dependencies
+pnpm install
 
-npm i
-
-# Run development mode
-
-# You can see webpack error messages in http://localhost:9000/
-
-npm start
-
-# Build for production
-
-npm run package
+# Full setup with all checks
+pnpm start
 ```
 
-### Publish
+Development Workflow
 
-Add a tag like `vx.x.x` to a commit, and push it to the origin, Github will start building App for all three platforms.
+1. First run: Use `pnpm start` to ensure everything is properly set up
+2. Daily development: Use `pnpm run start:dev` for faster iteration
+3. After pulling changes: Run `pnpm run build:plugin` if plugins were updated
+4. Before committing: Run `pnpm run lint` and `pnpm run test`
 
-After Github Action completed, you can open Releases to see the Draft release created by Github, add some comment and publish it.
+Note: You can see webpack error messages at console during development.
 
 </details>
+
+## Package.json Scripts
+
+### Development Scripts
+
+#### Quick Development (Recommended for daily use)
+
+```shell
+pnpm run start:dev
+```
+
+This is the fastest way to start development. It directly launches the Electron app without running the full setup process, making it ideal for iterative development.
+
+#### Full Development Setup
+
+```shell
+pnpm start
+```
+
+This runs the complete setup process including:
+
+- `clean` - Clears build artifacts and development folders
+- `init:git-submodule` - Updates git submodules
+- `build:plugin` - Compiles TiddlyWiki plugins
+- `start:dev` - Launches the Electron application
+
+#### Debug Variants
+
+```shell
+pnpm run start:dev:debug-worker    # Debug worker threads
+pnpm run start:dev:debug-main      # Debug main process
+pnpm run start:dev:debug-react     # Debug React renderer, react-devtool will be available in devtools
+```
+
+### Build & Package Scripts
+
+```shell
+pnpm run build:plugin    # Compile TiddlyWiki plugins only
+pnpm run package         # Package for production
+pnpm run package:dev     # Package for testing (with NODE_ENV=test)
+pnpm run make            # Create distributable packages
+```
+
+### Testing Scripts
+
+```shell
+pnpm run test           # Run all tests (unit + E2E)
+pnpm run test:unit      # Run Jest unit tests only
+pnpm run test:e2e       # Run Cucumber E2E tests only
+```
+
+### E2E Testing
+
+E2E tests require the packaged application to run. Key points:
+
+- Tests run against the packaged application to simulate real user scenarios
+- Uses Playwright + Cucumber for browser automation
+- Test reports are saved to `logs/` directory
+
+### Utility Scripts
+
+```shell
+pnpm run clean          # Clean build artifacts and temp folders
+pnpm run clean:cache    # Clear webpack and build caches, this can fix some error.
+pnpm run lint           # Run ESLint
+pnpm run lint:fix       # Run ESLint with auto-fix
+```
+
+### First-Time Setup Commands
 
 ## How to add dependency that used in a worker_thread
 
 For example: `tiddlywiki`
 
-1. `npm i tiddlywiki`
+1. `pnpm i tiddlywiki`
 1. Add `ExternalsPlugin` in webpack.plugins.js (maybe optional for some deps, tiddlywiki needs this because its custom `require` can't require things that is bundled by webpack. `dugite` don't need this step)
 1. Add a `await fs.copy(path.join(projectRoot, 'node_modules/tiddlywiki')` in `scripts/afterPack.js` , to copy things to resource folder, that is outside of asar, so it can be used by the worker_thread in electron
 
@@ -105,49 +155,4 @@ TBD
 
 ## FAQ
 
-### `Uncaught ReferenceError: require is not defined`
-
-Or `Uncaught TypeError: Cannot read properties of undefined (reading 'call')    at __webpack_require__ (index.js:4317:33)`
-
-`pnpm run clean:cache` can fix this.
-
-### Electron download slow
-
-Add `.npmrc` on this project (sometimes the one at home folder is not working).
-
-```npmrc
-electron-mirror=https://registry.npmmirror.com/-/binary/electron/
-electron_custom_dir={{ version }}
-```
-
-and run `node node_modules/electron/install.js` manually.
-
-### Preparing native dependencies `Error: ENOENT: no such file or directory, stat 'xxx/node_modules/.pnpm/node_modules/@types/lodash-es'`
-
-Or `[FAILED: ENOENT: no such file or directory, stat 'C:\Users\linonetwo\Documents\repo-c\TidGi-Desktop\node_modules\.pnpm\node_modules\@radix-ui\react-compose-refs']`
-
-Remove it by run `rm 'xxx/node_modules/.pnpm/node_modules/@types/lodash-es'` fixes it. Maybe pnpm install gets interrupted, and make a file-like symlink, get recognized as binary file. Remove it will work.
-
-### An unhandled rejection has occurred inside Forge about node-abi:
-
-Solution: Update `@electron/rebuild` to latest version:
-
-```shell
-pnpm up @electron/rebuild@latest
-```
-
-### Fetch failed at fetchAvailableUpdates
-
-We use [electron-chrome-web-store](https://github.com/samuelmaddock/electron-browser-shell/blob/master/packages/electron-chrome-web-store/README.md) to load react dev tools, so you need to add `https://clients2.google.com/service/update2/crx` to your Clash/Proxifier list. May need to enable system proxy and TUN mode or so.
-
-### Finalizing package postPackage error
-
-Add `DEBUG=electron-packager` to package, like:
-
-`cross-env NODE_ENV=production DEBUG=electron-packager electron-forge make --platform=win32 --arch=x64`
-
-<https://github.com/electron/forge/issues/3645>
-
-Usually you need to fix [scripts\afterPack.js](../scripts/afterPack.js)
-
-If use pnpm, need to copy dependency binary from `.pnpm` folder, but if add `node-linker=hoisted` to [.npmrc](../.npmrc) then we can simply copy from node_modules folder.
+[ErrorDuringStart](./ErrorDuringStart.md)
