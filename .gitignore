@@ -70,3 +70,11 @@ userData-dev/
 wiki-dev/
 *.tsbuildinfo
 tsconfig.test.json.tsbuildinfo
+
+# E2E test artifacts
+logs/
+reports/
+*.png
+*.jpg
+*.jpeg
+screenshots/

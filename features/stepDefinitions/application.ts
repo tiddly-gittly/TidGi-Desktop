@@ -28,19 +28,29 @@ After(async function(this: ApplicationWorld) {
 });
 
 When('I launch the TidGi application', async function(this: ApplicationWorld) {
-  // For E2E tests on dev mode, use the packaged test version with NODE_ENV environment variable baked in
-
   const packedAppPath = getPackedAppPath();
   console.log('Launching packaged test app at:', packedAppPath);
 
   try {
     this.app = await electron.launch({
       executablePath: packedAppPath,
-      // Add debugging options to prevent app from closing
-      args: ['--no-sandbox', '--disable-dev-shm-usage'],
+      // CI environment specific args for headless testing
+      args: [
+        '--no-sandbox', 
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection'
+      ],
       env: {
         ...process.env,
         NODE_ENV: 'test',
+        // Force headless mode in CI
+        DISPLAY: process.env.CI ? ':99' : process.env.DISPLAY,
       },
     });
     this.mainWindow = await this.app.firstWindow();

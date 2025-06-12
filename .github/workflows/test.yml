@@ -46,6 +46,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      # Set up virtual display for Linux GUI testing
+      - name: Set up virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+
       - name: Run linting
         run: pnpm run lint
         continue-on-error: true
@@ -57,7 +65,16 @@ jobs:
         run: pnpm run build:plugin
 
       - name: Package for testing
-        run: pnpm run package:dev
+        run: pnpm run package
+
+      - name: Set executable permissions
+        run: chmod +x out/TidGi-linux-x64/tidgi
+
+      - name: Create logs directory
+        run: mkdir -p logs
 
       - name: Run e2e tests
         run: pnpm run test:e2e
+        env:
+          CI: true
+          DISPLAY: :99
