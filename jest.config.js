@@ -28,6 +28,10 @@ module.exports = {
     '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/src/__tests__/__mocks__/fileMock.js',
   },
   
+  // Performance optimizations
+  maxWorkers: '50%', // 使用CPU核心数的50%进行并行测试
+  cacheDirectory: '<rootDir>/node_modules/.cache/jest', // 启用Jest缓存
+  
   // Coverage settings
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
@@ -43,22 +47,29 @@ module.exports = {
   // Ignored paths
   modulePathIgnorePatterns: ['<rootDir>/out/', '<rootDir>/.webpack/'],
   
-  // Modern ts-jest configuration
+  // 优化的ts-jest配置
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: {
-        experimentalDecorators: true,
-        emitDecoratorMetadata: true,
-        jsx: 'react-jsx',
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true,
-      },
+      tsconfig: './tsconfig.test.json', // 使用专门的测试配置
     }],
   },
+  
+  // 全局配置优化 - 修正警告
+  // globals: {
+  //   'ts-jest': {
+  //     isolatedModules: true, // 提高编译速度
+  //     useESM: false,
+  //   },
+  // },
   
   // Environment variables
   setupFiles: ['<rootDir>/src/__tests__/environment.ts'],
   
-  // Timeout setting
-  testTimeout: 10000,
+  // 缩短超时时间
+  testTimeout: 5000, // 从10000减少到5000
+  
+  // 并行化配置
+  runner: 'jest-runner', // 确保使用默认runner
+  detectOpenHandles: false, // 禁用检测打开的句柄以提高性能
+  forceExit: true, // 强制退出以避免EPERM错误
 };

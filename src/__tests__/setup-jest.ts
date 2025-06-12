@@ -5,26 +5,26 @@
 import 'reflect-metadata';
 import '@testing-library/jest-dom';
 
-// Mock Electron APIs
+// 简化的 Electron API mock
 const mockElectron = {
   ipcRenderer: {
-    invoke: jest.fn(),
+    invoke: jest.fn().mockResolvedValue(undefined),
     send: jest.fn(),
     on: jest.fn(),
     removeAllListeners: jest.fn(),
   },
   shell: {
-    openExternal: jest.fn(),
+    openExternal: jest.fn().mockResolvedValue(undefined),
   },
   app: {
     getVersion: jest.fn(() => '0.12.1'),
-    getPath: jest.fn(),
+    getPath: jest.fn(() => '/mock/path'),
   },
 };
 
 jest.mock('electron', () => mockElectron);
 
-// Mock i18next
+// 简化的 i18next mock
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, defaultValue?: string) => defaultValue || key,
@@ -35,24 +35,36 @@ jest.mock('react-i18next', () => ({
   Trans: ({ children }: { children: any }) => children,
 }));
 
-// Setup window.matchMedia
+// 优化的 window.matchMedia mock
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: jest.fn().mockImplementation((query: any) => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
 });
 
-// Mock ResizeObserver
+// 简化的 ResizeObserver mock
 (global as any).ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
 }));
+
+// Mock console 方法以减少测试输出噪音
+const originalError = console.error;
+const originalWarn = console.warn;
+console.error = jest.fn();
+console.warn = jest.fn();
+
+// 在测试结束后恢复
+afterAll(() => {
+  console.error = originalError;
+  console.warn = originalWarn;
+});
