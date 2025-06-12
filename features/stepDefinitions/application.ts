@@ -36,6 +36,25 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
 
   try {
     console.log('Starting electron.launch...');
+
+    // Add file existence check
+    const fs = await import('fs');
+    if (!fs.existsSync(packedAppPath)) {
+      throw new Error(`Executable not found at path: ${packedAppPath}. Please run 'pnpm run package' first.`);
+    }
+    
+    console.log('Executable exists, checking permissions...');
+    try {
+      await fs.promises.access(packedAppPath, fs.constants.F_OK | fs.constants.X_OK);
+      console.log('Executable is accessible and executable');
+    } catch (permError) {
+      console.warn('Permission check failed:', permError);
+    }
+
+    // Ensure DISPLAY is set correctly for CI
+    const displayEnvironment = process.env.CI ? ':99' : (process.env.DISPLAY || ':0');
+    console.log('Using DISPLAY:', displayEnvironment);
+
     this.app = await electron.launch({
       executablePath: packedAppPath,
       // CI environment specific args for headless testing
@@ -49,21 +68,72 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
         '--disable-renderer-backgrounding',
         '--disable-features=TranslateUI',
         '--disable-ipc-flooding-protection',
+        '--disable-web-security',
+        '--ignore-certificate-errors',
+        '--allow-running-insecure-content',
+        // Additional flags for CI stability
+        '--disable-extensions',
+        '--disable-plugins',
+        '--disable-default-apps',
+        '--disable-background-networking',
+        '--disable-sync',
+        '--metrics-recording-only',
+        '--no-first-run',
       ],
       env: {
         ...process.env,
         NODE_ENV: 'test',
-        // Force headless mode in CI
-        DISPLAY: process.env.CI ? ':99' : (process.env.DISPLAY || ':0'),
+        DISPLAY: displayEnvironment,
+        // Ensure other required env vars are set
+        HOME: process.env.HOME || '/home/runner',
+        TMPDIR: process.env.TMPDIR || '/tmp',
       },
       timeout: 60000, // 60 seconds timeout for app launch
     });
-    console.log('Electron app launched, getting first window...');
-    this.mainWindow = await this.app.firstWindow();
-    console.log('Main window obtained successfully');
+    console.log('Electron app launched, waiting for first window...');
+
+    // Use explicit timeout for firstWindow with better error handling
+    try {
+      this.mainWindow = await this.app.firstWindow({ timeout: 90000 }); // Increase to 90 seconds
+      console.log('Main window obtained successfully');
+    } catch (windowError) {
+      console.error('Failed to get first window:', windowError);
+      
+      // Try alternative approaches
+      const pages = this.app.windows();
+      if (pages.length > 0) {
+        console.log(`Found ${pages.length} pages, using first page as main window`);
+        this.mainWindow = pages[0];
+      } else {
+        console.log('No pages found, waiting for page event...');
+        const context = this.app.context();
+        await context.waitForEvent('page', { timeout: 30000 });
+        this.mainWindow = await this.app.firstWindow({ timeout: 10000 });
+      }
+    }
+
+    // Wait a bit for the window to be fully ready
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log('Window ready for interaction');
   } catch (error) {
     console.error('Launch error details:', error);
-    throw new Error(`Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package:dev\` before running the tests to ensure the app is built.`);
+
+    // Try to get more debug info if app was created
+    if (this.app) {
+      try {
+        const pages = this.app.windows();
+        console.log('Number of windows:', pages.length);
+
+        // Get console logs from main process
+        this.app.on('console', message => {
+          console.log('Main process log:', message.text());
+        });
+      } catch (debugError) {
+        console.error('Debug info error:', debugError);
+      }
+    }
+
+    throw new Error(`Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package\` before running the tests to ensure the app is built.`);
   }
 });
 

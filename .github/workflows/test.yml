@@ -50,11 +50,15 @@ jobs:
       - name: Set up virtual display
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb
+          sudo apt-get install -y xvfb xauth
           export DISPLAY=:99
-          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          # Start Xvfb with better configuration for Electron
+          Xvfb :99 -screen 0 1280x1024x24 -ac -nolisten tcp -dpi 96 > /dev/null 2>&1 &
           # Give Xvfb time to start
-          sleep 2
+          sleep 3
+          # Verify DISPLAY is working
+          echo "DISPLAY is set to: $DISPLAY"
+          xdpyinfo -display :99 >/dev/null 2>&1 && echo "✓ Virtual display is working" || echo "✗ Virtual display failed"
 
       - name: Run linting
         run: pnpm run lint
@@ -69,8 +73,30 @@ jobs:
       - name: Package for testing
         run: pnpm run package
 
+      - name: Verify package output
+        run: |
+          echo "=== Checking package output ==="
+          ls -la out/
+          if [ -d "out/TidGi-linux-x64" ]; then
+            echo "TidGi-linux-x64 directory found"
+            ls -la out/TidGi-linux-x64/
+          else
+            echo "TidGi-linux-x64 directory not found, checking all directories:"
+            find out/ -name "*tidgi*" -o -name "*TidGi*" 2>/dev/null || echo "No TidGi binaries found"
+          fi
+
       - name: Set executable permissions
-        run: chmod +x out/TidGi-linux-x64/tidgi
+        run: |
+          # Find the actual executable
+          TIDGI_EXEC=$(find out/ -name "tidgi" -o -name "TidGi" -type f 2>/dev/null | head -1)
+          if [ -n "$TIDGI_EXEC" ]; then
+            echo "Found TidGi executable at: $TIDGI_EXEC"
+            chmod +x "$TIDGI_EXEC"
+            ls -la "$TIDGI_EXEC"
+          else
+            echo "No TidGi executable found"
+            exit 1
+          fi
 
       - name: Create logs directory
         run: mkdir -p logs

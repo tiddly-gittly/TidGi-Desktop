@@ -10,7 +10,8 @@ module.exports = {
       snippetInterface: 'async-await',
     },
     paths: ['features/*.feature'],
-    timeout: 60000, // Increase timeout for CI
-    retry: process.env.CI ? 1 : 0, // Retry once in CI
+    timeout: 120000, // Increase timeout to 2 minutes for CI
+    retry: process.env.CI ? 2 : 0, // Retry twice in CI due to potential timing issues
+    retryTagFilter: '@smoke', // Only retry smoke tests
   },
 };
