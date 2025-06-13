@@ -1,5 +1,5 @@
+import { PageType } from '@/constants/pageTypes';
 import type { TFunction } from 'i18next';
-import { PageType } from './interface';
 
 export function getBuildInPageName(pageType: PageType, t: TFunction) {
   switch (pageType) {
@@ -11,6 +11,9 @@ export function getBuildInPageName(pageType: PageType, t: TFunction) {
     }
     case PageType.guide: {
       return t('WorkspaceSelector.Guide');
+    }
+    case PageType.agent: {
+      return t('WorkspaceSelector.Agent');
     }
   }
 }

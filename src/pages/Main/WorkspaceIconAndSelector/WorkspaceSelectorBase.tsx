@@ -121,6 +121,7 @@ const Badge = styled(BadgeRaw)`
 interface Props {
   active?: boolean;
   badgeCount?: number;
+  customIcon?: React.ReactElement;
   hibernated?: boolean;
   id: string;
   index?: number;
@@ -138,6 +139,7 @@ export function WorkspaceSelectorBase({
   active = false,
   restarting: loading = false,
   badgeCount = 0,
+  customIcon,
   hibernated = false,
   showSideBarIcon = true,
   id,
@@ -166,7 +168,7 @@ export function WorkspaceSelectorBase({
           ? (
             '※'
           )
-          : <AvatarPicture alt='Icon' $large={!showSidebarTexts} src={picturePath ? getAssetsFileUrl(picturePath) : defaultIcon} draggable={false} />)}
+          : customIcon || <AvatarPicture alt='Icon' $large={!showSidebarTexts} src={picturePath ? getAssetsFileUrl(picturePath) : defaultIcon} draggable={false} />)}
     </Avatar>
   );
   if (loading) {

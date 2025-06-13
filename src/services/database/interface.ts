@@ -1,14 +1,12 @@
 import { DatabaseChannel } from '@/constants/channels';
 import { IUserInfos } from '@services/auth/interface';
 import { AIGlobalSettings } from '@services/externalAPI/interface';
-import { IPage } from '@services/pages/interface';
 import { IPreferences } from '@services/preferences/interface';
 import { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { DataSource } from 'typeorm';
 
 export interface ISettingFile {
-  pages: Record<string, IPage>;
   preferences: IPreferences;
   userInfos: IUserInfos;
   workspaces: Record<string, IWorkspace>;

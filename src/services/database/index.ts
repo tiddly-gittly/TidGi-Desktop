@@ -33,7 +33,7 @@ export class DatabaseService implements IDatabaseService {
   private readonly schemaRegistry = new Map<string, SchemaConfig>();
 
   // Settings related fields
-  private settingFileContent: ISettingFile = settings.getSync() as unknown as ISettingFile || {};
+  private settingFileContent: ISettingFile = settings.getSync() as unknown as ISettingFile;
   private settingBackupStream: rotateFs.RotatingFileStream | undefined;
   private storeSettingsToFileLock = false;
 

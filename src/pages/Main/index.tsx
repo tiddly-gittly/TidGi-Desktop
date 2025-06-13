@@ -5,7 +5,7 @@ import { DefaultTheme, styled } from 'styled-components';
 import is, { isNot } from 'typescript-styled-is';
 import { Route, Switch } from 'wouter';
 
-import { PageType } from '@services/pages/interface';
+import { PageType } from '@/constants/pageTypes';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { Guide } from '../Guide';

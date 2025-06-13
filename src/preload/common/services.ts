@@ -16,7 +16,6 @@ import { GitServiceIPCDescriptor, IGitService } from '@services/git/interface';
 import { IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
 import { INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';
 import { INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
-import { IPagesService, PagesServiceIPCDescriptor } from '@services/pages/interface';
 import { IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/preferences/interface';
 import { ISyncService, SyncServiceIPCDescriptor } from '@services/sync/interface';
 import { ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences/interface';
@@ -41,7 +40,6 @@ export const git = createProxy<IGitService>(GitServiceIPCDescriptor);
 export const menu = createProxy<IMenuService>(MenuServiceIPCDescriptor);
 export const native = createProxy<INativeService>(NativeServiceIPCDescriptor);
 export const notification = createProxy<INotificationService>(NotificationServiceIPCDescriptor);
-export const pages = createProxy<IPagesService>(PagesServiceIPCDescriptor);
 export const preference = createProxy<IPreferenceService>(PreferenceServiceIPCDescriptor);
 export const sync = createProxy<ISyncService>(SyncServiceIPCDescriptor);
 export const systemPreference = createProxy<ISystemPreferenceService>(SystemPreferenceServiceIPCDescriptor);
@@ -65,7 +63,6 @@ export const descriptors = {
   menu: MenuServiceIPCDescriptor,
   native: NativeServiceIPCDescriptor,
   notification: NotificationServiceIPCDescriptor,
-  pages: PagesServiceIPCDescriptor,
   preference: PreferenceServiceIPCDescriptor,
   sync: SyncServiceIPCDescriptor,
   systemPreference: SystemPreferenceServiceIPCDescriptor,

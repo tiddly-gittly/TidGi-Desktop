@@ -3,7 +3,6 @@ import type { IAuthenticationService } from '@services/auth/interface';
 import { IContextService } from '@services/context/interface';
 import { IGitService } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
-import { IPagesService } from '@services/pages/interface';
 import { ISyncService } from '@services/sync/interface';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
@@ -22,7 +21,6 @@ interface IWorkspaceMenuRequiredServices {
   context: Pick<IContextService, 'isOnline'>;
   git: Pick<IGitService, 'commitAndSync'>;
   native: Pick<INativeService, 'log' | 'openURI' | 'openPath' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualInfo'>;
-  pages: Pick<IPagesService, 'setActivePage' | 'getActivePage'>;
   sync: Pick<ISyncService, 'syncWikiIfNeeded'>;
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
   wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer'>;

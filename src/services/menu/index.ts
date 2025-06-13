@@ -7,7 +7,6 @@ import type { IGitService } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
-import type { IPagesService } from '@services/pages/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { ISyncService } from '@services/sync/interface';
@@ -39,9 +38,6 @@ export class MenuService implements IMenuService {
 
   @lazyInject(serviceIdentifier.Git)
   private readonly gitService!: IGitService;
-
-  @lazyInject(serviceIdentifier.Pages)
-  private readonly pagesService!: IPagesService;
 
   @lazyInject(serviceIdentifier.NativeService)
   private readonly nativeService!: INativeService;
@@ -295,7 +291,6 @@ export class MenuService implements IMenuService {
       context: this.contextService,
       git: this.gitService,
       native: this.nativeService,
-      pages: this.pagesService,
       view: this.viewService,
       wiki: this.wikiService,
       wikiGitWorkspace: this.wikiGitWorkspaceService,

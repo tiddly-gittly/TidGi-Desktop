@@ -1,4 +1,5 @@
 import { WorkspaceChannel } from '@/constants/channels';
+import { PageType } from '@/constants/pageTypes';
 import { SupportedStorageServices } from '@services/types';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { BehaviorSubject, Observable } from 'rxjs';
@@ -83,6 +84,11 @@ export interface IWorkspace {
    * You can drag workspaces to reorder them
    */
   order: number;
+  /**
+   * If this workspace represents a page (like help, guide, agent), this field indicates the page type.
+   * If null or undefined, this is a regular wiki workspace.
+   */
+  pageType?: PageType | null;
   /**
    * workspace icon's path in file system
    */
@@ -214,6 +220,10 @@ export interface IWorkspaceService {
   getWorkspacesAsList(): Promise<IWorkspace[]>;
   getWorkspacesWithMetadata(): IWorkspacesWithMetadata;
   /**
+   * Initialize default page workspaces on first startup
+   */
+  initializeDefaultPageWorkspaces(): Promise<void>;
+  /**
    * Open a tiddler in the workspace, open workspace's tag by default.
    */
   openWorkspaceTiddler(workspace: IWorkspace, title?: string): Promise<void>;
@@ -255,6 +265,7 @@ export const WorkspaceServiceIPCDescriptor = {
     getWorkspaces: ProxyPropertyType.Function,
     getWorkspacesAsList: ProxyPropertyType.Function,
     getWorkspacesWithMetadata: ProxyPropertyType.Function,
+    initializeDefaultPageWorkspaces: ProxyPropertyType.Function,
     openWorkspaceTiddler: ProxyPropertyType.Function,
     remove: ProxyPropertyType.Function,
     removeWorkspacePicture: ProxyPropertyType.Function,

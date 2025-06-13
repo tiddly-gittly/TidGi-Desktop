@@ -31,6 +31,7 @@ import { initDevelopmentExtension } from './debug';
 import { isLinux } from './helpers/system';
 import type { IPreferenceService } from './services/preferences/interface';
 import type { IWindowService } from './services/windows/interface';
+import type { IWorkspaceService } from './services/workspaces/interface';
 import type { IWorkspaceViewService } from './services/workspacesView/interface';
 
 logger.info('App booting');
@@ -58,6 +59,7 @@ const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater)
 const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);
 const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
@@ -99,6 +101,8 @@ const commonInit = async (): Promise<void> => {
     }),
   ]);
   initializeObservables();
+  // Initialize default page workspaces before initializing all workspace views
+  await workspaceService.initializeDefaultPageWorkspaces();
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();
 

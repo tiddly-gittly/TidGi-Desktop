@@ -58,7 +58,8 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async initializeAllWorkspaceView(): Promise<void> {
     const workspacesList = await this.workspaceService.getWorkspacesAsList();
-    workspacesList.filter((workspace) => !workspace.isSubWiki).forEach((workspace) => {
+    // Only set wiki start lock for regular wiki workspaces (not subwikis or page workspaces)
+    workspacesList.filter((workspace) => !workspace.isSubWiki && !workspace.pageType).forEach((workspace) => {
       this.wikiService.setWikiStartLockOn(workspace.id);
     });
     // sorting (-1 will make a in the front, b in the back)
@@ -74,6 +75,13 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async initializeWorkspaceView(workspace: IWorkspace, options: IInitializeWorkspaceOptions = {}): Promise<void> {
     logger.info(i18n.t('Log.InitializeWorkspaceView'));
+    
+    // Skip initialization for page workspaces - they don't need TiddlyWiki setup
+    if (workspace.pageType) {
+      logger.info(`Skipping initialization for page workspace: ${workspace.id} (${workspace.pageType})`);
+      return;
+    }
+    
     const { followHibernateSettingWhenInit = true, syncImmediately = true, isNew = false } = options;
     // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
     if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {

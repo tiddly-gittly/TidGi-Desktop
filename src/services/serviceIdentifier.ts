@@ -10,7 +10,6 @@ export default {
   MenuService: Symbol.for('MenuService'),
   NativeService: Symbol.for('NativeService'),
   NotificationService: Symbol.for('NotificationService'),
-  Pages: Symbol.for('Pages'),
   Preference: Symbol.for('Preference'),
   Sync: Symbol.for('Sync'),
   SystemPreference: Symbol.for('SystemPreference'),

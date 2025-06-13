@@ -1,7 +1,7 @@
+import { PageType } from '@/constants/pageTypes';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import HelpIcon from '@mui/icons-material/Help';
 import InfoIcon from '@mui/icons-material/Info';
-import { PageType } from '@services/pages/interface';
 
 export function getBuildInPageIcon(pageType: PageType): React.JSX.Element {
   switch (pageType) {

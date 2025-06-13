@@ -8,13 +8,11 @@ import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { SortableWorkspaceSelectorList, WorkspaceSelectorBase } from '@/pages/Main/WorkspaceIconAndSelector';
 import { IconButton as IconButtonRaw, Tooltip } from '@mui/material';
-import { usePagesListObservable } from '@services/pages/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useUpdaterObservable } from '@services/updater/hooks';
 import { IUpdaterStatus } from '@services/updater/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
-import { SortablePageSelectorList } from './PageIconAndSelector';
 
 const sideBarStyle = css`
   height: 100%;
@@ -83,7 +81,6 @@ export function SideBar(): React.JSX.Element {
   const titleBar = usePromiseValue<boolean>(async () => await window.service.preference.get('titleBar'), false)!;
 
   const workspacesList = useWorkspacesListObservable();
-  const pagesList = usePagesListObservable();
   const preferences = usePreferenceObservable();
   const updaterMetaData = useUpdaterObservable();
   if (preferences === undefined) return <div>{t('Loading')}</div>;
@@ -103,15 +100,6 @@ export function SideBar(): React.JSX.Element {
           showSidebarTexts={showSideBarText}
           onClick={() => void window.service.window.open(WindowNames.addWorkspace)}
         />
-        {pagesList === undefined
-          ? <div>{t('Loading')}</div>
-          : (
-            <SortablePageSelectorList
-              showSideBarText={showSideBarText}
-              pagesList={pagesList}
-              showSideBarIcon={showSideBarIcon}
-            />
-          )}
       </SidebarTop>
       <SideBarEnd>
         {updaterMetaData?.status === IUpdaterStatus.updateAvailable && (

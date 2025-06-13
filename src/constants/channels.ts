@@ -113,10 +113,6 @@ export enum PreferenceChannel {
   update = 'update',
 }
 
-export enum PagesChannel {
-  name = 'PagesChannel',
-}
-
 export enum WindowChannel {
   closeFindInPage = 'close-find-in-page',
   name = 'WindowChannel',
@@ -175,7 +171,6 @@ export type Channels =
   | WikiGitWorkspaceChannel
   | WorkspaceChannel
   | WorkspaceViewChannel
-  | PagesChannel
   | DatabaseChannel
   | PreferenceChannel
   | WindowChannel

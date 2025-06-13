@@ -12,6 +12,7 @@ import { map } from 'rxjs/operators';
 
 import { WikiChannel } from '@/constants/channels';
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
+import { PageType } from '@/constants/pageTypes';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
@@ -19,7 +20,6 @@ import { IDatabaseService } from '@services/database/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
-import { IPagesService, PageType } from '@services/pages/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
@@ -55,9 +55,6 @@ export class Workspace implements IWorkspaceService {
 
   @lazyInject(serviceIdentifier.Authentication)
   private readonly authService!: IAuthenticationService;
-
-  @lazyInject(serviceIdentifier.Pages)
-  private readonly pagesService!: IPagesService;
 
   constructor() {
     setTimeout(() => {
@@ -340,16 +337,17 @@ export class Workspace implements IWorkspaceService {
   };
 
   public async setActiveWorkspace(id: string, oldActiveWorkspaceID: string | undefined): Promise<void> {
+    const newWorkspace = this.getSync(id);
+    if (!newWorkspace) {
+      throw new Error(`Workspace with id ${id} not found`);
+    }
+    
     // active new one
     await this.update(id, { active: true, hibernated: false });
     // de-active the other one
     if (oldActiveWorkspaceID !== id) {
       await this.clearActiveWorkspace(oldActiveWorkspaceID);
     }
-    // switch from page to workspace, clear active page to switch to WikiBackground page
-    const activePage = this.pagesService.getActivePageSync();
-    // instead of switch to a wiki workspace, we simply clear active page, because wiki page logic is not implemented yet, we are still using workspace logic.
-    await this.pagesService.clearActivePage(activePage?.id);
   }
 
   public async clearActiveWorkspace(oldActiveWorkspaceID: string | undefined): Promise<void> {
@@ -457,6 +455,77 @@ export class Workspace implements IWorkspaceService {
     return newWorkspace;
   }
 
+  public async createPageWorkspace(pageType: PageType, order: number, active = false): Promise<IWorkspace> {
+    const pageWorkspace: IWorkspace = {
+      id: pageType,
+      name: pageType, // Will be localized in the UI
+      pageType,
+      active,
+      order,
+      authToken: undefined,
+      backupOnInterval: false,
+      disableAudio: false,
+      disableNotifications: false,
+      enableHTTPAPI: false,
+      excludedPlugins: [],
+      gitUrl: null,
+      hibernateWhenUnused: false,
+      hibernated: false,
+      homeUrl: `tidgi://page/${pageType}/`,
+      isSubWiki: false,
+      lastNodeJSArgv: [],
+      lastUrl: null,
+      mainWikiID: null,
+      mainWikiToLink: null,
+      picturePath: null,
+      port: 0, // Not applicable for page workspaces
+      readOnlyMode: false,
+      rootTiddler: undefined,
+      storageService: SupportedStorageServices.local,
+      subWikiFolderName: 'subwiki',
+      syncOnInterval: false,
+      syncOnStartup: false,
+      tagName: null,
+      tokenAuth: false,
+      transparentBackground: false,
+      userName: '',
+      wikiFolderLocation: '', // Not applicable for page workspaces
+    };
+
+    await this.set(pageType, pageWorkspace);
+    return pageWorkspace;
+  }
+
+  /**
+   * Initialize default page workspaces on first startup
+   */
+  public async initializeDefaultPageWorkspaces(): Promise<void> {
+    try {
+      const existingWorkspaces = await this.getWorkspacesAsList();
+      const pageTypes = [PageType.agent, PageType.help, PageType.guide];
+      
+      // Find the maximum order to place page workspaces after regular workspaces
+      const maxWorkspaceOrder = existingWorkspaces.reduce((max, workspace) => workspace.pageType ? max : Math.max(max, workspace.order), -1);
+      
+      const currentOrder = maxWorkspaceOrder + 1;
+      
+      for (const [index, pageType] of pageTypes.entries()) {
+        // Check if page workspace already exists
+        const existingPageWorkspace = existingWorkspaces.find(w => w.pageType === pageType);
+        if (!existingPageWorkspace) {
+          // Create page workspace with appropriate order
+          await this.createPageWorkspace(pageType, currentOrder + index, false);
+          logger.info(`Created default page workspace for ${pageType}`);
+        }
+      }
+      
+      logger.info('Successfully initialized default page workspaces');
+    } catch (error) {
+      logger.error('Failed to initialize default page workspaces:', error);
+      throw error;
+    }
+  }
+
   /** to keep workspace variables (meta) that
    * are not saved to disk
    * badge count, error, etc
@@ -483,9 +552,14 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async openWorkspaceTiddler(workspace: IWorkspace, title?: string): Promise<void> {
-    const { id: idToActive, isSubWiki, mainWikiID } = workspace;
+    const { id: idToActive, isSubWiki, mainWikiID, pageType } = workspace;
     const oldActiveWorkspace = await this.getActiveWorkspace();
-    await this.pagesService.setActivePage(PageType.wiki);
+    
+    // Handle page workspace - no special action needed as routing handles the page display
+    if (pageType) {
+      return;
+    }
+    
     logger.log('debug', 'openWorkspaceTiddler', { workspace });
     // If is main wiki, open the wiki, and open provided title, or simply switch to it if no title provided
     if (!isSubWiki && idToActive) {
