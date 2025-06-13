@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import type { Logger } from '$:/core/modules/utils/logger.js';
 import type { IWikiServerStatusObject } from '@services/wiki/wikiWorker/ipcServerRoutes';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
@@ -40,7 +41,7 @@ class TidGiIPCSyncAdaptor {
     this.isReadOnly = false;
     this.logoutIsAvailable = true;
     this.workspaceID = (window.meta() as WindowMeta[WindowNames.view]).workspaceID!;
-    if (window.observables.wiki.getWikiChangeObserver$ !== undefined) {
+    if (window.observables?.wiki?.getWikiChangeObserver$ !== undefined) {
       // if install-electron-ipc-cat is faster than us, just subscribe to the observable. Otherwise we normally will wait for it to call us here.
       this.setupSSE();
     }
@@ -50,7 +51,7 @@ class TidGiIPCSyncAdaptor {
    * This should be called after install-electron-ipc-cat, so this is called in `$:/plugins/linonetwo/tidgi-ipc-syncadaptor/Startup/install-electron-ipc-cat.js`
    */
   setupSSE() {
-    if (window.observables.wiki.getWikiChangeObserver$ === undefined) {
+    if (window.observables?.wiki?.getWikiChangeObserver$ === undefined) {
       console.error("getWikiChangeObserver$ is undefined in window.observables.wiki, can't subscribe to server changes.");
       return;
     }
@@ -175,7 +176,6 @@ class TidGiIPCSyncAdaptor {
 
       callback?.(null, this.isLoggedIn, status.username, this.isReadOnly, this.isAnonymous);
     } catch (error) {
-      // eslint-disable-next-line n/no-callback-literal
       callback?.(error as Error);
     }
   }
@@ -204,7 +204,6 @@ class TidGiIPCSyncAdaptor {
       // Invoke the callback with the skinny tiddlers
       callback(null, skinnyTiddlers);
     } catch (error) {
-      // eslint-disable-next-line n/no-callback-literal
       callback(error as Error);
     }
   }
@@ -252,7 +251,6 @@ class TidGiIPCSyncAdaptor {
       }
     } catch (error) {
       console.error(error);
-      // eslint-disable-next-line n/no-callback-literal
       callback(error as Error);
     }
   }
@@ -273,7 +271,6 @@ class TidGiIPCSyncAdaptor {
       }
       callback?.(null, getTiddlerResponse.data as ITiddlerFields);
     } catch (error) {
-      // eslint-disable-next-line n/no-callback-literal
       callback?.(error as Error);
     }
   }
@@ -302,7 +299,6 @@ class TidGiIPCSyncAdaptor {
       // Invoke the callback & return null adaptorInfo
       callback(null, null);
     } catch (error) {
-      // eslint-disable-next-line n/no-callback-literal
       callback(error as Error);
     }
   }
