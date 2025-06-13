@@ -500,13 +500,12 @@ export class View implements IViewService {
           if (rememberLastPageVisited && workspace?.lastUrl) {
             try {
               await view.webContents.loadURL(workspace.lastUrl);
-              return;
             } catch (error) {
               logger.warn(new ViewLoadUrlError(workspace.lastUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
             }
           }
         }
-        // else fallback to just reload
+        // Always trigger a reload
         view.webContents.reload();
       }
     });
