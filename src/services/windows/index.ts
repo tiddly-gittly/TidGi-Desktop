@@ -217,6 +217,7 @@ export class Window implements IWindowService {
         additionalArguments: [
           `${MetaDataChannel.browserViewMetaData}${windowName}`,
           `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(meta))}`,
+          '--unsafely-disable-devtools-self-xss-warnings',
         ],
       },
       parent: isWindowWithBrowserView ? undefined : this.get(WindowNames.main),

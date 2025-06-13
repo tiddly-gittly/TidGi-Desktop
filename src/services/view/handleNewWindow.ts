@@ -92,6 +92,7 @@ export function handleNewWindow(
       additionalArguments: [
         `${MetaDataChannel.browserViewMetaData}${WindowNames.view}`,
         `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(browserViewMetaData))}`,
+        '--unsafely-disable-devtools-self-xss-warnings',
       ],
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     };

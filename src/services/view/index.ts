@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable n/no-callback-literal */
 /* eslint-disable @typescript-eslint/require-await */
 
@@ -282,6 +283,7 @@ export class View implements IViewService {
       additionalArguments: [
         `${MetaDataChannel.browserViewMetaData}${WindowNames.view}`,
         `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(browserViewMetaData))}`,
+        '--unsafely-disable-devtools-self-xss-warnings',
       ],
     } satisfies WebPreferences;
   }
