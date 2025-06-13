@@ -11,8 +11,8 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { WikiChannel } from '@/constants/channels';
-import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { PageType } from '@/constants/pageTypes';
+import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
@@ -502,7 +502,7 @@ export class Workspace implements IWorkspaceService {
   public async initializeDefaultPageWorkspaces(): Promise<void> {
     try {
       const existingWorkspaces = await this.getWorkspacesAsList();
-      const pageTypes = [PageType.agent, PageType.help, PageType.guide];
+      const pageTypes = [PageType.agent, PageType.help, PageType.guide, PageType.add];
       
       // Find the maximum order to place page workspaces after regular workspaces
       const maxWorkspaceOrder = existingWorkspaces.reduce((max, workspace) => workspace.pageType ? max : Math.max(max, workspace.order), -1);

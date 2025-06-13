@@ -6,7 +6,7 @@ import is, { isNot } from 'typescript-styled-is';
 
 import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import { SortableWorkspaceSelectorList, WorkspaceSelectorBase } from '@/pages/Main/WorkspaceIconAndSelector';
+import { SortableWorkspaceSelectorList } from '@/pages/Main/WorkspaceIconAndSelector';
 import { IconButton as IconButtonRaw, Tooltip } from '@mui/material';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useUpdaterObservable } from '@services/updater/hooks';
@@ -93,13 +93,6 @@ export function SideBar(): React.JSX.Element {
         {workspacesList === undefined
           ? <div>{t('Loading')}</div>
           : <SortableWorkspaceSelectorList showSideBarText={showSideBarText} workspacesList={workspacesList} showSideBarIcon={showSideBarIcon} />}
-        <WorkspaceSelectorBase
-          id='add'
-          showSideBarIcon={showSideBarIcon}
-          index={workspacesList?.length ?? 0}
-          showSidebarTexts={showSideBarText}
-          onClick={() => void window.service.window.open(WindowNames.addWorkspace)}
-        />
       </SidebarTop>
       <SideBarEnd>
         {updaterMetaData?.status === IUpdaterStatus.updateAvailable && (

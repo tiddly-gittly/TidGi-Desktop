@@ -7,7 +7,6 @@ export function useInitialPage() {
   const [location, setLocation] = useLocation();
   const workspacesList = useWorkspacesListObservable();
   const hasInitialized = useRef(false);
-
   useEffect(() => {
     // Only initialize once and only when at root
     if (workspacesList && !hasInitialized.current && (location === '/' || location === '')) {
@@ -16,10 +15,15 @@ export function useInitialPage() {
       if (!activeWorkspace) {
         setLocation(`/${PageType.guide}`);
       } else if (activeWorkspace.pageType) {
-        setLocation(`/${activeWorkspace.pageType}`);
+        // Don't navigate to add page, fallback to guide instead
+        if (activeWorkspace.pageType === PageType.add) {
+          setLocation(`/${PageType.guide}`);
+        } else {
+          setLocation(`/${activeWorkspace.pageType}`);
+        }
       } else {
         setLocation(`/${PageType.wiki}/${activeWorkspace.id}/`);
       }
     }
-  }, [location, workspacesList]);
+  }, [location, workspacesList, setLocation]);
 }

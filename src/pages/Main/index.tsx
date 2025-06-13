@@ -64,7 +64,7 @@ export default function Main(): React.JSX.Element {
   const { t } = useTranslation();
   useInitialPage();
   const preferences = usePreferenceObservable();
-  const showSidebar = (windowName === WindowNames.menuBar ? preferences?.sidebarOnMenubar : preferences?.sidebar) ?? false;
+  const showSidebar = (windowName === WindowNames.menuBar ? preferences?.sidebarOnMenubar : preferences?.sidebar) ?? true;
   return (
     <OuterRoot>
       <Helmet>
@@ -75,7 +75,6 @@ export default function Main(): React.JSX.Element {
         <ContentRoot $sidebar={showSidebar}>
           <FindInPage />
           <Switch>
-            {/* 使用 nest 属性创建嵌套路由上下文 */}
             <Route path={`/${PageType.wiki}/:id/`} component={WikiBackground} />
             <Route path={`/${PageType.agent}`} component={Agent} />
             <Route path={`/${PageType.guide}`} component={Guide} />

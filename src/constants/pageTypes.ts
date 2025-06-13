@@ -15,4 +15,8 @@ export enum PageType {
    * Chat page for AI agents.
    */
   agent = 'agent',
+  /**
+   * Special page type for the "add workspace" button.
+   */
+  add = 'add',
 }

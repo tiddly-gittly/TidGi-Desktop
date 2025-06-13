@@ -32,7 +32,7 @@ export function Pages(): React.JSX.Element {
         <Route path={`/${WindowNames.preferences}`} component={DialogPreferences} />
         <Route path={`/${WindowNames.spellcheck}`} component={SpellcheckLanguages} />
         <Route path={`/${WindowNames.main}`} component={Main} nest />
-        <Route path='/' component={Main} />
+        <Route path='/' component={Main} nest />
       </Switch>
     </HelmetProvider>
   );

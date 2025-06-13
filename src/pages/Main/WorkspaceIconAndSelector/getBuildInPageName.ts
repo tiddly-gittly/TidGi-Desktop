@@ -15,5 +15,8 @@ export function getBuildInPageName(pageType: PageType, t: TFunction) {
     case PageType.agent: {
       return t('WorkspaceSelector.Agent');
     }
+    case PageType.add: {
+      return t('AddWorkspace.AddWorkspace');
+    }
   }
 }

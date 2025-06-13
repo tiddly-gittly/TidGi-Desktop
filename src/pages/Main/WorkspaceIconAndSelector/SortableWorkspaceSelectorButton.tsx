@@ -9,6 +9,7 @@ import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
 import { PageType } from '@/constants/pageTypes';
 import { getBuildInPageIcon } from '@/pages/Main/WorkspaceIconAndSelector/getBuildInPageIcon';
 import { getBuildInPageName } from '@/pages/Main/WorkspaceIconAndSelector/getBuildInPageName';
+import { WindowNames } from '@services/windows/WindowProperties';
 import { useLocation } from 'wouter';
 
 export interface ISortableItemProps {
@@ -47,9 +48,14 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     workspaceClickedLoadingSetter(true);
     try {
       if (workspace.pageType) {
-        // Handle page workspace - navigate to the page and set as active workspace
-        setLocation(`/${workspace.pageType}`);
-        await window.service.workspaceView.setActiveWorkspaceView(id);
+        // Handle special "add" workspace
+        if (workspace.pageType === PageType.add) {
+          await window.service.window.open(WindowNames.addWorkspace);
+        } else {
+          // Handle other page workspaces - navigate to the page and set as active workspace
+          setLocation(`/${workspace.pageType}`);
+          await window.service.workspaceView.setActiveWorkspaceView(id);
+        }
       } else {
         // Handle regular wiki workspace
         setLocation(`/${PageType.wiki}/${id}/`);

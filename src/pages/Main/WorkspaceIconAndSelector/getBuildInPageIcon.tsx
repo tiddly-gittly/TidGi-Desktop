@@ -1,5 +1,6 @@
 import { PageType } from '@/constants/pageTypes';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import AddIcon from '@mui/icons-material/Add';
 import HelpIcon from '@mui/icons-material/Help';
 import InfoIcon from '@mui/icons-material/Info';
 
@@ -17,6 +18,9 @@ export function getBuildInPageIcon(pageType: PageType): React.JSX.Element {
     }
     case PageType.agent: {
       return <AccountTreeIcon />;
+    }
+    case PageType.add: {
+      return <AddIcon />;
     }
   }
   // don't return null here. If you get `Function lacks ending return statement and return type does not include 'undefined'.ts(2366)`, you must forget to provide an icon for a newly added page type here.
