@@ -11,7 +11,7 @@ export default [
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['./*.js', './*.mjs'],
+          allowDefaultProject: ['./*.js', './*.mjs','./*.*.js', './*.*.mjs'],
         },
         tsconfigRootDir: __dirname,
       },

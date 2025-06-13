@@ -1,5 +1,6 @@
-/** @type {import('jest').Config} */
-module.exports = {
+import type { Config } from 'jest';
+
+const config: Config = {
   // Use ts-jest to transform TypeScript
   preset: 'ts-jest',
   
@@ -29,8 +30,8 @@ module.exports = {
   },
   
   // Performance optimizations
-  maxWorkers: '50%', // 使用CPU核心数的50%进行并行测试
-  cacheDirectory: '<rootDir>/node_modules/.cache/jest', // 启用Jest缓存
+  maxWorkers: '50%', // Use 50% of CPU cores for parallel testing
+  cacheDirectory: '<rootDir>/node_modules/.cache/jest', // Enable Jest cache
   
   // Coverage settings
   collectCoverageFrom: [
@@ -47,29 +48,19 @@ module.exports = {
   // Ignored paths
   modulePathIgnorePatterns: ['<rootDir>/out/', '<rootDir>/.webpack/'],
   
-  // 优化的ts-jest配置
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: './tsconfig.test.json', // 使用专门的测试配置
+      tsconfig: './tsconfig.test.json', // Use dedicated test configuration with reduced checks
     }],
   },
   
-  // 全局配置优化 - 修正警告
-  // globals: {
-  //   'ts-jest': {
-  //     isolatedModules: true, // 提高编译速度
-  //     useESM: false,
-  //   },
-  // },
-  
   // Environment variables
   setupFiles: ['<rootDir>/src/__tests__/environment.ts'],
-  
-  // 缩短超时时间
-  testTimeout: 5000, // 从10000减少到5000
-  
-  // 并行化配置
-  runner: 'jest-runner', // 确保使用默认runner
-  detectOpenHandles: false, // 禁用检测打开的句柄以提高性能
-  forceExit: true, // 强制退出以避免EPERM错误
+
+  testTimeout: 5000,
+
+  detectOpenHandles: false, // Disable open handle detection for better performance
+  forceExit: true, // Force exit to avoid EPERM errors
 };
+
+export default config;

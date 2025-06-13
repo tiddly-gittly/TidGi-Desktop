@@ -153,6 +153,10 @@ Electron forge webpack don't support pure ESM yet
 
 TBD
 
+## Testing
+
+[Testing Guide](./Testing.md)
+
 ## FAQ
 
 [ErrorDuringStart](./ErrorDuringStart.md)
