@@ -5,7 +5,7 @@ import { styled } from 'styled-components';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IWorkspaceMetaData, IWorkspaceWithMetadata } from '@services/workspaces/interface';
-import { ReportErrorButton } from '../AddWorkspace/FormComponents';
+import { ReportErrorButton } from '../../windows/AddWorkspace/FormComponents';
 
 const HelperTextsList = styled.ul`
   margin-top: 0;

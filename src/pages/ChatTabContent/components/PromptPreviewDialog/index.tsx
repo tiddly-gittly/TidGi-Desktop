@@ -1,4 +1,4 @@
-import { useHandlerConfigManagement } from '@/pages/Preferences/sections/ExternalAPI/useHandlerConfigManagement';
+import { useHandlerConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useHandlerConfigManagement';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';

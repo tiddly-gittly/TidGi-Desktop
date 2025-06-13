@@ -2,8 +2,8 @@ import { usePromiseValue } from '@/helpers/useServiceValue';
 import { SupportedStorageServices } from '@services/types';
 import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { useEffect, useState } from 'react';
-import { useWikiWorkspaceForm } from '../AddWorkspace/useForm';
-import { INewWikiRequiredFormData, useNewWiki } from '../AddWorkspace/useNewWiki';
+import { useWikiWorkspaceForm } from '../../windows/AddWorkspace/useForm';
+import { INewWikiRequiredFormData, useNewWiki } from '../../windows/AddWorkspace/useNewWiki';
 
 export function useAutoCreateFirstWorkspace(workspacesList: IWorkspaceWithMetadata[] | undefined, wikiCreationMessageSetter: (m: string) => void): void {
   const form = useWikiWorkspaceForm();

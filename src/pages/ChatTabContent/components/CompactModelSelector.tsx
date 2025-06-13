@@ -3,7 +3,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, 
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAIConfigManagement } from '../../Preferences/sections/ExternalAPI/useAIConfigManagement';
+import { useAIConfigManagement } from '../../../windows/Preferences/sections/ExternalAPI/useAIConfigManagement';
 
 // Import from the external component
 import { Autocomplete, TextField } from '@mui/material';

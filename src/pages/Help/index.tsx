@@ -2,7 +2,7 @@ import { Divider, Grid, Typography } from '@mui/material';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
-import { Languages } from '../Preferences/sections/Languages';
+import { Languages } from '../../windows/Preferences/sections/Languages';
 import { HelpWebsiteItem } from './HelpWebsiteItem';
 import { useLoadHelpPagesList } from './useLoadHelpPagesList';
 

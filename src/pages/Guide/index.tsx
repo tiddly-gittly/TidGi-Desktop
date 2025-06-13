@@ -5,8 +5,8 @@ import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import { useState } from 'react';
-import { Languages } from '../Preferences/sections/Languages';
-import { TiddlyWiki } from '../Preferences/sections/TiddlyWiki';
+import { Languages } from '../../windows/Preferences/sections/Languages';
+import { TiddlyWiki } from '../../windows/Preferences/sections/TiddlyWiki';
 import { NewUserMessage } from './NewUserMessage';
 import { useAutoCreateFirstWorkspace } from './useAutoCreateFirstWorkspace';
 

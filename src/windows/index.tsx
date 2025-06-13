@@ -6,7 +6,7 @@ import { Route, Switch, useLocation } from 'wouter';
 const AboutPage = lazy(() => import('./About'));
 const DialogAddWorkspace = lazy(() => import('./AddWorkspace').then((module) => ({ default: module.AddWorkspace })));
 const EditWorkspace = lazy(() => import('./EditWorkspace'));
-const Main = lazy(() => import('./Main'));
+const Main = lazy(() => import('../pages/Main'));
 const DialogNotifications = lazy(() => import('./Notifications'));
 const DialogPreferences = lazy(() => import('./Preferences'));
 const SpellcheckLanguages = lazy(() => import('./SpellcheckLanguages'));

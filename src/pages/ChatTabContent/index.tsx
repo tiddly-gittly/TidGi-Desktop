@@ -12,7 +12,7 @@ import { MessagesContainer } from './components/MessagesContainer';
 import { ScrollToBottomButton } from './components/ScrollToBottomButton';
 
 // Import AIModelParametersDialog
-import { AIModelParametersDialog } from '@/pages/Preferences/sections/ExternalAPI/components/AIModelParametersDialog';
+import { AIModelParametersDialog } from '@/windows/Preferences/sections/ExternalAPI/components/AIModelParametersDialog';
 
 // Import custom hooks
 import { useMessageHandling } from './hooks/useMessageHandling';

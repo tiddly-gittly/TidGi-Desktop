@@ -1,4 +1,4 @@
-import { useHandlerConfigManagement } from '@/pages/Preferences/sections/ExternalAPI/useHandlerConfigManagement';
+import { useHandlerConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useHandlerConfigManagement';
 import MonacoEditor from '@monaco-editor/react';
 import { Box, styled } from '@mui/material';
 import Tab from '@mui/material/Tab';

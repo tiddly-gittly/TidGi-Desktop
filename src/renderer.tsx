@@ -24,7 +24,7 @@ import { initI18N } from './i18n';
 import 'electron-ipc-cat/fixContextIsolation';
 import { useHashLocation } from 'wouter/use-hash-location';
 import { RootStyle } from './components/RootStyle';
-import { Pages } from './pages';
+import { Pages } from './windows';
 
 function App(): JSX.Element {
   const theme = useThemeObservable();

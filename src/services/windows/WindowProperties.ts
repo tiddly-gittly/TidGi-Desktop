@@ -1,4 +1,4 @@
-import type { CreateWorkspaceTabs } from '@/pages/AddWorkspace/constants';
+import type { CreateWorkspaceTabs } from '@/windows/AddWorkspace/constants';
 import type { PreferenceSections } from '@services/preferences/interface';
 
 export enum WindowNames {
