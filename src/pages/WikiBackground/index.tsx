@@ -18,7 +18,7 @@ const InnerContentRoot = styled.div`
   height: 100%;
 `;
 
-export function WikiBackground(): React.JSX.Element {
+export default function WikiBackground(): React.JSX.Element {
   const { t } = useTranslation();
   const workspacesList = useWorkspacesListObservable();
 

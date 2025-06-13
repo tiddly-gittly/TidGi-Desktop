@@ -5,7 +5,7 @@ import { TabStoreInitializer } from './components/TabStoreInitializer';
 import { AgentLayout } from './components/UI/AgentLayout';
 import { TabContentArea } from './TabContent/TabContentArea';
 
-export const AgentPage: React.FC = () => {
+export default function Agent(): React.JSX.Element {
   return (
     <>
       <TabStoreInitializer />
@@ -15,6 +15,4 @@ export const AgentPage: React.FC = () => {
       </AgentLayout>
     </>
   );
-};
-
-export default AgentPage;
+}

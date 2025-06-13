@@ -75,13 +75,13 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async initializeWorkspaceView(workspace: IWorkspace, options: IInitializeWorkspaceOptions = {}): Promise<void> {
     logger.info(i18n.t('Log.InitializeWorkspaceView'));
-    
+
     // Skip initialization for page workspaces - they don't need TiddlyWiki setup
     if (workspace.pageType) {
       logger.info(`Skipping initialization for page workspace: ${workspace.id} (${workspace.pageType})`);
       return;
     }
-    
+
     const { followHibernateSettingWhenInit = true, syncImmediately = true, isNew = false } = options;
     // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
     if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {
@@ -289,6 +289,21 @@ export class WorkspaceView implements IWorkspaceViewService {
         )
       }`,
     );
+
+    // Handle page workspace - only update workspace state, no view management needed
+    if (newWorkspace.pageType) {
+      logger.debug(`${nextWorkspaceID} is a page workspace, only updating workspace state.`);
+      await this.workspaceService.setActiveWorkspace(nextWorkspaceID, oldActiveWorkspace?.id);
+      // Hide old workspace view if switching from a regular workspace
+      if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID && !oldActiveWorkspace.pageType) {
+        await this.hideWorkspaceView(oldActiveWorkspace.id);
+        if (oldActiveWorkspace.hibernateWhenUnused) {
+          await this.hibernateWorkspaceView(oldActiveWorkspace.id);
+        }
+      }
+      return;
+    }
+
     if (newWorkspace.isSubWiki && typeof newWorkspace.mainWikiID === 'string') {
       logger.debug(`${nextWorkspaceID} is a subwiki, set its main wiki ${newWorkspace.mainWikiID} to active instead.`);
       await this.setActiveWorkspaceView(newWorkspace.mainWikiID);

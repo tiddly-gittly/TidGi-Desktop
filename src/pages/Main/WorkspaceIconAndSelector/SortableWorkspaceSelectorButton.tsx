@@ -28,7 +28,7 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
   };
   const [workspaceClickedLoading, workspaceClickedLoadingSetter] = useState(false);
   const [, setLocation] = useLocation();
-  
+
   // Get page-specific name and icon if this is a page workspace
   const displayName = useMemo(() => {
     if (pageType) {
@@ -36,7 +36,7 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     }
     return name;
   }, [pageType, name, t]);
-  
+
   const customIcon = useMemo(() => {
     if (pageType) {
       return getBuildInPageIcon(pageType);
@@ -47,8 +47,9 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     workspaceClickedLoadingSetter(true);
     try {
       if (workspace.pageType) {
-        // Handle page workspace - just navigate to the page, no need to call pages service
-        setLocation(`/${workspace.pageType}/`);
+        // Handle page workspace - navigate to the page and set as active workspace
+        setLocation(`/${workspace.pageType}`);
+        await window.service.workspaceView.setActiveWorkspaceView(id);
       } else {
         // Handle regular wiki workspace
         setLocation(`/${PageType.wiki}/${id}/`);

@@ -21,7 +21,7 @@ const InnerContentRoot = styled.div`
   height: 100%;
 `;
 
-export function Guide(): React.JSX.Element {
+export default function Guide(): React.JSX.Element {
   const workspacesList = useWorkspacesListObservable();
   const [wikiCreationMessage, wikiCreationMessageSetter] = useState('');
   useAutoCreateFirstWorkspace(workspacesList, wikiCreationMessageSetter);

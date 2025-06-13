@@ -21,7 +21,7 @@ const StyledDivider = styled(Divider)`
   margin: 10px 0;
 `;
 
-export function Help(): React.JSX.Element {
+export default function Help(): React.JSX.Element {
   const { t } = useTranslation();
   const preference = usePreferenceObservable();
   const items = useLoadHelpPagesList(preference?.language);

@@ -1,30 +1,25 @@
 import { PageType } from '@/constants/pageTypes';
-import { usePromiseValue } from '@/helpers/useServiceValue';
-import { useEffect, useState } from 'react';
+import { useWorkspacesListObservable } from '@services/workspaces/hooks';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 
 export function useInitialPage() {
-  const [, setLocation] = useLocation();
-  // Get the initial active workspace (could be a page workspace or regular workspace)
-  const initialActiveWorkspace = usePromiseValue(async () => await window.service.workspace.getActiveWorkspace(), null);
-  // only do this once, and not triggering unnecessary rerender by using ref.
-  const [alreadyInitialized, alreadyInitializedSetter] = useState(false);
+  const [location, setLocation] = useLocation();
+  const workspacesList = useWorkspacesListObservable();
+  const hasInitialized = useRef(false);
+
   useEffect(() => {
-    // Navigate to the active workspace (page workspace or regular workspace)
-    if (initialActiveWorkspace !== null && !alreadyInitialized) {
-      alreadyInitializedSetter(true);
-      if (initialActiveWorkspace === undefined) {
-        // No active workspace, navigate to guide page by default
-        setLocation(`/${PageType.guide}/`);
+    // Only initialize once and only when at root
+    if (workspacesList && !hasInitialized.current && (location === '/' || location === '')) {
+      hasInitialized.current = true;
+      const activeWorkspace = workspacesList.find(workspace => workspace.active);
+      if (!activeWorkspace) {
+        setLocation(`/${PageType.guide}`);
+      } else if (activeWorkspace.pageType) {
+        setLocation(`/${activeWorkspace.pageType}`);
       } else {
-        if (initialActiveWorkspace.pageType) {
-          // It's a page workspace, navigate to the page
-          setLocation(`/${initialActiveWorkspace.pageType}/`);
-        } else {
-          // It's a regular workspace, navigate to wiki
-          setLocation(`/${PageType.wiki}/${initialActiveWorkspace.id}/`);
-        }
+        setLocation(`/${PageType.wiki}/${activeWorkspace.id}/`);
       }
     }
-  }, [setLocation, alreadyInitialized, alreadyInitializedSetter, initialActiveWorkspace]);
+  }, [location, workspacesList]);
 }

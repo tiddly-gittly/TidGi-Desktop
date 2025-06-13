@@ -8,14 +8,14 @@ import { Route, Switch } from 'wouter';
 import { PageType } from '@/constants/pageTypes';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { Guide } from '../Guide';
-import { Help } from '../Help';
-import { WikiBackground } from '../WikiBackground';
 import FindInPage from './FindInPage';
 import { SideBar } from './Sidebar';
 import { useInitialPage } from './useInitialPage';
 
 const Agent = lazy(() => import('../Agent'));
+const Guide = lazy(() => import('../Guide'));
+const Help = lazy(() => import('../Help'));
+const WikiBackground = lazy(() => import('../WikiBackground'));
 
 const OuterRoot = styled.div`
   display: flex;
@@ -64,12 +64,9 @@ export default function Main(): React.JSX.Element {
   const { t } = useTranslation();
   useInitialPage();
   const preferences = usePreferenceObservable();
-  if (preferences === undefined) return <div>{t('Loading')}</div>;
-  const { sidebar, sidebarOnMenubar } = preferences;
-  const showSidebar = windowName === WindowNames.menuBar ? sidebarOnMenubar : sidebar;
+  const showSidebar = (windowName === WindowNames.menuBar ? preferences?.sidebarOnMenubar : preferences?.sidebar) ?? false;
   return (
     <OuterRoot>
-      <div id='test' data-usage='For spectron automating testing' />
       <Helmet>
         <title>{t('Menu.TidGi')}</title>
       </Helmet>
@@ -80,7 +77,7 @@ export default function Main(): React.JSX.Element {
           <Switch>
             {/* 使用 nest 属性创建嵌套路由上下文 */}
             <Route path={`/${PageType.wiki}/:id/`} component={WikiBackground} />
-            <Route path={`/${PageType.agent}`} component={Agent} nest />
+            <Route path={`/${PageType.agent}`} component={Agent} />
             <Route path={`/${PageType.guide}`} component={Guide} />
             <Route path={`/${PageType.help}`} component={Help} />
             <Route path='/' component={Guide} />

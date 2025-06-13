@@ -25,12 +25,12 @@ import { GitRepoUrlForm } from './GitRepoUrlForm';
 import { ImportHtmlWikiDoneButton } from './ImportHtmlWikiDoneButton';
 import { ImportHtmlWikiForm } from './ImportHtmlWikiForm';
 
-export const Paper = styled(PaperRaw)`
+const Paper = styled(PaperRaw)`
   border-color: ${({ theme }) => theme.palette.divider};
   background: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.primary};
 ` as unknown as typeof PaperRaw;
-export const Accordion = styled(AccordionRaw)`
+const Accordion = styled(AccordionRaw)`
   border-color: ${({ theme }) => theme.palette.divider};
   background: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.primary};
@@ -69,7 +69,7 @@ const AdvancedSettingsAccordionSummary = styled(AccordionSummary)`
   margin-top: 10px;
 `;
 
-export function AddWorkspace(): React.JSX.Element {
+export default function AddWorkspace(): React.JSX.Element {
   const { t } = useTranslation();
   const [currentTab, currentTabSetter] = useState<CreateWorkspaceTabs>(
     (window.meta() as IPossibleWindowMeta<WindowMeta[WindowNames.addWorkspace]>).addWorkspaceTab ?? CreateWorkspaceTabs.CreateNewWiki,
@@ -81,7 +81,7 @@ export function AddWorkspace(): React.JSX.Element {
   const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList());
 
   // update storageProviderSetter to local based on isCreateSyncedWorkspace. Other services value will be changed by TokenForm
-  const { storageProvider, storageProviderSetter, wikiFolderName, wikiPort } = form;
+  const { storageProvider, storageProviderSetter, wikiFolderName } = form;
   useEffect(() => {
     if (!isCreateSyncedWorkspace && storageProvider !== SupportedStorageServices.local) {
       storageProviderSetter(SupportedStorageServices.local);
