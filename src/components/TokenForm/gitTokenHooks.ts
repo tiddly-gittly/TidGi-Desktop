@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 /* eslint-disable @typescript-eslint/await-thenable */
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
+
 import { SupportedStorageServices } from '@services/types';
 import { truncate } from 'lodash';
 import { useCallback, useEffect } from 'react';

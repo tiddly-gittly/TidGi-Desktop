@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/promise-function-async */
 import { Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
@@ -26,11 +24,11 @@ export function WikiBackground(): React.JSX.Element {
 
   const activeWorkspaceMetadata = workspacesList
     ?.map((workspace) => ({ active: workspace.active, ...workspace.metadata }))
-    ?.find((workspace) => workspace.active);
+    .find((workspace) => workspace.active);
   const activeWorkspace = workspacesList?.find((workspace) => workspace.active);
   const hasError = typeof activeWorkspaceMetadata?.didFailLoadErrorMessage === 'string' &&
-    activeWorkspaceMetadata?.didFailLoadErrorMessage.length > 0 &&
-    activeWorkspaceMetadata?.isLoading === false;
+    activeWorkspaceMetadata.didFailLoadErrorMessage.length > 0 &&
+    activeWorkspaceMetadata.isLoading === false;
   const [wikiCreationMessage, wikiCreationMessageSetter] = useState('');
   useAutoCreateFirstWorkspace(workspacesList, wikiCreationMessageSetter);
   return (

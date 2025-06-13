@@ -77,7 +77,7 @@ export class Sync implements ISyncService {
         const subWorkspaces = await this.workspaceService.getSubWorkspacesAsList(id);
         const subHasChangesPromise = subWorkspaces.map(async (subWorkspace) => {
           const { gitUrl: subGitUrl, storageService: subStorageService, wikiFolderLocation: subGitDir } = subWorkspace;
-          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
           if (!subGitUrl) return false;
           const subUserInfo = await this.authService.getStorageServiceUserInfo(subStorageService);
           const hasChanges = await this.gitService.syncOrForcePull(subWorkspace, {
@@ -104,7 +104,7 @@ export class Sync implements ISyncService {
         this.wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, ['[all[]is[draft]]']),
         this.wikiService.wikiOperationInBrowser(WikiChannel.runFilter, workspaceID, ['[list[$:/StoryList]has:field[wysiwyg]]']),
       ])).flat();
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
       if (Array.isArray(draftTitles) && draftTitles.length > 0) {
         return false;
       }

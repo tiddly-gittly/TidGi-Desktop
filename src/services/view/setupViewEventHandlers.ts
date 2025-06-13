@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable unicorn/consistent-destructuring */
 import { app, BrowserWindow, BrowserWindowConstructorOptions, nativeImage, shell, WebContentsView } from 'electron';
 import fsExtra from 'fs-extra';
 import { throttle } from 'lodash';
@@ -69,7 +67,6 @@ export default function setupViewEventHandlers(
       view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
     }
     await workspaceService.updateMetaData(workspace.id, {
-      // eslint-disable-next-line unicorn/no-null
       didFailLoadErrorMessage: null,
       isLoading: true,
     });
@@ -247,7 +244,6 @@ export default function setupViewEventHandlers(
     } else {
       const finalFilePath = path.join(downloadPath, item.getFilename());
       if (!fsExtra.existsSync(finalFilePath)) {
-        // eslint-disable-next-line no-param-reassign
         item.savePath = finalFilePath;
       }
     }
@@ -259,7 +255,7 @@ export default function setupViewEventHandlers(
         const itemCountRegex = /[([{](\d*?)[)\]}]/;
         const match = itemCountRegex.exec(title);
         const incString = match === null ? '' : match[1];
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
         const inc = Number.parseInt(incString, 10) || 0;
         await workspaceService.updateMetaData(workspace.id, {
           badgeCount: inc,
@@ -267,7 +263,7 @@ export default function setupViewEventHandlers(
         let count = 0;
         const workspaceMetaData = await workspaceService.getAllMetaData();
         Object.values(workspaceMetaData).forEach((metaData) => {
-          if (typeof metaData?.badgeCount === 'number') {
+          if (typeof metaData.badgeCount === 'number') {
             count += metaData.badgeCount;
           }
         });
@@ -277,7 +273,6 @@ export default function setupViewEventHandlers(
             const icon = nativeImage.createFromPath(path.resolve(buildResourcePath, 'overlay-icon.png'));
             browserWindow.setOverlayIcon(icon, `You have ${count} new messages.`);
           } else {
-            // eslint-disable-next-line unicorn/no-null
             browserWindow.setOverlayIcon(null, '');
           }
         }
@@ -293,7 +288,7 @@ export default function setupViewEventHandlers(
     try {
       view.webContents.send('update-target-url', url);
     } catch (error) {
-      logger.warn(error); // eslint-disable-line no-console
+      logger.warn(error);
     }
   });
 }

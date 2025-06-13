@@ -1,3 +1,4 @@
+import { Helmet } from '@dr.pogodin/react-helmet';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import {
   Accordion,
@@ -14,7 +15,6 @@ import {
   Typography,
 } from '@mui/material';
 import React from 'react';
-import { Helmet } from '@dr.pogodin/react-helmet';
 import { useTranslation } from 'react-i18next';
 import { css, styled } from 'styled-components';
 import defaultIcon from '../../images/default-icon.png';

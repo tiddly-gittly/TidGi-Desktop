@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { isWin } from '@/helpers/system';
 import { execSync } from 'child_process';
 import { userInfo } from 'os';

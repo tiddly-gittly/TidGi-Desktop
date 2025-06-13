@@ -1,8 +1,8 @@
 import { Box } from '@mui/material';
 import styled from 'styled-components';
-import { TEMP_TAB_ID_PREFIX } from '../../constants/tab';
-import { useTabStore } from '../../store/tabStore';
-import { TabState, TabType } from '../../types/tab';
+import { TEMP_TAB_ID_PREFIX } from '../constants/tab';
+import { useTabStore } from '../store/tabStore';
+import { TabState, TabType } from '../types/tab';
 
 import { TabContentView } from './TabContentView';
 import { NewTabContent } from './TabTypes/NewTabContent';

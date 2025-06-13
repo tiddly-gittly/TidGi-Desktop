@@ -25,8 +25,8 @@ import { isChatTab } from './utils/tabTypeGuards';
 // Import store hooks to fetch agent data
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
 import { useShallow } from 'zustand/react/shallow';
-import { AgentWithoutMessages } from '../../../../store/agentChatStore/types';
-import { TabItem } from '../../../../types/tab';
+import { AgentWithoutMessages } from '../Agent/store/agentChatStore/types';
+import { TabItem } from '../Agent/types/tab';
 
 /**
  * Props interface for ChatTabContent component

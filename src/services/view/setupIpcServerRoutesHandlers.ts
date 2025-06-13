@@ -43,7 +43,7 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
           'getTiddlersJSON',
           new URL(request.url).searchParams.get('filter') ?? '',
           // Allow send empty string to disable omit. Otherwise text field will be omitted.
-          new URL(request.url).searchParams.get('exclude')?.split?.(' ') ?? undefined,
+          new URL(request.url).searchParams.get('exclude')?.split(' ') ?? undefined,
         ),
     },
     {

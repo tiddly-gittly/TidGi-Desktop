@@ -19,7 +19,6 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 import { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import { IAgentInstanceService } from '@services/agentInstance/interface';
 import { IDatabaseService } from '@services/database/interface';
 import { IDeepLinkService } from '@services/deepLink/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';

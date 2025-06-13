@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable n/no-callback-literal */
 /* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
+
 import { BrowserWindow, ipcMain, WebContentsView, WebPreferences } from 'electron';
 import { injectable } from 'inversify';
 
@@ -80,7 +79,7 @@ export class View implements IViewService {
     const sidebar = await this.preferenceService.get('sidebar');
     const titleBar = await this.preferenceService.get('titleBar');
     // electron type forget that click can be async function
-    /* eslint-disable @typescript-eslint/no-misused-promises */
+
     await this.menuService.insertMenu('View', [
       {
         label: () => (sidebar ? i18n.t('Preference.HideSideBar') : i18n.t('Preference.ShowSideBar')),
@@ -119,7 +118,7 @@ export class View implements IViewService {
             return;
           }
           const mainWindow = this.windowService.get(WindowNames.main);
-          mainWindow?.setMenuBarVisibility(!mainWindow?.isMenuBarVisible());
+          mainWindow?.setMenuBarVisibility(!mainWindow.isMenuBarVisible());
           void this.workspaceViewService.realignActiveWorkspace();
         },
       },
@@ -140,7 +139,7 @@ export class View implements IViewService {
           // browserWindow above is for the main window's react UI
           // modify browser view in the main window
           const view = await this.getActiveBrowserView();
-          view?.webContents?.setZoomFactor?.(1);
+          view?.webContents.setZoomFactor(1);
         },
         enabled: hasWorkspaces,
       },
@@ -160,7 +159,7 @@ export class View implements IViewService {
           }
           // modify browser view in the main window
           const view = await this.getActiveBrowserView();
-          view?.webContents?.setZoomFactor?.(view.webContents.getZoomFactor() + 0.05);
+          view?.webContents.setZoomFactor(view.webContents.getZoomFactor() + 0.05);
         },
         enabled: hasWorkspaces,
       },
@@ -179,7 +178,7 @@ export class View implements IViewService {
           }
           // modify browser view in the main window
           const view = await this.getActiveBrowserView();
-          view?.webContents?.setZoomFactor?.(view.webContents.getZoomFactor() - 0.05);
+          view?.webContents.setZoomFactor(view.webContents.getZoomFactor() - 0.05);
         },
         enabled: hasWorkspaces,
       },
@@ -202,7 +201,6 @@ export class View implements IViewService {
         enabled: hasWorkspaces,
       },
     ]);
-    /* eslint-enable @typescript-eslint/no-misused-promises */
   }
 
   /**
@@ -212,7 +210,6 @@ export class View implements IViewService {
    */
   private readonly views = new Map<string, Map<WindowNames, WebContentsView> | undefined>();
   public async getViewCount(): Promise<number> {
-    // eslint-disable-next-line @typescript-eslint/return-await
     return await Promise.resolve(Object.keys(this.views).length);
   }
 
@@ -347,11 +344,10 @@ export class View implements IViewService {
 
   public async loadUrlForView(workspace: IWorkspace, view: WebContentsView, uri?: string): Promise<void> {
     const { rememberLastPageVisited } = this.preferenceService.getPreferences();
-    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/strict-boolean-expressions
+
     const urlToLoad = uri || (rememberLastPageVisited ? workspace.lastUrl : workspace.homeUrl) || workspace.homeUrl || getDefaultTidGiUrl(workspace.id);
     try {
       logger.debug(
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         `loadUrlForView(): view.webContents is ${view.webContents ? 'define' : 'undefined'} urlToLoad: ${urlToLoad} for workspace ${workspace.name}`,
         { stack: new Error('stack').stack?.replace('Error:', '') },
       );
@@ -361,7 +357,6 @@ export class View implements IViewService {
       }
       // will set again in view.webContents.on('did-start-loading'), but that one sometimes is too late to block services that wait for `isLoading`
       await this.workspaceService.updateMetaData(workspace.id, {
-        // eslint-disable-next-line unicorn/no-null
         didFailLoadErrorMessage: null,
         isLoading: true,
       });
@@ -494,7 +489,6 @@ export class View implements IViewService {
     this.forEachView(async (view, id, _name) => {
       /** if workspaceID not passed means reload all views. */
       if (workspaceID === undefined || id === workspaceID) {
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         if (!view.webContents) {
           logger.error(`view.webContents is ${String(view.webContents)} when reloadViewsWebContents's forEachView(${id})`);
           return;
@@ -502,7 +496,7 @@ export class View implements IViewService {
         // if we can get lastUrl, use it
         if (workspaceID !== undefined) {
           const workspace = await this.workspaceService.get(workspaceID);
-          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
           if (rememberLastPageVisited && workspace?.lastUrl) {
             try {
               await view.webContents.loadURL(workspace.lastUrl);
@@ -519,7 +513,6 @@ export class View implements IViewService {
   }
 
   public async getViewCurrentUrl(workspaceID?: string): Promise<string | undefined> {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!workspaceID) {
       return;
     }
@@ -557,7 +550,6 @@ export class View implements IViewService {
       logger.error(`reloadActiveBrowserView views.length === 0`, { stack: new Error('stack').stack?.replace('Error:', '') });
     }
     views.forEach((view) => {
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (view?.webContents) {
         view.webContents.reload();
       }
@@ -565,7 +557,6 @@ export class View implements IViewService {
   }
 
   public async realignActiveView(browserWindow: BrowserWindow, activeId: string, windowName: WindowNames, isRetry?: boolean): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
     const view = this.getView(activeId, windowName);
     if (view?.webContents) {
       const contentSize = browserWindow.getContentSize();
@@ -575,7 +566,7 @@ export class View implements IViewService {
       } else {
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
         logger.debug(`realignActiveView() contentSize set to ${JSON.stringify(newViewBounds)}`);
-        view?.setBounds(newViewBounds);
+        view.setBounds(newViewBounds);
       }
     } else if (isRetry === true) {
       logger.error(
@@ -600,7 +591,7 @@ export class View implements IViewService {
       view.webContents.stopFindInPage('clearSelection');
       view.webContents.send(WindowChannel.closeFindInPage);
       // make view small, hide browserView to show error message or other pages
-      view?.setBounds({
+      view.setBounds({
         x: -contentSize[0],
         y: -contentSize[1],
         width: contentSize[0],

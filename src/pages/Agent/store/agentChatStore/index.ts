@@ -22,8 +22,8 @@ export const useAgentChatStore = create<AgentChatStoreType>()((set, get, api) =>
     previewDialogTab: 'tree',
     previewLoading: false,
     previewResult: null,
-  lastUpdated: null,
-  formFieldsToScrollTo: [],
+    lastUpdated: null,
+    formFieldsToScrollTo: [],
     expandedArrayItems: new Map(),
   };
 

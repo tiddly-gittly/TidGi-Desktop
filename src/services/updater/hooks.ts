@@ -10,7 +10,7 @@ export function useUpdaterObservable(): IUpdaterMetaData | undefined {
   return updaterMetaData;
 }
 
-export function getUpdaterMessage(status: IUpdaterMetaData['status'], info: IUpdaterMetaData['info'], t: TFunction<'translation'>): string {
+export function getUpdaterMessage(status: IUpdaterMetaData['status'], info: IUpdaterMetaData['info'], t: TFunction): string {
   if (status === IUpdaterStatus.checkingFailed) {
     return `${t('ErrorMessage')} ${info?.errorMessage ?? '-'}`;
   }

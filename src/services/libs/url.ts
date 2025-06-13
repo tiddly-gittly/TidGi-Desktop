@@ -15,8 +15,7 @@ export async function getLocalHostUrlWithActualIP(originalUrl: string): Promise<
 }
 
 export function getUrlWithCorrectProtocol(workspace: IWorkspace, originalUrl: string): string {
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  const isHttps = Boolean(workspace.https?.enabled && workspace.https?.tlsKey && workspace.https?.tlsCert);
+  const isHttps = Boolean(workspace.https?.enabled && workspace.https.tlsKey && workspace.https.tlsCert);
   try {
     const parsedUrl = new URL(originalUrl);
     if (isHttps) {

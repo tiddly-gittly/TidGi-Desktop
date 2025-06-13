@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/promise-function-async */
-/* eslint-disable @typescript-eslint/no-inferrable-types */
-/* eslint-disable @typescript-eslint/no-misused-promises */
 /**
  * Call tiddlywiki api from electron
  * This file should be required by view.ts preload script to work

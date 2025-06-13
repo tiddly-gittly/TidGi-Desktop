@@ -1,5 +1,5 @@
 /* eslint-disable */
-/* eslint-disable unicorn/prevent-abbreviations */
+ 
 import { BackendModule } from 'i18next';
 import { cloneDeep, merge, Object } from 'lodash';
 import { I18NChannels } from '@/constants/channels';

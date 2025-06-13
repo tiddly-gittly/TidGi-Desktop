@@ -34,7 +34,7 @@ export function useWikiCreationProgress(
 }
 
 export function updateErrorInWhichComponentSetterByErrorMessage(
-  t: TFunction<'translation', undefined>,
+  t: TFunction,
   message: string,
   errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void,
 ): void {

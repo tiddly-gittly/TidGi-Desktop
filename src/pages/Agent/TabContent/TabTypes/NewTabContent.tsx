@@ -11,9 +11,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
-import { useTabStore } from '../../../store/tabStore';
-import { INewTab, TabType } from '../../../types/tab';
-import { Search } from '../../Search/Search';
+import { Search } from '../../components/Search/Search';
+import { useTabStore } from '../../store/tabStore';
+import { INewTab, TabType } from '../../types/tab';
 
 interface NewTabContentProps {
   tab: INewTab;

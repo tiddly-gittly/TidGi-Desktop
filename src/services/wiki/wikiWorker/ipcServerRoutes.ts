@@ -80,7 +80,7 @@ export class IpcServerRoutes {
       // Send the file
       try {
         const data = await fs.readFile(filename);
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
         const type = this.wikiInstance.config.fileExtensionInfo[extension] ? this.wikiInstance.config.fileExtensionInfo[extension].type : 'application/octet-stream';
         return ({ statusCode: 200, headers: { 'Content-Type': type }, data });
       } catch (error) {
@@ -115,11 +115,11 @@ export class IpcServerRoutes {
     if (tiddler === undefined) {
       return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `Tiddler "${title}" not exist` };
     }
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+
     const tiddlerFields = { ...tiddler.fields };
 
     // only add revision if it > 0 or exists
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
     if (this.wikiInstance.wiki.getChangeCount(title)) {
       tiddlerFields.revision = String(this.wikiInstance.wiki.getChangeCount(title));
     }
@@ -147,13 +147,12 @@ export class IpcServerRoutes {
         }
         const tiddlerFields = omit(tiddler.fields, excludeFields) as Record<string, string | number>;
         // only add revision if it > 0 or exists
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
         if (this.wikiInstance.wiki.getChangeCount(title)) {
           tiddlerFields.revision = String(this.wikiInstance.wiki.getChangeCount(title));
         }
         tiddlerFields.type = tiddlerFields.type ?? 'text/vnd.tiddlywiki';
         return tiddlerFields as Omit<ITiddlerFields, 'text'>;
-        // eslint-disable-next-line unicorn/no-useless-undefined
       })
         .filter((item): item is Omit<ITiddlerFields, 'text'> => item !== undefined);
     return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, data: tiddlers };

@@ -33,7 +33,7 @@ export async function registerMenu(): Promise<void> {
     {
       label: () => i18n.t('Menu.DeveloperToolsActiveWorkspace'),
       accelerator: 'CmdOrCtrl+Option+I',
-      click: async () => (await viewService.getActiveBrowserView())?.webContents?.openDevTools?.({ mode: 'detach' }),
+      click: async () => (await viewService.getActiveBrowserView())?.webContents.openDevTools({ mode: 'detach' }),
       enabled: hasActiveWorkspaces,
     },
   ]);
@@ -45,18 +45,18 @@ export async function registerMenu(): Promise<void> {
           const browserView = await viewService.getActiveBrowserView();
           const win = windowService.get(WindowNames.main);
           logger.info(
-            `print page, browserView printToPDF method is ${browserView?.webContents?.printToPDF === undefined ? 'undefined' : 'define'}, win is ${
+            `print page, browserView printToPDF method is ${browserView?.webContents.printToPDF === undefined ? 'undefined' : 'define'}, win is ${
               win === undefined ? 'undefined' : 'define'
             }`,
           );
           if (browserView === undefined || win === undefined) {
             return;
           }
-          const pdfBuffer = await browserView?.webContents?.printToPDF({
+          const pdfBuffer = await browserView.webContents.printToPDF({
             generateTaggedPDF: true,
           });
           // turn buffer to data uri
-          const dataUri = `data:application/pdf;base64,${pdfBuffer?.toString('base64')}`;
+          const dataUri = `data:application/pdf;base64,${pdfBuffer.toString('base64')}`;
           await download(win, dataUri, { filename: 'wiki.pdf', overwrite: false });
           logger.info(`print page done`);
         } catch (error) {
@@ -145,7 +145,7 @@ export async function registerMenu(): Promise<void> {
           }
         }
         const view = await viewService.getActiveBrowserView();
-        const url = view?.webContents?.getURL();
+        const url = view?.webContents.getURL();
         if (typeof url === 'string') {
           clipboard.writeText(url);
         }

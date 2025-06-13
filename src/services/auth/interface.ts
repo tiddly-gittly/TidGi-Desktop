@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/no-null */
 import { AuthenticationChannel } from '@/constants/channels';
 import { IGitUserInfos } from '@services/git/interface';
 import { SupportedStorageServices } from '@services/types';

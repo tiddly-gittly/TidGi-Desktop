@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prefer-native-coercion-functions */
 /**
  * Worker environment is not part of electron environment, so don't import "@/constants/paths" here, as its process.resourcesPath will become undefined and throw Errors.
  *
@@ -62,7 +61,7 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
            */
           const variableContextList: IVariableContextList = [];
           for (const [index, scriptInContext] of scriptsInDifferentContext.entries()) {
-            switch (scriptInContext?.context) {
+            switch (scriptInContext.context) {
               case 'zx': {
                 await executeScriptInZxScriptContext({ zxPath, filePathToExecute }, observer, scriptInContext.content, variableContextList, index);
                 break;
@@ -97,7 +96,7 @@ function beforeExit(): void {
 
 const wikiWorker = {
   startNodeJSWiki,
-  getTiddlerFileMetadata: (tiddlerTitle: string) => getWikiInstance()?.boot?.files?.[tiddlerTitle],
+  getTiddlerFileMetadata: (tiddlerTitle: string) => getWikiInstance()?.boot.files[tiddlerTitle],
   executeZxScript,
   extractWikiHTML,
   packetHTMLFromWikiFolder,

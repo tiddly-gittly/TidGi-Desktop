@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { IContextService } from '@services/context/interface';
@@ -48,7 +47,7 @@ export async function getWorkspaceMenuTemplate(
   service: IWorkspaceMenuRequiredServices,
 ): Promise<MenuItemConstructorOptions[]> {
   const { active, id, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, name, enableHTTPAPI, lastUrl, homeUrl } = workspace;
-  /* eslint-disable @typescript-eslint/no-misused-promises */
+
   const template: MenuItemConstructorOptions[] = [
     {
       label: t('WorkspaceSelector.OpenWorkspaceTagTiddler', {
@@ -154,7 +153,6 @@ export async function getWorkspaceMenuTemplate(
       },
     });
   }
-  /* eslint-enable @typescript-eslint/no-misused-promises */
 
   return template;
 }

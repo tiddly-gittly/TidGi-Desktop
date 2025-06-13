@@ -3,7 +3,7 @@ import { ObjectFieldTemplateProps } from '@rjsf/utils';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
-import { useAgentChatStore } from '../../../../../../../store/agentChatStore/index';
+import { useAgentChatStore } from '../../../../Agent/store/agentChatStore/index';
 
 export const RootObjectFieldTemplate: React.FC<ObjectFieldTemplateProps> = (props) => {
   const { properties, schema } = props;

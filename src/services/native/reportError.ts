@@ -59,7 +59,6 @@ Locale: ${app.getLocale()}
 
 export function reportErrorToGithubWithTemplates(error: Error): void {
   void import('@services/container')
-    // eslint-disable-next-line @typescript-eslint/promise-function-async
     .then(({ container }) => {
       const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
       return nativeService.openPath(LOG_FOLDER, true);

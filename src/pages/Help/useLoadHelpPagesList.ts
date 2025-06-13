@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/no-array-callback-reference */
 import uniqBy from 'lodash/uniqBy';
 import { useEffect, useState } from 'react';
 import { LastArrayElement } from 'type-fest';
@@ -7,7 +6,7 @@ import helpPages from './helpPages.json';
 function makeFallbackUrlsArray(
   item: LastArrayElement<typeof helpPages.default>,
 ): Omit<LastArrayElement<typeof helpPages.default>, 'fallbackUrls' | 'language' | 'tags'> & { fallbackUrls: string[]; language: string[]; tags: string[] } {
-  return { ...item, fallbackUrls: item?.fallbackUrls?.split(' ') ?? [], language: item?.language?.split(' ') ?? [], tags: item?.tags?.split(' ') ?? [] };
+  return { ...item, fallbackUrls: item.fallbackUrls?.split(' ') ?? [], language: item.language.split(' ') ?? [], tags: item.tags.split(' ') ?? [] };
 }
 
 export function useLoadHelpPagesList(language = 'en-GB') {

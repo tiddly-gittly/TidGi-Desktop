@@ -22,7 +22,7 @@ export const getSendWikiOperationsToBrowser = (workspaceID: string) =>
     [WikiChannel.createProgress]: (message: string): void => {
       const windowService = container.get<IWindowService>(serviceIdentifier.Window);
       const createWorkspaceWindow = windowService.get(WindowNames.addWorkspace);
-      createWorkspaceWindow?.webContents?.send(WikiChannel.createProgress, message);
+      createWorkspaceWindow?.webContents.send(WikiChannel.createProgress, message);
     },
     [WikiChannel.syncProgress]: (message: string): void => {
       sendNoWait(WikiChannel.syncProgress, workspaceID, [message]);

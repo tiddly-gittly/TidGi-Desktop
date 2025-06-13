@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable unicorn/no-null */
+import type { Logger } from '$:/core/modules/utils/logger.js';
 import type { IWikiServerStatusObject } from '@services/wiki/wikiWorker/ipcServerRoutes';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import debounce from 'lodash/debounce';
-import type { IChangedTiddlers, ITiddlerFields, IUtils, Syncer, Tiddler, Wiki } from 'tiddlywiki';
-import type { Logger } from '$:/core/modules/utils/logger.js';
+import type { IChangedTiddlers, ITiddlerFields, Syncer, Tiddler, Wiki } from 'tiddlywiki';
 
 type ISyncAdaptorGetStatusCallback = (error: Error | null, isLoggedIn?: boolean, username?: string, isReadOnly?: boolean, isAnonymous?: boolean) => void;
 type ISyncAdaptorGetTiddlersJSONCallback = (error: Error | null, tiddler?: Array<Omit<ITiddlerFields, 'text'>>) => void;
@@ -42,7 +40,7 @@ class TidGiIPCSyncAdaptor {
     this.isReadOnly = false;
     this.logoutIsAvailable = true;
     this.workspaceID = (window.meta() as WindowMeta[WindowNames.view]).workspaceID!;
-    if (window.observables?.wiki?.getWikiChangeObserver$ !== undefined) {
+    if (window.observables.wiki.getWikiChangeObserver$ !== undefined) {
       // if install-electron-ipc-cat is faster than us, just subscribe to the observable. Otherwise we normally will wait for it to call us here.
       this.setupSSE();
     }
@@ -52,7 +50,7 @@ class TidGiIPCSyncAdaptor {
    * This should be called after install-electron-ipc-cat, so this is called in `$:/plugins/linonetwo/tidgi-ipc-syncadaptor/Startup/install-electron-ipc-cat.js`
    */
   setupSSE() {
-    if (window.observables?.wiki?.getWikiChangeObserver$ === undefined) {
+    if (window.observables.wiki.getWikiChangeObserver$ === undefined) {
       console.error("getWikiChangeObserver$ is undefined in window.observables.wiki, can't subscribe to server changes.");
       return;
     }
@@ -69,7 +67,7 @@ class TidGiIPCSyncAdaptor {
     // After SSE is enabled, we can disable polling and else things that related to syncer. (build up complexer behavior with syncer.)
     this.configSyncer();
 
-    window.observables?.wiki?.getWikiChangeObserver$(this.workspaceID).subscribe((change: IChangedTiddlers) => {
+    window.observables.wiki.getWikiChangeObserver$(this.workspaceID).subscribe((change: IChangedTiddlers) => {
       // `$tw.syncer.syncFromServer` calling `this.getUpdatedTiddlers`, so we need to update `this.updatedTiddlers` before it do so. See `core/modules/syncer.js` in the core
       Object.keys(change).forEach(title => {
         if (!change[title]) {
@@ -150,7 +148,7 @@ class TidGiIPCSyncAdaptor {
 
   getTiddlerRevision(title: string) {
     const tiddler = this.wiki.getTiddler(title);
-    return tiddler?.fields?.revision;
+    return tiddler?.fields.revision;
   }
 
   /*
@@ -168,7 +166,7 @@ class TidGiIPCSyncAdaptor {
       }
       this.hasStatus = true;
       // Record the recipe
-      this.recipe = status.space?.recipe;
+      this.recipe = status.space.recipe;
       // Check if we're logged in
       this.isLoggedIn = status.username !== 'GUEST';
       this.isReadOnly = !!status.read_only;
@@ -207,7 +205,7 @@ class TidGiIPCSyncAdaptor {
       callback(null, skinnyTiddlers);
     } catch (error) {
       // eslint-disable-next-line n/no-callback-literal
-      callback?.(error as Error);
+      callback(error as Error);
     }
   }
 
@@ -240,7 +238,7 @@ class TidGiIPCSyncAdaptor {
         throw new Error('saveTiddler returned undefined from callWikiIpcServerRoute putTiddler in saveTiddler');
       }
       // Save the details of the new revision of the tiddler
-      const etag = putTiddlerResponse?.headers?.Etag;
+      const etag = putTiddlerResponse.headers?.Etag;
       if (etag === undefined) {
         callback(new Error('Response from server is missing required `etag` header'));
       } else {
@@ -255,7 +253,7 @@ class TidGiIPCSyncAdaptor {
     } catch (error) {
       console.error(error);
       // eslint-disable-next-line n/no-callback-literal
-      callback?.(error as Error);
+      callback(error as Error);
     }
   }
 
@@ -305,7 +303,7 @@ class TidGiIPCSyncAdaptor {
       callback(null, null);
     } catch (error) {
       // eslint-disable-next-line n/no-callback-literal
-      callback?.(error as Error);
+      callback(error as Error);
     }
   }
 
@@ -339,9 +337,9 @@ class TidGiIPCSyncAdaptor {
 }
 
 if ($tw.browser && typeof window !== 'undefined') {
-  const isInTidGi = typeof document !== 'undefined' && document?.location?.protocol?.startsWith('tidgi');
-  const servicesExposed = Boolean(window.service?.wiki);
-  const hasWorkspaceIDinMeta = Boolean((window.meta?.() as WindowMeta[WindowNames.view] | undefined)?.workspaceID);
+  const isInTidGi = typeof document !== 'undefined' && document.location.protocol.startsWith('tidgi');
+  const servicesExposed = Boolean(window.service.wiki);
+  const hasWorkspaceIDinMeta = Boolean((window.meta() as WindowMeta[WindowNames.view] | undefined)?.workspaceID);
   if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     exports.adaptorClass = TidGiIPCSyncAdaptor;

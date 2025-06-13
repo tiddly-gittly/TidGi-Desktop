@@ -1,8 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/promise-function-async */
-/* eslint-disable unicorn/no-null */
-/* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable unicorn/consistent-destructuring */
 import { mapSeries } from 'bluebird';
 import { app, dialog, session } from 'electron';
 import { injectable } from 'inversify';
@@ -123,7 +118,7 @@ export class WorkspaceView implements IWorkspaceViewService {
             throw new Error(i18n.t(`Error.MainWindowMissing`));
           }
           const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
-          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
           if (userInfo?.accessToken) {
             // sync in non-blocking way
             void this.syncService.syncWikiIfNeeded(workspace);
@@ -470,7 +465,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
     const mainWindow = this.windowService.get(WindowNames.main);
     const menuBarWindow = this.windowService.get(WindowNames.menuBar);
-    /* eslint-disable @typescript-eslint/strict-boolean-expressions */
+
     logger.info(
       `realignActiveWorkspaceView: id ${workspaceToRealign?.id ?? 'undefined'}`,
     );
@@ -517,5 +512,4 @@ export class WorkspaceView implements IWorkspaceViewService {
     await Promise.all(tasks);
     logger.info(`hideWorkspaceView: done.`);
   }
-  /* eslint-enable @typescript-eslint/strict-boolean-expressions */
 }

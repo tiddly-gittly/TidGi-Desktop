@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import { LinearProgress, Snackbar, Typography, Alert } from '@mui/material';
+import { Alert, LinearProgress, Snackbar, Typography } from '@mui/material';
 
 import { CloseButton, ReportErrorFabButton, WikiLocation } from './FormComponents';
 import { useExistedWiki, useValidateExistedWiki } from './useExistedWiki';

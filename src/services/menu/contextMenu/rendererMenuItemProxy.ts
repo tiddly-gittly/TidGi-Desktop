@@ -28,7 +28,7 @@ export function rendererMenuItemProxy(menus: MenuItemConstructorOptions[]): [Ipc
       // store callback into map, and use id instead. And we ipc.on that id.
       originalCallbackIdMap[id] = menuItem.click as () => void;
       const ipcCallback = (_event: IpcRendererEvent): void => {
-        originalCallbackIdMap[id]?.();
+        originalCallbackIdMap[id]();
         unregister();
       };
       ipcCallbackIdMap[id] = ipcCallback;

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import { Channels, WorkspaceChannel } from '@/constants/channels';
 import { webFrame } from 'electron';
 import '../services/wiki/wikiOperations/executor/wikiOperationInBrowser';
@@ -11,10 +10,10 @@ const handleLoaded = (event: string): void => {
   if (handled) {
     return;
   }
-  // eslint-disable-next-line no-console
+
   console.log(`Preload script is loading on ${event}...`);
   void executeJavaScriptInBrowserView();
-  // eslint-disable-next-line no-console
+
   console.log('Preload script is loaded...');
   handled = true;
 };

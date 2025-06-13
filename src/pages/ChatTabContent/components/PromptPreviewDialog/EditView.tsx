@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { useAgentChatStore } from '../../../../../../store/agentChatStore/index';
+import { useAgentChatStore } from '../../../Agent/store/agentChatStore/index';
 import { PromptConfigForm } from '../PromptConfigForm';
 
 const EditorTabs = styled(Tabs)`

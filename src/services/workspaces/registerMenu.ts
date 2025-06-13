@@ -17,7 +17,6 @@ export async function registerMenu(): Promise<void> {
   const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 
-  /* eslint-disable @typescript-eslint/no-misused-promises */
   await menuService.insertMenu('Workspaces', [
     {
       label: () => i18n.t('Menu.SelectNextWorkspace'),

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable @typescript-eslint/require-await */
 import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import serviceIdentifier from '@services/serviceIdentifier';

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { WikiCreationMethod } from '@/constants/wikiCreation';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,11 +26,11 @@ export function useValidateCloneWiki(
       errorInWhichComponentSetter({ gitRepoUrl: true });
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.GitRepoUrl')}`);
       hasErrorSetter(true);
-    } else if (!isCreateMainWorkspace && !form.mainWikiToLink?.wikiFolderLocation) {
+    } else if (!isCreateMainWorkspace && !form.mainWikiToLink.wikiFolderLocation) {
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.MainWorkspace')}`);
       errorInWhichComponentSetter({ mainWikiToLink: true });
       hasErrorSetter(true);
-    } else if (form.gitUserInfo === undefined || !(form.gitUserInfo.accessToken?.length > 0)) {
+    } else if (form.gitUserInfo === undefined || !(form.gitUserInfo.accessToken.length > 0)) {
       wikiCreationMessageSetter(t('AddWorkspace.NotLoggedIn'));
       errorInWhichComponentSetter({ gitUserInfo: true });
       hasErrorSetter(true);
@@ -47,7 +46,7 @@ export function useValidateCloneWiki(
     form.wikiFolderName,
     form.gitRepoUrl,
     form.gitUserInfo,
-    form.mainWikiToLink?.wikiFolderLocation,
+    form.mainWikiToLink.wikiFolderLocation,
     form.tagName,
     errorInWhichComponentSetter,
   ]);

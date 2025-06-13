@@ -1,8 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-types */
-/* eslint-disable unicorn/no-null */
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -34,7 +31,6 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
     void window.service.workspace.countWorkspaces().then((workspaceCount) => {
       wikiPortSetter(wikiPort + workspaceCount);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -87,7 +83,6 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
       parentFolderLocationSetter(desktopPathAsDefaultExistedWikiFolderPath);
     })();
     // we only do this on component init
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [gitRepoUrl, gitRepoUrlSetter] = useState<string>('');
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { container } from '@services/container';
 import { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';

@@ -1,5 +1,5 @@
-import { Typography } from '@mui/material';
 import { Folder as FolderIcon } from '@mui/icons-material';
+import { Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useValidateHtmlWiki } from './useImportHtmlWiki';
 
@@ -36,7 +36,7 @@ export function ImportHtmlWikiForm({
             // first clear the text, so button will refresh
             wikiHtmlPathSetter('');
             const filePaths = await window.service.native.pickFile([{ name: 'html文件', extensions: ['html', 'htm'] }]);
-            if (filePaths?.length > 0) {
+            if (filePaths.length > 0) {
               wikiHtmlPathSetter(filePaths[0]);
               const fileName = await window.service.native.path('basename', filePaths[0]);
               if (fileName !== undefined) {
@@ -66,7 +66,7 @@ export function ImportHtmlWikiForm({
             // first clear the text, so button will refresh
             form.parentFolderLocationSetter('');
             const filePaths = await window.service.native.pickDirectory(parentFolderLocation);
-            if (filePaths?.length > 0) {
+            if (filePaths.length > 0) {
               form.parentFolderLocationSetter(filePaths[0]);
             }
           }}

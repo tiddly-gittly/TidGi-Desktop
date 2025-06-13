@@ -63,7 +63,7 @@ export interface IWorkspaceViewService {
   /**
    * Restart nodejs wiki and reload the view. Only works for main wiki.
    */
-  restartWorkspaceViewService(workspaceID?: string | undefined): Promise<void>;
+  restartWorkspaceViewService(workspaceID?: string): Promise<void>;
   /**
    * If is main workspace, set workspace to active and load the url.
    * If is sub workspace, just load url with #tag for its main workspace.
@@ -74,7 +74,7 @@ export interface IWorkspaceViewService {
   setWorkspaceView(workspaceID: string, workspaceOptions: IWorkspace): Promise<void>;
   setWorkspaceViews(workspaces: Record<string, IWorkspace>): Promise<void>;
   /** get view's current url, store into the workspace. Can provide a designated view to operate  */
-  updateLastUrl(workspaceID: string, view?: Electron.CrossProcessExports.WebContentsView | undefined): Promise<void>;
+  updateLastUrl(workspaceID: string, view?: Electron.CrossProcessExports.WebContentsView): Promise<void>;
   wakeUpWorkspaceView(workspaceID: string): Promise<void>;
 }
 export const WorkspaceViewServiceIPCDescriptor = {

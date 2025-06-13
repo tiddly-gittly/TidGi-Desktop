@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { addDays, addHours, addMinutes, addWeeks } from 'date-fns';
 
 export const quickShortcuts = [

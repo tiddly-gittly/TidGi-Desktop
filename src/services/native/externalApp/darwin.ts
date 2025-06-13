@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/no-null */
 import { logger } from '@services/libs/log';
 import { pathExists } from 'fs-extra';
 import appPath from './app-path';
@@ -138,8 +137,8 @@ async function findApplication(editor: IDarwinExternalEditor): Promise<string | 
       // bundle isn't registered on the machine.
       // https://github.com/sindresorhus/app-path/blob/0e776d4e132676976b4a64e09b5e5a4c6e99fcba/index.js#L7-L13
       const installPath = await appPath(identifier).catch(async (error: Error) => {
-        logger.info(`findApplication() gets appPath Error: ${error?.message ?? String(error)}`);
-        if (error?.message === "Couldn't find the app") {
+        logger.info(`findApplication() gets appPath Error: ${error.message ?? String(error)}`);
+        if (error.message === "Couldn't find the app") {
           return await Promise.resolve(null);
         }
         return await Promise.reject(error);

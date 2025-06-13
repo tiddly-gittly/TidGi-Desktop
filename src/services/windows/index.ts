@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
+
 import { app, BrowserWindow, BrowserWindowConstructorOptions } from 'electron';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
 import { injectable } from 'inversify';
@@ -74,7 +73,7 @@ export class Window implements IWindowService {
   public async stopFindInPage(close?: boolean, windowName: WindowNames = WindowNames.main): Promise<void> {
     const mainWindow = this.get(windowName);
     const view = await this.viewService.getActiveBrowserView();
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
     if (view) {
       const contents = view.webContents;
       if (contents !== undefined) {
@@ -110,7 +109,7 @@ export class Window implements IWindowService {
   }
 
   public async close(windowName: WindowNames): Promise<void> {
-    this.get(windowName)?.close?.();
+    this.get(windowName)?.close();
     // remove the window instance, let it GC
     this.windows.delete(windowName);
   }
@@ -144,7 +143,7 @@ export class Window implements IWindowService {
   }
 
   public async isMenubarOpen(): Promise<boolean> {
-    return this.mainWindowMenuBar?.window?.isFocused?.() ?? false;
+    return this.mainWindowMenuBar?.window?.isFocused() ?? false;
   }
 
   public async open<N extends WindowNames>(windowName: N, meta?: WindowMeta[N], config?: IWindowOpenConfig<N>): Promise<undefined>;
@@ -269,7 +268,7 @@ export class Window implements IWindowService {
    * When using `loadURL`, window meta will be clear. And we can only append meta to a new window. So we need to push meta to window after `loadURL`.
    */
   private async pushWindowMetaToWindow<N extends WindowNames>(win: BrowserWindow, meta: WindowMeta[N]): Promise<void> {
-    win?.webContents?.send?.(MetaDataChannel.pushViewMetaData, meta);
+    win.webContents.send(MetaDataChannel.pushViewMetaData, meta);
   }
 
   /**
@@ -296,7 +295,7 @@ export class Window implements IWindowService {
 
   public async goBack(): Promise<void> {
     const contents = (await this.viewService.getActiveBrowserView())?.webContents;
-    if (contents?.navigationHistory?.canGoBack?.() === true) {
+    if (contents?.navigationHistory.canGoBack() === true) {
       contents.navigationHistory.goBack();
       contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
       contents.send(WindowChannel.updateCanGoForward, contents.navigationHistory.canGoForward());
@@ -305,7 +304,7 @@ export class Window implements IWindowService {
 
   public async goForward(): Promise<void> {
     const contents = (await this.viewService.getActiveBrowserView())?.webContents;
-    if (contents?.navigationHistory?.canGoForward?.() === true) {
+    if (contents?.navigationHistory.canGoForward() === true) {
       contents.navigationHistory.goForward();
       contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
       contents.send(WindowChannel.updateCanGoForward, contents.navigationHistory.canGoForward());
@@ -329,7 +328,7 @@ export class Window implements IWindowService {
 
   public async clearStorageData(workspaceID: string, windowName: WindowNames = WindowNames.main): Promise<void> {
     const view = this.viewService.getView(workspaceID, windowName);
-    const session = view?.webContents?.session;
+    const session = view?.webContents.session;
     if (session !== undefined) {
       await session.clearStorageData();
       await session.clearAuthCache();

@@ -11,7 +11,7 @@ export function Network(props: ISectionProps): React.JSX.Element {
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();
-  const [inputUrls, setInputUrls] = useState(preference?.disableAntiAntiLeechForUrls?.join?.('\n'));
+  const [inputUrls, setInputUrls] = useState(preference?.disableAntiAntiLeechForUrls.join('\n'));
   useEffect(() => {
     if (inputUrls === undefined && preference?.disableAntiAntiLeechForUrls !== undefined) {
       setInputUrls(preference.disableAntiAntiLeechForUrls.join('\n'));

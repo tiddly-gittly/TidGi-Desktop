@@ -3,8 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
-import { useTabStore } from '../../../store/tabStore';
-import { ISplitViewTab } from '../../../types/tab';
+import { useTabStore } from '../../store/tabStore';
+import { ISplitViewTab } from '../../types/tab';
 import { TabContentView } from '../TabContentView';
 
 // Props for split view tab content

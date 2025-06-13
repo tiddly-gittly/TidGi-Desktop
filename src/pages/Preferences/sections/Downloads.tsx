@@ -29,7 +29,6 @@ export function Downloads(props: Required<ISectionProps>): React.JSX.Element {
                       }
                     })
                     .catch((error: Error) => {
-                      // eslint-disable-next-line security-node/detect-crlf
                       console.log(error);
                     });
                 }}

@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
@@ -12,8 +9,8 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
   const infoTiddlerFields: Array<{ text: string; title: string }> = [];
   // Basics
   if (!$tw.browser || typeof window === 'undefined') return infoTiddlerFields;
-  const isInTidGi = typeof document !== 'undefined' && document?.location?.protocol?.startsWith('tidgi');
-  const workspaceID = (window.meta?.() as WindowMeta[WindowNames.view] | undefined)?.workspaceID;
+  const isInTidGi = typeof document !== 'undefined' && document.location.protocol.startsWith('tidgi');
+  const workspaceID = (window.meta() as WindowMeta[WindowNames.view] | undefined)?.workspaceID;
   infoTiddlerFields.push({ title: '$:/info/tidgi', text: mapBoolean(isInTidGi) });
   if (isInTidGi && workspaceID) {
     infoTiddlerFields.push({ title: '$:/info/tidgi/workspaceID', text: workspaceID });

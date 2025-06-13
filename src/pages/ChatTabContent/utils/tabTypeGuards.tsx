@@ -1,5 +1,5 @@
 // Type guards for tab related operations
-import { IChatTab, TabItem, TabType } from '../../../../../types/tab';
+import { IChatTab, TabItem, TabType } from '../../Agent/types/tab';
 
 /**
  * Type guard to ensure a tab is a chat tab

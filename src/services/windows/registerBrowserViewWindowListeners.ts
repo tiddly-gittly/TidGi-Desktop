@@ -19,7 +19,7 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
       if (newWindow === undefined) return;
       newWindow.on('swipe', async (_event, direction) => {
         const view = await viewService.getActiveBrowserView();
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
         if (view) {
           if (direction === 'left') {
             view.webContents.goBack();
@@ -45,18 +45,18 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
   newWindow.on('focus', async () => {
     if (windowName !== WindowNames.main || newWindow === undefined) return;
     const view = await viewService.getActiveBrowserView();
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    view?.webContents?.focus?.();
+
+    view?.webContents.focus();
   });
 
   newWindow.on('enter-full-screen', async () => {
     if (windowName !== WindowNames.main || newWindow === undefined) return;
-    newWindow?.webContents?.send?.('is-fullscreen-updated', true);
+    newWindow.webContents.send('is-fullscreen-updated', true);
     await workspaceViewService.realignActiveWorkspace();
   });
   newWindow.on('leave-full-screen', async () => {
     if (windowName !== WindowNames.main || newWindow === undefined) return;
-    newWindow?.webContents?.send?.('is-fullscreen-updated', false);
+    newWindow.webContents.send('is-fullscreen-updated', false);
     await workspaceViewService.realignActiveWorkspace();
   });
 }

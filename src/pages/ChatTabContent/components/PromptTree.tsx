@@ -2,7 +2,7 @@ import { Box, styled, Typography } from '@mui/material';
 import { IPromptPart } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useAgentChatStore } from '../../../../../store/agentChatStore/index';
+import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
 
 const TreeItem = styled(Box, {
   shouldForwardProp: (property: string) => property !== 'depth',

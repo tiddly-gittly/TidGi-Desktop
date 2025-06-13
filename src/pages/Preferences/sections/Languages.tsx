@@ -22,7 +22,7 @@ export function Languages(props: Partial<ISectionProps> & { languageSelectorOnly
 
   return (
     <>
-      <SectionTitle ref={props.sections?.languages?.ref}>{t('Preference.Languages')}</SectionTitle>
+      <SectionTitle ref={props.sections?.languages.ref}>{t('Preference.Languages')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           {preference === undefined || platform === undefined || supportedLanguagesMap === undefined || preference.language === undefined ? <ListItem>{t('Loading')}</ListItem> : (
@@ -59,7 +59,7 @@ export function Languages(props: Partial<ISectionProps> & { languageSelectorOnly
                         checked={preference.spellcheck}
                         onChange={async (event) => {
                           await window.service.preference.set('spellcheck', event.target.checked);
-                          props?.requestRestartCountDown?.();
+                          props.requestRestartCountDown?.();
                         }}
                       />
                     }

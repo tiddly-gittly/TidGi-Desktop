@@ -1,5 +1,5 @@
 /* eslint-disable unicorn/prevent-abbreviations */
-/* eslint-disable security/detect-unsafe-regex */
+
 import { TIDDLERS_PATH } from '@/constants/paths';
 import { logger } from '@services/libs/log';
 import { IWorkspace } from '@services/workspaces/interface';
@@ -13,7 +13,8 @@ import path from 'path';
 const REPLACE_SYSTEM_TIDDLER_SYMBOL = 'search-replace:g[/],[_]search-replace:g[:],[_]';
 const getMatchPart = (tagToMatch: string): string => `in-tagtree-of[${tagToMatch}]`;
 const andPart = ']:and[';
-const getPathPart = (subWikiFolderName: string, subWikiPathDirName: string): string => `${REPLACE_SYSTEM_TIDDLER_SYMBOL}addprefix[/]addprefix[${subWikiPathDirName}]addprefix[/]addprefix[${subWikiFolderName}]]`;
+const getPathPart = (subWikiFolderName: string, subWikiPathDirName: string): string =>
+  `${REPLACE_SYSTEM_TIDDLER_SYMBOL}addprefix[/]addprefix[${subWikiPathDirName}]addprefix[/]addprefix[${subWikiFolderName}]]`;
 const getTagNameFromMatchPart = (matchPart: string): string =>
   matchPart.replace(/\[(!is\[system]\s*)?in-tagtree-of\[/, '').replace(/](search-replace:g\[\/],\[_]search-replace:g\[:],\[_])?.*/, '');
 const getFolderNamePathPart = (pathPart: string): string => pathPart.replace(']addprefix[/]addprefix[subwiki]]', '').replace(/.+addprefix\[/, '');
@@ -118,7 +119,7 @@ export async function getSubWikiPluginContent(mainWikiPath: string): Promise<ISu
       folderName: getFolderNamePathPart(line),
     })).filter((item) => item.folderName.length > 0 && item.tagName.length > 0);
   } catch (error) {
-    logger.error((error as Error)?.message, { function: 'getSubWikiPluginContent' });
+    logger.error((error as Error).message, { function: 'getSubWikiPluginContent' });
     return [];
   }
 }

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { Folder as FolderIcon } from '@mui/icons-material';
 import { AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
 import { useCallback } from 'react';
@@ -62,7 +61,7 @@ export function ExistedWikiForm({
             // first clear the text, so button will refresh
             await onLocationChange('');
             const filePaths = await window.service.native.pickDirectory(parentFolderLocation);
-            if (filePaths?.length > 0) {
+            if (filePaths.length > 0) {
               await onLocationChange(filePaths[0]);
             }
           }}

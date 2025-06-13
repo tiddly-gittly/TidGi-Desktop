@@ -2,8 +2,7 @@
  * Maybe this should be used in the preload script, because menu item callback can't be easily pass to main thread.
  * Ported from https://github.com/electron-userland/electron-spellchecker/blob/master/src/context-menu-builder.js
  */
-/* eslint-disable class-methods-use-this */
-/* eslint-disable no-param-reassign */
+
 import { isMac } from '@/helpers/system';
 import { clipboard, Menu, MenuItem, shell, WebContents } from 'electron';
 import i18next from 'i18next';
@@ -20,7 +19,7 @@ const truncateString = (string: string): string => {
   const match = /^.{0,25}\S*/.exec(string);
   if (match === null) return string;
   const { length } = match[0];
-  let result = match?.[0]?.replace(/\s$/, '') ?? '';
+  let result = match[0].replace(/\s$/, '') ?? '';
   if (length < string.length) {
     result += '…';
   }
@@ -96,7 +95,7 @@ export default class ContextMenuBuilder {
    */
   public showPopupMenu(contextInfo: IOnContextMenuInfo): void {
     const menu = this.buildMenuForElement(contextInfo);
-    menu?.popup({});
+    menu.popup({});
   }
 
   /**
@@ -287,7 +286,7 @@ export default class ContextMenuBuilder {
       new MenuItem({
         label: this.stringTable.cut(),
         accelerator: 'CommandOrControl+X',
-        enabled: menuInfo?.editFlags?.canCut,
+        enabled: menuInfo.editFlags?.canCut,
         click: () => {
           this.webContents.cut();
         },
@@ -304,7 +303,7 @@ export default class ContextMenuBuilder {
       new MenuItem({
         label: this.stringTable.copy(),
         accelerator: 'CommandOrControl+C',
-        enabled: menuInfo?.editFlags?.canCopy,
+        enabled: menuInfo.editFlags?.canCopy,
         click: () => {
           this.webContents.copy();
         },
@@ -321,7 +320,7 @@ export default class ContextMenuBuilder {
       new MenuItem({
         label: this.stringTable.paste(),
         accelerator: 'CommandOrControl+V',
-        enabled: menuInfo?.editFlags?.canPaste,
+        enabled: menuInfo.editFlags?.canPaste,
         click: () => {
           this.webContents.paste();
         },

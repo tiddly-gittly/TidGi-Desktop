@@ -59,7 +59,7 @@ export async function registerMenu(): Promise<void> {
         accelerator: 'CmdOrCtrl+G',
         click: () => {
           const mainWindow = windowService.get(WindowNames.main);
-          mainWindow?.webContents?.send('request-back-find-in-page', true);
+          mainWindow?.webContents.send('request-back-find-in-page', true);
         },
         enabled: async () => (await workspaceService.countWorkspaces()) > 0,
       },
@@ -68,7 +68,7 @@ export async function registerMenu(): Promise<void> {
         accelerator: 'Shift+CmdOrCtrl+G',
         click: () => {
           const mainWindow = windowService.get(WindowNames.main);
-          mainWindow?.webContents?.send('request-back-find-in-page', false);
+          mainWindow?.webContents.send('request-back-find-in-page', false);
         },
         enabled: async () => (await workspaceService.countWorkspaces()) > 0,
       },
@@ -82,7 +82,6 @@ export async function registerMenu(): Promise<void> {
         },
       },
     ],
-    // eslint-disable-next-line unicorn/no-null
     null,
     true,
   );

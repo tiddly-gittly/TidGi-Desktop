@@ -1,5 +1,5 @@
-import { lazy } from 'react';
 import { Helmet } from '@dr.pogodin/react-helmet';
+import { lazy } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DefaultTheme, styled } from 'styled-components';
 import is, { isNot } from 'typescript-styled-is';

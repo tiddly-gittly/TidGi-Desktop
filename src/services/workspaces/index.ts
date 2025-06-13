@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable unicorn/no-null */
+
 import { app } from 'electron';
 import fsExtra from 'fs-extra';
 import { injectable } from 'inversify';
@@ -103,7 +101,7 @@ export class Workspace implements IWorkspaceService {
         },
       },
     ]);
-    /* eslint-enable @typescript-eslint/no-misused-promises */
+
     await this.menuService.insertMenu('Workspaces', newMenuItems, undefined, undefined, 'updateWorkspaceMenuItems');
   }
 
@@ -248,7 +246,7 @@ export class Workspace implements IWorkspaceService {
     if (!workspaceToSanitize.lastUrl?.startsWith('tidgi')) {
       fixingValues.lastUrl = null;
     }
-    if (!workspaceToSanitize.homeUrl?.startsWith('tidgi')) {
+    if (!workspaceToSanitize.homeUrl.startsWith('tidgi')) {
       fixingValues.homeUrl = getDefaultTidGiUrl(workspaceToSanitize.id);
     }
     if (workspaceToSanitize.tokenAuth && !workspaceToSanitize.authToken) {
@@ -481,7 +479,7 @@ export class Workspace implements IWorkspaceService {
 
   public async workspaceDidFailLoad(id: string): Promise<boolean> {
     const workspaceMetaData = this.getMetaDataSync(id);
-    return typeof workspaceMetaData?.didFailLoadErrorMessage === 'string' && workspaceMetaData.didFailLoadErrorMessage.length > 0;
+    return typeof workspaceMetaData.didFailLoadErrorMessage === 'string' && workspaceMetaData.didFailLoadErrorMessage.length > 0;
   }
 
   public async openWorkspaceTiddler(workspace: IWorkspace, title?: string): Promise<void> {

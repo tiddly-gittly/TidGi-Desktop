@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing */
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { logger } from '@services/libs/log';
 import { parse as bestEffortJsonParser } from 'best-effort-json-parser';

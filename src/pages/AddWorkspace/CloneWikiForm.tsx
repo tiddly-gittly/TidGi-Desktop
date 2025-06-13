@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { Folder as FolderIcon } from '@mui/icons-material';
 import { AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
 import React from 'react';
@@ -28,7 +27,7 @@ export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichCompone
             // first clear the text, so button will refresh
             form.parentFolderLocationSetter('');
             const filePaths = await window.service.native.pickDirectory(form.parentFolderLocation);
-            if (filePaths?.length > 0) {
+            if (filePaths.length > 0) {
               form.parentFolderLocationSetter(filePaths[0]);
             }
           }}

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import ip from 'ipaddr.js';
 import { networkInterfaces, platform, type } from 'os';
 
@@ -16,7 +15,6 @@ function findIp(gateway: string): string | undefined {
         if (cidr) {
           const net = ip.parseCIDR(cidr);
 
-          // eslint-disable-next-line unicorn/prefer-regexp-test
           if (net[0] && net[0].kind() === gatewayIp.kind() && gatewayIp.match(net)) {
             return net[0].toString();
           }

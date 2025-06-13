@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import { Helmet } from '@dr.pogodin/react-helmet';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
 
@@ -8,6 +8,7 @@ import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { DeveloperTools } from './sections/DeveloperTools';
 import { Downloads } from './sections/Downloads';
+import { ExternalAPI } from './sections/ExternalAPI';
 import { FriendLinks } from './sections/FriendLinks';
 import { General } from './sections/General';
 import { Languages } from './sections/Languages';
@@ -22,7 +23,6 @@ import { TiddlyWiki } from './sections/TiddlyWiki';
 import { Updates } from './sections/Updates';
 import { SectionSideBar } from './SectionsSideBar';
 import { usePreferenceSections } from './useSections';
-import { ExternalAPI } from './sections/ExternalAPI';
 
 const Root = styled.div`
   padding: 20px;
@@ -45,7 +45,7 @@ export default function Preferences(): React.JSX.Element {
     if (scrollTo === undefined) return;
     setTimeout(() => {
       // wait 100ms so page anchors are all loaded. Otherwise scroll will stop halfway.
-      sections[scrollTo].ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      sections[scrollTo].ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   }, [sections]);
 

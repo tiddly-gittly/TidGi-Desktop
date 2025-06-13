@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable unicorn/no-null */
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 import AltRouteIcon from '@mui/icons-material/AltRoute';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';

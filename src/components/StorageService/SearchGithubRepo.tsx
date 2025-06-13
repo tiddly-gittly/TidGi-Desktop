@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import Promise from 'bluebird';
 import { ClientContext, GraphQLClient, useMutation, useQuery } from 'graphql-hooks';
@@ -135,7 +134,6 @@ function SearchGithubRepoResultList({
     return () => {
       clearTimeout(timeoutHandle);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [githubUsername, accessToken]);
   // try refetch on error
   const [retryInterval, retryIntervalSetter] = useState(100);
@@ -150,12 +148,11 @@ function SearchGithubRepoResultList({
       };
     }
     return () => {};
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error, githubUsername, accessToken, retryInterval]);
 
   const [createRepository] = useMutation(CREATE_REPO_MUTATION);
 
-  const repositoryCount = data?.search?.repositoryCount;
+  const repositoryCount = data?.search.repositoryCount;
   const repoList: IGithubSearchNode[] = useMemo(
     () => (data !== undefined && (repositoryCount ?? 0) > 0 ? data.search.edges.map(({ node }) => node) : []),
     [data, repositoryCount],
@@ -163,13 +160,13 @@ function SearchGithubRepoResultList({
 
   // auto select first one after first search
   useEffect(() => {
-    if (githubWikiUrl?.length === 0 && repoList.length > 0) {
+    if (githubWikiUrl.length === 0 && repoList.length > 0) {
       onSelectRepo(repoList[0].url, repoList[0].name);
     }
   }, [repoList, githubWikiUrl, onSelectRepo]);
 
   const [isCreatingRepo, isCreatingRepoSetter] = useState(false);
-  const githubUserID = data?.repositoryOwner?.id;
+  const githubUserID = data?.repositoryOwner.id;
   const wikiUrlToCreate = `https://github.com/${githubUsername ?? '???'}/${githubRepoSearchString}`;
   const isCreateNewRepo = trim(githubWikiUrl) === wikiUrlToCreate;
   const githubPagesUrl = `https://${githubUsername ?? '???'}.github.io/${githubRepoSearchString}`;

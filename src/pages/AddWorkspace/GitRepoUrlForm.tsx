@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 

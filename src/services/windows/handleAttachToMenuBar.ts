@@ -61,7 +61,7 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
           }
         }
         const view = await viewService.getActiveBrowserView();
-        view?.webContents?.focus?.();
+        view?.webContents.focus();
       });
       menuBar.window.removeAllListeners('close');
       menuBar.window.on('close', (event) => {

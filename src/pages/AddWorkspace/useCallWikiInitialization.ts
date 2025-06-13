@@ -11,7 +11,7 @@ interface ICallWikiInitConfig {
 export async function callWikiInitialization(
   newWorkspaceConfig: INewWorkspaceConfig,
   wikiCreationMessageSetter: (m: string) => void,
-  t: TFunction<'translation'>,
+  t: TFunction,
   gitUserInfo: IGitUserInfos | undefined,
   configs: ICallWikiInitConfig,
 ): Promise<void> {
@@ -27,7 +27,7 @@ export async function callWikiInitialization(
   wikiCreationMessageSetter(t('Log.InitializeWorkspaceViewDone'));
   await window.service.workspaceView.setActiveWorkspaceView(newWorkspace.id);
   wikiCreationMessageSetter('');
-  if (configs?.notClose !== true) {
+  if (configs.notClose !== true) {
     // wait for wiki to start and close the window now.
     await window.remote.closeCurrentWindow();
   }

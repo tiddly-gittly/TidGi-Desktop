@@ -22,11 +22,11 @@ export function TiddlyWiki(props: Partial<ISectionProps>): React.JSX.Element {
   }, [userInfo]);
   const userNameTextFieldOnChange = useDebouncedCallback(async (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
     await window.service.auth.set('userName', event.target.value);
-    props?.requestRestartCountDown?.();
+    props.requestRestartCountDown?.();
   });
   return (
     <>
-      <SectionTitle ref={props.sections?.wiki?.ref}>{t('Preference.TiddlyWiki')}</SectionTitle>
+      <SectionTitle ref={props.sections?.wiki.ref}>{t('Preference.TiddlyWiki')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           {userInfo === undefined ? <ListItemVertical>{t('Loading')}</ListItemVertical> : (

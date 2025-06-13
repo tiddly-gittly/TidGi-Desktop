@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/promise-function-async */
 import { Typography } from '@mui/material';
 import { styled } from 'styled-components';
 
+import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import { useState } from 'react';
@@ -10,7 +9,6 @@ import { Languages } from '../Preferences/sections/Languages';
 import { TiddlyWiki } from '../Preferences/sections/TiddlyWiki';
 import { NewUserMessage } from './NewUserMessage';
 import { useAutoCreateFirstWorkspace } from './useAutoCreateFirstWorkspace';
-import { useRestartSnackbar } from '@/components/RestartSnackbar';
 
 const InnerContentRoot = styled.div`
   flex: 1;

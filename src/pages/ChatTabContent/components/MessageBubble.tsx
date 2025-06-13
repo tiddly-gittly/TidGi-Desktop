@@ -5,7 +5,7 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { Avatar, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';
-import { useAgentChatStore } from '../../../../../store/agentChatStore/index';
+import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
 import { MessageRenderer } from './MessageRenderer';
 
 const BubbleContainer = styled(Box)<{ $isUser: boolean }>`

@@ -72,7 +72,7 @@ export function startNodeJSWiki({
        *
        * @url https://wiki.zhiheng.io/static/TiddlyWiki%253A%2520Readonly%2520for%2520Node.js%2520Server.html
        */
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
       const readonlyArguments = readOnlyMode === true ? ['gzip=yes', 'readers=(anon)', `writers=${userName || nanoid()}`, `username=${userName}`, `password=${nanoid()}`] : [];
       if (readOnlyMode === true) {
         wikiInstance.preloadTiddler({ title: '$:/info/tidgi/readOnlyMode', text: 'yes' });
@@ -94,7 +94,7 @@ export function startNodeJSWiki({
           observer.next({ type: 'control', actions: WikiControlActions.error, message: 'tokenAuth is true, but authToken is empty, this can be a bug.', argv: fullBootArgv });
         }
       }
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
       const httpsArguments = https?.enabled && https.tlsKey && https.tlsCert
         ? [`tls-key=${https.tlsKey}`, `tls-cert=${https.tlsCert}`]
         : [];

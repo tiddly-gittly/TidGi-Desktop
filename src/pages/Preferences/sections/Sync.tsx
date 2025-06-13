@@ -54,7 +54,7 @@ export function Sync(props: Required<ISectionProps>): React.JSX.Element {
                   />
                 }
               >
-                <ListItemText primary={`${t('Preference.SyncOnlyWhenNoDraft')}`} secondary={t('Preference.SyncOnlyWhenNoDraftDescription')} />
+                <ListItemText primary={t('Preference.SyncOnlyWhenNoDraft')} secondary={t('Preference.SyncOnlyWhenNoDraftDescription')} />
               </ListItem>
               <Divider />
               <ListItem>

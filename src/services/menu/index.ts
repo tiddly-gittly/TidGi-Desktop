@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
 import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService } from '@services/auth/interface';
@@ -336,7 +335,7 @@ export class MenuService implements IMenuService {
           click: async () => {
             webContents.reload();
             const rememberLastPageVisited = await this.preferenceService.get('rememberLastPageVisited');
-            // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
             if (rememberLastPageVisited && activeWorkspace?.lastUrl) {
               await webContents.loadURL(activeWorkspace.lastUrl);
             }
@@ -469,7 +468,7 @@ export class MenuService implements IMenuService {
     // add custom menu items
     if (template !== undefined && Array.isArray(template) && template.length > 0) {
       // if our menu item config is pass from the renderer process, we reconstruct callback from the ipc.on channel id.
-      const menuItems = (typeof template?.[0]?.click === 'string'
+      const menuItems = (typeof template[0]?.click === 'string'
         ? mainMenuItemProxy(template as IpcSafeMenuItem[], webContents)
         : template) as unknown as MenuItemConstructorOptions[];
       menu.insert(0, new MenuItem({ type: 'separator' }));

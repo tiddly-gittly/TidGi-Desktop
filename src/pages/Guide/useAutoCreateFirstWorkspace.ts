@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/promise-function-async */
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { SupportedStorageServices } from '@services/types';
 import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
@@ -26,7 +25,7 @@ export function useAutoCreateFirstWorkspace(workspacesList: IWorkspaceWithMetada
   useEffect(() => {
     if (created) return;
     // skip this logic if already have workspaces
-    if (workspacesList?.length !== undefined && workspacesList?.length > 0) {
+    if (workspacesList?.length !== undefined && workspacesList.length > 0) {
       createdSetter(true);
       return;
     }
@@ -34,7 +33,7 @@ export function useAutoCreateFirstWorkspace(workspacesList: IWorkspaceWithMetada
     if (DEFAULT_WIKI_FOLDER === undefined || DEFAULT_FIRST_WIKI_PATH === undefined) return;
     if (workspacesList?.length === 0) {
       createdSetter(true);
-      void onSubmit()
+      void onSubmit();
     }
   }, [workspacesList?.length, created, createdSetter, onSubmit, DEFAULT_WIKI_FOLDER, DEFAULT_FIRST_WIKI_PATH]);
 }

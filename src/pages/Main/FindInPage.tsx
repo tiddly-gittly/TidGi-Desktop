@@ -60,7 +60,6 @@ export default function FindInPage(): React.JSX.Element | null {
     };
   }, [handleCloseFindInPage, handleOpenFindInPage, updateFindInPageMatches]);
   if (!open) {
-    // eslint-disable-next-line unicorn/no-null
     return null;
   }
   return (

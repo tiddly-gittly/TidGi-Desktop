@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable unicorn/no-null */
+
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import { IGitUserInfos } from '@services/git/interface';
@@ -47,7 +47,7 @@ export class Authentication implements IAuthenticationService {
   public async getRandomStorageServiceUserInfo(): Promise<{ info: IGitUserInfos; name: SupportedStorageServices } | undefined> {
     for (const serviceName of Object.values(SupportedStorageServices)) {
       const info = await this.getStorageServiceUserInfo(serviceName);
-      if (info?.accessToken !== undefined && info.accessToken.length > 0 && info?.email !== undefined && info?.gitUserName !== undefined) {
+      if (info?.accessToken !== undefined && info.accessToken.length > 0 && info.email !== undefined && info.gitUserName !== undefined) {
         return { name: serviceName, info };
       }
     }
@@ -115,7 +115,6 @@ export class Authentication implements IAuthenticationService {
    * @param workspace the workspace to get userName setting from
    */
   public async getUserName(workspace: IWorkspace): Promise<string> {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const userName = (workspace.userName || (await this.get('userName'))) ?? '';
     return userName;
   }

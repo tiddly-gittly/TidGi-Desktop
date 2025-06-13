@@ -7,8 +7,8 @@ import { Box, IconButton, TextField, Tooltip } from '@mui/material';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { useTabStore } from '../../../store/tabStore';
-import { IWebTab } from '../../../types/tab';
+import { useTabStore } from '../../store/tabStore';
+import { IWebTab } from '../../types/tab';
 
 /** Props for the web tab content component */
 interface WebTabContentProps {

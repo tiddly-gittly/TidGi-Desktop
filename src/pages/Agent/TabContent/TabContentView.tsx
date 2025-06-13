@@ -3,9 +3,9 @@ import { Box, IconButton } from '@mui/material';
 import React from 'react';
 import styled from 'styled-components';
 
-import { useTabStore } from '../../store/tabStore';
-import { TabItem, TabType } from '../../types/tab';
-import { ChatTabContent } from './TabTypes/ChatTabContent';
+import { ChatTabContent } from '../../ChatTabContent';
+import { useTabStore } from '../store/tabStore';
+import { TabItem, TabType } from '../types/tab';
 import { NewTabContent } from './TabTypes/NewTabContent';
 import { SplitViewTabContent } from './TabTypes/SplitViewTabContent';
 import { WebTabContent } from './TabTypes/WebTabContent';

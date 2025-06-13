@@ -1,4 +1,3 @@
-/* eslint-disable import/no-named-as-default-member */
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { Backend as ElectronFsBackend } from './services/libs/i18n/i18next-electron-fs-backend';
@@ -10,7 +9,6 @@ export async function initI18N(): Promise<void> {
     .use(ElectronFsBackend)
     .use(initReactI18next)
     .init({
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       backend: {
         loadPath: 'locales/{{lng}}/{{ns}}.json',
       },
@@ -23,7 +21,6 @@ export async function initI18N(): Promise<void> {
     });
   window.i18n.i18nextElectronBackend.onLanguageChange(async (language: { lng: string }) => {
     await i18n.changeLanguage(language.lng, (error?: Error) => {
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (error) {
         console.error(error);
       }

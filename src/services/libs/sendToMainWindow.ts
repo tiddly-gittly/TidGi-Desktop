@@ -17,7 +17,7 @@ export function sendToMainWindowNoWait(type: WikiChannel, workspaceID: string, m
   const viewService = container.get<IViewService>(serviceIdentifier.View);
   const browserView = viewService.getView(workspaceID, WindowNames.main);
   // second param is always a nonce, but in this case we don't need it
-  browserView?.webContents?.send?.(type, undefined, ...messages);
+  browserView?.webContents.send(type, undefined, ...messages);
 }
 /**
  * Send to main window renderer (preload script) and wait for response.
@@ -35,7 +35,7 @@ export async function sendToMainWindowAndAwait<T = string[]>(type: WikiChannel, 
   }
   return await new Promise<T>((resolve, reject) => {
     const nonce = Math.random();
-    browserView?.webContents?.send?.(type, nonce, ...messages);
+    browserView.webContents.send(type, nonce, ...messages);
     let timeoutHandle: NodeJS.Timeout;
     if (options?.timeout !== undefined) {
       timeoutHandle = setTimeout(() => {

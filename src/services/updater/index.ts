@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { shell } from 'electron';
 import i18next from 'i18next';
 import { injectable } from 'inversify';

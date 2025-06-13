@@ -3,11 +3,11 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, 
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAIConfigManagement } from '../../../../../../../pages/Preferences/sections/ExternalAPI/useAIConfigManagement';
+import { useAIConfigManagement } from '../../Preferences/sections/ExternalAPI/useAIConfigManagement';
 
 // Import from the external component
 import { Autocomplete, TextField } from '@mui/material';
-import { useAgentChatStore } from '../../../../../store/agentChatStore';
+import { useAgentChatStore } from '../../Agent/store/agentChatStore';
 
 interface ModelSelectorProps {
   agentDefId?: string;

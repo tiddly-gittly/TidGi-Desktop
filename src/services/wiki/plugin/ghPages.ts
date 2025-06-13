@@ -6,7 +6,6 @@ interface IGhOptions {
   branch?: string;
 }
 export async function updateGhConfig(wikiPath: string, options: IGhOptions): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (options.branch && options.branch !== 'master') {
     const ghPagesConfigPath = path.join(wikiPath, '.github', 'workflows', 'gh-pages.yml');
     try {

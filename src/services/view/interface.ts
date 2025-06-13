@@ -58,7 +58,7 @@ export interface IViewService {
   loadUrlForView(workspace: IWorkspace, view: WebContentsView): Promise<void>;
   realignActiveView(browserWindow: BrowserWindow, activeId: string, windowName: WindowNames, isRetry?: boolean): Promise<void>;
   reloadActiveBrowserView: () => Promise<void>;
-  reloadViewsWebContents(workspaceID?: string | undefined): Promise<void>;
+  reloadViewsWebContents(workspaceID?: string): Promise<void>;
   reloadViewsWebContentsIfDidFailLoad: () => Promise<void>;
   /**
    * @param workspaceID
