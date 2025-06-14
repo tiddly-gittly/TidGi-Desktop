@@ -1,9 +1,9 @@
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import BadgeRaw from '@mui/material/Badge';
+import { keyframes, styled } from '@mui/material/styles';
 import Promise from 'bluebird';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { keyframes, styled } from '@mui/material/styles';
 import is from 'typescript-styled-is';
 
 import { getAssetsFileUrl } from '@/helpers/url';

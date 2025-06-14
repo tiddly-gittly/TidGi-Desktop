@@ -16,19 +16,19 @@ export const StyledFormLabel = styled(FormLabel)`
   gap: ${({ theme }) => theme.spacing(0.5)};
 `;
 
-export const StyledControlGroup: typeof Box = styled(Box)`
+export const StyledControlGroup = styled((props: React.ComponentProps<typeof Box>) => <Box {...props} />)`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing(1)};
   flex-wrap: wrap;
 `;
 
-export const StyledFieldWrapper: typeof Box = styled(Box)`
+export const StyledFieldWrapper = styled((props: React.ComponentProps<typeof Box>) => <Box {...props} />)`
   position: relative;
   margin-bottom: ${({ theme }) => theme.spacing(1)};
 `;
 
-export const StyledErrorText: typeof Box = styled(Box)`
+export const StyledErrorText = styled((props: React.ComponentProps<typeof Box>) => <Box {...props} />)`
   color: ${({ theme }) => theme.palette.error.main};
   font-size: ${({ theme }) => theme.typography.caption.fontSize};
   margin-top: ${({ theme }) => theme.spacing(0.5)};

@@ -1,8 +1,8 @@
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { IconButton, Tooltip } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from '@mui/material/styles';
 
 const StyledHelpButton = styled(IconButton)`
   padding: ${({ theme }) => theme.spacing(0.25)};

@@ -1,7 +1,7 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
+import { styled } from '@mui/material/styles';
 import { lazy } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DefaultTheme, styled } from '@mui/material/styles';
 import is, { isNot } from 'typescript-styled-is';
 import { Route, Switch } from 'wouter';
 
@@ -49,8 +49,8 @@ const ContentRoot = styled('div')<{ $sidebar: boolean }>`
   flex-direction: column;
 
   ${is('$sidebar')`
-    width: calc(100% - ${({ theme }: { theme: DefaultTheme }) => theme.sidebar.width}px);
-    max-width: calc(100% - ${({ theme }: { theme: DefaultTheme }) => theme.sidebar.width}px);
+    width: calc(100% - ${({ theme }: { theme: any }) => theme.sidebar.width}px);
+    max-width: calc(100% - ${({ theme }: { theme: any }) => theme.sidebar.width}px);
   `}
   ${isNot('$sidebar')`
     width: 100%;

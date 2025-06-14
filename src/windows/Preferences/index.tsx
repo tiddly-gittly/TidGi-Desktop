@@ -1,7 +1,7 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
+import { styled } from '@mui/material/styles';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from '@mui/material/styles';
 
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 

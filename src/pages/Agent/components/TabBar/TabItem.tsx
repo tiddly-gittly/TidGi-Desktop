@@ -6,8 +6,8 @@ import PushPinIcon from '@mui/icons-material/PushPin';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import WebIcon from '@mui/icons-material/Web';
 import { ButtonBase, Tooltip, Typography } from '@mui/material';
-import React from 'react';
 import { styled } from '@mui/material/styles';
+import React from 'react';
 
 import { useTabStore } from '../../store/tabStore';
 import { INewTabButton, TabItem as TabItemType, TabType } from '../../types/tab';

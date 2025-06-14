@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Checkbox, FormControlLabel } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { WidgetProps } from '@rjsf/utils';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from '@mui/material/styles';
 
 const StyledFormControlLabel = styled(FormControlLabel)`
   margin: 0;
@@ -13,7 +13,7 @@ const StyledFormControlLabel = styled(FormControlLabel)`
   }
 `;
 
-const StyledCheckbox: typeof Checkbox = styled(Checkbox)`
+const StyledCheckbox = styled((props: React.ComponentProps<typeof Checkbox>) => <Checkbox {...props} />)`
   padding: ${({ theme }) => theme.spacing(0.5)};
 
   &.Mui-checked {

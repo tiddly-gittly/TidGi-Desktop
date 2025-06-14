@@ -1,8 +1,8 @@
 import AddIcon from '@mui/icons-material/Add';
 import { Alert, Box, Button, Snackbar, Tab, Tabs } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { Dispatch, SetStateAction, SyntheticEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from '@mui/material/styles';
 
 import { ListItemText } from '@/components/ListItem';
 import defaultProvidersConfig from '@services/externalAPI/defaultProviders.json';

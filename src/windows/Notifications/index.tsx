@@ -1,7 +1,7 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
+import { styled } from '@mui/material/styles';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from '@mui/material/styles';
 
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';

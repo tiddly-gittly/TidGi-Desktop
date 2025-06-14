@@ -14,9 +14,9 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { css, styled } from '@mui/material/styles';
 import React, { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { css, styled } from '@mui/material/styles';
 import defaultIcon from '../../images/default-icon.png';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';

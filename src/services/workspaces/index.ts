@@ -341,7 +341,7 @@ export class Workspace implements IWorkspaceService {
     if (!newWorkspace) {
       throw new Error(`Workspace with id ${id} not found`);
     }
-    
+
     // active new one
     await this.update(id, { active: true, hibernated: false });
     // de-active the other one
@@ -503,12 +503,12 @@ export class Workspace implements IWorkspaceService {
     try {
       const existingWorkspaces = await this.getWorkspacesAsList();
       const pageTypes = [PageType.agent, PageType.help, PageType.guide, PageType.add];
-      
+
       // Find the maximum order to place page workspaces after regular workspaces
       const maxWorkspaceOrder = existingWorkspaces.reduce((max, workspace) => workspace.pageType ? max : Math.max(max, workspace.order), -1);
-      
+
       const currentOrder = maxWorkspaceOrder + 1;
-      
+
       for (const [index, pageType] of pageTypes.entries()) {
         // Check if page workspace already exists
         const existingPageWorkspace = existingWorkspaces.find(w => w.pageType === pageType);
@@ -518,7 +518,7 @@ export class Workspace implements IWorkspaceService {
           logger.info(`Created default page workspace for ${pageType}`);
         }
       }
-      
+
       logger.info('Successfully initialized default page workspaces');
     } catch (error) {
       logger.error('Failed to initialize default page workspaces:', error);
@@ -554,12 +554,12 @@ export class Workspace implements IWorkspaceService {
   public async openWorkspaceTiddler(workspace: IWorkspace, title?: string): Promise<void> {
     const { id: idToActive, isSubWiki, mainWikiID, pageType } = workspace;
     const oldActiveWorkspace = await this.getActiveWorkspace();
-    
+
     // Handle page workspace - no special action needed as routing handles the page display
     if (pageType) {
       return;
     }
-    
+
     logger.log('debug', 'openWorkspaceTiddler', { workspace });
     // If is main wiki, open the wiki, and open provided title, or simply switch to it if no title provided
     if (!isSubWiki && idToActive) {

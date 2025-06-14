@@ -7,9 +7,9 @@ import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import WebIcon from '@mui/icons-material/Web';
 import { Box, Card, IconButton, Typography } from '@mui/material';
 import { Grid } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from '@mui/material/styles';
 
 import { Search } from '../../components/Search/Search';
 import { useTabStore } from '../../store/tabStore';

@@ -7,7 +7,7 @@ export const List = styled(ListRaw)`
     padding-bottom: 0;
   }
 `;
-export const ListItem: typeof ListItemRaw = styled(ListItemRaw)`
+export const ListItem = styled((props: React.ComponentProps<typeof ListItemRaw>) => <ListItemRaw {...props} />)`
   svg {
     color: ${({ theme }) => theme.palette.action.active};
   }
@@ -19,7 +19,7 @@ export const ListItem: typeof ListItemRaw = styled(ListItemRaw)`
     color: ${({ theme }) => theme.palette.text.primary};
   }
 `;
-export const ListItemText: typeof ListItemTextRaw = styled(ListItemTextRaw)`
+export const ListItemText = styled((props: React.ComponentProps<typeof ListItemTextRaw>) => <ListItemTextRaw {...props} />)`
   color: ${({ theme }) => theme.palette.text.primary};
   input {
     color: ${({ theme }) => theme.palette.text.primary};

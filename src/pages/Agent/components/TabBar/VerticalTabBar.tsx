@@ -1,7 +1,7 @@
 import { Box, Divider } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from '@mui/material/styles';
 
 import { useTabStore } from '../../store/tabStore';
 import { TabType } from '../../types/tab';

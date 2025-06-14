@@ -1,7 +1,7 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
+import { styled } from '@mui/material/styles';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { styled } from '@mui/material/styles';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { Button, DialogContent as DialogContentRaw } from '@mui/material';

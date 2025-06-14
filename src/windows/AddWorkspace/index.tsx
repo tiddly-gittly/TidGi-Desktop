@@ -1,9 +1,9 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { Accordion as AccordionRaw, AccordionDetails, AccordionSummary, AppBar, Box, Paper as PaperRaw, Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from '@mui/material/styles';
 
 import { SupportedStorageServices } from '@services/types';
 

@@ -1,5 +1,5 @@
-import { Trans, useTranslation } from 'react-i18next';
 import { styled } from '@mui/material/styles';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { IPreferences } from '@services/preferences/interface';
 import { WindowNames } from '@services/windows/WindowProperties';

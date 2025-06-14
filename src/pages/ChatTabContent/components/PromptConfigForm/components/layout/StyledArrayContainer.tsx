@@ -3,18 +3,18 @@ import { styled } from '@mui/material/styles';
 import { StyledCard, StyledCardContent } from './StyledCard';
 
 // Array container styles
-export const ArrayContainer: typeof Box = styled(Box)`
+export const ArrayContainer = styled((props: React.ComponentProps<typeof Box>) => <Box {...props} />)`
   width: 100%;
 `;
 
-export const ArrayHeader: typeof Box = styled(Box)`
+export const ArrayHeader = styled((props: React.ComponentProps<typeof Box>) => <Box {...props} />)`
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: ${({ theme }) => theme.spacing(0.5)};
 `;
 
-export const EmptyState: typeof Box = styled(Box)`
+export const EmptyState = styled((props: React.ComponentProps<typeof Box>) => <Box {...props} />)`
   padding: ${({ theme }) => theme.spacing(3)};
   text-align: center;
   color: ${({ theme }) => theme.palette.text.secondary};
@@ -65,7 +65,7 @@ export const ItemContent = styled(StyledCardContent)`
 `;
 
 // Drag handle styles
-export const DragHandle: typeof Box = styled(Box)`
+export const DragHandle = styled((props: React.ComponentProps<typeof Box>) => <Box {...props} />)`
   display: flex;
   align-items: center;
   cursor: grab;

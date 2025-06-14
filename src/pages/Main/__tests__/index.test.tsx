@@ -4,9 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Router } from 'wouter';
 import '@testing-library/jest-dom/vitest';
 
+import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
 import Main from '../index';
-import { ThemeProvider } from '@mui/material/styles';
 
 // Create mock functions using vi.hoisted to avoid hoisting issues
 const mockUsePreferenceObservable = vi.hoisted(() => vi.fn());

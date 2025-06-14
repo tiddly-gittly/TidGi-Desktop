@@ -1,7 +1,7 @@
 import { Settings as SettingsIcon, Upgrade as UpgradeIcon } from '@mui/icons-material';
+import { css, styled } from '@mui/material/styles';
 import { t } from 'i18next';
 import SimpleBar from 'simplebar-react';
-import { css, styled } from '@mui/material/styles';
 import is, { isNot } from 'typescript-styled-is';
 
 import { latestStableUpdateUrl } from '@/constants/urls';
@@ -16,9 +16,6 @@ import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 
 const sideBarStyle = css`
   height: 100%;
-  width: ${({ theme }) => theme.sidebar.width}px;
-  min-width: ${({ theme }) => theme.sidebar.width}px;
-  background-color: ${({ theme }) => theme.palette.background.default};
   -webkit-app-region: drag;
   user-select: none;
   display: flex;
@@ -34,9 +31,15 @@ const sideBarStyle = css`
 `;
 const SidebarRoot = styled('div')`
   ${sideBarStyle}
+  width: ${({ theme }) => theme.sidebar.width}px;
+  min-width: ${({ theme }) => theme.sidebar.width}px;
+  background-color: ${({ theme }) => theme.palette.background.default};
 `;
 const SidebarWithStyle = styled(SimpleBar)`
   ${sideBarStyle}
+  width: ${({ theme }) => theme.sidebar.width}px;
+  min-width: ${({ theme }) => theme.sidebar.width}px;
+  background-color: ${({ theme }) => theme.palette.background.default};
 `;
 
 const SidebarTop = styled('div')<{ $titleBar?: boolean }>`

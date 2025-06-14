@@ -347,7 +347,7 @@ export function ServerOptions(props: IServerOptionsProps) {
           renderInput={(parameters: AutocompleteRenderInputParams) => (
             <TextField {...parameters} label={t('EditWorkspace.WikiRootTiddler')} helperText={t('EditWorkspace.WikiRootTiddlerDescription')} />
           )}
-          renderOption={(props, option) => <li {...props}>{t(`EditWorkspace.WikiRootTiddlerItems.${option.replace('$:/core/save/', '')}`)} ({option})</li>}
+          renderOption={(props, option) => <li {...props}>{t(`EditWorkspace.WikiRootTiddlerItems.${String(option).replace('$:/core/save/', '')}`)} ({String(option)})</li>}
         />
       </AccordionDetails>
     </AServerOptionsAccordion>

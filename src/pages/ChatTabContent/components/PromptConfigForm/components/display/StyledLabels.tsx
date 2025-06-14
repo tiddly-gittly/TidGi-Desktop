@@ -1,7 +1,7 @@
 import { Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
-export const StyledFieldLabel: typeof Typography = styled(Typography)`
+export const StyledFieldLabel = styled((props: React.ComponentProps<typeof Typography> & { component?: string }) => <Typography {...props} />)`
   font-size: ${({ theme }) => theme.typography.subtitle2.fontSize};
   font-weight: ${({ theme }) => theme.typography.subtitle2.fontWeight};
   color: ${({ theme }) => theme.palette.text.primary};

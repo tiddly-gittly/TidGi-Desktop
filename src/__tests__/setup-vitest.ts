@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'reflect-metadata';
 import '@testing-library/jest-dom/vitest';
-import { vi } from 'vitest';
+import { afterAll, vi } from 'vitest';
 
 // 简化的 Electron API mock
 const mockElectron = {
@@ -59,20 +59,17 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
-// 简化的 ResizeObserver mock
 (global as any).ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
 
-// Mock console 方法以减少测试输出噪音
 const originalError = console.error;
 const originalWarn = console.warn;
 console.error = vi.fn();
 console.warn = vi.fn();
 
-// 在测试结束后恢复
 afterAll(() => {
   console.error = originalError;
   console.warn = originalWarn;

@@ -27,10 +27,10 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       modifiers={[restrictToVerticalAxis]}
       onDragEnd={async ({ active, over }) => {
         if (over === null || active.id === over.id) return;
-        
+
         const activeId = String(active.id);
         const overId = String(over.id);
-        
+
         const oldIndex = workspacesList.findIndex(workspace => workspace.id === activeId);
         const newIndex = workspacesList.findIndex(workspace => workspace.id === overId);
 

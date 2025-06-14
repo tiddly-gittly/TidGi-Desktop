@@ -34,7 +34,7 @@ const TabsContainer = styled('div')`
     min-width: 160px;
   }
 `;
-const backgroundColorShift = ({ theme }) =>
+const backgroundColorShift = ({ theme }: { theme: any }) =>
   keyframes`
 from {background-color: ${theme.palette.background.default};}
   to {background-color: ${theme.palette.background.default};}
