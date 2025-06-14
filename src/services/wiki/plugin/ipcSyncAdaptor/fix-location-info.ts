@@ -1,5 +1,6 @@
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 
 function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: string; title: string }>) => void) {
@@ -19,6 +20,10 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
      */
     void window.service.workspace.get(workspaceID).then(async (workspace) => {
       if (workspace === undefined) return;
+      
+      // Only wiki workspaces have these properties
+      if (!isWikiWorkspace(workspace)) return;
+      
       const {
         https = { enabled: false },
         port,

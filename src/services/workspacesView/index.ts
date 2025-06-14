@@ -18,6 +18,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { ISyncService } from '@services/sync/interface';
@@ -59,14 +60,14 @@ export class WorkspaceView implements IWorkspaceViewService {
   public async initializeAllWorkspaceView(): Promise<void> {
     const workspacesList = await this.workspaceService.getWorkspacesAsList();
     // Only set wiki start lock for regular wiki workspaces (not subwikis or page workspaces)
-    workspacesList.filter((workspace) => !workspace.isSubWiki && !workspace.pageType).forEach((workspace) => {
+    workspacesList.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.pageType).forEach((workspace) => {
       this.wikiService.setWikiStartLockOn(workspace.id);
     });
     // sorting (-1 will make a in the front, b in the back)
     const sortedList = workspacesList
       .sort((a, b) => a.order - b.order) // sort by order, 1-2<0, so first will be the first
       .sort((a, b) => (a.active && !b.active ? -1 : 0)) // put active wiki first
-      .sort((a, b) => (a.isSubWiki && !b.isSubWiki ? -1 : 0)); // put subwiki on top, they can't restart wiki, so need to sync them first, then let main wiki restart the wiki // revert this after tw can reload tid from fs
+      .sort((a, b) => (isWikiWorkspace(a) && a.isSubWiki && (!isWikiWorkspace(b) || !b.isSubWiki) ? -1 : 0)); // put subwiki on top, they can't restart wiki, so need to sync them first, then let main wiki restart the wiki // revert this after tw can reload tid from fs
     await mapSeries(sortedList, async (workspace) => {
       await this.initializeWorkspaceView(workspace);
     });
@@ -84,31 +85,32 @@ export class WorkspaceView implements IWorkspaceViewService {
 
     const { followHibernateSettingWhenInit = true, syncImmediately = true, isNew = false } = options;
     // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
-    if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {
+    if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: isWikiWorkspace(workspace) && !workspace.isSubWiki, showDialog: true })) !== true) {
       logger.warn(`initializeWorkspaceView() checkWikiExist found workspace ${workspace.id} don't have a valid wiki, and showDialog.`);
       return;
     }
     logger.debug(`initializeWorkspaceView() Initializing workspace ${workspace.id}, ${JSON.stringify(options)}`);
     if (followHibernateSettingWhenInit) {
       const hibernateUnusedWorkspacesAtLaunch = await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch');
-      if ((hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) && !workspace.active) {
+      if ((hibernateUnusedWorkspacesAtLaunch || (isWikiWorkspace(workspace) && workspace.hibernateWhenUnused)) && !workspace.active) {
         logger.debug(
           `initializeWorkspaceView() quit because ${
             JSON.stringify({
               followHibernateSettingWhenInit,
-              'workspace.hibernateWhenUnused': workspace.hibernateWhenUnused,
+              'workspace.hibernateWhenUnused': isWikiWorkspace(workspace) ? workspace.hibernateWhenUnused : false,
               'workspace.active': workspace.active,
               hibernateUnusedWorkspacesAtLaunch,
             })
           }`,
         );
-        if (!workspace.hibernated) {
+        if (isWikiWorkspace(workspace) && !workspace.hibernated) {
           await this.workspaceService.update(workspace.id, { hibernated: true });
         }
         return;
       }
     }
     const syncGitWhenInitializeWorkspaceView = async () => {
+      if (!isWikiWorkspace(workspace)) return;
       const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService, isSubWiki } = workspace;
       // we are using syncWikiIfNeeded that handles recursive sync for all subwiki, so we only need to pass main wiki to it in this method.
       if (isSubWiki) {
@@ -125,7 +127,7 @@ export class WorkspaceView implements IWorkspaceViewService {
           if (mainWindow === undefined) {
             throw new Error(i18n.t(`Error.MainWindowMissing`));
           }
-          const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
+          const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
 
           if (userInfo?.accessToken) {
             // sync in non-blocking way
@@ -149,7 +151,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     const addViewWhenInitializeWorkspaceView = async (): Promise<void> => {
       // adding WebContentsView for each workspace
       // skip view initialize if this is a sub wiki
-      if (workspace.isSubWiki) {
+      if (isWikiWorkspace(workspace) && workspace.isSubWiki) {
         return;
       }
       // if we run this due to RestartService, then skip the view adding and the while loop, because the workspaceMetadata.isLoading will be false, because addViewForAllBrowserViews will return before it run loadInitialUrlWithCatch
@@ -196,7 +198,7 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async openWorkspaceWindowWithView(workspace: IWorkspace, configs?: { uri?: string }): Promise<void> {
-    const uriToOpen = configs?.uri ?? workspace.lastUrl ?? workspace.homeUrl;
+    const uriToOpen = configs?.uri ?? (isWikiWorkspace(workspace) ? workspace.lastUrl : undefined) ?? (isWikiWorkspace(workspace) ? workspace.homeUrl : undefined);
     logger.debug('Open workspace in new window. uriToOpen here will overwrite the decision in initializeWorkspaceViewHandlersAndLoad.', {
       id: workspace.id,
       uriToOpen,
@@ -285,7 +287,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     logger.debug(
       `Set active workspace oldActiveWorkspace.id: ${oldActiveWorkspace?.id ?? 'undefined'} nextWorkspaceID: ${nextWorkspaceID} newWorkspace.isSubWiki ${
         String(
-          newWorkspace.isSubWiki,
+          isWikiWorkspace(newWorkspace) ? newWorkspace.isSubWiki : false,
         )
       }`,
     );
@@ -297,14 +299,14 @@ export class WorkspaceView implements IWorkspaceViewService {
       // Hide old workspace view if switching from a regular workspace
       if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID && !oldActiveWorkspace.pageType) {
         await this.hideWorkspaceView(oldActiveWorkspace.id);
-        if (oldActiveWorkspace.hibernateWhenUnused) {
+        if (isWikiWorkspace(oldActiveWorkspace) && oldActiveWorkspace.hibernateWhenUnused) {
           await this.hibernateWorkspaceView(oldActiveWorkspace.id);
         }
       }
       return;
     }
 
-    if (newWorkspace.isSubWiki && typeof newWorkspace.mainWikiID === 'string') {
+    if (isWikiWorkspace(newWorkspace) && newWorkspace.isSubWiki && typeof newWorkspace.mainWikiID === 'string') {
       logger.debug(`${nextWorkspaceID} is a subwiki, set its main wiki ${newWorkspace.mainWikiID} to active instead.`);
       await this.setActiveWorkspaceView(newWorkspace.mainWikiID);
       if (typeof newWorkspace.tagName === 'string') {
@@ -314,7 +316,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
     // later process will use the current active workspace
     await this.workspaceService.setActiveWorkspace(nextWorkspaceID, oldActiveWorkspace?.id);
-    if (newWorkspace.hibernated) {
+    if (isWikiWorkspace(newWorkspace) && newWorkspace.hibernated) {
       await this.wakeUpWorkspaceView(nextWorkspaceID);
     }
     try {
@@ -327,7 +329,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     // if we are switching to a new workspace, we hide and/or hibernate old view, and activate new view
     if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID) {
       await this.hideWorkspaceView(oldActiveWorkspace.id);
-      if (oldActiveWorkspace.hibernateWhenUnused) {
+      if (isWikiWorkspace(oldActiveWorkspace) && oldActiveWorkspace.hibernateWhenUnused) {
         await this.hibernateWorkspaceView(oldActiveWorkspace.id);
       }
     }
@@ -339,7 +341,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (activeWorkspace === undefined) {
       return;
     }
-    if (activeWorkspace.isSubWiki && typeof activeWorkspace.mainWikiID === 'string') {
+    if (isWikiWorkspace(activeWorkspace) && activeWorkspace.isSubWiki && typeof activeWorkspace.mainWikiID === 'string') {
       logger.debug(`${activeWorkspace.id} is a subwiki, set its main wiki ${activeWorkspace.mainWikiID} to deactivated instead.`, { function: 'clearActiveWorkspaceView' });
       await this.clearActiveWorkspaceView(activeWorkspace.mainWikiID);
       return;
@@ -350,7 +352,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.error(`Error while setActiveWorkspaceView(): ${(error as Error).message}`, error);
       throw error;
     }
-    if (activeWorkspace.hibernateWhenUnused) {
+    if (isWikiWorkspace(activeWorkspace) && activeWorkspace.hibernateWhenUnused) {
       await this.hibernateWorkspaceView(activeWorkspace.id);
     }
   }
@@ -377,7 +379,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.warn(`restartWorkspaceViewService: no workspace ${id ?? 'id undefined'} to restart`);
       return;
     }
-    if (workspaceToRestart.isSubWiki) {
+    if (isWikiWorkspace(workspaceToRestart) && workspaceToRestart.isSubWiki) {
       const mainWikiIDToRestart = workspaceToRestart.mainWikiID;
       if (mainWikiIDToRestart) {
         await this.restartWorkspaceViewService(mainWikiIDToRestart);
@@ -479,7 +481,7 @@ export class WorkspaceView implements IWorkspaceViewService {
   private async realignActiveWorkspaceView(id?: string): Promise<void> {
     const workspaceToRealign = id === undefined ? await this.workspaceService.getActiveWorkspace() : await this.workspaceService.get(id);
     logger.debug(`realignActiveWorkspaceView() activeWorkspace.id: ${workspaceToRealign?.id ?? 'undefined'}`, { stack: new Error('stack').stack?.replace('Error:', '') });
-    if (workspaceToRealign?.isSubWiki) {
+    if (workspaceToRealign && isWikiWorkspace(workspaceToRealign) && workspaceToRealign.isSubWiki) {
       logger.debug(`realignActiveWorkspaceView() skip because ${workspaceToRealign.id} is a subwiki. Realign main wiki instead.`);
       if (workspaceToRealign.mainWikiID) {
         await this.realignActiveWorkspaceView(workspaceToRealign.mainWikiID);

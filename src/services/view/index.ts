@@ -24,7 +24,7 @@ import { isBrowserWindow } from '@services/libs/isBrowserWindow';
 import { logger } from '@services/libs/log';
 import { INativeService } from '@services/native/interface';
 import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspace } from '@services/workspaces/interface';
+import { IWorkspace, isWikiWorkspace } from '@services/workspaces/interface';
 import debounce from 'lodash/debounce';
 import { setViewEventName } from './constants';
 import { ViewLoadUrlError } from './error';
@@ -347,7 +347,9 @@ export class View implements IViewService {
   public async loadUrlForView(workspace: IWorkspace, view: WebContentsView, uri?: string): Promise<void> {
     const { rememberLastPageVisited } = this.preferenceService.getPreferences();
 
-    const urlToLoad = uri || (rememberLastPageVisited ? workspace.lastUrl : workspace.homeUrl) || workspace.homeUrl || getDefaultTidGiUrl(workspace.id);
+    const lastUrl = isWikiWorkspace(workspace) ? workspace.lastUrl : null;
+    const homeUrl = isWikiWorkspace(workspace) ? workspace.homeUrl : null;
+    const urlToLoad = uri || (rememberLastPageVisited ? lastUrl : homeUrl) || homeUrl || getDefaultTidGiUrl(workspace.id);
     try {
       logger.debug(
         `loadUrlForView(): view.webContents is ${view.webContents ? 'define' : 'undefined'} urlToLoad: ${urlToLoad} for workspace ${workspace.name}`,
@@ -463,7 +465,7 @@ export class View implements IViewService {
     this.forEachView(async (view, id) => {
       const workspace = await this.workspaceService.get(id);
       if (view !== undefined && workspace !== undefined) {
-        view.webContents.audioMuted = workspace.disableAudio || this.shouldMuteAudio;
+        view.webContents.audioMuted = (isWikiWorkspace(workspace) ? workspace.disableAudio : false) || this.shouldMuteAudio;
       }
     });
   };
@@ -499,7 +501,7 @@ export class View implements IViewService {
         if (workspaceID !== undefined) {
           const workspace = await this.workspaceService.get(workspaceID);
 
-          if (rememberLastPageVisited && workspace?.lastUrl) {
+          if (rememberLastPageVisited && workspace && isWikiWorkspace(workspace) && workspace.lastUrl) {
             try {
               await view.webContents.loadURL(workspace.lastUrl);
             } catch (error) {

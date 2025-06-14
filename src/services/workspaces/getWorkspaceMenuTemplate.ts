@@ -15,6 +15,7 @@ import type { MenuItemConstructorOptions } from 'electron';
 import type { FlatNamespace, TFunction } from 'i18next';
 import type { _DefaultNamespace } from 'react-i18next/TransWithoutContext';
 import type { IWorkspace, IWorkspaceService } from './interface';
+import { isWikiWorkspace } from './interface';
 
 interface IWorkspaceMenuRequiredServices {
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
@@ -44,7 +45,16 @@ export async function getWorkspaceMenuTemplate(
   t: TFunction<[_DefaultNamespace, ...Array<Exclude<FlatNamespace, _DefaultNamespace>>]>,
   service: IWorkspaceMenuRequiredServices,
 ): Promise<MenuItemConstructorOptions[]> {
-  const { active, id, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, name, enableHTTPAPI, lastUrl, homeUrl } = workspace;
+  const { active, id, name } = workspace;
+  
+  if (!isWikiWorkspace(workspace)) {
+    return [{
+      label: t('WorkspaceSelector.DedicatedWorkspace'),
+      enabled: false,
+    }];
+  }
+  
+  const { hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, enableHTTPAPI, lastUrl, homeUrl } = workspace;
 
   const template: MenuItemConstructorOptions[] = [
     {

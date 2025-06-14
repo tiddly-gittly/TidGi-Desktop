@@ -17,6 +17,7 @@ import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { app, ContextMenuParams, Menu, MenuItem, MenuItemConstructorOptions, shell, WebContents } from 'electron';
 import { injectable } from 'inversify';
@@ -331,7 +332,7 @@ export class MenuService implements IMenuService {
             webContents.reload();
             const rememberLastPageVisited = await this.preferenceService.get('rememberLastPageVisited');
 
-            if (rememberLastPageVisited && activeWorkspace?.lastUrl) {
+            if (rememberLastPageVisited && activeWorkspace && isWikiWorkspace(activeWorkspace) && activeWorkspace.lastUrl) {
               await webContents.loadURL(activeWorkspace.lastUrl);
             }
           },
@@ -371,7 +372,9 @@ export class MenuService implements IMenuService {
           label: i18n.t('WorkspaceSelector.OpenWorkspaceMenuName'),
           submenu: workspaces.map((workspace) => ({
             label: i18n.t('WorkspaceSelector.OpenWorkspaceTagTiddler', {
-              tagName: workspace.tagName ?? (workspace.isSubWiki ? workspace.name : `${workspace.name} ${i18n.t('WorkspaceSelector.DefaultTiddlers')}`),
+              tagName: isWikiWorkspace(workspace) 
+                ? (workspace.tagName ?? (workspace.isSubWiki ? workspace.name : `${workspace.name} ${i18n.t('WorkspaceSelector.DefaultTiddlers')}`))
+                : workspace.name,
             }),
             click: async () => {
               await this.workspaceService.openWorkspaceTiddler(workspace);

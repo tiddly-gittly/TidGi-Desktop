@@ -30,7 +30,7 @@ import { RestartSnackbarType, useRestartSnackbar } from '@/components/RestartSna
 import { TokenForm } from '@/components/TokenForm';
 import { wikiPictureExtensions } from '@/constants/fileNames';
 import { SupportedStorageServices } from '@services/types';
-import { nonConfigFields } from '@services/workspaces/interface';
+import { nonConfigFields, isWikiWorkspace } from '@services/workspaces/interface';
 import { isEqual, omit } from 'lodash';
 import { SyncedWikiDescription } from '../AddWorkspace/Description';
 import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
@@ -147,27 +147,30 @@ export default function EditWorkspace(): React.JSX.Element {
   const originalWorkspace = useWorkspaceObservable(workspaceID);
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar({ waitBeforeCountDown: 0, workspace: originalWorkspace, restartType: RestartSnackbarType.Wiki });
   const [workspace, workspaceSetter, onSave] = useForm(originalWorkspace, requestRestartCountDown);
+  const isWiki = workspace && isWikiWorkspace(workspace);
   const {
-    backupOnInterval,
-    disableAudio,
-    disableNotifications,
-    gitUrl,
-    hibernateWhenUnused,
-    homeUrl,
-    isSubWiki,
-    mainWikiToLink,
     name,
     order,
     picturePath,
-    storageService,
-    syncOnInterval,
-    syncOnStartup,
-    tagName,
-    transparentBackground,
-    userName,
-    lastUrl,
-    wikiFolderLocation,
   } = workspace ?? {};
+  
+  // Wiki-specific properties with fallbacks
+  const backupOnInterval = isWiki ? workspace.backupOnInterval : false;
+  const disableAudio = isWiki ? workspace.disableAudio : false;
+  const disableNotifications = isWiki ? workspace.disableNotifications : false;
+  const gitUrl = isWiki ? workspace.gitUrl : null;
+  const hibernateWhenUnused = isWiki ? workspace.hibernateWhenUnused : false;
+  const homeUrl = isWiki ? workspace.homeUrl : '';
+  const isSubWiki = isWiki ? workspace.isSubWiki : false;
+  const mainWikiToLink = isWiki ? workspace.mainWikiToLink : null;
+  const storageService = isWiki ? workspace.storageService : SupportedStorageServices.github;
+  const syncOnInterval = isWiki ? workspace.syncOnInterval : false;
+  const syncOnStartup = isWiki ? workspace.syncOnStartup : false;
+  const tagName = isWiki ? workspace.tagName : null;
+  const transparentBackground = isWiki ? workspace.transparentBackground : false;
+  const userName = isWiki ? workspace.userName : '';
+  const lastUrl = isWiki ? workspace.lastUrl : null;
+  const wikiFolderLocation = isWiki ? workspace.wikiFolderLocation : '';
   const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
     async () => (mainWikiToLink ? await window.service.wiki.getSubWikiPluginContent(mainWikiToLink) : []),
     [],

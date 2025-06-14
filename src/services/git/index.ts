@@ -21,7 +21,7 @@ import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspace } from '@services/workspaces/interface';
+import { IWorkspace, isWikiWorkspace } from '@services/workspaces/interface';
 import { ObservablePromise } from 'node_modules/threads/dist/observable-promise';
 import { GitWorker } from './gitWorker';
 import { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
@@ -181,6 +181,9 @@ export class Git implements IGitService {
       // If not online, will not have any change
       return false;
     }
+    if (!isWikiWorkspace(workspace)) {
+      return false;
+    }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     try {
       try {
@@ -198,6 +201,9 @@ export class Git implements IGitService {
 
   public async forcePull(workspace: IWorkspace, configs: IForcePullConfigs): Promise<boolean> {
     if (!net.isOnline()) {
+      return false;
+    }
+    if (!isWikiWorkspace(workspace)) {
       return false;
     }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
@@ -243,6 +249,9 @@ export class Git implements IGitService {
   }
 
   public async syncOrForcePull(workspace: IWorkspace, configs: IForcePullConfigs & ICommitAndSyncConfigs): Promise<boolean> {
+    if (!isWikiWorkspace(workspace)) {
+      return false;
+    }
     // if local is in readonly mode, any things that write to local (by accident) should be completely overwrite by remote.
     if (workspace.readOnlyMode) {
       return await this.forcePull(workspace, configs);

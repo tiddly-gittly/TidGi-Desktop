@@ -17,7 +17,7 @@ import { IWikiService, ZxWorkerControlActions } from '@services/wiki/interface';
 import { IZxFileInput } from '@services/wiki/wikiWorker';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspaceService } from '@services/workspaces/interface';
+import { IWorkspaceService, isWikiWorkspace } from '@services/workspaces/interface';
 import i18next from 'i18next';
 import { ZxNotInitializedError } from './error';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
@@ -80,7 +80,7 @@ export class NativeService implements INativeService {
       showItemInFolder ? shell.showItemInFolder(filePath) : await shell.openPath(filePath);
     } else {
       const activeWorkspace = this.workspaceService.getActiveWorkspaceSync();
-      if (activeWorkspace?.wikiFolderLocation !== undefined) {
+      if (activeWorkspace && isWikiWorkspace(activeWorkspace) && activeWorkspace.wikiFolderLocation !== undefined) {
         const absolutePath = path.resolve(path.join(activeWorkspace.wikiFolderLocation, filePath));
         showItemInFolder ? shell.showItemInFolder(absolutePath) : await shell.openPath(absolutePath);
       }
@@ -251,7 +251,7 @@ ${message.message}
   public async getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string> {
     let replacedUrl = await getLocalHostUrlWithActualIP(urlToReplace);
     const workspace = await this.workspaceService.get(workspaceID);
-    if (workspace !== undefined) {
+    if (workspace !== undefined && isWikiWorkspace(workspace)) {
       replacedUrl = replaceUrlPortWithSettingPort(replacedUrl, workspace.port);
       replacedUrl = getUrlWithCorrectProtocol(workspace, replacedUrl);
     }
@@ -328,8 +328,8 @@ ${message.message}
     }
     logger.info(`try find file relative to workspace folder`, { filePath, function: 'formatFileUrlToAbsolutePath' });
     const workspace = this.workspaceService.getActiveWorkspaceSync();
-    if (workspace === undefined) {
-      logger.error(`No active workspace, abort. Try loading filePath as-is.`, { filePath, function: 'formatFileUrlToAbsolutePath' });
+    if (workspace === undefined || !isWikiWorkspace(workspace)) {
+      logger.error(`No active workspace or not a wiki workspace, abort. Try loading filePath as-is.`, { filePath, function: 'formatFileUrlToAbsolutePath' });
       return filePath;
     }
     // try concat workspace path + file path to get relative path

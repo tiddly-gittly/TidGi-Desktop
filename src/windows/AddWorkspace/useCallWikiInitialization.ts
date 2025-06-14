@@ -1,6 +1,6 @@
 import { WikiCreationMethod } from '@/constants/wikiCreation';
 import { IGitUserInfos } from '@services/git/interface';
-import { INewWorkspaceConfig } from '@services/workspaces/interface';
+import { INewWikiWorkspaceConfig } from '@services/workspaces/interface';
 import type { TFunction } from 'i18next';
 
 interface ICallWikiInitConfig {
@@ -9,7 +9,7 @@ interface ICallWikiInitConfig {
 }
 
 export async function callWikiInitialization(
-  newWorkspaceConfig: INewWorkspaceConfig,
+  newWorkspaceConfig: INewWikiWorkspaceConfig,
   wikiCreationMessageSetter: (m: string) => void,
   t: TFunction,
   gitUserInfo: IGitUserInfos | undefined,

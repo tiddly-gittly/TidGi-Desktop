@@ -6,7 +6,7 @@ import { IGitUserInfos } from '@services/git/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
-import { IWorkspace } from '@services/workspaces/interface';
+import { IWorkspace, isWikiWorkspace } from '@services/workspaces/interface';
 import { injectable } from 'inversify';
 import { truncate } from 'lodash';
 import { nanoid } from 'nanoid';
@@ -115,7 +115,7 @@ export class Authentication implements IAuthenticationService {
    * @param workspace the workspace to get userName setting from
    */
   public async getUserName(workspace: IWorkspace): Promise<string> {
-    const userName = (workspace.userName || (await this.get('userName'))) ?? '';
+    const userName = (isWikiWorkspace(workspace) ? workspace.userName : '') || (await this.get('userName')) || '';
     return userName;
   }
 }

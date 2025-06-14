@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput, SoftLinkToMainWikiSelect, SubWikiTagAutoComplete } from './FormComponents';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { useValidateExistedWiki } from './useExistedWiki';
 import type { IWikiWorkspaceFormProps } from './useForm';
@@ -84,7 +85,14 @@ export function ExistedWikiForm({
             value={mainWikiToLinkIndex}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
               const index = event.target.value as unknown as number;
-              mainWikiToLinkSetter(mainWorkspaceList[index]);
+              const selectedWorkspace = mainWorkspaceList[index];
+              if (selectedWorkspace && isWikiWorkspace(selectedWorkspace)) {
+                mainWikiToLinkSetter({
+                  wikiFolderLocation: selectedWorkspace.wikiFolderLocation,
+                  port: selectedWorkspace.port,
+                  id: selectedWorkspace.id,
+                });
+              }
             }}
           >
             {mainWorkspaceList.map((workspace, index) => (

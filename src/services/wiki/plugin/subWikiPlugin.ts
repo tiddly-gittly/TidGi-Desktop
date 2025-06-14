@@ -2,7 +2,7 @@
 
 import { TIDDLERS_PATH } from '@/constants/paths';
 import { logger } from '@services/libs/log';
-import { IWorkspace } from '@services/workspaces/interface';
+import { IWorkspace, isWikiWorkspace, IWikiWorkspace } from '@services/workspaces/interface';
 import fs from 'fs-extra';
 import { compact, drop, take } from 'lodash';
 import path from 'path';
@@ -41,8 +41,8 @@ const emptyFileSystemPathsTiddler = `title: $:/config/FileSystemPaths
 export function updateSubWikiPluginContent(
   mainWikiPath: string,
   subWikiPath: string,
-  newConfig?: Pick<IWorkspace, 'tagName' | 'subWikiFolderName'>,
-  oldConfig?: Pick<IWorkspace, 'tagName' | 'subWikiFolderName'>,
+  newConfig?: Pick<IWikiWorkspace, 'tagName' | 'subWikiFolderName'>,
+  oldConfig?: Pick<IWikiWorkspace, 'tagName' | 'subWikiFolderName'>,
 ): void {
   const FileSystemPathsTiddlerPath = getFileSystemPathsTiddlerPath(mainWikiPath);
 
@@ -58,7 +58,7 @@ export function updateSubWikiPluginContent(
       throw new Error('Both newConfig and oldConfig are not provided in the updateSubWikiPluginContent() for\n' + JSON.stringify(mainWikiPath));
     }
     const { tagName, subWikiFolderName } = oldConfig;
-    if (typeof tagName !== 'string' || subWikiFolderName === undefined) {
+    if (typeof tagName !== 'string' || typeof subWikiFolderName !== 'string') {
       throw new Error('tagName or subWikiFolderName is not string for in the updateSubWikiPluginContent() for\n' + JSON.stringify(mainWikiPath));
     }
     // find the old line, delete it
@@ -68,7 +68,7 @@ export function updateSubWikiPluginContent(
   } else {
     // if this config already exists, just return
     const { tagName, subWikiFolderName } = newConfig;
-    if (typeof tagName !== 'string' || subWikiFolderName === undefined) {
+    if (typeof tagName !== 'string' || typeof subWikiFolderName !== 'string') {
       throw new Error('tagName or subWikiFolderName is not string for in the updateSubWikiPluginContent() for\n' + JSON.stringify(mainWikiPath));
     }
     if (FileSystemPaths.some((line) => line.includes(tagName) && line.includes(subWikiFolderName))) {
@@ -78,7 +78,7 @@ export function updateSubWikiPluginContent(
     const newConfigLine = '[' + getMatchPart(tagName) + andPart + getPathPart(subWikiFolderName, subWikiPathDirName);
     // if we are just to add a new config, just append it to the end of the file
     const oldConfigTagName = oldConfig?.tagName;
-    if (oldConfig !== undefined && typeof oldConfigTagName === 'string') {
+    if (oldConfig !== undefined && typeof oldConfigTagName === 'string' && typeof oldConfig.subWikiFolderName === 'string') {
       // find the old line, replace it with the new line
       const newFileSystemPaths = FileSystemPaths.map((line) => {
         if (line.includes(oldConfigTagName) && line.includes(oldConfig.subWikiFolderName)) {

@@ -8,7 +8,7 @@ import { lazyInject } from '@services/container';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
-import { IWorkspaceService } from '@services/workspaces/interface';
+import { IWorkspaceService, isWikiWorkspace } from '@services/workspaces/interface';
 import debounce from 'lodash/debounce';
 import { ITheme, IThemeService } from './interface';
 
@@ -59,7 +59,7 @@ export class ThemeService implements IThemeService {
   private async updateActiveWikiTheme(): Promise<void> {
     const workspaces = await this.workspaceService.getWorkspacesAsList();
     await Promise.all(
-      workspaces.filter((workspace) => !workspace.isSubWiki && !workspace.hibernated).map(async (workspace) => {
+      workspaces.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.hibernated).map(async (workspace) => {
         await this.wikiService.wikiOperationInBrowser(WikiChannel.invokeActionsByTag, workspace.id, [
           '$:/tags/DarkLightChangeActions',
           {

@@ -5,7 +5,7 @@ import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
-import { IWorkspaceService } from '@services/workspaces/interface';
+import { IWorkspaceService, isWikiWorkspace } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 
 export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID: string) {
@@ -18,10 +18,12 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
       path: /^\/?$/,
       name: 'getIndex',
       handler: async (_request: GlobalRequest, workspaceIDFromHost: string, _parameters: RegExpMatchArray | null) => {
+        const workspace = await workspaceService.get(workspaceIDFromHost);
+        const rootTiddler = workspace && isWikiWorkspace(workspace) ? workspace.rootTiddler : undefined;
         const response = await wikiService.callWikiIpcServerRoute(
           workspaceIDFromHost,
           'getIndex',
-          (await workspaceService.get(workspaceIDFromHost))?.rootTiddler ?? '$:/core/save/lazy-images',
+          rootTiddler ?? '$:/core/save/lazy-images',
         );
         return response;
       },

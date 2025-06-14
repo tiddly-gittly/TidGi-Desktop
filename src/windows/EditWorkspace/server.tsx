@@ -28,7 +28,7 @@ import { tlsCertExtensions, tlsKeyExtensions } from '@/constants/fileNames';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useActualIp } from '@services/native/hooks';
-import { IWorkspace } from '@services/workspaces/interface';
+import { IWorkspace, isWikiWorkspace } from '@services/workspaces/interface';
 
 const AServerOptionsAccordion = styled(Accordion)`
   box-shadow: unset;
@@ -58,6 +58,8 @@ export interface IServerOptionsProps {
 export function ServerOptions(props: IServerOptionsProps) {
   const { t } = useTranslation();
   const { workspace, workspaceSetter } = props;
+  
+  const isWiki = isWikiWorkspace(workspace);
   const {
     https = { enabled: false },
     port,
@@ -69,7 +71,18 @@ export function ServerOptions(props: IServerOptionsProps) {
     authToken,
     userName,
     id,
-  } = (workspace ?? {}) as unknown as IWorkspace;
+  } = isWiki ? workspace : {
+    https: { enabled: false },
+    port: 0,
+    rootTiddler: '',
+    lastNodeJSArgv: [],
+    enableHTTPAPI: false,
+    readOnlyMode: false,
+    tokenAuth: false,
+    authToken: '',
+    userName: '',
+    id: workspace.id,
+  };
   const actualIP = useActualIp(getDefaultHTTPServerIP(port), id);
   // some feature need a username to work, so if userName is empty, assign a fallbackUserName DEFAULT_USER_NAME
 
@@ -362,6 +375,11 @@ const checkedIcon = <CheckBoxIcon fontSize='small' />;
 function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSetter: (newValue: IWorkspace, requestSaveAndRestart?: boolean) => void }) {
   const { t } = useTranslation();
   const { workspaceSetter, workspace } = props;
+  
+  if (!isWikiWorkspace(workspace)) {
+    return null;
+  }
+  
   const {
     excludedPlugins,
     id,

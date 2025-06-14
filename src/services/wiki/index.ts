@@ -18,6 +18,7 @@ import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { Observable } from 'rxjs';
 import type { IChangedTiddlers } from 'tiddlywiki';
@@ -109,6 +110,10 @@ export class Wiki implements IWikiService {
     const workspace = await this.workspaceService.get(workspaceID);
     if (workspace === undefined) {
       logger.error('Try to start wiki, but workspace not found', { workspace, workspaceID });
+      return;
+    }
+    if (!isWikiWorkspace(workspace)) {
+      logger.error('Try to start wiki, but workspace is not a wiki workspace', { workspace, workspaceID });
       return;
     }
     const { port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI, authToken } = workspace;
@@ -227,6 +232,9 @@ export class Wiki implements IWikiService {
     const workspace = await this.workspaceService.get(workspaceID);
     if (workspace === undefined) {
       logger.error('afterWikiStart() get workspace failed', { workspaceID });
+      return;
+    }
+    if (!isWikiWorkspace(workspace)) {
       return;
     }
     const { isSubWiki, enableHTTPAPI } = workspace;
@@ -472,6 +480,9 @@ export class Wiki implements IWikiService {
   }
 
   public async checkWikiExist(workspace: IWorkspace, options: { shouldBeMainWiki?: boolean; showDialog?: boolean } = {}): Promise<string | true> {
+    if (!isWikiWorkspace(workspace)) {
+      return true; // dedicated workspaces always "exist"
+    }
     const { wikiFolderLocation, id: workspaceID } = workspace;
     const { shouldBeMainWiki, showDialog } = options;
     try {
@@ -577,6 +588,9 @@ export class Wiki implements IWikiService {
   }
 
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
+    if (!isWikiWorkspace(workspace)) {
+      return;
+    }
     const { id, isSubWiki, name, mainWikiID } = workspace;
 
     const userName = await this.authService.getUserName(workspace);
@@ -619,6 +633,9 @@ export class Wiki implements IWikiService {
   }
 
   public async restartWiki(workspace: IWorkspace): Promise<void> {
+    if (!isWikiWorkspace(workspace)) {
+      return;
+    }
     const { id, isSubWiki } = workspace;
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
 
@@ -633,7 +650,9 @@ export class Wiki implements IWikiService {
   }
 
   public async updateSubWikiPluginContent(mainWikiPath: string, subWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void> {
-    updateSubWikiPluginContent(mainWikiPath, subWikiPath, newConfig, oldConfig);
+    const newConfigTyped = newConfig && isWikiWorkspace(newConfig) ? newConfig : undefined;
+    const oldConfigTyped = oldConfig && isWikiWorkspace(oldConfig) ? oldConfig : undefined;
+    updateSubWikiPluginContent(mainWikiPath, subWikiPath, newConfigTyped, oldConfigTyped);
   }
 
   public async wikiOperationInBrowser<OP extends keyof ISendWikiOperationsToBrowser>(

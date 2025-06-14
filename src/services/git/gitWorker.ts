@@ -1,6 +1,7 @@
 import 'source-map-support/register';
 import { WikiChannel } from '@/constants/channels';
 import type { IWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import {
   AssumeSyncError,
   CantForcePullError,
@@ -141,6 +142,10 @@ function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs
  */
 function forcePullWiki(workspace: IWorkspace, configs: IForcePullConfigs, errorI18NDict: Record<string, string>): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
+    if (!isWikiWorkspace(workspace)) {
+      observer.error(new Error('forcePullWiki can only be called on wiki workspaces'));
+      return;
+    }
     void forcePull({
       dir: workspace.wikiFolderLocation,
       ...configs,

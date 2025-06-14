@@ -13,7 +13,7 @@ import { IViewService } from '@services/view/interface';
 import { IWikiService } from '@services/wiki/interface';
 import { IWindowService } from '@services/windows/interface';
 import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspaceService } from '@services/workspaces/interface';
+import { IWorkspaceService, isWikiWorkspace } from '@services/workspaces/interface';
 import { clipboard, dialog } from 'electron';
 import { CancelError as DownloadCancelError, download } from 'electron-dl';
 import { minify } from 'html-minifier-terser';
@@ -114,6 +114,10 @@ export async function registerMenu(): Promise<void> {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         if (activeWorkspace === undefined) {
           logger.error('Can not export whole wiki, activeWorkspace is undefined');
+          return;
+        }
+        if (!isWikiWorkspace(activeWorkspace)) {
+          logger.error('Can not export whole wiki, activeWorkspace is not a wiki workspace');
           return;
         }
         const pathOfNewHTML = await nativeService.pickDirectory(DEFAULT_DOWNLOADS_PATH, {

@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
-import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
+import { IWorkspaceWithMetadata, isWikiWorkspace } from '@services/workspaces/interface';
 import { MouseEvent, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
@@ -21,7 +21,12 @@ export interface ISortableItemProps {
 
 export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarTexts, showSideBarIcon }: ISortableItemProps): React.JSX.Element {
   const { t } = useTranslation();
-  const { active, id, name, picturePath, hibernated, transparentBackground, pageType } = workspace;
+  const { active, id, name, picturePath, pageType } = workspace;
+  
+  const isWiki = isWikiWorkspace(workspace);
+  const hibernated = isWiki ? workspace.hibernated : false;
+  const transparentBackground = isWiki ? workspace.transparentBackground : false;
+  
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),

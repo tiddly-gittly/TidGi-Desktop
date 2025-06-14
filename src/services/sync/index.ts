@@ -12,7 +12,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
-import { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { IWorkspace, IWorkspaceService, isWikiWorkspace } from '@services/workspaces/interface';
 import { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { ISyncService } from './interface';
 
@@ -40,6 +40,11 @@ export class Sync implements ISyncService {
   private readonly workspaceService!: IWorkspaceService;
 
   public async syncWikiIfNeeded(workspace: IWorkspace): Promise<void> {
+    if (!isWikiWorkspace(workspace)) {
+      logger.warn('syncWikiIfNeeded called on non-wiki workspace', { workspaceId: workspace.id });
+      return;
+    }
+    
     const { gitUrl, storageService, id, isSubWiki, wikiFolderLocation: dir } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
     const defaultCommitMessage = i18n.t('LOG.CommitMessage');
@@ -76,6 +81,7 @@ export class Sync implements ISyncService {
         // sync all sub workspace
         const subWorkspaces = await this.workspaceService.getSubWorkspacesAsList(id);
         const subHasChangesPromise = subWorkspaces.map(async (subWorkspace) => {
+          if (!isWikiWorkspace(subWorkspace)) return false;
           const { gitUrl: subGitUrl, storageService: subStorageService, wikiFolderLocation: subGitDir } = subWorkspace;
 
           if (!subGitUrl) return false;
@@ -129,6 +135,9 @@ export class Sync implements ISyncService {
    * Trigger git sync interval if needed in config
    */
   public async startIntervalSyncIfNeeded(workspace: IWorkspace): Promise<void> {
+    if (!isWikiWorkspace(workspace)) {
+      return;
+    }
     const { syncOnInterval, backupOnInterval, id } = workspace;
     if (syncOnInterval || backupOnInterval) {
       const syncDebounceInterval = await this.preferenceService.get('syncDebounceInterval');

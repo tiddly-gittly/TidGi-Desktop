@@ -9,7 +9,7 @@ import { logger } from '@services/libs/log';
 import { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IBrowserViewMetaData, windowDimension, WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { IWorkspace, IWorkspaceService, isWikiWorkspace } from '@services/workspaces/interface';
 import { INewWindowAction } from './interface';
 import { IViewMeta } from './setupViewEventHandlers';
 import { handleOpenFileExternalLink } from './setupViewFileProtocol';
@@ -119,7 +119,8 @@ export function handleNewWindow(
       childWindow.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) => handleNewWindow(details, newWindowContext, childWindow.webContents));
       childWindow.webContents.once('will-navigate', async (_event, url) => {
         // if the window is used for the current app, then use default behavior
-        const appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
+        const currentWorkspace = await workspaceService.get(workspace.id);
+        const appUrl = currentWorkspace && isWikiWorkspace(currentWorkspace) ? currentWorkspace.homeUrl : undefined;
         if (appUrl === undefined) {
           throw new Error(`Workspace ${workspace.id} not existed, or don't have homeUrl setting`);
         }

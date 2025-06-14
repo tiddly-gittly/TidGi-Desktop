@@ -4,6 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput, SoftLinkToMainWikiSelect, SubWikiTagAutoComplete } from './FormComponents';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { useValidateCloneWiki } from './useCloneWiki';
 import type { IWikiWorkspaceFormProps } from './useForm';
@@ -61,7 +62,14 @@ export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichCompone
             value={form.mainWikiToLinkIndex}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
               const index = event.target.value as unknown as number;
-              form.mainWikiToLinkSetter(form.mainWorkspaceList[index]);
+              const selectedWorkspace = form.mainWorkspaceList[index];
+              if (selectedWorkspace && isWikiWorkspace(selectedWorkspace)) {
+                form.mainWikiToLinkSetter({
+                  wikiFolderLocation: selectedWorkspace.wikiFolderLocation,
+                  port: selectedWorkspace.port,
+                  id: selectedWorkspace.id,
+                });
+              }
             }}
           >
             {form.mainWorkspaceList.map((workspace, index) => (

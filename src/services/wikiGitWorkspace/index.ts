@@ -9,7 +9,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import type { INewWorkspaceConfig, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import type { INewWikiWorkspaceConfig, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { IContextService } from '@services/context/interface';
@@ -56,11 +57,15 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       try {
         if (await this.contextService.isOnline()) {
           const workspaces = await this.workspaceService.getWorkspacesAsList();
-          const workspacesToSync = workspaces.filter((workspace) => workspace.storageService !== SupportedStorageServices.local && !workspace.hibernated);
+          const workspacesToSync = workspaces.filter((workspace) => 
+            isWikiWorkspace(workspace) && 
+            workspace.storageService !== SupportedStorageServices.local && 
+            !workspace.hibernated
+          );
           await Promise.allSettled([
             this.notificationService.show({ title: i18n.t('Preference.SyncBeforeShutdown') }),
             ...workspacesToSync.map(async (workspace) => {
-              // only do this if not readonly
+              if (!isWikiWorkspace(workspace)) return;
               if (workspace.readOnlyMode) {
                 return;
               }
@@ -78,8 +83,11 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
     powerMonitor.addListener('shutdown', listener);
   }
 
-  public initWikiGitTransaction = async (newWorkspaceConfig: INewWorkspaceConfig, userInfo?: IGitUserInfos): Promise<IWorkspace | undefined> => {
+  public initWikiGitTransaction = async (newWorkspaceConfig: INewWikiWorkspaceConfig, userInfo?: IGitUserInfos): Promise<IWorkspace | undefined> => {
     const newWorkspace = await this.workspaceService.create(newWorkspaceConfig);
+    if (!isWikiWorkspace(newWorkspace)) {
+      throw new Error('initWikiGitTransaction can only be called with wiki workspaces');
+    }
     const { gitUrl, storageService, wikiFolderLocation, isSubWiki, id: workspaceID, mainWikiToLink } = newWorkspace;
     try {
       await this.workspaceService.setActiveWorkspace(newWorkspace.id, this.workspaceService.getActiveWorkspaceSync()?.id);
@@ -126,6 +134,9 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       const workspace = await this.workspaceService.get(workspaceID);
       if (workspace === undefined) {
         throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
+      }
+      if (!isWikiWorkspace(workspace)) {
+        throw new Error('removeWikiGitTransaction can only be called with wiki workspaces');
       }
       const { isSubWiki, mainWikiToLink, wikiFolderLocation, id, name } = workspace;
       const { response } = await dialog.showMessageBox(mainWindow, {

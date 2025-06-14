@@ -123,7 +123,7 @@ const createMockForm = (overrides: Partial<IWikiWorkspaceForm> = {}): IWikiWorks
     wikiFolderLocation: '/main/wiki',
     id: 'main-wiki-id',
     port: 5212,
-  } as Pick<IWorkspace, 'wikiFolderLocation' | 'port' | 'id'>,
+  },
   mainWikiToLinkSetter: vi.fn(),
   mainWikiToLinkIndex: 0,
   mainWorkspaceList: [

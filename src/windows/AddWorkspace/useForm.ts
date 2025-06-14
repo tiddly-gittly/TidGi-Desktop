@@ -7,8 +7,10 @@ import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useStorageServiceUserInfoObservable } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
 import { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
-import { INewWorkspaceConfig, IWorkspace } from '@services/workspaces/interface';
+import { INewWikiWorkspaceConfig, IWorkspace, isWikiWorkspace, IWikiWorkspace } from '@services/workspaces/interface';
 import type { INewWikiRequiredFormData } from './useNewWiki';
+
+type IMainWikiInfo = Pick<IWikiWorkspace, 'wikiFolderLocation' | 'port' | 'id'>;
 
 export function useIsCreateSyncedWorkspace(): [boolean, React.Dispatch<React.SetStateAction<boolean>>] {
   const [isCreateSyncedWorkspace, isCreateSyncedWorkspaceSetter] = useState(false);
@@ -42,9 +44,12 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
   /**
    * For sub-wiki, we need to link it to a main wiki's folder, so all wiki contents can be loaded together.
    */
-  const mainWorkspaceList = useMemo(() => workspaceList?.filter((workspace) => !workspace.isSubWiki) ?? [], [workspaceList]);
-  const [mainWikiToLink, mainWikiToLinkSetter] = useState<Pick<IWorkspace, 'wikiFolderLocation' | 'port' | 'id'>>(
-    mainWorkspaceList[0] ?? { wikiFolderLocation: '', port: 0, id: '' },
+  const mainWorkspaceList = useMemo(() => workspaceList?.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki) ?? [], [workspaceList]);
+  const [mainWikiToLink, mainWikiToLinkSetter] = useState<IMainWikiInfo>(
+    () => {
+      const firstMainWiki = mainWorkspaceList.find(isWikiWorkspace);
+      return firstMainWiki ? { wikiFolderLocation: firstMainWiki.wikiFolderLocation, port: firstMainWiki.port, id: firstMainWiki.id } : { wikiFolderLocation: '', port: 0, id: '' };
+    }
   );
   const [tagName, tagNameSetter] = useState<string>('');
   let mainWikiToLinkIndex = mainWorkspaceList.findIndex((workspace) => workspace.id === mainWikiToLink.id);
@@ -52,8 +57,9 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
     mainWikiToLinkIndex = 0;
   }
   useEffect(() => {
-    if (mainWorkspaceList[mainWikiToLinkIndex]?.wikiFolderLocation) {
-      mainWikiToLinkSetter(mainWorkspaceList[mainWikiToLinkIndex]);
+    const selectedWorkspace = mainWorkspaceList[mainWikiToLinkIndex];
+    if (selectedWorkspace && isWikiWorkspace(selectedWorkspace) && selectedWorkspace.wikiFolderLocation) {
+      mainWikiToLinkSetter({ wikiFolderLocation: selectedWorkspace.wikiFolderLocation, port: selectedWorkspace.port, id: selectedWorkspace.id });
     }
   }, [mainWorkspaceList, mainWikiToLinkIndex]);
   /**
@@ -79,7 +85,9 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
   useEffect(() => {
     void (async function getDefaultExistedWikiFolderPathEffect() {
       const desktopPathAsDefaultExistedWikiFolderPath = await window.service.context.get('DEFAULT_WIKI_FOLDER');
-      wikiFolderNameSetter(mainWorkspaceList.at(-1)?.wikiFolderLocation ?? 'wiki');
+      const lastMainWiki = mainWorkspaceList.at(-1);
+      const defaultWikiFolderName = (lastMainWiki && isWikiWorkspace(lastMainWiki)) ? lastMainWiki.wikiFolderLocation : 'wiki';
+      wikiFolderNameSetter(defaultWikiFolderName);
       parentFolderLocationSetter(desktopPathAsDefaultExistedWikiFolderPath);
     })();
     // we only do this on component init
@@ -156,7 +164,7 @@ export interface IWikiWorkspaceFormProps {
  * Fill in default value for newly created wiki.
  * @param form New wiki form value
  */
-export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreateMainWorkspace: boolean, isCreateSyncedWorkspace: boolean): INewWorkspaceConfig {
+export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreateMainWorkspace: boolean, isCreateSyncedWorkspace: boolean): INewWikiWorkspaceConfig {
   return {
     gitUrl: isCreateSyncedWorkspace ? form.gitRepoUrl : null,
     isSubWiki: !isCreateMainWorkspace,

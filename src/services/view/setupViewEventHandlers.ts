@@ -5,7 +5,7 @@ import path from 'path';
 
 import { buildResourcePath } from '@/constants/paths';
 import getViewBounds from '@services/libs/getViewBounds';
-import { IWorkspace } from '@services/workspaces/interface';
+import { IWorkspace, isWikiWorkspace } from '@services/workspaces/interface';
 
 import { ViewChannel, WindowChannel } from '@/constants/channels';
 import { isWin } from '@/helpers/system';
@@ -78,7 +78,9 @@ export default function setupViewEventHandlers(
       logger.debug(`will-navigate skipped, isSameOrigin("${newUrl}", "${currentUrl}")`);
       return;
     }
-    const { homeUrl, lastUrl } = workspace;
+    const isWiki = isWikiWorkspace(workspace);
+    const homeUrl = isWiki ? workspace.homeUrl : '';
+    const lastUrl = isWiki ? workspace.lastUrl : null;
     // skip handling if is in-wiki link
     if (
       isSameOrigin(newUrl, homeUrl) ||
@@ -152,7 +154,7 @@ export default function setupViewEventHandlers(
     }
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {
       // Fix nodejs wiki start slow on system startup, which cause `-102 ERR_CONNECTION_REFUSED` even if wiki said it is booted, we have to retry several times
-      if (errorCode === -102 && view.webContents.getURL().length > 0 && workspaceObject.homeUrl.startsWith('http')) {
+      if (errorCode === -102 && view.webContents.getURL().length > 0 && isWikiWorkspace(workspaceObject) && workspaceObject.homeUrl.startsWith('http')) {
         setTimeout(async () => {
           await loadInitialUrlWithCatch();
         }, 1000);
@@ -169,7 +171,7 @@ export default function setupViewEventHandlers(
       }
     }
     // edge case to handle failed auth, use setTimeout to prevent infinite loop
-    if (errorCode === -300 && view.webContents.getURL().length === 0 && workspaceObject.homeUrl.startsWith('http')) {
+    if (errorCode === -300 && view.webContents.getURL().length === 0 && isWikiWorkspace(workspaceObject) && workspaceObject.homeUrl.startsWith('http')) {
       setTimeout(async () => {
         await loadInitialUrlWithCatch();
       }, 1000);

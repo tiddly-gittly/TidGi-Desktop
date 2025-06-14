@@ -26,7 +26,8 @@ import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import type { INewWorkspaceConfig, IWorkspace, IWorkspaceMetaData, IWorkspaceService, IWorkspacesWithMetadata, IWorkspaceWithMetadata } from './interface';
+import type { IDedicatedWorkspace, INewWikiWorkspaceConfig, IWorkspace, IWorkspaceMetaData, IWorkspaceService, IWorkspacesWithMetadata, IWorkspaceWithMetadata } from './interface';
+import { isWikiWorkspace } from './interface';
 import { registerMenu } from './registerMenu';
 import { workspaceSorter } from './utils';
 
@@ -63,7 +64,13 @@ export class Workspace implements IWorkspaceService {
   }
 
   public getWorkspacesWithMetadata(): IWorkspacesWithMetadata {
-    return mapValues(this.getWorkspacesSync(), (workspace: IWorkspace, id): IWorkspaceWithMetadata => ({ ...workspace, metadata: this.getMetaDataSync(id) }));
+    return mapValues(this.getWorkspacesSync(), (workspace: IWorkspace, id): IWorkspaceWithMetadata => {
+      // Only wiki workspaces can have metadata, dedicated workspaces are filtered out
+      if (!isWikiWorkspace(workspace)) {
+        return { ...workspace, metadata: this.getMetaDataSync(id) } as IWorkspaceWithMetadata;
+      }
+      return { ...workspace, metadata: this.getMetaDataSync(id) };
+    });
   }
 
   public updateWorkspaceSubject(): void {
@@ -108,7 +115,7 @@ export class Workspace implements IWorkspaceService {
   private getInitWorkspacesForCache(): Record<string, IWorkspace> {
     const workspacesFromDisk = this.databaseService.getSetting(`workspaces`) ?? {};
     return typeof workspacesFromDisk === 'object' && !Array.isArray(workspacesFromDisk)
-      ? mapValues(pickBy(workspacesFromDisk, (value) => value !== null) as unknown as Record<string, IWorkspace>, (workspace) => this.sanitizeWorkspace(workspace))
+      ? mapValues(pickBy(workspacesFromDisk, (value) => !!value), (workspace) => this.sanitizeWorkspace(workspace))
       : {};
   }
 
@@ -146,16 +153,16 @@ export class Workspace implements IWorkspaceService {
 
   public async getSubWorkspacesAsList(workspaceID: string): Promise<IWorkspace[]> {
     const workspace = this.getSync(workspaceID);
-    if (workspace === undefined) return [];
+    if (workspace === undefined || !isWikiWorkspace(workspace)) return [];
     if (workspace.isSubWiki) return [];
-    return this.getWorkspacesAsListSync().filter((w) => w.mainWikiID === workspaceID).sort(workspaceSorter);
+    return this.getWorkspacesAsListSync().filter((w) => isWikiWorkspace(w) && w.mainWikiID === workspaceID).sort(workspaceSorter);
   }
 
   public getSubWorkspacesAsListSync(workspaceID: string): IWorkspace[] {
     const workspace = this.getSync(workspaceID);
-    if (workspace === undefined) return [];
+    if (workspace === undefined || !isWikiWorkspace(workspace)) return [];
     if (workspace.isSubWiki) return [];
-    return this.getWorkspacesAsListSync().filter((w) => w.mainWikiID === workspaceID).sort(workspaceSorter);
+    return this.getWorkspacesAsListSync().filter((w) => isWikiWorkspace(w) && w.mainWikiID === workspaceID).sort(workspaceSorter);
   }
 
   public async get(id: string): Promise<IWorkspace | undefined> {
@@ -207,11 +214,12 @@ export class Workspace implements IWorkspaceService {
   }
 
   public getMainWorkspace(subWorkspace: IWorkspace): IWorkspace | undefined {
+    if (!isWikiWorkspace(subWorkspace)) return undefined;
     const { mainWikiID, isSubWiki, mainWikiToLink } = subWorkspace;
     if (!isSubWiki) return undefined;
     if (mainWikiID) return this.getSync(mainWikiID);
-    const mainWorkspace = (this.getWorkspacesAsListSync() ?? []).find(
-      (workspaceToSearch) => mainWikiToLink === workspaceToSearch.wikiFolderLocation,
+    const mainWorkspace = this.getWorkspacesAsListSync().find(
+      (workspaceToSearch) => isWikiWorkspace(workspaceToSearch) && mainWikiToLink === workspaceToSearch.wikiFolderLocation,
     );
     return mainWorkspace;
   }
@@ -221,13 +229,18 @@ export class Workspace implements IWorkspaceService {
    * @param workspaceToSanitize User input workspace or loaded workspace, that may contains bad values
    */
   private sanitizeWorkspace(workspaceToSanitize: IWorkspace): IWorkspace {
-    const defaultValues: Partial<IWorkspace> = {
+    // For dedicated workspaces (help, guide, agent), no sanitization needed
+    if (!isWikiWorkspace(workspaceToSanitize)) {
+      return workspaceToSanitize;
+    }
+
+    const defaultValues: Partial<typeof workspaceToSanitize> = {
       storageService: SupportedStorageServices.github,
       backupOnInterval: true,
       excludedPlugins: [],
       enableHTTPAPI: false,
     };
-    const fixingValues: Partial<IWorkspace> = {};
+    const fixingValues: Partial<typeof workspaceToSanitize> = {};
     // we add mainWikiID in creation, we fix this value for old existed workspaces
     if (workspaceToSanitize.isSubWiki && !workspaceToSanitize.mainWikiID) {
       const mainWorkspace = this.getMainWorkspace(workspaceToSanitize);
@@ -258,10 +271,15 @@ export class Workspace implements IWorkspaceService {
    * @param newWorkspaceConfig new workspace settings
    */
   private async reactBeforeWorkspaceChanged(newWorkspaceConfig: IWorkspace): Promise<void> {
+    if (!isWikiWorkspace(newWorkspaceConfig)) return;
+
     const existedWorkspace = this.getSync(newWorkspaceConfig.id);
     const { id, tagName } = newWorkspaceConfig;
     // when update tagName of subWiki
-    if (existedWorkspace !== undefined && existedWorkspace.isSubWiki && typeof tagName === 'string' && tagName.length > 0 && existedWorkspace.tagName !== tagName) {
+    if (
+      existedWorkspace !== undefined && isWikiWorkspace(existedWorkspace) && existedWorkspace.isSubWiki && typeof tagName === 'string' && tagName.length > 0 &&
+      existedWorkspace.tagName !== tagName
+    ) {
       const { mainWikiToLink, wikiFolderLocation } = existedWorkspace;
       if (typeof mainWikiToLink !== 'string') {
         throw new TypeError(
@@ -281,7 +299,7 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async getByWikiFolderLocation(wikiFolderLocation: string): Promise<IWorkspace | undefined> {
-    return (await this.getWorkspacesAsList()).find((workspace) => workspace.wikiFolderLocation === wikiFolderLocation);
+    return (await this.getWorkspacesAsList()).find((workspace) => isWikiWorkspace(workspace) && workspace.wikiFolderLocation === wikiFolderLocation);
   }
 
   public async getByWikiName(wikiName: string): Promise<IWorkspace | undefined> {
@@ -343,7 +361,11 @@ export class Workspace implements IWorkspaceService {
     }
 
     // active new one
-    await this.update(id, { active: true, hibernated: false });
+    if (isWikiWorkspace(newWorkspace)) {
+      await this.update(id, { active: true, hibernated: false });
+    } else {
+      await this.update(id, { active: true });
+    }
     // de-active the other one
     if (oldActiveWorkspaceID !== id) {
       await this.clearActiveWorkspace(oldActiveWorkspaceID);
@@ -416,7 +438,7 @@ export class Workspace implements IWorkspaceService {
     void this.updateWorkspaceMenuItems();
   }
 
-  public async create(newWorkspaceConfig: INewWorkspaceConfig): Promise<IWorkspace> {
+  public async create(newWorkspaceConfig: INewWikiWorkspaceConfig): Promise<IWorkspace> {
     const newID = nanoid();
 
     // find largest order
@@ -432,8 +454,6 @@ export class Workspace implements IWorkspaceService {
       userName: '',
       ...newWorkspaceConfig,
       active: false,
-      disableAudio: false,
-      disableNotifications: false,
       hibernated: false,
       hibernateWhenUnused: false,
       homeUrl: getDefaultTidGiUrl(newID),
@@ -456,40 +476,13 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async createPageWorkspace(pageType: PageType, order: number, active = false): Promise<IWorkspace> {
-    const pageWorkspace: IWorkspace = {
+    const pageWorkspace: IDedicatedWorkspace = {
       id: pageType,
-      name: pageType, // Will be localized in the UI
+      name: pageType,
       pageType,
       active,
       order,
-      authToken: undefined,
-      backupOnInterval: false,
-      disableAudio: false,
-      disableNotifications: false,
-      enableHTTPAPI: false,
-      excludedPlugins: [],
-      gitUrl: null,
-      hibernateWhenUnused: false,
-      hibernated: false,
-      homeUrl: `tidgi://page/${pageType}/`,
-      isSubWiki: false,
-      lastNodeJSArgv: [],
-      lastUrl: null,
-      mainWikiID: null,
-      mainWikiToLink: null,
       picturePath: null,
-      port: 0, // Not applicable for page workspaces
-      readOnlyMode: false,
-      rootTiddler: undefined,
-      storageService: SupportedStorageServices.local,
-      subWikiFolderName: 'subwiki',
-      syncOnInterval: false,
-      syncOnStartup: false,
-      tagName: null,
-      tokenAuth: false,
-      transparentBackground: false,
-      userName: '',
-      wikiFolderLocation: '', // Not applicable for page workspaces
     };
 
     await this.set(pageType, pageWorkspace);
@@ -552,13 +545,18 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async openWorkspaceTiddler(workspace: IWorkspace, title?: string): Promise<void> {
-    const { id: idToActive, isSubWiki, mainWikiID, pageType } = workspace;
+    const { id: idToActive, pageType } = workspace;
     const oldActiveWorkspace = await this.getActiveWorkspace();
 
     // Handle page workspace - no special action needed as routing handles the page display
     if (pageType) {
       return;
     }
+
+    // Only handle wiki workspaces
+    if (!isWikiWorkspace(workspace)) return;
+
+    const { isSubWiki, mainWikiID, tagName } = workspace;
 
     logger.log('debug', 'openWorkspaceTiddler', { workspace });
     // If is main wiki, open the wiki, and open provided title, or simply switch to it if no title provided
@@ -576,7 +574,7 @@ export class Workspace implements IWorkspaceService {
       if (oldActiveWorkspace?.id !== mainWikiID) {
         await this.workspaceViewService.setActiveWorkspaceView(mainWikiID);
       }
-      const subWikiTag = title ?? workspace.tagName;
+      const subWikiTag = title ?? tagName;
       if (subWikiTag) {
         await this.wikiService.wikiOperationInBrowser(WikiChannel.openTiddler, mainWikiID, [subWikiTag]);
       }

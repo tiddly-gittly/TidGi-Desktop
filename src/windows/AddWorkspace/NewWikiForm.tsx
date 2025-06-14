@@ -3,6 +3,7 @@ import { AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/materi
 import { useTranslation } from 'react-i18next';
 
 import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput, SoftLinkToMainWikiSelect, SubWikiTagAutoComplete } from './FormComponents';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateNewWiki } from './useNewWiki';
@@ -69,7 +70,14 @@ export function NewWikiForm({
             value={form.mainWikiToLinkIndex}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
               const index = event.target.value as unknown as number;
-              form.mainWikiToLinkSetter(form.mainWorkspaceList[index]);
+              const selectedWorkspace = form.mainWorkspaceList[index];
+              if (selectedWorkspace && isWikiWorkspace(selectedWorkspace)) {
+                form.mainWikiToLinkSetter({
+                  wikiFolderLocation: selectedWorkspace.wikiFolderLocation,
+                  port: selectedWorkspace.port,
+                  id: selectedWorkspace.id,
+                });
+              }
             }}
           >
             {form.mainWorkspaceList.map((workspace, index) => (
