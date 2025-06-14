@@ -46,7 +46,7 @@ export const ListItemVertical = styled(ListItemRaw)`
   align-items: flex-start;
   padding-bottom: 10px;
 
-  & ${TextField} {
+  & .MuiTextField-root {
     margin-top: 20px;
   }
 `;

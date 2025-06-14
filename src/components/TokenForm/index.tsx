@@ -1,5 +1,5 @@
 import { Box, Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
-import { keyframes, styled } from '@mui/material/styles';
+import { keyframes, styled, Theme } from '@mui/material/styles';
 import { SupportedStorageServices } from '@services/types';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,11 +30,11 @@ const TabsContainer = styled('div')`
   display: flex;
   padding: 15px 0;
   flex-direction: row;
-  & ${Tabs} {
+  & .MuiTabs-root {
     min-width: 160px;
   }
 `;
-const backgroundColorShift = ({ theme }: { theme: any }) =>
+const backgroundColorShift = ({ theme }: { theme: Theme }) =>
   keyframes`
 from {background-color: ${theme.palette.background.default};}
   to {background-color: ${theme.palette.background.default};}
