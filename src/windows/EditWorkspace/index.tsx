@@ -14,9 +14,9 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { css, styled } from 'styled-components';
+import { css, styled } from '@mui/material/styles';
 import defaultIcon from '../../images/default-icon.png';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
@@ -36,15 +36,15 @@ import { SyncedWikiDescription } from '../AddWorkspace/Description';
 import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
 import { ServerOptions } from './server';
 
-const OptionsAccordion = styled(Accordion)`
+const OptionsAccordion = styled((props: React.ComponentProps<typeof Accordion>) => <Accordion {...props} />)`
   box-shadow: unset;
   background-color: unset;
 `;
-const OptionsAccordionSummary = styled(AccordionSummary)`
+const OptionsAccordionSummary = styled((props: React.ComponentProps<typeof AccordionSummary>) => <AccordionSummary {...props} />)`
   padding: 0;
   flex-direction: row-reverse;
 `;
-const Root = styled(Paper)`
+const Root = styled((props: React.ComponentProps<typeof Paper>) => <Paper {...props} />)`
   height: 100%;
   width: 100%;
   padding: 20px;
@@ -54,35 +54,28 @@ const Root = styled(Paper)`
   flex-direction: column;
   background: ${({ theme }) => theme.palette.background.paper};
 `;
-const FlexGrow = styled.div`
+const FlexGrow = styled('div')`
   flex: 1;
 `;
-const Button = styled(ButtonRaw)`
+const Button = styled((props: React.ComponentProps<typeof ButtonRaw>) => <ButtonRaw {...props} />)`
   float: right;
   margin-left: 10px;
 `;
-const TextField = styled(TextFieldRaw)`
+const TextField = styled((props: React.ComponentProps<typeof TextFieldRaw>) => (
+  <TextFieldRaw fullWidth margin='dense' size='small' variant='filled' slotProps={{ inputLabel: { shrink: true } }} {...props} />
+))`
   margin-bottom: 10px;
 `;
-TextField.defaultProps = {
-  fullWidth: true,
-  margin: 'dense',
-  size: 'small',
-  variant: 'filled',
-  InputLabelProps: {
-    shrink: true,
-  },
-};
-const AvatarFlex = styled.div`
+const AvatarFlex = styled('div')`
   display: flex;
 `;
-const AvatarLeft = styled.div`
+const AvatarLeft = styled('div')`
   padding-top: 10px;
   padding-bottom: 10px;
   padding-left: 0;
   padding-right: 10px;
 `;
-const AvatarRight = styled.div`
+const AvatarRight = styled('div')`
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -96,7 +89,7 @@ const AvatarRight = styled.div`
 /**
  * border: theme.palette.type === 'dark' ? 'none': '1px solid rgba(0, 0, 0, 0.12)';
  */
-const Avatar = styled.div<{ transparentBackground?: boolean }>`
+const Avatar = styled('div')<{ transparentBackground?: boolean }>`
   height: 85px;
   width: 85px;
   border-radius: 4px;
@@ -119,7 +112,7 @@ const Avatar = styled.div<{ transparentBackground?: boolean }>`
   }
 }}
 `;
-const SaveCancelButtonsContainer = styled.div`
+const SaveCancelButtonsContainer = styled('div')`
   position: fixed;
   left: 0;
   bottom: 0;
@@ -131,21 +124,14 @@ const SaveCancelButtonsContainer = styled.div`
   opacity: 0.9;
   backdrop-filter: blur(10px);
 `;
-const AvatarPicture = styled.img`
+const AvatarPicture = styled('img')`
   height: 100%;
   width: 100%;
 `;
-const PictureButton = styled(ButtonRaw)``;
-PictureButton.defaultProps = {
-  variant: 'outlined',
-  size: 'small',
-};
-const Caption = styled(Typography)`
+const PictureButton = styled((props: React.ComponentProps<typeof ButtonRaw>) => <ButtonRaw variant='outlined' size='small' {...props} />)``;
+const Caption = styled((props: { children?: ReactNode } & React.ComponentProps<typeof Typography>) => <Typography variant='caption' {...props} />)`
   display: block;
 `;
-Caption.defaultProps = {
-  variant: 'caption',
-};
 
 const getValidIconPath = (iconPath?: string | null): string => {
   if (typeof iconPath === 'string') {

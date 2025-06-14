@@ -1,7 +1,7 @@
 import { Button, TextField } from '@mui/material';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { useUserInfoObservable } from '@services/auth/hooks';
 import { IUserInfos } from '@services/auth/interface';
@@ -12,7 +12,7 @@ import { useAuth, useGetGithubUserInfoOnLoad } from './gitTokenHooks';
 const AuthingLoginButton = styled(Button)`
   width: 100%;
 `;
-const GitTokenInput = styled(TextField)`
+const GitTokenInput = styled((props) => <TextField fullWidth variant="standard" {...props} />)`
   color: ${({ theme }) => theme.palette.text.primary};
   input {
     color: ${({ theme }) => theme.palette.text.primary};
@@ -22,10 +22,6 @@ const GitTokenInput = styled(TextField)`
     color: ${({ theme }) => theme.palette.text.secondary};
   }
 `;
-GitTokenInput.defaultProps = {
-  fullWidth: true,
-  variant: 'standard',
-};
 
 export function GitTokenForm(props: {
   children?: React.JSX.Element | Array<React.JSX.Element | undefined | string>;

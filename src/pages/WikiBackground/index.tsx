@@ -1,13 +1,13 @@
 import { Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import { useState } from 'react';
 import { useAutoCreateFirstWorkspace } from '../Guide/useAutoCreateFirstWorkspace';
 import { ViewLoadErrorMessages, WikiErrorMessages } from './ErrorMessage';
 
-const InnerContentRoot = styled.div`
+const InnerContentRoot = styled('div')`
   flex: 1;
   display: flex;
   flex-direction: column;

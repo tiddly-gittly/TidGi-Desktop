@@ -6,7 +6,7 @@ import { Button, Card, CardActions, CardContent, Chip, ListItemIcon, ListItemTex
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 import { type useLoadHelpPagesList } from './useLoadHelpPagesList';
 
 const StyledCard = styled(Card)`

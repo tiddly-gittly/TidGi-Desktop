@@ -2,7 +2,7 @@ import { Box } from '@mui/material';
 import { lightTheme } from '@services/theme/defaultTheme';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
-import { ThemeProvider } from 'styled-components';
+import { ThemeProvider } from '@mui/material/styles';
 import { describe, expect, it } from 'vitest';
 
 // Test component using Material-UI to ensure works on each dep upgrade

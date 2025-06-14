@@ -38,18 +38,11 @@ export default defineConfig({
     testTimeout: 5000,
     hookTimeout: 5000,
   },
-  
-  define: {
-    // Tell Material-UI to use styled-components as the styled engine
-    'process.env.STYLED_ENGINE': '"styled-components"',
-  },
-  
+
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@services': path.resolve(__dirname, './src/services'),
-      '@mui/styled-engine': path.resolve(__dirname, './node_modules/@mui/styled-engine-sc'),
-      '@mui/styled-engine/esm': path.resolve(__dirname, './node_modules/@mui/styled-engine-sc/esm'),
     },
   },
   

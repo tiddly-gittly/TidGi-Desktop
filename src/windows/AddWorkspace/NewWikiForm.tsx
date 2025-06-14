@@ -57,6 +57,7 @@ export function NewWikiForm({
       {!isCreateMainWorkspace && (
         <>
           <SoftLinkToMainWikiSelect
+            select
             error={errorInWhichComponent.mainWikiToLink}
             label={t('AddWorkspace.MainWorkspaceLocation')}
             helperText={
@@ -78,9 +79,10 @@ export function NewWikiForm({
             ))}
           </SoftLinkToMainWikiSelect>
           <SubWikiTagAutoComplete
+            freeSolo
             options={form.fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
             value={form.tagName}
-            onInputChange={(event: React.SyntheticEvent, value: string) => {
+            onInputChange={(_event: React.SyntheticEvent, value: string) => {
               form.tagNameSetter(value);
             }}
             renderInput={(parameters: AutocompleteRenderInputParams) => (

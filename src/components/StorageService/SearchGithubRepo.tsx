@@ -4,7 +4,7 @@ import { ClientContext, GraphQLClient, useMutation, useQuery } from 'graphql-hoo
 import { trim } from 'lodash';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { Cached as CachedIcon, CreateNewFolder as CreateNewFolderIcon, Folder as FolderIcon } from '@mui/icons-material';
 import { Button, LinearProgress, List, ListItemButton, ListItemIcon, ListItemText, TextField } from '@mui/material';
@@ -13,7 +13,7 @@ import { GITHUB_GRAPHQL_API } from '@/constants/auth';
 import { useUserInfoObservable } from '@services/auth/hooks';
 import { IGithubSearchNode, IGithubSearchRepoQuery } from './interfaces';
 
-const RepoSearchContainer = styled.div`
+const RepoSearchContainer = styled('div')`
   margin-top: 20px;
 `;
 const RepoSearchInput = styled(TextField)``;

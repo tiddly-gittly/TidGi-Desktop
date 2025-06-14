@@ -3,7 +3,7 @@ import { Checkbox, FormControlLabel } from '@mui/material';
 import { WidgetProps } from '@rjsf/utils';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 const StyledFormControlLabel = styled(FormControlLabel)`
   margin: 0;

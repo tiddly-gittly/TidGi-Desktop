@@ -1,5 +1,6 @@
 import { InputLabel as InputLabelRaw, ListItem as ListItemRaw, Paper as PaperRaw, TextField as TextFieldRaw, Typography } from '@mui/material';
-import styled, { keyframes } from 'styled-components';
+import { keyframes, styled } from '@mui/material/styles';
+import { ReactNode } from 'react';
 
 export const Paper = styled(PaperRaw)`
   margin-top: 5px;
@@ -21,15 +22,12 @@ const animateMoveFromRight = keyframes`
     opacity: 1;
   }
 `;
-export const SectionTitle = styled(Typography)`
+export const SectionTitle = styled((props: { children?: ReactNode } & React.ComponentProps<typeof Typography>) => <Typography variant='subtitle2' {...props} />)`
   padding-left: 0px !important;
   animation: ${animateMoveFromRight} 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 `;
-SectionTitle.defaultProps = {
-  variant: 'subtitle2',
-};
 
-export const TextField = styled(TextFieldRaw)`
+export const TextField = styled((props: React.ComponentProps<typeof TextFieldRaw>) => <TextFieldRaw variant='standard' {...props} />)`
   color: ${({ theme }) => theme.palette.text.primary};
   input {
     color: ${({ theme }) => theme.palette.text.primary};
@@ -39,14 +37,11 @@ export const TextField = styled(TextFieldRaw)`
     color: ${({ theme }) => theme.palette.text.secondary};
   }
 `;
-TextField.defaultProps = {
-  variant: 'standard',
-};
 
-export const InputLabel: typeof InputLabelRaw = styled(InputLabelRaw)`
+export const InputLabel = styled(InputLabelRaw)`
   color: ${({ theme }) => theme.palette.text.primary};
 `;
-export const ListItemVertical: typeof ListItemRaw = styled(ListItemRaw)`
+export const ListItemVertical = styled(ListItemRaw)`
   flex-direction: column;
   align-items: flex-start;
   padding-bottom: 10px;
@@ -56,14 +51,14 @@ export const ListItemVertical: typeof ListItemRaw = styled(ListItemRaw)`
   }
 `;
 
-export const TimePickerContainer = styled.div`
+export const TimePickerContainer = styled('div')`
   margin-top: 10px;
   margin-bottom: 10px;
   display: flex;
   margin-right: 20px;
 `;
 
-export const Link = styled.span`
+export const Link = styled((props: { children?: ReactNode } & React.HTMLAttributes<HTMLSpanElement>) => <span role='link' tabIndex={0} {...props} />)`
   cursor: pointer;
   font-weight: 500px;
   outline: none;
@@ -74,7 +69,3 @@ export const Link = styled.span`
     text-decoration: underline;
   }
 `;
-Link.defaultProps = {
-  role: 'link',
-  tabIndex: 0,
-};

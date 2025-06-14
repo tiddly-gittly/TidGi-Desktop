@@ -9,7 +9,7 @@ import { Box, Card, IconButton, Typography } from '@mui/material';
 import { Grid } from '@mui/material';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { Search } from '../../components/Search/Search';
 import { useTabStore } from '../../store/tabStore';

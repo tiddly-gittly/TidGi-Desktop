@@ -1,4 +1,4 @@
-import { css } from 'styled-components';
+import { css } from '@mui/material/styles';
 import { TabType } from '../../types/tab';
 
 export const autocompleteStyles = css`

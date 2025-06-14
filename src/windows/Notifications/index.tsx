@@ -1,7 +1,7 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
@@ -26,7 +26,7 @@ import { PreferenceSections } from '@services/preferences/interface';
 import nightBackgroundPng from '../../images/night-background.png';
 import { quickShortcuts } from './quickShortcuts';
 
-const Root = styled(Container)`
+const Root = styled((props: React.ComponentProps<typeof Container>) => <Container {...props} />)`
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -34,24 +34,20 @@ const Root = styled(Container)`
   padding: 0;
 `;
 
-const List = styled(ListRaw)`
+const List = styled((props: React.ComponentProps<typeof ListRaw>) => <ListRaw dense disablePadding {...props} />)`
   width: 100%;
 `;
-List.defaultProps = {
-  dense: true,
-  disablePadding: true,
-};
 
 // TODO: handle classes={{ root: classes.pausingHeader }}
-const PausingHeader = styled(ListItem)`
+const PausingHeader = styled((props: React.ComponentProps<typeof ListItem>) => <ListItem {...props} />)`
   background: url(${nightBackgroundPng});
   height: 210px;
   background-size: 400px;
   align-items: flex-end;
-` as typeof ListItem;
+`;
 
 // TODO: handle classes={{ primary: classes.pausingHeaderText }}
-const PausingHeaderText = styled(ListItemText)`
+const PausingHeaderText = styled((props: React.ComponentProps<typeof ListItemText>) => <ListItemText {...props} />)`
   color: white;
 `;
 

@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 import { StyledCard, StyledCardContent } from './StyledCard';
 
 // Array container styles

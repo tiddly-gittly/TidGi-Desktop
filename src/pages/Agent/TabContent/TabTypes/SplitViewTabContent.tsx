@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { useTabStore } from '../../store/tabStore';
 import { ISplitViewTab } from '../../types/tab';

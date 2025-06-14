@@ -3,7 +3,7 @@ import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { Accordion as AccordionRaw, AccordionDetails, AccordionSummary, AppBar, Box, Paper as PaperRaw, Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { SupportedStorageServices } from '@services/types';
 
@@ -25,17 +25,17 @@ import { GitRepoUrlForm } from './GitRepoUrlForm';
 import { ImportHtmlWikiDoneButton } from './ImportHtmlWikiDoneButton';
 import { ImportHtmlWikiForm } from './ImportHtmlWikiForm';
 
-const Paper = styled(PaperRaw)`
+const Paper = styled((props: React.ComponentProps<typeof PaperRaw>) => <PaperRaw {...props} />)`
   border-color: ${({ theme }) => theme.palette.divider};
   background: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.primary};
-` as unknown as typeof PaperRaw;
-const Accordion = styled(AccordionRaw)`
+`;
+const Accordion = styled((props: React.ComponentProps<typeof AccordionRaw>) => <AccordionRaw {...props} />)`
   border-color: ${({ theme }) => theme.palette.divider};
   background: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.primary};
-` as unknown as typeof AccordionRaw;
-const Container = styled.main`
+`;
+const Container = styled('main')`
   display: flex;
   flex-direction: column;
   overflow: scroll;
@@ -43,29 +43,25 @@ const Container = styled.main`
     width: 0;
   }
 `;
-const TokenFormContainer = styled(Paper)`
+const TokenFormContainer = styled((props: React.ComponentProps<typeof Paper>) => <Paper square elevation={2} {...props} />)`
   margin: 10px 0;
   padding: 5px 10px;
   background-color: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.primary};
 `;
-TokenFormContainer.defaultProps = {
-  square: true,
-  elevation: 2,
-};
-const Tabs = styled(TabsRaw)`
+const Tabs = styled((props: React.ComponentProps<typeof TabsRaw>) => <TabsRaw {...props} />)`
   background: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.secondary};
 `;
-const Tab = styled(TabRaw)`
+const Tab = styled((props: React.ComponentProps<typeof TabRaw>) => <TabRaw {...props} />)`
   background: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.secondary};
 `;
-const TabPanel = styled(Box)`
+const TabPanel = styled((props: React.ComponentProps<typeof Box>) => <Box {...props} />)`
   margin-bottom: 10px;
   padding: 0;
 `;
-const AdvancedSettingsAccordionSummary = styled(AccordionSummary)`
+const AdvancedSettingsAccordionSummary = styled((props: React.ComponentProps<typeof AccordionSummary>) => <AccordionSummary {...props} />)`
   margin-top: 10px;
 `;
 

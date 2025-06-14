@@ -1,7 +1,7 @@
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Collapse, IconButton } from '@mui/material';
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 export const StyledCollapse = styled(Collapse)`
   border-top: 1px solid ${({ theme }) => theme.palette.divider};

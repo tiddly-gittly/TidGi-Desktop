@@ -1,7 +1,7 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { lazy } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DefaultTheme, styled } from 'styled-components';
+import { DefaultTheme, styled } from '@mui/material/styles';
 import is, { isNot } from 'typescript-styled-is';
 import { Route, Switch } from 'wouter';
 
@@ -17,7 +17,7 @@ const Guide = lazy(() => import('../Guide'));
 const Help = lazy(() => import('../Help'));
 const WikiBackground = lazy(() => import('../WikiBackground'));
 
-const OuterRoot = styled.div`
+const OuterRoot = styled('div')`
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -25,7 +25,7 @@ const OuterRoot = styled.div`
   overflow: hidden;
 `;
 
-const Root = styled.div`
+const Root = styled('div')`
   display: flex;
   flex-direction: row;
   flex: 1;
@@ -43,7 +43,7 @@ const Root = styled.div`
   }
 `;
 
-const ContentRoot = styled.div<{ $sidebar: boolean }>`
+const ContentRoot = styled('div')<{ $sidebar: boolean }>`
   flex: 1;
   display: flex;
   flex-direction: column;

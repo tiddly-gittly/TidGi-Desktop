@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@mui/material';
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 export const StyledCard = styled(Card)`
   border: 1px solid ${({ theme }) => theme.palette.divider};

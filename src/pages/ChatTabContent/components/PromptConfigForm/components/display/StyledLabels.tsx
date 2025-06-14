@@ -1,5 +1,5 @@
 import { Typography } from '@mui/material';
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 export const StyledFieldLabel: typeof Typography = styled(Typography)`
   font-size: ${({ theme }) => theme.typography.subtitle2.fontSize};
@@ -28,7 +28,7 @@ export const StyledDescription = styled(Typography)`
   font-style: italic;
 `;
 
-export const StyledRequiredIndicator = styled.span`
+export const StyledRequiredIndicator = styled('span')`
   color: ${({ theme }) => theme.palette.error.main};
   font-size: ${({ theme }) => theme.typography.caption.fontSize};
   margin-left: ${({ theme }) => theme.spacing(0.25)};

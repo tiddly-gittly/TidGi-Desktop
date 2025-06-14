@@ -6,6 +6,7 @@ import { IGitUserInfos } from '@services/git/interface';
 import { SupportedStorageServices } from '@services/types';
 import { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
 import { IWorkspace } from '@services/workspaces/interface';
+import { beforeEach, describe, expect, Mock, test, vi } from 'vitest';
 import { NewWikiForm } from '../NewWikiForm';
 import { IErrorInWhichComponent, IWikiWorkspaceForm } from '../useForm';
 
@@ -49,18 +50,18 @@ interface MockMenuItemProps {
 }
 
 // Mock the hooks
-jest.mock('../useNewWiki', () => ({
-  useValidateNewWiki: jest.fn(),
+vi.mock('../useNewWiki', () => ({
+  useValidateNewWiki: vi.fn(),
 }));
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
 }));
 
 // Mock FormComponents with clean implementations
-jest.mock('../FormComponents', () => ({
+vi.mock('../FormComponents', () => ({
   CreateContainer: ({ children }: MockComponentProps) => <div data-testid='create-container'>{children}</div>,
   LocationPickerContainer: ({ children }: MockComponentProps) => <div data-testid='location-picker-container'>{children}</div>,
   LocationPickerInput: ({ label, value, onChange, error }: MockInputProps) => (
@@ -102,7 +103,7 @@ jest.mock('../FormComponents', () => ({
 }));
 
 // Mock Material-UI
-jest.mock('@mui/material', () => ({
+vi.mock('@mui/material', () => ({
   Typography: ({ children }: MockTypographyProps) => <span>{children}</span>,
   MenuItem: ({ children, value }: MockMenuItemProps) => <option value={value}>{children}</option>,
 }));
@@ -110,20 +111,20 @@ jest.mock('@mui/material', () => ({
 // Simple mock form
 const createMockForm = (overrides: Partial<IWikiWorkspaceForm> = {}): IWikiWorkspaceForm => ({
   storageProvider: SupportedStorageServices.local,
-  storageProviderSetter: jest.fn(),
+  storageProviderSetter: vi.fn(),
   wikiPort: 5212,
-  wikiPortSetter: jest.fn(),
+  wikiPortSetter: vi.fn(),
   parentFolderLocation: '/test/parent',
-  parentFolderLocationSetter: jest.fn(),
+  parentFolderLocationSetter: vi.fn(),
   wikiFolderName: 'test-wiki',
-  wikiFolderNameSetter: jest.fn(),
+  wikiFolderNameSetter: vi.fn(),
   wikiFolderLocation: '/test/parent/test-wiki',
   mainWikiToLink: {
     wikiFolderLocation: '/main/wiki',
     id: 'main-wiki-id',
     port: 5212,
   } as Pick<IWorkspace, 'wikiFolderLocation' | 'port' | 'id'>,
-  mainWikiToLinkSetter: jest.fn(),
+  mainWikiToLinkSetter: vi.fn(),
   mainWikiToLinkIndex: 0,
   mainWorkspaceList: [
     {
@@ -135,15 +136,15 @@ const createMockForm = (overrides: Partial<IWikiWorkspaceForm> = {}): IWikiWorks
   fileSystemPaths: [
     { tagName: 'TagA', folderName: 'FolderA' } as ISubWikiPluginContent,
   ],
-  fileSystemPathsSetter: jest.fn(),
+  fileSystemPathsSetter: vi.fn(),
   tagName: '',
-  tagNameSetter: jest.fn(),
+  tagNameSetter: vi.fn(),
   gitRepoUrl: '',
-  gitRepoUrlSetter: jest.fn(),
+  gitRepoUrlSetter: vi.fn(),
   gitUserInfo: undefined as IGitUserInfos | undefined,
   workspaceList: [] as IWorkspace[],
   wikiHtmlPath: '',
-  wikiHtmlPathSetter: jest.fn(),
+  wikiHtmlPathSetter: vi.fn(),
   ...overrides,
 });
 
@@ -152,7 +153,7 @@ interface IMockProps {
   isCreateMainWorkspace: boolean;
   isCreateSyncedWorkspace: boolean;
   errorInWhichComponent: IErrorInWhichComponent;
-  errorInWhichComponentSetter: jest.Mock;
+  errorInWhichComponentSetter: Mock;
 }
 
 const createMockProps = (overrides: Partial<IMockProps> = {}): IMockProps => ({
@@ -160,19 +161,19 @@ const createMockProps = (overrides: Partial<IMockProps> = {}): IMockProps => ({
   isCreateMainWorkspace: true,
   isCreateSyncedWorkspace: false,
   errorInWhichComponent: {},
-  errorInWhichComponentSetter: jest.fn(),
+  errorInWhichComponentSetter: vi.fn(),
   ...overrides,
 });
 
 describe('NewWikiForm Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     // Mock window.service.native for testing - using simple any type to avoid IPC proxy type conflicts
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
     (globalThis as any).window = {
       service: {
         native: {
-          pickDirectory: jest.fn().mockResolvedValue(['/test/path']),
+          pickDirectory: vi.fn().mockResolvedValue(['/test/path']),
         },
       },
     };
@@ -228,7 +229,7 @@ describe('NewWikiForm Component', () => {
 
   describe('User Interaction Tests', () => {
     test('should handle parent folder path input change', () => {
-      const mockSetter = jest.fn();
+      const mockSetter = vi.fn();
       const form = createMockForm({
         parentFolderLocationSetter: mockSetter,
       });
@@ -244,7 +245,7 @@ describe('NewWikiForm Component', () => {
     });
 
     test('should handle wiki folder name input change', () => {
-      const mockSetter = jest.fn();
+      const mockSetter = vi.fn();
       const form = createMockForm({
         wikiFolderNameSetter: mockSetter,
       });

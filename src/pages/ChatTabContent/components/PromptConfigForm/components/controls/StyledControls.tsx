@@ -1,5 +1,5 @@
 import { Box, FormControl, FormLabel } from '@mui/material';
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 export const StyledFieldFormControl = styled(FormControl)`
   margin-bottom: ${({ theme }) => theme.spacing(2)};

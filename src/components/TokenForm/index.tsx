@@ -1,13 +1,13 @@
 import { Box, Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
+import { keyframes, styled } from '@mui/material/styles';
 import { SupportedStorageServices } from '@services/types';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme, keyframes } from 'styled-components';
 
 import { ListItemText } from '../ListItem';
 import { GitTokenForm } from './GitTokenForm';
 
-const Container = styled.div`
+const Container = styled('div')`
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -24,7 +24,7 @@ const Tabs = styled(TabsRaw)`
     background-color: ${({ theme }) => theme.palette.background.paper} !important;
   }
 `;
-const TabsContainer = styled.div`
+const TabsContainer = styled('div')`
   background-color: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.primary};
   display: flex;
@@ -34,7 +34,7 @@ const TabsContainer = styled.div`
     min-width: 160px;
   }
 `;
-const backgroundColorShift = ({ theme }: { theme: DefaultTheme }) =>
+const backgroundColorShift = ({ theme }) =>
   keyframes`
 from {background-color: ${theme.palette.background.default};}
   to {background-color: ${theme.palette.background.default};}

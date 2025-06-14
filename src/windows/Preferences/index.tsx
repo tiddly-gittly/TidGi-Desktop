@@ -1,7 +1,7 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 
@@ -24,11 +24,11 @@ import { Updates } from './sections/Updates';
 import { SectionSideBar } from './SectionsSideBar';
 import { usePreferenceSections } from './useSections';
 
-const Root = styled.div`
+const Root = styled('div')`
   padding: 20px;
 `;
 
-const Inner = styled.div`
+const Inner = styled('div')`
   width: 100%;
   max-width: 550px;
   float: right;

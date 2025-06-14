@@ -1,12 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { ThemeProvider } from 'styled-components';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Router } from 'wouter';
 import '@testing-library/jest-dom/vitest';
 
 import { lightTheme } from '@services/theme/defaultTheme';
 import Main from '../index';
+import { ThemeProvider } from '@mui/material/styles';
 
 // Create mock functions using vi.hoisted to avoid hoisting issues
 const mockUsePreferenceObservable = vi.hoisted(() => vi.fn());

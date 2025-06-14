@@ -1,12 +1,12 @@
 import { Divider, Grid, Typography } from '@mui/material';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 import { Languages } from '../../windows/Preferences/sections/Languages';
 import { HelpWebsiteItem } from './HelpWebsiteItem';
 import { useLoadHelpPagesList } from './useLoadHelpPagesList';
 
-const InnerContentRoot = styled.div`
+const InnerContentRoot = styled('div')`
   flex: 1;
   display: flex;
   flex-direction: column;

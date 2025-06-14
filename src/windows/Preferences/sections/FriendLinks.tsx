@@ -1,7 +1,7 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { Divider, List, ListItemButton } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { ListItemText } from '@/components/ListItem';
 import { Paper, SectionTitle } from '../PreferenceComponents';
@@ -10,7 +10,7 @@ import type { ISectionProps } from '../useSections';
 import translatiumLogo from '@/images/translatium-logo.svg';
 import webcatalogLogo from '@/images/webcatalog-logo.svg';
 
-const Logo = styled.img`
+const Logo = styled('img')`
   height: 28px;
 `;
 

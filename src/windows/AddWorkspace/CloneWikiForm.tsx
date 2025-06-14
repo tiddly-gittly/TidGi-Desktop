@@ -52,6 +52,7 @@ export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichCompone
       {!isCreateMainWorkspace && (
         <>
           <SoftLinkToMainWikiSelect
+            select
             error={errorInWhichComponent.mainWikiToLink}
             label={t('AddWorkspace.MainWorkspaceLocation')}
             helperText={form.mainWikiToLink.wikiFolderLocation &&
@@ -70,9 +71,10 @@ export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichCompone
             ))}
           </SoftLinkToMainWikiSelect>
           <SubWikiTagAutoComplete
+            freeSolo
             options={form.fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
             value={form.tagName}
-            onInputChange={(event: React.SyntheticEvent, value: string) => {
+            onInputChange={(_event: React.SyntheticEvent, value: string) => {
               form.tagNameSetter(value);
             }}
             renderInput={(parameters: AutocompleteRenderInputParams) => (

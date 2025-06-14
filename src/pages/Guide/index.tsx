@@ -1,5 +1,5 @@
 import { Typography } from '@mui/material';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { usePreferenceObservable } from '@services/preferences/hooks';
@@ -10,7 +10,7 @@ import { TiddlyWiki } from '../../windows/Preferences/sections/TiddlyWiki';
 import { NewUserMessage } from './NewUserMessage';
 import { useAutoCreateFirstWorkspace } from './useAutoCreateFirstWorkspace';
 
-const InnerContentRoot = styled.div`
+const InnerContentRoot = styled('div')`
   flex: 1;
   display: flex;
   flex-direction: column;

@@ -6,7 +6,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { Box, IconButton, TextField, Tooltip } from '@mui/material';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 import { useTabStore } from '../../store/tabStore';
 import { IWebTab } from '../../types/tab';
 

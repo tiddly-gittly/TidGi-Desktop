@@ -3,7 +3,7 @@ import BadgeRaw from '@mui/material/Badge';
 import Promise from 'bluebird';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { keyframes, styled } from 'styled-components';
+import { keyframes, styled } from '@mui/material/styles';
 import is from 'typescript-styled-is';
 
 import { getAssetsFileUrl } from '@/helpers/url';
@@ -12,7 +12,7 @@ import defaultIcon from '../../../images/default-icon.png';
 
 Promise.config({ cancellation: true });
 
-const Root = styled.div<{ $active?: boolean; $hibernated?: boolean; $workspaceClickedLoading?: boolean }>`
+const Root = styled('div')<{ $active?: boolean; $hibernated?: boolean; $workspaceClickedLoading?: boolean }>`
   height: fit-content;
   width: auto;
   padding: 10px 0;
@@ -55,7 +55,7 @@ interface IAvatarProps {
   $large?: boolean;
   $transparent?: boolean;
 }
-const Avatar = styled.div<IAvatarProps>`
+const Avatar = styled('div')<IAvatarProps>`
   height: 36px;
   width: 36px;
   border-radius: 4px;
@@ -91,7 +91,7 @@ const Avatar = styled.div<IAvatarProps>`
   `}
 `;
 
-const AvatarPicture = styled.img<{ $large?: boolean }>`
+const AvatarPicture = styled('img')<{ $large?: boolean }>`
   height: calc(36px - 2px);
   width: calc(36px - 2px);
   ${is('$large')`
@@ -100,7 +100,7 @@ const AvatarPicture = styled.img<{ $large?: boolean }>`
   `}
 `;
 
-const ShortcutText = styled.p<{ $active?: boolean }>`
+const ShortcutText = styled('p')<{ $active?: boolean }>`
   margin-top: 2px;
   margin-bottom: 0;
   padding: 0;

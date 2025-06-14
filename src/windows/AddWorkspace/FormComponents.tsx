@@ -1,6 +1,7 @@
 import { Autocomplete, Button, Fab, Paper, TextField, Tooltip, Typography } from '@mui/material';
+import { css, styled } from '@mui/material/styles';
+import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { css, styled } from 'styled-components';
 
 export const CreateContainer = styled(Paper)`
   padding: 10px;
@@ -8,7 +9,7 @@ export const CreateContainer = styled(Paper)`
   background-color: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.primary};
 `;
-export const LocationPickerContainer = styled.div`
+export const LocationPickerContainer = styled('div')`
   display: flex;
   flex-direction: row;
   margin-bottom: 10px;
@@ -16,15 +17,11 @@ export const LocationPickerContainer = styled.div`
   background-color: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.primary};
 `;
-export const LocationPickerInput = styled(TextField)`
+export const LocationPickerInput = styled((props: React.ComponentProps<typeof TextField>) => <TextField fullWidth variant='standard' {...props} />)`
   background-color: ${({ theme }) => theme.palette.background.paper};
   flex: 1;
 `;
-LocationPickerInput.defaultProps = {
-  fullWidth: true,
-  variant: 'standard',
-};
-export const LocationPickerButton = styled(Button)`
+export const LocationPickerButton = styled((props: React.ComponentProps<typeof Button>) => <Button variant='contained' color='inherit' {...props} />)`
   white-space: nowrap;
   width: fit-content;
 `;
@@ -38,25 +35,18 @@ export const CloseButton = styled(Button)`
   width: 100%;
   background-color: ${({ theme }) => theme.palette.secondary[theme.palette.mode]};
 `;
-LocationPickerButton.defaultProps = {
-  variant: 'contained',
-  color: 'inherit',
-};
-export const SoftLinkToMainWikiSelect = styled(LocationPickerInput)`
+export const SoftLinkToMainWikiSelect = styled((props: React.ComponentProps<typeof LocationPickerInput>) => <LocationPickerInput {...props} />)`
   width: 100%;
 `;
-SoftLinkToMainWikiSelect.defaultProps = { select: true };
-export const SubWikiTagAutoComplete = styled(Autocomplete)``;
-SubWikiTagAutoComplete.defaultProps = {
-  freeSolo: true,
-};
-export const WikiLocation = styled(Typography)`
+export const SubWikiTagAutoComplete = styled((props: React.ComponentProps<typeof Autocomplete>) => <Autocomplete {...props} />)``;
+export const WikiLocation = styled((props: { children?: ReactNode } & React.ComponentProps<typeof Typography>) => (
+  <Typography variant='body2' noWrap display='inline' align='center' {...props} />
+))`
   direction: rtl;
   text-transform: none;
   margin-left: 5px;
   margin-right: 5px;
 `;
-WikiLocation.defaultProps = { variant: 'body2', noWrap: true, display: 'inline', align: 'center' };
 
 export function ReportErrorButton(props: { message: string }): React.JSX.Element {
   const { t } = useTranslation();

@@ -1,5 +1,5 @@
 import { Trans, useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { IPreferences } from '@services/preferences/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -7,7 +7,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import arrowBlack from '@/images/arrow-black.png';
 import arrowWhite from '@/images/arrow-white.png';
 
-const Arrow = styled.div<{ image: string }>`
+const Arrow = styled('div')<{ image: string }>`
   height: 202px;
   width: 150px;
   position: absolute;
@@ -18,7 +18,7 @@ const Arrow = styled.div<{ image: string }>`
   background-size: 150px 202px;
 `;
 
-const Avatar = styled.div`
+const Avatar = styled('div')`
   display: inline-block;
   height: 32px;
   width: 32px;
@@ -35,24 +35,24 @@ const Avatar = styled.div`
   /* border: theme.palette.type === 'dark' ? 'none' : 1px solid rgba(0, 0, 0, 0.12); */
 `;
 
-const Tip2Text = styled.span`
+const Tip2Text = styled('span')`
   display: inline-block;
   font-size: 18px;
   color: ${({ theme }) => theme.palette.text.primary};
 `;
 
-const TipWithSidebar = styled.div`
+const TipWithSidebar = styled('div')`
   position: absolute;
   top: 112px;
   left: 180px;
   user-select: none;
 `;
 
-const TipWithoutSidebar = styled.div`
+const TipWithoutSidebar = styled('div')`
   user-select: none;
 `;
 
-const AddWorkspaceGuideInfoContainer = styled.div`
+const AddWorkspaceGuideInfoContainer = styled('div')`
   cursor: pointer;
 `;
 

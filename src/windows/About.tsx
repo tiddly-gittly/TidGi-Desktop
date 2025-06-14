@@ -1,7 +1,7 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { Button, DialogContent as DialogContentRaw } from '@mui/material';
@@ -16,22 +16,22 @@ const DialogContent = styled(DialogContentRaw)`
   align-items: center;
 `;
 
-const Icon = styled.img`
+const Icon = styled('img')`
   height: 96px;
   width: 96px;
 `;
 
-const Title = styled.h6`
+const Title = styled('h6')`
   margin-top: 10px;
 `;
 
-const TidGiVersion = styled.p`
+const TidGiVersion = styled('p')`
   margin-top: 0;
   margin-bottom: 20px;
   text-align: center;
 `;
 
-const DependenciesVersionsContainer = styled.div`
+const DependenciesVersionsContainer = styled('div')`
   margin-top: 0px;
   margin-bottom: 20px;
   flex-direction: column;
@@ -39,12 +39,12 @@ const DependenciesVersionsContainer = styled.div`
   align-items: center;
 `;
 
-const DependenciesVersions = styled.div`
+const DependenciesVersions = styled('div')`
   font-size: 0.8rem;
   text-align: center;
 `;
 
-const ButtonContainer = styled.div`
+const ButtonContainer = styled('div')`
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -53,11 +53,11 @@ const GoToTheWebsiteButton = styled(Button)`
   margin-right: 10px;
 `;
 
-const MadeBy = styled.div`
+const MadeBy = styled('div')`
   margin-top: 20px;
 `;
 
-const Link = styled.span`
+const Link = styled('span')`
   font-weight: 600;
   cursor: pointer;
   &:hover {

@@ -6,16 +6,6 @@ import 'reflect-metadata';
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
-// Configure styled-components for Material-UI compatibility
-// This ensures @mui/styled-engine works correctly with styled-components
-vi.mock('@mui/styled-engine', async () => {
-  const actual = await vi.importActual('styled-components');
-  return {
-    ...actual,
-    default: actual.styled,
-  };
-});
-
 // 简化的 Electron API mock
 const mockElectron = {
   ipcRenderer: {

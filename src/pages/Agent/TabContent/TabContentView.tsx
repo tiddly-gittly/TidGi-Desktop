@@ -1,7 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Box, IconButton } from '@mui/material';
 import React from 'react';
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { ChatTabContent } from '../../ChatTabContent';
 import { useTabStore } from '../store/tabStore';

@@ -9,7 +9,6 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 const tsImportPluginFactory = require('ts-import-plugin');
-const styledComponentsTransformerFactory = require('typescript-plugin-styled-components').default;
 const fs = require('fs');
 const JSON5 = require('json5');
 
@@ -50,7 +49,6 @@ module.exports = [
           transpileOnly: true,
           getCustomTransformers: () => ({
             before: [
-              styledComponentsTransformerFactory(),
               // lodash
               tsImportPluginFactory({
                 style: false,

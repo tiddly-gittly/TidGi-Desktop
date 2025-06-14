@@ -1,19 +1,19 @@
 import { Accordion, AccordionDetails, AccordionSummary, Button, Typography } from '@mui/material';
 import { useCallback } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IWorkspaceMetaData, IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { ReportErrorButton } from '../../windows/AddWorkspace/FormComponents';
 
-const HelperTextsList = styled.ul`
+const HelperTextsList = styled('ul')`
   margin-top: 0;
   margin-bottom: 1.5rem;
   max-width: 70vw;
 `;
 
-const WikiErrorMessagesContainer = styled.article`
+const WikiErrorMessagesContainer = styled('article')`
   width: 100%;
   margin-bottom: 20px;
 
@@ -67,7 +67,7 @@ export function WikiErrorMessages(props: IWikiErrorMessagesProps): React.JSX.Ele
   return <div />;
 }
 
-const ButtonGroup = styled.div`
+const ButtonGroup = styled('div')`
   display: flex;
   flex-direction: row;
   justify-content: flex-start;

@@ -40,7 +40,6 @@
     "paths": {
       "@services/*": ["./src/services/*"],
       "@/*": ["./src/*"],
-      "@mui/styled-engine": ["./node_modules/@mui/styled-engine-sc"]
     }
   },
   "include": [

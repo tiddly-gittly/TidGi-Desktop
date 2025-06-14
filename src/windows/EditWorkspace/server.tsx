@@ -15,8 +15,8 @@ import {
   TextField,
   Tooltip,
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { DEFAULT_USER_NAME, getTidGiAuthHeaderWithToken } from '@/constants/auth';
@@ -36,15 +36,15 @@ const AServerOptionsAccordionSummary = styled(AccordionSummary)`
   padding: 0;
   flex-direction: row-reverse;
 `;
-const HttpsCertKeyListItem: typeof ListItem = styled(ListItem)`
+const HttpsCertKeyListItem = styled(ListItem)`
   flex-direction: row;
   align-items: flex-start;
   justify-content: space-between;
 `;
-const AutocompleteWithMarginTop: typeof Autocomplete = styled(Autocomplete)`
+const AutocompleteWithMarginTop = styled(Autocomplete)`
   margin-top: 8px;
 `;
-const AuthTokenTextAndButtonContainer = styled.div`
+const AuthTokenTextAndButtonContainer = styled('div')`
   display: flex;
   flex-direction: row;
 `;

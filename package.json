@@ -39,11 +39,12 @@
     "@dnd-kit/sortable": "10.0.0",
     "@dnd-kit/utilities": "3.2.2",
     "@dr.pogodin/react-helmet": "^3.0.2",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
     "@fontsource/roboto": "^5.1.1",
     "@monaco-editor/react": "^4.7.0",
     "@mui/icons-material": "^7.1.1",
     "@mui/material": "^7.1.1",
-    "@mui/styled-engine-sc": "7.1.1",
     "@mui/system": "^7.1.1",
     "@mui/types": "^7.4.3",
     "@mui/x-date-pickers": "^8.4.0",
@@ -104,7 +105,6 @@
     "simplebar-react": "3.3.0",
     "source-map-support": "0.5.21",
     "strip-ansi": "^7.1.0",
-    "styled-components": "6.1.18",
     "threads": "1.7.0",
     "tiddlywiki": "5.3.6",
     "type-fest": "4.41.0",
@@ -152,7 +152,6 @@
     "@types/react-jsonschema-form": "^1.7.13",
     "@types/semver": "7.5.8",
     "@types/source-map-support": "0.5.10",
-    "@types/styled-components": "5.1.34",
     "@types/webpack-bundle-analyzer": "4.7.0",
     "@types/webpack-node-externals": "3.0.4",
     "@vercel/webpack-asset-relocator-loader": "1.7.3",
@@ -184,7 +183,6 @@
     "ts-node": "10.9.2",
     "tw5-typed": "^0.6.3",
     "typescript": "5.8.3",
-    "typescript-plugin-styled-components": "3.0.0",
     "typesync": "0.14.3",
     "vitest": "^3.2.3",
     "webpack-bundle-analyzer": "4.10.2",
@@ -195,7 +193,6 @@
   },
   "pnpm": {
     "overrides": {
-      "@mui/styled-engine": "npm:@mui/styled-engine-sc@latest",
       "prebuild-install": "latest"
     },
     "onlyBuiltDependencies": [

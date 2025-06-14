@@ -7,7 +7,7 @@ import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import WebIcon from '@mui/icons-material/Web';
 import { ButtonBase, Tooltip, Typography } from '@mui/material';
 import React from 'react';
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { useTabStore } from '../../store/tabStore';
 import { INewTabButton, TabItem as TabItemType, TabType } from '../../types/tab';
@@ -53,7 +53,7 @@ const TabButton = styled(ButtonBase)<StyledTabProps>`
   }
 `;
 
-const TabIcon = styled.div<StyledTabProps>`
+const TabIcon = styled('div')<StyledTabProps>`
   color: ${props => props.$isActive ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
   font-size: 20px;
   display: flex;
@@ -73,7 +73,7 @@ const TabLabel = styled(Typography)<StyledTabProps>`
   color: ${props => props.$isActive ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
 `;
 
-const TabActions = styled.div`
+const TabActions = styled('div')`
   position: absolute;
   top: 50%;
   right: 8px;
@@ -84,7 +84,7 @@ const TabActions = styled.div`
   transition: opacity 0.2s;
 `;
 
-const ActionIcon = styled.div`
+const ActionIcon = styled('div')`
   font-size: 14px;
   cursor: pointer;
   display: flex;
@@ -101,7 +101,7 @@ const ActionIcon = styled.div`
   }
 `;
 
-const PinIndicator = styled.div`
+const PinIndicator = styled('div')`
   position: absolute;
   left: 4px;
   bottom: 4px;

@@ -1,11 +1,11 @@
 import { Divider as DividerRaw, List, ListItemButton, ListItemIcon as ListItemIconRaw, ListItemText } from '@mui/material';
+import { keyframes, styled } from '@mui/material/styles';
 import React from 'react';
-import styled, { keyframes } from 'styled-components';
 
 import { PreferenceSections } from '@services/preferences/interface';
 import { ISectionProps } from './useSections';
 
-const SideBar = styled.div`
+const SideBar = styled('div')`
   position: fixed;
   width: 200px;
   background-color: ${({ theme }) => theme.palette.background.default};

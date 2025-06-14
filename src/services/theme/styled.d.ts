@@ -1,12 +1,8 @@
-// styled.d.ts
-import 'styled-components';
-import { Theme } from '@mui/material';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, unused-imports/no-unused-imports
+import { Theme, ThemeOptions } from '@mui/material/styles';
 interface IPalette {
   contrastText: string;
   main: string;
-}
-declare module 'styled-components' {
-  export interface DefaultTheme extends Theme {}
 }
 
 // https://mui.com/material-ui/customization/theming/#custom-variables

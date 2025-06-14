@@ -3,7 +3,7 @@ import { autocomplete } from '@algolia/autocomplete-js';
 import { Box } from '@mui/material';
 import { createElement, Fragment, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import { useTabStore } from '../../store/tabStore';
 import { createAgentsPlugin } from './plugins/AgentsPlugin';

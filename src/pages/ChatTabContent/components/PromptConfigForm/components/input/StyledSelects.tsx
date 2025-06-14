@@ -1,5 +1,5 @@
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 export const StyledSelect = styled(Select)`
   font-size: ${({ theme }) => theme.typography.body2.fontSize};

@@ -1,7 +1,7 @@
 import { Settings as SettingsIcon, Upgrade as UpgradeIcon } from '@mui/icons-material';
 import { t } from 'i18next';
 import SimpleBar from 'simplebar-react';
-import { css, styled } from 'styled-components';
+import { css, styled } from '@mui/material/styles';
 import is, { isNot } from 'typescript-styled-is';
 
 import { latestStableUpdateUrl } from '@/constants/urls';
@@ -32,14 +32,14 @@ const sideBarStyle = css`
     width: 0;
   }
 `;
-const SidebarRoot = styled.div`
+const SidebarRoot = styled('div')`
   ${sideBarStyle}
 `;
 const SidebarWithStyle = styled(SimpleBar)`
   ${sideBarStyle}
 `;
 
-const SidebarTop = styled.div<{ $titleBar?: boolean }>`
+const SidebarTop = styled('div')<{ $titleBar?: boolean }>`
   overflow-y: scroll;
   &::-webkit-scrollbar {
     width: 0;
@@ -53,7 +53,7 @@ const SidebarTop = styled.div<{ $titleBar?: boolean }>`
     padding-top: 30px;
   `}
 `;
-const SideBarEnd = styled.div`
+const SideBarEnd = styled('div')`
   display: flex;
   flex-direction: column;
   align-items: center;

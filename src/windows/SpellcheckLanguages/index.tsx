@@ -1,7 +1,7 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
+import { styled } from '@mui/material/styles';
 
 import ButtonRaw from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -13,22 +13,18 @@ import { ListItemButton } from '@mui/material';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { HunspellLanguages, hunspellLanguagesMap } from '../../constants/hunspellLanguages';
 
-const Root = styled.div`
+const Root = styled('div')`
   display: flex;
   flex-direction: column;
   height: 100vh;
 `;
 
-const Top = styled(List)`
+const Top = styled((props: React.ComponentProps<typeof List>) => <List disablePadding dense {...props} />)`
   flex: 1;
   overflow: auto;
 `;
-Top.defaultProps = {
-  disablePadding: true,
-  dense: true,
-};
 
-const Bottom = styled.div`
+const Bottom = styled('div')`
   display: fixed;
   z-index: 10;
   bottom: 0;
@@ -36,14 +32,10 @@ const Bottom = styled.div`
   padding: 10px;
 `;
 
-const Button = styled(ButtonRaw)`
+const Button = styled((props: React.ComponentProps<typeof ButtonRaw>) => <ButtonRaw {...props} />)`
   float: right;
   margin-left: 10px;
 `;
-Button.defaultProps = {
-  variant: 'contained',
-  disableElevation: true,
-};
 
 export default function SpellcheckLanguages(): React.JSX.Element {
   const { t } = useTranslation();
@@ -85,10 +77,12 @@ export default function SpellcheckLanguages(): React.JSX.Element {
         ))}
       </Top>
       <Bottom>
-        <Button color='primary' disabled>
+        <Button color='primary' disabled variant='contained' disableElevation>
           This Page is Auto Saved
         </Button>
         <Button
+          variant='contained'
+          disableElevation
           onClick={async () => {
             await window.remote.closeCurrentWindow();
           }}

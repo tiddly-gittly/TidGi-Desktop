@@ -1,6 +1,6 @@
-import { css, styled } from 'styled-components';
+import { css, styled } from '@mui/material/styles';
 
-export const RootStyle = styled.div`
+export const RootStyle = styled('div')`
   .Mui-selected,
   .Mui-checked {
     ${({ theme }) =>
