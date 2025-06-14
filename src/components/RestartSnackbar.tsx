@@ -1,4 +1,4 @@
-import { Close as CloseIcon } from '@mui/icons-material';
+import CloseIcon from '@mui/icons-material/Close';
 import { Button, IconButton, Snackbar, Tooltip } from '@mui/material';
 import { keyframes, styled } from '@mui/material/styles';
 import { IWorkspace } from '@services/workspaces/interface';

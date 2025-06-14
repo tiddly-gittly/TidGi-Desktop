@@ -1,4 +1,4 @@
-import { Folder as FolderIcon } from '@mui/icons-material';
+import FolderIcon from '@mui/icons-material/Folder';
 import { AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';

@@ -6,7 +6,9 @@ import { trim } from 'lodash';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Cached as CachedIcon, CreateNewFolder as CreateNewFolderIcon, Folder as FolderIcon } from '@mui/icons-material';
+import CachedIcon from '@mui/icons-material/Cached';
+import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
+import FolderIcon from '@mui/icons-material/Folder';
 import { Button, LinearProgress, List, ListItemButton, ListItemIcon, ListItemText, TextField } from '@mui/material';
 
 import { GITHUB_GRAPHQL_API } from '@/constants/auth';

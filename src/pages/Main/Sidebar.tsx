@@ -1,4 +1,5 @@
-import { Settings as SettingsIcon, Upgrade as UpgradeIcon } from '@mui/icons-material';
+import SettingsIcon from '@mui/icons-material/Settings';
+import UpgradeIcon from '@mui/icons-material/Upgrade';
 import { css, styled } from '@mui/material/styles';
 import { t } from 'i18next';
 import SimpleBar from 'simplebar-react';

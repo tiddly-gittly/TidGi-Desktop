@@ -1,4 +1,4 @@
-import { Folder as FolderIcon } from '@mui/icons-material';
+import FolderIcon from '@mui/icons-material/Folder';
 import { Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useValidateHtmlWiki } from './useImportHtmlWiki';
