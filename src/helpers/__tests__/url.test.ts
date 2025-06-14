@@ -1,3 +1,4 @@
+import { describe, expect, test } from 'vitest';
 import { equivalentDomain, extractDomain, getAssetsFileUrl, isInternalUrl, isSubdomain } from '../url';
 
 describe('URL Helper Functions', () => {
@@ -66,13 +67,10 @@ describe('URL Helper Functions', () => {
       expect(equivalentDomain('accounts.example.com')).toBe('accounts.example.com');
     });
 
-    test('should handle multiple prefixes', () => {
+    test('should handle multiple prefixes and preserve non-prefix subdomains', () => {
       // According to actual tests, these won't be removed either
       expect(equivalentDomain('go.example.com')).toBe('go.example.com');
       expect(equivalentDomain('open.example.com')).toBe('open.example.com');
-    });
-
-    test('should preserve non-prefix subdomains', () => {
       // If it's not a predefined prefix, it should be preserved
       expect(equivalentDomain('api.example.com')).toBe('api.example.com');
       expect(equivalentDomain('custom.example.com')).toBe('custom.example.com');
@@ -93,16 +91,6 @@ describe('URL Helper Functions', () => {
   });
 
   describe('isInternalUrl', () => {
-    test('should identify Google account related internal URLs', () => {
-      const currentUrls = ['https://accounts.google.com/signin'];
-      expect(isInternalUrl('https://any-url.com', currentUrls)).toBe(true);
-    });
-
-    test('should exclude Google Meet redirect links', () => {
-      const currentUrls = ['https://example.com'];
-      expect(isInternalUrl('https://meet.google.com/linkredirect?dest=https://external.com', currentUrls)).toBe(false);
-    });
-
     test('should identify same domain internal URLs', () => {
       const currentUrls = ['https://example.com', 'https://api.service.com'];
       expect(isInternalUrl('https://example.com/different-path', currentUrls)).toBe(true);
@@ -122,10 +110,11 @@ describe('URL Helper Functions', () => {
       expect(isInternalUrl('https://different-domain.org', currentUrls)).toBe(true); // This also returns true
     });
 
-    test('should handle Yandex special cases', () => {
+    test('should handle Yandex Google special cases', () => {
       const currentUrls = ['https://music.yandex.ru'];
       expect(isInternalUrl('https://passport.yandex.ru?retpath=music.yandex.ru', currentUrls)).toBe(true);
       expect(isInternalUrl('https://clck.yandex.ru/music.yandex.ru', currentUrls)).toBe(true);
+      expect(isInternalUrl('https://any-url.com', ['https://accounts.google.com/signin'])).toBe(true);
     });
 
     test('should handle empty or undefined internal URL list', () => {

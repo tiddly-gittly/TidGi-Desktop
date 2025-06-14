@@ -1,8 +1,10 @@
 /**
  * Simple example tests to verify that the test configuration is working correctly
  */
+import { describe, expect, test, vi } from 'vitest';
+
 describe('Environment Verification', () => {
-  test('Basic Jest functionality works', () => {
+  test('Basic Vitest functionality works', () => {
     expect(1 + 1).toBe(2);
   });
 
@@ -11,8 +13,8 @@ describe('Environment Verification', () => {
     expect(message).toBe('Hello, TidGi!');
   });
 
-  test('Jest mock functionality works', () => {
-    const mockFunction = jest.fn();
+  test('Vitest mock functionality works', () => {
+    const mockFunction = vi.fn();
     mockFunction('test');
     expect(mockFunction).toHaveBeenCalledWith('test');
   });
