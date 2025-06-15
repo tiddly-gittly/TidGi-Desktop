@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { PageType } from '@/constants/pageTypes';
@@ -81,11 +82,11 @@ vi.mock('../subPages', () => ({
 describe('Main Page', () => {
   // Helper function to render Main with specific route (defaults to '/' for normal tests)
   const renderMain = (initialPath: string = '/') => {
-    const { hook, navigate } = memoryLocation({
+    const { hook } = memoryLocation({
       path: initialPath,
       record: true,
     });
-    const renderResult = render(
+    render(
       <HelmetProvider>
         <ThemeProvider theme={lightTheme}>
           <Router hook={hook}>
@@ -94,78 +95,78 @@ describe('Main Page', () => {
         </ThemeProvider>
       </HelmetProvider>,
     );
-    return { ...renderResult, navigate };
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     renderMain();
+    // Wait for initial async state updates to complete
+    await screen.findByText('Guide Page Content');
   });
 
   it('should display workspace names and icons in sidebar', async () => {
-    await waitFor(() => {
-      const workspaceElements = screen.getAllByRole('button', { hidden: true });
-      expect(workspaceElements.length).toBeGreaterThan(0);
-      expect(screen.getByText('我的维基')).toBeInTheDocument();
-      expect(screen.getByText('工作笔记')).toBeInTheDocument();
-      expect(screen.getByText('WorkspaceSelector.Help')).toBeInTheDocument();
-      expect(screen.getByText('WorkspaceSelector.Agent')).toBeInTheDocument();
-      expect(screen.getByText('WorkspaceSelector.Guide')).toBeInTheDocument();
-      expect(screen.getByText('AddWorkspace.AddWorkspace')).toBeInTheDocument();
-    });
+    const workspaceElements = screen.getAllByRole('button', { hidden: true });
+    expect(workspaceElements.length).toBeGreaterThan(0);
+
+    // Use findByText for async elements that might not be immediately available
+    expect(await screen.findByText('我的维基')).toBeInTheDocument();
+    expect(await screen.findByText('工作笔记')).toBeInTheDocument();
+    expect(await screen.findByText('WorkspaceSelector.Help')).toBeInTheDocument();
+    expect(await screen.findByText('WorkspaceSelector.Agent')).toBeInTheDocument();
+    expect(await screen.findByText('WorkspaceSelector.Guide')).toBeInTheDocument();
+    expect(await screen.findByText('AddWorkspace.AddWorkspace')).toBeInTheDocument();
   });
 
   it('should display Guide content and preferences button by default', async () => {
-    await waitFor(() => {
-      // Should display Guide page content by default
-      expect(screen.getByText('Guide Page Content')).toBeInTheDocument();
-      // Should show preferences button
-      const settingsIcon = screen.getByTestId('SettingsIcon');
-      expect(settingsIcon).toBeInTheDocument();
-      const preferencesButton = settingsIcon.closest('button');
-      expect(preferencesButton).toHaveAttribute('id', 'open-preferences-button');
-    });
+    // Use findByText for async content
+    expect(await screen.findByText('Guide Page Content')).toBeInTheDocument();
+
+    // Should show preferences button
+    const settingsIcon = await screen.findByTestId('SettingsIcon');
+    expect(settingsIcon).toBeInTheDocument();
+    const preferencesButton = settingsIcon.closest('button');
+    expect(preferencesButton).toHaveAttribute('id', 'open-preferences-button');
   });
 
   it('should handle workspace switching', async () => {
-    await waitFor(() => {
-      // Wait for main content to be loaded by checking for the Guide page content
-      expect(screen.getByText('Guide Page Content')).toBeInTheDocument();
-      // Check that all workspace elements are present (2 wiki + 4 built-in pages)
-      expect(screen.getByText('我的维基')).toBeInTheDocument();
-      expect(screen.getByText('工作笔记')).toBeInTheDocument();
-      expect(screen.getByText('WorkspaceSelector.Help')).toBeInTheDocument();
-      expect(screen.getByText('WorkspaceSelector.Agent')).toBeInTheDocument();
-      expect(screen.getByText('WorkspaceSelector.Guide')).toBeInTheDocument();
-      expect(screen.getByText('AddWorkspace.AddWorkspace')).toBeInTheDocument();
-    });
+    // Wait for main content to be loaded by checking for the Guide page content
+    expect(await screen.findByText('Guide Page Content')).toBeInTheDocument();
+
+    // Check that all workspace elements are present (2 wiki + 4 built-in pages)
+    expect(await screen.findByText('我的维基')).toBeInTheDocument();
+    expect(await screen.findByText('工作笔记')).toBeInTheDocument();
+    expect(await screen.findByText('WorkspaceSelector.Help')).toBeInTheDocument();
+    expect(await screen.findByText('WorkspaceSelector.Agent')).toBeInTheDocument();
+    expect(await screen.findByText('WorkspaceSelector.Guide')).toBeInTheDocument();
+    expect(await screen.findByText('AddWorkspace.AddWorkspace')).toBeInTheDocument();
   });
 
   it('should switch to Help page content when clicking Help workspace', async () => {
-    await waitFor(() => {
-      // Initially should show Guide page content
-      expect(screen.getByText('Guide Page Content')).toBeInTheDocument();
-    });
-    // Find and click the Help workspace text directly - let event bubble up
-    const helpText = screen.getByText('WorkspaceSelector.Help');
-    fireEvent.click(helpText, { bubbles: true });
-    await waitFor(() => {
-      expect(screen.getByText('Help Page Content')).toBeInTheDocument();
-    });
+    const user = userEvent.setup();
+
+    // Initially should show Guide page content
+    expect(await screen.findByText('Guide Page Content')).toBeInTheDocument();
+
+    // Find and click the Help workspace text directly - more realistic user interaction
+    const helpText = await screen.findByText('WorkspaceSelector.Help');
+    await user.click(helpText);
+
+    // Wait for the Help page content to appear
+    expect(await screen.findByText('Help Page Content')).toBeInTheDocument();
   });
 
   it('should switch to Agent page content when clicking Agent workspace', async () => {
-    await waitFor(() => {
-      // Initially should show Guide page content
-      expect(screen.getByText('Guide Page Content')).toBeInTheDocument();
-    });
-    // Find and click the Agent workspace text directly - let event bubble up
-    const agentText = screen.getByText('WorkspaceSelector.Agent');
-    fireEvent.click(agentText, { bubbles: true });
-    await waitFor(() => {
-      // Should now show Agent page content instead of Guide page content
-      expect(screen.getByText('Agent Page Content')).toBeInTheDocument();
-      expect(screen.queryByText('Guide Page Content')).not.toBeInTheDocument();
-    });
+    const user = userEvent.setup();
+
+    // Initially should show Guide page content
+    expect(await screen.findByText('Guide Page Content')).toBeInTheDocument();
+
+    // Find and click the Agent workspace text directly - more realistic user interaction
+    const agentText = await screen.findByText('WorkspaceSelector.Agent');
+    await user.click(agentText);
+
+    // Wait for the Agent page content to appear
+    expect(await screen.findByText('Agent Page Content')).toBeInTheDocument();
+    expect(screen.queryByText('Guide Page Content')).not.toBeInTheDocument();
   });
 });

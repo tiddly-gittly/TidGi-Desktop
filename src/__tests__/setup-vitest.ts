@@ -4,27 +4,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'reflect-metadata';
 import '@testing-library/jest-dom/vitest';
+import { configure } from '@testing-library/dom';
 import { BehaviorSubject } from 'rxjs';
-import { afterAll, vi } from 'vitest';
+import { vi } from 'vitest';
 
-// 简化的 Electron API mock
-const mockElectron = {
-  ipcRenderer: {
-    invoke: vi.fn().mockResolvedValue(undefined),
-    send: vi.fn(),
-    on: vi.fn(),
-    removeAllListeners: vi.fn(),
-  },
-  shell: {
-    openExternal: vi.fn().mockResolvedValue(undefined),
-  },
-  app: {
-    getVersion: vi.fn(() => '0.12.1'),
-    getPath: vi.fn(() => '/mock/path'),
-  },
-};
+configure({
+  computedStyleSupportsPseudoElements: false,
+});
 
-vi.mock('electron', () => mockElectron);
+// Fix for JSDOM getComputedStyle issue - strip unsupported second parameter
+const originalGetComputedStyle = window.getComputedStyle;
+window.getComputedStyle = (elt) => originalGetComputedStyle.call(window, elt);
 
 // Mock window.meta globally
 Object.defineProperty(window, 'meta', {
@@ -58,6 +48,9 @@ Object.defineProperty(window, 'service', {
       getStorageServiceUserInfo: vi.fn().mockResolvedValue(undefined),
     },
     context: {
+      get: vi.fn().mockResolvedValue(undefined),
+    },
+    preference: {
       get: vi.fn().mockResolvedValue(undefined),
     },
   },
@@ -95,7 +88,6 @@ Object.defineProperty(window, 'observables', {
   },
 });
 
-// 简化的 i18next mock
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, defaultValue?: string) => defaultValue || key,
@@ -109,34 +101,3 @@ vi.mock('react-i18next', () => ({
   }),
   Trans: ({ children }: { children: any }) => children,
 }));
-
-// 优化的 window.matchMedia mock
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation((query: any) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-});
-
-(global as any).ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
-
-const originalError = console.error;
-const originalWarn = console.warn;
-console.error = vi.fn();
-console.warn = vi.fn();
-
-afterAll(() => {
-  console.error = originalError;
-  console.warn = originalWarn;
-});

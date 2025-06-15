@@ -15,6 +15,8 @@ export default defineConfig({
       'src/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
       'src/**/*.(test|spec).(ts|tsx|js)',
     ],
+
+    
     
     // Global test settings - this makes vi, expect, etc. available globally
     globals: true,
@@ -32,6 +34,15 @@ export default defineConfig({
         'src/main.ts',
         'src/preload/**/*',
       ],
+    },
+    
+    // Parallel testing configuration
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        useAtomics: true,
+      },
+      isolate: true,
     },
     
     // Performance settings
