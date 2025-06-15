@@ -4,6 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'reflect-metadata';
 import '@testing-library/jest-dom/vitest';
+import { BehaviorSubject } from 'rxjs';
 import { afterAll, vi } from 'vitest';
 
 // 简化的 Electron API mock
@@ -33,6 +34,67 @@ Object.defineProperty(window, 'meta', {
   })),
 });
 
+// Mock window.service for necessary async calls - common across all tests
+Object.defineProperty(window, 'service', {
+  writable: true,
+  value: {
+    workspace: {
+      countWorkspaces: vi.fn().mockResolvedValue(5),
+      openWorkspaceTiddler: vi.fn().mockResolvedValue(undefined),
+    },
+    workspaceView: {
+      setActiveWorkspaceView: vi.fn().mockResolvedValue(undefined),
+    },
+    window: {
+      open: vi.fn().mockResolvedValue(undefined),
+    },
+    native: {
+      log: vi.fn().mockResolvedValue(undefined),
+    },
+    wiki: {
+      getSubWikiPluginContent: vi.fn().mockResolvedValue([]),
+    },
+    auth: {
+      getStorageServiceUserInfo: vi.fn().mockResolvedValue(undefined),
+    },
+    context: {
+      get: vi.fn().mockResolvedValue(undefined),
+    },
+  },
+});
+
+// Mock window.remote for FindInPage functionality - common across all tests
+Object.defineProperty(window, 'remote', {
+  writable: true,
+  value: {
+    registerOpenFindInPage: vi.fn(),
+    registerCloseFindInPage: vi.fn(),
+    registerUpdateFindInPageMatches: vi.fn(),
+    unregisterOpenFindInPage: vi.fn(),
+    unregisterCloseFindInPage: vi.fn(),
+    unregisterUpdateFindInPageMatches: vi.fn(),
+  },
+});
+
+// Mock window.observables with default empty observables - can be overridden in specific tests
+Object.defineProperty(window, 'observables', {
+  writable: true,
+  value: {
+    preference: {
+      preference$: new BehaviorSubject({}).asObservable(),
+    },
+    workspace: {
+      workspaces$: new BehaviorSubject([]).asObservable(),
+    },
+    updater: {
+      updaterMetaData$: new BehaviorSubject(undefined).asObservable(),
+    },
+    auth: {
+      userInfo$: new BehaviorSubject(undefined).asObservable(),
+    },
+  },
+});
+
 // 简化的 i18next mock
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -40,6 +102,10 @@ vi.mock('react-i18next', () => ({
     i18n: {
       changeLanguage: vi.fn(),
     },
+  }),
+  getI18n: () => ({
+    t: (key: string, defaultValue?: string) => defaultValue || key,
+    changeLanguage: vi.fn(),
   }),
   Trans: ({ children }: { children: any }) => children,
 }));

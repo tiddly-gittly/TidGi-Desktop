@@ -12,8 +12,6 @@ import Main from '../index';
 
 // Mock window.observables to provide realistic API behavior
 const preferencesSubject = new BehaviorSubject({
-  language: 'zh-CN',
-  sideBarWidth: 250,
   sidebar: true,
   sidebarOnMenubar: true,
   showSideBarText: true,
@@ -59,83 +57,17 @@ const workspacesSubject = new BehaviorSubject([
   })),
 ]);
 
-Object.defineProperty(window, 'observables', {
-  value: {
-    preference: {
-      preference$: preferencesSubject.asObservable(),
-    },
-    workspace: {
-      workspaces$: workspacesSubject.asObservable(),
-    },
-    updater: {
-      updaterMetaData$: new BehaviorSubject(undefined).asObservable(),
-    },
-    auth: {
-      userInfo$: new BehaviorSubject(undefined).asObservable(),
-    },
-  },
+// Override the global workspaces$ observable with our test-specific data
+Object.defineProperty(window.observables.workspace, 'workspaces$', {
+  value: workspacesSubject.asObservable(),
+  writable: true,
 });
 
-// Mock window.service for necessary async calls
-Object.defineProperty(window, 'service', {
-  value: {
-    workspace: {
-      countWorkspaces: vi.fn().mockResolvedValue(5),
-      openWorkspaceTiddler: vi.fn().mockResolvedValue(undefined),
-    },
-    workspaceView: {
-      setActiveWorkspaceView: vi.fn().mockResolvedValue(undefined),
-    },
-    window: {
-      open: vi.fn().mockResolvedValue(undefined),
-    },
-    native: {
-      log: vi.fn().mockResolvedValue(undefined),
-    },
-    wiki: {
-      getSubWikiPluginContent: vi.fn().mockResolvedValue([]),
-    },
-    auth: {
-      getStorageServiceUserInfo: vi.fn().mockResolvedValue(undefined),
-    },
-    context: {
-      get: vi.fn().mockResolvedValue(undefined),
-    },
-  },
+// Override preferences for this test
+Object.defineProperty(window.observables.preference, 'preference$', {
+  value: preferencesSubject.asObservable(),
+  writable: true,
 });
-
-// Mock window.meta function
-Object.defineProperty(window, 'meta', {
-  value: vi.fn().mockReturnValue({
-    windowName: 'main',
-  }),
-});
-
-// Mock window.remote for FindInPage functionality
-Object.defineProperty(window, 'remote', {
-  value: {
-    registerOpenFindInPage: vi.fn(),
-    registerCloseFindInPage: vi.fn(),
-    registerUpdateFindInPageMatches: vi.fn(),
-    unregisterOpenFindInPage: vi.fn(),
-    unregisterCloseFindInPage: vi.fn(),
-    unregisterUpdateFindInPageMatches: vi.fn(),
-  },
-});
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: {
-      changeLanguage: vi.fn(),
-    },
-  }),
-  getI18n: () => ({
-    t: (key: string) => key,
-    changeLanguage: vi.fn(),
-  }),
-}));
 
 // Mock subPages to provide simple test components
 vi.mock('../subPages', () => ({
