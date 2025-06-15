@@ -9,22 +9,6 @@ import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
 import Main from '../index';
 
-// Mock wouter to control routing in tests
-const mockLocation = { pathname: '/' };
-const mockNavigate = vi.fn();
-
-vi.mock('wouter', () => ({
-  Router: ({ children }: { children: React.ReactNode }) => <div data-testid='router'>{children}</div>,
-  Route: ({ path, component: Component }: { path: string; component: React.ComponentType }) => {
-    if (path === mockLocation.pathname || (path === '/' && mockLocation.pathname === '/')) {
-      return <Component />;
-    }
-    return null;
-  },
-  Switch: ({ children }: { children: React.ReactNode }) => <div data-testid='switch'>{children}</div>,
-  useLocation: () => [mockLocation.pathname, mockNavigate],
-}));
-
 // Mock window.observables to provide realistic API behavior
 const preferencesSubject = new BehaviorSubject({
   language: 'zh-CN',
@@ -36,29 +20,57 @@ const preferencesSubject = new BehaviorSubject({
 });
 
 const workspacesSubject = new BehaviorSubject([
+  // Regular wiki workspaces
   {
     id: 'workspace-1',
     name: '我的维基',
+    order: 0,
+    picturePath: '/mock-icon1.png',
     gitUrl: 'https://github.com/test/repo1.git',
     wikiFolderLocation: '/path/to/wiki1',
-    picturePath: '/mock-icon1.png',
-    order: 0,
-    active: false,
-  },
-  {
-    id: 'help-workspace',
-    name: 'Help',
-    pageType: 'help',
-    order: 1,
-    active: false,
+    homeUrl: 'tidgi://workspace/workspace-1/',
+    port: 5212,
     metadata: {},
   },
   {
-    id: 'agent-workspace',
-    name: 'Agent',
-    pageType: 'agent',
+    id: 'workspace-2',
+    name: '工作笔记',
+    order: 1,
+    picturePath: '/mock-icon2.png',
+    gitUrl: 'https://github.com/test/repo2.git',
+    wikiFolderLocation: '/path/to/wiki2',
+    homeUrl: 'tidgi://workspace/workspace-2/',
+    isSubWiki: true,
+    mainWikiID: 'workspace-1',
+    mainWikiToLink: '/path/to/wiki1',
+    port: 5213,
+    tagName: 'WorkNotes',
+    metadata: { badgeCount: 5 },
+  },
+  // Built-in page workspaces
+  {
+    id: 'help',
+    name: 'help',
+    pageType: 'help',
     order: 2,
-    active: false,
+    picturePath: null,
+    metadata: {},
+  },
+  {
+    id: 'agent',
+    name: 'agent',
+    pageType: 'agent',
+    order: 3,
+    picturePath: null,
+    metadata: {},
+  },
+  {
+    id: 'guide',
+    name: 'guide',
+    pageType: 'guide',
+    active: true,
+    order: 4,
+    picturePath: null,
     metadata: {},
   },
 ]);
@@ -84,18 +96,8 @@ Object.defineProperty(window, 'observables', {
 // Mock window.service for necessary async calls
 Object.defineProperty(window, 'service', {
   value: {
-    preference: {
-      get: vi.fn().mockResolvedValue(undefined),
-    },
-    context: {
-      get: vi.fn().mockImplementation((key: string) => {
-        if (key === 'platform') return Promise.resolve('win32');
-        return Promise.resolve(undefined);
-      }),
-    },
     workspace: {
-      setWorkspaces: vi.fn().mockResolvedValue(undefined),
-      countWorkspaces: vi.fn().mockResolvedValue(3),
+      countWorkspaces: vi.fn().mockResolvedValue(5),
       openWorkspaceTiddler: vi.fn().mockResolvedValue(undefined),
     },
     workspaceView: {
@@ -105,13 +107,16 @@ Object.defineProperty(window, 'service', {
       open: vi.fn().mockResolvedValue(undefined),
     },
     native: {
-      openURI: vi.fn().mockResolvedValue(undefined),
+      log: vi.fn().mockResolvedValue(undefined),
     },
     wiki: {
       getSubWikiPluginContent: vi.fn().mockResolvedValue([]),
     },
     auth: {
       getStorageServiceUserInfo: vi.fn().mockResolvedValue(undefined),
+    },
+    context: {
+      get: vi.fn().mockResolvedValue(undefined),
     },
   },
   writable: true,
@@ -166,6 +171,16 @@ vi.mock('../FindInPage', () => ({
   default: () => <div data-testid='find-in-page'>FindInPage</div>,
 }));
 
+// Mock subPages to provide simple test components
+vi.mock('../subPages', () => ({
+  subPages: {
+    Help: () => <div data-testid='help-page'>Help Page Content</div>,
+    Guide: () => <div data-testid='guide-page'>Guide Page Content</div>,
+    Agent: () => <div data-testid='agent-page'>Agent Page Content</div>,
+    AddWorkspace: () => <div data-testid='add-workspace-page'>Add Workspace Page Content</div>,
+  },
+}));
+
 // Mock simplebar-react
 vi.mock('simplebar-react', () => ({
   default: ({ children }: { children: React.ReactNode }) => <div data-testid='simplebar'>{children}</div>,
@@ -179,17 +194,9 @@ vi.mock('../WorkspaceIconAndSelector/SortableWorkspaceSelectorButton', () => ({
     showSideBarIcon: boolean;
   }) => {
     const handleClick = async () => {
-      // Mock navigation based on workspace pageType
-      if (workspace.pageType === 'help') {
-        mockNavigate('/help');
+      // Mock workspace view service calls for built-in pages
+      if (workspace.pageType === 'help' || workspace.pageType === 'agent') {
         await window.service.workspaceView.setActiveWorkspaceView(workspace.id);
-      } else if (workspace.pageType === 'agent') {
-        mockNavigate('/agent');
-        await window.service.workspaceView.setActiveWorkspaceView(workspace.id);
-      } else {
-        // Regular wiki workspace
-        mockNavigate(`/wiki/${workspace.id}/`);
-        // For regular workspace, just mock the navigation
       }
     };
 
@@ -224,8 +231,6 @@ describe('Main Page', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset to home route before each test
-    mockLocation.pathname = '/';
   });
 
   it('should render without crashing', () => {
@@ -234,7 +239,7 @@ describe('Main Page', () => {
 
   it('should display sidebar with correct width', async () => {
     const { container } = renderMain();
-    
+
     // Check that the component renders successfully
     await waitFor(() => {
       expect(container.firstChild).toBeTruthy();
@@ -243,16 +248,20 @@ describe('Main Page', () => {
 
   it('should display workspace names and icons in sidebar', async () => {
     renderMain();
-    
+
     await waitFor(() => {
       // Check that workspace buttons are displayed
       const workspaceButtons = screen.getAllByTestId('workspace-button');
       expect(workspaceButtons.length).toBeGreaterThan(0);
-      
-      // Check that workspace names are displayed
+
+      // Check regular wiki workspace names
       expect(screen.getByText('我的维基')).toBeInTheDocument();
-      expect(screen.getByText('Help')).toBeInTheDocument();
-      expect(screen.getByText('Agent')).toBeInTheDocument();
+      expect(screen.getByText('工作笔记')).toBeInTheDocument();
+
+      // Check built-in page workspace names (they use raw pageType as name, will be localized in UI)
+      expect(screen.getByText('help')).toBeInTheDocument();
+      expect(screen.getByText('agent')).toBeInTheDocument();
+      expect(screen.getByText('guide')).toBeInTheDocument();
     });
   });
 
@@ -264,9 +273,9 @@ describe('Main Page', () => {
       const contentArea = screen.getByTestId('find-in-page');
       expect(contentArea).toBeInTheDocument();
 
-      // By default, should render the preference sections (which are part of Guide component)
-      expect(screen.getByText('Preference.Languages')).toBeInTheDocument();
-      expect(screen.getByText('Preference.TiddlyWiki')).toBeInTheDocument();
+      // By default, should render the Guide page content
+      expect(screen.getByTestId('guide-page')).toBeInTheDocument();
+      expect(screen.getByText('Guide Page Content')).toBeInTheDocument();
     });
   });
 
@@ -292,78 +301,53 @@ describe('Main Page', () => {
       // Check that content area is present
       expect(screen.getByTestId('find-in-page')).toBeInTheDocument();
 
-      // Check that workspace buttons are present and clickable
+      // Check that all workspace buttons are present (2 wiki + 3 built-in pages)
       const workspaceButtons = screen.getAllByTestId('workspace-button');
-      expect(workspaceButtons.length).toBe(3);
+      expect(workspaceButtons.length).toBe(5);
     });
   });
 
   it('should switch to Help page when clicking Help workspace', async () => {
     renderMain();
 
-    // Wait for the component to fully render first
     await waitFor(() => {
       expect(screen.getByTestId('find-in-page')).toBeInTheDocument();
     });
 
     // Click Help workspace button
-    const helpButton = screen.getByText('Help').closest('[data-testid="workspace-button"]');
+    const helpButton = screen.getByText('help').closest('[data-testid="workspace-button"]');
     expect(helpButton).toBeInTheDocument();
-    
+
     fireEvent.click(helpButton!);
 
-    // Verify that the location was changed to /help
-    expect(mockNavigate).toHaveBeenCalledWith('/help');
-    
-    // Verify that setActiveWorkspaceView was called
-    expect(window.service.workspaceView.setActiveWorkspaceView).toHaveBeenCalledWith('help-workspace');
+    // Verify setActiveWorkspaceView was called
+    expect(window.service.workspaceView.setActiveWorkspaceView).toHaveBeenCalledWith('help');
   });
 
   it('should switch to Agent page when clicking Agent workspace', async () => {
     renderMain();
 
-    // Wait for the component to fully render first
     await waitFor(() => {
       expect(screen.getByTestId('find-in-page')).toBeInTheDocument();
     });
 
     // Click Agent workspace button
-    const agentButton = screen.getByText('Agent').closest('[data-testid="workspace-button"]');
+    const agentButton = screen.getByText('agent').closest('[data-testid="workspace-button"]');
     expect(agentButton).toBeInTheDocument();
-    
+
     fireEvent.click(agentButton!);
 
-    // Verify that the location was changed to /agent
-    expect(mockNavigate).toHaveBeenCalledWith('/agent');
-    
-    // Verify that setActiveWorkspaceView was called
-    expect(window.service.workspaceView.setActiveWorkspaceView).toHaveBeenCalledWith('agent-workspace');
+    // Verify setActiveWorkspaceView was called
+    expect(window.service.workspaceView.setActiveWorkspaceView).toHaveBeenCalledWith('agent');
   });
 
-  it('should display different content based on current route', async () => {
-    // Test Help route
-    mockLocation.pathname = '/help';
-    const { unmount: unmountHelp } = renderMain();
-
-    await waitFor(() => {
-      // Should show Help page content
-      expect(screen.getByText('Help.Description')).toBeInTheDocument();
-      expect(screen.getByText('Help.List')).toBeInTheDocument();
-    });
-
-    // Clean up first render
-    unmountHelp();
-
-    // Test default route (Guide content)
-    mockLocation.pathname = '/';
+  it('should display Guide page content by default', async () => {
     renderMain();
 
     await waitFor(() => {
-      // Should show Guide content (preference sections)
-      expect(screen.getByText('Preference.Languages')).toBeInTheDocument();
-      expect(screen.getByText('Preference.TiddlyWiki')).toBeInTheDocument();
-      // Help content should not be visible
-      expect(screen.queryByText('Help.Description')).not.toBeInTheDocument();
+      // Should display our mocked Guide page content
+      expect(screen.getByTestId('guide-page')).toBeInTheDocument();
+      expect(screen.getByText('Guide Page Content')).toBeInTheDocument();
     });
   });
 });

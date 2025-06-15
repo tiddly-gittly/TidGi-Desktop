@@ -12,9 +12,8 @@ import FindInPage from './FindInPage';
 import { SideBar } from './Sidebar';
 import { useInitialPage } from './useInitialPage';
 
-const Agent = lazy(() => import('../Agent'));
-const Guide = lazy(() => import('../Guide'));
-const Help = lazy(() => import('../Help'));
+import { subPages } from './subPages';
+
 const WikiBackground = lazy(() => import('../WikiBackground'));
 
 const OuterRoot = styled('div')`
@@ -76,11 +75,11 @@ export default function Main(): React.JSX.Element {
           <FindInPage />
           <Switch>
             <Route path={`/${PageType.wiki}/:id/`} component={WikiBackground} />
-            <Route path={`/${PageType.agent}`} component={Agent} />
-            <Route path={`/${PageType.guide}`} component={Guide} />
-            <Route path={`/${PageType.help}`} component={Help} />
-            <Route path='/' component={Guide} />
-            <Route component={Guide} />
+            <Route path={`/${PageType.agent}`} component={subPages.Agent} />
+            <Route path={`/${PageType.guide}`} component={subPages.Guide} />
+            <Route path={`/${PageType.help}`} component={subPages.Help} />
+            <Route path='/' component={subPages.Guide} />
+            <Route component={subPages.Guide} />
           </Switch>
         </ContentRoot>
       </Root>
