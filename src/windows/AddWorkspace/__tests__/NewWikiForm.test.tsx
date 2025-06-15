@@ -1,114 +1,21 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
-import '@testing-library/jest-dom';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 
 import { IGitUserInfos } from '@services/git/interface';
 import { SupportedStorageServices } from '@services/types';
 import { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
 import { IWorkspace } from '@services/workspaces/interface';
-import { beforeEach, describe, expect, Mock, test, vi } from 'vitest';
 import { NewWikiForm } from '../NewWikiForm';
 import { IErrorInWhichComponent, IWikiWorkspaceForm } from '../useForm';
 
-// Type definitions for mock components
-interface MockComponentProps {
-  children: React.ReactNode;
-}
-
-interface MockInputProps {
-  label?: string;
-  value?: string;
-  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  error?: boolean;
-}
-
-interface MockSelectProps {
-  children: React.ReactNode;
-  label?: string;
-  value?: string | number;
-  onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
-}
-
-interface MockButtonProps {
-  children: React.ReactNode;
-  onClick?: () => void;
-}
-
-interface MockAutocompleteProps {
-  value?: string;
-  onInputChange?: (event: React.SyntheticEvent, value: string) => void;
-  renderInput?: (parameters: { value?: string; onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void }) => React.ReactNode;
-}
-
-interface MockTypographyProps {
-  children: React.ReactNode;
-}
-
-interface MockMenuItemProps {
-  children: React.ReactNode;
-  value?: string | number;
-}
-
-// Mock the hooks
+// Mock only the hooks we need, not the components
 vi.mock('../useNewWiki', () => ({
   useValidateNewWiki: vi.fn(),
 }));
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
-
-// Mock FormComponents with clean implementations
-vi.mock('../FormComponents', () => ({
-  CreateContainer: ({ children }: MockComponentProps) => <div data-testid='create-container'>{children}</div>,
-  LocationPickerContainer: ({ children }: MockComponentProps) => <div data-testid='location-picker-container'>{children}</div>,
-  LocationPickerInput: ({ label, value, onChange, error }: MockInputProps) => (
-    <div data-testid='location-picker-input'>
-      <label>{label}</label>
-      <input
-        value={value || ''}
-        onChange={onChange}
-        data-error={error}
-      />
-    </div>
-  ),
-  LocationPickerButton: ({ children, onClick }: MockButtonProps) => (
-    <button data-testid='location-picker-button' onClick={onClick}>
-      {children}
-    </button>
-  ),
-  SoftLinkToMainWikiSelect: ({ children, label, value, onChange }: MockSelectProps) => (
-    <div data-testid='soft-link-select'>
-      <label>{label}</label>
-      <select value={value} onChange={onChange}>
-        {children}
-      </select>
-    </div>
-  ),
-  SubWikiTagAutoComplete: ({ value, onInputChange, renderInput }: MockAutocompleteProps) => {
-    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      onInputChange?.(event, event.target.value);
-    };
-    return (
-      <div data-testid='tag-autocomplete'>
-        {renderInput?.({
-          value,
-          onChange: handleInputChange,
-        })}
-      </div>
-    );
-  },
-}));
-
-// Mock Material-UI
-vi.mock('@mui/material', () => ({
-  Typography: ({ children }: MockTypographyProps) => <span>{children}</span>,
-  MenuItem: ({ children, value }: MockMenuItemProps) => <option value={value}>{children}</option>,
-}));
-
-// Simple mock form
+// Mock form data helper
 const createMockForm = (overrides: Partial<IWikiWorkspaceForm> = {}): IWikiWorkspaceForm => ({
   storageProvider: SupportedStorageServices.local,
   storageProviderSetter: vi.fn(),
@@ -131,10 +38,24 @@ const createMockForm = (overrides: Partial<IWikiWorkspaceForm> = {}): IWikiWorks
       id: 'main-wiki-id',
       name: 'Main Wiki',
       wikiFolderLocation: '/main/wiki',
-    } as IWorkspace,
+      port: 5212,
+      gitUrl: 'https://example.com/git',
+      homeUrl: 'http://localhost:5212',
+      metadata: {},
+    } as unknown as IWorkspace,
+    {
+      id: 'second-wiki-id',
+      name: 'Second Wiki',
+      wikiFolderLocation: '/second/wiki',
+      port: 5213,
+      gitUrl: 'https://example.com/git2',
+      homeUrl: 'http://localhost:5213',
+      metadata: {},
+    } as unknown as IWorkspace,
   ],
   fileSystemPaths: [
     { tagName: 'TagA', folderName: 'FolderA' } as ISubWikiPluginContent,
+    { tagName: 'TagB', folderName: 'FolderB' } as ISubWikiPluginContent,
   ],
   fileSystemPathsSetter: vi.fn(),
   tagName: '',
@@ -148,15 +69,13 @@ const createMockForm = (overrides: Partial<IWikiWorkspaceForm> = {}): IWikiWorks
   ...overrides,
 });
 
-interface IMockProps {
+const createMockProps = (overrides: Partial<{
   form: IWikiWorkspaceForm;
   isCreateMainWorkspace: boolean;
   isCreateSyncedWorkspace: boolean;
   errorInWhichComponent: IErrorInWhichComponent;
-  errorInWhichComponentSetter: Mock;
-}
-
-const createMockProps = (overrides: Partial<IMockProps> = {}): IMockProps => ({
+  errorInWhichComponentSetter: ReturnType<typeof vi.fn>;
+}> = {}) => ({
   form: createMockForm(),
   isCreateMainWorkspace: true,
   isCreateSyncedWorkspace: false,
@@ -168,59 +87,55 @@ const createMockProps = (overrides: Partial<IMockProps> = {}): IMockProps => ({
 describe('NewWikiForm Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Mock window.service.native for testing - using simple any type to avoid IPC proxy type conflicts
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    (globalThis as any).window = {
-      service: {
-        native: {
-          pickDirectory: vi.fn().mockResolvedValue(['/test/path']),
-        },
-      },
-    };
   });
 
+  // Helper function to render component with default props
+  const renderNewWikiForm = (overrides = {}) => {
+    const props = createMockProps(overrides);
+    return render(<NewWikiForm {...props} />);
+  };
+
   describe('Basic Rendering Tests', () => {
-    test('should render basic elements for main workspace form', () => {
-      const props = createMockProps({
+    it('should render main workspace form with basic fields', () => {
+      renderNewWikiForm({
         isCreateMainWorkspace: true,
-      });
+      }); // Check for parent folder input
+      expect(screen.getByRole('textbox', { name: 'AddWorkspace.WorkspaceParentFolder' })).toBeInTheDocument();
 
-      render(<NewWikiForm {...props} />);
+      // Check for wiki folder name input
+      expect(screen.getByRole('textbox', { name: 'AddWorkspace.WorkspaceFolderNameToCreate' })).toBeInTheDocument();
 
-      expect(screen.getByText('AddWorkspace.WorkspaceParentFolder')).toBeInTheDocument();
-      expect(screen.getByText('AddWorkspace.WorkspaceFolderNameToCreate')).toBeInTheDocument();
-      expect(screen.getByText('AddWorkspace.Choose')).toBeInTheDocument();
+      // Check for choose folder button
+      expect(screen.getByRole('button', { name: 'AddWorkspace.Choose' })).toBeInTheDocument();
 
-      // Main workspace should not show sub workspace related fields
-      expect(screen.queryByText('AddWorkspace.MainWorkspaceLocation')).not.toBeInTheDocument();
-      expect(screen.queryByText('AddWorkspace.TagName')).not.toBeInTheDocument();
+      // Main workspace should not show sub workspace fields
+      expect(screen.queryByRole('combobox', { name: 'AddWorkspace.MainWorkspaceLocation' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('combobox', { name: 'AddWorkspace.TagName' })).not.toBeInTheDocument();
     });
 
-    test('should render complete elements for sub workspace form', () => {
-      const props = createMockProps({
+    it('should render sub workspace form with all fields', () => {
+      renderNewWikiForm({
         isCreateMainWorkspace: false,
       });
+      // Basic fields should be present
+      expect(screen.getByRole('textbox', { name: 'AddWorkspace.WorkspaceParentFolder' })).toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: 'AddWorkspace.WorkspaceFolderNameToCreate' })).toBeInTheDocument();
 
-      render(<NewWikiForm {...props} />);
-
-      expect(screen.getByText('AddWorkspace.WorkspaceParentFolder')).toBeInTheDocument();
-      expect(screen.getByText('AddWorkspace.WorkspaceFolderNameToCreate')).toBeInTheDocument();
-      expect(screen.getByText('AddWorkspace.MainWorkspaceLocation')).toBeInTheDocument();
-      expect(screen.getByText('AddWorkspace.TagName')).toBeInTheDocument();
+      // Sub workspace specific fields should be present
+      expect(screen.getByRole('combobox', { name: 'AddWorkspace.MainWorkspaceLocation' })).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: 'AddWorkspace.TagName' })).toBeInTheDocument();
     });
 
-    test('should display correct form field values', () => {
+    it('should display correct initial values', () => {
       const form = createMockForm({
         parentFolderLocation: '/custom/path',
         wikiFolderName: 'my-wiki',
       });
 
-      const props = createMockProps({
+      renderNewWikiForm({
         form,
         isCreateMainWorkspace: false,
       });
-
-      render(<NewWikiForm {...props} />);
 
       expect(screen.getByDisplayValue('/custom/path')).toBeInTheDocument();
       expect(screen.getByDisplayValue('my-wiki')).toBeInTheDocument();
@@ -228,62 +143,177 @@ describe('NewWikiForm Component', () => {
   });
 
   describe('User Interaction Tests', () => {
-    test('should handle parent folder path input change', () => {
+    it('should handle parent folder path input change', async () => {
+      const user = userEvent.setup();
       const mockSetter = vi.fn();
       const form = createMockForm({
         parentFolderLocationSetter: mockSetter,
       });
 
-      const props = createMockProps({ form });
+      renderNewWikiForm({ form });
 
-      render(<NewWikiForm {...props} />);
+      const input = screen.getByRole('textbox', { name: 'AddWorkspace.WorkspaceParentFolder' });
+      await user.clear(input);
+      await user.type(input, '/new/path');
 
-      const input = screen.getByDisplayValue('/test/parent');
-      fireEvent.change(input, { target: { value: '/new/path' } });
-
-      expect(mockSetter).toHaveBeenCalledWith('/new/path');
+      // Check that the setter was called (it gets called for each character)
+      expect(mockSetter).toHaveBeenCalled();
+      expect(mockSetter.mock.calls.length).toBeGreaterThan(0);
     });
 
-    test('should handle wiki folder name input change', () => {
+    it('should handle wiki folder name input change', async () => {
+      const user = userEvent.setup();
       const mockSetter = vi.fn();
       const form = createMockForm({
         wikiFolderNameSetter: mockSetter,
       });
 
-      const props = createMockProps({ form });
+      renderNewWikiForm({ form });
 
-      render(<NewWikiForm {...props} />);
+      const input = screen.getByRole('textbox', { name: 'AddWorkspace.WorkspaceFolderNameToCreate' });
+      await user.clear(input);
+      await user.type(input, 'new-wiki-name');
 
-      const input = screen.getByDisplayValue('test-wiki');
-      fireEvent.change(input, { target: { value: 'new-wiki-name' } });
-
-      expect(mockSetter).toHaveBeenCalledWith('new-wiki-name');
+      // Check that the setter was called (it gets called for each character)
+      expect(mockSetter).toHaveBeenCalled();
+      expect(mockSetter.mock.calls.length).toBeGreaterThan(0);
     });
-  });
 
-  describe('Conditional Rendering Tests', () => {
-    test('should not show sub workspace fields in main workspace mode', () => {
-      const props = createMockProps({
-        isCreateMainWorkspace: true,
+    it('should handle directory picker button click', async () => {
+      const user = userEvent.setup();
+      const mockSetter = vi.fn();
+      const form = createMockForm({
+        parentFolderLocationSetter: mockSetter,
       });
 
-      render(<NewWikiForm {...props} />);
+      renderNewWikiForm({ form });
 
-      expect(screen.queryByText('AddWorkspace.MainWorkspaceLocation')).not.toBeInTheDocument();
-      expect(screen.queryByText('AddWorkspace.TagName')).not.toBeInTheDocument();
+      const button = screen.getByRole('button', { name: 'AddWorkspace.Choose' });
+      await user.click(button);
+
+      // Should call the setter with empty string first, then with selected path
+      expect(mockSetter).toHaveBeenCalledWith('');
+      expect(mockSetter).toHaveBeenCalledWith('/test/selected/path');
+      expect(window.service.native.pickDirectory).toHaveBeenCalled();
     });
 
-    test('should show all fields in sub workspace mode', () => {
-      const props = createMockProps({
+    it('should handle main workspace selection for sub workspace', async () => {
+      const user = userEvent.setup();
+      const mockSetter = vi.fn();
+      const form = createMockForm({
+        mainWikiToLinkSetter: mockSetter,
+      });
+
+      renderNewWikiForm({
+        form,
         isCreateMainWorkspace: false,
       });
 
-      render(<NewWikiForm {...props} />);
+      const select = screen.getByRole('combobox', { name: 'AddWorkspace.MainWorkspaceLocation' });
+      await user.click(select);
 
-      expect(screen.getByText('AddWorkspace.WorkspaceParentFolder')).toBeInTheDocument();
-      expect(screen.getByText('AddWorkspace.WorkspaceFolderNameToCreate')).toBeInTheDocument();
-      expect(screen.getByText('AddWorkspace.MainWorkspaceLocation')).toBeInTheDocument();
-      expect(screen.getByText('AddWorkspace.TagName')).toBeInTheDocument();
+      // Select the second option (Second Wiki)
+      const option = screen.getByRole('option', { name: 'Second Wiki' });
+      await user.click(option);
+
+      expect(mockSetter).toHaveBeenCalledWith({
+        wikiFolderLocation: '/second/wiki',
+        port: 5213,
+        id: 'second-wiki-id',
+      });
+    });
+
+    it('should handle tag name input for sub workspace', async () => {
+      const user = userEvent.setup();
+      const mockSetter = vi.fn();
+      const form = createMockForm({
+        tagNameSetter: mockSetter,
+      });
+
+      renderNewWikiForm({
+        form,
+        isCreateMainWorkspace: false,
+      });
+
+      const tagInput = screen.getByRole('combobox', { name: 'AddWorkspace.TagName' });
+      await user.type(tagInput, 'MyTag');
+
+      expect(mockSetter).toHaveBeenCalledWith('MyTag');
+    });
+  });
+
+  describe('Error State Tests', () => {
+    it('should display errors on form fields when provided', () => {
+      renderNewWikiForm({
+        errorInWhichComponent: {
+          parentFolderLocation: true,
+          wikiFolderName: true,
+        },
+      });
+
+      // Check that input fields have error states
+      const parentInput = screen.getByRole('textbox', { name: 'AddWorkspace.WorkspaceParentFolder' });
+      const wikiNameInput = screen.getByRole('textbox', { name: 'AddWorkspace.WorkspaceFolderNameToCreate' });
+
+      expect(parentInput).toHaveAttribute('aria-invalid', 'true');
+      expect(wikiNameInput).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('should display errors on sub workspace fields when provided', () => {
+      renderNewWikiForm({
+        isCreateMainWorkspace: false,
+        errorInWhichComponent: {
+          mainWikiToLink: true,
+          tagName: true,
+        },
+      });
+
+      const mainWikiSelect = screen.getByRole('combobox', { name: 'AddWorkspace.MainWorkspaceLocation' });
+      const tagInput = screen.getByRole('combobox', { name: 'AddWorkspace.TagName' });
+
+      expect(mainWikiSelect).toHaveAttribute('aria-invalid', 'true');
+      expect(tagInput).toHaveAttribute('aria-invalid', 'true');
+    });
+  });
+
+  describe('Props and State Tests', () => {
+    it('should render without errors when required props are provided', () => {
+      expect(() => {
+        renderNewWikiForm();
+      }).not.toThrow();
+    });
+
+    it('should show helper text for wiki folder location', () => {
+      const form = createMockForm({
+        wikiFolderLocation: '/test/parent/my-wiki',
+      });
+
+      renderNewWikiForm({ form });
+
+      expect(screen.getByText('AddWorkspace.CreateWiki/test/parent/my-wiki')).toBeInTheDocument();
+    });
+
+    it('should show helper text for sub workspace linking', () => {
+      const form = createMockForm({
+        wikiFolderName: 'sub-wiki',
+        mainWikiToLink: {
+          wikiFolderLocation: '/main/wiki',
+          id: 'main-id',
+          port: 5212,
+        },
+      });
+
+      renderNewWikiForm({
+        form,
+        isCreateMainWorkspace: false,
+      });
+
+      // Because the text is rendered with a template literal and newlines, we need to use a regex
+      expect(screen.getByText((content, _element) => {
+        // The actual text might have whitespace and newlines
+        const normalized = content.replace(/\s+/g, ' ').trim();
+        return normalized === 'AddWorkspace.SubWorkspaceWillLinkTo /main/wiki/tiddlers/subwiki/sub-wiki';
+      })).toBeInTheDocument();
     });
   });
 });

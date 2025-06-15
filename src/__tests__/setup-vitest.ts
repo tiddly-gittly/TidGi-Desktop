@@ -40,6 +40,7 @@ Object.defineProperty(window, 'service', {
     },
     native: {
       log: vi.fn().mockResolvedValue(undefined),
+      pickDirectory: vi.fn().mockResolvedValue(['/test/selected/path']),
     },
     wiki: {
       getSubWikiPluginContent: vi.fn().mockResolvedValue([]),
