@@ -100,7 +100,7 @@ describe('Main Page', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     renderMain();
-    // Wait for initial async state updates to complete
+    // Wait for initial async state updates to complete, to avoid `act` warnings
     await screen.findByText('Guide Page Content');
   });
 

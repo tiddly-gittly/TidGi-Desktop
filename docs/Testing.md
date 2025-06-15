@@ -1,6 +1,6 @@
 # Testing Guide
 
-Comprehensive testing guide for TidGi-Desktop using Jest + React Testing Library for unit tests and Playwright + Cucumber for E2E tests.
+Testing guide for TidGi-Desktop using Vitest + React Testing Library for unit tests and Playwright + Cucumber for E2E tests.
 
 ## Quick Start
 
@@ -20,9 +20,9 @@ pnpm test:unit -- --coverage
 
 ## Project Setup
 
-**Test Configuration**: TypeScript-first with `jest.config.ts`
+**Test Configuration**: TypeScript-first with `vitest.config.ts`
 
-- Unit tests: Jest + React Testing Library + jsdom
+- Unit tests: Vitest + React Testing Library + jsdom
 - E2E tests: Playwright + Cucumber
 - Coverage: HTML reports in `coverage/`
 
@@ -44,89 +44,88 @@ features/                # E2E tests
 
 ## Writing Unit Tests
 
-### Basic Component Test
+### Component Testing Best Practices
 
 ```typescript
-// src/components/Button/__tests__/Button.test.tsx
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { Button } from '../Button';
+// Use semantic queries and user-event for realistic interactions
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
-describe('Button', () => {
-  it('should handle click events', () => {
-    const onClick = vi.fn();
-    render(<Button onClick={onClick}>Click me</Button>);
+describe('WorkspaceSelector', () => {
+  it('should switch to Help page when clicking Help workspace', async () => {
+    const user = userEvent.setup();
+    render(<WorkspaceSelector />);
     
-    fireEvent.click(screen.getByText('Click me'));
+    // Wait for async content to load
+    expect(await screen.findByText('Guide Page Content')).toBeInTheDocument();
     
-    expect(onClick).toHaveBeenCalledTimes(1);
+    // Use realistic user interactions
+    const helpText = await screen.findByText('Help');
+    await user.click(helpText);
+    
+    // Assert on user-visible changes
+    expect(await screen.findByText('Help Page Content')).toBeInTheDocument();
   });
 });
 ```
 
-### Testing with Material-UI
+### Effective Mocking
 
 ```typescript
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-
-const renderWithTheme = (component: React.ReactElement) => {
-  return render(
-    <ThemeProvider theme={createTheme()}>
-      {component}
-    </ThemeProvider>
-  );
-};
-```
-
-### Async & API Tests
-
-```typescript
-// Mock fetch globally
-global.fetch = vi.fn();
-
-beforeEach(() => {
-  vi.clearAllMocks();
-});
-
-it('should fetch data successfully', async () => {
-  const mockData = { id: 1, name: 'Test' };
-  
-  (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
-    ok: true,
-    json: async () => mockData,
-  } as Response);
-
-  const result = await fetchUserData(1);
-  
-  expect(fetch).toHaveBeenCalledWith('/api/users/1');
-  expect(result).toEqual(mockData);
-});
-```
-
-### Testing Electron IPC
-
-```typescript
-// Mock electron
-vi.mock('electron', () => ({
-  ipcRenderer: {
-    invoke: vi.fn(),
-    send: vi.fn(),
-    on: vi.fn(),
-  },
+// Mock complex components simply
+vi.mock('../ComplexComponent', () => ({
+  default: () => <div data-testid="complex-component">Mocked Component</div>,
 }));
 
-import { ipcRenderer } from 'electron';
+// Test-specific data for current test file
+const workspacesSubject = new BehaviorSubject([
+  { id: 'test-workspace', name: 'Test Wiki' }
+]);
 
-it('should communicate with main process', async () => {
-  const mockResponse = { success: true };
-  (ipcRenderer.invoke as jest.MockedFunction<typeof ipcRenderer.invoke>)
-    .mockResolvedValueOnce(mockResponse);
-
-  const result = await electronService.getData();
-  
-  expect(ipcRenderer.invoke).toHaveBeenCalledWith('get-data');
-  expect(result).toEqual(mockResponse);
+// Override global observables for this test
+Object.defineProperty(window.observables.workspace, 'workspaces$', {
+  value: workspacesSubject.asObservable(),
+  writable: true,
 });
+```
+
+### Global Mock Management
+
+**Centralize common mocks** in `src/__tests__/setup-vitest.ts`:
+
+- Window APIs (`window.service`, `window.remote`, `window.observables`)
+- Electron APIs (`ipcRenderer`, `shell`)
+- Common libraries (`react-i18next`)
+
+**Override in test files** only when you need test-specific data:
+
+```typescript
+// Only override what's specific to this test
+Object.defineProperty(window.observables.workspace, 'workspaces$', {
+  value: testSpecificWorkspaces$.asObservable(),
+  writable: true,
+});
+```
+
+This keeps tests focused and reduces duplication across test files.
+
+### Async Testing Patterns
+
+```typescript
+// Use findBy* for elements that appear asynchronously
+expect(await screen.findByText('Loading complete')).toBeInTheDocument();
+
+// Use waitForElementToBeRemoved for disappearing elements
+await waitForElementToBeRemoved(() => screen.queryByText('Loading...'));
+
+// Avoid unnecessary waitFor - prefer findBy*
+// ❌ Don't do this
+await waitFor(() => {
+  expect(screen.getByText('Content')).toBeInTheDocument();
+});
+
+// ✅ Do this instead
+expect(await screen.findByText('Content')).toBeInTheDocument();
 ```
 
 ## Writing E2E Tests
@@ -178,65 +177,37 @@ Then('I should see {string} in workspace list', async function (text: string) {
 });
 ```
 
-## Best Practices
+## Testing Library Best Practices
 
-### Unit Testing
+### Query Priority (use in this order)
 
-- **Test behavior, not implementation** - Focus on user interactions and outputs
-- **Use data-testid** for reliable element selection
-- **Mock external dependencies** - APIs, file system, Electron APIs
-- **Test error cases** - Don't just test the happy path
+1. **Accessible queries** - `getByRole`, `getByLabelText`, `getByPlaceholderText`
+2. **Semantic queries** - `getByAltText`, `getByTitle`
+3. **Test IDs** - `getByTestId` (when accessibility queries aren't practical)
 
-### E2E Testing
+### Async Patterns
 
-- **Use semantic selectors** - `data-testid`, `role`, or text content
-- **Wait for elements** - Use `waitFor`, `findBy` queries
-- **Test real workflows** - Complete user scenarios, not isolated features
-- **Keep scenarios focused** - One feature per scenario
+- Use `findBy*` instead of `getBy*` + `waitFor`
+- Use `user-event` instead of `fireEvent` for realistic interactions
+- Wait for initial async state in `beforeEach` to avoid act() warnings
 
-### General
+### Common Antipatterns to Avoid
 
-- **Arrange-Act-Assert** pattern for clear test structure
-- **Descriptive test names** - What should happen, when, under what conditions
-- **Clean up between tests** - Reset mocks, clear state
+```typescript
+// ❌ Testing implementation details
+expect(component.state.isLoading).toBe(false);
 
-## Debugging
+// ✅ Testing user-visible behavior  
+expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
 
-```bash
-# Debug unit tests
-pnpm test:unit -- --runInBand src/path/to/test.ts
+// ❌ Using act() wrapper unnecessarily
+act(() => {
+  fireEvent.click(button);
+});
 
-# Debug E2E tests (headed mode)
-pnpm test:e2e -- --headed
-
-# Use screen.debug() to see DOM state
-screen.debug(); // In React tests
-
-# Check coverage gaps
-pnpm test:unit -- --coverage
-# Open coverage/lcov-report/index.html
+// ✅ Using proper async testing
+const user = userEvent.setup();
+await user.click(button);
 ```
 
-## Common Issues
-
-| Issue            | Solution                                        |
-| ---------------- | ----------------------------------------------- |
-| Tests timeout    | Check for unresolved promises, increase timeout |
-| Mock not working | Ensure mocks are set up before imports          |
-| CSS/Asset errors | Check `moduleNameMapper` in `jest.config.ts`    |
-| E2E test fails   | Verify app is packaged, check selectors         |
-
-## CI Integration
-
-Tests run automatically on PRs and main branch pushes. Ensure all tests pass:
-
-```bash
-pnpm test        # Full test suite
-pnpm lint:fix    # Fix linting issues
-```
-
-## References
-
-- [Jest](https://jestjs.io/docs/getting-started) | [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
-- [Playwright](https://playwright.dev/docs/intro) | [Cucumber](https://cucumber.io/docs/cucumber/)
-- [Testing Best Practices](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library)
+For complete Testing Library guidance, see [Testing Library docs](https://testing-library.com/docs/queries/about).
