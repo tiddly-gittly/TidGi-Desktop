@@ -1,12 +1,13 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import { PageType } from '@/constants/pageTypes';
 import { HelmetProvider } from '@dr.pogodin/react-helmet';
-import React from 'react';
-import { BehaviorSubject } from 'rxjs';
-
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
+import { BehaviorSubject } from 'rxjs';
+import { Router } from 'wouter';
+import { memoryLocation } from 'wouter/memory-location';
 import Main from '../index';
 
 // Mock window.observables to provide realistic API behavior
@@ -19,6 +20,7 @@ const preferencesSubject = new BehaviorSubject({
   showSideBarIcon: true,
 });
 
+const pageTypes = [PageType.agent, PageType.help, PageType.guide, PageType.add];
 const workspacesSubject = new BehaviorSubject([
   // Regular wiki workspaces
   {
@@ -47,32 +49,14 @@ const workspacesSubject = new BehaviorSubject([
     tagName: 'WorkNotes',
     metadata: { badgeCount: 5 },
   },
-  // Built-in page workspaces
-  {
-    id: 'help',
-    name: 'help',
-    pageType: 'help',
-    order: 2,
-    picturePath: null,
+  // Built-in page workspaces generated from pageTypes
+  ...pageTypes.entries().map(([index, pageType]) => ({
+    id: pageType,
+    name: pageType,
+    pageType,
+    order: index + 2,
     metadata: {},
-  },
-  {
-    id: 'agent',
-    name: 'agent',
-    pageType: 'agent',
-    order: 3,
-    picturePath: null,
-    metadata: {},
-  },
-  {
-    id: 'guide',
-    name: 'guide',
-    pageType: 'guide',
-    active: true,
-    order: 4,
-    picturePath: null,
-    metadata: {},
-  },
+  })),
 ]);
 
 Object.defineProperty(window, 'observables', {
@@ -90,7 +74,6 @@ Object.defineProperty(window, 'observables', {
       userInfo$: new BehaviorSubject(undefined).asObservable(),
     },
   },
-  writable: true,
 });
 
 // Mock window.service for necessary async calls
@@ -119,7 +102,6 @@ Object.defineProperty(window, 'service', {
       get: vi.fn().mockResolvedValue(undefined),
     },
   },
-  writable: true,
 });
 
 // Mock window.meta function
@@ -127,7 +109,18 @@ Object.defineProperty(window, 'meta', {
   value: vi.fn().mockReturnValue({
     windowName: 'main',
   }),
-  writable: true,
+});
+
+// Mock window.remote for FindInPage functionality
+Object.defineProperty(window, 'remote', {
+  value: {
+    registerOpenFindInPage: vi.fn(),
+    registerCloseFindInPage: vi.fn(),
+    registerUpdateFindInPageMatches: vi.fn(),
+    unregisterOpenFindInPage: vi.fn(),
+    unregisterCloseFindInPage: vi.fn(),
+    unregisterUpdateFindInPageMatches: vi.fn(),
+  },
 });
 
 // Mock react-i18next
@@ -144,210 +137,103 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-// Mock useInitialPage hook
-vi.mock('../useInitialPage', () => ({
-  useInitialPage: vi.fn(),
-}));
-
-// Mock lazy-loaded components with simple divs
-vi.mock('../../../Agent', () => ({
-  default: () => <div data-testid='agent'>Agent</div>,
-}));
-
-vi.mock('../../../Guide', () => ({
-  default: () => <div data-testid='guide'>Guide 指引页面内容</div>,
-}));
-
-vi.mock('../../../Help', () => ({
-  default: () => <div data-testid='help'>Help</div>,
-}));
-
-vi.mock('../../../WikiBackground', () => ({
-  default: () => <div data-testid='wiki-background'>WikiBackground</div>,
-}));
-
-// Mock Find in Page component
-vi.mock('../FindInPage', () => ({
-  default: () => <div data-testid='find-in-page'>FindInPage</div>,
-}));
-
 // Mock subPages to provide simple test components
 vi.mock('../subPages', () => ({
   subPages: {
     Help: () => <div data-testid='help-page'>Help Page Content</div>,
     Guide: () => <div data-testid='guide-page'>Guide Page Content</div>,
     Agent: () => <div data-testid='agent-page'>Agent Page Content</div>,
-    AddWorkspace: () => <div data-testid='add-workspace-page'>Add Workspace Page Content</div>,
   },
 }));
-
-// Mock simplebar-react
-vi.mock('simplebar-react', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div data-testid='simplebar'>{children}</div>,
-}));
-
-// Mock SortableWorkspaceSelectorButton component
-vi.mock('../WorkspaceIconAndSelector/SortableWorkspaceSelectorButton', () => ({
-  SortableWorkspaceSelectorButton: ({ workspace, showSidebarTexts, showSideBarIcon }: {
-    workspace: { id: string; name: string; picturePath?: string; pageType?: string };
-    showSidebarTexts: boolean;
-    showSideBarIcon: boolean;
-  }) => {
-    const handleClick = async () => {
-      // Mock workspace view service calls for built-in pages
-      if (workspace.pageType === 'help' || workspace.pageType === 'agent') {
-        await window.service.workspaceView.setActiveWorkspaceView(workspace.id);
-      }
-    };
-
-    return (
-      <button
-        data-testid='workspace-button'
-        data-workspace-id={workspace.id}
-        onClick={handleClick}
-      >
-        {showSideBarIcon && workspace.picturePath && <img src={workspace.picturePath} alt={workspace.name} data-testid='workspace-icon' />}
-        {showSidebarTexts && <span data-testid='workspace-name'>{workspace.name}</span>}
-      </button>
-    );
-  },
-}));
-
-// Import the mock components
-import { Router } from 'wouter';
 
 describe('Main Page', () => {
-  const renderMain = () => {
-    return render(
+  // Helper function to render Main with specific route (defaults to '/' for normal tests)
+  const renderMain = (initialPath: string = '/') => {
+    const { hook, navigate } = memoryLocation({
+      path: initialPath,
+      record: true,
+    });
+    const renderResult = render(
       <HelmetProvider>
         <ThemeProvider theme={lightTheme}>
-          <Router>
+          <Router hook={hook}>
             <Main />
           </Router>
         </ThemeProvider>
       </HelmetProvider>,
     );
+    return { ...renderResult, navigate };
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it('should render without crashing', () => {
-    expect(() => renderMain()).not.toThrow();
-  });
-
-  it('should display sidebar with correct width', async () => {
-    const { container } = renderMain();
-
-    // Check that the component renders successfully
-    await waitFor(() => {
-      expect(container.firstChild).toBeTruthy();
-    });
+    renderMain();
   });
 
   it('should display workspace names and icons in sidebar', async () => {
-    renderMain();
-
     await waitFor(() => {
-      // Check that workspace buttons are displayed
-      const workspaceButtons = screen.getAllByTestId('workspace-button');
-      expect(workspaceButtons.length).toBeGreaterThan(0);
-
-      // Check regular wiki workspace names
+      const workspaceElements = screen.getAllByRole('button', { hidden: true });
+      expect(workspaceElements.length).toBeGreaterThan(0);
       expect(screen.getByText('我的维基')).toBeInTheDocument();
       expect(screen.getByText('工作笔记')).toBeInTheDocument();
-
-      // Check built-in page workspace names (they use raw pageType as name, will be localized in UI)
-      expect(screen.getByText('help')).toBeInTheDocument();
-      expect(screen.getByText('agent')).toBeInTheDocument();
-      expect(screen.getByText('guide')).toBeInTheDocument();
+      expect(screen.getByText('WorkspaceSelector.Help')).toBeInTheDocument();
+      expect(screen.getByText('WorkspaceSelector.Agent')).toBeInTheDocument();
+      expect(screen.getByText('WorkspaceSelector.Guide')).toBeInTheDocument();
+      expect(screen.getByText('AddWorkspace.AddWorkspace')).toBeInTheDocument();
     });
   });
 
-  it('should display Guide content on the right side by default', async () => {
-    renderMain();
-
+  it('should display Guide content and preferences button by default', async () => {
     await waitFor(() => {
-      // Check that main content area exists
-      const contentArea = screen.getByTestId('find-in-page');
-      expect(contentArea).toBeInTheDocument();
-
-      // By default, should render the Guide page content
-      expect(screen.getByTestId('guide-page')).toBeInTheDocument();
+      // Should display Guide page content by default
       expect(screen.getByText('Guide Page Content')).toBeInTheDocument();
-    });
-  });
-
-  it('should show preferences button in sidebar', async () => {
-    renderMain();
-
-    await waitFor(() => {
-      // Check that preferences button is present by ID (the most reliable way)
-      const preferencesButton = document.getElementById('open-preferences-button');
-      expect(preferencesButton).toBeInTheDocument();
-      expect(preferencesButton).toHaveAttribute('type', 'button');
-
-      // Also verify it has the settings icon
+      // Should show preferences button
       const settingsIcon = screen.getByTestId('SettingsIcon');
       expect(settingsIcon).toBeInTheDocument();
+      const preferencesButton = settingsIcon.closest('button');
+      expect(preferencesButton).toHaveAttribute('id', 'open-preferences-button');
     });
   });
 
   it('should handle workspace switching', async () => {
-    renderMain();
-
     await waitFor(() => {
-      // Check that content area is present
-      expect(screen.getByTestId('find-in-page')).toBeInTheDocument();
-
-      // Check that all workspace buttons are present (2 wiki + 3 built-in pages)
-      const workspaceButtons = screen.getAllByTestId('workspace-button');
-      expect(workspaceButtons.length).toBe(5);
-    });
-  });
-
-  it('should switch to Help page when clicking Help workspace', async () => {
-    renderMain();
-
-    await waitFor(() => {
-      expect(screen.getByTestId('find-in-page')).toBeInTheDocument();
-    });
-
-    // Click Help workspace button
-    const helpButton = screen.getByText('help').closest('[data-testid="workspace-button"]');
-    expect(helpButton).toBeInTheDocument();
-
-    fireEvent.click(helpButton!);
-
-    // Verify setActiveWorkspaceView was called
-    expect(window.service.workspaceView.setActiveWorkspaceView).toHaveBeenCalledWith('help');
-  });
-
-  it('should switch to Agent page when clicking Agent workspace', async () => {
-    renderMain();
-
-    await waitFor(() => {
-      expect(screen.getByTestId('find-in-page')).toBeInTheDocument();
-    });
-
-    // Click Agent workspace button
-    const agentButton = screen.getByText('agent').closest('[data-testid="workspace-button"]');
-    expect(agentButton).toBeInTheDocument();
-
-    fireEvent.click(agentButton!);
-
-    // Verify setActiveWorkspaceView was called
-    expect(window.service.workspaceView.setActiveWorkspaceView).toHaveBeenCalledWith('agent');
-  });
-
-  it('should display Guide page content by default', async () => {
-    renderMain();
-
-    await waitFor(() => {
-      // Should display our mocked Guide page content
-      expect(screen.getByTestId('guide-page')).toBeInTheDocument();
+      // Wait for main content to be loaded by checking for the Guide page content
       expect(screen.getByText('Guide Page Content')).toBeInTheDocument();
+      // Check that all workspace elements are present (2 wiki + 4 built-in pages)
+      expect(screen.getByText('我的维基')).toBeInTheDocument();
+      expect(screen.getByText('工作笔记')).toBeInTheDocument();
+      expect(screen.getByText('WorkspaceSelector.Help')).toBeInTheDocument();
+      expect(screen.getByText('WorkspaceSelector.Agent')).toBeInTheDocument();
+      expect(screen.getByText('WorkspaceSelector.Guide')).toBeInTheDocument();
+      expect(screen.getByText('AddWorkspace.AddWorkspace')).toBeInTheDocument();
+    });
+  });
+
+  it('should switch to Help page content when clicking Help workspace', async () => {
+    await waitFor(() => {
+      // Initially should show Guide page content
+      expect(screen.getByText('Guide Page Content')).toBeInTheDocument();
+    });
+    // Find and click the Help workspace text directly - let event bubble up
+    const helpText = screen.getByText('WorkspaceSelector.Help');
+    fireEvent.click(helpText, { bubbles: true });
+    await waitFor(() => {
+      expect(screen.getByText('Help Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('should switch to Agent page content when clicking Agent workspace', async () => {
+    await waitFor(() => {
+      // Initially should show Guide page content
+      expect(screen.getByText('Guide Page Content')).toBeInTheDocument();
+    });
+    // Find and click the Agent workspace text directly - let event bubble up
+    const agentText = screen.getByText('WorkspaceSelector.Agent');
+    fireEvent.click(agentText, { bubbles: true });
+    await waitFor(() => {
+      // Should now show Agent page content instead of Guide page content
+      expect(screen.getByText('Agent Page Content')).toBeInTheDocument();
+      expect(screen.queryByText('Guide Page Content')).not.toBeInTheDocument();
     });
   });
 });

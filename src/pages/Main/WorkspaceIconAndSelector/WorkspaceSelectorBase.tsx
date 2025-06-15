@@ -180,13 +180,6 @@ export function WorkspaceSelectorBase({
       </Tooltip>
     );
   }
-  let displayName = workspaceName;
-  switch (id) {
-    case 'add': {
-      displayName = t('WorkspaceSelector.Add');
-      break;
-    }
-  }
   return (
     <Root
       $hibernated={hibernated}
@@ -199,7 +192,7 @@ export function WorkspaceSelectorBase({
       </Badge>
       {showSidebarTexts && (
         <ShortcutText $active={active}>
-          {displayName}
+          {workspaceName}
         </ShortcutText>
       )}
     </Root>
