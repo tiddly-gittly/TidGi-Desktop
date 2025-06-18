@@ -8,7 +8,7 @@ import { lazyInject } from '@services/container';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
-import { IWorkspaceService, isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import debounce from 'lodash/debounce';
 import { ITheme, IThemeService } from './interface';
 

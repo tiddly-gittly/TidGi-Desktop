@@ -21,7 +21,7 @@ import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspace, isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 import { ObservablePromise } from 'node_modules/threads/dist/observable-promise';
 import { GitWorker } from './gitWorker';
 import { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';

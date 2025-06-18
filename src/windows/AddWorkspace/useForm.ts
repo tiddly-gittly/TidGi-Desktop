@@ -7,7 +7,7 @@ import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useStorageServiceUserInfoObservable } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
 import { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
-import { INewWikiWorkspaceConfig, IWorkspace, isWikiWorkspace, IWikiWorkspace } from '@services/workspaces/interface';
+import { INewWikiWorkspaceConfig, isWikiWorkspace, IWikiWorkspace } from '@services/workspaces/interface';
 import type { INewWikiRequiredFormData } from './useNewWiki';
 
 type IMainWikiInfo = Pick<IWikiWorkspace, 'wikiFolderLocation' | 'port' | 'id'>;
@@ -49,7 +49,7 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
     () => {
       const firstMainWiki = mainWorkspaceList.find(isWikiWorkspace);
       return firstMainWiki ? { wikiFolderLocation: firstMainWiki.wikiFolderLocation, port: firstMainWiki.port, id: firstMainWiki.id } : { wikiFolderLocation: '', port: 0, id: '' };
-    }
+    },
   );
   const [tagName, tagNameSetter] = useState<string>('');
   let mainWikiToLinkIndex = mainWorkspaceList.findIndex((workspace) => workspace.id === mainWikiToLink.id);

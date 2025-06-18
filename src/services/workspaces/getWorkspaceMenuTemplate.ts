@@ -46,14 +46,14 @@ export async function getWorkspaceMenuTemplate(
   service: IWorkspaceMenuRequiredServices,
 ): Promise<MenuItemConstructorOptions[]> {
   const { active, id, name } = workspace;
-  
+
   if (!isWikiWorkspace(workspace)) {
     return [{
       label: t('WorkspaceSelector.DedicatedWorkspace'),
       enabled: false,
     }];
   }
-  
+
   const { hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, enableHTTPAPI, lastUrl, homeUrl } = workspace;
 
   const template: MenuItemConstructorOptions[] = [

@@ -1,4 +1,4 @@
-import { AgentDefinition } from '@services/agentDefinition/interface';
+import { AgentDefinition, AgentToolConfig } from '@services/agentDefinition/interface';
 import { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage } from '@services/agentInstance/interface';
 import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
@@ -38,6 +38,10 @@ export class AgentDefinitionEntity implements Partial<AgentDefinition> {
   /** Agent's AI API configuration, can override global default config */
   @Column({ type: 'simple-json', nullable: true })
   aiApiConfig?: Partial<AiAPIConfig>;
+
+  /** Tools available to this agent */
+  @Column({ type: 'simple-json', nullable: true })
+  agentTools?: AgentToolConfig[];
 
   /** Creation timestamp */
   @CreateDateColumn()

@@ -2,8 +2,8 @@ import FolderIcon from '@mui/icons-material/Folder';
 import { AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
-import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput, SoftLinkToMainWikiSelect, SubWikiTagAutoComplete } from './FormComponents';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput, SoftLinkToMainWikiSelect, SubWikiTagAutoComplete } from './FormComponents';
 
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateNewWiki } from './useNewWiki';

@@ -17,7 +17,7 @@ import { IWikiService, ZxWorkerControlActions } from '@services/wiki/interface';
 import { IZxFileInput } from '@services/wiki/wikiWorker';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspaceService, isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import i18next from 'i18next';
 import { ZxNotInitializedError } from './error';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';

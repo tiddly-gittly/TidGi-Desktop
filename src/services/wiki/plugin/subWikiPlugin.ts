@@ -2,7 +2,7 @@
 
 import { TIDDLERS_PATH } from '@/constants/paths';
 import { logger } from '@services/libs/log';
-import { IWorkspace, isWikiWorkspace, IWikiWorkspace } from '@services/workspaces/interface';
+import { IWikiWorkspace } from '@services/workspaces/interface';
 import fs from 'fs-extra';
 import { compact, drop, take } from 'lodash';
 import path from 'path';

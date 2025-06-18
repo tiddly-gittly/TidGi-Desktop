@@ -9,7 +9,7 @@ import { logger } from '@services/libs/log';
 import { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IBrowserViewMetaData, windowDimension, WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspace, IWorkspaceService, isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { INewWindowAction } from './interface';
 import { IViewMeta } from './setupViewEventHandlers';
 import { handleOpenFileExternalLink } from './setupViewFileProtocol';

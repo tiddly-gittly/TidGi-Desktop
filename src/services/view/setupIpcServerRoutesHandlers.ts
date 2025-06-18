@@ -5,7 +5,7 @@ import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
-import { IWorkspaceService, isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 
 export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID: string) {

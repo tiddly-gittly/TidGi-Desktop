@@ -6,7 +6,7 @@ import { IGitUserInfos } from '@services/git/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
-import { IWorkspace, isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 import { injectable } from 'inversify';
 import { truncate } from 'lodash';
 import { nanoid } from 'nanoid';

@@ -28,7 +28,7 @@ import { tlsCertExtensions, tlsKeyExtensions } from '@/constants/fileNames';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useActualIp } from '@services/native/hooks';
-import { IWorkspace, isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 
 const AServerOptionsAccordion = styled(Accordion)`
   box-shadow: unset;
@@ -58,7 +58,7 @@ export interface IServerOptionsProps {
 export function ServerOptions(props: IServerOptionsProps) {
   const { t } = useTranslation();
   const { workspace, workspaceSetter } = props;
-  
+
   const isWiki = isWikiWorkspace(workspace);
   const {
     https = { enabled: false },
@@ -375,11 +375,11 @@ const checkedIcon = <CheckBoxIcon fontSize='small' />;
 function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSetter: (newValue: IWorkspace, requestSaveAndRestart?: boolean) => void }) {
   const { t } = useTranslation();
   const { workspaceSetter, workspace } = props;
-  
+
   if (!isWikiWorkspace(workspace)) {
     return null;
   }
-  
+
   const {
     excludedPlugins,
     id,

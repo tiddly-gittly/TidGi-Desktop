@@ -5,7 +5,7 @@ import path from 'path';
 
 import { buildResourcePath } from '@/constants/paths';
 import getViewBounds from '@services/libs/getViewBounds';
-import { IWorkspace, isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 
 import { ViewChannel, WindowChannel } from '@/constants/channels';
 import { isWin } from '@/helpers/system';

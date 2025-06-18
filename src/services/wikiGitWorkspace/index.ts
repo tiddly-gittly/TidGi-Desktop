@@ -57,9 +57,9 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       try {
         if (await this.contextService.isOnline()) {
           const workspaces = await this.workspaceService.getWorkspacesAsList();
-          const workspacesToSync = workspaces.filter((workspace) => 
-            isWikiWorkspace(workspace) && 
-            workspace.storageService !== SupportedStorageServices.local && 
+          const workspacesToSync = workspaces.filter((workspace) =>
+            isWikiWorkspace(workspace) &&
+            workspace.storageService !== SupportedStorageServices.local &&
             !workspace.hibernated
           );
           await Promise.allSettled([

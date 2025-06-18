@@ -12,7 +12,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
-import { IWorkspace, IWorkspaceService, isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { ISyncService } from './interface';
 
@@ -44,7 +44,7 @@ export class Sync implements ISyncService {
       logger.warn('syncWikiIfNeeded called on non-wiki workspace', { workspaceId: workspace.id });
       return;
     }
-    
+
     const { gitUrl, storageService, id, isSubWiki, wikiFolderLocation: dir } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
     const defaultCommitMessage = i18n.t('LOG.CommitMessage');

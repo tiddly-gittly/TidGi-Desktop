@@ -11,7 +11,7 @@ import { SetOptional } from 'type-fest';
 export const nonConfigFields = ['metadata', 'lastNodeJSArgv'];
 
 export interface IDedicatedWorkspace {
-/**
+  /**
    * Is this workspace selected by user, and showing corresponding webview?
    */
   active: boolean;

@@ -30,7 +30,7 @@ import { RestartSnackbarType, useRestartSnackbar } from '@/components/RestartSna
 import { TokenForm } from '@/components/TokenForm';
 import { wikiPictureExtensions } from '@/constants/fileNames';
 import { SupportedStorageServices } from '@services/types';
-import { nonConfigFields, isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, nonConfigFields } from '@services/workspaces/interface';
 import { isEqual, omit } from 'lodash';
 import { SyncedWikiDescription } from '../AddWorkspace/Description';
 import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
@@ -153,7 +153,7 @@ export default function EditWorkspace(): React.JSX.Element {
     order,
     picturePath,
   } = workspace ?? {};
-  
+
   // Wiki-specific properties with fallbacks
   const backupOnInterval = isWiki ? workspace.backupOnInterval : false;
   const disableAudio = isWiki ? workspace.disableAudio : false;

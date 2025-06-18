@@ -13,7 +13,7 @@ import { IViewService } from '@services/view/interface';
 import { IWikiService } from '@services/wiki/interface';
 import { IWindowService } from '@services/windows/interface';
 import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspaceService, isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { clipboard, dialog } from 'electron';
 import { CancelError as DownloadCancelError, download } from 'electron-dl';
 import { minify } from 'html-minifier-terser';
