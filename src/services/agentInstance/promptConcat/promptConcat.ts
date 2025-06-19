@@ -201,6 +201,7 @@ export async function promptConcat(
 
   const sourcePaths = generateSourcePaths(promptsCopy, promptDynamicModifications);
 
+  // 2. Go through each middleware, applying dynamic modifications, they have full prompt structure, can do anything
   for (const modification of promptDynamicModifications) {
     const handler = promptDynamicModificationHandlers[modification.dynamicModificationType];
 
@@ -211,11 +212,13 @@ export async function promptConcat(
     });
 
     if (handler) {
-      modifiedPrompts = await Promise.resolve(handler(modifiedPrompts, modification, { messages, sourcePaths }));
+      modifiedPrompts = await handler(modifiedPrompts, modification, { messages, sourcePaths });
     } else {
       logger.warn(`No handler found for modification type: ${modification.dynamicModificationType}`);
     }
   }
+
+  // TODO: 3. Apply prompt parameters to remove outdated prompts
 
   // 5. Flatten tree-structured prompts into an array
   const flatPrompts = flattenPrompts(modifiedPrompts);

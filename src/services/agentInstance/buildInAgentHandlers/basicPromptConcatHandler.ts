@@ -5,6 +5,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { processResponse } from '../promptConcat/handlers/responseHandler';
 import { AgentPromptDescription, AiAPIConfig } from '../promptConcat/promptConcatSchema';
+import { continueRoundHandler } from './continueRoundHandlers';
 import { canceled, completed, error, working } from './statusUtilities';
 import { AgentHandlerContext } from './type';
 
@@ -131,9 +132,47 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                 contentLength: response.content.length || 0,
               });
 
+              // Check for continue round logic (tool calling, etc.)
+              const continueResult = await continueRoundHandler(promptDescription, response.content, context);
+
+              if (continueResult.continue) {
+                logger.info('Continue round triggered', {
+                  reason: continueResult.reason,
+                  hasNewMessage: !!continueResult.newMessage,
+                  retryCount,
+                });
+
+                // If we've hit max retries, prevent infinite loops
+                if (retryCount >= maxRetries) {
+                  logger.warn('Maximum retry limit reached, returning final response', {
+                    maxRetries,
+                    retryCount,
+                  });
+                  yield completed(response.content, context, currentRequestId);
+                  return;
+                }
+                retryCount++;
+                // Reset request ID for new call
+                currentRequestId = undefined;
+                // Yield current response as working state
+                yield working(response.content, context, currentRequestId);
+
+                // Continue with new round - use last user message or provided message
+                const nextUserMessage = continueResult.newMessage || lastUserMessage?.content;
+                if (nextUserMessage) {
+                  yield* processLLMCall(nextUserMessage);
+                } else {
+                  logger.warn('No message provided for continue round', {
+                    method: 'basicPromptConcatHandler',
+                    agentId: context.agent.id,
+                  });
+                  yield completed(response.content, context, currentRequestId);
+                }
+                return;
+              }
+
               // Process response with all registered handlers
               const processedResult = await processResponse(agentConfig, response.content, context);
-
               // Check if we need to trigger another LLM call
               if (processedResult.needsNewLLMCall) {
                 logger.info('Response processing triggered new LLM call', {

@@ -4,6 +4,34 @@ import { AgentChannel } from '@/constants/channels';
 import { AiAPIConfig } from '../agentInstance/promptConcat/promptConcatSchema';
 
 /**
+ * Agent tool configuration
+ */
+export interface AgentToolConfig {
+  /** Tool ID to reference the tool */
+  toolId: string;
+  /** Whether this tool is enabled for this agent */
+  enabled?: boolean;
+  /** Custom parameters for this tool instance */
+  parameters?: Record<string, unknown>;
+  /** Tags for categorization */
+  tags?: string[];
+}
+
+/**
+ * Tool calling match result
+ */
+export interface ToolCallingMatch {
+  /** Whether a tool call was found in the text */
+  found: boolean;
+  /** Tool ID to call */
+  toolId?: string;
+  /** Parameters to pass to the tool */
+  parameters?: Record<string, unknown>;
+  /** Original text that matched the pattern */
+  originalText?: string;
+}
+
+/**
  * Agent definition, including basic information and processing logic
  */
 export interface AgentDefinition {
@@ -24,6 +52,10 @@ export interface AgentDefinition {
    * Priority is higher than the global default agent config.
    */
   aiApiConfig?: Partial<AiAPIConfig>;
+  /**
+   * Tools available to this agent
+   */
+  agentTools?: AgentToolConfig[];
 }
 
 /**
@@ -58,6 +90,27 @@ export interface IAgentDefinitionService {
    * @param id Agent definition ID
    */
   deleteAgentDef(id: string): Promise<void>;
+  /**
+   * Register tools for an agent
+   * @param agentId Agent ID
+   * @param tools Tool configurations
+   */
+  registerAgentTools(agentId: string, tools: AgentToolConfig[]): Promise<void>;
+  /**
+   * Get tools for an agent
+   * @param agentId Agent ID
+   */
+  getAgentTools(agentId: string): Promise<AgentToolConfig[]>;
+  /**
+   * Get all available tools that can be registered
+   */
+  getAvailableTools(): Promise<Array<{ id: string; name: string; description: string; parameterSchema: unknown }>>;
+  /**
+   * Match tool calling patterns in AI response text
+   * @param responseText AI response text to analyze
+   * @returns Tool calling match result
+   */
+  matchToolCalling(responseText: string): Promise<ToolCallingMatch>;
 }
 
 export const AgentDefinitionServiceIPCDescriptor = {
@@ -68,5 +121,9 @@ export const AgentDefinitionServiceIPCDescriptor = {
     getAgentDefs: ProxyPropertyType.Function,
     getAgentDef: ProxyPropertyType.Function,
     deleteAgentDef: ProxyPropertyType.Function,
+    registerAgentTools: ProxyPropertyType.Function,
+    getAgentTools: ProxyPropertyType.Function,
+    getAvailableTools: ProxyPropertyType.Function,
+    matchToolCalling: ProxyPropertyType.Function,
   },
 };

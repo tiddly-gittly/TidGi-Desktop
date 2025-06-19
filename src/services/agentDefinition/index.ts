@@ -12,7 +12,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 
 import { IAgentBrowserService } from '@services/agentBrowser/interface';
-import { AgentDefinition, IAgentDefinitionService } from './interface';
+import { globalToolRegistry } from '@services/agentInstance/buildInAgentTools';
+import { AgentDefinition, AgentToolConfig, IAgentDefinitionService, ToolCallingMatch } from './interface';
+import { matchToolCalling } from './responsePatternUtility';
 
 @injectable()
 export class AgentDefinitionService implements IAgentDefinitionService {
@@ -260,6 +262,84 @@ export class AgentDefinitionService implements IAgentDefinitionService {
     } catch (error) {
       logger.error(`Failed to delete agent definition: ${error as Error}`);
       throw error;
+    }
+  }
+
+  /**
+   * Register tools for an agent
+   * @param agentId Agent ID
+   * @param tools Tool configurations
+   */
+  public async registerAgentTools(agentId: string, tools: AgentToolConfig[]): Promise<void> {
+    this.ensureRepositories();
+
+    try {
+      // Get the existing agent
+      const existingAgent = await this.agentDefRepository!.findOne({ where: { id: agentId } });
+      if (!existingAgent) {
+        throw new Error(`Agent ${agentId} not found`);
+      }
+
+      // Update the agent with new tools
+      existingAgent.agentTools = tools;
+
+      await this.agentDefRepository!.save(existingAgent);
+      logger.info(`Registered ${tools.length} tools for agent: ${agentId}`);
+    } catch (error) {
+      logger.error(`Failed to register tools for agent: ${error as Error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get tools for an agent
+   * @param agentId Agent ID
+   */
+  public async getAgentTools(agentId: string): Promise<AgentToolConfig[]> {
+    this.ensureRepositories();
+
+    try {
+      const agent = await this.agentDefRepository!.findOne({ where: { id: agentId } });
+      if (!agent) {
+        throw new Error(`Agent ${agentId} not found`);
+      }
+
+      return agent.agentTools || [];
+    } catch (error) {
+      logger.error(`Failed to get tools for agent: ${error as Error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all available tools that can be registered
+   */
+  public getAvailableTools(): Promise<Array<{ id: string; name: string; description: string; parameterSchema: unknown }>> {
+    try {
+      const allTools = globalToolRegistry.getAllTools();
+      return Promise.resolve(allTools.map(tool => ({
+        id: tool.id,
+        name: tool.name,
+        description: tool.description,
+        parameterSchema: tool.parameterSchema,
+      })));
+    } catch (error) {
+      logger.error(`Failed to get available tools: ${error as Error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Match tool calling patterns in AI response text
+   * Supports various formats: <tool_use>, <function_call>, etc.
+   */
+  public matchToolCalling(responseText: string): Promise<ToolCallingMatch> {
+    try {
+      const result = matchToolCalling(responseText);
+      return Promise.resolve(result);
+    } catch (error) {
+      logger.error(`Failed to match tool calling: ${error as Error}`);
+      return Promise.resolve({ found: false });
     }
   }
 }

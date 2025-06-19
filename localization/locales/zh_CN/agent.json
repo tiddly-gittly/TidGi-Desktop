@@ -531,6 +531,18 @@
       "FilterTitle": "筛选器",
       "WorkspaceName": "工作区名称",
       "WorkspaceNameTitle": "工作区名称"
+    },
+    "WikiSearch": {
+      "Title": "Wiki 搜索",
+      "Description": "使用过滤表达式搜索 TiddlyWiki 工作区内容",
+      "WorkspaceNameTitle": "工作区名称",
+      "WorkspaceName": "要搜索的 TiddlyWiki 工作区名称",
+      "FilterTitle": "过滤器",
+      "Filter": "TiddlyWiki 过滤表达式，用于指定搜索条件",
+      "MaxResultsTitle": "最大结果数",
+      "MaxResults": "返回的最大搜索结果数量",
+      "IncludeTextTitle": "包含文本",
+      "IncludeText": "是否在结果中包含 tiddler 的文本内容"
     }
   },
   "Search": {

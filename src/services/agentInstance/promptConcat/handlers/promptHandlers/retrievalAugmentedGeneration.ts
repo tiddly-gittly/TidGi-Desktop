@@ -1,19 +1,15 @@
 /**
  * Retrieval Augmented Generation handler
- * Integrates with Wiki service t    logger.warn('Missing wikiParam in retrievalAugmentedGeneration', { handler: 'retrievalAugmentedGenerationHandler' });
-    return prompts;
-  }
-
-  // Check if trigger condition is metrieve content from TiddlyWiki
+ * Now handles both tool prompt injection and result extraction from messages
  * This handler is registered to process retrievalAugmentedGeneration dynamic modifications
  */
-import { WikiChannel } from '@/constants/channels';
+import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IWikiService } from '@services/wiki/interface';
 import { IWorkspaceService } from '@services/workspaces/interface';
-import type { ITiddlerFields } from 'tiddlywiki';
+import { isWikiWorkspace } from '@services/workspaces/interface';
+import { AgentToolResult, WikiSearchTool } from '../../../buildInAgentTools';
 import { findPromptById, PromptConcatContext } from '../../promptConcat';
 import type { Prompt, PromptDynamicModification, RetrievalAugmentedGenerationParameter } from '../../promptConcatSchema';
 
@@ -23,12 +19,12 @@ import type { Prompt, PromptDynamicModification, RetrievalAugmentedGenerationPar
  * @param context The agent handler context
  * @returns Whether the trigger condition matches
  */
-async function checkTriggerCondition(
+function checkTriggerCondition(
   trigger: RetrievalAugmentedGenerationParameter['trigger'],
   context: PromptConcatContext,
-): Promise<boolean> {
+): boolean {
   if (!trigger) {
-    return true; // No trigger defined, always apply
+    return true;
   }
 
   // Get the last user message (if any)
@@ -53,14 +49,159 @@ async function checkTriggerCondition(
     return triggered;
   }
 
-  // Check filter trigger - will be handled by Wiki service separately
-
   return false;
 }
 
 /**
+ * Inject tool list and wiki information into prompts
+ */
+async function injectToolListPrompt(
+  prompts: Prompt[],
+  toolListPosition: NonNullable<RetrievalAugmentedGenerationParameter['toolListPosition']>,
+  workspaceService: IWorkspaceService,
+  agentDefinitionService: IAgentDefinitionService,
+  context: PromptConcatContext,
+  modification: PromptDynamicModification,
+): Promise<void> {
+  const toolListTarget = findPromptById(prompts, toolListPosition.targetId);
+  if (!toolListTarget) return;
+
+  // Get available wikis
+  try {
+    const workspaces = await workspaceService.getWorkspacesAsList();
+    const wikiWorkspaces = workspaces.filter(isWikiWorkspace);
+
+    // Get wiki search tool information
+    const availableTools = await agentDefinitionService.getAvailableTools();
+    const wikiSearchTool = availableTools.find(tool => tool.id === 'wiki-search');
+
+    let toolPromptContent = '';
+
+    // Add wiki information
+    if (wikiWorkspaces.length > 0) {
+      toolPromptContent += 'Available Wiki Workspaces:\n';
+      for (const workspace of wikiWorkspaces) {
+        toolPromptContent += `- ${workspace.name} (ID: ${workspace.id})\n`;
+      }
+      toolPromptContent += '\n';
+    }
+
+    // Add tool information
+    if (wikiSearchTool) {
+      toolPromptContent += 'Available Tools:\n';
+      toolPromptContent += `- ${wikiSearchTool.name}: ${wikiSearchTool.description}\n`;
+      toolPromptContent += 'Usage example:\n';
+      toolPromptContent += '<tool_use name="wiki-search">\n';
+      toolPromptContent += '{\n';
+      toolPromptContent += '  "workspaceName": "workspace-id",\n';
+      toolPromptContent += '  "filter": "[tag[example]]",\n';
+      toolPromptContent += '  "maxResults": 5\n';
+      toolPromptContent += '}\n';
+      toolPromptContent += '</tool_use>\n';
+    }
+
+    if (toolPromptContent.trim()) {
+      const toolPrompt: Prompt = {
+        id: `tool-list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        text: toolPromptContent,
+        tags: ['toolList', 'retrievalAugmentedGeneration'],
+        caption: 'Available tools and wikis',
+        enabled: true,
+        source: context.sourcePaths?.get(modification.id),
+      };
+
+      // Insert at specified position
+      if (toolListPosition.position === 'before') {
+        toolListTarget.parent.splice(toolListTarget.index, 0, toolPrompt);
+      } else if (toolListPosition.position === 'after') {
+        toolListTarget.parent.splice(toolListTarget.index + 1, 0, toolPrompt);
+      } else {
+        toolListTarget.parent.splice(toolListTarget.index + 1, 0, toolPrompt);
+      }
+
+      logger.debug('Tool list prompt inserted successfully', {
+        targetId: toolListPosition.targetId,
+        toolCount: availableTools.length,
+        wikiCount: wikiWorkspaces.length,
+      });
+    }
+  } catch (error) {
+    logger.error('Error getting workspaces for tool list', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
+ * Extract tool results from messages and inject into prompts
+ */
+function injectToolResultPrompt(
+  prompts: Prompt[],
+  resultPosition: NonNullable<RetrievalAugmentedGenerationParameter['resultPosition']>,
+  context: PromptConcatContext,
+  modification: PromptDynamicModification,
+): void {
+  const resultTarget = findPromptById(prompts, resultPosition.targetId);
+  if (!resultTarget) return;
+
+  // Find the latest tool calling result in messages
+  const toolResultMessages = context.messages
+    .filter(m => m.metadata && m.metadata.sourceType === 'toolCalling' && m.metadata.toolId === 'wiki-search')
+    .sort((a, b) => new Date(b.modified || 0).getTime() - new Date(a.modified || 0).getTime());
+
+  if (toolResultMessages.length > 0) {
+    const latestToolResult = toolResultMessages[0];
+    const resultData = latestToolResult.metadata?.toolResult;
+
+    let resultContent = '';
+    if (resultData && typeof resultData === 'object' && 'success' in resultData && 'data' in resultData) {
+      if (resultData.success) {
+        resultContent = WikiSearchTool.formatResultsAsText(resultData as unknown as AgentToolResult);
+      } else {
+        resultContent = `Tool execution failed: ${(resultData as { error?: string }).error || 'Unknown error'}`;
+      }
+    } else {
+      resultContent = 'Tool execution result format error';
+    }
+
+    if (resultContent.trim()) {
+      const resultPrompt: Prompt = {
+        id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        text: resultContent,
+        tags: ['toolResult', 'retrievalAugmentedGeneration'],
+        caption: 'Tool execution result',
+        enabled: true,
+        source: context.sourcePaths?.get(modification.id),
+      };
+
+      // Insert at specified position
+      if (resultPosition.position === 'before') {
+        resultTarget.parent.splice(resultTarget.index, 0, resultPrompt);
+      } else if (resultPosition.position === 'after') {
+        resultTarget.parent.splice(resultTarget.index + 1, 0, resultPrompt);
+      } else {
+        resultTarget.parent.splice(resultTarget.index + 1, 0, resultPrompt);
+      }
+
+      logger.debug('Tool result prompt inserted successfully', {
+        targetId: resultPosition.targetId,
+        resultLength: resultContent.length,
+        toolId: latestToolResult.metadata?.toolId,
+      });
+    }
+  }
+}
+
+/**
  * Handler for retrievalAugmentedGeneration
- * Retrieves content from TiddlyWiki based on filter expressions
+ * Handles two main functions:
+ * 1. Inject tool list and wiki information at toolListPosition
+ * 2. Extract tool results from messages and insert at resultPosition
+ *
+ * @param prompts - Array of prompts that will be sent to AI, can be modified to insert content at specific positions
+ * @param modification - JSON configuration object created from schema, contains parameters for retrieval and insertion
+ * @param context - Processing context containing conversation history including previous AI responses for tool matching
+ * @returns Modified prompts array with tool information and results inserted
  */
 export async function retrievalAugmentedGenerationHandler(
   prompts: Prompt[],
@@ -73,143 +214,41 @@ export async function retrievalAugmentedGenerationHandler(
   }
 
   const {
-    wikiParam,
+    toolListPosition,
+    resultPosition,
     trigger,
-    position,
-    targetId,
   } = modification.retrievalAugmentedGenerationParam;
 
-  // Only support wiki source type for now
-  if (!wikiParam) {
-    logger.warn(`Missing wikiParam in retrievalAugmentedGeneration`);
-    return prompts;
-  }
-
-  // Check if trigger condition is met
   try {
-    const shouldTrigger = await checkTriggerCondition(trigger, context);
+    // Check if trigger condition is met
+    const shouldTrigger = checkTriggerCondition(trigger, context);
     if (!shouldTrigger) {
-      logger.debug('retrievalAugmentedGeneration trigger condition not met', { handler: 'retrievalAugmentedGenerationHandler' });
-      return prompts;
-    }
-  } catch (error) {
-    logger.error('Error checking trigger condition', {
-      error: error instanceof Error ? error.message : String(error),
-      triggerId: modification.id,
-      handler: 'retrievalAugmentedGenerationHandler',
-    });
-    return prompts;
-  }
-
-  // Get Wiki service
-  const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-  const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-  const { workspaceName, filter } = wikiParam;
-
-  if (!workspaceName || !filter) {
-    logger.warn('Missing workspaceName or filter in wikiParam', { wikiParam, handler: 'retrievalAugmentedGenerationHandler' });
-    return prompts;
-  }
-
-  try {
-    // Look up workspace ID from workspace name
-    // For now, assuming workspaceName is actually the workspaceID
-    // In a real implementation, you'd lookup the workspace ID by name
-    const workspaceID = workspaceName;
-    if (!await workspaceService.exists(workspaceID)) {
-      logger.warn(`Workspace ${workspaceID} does not exist`, { workspaceID, handler: 'retrievalAugmentedGenerationHandler' });
+      logger.debug('Trigger condition not met, skipping RAG', {
+        triggerId: modification.id,
+        handler: 'retrievalAugmentedGenerationHandler',
+      });
       return prompts;
     }
 
-    logger.debug('Retrieving content from Wiki', {
-      workspaceID,
-      filter,
-      handler: 'retrievalAugmentedGenerationHandler',
-    });
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
 
-    // Retrieve tiddlers using the filter expression
-    const tiddlers = await wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, [filter]);
-
-    if (tiddlers.length === 0) {
-      logger.debug('No tiddlers found with filter', { filter, handler: 'retrievalAugmentedGenerationHandler' });
-      return prompts;
+    // 1. Inject tool list and wiki information if toolListPosition is specified
+    if (toolListPosition?.targetId) {
+      await injectToolListPrompt(prompts, toolListPosition, workspaceService, agentDefinitionService, context, modification);
     }
 
-    logger.debug(`Found ${tiddlers.length} tiddlers`, {
-      tiddlerTitles: tiddlers.slice(0, 5), // Log only first 5 titles for brevity
-      handler: 'retrievalAugmentedGenerationHandler',
-    });
-
-    // Retrieve full tiddler content for each tiddler
-    const tiddlerContents: ITiddlerFields[] = [];
-    for (const title of tiddlers) {
-      try {
-        const tiddlerFields = await wikiService.wikiOperationInServer(WikiChannel.getTiddlersAsJson, workspaceID, [title]);
-        if (tiddlerFields.length > 0) {
-          tiddlerContents.push(tiddlerFields[0]);
-        }
-      } catch (error) {
-        logger.warn(`Error retrieving tiddler content for ${title}`, {
-          error: error instanceof Error ? error.message : String(error),
-          handler: 'retrievalAugmentedGenerationHandler',
-        });
-      }
+    // 2. Extract and inject tool results if resultPosition is specified
+    if (resultPosition?.targetId) {
+      injectToolResultPrompt(prompts, resultPosition, context, modification);
     }
-
-    if (tiddlerContents.length === 0) {
-      logger.debug('No tiddler contents could be retrieved', { handler: 'retrievalAugmentedGenerationHandler' });
-      return prompts;
-    }
-
-    // Format tiddler content as a string
-    let content = '';
-    for (const tiddler of tiddlerContents) {
-      content += `# ${tiddler.title}\n\n${tiddler.text || ''}\n\n`;
-    }
-
-    // Find the target position for insertion
-    const target = findPromptById(prompts, targetId);
-
-    if (!target) {
-      logger.warn(`Target ${targetId} not found for retrievalAugmentedGeneration`, { handler: 'retrievalAugmentedGenerationHandler' });
-      return prompts;
-    }
-
-    // Create new prompt part with the retrieved content
-    const newPart: Prompt = {
-      id: `rag-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      text: content,
-      tags: ['retrievalAugmentedGeneration'],
-      caption: 'Retrieved content',
-      enabled: true,
-      source: context.sourcePaths?.get(modification.id),
-    };
-
-    // Insert the content at the target position
-    if (position === 'before') {
-      target.parent.splice(target.index, 0, newPart);
-    } else if (position === 'after') {
-      target.parent.splice(target.index + 1, 0, newPart);
-    } else if (position === 'relative') {
-      // Handle relative positions (top, bottom)
-      // For simplicity, just insert after for now
-      target.parent.splice(target.index + 1, 0, newPart);
-    }
-
-    logger.info('Successfully added retrievalAugmentedGeneration content', {
-      contentLength: content.length,
-      targetId,
-      position,
-      handler: 'retrievalAugmentedGenerationHandler',
-    });
 
     return prompts;
   } catch (error) {
-    logger.error('Error in retrievalAugmentedGeneration handler', {
+    logger.error('Error in retrievalAugmentedGenerationHandler', {
       error: error instanceof Error ? error.message : String(error),
-      workspaceName,
-      filter,
       handler: 'retrievalAugmentedGenerationHandler',
+      modificationId: modification.id,
     });
     return prompts;
   }

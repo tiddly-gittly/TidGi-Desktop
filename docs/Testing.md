@@ -16,6 +16,9 @@ pnpm run package:dev && pnpm test:e2e
 
 # Run with coverage
 pnpm test:unit -- --coverage
+
+# Run a test file you newly written
+pnpm test:unit src/services/agentDefinition/__tests__/responsePatternUtility.test.ts
 ```
 
 ## Project Setup
