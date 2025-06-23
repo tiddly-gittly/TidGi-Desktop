@@ -3,22 +3,6 @@
   // 悬停以查看现有属性的描述。
   // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
-  "tasks": [
-    {
-      "type": "npm",
-      "script": "start:without-clean",
-      "group": "build",
-      "isBackground": true,
-      "problemMatcher": ["$ts-webpack-watch", "$ts-webpack-watch", "$ts-checker-eslint-webpack-watch"]
-    },
-    {
-      "type": "npm",
-      "script": "start",
-      "group": "build",
-      "isBackground": true,
-      "problemMatcher": ["$ts-webpack-watch", "$ts-webpack-watch", "$ts-checker-eslint-webpack-watch"]
-    }
-  ],
   "configurations": [
     {
       "name": "Debug Main Process",
@@ -27,8 +11,7 @@
       "args": ["start"],
       "request": "launch",
       "env": {
-        "NODE_ENV": "development",
-        "DEBUG_MAIN": "true"
+        "NODE_ENV": "development"
       },
       "type": "node",
       "skipFiles": ["<node_internals>/**"]

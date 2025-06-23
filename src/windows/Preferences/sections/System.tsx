@@ -24,7 +24,7 @@ export function System(props: ISectionProps): React.JSX.Element {
                 {(popupState) => (
                   <>
                     <ListItemButton {...bindTrigger(popupState)}>
-                      <ListItemText primary={t('Preference.OpenAtLogin')} secondary={getOpenAtLoginString(systemPreference.openAtLogin)} />
+                      <ListItemText primary={t('Preference.OpenAtLogin')} secondary={getOpenAtLoginString(systemPreference.openAtLogin, t)} />
                       <ChevronRightIcon color='action' />
                     </ListItemButton>
                     <Menu {...bindMenu(popupState)}>

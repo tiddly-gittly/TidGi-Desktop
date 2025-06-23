@@ -87,13 +87,10 @@ async function injectToolListPrompt(
 
     // Add tool information with optimized schema
     if (wikiSearchTool) {
-      toolPromptContent += `Available Tools:
-- ${wikiSearchTool.name}: ${wikiSearchTool.description}
-
-${wikiSearchTool.schema.description ? `Description: ${wikiSearchTool.schema.description}\n` : ''}${
+      // 只保留 schema.description，避免 name/description 重复
+      toolPromptContent += `Available Tools:\n- ${wikiSearchTool.name}\n\n${wikiSearchTool.schema.description ? `Description: ${wikiSearchTool.schema.description}\n` : ''}${
         wikiSearchTool.schema.parameters ? `Parameters: ${wikiSearchTool.schema.parameters}` : 'No parameters'
-      }
-`;
+      }\n`;
     }
 
     if (toolPromptContent.trim()) {

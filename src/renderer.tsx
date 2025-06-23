@@ -1,5 +1,5 @@
 import { ThemeProvider } from '@mui/material/styles';
-import i18n from 'i18next';
+import i18next from 'i18next';
 import React, { JSX, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
@@ -20,7 +20,7 @@ import 'simplebar/dist/simplebar.min.css';
 
 import { darkTheme, lightTheme } from '@services/theme/defaultTheme';
 import { useThemeObservable } from '@services/theme/hooks';
-import { initI18N } from './i18n';
+import { initRendererI18N } from './services/libs/i18n/renderer';
 import 'electron-ipc-cat/fixContextIsolation';
 import { useHashLocation } from 'wouter/use-hash-location';
 import { RootStyle } from './components/RootStyle';
@@ -36,7 +36,7 @@ function App(): JSX.Element {
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <CssBaseline />
             <Suspense fallback={<div />}>
-              <I18nextProvider i18n={i18n}>
+              <I18nextProvider i18n={i18next}>
                 <RootStyle>
                   <Router hook={useHashLocation}>
                     <Pages />
@@ -56,4 +56,4 @@ const container = document.querySelector('#app');
 const root = createRoot(container!);
 root.render(<App />);
 
-void initI18N();
+void initRendererI18N();
