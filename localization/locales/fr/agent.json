@@ -223,169 +223,325 @@
   },
   "Schema": {
     "AIConfig": {
-      "Description": "Configuration des paramètres de conversation IA"
+      "Description": "Configuration des paramètres de conversation IA",
+      "Title": ""
     },
     "AgentConfig": {
       "Description": "Configuration de l'agent intelligent",
       "Id": "Identifiant unique de l'agent intelligent",
+      "IdTitle": "",
       "PromptConfig": {
         "Description": "configuration des mots-clés",
         "PromptDynamicModification": "Liste de configuration de modification dynamique des mots-clés",
         "Prompts": "Liste de configuration des mots-clés",
         "Response": "Liste de configuration des réponses",
-        "ResponseDynamicModification": "Répondre à la liste de configuration modifiée dynamiquement"
-      }
+        "ResponseDynamicModification": "Répondre à la liste de configuration modifiée dynamiquement",
+        "Title": ""
+      },
+      "Title": ""
     },
     "AutoReply": {
       "Description": "Configuration des paramètres de réponse automatique",
       "MaxAutoReply": "Nombre maximum de réponses automatiques",
+      "MaxAutoReplyTitle": "",
       "TargetId": "ID de l'élément cible",
+      "TargetIdTitle": "",
       "Text": "texte de réponse",
-      "Trigger": "Condition de déclenchement"
+      "TextTitle": "",
+      "Title": "",
+      "Trigger": "Condition de déclenchement",
+      "TriggerTitle": ""
     },
     "AutoReroll": {
       "Description": "Regénération automatique des paramètres de configuration",
       "MaxRetry": "Nombre maximum de tentatives",
+      "MaxRetryTitle": "",
       "Search": "mot-clé de recherche",
-      "TargetId": "ID de l'élément cible"
+      "SearchTitle": "",
+      "TargetId": "ID de l'élément cible",
+      "TargetIdTitle": "",
+      "Title": ""
     },
     "BaseAPIConfig": {
       "API": "Fournisseur d'API et configuration du modèle",
+      "APITitle": "",
       "Description": "Configuration de l'API de base",
-      "ModelParameters": "Configuration des paramètres du modèle"
+      "ModelParameters": "Configuration des paramètres du modèle",
+      "ModelParametersTitle": "",
+      "Title": ""
     },
     "DefaultAgents": {
-      "Description": "Liste de configuration des agents intelligents par défaut"
+      "Description": "Liste de configuration des agents intelligents par défaut",
+      "Title": ""
     },
     "DynamicPosition": {
-      "Description": "Configuration dynamique des paramètres de position"
+      "Description": "Configuration dynamique des paramètres de position",
+      "Title": ""
     },
     "FullReplacement": {
       "Description": "remplacement complet de la configuration des paramètres",
       "SourceType": "type source",
-      "TargetId": "ID de l'élément cible"
+      "SourceTypeTitle": "",
+      "SourceTypes": {
+        "HistoryOfSession": "",
+        "LlmResponse": ""
+      },
+      "TargetId": "ID de l'élément cible",
+      "TargetIdTitle": "",
+      "Title": ""
     },
     "Function": {
       "Description": "Configuration des paramètres de fonction",
       "FunctionId": "ID de fonction",
+      "FunctionIdTitle": "",
       "TimeoutMessage": "message en retard",
+      "TimeoutMessageTitle": "",
       "TimeoutSecond": "Délai d'expiration (secondes)",
-      "Trigger": "conditions de déclenchement"
+      "TimeoutSecondTitle": "",
+      "Title": "",
+      "Trigger": "conditions de déclenchement",
+      "TriggerTitle": ""
+    },
+    "HandlerConfig": {
+      "Description": "",
+      "Title": ""
     },
     "JavascriptTool": {
       "Description": "Configuration des paramètres des outils JavaScript",
-      "URI": "Outil JavaScript URI"
+      "Title": "",
+      "URI": "Outil JavaScript URI",
+      "URITitle": ""
     },
     "MCP": {
       "Description": "Configuration des paramètres du protocole de contexte du modèle",
       "Id": "ID du serveur MCP",
+      "IdTitle": "",
       "ResponseProcessing": {
         "Description": "Configuration de traitement des réponses",
-        "Id": "ID du processeur de réponse"
+        "Id": "ID du processeur de réponse",
+        "IdTitle": "",
+        "Title": ""
       },
       "TimeoutMessage": "message en retard",
+      "TimeoutMessageTitle": "",
       "TimeoutSecond": "Délai d'expiration (secondes)",
-      "Trigger": "conditions de déclenchement"
+      "TimeoutSecondTitle": "",
+      "Title": "",
+      "Trigger": "conditions de déclenchement",
+      "TriggerTitle": ""
     },
     "ModelParameters": {
       "Description": "Configuration des paramètres du modèle",
       "MaxTokens": "nombre maximum de jetons générés",
+      "MaxTokensTitle": "",
       "SystemPrompt": "Mot-clé d'invite du système de modèle",
+      "SystemPromptTitle": "",
       "Temperature": "Température de génération des réponses (plus élevée = plus créatif)",
-      "TopP": "Paramètre d'échantillonnage Top P"
+      "TemperatureTitle": "",
+      "Title": "",
+      "TopP": "Paramètre d'échantillonnage Top P",
+      "TopPTitle": ""
     },
     "Position": {
       "Bottom": "Décaler quelques messages depuis le bas",
+      "BottomTitle": "",
       "Description": "configuration des paramètres de position",
       "TargetId": "ID de l'élément cible",
+      "TargetIdTitle": "",
+      "Title": "",
       "Top": "décaler quelques messages depuis le haut",
-      "Type": "type d'emplacement"
+      "TopTitle": "",
+      "Type": "type d'emplacement",
+      "TypeTitle": "",
+      "Types": {
+        "Absolute": "",
+        "After": "",
+        "Before": "",
+        "Relative": ""
+      }
     },
     "Prompt": {
       "Caption": "brève description",
+      "CaptionTitle": "",
       "Children": "Liste des sous-indices, qui seront concaténés de haut en bas et de l'extérieur vers l'intérieur pour former le texte final d'indice.",
+      "ChildrenTitle": "",
       "Description": "Configuration complète des invites, incluant le type et le contenu.",
       "Enabled": "Activer cette invite, seules celles activées seront intégrées dans l'invite finale.",
+      "EnabledTitle": "",
       "Id": "L'identifiant unique de configuration des mots d'invite, permettant de référencer par targetId dans PromptDynamicModification.",
+      "IdTitle": "",
       "Role": "Rôle des invites d'interface compatible OpenAI",
+      "RoleTitle": "",
+      "RoleType": {
+        "Assistant": "",
+        "System": "",
+        "User": ""
+      },
       "Tags": "Liste des étiquettes",
-      "Text": "Le contenu des mots d'invite peut inclure la syntaxe prise en charge par le texte wiki, comme <<nom de variable>>."
+      "TagsTitle": "",
+      "Text": "Le contenu des mots d'invite peut inclure la syntaxe prise en charge par le texte wiki, comme <<nom de variable>>.",
+      "TextTitle": "",
+      "Title": ""
     },
     "PromptDynamicModification": {
       "Caption": "brève description",
+      "CaptionTitle": "",
       "Content": "contenu",
+      "ContentTitle": "",
       "Description": "description détaillée",
       "DynamicModificationType": "modification dynamique de type",
+      "DynamicModificationTypeTitle": "",
+      "DynamicModificationTypes": {
+        "DynamicPosition": "",
+        "FullReplacement": "",
+        "Function": "",
+        "JavascriptTool": "",
+        "ModelContextProtocol": "",
+        "RetrievalAugmentedGeneration": ""
+      },
       "DynamicPositionParam": "paramètres de position dynamiques",
+      "DynamicPositionParamTitle": "",
       "ForbidOverrides": "Interdiction de recouvrement",
+      "ForbidOverridesTitle": "",
       "FullReplacementParam": "remplacer complètement les paramètres",
+      "FullReplacementParamTitle": "",
       "FunctionParam": "paramètres de fonction",
+      "FunctionParamTitle": "",
       "Id": "identifiant unique",
+      "IdTitle": "",
       "JavascriptToolParam": "Paramètres des outils JavaScript",
+      "JavascriptToolParamTitle": "",
       "MCPParam": "Paramètres du protocole de contexte du modèle",
+      "MCPParamTitle": "",
       "RAGParam": "Paramètres de génération améliorée par recherche",
-      "SchemaDescription": "Configuration de modification dynamique des mots d'incitation"
+      "RAGParamTitle": "",
+      "SchemaDescription": "Configuration de modification dynamique des mots d'incitation",
+      "Title": ""
     },
     "PromptPart": {
       "Caption": "une brève description des mots d'invite",
+      "CaptionTitle": "",
       "Children": "Liste des sous-indices, qui seront concaténés de haut en bas et de l'extérieur vers l'intérieur pour former le texte final d'indice.",
+      "ChildrenTitle": "",
       "Description": "représente une partie de l'invite, qui peut être du texte ou une structure imbriquée",
       "Id": "Identifiant unique, pratique pour référencer via targetId dans PromptDynamicModification.",
+      "IdTitle": "",
       "Tags": "Liste d'étiquettes, utilisée pour la classification et la référence",
-      "Text": "Le texte de l'invite peut inclure une syntaxe prise en charge par le wiki, comme <<nom_variable>>."
+      "TagsTitle": "",
+      "Text": "Le texte de l'invite peut inclure une syntaxe prise en charge par le wiki, comme <<nom_variable>>.",
+      "TextTitle": "",
+      "Title": ""
     },
     "ProviderModel": {
       "Description": "Fournisseur et configuration du modèle",
       "Model": "Nom du modèle d'IA",
-      "Provider": "Nom du fournisseur d'IA"
+      "ModelTitle": "",
+      "Provider": "Nom du fournisseur d'IA",
+      "ProviderTitle": "",
+      "Title": ""
     },
     "RAG": {
       "Description": "Configuration des paramètres de génération améliorée par recherche",
       "Removal": {
         "CoolDownChatRound": "Nombre de tours de refroidissement après la dernière présentation",
+        "CoolDownChatRoundTitle": "",
         "Description": "supprimer la condition",
-        "ExpireAfterChatRound": "Après combien de tours de dialogue cela expire-t-il ?"
+        "ExpireAfterChatRound": "Après combien de tours de dialogue cela expire-t-il ?",
+        "ExpireAfterChatRoundTitle": "",
+        "Title": ""
       },
       "SourceType": "type source",
+      "SourceTypeTitle": "",
+      "SourceTypes": {
+        "Wiki": ""
+      },
+      "Title": "",
       "Trigger": "condition de déclenchement",
-      "WikiParam": "Paramètres Wiki"
+      "TriggerTitle": "",
+      "WikiParam": "Paramètres Wiki",
+      "WikiParamTitle": ""
     },
     "Response": {
-      "Description": "La réponse de l'API externe, souvent utilisée comme cible pour des modifications dynamiques en réponse, a la même structure que les mots d'invite. Elle peut être préremplie avec du contenu prédéfini ou servir d'espace réservé (placeholder) ou de conteneur, où ResponseDynamicModification insère le contenu spécifique de la réponse de l'API externe."
+      "Description": "La réponse de l'API externe, souvent utilisée comme cible pour des modifications dynamiques en réponse, a la même structure que les mots d'invite. Elle peut être préremplie avec du contenu prédéfini ou servir d'espace réservé (placeholder) ou de conteneur, où ResponseDynamicModification insère le contenu spécifique de la réponse de l'API externe.",
+      "Title": ""
     },
     "ResponseDynamicModification": {
       "AutoReplyParam": "paramètres de réponse automatique",
+      "AutoReplyParamTitle": "",
       "AutoRerollParam": "Paramètres de régénération automatique",
+      "AutoRerollParamTitle": "",
       "Caption": "brève description",
+      "CaptionTitle": "",
       "Description": "répondre à la modification dynamique de la configuration",
       "DynamicModificationType": "modification dynamique de type",
+      "DynamicModificationTypeTitle": "",
+      "DynamicModificationTypes": {
+        "FullReplacement": ""
+      },
       "ForbidOverrides": "Interdiction de remplacement",
+      "ForbidOverridesTitle": "",
       "FullReplacementParam": "remplacer complètement les paramètres",
+      "FullReplacementParamTitle": "",
       "Id": "identifiant unique",
+      "IdTitle": "",
       "ResponseProcessingType": "Type de réponse au traitement",
-      "ToolCallingParam": "paramètres d'appel d'outil"
+      "ResponseProcessingTypeTitle": "",
+      "ResponseProcessingTypes": {
+        "AutoReply": "",
+        "AutoReroll": "",
+        "ToolCalling": ""
+      },
+      "Title": "",
+      "ToolCallingParam": "paramètres d'appel d'outil",
+      "ToolCallingParamTitle": ""
     },
     "ToolCalling": {
       "Description": "Configuration des paramètres d'appel des outils",
       "Match": "mode de correspondance",
-      "TargetId": "ID de l'élément cible"
+      "MatchTitle": "",
+      "TargetId": "ID de l'élément cible",
+      "TargetIdTitle": "",
+      "Title": ""
     },
     "Trigger": {
       "Description": "Configuration des conditions de déclenchement",
       "Filter": "Critères de sélection",
+      "FilterTitle": "",
       "Model": {
         "Description": "Condition de déclenchement basée sur l'évaluation du modèle",
         "Preset": "modèle prédéfini",
+        "PresetTitle": "",
         "System": "Invite système",
-        "User": "prompt utilisateur"
+        "SystemTitle": "",
+        "Title": "",
+        "User": "prompt utilisateur",
+        "UserTitle": ""
       },
       "RandomChance": "probabilité de déclenchement aléatoire",
-      "Search": "mots-clés de recherche"
+      "RandomChanceTitle": "",
+      "Search": "mots-clés de recherche",
+      "SearchTitle": "",
+      "Title": ""
     },
     "Wiki": {
       "Description": "Configuration des paramètres Wiki",
       "Filter": "Expression de filtre, vous pouvez utiliser les filtres pris en charge par TiddlyWiki pour extraire des données de la base de connaissances.",
-      "WorkspaceName": "Nom de l'espace de travail"
+      "FilterTitle": "",
+      "Title": "",
+      "WorkspaceName": "Nom de l'espace de travail",
+      "WorkspaceNameTitle": ""
+    },
+    "WikiSearch": {
+      "Description": "",
+      "Filter": "",
+      "FilterTitle": "",
+      "IncludeText": "",
+      "IncludeTextTitle": "",
+      "MaxResults": "",
+      "MaxResultsTitle": "",
+      "Title": "",
+      "WorkspaceName": "",
+      "WorkspaceNameTitle": ""
     }
   },
   "Search": {

@@ -224,169 +224,325 @@
   },
   "Schema": {
     "AIConfig": {
-      "Description": "AI 会話設定の構成"
+      "Description": "AI 会話設定の構成",
+      "Title": ""
     },
     "AgentConfig": {
       "Description": "エージェント設定",
       "Id": "エージェント一意識別子",
+      "IdTitle": "",
       "PromptConfig": {
         "Description": "プロンプト設定",
         "PromptDynamicModification": "プロンプトワード動的修正設定リスト",
         "Prompts": "プロンプト設定リスト",
         "Response": "応答設定リスト",
-        "ResponseDynamicModification": "動的に構成リストを変更するように応答"
-      }
+        "ResponseDynamicModification": "動的に構成リストを変更するように応答",
+        "Title": ""
+      },
+      "Title": ""
     },
     "AutoReply": {
       "Description": "自動返信パラメータ設定",
       "MaxAutoReply": "最大自動返信回数",
+      "MaxAutoReplyTitle": "",
       "TargetId": "ターゲット要素ID",
+      "TargetIdTitle": "",
       "Text": "返信テキスト",
-      "Trigger": "トリガー条件"
+      "TextTitle": "",
+      "Title": "",
+      "Trigger": "トリガー条件",
+      "TriggerTitle": ""
     },
     "AutoReroll": {
       "Description": "自動再生成パラメータ設定",
       "MaxRetry": "最大再試行回数",
+      "MaxRetryTitle": "",
       "Search": "検索キーワード",
-      "TargetId": "ターゲット要素ID"
+      "SearchTitle": "",
+      "TargetId": "ターゲット要素ID",
+      "TargetIdTitle": "",
+      "Title": ""
     },
     "BaseAPIConfig": {
       "API": "APIプロバイダーとモデル設定",
+      "APITitle": "",
       "Description": "基本API設定",
-      "ModelParameters": "モデルパラメータ設定"
+      "ModelParameters": "モデルパラメータ設定",
+      "ModelParametersTitle": "",
+      "Title": ""
     },
     "DefaultAgents": {
-      "Description": "デフォルトのインテリジェントエージェント設定リスト"
+      "Description": "デフォルトのインテリジェントエージェント設定リスト",
+      "Title": ""
     },
     "DynamicPosition": {
-      "Description": "動的位置パラメータ設定"
+      "Description": "動的位置パラメータ設定",
+      "Title": ""
     },
     "FullReplacement": {
       "Description": "完全置換パラメータ設定",
       "SourceType": "ソースタイプ",
-      "TargetId": "ターゲット要素ID"
+      "SourceTypeTitle": "",
+      "SourceTypes": {
+        "HistoryOfSession": "",
+        "LlmResponse": ""
+      },
+      "TargetId": "ターゲット要素ID",
+      "TargetIdTitle": "",
+      "Title": ""
     },
     "Function": {
       "Description": "関数パラメータ設定",
       "FunctionId": "関数ID",
+      "FunctionIdTitle": "",
       "TimeoutMessage": "タイムアウトメッセージ",
+      "TimeoutMessageTitle": "",
       "TimeoutSecond": "タイムアウト時間（秒）",
-      "Trigger": "トリガー条件"
+      "TimeoutSecondTitle": "",
+      "Title": "",
+      "Trigger": "トリガー条件",
+      "TriggerTitle": ""
+    },
+    "HandlerConfig": {
+      "Description": "",
+      "Title": ""
     },
     "JavascriptTool": {
       "Description": "JavaScript ツールパラメータ設定",
-      "URI": "JavaScript ツール URI"
+      "Title": "",
+      "URI": "JavaScript ツール URI",
+      "URITitle": ""
     },
     "MCP": {
       "Description": "モデルコンテキストプロトコルパラメータ設定",
       "Id": "MCP サーバー ID",
+      "IdTitle": "",
       "ResponseProcessing": {
         "Description": "応答処理設定",
-        "Id": "レスポンスハンドラID"
+        "Id": "レスポンスハンドラID",
+        "IdTitle": "",
+        "Title": ""
       },
       "TimeoutMessage": "タイムアウトメッセージ",
+      "TimeoutMessageTitle": "",
       "TimeoutSecond": "タイムアウト時間（秒）",
-      "Trigger": "トリガー条件"
+      "TimeoutSecondTitle": "",
+      "Title": "",
+      "Trigger": "トリガー条件",
+      "TriggerTitle": ""
     },
     "ModelParameters": {
       "Description": "モデルパラメータ設定",
       "MaxTokens": "生成される最大トークン数",
+      "MaxTokensTitle": "",
       "SystemPrompt": "モデルシステムプロンプト",
+      "SystemPromptTitle": "",
       "Temperature": "応答生成温度（高いほど創造的）",
-      "TopP": "Top P サンプリングパラメータ"
+      "TemperatureTitle": "",
+      "Title": "",
+      "TopP": "Top P サンプリングパラメータ",
+      "TopPTitle": ""
     },
     "Position": {
       "Bottom": "下部から数件のメッセージをオフセット",
+      "BottomTitle": "",
       "Description": "位置パラメータ設定",
       "TargetId": "ターゲット要素ID",
+      "TargetIdTitle": "",
+      "Title": "",
       "Top": "上部から数件のメッセージをオフセット",
-      "Type": "位置タイプ"
+      "TopTitle": "",
+      "Type": "位置タイプ",
+      "TypeTitle": "",
+      "Types": {
+        "Absolute": "",
+        "After": "",
+        "Before": "",
+        "Relative": ""
+      }
     },
     "Prompt": {
       "Caption": "簡単な説明",
+      "CaptionTitle": "",
       "Children": "サブプロンプトのリストは、上から下へ、外から内へと順に結合され、最終的なプロンプトテキストとなります。",
+      "ChildrenTitle": "",
       "Description": "完全なプロンプト設定、タイプと内容を含む",
       "Enabled": "このプロンプトを有効にするかどうか、有効にしたものだけが最終的なプロンプトに組み込まれます。",
+      "EnabledTitle": "",
       "Id": "プロンプト設定の一意の識別子。PromptDynamicModificationでtargetIdを介して参照するのに便利です。",
+      "IdTitle": "",
       "Role": "OpenAI互換インターフェースのプロンプトロール",
+      "RoleTitle": "",
+      "RoleType": {
+        "Assistant": "",
+        "System": "",
+        "User": ""
+      },
       "Tags": "タグリスト",
-      "Text": "プロンプトの内容には、<<変数名>>などのウィキテキストでサポートされている構文を含めることができます。"
+      "TagsTitle": "",
+      "Text": "プロンプトの内容には、<<変数名>>などのウィキテキストでサポートされている構文を含めることができます。",
+      "TextTitle": "",
+      "Title": ""
     },
     "PromptDynamicModification": {
       "Caption": "簡単な説明",
+      "CaptionTitle": "",
       "Content": "内容",
+      "ContentTitle": "",
       "Description": "詳細に説明する",
       "DynamicModificationType": "動的に型を変更する",
+      "DynamicModificationTypeTitle": "",
+      "DynamicModificationTypes": {
+        "DynamicPosition": "",
+        "FullReplacement": "",
+        "Function": "",
+        "JavascriptTool": "",
+        "ModelContextProtocol": "",
+        "RetrievalAugmentedGeneration": ""
+      },
       "DynamicPositionParam": "動的位置パラメータ",
+      "DynamicPositionParamTitle": "",
       "ForbidOverrides": "上書きを禁止しますか",
+      "ForbidOverridesTitle": "",
       "FullReplacementParam": "完全置換パラメータ",
+      "FullReplacementParamTitle": "",
       "FunctionParam": "関数の引数",
+      "FunctionParamTitle": "",
       "Id": "一意の識別子",
+      "IdTitle": "",
       "JavascriptToolParam": "JavaScript ツールパラメータ",
+      "JavascriptToolParamTitle": "",
       "MCPParam": "モデルコンテキストプロトコルパラメータ",
+      "MCPParamTitle": "",
       "RAGParam": "検索拡張生成パラメータ",
-      "SchemaDescription": "プロンプトワード動的修正設定"
+      "RAGParamTitle": "",
+      "SchemaDescription": "プロンプトワード動的修正設定",
+      "Title": ""
     },
     "PromptPart": {
       "Caption": "プロンプトの簡単な説明",
+      "CaptionTitle": "",
       "Children": "サブプロンプトのリストは、上から下へ、外から内へと結合され、最終的なプロンプトテキストとなります。",
+      "ChildrenTitle": "",
       "Description": "プロンプトの一部を表し、テキストまたはネスト構造にすることができます",
       "Id": "一意の識別子。PromptDynamicModification内でtargetIdを介して参照するのに便利です。",
+      "IdTitle": "",
       "Tags": "タグリスト、分類と参照用",
-      "Text": "プロンプトテキストの内容には、<<変数名>>などのウィキテキストでサポートされている構文を含めることができます。"
+      "TagsTitle": "",
+      "Text": "プロンプトテキストの内容には、<<変数名>>などのウィキテキストでサポートされている構文を含めることができます。",
+      "TextTitle": "",
+      "Title": ""
     },
     "ProviderModel": {
       "Description": "プロバイダーとモデル設定",
       "Model": "AIモデル名",
-      "Provider": "AIプロバイダー名"
+      "ModelTitle": "",
+      "Provider": "AIプロバイダー名",
+      "ProviderTitle": "",
+      "Title": ""
     },
     "RAG": {
       "Description": "検索拡張生成パラメータ設定",
       "Removal": {
         "CoolDownChatRound": "前回の展示後の冷却ラウンド数",
+        "CoolDownChatRoundTitle": "",
         "Description": "条件を削除",
-        "ExpireAfterChatRound": "何回の対話後に期限切れになりますか"
+        "ExpireAfterChatRound": "何回の対話後に期限切れになりますか",
+        "ExpireAfterChatRoundTitle": "",
+        "Title": ""
       },
       "SourceType": "ソースタイプ",
+      "SourceTypeTitle": "",
+      "SourceTypes": {
+        "Wiki": ""
+      },
+      "Title": "",
       "Trigger": "トリガー条件",
-      "WikiParam": "Wiki パラメータ"
+      "TriggerTitle": "",
+      "WikiParam": "Wiki パラメータ",
+      "WikiParamTitle": ""
     },
     "Response": {
-      "Description": "外部APIのレスポンスは、通常、動的に変更される対象として応答され、その構造はプロンプトと同じです。プリセット内容を記入することもできますし、プレースホルダーやコンテナとして機能させ、ResponseDynamicModificationによって外部APIのレスポンスの具体的な内容が入力されることもあります。"
+      "Description": "外部APIのレスポンスは、通常、動的に変更される対象として応答され、その構造はプロンプトと同じです。プリセット内容を記入することもできますし、プレースホルダーやコンテナとして機能させ、ResponseDynamicModificationによって外部APIのレスポンスの具体的な内容が入力されることもあります。",
+      "Title": ""
     },
     "ResponseDynamicModification": {
       "AutoReplyParam": "自動返信パラメータ",
+      "AutoReplyParamTitle": "",
       "AutoRerollParam": "自動再生成パラメータ",
+      "AutoRerollParamTitle": "",
       "Caption": "簡単な説明",
+      "CaptionTitle": "",
       "Description": "動的な設定変更に対応",
       "DynamicModificationType": "動的に型を変更する",
+      "DynamicModificationTypeTitle": "",
+      "DynamicModificationTypes": {
+        "FullReplacement": ""
+      },
       "ForbidOverrides": "上書きを禁止しますか",
+      "ForbidOverridesTitle": "",
       "FullReplacementParam": "パラメータを完全に置換",
+      "FullReplacementParamTitle": "",
       "Id": "一意の識別子",
+      "IdTitle": "",
       "ResponseProcessingType": "応答処理タイプ",
-      "ToolCallingParam": "ツール呼び出しパラメータ"
+      "ResponseProcessingTypeTitle": "",
+      "ResponseProcessingTypes": {
+        "AutoReply": "",
+        "AutoReroll": "",
+        "ToolCalling": ""
+      },
+      "Title": "",
+      "ToolCallingParam": "ツール呼び出しパラメータ",
+      "ToolCallingParamTitle": ""
     },
     "ToolCalling": {
       "Description": "ツール呼び出しパラメータ設定",
       "Match": "マッチングモード",
-      "TargetId": "ターゲット要素ID"
+      "MatchTitle": "",
+      "TargetId": "ターゲット要素ID",
+      "TargetIdTitle": "",
+      "Title": ""
     },
     "Trigger": {
       "Description": "トリガー条件の設定",
       "Filter": "フィルター条件",
+      "FilterTitle": "",
       "Model": {
         "Description": "モデルに基づく判断のトリガー条件",
         "Preset": "プリセットモデル",
+        "PresetTitle": "",
         "System": "システムプロンプト",
-        "User": "ユーザープロンプト"
+        "SystemTitle": "",
+        "Title": "",
+        "User": "ユーザープロンプト",
+        "UserTitle": ""
       },
       "RandomChance": "ランダム発動確率",
-      "Search": "検索キーワード"
+      "RandomChanceTitle": "",
+      "Search": "検索キーワード",
+      "SearchTitle": "",
+      "Title": ""
     },
     "Wiki": {
       "Description": "Wiki パラメータ設定",
       "Filter": "フィルター式では、TiddlyWikiがサポートするフィルターを使用して、ナレッジベースからデータを抽出できます。",
-      "WorkspaceName": "ワークスペース名"
+      "FilterTitle": "",
+      "Title": "",
+      "WorkspaceName": "ワークスペース名",
+      "WorkspaceNameTitle": ""
+    },
+    "WikiSearch": {
+      "Description": "",
+      "Filter": "",
+      "FilterTitle": "",
+      "IncludeText": "",
+      "IncludeTextTitle": "",
+      "MaxResults": "",
+      "MaxResultsTitle": "",
+      "Title": "",
+      "WorkspaceName": "",
+      "WorkspaceNameTitle": ""
     }
   },
   "Search": {

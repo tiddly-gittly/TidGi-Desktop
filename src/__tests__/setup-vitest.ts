@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -149,7 +150,8 @@ vi.mock('@services/container', () => {
           'Symbol(ExternalAPI)': 'externalAPI',
           'Symbol(AgentInstance)': 'workspace',
           'Symbol(AgentDefinition)': 'agentDefinition',
-        };        const serviceKey = identifierMap[identifier.toString()];
+        };
+        const serviceKey = identifierMap[identifier.toString()];
         return serviceKey ? mockServiceInstances[serviceKey] : (() => {
           throw new Error(`Unknown service identifier: ${identifier.toString()}`);
         })();

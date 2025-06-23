@@ -196,7 +196,8 @@
               "targetId": "default-before-tool"
             },
             "resultPosition": {
-              "position": "before",
+              "position": "relative",
+              "bottom": 0,
               "targetId": "default-tool-result"
             },
             "trigger": {

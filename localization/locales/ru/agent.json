@@ -224,169 +224,325 @@
   },
   "Schema": {
     "AIConfig": {
-      "Description": "Настройка конфигурации AI-диалога"
+      "Description": "Настройка конфигурации AI-диалога",
+      "Title": ""
     },
     "AgentConfig": {
       "Description": "Конфигурация агента",
       "Id": "уникальный идентификатор агента",
+      "IdTitle": "",
       "PromptConfig": {
         "Description": "настройка подсказок",
         "PromptDynamicModification": "Список конфигураций динамического изменения подсказок",
         "Prompts": "Список конфигурации подсказок",
         "Response": "список конфигураций ответа",
-        "ResponseDynamicModification": "динамическое изменение списка конфигураций в ответ"
-      }
+        "ResponseDynamicModification": "динамическое изменение списка конфигураций в ответ",
+        "Title": ""
+      },
+      "Title": ""
     },
     "AutoReply": {
       "Description": "Автоматическая настройка параметров ответа",
       "MaxAutoReply": "Максимальное количество автоответов",
+      "MaxAutoReplyTitle": "",
       "TargetId": "ID целевого элемента",
+      "TargetIdTitle": "",
       "Text": "текст ответа",
-      "Trigger": "условие срабатывания"
+      "TextTitle": "",
+      "Title": "",
+      "Trigger": "условие срабатывания",
+      "TriggerTitle": ""
     },
     "AutoReroll": {
       "Description": "автоматическое пересоздание конфигурации параметров",
       "MaxRetry": "максимальное количество попыток",
+      "MaxRetryTitle": "",
       "Search": "ключевые слова поиска",
-      "TargetId": "ID целевого элемента"
+      "SearchTitle": "",
+      "TargetId": "ID целевого элемента",
+      "TargetIdTitle": "",
+      "Title": ""
     },
     "BaseAPIConfig": {
       "API": "API-провайдеры и конфигурация моделей",
+      "APITitle": "",
       "Description": "Базовая настройка API",
-      "ModelParameters": "Настройка параметров модели"
+      "ModelParameters": "Настройка параметров модели",
+      "ModelParametersTitle": "",
+      "Title": ""
     },
     "DefaultAgents": {
-      "Description": "список конфигураций агента по умолчанию"
+      "Description": "список конфигураций агента по умолчанию",
+      "Title": ""
     },
     "DynamicPosition": {
-      "Description": "динамическая конфигурация параметров позиционирования"
+      "Description": "динамическая конфигурация параметров позиционирования",
+      "Title": ""
     },
     "FullReplacement": {
       "Description": "полная замена параметров конфигурации",
       "SourceType": "тип источника",
-      "TargetId": "ID целевого элемента"
+      "SourceTypeTitle": "",
+      "SourceTypes": {
+        "HistoryOfSession": "",
+        "LlmResponse": ""
+      },
+      "TargetId": "ID целевого элемента",
+      "TargetIdTitle": "",
+      "Title": ""
     },
     "Function": {
       "Description": "настройка параметров функции",
       "FunctionId": "идентификатор функции",
+      "FunctionIdTitle": "",
       "TimeoutMessage": "сообщение о тайм-ауте",
+      "TimeoutMessageTitle": "",
       "TimeoutSecond": "Таймаут (секунды)",
-      "Trigger": "условие срабатывания"
+      "TimeoutSecondTitle": "",
+      "Title": "",
+      "Trigger": "условие срабатывания",
+      "TriggerTitle": ""
+    },
+    "HandlerConfig": {
+      "Description": "",
+      "Title": ""
     },
     "JavascriptTool": {
       "Description": "Настройка параметров инструментов JavaScript",
-      "URI": "Инструменты JavaScript URI"
+      "Title": "",
+      "URI": "Инструменты JavaScript URI",
+      "URITitle": ""
     },
     "MCP": {
       "Description": "Настройка параметров протокола контекста модели",
       "Id": "Идентификатор сервера MCP",
+      "IdTitle": "",
       "ResponseProcessing": {
         "Description": "Конфигурация обработки ответов",
-        "Id": "Идентификатор обработчика ответа"
+        "Id": "Идентификатор обработчика ответа",
+        "IdTitle": "",
+        "Title": ""
       },
       "TimeoutMessage": "сообщение с истекшим сроком",
+      "TimeoutMessageTitle": "",
       "TimeoutSecond": "Таймаут (секунды)",
-      "Trigger": "условие срабатывания"
+      "TimeoutSecondTitle": "",
+      "Title": "",
+      "Trigger": "условие срабатывания",
+      "TriggerTitle": ""
     },
     "ModelParameters": {
       "Description": "Настройка параметров модели",
       "MaxTokens": "максимальное количество генерируемых токенов",
+      "MaxTokensTitle": "",
       "SystemPrompt": "системная подсказка модели",
+      "SystemPromptTitle": "",
       "Temperature": "Температура генерации ответа (чем выше = тем креативнее)",
-      "TopP": "Параметр выборки Top P"
+      "TemperatureTitle": "",
+      "Title": "",
+      "TopP": "Параметр выборки Top P",
+      "TopPTitle": ""
     },
     "Position": {
       "Bottom": "смещение нескольких сообщений снизу",
+      "BottomTitle": "",
       "Description": "настройка позиционных параметров",
       "TargetId": "ID целевого элемента",
+      "TargetIdTitle": "",
+      "Title": "",
       "Top": "смещение нескольких сообщений сверху",
-      "Type": "тип местоположения"
+      "TopTitle": "",
+      "Type": "тип местоположения",
+      "TypeTitle": "",
+      "Types": {
+        "Absolute": "",
+        "After": "",
+        "Before": "",
+        "Relative": ""
+      }
     },
     "Prompt": {
       "Caption": "краткое описание",
+      "CaptionTitle": "",
       "Children": "Список подсказок будет объединен в итоговый текст подсказки сверху вниз, снаружи внутрь.",
+      "ChildrenTitle": "",
       "Description": "Полная конфигурация подсказок, включая тип и содержание.",
       "Enabled": "Включить эту подсказку? Только включенные подсказки будут добавлены в итоговый текст.",
+      "EnabledTitle": "",
       "Id": "Уникальный идентификатор конфигурации подсказки, удобный для ссылки на targetId в PromptDynamicModification.",
+      "IdTitle": "",
       "Role": "роль подсказки в интерфейсе, совместимом с OpenAI",
+      "RoleTitle": "",
+      "RoleType": {
+        "Assistant": "",
+        "System": "",
+        "User": ""
+      },
       "Tags": "список тегов",
-      "Text": "Содержание подсказки может включать синтаксис, поддерживаемый вики-текстом, например <<имя_переменной>>."
+      "TagsTitle": "",
+      "Text": "Содержание подсказки может включать синтаксис, поддерживаемый вики-текстом, например <<имя_переменной>>.",
+      "TextTitle": "",
+      "Title": ""
     },
     "PromptDynamicModification": {
       "Caption": "краткое описание",
+      "CaptionTitle": "",
       "Content": "содержание",
+      "ContentTitle": "",
       "Description": "подробное описание",
       "DynamicModificationType": "динамическое изменение типа",
+      "DynamicModificationTypeTitle": "",
+      "DynamicModificationTypes": {
+        "DynamicPosition": "",
+        "FullReplacement": "",
+        "Function": "",
+        "JavascriptTool": "",
+        "ModelContextProtocol": "",
+        "RetrievalAugmentedGeneration": ""
+      },
       "DynamicPositionParam": "динамические параметры позиции",
+      "DynamicPositionParamTitle": "",
       "ForbidOverrides": "Запрещено ли перезаписывать",
+      "ForbidOverridesTitle": "",
       "FullReplacementParam": "полная замена параметров",
+      "FullReplacementParamTitle": "",
       "FunctionParam": "параметры функции",
+      "FunctionParamTitle": "",
       "Id": "уникальный идентификатор",
+      "IdTitle": "",
       "JavascriptToolParam": "Параметры инструментов JavaScript",
+      "JavascriptToolParamTitle": "",
       "MCPParam": "Параметры протокола контекста модели",
+      "MCPParamTitle": "",
       "RAGParam": "параметры усиления генерации поиска",
-      "SchemaDescription": "динамическая модификация конфигурации подсказок"
+      "RAGParamTitle": "",
+      "SchemaDescription": "динамическая модификация конфигурации подсказок",
+      "Title": ""
     },
     "PromptPart": {
       "Caption": "краткое описание подсказки",
+      "CaptionTitle": "",
       "Children": "Список подсказок будет объединен в итоговый текст подсказки сверху вниз, снаружи внутрь.",
+      "ChildrenTitle": "",
       "Description": "указывает часть подсказки, которая может быть текстом или вложенной структурой",
       "Id": "Уникальный идентификатор, позволяющий ссылаться на targetId в PromptDynamicModification.",
+      "IdTitle": "",
       "Tags": "Список тегов для классификации и ссылок",
-      "Text": "Текст подсказки может содержать синтаксис, поддерживаемый вики-разметкой, например <<имя_переменной>>."
+      "TagsTitle": "",
+      "Text": "Текст подсказки может содержать синтаксис, поддерживаемый вики-разметкой, например <<имя_переменной>>.",
+      "TextTitle": "",
+      "Title": ""
     },
     "ProviderModel": {
       "Description": "провайдер и конфигурация модели",
       "Model": "Название модели ИИ",
-      "Provider": "Название поставщика ИИ"
+      "ModelTitle": "",
+      "Provider": "Название поставщика ИИ",
+      "ProviderTitle": "",
+      "Title": ""
     },
     "RAG": {
       "Description": "Конфигурация параметров усиленного генеративного поиска",
       "Removal": {
         "CoolDownChatRound": "Количество циклов охлаждения после последней демонстрации",
+        "CoolDownChatRoundTitle": "",
         "Description": "удалить условие",
-        "ExpireAfterChatRound": "Через сколько раундов диалога истекает срок"
+        "ExpireAfterChatRound": "Через сколько раундов диалога истекает срок",
+        "ExpireAfterChatRoundTitle": "",
+        "Title": ""
       },
       "SourceType": "тип источника",
+      "SourceTypeTitle": "",
+      "SourceTypes": {
+        "Wiki": ""
+      },
+      "Title": "",
       "Trigger": "Условие срабатывания",
-      "WikiParam": "Параметры Wiki"
+      "TriggerTitle": "",
+      "WikiParam": "Параметры Wiki",
+      "WikiParamTitle": ""
     },
     "Response": {
-      "Description": "Ответ от внешнего API, который обычно служит целью для динамического изменения в ответе, имеет такую же структуру, как и подсказка. Можно заполнить его предустановленным содержимым или использовать в качестве заполнителя (контейнера), куда ResponseDynamicModification внесёт конкретное содержимое ответа от внешнего API."
+      "Description": "Ответ от внешнего API, который обычно служит целью для динамического изменения в ответе, имеет такую же структуру, как и подсказка. Можно заполнить его предустановленным содержимым или использовать в качестве заполнителя (контейнера), куда ResponseDynamicModification внесёт конкретное содержимое ответа от внешнего API.",
+      "Title": ""
     },
     "ResponseDynamicModification": {
       "AutoReplyParam": "автоматический ответ параметры",
+      "AutoReplyParamTitle": "",
       "AutoRerollParam": "автоматически перегенерировать параметры",
+      "AutoRerollParamTitle": "",
       "Caption": "краткое описание",
+      "CaptionTitle": "",
       "Description": "динамическое изменение конфигурации в ответ",
       "DynamicModificationType": "динамическое изменение типа",
+      "DynamicModificationTypeTitle": "",
+      "DynamicModificationTypes": {
+        "FullReplacement": ""
+      },
       "ForbidOverrides": "Запрещено ли перезаписывать?",
+      "ForbidOverridesTitle": "",
       "FullReplacementParam": "полная замена параметров",
+      "FullReplacementParamTitle": "",
       "Id": "уникальный идентификатор",
+      "IdTitle": "",
       "ResponseProcessingType": "тип обработки ответа",
-      "ToolCallingParam": "параметры вызова инструмента"
+      "ResponseProcessingTypeTitle": "",
+      "ResponseProcessingTypes": {
+        "AutoReply": "",
+        "AutoReroll": "",
+        "ToolCalling": ""
+      },
+      "Title": "",
+      "ToolCallingParam": "параметры вызова инструмента",
+      "ToolCallingParamTitle": ""
     },
     "ToolCalling": {
       "Description": "Настройка параметров вызова инструментов",
       "Match": "режим соответствия",
-      "TargetId": "ID целевого элемента"
+      "MatchTitle": "",
+      "TargetId": "ID целевого элемента",
+      "TargetIdTitle": "",
+      "Title": ""
     },
     "Trigger": {
       "Description": "Настройка условий срабатывания",
       "Filter": "условия фильтрации",
+      "FilterTitle": "",
       "Model": {
         "Description": "условие срабатывания на основе оценки модели",
         "Preset": "предустановленная модель",
+        "PresetTitle": "",
         "System": "системное приглашение",
-        "User": "подсказка пользователя"
+        "SystemTitle": "",
+        "Title": "",
+        "User": "подсказка пользователя",
+        "UserTitle": ""
       },
       "RandomChance": "вероятность случайного срабатывания",
-      "Search": "ключевые слова поиска"
+      "RandomChanceTitle": "",
+      "Search": "ключевые слова поиска",
+      "SearchTitle": "",
+      "Title": ""
     },
     "Wiki": {
       "Description": "Настройка параметров Wiki",
       "Filter": "Выражение фильтра позволяет извлекать данные из базы знаний, используя фильтры, поддерживаемые TiddlyWiki.",
-      "WorkspaceName": "Название рабочей области"
+      "FilterTitle": "",
+      "Title": "",
+      "WorkspaceName": "Название рабочей области",
+      "WorkspaceNameTitle": ""
+    },
+    "WikiSearch": {
+      "Description": "",
+      "Filter": "",
+      "FilterTitle": "",
+      "IncludeText": "",
+      "IncludeTextTitle": "",
+      "MaxResults": "",
+      "MaxResultsTitle": "",
+      "Title": "",
+      "WorkspaceName": "",
+      "WorkspaceNameTitle": ""
     }
   },
   "Search": {

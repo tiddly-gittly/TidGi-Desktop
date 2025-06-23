@@ -3,17 +3,18 @@ import { injectable } from 'inversify';
 import { pick } from 'lodash';
 import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
+import z from 'zod/v4';
 
+import { IAgentBrowserService } from '@services/agentBrowser/interface';
 import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
+import { globalToolRegistry } from '@services/agentInstance/buildInAgentTools';
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-
-import { IAgentBrowserService } from '@services/agentBrowser/interface';
-import { globalToolRegistry } from '@services/agentInstance/buildInAgentTools';
 import { AgentDefinition, AgentToolConfig, IAgentDefinitionService, ToolCallingMatch } from './interface';
+import { optimizeToolForLLM } from './llmToolSchemaOptimizer';
 import { matchToolCalling } from './responsePatternUtility';
 
 @injectable()
@@ -314,15 +315,19 @@ export class AgentDefinitionService implements IAgentDefinitionService {
   /**
    * Get all available tools that can be registered
    */
-  public getAvailableTools(): Promise<Array<{ id: string; name: string; description: string; parameterSchema: unknown }>> {
+  public getAvailableTools() {
     try {
       const allTools = globalToolRegistry.getAllTools();
-      return Promise.resolve(allTools.map(tool => ({
-        id: tool.id,
-        name: tool.name,
-        description: tool.description,
-        parameterSchema: tool.parameterSchema,
-      })));
+      return Promise.resolve(
+        allTools.map(tool =>
+          optimizeToolForLLM({
+            id: tool.id,
+            name: tool.name,
+            description: tool.description,
+            parameterSchema: z.toJSONSchema(tool.parameterSchema),
+          })
+        ),
+      );
     } catch (error) {
       logger.error(`Failed to get available tools: ${error as Error}`);
       throw error;

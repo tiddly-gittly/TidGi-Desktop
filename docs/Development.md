@@ -71,6 +71,24 @@ pnpm run start:dev:debug-main      # Debug main process
 pnpm run start:dev:debug-react     # Debug React renderer, react-devtool will be available in devtools
 ```
 
+#### Show electron-packager debug logs
+
+If you want to see detailed logs from electron-packager during packaging, set the environment variable `DEBUG=electron-packager`:
+
+- Linux/macOS:
+
+  ```shell
+  DEBUG=electron-packager pnpm run start:dev
+  ```
+
+- Windows PowerShell:
+
+  ```shell
+  $env:DEBUG="electron-packager"; pnpm run start:dev
+  ```
+
+This will print verbose debug information from electron-packager to help diagnose packaging issues.
+
 ### Build & Package Scripts
 
 ```shell

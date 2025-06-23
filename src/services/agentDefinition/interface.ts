@@ -1,7 +1,7 @@
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
-
 import { AgentChannel } from '@/constants/channels';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { AiAPIConfig } from '../agentInstance/promptConcat/promptConcatSchema';
+import type { OptimizedToolSchema } from './llmToolSchemaOptimizer';
 
 /**
  * Agent tool configuration
@@ -104,7 +104,7 @@ export interface IAgentDefinitionService {
   /**
    * Get all available tools that can be registered
    */
-  getAvailableTools(): Promise<Array<{ id: string; name: string; description: string; parameterSchema: unknown }>>;
+  getAvailableTools(): Promise<Array<{ id: string; name: string; description: string; schema: OptimizedToolSchema }>>;
   /**
    * Match tool calling patterns in AI response text
    * @param responseText AI response text to analyze

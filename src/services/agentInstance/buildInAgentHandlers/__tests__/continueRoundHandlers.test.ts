@@ -39,10 +39,10 @@ describe('continueRoundHandlers', () => {
 
       continueRoundHandlerRegistry.register(testHandler);
       const handlers = continueRoundHandlerRegistry.getHandlers();
-      
+
       // Should have 2 handlers now (default + test)
       expect(handlers).toHaveLength(2);
-      
+
       // Should be sorted by priority (test handler has lower priority)
       expect(handlers[0].id).toBe('test-handler');
       expect(handlers[1].id).toBe('tool-calling');

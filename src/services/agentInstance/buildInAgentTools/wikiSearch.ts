@@ -19,18 +19,22 @@ const WikiSearchParameterSchema = z.object({
   workspaceName: z.string().meta({
     title: t('Schema.WikiSearch.WorkspaceNameTitle'),
     description: t('Schema.WikiSearch.WorkspaceName'),
+    example: 'wiki1',
   }),
   filter: z.string().meta({
     title: t('Schema.WikiSearch.FilterTitle'),
     description: t('Schema.WikiSearch.Filter'),
+    example: '[tag[example]]',
   }),
   maxResults: z.number().optional().default(10).meta({
     title: t('Schema.WikiSearch.MaxResultsTitle'),
     description: t('Schema.WikiSearch.MaxResults'),
+    example: '50',
   }),
   includeText: z.boolean().optional().default(true).meta({
     title: t('Schema.WikiSearch.IncludeTextTitle'),
     description: t('Schema.WikiSearch.IncludeText'),
+    example: 'true',
   }),
 }).meta({
   title: t('Schema.WikiSearch.Title'),
@@ -45,8 +49,8 @@ type WikiSearchParameters = z.infer<typeof WikiSearchParameterSchema>;
  */
 export class WikiSearchTool implements IAgentTool {
   public readonly id = 'wiki-search';
-  public readonly name = 'Wiki Search';
-  public readonly description = 'Search for content in TiddlyWiki workspaces using filter expressions';
+  public readonly name = t('Schema.WikiSearch.Title');
+  public readonly description = t('Schema.WikiSearch.Description');
   public readonly parameterSchema = WikiSearchParameterSchema;
 
   /**

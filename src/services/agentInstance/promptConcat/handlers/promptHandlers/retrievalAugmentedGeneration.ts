@@ -3,13 +3,15 @@
  * Now handles both tool prompt injection and result extraction from messages
  * This handler is registered to process retrievalAugmentedGeneration dynamic modifications
  */
+import { WikiChannel } from '@/constants/channels';
 import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { IWikiService } from '@services/wiki/interface';
 import { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
-import { AgentToolResult, WikiSearchTool } from '../../../buildInAgentTools';
+
 import { findPromptById, PromptConcatContext } from '../../promptConcat';
 import type { Prompt, PromptDynamicModification, RetrievalAugmentedGenerationParameter } from '../../promptConcatSchema';
 
@@ -79,25 +81,19 @@ async function injectToolListPrompt(
 
     // Add wiki information
     if (wikiWorkspaces.length > 0) {
-      toolPromptContent += 'Available Wiki Workspaces:\n';
-      for (const workspace of wikiWorkspaces) {
-        toolPromptContent += `- ${workspace.name} (ID: ${workspace.id})\n`;
-      }
-      toolPromptContent += '\n';
+      const workspaceList = wikiWorkspaces.map(workspace => `- ${workspace.name} (ID: ${workspace.id})`).join('\n');
+      toolPromptContent += `Available Wiki Workspaces:\n${workspaceList}\n\n`;
     }
 
-    // Add tool information
+    // Add tool information with optimized schema
     if (wikiSearchTool) {
-      toolPromptContent += 'Available Tools:\n';
-      toolPromptContent += `- ${wikiSearchTool.name}: ${wikiSearchTool.description}\n`;
-      toolPromptContent += 'Usage example:\n';
-      toolPromptContent += '<tool_use name="wiki-search">\n';
-      toolPromptContent += '{\n';
-      toolPromptContent += '  "workspaceName": "workspace-id",\n';
-      toolPromptContent += '  "filter": "[tag[example]]",\n';
-      toolPromptContent += '  "maxResults": 5\n';
-      toolPromptContent += '}\n';
-      toolPromptContent += '</tool_use>\n';
+      toolPromptContent += `Available Tools:
+- ${wikiSearchTool.name}: ${wikiSearchTool.description}
+
+${wikiSearchTool.schema.description ? `Description: ${wikiSearchTool.schema.description}\n` : ''}${
+        wikiSearchTool.schema.parameters ? `Parameters: ${wikiSearchTool.schema.parameters}` : 'No parameters'
+      }
+`;
     }
 
     if (toolPromptContent.trim()) {
@@ -135,41 +131,45 @@ async function injectToolListPrompt(
 /**
  * Extract tool results from messages and inject into prompts
  */
-function injectToolResultPrompt(
+async function injectToolResultPrompt(
   prompts: Prompt[],
   resultPosition: NonNullable<RetrievalAugmentedGenerationParameter['resultPosition']>,
+  wikiParameter: RetrievalAugmentedGenerationParameter['wikiParam'],
   context: PromptConcatContext,
   modification: PromptDynamicModification,
-): void {
+): Promise<void> {
   const resultTarget = findPromptById(prompts, resultPosition.targetId);
   if (!resultTarget) return;
 
-  // Find the latest tool calling result in messages
-  const toolResultMessages = context.messages
-    .filter(m => m.metadata && m.metadata.sourceType === 'toolCalling' && m.metadata.toolId === 'wiki-search')
-    .sort((a, b) => new Date(b.modified || 0).getTime() - new Date(a.modified || 0).getTime());
+  // Check if we have wiki parameters to execute filter
+  if (!wikiParameter?.workspaceName || !wikiParameter.filter) {
+    logger.debug('No wiki parameters provided for tool result injection', {
+      wikiParameter,
+      targetId: resultPosition.targetId,
+    });
+    return;
+  }
 
-  if (toolResultMessages.length > 0) {
-    const latestToolResult = toolResultMessages[0];
-    const resultData = latestToolResult.metadata?.toolResult;
+  try {
+    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 
-    let resultContent = '';
-    if (resultData && typeof resultData === 'object' && 'success' in resultData && 'data' in resultData) {
-      if (resultData.success) {
-        resultContent = WikiSearchTool.formatResultsAsText(resultData as unknown as AgentToolResult);
-      } else {
-        resultContent = `Tool execution failed: ${(resultData as { error?: string }).error || 'Unknown error'}`;
-      }
-    } else {
-      resultContent = 'Tool execution result format error';
-    }
+    // Execute the filter in the specified wiki workspace
+    const resultContent = await wikiService.wikiOperationInServer(
+      WikiChannel.runFilter,
+      wikiParameter.workspaceName,
+      [wikiParameter.filter],
+    );
 
-    if (resultContent.trim()) {
+    // Check if we have results (wikiOperationInServer returns string[])
+    if (Array.isArray(resultContent) && resultContent.length > 0) {
+      // Join the results into a single string
+      const contentText = resultContent.join('\n');
+
       const resultPrompt: Prompt = {
         id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        text: resultContent,
+        text: `Wiki search results from "${wikiParameter.workspaceName}" with filter "${wikiParameter.filter}":\n\n${contentText}`,
         tags: ['toolResult', 'retrievalAugmentedGeneration'],
-        caption: 'Tool execution result',
+        caption: 'Wiki search result',
         enabled: true,
         source: context.sourcePaths?.get(modification.id),
       };
@@ -183,12 +183,26 @@ function injectToolResultPrompt(
         resultTarget.parent.splice(resultTarget.index + 1, 0, resultPrompt);
       }
 
-      logger.debug('Tool result prompt inserted successfully', {
+      logger.debug('Wiki search result prompt inserted successfully', {
         targetId: resultPosition.targetId,
-        resultLength: resultContent.length,
-        toolId: latestToolResult.metadata?.toolId,
+        workspaceName: wikiParameter.workspaceName,
+        filter: wikiParameter.filter,
+        resultCount: resultContent.length,
+        contentLength: contentText.length,
+      });
+    } else {
+      logger.debug('No results found from wiki filter', {
+        workspaceName: wikiParameter.workspaceName,
+        filter: wikiParameter.filter,
       });
     }
+  } catch (error) {
+    logger.error('Error executing wiki filter for tool result', {
+      error: error instanceof Error ? error.message : String(error),
+      workspaceName: wikiParameter.workspaceName,
+      filter: wikiParameter.filter,
+      targetId: resultPosition.targetId,
+    });
   }
 }
 
@@ -217,6 +231,7 @@ export async function retrievalAugmentedGenerationHandler(
     toolListPosition,
     resultPosition,
     trigger,
+    wikiParam,
   } = modification.retrievalAugmentedGenerationParam;
 
   try {
@@ -240,7 +255,7 @@ export async function retrievalAugmentedGenerationHandler(
 
     // 2. Extract and inject tool results if resultPosition is specified
     if (resultPosition?.targetId) {
-      injectToolResultPrompt(prompts, resultPosition, context, modification);
+      await injectToolResultPrompt(prompts, resultPosition, wikiParam, context, modification);
     }
 
     return prompts;

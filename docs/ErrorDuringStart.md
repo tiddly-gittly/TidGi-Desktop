@@ -23,7 +23,7 @@ Or `[FAILED: ENOENT: no such file or directory, stat 'C:\Users\linonetwo\Documen
 
 Remove it by run `rm 'xxx/node_modules/.pnpm/node_modules/@types/lodash-es'` fixes it. Maybe pnpm install gets interrupted, and make a file-like symlink, get recognized as binary file. Remove it will work.
 
-## An unhandled rejection has occurred inside Forge about node-abi:
+## An unhandled rejection has occurred inside Forge about node-abi
 
 Solution: Update `@electron/rebuild` to latest version:
 
@@ -104,3 +104,23 @@ NODE_MODULE_VERSION 93. Please try re-compiling or re-installing
 the module (for instance, using `npm rebuild` or `npm install`).
 
 See <https://github.com/justadudewhohacks/opencv4nodejs/issues/401#issuecomment-463434713> if you still have problem rebuild opencv for @nut-tree/nut-js
+
+## Command failed with exit code 1
+
+When you see an error like:
+
+```log
+ELIFECYCLE Command failed with exit code 1.
+```
+
+This is a generic error and the real cause is usually shown earlier in the log. Sometimes, the actual error is hidden. You can set `DEBUG=electron-packager` to get more detailed logs (see [Show electron-packager debug logs](./Development.md#show-electron-packager-debug-logs)).
+
+For example, after setting the debug variable, you may see:
+
+```log
+An unhandled exception has occurred inside Forge:
+listen EACCES: permission denied 0.0.0.0:9000
+Error: listen EACCES: permission denied 0.0.0.0:9000
+```
+
+This means the port 9000 is not accessible, possibly due to permission issues or the port already being in use. Try disable some startup service and restart computer. Some app may occupies port for its own use on startup.
