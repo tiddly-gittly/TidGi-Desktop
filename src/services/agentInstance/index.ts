@@ -662,12 +662,6 @@ export class AgentInstanceService implements IAgentInstanceService {
   ): void {
     const messageId = message.id;
 
-    logger.debug(`Updating message ${messageId} with content length: ${message.content.length}`, {
-      method: 'debounceUpdateMessage',
-      agentId,
-      contentPreview: message.content.substring(0, 50),
-    });
-
     // Update status subscribers for specific message if available
     if (agentId) {
       const statusKey = `${agentId}:${messageId}`;

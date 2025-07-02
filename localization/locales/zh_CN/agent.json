@@ -229,39 +229,39 @@
     },
     "AgentConfig": {
       "Description": "智能体配置",
-      "Title": "智能体配置",
       "Id": "智能体唯一标识符",
       "IdTitle": "智能体 ID",
       "PromptConfig": {
         "Description": "提示词配置",
-        "Title": "提示词配置",
         "PromptDynamicModification": "提示词动态修改配置列表",
         "Prompts": "提示词配置列表",
         "Response": "响应配置列表",
-        "ResponseDynamicModification": "响应动态修改配置列表"
-      }
+        "ResponseDynamicModification": "响应动态修改配置列表",
+        "Title": "提示词配置"
+      },
+      "Title": "智能体配置"
     },
     "AutoReply": {
       "Description": "自动回复参数配置",
-      "Title": "自动回复参数",
       "MaxAutoReply": "最大自动回复次数",
       "MaxAutoReplyTitle": "最大回复次数",
       "TargetId": "目标元素ID",
       "TargetIdTitle": "目标ID",
       "Text": "回复文本",
       "TextTitle": "回复文本",
+      "Title": "自动回复参数",
       "Trigger": "触发条件",
       "TriggerTitle": "触发条件"
     },
     "AutoReroll": {
       "Description": "自动重新生成参数配置",
-      "Title": "自动重新生成参数",
       "MaxRetry": "最大重试次数",
       "MaxRetryTitle": "最大重试次数",
       "Search": "搜索关键词",
       "SearchTitle": "搜索关键词",
       "TargetId": "目标元素ID",
-      "TargetIdTitle": "目标ID"
+      "TargetIdTitle": "目标ID",
+      "Title": "自动重新生成参数"
     },
     "BaseAPIConfig": {
       "API": "API 提供商和模型配置",
@@ -281,25 +281,25 @@
     },
     "FullReplacement": {
       "Description": "完全替换参数配置",
-      "Title": "完全替换参数",
       "SourceType": "数据来源类型，决定用什么内容来替换目标元素",
       "SourceTypeTitle": "源类型",
-      "TargetId": "目标元素ID",
-      "TargetIdTitle": "目标ID",
       "SourceTypes": {
         "HistoryOfSession": "会话历史 - 使用当前聊天会话的历史记录作为替换内容",
         "LlmResponse": "语言模型响应 - 使用AI模型生成的响应作为替换内容"
-      }
+      },
+      "TargetId": "目标元素ID",
+      "TargetIdTitle": "目标ID",
+      "Title": "完全替换参数"
     },
     "Function": {
       "Description": "函数参数配置",
-      "Title": "函数参数",
       "FunctionId": "函数ID",
       "FunctionIdTitle": "函数ID",
       "TimeoutMessage": "超时消息",
       "TimeoutMessageTitle": "超时消息",
       "TimeoutSecond": "超时时间（秒）",
       "TimeoutSecondTitle": "超时时间",
+      "Title": "函数参数",
       "Trigger": "触发条件",
       "TriggerTitle": "触发条件"
     },
@@ -315,31 +315,31 @@
     },
     "MCP": {
       "Description": "模型上下文协议参数配置",
-      "Title": "模型上下文协议参数",
       "Id": "MCP 服务器 ID",
       "IdTitle": "服务器 ID",
       "ResponseProcessing": {
         "Description": "响应处理配置",
-        "Title": "响应处理",
         "Id": "响应处理器 ID",
-        "IdTitle": "处理器 ID"
+        "IdTitle": "处理器 ID",
+        "Title": "响应处理"
       },
       "TimeoutMessage": "超时消息",
       "TimeoutMessageTitle": "超时消息",
       "TimeoutSecond": "超时时间（秒）",
       "TimeoutSecondTitle": "超时时间",
+      "Title": "模型上下文协议参数",
       "Trigger": "触发条件",
       "TriggerTitle": "触发条件"
     },
     "ModelParameters": {
       "Description": "模型参数配置",
-      "Title": "模型参数",
       "MaxTokens": "生成的最大令牌数量",
       "MaxTokensTitle": "最大令牌数",
       "SystemPrompt": "模型系统提示词",
       "SystemPromptTitle": "系统提示词",
       "Temperature": "响应生成温度（越高=越创造性）",
       "TemperatureTitle": "温度",
+      "Title": "模型参数",
       "TopP": "Top P 采样参数",
       "TopPTitle": "Top P"
     },
@@ -347,26 +347,26 @@
       "Bottom": "自底部偏移几条消息",
       "BottomTitle": "底部偏移",
       "Description": "位置参数配置，用于确定内容插入的精确位置。支持相对位置、绝对位置、前置和后置四种定位方式",
-      "Title": "位置参数",
       "TargetId": "目标元素ID",
       "TargetIdTitle": "目标ID",
+      "Title": "位置参数",
       "Top": "自顶部偏移几条消息",
       "TopTitle": "顶部偏移",
       "Type": "位置类型，用于确定内容插入的精确位置。支持相对位置、绝对位置、前置和后置四种定位方式",
       "TypeTitle": "位置类型",
       "Types": {
-        "Relative": "相对位置 - 在目标元素内部插入内容，使用top/bottom偏移量",
         "Absolute": "绝对位置 - 在指定的绝对位置插入内容",
+        "After": "后置 - 在目标元素之后插入内容",
         "Before": "前置 - 在目标元素之前插入内容",
-        "After": "后置 - 在目标元素之后插入内容"
+        "Relative": "相对位置 - 在目标元素内部插入内容，使用top/bottom偏移量"
       }
     },
     "Prompt": {
       "Caption": "简短描述",
       "CaptionTitle": "描述",
       "Children": "子提示词列表，将从上到下，从外到里地拼接为最终的提示词文本。",
+      "ChildrenTitle": "子提示词",
       "Description": "完整的提示词配置，包含类型和内容",
-      "Title": "提示词",
       "Enabled": "是否启用此提示词，启用的才会拼入到最终的提示词中",
       "EnabledTitle": "启用",
       "Id": "提示词配置的唯一标识符，方便在 PromptDynamicModification 里通过 targetId 引用。",
@@ -374,15 +374,15 @@
       "Role": "OpenAI 兼容接口的提示词角色。system: 定义AI的行为规则和背景设定；user: 模拟用户的输入和请求；assistant: AI的回复和响应内容",
       "RoleTitle": "角色",
       "RoleType": {
+        "Assistant": "助手 - AI的回复和响应内容",
         "System": "系统 - 定义AI的行为规则和背景设定",
-        "User": "用户 - 模拟用户的输入和请求",
-        "Assistant": "助手 - AI的回复和响应内容"
+        "User": "用户 - 模拟用户的输入和请求"
       },
       "Tags": "标签列表",
+      "TagsTitle": "标签",
       "Text": "提示词内容，可以包含维基文本支持的语法，例如<<变量名>>。",
       "TextTitle": "文本",
-      "TagsTitle": "标签",
-      "ChildrenTitle": "子提示词"
+      "Title": "提示词"
     },
     "PromptDynamicModification": {
       "Caption": "简短描述",
@@ -390,16 +390,15 @@
       "Content": "内容",
       "ContentTitle": "内容",
       "Description": "详细描述",
-      "Title": "提示词动态修改",
       "DynamicModificationType": "动态修改类型",
       "DynamicModificationTypeTitle": "修改类型",
       "DynamicModificationTypes": {
-        "FullReplacement": "完全替换 - 将目标内容完全替换为来源数据",
         "DynamicPosition": "动态位置 - 在指定位置插入内容",
-        "RetrievalAugmentedGeneration": "检索增强生成 - 从知识库检索相关内容并插入",
+        "FullReplacement": "完全替换 - 将目标内容完全替换为来源数据",
         "Function": "函数调用 - 执行函数并插入其返回结果",
         "JavascriptTool": "JavaScript工具 - 加载并执行JavaScript工具",
-        "ModelContextProtocol": "模型上下文协议 - 与外部MCP服务器通信"
+        "ModelContextProtocol": "模型上下文协议 - 与外部MCP服务器通信",
+        "RetrievalAugmentedGeneration": "检索增强生成 - 从知识库检索相关内容并插入"
       },
       "DynamicPositionParam": "动态位置参数",
       "DynamicPositionParamTitle": "动态位置参数",
@@ -417,46 +416,47 @@
       "MCPParamTitle": "MCP 参数",
       "RAGParam": "检索增强生成参数",
       "RAGParamTitle": "RAG 参数",
-      "SchemaDescription": "提示词动态修改配置"
+      "SchemaDescription": "提示词动态修改配置",
+      "Title": "提示词动态修改"
     },
     "PromptPart": {
       "Caption": "提示词的简短描述",
       "CaptionTitle": "描述",
       "Children": "子提示词列表，将从上到下，从外到里地拼接为最终的提示词文本。",
+      "ChildrenTitle": "子提示词",
       "Description": "表示提示词的一部分，可以是文本或嵌套结构",
-      "Title": "提示词片段",
       "Id": "唯一标识符，方便在 PromptDynamicModification 里通过 targetId 引用。",
       "IdTitle": "ID",
       "Tags": "标签列表，用于分类和引用",
+      "TagsTitle": "标签",
       "Text": "提示词文本内容，可以包含维基文本支持的语法，例如<<变量名>>。",
       "TextTitle": "文本",
-      "TagsTitle": "标签",
-      "ChildrenTitle": "子提示词"
+      "Title": "提示词片段"
     },
     "ProviderModel": {
       "Description": "提供商和模型配置",
-      "Title": "提供商模型",
       "Model": "AI 模型名称",
       "ModelTitle": "模型",
       "Provider": "AI 提供商名称",
-      "ProviderTitle": "提供商"
+      "ProviderTitle": "提供商",
+      "Title": "提供商模型"
     },
     "RAG": {
       "Description": "检索增强生成参数配置",
-      "Title": "检索增强生成参数",
       "Removal": {
         "CoolDownChatRound": "上次展示后冷却轮数",
         "CoolDownChatRoundTitle": "冷却轮数",
         "Description": "移除条件",
-        "Title": "移除条件",
         "ExpireAfterChatRound": "多少轮对话后过期",
-        "ExpireAfterChatRoundTitle": "过期轮数"
+        "ExpireAfterChatRoundTitle": "过期轮数",
+        "Title": "移除条件"
       },
       "SourceType": "源类型",
       "SourceTypeTitle": "源类型",
       "SourceTypes": {
         "Wiki": "Wiki知识库 - 从TiddlyWiki知识库中检索相关内容"
       },
+      "Title": "检索增强生成参数",
       "Trigger": "触发条件",
       "TriggerTitle": "触发条件",
       "WikiParam": "Wiki 参数",
@@ -474,17 +474,10 @@
       "Caption": "简短描述",
       "CaptionTitle": "描述",
       "Description": "响应动态修改配置",
-      "Title": "响应动态修改",
       "DynamicModificationType": "动态修改类型",
       "DynamicModificationTypeTitle": "修改类型",
       "DynamicModificationTypes": {
         "FullReplacement": "完全替换 - 将响应内容完全替换为指定来源的内容"
-      },
-      "ResponseProcessingType": "响应处理类型",
-      "ResponseProcessingTypes": {
-        "ToolCalling": "工具调用 - 解析响应中的工具调用并执行",
-        "AutoReroll": "自动重新生成 - 检测到不当内容时自动重新生成",
-        "AutoReply": "自动回复 - 根据条件自动发送后续消息"
       },
       "ForbidOverrides": "是否禁止覆盖",
       "ForbidOverridesTitle": "禁止覆盖",
@@ -492,57 +485,64 @@
       "FullReplacementParamTitle": "完全替换参数",
       "Id": "唯一标识符",
       "IdTitle": "ID",
+      "ResponseProcessingType": "响应处理类型",
       "ResponseProcessingTypeTitle": "处理类型",
+      "ResponseProcessingTypes": {
+        "AutoReply": "自动回复 - 根据条件自动发送后续消息",
+        "AutoReroll": "自动重新生成 - 检测到不当内容时自动重新生成",
+        "ToolCalling": "工具调用 - 解析响应中的工具调用并执行"
+      },
+      "Title": "响应动态修改",
       "ToolCallingParam": "工具调用参数",
       "ToolCallingParamTitle": "工具调用参数"
     },
     "ToolCalling": {
       "Description": "工具调用参数配置",
-      "Title": "工具调用参数",
       "Match": "匹配模式",
       "MatchTitle": "匹配模式",
       "TargetId": "目标元素ID",
-      "TargetIdTitle": "目标ID"
+      "TargetIdTitle": "目标ID",
+      "Title": "工具调用参数"
     },
     "Trigger": {
       "Description": "触发条件配置",
-      "Title": "触发条件",
       "Filter": "筛选条件",
       "FilterTitle": "筛选条件",
       "Model": {
         "Description": "基于模型判断的触发条件",
-        "Title": "模型判断",
         "Preset": "预设模型",
         "PresetTitle": "预设模型",
         "System": "系统提示词",
         "SystemTitle": "系统提示词",
+        "Title": "模型判断",
         "User": "用户提示词",
         "UserTitle": "用户提示词"
       },
       "RandomChance": "随机触发概率",
       "RandomChanceTitle": "随机概率",
       "Search": "搜索关键词",
-      "SearchTitle": "搜索关键词"
+      "SearchTitle": "搜索关键词",
+      "Title": "触发条件"
     },
     "Wiki": {
       "Description": "Wiki 参数配置",
-      "Title": "Wiki 参数",
       "Filter": "筛选器表达式，可以使用 TiddlyWiki 支持的筛选器，从知识库中提取数据",
       "FilterTitle": "筛选器",
+      "Title": "Wiki 参数",
       "WorkspaceName": "工作区名称",
       "WorkspaceNameTitle": "工作区名称"
     },
     "WikiSearch": {
-      "Title": "Wiki 搜索",
-      "Description": "使用过滤表达式搜索 TiddlyWiki 工作区内容",
-      "WorkspaceNameTitle": "工作区名称",
-      "WorkspaceName": "要搜索的 TiddlyWiki 工作区名称",
-      "FilterTitle": "过滤器",
-      "Filter": "TiddlyWiki 过滤表达式，用于指定搜索条件",
-      "MaxResultsTitle": "最大结果数",
-      "MaxResults": "返回的最大搜索结果数量",
+      "Description": "使用筛选器表达式搜索 TiddlyWiki 工作区内容",
+      "Filter": "TiddlyWiki 筛选器表达式，用于指定搜索条件",
+      "FilterTitle": "筛选器",
+      "IncludeText": "是否在结果中包含 tiddler 的文本内容",
       "IncludeTextTitle": "包含文本",
-      "IncludeText": "是否在结果中包含 tiddler 的文本内容"
+      "MaxResults": "返回的最大搜索结果数量",
+      "MaxResultsTitle": "最大结果数",
+      "Title": "Wiki 搜索",
+      "WorkspaceName": "要搜索的 TiddlyWiki 工作区名称",
+      "WorkspaceNameTitle": "工作区名称"
     }
   },
   "Search": {

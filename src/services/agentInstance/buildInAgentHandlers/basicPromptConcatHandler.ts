@@ -70,13 +70,6 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
       promptConfig: handlerConfig,
     } as AgentPromptDescription;
 
-    const { flatPrompts } = await agentInstanceService.concatPrompt(promptDescription, context.agent.messages);
-
-    logger.debug('Prompt concatenation result', {
-      flatPromptCount: flatPrompts.length,
-      roles: flatPrompts.map((p: { role?: string }) => p.role),
-    });
-
     // Generate AI response
     // Function to process a single LLM call with retry support
     async function* processLLMCall(_userMessage: string): AsyncGenerator<AgentInstanceLatestStatus> {
@@ -84,13 +77,17 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
         // Use prompt description from outer scope instead of fetching by ID
         const agentConfig = promptDescription;
 
+        // Re-generate prompts to trigger middleware (including retrievalAugmentedGenerationHandler)
+        const { flatPrompts: currentFlatPrompts } = await agentInstanceService.concatPrompt(promptDescription, context.agent.messages);
+
         logger.info('Starting AI generation', {
+          method: 'processLLMCall',
           modelName: aiApiConfig.api.model,
-          promptCount: flatPrompts.length,
+          promptCount: currentFlatPrompts.length,
           messageCount: context.agent.messages.length,
         });
 
-        for await (const response of externalAPIService.generateFromAI(flatPrompts, aiApiConfig)) {
+        for await (const response of externalAPIService.generateFromAI(currentFlatPrompts, aiApiConfig)) {
           if (!currentRequestId && response.requestId) {
             currentRequestId = response.requestId;
             logger.debug('Received request ID', {
@@ -100,6 +97,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
 
           if (context.isCancelled()) {
             logger.info('Request cancelled by user', {
+              method: 'processLLMCall',
               requestId: currentRequestId,
             });
 
@@ -110,24 +108,12 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
             return;
           }
 
-          // Log response content for debugging
-          logger.debug(`Response content from AI`, {
-            status: response.status,
-            contentLength: response.content.length,
-            requestId: currentRequestId,
-          });
-
           if (response.status === 'update' || response.status === 'done') {
             const state = response.status === 'done' ? 'completed' : 'working';
 
-            logger.debug('Processing response', {
-              status: response.status,
-              state: state,
-              contentLength: response.content.length || 0,
-            });
-
             if (state === 'completed') {
               logger.info('AI generation completed', {
+                method: 'processLLMCall',
                 requestId: currentRequestId,
                 contentLength: response.content.length || 0,
               });
@@ -137,6 +123,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
 
               if (continueResult.continue) {
                 logger.info('Continue round triggered', {
+                  method: 'processLLMCall',
                   reason: continueResult.reason,
                   hasNewMessage: !!continueResult.newMessage,
                   retryCount,
@@ -157,7 +144,16 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                 // Yield current response as working state
                 yield working(response.content, context, currentRequestId);
 
-                // Continue with new round - use last user message or provided message
+                // Add AI's response to message history BEFORE continuing
+                // This ensures retrievalAugmentedGenerationHandler can find the tool call
+                context.agent.messages.push({
+                  id: `ai-response-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                  agentId: context.agent.id,
+                  role: 'assistant',
+                  content: response.content,
+                });
+
+                // Continue with new round - use last user message
                 const nextUserMessage = continueResult.newMessage || lastUserMessage?.content;
                 if (nextUserMessage) {
                   yield* processLLMCall(nextUserMessage);
@@ -176,6 +172,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
               // Check if we need to trigger another LLM call
               if (processedResult.needsNewLLMCall) {
                 logger.info('Response processing triggered new LLM call', {
+                  method: 'processLLMCall',
                   hasNewUserMessage: !!processedResult.newUserMessage,
                   retryCount,
                 });

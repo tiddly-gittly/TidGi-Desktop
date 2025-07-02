@@ -223,11 +223,6 @@ export async function promptConcat(
   // 5. Flatten tree-structured prompts into an array
   const flatPrompts = flattenPrompts(modifiedPrompts);
 
-  logger.debug('Flattened prompts', {
-    flatPromptCount: flatPrompts.length,
-    roles: flatPrompts.map(p => p.role),
-  });
-
   // 6. Add user messages (if any)
   // Get the last message, which should be the user message
   const messagesCopy = cloneDeep(messages);

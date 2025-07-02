@@ -8,6 +8,7 @@ export interface OptimizedToolSchema {
 interface JSONSchemaProperty {
   default?: unknown;
   description?: string;
+  example?: string;
   title?: string;
   type?: string;
 }
@@ -40,11 +41,13 @@ export function optimizeToolSchema(schema: JSONSchema): OptimizedToolSchema {
       const parameterType = property.type ?? 'string';
       const parameterTitle = property.title ? (translate(property.title)) : '';
       const parameterDescription = property.description ? (translate(property.description)) : '';
+      const example = property.example ? `示例: ${property.example}` : '';
       // 避免 title/description/参数名重复
       const metaList = [];
       if (parameterTitle && parameterTitle !== key && parameterTitle !== parameterDescription) metaList.push(parameterTitle);
       if (property.default !== undefined) metaList.push(`默认: ${JSON.stringify(property.default)}`);
       if (isRequired) metaList.push('必填');
+      if (example) metaList.push(example);
       const metaString = metaList.length ? `（${metaList.join('，')}）` : '';
       // 避免描述重复
       const desc = parameterDescription && parameterDescription !== parameterTitle ? ` - ${parameterDescription}` : '';

@@ -30,7 +30,7 @@
               "children": [
                 {
                   "id": "default-before-tool",
-                  "text": "<tools>\n以下是可用的工具。请在使用工具时，遵循以下规则：\n1. 你可以使用这些工具来帮助你完成任务。\n2. 你需要根据上下文和用户的需求来选择合适的工具。\n3. 工具调用必须严格使用如下格式：\n<tool_use name=\"工具ID\">{参数:值, ...}</tool_use>\n其中参数内容必须是JSON对象。\n4. 工具调用返回内容必须用 <functions_result>...</functions_result> 包裹。"
+                  "text": "<tools>\n以下是可用的工具。请在使用工具时，遵循以下规则：\n1. 你可以使用这些工具来帮助你完成任务。\n2. 你需要根据上下文和用户的需求来选择合适的工具。\n3. 工具调用必须严格使用如下格式：\n<tool_use name=\"工具ID\">{参数:值, ...}</tool_use>\n其中工具ID必须是下方列出的英文ID（如wiki-search），参数内容必须是JSON对象。\n4. 工具调用返回内容将用 <functions_result>...</functions_result> 包裹。"
                 },
                 {
                   "id": "default-post-tool",

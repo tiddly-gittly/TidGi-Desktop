@@ -24,7 +24,7 @@ const WikiSearchParameterSchema = z.object({
   filter: z.string().meta({
     title: t('Schema.WikiSearch.FilterTitle'),
     description: t('Schema.WikiSearch.Filter'),
-    example: '[tag[example]]',
+    example: '[tag[example]] [title[SomeTitle]]',
   }),
   maxResults: z.number().optional().default(10).meta({
     title: t('Schema.WikiSearch.MaxResultsTitle'),
@@ -111,13 +111,14 @@ export class WikiSearchTool implements IAgentTool {
       if (tiddlerTitles.length === 0) {
         return {
           success: true,
-          data: {
-            results: [],
-            totalFound: 0,
-          },
+          data: '', // Empty string for no results
           metadata: {
             filter,
             workspaceID,
+            rawResults: {
+              results: [],
+              totalFound: 0,
+            },
           },
         };
       }
@@ -163,16 +164,24 @@ export class WikiSearchTool implements IAgentTool {
 
       return {
         success: true,
-        data: {
-          results,
-          totalFound: tiddlerTitles.length,
-          returned: results.length,
-        },
+        data: WikiSearchTool.formatResultsAsText({
+          success: true,
+          data: {
+            results,
+            totalFound: tiddlerTitles.length,
+            returned: results.length,
+          },
+        }),
         metadata: {
           filter,
           workspaceID,
           maxResults,
           includeText,
+          rawResults: {
+            results,
+            totalFound: tiddlerTitles.length,
+            returned: results.length,
+          },
         },
       };
     } catch (error) {
