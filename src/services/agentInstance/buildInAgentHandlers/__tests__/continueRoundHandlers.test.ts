@@ -1,19 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-// Mock dependencies that have Electron dependencies
-vi.mock('@services/libs/log', () => ({
-  logger: {
-    error: vi.fn(),
-    info: vi.fn(),
-    debug: vi.fn(),
-    warn: vi.fn(),
-  },
-}));
-vi.mock('@services/container');
-
+import { continueRoundHandlerRegistry } from '../continueRoundHandlers';
+import { AgentHandlerContext } from '../type';
+import { AgentPromptDescription } from '../../promptConcat/promptConcatSchema';
+import { ContinueRoundResult } from '../continueRoundHandlers/types';
+import { AgentInstance } from '../../interface';
+import { AgentDefinition } from '@services/agentDefinition/interface';
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { continueRoundHandlerRegistry } from '../continueRoundHandlers';
 
 describe('continueRoundHandlers', () => {
   beforeEach(() => {
@@ -86,14 +79,14 @@ describe('continueRoundHandlers', () => {
         enabled: true,
       });
 
-      const mockContext = {
-        agent: { id: 'test-agent', messages: [] },
-        agentDef: { id: 'test-def' },
+      const mockContext: AgentHandlerContext = {
+        agent: { id: 'test-agent', agentDefId: 'test-def', messages: [], status: { state: 'unknown' }, created: new Date() } as AgentInstance,
+        agentDef: { id: 'test-def', name: 'Test Agent' } as AgentDefinition,
         isCancelled: vi.fn().mockReturnValue(false),
-      } as any;
+      };
 
-      const result = await continueRoundHandlerRegistry.processContinueRound(
-        { id: 'test-config' } as any,
+      const result: ContinueRoundResult = await continueRoundHandlerRegistry.processContinueRound(
+        { id: 'test-config', promptConfig: {} } as AgentPromptDescription,
         'test response',
         mockContext,
       );

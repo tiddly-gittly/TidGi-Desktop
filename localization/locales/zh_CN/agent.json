@@ -462,6 +462,7 @@
       "WikiParam": "Wiki 参数",
       "WikiParamTitle": "Wiki 参数"
     },
+    "Required": "必填",
     "Response": {
       "Description": "外部API的响应，通常作为响应动态修改的目标，结构与提示词的一样，可以填写预置内容，也可以作为占位符或容器，由 ResponseDynamicModification 填入外部API的响应的具体内容。",
       "Title": "响应"

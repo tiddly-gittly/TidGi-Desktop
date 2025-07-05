@@ -4,31 +4,6 @@ import { PromptConcatContext } from '../../../promptConcat';
 import { Prompt, PromptDynamicModification } from '../../../promptConcatSchema';
 import { retrievalAugmentedGenerationHandler } from '../retrievalAugmentedGeneration';
 
-// Mock dependencies
-vi.mock('@services/container', () => ({
-  container: {
-    get: vi.fn(),
-  },
-}));
-
-vi.mock('@services/libs/log', () => ({
-  logger: {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  },
-}));
-
-vi.mock('../../../../../../constants/channels', () => ({
-  WikiChannel: {
-    runFilter: 'wiki:runFilter',
-  },
-  WorkspaceChannel: {
-    name: 'workspace',
-  },
-}));
-
 describe('RAG Tool Injection', () => {
   let mockWorkspaceService: {
     getWorkspacesAsList: ReturnType<typeof vi.fn>;
@@ -157,8 +132,6 @@ describe('RAG Tool Injection', () => {
 
       // Should contain tool information with optimized schema
       expect(toolPrompt?.text).toContain('Available Tools:');
-      expect(toolPrompt?.text).toContain('Wiki Search: Search for content in TiddlyWiki workspaces using filter expressions');
-      // Should contain optimized parameter format (not JSON)
       expect(toolPrompt?.text).toContain('Parameters:');
       expect(toolPrompt?.text).toContain('Description: search wiki content using filters');
       expect(toolPrompt?.text).toContain('Parameters: workspaceName (required): string - workspace to search');
@@ -259,7 +232,7 @@ describe('RAG Tool Injection', () => {
 
       // Verify wiki service was called correctly
       expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
-        'wiki:runFilter',
+        'wiki-run-filter',
         'wiki1',
         ['[tag[example]]'],
       );

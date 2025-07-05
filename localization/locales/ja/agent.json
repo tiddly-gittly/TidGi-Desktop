@@ -462,6 +462,7 @@
       "WikiParam": "Wiki パラメータ",
       "WikiParamTitle": ""
     },
+    "Required": "",
     "Response": {
       "Description": "外部APIのレスポンスは、通常、動的に変更される対象として応答され、その構造はプロンプトと同じです。プリセット内容を記入することもできますし、プレースホルダーやコンテナとして機能させ、ResponseDynamicModificationによって外部APIのレスポンスの具体的な内容が入力されることもあります。",
       "Title": ""

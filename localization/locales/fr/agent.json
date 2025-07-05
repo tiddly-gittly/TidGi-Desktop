@@ -461,6 +461,7 @@
       "WikiParam": "Paramètres Wiki",
       "WikiParamTitle": ""
     },
+    "Required": "",
     "Response": {
       "Description": "La réponse de l'API externe, souvent utilisée comme cible pour des modifications dynamiques en réponse, a la même structure que les mots d'invite. Elle peut être préremplie avec du contenu prédéfini ou servir d'espace réservé (placeholder) ou de conteneur, où ResponseDynamicModification insère le contenu spécifique de la réponse de l'API externe.",
       "Title": ""

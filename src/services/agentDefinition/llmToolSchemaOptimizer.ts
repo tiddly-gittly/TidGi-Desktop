@@ -46,7 +46,7 @@ export function optimizeToolSchema(schema: JSONSchema): OptimizedToolSchema {
       const metaList = [];
       if (parameterTitle && parameterTitle !== key && parameterTitle !== parameterDescription) metaList.push(parameterTitle);
       if (property.default !== undefined) metaList.push(`默认: ${JSON.stringify(property.default)}`);
-      if (isRequired) metaList.push('必填');
+      if (isRequired) metaList.push(i18n.t('Schema.Required', { ns: 'agent' }));
       if (example) metaList.push(example);
       const metaString = metaList.length ? `（${metaList.join('，')}）` : '';
       // 避免描述重复

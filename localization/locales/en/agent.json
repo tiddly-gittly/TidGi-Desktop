@@ -462,6 +462,7 @@
       "WikiParam": "Wiki parameters",
       "WikiParamTitle": ""
     },
+    "Required": "Required",
     "Response": {
       "Description": "The response from an external API, typically used as the target for dynamic modifications in responses, shares the same structure as the prompt. It can be filled with preset content or serve as a placeholder or container, where ResponseDynamicModification injects the specific content from the external API's response.",
       "Title": ""

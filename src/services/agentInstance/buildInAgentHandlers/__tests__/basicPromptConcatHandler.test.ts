@@ -429,7 +429,7 @@ describe('basicPromptConcatHandler', () => {
       expect(results[0]).toMatchObject({
         state: 'completed',
         message: {
-          content: 'Error processing prompt: Service unavailable',
+          content: 'Unexpected error: Service unavailable',
           role: 'agent',
         },
       });

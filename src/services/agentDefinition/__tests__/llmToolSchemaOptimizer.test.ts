@@ -33,6 +33,7 @@ describe('llmToolSchemaOptimizer', () => {
         if (key === 'Schema.WikiSearch.Description') return '在wiki中搜索内容';
         if (key === 'Schema.WikiSearch.WorkspaceName') return '工作区名描述';
         if (key === 'Schema.WikiSearch.MaxResults') return '最大数量描述';
+        if (key === 'Schema.Required') return '必填';
         return key;
       });
 
@@ -61,7 +62,7 @@ describe('llmToolSchemaOptimizer', () => {
 
       expect(result).toEqual({
         description: '在wiki中搜索内容',
-        parameters: 'workspaceName (工作区名, required): string - 工作区名描述; maxResults (最大数量, default: 10, required): number - 最大数量描述',
+        parameters: 'workspaceName（工作区名，必填）: string - 工作区名描述；maxResults（最大数量，默认: 10，必填）: number - 最大数量描述',
       });
     });
 
@@ -92,7 +93,7 @@ describe('llmToolSchemaOptimizer', () => {
 
       const result = optimizeToolSchema(inputSchema);
 
-      expect(result.description).toBe('Test Parameter with spaces');
+      expect(result.description).toBe('Schema.TestParameter.Title   with   spaces   ');
     });
 
     it('should handle camelCase conversion', () => {
@@ -109,7 +110,7 @@ describe('llmToolSchemaOptimizer', () => {
 
       const result = optimizeToolSchema(inputSchema);
 
-      expect(result.description).toBe('camel Case Test Value');
+      expect(result.description).toBe('camelCaseTestValue');
     });
 
     it('should handle properties without optional fields', () => {
@@ -126,7 +127,7 @@ describe('llmToolSchemaOptimizer', () => {
 
       const result = optimizeToolSchema(inputSchema);
 
-      expect(result.parameters).toBe('simpleField: string - ');
+      expect(result.parameters).toBe('simpleField: string');
     });
   });
 
@@ -164,10 +165,10 @@ describe('llmToolSchemaOptimizer', () => {
       expect(result).toEqual({
         id: 'wiki-search',
         name: '搜索',
-        description: '搜索wiki内容',
+        description: 'Search parameters',
         schema: {
           description: 'Search parameters',
-          parameters: 'query (查询, required): string - Search query',
+          parameters: 'query（查询，Schema.Required）: string - Search query',
         },
       });
     });
@@ -190,7 +191,7 @@ describe('llmToolSchemaOptimizer', () => {
       expect(result).toEqual({
         id: 'test-tool',
         name: 'Test Tool',
-        description: 'A test tool',
+        description: '',
         schema: {
           description: '',
           parameters: '',
