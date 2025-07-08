@@ -14,6 +14,10 @@ export interface IWikiGitWorkspaceService {
    */
   registerSyncBeforeShutdown(): void;
   removeWorkspace: (id: string) => Promise<void>;
+  /**
+   * Automatically initialize a default wiki workspace if none exists.
+   */
+  initialize(): Promise<void>;
 }
 export const WikiGitWorkspaceServiceIPCDescriptor = {
   channel: WikiGitWorkspaceChannel.name,

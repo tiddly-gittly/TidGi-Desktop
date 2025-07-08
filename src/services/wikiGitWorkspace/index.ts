@@ -22,6 +22,7 @@ import { updateGhConfig } from '@services/wiki/plugin/ghPages';
 import { hasGit } from 'git-sync-js';
 import { InitWikiGitError, InitWikiGitRevertError, InitWikiGitSyncedWikiNoGitUserInfoError } from './error';
 import { IWikiGitWorkspaceService } from './interface';
+import { DEFAULT_WIKI_FOLDER, DEFAULT_FIRST_WIKI_PATH } from '@/constants/paths';
 
 @injectable()
 export class WikiGitWorkspace implements IWikiGitWorkspaceService {
@@ -127,6 +128,39 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       throw new InitWikiGitError(errorMessage);
     }
   };
+
+  /**
+   * Automatically initialize a default wiki workspace if none exists. This matches the previous frontend logic.
+   */
+  public async initialize(): Promise<void> {
+    const workspaces = await this.workspaceService.getWorkspacesAsList();
+    const wikiWorkspaces = workspaces.filter(w => isWikiWorkspace(w) && !w.isSubWiki);
+    if (wikiWorkspaces.length > 0) return;
+    // Construct minimal default config, only fill required fields, let workspaceService.create handle defaults
+    const defaultConfig: INewWikiWorkspaceConfig = {
+      order: 0,
+      wikiFolderLocation: DEFAULT_FIRST_WIKI_PATH,
+      storageService: SupportedStorageServices.local,
+      name: 'wiki',
+      port: 5212,
+      isSubWiki: false,
+      backupOnInterval: true,
+      readOnlyMode: false,
+      tokenAuth: false,
+      tagName: null,
+      mainWikiToLink: null,
+      mainWikiID: null,
+      excludedPlugins: [],
+      enableHTTPAPI: false,
+      lastNodeJSArgv: [],
+      homeUrl: '',
+      gitUrl: null,
+    };
+    // Copy the wiki template first
+    await this.wikiService.copyWikiTemplate(DEFAULT_WIKI_FOLDER, 'wiki');
+    // Create the workspace
+    await this.initWikiGitTransaction(defaultConfig);
+  }
 
   public async removeWorkspace(workspaceID: string): Promise<void> {
     const mainWindow = this.windowService.get(WindowNames.main);

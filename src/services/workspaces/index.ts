@@ -440,16 +440,6 @@ export class Workspace implements IWorkspaceService {
 
   public async create(newWorkspaceConfig: INewWikiWorkspaceConfig): Promise<IWorkspace> {
     const newID = nanoid();
-
-    // find largest order
-    const workspaceLst = await this.getWorkspacesAsList();
-    let max = 0;
-    for (const element of workspaceLst) {
-      if (element.order > max) {
-        max = element.order;
-      }
-    }
-
     const newWorkspace: IWorkspace = {
       userName: '',
       ...newWorkspaceConfig,
@@ -460,7 +450,7 @@ export class Workspace implements IWorkspaceService {
       id: newID,
       lastUrl: null,
       lastNodeJSArgv: [],
-      order: max + 1,
+      order: typeof newWorkspaceConfig.order === 'number' ? newWorkspaceConfig.order : ((await this.getWorkspacesAsList()).length + 1),
       picturePath: null,
       subWikiFolderName: 'subwiki',
       syncOnInterval: false,

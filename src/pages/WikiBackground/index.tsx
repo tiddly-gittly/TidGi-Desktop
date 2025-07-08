@@ -3,8 +3,6 @@ import { styled } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
 
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
-import { useState } from 'react';
-import { useAutoCreateFirstWorkspace } from '../Guide/useAutoCreateFirstWorkspace';
 import { ViewLoadErrorMessages, WikiErrorMessages } from './ErrorMessage';
 
 const InnerContentRoot = styled('div')`
@@ -21,7 +19,6 @@ const InnerContentRoot = styled('div')`
 export default function WikiBackground(): React.JSX.Element {
   const { t } = useTranslation();
   const workspacesList = useWorkspacesListObservable();
-
   const activeWorkspaceMetadata = workspacesList
     ?.map((workspace) => ({ active: workspace.active, ...workspace.metadata }))
     .find((workspace) => workspace.active);
@@ -29,8 +26,6 @@ export default function WikiBackground(): React.JSX.Element {
   const hasError = typeof activeWorkspaceMetadata?.didFailLoadErrorMessage === 'string' &&
     activeWorkspaceMetadata.didFailLoadErrorMessage.length > 0 &&
     activeWorkspaceMetadata.isLoading === false;
-  const [wikiCreationMessage, wikiCreationMessageSetter] = useState('');
-  useAutoCreateFirstWorkspace(workspacesList, wikiCreationMessageSetter);
   return (
     <>
       <InnerContentRoot>
@@ -39,7 +34,6 @@ export default function WikiBackground(): React.JSX.Element {
           <ViewLoadErrorMessages activeWorkspace={activeWorkspace} activeWorkspaceMetadata={activeWorkspaceMetadata} />
         )}
         {Array.isArray(workspacesList) && workspacesList.length > 0 && activeWorkspaceMetadata?.isLoading === true && <Typography color='textSecondary'>{t('Loading')}</Typography>}
-        {wikiCreationMessage && <Typography color='textSecondary'>{wikiCreationMessage}</Typography>}
       </InnerContentRoot>
     </>
   );

@@ -8,7 +8,6 @@ import { useState } from 'react';
 import { Languages } from '../../windows/Preferences/sections/Languages';
 import { TiddlyWiki } from '../../windows/Preferences/sections/TiddlyWiki';
 import { NewUserMessage } from './NewUserMessage';
-import { useAutoCreateFirstWorkspace } from './useAutoCreateFirstWorkspace';
 
 const InnerContentRoot = styled('div')`
   flex: 1;
@@ -23,14 +22,11 @@ const InnerContentRoot = styled('div')`
 
 export default function Guide(): React.JSX.Element {
   const workspacesList = useWorkspacesListObservable();
-  const [wikiCreationMessage, wikiCreationMessageSetter] = useState('');
-  useAutoCreateFirstWorkspace(workspacesList, wikiCreationMessageSetter);
   const preferences = usePreferenceObservable();
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
   return (
     <>
       <InnerContentRoot>
-        {wikiCreationMessage && <Typography color='textSecondary'>{wikiCreationMessage}</Typography>}
         {preferences !== undefined && Array.isArray(workspacesList) && workspacesList.length === 0 && (
           <NewUserMessage sidebar={preferences.sidebar} themeSource={preferences.themeSource} />
         )}
