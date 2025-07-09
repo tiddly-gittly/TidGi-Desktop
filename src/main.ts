@@ -102,10 +102,10 @@ const commonInit = async (): Promise<void> => {
     }),
   ]);
   initializeObservables();
-  // Initialize default page workspaces before initializing all workspace views
-  await workspaceService.initializeDefaultPageWorkspaces();
-  // Auto-create default wiki workspace if none exists (handled in backend)
+  // Auto-create default wiki workspace if none exists. Create wiki workspace first, so it is on first one
   await wikiGitWorkspaceService.initialize();
+  // Create default page workspaces before initializing all workspace views
+  await workspaceService.initializeDefaultPageWorkspaces();
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();
 
