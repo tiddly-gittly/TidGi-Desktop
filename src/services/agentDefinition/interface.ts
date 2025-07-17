@@ -105,12 +105,6 @@ export interface IAgentDefinitionService {
    * Get all available tools that can be registered
    */
   getAvailableTools(): Promise<Array<{ id: string; name: string; description: string; schema: OptimizedToolSchema }>>;
-  /**
-   * Match tool calling patterns in AI response text
-   * @param responseText AI response text to analyze
-   * @returns Tool calling match result
-   */
-  matchToolCalling(responseText: string): Promise<ToolCallingMatch>;
 }
 
 export const AgentDefinitionServiceIPCDescriptor = {
@@ -124,6 +118,5 @@ export const AgentDefinitionServiceIPCDescriptor = {
     registerAgentTools: ProxyPropertyType.Function,
     getAgentTools: ProxyPropertyType.Function,
     getAvailableTools: ProxyPropertyType.Function,
-    matchToolCalling: ProxyPropertyType.Function,
   },
 };

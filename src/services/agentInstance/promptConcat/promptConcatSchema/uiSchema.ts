@@ -72,20 +72,6 @@ export const HANDLER_CONFIG_UI_SCHEMA: UiSchema = {
           showWhen: 'retrievalAugmentedGeneration',
         },
       },
-      functionParam: {
-        'ui:field': 'ConditionalField',
-        'ui:condition': {
-          dependsOn: 'dynamicModificationType',
-          showWhen: 'function',
-        },
-      },
-      javascriptToolParam: {
-        'ui:field': 'ConditionalField',
-        'ui:condition': {
-          dependsOn: 'dynamicModificationType',
-          showWhen: 'javascriptTool',
-        },
-      },
       modelContextProtocolParam: {
         'ui:field': 'ConditionalField',
         'ui:condition': {

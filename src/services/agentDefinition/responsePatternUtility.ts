@@ -27,6 +27,50 @@ function parseToolParameters(parametersText: string): Record<string, unknown> {
     // JSON parsing failed, try other formats
   }
 
+  // Try parsing as JavaScript object literal using new Function
+  try {
+    // Wrap the object in a return statement to make it a valid function body
+    const functionBody = `return (${trimmedText});`;
+    const parseFunction = new Function(functionBody);
+    const parsed = parseFunction() as Record<string, unknown>;
+    
+    logger.debug('Successfully parsed JavaScript object using new Function', {
+      original: trimmedText,
+      parsed: typeof parsed,
+    });
+    return parsed;
+  } catch (functionError) {
+    logger.debug('Failed to parse using new Function', {
+      original: trimmedText,
+      error: functionError instanceof Error ? functionError.message : String(functionError),
+    });
+  }
+
+  // Try parsing as JavaScript object literal (with regex conversion to JSON)
+  try {
+    // Convert JavaScript object syntax to JSON
+    let jsonText = trimmedText;
+    
+    // Replace unquoted keys with quoted keys
+    // This regex matches object property names that aren't already quoted
+    jsonText = jsonText.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
+    
+    // Handle edge case where the object starts with an unquoted key
+    jsonText = jsonText.replace(/^(\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/, '$1"$2":');
+    
+    const parsed = JSON.parse(jsonText) as Record<string, unknown>;
+    logger.debug('Successfully parsed JavaScript object literal as JSON', {
+      original: trimmedText,
+      converted: jsonText,
+    });
+    return parsed;
+  } catch (jsonError) {
+    logger.debug('Failed to parse as JavaScript object literal', {
+      original: trimmedText,
+      error: jsonError instanceof Error ? jsonError.message : String(jsonError),
+    });
+  }
+
   // Check which format is most likely being used
   const lines = trimmedText.split('\n').map(line => line.trim()).filter(Boolean);
   const hasEqualSigns = lines.some(line => line.includes('='));

@@ -1,19 +1,24 @@
 /**
  * Function handler
  *
- * Executes a function and inserts its result at the specified position
+ * Executes a function and inse      const newPart: IPrompt = {
+        id: `function-result-${Date.now()}`,
+        caption: 'Function Result',
+        text: result,
+        source: context.sourcePaths?.get(modification.id),
+      };ts result at the specified position
  */
 import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
 import { findPromptById, PromptConcatContext } from '../../promptConcat';
-import { Prompt, PromptDynamicModification, PromptPart } from '../../promptConcatSchema';
+import { IPrompt, PromptDynamicModification } from '../../promptConcatSchema';
 import { insertContent, shouldTrigger } from '../shared/utilities';
 
 /**
  * Handler for dynamicModificationType: "function"
  * Executes a function and inserts its result at the specified position
  */
-export function functionHandler(prompts: Prompt[], modification: PromptDynamicModification, context: PromptConcatContext): Prompt[] {
+export function functionHandler(prompts: IPrompt[], modification: PromptDynamicModification, context: PromptConcatContext): IPrompt[] {
   if (!modification.functionParam) {
     logger.debug('Missing functionParam', {
       modificationType: 'function',
@@ -56,8 +61,9 @@ export function functionHandler(prompts: Prompt[], modification: PromptDynamicMo
       if (!result) return;
 
       // Create new prompt part
-      const newPart: PromptPart = {
+      const newPart: IPrompt = {
         id: `function-${Date.now()}`,
+        caption: 'Function Result',
         text: result,
         source: context.sourcePaths?.get(modification.id),
       };

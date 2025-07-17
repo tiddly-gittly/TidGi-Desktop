@@ -92,7 +92,7 @@ export interface ResponseDynamicModification {
   dynamicModificationType?: 'fullReplacement';
   fullReplacementParam?: FullReplacementParameter;
 
-  responseProcessingType?: 'toolCalling' | 'autoReroll' | 'autoReply';
+  responseProcessingType?: 'toolCalling';
   toolCallingParam?: ToolCallingParameter;
   autoRerollParam?: AutoRerollParameter;
   autoReplyParam?: AutoReplyParameter;

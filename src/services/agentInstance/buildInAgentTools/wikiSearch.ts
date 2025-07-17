@@ -87,9 +87,17 @@ export class WikiSearchTool implements IAgentTool {
       const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
 
       // Look up workspace ID from workspace name
-      // For now, assuming workspaceName is actually the workspaceID
-      // In a real implementation, you'd lookup the workspace ID by name
-      const workspaceID = workspaceName;
+      const workspaces = await workspaceService.getWorkspacesAsList();
+      const targetWorkspace = workspaces.find(ws => ws.name === workspaceName);
+      
+      if (!targetWorkspace) {
+        return {
+          success: false,
+          error: `Workspace with name "${workspaceName}" does not exist`,
+        };
+      }
+      
+      const workspaceID = targetWorkspace.id;
 
       if (!await workspaceService.exists(workspaceID)) {
         return {
@@ -203,16 +211,25 @@ export class WikiSearchTool implements IAgentTool {
    */
   public static formatResultsAsText(results: AgentToolResult): string {
     if (!results.success || !results.data) {
-      return '';
+      return 'No search results found.';
     }
 
-    const data = results.data as { results: Array<{ title: string; text?: string }> };
-    let content = '';
+    const data = results.data as { results: Array<{ title: string; text?: string }>; totalFound: number; returned: number };
+    
+    if (!data.results || data.results.length === 0) {
+      return 'No search results found.';
+    }
+
+    let content = `Wiki search completed successfully. Found ${data.totalFound} total results, showing ${data.returned}:\n\n`;
 
     for (const result of data.results) {
-      content += `# ${result.title}\n\n`;
+      content += `**Tiddler: ${result.title}**\n\n`;
       if (result.text) {
-        content += `${result.text}\n\n`;
+        content += '```tiddlywiki\n';
+        content += result.text;
+        content += '\n```\n\n';
+      } else {
+        content += '(Content not available)\n\n';
       }
     }
 

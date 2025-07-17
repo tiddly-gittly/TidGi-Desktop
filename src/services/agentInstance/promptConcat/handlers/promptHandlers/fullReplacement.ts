@@ -7,18 +7,14 @@ import { AgentInstanceMessage } from '@services/agentInstance/interface';
 import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
 import { findPromptById, PromptConcatContext } from '../../promptConcat';
-import { Prompt, PromptDynamicModification } from '../../promptConcatSchema';
+import { IPrompt, PromptDynamicModification } from '../../promptConcatSchema';
 
 /**
  * Handler for dynamicModificationType: "fullReplacement"
  * Completely replaces target content with content from a specified source
  */
-export function fullReplacementHandler(prompts: Prompt[], modification: PromptDynamicModification, context: PromptConcatContext): Prompt[] {
+export function fullReplacementHandler(prompts: IPrompt[], modification: PromptDynamicModification, context: PromptConcatContext): IPrompt[] {
   if (!modification.fullReplacementParam) {
-    logger.debug('Missing fullReplacementParam', {
-      modificationType: 'fullReplacement',
-      modificationId: modification.id,
-    });
     return prompts;
   }
 
@@ -37,28 +33,26 @@ export function fullReplacementHandler(prompts: Prompt[], modification: PromptDy
   let content = '';
   // Get all messages except the last one which is the user message
   const messages = cloneDeep(context.messages);
-  const _userMessage = messages.pop(); // Last message is the user message
+  messages.pop(); // Last message is the user message
   const history = messages; // Remaining messages are history
-
   if (sourceType === 'historyOfSession' && history.length > 0) {
-    // Convert history messages to text
-    content = history
-      .map((message: AgentInstanceMessage) => {
-        // Convert role from 'agent' to 'assistant' for compatibility
-        const role = message.role === 'agent' ? 'assistant' : message.role;
-        const text = message.content;
-        return `${role}: ${text}`;
-      })
-      .join('\n\n');
-
-    logger.debug('Full replacement with history', {
-      targetId,
-      historyLength: history.length,
-      contentLength: content.length,
+    // Insert history messages as Prompt children (full Prompt type)
+    target.prompt.children = [];
+    history.forEach((message: AgentInstanceMessage, idx: number) => {
+      // Use the role type from Prompt
+      type PromptRole = NonNullable<IPrompt['role']>;
+      let role: PromptRole =
+        message.role === 'agent' ? 'assistant'
+        : message.role === 'user' ? 'user'
+        : 'assistant';
+      delete target.prompt.text;
+      target.prompt.children!.push({
+        id: `history-${idx}`,
+        caption: `History message ${idx + 1}`,
+        role,
+        text: message.content
+      } as IPrompt);
     });
   }
-
-  // Update target prompt
-  target.prompt.text = content;
   return prompts;
 }

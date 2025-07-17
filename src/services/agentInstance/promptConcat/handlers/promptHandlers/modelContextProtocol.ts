@@ -5,14 +5,14 @@
  */
 import { logger } from '@services/libs/log';
 import { findPromptById, PromptConcatContext } from '../../promptConcat';
-import { Prompt, PromptDynamicModification, PromptPart } from '../../promptConcatSchema';
+import { IPrompt, PromptDynamicModification } from '../../promptConcatSchema';
 import { shouldTrigger } from '../shared/utilities';
 
 /**
  * Handler for dynamicModificationType: "modelContextProtocol"
  * Integrates with external model context protocol servers
  */
-export async function modelContextProtocolHandler(prompts: Prompt[], modification: PromptDynamicModification, context: PromptConcatContext): Promise<Prompt[]> {
+export async function modelContextProtocolHandler(prompts: IPrompt[], modification: PromptDynamicModification, context: PromptConcatContext): Promise<IPrompt[]> {
   if (!modification.modelContextProtocolParam) {
     logger.debug('Missing modelContextProtocolParam', {
       modificationType: 'modelContextProtocol',
@@ -53,8 +53,9 @@ export async function modelContextProtocolHandler(prompts: Prompt[], modificatio
       if (!result) return;
 
       // Create new prompt part
-      const newPart: PromptPart = {
+      const newPart: IPrompt = {
         id: `mcp-${Date.now()}`,
+        caption: 'MCP Tool Response',
         text: result,
         source: context.sourcePaths?.get(modification.id),
       };

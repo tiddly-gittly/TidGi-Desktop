@@ -1,19 +1,17 @@
 /**
  * Retrieval Augmented Generation handler
- * Now handles both tool prompt injection and result extraction from messages
- * This handler is registered to process retrievalAugmentedGeneration dynamic modifications
+ * Simplified to only handle tool list injection
+ * Tool execution results are now handled via message history in basicPromptConcatHandler
  */
-import { WikiChannel } from '@/constants/channels';
 import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWikiService } from '@services/wiki/interface';
 import { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { findPromptById, PromptConcatContext } from '../../promptConcat';
-import type { Prompt, PromptDynamicModification, RetrievalAugmentedGenerationParameter } from '../../promptConcatSchema';
+import type { IPrompt, PromptDynamicModification, RetrievalAugmentedGenerationParameter } from '../../promptConcatSchema';
 
 /**
  * Checks if a trigger condition matches the current context
@@ -58,7 +56,7 @@ function checkTriggerCondition(
  * Inject tool list and wiki information into prompts
  */
 async function injectToolListPrompt(
-  prompts: Prompt[],
+  prompts: IPrompt[],
   toolListPosition: NonNullable<RetrievalAugmentedGenerationParameter['toolListPosition']>,
   workspaceService: IWorkspaceService,
   agentDefinitionService: IAgentDefinitionService,
@@ -87,14 +85,13 @@ async function injectToolListPrompt(
 
     // Add tool information with optimized schema
     if (wikiSearchTool) {
-      // 只保留 schema.description，避免 name/description 重复
-      toolPromptContent += `Available Tools:\n- ${wikiSearchTool.name}\n\n${wikiSearchTool.schema.description ? `Description: ${wikiSearchTool.schema.description}\n` : ''}${
+      toolPromptContent += `Available Tools:\n- Tool ID: ${wikiSearchTool.id}\n- Tool Name: ${wikiSearchTool.name}\n\n${wikiSearchTool.schema.description ? `Description: ${wikiSearchTool.schema.description}\n` : ''}${
         wikiSearchTool.schema.parameters ? `Parameters: ${wikiSearchTool.schema.parameters}` : 'No parameters'
-      }\n`;
+      }`;
     }
 
     if (toolPromptContent.trim()) {
-      const toolPrompt: Prompt = {
+      const toolPrompt: IPrompt = {
         id: `tool-list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         text: toolPromptContent,
         tags: ['toolList', 'retrievalAugmentedGeneration'],
@@ -116,6 +113,8 @@ async function injectToolListPrompt(
         targetId: toolListPosition.targetId,
         toolCount: availableTools.length,
         wikiCount: wikiWorkspaces.length,
+        injectedToolId: wikiSearchTool?.id,
+        promptLength: toolPromptContent.length,
       });
     }
   } catch (error) {
@@ -126,99 +125,20 @@ async function injectToolListPrompt(
 }
 
 /**
- * Extract tool results from messages and inject into prompts
- */
-async function injectToolResultPrompt(
-  prompts: Prompt[],
-  resultPosition: NonNullable<RetrievalAugmentedGenerationParameter['resultPosition']>,
-  wikiParameter: RetrievalAugmentedGenerationParameter['wikiParam'],
-  context: PromptConcatContext,
-  modification: PromptDynamicModification,
-): Promise<void> {
-  const resultTarget = findPromptById(prompts, resultPosition.targetId);
-  if (!resultTarget) return;
-
-  // Check if we have wiki parameters to execute filter
-  if (!wikiParameter?.workspaceName || !wikiParameter.filter) {
-    logger.debug('No wiki parameters provided for tool result injection', {
-      wikiParameter,
-      targetId: resultPosition.targetId,
-    });
-    return;
-  }
-
-  try {
-    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-
-    // Execute the filter in the specified wiki workspace
-    const resultContent = await wikiService.wikiOperationInServer(
-      WikiChannel.runFilter,
-      wikiParameter.workspaceName,
-      [wikiParameter.filter],
-    );
-
-    // Check if we have results (wikiOperationInServer returns string[])
-    if (Array.isArray(resultContent) && resultContent.length > 0) {
-      // Join the results into a single string
-      const contentText = resultContent.join('\n');
-
-      const resultPrompt: Prompt = {
-        id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        text: `Wiki search results from "${wikiParameter.workspaceName}" with filter "${wikiParameter.filter}":\n\n${contentText}`,
-        tags: ['toolResult', 'retrievalAugmentedGeneration'],
-        caption: 'Wiki search result',
-        enabled: true,
-        source: context.sourcePaths?.get(modification.id),
-      };
-
-      // Insert at specified position
-      if (resultPosition.position === 'before') {
-        resultTarget.parent.splice(resultTarget.index, 0, resultPrompt);
-      } else if (resultPosition.position === 'after') {
-        resultTarget.parent.splice(resultTarget.index + 1, 0, resultPrompt);
-      } else {
-        resultTarget.parent.splice(resultTarget.index + 1, 0, resultPrompt);
-      }
-
-      logger.debug('Wiki search result prompt inserted successfully', {
-        targetId: resultPosition.targetId,
-        workspaceName: wikiParameter.workspaceName,
-        filter: wikiParameter.filter,
-        resultCount: resultContent.length,
-        contentLength: contentText.length,
-      });
-    } else {
-      logger.debug('No results found from wiki filter', {
-        workspaceName: wikiParameter.workspaceName,
-        filter: wikiParameter.filter,
-      });
-    }
-  } catch (error) {
-    logger.error('Error executing wiki filter for tool result', {
-      error: error instanceof Error ? error.message : String(error),
-      workspaceName: wikiParameter.workspaceName,
-      filter: wikiParameter.filter,
-      targetId: resultPosition.targetId,
-    });
-  }
-}
-
-/**
  * Handler for retrievalAugmentedGeneration
- * Handles two main functions:
- * 1. Inject tool list and wiki information at toolListPosition
- * 2. Extract tool results from messages and insert at resultPosition
+ * Now simplified to only handle tool list injection
+ * Tool execution results are handled via message history in basicPromptConcatHandler
  *
  * @param prompts - Array of prompts that will be sent to AI, can be modified to insert content at specific positions
  * @param modification - JSON configuration object created from schema, contains parameters for retrieval and insertion
  * @param context - Processing context containing conversation history including previous AI responses for tool matching
- * @returns Modified prompts array with tool information and results inserted
+ * @returns Modified prompts array with tool information inserted
  */
 export async function retrievalAugmentedGenerationHandler(
-  prompts: Prompt[],
+  prompts: IPrompt[],
   modification: PromptDynamicModification,
   context: PromptConcatContext,
-): Promise<Prompt[]> {
+): Promise<IPrompt[]> {
   if (!modification.retrievalAugmentedGenerationParam) {
     logger.warn('retrievalAugmentedGeneration handler called without parameters', { handler: 'retrievalAugmentedGenerationHandler' });
     return prompts;
@@ -226,9 +146,7 @@ export async function retrievalAugmentedGenerationHandler(
 
   const {
     toolListPosition,
-    resultPosition,
     trigger,
-    wikiParam,
   } = modification.retrievalAugmentedGenerationParam;
 
   try {
@@ -245,15 +163,13 @@ export async function retrievalAugmentedGenerationHandler(
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
 
-    // 1. Inject tool list and wiki information if toolListPosition is specified
+    // Only inject tool list and wiki information if toolListPosition is specified
     if (toolListPosition?.targetId) {
       await injectToolListPrompt(prompts, toolListPosition, workspaceService, agentDefinitionService, context, modification);
     }
 
-    // 2. Extract and inject tool results if resultPosition is specified
-    if (resultPosition?.targetId) {
-      await injectToolResultPrompt(prompts, resultPosition, wikiParam, context, modification);
-    }
+    // Tool result injection is no longer handled here - it's now done via message history
+    // in basicPromptConcatHandler when tools are actually executed
 
     return prompts;
   } catch (error) {

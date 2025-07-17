@@ -8,6 +8,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { Message } from 'ai';
 import { PromptConcatContext } from '../../promptConcat';
 import { findPromptById } from '../../promptConcat';
+import { IPrompt } from '../../promptConcatSchema';
 import { PromptPart } from './types';
 
 /**
@@ -179,7 +180,7 @@ async function evaluateModelTrigger(
 /**
  * Inserts content at the specified position relative to target
  */
-export function insertContent(target: ReturnType<typeof findPromptById>, newPart: PromptPart, position: string): void {
+export function insertContent(target: ReturnType<typeof findPromptById>, newPart: IPrompt, position: string): void {
   if (!target) return;
 
   if (position === 'before') {

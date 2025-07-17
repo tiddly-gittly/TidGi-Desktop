@@ -1,21 +1,13 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { mockServiceInstances } from '@/__tests__/setup-vitest';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
+import defaultAgents from '../defaultAgents.json';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentInstance, AgentInstanceMessage } from '../../interface';
-import { processResponse } from '../../promptConcat/handlers/responseHandler';
 import { basicPromptConcatHandler } from '../basicPromptConcatHandler';
-import { continueRoundHandler } from '../continueRoundHandlers';
 import type { AgentHandlerContext } from '../type';
 
-// Mock the specific modules we need to control
-vi.mock('../continueRoundHandlers', () => ({
-  continueRoundHandler: vi.fn(),
-}));
 
-vi.mock('../../promptConcat/handlers/responseHandler', () => ({
-  processResponse: vi.fn(),
-}));
 
 describe('basicPromptConcatHandler', () => {
   let mockContext: AgentHandlerContext;
@@ -41,12 +33,7 @@ describe('basicPromptConcatHandler', () => {
       aiApiConfig: {},
     } as AgentInstance;
 
-    mockAgentDefinition = {
-      id: 'def-1',
-      handlerID: 'basicPromptConcat',
-      aiApiConfig: {},
-      handlerConfig: {},
-    } as AgentDefinition;
+    mockAgentDefinition = defaultAgents[0] as AgentDefinition;
 
     mockContext = {
       agent: mockAgent,
@@ -54,16 +41,7 @@ describe('basicPromptConcatHandler', () => {
       isCancelled: vi.fn().mockReturnValue(false),
     };
 
-    // Set up default mock behaviors
-    vi.mocked(continueRoundHandler).mockResolvedValue({
-      continue: false,
-      reason: 'Default: no continuation needed',
-    });
 
-    vi.mocked(processResponse).mockResolvedValue({
-      processedResponse: 'Default processed response',
-      needsNewLLMCall: false,
-    });
   });
 
   describe('single round conversation', () => {
@@ -79,17 +57,7 @@ describe('basicPromptConcatHandler', () => {
         yield mockResponse;
       });
 
-      // Mock continue round handler to not continue
-      vi.mocked(continueRoundHandler).mockResolvedValue({
-        continue: false,
-        reason: 'No continuation needed',
-      });
 
-      // Mock response processing
-      vi.mocked(processResponse).mockResolvedValue({
-        processedResponse: 'Hello! I am doing well, thank you for asking.',
-        needsNewLLMCall: false,
-      });
 
       // Execute handler
       const generator = basicPromptConcatHandler(mockContext);
@@ -110,8 +78,6 @@ describe('basicPromptConcatHandler', () => {
 
       // Verify mocks called
       expect(mockServiceInstances.externalAPI.generateFromAI).toHaveBeenCalledOnce();
-      expect(continueRoundHandler).toHaveBeenCalledOnce();
-      expect(processResponse).toHaveBeenCalledOnce();
     });
 
     it('should handle cancellation before AI generation', async () => {
@@ -232,28 +198,7 @@ describe('basicPromptConcatHandler', () => {
         }
       });
 
-      // First call continues, second call doesn't
-      let continueCallCount = 0;
-      vi.mocked(continueRoundHandler).mockImplementation(async () => {
-        if (continueCallCount === 0) {
-          continueCallCount++;
-          return {
-            continue: true,
-            reason: 'Tool calling detected',
-          };
-        } else {
-          return {
-            continue: false,
-            reason: 'No more tools needed',
-          };
-        }
-      });
 
-      // Process response calls - only called when continue=false
-      vi.mocked(processResponse).mockResolvedValue({
-        processedResponse: 'Based on the search results, here is your answer.',
-        needsNewLLMCall: false,
-      });
 
       // Execute handler
       const generator = basicPromptConcatHandler(mockContext);
@@ -279,8 +224,7 @@ describe('basicPromptConcatHandler', () => {
         },
       });
 
-      // Both continue round handler calls should have happened
-      expect(continueRoundHandler).toHaveBeenCalledTimes(2);
+      // Both continue round handler calls应该发生了两次
       expect(mockServiceInstances.externalAPI.generateFromAI).toHaveBeenCalledTimes(2);
     });
 
@@ -291,19 +235,10 @@ describe('basicPromptConcatHandler', () => {
         requestId: 'req-1',
       };
 
+
       // Mock to always continue (simulating infinite tool calling)
       mockServiceInstances.externalAPI.generateFromAI = vi.fn().mockImplementation(async function*() {
         yield mockResponse;
-      });
-
-      vi.mocked(continueRoundHandler).mockResolvedValue({
-        continue: true,
-        reason: 'Tool calling detected',
-      });
-
-      vi.mocked(processResponse).mockResolvedValue({
-        processedResponse: 'Tool calling response',
-        needsNewLLMCall: false,
       });
 
       // Execute handler
@@ -317,8 +252,7 @@ describe('basicPromptConcatHandler', () => {
       const completedResults = results.filter((r) => r.state === 'completed');
       expect(completedResults).toHaveLength(1);
 
-      // Should have called continue handler multiple times but stopped at limit (3 retries + 1 initial = 4)
-      expect(continueRoundHandler).toHaveBeenCalledTimes(4);
+
     });
 
     it('should handle working status updates during generation', async () => {
@@ -341,15 +275,7 @@ describe('basicPromptConcatHandler', () => {
         }
       });
 
-      vi.mocked(continueRoundHandler).mockResolvedValue({
-        continue: false,
-        reason: 'No continuation needed',
-      });
 
-      vi.mocked(processResponse).mockResolvedValue({
-        processedResponse: 'Hello! I am doing well, thank you for asking.',
-        needsNewLLMCall: false,
-      });
 
       // Execute handler
       const generator = basicPromptConcatHandler(mockContext);

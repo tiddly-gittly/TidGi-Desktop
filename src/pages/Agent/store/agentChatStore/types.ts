@@ -1,6 +1,6 @@
 import { AgentDefinition } from '@services/agentDefinition/interface';
 import type { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
-import type { AgentPromptDescription, Prompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { CoreMessage } from 'ai';
 
 // Type for agent data without messages - exported for use in other components
@@ -31,7 +31,7 @@ export interface PreviewDialogState {
   previewLoading: boolean;
   previewResult: {
     flatPrompts: CoreMessage[];
-    processedPrompts: Prompt[];
+    processedPrompts: IPrompt[];
   } | null;
   lastUpdated: Date | null;
   formFieldsToScrollTo: string[];
@@ -186,7 +186,7 @@ export interface PreviewActions {
   ) => Promise<
     {
       flatPrompts: CoreMessage[];
-      processedPrompts: Prompt[];
+      processedPrompts: IPrompt[];
     } | null
   >;
 

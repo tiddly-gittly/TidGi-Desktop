@@ -16,7 +16,7 @@ const t = identity;
  * }
  * ```
  */
-const ToolCallingParameterSchema = z.object({
+export const ToolCallingParameterSchema = z.object({
   targetId: z.string().meta({
     title: t('Schema.ToolCalling.TargetIdTitle'),
     description: t('Schema.ToolCalling.TargetId'),
@@ -28,77 +28,6 @@ const ToolCallingParameterSchema = z.object({
 }).meta({
   title: t('Schema.ToolCalling.Title'),
   description: t('Schema.ToolCalling.Description'),
-});
-
-/**
- * Parameters for responseProcessingType: "autoReroll"
- * Automatically regenerates responses that match certain criteria
- * @example
- * ```json
- * {
- *   "targetId": "default-response",
- *   "search": "自杀",
- *   "maxRetry": 5
- * }
- * ```
- */
-const AutoRerollParameterSchema = z.object({
-  targetId: z.string().meta({
-    title: t('Schema.AutoReroll.TargetIdTitle'),
-    description: t('Schema.AutoReroll.TargetId'),
-  }),
-  search: z.string().meta({
-    title: t('Schema.AutoReroll.SearchTitle'),
-    description: t('Schema.AutoReroll.Search'),
-  }),
-  maxRetry: z.number().meta({
-    title: t('Schema.AutoReroll.MaxRetryTitle'),
-    description: t('Schema.AutoReroll.MaxRetry'),
-  }),
-}).meta({
-  title: t('Schema.AutoReroll.Title'),
-  description: t('Schema.AutoReroll.Description'),
-});
-
-/**
- * Parameters for responseType: "autoReply"
- * Automatically sends follow-up messages based on trigger conditions
- * @example
- * ```json
- * {
- *   "targetId": "default-response",
- *   "text": "继续工作直到你自己觉得工作已经完全完成。",
- *   "trigger": {
- *     "model": {
- *       "preset": "defaultLite",
- *       "system": "你是一个对话分析师...",
- *       "user": "用户的消息内容为:<<input>>..."
- *     }
- *   },
- *   "maxAutoReply": 5
- * }
- * ```
- */
-const AutoReplyParameterSchema = z.object({
-  targetId: z.string().meta({
-    title: t('Schema.AutoReply.TargetIdTitle'),
-    description: t('Schema.AutoReply.TargetId'),
-  }),
-  text: z.string().meta({
-    title: t('Schema.AutoReply.TextTitle'),
-    description: t('Schema.AutoReply.Text'),
-  }),
-  trigger: TriggerSchema.meta({
-    title: t('Schema.AutoReply.TriggerTitle'),
-    description: t('Schema.AutoReply.Trigger'),
-  }),
-  maxAutoReply: z.number().meta({
-    title: t('Schema.AutoReply.MaxAutoReplyTitle'),
-    description: t('Schema.AutoReply.MaxAutoReply'),
-  }),
-}).meta({
-  title: t('Schema.AutoReply.Title'),
-  description: t('Schema.AutoReply.Description'),
 });
 
 /**
@@ -149,32 +78,20 @@ export const ResponseDynamicModificationSchema = z.object({
   }),
 
   // 基于响应结果，调用程序做额外处理的过程
-  responseProcessingType: z.enum(['toolCalling', 'autoReroll', 'autoReply']).optional().meta({
+  responseProcessingType: z.enum(['toolCalling']).optional().meta({
     title: t('Schema.ResponseDynamicModification.ResponseProcessingTypeTitle'),
     description: t('Schema.ResponseDynamicModification.ResponseProcessingType'),
     enumOptions: [
       { value: 'toolCalling', label: t('Schema.ResponseDynamicModification.ToolCallingParamTitle') },
-      { value: 'autoReroll', label: t('Schema.ResponseDynamicModification.AutoRerollParamTitle') },
-      { value: 'autoReply', label: t('Schema.ResponseDynamicModification.AutoReplyParamTitle') },
     ],
   }),
   toolCallingParam: ToolCallingParameterSchema.optional().meta({
     title: t('Schema.ResponseDynamicModification.ToolCallingParamTitle'),
     description: t('Schema.ResponseDynamicModification.ToolCallingParam'),
   }),
-  autoRerollParam: AutoRerollParameterSchema.optional().meta({
-    title: t('Schema.ResponseDynamicModification.AutoRerollParamTitle'),
-    description: t('Schema.ResponseDynamicModification.AutoRerollParam'),
-  }),
-  autoReplyParam: AutoReplyParameterSchema.optional().meta({
-    title: t('Schema.ResponseDynamicModification.AutoReplyParamTitle'),
-    description: t('Schema.ResponseDynamicModification.AutoReplyParam'),
-  }),
 }).meta({
   title: t('Schema.ResponseDynamicModification.Title'),
   description: t('Schema.ResponseDynamicModification.Description'),
 });
-
-export { AutoReplyParameterSchema, AutoRerollParameterSchema, ToolCallingParameterSchema };
 
 export type ResponseDynamicModification = z.infer<typeof ResponseDynamicModificationSchema>;

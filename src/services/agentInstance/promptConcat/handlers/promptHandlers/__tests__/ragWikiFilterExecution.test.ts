@@ -2,7 +2,7 @@ import { WikiChannel } from '@/constants/channels';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PromptConcatContext } from '../../../promptConcat';
-import { Prompt, PromptDynamicModification } from '../../../promptConcatSchema';
+import { IPrompt, PromptDynamicModification } from '../../../promptConcatSchema';
 import { retrievalAugmentedGenerationHandler } from '../retrievalAugmentedGeneration';
 
 describe('RAG Handler Execute Provided Wiki Filter ', () => {
@@ -15,7 +15,7 @@ describe('RAG Handler Execute Provided Wiki Filter ', () => {
   let mockWikiService: {
     wikiOperationInServer: ReturnType<typeof vi.fn>;
   };
-  let prompts: Prompt[];
+  let prompts: IPrompt[];
   let context: PromptConcatContext;
 
   beforeEach(async () => {
@@ -104,10 +104,6 @@ describe('RAG Handler Execute Provided Wiki Filter ', () => {
             workspaceName: 'test-wiki',
             filter: '[tag[machine-learning]]',
           },
-          resultPosition: {
-            position: 'after',
-            targetId: 'tool-result-target',
-          },
           trigger: {
             randomChance: 1.0,
           },
@@ -146,10 +142,6 @@ describe('RAG Handler Execute Provided Wiki Filter ', () => {
             workspaceName: 'test-wiki',
             filter: '[tag[nonexistent]]',
           },
-          resultPosition: {
-            position: 'after',
-            targetId: 'tool-result-target',
-          },
           trigger: {
             randomChance: 1.0,
           },
@@ -179,10 +171,6 @@ describe('RAG Handler Execute Provided Wiki Filter ', () => {
           position: 'relative',
           targetId: 'tool-result-target',
           sourceType: 'wiki',
-          resultPosition: {
-            position: 'after',
-            targetId: 'tool-result-target',
-          },
           trigger: {
             randomChance: 1.0,
           },
@@ -212,10 +200,6 @@ describe('RAG Handler Execute Provided Wiki Filter ', () => {
           wikiParam: {
             workspaceName: 'test-wiki',
             filter: '[tag[test]]',
-          },
-          resultPosition: {
-            position: 'after',
-            targetId: 'tool-result-target',
           },
           trigger: {
             randomChance: 1.0,
@@ -256,10 +240,6 @@ describe('RAG Handler Execute Provided Wiki Filter ', () => {
             workspaceName: 'test-wiki',
             filter: '[tag[test]]',
           },
-          resultPosition: {
-            position: 'after',
-            targetId: 'tool-result-target',
-          },
           trigger: {
             randomChance: 1.0,
           },
@@ -283,10 +263,8 @@ describe('RAG Handler Execute Provided Wiki Filter ', () => {
       expect(resultPrompt?.text).toContain('Result 2');
     });
 
-    it('should position result prompt correctly based on resultPosition config', async () => {
-      const filterResults = ['Test Result'];
-      mockWikiService.wikiOperationInServer.mockResolvedValue(filterResults);
-
+    it('should not inject tool result prompt, as resultPosition is deprecated and results are now in message history', async () => {
+      mockWikiService.wikiOperationInServer.mockResolvedValue(['Tiddler 1', 'Tiddler 2']);
       const modification: PromptDynamicModification = {
         id: 'test-rag',
         caption: 'Test RAG',
@@ -298,27 +276,20 @@ describe('RAG Handler Execute Provided Wiki Filter ', () => {
           sourceType: 'wiki',
           wikiParam: {
             workspaceName: 'test-wiki',
-            filter: '[tag[test]]',
-          },
-          resultPosition: {
-            position: 'before',
-            targetId: 'tool-result-target',
+            filter: '[tag[machine-learning]]',
           },
           trigger: {
             randomChance: 1.0,
           },
         },
       };
-
       const result = await retrievalAugmentedGenerationHandler(prompts, modification, context);
-
-      const resultPrompt = result.find(p => p.tags?.includes('toolResult'));
-      const targetIndex = result.findIndex(p => p.id === 'tool-result-target');
-      const resultIndex = result.findIndex(p => p.tags?.includes('toolResult'));
-
-      expect(resultPrompt).toBeDefined();
-      // When inserting before, the result should be at the same index as the target was
-      expect(resultIndex).toBe(targetIndex - 1); // Result inserted before target pushes target to next index
+      expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
+        WikiChannel.runFilter,
+        'test-wiki',
+        ['[tag[machine-learning]]'],
+      );
+      expect(result.find(p => p.tags?.includes('toolResult'))).toBeUndefined();
     });
   });
 
@@ -362,10 +333,6 @@ describe('RAG Handler Execute Provided Wiki Filter ', () => {
           toolListPosition: {
             position: 'after',
             targetId: 'system',
-          },
-          resultPosition: {
-            position: 'after',
-            targetId: 'tool-result-target',
           },
           trigger: {
             randomChance: 1.0,
@@ -439,10 +406,6 @@ describe('RAG Handler Execute Provided Wiki Filter ', () => {
             position: 'relative',
             targetId: 'tool-result-target',
             sourceType: 'wiki',
-            resultPosition: {
-              position: 'after',
-              targetId: 'tool-result-target',
-            },
             trigger: {
               randomChance: 1.0,
             },
@@ -509,10 +472,6 @@ describe('RAG Handler Execute Provided Wiki Filter ', () => {
             position: 'after',
             targetId: 'system',
           },
-          resultPosition: {
-            position: 'after',
-            targetId: 'tool-result-target',
-          },
           trigger: {
             randomChance: 1.0,
           },
@@ -562,10 +521,6 @@ describe('RAG Handler Execute Provided Wiki Filter ', () => {
             position: 'relative',
             targetId: 'tool-result-target',
             sourceType: 'wiki',
-            resultPosition: {
-              position: 'after',
-              targetId: 'tool-result-target',
-            },
             trigger: {
               randomChance: 1.0,
             },
@@ -612,10 +567,6 @@ describe('RAG Handler Execute Provided Wiki Filter ', () => {
           position: 'relative',
           targetId: 'tool-result-target',
           sourceType: 'wiki',
-          resultPosition: {
-            position: 'after',
-            targetId: 'tool-result-target',
-          },
           trigger: {
             randomChance: 1.0,
           },

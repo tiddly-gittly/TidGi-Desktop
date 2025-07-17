@@ -119,10 +119,10 @@ export class AgentInstanceMessageEntity implements AgentInstanceMessage {
 
   @Column({
     type: 'varchar',
-    enum: ['user', 'assistant', 'agent'],
+    enum: ['user', 'assistant', 'agent', 'tool'],
     default: 'user',
   })
-  role!: 'user' | 'assistant' | 'agent';
+  role!: 'user' | 'assistant' | 'agent' | 'tool';
 
   @Column({ type: 'text' })
   content!: string;

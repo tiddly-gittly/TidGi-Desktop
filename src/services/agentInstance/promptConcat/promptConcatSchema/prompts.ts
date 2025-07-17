@@ -5,73 +5,6 @@ import { z } from 'zod/v4';
 const t = identity;
 
 /**
- * Base interface for prompt parts in the agent configuration
- * Used for building hierarchical prompt structures with parent-child relationships
- * @example
- * ```json
- * {
- *   "id": "default-main",
- *   "tags": ["SystemPrompt"],
- *   "text": "Write <<char>>'s next reply in a fictional chat between <<charIfNotGroup>> and <<user>>."
- * }
- * ```
- */
-export interface IPromptPart {
-  id: string;
-  text?: string;
-  tags?: string[];
-  caption?: string;
-  content?: string;
-  name?: string;
-  children?: IPromptPart[];
-  source?: string[];
-}
-
-/**
- * Schema for prompt parts that can be nested within a prompt
- * Supports recursive structures using getter for proper JSON schema generation with $ref
- * @example
- * ```json
- * {
- *   "id": "default-main",
- *   "tags": ["SystemPrompt"],
- *   "text": "Write <<char>>'s next reply in a fictional chat between <<charIfNotGroup>> and <<user>>."
- * }
- * ```
- */
-export const PromptPartSchema: z.ZodType<IPromptPart> = z.object({
-  id: z.string().meta({
-    title: t('Schema.PromptPart.IdTitle'),
-    description: t('Schema.PromptPart.Id'),
-  }),
-  text: z.string().optional().meta({
-    title: t('Schema.PromptPart.TextTitle'),
-    description: t('Schema.PromptPart.Text'),
-  }),
-  tags: z.array(z.string()).optional().meta({
-    title: t('Schema.PromptPart.TagsTitle'),
-    description: t('Schema.PromptPart.Tags'),
-  }),
-  caption: z.string().optional().meta({
-    title: t('Schema.PromptPart.CaptionTitle'),
-    description: t('Schema.PromptPart.Caption'),
-  }),
-  source: z.array(z.string()).optional().meta({
-    title: t('Schema.PromptPart.SourceTitle'),
-    description: t('Schema.PromptPart.Source'),
-  }),
-  get children() {
-    return z.array(PromptPartSchema).optional().meta({
-      title: t('Schema.PromptPart.ChildrenTitle'),
-      description: t('Schema.PromptPart.Children'),
-    });
-  },
-}).meta({
-  title: t('Schema.PromptPart.Title'),
-  description: t('Schema.PromptPart.Description'),
-});
-
-/**
  * Complete prompt configuration schema
  * Defines a prompt with its metadata and content structure
  * The role field determines whether it's a system or user prompt
@@ -85,14 +18,25 @@ export const PromptPartSchema: z.ZodType<IPromptPart> = z.object({
  *   "children": [
  *     {
  *       "id": "default-main",
- *       "tags": ["SystemPrompt"],
+ *       "caption": "Child prompt",
  *       "text": "Write {{char}}'s next reply..."
  *     }
  *   ]
  * }
  * ```
  */
-export const PromptSchema = z.object({
+export interface IPrompt {
+  id: string;
+  caption: string;
+  enabled?: boolean;
+  role?: 'system' | 'user' | 'assistant';
+  tags?: string[];
+  text?: string;
+  children?: IPrompt[];
+  source?: string[];
+}
+
+export const PromptSchema: z.ZodType<IPrompt> = z.object({
   id: z.string().meta({
     title: t('Schema.Prompt.IdTitle'),
     description: t('Schema.Prompt.Id'),
@@ -122,10 +66,12 @@ export const PromptSchema = z.object({
     title: t('Schema.Prompt.TextTitle'),
     description: t('Schema.Prompt.Text'),
   }),
-  children: z.array(PromptPartSchema).optional().meta({
-    title: t('Schema.Prompt.ChildrenTitle'),
-    description: t('Schema.Prompt.Children'),
-  }),
+  get children() {
+    return z.array(z.lazy(() => PromptSchema)).optional().meta({
+      title: t('Schema.Prompt.ChildrenTitle'),
+      description: t('Schema.Prompt.Children'),
+    });
+  },
   source: z.array(z.string()).optional().meta({
     title: t('Schema.Prompt.SourceTitle'),
     description: t('Schema.Prompt.Source'),
@@ -133,7 +79,4 @@ export const PromptSchema = z.object({
 }).meta({
   title: t('Schema.Prompt.Title'),
   description: t('Schema.Prompt.Description'),
-});
-
-export type Prompt = z.infer<typeof PromptSchema>;
-export type PromptPart = z.infer<typeof PromptPartSchema>;
+}) as z.ZodType<IPrompt>;

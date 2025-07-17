@@ -141,10 +141,6 @@ export const ToolConfigurationParameterSchema = z.object({
     title: t('Schema.ToolConfig.ToolListPositionTitle'),
     description: t('Schema.ToolConfig.ToolListPosition'),
   }),
-  resultPosition: PositionParameterSchema.optional().meta({
-    title: t('Schema.ToolConfig.ResultPositionTitle'),
-    description: t('Schema.ToolConfig.ResultPosition'),
-  }),
 }).meta({
   title: t('Schema.ToolConfig.Title'),
   description: t('Schema.ToolConfig.Description'),

@@ -1,4 +1,6 @@
 import { container } from '@services/container';
+import { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { matchAndExecuteTool } from '@services/agentDefinition/toolExecutor';
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -152,6 +154,61 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                   role: 'assistant',
                   content: response.content,
                 });
+
+                // Check if there's a tool call in the response and execute it immediately
+                const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
+                try {
+                  logger.debug('Checking for tool calls in AI response', {
+                    responseLength: response.content.length,
+                    responsePreview: response.content.substring(0, 100),
+                  });
+
+                  const toolResult = await matchAndExecuteTool(
+                    response.content,
+                    {
+                      workspaceId: context.agent.id,
+                      metadata: { messageId: context.agent.messages[context.agent.messages.length - 1].id },
+                    }
+                  );
+
+                  if (toolResult) {
+                    // Add tool result as a separate message with 'tool' role
+                    const toolMessage: AgentInstanceMessage = {
+                      id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                      agentId: context.agent.id,
+                      role: 'tool',
+                      content: toolResult.success 
+                        ? `Tool execution result:\n\n${toolResult.data || 'Tool executed successfully but returned no data'}`
+                        : `Tool execution failed: ${toolResult.error}`,
+                      metadata: {
+                        toolSuccess: toolResult.success,
+                        toolError: toolResult.error,
+                        executedAt: new Date().toISOString(),
+                      },
+                    };
+
+                    context.agent.messages.push(toolMessage);
+
+                    // Yield the tool message so it gets persisted through the normal flow
+                    yield {
+                      state: 'working',
+                      message: toolMessage,
+                      modified: new Date(),
+                    };
+
+                    // Tool message will be persisted through the normal message flow
+                    logger.info('Tool execution result added to message history', {
+                      toolSuccess: toolResult.success,
+                      hasData: !!toolResult.data,
+                      messageId: toolMessage.id,
+                      willBePersisted: true,
+                    });
+                  }
+                } catch (toolError) {
+                  logger.debug('No tool call found or tool execution failed during continue round', {
+                    error: toolError instanceof Error ? toolError.message : String(toolError),
+                  });
+                }
 
                 // Continue with new round - use last user message
                 const nextUserMessage = continueResult.newMessage || lastUserMessage?.content;

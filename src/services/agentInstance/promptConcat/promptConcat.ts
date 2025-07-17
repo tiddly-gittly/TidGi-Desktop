@@ -1,9 +1,24 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
+/*
+ * This module provides functions for processing and flattening prompt trees for language model input.
+ * It supports dynamic prompt modifications, source path mapping, and prompt tree traversal.
+ *
+ * Key Exports:
+ * - flattenPrompts: Flattens a tree of prompts into a linear array for LLMs.
+ * - promptConcat: Main entry, applies dynamic modifications and returns processed prompts.
+ * - registerPromptDynamicModificationHandler: Register handlers for dynamic prompt modifications.
+ * - findPromptById: Utility to find a prompt node by ID.
+ *
+ * Main Concepts:
+ * - Prompts are tree-structured, can have roles (system/user/assistant) and children.
+ * - Dynamic modifications allow runtime changes to the prompt tree.
+ * - Source path mapping enables tracking prompt locations for UI/form navigation.
+ */
+
 import { logger } from '@services/libs/log';
 import { CoreMessage } from 'ai';
 import { cloneDeep } from 'lodash';
 import { AgentInstanceMessage } from '../interface';
-import { AgentPromptDescription, Prompt, PromptDynamicModification, PromptPart } from './promptConcatSchema';
+import { AgentPromptDescription, IPrompt, PromptDynamicModification } from './promptConcatSchema';
 
 /**
  * Context type specific for prompt concatenation operations
@@ -20,10 +35,10 @@ export interface PromptConcatContext {
  * Type definition for prompt dynamic modification handlers
  */
 export type PromptDynamicModificationHandler = (
-  prompts: Prompt[],
+  prompts: IPrompt[],
   modification: PromptDynamicModification,
   context: PromptConcatContext,
-) => Prompt[] | Promise<Prompt[]>;
+) => IPrompt[] | Promise<IPrompt[]>;
 
 /**
  * Registry for prompt dynamic modification handlers
@@ -34,16 +49,16 @@ const promptDynamicModificationHandlers: Record<string, PromptDynamicModificatio
  * Generate ID-based path mapping for prompts to enable source tracking
  * Uses actual node IDs instead of indices to avoid path conflicts with dynamic content
  */
-function generateSourcePaths(prompts: Prompt[], promptDynamicModifications: PromptDynamicModification[] = []): Map<string, string[]> {
+function generateSourcePaths(prompts: IPrompt[], promptDynamicModifications: PromptDynamicModification[] = []): Map<string, string[]> {
   const pathMap = new Map<string, string[]>();
 
-  function traversePrompts(items: Prompt[], currentPath: string[]): void {
+  function traversePrompts(items: IPrompt[], currentPath: string[]): void {
     items.forEach((item) => {
       const itemPath = [...currentPath, item.id];
       pathMap.set(item.id, itemPath);
 
       if (item.children && item.children.length > 0) {
-        traversePrompts(item.children as Prompt[], [...itemPath, 'children']);
+        traversePrompts(item.children as IPrompt[], [...itemPath, 'children']);
       }
     });
   }
@@ -80,9 +95,9 @@ export function registerPromptDynamicModificationHandler(
  * @returns The found prompt object along with its parent array and index
  */
 export function findPromptById(
-  prompts: Prompt[] | PromptPart[],
+  prompts: IPrompt[],
   id: string,
-): { prompt: Prompt | PromptPart; parent: (Prompt | PromptPart)[]; index: number } | undefined {
+): { prompt: IPrompt; parent: IPrompt[]; index: number } | undefined {
   for (let index = 0; index < prompts.length; index++) {
     const prompt = prompts[index];
     if (prompt.id === id) {
@@ -103,15 +118,16 @@ export function findPromptById(
  * @param prompts Tree-structured prompt array
  * @returns Flattened array of prompts
  */
-export function flattenPrompts(prompts: Prompt[]): CoreMessage[] {
+export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
   logger.debug('Starting prompt flattening', {
     promptCount: prompts.length,
   });
 
   const result: CoreMessage[] = [];
 
-  // Process prompt tree recursively
-  function processPrompt(prompt: Prompt | PromptPart): string {
+  // Process prompt tree recursively - collect non-role children text
+  function processPrompt(prompt: IPrompt): string {
+    // If the prompt has many children, log for debugging
     if (prompt.children && prompt.children.length > 5) {
       logger.debug('Processing complex prompt part', {
         id: prompt.id,
@@ -121,39 +137,78 @@ export function flattenPrompts(prompts: Prompt[]): CoreMessage[] {
     }
 
     let text = prompt.text || '';
+
+    // Collect content from children without a role
     if (prompt.children) {
       for (const child of prompt.children) {
-        text += processPrompt(child);
+        if (!child.role) {
+          // If child has no role, concatenate its content to parent text
+          text += processPrompt(child);
+        }
       }
     }
     return text;
   }
-
-  // Process each top-level prompt
-  for (const prompt of prompts) {
-    if (prompt.enabled === false) {
-      logger.debug('Skipping disabled prompt', { id: prompt.id });
-      continue;
-    }
-
-    const content = processPrompt(prompt);
-    if (content.trim()) {
-      if (content.length > 1000) {
-        logger.debug('Adding large content to result', {
-          id: prompt.id,
+  
+  // Traverse prompt tree, collect nodes with a role in depth-first order
+  function collectRolePrompts(prompts: IPrompt[]): void {
+    for (const prompt of prompts) {
+      if (prompt.enabled === false) {
+        logger.debug('Skipping disabled prompt', { id: prompt.id });
+        continue;
+      }
+      
+      // Process current node first
+      const content = processPrompt(prompt);
+      if (content.trim() || prompt.role) {
+        if (content.length > 1000) {
+          logger.debug('Adding large content to result', {
+            id: prompt.id,
+            role: prompt.role || 'system',
+            contentLength: content.length,
+          });
+        }
+        
+        result.push({
           role: prompt.role || 'system',
-          contentLength: content.length,
+          content: content.trim() || '',
         });
       }
-
-      result.push({
-        role: prompt.role || 'system',
-        content,
-      });
-    } else {
-      logger.debug('Skipping empty content', { id: prompt.id });
+      
+      // Depth-first traversal for all children with a role
+      if (prompt.children) {
+        // Collect all children with a role
+        const roleChildren: IPrompt[] = [];
+        const processChild = (children: IPrompt[]) => {
+          for (const child of children) {
+            if (child.role) {
+              roleChildren.push(child);
+            }
+            if (child.children) {
+              processChild(child.children);
+            }
+          }
+        };
+        
+        processChild(prompt.children);
+        
+        // Process all collected children with a role
+        for (const child of roleChildren) {
+          const childContent = processPrompt(child);
+          if (childContent.trim() || child.role) {
+            result.push({
+              role: child.role as 'system' | 'user' | 'assistant',
+              content: childContent.trim() || '',
+            });
+          }
+        }
+      }
     }
   }
+
+  collectRolePrompts(prompts);
+  
+  logger.debug('Skipping any empty content');
 
   logger.debug('Prompt flattening completed', {
     resultCount: result.length,
@@ -176,7 +231,7 @@ export async function promptConcat(
   messages: AgentInstanceMessage[],
 ): Promise<{
   flatPrompts: CoreMessage[];
-  processedPrompts: Prompt[];
+  processedPrompts: IPrompt[];
 }> {
   // Generate unique ID for logging
   const messageId = messages[0]?.id || 'unknown';

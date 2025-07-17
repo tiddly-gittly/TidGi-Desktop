@@ -22,6 +22,7 @@
     "init:git-submodule": "git submodule update --recursive && git submodule update --remote",
     "lint": "eslint ./src --ext js,ts,tsx,json",
     "lint:fix": "eslint ./src --ext ts,tsx --fix",
+    "check": "tsc --noEmit --skipLibCheck",
     "installType": "typesync"
   },
   "repository": "https://github.com/tiddly-gittly/TidGi-Desktop",

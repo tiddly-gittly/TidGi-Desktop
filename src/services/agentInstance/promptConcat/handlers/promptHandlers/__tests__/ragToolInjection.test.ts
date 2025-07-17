@@ -1,7 +1,7 @@
 import serviceIdentifier from '@services/serviceIdentifier';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PromptConcatContext } from '../../../promptConcat';
-import { Prompt, PromptDynamicModification } from '../../../promptConcatSchema';
+import { IPrompt, PromptDynamicModification } from '../../../promptConcatSchema';
 import { retrievalAugmentedGenerationHandler } from '../retrievalAugmentedGeneration';
 
 describe('RAG Tool Injection', () => {
@@ -14,7 +14,7 @@ describe('RAG Tool Injection', () => {
   let mockWikiService: {
     wikiOperationInServer: ReturnType<typeof vi.fn>;
   };
-  let prompts: Prompt[];
+  let prompts: IPrompt[];
   let context: PromptConcatContext;
 
   beforeEach(async () => {
@@ -198,7 +198,7 @@ describe('RAG Tool Injection', () => {
   });
 
   describe('Tool Result Injection', () => {
-    it('should inject wiki search results when resultPosition and wikiParam are specified', async () => {
+    it('should not inject tool result prompt, as resultPosition is deprecated and results are now in message history', async () => {
       const modification: PromptDynamicModification = {
         id: 'test-rag',
         caption: 'Test RAG',
@@ -208,10 +208,6 @@ describe('RAG Tool Injection', () => {
           position: 'relative',
           targetId: 'system',
           sourceType: 'wiki',
-          resultPosition: {
-            position: 'after',
-            targetId: 'system',
-          },
           wikiParam: {
             workspaceName: 'wiki1',
             filter: '[tag[example]]',
@@ -221,76 +217,14 @@ describe('RAG Tool Injection', () => {
 
       const result = await retrievalAugmentedGenerationHandler(prompts, modification, context);
 
-      // Should have added a new prompt after the target
-      expect(result).toHaveLength(3);
-
-      // Find the injected result prompt
-      const resultPrompt = result.find(p => p.tags?.includes('toolResult'));
-      expect(resultPrompt).toBeDefined();
-      expect(resultPrompt?.text).toContain('Wiki search results from "wiki1" with filter "[tag[example]]"');
-      expect(resultPrompt?.text).toContain('Tiddler1\nTiddler2\nTiddler3');
-
-      // Verify wiki service was called correctly
+      // Should not inject any toolResult prompt
+      expect(result.find(p => p.tags?.includes('toolResult'))).toBeUndefined();
+      // Should still call wiki service
       expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
         'wiki-run-filter',
         'wiki1',
         ['[tag[example]]'],
       );
-    });
-
-    it('should not inject when wikiParam is missing', async () => {
-      const modification: PromptDynamicModification = {
-        id: 'test-rag',
-        caption: 'Test RAG',
-        forbidOverrides: false,
-        dynamicModificationType: 'retrievalAugmentedGeneration',
-        retrievalAugmentedGenerationParam: {
-          position: 'relative',
-          targetId: 'system',
-          sourceType: 'wiki',
-          resultPosition: {
-            position: 'after',
-            targetId: 'system',
-          },
-        },
-      };
-
-      const result = await retrievalAugmentedGenerationHandler(prompts, modification, context);
-
-      // Should not modify prompts when wikiParam is missing
-      expect(result).toHaveLength(2);
-      expect(result.find(p => p.tags?.includes('toolResult'))).toBeUndefined();
-      expect(mockWikiService.wikiOperationInServer).not.toHaveBeenCalled();
-    });
-
-    it('should handle empty search results gracefully', async () => {
-      mockWikiService.wikiOperationInServer.mockResolvedValue([]);
-
-      const modification: PromptDynamicModification = {
-        id: 'test-rag',
-        caption: 'Test RAG',
-        forbidOverrides: false,
-        dynamicModificationType: 'retrievalAugmentedGeneration',
-        retrievalAugmentedGenerationParam: {
-          position: 'relative',
-          targetId: 'system',
-          sourceType: 'wiki',
-          resultPosition: {
-            position: 'after',
-            targetId: 'system',
-          },
-          wikiParam: {
-            workspaceName: 'wiki1',
-            filter: '[tag[nonexistent]]',
-          },
-        },
-      };
-
-      const result = await retrievalAugmentedGenerationHandler(prompts, modification, context);
-
-      // Should not inject when no results are found
-      expect(result).toHaveLength(2);
-      expect(result.find(p => p.tags?.includes('toolResult'))).toBeUndefined();
     });
   });
 
@@ -431,10 +365,6 @@ describe('RAG Tool Injection', () => {
           position: 'relative',
           targetId: 'system',
           sourceType: 'wiki',
-          resultPosition: {
-            position: 'after',
-            targetId: 'system',
-          },
           wikiParam: {
             workspaceName: 'wiki1',
             filter: '[tag[example]]',

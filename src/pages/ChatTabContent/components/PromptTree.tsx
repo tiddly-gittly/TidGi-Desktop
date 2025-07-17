@@ -1,5 +1,5 @@
 import { Box, styled, Typography } from '@mui/material';
-import { IPromptPart } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
@@ -44,7 +44,7 @@ export const PromptTreeNode = ({
   depth,
   fieldPath = [],
 }: {
-  node: IPromptPart;
+  node: IPrompt;
   depth: number;
   fieldPath?: string[];
 }): React.ReactElement => {
@@ -84,7 +84,7 @@ export const PromptTreeNode = ({
           {node.text}
         </Typography>
       )}
-      {node.children && node.children.length > 0 && node.children.map((child) => {
+      {node.children && node.children.length > 0 && node.children.map((child: IPrompt) => {
         const childFieldPath = [...fieldPath, child.id];
         return (
           <PromptTreeNode
@@ -102,7 +102,7 @@ export const PromptTreeNode = ({
 /**
  * Prompt tree component
  */
-export const PromptTree = ({ prompts }: { prompts?: IPromptPart[] }): React.ReactElement => {
+export const PromptTree = ({ prompts }: { prompts?: IPrompt[] }): React.ReactElement => {
   if (!prompts?.length) {
     return <EmptyState>No prompt tree to display</EmptyState>;
   }

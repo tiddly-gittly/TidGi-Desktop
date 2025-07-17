@@ -5,13 +5,13 @@
  */
 import { logger } from '@services/libs/log';
 import { findPromptById, PromptConcatContext } from '../../promptConcat';
-import { Prompt, PromptDynamicModification, PromptPart } from '../../promptConcatSchema';
+import { IPrompt, PromptDynamicModification } from '../../promptConcatSchema';
 
 /**
  * Handler for dynamicModificationType: "dynamicPosition"
  * Inserts content at a specific position relative to a target element
  */
-export function dynamicPositionHandler(prompts: Prompt[], modification: PromptDynamicModification, context: PromptConcatContext): Prompt[] {
+export function dynamicPositionHandler(prompts: IPrompt[], modification: PromptDynamicModification, context: PromptConcatContext): IPrompt[] {
   if (!modification.dynamicPositionParam || !modification.content) {
     logger.debug('Missing dynamicPositionParam or content', {
       modificationType: 'dynamicPosition',
@@ -34,8 +34,9 @@ export function dynamicPositionHandler(prompts: Prompt[], modification: PromptDy
   }
 
   // Create new prompt part
-  const newPart: PromptPart = {
+  const newPart: IPrompt = {
     id: `dynamic-${Date.now()}`,
+    caption: 'Dynamic Content',
     text: modification.content,
     source: context.sourcePaths?.get(modification.id),
   };

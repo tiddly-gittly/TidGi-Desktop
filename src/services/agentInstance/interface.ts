@@ -4,7 +4,7 @@ import type { Observable } from 'rxjs';
 
 import { AgentChannel } from '@/constants/channels';
 import { AgentDefinition } from '@services/agentDefinition/interface';
-import { AgentPromptDescription, Prompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
 
 /**
  * Content of a session instance that user chat with an agent.
@@ -75,7 +75,7 @@ export interface AgentInstanceMessage {
   id: string;
   agentId: string;
   /** Message role */
-  role: 'user' | 'assistant' | 'agent';
+  role: 'user' | 'assistant' | 'agent' | 'tool';
   /** Message content */
   content: string;
   /**
@@ -169,7 +169,7 @@ export interface IAgentInstanceService {
    */
   concatPrompt(promptDescription: Pick<AgentPromptDescription, 'promptConfig'>, messages: AgentInstanceMessage[]): Promise<{
     flatPrompts: CoreMessage[];
-    processedPrompts: Prompt[];
+    processedPrompts: IPrompt[];
   }>;
 
   /**

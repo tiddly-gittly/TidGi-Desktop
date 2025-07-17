@@ -91,10 +91,6 @@ export const RetrievalAugmentedGenerationParameterSchema = PositionParameterSche
     title: t('Schema.ToolConfig.ToolListPositionTitle'),
     description: t('Schema.ToolConfig.ToolListPosition'),
   }),
-  resultPosition: PositionParameterSchema.optional().meta({
-    title: t('Schema.ToolConfig.ResultPositionTitle'),
-    description: t('Schema.ToolConfig.ResultPosition'),
-  }),
   removal: z.object({
     expireAfterChatRound: z.number().optional().meta({
       title: t('Schema.RAG.Removal.ExpireAfterChatRoundTitle'),
@@ -111,71 +107,6 @@ export const RetrievalAugmentedGenerationParameterSchema = PositionParameterSche
 }).meta({
   title: t('Schema.RAG.Title'),
   description: t('Schema.RAG.Description'),
-});
-
-/**
- * Parameters for dynamicModificationType: "function"
- * Executes a function and inserts its result at the specified position
- * @example
- * ```json
- * {
- *   "functionId": "default-ai-search-function",
- *   "timeoutSecond": 15,
- *   "position": "relative",
- *   "targetId": "default-history",
- *   "bottom": 0,
- *   "trigger": {
- *     "model": {
- *       "preset": "defaultLite",
- *       "system": "你是一个对话分析师...",
- *       "user": "用户的消息内容为:<<input>>..."
- *     }
- *   }
- * }
- * ```
- */
-export const FunctionParameterSchema = PositionParameterSchema.extend({
-  functionId: z.string().meta({
-    title: t('Schema.Function.FunctionIdTitle'),
-    description: t('Schema.Function.FunctionId'),
-  }),
-  timeoutSecond: z.number().optional().meta({
-    title: t('Schema.Function.TimeoutSecondTitle'),
-    description: t('Schema.Function.TimeoutSecond'),
-  }),
-  timeoutMessage: z.string().optional().meta({
-    title: t('Schema.Function.TimeoutMessageTitle'),
-    description: t('Schema.Function.TimeoutMessage'),
-  }),
-  trigger: TriggerSchema.optional().meta({
-    title: t('Schema.Function.TriggerTitle'),
-    description: t('Schema.Function.Trigger'),
-  }),
-}).meta({
-  title: t('Schema.Function.Title'),
-  description: t('Schema.Function.Description'),
-});
-
-/**
- * Parameters for dynamicModificationType: "javascriptTool"
- * Loads and executes a JavaScript tool at the specified position
- * @example
- * ```json
- * {
- *   "uri": "tidgi://wiki/xxx.js",
- *   "position": "before",
- *   "targetId": "default-post-tool"
- * }
- * ```
- */
-export const JavascriptToolParameterSchema = PositionParameterSchema.extend({
-  uri: z.string().meta({
-    title: t('Schema.JavascriptTool.URITitle'),
-    description: t('Schema.JavascriptTool.URI'),
-  }),
-}).meta({
-  title: t('Schema.JavascriptTool.Title'),
-  description: t('Schema.JavascriptTool.Description'),
 });
 
 /**
@@ -223,10 +154,6 @@ export const ModelContextProtocolParameterSchema = PositionParameterSchema.exten
     title: t('Schema.ToolConfig.ToolListPositionTitle'),
     description: t('Schema.ToolConfig.ToolListPosition'),
   }),
-  resultPosition: PositionParameterSchema.optional().meta({
-    title: t('Schema.ToolConfig.ResultPositionTitle'),
-    description: t('Schema.ToolConfig.ResultPosition'),
-  }),
   trigger: TriggerSchema.optional().meta({
     title: t('Schema.MCP.TriggerTitle'),
     description: t('Schema.MCP.Trigger'),
@@ -239,6 +166,4 @@ export const ModelContextProtocolParameterSchema = PositionParameterSchema.exten
 export type FullReplacementParameter = z.infer<typeof FullReplacementParameterSchema>;
 export type DynamicPositionParameter = z.infer<typeof DynamicPositionParameterSchema>;
 export type RetrievalAugmentedGenerationParameter = z.infer<typeof RetrievalAugmentedGenerationParameterSchema>;
-export type FunctionParameter = z.infer<typeof FunctionParameterSchema>;
-export type JavascriptToolParameter = z.infer<typeof JavascriptToolParameterSchema>;
 export type ModelContextProtocolParameter = z.infer<typeof ModelContextProtocolParameterSchema>;

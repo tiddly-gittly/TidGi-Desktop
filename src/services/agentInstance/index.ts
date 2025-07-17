@@ -13,7 +13,7 @@ import { basicPromptConcatHandler } from '@services/agentInstance/buildInAgentHa
 import { AgentHandler, AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
 import { registerAllPromptHandlers } from '@services/agentInstance/promptConcat/handlers/promptHandlers/index';
 import { promptConcat } from '@services/agentInstance/promptConcat/promptConcat';
-import { AgentPromptDescription, Prompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { promptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
@@ -770,7 +770,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   public async concatPrompt(promptDescription: Pick<AgentPromptDescription, 'promptConfig'>, messages: AgentInstanceMessage[]): Promise<{
     flatPrompts: CoreMessage[];
-    processedPrompts: Prompt[];
+    processedPrompts: IPrompt[];
   }> {
     try {
       logger.debug('AgentInstanceService.concatPrompt called', {

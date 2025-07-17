@@ -2,8 +2,6 @@ import { z } from 'zod/v4';
 import {
   DynamicPositionParameterSchema,
   FullReplacementParameterSchema,
-  FunctionParameterSchema,
-  JavascriptToolParameterSchema,
   ModelContextProtocolParameterSchema,
   RetrievalAugmentedGenerationParameterSchema,
 } from './parameter-schemas';
@@ -60,8 +58,6 @@ export const PromptDynamicModificationSchema = z.object({
     'fullReplacement',
     'dynamicPosition',
     'retrievalAugmentedGeneration',
-    'function',
-    'javascriptTool',
     'modelContextProtocol',
   ]).meta({
     title: t('Schema.PromptDynamicModification.DynamicModificationTypeTitle'),
@@ -70,8 +66,6 @@ export const PromptDynamicModificationSchema = z.object({
       { value: 'fullReplacement', label: t('Schema.PromptDynamicModification.FullReplacementParamTitle') },
       { value: 'dynamicPosition', label: t('Schema.PromptDynamicModification.DynamicPositionParamTitle') },
       { value: 'retrievalAugmentedGeneration', label: t('Schema.PromptDynamicModification.RAGParamTitle') },
-      { value: 'function', label: t('Schema.PromptDynamicModification.FunctionParamTitle') },
-      { value: 'javascriptTool', label: t('Schema.PromptDynamicModification.JavascriptToolParamTitle') },
       { value: 'modelContextProtocol', label: t('Schema.PromptDynamicModification.MCPParamTitle') },
     ],
   }),
@@ -88,14 +82,6 @@ export const PromptDynamicModificationSchema = z.object({
   retrievalAugmentedGenerationParam: RetrievalAugmentedGenerationParameterSchema.optional().meta({
     title: t('Schema.PromptDynamicModification.RAGParamTitle'),
     description: t('Schema.PromptDynamicModification.RAGParam'),
-  }),
-  functionParam: FunctionParameterSchema.optional().meta({
-    title: t('Schema.PromptDynamicModification.FunctionParamTitle'),
-    description: t('Schema.PromptDynamicModification.FunctionParam'),
-  }),
-  javascriptToolParam: JavascriptToolParameterSchema.optional().meta({
-    title: t('Schema.PromptDynamicModification.JavascriptToolParamTitle'),
-    description: t('Schema.PromptDynamicModification.JavascriptToolParam'),
   }),
   modelContextProtocolParam: ModelContextProtocolParameterSchema.optional().meta({
     title: t('Schema.PromptDynamicModification.MCPParamTitle'),

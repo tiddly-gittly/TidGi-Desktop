@@ -333,18 +333,4 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       throw error;
     }
   }
-
-  /**
-   * Match tool calling patterns in AI response text
-   * Supports various formats: <tool_use>, <function_call>, etc.
-   */
-  public matchToolCalling(responseText: string): Promise<ToolCallingMatch> {
-    try {
-      const result = matchToolCalling(responseText);
-      return Promise.resolve(result);
-    } catch (error) {
-      logger.error(`Failed to match tool calling: ${error as Error}`);
-      return Promise.resolve({ found: false });
-    }
-  }
 }
