@@ -6,6 +6,8 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { responseConcat } from '../promptConcat/responseConcat';
+import { PromptConcatStreamState } from '../promptConcat/promptConcat';
+import { getFinalPromptResult } from '../promptConcat/utils';
 import { AgentPromptDescription, AiAPIConfig } from '../promptConcat/promptConcatSchema';
 import { continueRoundHandler } from './continueRoundHandlers';
 import { canceled, completed, error, working } from './statusUtilities';
@@ -80,7 +82,9 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
         const agentConfig = promptDescription;
 
         // Re-generate prompts to trigger middleware (including retrievalAugmentedGenerationHandler)
-        const { flatPrompts: currentFlatPrompts } = await agentInstanceService.concatPrompt(promptDescription, context.agent.messages);
+        // Get the final result from the stream using utility function
+        const concatStream = agentInstanceService.concatPrompt(promptDescription, context.agent.messages);
+        const { flatPrompts: currentFlatPrompts } = await getFinalPromptResult(concatStream);
 
         logger.info('Starting AI generation', {
           method: 'processLLMCall',

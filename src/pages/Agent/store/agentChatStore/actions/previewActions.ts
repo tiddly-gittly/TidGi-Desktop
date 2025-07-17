@@ -1,4 +1,5 @@
 import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { last, timeout } from 'rxjs/operators';
 import { StateCreator } from 'zustand';
 import { AgentChatStoreType, PreviewActions } from '../types';
 
@@ -83,30 +84,27 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
         });
       }
 
-      // Add a timeout to the concatPrompt call to prevent hanging
-      let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
-      const timeoutPromise = new Promise<null>((resolve) => {
-        timeoutId = setTimeout(() => {
-          resolve(null);
-        }, 15000); // 15 second timeout - increased from 10s to give more time for processing
-      });
+      // Use the streaming API and get only the final result
+      const concatStream = window.service.agentInstance.concatPrompt({ promptConfig }, messages);
+      
+      // Use RxJS operators to get the final result with timeout
+      const finalState = await concatStream.pipe(
+        last(), // Get the final state
+        timeout(15000) // 15 second timeout
+      ).toPromise();
 
-      const concatPromptPromise = window.service.agentInstance.concatPrompt({ promptConfig }, messages);
-
-      // Race the promises
-      const result = await Promise.race([concatPromptPromise, timeoutPromise]);
-
-      // Clear the timeout
-      clearTimeout(timeoutId);
-
-      if (result === null) {
-        // Timeout occurred
+      if (!finalState) {
         set({
           previewResult: null,
           previewLoading: false,
         });
         return null;
       }
+
+      const result = {
+        flatPrompts: finalState.flatPrompts,
+        processedPrompts: finalState.processedPrompts,
+      };
 
       set({
         previewResult: result,

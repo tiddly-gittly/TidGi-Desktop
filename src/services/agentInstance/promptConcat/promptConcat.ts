@@ -193,26 +193,38 @@ export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
 }
 
 /**
- * Process prompt configuration, apply dynamic modifications, and return a flat array for language model input
- * Pure function version, only accepts necessary parameters
- *
- * @param agentConfig Prompt configuration
- * @param messages Message history
- * @returns Processed prompt array and original prompt tree
+ * Streaming state for prompt processing
  */
-export async function promptConcat(
+export interface PromptConcatStreamState {
+  /** Current processed prompts */
+  processedPrompts: IPrompt[];
+  /** Current flat prompts for LLM */
+  flatPrompts: CoreMessage[];
+  /** Current processing step */
+  step: 'plugin' | 'finalize' | 'flatten' | 'complete';
+  /** Current plugin being processed (if step is 'plugin') */
+  currentPlugin?: Plugin;
+  /** Processing progress (0-1) */
+  progress: number;
+  /** Whether processing is complete */
+  isComplete: boolean;
+}
+
+/**
+ * Async generator version of promptConcat for streaming updates
+ * Yields intermediate results for real-time UI updates
+ */
+export async function* promptConcatStream(
   agentConfig: Pick<AgentPromptDescription, 'promptConfig'>,
   messages: AgentInstanceMessage[],
-): Promise<{
-  flatPrompts: CoreMessage[];
-  processedPrompts: IPrompt[];
-}> {
+): AsyncGenerator<PromptConcatStreamState, PromptConcatStreamState, unknown> {
   const messageId = messages[0]?.id || 'unknown';
-  logger.debug('Starting prompt concatenation', {
-    method: 'promptConcat',
+  logger.debug('Starting streaming prompt concatenation', {
+    method: 'promptConcatStream',
     messageId,
     messageCount: messages.length,
   });
+  
   const promptConfig = agentConfig.promptConfig || {};
   const prompts = Array.isArray(promptConfig.prompts) ? promptConfig.prompts : [];
   const plugins = Array.isArray(promptConfig.plugins) ? promptConfig.plugins : [];
@@ -236,10 +248,12 @@ export async function promptConcat(
     }
   }
   
-  // Process each plugin through hooks
+  // Process each plugin through hooks with streaming
   let modifiedPrompts = promptsCopy;
+  const totalSteps = plugins.length + 2; // plugins + finalize + flatten
   
-  for (const plugin of plugins) {
+  for (let i = 0; i < plugins.length; i++) {
+    const plugin = plugins[i];
     const context: PromptConcatHookContext = {
       messages,
       prompts: modifiedPrompts,
@@ -254,7 +268,27 @@ export async function promptConcat(
       logger.debug('Plugin processed successfully', {
         pluginId: plugin.pluginId,
         pluginInstanceId: plugin.id,
+        promptCount: modifiedPrompts.length,
       });
+      
+      // Yield intermediate state
+      const intermediateFlat = flattenPrompts(modifiedPrompts);
+      const messagesCopy = cloneDeep(messages);
+      const userMessage = messagesCopy.length > 0 ? messagesCopy[messagesCopy.length - 1] : null;
+      
+      if (userMessage && userMessage.role === 'user') {
+        intermediateFlat.push({ role: 'user', content: userMessage.content });
+      }
+      
+      yield {
+        processedPrompts: modifiedPrompts,
+        flatPrompts: intermediateFlat,
+        step: 'plugin',
+        currentPlugin: plugin,
+        progress: (i + 1) / totalSteps,
+        isComplete: false,
+      };
+      
     } catch (error) {
       logger.error('Plugin processing error', {
         pluginId: plugin.pluginId,
@@ -266,6 +300,14 @@ export async function promptConcat(
   }
   
   // Finalize prompts
+  yield {
+    processedPrompts: modifiedPrompts,
+    flatPrompts: flattenPrompts(modifiedPrompts),
+    step: 'finalize',
+    progress: (plugins.length + 1) / totalSteps,
+    isComplete: false,
+  };
+  
   const finalContext: PromptConcatHookContext = {
     messages,
     prompts: modifiedPrompts,
@@ -280,6 +322,15 @@ export async function promptConcat(
     logger.error('Prompt finalization error', error);
   }
   
+  // Final flattening
+  yield {
+    processedPrompts: modifiedPrompts,
+    flatPrompts: flattenPrompts(modifiedPrompts),
+    step: 'flatten',
+    progress: (plugins.length + 2) / totalSteps,
+    isComplete: false,
+  };
+  
   const flatPrompts = flattenPrompts(modifiedPrompts);
   const messagesCopy = cloneDeep(messages);
   const userMessage = messagesCopy.length > 0 ? messagesCopy[messagesCopy.length - 1] : null;
@@ -292,13 +343,50 @@ export async function promptConcat(
     flatPrompts.push({ role: 'user', content: userMessage.content });
   }
   
-  logger.debug('Prompt concatenation completed', {
+  logger.debug('Streaming prompt concatenation completed', {
     finalPromptCount: flatPrompts.length,
     processedPromptsCount: modifiedPrompts.length,
   });
   
-  return {
-    flatPrompts,
+  // Final complete state
+  const finalState: PromptConcatStreamState = {
     processedPrompts: modifiedPrompts,
+    flatPrompts,
+    step: 'complete',
+    progress: 1,
+    isComplete: true,
+  };
+  
+  yield finalState;
+  return finalState;
+}
+
+/**
+ * Process prompt configuration, apply dynamic modifications, and return a flat array for language model input
+ * Synchronous version that waits for all processing to complete - use for backend LLM calls
+ *
+ * @param agentConfig Prompt configuration
+ * @param messages Message history
+ * @returns Processed prompt array and original prompt tree
+ */
+export async function promptConcat(
+  agentConfig: Pick<AgentPromptDescription, 'promptConfig'>,
+  messages: AgentInstanceMessage[],
+): Promise<{
+  flatPrompts: CoreMessage[];
+  processedPrompts: IPrompt[];
+}> {
+  // Use the streaming version and just return the final result
+  const stream = promptConcatStream(agentConfig, messages);
+  let finalResult: PromptConcatStreamState;
+  
+  // Consume all intermediate states to get the final result
+  for await (const state of stream) {
+    finalResult = state;
+  }
+  
+  return {
+    flatPrompts: finalResult!.flatPrompts,
+    processedPrompts: finalResult!.processedPrompts,
   };
 }

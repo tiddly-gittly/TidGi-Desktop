@@ -85,12 +85,18 @@ const mockServiceInstances = {
   workspace: {
     countWorkspaces: vi.fn().mockResolvedValue(5),
     openWorkspaceTiddler: vi.fn().mockResolvedValue(undefined),
-    concatPrompt: vi.fn().mockResolvedValue({
-      flatPrompts: [
-        { role: 'system', content: 'You are a helpful assistant' },
-        { role: 'user', content: 'Hello' },
-      ],
-    }),
+    concatPrompt: vi.fn().mockReturnValue(
+      new BehaviorSubject({
+        processedPrompts: [],
+        flatPrompts: [
+          { role: 'system', content: 'You are a helpful assistant' },
+          { role: 'user', content: 'Hello' },
+        ],
+        step: 'complete',
+        progress: 1,
+        isComplete: true,
+      }),
+    ),
   },
   workspaceView: {
     setActiveWorkspaceView: vi.fn().mockResolvedValue(undefined),

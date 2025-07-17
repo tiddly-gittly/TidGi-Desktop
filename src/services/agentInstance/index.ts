@@ -1,14 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
-/* esli  /**
-   * Register built-in handlers and initialize plugin system
-   */
-  private registerBuiltinHandlers(): void {
-    // Initialize the new plugin system
-    initializePluginSystem();
-
-    // Register basic prompt concatenation handler with its schema
-    this.registerHandler('basicPromptConcatHandler', basicPromptConcatHandler, promptConcatHandlerConfigJsonSchema);
-  } @typescript-eslint/use-unknown-in-catch-callback-variable */
 /* eslint-disable unicorn/prevent-abbreviations */
 import { CoreMessage } from 'ai';
 import { injectable } from 'inversify';
@@ -21,7 +10,7 @@ import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { basicPromptConcatHandler } from '@services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler';
 import { AgentHandler, AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
 import { initializePluginSystem } from '@services/agentInstance/promptConcat/plugins';
-import { promptConcat } from '@services/agentInstance/promptConcat/promptConcat';
+import { promptConcat, promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { promptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
 import { lazyInject } from '@services/container';
@@ -777,50 +766,46 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async concatPrompt(promptDescription: Pick<AgentPromptDescription, 'promptConfig'>, messages: AgentInstanceMessage[]): Promise<{
-    flatPrompts: CoreMessage[];
-    processedPrompts: IPrompt[];
-  }> {
-    try {
-      logger.debug('AgentInstanceService.concatPrompt called', {
-        hasPromptConfig: !!promptDescription.promptConfig,
-        promptConfigKeys: Object.keys(promptDescription.promptConfig || {}),
-        messagesCount: messages.length,
-      });
+  public concatPrompt(promptDescription: Pick<AgentPromptDescription, 'promptConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState> {
+    logger.debug('AgentInstanceService.concatPrompt called', {
+      hasPromptConfig: !!promptDescription.promptConfig,
+      promptConfigKeys: Object.keys(promptDescription.promptConfig || {}),
+      messagesCount: messages.length,
+    });
 
-      // Add a timeout to the promptConcat operation
-      const timeoutPromise = new Promise<null>((resolve) => {
-        setTimeout(() => {
-          logger.warn('AgentInstanceService.concatPrompt: Operation timed out after 20 seconds', { method: 'concatPrompt' });
-          resolve(null);
-        }, 20000); // 20 second timeout
-      });
+    return new Observable<PromptConcatStreamState>((subscriber) => {
+      const processStream = async () => {
+        try {
+          const streamGenerator = promptConcatStream(promptDescription as AgentPromptDescription, messages);
+          
+          for await (const state of streamGenerator) {
+            logger.debug('AgentInstanceService.concatPrompt yielding state', {
+              step: state.step,
+              progress: state.progress,
+              isComplete: state.isComplete,
+              flatPromptsCount: state.flatPrompts.length,
+              currentPlugin: state.currentPlugin?.pluginId,
+            });
+            
+            subscriber.next(state);
+            
+            if (state.isComplete) {
+              subscriber.complete();
+              break;
+            }
+          }
+        } catch (error) {
+          logger.error('Error in AgentInstanceService.concatPrompt', {
+            error: error instanceof Error ? error.message : String(error),
+            promptDescriptionId: (promptDescription as AgentPromptDescription).id,
+            messagesCount: messages.length,
+          });
+          subscriber.error(error);
+        }
+      };
 
-      const concatPromptPromise = promptConcat(promptDescription as AgentPromptDescription, messages);
-
-      // Race the promises
-      const result = await Promise.race([concatPromptPromise, timeoutPromise]);
-
-      if (result === null) {
-        // Timeout occurred
-        logger.error('AgentInstanceService.concatPrompt timed out', { method: 'concatPrompt' });
-        throw new Error('Prompt generation timed out');
-      }
-
-      logger.debug('AgentInstanceService.concatPrompt completed', {
-        flatPromptsCount: result.flatPrompts.length,
-        processedPromptsCount: result.processedPrompts.length,
-      });
-
-      return result;
-    } catch (error) {
-      logger.error('Error in AgentInstanceService.concatPrompt', {
-        error: error instanceof Error ? error.message : String(error),
-        promptDescriptionId: (promptDescription as AgentPromptDescription).id,
-        messagesCount: messages.length,
-      });
-      throw error;
-    }
+      processStream();
+    });
   }
 
   /**

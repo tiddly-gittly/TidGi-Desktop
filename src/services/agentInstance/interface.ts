@@ -5,6 +5,7 @@ import type { Observable } from 'rxjs';
 import { AgentChannel } from '@/constants/channels';
 import { AgentDefinition } from '@services/agentDefinition/interface';
 import { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 
 /**
  * Content of a session instance that user chat with an agent.
@@ -163,14 +164,12 @@ export interface IAgentInstanceService {
   /**
    * Pure function to concatenate prompts with given prompt description and messages
    * This is useful for front-end to generate prompts from configurations.
+   * Returns an Observable stream that yields intermediate processing states and final result
    * @param promptDescription Configuration for prompt generation
    * @param messages Messages to be included in prompt generation
-   * @returns Processed flat array of prompts and processed prompt tree
+   * @returns Observable stream of processing states, with final state containing complete results
    */
-  concatPrompt(promptDescription: Pick<AgentPromptDescription, 'promptConfig'>, messages: AgentInstanceMessage[]): Promise<{
-    flatPrompts: CoreMessage[];
-    processedPrompts: IPrompt[];
-  }>;
+  concatPrompt(promptDescription: Pick<AgentPromptDescription, 'promptConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState>;
 
   /**
    * Get JSON Schema for handler configuration
@@ -186,7 +185,7 @@ export const AgentInstanceServiceIPCDescriptor = {
   properties: {
     cancelAgent: ProxyPropertyType.Function,
     closeAgent: ProxyPropertyType.Function,
-    concatPrompt: ProxyPropertyType.Function,
+    concatPrompt: ProxyPropertyType.Function$,
     createAgent: ProxyPropertyType.Function,
     deleteAgent: ProxyPropertyType.Function,
     getAgent: ProxyPropertyType.Function,

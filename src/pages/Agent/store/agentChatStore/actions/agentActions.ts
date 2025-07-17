@@ -188,7 +188,7 @@ export const agentActions = (
 
       // Subscribe to overall agent updates (primarily for new messages)
       const agentSubscription = window.observables.agentInstance.subscribeToAgentUpdates(agentId).subscribe({
-        next: async (fullAgent) => {
+        next: async (fullAgent: AgentInstance) => {
           // Ensure fullAgent exists before processing
           if (!fullAgent) return;
 
@@ -197,7 +197,7 @@ export const agentActions = (
           const newMessageIds: string[] = [];
 
           // Process new messages - backend already sorts messages by modified time
-          fullAgent.messages.forEach(message => {
+          fullAgent.messages.forEach((message: AgentInstanceMessage) => {
             const existingMessage = currentMessages.get(message.id);
 
             // If this is a new message
@@ -214,7 +214,7 @@ export const agentActions = (
                 messageSubscriptions.set(
                   message.id,
                   window.observables.agentInstance.subscribeToAgentUpdates(agentId, message.id).subscribe({
-                    next: (status) => {
+                    next: (status: any) => {
                       if (status?.message) {
                         // Update the message in our map
                         get().messages.set(status.message.id, status.message);
@@ -224,7 +224,7 @@ export const agentActions = (
                         }
                       }
                     },
-                    error: (error) => {
+                    error: (error: any) => {
                       console.error(`Error in message subscription for ${message.id}:`, error);
                     },
                     complete: () => {
@@ -252,7 +252,7 @@ export const agentActions = (
             set({ agent: agentWithoutMessages });
           }
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Error in agent subscription:', error);
           set({ error: error instanceof Error ? error : new Error(String(error)) });
         },

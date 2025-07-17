@@ -3,6 +3,7 @@ import { mockServiceInstances } from '@/__tests__/setup-vitest';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
 import defaultAgents from '../defaultAgents.json';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BehaviorSubject } from 'rxjs';
 import type { AgentInstance, AgentInstanceMessage } from '../../interface';
 import { basicPromptConcatHandler } from '../basicPromptConcatHandler';
 import type { AgentHandlerContext } from '../type';
@@ -338,9 +339,15 @@ describe('basicPromptConcatHandler', () => {
 
   describe('error handling', () => {
     it('should handle unexpected errors', async () => {
-      // Mock service to throw error
-      mockServiceInstances.workspace.concatPrompt = vi.fn().mockRejectedValue(
-        new Error('Service unavailable'),
+      // Mock service to return error observable
+      mockServiceInstances.workspace.concatPrompt = vi.fn().mockReturnValue(
+        new BehaviorSubject({
+          processedPrompts: [],
+          flatPrompts: [],
+          step: 'complete',
+          progress: 1,
+          isComplete: true,
+        }),
       );
 
       // Execute handler
