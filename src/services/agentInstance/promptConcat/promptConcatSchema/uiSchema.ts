@@ -5,7 +5,7 @@ import type { UiSchema } from '@rjsf/utils';
  * Defines the layout, widgets, and styling for the prompt configuration form
  */
 export const HANDLER_CONFIG_UI_SCHEMA: UiSchema = {
-  'ui:order': ['prompts', 'promptDynamicModification', 'response', 'responseDynamicModification', '*'],
+  'ui:order': ['prompts', 'plugins', 'response', '*'],
   prompts: {
     'ui:options': {
       orderable: true,
@@ -43,40 +43,54 @@ export const HANDLER_CONFIG_UI_SCHEMA: UiSchema = {
       },
     },
   },
-  promptDynamicModification: {
+  plugins: {
     'ui:options': {
       orderable: true,
       variant: 'info',
     },
     items: {
-      'ui:order': ['id', 'enabled', 'sourceTag', 'targetTag', 'action', '*'],
-      'ui:compactFields': ['id', 'enabled', 'sourceTag', 'targetTag'],
+      'ui:order': ['id', 'caption', 'pluginId', '*'],
+      'ui:compactFields': ['id', 'caption', 'pluginId'],
       fullReplacementParam: {
         'ui:field': 'ConditionalField',
         'ui:condition': {
-          dependsOn: 'dynamicModificationType',
+          dependsOn: 'pluginId',
           showWhen: 'fullReplacement',
         },
       },
       dynamicPositionParam: {
         'ui:field': 'ConditionalField',
         'ui:condition': {
-          dependsOn: 'dynamicModificationType',
+          dependsOn: 'pluginId',
           showWhen: 'dynamicPosition',
         },
       },
       retrievalAugmentedGenerationParam: {
         'ui:field': 'ConditionalField',
         'ui:condition': {
-          dependsOn: 'dynamicModificationType',
+          dependsOn: 'pluginId',
           showWhen: 'retrievalAugmentedGeneration',
         },
       },
       modelContextProtocolParam: {
         'ui:field': 'ConditionalField',
         'ui:condition': {
-          dependsOn: 'dynamicModificationType',
+          dependsOn: 'pluginId',
           showWhen: 'modelContextProtocol',
+        },
+      },
+      toolCallingParam: {
+        'ui:field': 'ConditionalField',
+        'ui:condition': {
+          dependsOn: 'pluginId',
+          showWhen: 'toolCalling',
+        },
+      },
+      autoReplyParam: {
+        'ui:field': 'ConditionalField',
+        'ui:condition': {
+          dependsOn: 'pluginId',
+          showWhen: 'autoReply',
         },
       },
     },
@@ -95,13 +109,5 @@ export const HANDLER_CONFIG_UI_SCHEMA: UiSchema = {
       },
     },
   },
-  responseDynamicModification: {
-    'ui:options': {
-      orderable: true,
-      variant: 'warning',
-    },
-    items: {
-      'ui:compactFields': ['id', 'enabled'],
-    },
-  },
+  // ...existing code...
 };

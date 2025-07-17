@@ -1,10 +1,9 @@
 import { identity } from 'lodash';
 import { z } from 'zod/v4';
 import { ModelParametersSchema, ProviderModelSchema } from './modelParameters';
-import { PromptDynamicModificationSchema } from './promptDynamicModification';
+import { PluginSchema } from './plugin';
 import { PromptSchema } from './prompts';
 import { ResponseSchema } from './response';
-import { ResponseDynamicModificationSchema } from './responseDynamicModification';
 import { HANDLER_CONFIG_UI_SCHEMA } from './uiSchema';
 
 /** Placeholder to trigger VSCode i18nAlly extension to show translated text. */
@@ -39,24 +38,20 @@ export const AIConfigSchema = BaseAPIConfigSchema
 
 /**
  * Handler configuration schema
- * Contains the handler-related configuration fields for prompts and responses
+ * Contains the handler-related configuration fields for prompts, responses, and plugins
  */
 export const HandlerConfigSchema = z.object({
   prompts: z.array(PromptSchema).meta({
     description: t('Schema.AgentConfig.PromptConfig.Prompts'),
     title: t('PromptConfig.Tabs.Prompts'),
   }),
-  promptDynamicModification: z.array(PromptDynamicModificationSchema).meta({
-    description: t('Schema.AgentConfig.PromptConfig.PromptDynamicModification'),
-    title: t('PromptConfig.Tabs.PromptDynamicModification'),
-  }),
   response: z.array(ResponseSchema).meta({
     description: t('Schema.AgentConfig.PromptConfig.Response'),
     title: t('PromptConfig.Tabs.Response'),
   }),
-  responseDynamicModification: z.array(ResponseDynamicModificationSchema).meta({
-    description: t('Schema.AgentConfig.PromptConfig.ResponseDynamicModification'),
-    title: t('PromptConfig.Tabs.ResponseDynamicModification'),
+  plugins: z.array(PluginSchema).meta({
+    description: t('Schema.AgentConfig.PromptConfig.Plugins'),
+    title: t('PromptConfig.Tabs.Plugins'),
   }),
 }).meta({
   title: t('Schema.AgentConfig.PromptConfig.Title'),
@@ -110,7 +105,6 @@ export type HandlerConfig = z.infer<typeof HandlerConfigSchema>;
 
 // Re-export all schemas and types
 export * from './modelParameters';
-export * from './promptDynamicModification';
+export * from './plugin';
 export * from './prompts';
 export * from './response';
-export * from './responseDynamicModification';

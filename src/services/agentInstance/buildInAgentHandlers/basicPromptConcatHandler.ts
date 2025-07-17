@@ -5,7 +5,7 @@ import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
-import { processResponse } from '../promptConcat/handlers/responseHandler';
+import { responseConcat } from '../promptConcat/responseConcat';
 import { AgentPromptDescription, AiAPIConfig } from '../promptConcat/promptConcatSchema';
 import { continueRoundHandler } from './continueRoundHandlers';
 import { canceled, completed, error, working } from './statusUtilities';
@@ -224,8 +224,8 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                 return;
               }
 
-              // Process response with all registered handlers
-              const processedResult = await processResponse(agentConfig, response.content, context);
+              // Process response with all registered plugins
+              const processedResult = await responseConcat(agentConfig, response.content, context, context.agent.messages || []);
               // Check if we need to trigger another LLM call
               if (processedResult.needsNewLLMCall) {
                 logger.info('Response processing triggered new LLM call', {

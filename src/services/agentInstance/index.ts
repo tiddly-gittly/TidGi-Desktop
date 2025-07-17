@@ -1,5 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-condition */
-/* eslint-disable @typescript-eslint/use-unknown-in-catch-callback-variable */
+/* esli  /**
+   * Register built-in handlers and initialize plugin system
+   */
+  private registerBuiltinHandlers(): void {
+    // Initialize the new plugin system
+    initializePluginSystem();
+
+    // Register basic prompt concatenation handler with its schema
+    this.registerHandler('basicPromptConcatHandler', basicPromptConcatHandler, promptConcatHandlerConfigJsonSchema);
+  } @typescript-eslint/use-unknown-in-catch-callback-variable */
 /* eslint-disable unicorn/prevent-abbreviations */
 import { CoreMessage } from 'ai';
 import { injectable } from 'inversify';
@@ -11,7 +20,7 @@ import { DataSource, Repository } from 'typeorm';
 import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { basicPromptConcatHandler } from '@services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler';
 import { AgentHandler, AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
-import { registerAllPromptHandlers } from '@services/agentInstance/promptConcat/handlers/promptHandlers/index';
+import { initializePluginSystem } from '@services/agentInstance/promptConcat/plugins';
 import { promptConcat } from '@services/agentInstance/promptConcat/promptConcat';
 import { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { promptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
@@ -74,8 +83,8 @@ export class AgentInstanceService implements IAgentInstanceService {
    * Register built-in agent handlers
    */
   private registerBuiltinHandlers(): void {
-    // Register all prompt handlers from promptConcatUtils/handlers/promptHandlers/index.ts
-    registerAllPromptHandlers();
+    // Initialize the new plugin system
+    initializePluginSystem();
 
     // Register basic prompt concatenation handler with its schema
     this.registerHandler('basicPromptConcatHandler', basicPromptConcatHandler, promptConcatHandlerConfigJsonSchema);

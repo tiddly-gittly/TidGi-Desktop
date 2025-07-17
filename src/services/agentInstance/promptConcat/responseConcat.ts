@@ -1,70 +1,19 @@
 /**
- * Response concatenation and processing
+ * Response concatenation and processing with plugin-based architecture
  *
- * Handles response modifications and processing
+ * Handles response modifications and processing through tapable hooks
  */
 import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
 import { AgentHandlerContext } from '../buildInAgentHandlers/type';
-import { AgentResponse } from './handlers/shared/types';
-import { AgentPromptDescription, ResponseDynamicModification } from './promptConcatSchema';
+import { AgentInstanceMessage } from '../interface';
+import { AgentPromptDescription } from './promptConcatSchema';
+import { Plugin } from './promptConcatSchema/plugin';
+import { PromptConcatHooks, PromptConcatHookContext, builtInPlugins } from './plugins';
+import { ResponseHookContext, AgentResponse } from './plugins/responsePlugins';
 
 /**
- * Response dynamic modification handler function type
- */
-export type ResponseDynamicModificationHandler = (
-  responses: AgentResponse[],
-  modification: ResponseDynamicModification,
-  llmResponse: string,
-  context: AgentHandlerContext,
-) => Promise<AgentResponse[]>;
-
-/**
- * Response processing handler function type
- */
-export type ResponseProcessingHandler = (
-  responses: AgentResponse[],
-  modification: ResponseDynamicModification,
-  context: AgentHandlerContext,
-) => Promise<{
-  responses: AgentResponse[];
-  processed: boolean;
-  newLLMCall?: boolean;
-  newUserMessage?: string;
-}>;
-
-/**
- * Response dynamic modification handler registry
- */
-const responseDynamicModificationHandlers: Record<string, ResponseDynamicModificationHandler | undefined> = {};
-
-/**
- * Response processing handler registry
- */
-const responseProcessingHandlers: Record<string, ResponseProcessingHandler | undefined> = {};
-
-/**
- * Register response dynamic modification handler
- */
-export function registerResponseDynamicModificationHandler(
-  type: string,
-  handler: ResponseDynamicModificationHandler,
-): void {
-  responseDynamicModificationHandlers[type] = handler;
-}
-
-/**
- * Register response processing handler
- */
-export function registerResponseProcessingHandler(
-  type: string,
-  handler: ResponseProcessingHandler,
-): void {
-  responseProcessingHandlers[type] = handler;
-}
-
-/**
- * Process response configuration, apply dynamic modifications, and return final response
+ * Process response configuration, apply plugins, and return final response
  *
  * @param agentConfig Agent configuration
  * @param llmResponse Raw LLM response
@@ -75,6 +24,7 @@ export async function responseConcat(
   agentConfig: AgentPromptDescription,
   llmResponse: string,
   context: AgentHandlerContext,
+  messages: AgentInstanceMessage[] = [],
 ): Promise<{
   processedResponse: string;
   needsNewLLMCall: boolean;
@@ -86,97 +36,88 @@ export async function responseConcat(
     configId: agentConfig.id,
     responseLength: llmResponse.length,
   });
-
-  // Get response configuration (ensuring we handle all possible shapes)
+  
   const { promptConfig } = agentConfig;
-  // Extract responses with proper type checking
   const responses = Array.isArray(promptConfig.response) ? promptConfig.response : [];
-
+  const plugins = Array.isArray(promptConfig.plugins) ? promptConfig.plugins : [];
+  
   logger.debug('Response configuration loaded', {
     hasResponses: responses.length > 0,
     responseCount: responses.length,
+    pluginCount: plugins.length,
   });
-
-  // 1. Clone response configuration for modification
+  
   const responsesCopy = cloneDeep(responses);
-
-  // 2. Apply dynamic modifications to responses
   let modifiedResponses: AgentResponse[] = responsesCopy;
-  const responseDynamicModifications = Array.isArray(promptConfig.responseDynamicModification)
-    ? promptConfig.responseDynamicModification
-    : [];
-
-  logger.debug('Response dynamic modifications loaded', {
-    modificationCount: responseDynamicModifications.length,
-    types: responseDynamicModifications
-      .filter(mod => mod.dynamicModificationType)
-      .map(mod => mod.dynamicModificationType),
-  });
-
-  // Process dynamic modifications first
-  for (const modification of responseDynamicModifications) {
-    if (modification.dynamicModificationType) {
-      const handler = responseDynamicModificationHandlers[modification.dynamicModificationType];
-
-      logger.debug('Processing response dynamic modification', {
-        modificationType: modification.dynamicModificationType,
-        targetId: modification.fullReplacementParam?.targetId,
-        handlerAvailable: !!handler,
+  
+  // Create hooks instance
+  const hooks = new PromptConcatHooks();
+  
+  // Register all plugins from configuration (no need to filter by type)
+  for (const plugin of plugins) {
+    const builtInPlugin = builtInPlugins.get(plugin.pluginId);
+    if (builtInPlugin) {
+      hooks.registerPlugin(builtInPlugin);
+      logger.debug('Registered response plugin', {
+        pluginId: plugin.pluginId,
+        pluginInstanceId: plugin.id,
       });
-
-      if (handler) {
-        modifiedResponses = await handler(modifiedResponses, modification, llmResponse, context);
-      } else {
-        logger.warn(`No handler found for response dynamic modification type: ${modification.dynamicModificationType}`);
-      }
+    } else {
+      logger.warn(`No built-in plugin found for response pluginId: ${plugin.pluginId}`);
     }
   }
-
-  // 3. Apply response processing
-  let finalResponses = modifiedResponses;
+  
+  // Process each plugin through hooks
   let needsNewLLMCall = false;
   let newUserMessage: string | undefined;
-
-  for (const modification of responseDynamicModifications) {
-    if (modification.responseProcessingType) {
-      const handler = responseProcessingHandlers[modification.responseProcessingType];
-
-      logger.debug('Processing response post-processing', {
-        processingType: modification.responseProcessingType,
-        handlerAvailable: !!handler,
-      });
-
-      if (handler) {
-        const result = await handler(finalResponses, modification, context);
-        finalResponses = result.responses;
-
-        if (result.newLLMCall) {
-          needsNewLLMCall = true;
-          if (result.newUserMessage) {
-            newUserMessage = result.newUserMessage;
-          }
-
-          logger.debug('Response processing triggered new LLM call', {
-            processingType: modification.responseProcessingType,
-            hasNewUserMessage: !!result.newUserMessage,
-          });
+  
+  for (const plugin of plugins) {
+    const responseContext: ResponseHookContext = {
+      messages,
+      prompts: [], // Not used in response processing
+      plugin,
+      llmResponse,
+      responses: modifiedResponses,
+      metadata: {},
+    };
+    
+    try {
+      const result = await hooks.postProcess.promise(responseContext) as ResponseHookContext;
+      
+      // Update responses if they were modified in the context
+      modifiedResponses = result.responses;
+      
+      // Check if plugin indicated need for new LLM call
+      if (result.metadata?.needsNewLLMCall) {
+        needsNewLLMCall = true;
+        if (result.metadata.newUserMessage) {
+          newUserMessage = result.metadata.newUserMessage;
         }
-      } else {
-        logger.warn(`No handler found for response processing type: ${modification.responseProcessingType}`);
       }
+      
+      logger.debug('Response plugin processed successfully', {
+        pluginId: plugin.pluginId,
+        pluginInstanceId: plugin.id,
+      });
+    } catch (error) {
+      logger.error('Response plugin processing error', {
+        pluginId: plugin.pluginId,
+        pluginInstanceId: plugin.id,
+        error,
+      });
+      // Continue processing other plugins even if one fails
     }
   }
-
-  // 4. Flatten responses to a single string
-  const processedResponse = flattenResponses(finalResponses);
-
+  
+  const processedResponse = flattenResponses(modifiedResponses);
+  
   logger.debug('Response processing completed', {
     originalLength: llmResponse.length,
     processedLength: processedResponse.length,
     needsNewLLMCall,
     hasNewUserMessage: !!newUserMessage,
   });
-
+  
   return {
     processedResponse,
     needsNewLLMCall,

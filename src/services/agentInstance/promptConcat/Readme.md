@@ -1,55 +1,57 @@
 # Prompt Concat Tools
 
-Pure functions for prompt engineering and message processing, with no side effects.
+Prompt engineering and message processing with a plugin-based architecture.
 
-## Purpose
+If final prompt is a food, then `handlerConfig.prompts` is the recipe. Chat history and user input are raw materials.
 
-This module handles the transformation and preparation of conversation data into AI-ready prompts. It focuses purely on data processing without performing any external operations.
+## Implementation
 
-## Core Responsibilities
+The `promptConcat` function uses a tapable hooks-based plugin system. Built-in plugins are registered by `pluginId` and loaded based on configuration in `defaultAgents.json`.
 
-### Prompt Construction
+### Plugin System Architecture
 
-- Convert conversation history into structured prompts
-- Apply prompt templates and formatting rules
-- Handle different AI model prompt formats
-- Merge system prompts with user messages
+1. **Hooks**: Uses tapable `AsyncSeriesWaterfallHook` for plugin execution
+   - `processPrompts`: Modifies prompt tree during processing
+   - `finalizePrompts`: Final processing before LLM call
+   - `postProcess`: Handles response processing
 
-### Message Processing
+2. **Built-in Plugins**: 
+   - `fullReplacement`: Replaces content from various sources
+   - `dynamicPosition`: Inserts content at specific positions
+   - `retrievalAugmentedGeneration`: Retrieves content from wiki/external sources
+   - `modelContextProtocol`: Integrates with external MCP servers
+   - `toolCalling`: Processes function calls in responses
+   - `autoReply`: Automatic follow-up response generation
 
-- Clean and normalize message content
-- Apply content filters and transformations
-- Handle message metadata and attachments
-- Validate message structure and format
+3. **Plugin Registration**: 
+   - Plugins are registered by `pluginId` field in the `plugins` array
+   - Each plugin instance has its own configuration parameters
+   - Built-in plugins are auto-registered on system initialization
 
-### Response Processing
+### Plugin Lifecycle
 
-- Parse and normalize AI responses
-- Extract structured data from responses
-- Apply post-processing transformations
-- Prepare responses for storage
+1. **Initialization**: `initializePluginSystem()` registers all built-in plugins
+2. **Configuration**: Plugins are loaded based on `promptConfig.plugins` array
+3. **Execution**: Hooks execute plugins in registration order
+4. **Error Handling**: Individual plugin failures don't stop the pipeline
 
-## Architecture Principles
+### Adding New Plugins
 
-- **Pure functions**: No side effects, predictable outputs
-- **Composable**: Functions can be combined and reused
-- **Type-safe**: Strong TypeScript typing throughout
-- **Testable**: Easy to unit test without mocking
+1. Create plugin function in `plugins/` directory
+2. Register in `plugins/index.ts`
+3. Add `pluginId` to schema enum
+4. Add parameter schema if needed
 
-## Integration
+Each plugin receives a hooks object and registers handlers for specific hook points. Plugins can modify prompt trees, inject content, process responses, and trigger additional LLM calls.
 
-These tools are consumed by buildInAgentHandlers for:
+### Example Plugin Structure
 
-- Pre-processing user inputs before AI generation
-- Post-processing AI outputs before storage
-- Formatting prompts for different AI providers
-- Normalizing conversation data
-
-For actual AI generation, tool calling, retry logic, and multi-round processing, see [buildInAgentHandlers](../buildInAgentHandlers/Readme.md).
-
-## Key Modules
-
-- **Prompt builders**: Template-based prompt construction
-- **Message formatters**: Standardized message processing
-- **Response handlers**: AI output processing and validation
-- **Schema validators**: Type checking and data validation
+```typescript
+export const myPlugin: PromptConcatPlugin = (hooks) => {
+  hooks.processPrompts.tapAsync('myPlugin', async (context, callback) => {
+    const { plugin, prompts, messages } = context;
+    // Plugin logic here
+    callback(null, context);
+  });
+};
+```

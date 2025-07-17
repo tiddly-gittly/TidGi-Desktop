@@ -1,24 +1,29 @@
 /*
- * This module provides functions for processing and flattening prompt trees for language model input.
- * It supports dynamic prompt modifications, source path mapping, and prompt tree traversal.
+ * This module provides a plugin-based system for processing and flattening prompt trees for language model input.
+ * It uses tapable hooks to allow plugins to modify prompts dynamically.
  *
  * Key Exports:
  * - flattenPrompts: Flattens a tree of prompts into a linear array for LLMs.
- * - promptConcat: Main entry, applies dynamic modifications and returns processed prompts.
- * - registerPromptDynamicModificationHandler: Register handlers for dynamic prompt modifications.
+ * - promptConcat: Main entry, applies plugins via hooks and returns processed prompts.
  * - findPromptById: Utility to find a prompt node by ID.
  *
  * Main Concepts:
  * - Prompts are tree-structured, can have roles (system/user/assistant) and children.
- * - Dynamic modifications allow runtime changes to the prompt tree.
- * - Source path mapping enables tracking prompt locations for UI/form navigation.
+ * - Plugins use hooks to modify the prompt tree at runtime.
+ * - Built-in plugins are registered by pluginId and executed when matching plugins are found.
  */
 
 import { logger } from '@services/libs/log';
 import { CoreMessage } from 'ai';
 import { cloneDeep } from 'lodash';
 import { AgentInstanceMessage } from '../interface';
-import { AgentPromptDescription, IPrompt, PromptDynamicModification } from './promptConcatSchema';
+import { AgentPromptDescription, IPrompt } from './promptConcatSchema';
+import { Plugin } from './promptConcatSchema/plugin';
+import { PromptConcatHooks, PromptConcatHookContext, builtInPlugins } from './hooks';
+import { initializePluginSystem } from './plugins';
+
+// Initialize plugin system on module load
+initializePluginSystem();
 
 /**
  * Context type specific for prompt concatenation operations
@@ -32,60 +37,29 @@ export interface PromptConcatContext {
 }
 
 /**
- * Type definition for prompt dynamic modification handlers
- */
-export type PromptDynamicModificationHandler = (
-  prompts: IPrompt[],
-  modification: PromptDynamicModification,
-  context: PromptConcatContext,
-) => IPrompt[] | Promise<IPrompt[]>;
-
-/**
- * Registry for prompt dynamic modification handlers
- */
-const promptDynamicModificationHandlers: Record<string, PromptDynamicModificationHandler | undefined> = {};
-
-/**
  * Generate ID-based path mapping for prompts to enable source tracking
  * Uses actual node IDs instead of indices to avoid path conflicts with dynamic content
  */
-function generateSourcePaths(prompts: IPrompt[], promptDynamicModifications: PromptDynamicModification[] = []): Map<string, string[]> {
+function generateSourcePaths(prompts: IPrompt[], plugins: Plugin[] = []): Map<string, string[]> {
   const pathMap = new Map<string, string[]>();
-
   function traversePrompts(items: IPrompt[], currentPath: string[]): void {
     items.forEach((item) => {
       const itemPath = [...currentPath, item.id];
       pathMap.set(item.id, itemPath);
-
       if (item.children && item.children.length > 0) {
         traversePrompts(item.children as IPrompt[], [...itemPath, 'children']);
       }
     });
   }
-
-  function traverseDynamicModifications(items: PromptDynamicModification[], currentPath: string[]): void {
+  function traversePlugins(items: Plugin[], currentPath: string[]): void {
     items.forEach((item) => {
       const itemPath = [...currentPath, item.id];
       pathMap.set(item.id, itemPath);
     });
   }
-
   traversePrompts(prompts, ['prompts']);
-  traverseDynamicModifications(promptDynamicModifications, ['promptDynamicModification']);
-
+  traversePlugins(plugins, ['plugins']);
   return pathMap;
-}
-
-/**
- * Register a prompt dynamic modification handler
- * @param type Handler type
- * @param handler Handler function
- */
-export function registerPromptDynamicModificationHandler(
-  type: string,
-  handler: PromptDynamicModificationHandler,
-): void {
-  promptDynamicModificationHandlers[type] = handler;
 }
 
 /**
@@ -233,70 +207,96 @@ export async function promptConcat(
   flatPrompts: CoreMessage[];
   processedPrompts: IPrompt[];
 }> {
-  // Generate unique ID for logging
   const messageId = messages[0]?.id || 'unknown';
-
   logger.debug('Starting prompt concatenation', {
     method: 'promptConcat',
     messageId,
     messageCount: messages.length,
   });
-
-  // Ensure configuration exists and has correct structure
   const promptConfig = agentConfig.promptConfig || {};
   const prompts = Array.isArray(promptConfig.prompts) ? promptConfig.prompts : [];
-
-  // 1. Clone prompt configuration for modification
+  const plugins = Array.isArray(promptConfig.plugins) ? promptConfig.plugins : [];
   const promptsCopy = cloneDeep(prompts);
-
-  let modifiedPrompts = promptsCopy;
-  const promptDynamicModifications = Array.isArray(promptConfig.promptDynamicModification)
-    ? promptConfig.promptDynamicModification
-    : [];
-
-  const sourcePaths = generateSourcePaths(promptsCopy, promptDynamicModifications);
-
-  // 2. Go through each middleware, applying dynamic modifications, they have full prompt structure, can do anything
-  for (const modification of promptDynamicModifications) {
-    const handler = promptDynamicModificationHandlers[modification.dynamicModificationType];
-
-    logger.debug('Processing modification', {
-      modificationType: modification.dynamicModificationType,
-      targetId: modification.fullReplacementParam?.targetId,
-      handlerAvailable: !!handler,
-    });
-
-    if (handler) {
-      modifiedPrompts = await handler(modifiedPrompts, modification, { messages, sourcePaths });
+  const sourcePaths = generateSourcePaths(promptsCopy, plugins);
+  
+  // Create hooks instance
+  const hooks = new PromptConcatHooks();
+  
+  // Register plugins that match the configuration
+  for (const plugin of plugins) {
+    const builtInPlugin = builtInPlugins.get(plugin.pluginId);
+    if (builtInPlugin) {
+      hooks.registerPlugin(builtInPlugin);
+      logger.debug('Registered plugin', {
+        pluginId: plugin.pluginId,
+        pluginInstanceId: plugin.id,
+      });
     } else {
-      logger.warn(`No handler found for modification type: ${modification.dynamicModificationType}`);
+      logger.warn(`No built-in plugin found for pluginId: ${plugin.pluginId}`);
     }
   }
-
-  // TODO: 3. Apply prompt parameters to remove outdated prompts
-
-  // 5. Flatten tree-structured prompts into an array
+  
+  // Process each plugin through hooks
+  let modifiedPrompts = promptsCopy;
+  
+  for (const plugin of plugins) {
+    const context: PromptConcatHookContext = {
+      messages,
+      prompts: modifiedPrompts,
+      plugin,
+      metadata: { sourcePaths },
+    };
+    
+    try {
+      const result = await hooks.processPrompts.promise(context);
+      modifiedPrompts = result.prompts;
+      
+      logger.debug('Plugin processed successfully', {
+        pluginId: plugin.pluginId,
+        pluginInstanceId: plugin.id,
+      });
+    } catch (error) {
+      logger.error('Plugin processing error', {
+        pluginId: plugin.pluginId,
+        pluginInstanceId: plugin.id,
+        error,
+      });
+      // Continue processing other plugins even if one fails
+    }
+  }
+  
+  // Finalize prompts
+  const finalContext: PromptConcatHookContext = {
+    messages,
+    prompts: modifiedPrompts,
+    plugin: {} as Plugin, // Empty plugin for finalization
+    metadata: { sourcePaths },
+  };
+  
+  try {
+    const finalResult = await hooks.finalizePrompts.promise(finalContext);
+    modifiedPrompts = finalResult.prompts;
+  } catch (error) {
+    logger.error('Prompt finalization error', error);
+  }
+  
   const flatPrompts = flattenPrompts(modifiedPrompts);
-
-  // 6. Add user messages (if any)
-  // Get the last message, which should be the user message
   const messagesCopy = cloneDeep(messages);
   const userMessage = messagesCopy.length > 0 ? messagesCopy[messagesCopy.length - 1] : null;
-
+  
   if (userMessage && userMessage.role === 'user') {
     logger.debug('Adding user message to prompts', {
       messageId: userMessage.id,
       contentLength: userMessage.content.length,
     });
-
     flatPrompts.push({ role: 'user', content: userMessage.content });
   }
-
+  
   logger.debug('Prompt concatenation completed', {
     finalPromptCount: flatPrompts.length,
     processedPromptsCount: modifiedPrompts.length,
   });
-
+  
   return {
     flatPrompts,
     processedPrompts: modifiedPrompts,

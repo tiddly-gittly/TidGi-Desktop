@@ -58,10 +58,16 @@
           ]
         }
       ],
-      "promptDynamicModification": [
+      "response": [
+        {
+          "id": "default-response",
+          "caption": "LLM response"
+        }
+      ],
+      "plugins": [
         {
           "id": "efe5be74-540d-487d-8a05-7377e486953d",
-          "dynamicModificationType": "fullReplacement",
+          "pluginId": "fullReplacement",
           "fullReplacementParam": {
             "targetId": "default-history",
             "sourceType": "historyOfSession"
@@ -72,7 +78,7 @@
         {
           "id": "a0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
           "caption": "世界书（系统提示词）",
-          "dynamicModificationType": "retrievalAugmentedGeneration",
+          "pluginId": "retrievalAugmentedGeneration",
           "retrievalAugmentedGenerationParam": {
             "position": "relative",
             "targetId": "system",
@@ -90,7 +96,7 @@
         {
           "id": "b0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
           "caption": "世界书（用户提示词）",
-          "dynamicModificationType": "retrievalAugmentedGeneration",
+          "pluginId": "retrievalAugmentedGeneration",
           "retrievalAugmentedGenerationParam": {
             "position": "relative",
             "targetId": "system",
@@ -113,7 +119,7 @@
         {
           "id": "c0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
           "caption": "地图服务MCP工具提示",
-          "dynamicModificationType": "modelContextProtocol",
+          "pluginId": "modelContextProtocol",
           "modelContextProtocolParam": {
             "id": "@amap/amap-maps-mcp-server",
             "timeoutSecond": 1.5,
@@ -132,7 +138,7 @@
           "id": "d0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
           "caption": "Wiki工具和搜索结果",
           "description": "自动在提示词中注入可用的Wiki工具信息，并将工具执行结果插入到下一轮对话中",
-          "dynamicModificationType": "retrievalAugmentedGeneration",
+          "pluginId": "retrievalAugmentedGeneration",
           "retrievalAugmentedGenerationParam": {
             "sourceType": "wiki",
             "toolListPosition": {
@@ -143,18 +149,10 @@
               "randomChance": 1.0
             }
           }
-        }
-      ],
-      "response": [
-        {
-          "id": "default-response",
-          "caption": "LLM response"
-        }
-      ],
-      "responseDynamicModification": [
+        },
         {
           "id": "a0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
-          "dynamicModificationType": "fullReplacement",
+          "pluginId": "fullReplacement",
           "fullReplacementParam": {
             "targetId": "default-response",
             "sourceType": "llmResponse"
@@ -164,7 +162,7 @@
         },
         {
           "id": "a0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
-          "responseProcessingType": "toolCalling",
+          "pluginId": "toolCalling",
           "toolCallingParam": {
             "targetId": "default-response",
             "match": "/<functions_result>(.+)</functions_result>/g"
@@ -173,7 +171,7 @@
         {
           "id": "b1f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
           "caption": "AI回复没有完全解决问题时，继续工作直到它自己觉得满意。",
-          "responseProcessingType": "autoReply",
+          "pluginId": "autoReply",
           "autoReplyParam": {
             "targetId": "default-response",
             "text": "继续工作直到你自己觉得工作已经完全完成。",
