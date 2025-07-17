@@ -2,7 +2,7 @@
   "name": "tidgi",
   "productName": "TidGi",
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "license": "MPL 2.0",
   "scripts": {
     "start": "pnpm run clean && pnpm run init:git-submodule && pnpm run start:without-clean",
@@ -69,7 +69,7 @@
     "source-map-support": "0.5.21",
     "strip-ansi": "^7.1.0",
     "threads": "1.7.0",
-    "tiddlywiki": "5.3.6",
+    "tiddlywiki": "5.3.7",
     "type-fest": "4.33.0",
     "typescript-styled-is": "^2.1.0",
     "v8-compile-cache-lib": "^3.0.1",

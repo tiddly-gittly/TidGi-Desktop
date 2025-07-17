@@ -128,8 +128,8 @@ importers:
         specifier: 1.7.0
         version: 1.7.0
       tiddlywiki:
-        specifier: 5.3.6
-        version: 5.3.6
+        specifier: 5.3.7
+        version: 5.3.7
       type-fest:
         specifier: 4.33.0
         version: 4.33.0
@@ -6669,8 +6669,8 @@ packages:
   thunky@1.1.0:
     resolution: {integrity: sha512-eHY7nBftgThBqOyHGVN+l8gF0BucP09fMo0oO/Lb0w1OF80dJv+lDVpXG60WMQvkcxAkNybKsrEIE3ZtKGmPrA==}
 
-  tiddlywiki@5.3.6:
-    resolution: {integrity: sha512-RfWt+Bo/UsTdzP5N4nEInjaJjgAzylUMf21hE4FL5v65c3x054+A+3g3sgW1m68lTJbTbiiqSZ6q6BEIZMwhSQ==}
+  tiddlywiki@5.3.7:
+    resolution: {integrity: sha512-BVVmqGUj47BC+wFZgNLU5qKuNJbTnWWTOB9mEELHtovdKaAchMF5DEXFvZEl0SOTjhF29ljecKhjla19vmoHPA==}
     engines: {node: '>=0.8.2'}
     hasBin: true
     bundledDependencies: []
@@ -14616,7 +14616,7 @@ snapshots:
 
   thunky@1.1.0: {}
 
-  tiddlywiki@5.3.6: {}
+  tiddlywiki@5.3.7: {}
 
   tiny-case@1.0.3: {}
 
