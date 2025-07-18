@@ -29,6 +29,8 @@ export interface PreviewDialogState {
   previewDialogOpen: boolean;
   previewDialogTab: 'flat' | 'tree';
   previewLoading: boolean;
+  previewProgress?: number; // 0-1 progress value
+  previewStep?: string; // Current processing step
   previewResult: {
     flatPrompts: CoreMessage[];
     processedPrompts: IPrompt[];
@@ -176,19 +178,15 @@ export interface PreviewActions {
 
   /**
    * Generates a preview of prompts for the current agent state
+   * Now uses streaming API for real-time progress updates
    * @param inputText Input text to include in the preview
    * @param promptConfig Prompt configuration to use for preview
-   * @returns Promise that resolves when preview is generated and state is updated
+   * @returns Promise that resolves to a cleanup function to cancel the subscription
    */
   getPreviewPromptResult: (
     inputText: string,
     promptConfig: AgentPromptDescription['promptConfig'],
-  ) => Promise<
-    {
-      flatPrompts: CoreMessage[];
-      processedPrompts: IPrompt[];
-    } | null
-  >;
+  ) => Promise<(() => void) | null>;
 
   /**
    * Resets the lastUpdated timestamp, typically called when dialog is closed

@@ -339,8 +339,8 @@ describe('basicPromptConcatHandler', () => {
 
   describe('error handling', () => {
     it('should handle unexpected errors', async () => {
-      // Mock service to return error observable
-      mockServiceInstances.workspace.concatPrompt = vi.fn().mockReturnValue(
+      // Mock service to return error observable  
+      mockServiceInstances.agentInstance.concatPrompt = vi.fn().mockReturnValue(
         new BehaviorSubject({
           processedPrompts: [],
           flatPrompts: [],

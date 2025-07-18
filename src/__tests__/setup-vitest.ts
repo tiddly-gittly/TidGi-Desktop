@@ -46,12 +46,28 @@ Object.defineProperty(window, 'observables', {
     },
     workspace: {
       workspaces$: new BehaviorSubject([]).asObservable(),
+      get$: vi.fn().mockReturnValue(new BehaviorSubject(null).asObservable()),
     },
     updater: {
       updaterMetaData$: new BehaviorSubject(undefined).asObservable(),
     },
     auth: {
       userInfo$: new BehaviorSubject(undefined).asObservable(),
+    },
+    agentInstance: {
+      subscribeToAgentUpdates: vi.fn().mockReturnValue(new BehaviorSubject(null).asObservable()),
+    },
+    agentBrowser: {
+      tabs$: new BehaviorSubject([]).asObservable(),
+    },
+    notification: {
+      pauseNotificationsInfo$: new BehaviorSubject(null).asObservable(),
+    },
+    systemPreference: {
+      systemPreference$: new BehaviorSubject(null).asObservable(),
+    },
+    theme: {
+      theme$: new BehaviorSubject(null).asObservable(),
     },
   },
 });
@@ -85,6 +101,8 @@ const mockServiceInstances = {
   workspace: {
     countWorkspaces: vi.fn().mockResolvedValue(5),
     openWorkspaceTiddler: vi.fn().mockResolvedValue(undefined),
+  },
+  agentInstance: {
     concatPrompt: vi.fn().mockReturnValue(
       new BehaviorSubject({
         processedPrompts: [],
@@ -97,6 +115,7 @@ const mockServiceInstances = {
         isComplete: true,
       }),
     ),
+    subscribeToAgentUpdates: vi.fn().mockReturnValue(new BehaviorSubject(null)),
   },
   workspaceView: {
     setActiveWorkspaceView: vi.fn().mockResolvedValue(undefined),
@@ -154,7 +173,7 @@ vi.mock('@services/container', () => {
           'Symbol(Context)': 'context',
           'Symbol(Preference)': 'preference',
           'Symbol(ExternalAPI)': 'externalAPI',
-          'Symbol(AgentInstance)': 'workspace',
+          'Symbol(AgentInstance)': 'agentInstance',
           'Symbol(AgentDefinition)': 'agentDefinition',
         };
         const serviceKey = identifierMap[identifier.toString()];
