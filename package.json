@@ -196,13 +196,15 @@
       "prebuild-install": "latest"
     },
     "onlyBuiltDependencies": [
+      "@swc/core",
+      "better-sqlite3",
       "dprint",
       "dugite",
       "electron",
       "electron-winstaller",
       "esbuild",
-      "better-sqlite3",
-      "registry-js"
+      "registry-js",
+      "unrs-resolver"
     ],
     "patchedDependencies": {
       "threads": "patches/threads.patch"
