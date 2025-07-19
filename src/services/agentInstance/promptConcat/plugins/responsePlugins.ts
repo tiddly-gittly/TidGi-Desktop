@@ -2,18 +2,10 @@
  * Response processing plugins
  */
 import { logger } from '@services/libs/log';
-import { PromptConcatPlugin, PromptConcatHookContext } from './index';
-
-/**
- * Agent response interface
- * Represents a structured response from an agent
- */
-export interface AgentResponse {
-  id: string;
-  text?: string;
-  enabled?: boolean;
-  children?: AgentResponse[];
-}
+import { AgentInstanceMessage } from '../../interface';
+import { IPrompt } from '../promptConcatSchema';
+import { Plugin } from '../promptConcatSchema/plugin';
+import { PromptConcatPlugin, PromptConcatHookContext, AgentResponse, ResponseHookContext } from './types';
 
 /**
  * Find response by ID in response array
@@ -50,14 +42,6 @@ function parseRegexString(regexString: string): RegExp | null {
     logger.error('Failed to parse regex string', { regexString, error });
     return null;
   }
-}
-
-/**
- * Context for response processing hooks
- */
-export interface ResponseHookContext extends PromptConcatHookContext {
-  llmResponse: string;
-  responses: AgentResponse[];
 }
 
 /**

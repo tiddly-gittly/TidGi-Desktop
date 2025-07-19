@@ -1,8 +1,8 @@
 import { AsyncSeriesWaterfallHook } from 'tapable';
 import { logger } from '@services/libs/log';
-import { AgentInstanceMessage } from '../interface';
-import { IPrompt } from './promptConcatSchema';
-import { Plugin } from './promptConcatSchema/plugin';
+import { IPrompt } from '../promptConcatSchema';
+import { Plugin } from '../promptConcatSchema/plugin';
+import { AgentInstanceMessage } from '@services/agentInstance/interface';
 
 /**
  * Context passed to plugin hooks
@@ -16,6 +16,25 @@ export interface PromptConcatHookContext {
   plugin: Plugin;
   /** Additional context data */
   metadata?: Record<string, any>;
+}
+
+/**
+ * Agent response interface
+ * Represents a structured response from an agent
+ */
+export interface AgentResponse {
+  id: string;
+  text?: string;
+  enabled?: boolean;
+  children?: AgentResponse[];
+}
+
+/**
+ * Context for response processing hooks
+ */
+export interface ResponseHookContext extends PromptConcatHookContext {
+  llmResponse: string;
+  responses: AgentResponse[];
 }
 
 /**
@@ -43,17 +62,4 @@ export class PromptConcatHooks {
     logger.debug('Registering prompt concat plugin');
     plugin(this);
   }
-}
-
-/**
- * Registry for built-in plugins
- */
-export const builtInPlugins = new Map<string, PromptConcatPlugin>();
-
-/**
- * Register a built-in plugin
- */
-export function registerBuiltInPlugin(pluginId: string, plugin: PromptConcatPlugin): void {
-  builtInPlugins.set(pluginId, plugin);
-  logger.debug(`Registered built-in plugin: ${pluginId}`);
 }

@@ -10,7 +10,7 @@ import { AgentInstanceMessage } from '../interface';
 import { AgentPromptDescription } from './promptConcatSchema';
 import { Plugin } from './promptConcatSchema/plugin';
 import { PromptConcatHooks, PromptConcatHookContext, builtInPlugins } from './plugins';
-import { ResponseHookContext, AgentResponse } from './plugins/responsePlugins';
+import { ResponseHookContext, AgentResponse } from './plugins/types';
 
 /**
  * Process response configuration, apply plugins, and return final response

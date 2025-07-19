@@ -2,7 +2,7 @@
  * Utility functions for prompt concatenation
  */
 
-import { Observable } from 'rxjs';
+import { Observable, lastValueFrom } from 'rxjs';
 import { last } from 'rxjs/operators';
 import { PromptConcatStreamState } from './promptConcat';
 
@@ -19,7 +19,7 @@ export async function getFinalPromptResult(
   flatPrompts: PromptConcatStreamState['flatPrompts'];
   processedPrompts: PromptConcatStreamState['processedPrompts'];
 }> {
-  const finalState = await last<PromptConcatStreamState>()(stream).toPromise();
+  const finalState = await lastValueFrom(stream.pipe(last()));
   
   if (!finalState) {
     throw new Error('Prompt concatenation stream ended without final result');

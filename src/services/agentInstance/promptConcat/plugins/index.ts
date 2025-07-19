@@ -1,51 +1,9 @@
-import { AsyncSeriesWaterfallHook } from 'tapable';
 import { logger } from '@services/libs/log';
-import { IPrompt } from '../promptConcatSchema';
-import { Plugin } from '../promptConcatSchema/plugin';
-import { fullReplacementPlugin, dynamicPositionPlugin, modelContextProtocolPlugin, retrievalAugmentedGenerationPlugin } from './promptPlugins';
-import { toolCallingPlugin, autoReplyPlugin } from './responsePlugins';
-import { AgentInstanceMessage } from '@services/agentInstance/interface';
+import { PromptConcatHooks, PromptConcatHookContext, PromptConcatPlugin, AgentResponse, ResponseHookContext } from './types';
 
-/**
- * Context passed to plugin hooks
- */
-export interface PromptConcatHookContext {
-  /** Array of agent instance messages for context */
-  messages: AgentInstanceMessage[];
-  /** Current prompt tree */
-  prompts: IPrompt[];
-  /** Plugin configuration */
-  plugin: Plugin;
-  /** Additional context data */
-  metadata?: Record<string, any>;
-}
-
-/**
- * Plugin function type - receives hooks object and registers handlers
- */
-export type PromptConcatPlugin = (hooks: PromptConcatHooks) => void;
-
-/**
- * Hooks system for prompt concatenation
- */
-export class PromptConcatHooks {
-  /** Hook for processing prompt modifications */
-  public readonly processPrompts = new AsyncSeriesWaterfallHook<[PromptConcatHookContext]>(['context']);
-
-  /** Hook for finalizing prompts before LLM call */
-  public readonly finalizePrompts = new AsyncSeriesWaterfallHook<[PromptConcatHookContext]>(['context']);
-
-  /** Hook for post-processing after LLM response */
-  public readonly postProcess = new AsyncSeriesWaterfallHook<[PromptConcatHookContext & { llmResponse: string }]>(['context']);
-
-  /**
-   * Register a plugin
-   */
-  public registerPlugin(plugin: PromptConcatPlugin): void {
-    logger.debug('Registering prompt concat plugin');
-    plugin(this);
-  }
-}
+// Re-export types for convenience
+export type { PromptConcatHookContext, PromptConcatPlugin, AgentResponse, ResponseHookContext };
+export { PromptConcatHooks };
 
 /**
  * Registry for built-in plugins
@@ -60,23 +18,29 @@ export function registerBuiltInPlugin(pluginId: string, plugin: PromptConcatPlug
   logger.debug(`Registered built-in plugin: ${pluginId}`);
 }
 
-
 /**
  * Register all built-in plugins
  */
 export function registerAllBuiltInPlugins(): void {
-  // Prompt processing plugins
-  registerBuiltInPlugin('fullReplacement', fullReplacementPlugin);
-  registerBuiltInPlugin('dynamicPosition', dynamicPositionPlugin);
-  registerBuiltInPlugin('modelContextProtocol', modelContextProtocolPlugin);
-  registerBuiltInPlugin('retrievalAugmentedGeneration', retrievalAugmentedGenerationPlugin);
-  
-  // Response processing plugins
-  registerBuiltInPlugin('toolCalling', toolCallingPlugin);
-  registerBuiltInPlugin('autoReply', autoReplyPlugin);
-  
-  // Note: fullReplacementResponsePlugin is separate from fullReplacementPlugin
-  // They handle different phases of processing
+  // Use dynamic imports to avoid circular dependency issues
+  Promise.all([
+    import('./promptPlugins'),
+    import('./responsePlugins')
+  ]).then(([promptPluginsModule, responsePluginsModule]) => {
+    // Prompt processing plugins
+    registerBuiltInPlugin('fullReplacement', promptPluginsModule.fullReplacementPlugin);
+    registerBuiltInPlugin('dynamicPosition', promptPluginsModule.dynamicPositionPlugin);
+    registerBuiltInPlugin('modelContextProtocol', promptPluginsModule.modelContextProtocolPlugin);
+    registerBuiltInPlugin('retrievalAugmentedGeneration', promptPluginsModule.retrievalAugmentedGenerationPlugin);
+    
+    // Response processing plugins
+    registerBuiltInPlugin('toolCalling', responsePluginsModule.toolCallingPlugin);
+    registerBuiltInPlugin('autoReply', responsePluginsModule.autoReplyPlugin);
+    
+    logger.debug('All built-in plugins registered successfully');
+  }).catch(error => {
+    logger.error('Failed to register built-in plugins:', error);
+  });
 }
 
 /**

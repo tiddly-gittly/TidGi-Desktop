@@ -51,8 +51,6 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = ({
     previewDialogTab: tab,
     previewLoading,
     previewResult,
-    previewProgress,
-    previewStep,
     lastUpdated,
     setPreviewDialogTab,
   } = useAgentChatStore(
@@ -60,8 +58,6 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = ({
       previewDialogTab: state.previewDialogTab,
       previewLoading: state.previewLoading,
       previewResult: state.previewResult,
-      previewProgress: state.previewProgress,
-      previewStep: state.previewStep,
       lastUpdated: state.lastUpdated,
       setPreviewDialogTab: state.setPreviewDialogTab,
     })),
@@ -89,13 +85,7 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = ({
   }, [setPreviewDialogTab]);
 
   if (previewLoading) {
-    return (
-      <LoadingView 
-        progress={previewProgress}
-        step={previewStep}
-        message={t('Prompt.GeneratingPreview')}
-      />
-    );
+    return <LoadingView />;
   }
 
   return (

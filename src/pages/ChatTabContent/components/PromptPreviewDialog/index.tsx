@@ -14,6 +14,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { useAgentChatStore } from '../../../Agent/store/agentChatStore/index';
+import { PreviewProgressBar } from '../../../Agent/components/PreviewDialog/PreviewProgressBar';
 import { EditView } from './EditView';
 import { PreviewTabsView } from './PreviewTabsView';
 
@@ -42,9 +43,13 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
     agentId: agent?.id,
   });
 
-  const { getPreviewPromptResult } = useAgentChatStore(
+  const {
+    getPreviewPromptResult,
+    previewLoading,
+  } = useAgentChatStore(
     useShallow((state) => ({
       getPreviewPromptResult: state.getPreviewPromptResult,
+      previewLoading: state.previewLoading,
     })),
   );
   useEffect(() => {
@@ -59,7 +64,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
       }
     };
     void fetchInitialPreview();
-  }, [agent?.agentDefId, handlerConfig, handlerConfigLoading, getPreviewPromptResult, inputText, open]);
+  }, [agent?.agentDefId, handlerConfig, handlerConfigLoading, inputText, open]); // 移除 getPreviewPromptResult
 
   const handleToggleFullScreen = useCallback((): void => {
     setIsFullScreen(previous => !previous);
@@ -143,6 +148,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
           }),
         }}
       >
+        <PreviewProgressBar show={previewLoading} />
         {isEditMode
           ? (
             <Box sx={{ display: 'flex', gap: 2, height: isFullScreen ? '100%' : '70vh' }}>

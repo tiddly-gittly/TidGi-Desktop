@@ -1,12 +1,12 @@
 import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { timeout } from 'rxjs/operators';
-import { nanoid } from 'nanoid';
+import { timeout, tap } from 'rxjs/operators';
+import { lastValueFrom } from 'rxjs';
 import { StateCreator } from 'zustand';
 import { AgentChatStoreType, PreviewActions } from '../types';
 
 /**
  * Preview dialog related actions
- * Handles dialog state and preview generation with real-time updates
+ * Handles dialog state and preview generation
  */
 export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], PreviewActions> = (
   set,
@@ -22,8 +22,6 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
       lastUpdated: null,
       expandedArrayItems: new Map(),
       formFieldsToScrollTo: [],
-      previewProgress: undefined,
-      previewStep: undefined,
     });
   },
 
@@ -31,14 +29,12 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
     set({ previewDialogTab: tab });
   },
 
-  setFormFieldsToScrollTo: (fieldIds: string[]) => {
-    set({ formFieldsToScrollTo: fieldIds });
+  setFormFieldsToScrollTo: (fieldPaths: string[]) => {
+    set({ formFieldsToScrollTo: fieldPaths });
   },
-
   setArrayItemExpanded: (itemId: string, expanded: boolean) => {
     const { expandedArrayItems } = get();
     const newMap = new Map(expandedArrayItems);
-    
     if (expanded) {
       newMap.set(itemId, true);
     } else {
@@ -46,33 +42,10 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
     }
     set({ expandedArrayItems: newMap });
   },
-
-  toggleArrayItemExpansion: (itemId: string) => {
-    const { expandedArrayItems } = get();
-    const newMap = new Map(expandedArrayItems);
-    
-    if (newMap.has(itemId)) {
-      newMap.delete(itemId);
-    } else {
-      newMap.set(itemId, true);
-    }
-    set({ expandedArrayItems: newMap });
-  },
-
-  collapseArrayItem: (itemId: string) => {
-    const { expandedArrayItems } = get();
-    const newMap = new Map(expandedArrayItems);
-    if (newMap.has(itemId)) {
-      newMap.delete(itemId);
-    }
-    set({ expandedArrayItems: newMap });
-  },
-
   isArrayItemExpanded: (itemId: string) => {
     const { expandedArrayItems } = get();
     return expandedArrayItems.get(itemId) ?? false;
   },
-
   expandPathToTarget: (targetPath: string[]) => {
     const { expandedArrayItems } = get();
     const newMap = new Map(expandedArrayItems);
@@ -88,37 +61,28 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
     set({ expandedArrayItems: newMap });
   },
 
-  /**
-   * Generate preview result with real-time progress updates
-   * Shows processing status and intermediate results to the user
-   */
+  updatePreviewProgress: (progress: number, step: string, currentPlugin?: string) => {
+    set({
+      previewProgress: progress,
+      previewCurrentStep: step,
+      previewCurrentPlugin: currentPlugin || null,
+    });
+  },
+
   getPreviewPromptResult: async (
     inputText: string,
     promptConfig: AgentPromptDescription['promptConfig'],
   ) => {
     try {
-      // Initialize loading state
-      set({ 
-        previewLoading: true, 
-        previewProgress: 0, 
-        previewStep: 'Starting...',
-        previewResult: null 
-      });
-      
+      set({ previewLoading: true });
       const messages = Array.from(get().messages.values());
 
       // Safety check - if promptConfig is empty, fail early
       if (Object.keys(promptConfig).length === 0) {
-        set({ 
-          previewLoading: false, 
-          previewResult: null,
-          previewProgress: undefined,
-          previewStep: undefined,
-        });
+        set({ previewLoading: false, previewResult: null });
         return null;
       }
 
-      // Add input text as a preview message
       if (inputText.trim()) {
         messages.push({
           id: 'preview-input',
@@ -129,72 +93,99 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
         });
       }
 
-      // Use the streaming API for real-time progress
-      const concatStream = window.service.agentInstance.concatPrompt({ promptConfig }, messages);
+      // Use the streaming API with progress updates
+      const concatStream = window.observables.agentInstance.concatPrompt({ promptConfig }, messages);
       
-      // Create promise to track completion and provide real-time updates
-      return new Promise((resolve, reject) => {
-        let finalResult: any = null;
-        
-        const subscription = concatStream.pipe(
-          timeout(15000) // 15 second timeout
-        ).subscribe({
+      // Initialize progress
+      set({
+        previewProgress: 0,
+        previewCurrentStep: 'Starting...',
+        previewCurrentPlugin: null,
+      });
+
+      let finalResult: any = null;
+      let completed = false;
+
+      // Create a promise that resolves when the stream completes
+      const streamPromise = new Promise<any>((resolve, reject) => {
+        // Subscribe to the stream and update progress in real-time
+        const subscription = concatStream.subscribe({
           next: (state) => {
-            // Update UI with real-time progress
+            // Update progress and current step
+            const stepDescription = state.step === 'plugin' 
+              ? `Processing plugin: ${state.currentPlugin?.pluginId || 'unknown'}`
+              : state.step === 'finalize'
+              ? 'Finalizing prompts...'
+              : state.step === 'flatten'
+              ? 'Flattening prompt tree...'
+              : 'Completing...';
+
             set({
               previewProgress: state.progress,
-              previewStep: state.step,
+              previewCurrentStep: stepDescription,
+              previewCurrentPlugin: state.currentPlugin?.pluginId || null,
+              // Update intermediate results
+              previewResult: {
+                flatPrompts: state.flatPrompts,
+                processedPrompts: state.processedPrompts,
+              },
             });
-            
-            // Store final result when processing is complete
+
+            // Store final result
             if (state.isComplete) {
               finalResult = {
                 flatPrompts: state.flatPrompts,
                 processedPrompts: state.processedPrompts,
               };
-              
-              set({
-                previewResult: finalResult,
-                previewLoading: false,
-                lastUpdated: new Date(),
-              });
             }
-            
-            // Log progress for development debugging
-            console.log(`🔄 Preview progress: ${Math.round(state.progress * 100)}% - ${state.step}`, {
-              currentPlugin: state.currentPlugin?.pluginId,
-              flatPromptsCount: state.flatPrompts.length,
-              processedPromptsCount: state.processedPrompts.length,
-            });
           },
-          error: (error: any) => {
-            console.error('❌ Error generating preview prompt result:', error);
+          error: (error) => {
+            console.error('Error generating preview prompt result:', error);
             set({
               previewResult: null,
               previewLoading: false,
-              previewProgress: undefined,
-              previewStep: undefined,
+              previewProgress: 0,
+              previewCurrentStep: 'Error occurred',
+              previewCurrentPlugin: null,
             });
             reject(error);
           },
           complete: () => {
-            console.log('✅ Preview prompt generation completed');
+            completed = true;
             set({
+              previewResult: finalResult,
               previewLoading: false,
-              previewProgress: undefined,
-              previewStep: undefined,
+              previewProgress: 1,
+              previewCurrentStep: 'Complete',
+              previewCurrentPlugin: null,
+              lastUpdated: new Date(),
             });
             resolve(finalResult);
-          },
+          }
         });
+
+        // Set up timeout
+        setTimeout(() => {
+          if (!completed) {
+            subscription.unsubscribe();
+            set({
+              previewResult: null,
+              previewLoading: false,
+              previewProgress: 0,
+              previewCurrentStep: 'Timeout',
+              previewCurrentPlugin: null,
+            });
+            reject(new Error('Preview generation timed out'));
+          }
+        }, 15000);
       });
-    } catch (error: any) {
-      console.error('❌ Error in preview generation:', error);
+
+      return streamPromise;
+    } catch (error) {
+      console.error('Error generating preview prompt result:', error);
       set({
         previewResult: null,
         previewLoading: false,
-        previewProgress: undefined,
-        previewStep: undefined,
       });
       return null;
     }

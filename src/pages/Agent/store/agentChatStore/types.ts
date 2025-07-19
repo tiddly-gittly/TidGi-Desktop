@@ -1,6 +1,7 @@
 import { AgentDefinition } from '@services/agentDefinition/interface';
 import type { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
 import type { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import { CoreMessage } from 'ai';
 
 // Type for agent data without messages - exported for use in other components
@@ -29,8 +30,9 @@ export interface PreviewDialogState {
   previewDialogOpen: boolean;
   previewDialogTab: 'flat' | 'tree';
   previewLoading: boolean;
-  previewProgress?: number; // 0-1 progress value
-  previewStep?: string; // Current processing step
+  previewProgress: number; // 0-1, processing progress
+  previewCurrentStep: string; // current processing step description
+  previewCurrentPlugin: string | null; // current plugin being processed
   previewResult: {
     flatPrompts: CoreMessage[];
     processedPrompts: IPrompt[];
@@ -177,16 +179,28 @@ export interface PreviewActions {
   expandPathToTarget: (targetPath: string[]) => void;
 
   /**
+   * Updates preview progress state
+   * @param progress Progress value from 0 to 1
+   * @param step Current processing step description
+   * @param currentPlugin Current plugin being processed
+   */
+  updatePreviewProgress: (progress: number, step: string, currentPlugin?: string) => void;
+
+  /**
    * Generates a preview of prompts for the current agent state
-   * Now uses streaming API for real-time progress updates
    * @param inputText Input text to include in the preview
    * @param promptConfig Prompt configuration to use for preview
-   * @returns Promise that resolves to a cleanup function to cancel the subscription
+   * @returns Promise that resolves when preview is generated and state is updated
    */
   getPreviewPromptResult: (
     inputText: string,
     promptConfig: AgentPromptDescription['promptConfig'],
-  ) => Promise<(() => void) | null>;
+  ) => Promise<
+    {
+      flatPrompts: CoreMessage[];
+      processedPrompts: IPrompt[];
+    } | null
+  >;
 
   /**
    * Resets the lastUpdated timestamp, typically called when dialog is closed

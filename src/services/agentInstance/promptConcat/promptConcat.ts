@@ -19,8 +19,7 @@ import { cloneDeep } from 'lodash';
 import { AgentInstanceMessage } from '../interface';
 import { AgentPromptDescription, IPrompt } from './promptConcatSchema';
 import { Plugin } from './promptConcatSchema/plugin';
-import { PromptConcatHooks, PromptConcatHookContext, builtInPlugins } from './hooks';
-import { initializePluginSystem } from './plugins';
+import { PromptConcatHooks, PromptConcatHookContext, builtInPlugins, initializePluginSystem } from './plugins';
 
 // Initialize plugin system on module load
 initializePluginSystem();

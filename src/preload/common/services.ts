@@ -31,7 +31,7 @@ import { ExternalAPIServiceIPCDescriptor, IExternalAPIService } from '../../serv
 
 export const agentBrowser = createProxy<AsyncifyProxy<IAgentBrowserService>>(AgentBrowserServiceIPCDescriptor);
 export const agentDefinition = createProxy<AsyncifyProxy<IAgentDefinitionService>>(AgentDefinitionServiceIPCDescriptor);
-export const agentInstance = createProxy<IAgentInstanceService>(AgentInstanceServiceIPCDescriptor);
+export const agentInstance = createProxy<AsyncifyProxy<IAgentInstanceService>>(AgentInstanceServiceIPCDescriptor);
 export const auth = createProxy<IAuthenticationService>(AuthenticationServiceIPCDescriptor);
 export const context = createProxy<IContextService>(ContextServiceIPCDescriptor);
 export const deepLink = createProxy<IDeepLinkService>(DeepLinkServiceIPCDescriptor);
