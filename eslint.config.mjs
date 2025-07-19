@@ -17,14 +17,12 @@ export default [
       },
     },
     rules: {},
-    overrides: [
-      {
-        files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
-        rules: {
-          '@typescript-eslint/unbound-method': 'off',
-          'unicorn/prevent-abbreviations': 'off',
-        },
-      },
-    ],
-  }
+  },
+  {
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+      'unicorn/prevent-abbreviations': 'off',
+    },
+  },
 ];
