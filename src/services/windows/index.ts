@@ -196,6 +196,8 @@ export class Window implements IWindowService {
         height: windowWithBrowserViewState.height,
       };
     }
+    // hide titleBar should not take effect on setting window
+    const hideTitleBar = [WindowNames.main, WindowNames.menuBar].includes(windowName) && !showTitleBar;
     const windowConfig: BrowserWindowConstructorOptions = {
       ...windowDimension[windowName],
       ...windowWithBrowserViewConfig,
@@ -204,8 +206,9 @@ export class Window implements IWindowService {
       minimizable: true,
       fullscreenable: true,
       autoHideMenuBar,
-      // hide titleBar should not take effect on setting window
-      titleBarStyle: (![WindowNames.main, WindowNames.menuBar].includes(windowName) || showTitleBar) ? 'default' : 'hidden',
+      titleBarStyle: hideTitleBar ? 'hidden' : 'default',
+      // https://www.electronjs.org/docs/latest/tutorial/custom-title-bar#add-native-window-controls-windows-linux
+      ...(hideTitleBar && process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
       alwaysOnTop: windowName === WindowNames.menuBar ? menuBarAlwaysOnTop : alwaysOnTop,
       webPreferences: {
         devTools: !isTest,

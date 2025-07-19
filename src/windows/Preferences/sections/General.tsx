@@ -137,28 +137,24 @@ export function General(props: Required<ISectionProps>): React.JSX.Element {
               >
                 <ListItemText primary={t('Preference.ShowSideBarText')} />
               </ListItem>
-              {platform === 'darwin' && (
-                <>
-                  <Divider />
-                  <ListItem
-                    secondaryAction={
-                      <Switch
-                        edge='end'
-                        color='primary'
-                        checked={preference.titleBar}
-                        onChange={async (event) => {
-                          await window.service.preference.set('titleBar', event.target.checked);
-                          // no need to realignActiveWorkspace -> realignActiveView , otherwise view will reload bound, and move down by height of titlebar, while titlebar change is not taking effect yet
-                          // await window.service.workspaceView.realignActiveWorkspace();
-                          props.requestRestartCountDown();
-                        }}
-                      />
-                    }
-                  >
-                    <ListItemText primary={t('Preference.ShowTitleBar')} secondary={t('Preference.ShowTitleBarDetail')} />
-                  </ListItem>
-                </>
-              )}
+              <Divider />
+              <ListItem
+                secondaryAction={
+                  <Switch
+                    edge='end'
+                    color='primary'
+                    checked={preference.titleBar}
+                    onChange={async (event) => {
+                      await window.service.preference.set('titleBar', event.target.checked);
+                      // no need to realignActiveWorkspace -> realignActiveView , otherwise view will reload bound, and move down by height of titlebar, while titlebar change is not taking effect yet
+                      // await window.service.workspaceView.realignActiveWorkspace();
+                      props.requestRestartCountDown();
+                    }}
+                  />
+                }
+              >
+                <ListItemText primary={t('Preference.ShowTitleBar')} secondary={t('Preference.ShowTitleBarDetail')} />
+              </ListItem>
               {platform !== 'darwin' && (
                 <>
                   <Divider />
