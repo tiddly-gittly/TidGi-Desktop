@@ -176,19 +176,15 @@ app.on(
   'before-quit',
   async (): Promise<void> => {
     logger.info('App before-quit');
+    destroyLogger();
     await Promise.all([
       databaseService.immediatelyStoreSettingsToFile(),
       wikiService.stopAllWiki(),
       windowService.clearWindowsReference(),
     ]);
-    destroyLogger();
-    app.exit(0);
+    uninstall?.uninstall();
   },
 );
-app.on('quit', () => {
-  uninstall?.uninstall();
-  logger.info('App quit');
-});
 
 if (!isTest) {
   unhandled({

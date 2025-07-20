@@ -1,7 +1,7 @@
 import { LOG_FOLDER } from '@/constants/appPaths';
 import winston, { format } from 'winston';
-import RendererTransport from './rendererTransport';
 import 'winston-daily-rotate-file';
+import RendererTransport from './rendererTransport';
 
 export * from './wikiOutput';
 
@@ -42,17 +42,23 @@ const logger = (
 ) as winston.Logger;
 export { logger };
 
+/**
+ * Prevent MacOS error `Unhandled Error Error: write EIO at afterWriteDispatched`
+ */
 export function destroyLogger(): void {
-  logger.close();
-  logger.removeAllListeners();
-  logger.destroy();
-  logger.write = (chunk: unknown) => {
-    // no console here, otherwise will cause `Error: write EIO`
-    // console.log('Message after logger destroyed', chunk);
-    return true;
-  };
-  logger.error = (message: unknown) => {
-    // console.log('Error Message after logger destroyed', message);
-    return logger;
-  };
+  logger.transports.forEach((t) => {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (t) {
+      try {
+        // May cause `TypeError: Cannot read properties of undefined (reading 'length') at DerivedLogger.remove`
+        logger.remove(t);
+        // eslint-disable-next-line no-empty
+      } catch {}
+    }
+  });
+  // Prevent `Error: write EIO at afterWriteDispatched (node:internal/stream_base_commons:159:15)`
+  console.error = () => {};
+  console.info = () => {};
+  console.warn = () => {};
+  console.debug = () => {};
 }
