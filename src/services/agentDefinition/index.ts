@@ -13,9 +13,8 @@ import { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { AgentDefinition, AgentToolConfig, IAgentDefinitionService, ToolCallingMatch } from './interface';
+import { AgentDefinition, AgentToolConfig, IAgentDefinitionService } from './interface';
 import { optimizeToolForLLM } from './llmToolSchemaOptimizer';
-import { matchToolCalling } from './responsePatternUtility';
 
 @injectable()
 export class AgentDefinitionService implements IAgentDefinitionService {

@@ -15,7 +15,7 @@ The `promptConcat` function uses a tapable hooks-based plugin system. Built-in p
    - `finalizePrompts`: Final processing before LLM call
    - `postProcess`: Handles response processing
 
-2. **Built-in Plugins**: 
+2. **Built-in Plugins**:
    - `fullReplacement`: Replaces content from various sources
    - `dynamicPosition`: Inserts content at specific positions
    - `retrievalAugmentedGeneration`: Retrieves content from wiki/external sources
@@ -23,7 +23,7 @@ The `promptConcat` function uses a tapable hooks-based plugin system. Built-in p
    - `toolCalling`: Processes function calls in responses
    - `autoReply`: Automatic follow-up response generation
 
-3. **Plugin Registration**: 
+3. **Plugin Registration**:
    - Plugins are registered by `pluginId` field in the `plugins` array
    - Each plugin instance has its own configuration parameters
    - Built-in plugins are auto-registered on system initialization

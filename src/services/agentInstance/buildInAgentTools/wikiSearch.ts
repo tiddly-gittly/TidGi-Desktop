@@ -89,14 +89,14 @@ export class WikiSearchTool implements IAgentTool {
       // Look up workspace ID from workspace name
       const workspaces = await workspaceService.getWorkspacesAsList();
       const targetWorkspace = workspaces.find(ws => ws.name === workspaceName);
-      
+
       if (!targetWorkspace) {
         return {
           success: false,
           error: `Workspace with name "${workspaceName}" does not exist`,
         };
       }
-      
+
       const workspaceID = targetWorkspace.id;
 
       if (!await workspaceService.exists(workspaceID)) {
@@ -215,7 +215,7 @@ export class WikiSearchTool implements IAgentTool {
     }
 
     const data = results.data as { results: Array<{ title: string; text?: string }>; totalFound: number; returned: number };
-    
+
     if (!data.results || data.results.length === 0) {
       return 'No search results found.';
     }

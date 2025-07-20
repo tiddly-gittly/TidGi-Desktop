@@ -3,9 +3,9 @@
  */
 import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
-import { PromptConcatPlugin, PromptConcatHookContext, AgentResponse, ResponseHookContext } from './types';
 import { findPromptById } from '../promptConcat';
 import { IPrompt } from '../promptConcatSchema';
+import { AgentResponse, PromptConcatPlugin, ResponseHookContext } from './types';
 
 /**
  * Full replacement plugin
@@ -14,9 +14,10 @@ import { IPrompt } from '../promptConcatSchema';
 export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
   hooks.processPrompts.tapAsync('fullReplacementPlugin', async (context, callback) => {
     const { plugin, prompts, messages } = context;
-    
+
     if (plugin.pluginId !== 'fullReplacement' || !plugin.fullReplacementParam) {
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
     const { targetId, sourceType } = plugin.fullReplacementParam;
@@ -27,11 +28,12 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
         targetId,
         pluginId: plugin.id,
       });
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
-    let content = '';
-    
+    const content = '';
+
     // Get all messages except the last one which is the user message
     const messagesCopy = cloneDeep(messages);
     messagesCopy.pop(); // Last message is the user message
@@ -42,17 +44,18 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
         if (history.length > 0) {
           // Insert history messages as Prompt children (full Prompt type)
           found.prompt.children = [];
-          history.forEach((message, idx: number) => {
+          history.forEach((message, index: number) => {
             // Use the role type from Prompt
             type PromptRole = NonNullable<IPrompt['role']>;
-            let role: PromptRole =
-              message.role === 'agent' ? 'assistant'
-              : message.role === 'user' ? 'user'
+            const role: PromptRole = message.role === 'agent'
+              ? 'assistant'
+              : message.role === 'user'
+              ? 'user'
               : 'assistant';
             delete found.prompt.text;
             found.prompt.children!.push({
-              id: `history-${idx}`,
-              caption: `History message ${idx + 1}`,
+              id: `history-${index}`,
+              caption: `History message ${index + 1}`,
               role,
               text: message.content,
             });
@@ -66,7 +69,10 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
         break;
       default:
         logger.warn(`Unknown sourceType: ${sourceType}`);
-        return callback(null, context);
+        {
+          callback(null, context);
+          return;
+        }
     }
 
     logger.debug('Full replacement completed in prompt phase', {
@@ -81,16 +87,18 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
   hooks.postProcess.tapAsync('fullReplacementPlugin', async (context, callback) => {
     const responseContext = context as ResponseHookContext;
     const { plugin, llmResponse, responses } = responseContext;
-    
+
     if (plugin.pluginId !== 'fullReplacement' || !plugin.fullReplacementParam) {
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
     const { targetId, sourceType } = plugin.fullReplacementParam;
-    
+
     // Only handle llmResponse in response phase
     if (sourceType !== 'llmResponse') {
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
     // Early return if no responses
@@ -98,7 +106,8 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
       logger.debug('Skipping full replacement - no responses', {
         pluginId: plugin.id,
       });
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
     // Find the target response by ID
@@ -109,7 +118,8 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
         targetId,
         pluginId: plugin.id,
       });
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
     // Replace target content with LLM response
@@ -137,9 +147,10 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
 export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
   hooks.processPrompts.tapAsync('dynamicPositionPlugin', async (context, callback) => {
     const { plugin, prompts } = context;
-    
+
     if (plugin.pluginId !== 'dynamicPosition' || !plugin.dynamicPositionParam || !plugin.content) {
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
     const { targetId, position } = plugin.dynamicPositionParam;
@@ -150,7 +161,8 @@ export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
         targetId,
         pluginId: plugin.id,
       });
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
     // Create new prompt part
@@ -177,7 +189,10 @@ export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
         break;
       default:
         logger.warn(`Unknown position: ${position}`);
-        return callback(null, context);
+        {
+          callback(null, context);
+          return;
+        }
     }
 
     logger.debug('Dynamic position insertion completed', {
@@ -197,9 +212,10 @@ export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
 export const retrievalAugmentedGenerationPlugin: PromptConcatPlugin = (hooks) => {
   hooks.processPrompts.tapAsync('retrievalAugmentedGenerationPlugin', async (context, callback) => {
     const { plugin, prompts } = context;
-    
+
     if (plugin.pluginId !== 'retrievalAugmentedGeneration' || !plugin.retrievalAugmentedGenerationParam) {
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
     const parameter = plugin.retrievalAugmentedGenerationParam;
@@ -211,12 +227,13 @@ export const retrievalAugmentedGenerationPlugin: PromptConcatPlugin = (hooks) =>
         targetId,
         pluginId: plugin.id,
       });
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
     try {
       let content = '';
-      
+
       if (sourceType === 'wiki' && wikiParam) {
         // TODO: Implement actual wiki retrieval
         // For now, create a placeholder that could be replaced with actual wiki content
@@ -258,7 +275,10 @@ The content would be fetched using the wiki workspace service and filtered accor
           break;
         default:
           logger.warn(`Unknown position: ${position}`);
-          return callback(null, context);
+          {
+            callback(null, context);
+            return;
+          }
       }
 
       logger.debug('RAG plugin completed', {
@@ -283,9 +303,10 @@ The content would be fetched using the wiki workspace service and filtered accor
 export const modelContextProtocolPlugin: PromptConcatPlugin = (hooks) => {
   hooks.processPrompts.tapAsync('modelContextProtocolPlugin', async (context, callback) => {
     const { plugin, prompts } = context;
-    
+
     if (plugin.pluginId !== 'modelContextProtocol' || !plugin.modelContextProtocolParam) {
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
     const parameter = plugin.modelContextProtocolParam;
@@ -297,13 +318,14 @@ export const modelContextProtocolPlugin: PromptConcatPlugin = (hooks) => {
         targetId,
         pluginId: plugin.id,
       });
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
     try {
       // TODO: Implement actual MCP server call with timeout
       // For now, create a placeholder that indicates MCP integration
-      let content = `MCP Server Call: ${id}
+      const content = `MCP Server Call: ${id}
 Timeout: ${timeoutSecond} seconds
 Timeout Message: ${timeoutMessage}
 
@@ -333,7 +355,10 @@ The MCP server would provide additional context or capabilities to the AI model.
           break;
         default:
           logger.warn(`Unknown position: ${position}`);
-          return callback(null, context);
+          {
+            callback(null, context);
+            return;
+          }
       }
 
       logger.debug('MCP plugin completed', {

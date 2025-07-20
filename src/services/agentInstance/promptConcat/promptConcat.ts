@@ -17,9 +17,9 @@ import { logger } from '@services/libs/log';
 import { CoreMessage } from 'ai';
 import { cloneDeep } from 'lodash';
 import { AgentInstanceMessage } from '../interface';
+import { builtInPlugins, initializePluginSystem, PromptConcatHookContext, PromptConcatHooks } from './plugins';
 import { AgentPromptDescription, IPrompt } from './promptConcatSchema';
 import { Plugin } from './promptConcatSchema/plugin';
-import { PromptConcatHooks, PromptConcatHookContext, builtInPlugins, initializePluginSystem } from './plugins';
 
 // Initialize plugin system on module load
 initializePluginSystem();
@@ -46,7 +46,7 @@ function generateSourcePaths(prompts: IPrompt[], plugins: Plugin[] = []): Map<st
       const itemPath = [...currentPath, item.id];
       pathMap.set(item.id, itemPath);
       if (item.children && item.children.length > 0) {
-        traversePrompts(item.children as IPrompt[], [...itemPath, 'children']);
+        traversePrompts(item.children, [...itemPath, 'children']);
       }
     });
   }
@@ -122,7 +122,7 @@ export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
     }
     return text;
   }
-  
+
   // Traverse prompt tree, collect nodes with a role in depth-first order
   function collectRolePrompts(prompts: IPrompt[]): void {
     for (const prompt of prompts) {
@@ -130,7 +130,7 @@ export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
         logger.debug('Skipping disabled prompt', { id: prompt.id });
         continue;
       }
-      
+
       // Process current node first
       const content = processPrompt(prompt);
       if (content.trim() || prompt.role) {
@@ -141,13 +141,13 @@ export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
             contentLength: content.length,
           });
         }
-        
+
         result.push({
           role: prompt.role || 'system',
           content: content.trim() || '',
         });
       }
-      
+
       // Depth-first traversal for all children with a role
       if (prompt.children) {
         // Collect all children with a role
@@ -162,9 +162,9 @@ export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
             }
           }
         };
-        
+
         processChild(prompt.children);
-        
+
         // Process all collected children with a role
         for (const child of roleChildren) {
           const childContent = processPrompt(child);
@@ -180,7 +180,7 @@ export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
   }
 
   collectRolePrompts(prompts);
-  
+
   logger.debug('Skipping any empty content');
 
   logger.debug('Prompt flattening completed', {
@@ -223,16 +223,16 @@ export async function* promptConcatStream(
     messageId,
     messageCount: messages.length,
   });
-  
+
   const promptConfig = agentConfig.promptConfig || {};
   const prompts = Array.isArray(promptConfig.prompts) ? promptConfig.prompts : [];
   const plugins = Array.isArray(promptConfig.plugins) ? promptConfig.plugins : [];
   const promptsCopy = cloneDeep(prompts);
   const sourcePaths = generateSourcePaths(promptsCopy, plugins);
-  
+
   // Create hooks instance
   const hooks = new PromptConcatHooks();
-  
+
   // Register plugins that match the configuration
   for (const plugin of plugins) {
     const builtInPlugin = builtInPlugins.get(plugin.pluginId);
@@ -246,48 +246,47 @@ export async function* promptConcatStream(
       logger.warn(`No built-in plugin found for pluginId: ${plugin.pluginId}`);
     }
   }
-  
+
   // Process each plugin through hooks with streaming
   let modifiedPrompts = promptsCopy;
   const totalSteps = plugins.length + 2; // plugins + finalize + flatten
-  
-  for (let i = 0; i < plugins.length; i++) {
-    const plugin = plugins[i];
+
+  for (let index = 0; index < plugins.length; index++) {
+    const plugin = plugins[index];
     const context: PromptConcatHookContext = {
       messages,
       prompts: modifiedPrompts,
       plugin,
       metadata: { sourcePaths },
     };
-    
+
     try {
       const result = await hooks.processPrompts.promise(context);
       modifiedPrompts = result.prompts;
-      
+
       logger.debug('Plugin processed successfully', {
         pluginId: plugin.pluginId,
         pluginInstanceId: plugin.id,
         promptCount: modifiedPrompts.length,
       });
-      
+
       // Yield intermediate state
       const intermediateFlat = flattenPrompts(modifiedPrompts);
       const messagesCopy = cloneDeep(messages);
       const userMessage = messagesCopy.length > 0 ? messagesCopy[messagesCopy.length - 1] : null;
-      
+
       if (userMessage && userMessage.role === 'user') {
         intermediateFlat.push({ role: 'user', content: userMessage.content });
       }
-      
+
       yield {
         processedPrompts: modifiedPrompts,
         flatPrompts: intermediateFlat,
         step: 'plugin',
         currentPlugin: plugin,
-        progress: (i + 1) / totalSteps,
+        progress: (index + 1) / totalSteps,
         isComplete: false,
       };
-      
     } catch (error) {
       logger.error('Plugin processing error', {
         pluginId: plugin.pluginId,
@@ -297,7 +296,7 @@ export async function* promptConcatStream(
       // Continue processing other plugins even if one fails
     }
   }
-  
+
   // Finalize prompts
   yield {
     processedPrompts: modifiedPrompts,
@@ -306,21 +305,21 @@ export async function* promptConcatStream(
     progress: (plugins.length + 1) / totalSteps,
     isComplete: false,
   };
-  
+
   const finalContext: PromptConcatHookContext = {
     messages,
     prompts: modifiedPrompts,
     plugin: {} as Plugin, // Empty plugin for finalization
     metadata: { sourcePaths },
   };
-  
+
   try {
     const finalResult = await hooks.finalizePrompts.promise(finalContext);
     modifiedPrompts = finalResult.prompts;
   } catch (error) {
     logger.error('Prompt finalization error', error);
   }
-  
+
   // Final flattening
   yield {
     processedPrompts: modifiedPrompts,
@@ -329,11 +328,11 @@ export async function* promptConcatStream(
     progress: (plugins.length + 2) / totalSteps,
     isComplete: false,
   };
-  
+
   const flatPrompts = flattenPrompts(modifiedPrompts);
   const messagesCopy = cloneDeep(messages);
   const userMessage = messagesCopy.length > 0 ? messagesCopy[messagesCopy.length - 1] : null;
-  
+
   if (userMessage && userMessage.role === 'user') {
     logger.debug('Adding user message to prompts', {
       messageId: userMessage.id,
@@ -341,12 +340,12 @@ export async function* promptConcatStream(
     });
     flatPrompts.push({ role: 'user', content: userMessage.content });
   }
-  
+
   logger.debug('Streaming prompt concatenation completed', {
     finalPromptCount: flatPrompts.length,
     processedPromptsCount: modifiedPrompts.length,
   });
-  
+
   // Final complete state
   const finalState: PromptConcatStreamState = {
     processedPrompts: modifiedPrompts,
@@ -355,7 +354,7 @@ export async function* promptConcatStream(
     progress: 1,
     isComplete: true,
   };
-  
+
   yield finalState;
   return finalState;
 }
@@ -378,12 +377,12 @@ export async function promptConcat(
   // Use the streaming version and just return the final result
   const stream = promptConcatStream(agentConfig, messages);
   let finalResult: PromptConcatStreamState;
-  
+
   // Consume all intermediate states to get the final result
   for await (const state of stream) {
     finalResult = state;
   }
-  
+
   return {
     flatPrompts: finalResult!.flatPrompts,
     processedPrompts: finalResult!.processedPrompts,

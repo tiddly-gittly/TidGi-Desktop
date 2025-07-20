@@ -1,12 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { continueRoundHandlerRegistry } from '../continueRoundHandlers';
-import { AgentHandlerContext } from '../type';
-import { AgentPromptDescription } from '../../promptConcat/promptConcatSchema';
-import { ContinueRoundResult } from '../continueRoundHandlers/types';
-import { AgentInstance } from '../../interface';
 import { AgentDefinition } from '@services/agentDefinition/interface';
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AgentInstance } from '../../interface';
+import { AgentPromptDescription } from '../../promptConcat/promptConcatSchema';
+import { continueRoundHandlerRegistry } from '../continueRoundHandlers';
+import { ContinueRoundResult } from '../continueRoundHandlers/types';
+import { AgentHandlerContext } from '../type';
 
 describe('continueRoundHandlers', () => {
   beforeEach(() => {

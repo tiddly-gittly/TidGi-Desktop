@@ -1,11 +1,10 @@
-import { CoreMessage } from 'ai';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { Observable } from 'rxjs';
 
 import { AgentChannel } from '@/constants/channels';
 import { AgentDefinition } from '@services/agentDefinition/interface';
-import { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
+import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 
 /**
  * Content of a session instance that user chat with an agent.

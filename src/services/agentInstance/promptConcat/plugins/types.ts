@@ -1,8 +1,8 @@
-import { AsyncSeriesWaterfallHook } from 'tapable';
+import { AgentInstanceMessage } from '@services/agentInstance/interface';
 import { logger } from '@services/libs/log';
+import { AsyncSeriesWaterfallHook } from 'tapable';
 import { IPrompt } from '../promptConcatSchema';
 import { Plugin } from '../promptConcatSchema/plugin';
-import { AgentInstanceMessage } from '@services/agentInstance/interface';
 
 /**
  * Context passed to plugin hooks

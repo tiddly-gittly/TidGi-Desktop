@@ -33,7 +33,7 @@ function parseToolParameters(parametersText: string): Record<string, unknown> {
     const functionBody = `return (${trimmedText});`;
     const parseFunction = new Function(functionBody);
     const parsed = parseFunction() as Record<string, unknown>;
-    
+
     logger.debug('Successfully parsed JavaScript object using new Function', {
       original: trimmedText,
       parsed: typeof parsed,
@@ -50,14 +50,14 @@ function parseToolParameters(parametersText: string): Record<string, unknown> {
   try {
     // Convert JavaScript object syntax to JSON
     let jsonText = trimmedText;
-    
+
     // Replace unquoted keys with quoted keys
     // This regex matches object property names that aren't already quoted
     jsonText = jsonText.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
-    
+
     // Handle edge case where the object starts with an unquoted key
     jsonText = jsonText.replace(/^(\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/, '$1"$2":');
-    
+
     const parsed = JSON.parse(jsonText) as Record<string, unknown>;
     logger.debug('Successfully parsed JavaScript object literal as JSON', {
       original: trimmedText,

@@ -10,14 +10,14 @@ import { matchToolCalling } from './responsePatternUtility';
  * @returns Tool execution result
  */
 export async function executeTool(
-  toolId: string, 
-  parameters: Record<string, unknown>, 
-  context?: { workspaceId?: string; metadata?: Record<string, unknown> }
+  toolId: string,
+  parameters: Record<string, unknown>,
+  context?: { workspaceId?: string; metadata?: Record<string, unknown> },
 ): Promise<{ success: boolean; data?: string; error?: string; metadata?: Record<string, unknown> }> {
   try {
     // Get the tool from the registry
     const tool = globalToolRegistry.getTool(toolId);
-    
+
     if (!tool) {
       logger.warn('Tool not found in registry', { toolId });
       return {
@@ -25,19 +25,19 @@ export async function executeTool(
         error: `Tool ${toolId} not found`,
       };
     }
-    
+
     // Execute the tool
     const toolResult = await tool.execute(parameters, {
       workspaceId: context?.workspaceId || 'unknown',
       metadata: context?.metadata || {},
     });
-    
+
     if (toolResult.success) {
       logger.info('Successfully executed tool', {
         toolId,
         hasData: !!toolResult.data,
       });
-      
+
       return {
         success: true,
         data: toolResult.data as string,
@@ -48,7 +48,7 @@ export async function executeTool(
         toolId,
         error: toolResult.error,
       });
-      
+
       return {
         success: false,
         error: toolResult.error,
@@ -60,7 +60,7 @@ export async function executeTool(
       toolId,
       parameters,
     });
-    
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -75,26 +75,26 @@ export async function executeTool(
  * @returns Tool execution result or undefined if no tool call found
  */
 export async function matchAndExecuteTool(
-  responseText: string, 
-  context?: { workspaceId?: string; metadata?: Record<string, unknown> }
+  responseText: string,
+  context?: { workspaceId?: string; metadata?: Record<string, unknown> },
 ): Promise<{ success: boolean; data?: string; error?: string; metadata?: Record<string, unknown> } | undefined> {
   try {
     // Check if this message contains a tool call
     const toolMatch = matchToolCalling(responseText);
-    
+
     if (toolMatch.found && toolMatch.toolId && toolMatch.parameters) {
       logger.debug('Found tool call in text', {
         toolId: toolMatch.toolId,
         parameters: toolMatch.parameters,
       });
-      
+
       // Execute the tool
       const toolResult = await executeTool(
         toolMatch.toolId,
         toolMatch.parameters,
-        context
+        context,
       );
-      
+
       return toolResult;
     } else {
       logger.debug('No tool call found in text');

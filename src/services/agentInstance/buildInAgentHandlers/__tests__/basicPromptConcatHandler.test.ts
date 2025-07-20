@@ -1,14 +1,12 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { mockServiceInstances } from '@/__tests__/setup-vitest';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
-import defaultAgents from '../defaultAgents.json';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BehaviorSubject } from 'rxjs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentInstance, AgentInstanceMessage } from '../../interface';
 import { basicPromptConcatHandler } from '../basicPromptConcatHandler';
+import defaultAgents from '../defaultAgents.json';
 import type { AgentHandlerContext } from '../type';
-
-
 
 describe('basicPromptConcatHandler', () => {
   let mockContext: AgentHandlerContext;
@@ -41,8 +39,6 @@ describe('basicPromptConcatHandler', () => {
       agentDef: mockAgentDefinition,
       isCancelled: vi.fn().mockReturnValue(false),
     };
-
-
   });
 
   describe('single round conversation', () => {
@@ -57,8 +53,6 @@ describe('basicPromptConcatHandler', () => {
       mockServiceInstances.externalAPI.generateFromAI = vi.fn().mockImplementation(async function*() {
         yield mockResponse;
       });
-
-
 
       // Execute handler
       const generator = basicPromptConcatHandler(mockContext);
@@ -199,8 +193,6 @@ describe('basicPromptConcatHandler', () => {
         }
       });
 
-
-
       // Execute handler
       const generator = basicPromptConcatHandler(mockContext);
       const results = [];
@@ -236,7 +228,6 @@ describe('basicPromptConcatHandler', () => {
         requestId: 'req-1',
       };
 
-
       // Mock to always continue (simulating infinite tool calling)
       mockServiceInstances.externalAPI.generateFromAI = vi.fn().mockImplementation(async function*() {
         yield mockResponse;
@@ -252,8 +243,6 @@ describe('basicPromptConcatHandler', () => {
       // Should stop after max retries - check that we get final completed result
       const completedResults = results.filter((r) => r.state === 'completed');
       expect(completedResults).toHaveLength(1);
-
-
     });
 
     it('should handle working status updates during generation', async () => {
@@ -275,8 +264,6 @@ describe('basicPromptConcatHandler', () => {
           yield response;
         }
       });
-
-
 
       // Execute handler
       const generator = basicPromptConcatHandler(mockContext);

@@ -13,6 +13,7 @@ import type { INewWikiWorkspaceConfig, IWorkspace, IWorkspaceService } from '@se
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
+import { DEFAULT_FIRST_WIKI_PATH, DEFAULT_WIKI_FOLDER } from '@/constants/paths';
 import { IContextService } from '@services/context/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
@@ -22,7 +23,6 @@ import { updateGhConfig } from '@services/wiki/plugin/ghPages';
 import { hasGit } from 'git-sync-js';
 import { InitWikiGitError, InitWikiGitRevertError, InitWikiGitSyncedWikiNoGitUserInfoError } from './error';
 import { IWikiGitWorkspaceService } from './interface';
-import { DEFAULT_WIKI_FOLDER, DEFAULT_FIRST_WIKI_PATH } from '@/constants/paths';
 
 @injectable()
 export class WikiGitWorkspace implements IWikiGitWorkspaceService {

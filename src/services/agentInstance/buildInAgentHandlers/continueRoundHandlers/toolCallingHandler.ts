@@ -20,13 +20,13 @@ export const toolCallingHandler: ContinueRoundHandler = async (
     if (toolMatch.found && toolMatch.toolId) {
       // Verify the tool exists in the registry
       const tool = globalToolRegistry.getTool(toolMatch.toolId);
-      
+
       if (!tool) {
         logger.warn('Tool calling detected but tool not found in registry - will not continue', {
           toolId: toolMatch.toolId,
           originalText: toolMatch.originalText,
         });
-        
+
         return {
           continue: false,
           reason: `Tool "${toolMatch.toolId}" not found in registry`,
@@ -38,7 +38,7 @@ export const toolCallingHandler: ContinueRoundHandler = async (
         try {
           // Try to validate parameters using the tool's schema
           const validationResult = tool.parameterSchema.safeParse(toolMatch.parameters);
-          
+
           if (!validationResult.success) {
             logger.warn('Tool calling detected but parameters validation failed - will not continue', {
               toolId: toolMatch.toolId,
@@ -46,20 +46,19 @@ export const toolCallingHandler: ContinueRoundHandler = async (
               validationError: validationResult.error.issues,
               originalText: toolMatch.originalText,
             });
-            
+
             return {
               continue: false,
               reason: `Tool "${toolMatch.toolId}" parameters validation failed: ${validationResult.error.issues.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')}`,
             };
           }
-
         } catch (error) {
           logger.warn('Tool calling detected but parameter validation threw error - will not continue', {
             toolId: toolMatch.toolId,
             parameters: toolMatch.parameters,
             error: error instanceof Error ? error.message : String(error),
           });
-          
+
           return {
             continue: false,
             reason: `Tool "${toolMatch.toolId}" parameter validation error: ${error instanceof Error ? error.message : String(error)}`,

@@ -12,24 +12,24 @@ describe('Tool Executor Functions', () => {
   describe('matchToolCalling', () => {
     it('should detect wiki-search tool call correctly', () => {
       const responseText = '<tool_use name="wiki-search">{workspaceName: "wiki", filter: "[title[Index]]", maxResults: 1, includeText: true}</tool_use>';
-      
+
       const result = matchToolCalling(responseText);
-      
+
       expect(result.found).toBe(true);
       expect(result.toolId).toBe('wiki-search');
       expect(result.parameters).toMatchObject({
-        workspaceName: "wiki",
-        filter: "[title[Index]]",
+        workspaceName: 'wiki',
+        filter: '[title[Index]]',
         maxResults: 1,
-        includeText: true
+        includeText: true,
       });
     });
 
     it('should return false for text without tool calls', () => {
       const responseText = 'This is just a normal response without any tool calls.';
-      
+
       const result = matchToolCalling(responseText);
-      
+
       expect(result.found).toBe(false);
     });
   });
@@ -40,7 +40,7 @@ describe('Tool Executor Functions', () => {
       const enhancedWorkspaceService = {
         ...mockServiceInstances.workspace,
         getWorkspacesAsList: vi.fn().mockResolvedValue([
-          { id: 'wiki-workspace-1', name: 'wiki', type: 'wiki' }
+          { id: 'wiki-workspace-1', name: 'wiki', type: 'wiki' },
         ]),
         exists: vi.fn().mockResolvedValue(true),
       };
@@ -55,7 +55,7 @@ describe('Tool Executor Functions', () => {
             return [{
               title: 'Index',
               text: 'This is the Index tiddler content.',
-              fields: { title: 'Index', text: 'This is the Index tiddler content.' }
+              fields: { title: 'Index', text: 'This is the Index tiddler content.' },
             }];
           }
           return [];
@@ -67,12 +67,12 @@ describe('Tool Executor Functions', () => {
       mockServiceInstances.wiki = enhancedWikiService;
 
       const responseText = '<tool_use name="wiki-search">{workspaceName: "wiki", filter: "[title[Index]]", maxResults: 1, includeText: true}</tool_use>';
-      
+
       const result = await matchAndExecuteTool(responseText, {
         workspaceId: 'test-workspace',
-        metadata: { messageId: 'test-message' }
+        metadata: { messageId: 'test-message' },
       });
-      
+
       expect(result).toBeDefined();
       expect(result?.success).toBe(true);
       expect(result?.data).toContain('Index');
@@ -81,12 +81,12 @@ describe('Tool Executor Functions', () => {
 
     it('should return undefined for text without tool calls', async () => {
       const responseText = 'This is just a normal response without any tool calls.';
-      
+
       const result = await matchAndExecuteTool(responseText, {
         workspaceId: 'test-workspace',
-        metadata: { messageId: 'test-message' }
+        metadata: { messageId: 'test-message' },
       });
-      
+
       expect(result).toBeUndefined();
     });
   });

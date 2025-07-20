@@ -1,14 +1,12 @@
-import { container } from '@services/container';
 import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { matchAndExecuteTool } from '@services/agentDefinition/toolExecutor';
+import { container } from '@services/container';
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { responseConcat } from '../promptConcat/responseConcat';
-import { PromptConcatStreamState } from '../promptConcat/promptConcat';
 import { getFinalPromptResult } from '../promptConcat/utils';
-import { AgentPromptDescription, AiAPIConfig } from '../promptConcat/promptConcatSchema';
 import { continueRoundHandler } from './continueRoundHandlers';
 import { canceled, completed, error, working } from './statusUtilities';
 import { AgentHandlerContext } from './type';
@@ -172,7 +170,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                     {
                       workspaceId: context.agent.id,
                       metadata: { messageId: context.agent.messages[context.agent.messages.length - 1].id },
-                    }
+                    },
                   );
 
                   if (toolResult) {
@@ -181,7 +179,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                       id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
                       agentId: context.agent.id,
                       role: 'tool',
-                      content: toolResult.success 
+                      content: toolResult.success
                         ? `Tool execution result:\n\n${toolResult.data || 'Tool executed successfully but returned no data'}`
                         : `Tool execution failed: ${toolResult.error}`,
                       metadata: {

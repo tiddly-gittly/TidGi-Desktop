@@ -7,10 +7,9 @@ import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
 import { AgentHandlerContext } from '../buildInAgentHandlers/type';
 import { AgentInstanceMessage } from '../interface';
+import { builtInPlugins, PromptConcatHooks } from './plugins';
+import { AgentResponse, ResponseHookContext } from './plugins/types';
 import { AgentPromptDescription } from './promptConcatSchema';
-import { Plugin } from './promptConcatSchema/plugin';
-import { PromptConcatHooks, PromptConcatHookContext, builtInPlugins } from './plugins';
-import { ResponseHookContext, AgentResponse } from './plugins/types';
 
 /**
  * Process response configuration, apply plugins, and return final response
@@ -36,23 +35,23 @@ export async function responseConcat(
     configId: agentConfig.id,
     responseLength: llmResponse.length,
   });
-  
+
   const { promptConfig } = agentConfig;
   const responses = Array.isArray(promptConfig.response) ? promptConfig.response : [];
   const plugins = Array.isArray(promptConfig.plugins) ? promptConfig.plugins : [];
-  
+
   logger.debug('Response configuration loaded', {
     hasResponses: responses.length > 0,
     responseCount: responses.length,
     pluginCount: plugins.length,
   });
-  
+
   const responsesCopy = cloneDeep(responses);
   let modifiedResponses: AgentResponse[] = responsesCopy;
-  
+
   // Create hooks instance
   const hooks = new PromptConcatHooks();
-  
+
   // Register all plugins from configuration (no need to filter by type)
   for (const plugin of plugins) {
     const builtInPlugin = builtInPlugins.get(plugin.pluginId);
@@ -66,11 +65,11 @@ export async function responseConcat(
       logger.warn(`No built-in plugin found for response pluginId: ${plugin.pluginId}`);
     }
   }
-  
+
   // Process each plugin through hooks
   let needsNewLLMCall = false;
   let newUserMessage: string | undefined;
-  
+
   for (const plugin of plugins) {
     const responseContext: ResponseHookContext = {
       messages,
@@ -80,13 +79,13 @@ export async function responseConcat(
       responses: modifiedResponses,
       metadata: {},
     };
-    
+
     try {
       const result = await hooks.postProcess.promise(responseContext) as ResponseHookContext;
-      
+
       // Update responses if they were modified in the context
       modifiedResponses = result.responses;
-      
+
       // Check if plugin indicated need for new LLM call
       if (result.metadata?.needsNewLLMCall) {
         needsNewLLMCall = true;
@@ -94,7 +93,7 @@ export async function responseConcat(
           newUserMessage = result.metadata.newUserMessage;
         }
       }
-      
+
       logger.debug('Response plugin processed successfully', {
         pluginId: plugin.pluginId,
         pluginInstanceId: plugin.id,
@@ -108,16 +107,16 @@ export async function responseConcat(
       // Continue processing other plugins even if one fails
     }
   }
-  
+
   const processedResponse = flattenResponses(modifiedResponses);
-  
+
   logger.debug('Response processing completed', {
     originalLength: llmResponse.length,
     processedLength: processedResponse.length,
     needsNewLLMCall,
     hasNewUserMessage: !!newUserMessage,
   });
-  
+
   return {
     processedResponse,
     needsNewLLMCall,

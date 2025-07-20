@@ -1,5 +1,4 @@
 /* eslint-disable unicorn/prevent-abbreviations */
-import { CoreMessage } from 'ai';
 import { injectable } from 'inversify';
 import { debounce, pick } from 'lodash';
 import { nanoid } from 'nanoid';
@@ -10,8 +9,8 @@ import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { basicPromptConcatHandler } from '@services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler';
 import { AgentHandler, AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
 import { initializePluginSystem } from '@services/agentInstance/promptConcat/plugins';
-import { promptConcat, promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
-import { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
+import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { promptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
@@ -777,7 +776,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       const processStream = async () => {
         try {
           const streamGenerator = promptConcatStream(promptDescription as AgentPromptDescription, messages);
-          
+
           for await (const state of streamGenerator) {
             logger.debug('AgentInstanceService.concatPrompt yielding state', {
               step: state.step,
@@ -786,9 +785,9 @@ export class AgentInstanceService implements IAgentInstanceService {
               flatPromptsCount: state.flatPrompts.length,
               currentPlugin: state.currentPlugin?.pluginId,
             });
-            
+
             subscriber.next(state);
-            
+
             if (state.isComplete) {
               subscriber.complete();
               break;

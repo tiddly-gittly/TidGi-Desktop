@@ -34,17 +34,17 @@ describe('flattenPrompts', () => {
         role: 'system',
         children: [
           { id: 'child1', caption: 'Child 1', text: 'Child 1 text ' }, // No role, should be merged with parent
-          { 
-            id: 'child2', 
+          {
+            id: 'child2',
             caption: 'Child 2',
-            text: 'Child 2 text ', 
-            role: 'user'  // Has role, should be separate
+            text: 'Child 2 text ',
+            role: 'user', // Has role, should be separate
           },
-          { 
-            id: 'child3', 
+          {
+            id: 'child3',
             caption: 'Child 3',
-            text: 'Child 3 text ', 
-            role: 'assistant'  // Has role, should be separate
+            text: 'Child 3 text ',
+            role: 'assistant', // Has role, should be separate
           },
         ],
       },
@@ -82,16 +82,16 @@ describe('flattenPrompts', () => {
             children: [
               { id: 'msg1', caption: 'User Message 1', role: 'user', text: 'Hello' },
               { id: 'msg2', caption: 'Assistant Message 1', role: 'assistant', text: 'Hi there' },
-              { 
-                id: 'msg3', 
+              {
+                id: 'msg3',
                 caption: 'User Message 2',
-                role: 'user', 
+                role: 'user',
                 text: 'How are you?',
                 children: [
-                  { id: 'attachment', caption: 'Attachment', text: ' [with attachment]' } // Should be merged with parent
-                ]
+                  { id: 'attachment', caption: 'Attachment', text: ' [with attachment]' }, // Should be merged with parent
+                ],
               },
-            ]
+            ],
           },
         ],
       },

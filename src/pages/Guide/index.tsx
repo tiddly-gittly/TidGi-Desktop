@@ -1,10 +1,8 @@
-import { Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
-import { useState } from 'react';
 import { Languages } from '../../windows/Preferences/sections/Languages';
 import { TiddlyWiki } from '../../windows/Preferences/sections/TiddlyWiki';
 import { NewUserMessage } from './NewUserMessage';

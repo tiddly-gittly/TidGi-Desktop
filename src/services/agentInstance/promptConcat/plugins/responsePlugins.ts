@@ -2,10 +2,7 @@
  * Response processing plugins
  */
 import { logger } from '@services/libs/log';
-import { AgentInstanceMessage } from '../../interface';
-import { IPrompt } from '../promptConcatSchema';
-import { Plugin } from '../promptConcatSchema/plugin';
-import { PromptConcatPlugin, PromptConcatHookContext, AgentResponse, ResponseHookContext } from './types';
+import { AgentResponse, PromptConcatPlugin, ResponseHookContext } from './types';
 
 /**
  * Find response by ID in response array
@@ -51,22 +48,24 @@ function parseRegexString(regexString: string): RegExp | null {
 export const toolCallingPlugin: PromptConcatPlugin = (hooks) => {
   hooks.postProcess.tapAsync('toolCallingPlugin', async (context, callback) => {
     const { plugin } = context as ResponseHookContext;
-    
+
     if (plugin.pluginId !== 'toolCalling' || !plugin.toolCallingParam) {
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
     const { targetId, match } = plugin.toolCallingParam;
     const responseContext = context as ResponseHookContext;
     const { responses } = responseContext;
-    
+
     try {
       // Early return if no responses
       if (responses.length === 0) {
         logger.debug('Skipping tool calling - no responses', {
           pluginId: plugin.id,
         });
-        return callback(null, context);
+        callback(null, context);
+        return;
       }
 
       // Find the target response by ID
@@ -78,7 +77,8 @@ export const toolCallingPlugin: PromptConcatPlugin = (hooks) => {
           hasText: !!found?.response.text,
           pluginId: plugin.id,
         });
-        return callback(null, context);
+        callback(null, context);
+        return;
       }
 
       const targetText = found.response.text;
@@ -91,7 +91,8 @@ export const toolCallingPlugin: PromptConcatPlugin = (hooks) => {
           match,
           pluginId: plugin.id,
         });
-        return callback(null, context);
+        callback(null, context);
+        return;
       }
 
       // Test if the response contains any function calls
@@ -102,7 +103,8 @@ export const toolCallingPlugin: PromptConcatPlugin = (hooks) => {
           targetId,
           pluginId: plugin.id,
         });
-        return callback(null, context);
+        callback(null, context);
+        return;
       }
 
       // Reset the lastIndex to start matching from the beginning
@@ -122,7 +124,8 @@ export const toolCallingPlugin: PromptConcatPlugin = (hooks) => {
           targetId,
           pluginId: plugin.id,
         });
-        return callback(null, context);
+        callback(null, context);
+        return;
       }
 
       // Process the extracted function calls
@@ -171,39 +174,38 @@ export const toolCallingPlugin: PromptConcatPlugin = (hooks) => {
 export const autoReplyPlugin: PromptConcatPlugin = (hooks) => {
   hooks.postProcess.tapAsync('autoReplyPlugin', async (context, callback) => {
     const { plugin, llmResponse } = context as ResponseHookContext;
-    
+
     if (plugin.pluginId !== 'autoReply' || !plugin.autoReplyParam) {
-      return callback(null, context);
+      callback(null, context);
+      return;
     }
 
     const { targetId, text, trigger, maxAutoReply = 5 } = plugin.autoReplyParam;
-    
+
     try {
       // Simple trigger evaluation based on content matching
       let shouldTrigger = true;
-      
+
       if (trigger) {
         shouldTrigger = false;
-        
+
         // Check search keywords
         if (trigger.search) {
           const searchTerms = trigger.search.split(',');
-          const responseMatches = searchTerms.some((term: string) => 
-            llmResponse.toLowerCase().includes(term.trim().toLowerCase())
-          );
+          const responseMatches = searchTerms.some((term: string) => llmResponse.toLowerCase().includes(term.trim().toLowerCase()));
           if (responseMatches) shouldTrigger = true;
         }
-        
+
         // Check random chance
         if (typeof trigger.randomChance === 'number') {
           if (Math.random() < trigger.randomChance) shouldTrigger = true;
         }
-        
+
         // Check filter
         if (trigger.filter && llmResponse.includes(trigger.filter)) {
           shouldTrigger = true;
         }
-        
+
         // Model-based trigger would require additional LLM call (TODO)
         if (trigger.model) {
           logger.debug('Model-based trigger configured but not implemented', {

@@ -1,7 +1,6 @@
 import { AgentDefinition } from '@services/agentDefinition/interface';
 import type { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
 import type { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import { CoreMessage } from 'ai';
 
 // Type for agent data without messages - exported for use in other components

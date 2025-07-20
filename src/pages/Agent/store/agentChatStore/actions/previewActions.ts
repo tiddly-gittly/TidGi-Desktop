@@ -1,6 +1,4 @@
 import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { timeout, tap } from 'rxjs/operators';
-import { lastValueFrom } from 'rxjs';
 import { StateCreator } from 'zustand';
 import { AgentChatStoreType, PreviewActions } from '../types';
 
@@ -95,7 +93,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
 
       // Use the streaming API with progress updates
       const concatStream = window.observables.agentInstance.concatPrompt({ promptConfig }, messages);
-      
+
       // Initialize progress
       set({
         previewProgress: 0,
@@ -112,7 +110,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
         const subscription = concatStream.subscribe({
           next: (state) => {
             // Update progress and current step
-            const stepDescription = state.step === 'plugin' 
+            const stepDescription = state.step === 'plugin'
               ? `Processing plugin: ${state.currentPlugin?.pluginId || 'unknown'}`
               : state.step === 'finalize'
               ? 'Finalizing prompts...'
@@ -161,7 +159,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
               lastUpdated: new Date(),
             });
             resolve(finalResult);
-          }
+          },
         });
 
         // Set up timeout

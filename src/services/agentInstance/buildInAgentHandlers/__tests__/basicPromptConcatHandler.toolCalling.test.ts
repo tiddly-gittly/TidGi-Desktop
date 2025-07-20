@@ -1,19 +1,18 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { mockServiceInstances } from '@/__tests__/setup-vitest';
+import type { AgentDefinition } from '@services/agentDefinition/interface';
 import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
 import { matchAndExecuteTool } from '@services/agentDefinition/toolExecutor';
-import type { AgentDefinition } from '@services/agentDefinition/interface';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentInstance, AgentInstanceMessage } from '../../interface';
 import { basicPromptConcatHandler } from '../basicPromptConcatHandler';
-import type { AgentHandlerContext } from '../type';
 import defaultAgents from '../defaultAgents.json';
-
+import type { AgentHandlerContext } from '../type';
 
 describe('basicPromptConcatHandler - Tool Calling Integration', () => {
   let mockContext: AgentHandlerContext;
   let mockAgent: AgentInstance;
-  let defaultAgentConfig: AgentDefinition = defaultAgents[0] as AgentDefinition;
+  const defaultAgentConfig: AgentDefinition = defaultAgents[0] as AgentDefinition;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -38,8 +37,6 @@ describe('basicPromptConcatHandler - Tool Calling Integration', () => {
       agentDef: defaultAgentConfig,
       isCancelled: vi.fn().mockReturnValue(false),
     };
-
-
   });
 
   it('should use real pure functions for tool calling', async () => {
@@ -59,7 +56,7 @@ describe('basicPromptConcatHandler - Tool Calling Integration', () => {
     const enhancedWorkspaceService = {
       ...mockServiceInstances.workspace,
       getWorkspacesAsList: vi.fn().mockResolvedValue([
-        { id: 'wiki-workspace-1', name: 'wiki', type: 'wiki' }
+        { id: 'wiki-workspace-1', name: 'wiki', type: 'wiki' },
       ]),
       exists: vi.fn().mockResolvedValue(true),
     };
@@ -74,7 +71,7 @@ describe('basicPromptConcatHandler - Tool Calling Integration', () => {
           return [{
             title: 'Index',
             text: 'This is the Index tiddler content.',
-            fields: { title: 'Index', text: 'This is the Index tiddler content.' }
+            fields: { title: 'Index', text: 'This is the Index tiddler content.' },
           }];
         }
         return [];
@@ -96,23 +93,21 @@ describe('basicPromptConcatHandler - Tool Calling Integration', () => {
       yield aiResponse;
     });
 
-
-
     // Test the real pure functions directly
     const toolMatch = matchToolCalling(aiResponse.content);
     expect(toolMatch.found).toBe(true);
     expect(toolMatch.toolId).toBe('wiki-search');
     expect(toolMatch.parameters).toMatchObject({
-      workspaceName: "wiki",
-      filter: "[title[Index]]",
+      workspaceName: 'wiki',
+      filter: '[title[Index]]',
       maxResults: 1,
-      includeText: true
+      includeText: true,
     });
 
     // Test the real tool execution
     const toolResult = await matchAndExecuteTool(aiResponse.content, {
       workspaceId: 'agent-1',
-      metadata: { messageId: 'test-message' }
+      metadata: { messageId: 'test-message' },
     });
 
     expect(toolResult).toBeDefined();
@@ -137,12 +132,12 @@ describe('basicPromptConcatHandler - Tool Calling Integration', () => {
     expect(enhancedWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       'wiki-run-filter',
       'wiki-workspace-1',
-      ['[title[Index]]']
+      ['[title[Index]]'],
     );
     expect(enhancedWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       'get-tiddlers-as-json',
       'wiki-workspace-1',
-      ['Index']
+      ['Index'],
     );
   });
 });
