@@ -188,12 +188,12 @@ export interface PreviewActions {
   /**
    * Generates a preview of prompts for the current agent state
    * @param inputText Input text to include in the preview
-   * @param promptConfig Prompt configuration to use for preview
+   * @param handlerConfig Prompt configuration to use for preview
    * @returns Promise that resolves when preview is generated and state is updated
    */
   getPreviewPromptResult: (
     inputText: string,
-    promptConfig: AgentPromptDescription['promptConfig'],
+    handlerConfig: AgentPromptDescription['handlerConfig'],
   ) => Promise<
     {
       flatPrompts: CoreMessage[];

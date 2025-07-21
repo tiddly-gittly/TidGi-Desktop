@@ -1,21 +1,30 @@
-import { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import { matchAndExecuteTool } from '@services/agentDefinition/toolExecutor';
+import { executeTool } from '@services/agentDefinition/toolExecutor';
 import { container } from '@services/container';
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { merge } from 'lodash';
 import { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
+import { createHandlerHooks, registerBuiltInHandlerPlugins } from '../promptConcat/plugins';
+import { AgentPromptDescription, AiAPIConfig, HandlerConfig } from '../promptConcat/promptConcatSchema';
 import { responseConcat } from '../promptConcat/responseConcat';
 import { getFinalPromptResult } from '../promptConcat/utils';
-import { continueRoundHandler } from './continueRoundHandlers';
 import { canceled, completed, error, working } from './statusUtilities';
 import { AgentHandlerContext } from './type';
 
 /**
- * Example agent handler
- * Generates responses based on AgentHandlerContext
+ * Main conversation orchestrator for AI agents
  *
- * @param context - Agent handling context
+ * Responsibilities:
+ * - Control flow between human users and AI models
+ * - Coordinate with plugins for prompt processing and response handling
+ * - Delegate prompt concatenation to plugin system
+ * - Delegate AI API calls to externalAPIService
+ * - Manage message history and conversation state
+ * - Handle tool execution coordination
+ * - Process yieldNextRoundTo actions from response plugins
+ *
+ * @param context - Agent handling context containing configuration and message history
  */
 export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
   // Initialize variables for request tracking
@@ -23,6 +32,10 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
   let retryCount = 0;
   const maxRetries = 3;
   const lastUserMessage: AgentInstanceMessage | undefined = context.agent.messages[context.agent.messages.length - 1];
+
+  // Create and register handler hooks
+  const handlerHooks = createHandlerHooks();
+  registerBuiltInHandlerPlugins(handlerHooks);
 
   // Log the start of handler execution with context information
   logger.debug('Starting prompt handler execution', {
@@ -44,13 +57,14 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
   }
 
   // Ensure AI configuration exists
-  const aiApiConfig: AiAPIConfig = {
-    ...await externalAPIService.getAIConfig(),
-    ...context.agentDef.aiApiConfig,
-    ...context.agent.aiApiConfig,
-  };
+  const aiApiConfig: AiAPIConfig = merge(
+    {},
+    await externalAPIService.getAIConfig(),
+    context.agentDef.aiApiConfig,
+    context.agent.aiApiConfig,
+  );
 
-  // Check if cancelled
+  // Check if cancelled by user
   if (context.isCancelled()) {
     yield canceled();
     return;
@@ -58,45 +72,35 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
 
   // Process prompts using common handler function
   try {
-    const handlerConfig = context.agentDef.handlerConfig || {};
-
-    logger.debug('Creating prompt description from handler config', {
-      hasHandlerConfig: Object.keys(handlerConfig).length > 0,
-      handlerConfigKeys: Object.keys(handlerConfig),
-    });
-
-    const promptDescription = {
+    const handlerConfig: HandlerConfig = context.agentDef.handlerConfig as HandlerConfig;
+    const agentPromptDescription: AgentPromptDescription = {
       id: context.agentDef.id,
       api: aiApiConfig.api,
       modelParameters: aiApiConfig.modelParameters,
-      promptConfig: handlerConfig,
-    } as AgentPromptDescription;
+      handlerConfig,
+    };
 
     // Generate AI response
     // Function to process a single LLM call with retry support
     async function* processLLMCall(_userMessage: string): AsyncGenerator<AgentInstanceLatestStatus> {
       try {
-        // Use prompt description from outer scope instead of fetching by ID
-        const agentConfig = promptDescription;
-
+        // Delegate prompt concatenation to plugin system
         // Re-generate prompts to trigger middleware (including retrievalAugmentedGenerationHandler)
         // Get the final result from the stream using utility function
-        const concatStream = agentInstanceService.concatPrompt(promptDescription, context.agent.messages);
-        const { flatPrompts: currentFlatPrompts } = await getFinalPromptResult(concatStream);
+        const concatStream = agentInstanceService.concatPrompt(agentPromptDescription, context.agent.messages);
+        const { flatPrompts } = await getFinalPromptResult(concatStream);
 
         logger.info('Starting AI generation', {
           method: 'processLLMCall',
           modelName: aiApiConfig.api.model,
-          promptCount: currentFlatPrompts.length,
+          promptCount: flatPrompts.length,
           messageCount: context.agent.messages.length,
         });
 
-        for await (const response of externalAPIService.generateFromAI(currentFlatPrompts, aiApiConfig)) {
+        // Delegate AI API calls to externalAPIService
+        for await (const response of externalAPIService.generateFromAI(flatPrompts, aiApiConfig)) {
           if (!currentRequestId && response.requestId) {
             currentRequestId = response.requestId;
-            logger.debug('Received request ID', {
-              requestId: currentRequestId,
-            });
           }
 
           if (context.isCancelled()) {
@@ -107,136 +111,53 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
 
             if (currentRequestId) {
               await externalAPIService.cancelAIRequest(currentRequestId);
+              yield canceled();
             }
-            yield canceled();
             return;
           }
 
           if (response.status === 'update' || response.status === 'done') {
             const state = response.status === 'done' ? 'completed' : 'working';
 
+            // Delegate response processing to handler hooks
+            if (response.status === 'update') {
+              await handlerHooks.responseUpdate.promise({
+                handlerContext: context,
+                response,
+                requestId: currentRequestId,
+                isFinal: false,
+              });
+            }
+
             if (state === 'completed') {
-              logger.info('AI generation completed', {
+              logger.debug('AI generation completed', {
                 method: 'processLLMCall',
                 requestId: currentRequestId,
                 contentLength: response.content.length || 0,
               });
 
-              // Check for continue round logic (tool calling, etc.)
-              const continueResult = await continueRoundHandler(promptDescription, response.content, context);
+              // Delegate final response processing to handler hooks
+              await handlerHooks.responseComplete.promise({
+                handlerContext: context,
+                response,
+                requestId: currentRequestId,
+                isFinal: true,
+              });
 
-              if (continueResult.continue) {
-                logger.info('Continue round triggered', {
-                  method: 'processLLMCall',
-                  reason: continueResult.reason,
-                  hasNewMessage: !!continueResult.newMessage,
-                  retryCount,
-                });
+              // Delegate response processing to plugin system
+              // Plugins can set yieldNextRoundTo actions to control conversation flow
+              const processedResult = await responseConcat(agentPromptDescription, response.content, context, context.agent.messages);
 
-                // If we've hit max retries, prevent infinite loops
-                if (retryCount >= maxRetries) {
-                  logger.warn('Maximum retry limit reached, returning final response', {
-                    maxRetries,
-                    retryCount,
-                  });
-                  yield completed(response.content, context, currentRequestId);
-                  return;
-                }
-                retryCount++;
-                // Reset request ID for new call
-                currentRequestId = undefined;
-                // Yield current response as working state
-                yield working(response.content, context, currentRequestId);
-
-                // Add AI's response to message history BEFORE continuing
-                // This ensures retrievalAugmentedGenerationHandler can find the tool call
-                context.agent.messages.push({
-                  id: `ai-response-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-                  agentId: context.agent.id,
-                  role: 'assistant',
-                  content: response.content,
-                });
-
-                // Check if there's a tool call in the response and execute it immediately
-                const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
-                try {
-                  logger.debug('Checking for tool calls in AI response', {
-                    responseLength: response.content.length,
-                    responsePreview: response.content.substring(0, 100),
-                  });
-
-                  const toolResult = await matchAndExecuteTool(
-                    response.content,
-                    {
-                      workspaceId: context.agent.id,
-                      metadata: { messageId: context.agent.messages[context.agent.messages.length - 1].id },
-                    },
-                  );
-
-                  if (toolResult) {
-                    // Add tool result as a separate message with 'tool' role
-                    const toolMessage: AgentInstanceMessage = {
-                      id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-                      agentId: context.agent.id,
-                      role: 'tool',
-                      content: toolResult.success
-                        ? `Tool execution result:\n\n${toolResult.data || 'Tool executed successfully but returned no data'}`
-                        : `Tool execution failed: ${toolResult.error}`,
-                      metadata: {
-                        toolSuccess: toolResult.success,
-                        toolError: toolResult.error,
-                        executedAt: new Date().toISOString(),
-                      },
-                    };
-
-                    context.agent.messages.push(toolMessage);
-
-                    // Yield the tool message so it gets persisted through the normal flow
-                    yield {
-                      state: 'working',
-                      message: toolMessage,
-                      modified: new Date(),
-                    };
-
-                    // Tool message will be persisted through the normal message flow
-                    logger.info('Tool execution result added to message history', {
-                      toolSuccess: toolResult.success,
-                      hasData: !!toolResult.data,
-                      messageId: toolMessage.id,
-                      willBePersisted: true,
-                    });
-                  }
-                } catch (toolError) {
-                  logger.debug('No tool call found or tool execution failed during continue round', {
-                    error: toolError instanceof Error ? toolError.message : String(toolError),
-                  });
-                }
-
-                // Continue with new round - use last user message
-                const nextUserMessage = continueResult.newMessage || lastUserMessage?.content;
-                if (nextUserMessage) {
-                  yield* processLLMCall(nextUserMessage);
-                } else {
-                  logger.warn('No message provided for continue round', {
-                    method: 'basicPromptConcatHandler',
-                    agentId: context.agent.id,
-                  });
-                  yield completed(response.content, context, currentRequestId);
-                }
-                return;
-              }
-
-              // Process response with all registered plugins
-              const processedResult = await responseConcat(agentConfig, response.content, context, context.agent.messages || []);
-              // Check if we need to trigger another LLM call
+              // Handle control flow based on plugin decisions
               if (processedResult.needsNewLLMCall) {
-                logger.info('Response processing triggered new LLM call', {
+                // Control transfer: Continue with AI (yieldNextRoundTo: 'self')
+                logger.debug('Response processing triggered new LLM call', {
                   method: 'processLLMCall',
                   hasNewUserMessage: !!processedResult.newUserMessage,
                   retryCount,
                 });
 
-                // If we've hit max retries, prevent infinite loops
+                // Prevent infinite loops with retry limit
                 if (retryCount >= maxRetries) {
                   logger.warn('Maximum retry limit reached, returning final response', {
                     maxRetries,
@@ -248,21 +169,53 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
 
                 // Increment retry counter
                 retryCount++;
-
                 // Reset request ID for new call
                 currentRequestId = undefined;
-
-                // Start new generation with either provided message or last user message
-                const nextUserMessage = processedResult.newUserMessage || lastUserMessage?.content;
-
-                // Yield the processed response first
+                // Yield current response as working state
                 yield working(processedResult.processedResponse, context, currentRequestId);
 
-                // Then trigger a new LLM call
+                // Handle tool execution if requested by plugins
+                if (processedResult.toolCallInfo?.found && processedResult.toolCallInfo.toolId && processedResult.toolCallInfo.parameters) {
+                  try {
+                    logger.debug('Executing tool requested by plugin', {
+                      toolId: processedResult.toolCallInfo.toolId,
+                      parameters: processedResult.toolCallInfo.parameters,
+                    });
+
+                    const toolResult = await executeTool(
+                      processedResult.toolCallInfo.toolId,
+                      processedResult.toolCallInfo.parameters,
+                      {
+                        workspaceId: context.agent.id,
+                        metadata: { messageId: context.agent.messages[context.agent.messages.length - 1].id },
+                      },
+                    );
+
+                    // Delegate tool result processing to handler hooks
+                    await handlerHooks.toolExecuted.promise({
+                      handlerContext: context,
+                      toolResult,
+                      toolInfo: {
+                        toolId: processedResult.toolCallInfo.toolId,
+                        parameters: processedResult.toolCallInfo.parameters,
+                        originalText: processedResult.toolCallInfo.originalText,
+                      },
+                      requestId: currentRequestId,
+                    });
+                  } catch (toolError) {
+                    logger.debug('Tool execution failed', {
+                      error: toolError instanceof Error ? toolError.message : String(toolError),
+                      toolId: processedResult.toolCallInfo.toolId,
+                    });
+                  }
+                }
+
+                // Continue with new round - use provided message or last user message
+                const nextUserMessage = processedResult.newUserMessage || lastUserMessage?.content;
                 if (nextUserMessage) {
                   yield* processLLMCall(nextUserMessage);
                 } else {
-                  logger.warn('No new user message provided for retry', {
+                  logger.warn('No message provided for continue round', {
                     method: 'basicPromptConcatHandler',
                     agentId: context.agent.id,
                   });
@@ -271,7 +224,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                 return;
               }
 
-              // No further processing needed, yield completed response
+              // Control transfer: Return to human (yieldNextRoundTo: 'human' or default)
               yield completed(processedResult.processedResponse, context, currentRequestId);
             } else {
               yield working(response.content, context, currentRequestId);

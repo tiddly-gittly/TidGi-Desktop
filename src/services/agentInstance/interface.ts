@@ -88,6 +88,8 @@ export interface AgentInstanceMessage {
   modified?: Date;
   /** Message metadata */
   metadata?: Record<string, unknown>;
+  /** Whether this message should be hidden from UI/history (default: false) */
+  hidden?: boolean;
 }
 
 /**
@@ -168,7 +170,7 @@ export interface IAgentInstanceService {
    * @param messages Messages to be included in prompt generation
    * @returns Observable stream of processing states, with final state containing complete results
    */
-  concatPrompt(promptDescription: Pick<AgentPromptDescription, 'promptConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState>;
+  concatPrompt(promptDescription: Pick<AgentPromptDescription, 'handlerConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState>;
 
   /**
    * Get JSON Schema for handler configuration
@@ -177,6 +179,15 @@ export interface IAgentInstanceService {
    * @returns JSON Schema for the handler configuration
    */
   getHandlerConfigSchema(handlerId: string): Promise<Record<string, unknown>>;
+
+  /**
+   * Debounced message update for UI notifications
+   * This method is used by plugins to update UI without direct database writes
+   * @param message Message to update
+   * @param agentId Agent ID for status subscribers
+   * @param debounceMs Debounce delay in milliseconds
+   */
+  debounceUpdateMessage(message: AgentInstanceMessage, agentId?: string, debounceMs?: number): void;
 }
 
 export const AgentInstanceServiceIPCDescriptor = {

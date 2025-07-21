@@ -214,7 +214,7 @@ export interface PromptConcatStreamState {
  * Yields intermediate results for real-time UI updates
  */
 export async function* promptConcatStream(
-  agentConfig: Pick<AgentPromptDescription, 'promptConfig'>,
+  agentConfig: Pick<AgentPromptDescription, 'handlerConfig'>,
   messages: AgentInstanceMessage[],
 ): AsyncGenerator<PromptConcatStreamState, PromptConcatStreamState, unknown> {
   const messageId = messages[0]?.id || 'unknown';
@@ -224,9 +224,9 @@ export async function* promptConcatStream(
     messageCount: messages.length,
   });
 
-  const promptConfig = agentConfig.promptConfig || {};
-  const prompts = Array.isArray(promptConfig.prompts) ? promptConfig.prompts : [];
-  const plugins = Array.isArray(promptConfig.plugins) ? promptConfig.plugins : [];
+  const handlerConfig = agentConfig.handlerConfig || {};
+  const prompts = Array.isArray(handlerConfig.prompts) ? handlerConfig.prompts : [];
+  const plugins = Array.isArray(handlerConfig.plugins) ? handlerConfig.plugins : [];
   const promptsCopy = cloneDeep(prompts);
   const sourcePaths = generateSourcePaths(promptsCopy, plugins);
 
@@ -256,7 +256,7 @@ export async function* promptConcatStream(
     const context: PromptConcatHookContext = {
       messages,
       prompts: modifiedPrompts,
-      plugin,
+      pluginConfig: plugin,
       metadata: { sourcePaths },
     };
 
@@ -309,7 +309,7 @@ export async function* promptConcatStream(
   const finalContext: PromptConcatHookContext = {
     messages,
     prompts: modifiedPrompts,
-    plugin: {} as Plugin, // Empty plugin for finalization
+    pluginConfig: {} as Plugin, // Empty plugin for finalization
     metadata: { sourcePaths },
   };
 
@@ -368,7 +368,7 @@ export async function* promptConcatStream(
  * @returns Processed prompt array and original prompt tree
  */
 export async function promptConcat(
-  agentConfig: Pick<AgentPromptDescription, 'promptConfig'>,
+  agentConfig: Pick<AgentPromptDescription, 'handlerConfig'>,
   messages: AgentInstanceMessage[],
 ): Promise<{
   flatPrompts: CoreMessage[];

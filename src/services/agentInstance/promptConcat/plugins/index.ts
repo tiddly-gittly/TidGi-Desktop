@@ -1,8 +1,9 @@
 import { logger } from '@services/libs/log';
-import { AgentResponse, PromptConcatHookContext, PromptConcatHooks, PromptConcatPlugin, ResponseHookContext } from './types';
+import { AsyncSeriesHook } from 'tapable';
+import { AgentResponse, HandlerHooks, PromptConcatHookContext, PromptConcatHooks, PromptConcatPlugin, ResponseHookContext } from './types';
 
 // Re-export types for convenience
-export type { AgentResponse, PromptConcatHookContext, PromptConcatPlugin, ResponseHookContext };
+export type { AgentResponse, HandlerHooks, PromptConcatHookContext, PromptConcatPlugin, ResponseHookContext };
 export { PromptConcatHooks };
 
 /**
@@ -26,7 +27,8 @@ export function registerAllBuiltInPlugins(): void {
   Promise.all([
     import('./promptPlugins'),
     import('./responsePlugins'),
-  ]).then(([promptPluginsModule, responsePluginsModule]) => {
+    import('./toolCallingUnifiedPlugin'),
+  ]).then(([promptPluginsModule, responsePluginsModule, toolCallingModule]) => {
     // Prompt processing plugins
     registerBuiltInPlugin('fullReplacement', promptPluginsModule.fullReplacementPlugin);
     registerBuiltInPlugin('dynamicPosition', promptPluginsModule.dynamicPositionPlugin);
@@ -34,11 +36,11 @@ export function registerAllBuiltInPlugins(): void {
     registerBuiltInPlugin('retrievalAugmentedGeneration', promptPluginsModule.retrievalAugmentedGenerationPlugin);
 
     // Response processing plugins
-    registerBuiltInPlugin('toolCalling', responsePluginsModule.toolCallingPlugin);
+    registerBuiltInPlugin('toolCalling', toolCallingModule.toolCallingResponsePlugin);
     registerBuiltInPlugin('autoReply', responsePluginsModule.autoReplyPlugin);
 
     logger.debug('All built-in plugins registered successfully');
-  }).catch(error => {
+  }).catch((error: unknown) => {
     logger.error('Failed to register built-in plugins:', error);
   });
 }
@@ -48,4 +50,37 @@ export function registerAllBuiltInPlugins(): void {
  */
 export function initializePluginSystem(): void {
   registerAllBuiltInPlugins();
+}
+
+/**
+ * Create handler hooks instance for basicPromptConcatHandler
+ */
+export function createHandlerHooks(): HandlerHooks {
+  return {
+    toolExecuted: new AsyncSeriesHook(['context']),
+    responseUpdate: new AsyncSeriesHook(['context']),
+    responseComplete: new AsyncSeriesHook(['context']),
+  };
+}
+
+/**
+ * Register built-in handler plugins
+ */
+export function registerBuiltInHandlerPlugins(hooks: HandlerHooks): void {
+  // Import and register handler plugins
+  import('./toolCallingUnifiedPlugin').then(module => {
+    module.toolExecutionHistoryPlugin(hooks);
+    logger.debug('Registered toolExecutionHistoryPlugin');
+  }).catch((error: unknown) => {
+    logger.error('Failed to register toolExecutionHistoryPlugin:', error);
+  });
+
+  import('./aiResponseHistoryPlugin').then(module => {
+    module.aiResponseHistoryPlugin(hooks);
+    logger.debug('Registered aiResponseHistoryPlugin');
+  }).catch((error: unknown) => {
+    logger.error('Failed to register aiResponseHistoryPlugin:', error);
+  });
+
+  logger.debug('Built-in handler plugins registration initiated');
 }

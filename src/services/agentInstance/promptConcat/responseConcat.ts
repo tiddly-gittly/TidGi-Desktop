@@ -3,13 +3,14 @@
  *
  * Handles response modifications and processing through tapable hooks
  */
+import { ToolCallingMatch } from '@services/agentDefinition/interface';
 import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
 import { AgentHandlerContext } from '../buildInAgentHandlers/type';
 import { AgentInstanceMessage } from '../interface';
 import { builtInPlugins, PromptConcatHooks } from './plugins';
 import { AgentResponse, ResponseHookContext } from './plugins/types';
-import { AgentPromptDescription } from './promptConcatSchema';
+import { AgentPromptDescription, HandlerConfig } from './promptConcatSchema';
 
 /**
  * Process response configuration, apply plugins, and return final response
@@ -28,6 +29,7 @@ export async function responseConcat(
   processedResponse: string;
   needsNewLLMCall: boolean;
   newUserMessage?: string;
+  toolCallInfo?: ToolCallingMatch;
 }> {
   logger.debug('Starting response processing', {
     method: 'responseConcat',
@@ -36,31 +38,20 @@ export async function responseConcat(
     responseLength: llmResponse.length,
   });
 
-  const { promptConfig } = agentConfig;
-  const responses = Array.isArray(promptConfig.response) ? promptConfig.response : [];
-  const plugins = Array.isArray(promptConfig.plugins) ? promptConfig.plugins : [];
-
-  logger.debug('Response configuration loaded', {
-    hasResponses: responses.length > 0,
-    responseCount: responses.length,
-    pluginCount: plugins.length,
-  });
+  const { handlerConfig } = agentConfig;
+  const responses: HandlerConfig['response'] = Array.isArray(handlerConfig.response) ? handlerConfig.response : [];
+  const plugins = Array.isArray(handlerConfig.plugins) ? handlerConfig.plugins : [];
 
   const responsesCopy = cloneDeep(responses);
   let modifiedResponses: AgentResponse[] = responsesCopy;
 
   // Create hooks instance
   const hooks = new PromptConcatHooks();
-
-  // Register all plugins from configuration (no need to filter by type)
+  // Register all plugins from configuration
   for (const plugin of plugins) {
     const builtInPlugin = builtInPlugins.get(plugin.pluginId);
     if (builtInPlugin) {
       hooks.registerPlugin(builtInPlugin);
-      logger.debug('Registered response plugin', {
-        pluginId: plugin.pluginId,
-        pluginInstanceId: plugin.id,
-      });
     } else {
       logger.warn(`No built-in plugin found for response pluginId: ${plugin.pluginId}`);
     }
@@ -69,12 +60,13 @@ export async function responseConcat(
   // Process each plugin through hooks
   let needsNewLLMCall = false;
   let newUserMessage: string | undefined;
+  let toolCallInfo: ToolCallingMatch | undefined;
 
   for (const plugin of plugins) {
     const responseContext: ResponseHookContext = {
       messages,
       prompts: [], // Not used in response processing
-      plugin,
+      pluginConfig: plugin,
       llmResponse,
       responses: modifiedResponses,
       metadata: {},
@@ -86,12 +78,21 @@ export async function responseConcat(
       // Update responses if they were modified in the context
       modifiedResponses = result.responses;
 
-      // Check if plugin indicated need for new LLM call
-      if (result.metadata?.needsNewLLMCall) {
+      // Check if plugin indicated need for new LLM call via actions
+      if (result.actions?.yieldNextRoundTo === 'self') {
         needsNewLLMCall = true;
-        if (result.metadata.newUserMessage) {
-          newUserMessage = result.metadata.newUserMessage;
+        if (result.actions.newUserMessage) {
+          newUserMessage = result.actions.newUserMessage;
         }
+        if (result.actions.toolCalling) {
+          toolCallInfo = result.actions.toolCalling;
+        }
+        logger.debug('Plugin requested yield next round to self', {
+          pluginId: plugin.pluginId,
+          pluginInstanceId: plugin.id,
+          hasNewUserMessage: !!result.actions.newUserMessage,
+          hasToolCall: !!result.actions.toolCalling,
+        });
       }
 
       logger.debug('Response plugin processed successfully', {
@@ -121,6 +122,7 @@ export async function responseConcat(
     processedResponse,
     needsNewLLMCall,
     newUserMessage,
+    toolCallInfo,
   };
 }
 

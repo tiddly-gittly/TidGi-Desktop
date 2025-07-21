@@ -69,14 +69,14 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
 
   getPreviewPromptResult: async (
     inputText: string,
-    promptConfig: AgentPromptDescription['promptConfig'],
+    handlerConfig: AgentPromptDescription['handlerConfig'],
   ) => {
     try {
       set({ previewLoading: true });
       const messages = Array.from(get().messages.values());
 
-      // Safety check - if promptConfig is empty, fail early
-      if (Object.keys(promptConfig).length === 0) {
+      // Safety check - if handlerConfig is empty, fail early
+      if (Object.keys(handlerConfig).length === 0) {
         set({ previewLoading: false, previewResult: null });
         return null;
       }
@@ -92,7 +92,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
       }
 
       // Use the streaming API with progress updates
-      const concatStream = window.observables.agentInstance.concatPrompt({ promptConfig }, messages);
+      const concatStream = window.observables.agentInstance.concatPrompt({ handlerConfig }, messages);
 
       // Initialize progress
       set({

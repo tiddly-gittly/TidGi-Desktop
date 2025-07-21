@@ -1,6 +1,9 @@
+import { ToolCallingMatch } from '@services/agentDefinition/interface';
+import type { AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
 import { AgentInstanceMessage } from '@services/agentInstance/interface';
+import { AIStreamResponse } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
-import { AsyncSeriesWaterfallHook } from 'tapable';
+import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
 import { IPrompt } from '../promptConcatSchema';
 import { Plugin } from '../promptConcatSchema/plugin';
 
@@ -13,9 +16,9 @@ export interface PromptConcatHookContext {
   /** Current prompt tree */
   prompts: IPrompt[];
   /** Plugin configuration */
-  plugin: Plugin;
+  pluginConfig: Plugin;
   /** Additional context data */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -30,17 +33,89 @@ export interface AgentResponse {
 }
 
 /**
+ * Next round target options
+ */
+export type YieldNextRoundTarget = 'human' | 'self' | `agent:${string}`; // allows for future agent IDs like "agent:agent-id"
+
+/**
  * Context for response processing hooks
  */
 export interface ResponseHookContext extends PromptConcatHookContext {
   llmResponse: string;
   responses: AgentResponse[];
+  actions?: {
+    yieldNextRoundTo?: YieldNextRoundTarget;
+    newUserMessage?: string;
+    toolCalling?: ToolCallingMatch;
+  };
 }
 
 /**
- * Plugin function type - receives hooks object and registers handlers
+ * Tool execution result context for handler hooks
+ */
+export interface ToolExecutionContext {
+  /** Handler context */
+  handlerContext: AgentHandlerContext;
+  /** Tool execution result */
+  toolResult: {
+    success: boolean;
+    data?: string;
+    error?: string;
+    metadata?: Record<string, unknown>;
+  };
+  /** Tool information */
+  toolInfo: {
+    toolId: string;
+    parameters: Record<string, unknown>;
+    originalText?: string;
+  };
+  /** Current request ID */
+  requestId?: string;
+}
+
+/**
+ * AI Response context for streaming updates
+ */
+export interface AIResponseContext {
+  /** Handler context */
+  handlerContext: AgentHandlerContext;
+  /** AI streaming response */
+  response: AIStreamResponse;
+  /** Current request ID */
+  requestId?: string;
+  /** Whether this is the final response */
+  isFinal: boolean;
+}
+
+/**
+ * Handler hooks for basicPromptConcatHandler extensibility
+ */
+export interface HandlerHooks {
+  /** Called when tool execution completes */
+  toolExecuted: AsyncSeriesHook<[ToolExecutionContext]>;
+  /** Called when AI response status updates (streaming) */
+  responseUpdate: AsyncSeriesHook<[AIResponseContext]>;
+  /** Called when AI response is complete */
+  responseComplete: AsyncSeriesHook<[AIResponseContext]>;
+}
+
+/**
+ * Plugin function interface - can register handlers for any hooks
  */
 export type PromptConcatPlugin = (hooks: PromptConcatHooks) => void;
+
+/**
+ * Handler plugin interface - can register handlers for handler hooks
+ */
+export type HandlerPlugin = (hooks: HandlerHooks) => void;
+
+/**
+ * Universal plugin interface - can register handlers for all types of hooks
+ */
+export type UniversalPlugin = {
+  promptConcat?: PromptConcatPlugin;
+  handler?: HandlerPlugin;
+};
 
 /**
  * Hooks system for prompt concatenation

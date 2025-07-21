@@ -69,11 +69,10 @@ export const HandlerConfigSchema = z.object({
  *     "model": "Qwen/Qwen2.5-7B-Instruct"
  *   },
  *   "modelParameters": { ... },
- *   "promptConfig": {
+ *   "handlerConfig": {
  *     "prompts": [ ... ],
- *     "promptDynamicModification": [ ... ],
  *     "response": [ ... ],
- *     "responseDynamicModification": [ ... ]
+ *     "plugins": [ ... ],
  *   }
  * }
  * ```
@@ -83,7 +82,7 @@ export const AgentConfigSchema = BaseAPIConfigSchema.extend({
     title: t('Schema.AgentConfig.IdTitle'),
     description: t('Schema.AgentConfig.Id'),
   }),
-  promptConfig: HandlerConfigSchema,
+  handlerConfig: HandlerConfigSchema,
 }).meta({
   title: t('Schema.AgentConfig.Title'),
   description: t('Schema.AgentConfig.Description'),

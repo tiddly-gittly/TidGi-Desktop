@@ -211,25 +211,33 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       // Handle message updates if provided
       if (data.messages && data.messages.length > 0) {
-        // Create entities for new messages
-        const newMessages = data.messages.filter(message => {
-          // Filter out messages not in database
+        // Create entities for new messages and update existing ones
+        for (const message of data.messages) {
+          // Check if message already exists
           const existingMessage = instanceEntity.messages?.find(m => m.id === message.id);
-          return !existingMessage;
-        });
 
-        for (const message of newMessages) {
-          const messageEntity = this.agentMessageRepository!.create(
-            pick(message, MESSAGE_FIELDS) as AgentInstanceMessage,
-          );
+          if (existingMessage) {
+            // Update existing message
+            existingMessage.content = message.content;
+            existingMessage.modified = message.modified || new Date();
+            if (message.metadata) existingMessage.metadata = message.metadata;
+            if (message.contentType) existingMessage.contentType = message.contentType;
 
-          await this.agentMessageRepository!.save(messageEntity);
+            await this.agentMessageRepository!.save(existingMessage);
+          } else {
+            // Create new message
+            const messageEntity = this.agentMessageRepository!.create(
+              pick(message, MESSAGE_FIELDS) as AgentInstanceMessage,
+            );
 
-          // Add new message to the instance entity
-          if (!instanceEntity.messages) {
-            instanceEntity.messages = [];
+            await this.agentMessageRepository!.save(messageEntity);
+
+            // Add new message to the instance entity
+            if (!instanceEntity.messages) {
+              instanceEntity.messages = [];
+            }
+            instanceEntity.messages.push(messageEntity);
           }
-          instanceEntity.messages.push(messageEntity);
         }
       }
 
@@ -352,8 +360,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       });
 
       // Save user message
-      const messageEntity = this.agentMessageRepository!.create(userMessage);
-      await this.agentMessageRepository!.save(messageEntity);
+      await this.agentMessageRepository!.save(this.agentMessageRepository!.create(userMessage));
 
       // Update agent status to "working"
       logger.debug(`Sending message to agent ${agentId}, appending user message to ${agentInstance.messages.length} existing messages`, { method: 'sendMsgToAgent' });
@@ -387,7 +394,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       const cancelToken = { value: false };
       this.cancelTokenMap.set(agentId, cancelToken);
       const handlerContext: AgentHandlerContext = {
-        agent: updatedAgent, // 直接使用updateAgent返回的结果
+        agent: updatedAgent,
         agentDef: agentDefinition,
         isCancelled: () => cancelToken.value,
       };
@@ -400,18 +407,14 @@ export class AgentInstanceService implements IAgentInstanceService {
         let lastResult: AgentInstanceLatestStatus | undefined;
 
         for await (const result of generator) {
+          // Update status subscribers for specific message
           if (result.message?.content) {
             // Ensure message has correct modification timestamp
             if (!result.message.modified) {
               result.message.modified = new Date();
             }
 
-            this.debounceUpdateMessage(
-              result.message,
-              agentId,
-            );
-
-            // Update status subscribers
+            // Update status subscribers directly
             const statusKey = `${agentId}:${result.message.id}`;
             if (this.statusSubjects.has(statusKey)) {
               this.statusSubjects.get(statusKey)?.next(result);
@@ -421,8 +424,6 @@ export class AgentInstanceService implements IAgentInstanceService {
           // Update agent status only when state changes or on first message
           const isFirstMessage = !lastResult;
           if (isFirstMessage || lastResult?.state !== result.state) {
-            // For the first message, include the message itself in the update
-            // This ensures the UI immediately gets the message without waiting for debounced updates
             const updateData: Partial<AgentInstance> = {
               status: {
                 state: result.state,
@@ -430,19 +431,10 @@ export class AgentInstanceService implements IAgentInstanceService {
               },
             };
 
-            // Include message on first update to ensure immediate UI feedback
-            if (isFirstMessage && result.message) {
-              // Get the current agent to append the new message
-              const currentAgent = await this.getAgent(agentId);
-              if (currentAgent) {
-                updateData.messages = [...currentAgent.messages, result.message];
-              }
-            }
-
             await this.updateAgent(agentId, updateData);
           }
 
-          // Store the last result for completion handling. Also used for check if this is first message
+          // Store the last result for completion handling
           lastResult = result;
         }
 
@@ -651,8 +643,9 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   /**
    * Debounced message update to reduce database writes
+   * Made public so plugins can use it for UI updates
    */
-  private debounceUpdateMessage(
+  public debounceUpdateMessage(
     message: AgentInstanceMessage,
     agentId?: string,
     debounceMs = 300,
@@ -765,10 +758,10 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public concatPrompt(promptDescription: Pick<AgentPromptDescription, 'promptConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState> {
+  public concatPrompt(promptDescription: Pick<AgentPromptDescription, 'handlerConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState> {
     logger.debug('AgentInstanceService.concatPrompt called', {
-      hasPromptConfig: !!promptDescription.promptConfig,
-      promptConfigKeys: Object.keys(promptDescription.promptConfig || {}),
+      hasPromptConfig: !!promptDescription.handlerConfig,
+      promptConfigKeys: Object.keys(promptDescription.handlerConfig || {}),
       messagesCount: messages.length,
     });
 

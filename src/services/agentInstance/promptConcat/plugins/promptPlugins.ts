@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 /**
  * Built-in plugins for prompt concatenation
  */
@@ -13,26 +14,25 @@ import { AgentResponse, PromptConcatPlugin, ResponseHookContext } from './types'
  */
 export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
   hooks.processPrompts.tapAsync('fullReplacementPlugin', async (context, callback) => {
-    const { plugin, prompts, messages } = context;
+    const { pluginConfig, prompts, messages } = context;
 
-    if (plugin.pluginId !== 'fullReplacement' || !plugin.fullReplacementParam) {
-      callback(null, context);
+    if (pluginConfig.pluginId !== 'fullReplacement' || !pluginConfig.fullReplacementParam) {
+      callback();
       return;
     }
 
-    const { targetId, sourceType } = plugin.fullReplacementParam;
+    const fullReplacementConfig = pluginConfig.fullReplacementParam;
+    const { targetId, sourceType } = fullReplacementConfig;
     const found = findPromptById(prompts, targetId);
 
     if (!found) {
       logger.warn('Target prompt not found for fullReplacement', {
         targetId,
-        pluginId: plugin.id,
+        pluginId: pluginConfig.id,
       });
-      callback(null, context);
+      callback();
       return;
     }
-
-    const content = '';
 
     // Get all messages except the last one which is the user message
     const messagesCopy = cloneDeep(messages);
@@ -68,11 +68,9 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
         // This is handled in response phase
         break;
       default:
-        logger.warn(`Unknown sourceType: ${sourceType}`);
-        {
-          callback(null, context);
-          return;
-        }
+        logger.warn(`Unknown sourceType: ${sourceType as string}`);
+        callback();
+        return;
     }
 
     logger.debug('Full replacement completed in prompt phase', {
@@ -80,33 +78,33 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
       sourceType,
     });
 
-    callback(null, context);
+    callback();
   });
 
   // Handle response phase for llmResponse source type
   hooks.postProcess.tapAsync('fullReplacementPlugin', async (context, callback) => {
     const responseContext = context as ResponseHookContext;
-    const { plugin, llmResponse, responses } = responseContext;
+    const { pluginConfig, llmResponse, responses } = responseContext;
 
-    if (plugin.pluginId !== 'fullReplacement' || !plugin.fullReplacementParam) {
-      callback(null, context);
+    if (pluginConfig.pluginId !== 'fullReplacement' || !pluginConfig.fullReplacementParam) {
+      callback();
       return;
     }
 
-    const { targetId, sourceType } = plugin.fullReplacementParam;
+    const { targetId, sourceType } = pluginConfig.fullReplacementParam;
 
     // Only handle llmResponse in response phase
     if (sourceType !== 'llmResponse') {
-      callback(null, context);
+      callback();
       return;
     }
 
     // Early return if no responses
     if (!responses || responses.length === 0) {
       logger.debug('Skipping full replacement - no responses', {
-        pluginId: plugin.id,
+        pluginId: pluginConfig.id,
       });
-      callback(null, context);
+      callback();
       return;
     }
 
@@ -116,9 +114,9 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
     if (!found) {
       logger.warn('Full replacement target not found in responses', {
         targetId,
-        pluginId: plugin.id,
+        pluginId: pluginConfig.id,
       });
-      callback(null, context);
+      callback();
       return;
     }
 
@@ -126,7 +124,7 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
     logger.debug('Replacing target with LLM response', {
       targetId,
       responseLength: llmResponse.length,
-      pluginId: plugin.id,
+      pluginId: pluginConfig.id,
     });
 
     found.text = llmResponse;
@@ -136,7 +134,7 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
       sourceType,
     });
 
-    callback(null, context);
+    callback();
   });
 };
 
@@ -146,30 +144,31 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
  */
 export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
   hooks.processPrompts.tapAsync('dynamicPositionPlugin', async (context, callback) => {
-    const { plugin, prompts } = context;
+    const { pluginConfig, prompts } = context;
 
-    if (plugin.pluginId !== 'dynamicPosition' || !plugin.dynamicPositionParam || !plugin.content) {
-      callback(null, context);
+    if (pluginConfig.pluginId !== 'dynamicPosition' || !pluginConfig.dynamicPositionParam || !pluginConfig.content) {
+      callback();
       return;
     }
 
-    const { targetId, position } = plugin.dynamicPositionParam;
+    const dynamicPositionConfig = pluginConfig.dynamicPositionParam;
+    const { targetId, position } = dynamicPositionConfig;
     const found = findPromptById(prompts, targetId);
 
     if (!found) {
       logger.warn('Target prompt not found for dynamicPosition', {
         targetId,
-        pluginId: plugin.id,
+        pluginId: pluginConfig.id,
       });
-      callback(null, context);
+      callback();
       return;
     }
 
     // Create new prompt part
     const newPart: IPrompt = {
-      id: `dynamic-${plugin.id}-${Date.now()}`,
-      caption: plugin.caption || 'Dynamic Content',
-      text: plugin.content,
+      id: `dynamic-${pluginConfig.id}-${Date.now()}`,
+      caption: pluginConfig.caption || 'Dynamic Content',
+      text: pluginConfig.content,
     };
 
     // Insert based on position
@@ -188,20 +187,18 @@ export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
         found.prompt.children.push(newPart);
         break;
       default:
-        logger.warn(`Unknown position: ${position}`);
-        {
-          callback(null, context);
-          return;
-        }
+        logger.warn(`Unknown position: ${position as string}`);
+        callback();
+        return;
     }
 
     logger.debug('Dynamic position insertion completed', {
       targetId,
       position,
-      contentLength: plugin.content.length,
+      contentLength: pluginConfig.content.length,
     });
 
-    callback(null, context);
+    callback();
   });
 };
 
@@ -211,23 +208,23 @@ export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
  */
 export const retrievalAugmentedGenerationPlugin: PromptConcatPlugin = (hooks) => {
   hooks.processPrompts.tapAsync('retrievalAugmentedGenerationPlugin', async (context, callback) => {
-    const { plugin, prompts } = context;
+    const { pluginConfig, prompts } = context;
 
-    if (plugin.pluginId !== 'retrievalAugmentedGeneration' || !plugin.retrievalAugmentedGenerationParam) {
-      callback(null, context);
+    if (pluginConfig.pluginId !== 'retrievalAugmentedGeneration' || !pluginConfig.retrievalAugmentedGenerationParam) {
+      callback();
       return;
     }
 
-    const parameter = plugin.retrievalAugmentedGenerationParam;
+    const parameter = pluginConfig.retrievalAugmentedGenerationParam;
     const { targetId, position, sourceType, wikiParam } = parameter;
     const found = findPromptById(prompts, targetId);
 
     if (!found) {
       logger.warn('Target prompt not found for retrievalAugmentedGeneration', {
         targetId,
-        pluginId: plugin.id,
+        pluginId: pluginConfig.id,
       });
-      callback(null, context);
+      callback();
       return;
     }
 
@@ -245,13 +242,13 @@ The content would be fetched using the wiki workspace service and filtered accor
         logger.debug('RAG plugin - wiki content placeholder created', {
           workspaceName: wikiParam.workspaceName,
           filter: wikiParam.filter,
-          pluginId: plugin.id,
+          pluginId: pluginConfig.id,
         });
       }
 
       const newPart: IPrompt = {
-        id: `rag-${plugin.id}-${Date.now()}`,
-        caption: plugin.caption || 'RAG Content',
+        id: `rag-${pluginConfig.id}-${Date.now()}`,
+        caption: pluginConfig.caption || 'RAG Content',
         text: content,
       };
 
@@ -274,11 +271,9 @@ The content would be fetched using the wiki workspace service and filtered accor
           found.parent.splice(found.index + 1, 0, newPart);
           break;
         default:
-          logger.warn(`Unknown position: ${position}`);
-          {
-            callback(null, context);
-            return;
-          }
+          logger.warn(`Unknown position: ${position as string}`);
+          callback();
+          return;
       }
 
       logger.debug('RAG plugin completed', {
@@ -288,10 +283,10 @@ The content would be fetched using the wiki workspace service and filtered accor
         contentLength: content.length,
       });
 
-      callback(null, context);
+      callback();
     } catch (error) {
       logger.error('RAG plugin error', error);
-      callback(error instanceof Error ? error : new Error(String(error)), context);
+      callback();
     }
   });
 };
@@ -302,23 +297,23 @@ The content would be fetched using the wiki workspace service and filtered accor
  */
 export const modelContextProtocolPlugin: PromptConcatPlugin = (hooks) => {
   hooks.processPrompts.tapAsync('modelContextProtocolPlugin', async (context, callback) => {
-    const { plugin, prompts } = context;
+    const { pluginConfig, prompts } = context;
 
-    if (plugin.pluginId !== 'modelContextProtocol' || !plugin.modelContextProtocolParam) {
-      callback(null, context);
+    if (pluginConfig.pluginId !== 'modelContextProtocol' || !pluginConfig.modelContextProtocolParam) {
+      callback();
       return;
     }
 
-    const parameter = plugin.modelContextProtocolParam;
+    const parameter = pluginConfig.modelContextProtocolParam;
     const { targetId, position, id, timeoutSecond = 10, timeoutMessage = 'MCP server call timed out' } = parameter;
     const found = findPromptById(prompts, targetId);
 
     if (!found) {
       logger.warn('Target prompt not found for modelContextProtocol', {
         targetId,
-        pluginId: plugin.id,
+        pluginId: pluginConfig.id,
       });
-      callback(null, context);
+      callback();
       return;
     }
 
@@ -336,12 +331,12 @@ The MCP server would provide additional context or capabilities to the AI model.
       logger.debug('MCP plugin - simulating server call', {
         mcpId: id,
         timeout: timeoutSecond,
-        pluginId: plugin.id,
+        pluginId: pluginConfig.id,
       });
 
       const newPart: IPrompt = {
-        id: `mcp-${plugin.id}-${Date.now()}`,
-        caption: plugin.caption || 'MCP Content',
+        id: `mcp-${pluginConfig.id}-${Date.now()}`,
+        caption: pluginConfig.caption || 'MCP Content',
         text: content,
       };
 
@@ -354,11 +349,9 @@ The MCP server would provide additional context or capabilities to the AI model.
           found.parent.splice(found.index + 1, 0, newPart);
           break;
         default:
-          logger.warn(`Unknown position: ${position}`);
-          {
-            callback(null, context);
-            return;
-          }
+          logger.warn(`Unknown position: ${position as string}`);
+          callback();
+          return;
       }
 
       logger.debug('MCP plugin completed', {
@@ -367,10 +360,10 @@ The MCP server would provide additional context or capabilities to the AI model.
         mcpId: id,
       });
 
-      callback(null, context);
+      callback();
     } catch (error) {
       logger.error('MCP plugin error', error);
-      callback(error instanceof Error ? error : new Error(String(error)), context);
+      callback();
     }
   });
 };

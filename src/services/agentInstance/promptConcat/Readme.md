@@ -31,7 +31,7 @@ The `promptConcat` function uses a tapable hooks-based plugin system. Built-in p
 ### Plugin Lifecycle
 
 1. **Initialization**: `initializePluginSystem()` registers all built-in plugins
-2. **Configuration**: Plugins are loaded based on `promptConfig.plugins` array
+2. **Configuration**: Plugins are loaded based on `handlerConfig.plugins` array
 3. **Execution**: Hooks execute plugins in registration order
 4. **Error Handling**: Individual plugin failures don't stop the pipeline
 
