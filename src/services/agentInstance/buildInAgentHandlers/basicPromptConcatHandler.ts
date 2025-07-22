@@ -5,7 +5,7 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { merge } from 'lodash';
 import { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
-import { createHandlerHooks, registerBuiltInHandlerPlugins } from '../promptConcat/plugins';
+import { createHandlerHooks, registerBuiltInHandlerPlugins } from '../plugins';
 import { AgentPromptDescription, AiAPIConfig, HandlerConfig } from '../promptConcat/promptConcatSchema';
 import { responseConcat } from '../promptConcat/responseConcat';
 import { getFinalPromptResult } from '../promptConcat/utils';
@@ -45,6 +45,39 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
     handlerId: context.agentDef.handlerID,
     messageCount: context.agent.messages.length,
   });
+
+  // Check if there's a new user message to process - trigger user message received hook
+  // This is determined by checking if the last message is from user and hasn't been processed yet
+  const isNewUserMessage = lastUserMessage.role === 'user' && !lastUserMessage.metadata?.processed;
+
+  if (isNewUserMessage) {
+    // Extract message ID and content for plugin processing
+    const messageId = lastUserMessage.id;
+    const userContent = {
+      text: lastUserMessage.content,
+      file: lastUserMessage.metadata?.file as File | undefined,
+    };
+
+    // Trigger user message received hook
+    await handlerHooks.userMessageReceived.promise({
+      handlerContext: context,
+      content: userContent,
+      messageId,
+      timestamp: lastUserMessage.modified || new Date(),
+    });
+
+    // Mark user message as processed
+    lastUserMessage.metadata = { ...lastUserMessage.metadata, processed: true };
+
+    // Trigger agent status change to working
+    await handlerHooks.agentStatusChanged.promise({
+      handlerContext: context,
+      status: {
+        state: 'working',
+        modified: new Date(),
+      },
+    });
+  }
 
   // Get service instances
   const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);

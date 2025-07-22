@@ -173,12 +173,18 @@ export interface IAgentInstanceService {
   concatPrompt(promptDescription: Pick<AgentPromptDescription, 'handlerConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState>;
 
   /**
-   * Get JSON Schema for handler configuration
-   * This allows frontend to generate a form based on the schema for a specific handler
-   * @param handlerId ID of the handler to get schema for
-   * @returns JSON Schema for the handler configuration
+   * Get handler configuration schema for validation and form generation
+   * @param handlerId Handler ID to get schema for
+   * @returns JSON Schema for handler configuration
    */
-  getHandlerConfigSchema(handlerId: string): Promise<Record<string, unknown>>;
+  getHandlerConfigSchema(handlerId: string): Record<string, unknown>;
+
+  /**
+   * Save user message to database
+   * This method is used by plugins for message persistence
+   * @param userMessage User message to save
+   */
+  saveUserMessage(userMessage: AgentInstanceMessage): Promise<void>;
 
   /**
    * Debounced message update for UI notifications
@@ -201,6 +207,7 @@ export const AgentInstanceServiceIPCDescriptor = {
     getAgent: ProxyPropertyType.Function,
     getAgents: ProxyPropertyType.Function,
     getHandlerConfigSchema: ProxyPropertyType.Function,
+    saveUserMessage: ProxyPropertyType.Function,
     sendMsgToAgent: ProxyPropertyType.Function,
     subscribeToAgentUpdates: ProxyPropertyType.Function$,
     updateAgent: ProxyPropertyType.Function,

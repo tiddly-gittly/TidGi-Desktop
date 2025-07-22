@@ -4,8 +4,7 @@ import { AgentInstanceMessage } from '@services/agentInstance/interface';
 import { AIStreamResponse } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
-import { IPrompt } from '../promptConcatSchema';
-import { Plugin } from '../promptConcatSchema/plugin';
+import type { IPrompt, Plugin } from '../promptConcat/promptConcatSchema/';
 
 /**
  * Context passed to plugin hooks
@@ -88,9 +87,40 @@ export interface AIResponseContext {
 }
 
 /**
+ * User message context for new message arrival
+ */
+export interface UserMessageContext {
+  /** Handler context */
+  handlerContext: AgentHandlerContext;
+  /** User message content */
+  content: { text: string; file?: File };
+  /** Generated message ID */
+  messageId: string;
+  /** Timestamp for the message */
+  timestamp: Date;
+}
+
+/**
+ * Agent status context for status updates
+ */
+export interface AgentStatusContext {
+  /** Handler context */
+  handlerContext: AgentHandlerContext;
+  /** New status state */
+  status: {
+    state: 'working' | 'completed' | 'failed' | 'canceled';
+    modified: Date;
+  };
+}
+
+/**
  * Handler hooks for basicPromptConcatHandler extensibility
  */
 export interface HandlerHooks {
+  /** Called when user sends a new message */
+  userMessageReceived: AsyncSeriesHook<[UserMessageContext]>;
+  /** Called when agent status changes */
+  agentStatusChanged: AsyncSeriesHook<[AgentStatusContext]>;
   /** Called when tool execution completes */
   toolExecuted: AsyncSeriesHook<[ToolExecutionContext]>;
   /** Called when AI response status updates (streaming) */

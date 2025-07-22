@@ -17,7 +17,7 @@ import { logger } from '@services/libs/log';
 import { CoreMessage } from 'ai';
 import { cloneDeep } from 'lodash';
 import { AgentInstanceMessage } from '../interface';
-import { builtInPlugins, initializePluginSystem, PromptConcatHookContext, PromptConcatHooks } from './plugins';
+import { builtInPlugins, initializePluginSystem, PromptConcatHookContext, PromptConcatHooks } from '../plugins';
 import { AgentPromptDescription, IPrompt } from './promptConcatSchema';
 import { Plugin } from './promptConcatSchema/plugin';
 

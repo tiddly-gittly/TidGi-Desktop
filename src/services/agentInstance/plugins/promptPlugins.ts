@@ -4,8 +4,8 @@
  */
 import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
-import { findPromptById } from '../promptConcat';
-import { IPrompt } from '../promptConcatSchema';
+import { findPromptById } from '../promptConcat/promptConcat';
+import { IPrompt } from '../promptConcat/promptConcatSchema';
 import { AgentResponse, PromptConcatPlugin, ResponseHookContext } from './types';
 
 /**

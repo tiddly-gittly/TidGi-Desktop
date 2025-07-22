@@ -8,7 +8,7 @@ import { DataSource, Repository } from 'typeorm';
 import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { basicPromptConcatHandler } from '@services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler';
 import { AgentHandler, AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
-import { initializePluginSystem } from '@services/agentInstance/promptConcat/plugins';
+import { initializePluginSystem } from '@services/agentInstance/plugins';
 import { promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { promptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
@@ -250,7 +250,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       // Notify subscribers about the updates with the already available data
       // This avoids another database query within notifyAgentUpdate
-      await this.notifyAgentUpdate(agentId, updatedAgent);
+      this.notifyAgentUpdate(agentId, updatedAgent);
 
       return updatedAgent;
     } catch (error) {
@@ -348,32 +348,6 @@ export class AgentInstanceService implements IAgentInstanceService {
         throw new Error(`Agent instance not found: ${agentId}`);
       }
 
-      // Create user message
-      const messageId = nanoid();
-      const now = new Date();
-      // Use helper function to create message with proper structure
-      const userMessage = createAgentMessage(messageId, agentId, {
-        role: 'user',
-        content: content.text,
-        contentType: 'text/plain',
-        metadata: content.file ? { file: content.file } : undefined,
-      });
-
-      // Save user message
-      await this.agentMessageRepository!.save(this.agentMessageRepository!.create(userMessage));
-
-      // Update agent status to "working"
-      logger.debug(`Sending message to agent ${agentId}, appending user message to ${agentInstance.messages.length} existing messages`, { method: 'sendMsgToAgent' });
-
-      // Update agent and use the returned value directly instead of querying again
-      const updatedAgent = await this.updateAgent(agentId, {
-        status: {
-          state: 'working',
-          modified: now,
-        },
-        messages: [...agentInstance.messages, userMessage], // Append message at the end to maintain chronological order (ASC)
-      });
-
       // Get agent configuration
       const agentDefinition = await this.agentDefinitionService.getAgentDef(agentInstance.agentDefId);
       if (!agentDefinition) {
@@ -390,11 +364,28 @@ export class AgentInstanceService implements IAgentInstanceService {
         throw new Error(`Handler not found: ${handlerId}`);
       }
 
-      // Create handler context
+      // Create temporary user message for handler processing - plugins will handle actual persistence
+      const messageId = nanoid();
+      const now = new Date();
+      const userMessage = createAgentMessage(messageId, agentId, {
+        role: 'user',
+        content: content.text,
+        contentType: 'text/plain',
+        metadata: content.file ? { file: content.file } : undefined,
+      });
+
+      // Create handler context with temporary message added for processing
       const cancelToken = { value: false };
       this.cancelTokenMap.set(agentId, cancelToken);
       const handlerContext: AgentHandlerContext = {
-        agent: updatedAgent,
+        agent: {
+          ...agentInstance,
+          messages: [...agentInstance.messages, userMessage],
+          status: {
+            state: 'working',
+            modified: now,
+          },
+        },
         agentDef: agentDefinition,
         isCancelled: () => cancelToken.value,
       };
@@ -421,24 +412,11 @@ export class AgentInstanceService implements IAgentInstanceService {
             }
           }
 
-          // Update agent status only when state changes or on first message
-          const isFirstMessage = !lastResult;
-          if (isFirstMessage || lastResult?.state !== result.state) {
-            const updateData: Partial<AgentInstance> = {
-              status: {
-                state: result.state,
-                modified: new Date(),
-              },
-            };
-
-            await this.updateAgent(agentId, updateData);
-          }
-
           // Store the last result for completion handling
           lastResult = result;
         }
 
-        // Handle stream completion without fetching agent again
+        // Handle stream completion
         if (lastResult?.message) {
           // Complete the message stream directly using the last message from the generator
           const statusKey = `${agentId}:${lastResult.message.id}`;
@@ -464,33 +442,14 @@ export class AgentInstanceService implements IAgentInstanceService {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error(`Agent handler execution failed: ${errorMessage}`);
 
-        // Update agent status to failed
-        await this.updateAgent(agentId, {
-          status: {
-            state: 'failed',
-            modified: new Date(),
-          },
-        });
-
+        // Notify about failed status via plugins instead of direct database update
         // Remove cancel token
         this.cancelTokenMap.delete(agentId);
+        throw error;
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Failed to send message to agent: ${errorMessage}`);
-
-      // Try to update status to failed
-      try {
-        await this.updateAgent(agentId, {
-          status: {
-            state: 'failed',
-            modified: new Date(),
-          },
-        });
-      } catch {
-        // Ignore errors here since the main error is already being handled
-      }
-
       throw error;
     }
   }
@@ -599,7 +558,7 @@ export class AgentInstanceService implements IAgentInstanceService {
               this.statusSubjects.get(statusKey)?.next(status);
             }
           }
-        }).catch(error => {
+        }).catch((error: unknown) => {
           logger.error(`Failed to get initial status for message: ${String(error)}`);
         });
       }
@@ -614,7 +573,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Try to get initial data
       this.getAgent(agentId).then(agent => {
         this.agentInstanceSubjects.get(agentId)?.next(agent);
-      }).catch(error => {
+      }).catch((error: unknown) => {
         logger.error(`Failed to get initial agent data: ${String(error)}`);
       });
     }
@@ -627,7 +586,7 @@ export class AgentInstanceService implements IAgentInstanceService {
    * @param agentId Agent ID
    * @param agentData Agent data to use for notification
    */
-  private async notifyAgentUpdate(agentId: string, agentData: AgentInstance): Promise<void> {
+  private notifyAgentUpdate(agentId: string, agentData: AgentInstance): void {
     try {
       // Only notify if there are active subscriptions
       if (this.agentInstanceSubjects.has(agentId)) {
@@ -638,6 +597,25 @@ export class AgentInstanceService implements IAgentInstanceService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Failed to notify agent update: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Save user message to database
+   * Made public so plugins can use it for message persistence
+   */
+  public async saveUserMessage(userMessage: AgentInstanceMessage): Promise<void> {
+    this.ensureRepositories();
+    try {
+      await this.agentMessageRepository!.save(this.agentMessageRepository!.create(userMessage));
+      logger.debug('User message saved to database', {
+        messageId: userMessage.id,
+        agentId: userMessage.agentId,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`Failed to save user message: ${errorMessage}`);
+      throw error;
     }
   }
 
@@ -722,7 +700,7 @@ export class AgentInstanceService implements IAgentInstanceService {
                   // Construct agent data from entity directly without additional query
                   const updatedAgent: AgentInstance = {
                     ...pick(agentEntity, AGENT_INSTANCE_FIELDS),
-                    messages: agentEntity.messages || [],
+                    messages: agentEntity.messages,
                   };
 
                   // Notify subscribers directly without additional queries
@@ -761,7 +739,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   public concatPrompt(promptDescription: Pick<AgentPromptDescription, 'handlerConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState> {
     logger.debug('AgentInstanceService.concatPrompt called', {
       hasPromptConfig: !!promptDescription.handlerConfig,
-      promptConfigKeys: Object.keys(promptDescription.handlerConfig || {}),
+      promptConfigKeys: Object.keys(promptDescription.handlerConfig),
       messagesCount: messages.length,
     });
 
@@ -796,7 +774,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         }
       };
 
-      processStream();
+      void processStream();
     });
   }
 
@@ -806,7 +784,7 @@ export class AgentInstanceService implements IAgentInstanceService {
    * @param handlerId ID of the handler to get schema for
    * @returns JSON Schema for the handler configuration
    */
-  public async getHandlerConfigSchema(handlerId: string): Promise<Record<string, unknown>> {
+  public getHandlerConfigSchema(handlerId: string): Record<string, unknown> {
     try {
       logger.debug('AgentInstanceService.getHandlerConfigSchema called', { handlerId });
       // Check if we have a schema for this handler

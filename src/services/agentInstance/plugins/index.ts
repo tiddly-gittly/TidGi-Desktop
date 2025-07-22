@@ -57,6 +57,8 @@ export function initializePluginSystem(): void {
  */
 export function createHandlerHooks(): HandlerHooks {
   return {
+    userMessageReceived: new AsyncSeriesHook(['context']),
+    agentStatusChanged: new AsyncSeriesHook(['context']),
     toolExecuted: new AsyncSeriesHook(['context']),
     responseUpdate: new AsyncSeriesHook(['context']),
     responseComplete: new AsyncSeriesHook(['context']),
@@ -67,6 +69,14 @@ export function createHandlerHooks(): HandlerHooks {
  * Register built-in handler plugins
  */
 export function registerBuiltInHandlerPlugins(hooks: HandlerHooks): void {
+  // Import and register persistence plugin first (handles database operations)
+  import('./persistencePlugin').then(module => {
+    module.persistencePlugin(hooks);
+    logger.debug('Registered persistencePlugin');
+  }).catch((error: unknown) => {
+    logger.error('Failed to register persistencePlugin:', error);
+  });
+
   // Import and register handler plugins
   import('./toolCallingUnifiedPlugin').then(module => {
     module.toolExecutionHistoryPlugin(hooks);
@@ -75,11 +85,11 @@ export function registerBuiltInHandlerPlugins(hooks: HandlerHooks): void {
     logger.error('Failed to register toolExecutionHistoryPlugin:', error);
   });
 
-  import('./aiResponseHistoryPlugin').then(module => {
-    module.aiResponseHistoryPlugin(hooks);
-    logger.debug('Registered aiResponseHistoryPlugin');
+  import('./enhancedAiResponseHistoryPlugin').then(module => {
+    module.enhancedAiResponseHistoryPlugin(hooks);
+    logger.debug('Registered enhancedAiResponseHistoryPlugin');
   }).catch((error: unknown) => {
-    logger.error('Failed to register aiResponseHistoryPlugin:', error);
+    logger.error('Failed to register enhancedAiResponseHistoryPlugin:', error);
   });
 
   logger.debug('Built-in handler plugins registration initiated');

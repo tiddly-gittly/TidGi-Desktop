@@ -8,8 +8,8 @@ import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
 import { AgentHandlerContext } from '../buildInAgentHandlers/type';
 import { AgentInstanceMessage } from '../interface';
-import { builtInPlugins, PromptConcatHooks } from './plugins';
-import { AgentResponse, ResponseHookContext } from './plugins/types';
+import { builtInPlugins, PromptConcatHooks } from '../plugins';
+import { AgentResponse, ResponseHookContext } from '../plugins/types';
 import { AgentPromptDescription, HandlerConfig } from './promptConcatSchema';
 
 /**

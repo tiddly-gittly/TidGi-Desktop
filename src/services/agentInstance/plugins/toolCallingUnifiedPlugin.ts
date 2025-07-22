@@ -6,7 +6,7 @@ import { matchToolCalling } from '@services/agentDefinition/responsePatternUtili
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { AgentInstanceMessage, IAgentInstanceService } from '../../interface';
+import { AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { HandlerPlugin, PromptConcatPlugin, ResponseHookContext, ToolExecutionContext } from './types';
 
 /**

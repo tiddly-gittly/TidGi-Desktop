@@ -1,20 +1,67 @@
 /**
- * AI response history plugin
- * Handles AI response streaming updates and completion
+ * Enhanced AI response and message history plugin
+ * Handles AI response streaming updates, completion, user message processing, and status updates
  */
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { AgentInstanceMessage, IAgentInstanceService } from '../../interface';
-import { AIResponseContext, HandlerPlugin } from './types';
+import { AgentInstanceMessage, IAgentInstanceService } from '../interface';
+import { AgentStatusContext, AIResponseContext, HandlerPlugin, UserMessageContext } from './types';
 
 /**
- * AI response history plugin
+ * Enhanced AI response history plugin
  * Manages AI response messages in conversation history during streaming and completion
+ * Also handles user message processing and status updates
  */
-export const aiResponseHistoryPlugin: HandlerPlugin = (hooks) => {
+export const enhancedAiResponseHistoryPlugin: HandlerPlugin = (hooks) => {
+  // Handle user message processing
+  hooks.userMessageReceived.tapAsync('enhancedAiResponseHistoryPlugin', (context: UserMessageContext, callback) => {
+    try {
+      const { handlerContext, messageId } = context;
+
+      logger.debug('User message received in enhanced AI response history plugin', {
+        messageId,
+        agentId: handlerContext.agent.id,
+      });
+
+      // User message has already been processed by persistencePlugin
+      // This hook can be used for additional processing like analytics, notifications, etc.
+      callback();
+    } catch (error) {
+      logger.error('Enhanced AI response history plugin error in userMessageReceived', {
+        error: error instanceof Error ? error.message : String(error),
+        messageId: context.messageId,
+        agentId: context.handlerContext.agent.id,
+      });
+      callback();
+    }
+  });
+
+  // Handle agent status changes
+  hooks.agentStatusChanged.tapAsync('enhancedAiResponseHistoryPlugin', (context: AgentStatusContext, callback) => {
+    try {
+      const { handlerContext, status } = context;
+
+      logger.debug('Agent status changed in enhanced AI response history plugin', {
+        agentId: handlerContext.agent.id,
+        state: status.state,
+      });
+
+      // Status has already been updated by persistencePlugin
+      // This hook can be used for additional processing like notifications, analytics, etc.
+      callback();
+    } catch (error) {
+      logger.error('Enhanced AI response history plugin error in agentStatusChanged', {
+        error: error instanceof Error ? error.message : String(error),
+        agentId: context.handlerContext.agent.id,
+        status: context.status,
+      });
+      callback();
+    }
+  });
+
   // Handle AI response updates (streaming)
-  hooks.responseUpdate.tapAsync('aiResponseHistoryPlugin', (context: AIResponseContext, callback) => {
+  hooks.responseUpdate.tapAsync('enhancedAiResponseHistoryPlugin', (context: AIResponseContext, callback) => {
     try {
       const { handlerContext, response } = context;
 
@@ -60,7 +107,7 @@ export const aiResponseHistoryPlugin: HandlerPlugin = (hooks) => {
 
       callback();
     } catch (error) {
-      logger.error('AI response history plugin error in responseUpdate', {
+      logger.error('Enhanced AI response history plugin error in responseUpdate', {
         error: error instanceof Error ? error.message : String(error),
       });
       callback();
@@ -68,7 +115,7 @@ export const aiResponseHistoryPlugin: HandlerPlugin = (hooks) => {
   });
 
   // Handle AI response completion
-  hooks.responseComplete.tapAsync('aiResponseHistoryPlugin', (context: AIResponseContext, callback) => {
+  hooks.responseComplete.tapAsync('enhancedAiResponseHistoryPlugin', (context: AIResponseContext, callback) => {
     try {
       const { handlerContext, response } = context;
 
@@ -131,7 +178,7 @@ export const aiResponseHistoryPlugin: HandlerPlugin = (hooks) => {
 
       callback();
     } catch (error) {
-      logger.error('AI response history plugin error in responseComplete', {
+      logger.error('Enhanced AI response history plugin error in responseComplete', {
         error: error instanceof Error ? error.message : String(error),
       });
       callback();
