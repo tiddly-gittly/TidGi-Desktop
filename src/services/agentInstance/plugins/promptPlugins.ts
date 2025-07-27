@@ -99,15 +99,6 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
       return;
     }
 
-    // Early return if no responses
-    if (!responses || responses.length === 0) {
-      logger.debug('Skipping full replacement - no responses', {
-        pluginId: pluginConfig.id,
-      });
-      callback();
-      return;
-    }
-
     // Find the target response by ID
     const found = responses.find((r: AgentResponse) => r.id === targetId);
 
@@ -199,95 +190,6 @@ export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
     });
 
     callback();
-  });
-};
-
-/**
- * Retrieval Augmented Generation plugin
- * Retrieves content from wiki or other sources
- */
-export const retrievalAugmentedGenerationPlugin: PromptConcatPlugin = (hooks) => {
-  hooks.processPrompts.tapAsync('retrievalAugmentedGenerationPlugin', async (context, callback) => {
-    const { pluginConfig, prompts } = context;
-
-    if (pluginConfig.pluginId !== 'retrievalAugmentedGeneration' || !pluginConfig.retrievalAugmentedGenerationParam) {
-      callback();
-      return;
-    }
-
-    const parameter = pluginConfig.retrievalAugmentedGenerationParam;
-    const { targetId, position, sourceType, wikiParam } = parameter;
-    const found = findPromptById(prompts, targetId);
-
-    if (!found) {
-      logger.warn('Target prompt not found for retrievalAugmentedGeneration', {
-        targetId,
-        pluginId: pluginConfig.id,
-      });
-      callback();
-      return;
-    }
-
-    try {
-      let content = '';
-
-      if (sourceType === 'wiki' && wikiParam) {
-        // TODO: Implement actual wiki retrieval
-        // For now, create a placeholder that could be replaced with actual wiki content
-        content = `Wiki content from ${wikiParam.workspaceName} with filter: ${wikiParam.filter}
-        
-This is where the actual wiki content would be retrieved and injected.
-The content would be fetched using the wiki workspace service and filtered according to the provided filter criteria.`;
-
-        logger.debug('RAG plugin - wiki content placeholder created', {
-          workspaceName: wikiParam.workspaceName,
-          filter: wikiParam.filter,
-          pluginId: pluginConfig.id,
-        });
-      }
-
-      const newPart: IPrompt = {
-        id: `rag-${pluginConfig.id}-${Date.now()}`,
-        caption: pluginConfig.caption || 'RAG Content',
-        text: content,
-      };
-
-      // Insert based on position
-      switch (position) {
-        case 'before':
-          found.parent.splice(found.index, 0, newPart);
-          break;
-        case 'after':
-          found.parent.splice(found.index + 1, 0, newPart);
-          break;
-        case 'relative':
-          if (!found.prompt.children) {
-            found.prompt.children = [];
-          }
-          found.prompt.children.push(newPart);
-          break;
-        case 'absolute':
-          // For absolute positioning, we'd need additional parameters
-          found.parent.splice(found.index + 1, 0, newPart);
-          break;
-        default:
-          logger.warn(`Unknown position: ${position as string}`);
-          callback();
-          return;
-      }
-
-      logger.debug('RAG plugin completed', {
-        targetId,
-        position,
-        sourceType,
-        contentLength: content.length,
-      });
-
-      callback();
-    } catch (error) {
-      logger.error('RAG plugin error', error);
-      callback();
-    }
   });
 };
 

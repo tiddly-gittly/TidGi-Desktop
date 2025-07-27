@@ -27,16 +27,17 @@ export function registerAllBuiltInPlugins(): void {
   Promise.all([
     import('./promptPlugins'),
     import('./responsePlugins'),
-    import('./toolCallingUnifiedPlugin'),
-  ]).then(([promptPluginsModule, responsePluginsModule, toolCallingModule]) => {
+    import('./wikiSearchPlugin'),
+  ]).then(([promptPluginsModule, responsePluginsModule, wikiSearchModule]) => {
     // Prompt processing plugins
     registerBuiltInPlugin('fullReplacement', promptPluginsModule.fullReplacementPlugin);
     registerBuiltInPlugin('dynamicPosition', promptPluginsModule.dynamicPositionPlugin);
     registerBuiltInPlugin('modelContextProtocol', promptPluginsModule.modelContextProtocolPlugin);
-    registerBuiltInPlugin('retrievalAugmentedGeneration', promptPluginsModule.retrievalAugmentedGenerationPlugin);
+    
+    // Wiki search plugin - handles both prompt and response processing
+    registerBuiltInPlugin('wikiSearch', wikiSearchModule.wikiSearchPlugin);
 
     // Response processing plugins
-    registerBuiltInPlugin('toolCalling', toolCallingModule.toolCallingResponsePlugin);
     registerBuiltInPlugin('autoReply', responsePluginsModule.autoReplyPlugin);
 
     logger.debug('All built-in plugins registered successfully');
@@ -77,19 +78,12 @@ export function registerBuiltInHandlerPlugins(hooks: HandlerHooks): void {
     logger.error('Failed to register persistencePlugin:', error);
   });
 
-  // Import and register handler plugins
-  import('./toolCallingUnifiedPlugin').then(module => {
-    module.toolExecutionHistoryPlugin(hooks);
-    logger.debug('Registered toolExecutionHistoryPlugin');
+  // Import and register wiki search handler plugin
+  import('./wikiSearchPlugin').then(module => {
+    module.wikiSearchHandlerPlugin(hooks);
+    logger.debug('Registered wikiSearchHandlerPlugin');
   }).catch((error: unknown) => {
-    logger.error('Failed to register toolExecutionHistoryPlugin:', error);
-  });
-
-  import('./enhancedAiResponseHistoryPlugin').then(module => {
-    module.enhancedAiResponseHistoryPlugin(hooks);
-    logger.debug('Registered enhancedAiResponseHistoryPlugin');
-  }).catch((error: unknown) => {
-    logger.error('Failed to register enhancedAiResponseHistoryPlugin:', error);
+    logger.error('Failed to register wikiSearchHandlerPlugin:', error);
   });
 
   logger.debug('Built-in handler plugins registration initiated');

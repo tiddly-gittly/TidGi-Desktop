@@ -102,6 +102,19 @@ export const RetrievalAugmentedGenerationParameterSchema = z.object({
     title: t('Schema.RAG.WikiParamTitle'),
     description: t('Schema.RAG.WikiParam'),
   }),
+  toolListPosition: z.object({
+    targetId: z.string().meta({
+      title: t('Schema.RAG.ToolListPosition.TargetIdTitle'),
+      description: t('Schema.RAG.ToolListPosition.TargetId'),
+    }),
+    position: z.enum(['before', 'after']).meta({
+      title: t('Schema.RAG.ToolListPosition.PositionTitle'),
+      description: t('Schema.RAG.ToolListPosition.Position'),
+    }),
+  }).optional().meta({
+    title: t('Schema.RAG.ToolListPositionTitle'),
+    description: t('Schema.RAG.ToolListPosition'),
+  }),
   trigger: TriggerSchema.optional().meta({
     title: t('Schema.RAG.TriggerTitle'),
     description: t('Schema.RAG.Trigger'),
@@ -198,6 +211,7 @@ export const PluginSchema = z.object({
     'fullReplacement',
     'dynamicPosition',
     'retrievalAugmentedGeneration',
+    'wikiSearch',
     'modelContextProtocol',
     'toolCalling',
     'autoReply',

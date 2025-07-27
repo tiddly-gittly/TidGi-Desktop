@@ -1,4 +1,3 @@
-import { executeTool } from '@services/agentDefinition/toolExecutor';
 import { container } from '@services/container';
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
@@ -51,18 +50,14 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
   const isNewUserMessage = lastUserMessage.role === 'user' && !lastUserMessage.metadata?.processed;
 
   if (isNewUserMessage) {
-    // Extract message ID and content for plugin processing
-    const messageId = lastUserMessage.id;
-    const userContent = {
-      text: lastUserMessage.content,
-      file: lastUserMessage.metadata?.file as File | undefined,
-    };
-
     // Trigger user message received hook
     await handlerHooks.userMessageReceived.promise({
       handlerContext: context,
-      content: userContent,
-      messageId,
+      content: {
+        text: lastUserMessage.content,
+        file: lastUserMessage.metadata?.file as File | undefined,
+      },
+      messageId: lastUserMessage.id,
       timestamp: lastUserMessage.modified || new Date(),
     });
 
@@ -79,10 +74,6 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
     });
   }
 
-  // Get service instances
-  const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
-  const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-
   if (!lastUserMessage.content || lastUserMessage.role !== 'user') {
     logger.warn('No valid user message found', { method: 'basicPromptConcatHandler' });
     yield completed('No user message found to process.', context);
@@ -90,6 +81,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
   }
 
   // Ensure AI configuration exists
+  const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
   const aiApiConfig: AiAPIConfig = merge(
     {},
     await externalAPIService.getAIConfig(),
@@ -113,6 +105,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
       handlerConfig,
     };
 
+    const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
     // Generate AI response
     // Function to process a single LLM call with retry support
     async function* processLLMCall(_userMessage: string): AsyncGenerator<AgentInstanceLatestStatus> {
@@ -207,41 +200,6 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                 // Yield current response as working state
                 yield working(processedResult.processedResponse, context, currentRequestId);
 
-                // Handle tool execution if requested by plugins
-                if (processedResult.toolCallInfo?.found && processedResult.toolCallInfo.toolId && processedResult.toolCallInfo.parameters) {
-                  try {
-                    logger.debug('Executing tool requested by plugin', {
-                      toolId: processedResult.toolCallInfo.toolId,
-                      parameters: processedResult.toolCallInfo.parameters,
-                    });
-
-                    const toolResult = await executeTool(
-                      processedResult.toolCallInfo.toolId,
-                      processedResult.toolCallInfo.parameters,
-                      {
-                        workspaceId: context.agent.id,
-                        metadata: { messageId: context.agent.messages[context.agent.messages.length - 1].id },
-                      },
-                    );
-
-                    // Delegate tool result processing to handler hooks
-                    await handlerHooks.toolExecuted.promise({
-                      handlerContext: context,
-                      toolResult,
-                      toolInfo: {
-                        toolId: processedResult.toolCallInfo.toolId,
-                        parameters: processedResult.toolCallInfo.parameters,
-                        originalText: processedResult.toolCallInfo.originalText,
-                      },
-                      requestId: currentRequestId,
-                    });
-                  } catch (toolError) {
-                    logger.debug('Tool execution failed', {
-                      error: toolError instanceof Error ? toolError.message : String(toolError),
-                      toolId: processedResult.toolCallInfo.toolId,
-                    });
-                  }
-                }
 
                 // Continue with new round - use provided message or last user message
                 const nextUserMessage = processedResult.newUserMessage || lastUserMessage?.content;

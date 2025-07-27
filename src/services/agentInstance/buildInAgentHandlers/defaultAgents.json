@@ -76,43 +76,15 @@
           "forbidOverrides": true
         },
         {
-          "id": "a0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
-          "caption": "世界书（系统提示词）",
+          "id": "d0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
+          "caption": "Wiki工具和搜索结果",
+          "description": "自动在提示词中注入可用的Wiki工具信息，并将工具执行结果插入到下一轮对话中",
           "pluginId": "retrievalAugmentedGeneration",
           "retrievalAugmentedGenerationParam": {
-            "position": "relative",
-            "targetId": "system",
-            "bottom": 0,
             "sourceType": "wiki",
-            "wikiParam": {
-              "workspaceName": "wiki1",
-              "filter": "[[Title1]]"
-            },
-            "trigger": {
-              "search": "人名xxx"
-            }
-          }
-        },
-        {
-          "id": "b0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
-          "caption": "世界书（用户提示词）",
-          "pluginId": "retrievalAugmentedGeneration",
-          "retrievalAugmentedGenerationParam": {
-            "position": "relative",
-            "targetId": "system",
-            "bottom": 0,
-            "sourceType": "wiki",
-            "wikiParam": {
-              "workspaceName": "wiki",
-              "filter": "[[Title1]]"
-            },
-            "trigger": {
-              "randomChance": 0.5,
-              "filter": "[search[人名xxx]!search[不许]regexp[(?i)Wiki]]"
-            },
-            "removal": {
-              "expireAfterChatRound": 2,
-              "coolDownChatRoundAfterLastShown": 2
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
             }
           }
         },
@@ -135,22 +107,6 @@
           }
         },
         {
-          "id": "d0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
-          "caption": "Wiki工具和搜索结果",
-          "description": "自动在提示词中注入可用的Wiki工具信息，并将工具执行结果插入到下一轮对话中",
-          "pluginId": "retrievalAugmentedGeneration",
-          "retrievalAugmentedGenerationParam": {
-            "sourceType": "wiki",
-            "toolListPosition": {
-              "position": "after",
-              "targetId": "default-before-tool"
-            },
-            "trigger": {
-              "randomChance": 1.0
-            }
-          }
-        },
-        {
           "id": "a0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
           "pluginId": "fullReplacement",
           "fullReplacementParam": {
@@ -159,14 +115,6 @@
           },
           "caption": "语言模型最新回复",
           "forbidOverrides": true
-        },
-        {
-          "id": "a0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
-          "pluginId": "toolCalling",
-          "toolCallingParam": {
-            "targetId": "default-response",
-            "match": "/<functions_result>(.+)</functions_result>/g"
-          }
         },
         {
           "id": "b1f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",

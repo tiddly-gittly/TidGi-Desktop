@@ -3,11 +3,9 @@ import { injectable } from 'inversify';
 import { pick } from 'lodash';
 import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
-import z from 'zod/v4';
 
 import { IAgentBrowserService } from '@services/agentBrowser/interface';
 import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
-import { globalToolRegistry } from '@services/agentInstance/buildInAgentTools';
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
@@ -313,20 +311,32 @@ export class AgentDefinitionService implements IAgentDefinitionService {
 
   /**
    * Get all available tools that can be registered
+   * @deprecated Tools are now managed by individual plugins
    */
   public getAvailableTools() {
     try {
-      const allTools = globalToolRegistry.getAllTools();
-      return Promise.resolve(
-        allTools.map(tool =>
-          optimizeToolForLLM({
-            id: tool.id,
-            name: tool.name,
-            description: tool.description,
-            parameterSchema: z.toJSONSchema(tool.parameterSchema),
-          })
-        ),
-      );
+      // Tools are now managed by individual plugins, return wiki search tool as example
+      const wikiSearchTool = optimizeToolForLLM({
+        id: 'wiki-search',
+        name: 'Wiki Search',
+        description: 'Search content in wiki workspaces',
+        parameterSchema: {
+          type: 'object',
+          properties: {
+            workspaceId: {
+              type: 'string',
+              description: 'The ID of the wiki workspace to search in',
+            },
+            query: {
+              type: 'string',
+              description: 'The search query',
+            },
+          },
+          required: ['workspaceId', 'query'],
+        },
+      });
+      
+      return Promise.resolve([wikiSearchTool]);
     } catch (error) {
       logger.error(`Failed to get available tools: ${error as Error}`);
       throw error;

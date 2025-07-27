@@ -8,7 +8,7 @@ import { DataSource, Repository } from 'typeorm';
 import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { basicPromptConcatHandler } from '@services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler';
 import { AgentHandler, AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
-import { initializePluginSystem } from '@services/agentInstance/plugins';
+import { createHandlerHooks, initializePluginSystem, registerBuiltInHandlerPlugins } from '@services/agentInstance/plugins';
 import { promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { promptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
@@ -50,6 +50,9 @@ export class AgentInstanceService implements IAgentInstanceService {
   private cancelTokenMap: Map<string, { value: boolean }> = new Map();
   private debouncedUpdateFunctions: Map<string, (message: AgentInstanceLatestStatus['message'] & { id: string }, agentId?: string) => void> = new Map();
 
+  // Handler hooks for plugin system
+  private handlerHooks = createHandlerHooks();
+
   public async initialize(): Promise<void> {
     try {
       // Database is already initialized in the agent definition service
@@ -73,6 +76,9 @@ export class AgentInstanceService implements IAgentInstanceService {
   private registerBuiltinHandlers(): void {
     // Initialize the new plugin system
     initializePluginSystem();
+
+    // Register built-in handler plugins
+    registerBuiltInHandlerPlugins(this.handlerHooks);
 
     // Register basic prompt concatenation handler with its schema
     this.registerHandler('basicPromptConcatHandler', basicPromptConcatHandler, promptConcatHandlerConfigJsonSchema);
@@ -335,9 +341,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Send message to agent and process response
-   */
   public async sendMsgToAgent(agentId: string, content: { text: string; file?: File }): Promise<void> {
     this.ensureRepositories();
 
@@ -347,6 +350,10 @@ export class AgentInstanceService implements IAgentInstanceService {
       if (!agentInstance) {
         throw new Error(`Agent instance not found: ${agentId}`);
       }
+
+      // Create user message
+      const messageId = nanoid();
+      const now = new Date();
 
       // Get agent configuration
       const agentDefinition = await this.agentDefinitionService.getAgentDef(agentInstance.agentDefId);
@@ -364,23 +371,13 @@ export class AgentInstanceService implements IAgentInstanceService {
         throw new Error(`Handler not found: ${handlerId}`);
       }
 
-      // Create temporary user message for handler processing - plugins will handle actual persistence
-      const messageId = nanoid();
-      const now = new Date();
-      const userMessage = createAgentMessage(messageId, agentId, {
-        role: 'user',
-        content: content.text,
-        contentType: 'text/plain',
-        metadata: content.file ? { file: content.file } : undefined,
-      });
-
       // Create handler context with temporary message added for processing
       const cancelToken = { value: false };
       this.cancelTokenMap.set(agentId, cancelToken);
       const handlerContext: AgentHandlerContext = {
         agent: {
           ...agentInstance,
-          messages: [...agentInstance.messages, userMessage],
+          messages: [...agentInstance.messages],
           status: {
             state: 'working',
             modified: now,
@@ -389,6 +386,22 @@ export class AgentInstanceService implements IAgentInstanceService {
         agentDef: agentDefinition,
         isCancelled: () => cancelToken.value,
       };
+
+      // Trigger userMessageReceived hook
+      await new Promise<void>((resolve, reject) => {
+        this.handlerHooks.userMessageReceived.callAsync({
+          handlerContext,
+          content,
+          messageId,
+          timestamp: now,
+        }, (error: Error | null) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve();
+          }
+        });
+      });
 
       try {
         // Create async generator
@@ -434,6 +447,23 @@ export class AgentInstanceService implements IAgentInstanceService {
               this.statusSubjects.delete(statusKey);
             }
           }
+
+          // Trigger agentStatusChanged hook for completion
+          await new Promise<void>((resolve, reject) => {
+            this.handlerHooks.agentStatusChanged.callAsync({
+              handlerContext,
+              status: {
+                state: 'completed',
+                modified: new Date(),
+              },
+            }, (error: Error | null) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve();
+              }
+            });
+          });
         }
 
         // Remove cancel token after generator completes
@@ -442,7 +472,19 @@ export class AgentInstanceService implements IAgentInstanceService {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error(`Agent handler execution failed: ${errorMessage}`);
 
-        // Notify about failed status via plugins instead of direct database update
+        // Trigger agentStatusChanged hook for failure
+        await new Promise<void>((resolve) => {
+          this.handlerHooks.agentStatusChanged.callAsync({
+            handlerContext,
+            status: {
+              state: 'failed',
+              modified: new Date(),
+            },
+          }, () => {
+            resolve();
+          });
+        });
+
         // Remove cancel token
         this.cancelTokenMap.delete(agentId);
         throw error;
@@ -743,24 +785,14 @@ export class AgentInstanceService implements IAgentInstanceService {
       messagesCount: messages.length,
     });
 
-    return new Observable<PromptConcatStreamState>((subscriber) => {
+    return new Observable<PromptConcatStreamState>((observer) => {
       const processStream = async () => {
         try {
           const streamGenerator = promptConcatStream(promptDescription as AgentPromptDescription, messages);
-
           for await (const state of streamGenerator) {
-            logger.debug('AgentInstanceService.concatPrompt yielding state', {
-              step: state.step,
-              progress: state.progress,
-              isComplete: state.isComplete,
-              flatPromptsCount: state.flatPrompts.length,
-              currentPlugin: state.currentPlugin?.pluginId,
-            });
-
-            subscriber.next(state);
-
+            observer.next(state);
             if (state.isComplete) {
-              subscriber.complete();
+              observer.complete();
               break;
             }
           }
@@ -770,10 +802,9 @@ export class AgentInstanceService implements IAgentInstanceService {
             promptDescriptionId: (promptDescription as AgentPromptDescription).id,
             messagesCount: messages.length,
           });
-          subscriber.error(error);
+          observer.error(error);
         }
       };
-
       void processStream();
     });
   }

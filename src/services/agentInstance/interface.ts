@@ -108,7 +108,7 @@ export interface IAgentInstanceService {
   createAgent(agentDefinitionID?: string): Promise<AgentInstance>;
 
   /**
-   * Send a message or file to an agent instance.
+   * Send a message or file to an agent instance, and put response to observables. Persistence and tool calling is handled by the plugins.
    * @param agentId Agent ID
    * @param messageText Message text
    * @param file File to upload

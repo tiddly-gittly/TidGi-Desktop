@@ -217,24 +217,14 @@ export async function* promptConcatStream(
   agentConfig: Pick<AgentPromptDescription, 'handlerConfig'>,
   messages: AgentInstanceMessage[],
 ): AsyncGenerator<PromptConcatStreamState, PromptConcatStreamState, unknown> {
-  const messageId = messages[0]?.id || 'unknown';
-  logger.debug('Starting streaming prompt concatenation', {
-    method: 'promptConcatStream',
-    messageId,
-    messageCount: messages.length,
-  });
+  const promptConfigs = Array.isArray(agentConfig.handlerConfig.prompts) ? agentConfig.handlerConfig.prompts : [];
+  const pluginConfigs = Array.isArray(agentConfig.handlerConfig.plugins) ? agentConfig.handlerConfig.plugins : [];
+  const promptsCopy = cloneDeep(promptConfigs);
+  const sourcePaths = generateSourcePaths(promptsCopy, pluginConfigs);
 
-  const handlerConfig = agentConfig.handlerConfig || {};
-  const prompts = Array.isArray(handlerConfig.prompts) ? handlerConfig.prompts : [];
-  const plugins = Array.isArray(handlerConfig.plugins) ? handlerConfig.plugins : [];
-  const promptsCopy = cloneDeep(prompts);
-  const sourcePaths = generateSourcePaths(promptsCopy, plugins);
-
-  // Create hooks instance
   const hooks = new PromptConcatHooks();
-
   // Register plugins that match the configuration
-  for (const plugin of plugins) {
+  for (const plugin of pluginConfigs) {
     const builtInPlugin = builtInPlugins.get(plugin.pluginId);
     if (builtInPlugin) {
       hooks.registerPlugin(builtInPlugin);
@@ -243,33 +233,24 @@ export async function* promptConcatStream(
         pluginInstanceId: plugin.id,
       });
     } else {
-      logger.warn(`No built-in plugin found for pluginId: ${plugin.pluginId}`);
+      logger.info(`No built-in plugin found for pluginId: ${plugin.pluginId}`);
     }
   }
 
   // Process each plugin through hooks with streaming
   let modifiedPrompts = promptsCopy;
-  const totalSteps = plugins.length + 2; // plugins + finalize + flatten
+  const totalSteps = pluginConfigs.length + 2; // plugins + finalize + flatten
 
-  for (let index = 0; index < plugins.length; index++) {
-    const plugin = plugins[index];
+  for (let index = 0; index < pluginConfigs.length; index++) {
     const context: PromptConcatHookContext = {
       messages,
       prompts: modifiedPrompts,
-      pluginConfig: plugin,
+      pluginConfig: pluginConfigs[index],
       metadata: { sourcePaths },
     };
-
     try {
       const result = await hooks.processPrompts.promise(context);
       modifiedPrompts = result.prompts;
-
-      logger.debug('Plugin processed successfully', {
-        pluginId: plugin.pluginId,
-        pluginInstanceId: plugin.id,
-        promptCount: modifiedPrompts.length,
-      });
-
       // Yield intermediate state
       const intermediateFlat = flattenPrompts(modifiedPrompts);
       const messagesCopy = cloneDeep(messages);
@@ -283,14 +264,13 @@ export async function* promptConcatStream(
         processedPrompts: modifiedPrompts,
         flatPrompts: intermediateFlat,
         step: 'plugin',
-        currentPlugin: plugin,
+        currentPlugin: pluginConfigs[index],
         progress: (index + 1) / totalSteps,
         isComplete: false,
       };
     } catch (error) {
       logger.error('Plugin processing error', {
-        pluginId: plugin.pluginId,
-        pluginInstanceId: plugin.id,
+        pluginConfig: pluginConfigs[index],
         error,
       });
       // Continue processing other plugins even if one fails
@@ -302,7 +282,7 @@ export async function* promptConcatStream(
     processedPrompts: modifiedPrompts,
     flatPrompts: flattenPrompts(modifiedPrompts),
     step: 'finalize',
-    progress: (plugins.length + 1) / totalSteps,
+    progress: (pluginConfigs.length + 1) / totalSteps,
     isComplete: false,
   };
 
@@ -325,7 +305,7 @@ export async function* promptConcatStream(
     processedPrompts: modifiedPrompts,
     flatPrompts: flattenPrompts(modifiedPrompts),
     step: 'flatten',
-    progress: (plugins.length + 2) / totalSteps,
+    progress: (pluginConfigs.length + 2) / totalSteps,
     isComplete: false,
   };
 

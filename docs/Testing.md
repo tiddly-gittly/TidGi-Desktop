@@ -96,9 +96,11 @@ Object.defineProperty(window.observables.workspace, 'workspaces$', {
 
 **Centralize common mocks** in `src/__tests__/setup-vitest.ts`:
 
-- Window APIs (`window.service`, `window.remote`, `window.observables`)
+- Services from window APIs (`window.service`, `window.remote`, `window.observables`) and container APIs (`@services/container`)
 - Electron APIs (`ipcRenderer`, `shell`)
 - Common libraries (`react-i18next`)
+
+Most of services should be here. Only mock specific small set of service API in new test files.
 
 **Override in test files** only when you need test-specific data:
 
