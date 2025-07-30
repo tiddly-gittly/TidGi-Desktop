@@ -8,6 +8,9 @@ import { WikiChannel } from '@/constants/channels';
 import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
 import serviceIdentifier from '@services/serviceIdentifier';
 
+// Import defaultAgents configuration
+import defaultAgents from '../defaultAgents.json';
+
 // Mock the external services
 const mockWikiService = {
   wikiOperationInServer: vi.fn(),
@@ -39,56 +42,69 @@ vi.mock('@services/agentDefinition/responsePatternUtility', () => ({
 }));
 
 // Import plugin components for direct testing
-import { wikiSearchHandlerPlugin, wikiSearchPlugin } from '../../plugins/wikiSearchPlugin';
+import { createHandlerHooks } from '../../plugins/index';
+import { wikiSearchPlugin } from '../../plugins/wikiSearchPlugin';
 
 describe('WikiSearch Plugin Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Setup default mock responses
-    (mockWorkspaceService.getWorkspacesAsList as any).mockResolvedValue([
-      { id: 'test-wiki-1', name: 'Test Wiki 1', type: 'wiki' },
-      { id: 'test-wiki-2', name: 'Test Wiki 2', type: 'wiki' },
+    // Setup default mock responses with complete wiki workspace data
+    mockWorkspaceService.getWorkspacesAsList.mockResolvedValue([
+      {
+        id: 'test-wiki-1',
+        name: 'Test Wiki 1',
+        wikiFolderLocation: '/path/to/test-wiki-1',
+        homeUrl: 'http://localhost:5212/',
+        port: 5212,
+        isSubWiki: false,
+        mainWikiToLink: undefined,
+        tagName: '',
+        lastUrl: '',
+        active: true,
+        hibernated: false,
+        order: 0,
+        disableNotifications: false,
+        badgeCount: 0,
+        type: 'wiki' as const,
+      },
+      {
+        id: 'test-wiki-2',
+        name: 'Test Wiki 2',
+        wikiFolderLocation: '/path/to/test-wiki-2',
+        homeUrl: 'http://localhost:5213/',
+        port: 5213,
+        isSubWiki: false,
+        mainWikiToLink: undefined,
+        tagName: '',
+        lastUrl: '',
+        active: true,
+        hibernated: false,
+        order: 1,
+        disableNotifications: false,
+        badgeCount: 0,
+        type: 'wiki' as const,
+      },
     ]);
-    (mockWorkspaceService.exists as any).mockResolvedValue(true);
+    mockWorkspaceService.exists.mockResolvedValue(true);
   });
 
   describe('Complete Workflow Integration', () => {
     it('should complete full wiki search workflow: tool list -> tool execution -> response', async () => {
-      // Test data
-      const prompts = [
-        {
-          id: 'system-prompt',
-          text: 'You are a helpful assistant.',
-          caption: 'System prompt',
-          enabled: true,
-        },
-        {
-          id: 'tools-section',
-          text: 'Available tools:',
-          caption: 'Tools section',
-          enabled: true,
-        },
-      ];
+      // Use real agent config from defaultAgents.json
+      const exampleAgent = defaultAgents[0];
+      const handlerConfig = exampleAgent.handlerConfig;
 
-      const pluginConfig = {
-        id: 'wiki-search-plugin',
-        pluginId: 'wikiSearch' as const,
-        forbidOverrides: false,
-        retrievalAugmentedGenerationParam: {
-          position: 'after' as const,
-          targetId: 'system-prompt',
-          sourceType: 'wiki' as const,
-          toolListPosition: {
-            targetId: 'tools-section',
-            position: 'after' as const,
-          },
-        },
-      };
+      // Get the wiki search plugin configuration
+      const wikiPlugin = handlerConfig.plugins.find(p => p.pluginId === 'wikiSearch');
+      expect(wikiPlugin).toBeDefined();
+      if (!wikiPlugin) throw new Error('wikiPlugin not found');
+
+      const prompts = JSON.parse(JSON.stringify(handlerConfig.prompts));
 
       // Phase 1: Tool List Injection
       const promptContext = {
-        pluginConfig,
+        pluginConfig: wikiPlugin as any, // Cast to avoid type complexity in tests
         prompts,
         messages: [
           {
@@ -102,22 +118,13 @@ describe('WikiSearch Plugin Integration', () => {
         ],
       };
 
-      let toolListInjected = false;
-      const promptHooks = {
-        processPrompts: {
-          tapAsync: vi.fn(async (name: string, callback: (ctx: any, cb: () => void) => Promise<void>) => {
-            if (name === 'wikiSearchPlugin-toolList') {
-              await callback(promptContext, () => {
-                toolListInjected = true;
-              });
-            }
-          }),
-        },
-      };
+      const promptHooks = createHandlerHooks();
+      wikiSearchPlugin(promptHooks);
+      await promptHooks.processPrompts.promise(promptContext);
 
-      // Execute tool list injection
-      wikiSearchPlugin(promptHooks as any);
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // Check if tool was injected by looking for wiki tool in prompts
+      const promptTexts = JSON.stringify(promptContext.prompts);
+      const toolListInjected = promptTexts.includes('Test Wiki 1') && promptTexts.includes('wiki-search');
 
       expect(toolListInjected).toBe(true);
       expect(mockWorkspaceService.getWorkspacesAsList).toHaveBeenCalled();
@@ -138,7 +145,7 @@ describe('WikiSearch Plugin Integration', () => {
 
       // Mock wiki search results
       (mockWikiService.wikiOperationInServer as any).mockImplementation(
-        (channel: string, _workspaceId: string, args: string[]) => {
+        (channel: WikiChannel, _workspaceId: string, args: string[]) => {
           if (channel === WikiChannel.runFilter) {
             return Promise.resolve(['Important Note 1', 'Important Note 2']);
           }
@@ -160,19 +167,25 @@ describe('WikiSearch Plugin Integration', () => {
         handlerContext: {
           agent: {
             id: 'test-agent',
+            agentDefId: 'test-agent-def',
+            status: {
+              state: 'working' as const,
+              modified: new Date(),
+            },
+            created: new Date(),
             messages: [],
           },
+          agentDef: { id: 'test-agent-def' } as any,
+          isCancelled: () => false,
         },
         response: {
           status: 'done' as const,
           content: 'I will search for important content using wiki-search tool.',
+          requestId: 'test-request-123',
         },
         requestId: 'test-request',
-        pluginConfig: {
-          id: 'test-plugin',
-          pluginId: 'wikiSearch' as const,
-          forbidOverrides: false,
-        },
+        isFinal: true,
+        pluginConfig: wikiPlugin,
         prompts: [],
         messages: [],
         llmResponse: 'I will search for important content using wiki-search tool.',
@@ -180,29 +193,14 @@ describe('WikiSearch Plugin Integration', () => {
         actions: {} as any,
       };
 
-      let toolExecuted = false;
-      const responseHooks = {
-        responseComplete: {
-          tapAsync: vi.fn(async (name: string, callback: (ctx: any, cb: () => void) => Promise<void>) => {
-            if (name === 'wikiSearchHandlerPlugin') {
-              await callback(responseContext, () => {
-                toolExecuted = true;
-              });
-            }
-          }),
-        },
-        toolExecuted: {
-          callAsync: vi.fn((data: any, callback: (error: Error | null) => void) => {
-            callback(null);
-          }),
-        },
-      };
+      // Use real handler hooks
+      const responseHooks = createHandlerHooks();
 
-      // Execute tool execution
-      wikiSearchHandlerPlugin(responseHooks as any);
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Register the plugin
+      wikiSearchPlugin(responseHooks);
 
-      expect(toolExecuted).toBe(true);
+      // Execute the response complete hook
+      await responseHooks.responseComplete.promise(responseContext);
       expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(WikiChannel.runFilter, 'test-wiki-1', [
         '[tag[important]]',
       ]);
@@ -216,6 +214,14 @@ describe('WikiSearch Plugin Integration', () => {
     });
 
     it('should handle errors in wiki search gracefully', async () => {
+      // Use real agent config from defaultAgents.json
+      const exampleAgent = defaultAgents[0];
+      const handlerConfig = exampleAgent.handlerConfig;
+
+      // Get the wiki search plugin configuration
+      const wikiPlugin = handlerConfig.plugins.find(p => p.pluginId === 'wikiSearch');
+      expect(wikiPlugin).toBeDefined();
+
       // Mock tool calling with invalid workspace
       (matchToolCalling as any).mockReturnValue({
         found: true,
@@ -231,19 +237,25 @@ describe('WikiSearch Plugin Integration', () => {
         handlerContext: {
           agent: {
             id: 'test-agent',
+            agentDefId: 'test-agent-def',
+            status: {
+              state: 'working' as const,
+              modified: new Date(),
+            },
+            created: new Date(),
             messages: [],
           },
+          agentDef: { id: 'test-agent-def' } as any,
+          isCancelled: () => false,
         },
         response: {
           status: 'done' as const,
           content: 'Search in nonexistent wiki',
+          requestId: 'test-request-234',
         },
         requestId: 'test-request',
-        pluginConfig: {
-          id: 'test-plugin',
-          pluginId: 'wikiSearch' as const,
-          forbidOverrides: false,
-        },
+        isFinal: true,
+        pluginConfig: wikiPlugin,
         prompts: [],
         messages: [],
         llmResponse: 'Search in nonexistent wiki',
@@ -251,29 +263,14 @@ describe('WikiSearch Plugin Integration', () => {
         actions: {} as any,
       };
 
-      let errorHandled = false;
-      const responseHooks = {
-        responseComplete: {
-          tapAsync: vi.fn(async (name: string, callback: (ctx: any, cb: () => void) => Promise<void>) => {
-            if (name === 'wikiSearchHandlerPlugin') {
-              await callback(responseContext, () => {
-                errorHandled = true;
-              });
-            }
-          }),
-        },
-        toolExecuted: {
-          callAsync: vi.fn((data: any, callback: (error: Error | null) => void) => {
-            callback(null);
-          }),
-        },
-      };
+      // Use real handler hooks
+      const responseHooks = createHandlerHooks();
 
-      // Execute with error scenario
-      wikiSearchHandlerPlugin(responseHooks as any);
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Register the plugin
+      wikiSearchPlugin(responseHooks);
 
-      expect(errorHandled).toBe(true);
+      // Execute the response complete hook
+      await responseHooks.responseComplete.promise(responseContext);
 
       // Should still set up next round even with error
       expect(responseContext.actions.yieldNextRoundTo).toBe('self');

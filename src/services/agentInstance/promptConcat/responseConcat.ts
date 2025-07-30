@@ -8,7 +8,7 @@ import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
 import { AgentHandlerContext } from '../buildInAgentHandlers/type';
 import { AgentInstanceMessage } from '../interface';
-import { builtInPlugins, PromptConcatHooks } from '../plugins';
+import { builtInPlugins, createHandlerHooks } from '../plugins';
 import { AgentResponse, ResponseHookContext } from '../plugins/types';
 import { AgentPromptDescription, HandlerConfig } from './promptConcatSchema';
 
@@ -46,12 +46,12 @@ export async function responseConcat(
   let modifiedResponses: AgentResponse[] = responsesCopy;
 
   // Create hooks instance
-  const hooks = new PromptConcatHooks();
+  const hooks = createHandlerHooks();
   // Register all plugins from configuration
   for (const plugin of plugins) {
     const builtInPlugin = builtInPlugins.get(plugin.pluginId);
     if (builtInPlugin) {
-      hooks.registerPlugin(builtInPlugin);
+      builtInPlugin(hooks);
     } else {
       logger.warn(`No built-in plugin found for response pluginId: ${plugin.pluginId}`);
     }

@@ -3,56 +3,6 @@ import { z } from 'zod/v4';
 
 const t = identity;
 
-// Import parameter schemas from a consolidated location
-export const WikiParameterSchema = z.object({
-  workspaceName: z.string().meta({
-    title: t('Schema.Wiki.WorkspaceNameTitle'),
-    description: t('Schema.Wiki.WorkspaceName'),
-  }),
-  filter: z.string().meta({
-    title: t('Schema.Wiki.FilterTitle'),
-    description: t('Schema.Wiki.Filter'),
-  }),
-}).meta({
-  title: t('Schema.Wiki.Title'),
-  description: t('Schema.Wiki.Description'),
-});
-
-export const TriggerSchema = z.object({
-  search: z.string().optional().meta({
-    title: t('Schema.Trigger.SearchTitle'),
-    description: t('Schema.Trigger.Search'),
-  }),
-  randomChance: z.number().min(0).max(1).optional().meta({
-    title: t('Schema.Trigger.RandomChanceTitle'),
-    description: t('Schema.Trigger.RandomChance'),
-  }),
-  filter: z.string().optional().meta({
-    title: t('Schema.Trigger.FilterTitle'),
-    description: t('Schema.Trigger.Filter'),
-  }),
-  model: z.object({
-    preset: z.string().optional().meta({
-      title: t('Schema.Trigger.Model.PresetTitle'),
-      description: t('Schema.Trigger.Model.Preset'),
-    }),
-    system: z.string().optional().meta({
-      title: t('Schema.Trigger.Model.SystemTitle'),
-      description: t('Schema.Trigger.Model.System'),
-    }),
-    user: z.string().optional().meta({
-      title: t('Schema.Trigger.Model.UserTitle'),
-      description: t('Schema.Trigger.Model.User'),
-    }),
-  }).optional().meta({
-    title: t('Schema.Trigger.Model.Title'),
-    description: t('Schema.Trigger.Model.Description'),
-  }),
-}).meta({
-  title: t('Schema.Trigger.Title'),
-  description: t('Schema.Trigger.Description'),
-});
-
 export const FullReplacementParameterSchema = z.object({
   targetId: z.string().meta({
     title: t('Schema.FullReplacement.TargetIdTitle'),
@@ -81,7 +31,7 @@ export const DynamicPositionParameterSchema = z.object({
   description: t('Schema.Position.Description'),
 });
 
-export const RetrievalAugmentedGenerationParameterSchema = z.object({
+export const WikiSearchParameterSchema = z.object({
   position: z.enum(['relative', 'absolute', 'before', 'after']).meta({
     title: t('Schema.Position.TypeTitle'),
     description: t('Schema.Position.Type'),
@@ -95,33 +45,25 @@ export const RetrievalAugmentedGenerationParameterSchema = z.object({
     description: t('Schema.Position.Bottom'),
   }),
   sourceType: z.enum(['wiki']).meta({
-    title: t('Schema.RAG.SourceTypeTitle'),
-    description: t('Schema.RAG.SourceType'),
-  }),
-  wikiParam: WikiParameterSchema.optional().meta({
-    title: t('Schema.RAG.WikiParamTitle'),
-    description: t('Schema.RAG.WikiParam'),
+    title: t('Schema.WikiSearch.SourceTypeTitle'),
+    description: t('Schema.WikiSearch.SourceType'),
   }),
   toolListPosition: z.object({
     targetId: z.string().meta({
-      title: t('Schema.RAG.ToolListPosition.TargetIdTitle'),
-      description: t('Schema.RAG.ToolListPosition.TargetId'),
+      title: t('Schema.WikiSearch.ToolListPosition.TargetIdTitle'),
+      description: t('Schema.WikiSearch.ToolListPosition.TargetId'),
     }),
     position: z.enum(['before', 'after']).meta({
-      title: t('Schema.RAG.ToolListPosition.PositionTitle'),
-      description: t('Schema.RAG.ToolListPosition.Position'),
+      title: t('Schema.WikiSearch.ToolListPosition.PositionTitle'),
+      description: t('Schema.WikiSearch.ToolListPosition.Position'),
     }),
   }).optional().meta({
-    title: t('Schema.RAG.ToolListPositionTitle'),
-    description: t('Schema.RAG.ToolListPosition'),
-  }),
-  trigger: TriggerSchema.optional().meta({
-    title: t('Schema.RAG.TriggerTitle'),
-    description: t('Schema.RAG.Trigger'),
+    title: t('Schema.WikiSearch.ToolListPositionTitle'),
+    description: t('Schema.WikiSearch.ToolListPosition'),
   }),
 }).meta({
-  title: t('Schema.RAG.Title'),
-  description: t('Schema.RAG.Description'),
+  title: t('Schema.WikiSearch.Title'),
+  description: t('Schema.WikiSearch.Description'),
 });
 
 export const ModelContextProtocolParameterSchema = z.object({
@@ -144,10 +86,6 @@ export const ModelContextProtocolParameterSchema = z.object({
   targetId: z.string().meta({
     title: t('Schema.Position.TargetIdTitle'),
     description: t('Schema.Position.TargetId'),
-  }),
-  trigger: TriggerSchema.optional().meta({
-    title: t('Schema.MCP.TriggerTitle'),
-    description: t('Schema.MCP.Trigger'),
   }),
 }).meta({
   title: t('Schema.MCP.Title'),
@@ -176,10 +114,6 @@ export const AutoReplyParameterSchema = z.object({
   text: z.string().meta({
     title: t('Schema.AutoReply.TextTitle'),
     description: t('Schema.AutoReply.Text'),
-  }),
-  trigger: TriggerSchema.optional().meta({
-    title: t('Schema.AutoReply.TriggerTitle'),
-    description: t('Schema.AutoReply.Trigger'),
   }),
   maxAutoReply: z.number().optional().meta({
     title: t('Schema.AutoReply.MaxAutoReplyTitle'),
@@ -236,9 +170,9 @@ export const PluginSchema = z.object({
     title: t('Schema.Plugin.DynamicPositionParamTitle'),
     description: t('Schema.Plugin.DynamicPositionParam'),
   }),
-  retrievalAugmentedGenerationParam: RetrievalAugmentedGenerationParameterSchema.optional().meta({
-    title: t('Schema.Plugin.RAGParamTitle'),
-    description: t('Schema.Plugin.RAGParam'),
+  wikiSearchParam: WikiSearchParameterSchema.optional().meta({
+    title: t('Schema.Plugin.WikiSearchParamTitle'),
+    description: t('Schema.Plugin.WikiSearchParam'),
   }),
   modelContextProtocolParam: ModelContextProtocolParameterSchema.optional().meta({
     title: t('Schema.Plugin.MCPParamTitle'),

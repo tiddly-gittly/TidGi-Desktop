@@ -2,7 +2,6 @@ import { ToolCallingMatch } from '@services/agentDefinition/interface';
 import type { AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
 import { AgentInstanceMessage } from '@services/agentInstance/interface';
 import { AIStreamResponse } from '@services/externalAPI/interface';
-import { logger } from '@services/libs/log';
 import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
 import type { IPrompt, Plugin } from '../promptConcat/promptConcatSchema/';
 
@@ -114,9 +113,16 @@ export interface AgentStatusContext {
 }
 
 /**
- * Handler hooks for basicPromptConcatHandler extensibility
+ * Handler hooks for unified plugin system
+ * Handles both prompt processing and agent lifecycle events
  */
-export interface HandlerHooks {
+export interface PromptConcatHooks {
+  /** Called to process prompt modifications (tool injection, etc.) */
+  processPrompts: AsyncSeriesWaterfallHook<[PromptConcatHookContext]>;
+  /** Called to finalize prompts before LLM call */
+  finalizePrompts: AsyncSeriesWaterfallHook<[PromptConcatHookContext]>;
+  /** Called for post-processing after LLM response */
+  postProcess: AsyncSeriesWaterfallHook<[PromptConcatHookContext & { llmResponse: string }]>;
   /** Called when user sends a new message */
   userMessageReceived: AsyncSeriesHook<[UserMessageContext]>;
   /** Called when agent status changes */
@@ -130,41 +136,6 @@ export interface HandlerHooks {
 }
 
 /**
- * Plugin function interface - can register handlers for any hooks
+ * Universal plugin function interface - can register handlers for any hooks
  */
 export type PromptConcatPlugin = (hooks: PromptConcatHooks) => void;
-
-/**
- * Handler plugin interface - can register handlers for handler hooks
- */
-export type HandlerPlugin = (hooks: HandlerHooks) => void;
-
-/**
- * Universal plugin interface - can register handlers for all types of hooks
- */
-export type UniversalPlugin = {
-  promptConcat?: PromptConcatPlugin;
-  handler?: HandlerPlugin;
-};
-
-/**
- * Hooks system for prompt concatenation
- */
-export class PromptConcatHooks {
-  /** Hook for processing prompt modifications */
-  public readonly processPrompts = new AsyncSeriesWaterfallHook<[PromptConcatHookContext]>(['context']);
-
-  /** Hook for finalizing prompts before LLM call */
-  public readonly finalizePrompts = new AsyncSeriesWaterfallHook<[PromptConcatHookContext]>(['context']);
-
-  /** Hook for post-processing after LLM response */
-  public readonly postProcess = new AsyncSeriesWaterfallHook<[PromptConcatHookContext & { llmResponse: string }]>(['context']);
-
-  /**
-   * Register a plugin
-   */
-  public registerPlugin(plugin: PromptConcatPlugin): void {
-    logger.debug('Registering prompt concat plugin');
-    plugin(this);
-  }
-}

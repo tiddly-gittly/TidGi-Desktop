@@ -6,7 +6,7 @@ import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
 import { findPromptById } from '../promptConcat/promptConcat';
 import { IPrompt } from '../promptConcat/promptConcatSchema';
-import { AgentResponse, PromptConcatPlugin, ResponseHookContext } from './types';
+import { AgentResponse, ResponseHookContext, PromptConcatPlugin } from './types';
 
 /**
  * Full replacement plugin

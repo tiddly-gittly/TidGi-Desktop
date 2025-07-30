@@ -7,13 +7,13 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 
 import { AgentInstanceMessage, IAgentInstanceService } from '../interface';
-import { AIResponseContext, HandlerPlugin } from './types';
+import { AIResponseContext, PromptConcatPlugin } from './types';
 
 /**
  * AI response history plugin
  * Manages AI response messages in conversation history during streaming and completion
  */
-export const aiResponseHistoryPlugin: HandlerPlugin = (hooks) => {
+export const aiResponseHistoryPlugin: PromptConcatPlugin = (hooks) => {
   // Handle AI response updates (streaming)
   hooks.responseUpdate.tapAsync('aiResponseHistoryPlugin', (context: AIResponseContext, callback) => {
     try {

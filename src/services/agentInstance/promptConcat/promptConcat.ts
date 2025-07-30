@@ -17,7 +17,7 @@ import { logger } from '@services/libs/log';
 import { CoreMessage } from 'ai';
 import { cloneDeep } from 'lodash';
 import { AgentInstanceMessage } from '../interface';
-import { builtInPlugins, initializePluginSystem, PromptConcatHookContext, PromptConcatHooks } from '../plugins';
+import { builtInPlugins, createHandlerHooks, initializePluginSystem, PromptConcatHookContext } from '../plugins';
 import { AgentPromptDescription, IPrompt } from './promptConcatSchema';
 import { Plugin } from './promptConcatSchema/plugin';
 
@@ -222,12 +222,12 @@ export async function* promptConcatStream(
   const promptsCopy = cloneDeep(promptConfigs);
   const sourcePaths = generateSourcePaths(promptsCopy, pluginConfigs);
 
-  const hooks = new PromptConcatHooks();
+  const hooks = createHandlerHooks();
   // Register plugins that match the configuration
   for (const plugin of pluginConfigs) {
     const builtInPlugin = builtInPlugins.get(plugin.pluginId);
     if (builtInPlugin) {
-      hooks.registerPlugin(builtInPlugin);
+      builtInPlugin(hooks);
       logger.debug('Registered plugin', {
         pluginId: plugin.pluginId,
         pluginInstanceId: plugin.id,

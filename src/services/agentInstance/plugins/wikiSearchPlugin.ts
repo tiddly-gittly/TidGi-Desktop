@@ -1,29 +1,6 @@
 /**
  * Wiki Search plugin
- * Handles wiki tool list injection, tool calling det    // Retrieve tiddlers using the filter ex        try {
-          const tiddlerFields = await wikiService.wikiOperationInServer(WikiChannel.getTiddlersAsJson, workspaceID, [title]);
-          if (tiddlerFields.length > 0) {
-            results.push({
-              title,
-              text: tiddlerFields[0].text,
-              fields: tiddlerFields[0],
-            });
-          } else {
-            results.push({ title });
-          }  const tiddlerTitles = await wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, [filter]) as string[];
-
-    if (tiddlerTitles.length === 0) {
-      return {
-        success: true,
-        data: `No results found for filter "${filter}" in wiki workspace "${workspaceName}".`,
-        metadata: {
-          filter,
-          workspaceID,
-          workspaceName,
-          resultCount: 0,
-        },
-      };
-    }on and response processing
+ * Handles wiki search tool list injection, tool calling detection and response processing
  */
 import { z } from 'zod/v4';
 
@@ -37,13 +14,9 @@ import { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 
-import type { AgentInstanceMessage } from '../interface';
-import { findPromptById, PromptConcatContext } from '../promptConcat/promptConcat';
-import type { IPrompt, RetrievalAugmentedGenerationParameterSchema } from '../promptConcat/promptConcatSchema';
-import type { HandlerPlugin, PromptConcatPlugin, ResponseHookContext } from './types';
-
-// Type for the actual parameter (inferred from schema)
-type WikiSearchParameter = z.infer<typeof RetrievalAugmentedGenerationParameterSchema>;
+import { findPromptById } from '../promptConcat/promptConcat';
+import type { IPrompt } from '../promptConcat/promptConcatSchema';
+import type { ResponseHookContext, PromptConcatPlugin } from './types';
 
 /**
  * Parameter schema for Wiki search tool
@@ -196,42 +169,6 @@ async function executeWikiSearchTool(
 }
 
 /**
- * Checks if a trigger condition matches the current context
- */
-function checkTriggerCondition(
-  trigger: WikiSearchParameter['trigger'],
-  context: PromptConcatContext,
-): boolean {
-  if (!trigger) {
-    return true;
-  }
-
-  // Get the last user message (if any)
-  const userMessages = context.messages.filter((m) => m.role === 'user');
-  const lastUserMessage = userMessages.length > 0 ? userMessages[userMessages.length - 1].content : '';
-
-  // Check search term trigger
-  if (trigger.search && lastUserMessage && lastUserMessage.toLowerCase().includes(trigger.search.toLowerCase())) {
-    logger.debug('Trigger matched by search term', { search: trigger.search });
-    return true;
-  }
-
-  // Check random chance trigger
-  if (trigger.randomChance !== undefined) {
-    const randomValue = Math.random();
-    const triggered = randomValue < trigger.randomChance;
-    logger.debug('Random chance trigger evaluation', {
-      randomValue,
-      threshold: trigger.randomChance,
-      triggered,
-    });
-    return triggered;
-  }
-
-  return false;
-}
-
-/**
  * Wiki Search plugin - Prompt processing
  * Handles tool list injection for wiki search functionality
  */
@@ -240,24 +177,14 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
   hooks.processPrompts.tapAsync('wikiSearchPlugin-toolList', async (context, callback) => {
     const { pluginConfig, prompts } = context;
 
-    if (pluginConfig.pluginId !== 'wikiSearch' || !pluginConfig.retrievalAugmentedGenerationParam) {
+    if (pluginConfig.pluginId !== 'wikiSearch' || !pluginConfig.wikiSearchParam) {
       callback();
       return;
     }
 
-    const wikiSearchParameter = pluginConfig.retrievalAugmentedGenerationParam;
+    const wikiSearchParameter = pluginConfig.wikiSearchParam;
 
     try {
-      // Check if trigger condition is met
-      const shouldTrigger = checkTriggerCondition(wikiSearchParameter.trigger, context);
-      if (!shouldTrigger) {
-        logger.debug('Trigger condition not met, skipping wiki search tool list injection', {
-          pluginId: pluginConfig.id,
-        });
-        callback();
-        return;
-      }
-
       // Handle tool list injection if toolListPosition is configured
       const toolListPosition = wikiSearchParameter.toolListPosition;
       if (toolListPosition?.targetId) {
@@ -318,121 +245,8 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
     }
   });
 
-  // Second tapAsync: Wiki content injection based on wiki parameters
-  hooks.processPrompts.tapAsync('wikiSearchPlugin-content', async (context, callback) => {
-    const { pluginConfig, prompts } = context;
-
-    if (pluginConfig.pluginId !== 'wikiSearch' || !pluginConfig.retrievalAugmentedGenerationParam) {
-      callback();
-      return;
-    }
-
-    const wikiSearchParameter = pluginConfig.retrievalAugmentedGenerationParam;
-
-    try {
-      // Only inject wiki content if wikiParam is configured
-      if (!wikiSearchParameter.wikiParam) {
-        callback();
-        return;
-      }
-
-      const target = findPromptById(prompts, wikiSearchParameter.targetId);
-      if (!target) {
-        logger.warn('Wiki content target prompt not found', {
-          targetId: wikiSearchParameter.targetId,
-          pluginId: pluginConfig.id,
-        });
-        callback();
-        return;
-      }
-
-      const { workspaceName, filter } = wikiSearchParameter.wikiParam;
-
-      // Get workspace by name
-      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-      const workspaces = await workspaceService.getWorkspacesAsList();
-      const targetWorkspace = workspaces.find(ws => isWikiWorkspace(ws) && ws.name === workspaceName);
-
-      if (!targetWorkspace) {
-        logger.warn('Wiki workspace not found for content injection', {
-          workspaceName,
-          pluginId: pluginConfig.id,
-        });
-        callback();
-        return;
-      }
-
-      // For now, create a placeholder for wiki content
-      // TODO: Implement actual wiki content retrieval using the workspace service
-      let wikiContent = `Wiki content from "${workspaceName}"`;
-
-      if (filter) {
-        wikiContent += ` with filter: "${filter}"`;
-        // TODO: Apply actual filtering logic based on the filter parameter
-      }
-
-      wikiContent += `\n\nThis is where actual wiki content would be retrieved and filtered.`;
-
-      const wikiPrompt: IPrompt = {
-        id: `wiki-content-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        text: wikiContent,
-        tags: ['wikiContent', 'wikiSearch'],
-        caption: `Wiki content from ${workspaceName}`,
-        enabled: true,
-      };
-
-      // Insert based on position
-      switch (wikiSearchParameter.position) {
-        case 'before':
-          target.parent.splice(target.index, 0, wikiPrompt);
-          break;
-        case 'after':
-          target.parent.splice(target.index + 1, 0, wikiPrompt);
-          break;
-        case 'relative':
-          // Add to target's children
-          if (!target.prompt.children) {
-            target.prompt.children = [];
-          }
-          target.prompt.children.push(wikiPrompt);
-          break;
-        case 'absolute':
-          // For absolute positioning, we would need bottom parameter
-          // For now, default to after
-          target.parent.splice(target.index + 1, 0, wikiPrompt);
-          break;
-        default:
-          target.parent.splice(target.index + 1, 0, wikiPrompt);
-          break;
-      }
-
-      logger.debug('Wiki content injected successfully', {
-        workspaceName,
-        filter,
-        targetId: wikiSearchParameter.targetId,
-        position: wikiSearchParameter.position,
-        contentLength: wikiContent.length,
-        pluginId: pluginConfig.id,
-      });
-
-      callback();
-    } catch (error) {
-      logger.error('Error in wiki content injection', {
-        error: error instanceof Error ? error.message : String(error),
-        pluginId: pluginConfig.id,
-      });
-      callback();
-    }
-  });
-};
-
-/**
- * Wiki Search Handler Plugin
- * Handles tool calling detection, execution and response processing
- */
-export const wikiSearchHandlerPlugin: HandlerPlugin = (hooks) => {
-  // Handle AI response for tool calling detection and execution
-  hooks.responseComplete.tapAsync('wikiSearchHandlerPlugin', async (context, callback) => {
+  // 2. Tool execution when AI response is complete
+  hooks.responseComplete.tapAsync('wikiSearchPlugin-handler', async (context, callback) => {
     try {
       const { handlerContext, response } = context;
 
@@ -468,6 +282,23 @@ export const wikiSearchHandlerPlugin: HandlerPlugin = (hooks) => {
           },
         );
 
+        // Signal that tool was executed
+        await hooks.toolExecuted.promise({
+          handlerContext,
+          toolResult: {
+            success: true,
+            data: result.success ? result.data : result.error,
+            metadata: { toolCount: 1 },
+          },
+          toolInfo: {
+            toolId: 'wiki-search',
+            parameters: validatedParameters,
+            originalText: toolMatch.originalText || '',
+          },
+          requestId: context.requestId,
+        });
+
+        // Format the tool result for display
         let toolResultText: string;
         if (result.success && result.data) {
           toolResultText = `<functions_result>\nTool: wiki-search\nParameters: ${JSON.stringify(validatedParameters)}\nResult: ${result.data}\n</functions_result>`;
@@ -477,51 +308,7 @@ export const wikiSearchHandlerPlugin: HandlerPlugin = (hooks) => {
           }\n</functions_result>`;
         }
 
-        // Create a new user message with tool results
-        const toolResultMessage: AgentInstanceMessage = {
-          id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          agentId: handlerContext.agent.id,
-          role: 'user',
-          content: toolResultText,
-          contentType: 'text/plain',
-          modified: new Date(),
-          metadata: { isToolResult: true, toolCount: 1 },
-        };
-
-        // Add tool result message to agent's message history
-        handlerContext.agent.messages.push(toolResultMessage);
-
-        // Trigger tool execution hook for persistence
-        await new Promise<void>((resolve, reject) => {
-          hooks.toolExecuted.callAsync({
-            handlerContext,
-            toolResult: {
-              success: true,
-              data: toolResultText,
-              metadata: { toolCount: 1 },
-            },
-            toolInfo: {
-              toolId: 'wiki-search',
-              parameters: validatedParameters,
-              originalText: toolMatch.originalText || '',
-            },
-            requestId: context.requestId,
-          }, (error: Error | null) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve();
-            }
-          });
-        });
-
-        logger.info('Wiki search tool execution completed, triggering new round', {
-          resultLength: toolResultText.length,
-          agentId: handlerContext.agent.id,
-        });
-
-        // Set up for next round with yieldNextRoundTo = 'self'
-        // This will trigger the AI to respond again with the tool results
+        // Set up actions to continue the conversation with tool results
         const responseContext = context as unknown as ResponseHookContext;
         if (!responseContext.actions) {
           responseContext.actions = {};
@@ -533,6 +320,17 @@ export const wikiSearchHandlerPlugin: HandlerPlugin = (hooks) => {
           error: error instanceof Error ? error.message : String(error),
           toolCall: toolMatch,
         });
+
+        // Set up error response for next round
+        const responseContext = context as unknown as ResponseHookContext;
+        if (!responseContext.actions) {
+          responseContext.actions = {};
+        }
+        responseContext.actions.yieldNextRoundTo = 'self';
+        responseContext.actions.newUserMessage = `<functions_result>
+Tool: wiki-search
+Error: ${error instanceof Error ? error.message : String(error)}
+</functions_result>`;
       }
 
       callback();

@@ -128,9 +128,6 @@ const mockServiceInstances = {
     generateFromAI: vi.fn(),
     cancelAIRequest: vi.fn(),
   },
-  agentDefinition: {
-    matchToolCalling: vi.fn().mockResolvedValue({ found: false }),
-  },
 };
 
 // Mock window.service using shared instances
@@ -155,7 +152,6 @@ vi.mock('@services/container', () => {
           'Symbol(Preference)': 'preference',
           'Symbol(ExternalAPI)': 'externalAPI',
           'Symbol(AgentInstance)': 'workspace',
-          'Symbol(AgentDefinition)': 'agentDefinition',
         };
         const serviceKey = identifierMap[identifier.toString()];
         return serviceKey ? mockServiceInstances[serviceKey] : (() => {

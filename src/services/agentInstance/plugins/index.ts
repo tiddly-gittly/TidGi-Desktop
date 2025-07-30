@@ -1,10 +1,19 @@
 import { logger } from '@services/libs/log';
-import { AsyncSeriesHook } from 'tapable';
-import { AgentResponse, HandlerHooks, PromptConcatHookContext, PromptConcatHooks, PromptConcatPlugin, ResponseHookContext } from './types';
+import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
+import { 
+  AgentResponse, 
+  PromptConcatHooks,
+  PromptConcatHookContext, 
+  PromptConcatPlugin, 
+  ResponseHookContext,
+  UserMessageContext,
+  AgentStatusContext,
+  ToolExecutionContext,
+  AIResponseContext
+} from './types';
 
 // Re-export types for convenience
-export type { AgentResponse, HandlerHooks, PromptConcatHookContext, PromptConcatPlugin, ResponseHookContext };
-export { PromptConcatHooks };
+export type { AgentResponse, PromptConcatHooks, PromptConcatHookContext, PromptConcatPlugin, ResponseHookContext };
 
 /**
  * Registry for built-in plugins
@@ -54,10 +63,15 @@ export function initializePluginSystem(): void {
 }
 
 /**
- * Create handler hooks instance for basicPromptConcatHandler
+ * Create unified hooks instance for the complete plugin system
  */
-export function createHandlerHooks(): HandlerHooks {
+export function createHandlerHooks(): PromptConcatHooks {
   return {
+    // Prompt processing hooks
+    processPrompts: new AsyncSeriesWaterfallHook(['context']),
+    finalizePrompts: new AsyncSeriesWaterfallHook(['context']),
+    postProcess: new AsyncSeriesWaterfallHook(['context']),
+    // Agent lifecycle hooks
     userMessageReceived: new AsyncSeriesHook(['context']),
     agentStatusChanged: new AsyncSeriesHook(['context']),
     toolExecuted: new AsyncSeriesHook(['context']),
@@ -69,7 +83,7 @@ export function createHandlerHooks(): HandlerHooks {
 /**
  * Register built-in handler plugins
  */
-export function registerBuiltInHandlerPlugins(hooks: HandlerHooks): void {
+export function registerBuiltInHandlerPlugins(hooks: PromptConcatHooks): void {
   // Import and register persistence plugin first (handles database operations)
   import('./persistencePlugin').then(module => {
     module.persistencePlugin(hooks);
@@ -80,10 +94,10 @@ export function registerBuiltInHandlerPlugins(hooks: HandlerHooks): void {
 
   // Import and register wiki search handler plugin
   import('./wikiSearchPlugin').then(module => {
-    module.wikiSearchHandlerPlugin(hooks);
-    logger.debug('Registered wikiSearchHandlerPlugin');
+    module.wikiSearchPlugin(hooks);
+    logger.debug('Registered wikiSearchPlugin');
   }).catch((error: unknown) => {
-    logger.error('Failed to register wikiSearchHandlerPlugin:', error);
+    logger.error('Failed to register wikiSearchPlugin:', error);
   });
 
   logger.debug('Built-in handler plugins registration initiated');

@@ -7,13 +7,13 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IAgentInstanceService } from '../interface';
 import { createAgentMessage } from '../utilities';
-import { AgentStatusContext, AIResponseContext, HandlerPlugin, UserMessageContext } from './types';
+import { AgentStatusContext, AIResponseContext, PromptConcatPlugin, UserMessageContext } from './types';
 
 /**
  * Persistence plugin
  * Manages database operations, message history and UI updates for all agent interactions
  */
-export const persistencePlugin: HandlerPlugin = (hooks) => {
+export const persistencePlugin: PromptConcatPlugin = (hooks) => {
   // Handle user message persistence
   hooks.userMessageReceived.tapAsync('persistencePlugin', async (context: UserMessageContext, callback) => {
     try {

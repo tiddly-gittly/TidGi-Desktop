@@ -388,19 +388,11 @@ export class AgentInstanceService implements IAgentInstanceService {
       };
 
       // Trigger userMessageReceived hook
-      await new Promise<void>((resolve, reject) => {
-        this.handlerHooks.userMessageReceived.callAsync({
-          handlerContext,
-          content,
-          messageId,
-          timestamp: now,
-        }, (error: Error | null) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve();
-          }
-        });
+      await this.handlerHooks.userMessageReceived.promise({
+        handlerContext,
+        content,
+        messageId,
+        timestamp: now,
       });
 
       try {
@@ -449,20 +441,12 @@ export class AgentInstanceService implements IAgentInstanceService {
           }
 
           // Trigger agentStatusChanged hook for completion
-          await new Promise<void>((resolve, reject) => {
-            this.handlerHooks.agentStatusChanged.callAsync({
-              handlerContext,
-              status: {
-                state: 'completed',
-                modified: new Date(),
-              },
-            }, (error: Error | null) => {
-              if (error) {
-                reject(error);
-              } else {
-                resolve();
-              }
-            });
+          await this.handlerHooks.agentStatusChanged.promise({
+            handlerContext,
+            status: {
+              state: 'completed',
+              modified: new Date(),
+            },
           });
         }
 
@@ -473,16 +457,14 @@ export class AgentInstanceService implements IAgentInstanceService {
         logger.error(`Agent handler execution failed: ${errorMessage}`);
 
         // Trigger agentStatusChanged hook for failure
-        await new Promise<void>((resolve) => {
-          this.handlerHooks.agentStatusChanged.callAsync({
-            handlerContext,
-            status: {
-              state: 'failed',
-              modified: new Date(),
-            },
-          }, () => {
-            resolve();
-          });
+        await this.handlerHooks.agentStatusChanged.promise({
+          handlerContext,
+          status: {
+            state: 'failed',
+            modified: new Date(),
+          },
+        }).catch(() => {
+          // Ignore hook errors during error handling
         });
 
         // Remove cancel token
