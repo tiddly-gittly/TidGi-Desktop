@@ -2,6 +2,7 @@
  * Tests for Wiki Search plugin
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AgentInstanceMessage } from '../../interface';
 
 import { WikiChannel } from '@/constants/channels';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -111,6 +112,11 @@ describe('Wiki Search Plugin', () => {
       ];
 
       const context: PromptConcatHookContext = {
+        handlerContext: {
+          agent: { id: 'test', messages: [], agentDefId: 'test', status: { state: 'working' as const, modified: new Date() }, created: new Date() },
+          agentDef: { id: 'test', name: 'test' },
+          isCancelled: () => false,
+        },
         pluginConfig: wikiPlugin,
         prompts: prompts,
         messages,
@@ -269,11 +275,15 @@ describe('Wiki Search Plugin', () => {
 
       // Verify that the search was executed and results were set up for next round
       expect(context.actions.yieldNextRoundTo).toBe('self');
-      expect(context.actions.newUserMessage).toContain('<functions_result>');
-      expect(context.actions.newUserMessage).toContain('Tool: wiki-search');
-      expect(context.actions.newUserMessage).toContain('Important Note 1');
-      expect(context.actions.newUserMessage).toContain('Important Note 2');
-      expect(context.actions.newUserMessage).toContain('Content of Important Note 1');
+
+      // Verify tool result message was added to agent history
+      expect(handlerContext.agent.messages.length).toBeGreaterThan(0);
+      const toolResultMessage = handlerContext.agent.messages[handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
+      expect(toolResultMessage.role).toBe('user');
+      expect(toolResultMessage.content).toContain('<functions_result>');
+      expect(toolResultMessage.content).toContain('Tool: wiki-search');
+      expect(toolResultMessage.content).toContain('Important Note 1');
+      expect(toolResultMessage.metadata?.isToolResult).toBe(true);
     });
 
     it('should handle wiki search errors gracefully', async () => {
@@ -326,9 +336,16 @@ describe('Wiki Search Plugin', () => {
 
       // Should still set up next round with error message
       expect(context.actions.yieldNextRoundTo).toBe('self');
-      expect(context.actions.newUserMessage).toContain('<functions_result>');
-      expect(context.actions.newUserMessage).toContain('Error:');
-      expect(context.actions.newUserMessage).toContain('does not exist');
+
+      // Verify error message was added to agent history
+      expect(handlerContext.agent.messages.length).toBeGreaterThan(0);
+      const errorResultMessage = handlerContext.agent.messages[handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
+      expect(errorResultMessage.role).toBe('user');
+      expect(errorResultMessage.content).toContain('<functions_result>');
+      expect(errorResultMessage.content).toContain('Error:');
+      expect(errorResultMessage.content).toContain('does not exist');
+      expect(errorResultMessage.metadata?.isToolResult).toBe(true);
+      expect(errorResultMessage.metadata?.isError).toBe(true);
     });
 
     it('should skip execution when no tool call is detected', async () => {

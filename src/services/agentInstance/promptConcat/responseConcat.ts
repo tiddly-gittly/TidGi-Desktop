@@ -9,7 +9,7 @@ import { cloneDeep } from 'lodash';
 import { AgentHandlerContext } from '../buildInAgentHandlers/type';
 import { AgentInstanceMessage } from '../interface';
 import { builtInPlugins, createHandlerHooks } from '../plugins';
-import { AgentResponse, ResponseHookContext } from '../plugins/types';
+import { AgentResponse, PostProcessContext, YieldNextRoundTarget } from '../plugins/types';
 import { AgentPromptDescription, HandlerConfig } from './promptConcatSchema';
 
 /**
@@ -27,8 +27,7 @@ export async function responseConcat(
   messages: AgentInstanceMessage[] = [],
 ): Promise<{
   processedResponse: string;
-  needsNewLLMCall: boolean;
-  newUserMessage?: string;
+  yieldNextRoundTo?: YieldNextRoundTarget;
   toolCallInfo?: ToolCallingMatch;
 }> {
   logger.debug('Starting response processing', {
@@ -42,9 +41,7 @@ export async function responseConcat(
   const responses: HandlerConfig['response'] = Array.isArray(handlerConfig.response) ? handlerConfig.response : [];
   const plugins = Array.isArray(handlerConfig.plugins) ? handlerConfig.plugins : [];
 
-  const responsesCopy = cloneDeep(responses);
-  let modifiedResponses: AgentResponse[] = responsesCopy;
-
+  let modifiedResponses = cloneDeep(responses) as AgentResponse[];
   // Create hooks instance
   const hooks = createHandlerHooks();
   // Register all plugins from configuration
@@ -58,12 +55,12 @@ export async function responseConcat(
   }
 
   // Process each plugin through hooks
-  let needsNewLLMCall = false;
-  let newUserMessage: string | undefined;
+  let yieldNextRoundTo: YieldNextRoundTarget | undefined;
   let toolCallInfo: ToolCallingMatch | undefined;
 
   for (const plugin of plugins) {
-    const responseContext: ResponseHookContext = {
+    const responseContext: PostProcessContext = {
+      handlerContext: context,
       messages,
       prompts: [], // Not used in response processing
       pluginConfig: plugin,
@@ -73,24 +70,23 @@ export async function responseConcat(
     };
 
     try {
-      const result = await hooks.postProcess.promise(responseContext) as ResponseHookContext;
+      const result = await hooks.postProcess.promise(responseContext);
 
       // Update responses if they were modified in the context
-      modifiedResponses = result.responses;
+      if (result.responses) {
+        modifiedResponses = result.responses;
+      }
 
       // Check if plugin indicated need for new LLM call via actions
-      if (result.actions?.yieldNextRoundTo === 'self') {
-        needsNewLLMCall = true;
-        if (result.actions.newUserMessage) {
-          newUserMessage = result.actions.newUserMessage;
-        }
+      if (result.actions?.yieldNextRoundTo) {
+        yieldNextRoundTo = result.actions.yieldNextRoundTo;
         if (result.actions.toolCalling) {
           toolCallInfo = result.actions.toolCalling;
         }
-        logger.debug('Plugin requested yield next round to self', {
+        logger.debug('Plugin requested yield next round', {
           pluginId: plugin.pluginId,
           pluginInstanceId: plugin.id,
-          hasNewUserMessage: !!result.actions.newUserMessage,
+          yieldNextRoundTo,
           hasToolCall: !!result.actions.toolCalling,
         });
       }
@@ -114,14 +110,12 @@ export async function responseConcat(
   logger.debug('Response processing completed', {
     originalLength: llmResponse.length,
     processedLength: processedResponse.length,
-    needsNewLLMCall,
-    hasNewUserMessage: !!newUserMessage,
+    yieldNextRoundTo,
   });
 
   return {
     processedResponse,
-    needsNewLLMCall,
-    newUserMessage,
+    yieldNextRoundTo,
     toolCallInfo,
   };
 }

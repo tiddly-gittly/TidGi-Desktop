@@ -140,6 +140,9 @@ export class AgentInstanceMessageEntity implements AgentInstanceMessage {
   @Column({ type: 'simple-json', nullable: true, name: 'meta_data' })
   metadata?: Record<string, unknown>;
 
+  @Column({ type: 'integer', nullable: true })
+  duration?: number;
+
   // Relation to AgentInstance
   @ManyToOne(() => AgentInstanceEntity, instance => instance.messages)
   @JoinColumn({ name: 'agentId' })

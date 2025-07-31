@@ -16,6 +16,7 @@
 import { logger } from '@services/libs/log';
 import { CoreMessage } from 'ai';
 import { cloneDeep } from 'lodash';
+import { AgentHandlerContext } from '../buildInAgentHandlers/type';
 import { AgentInstanceMessage } from '../interface';
 import { builtInPlugins, createHandlerHooks, initializePluginSystem, PromptConcatHookContext } from '../plugins';
 import { AgentPromptDescription, IPrompt } from './promptConcatSchema';
@@ -216,6 +217,7 @@ export interface PromptConcatStreamState {
 export async function* promptConcatStream(
   agentConfig: Pick<AgentPromptDescription, 'handlerConfig'>,
   messages: AgentInstanceMessage[],
+  handlerContext: AgentHandlerContext,
 ): AsyncGenerator<PromptConcatStreamState, PromptConcatStreamState, unknown> {
   const promptConfigs = Array.isArray(agentConfig.handlerConfig.prompts) ? agentConfig.handlerConfig.prompts : [];
   const pluginConfigs = Array.isArray(agentConfig.handlerConfig.plugins) ? agentConfig.handlerConfig.plugins : [];
@@ -243,6 +245,7 @@ export async function* promptConcatStream(
 
   for (let index = 0; index < pluginConfigs.length; index++) {
     const context: PromptConcatHookContext = {
+      handlerContext,
       messages,
       prompts: modifiedPrompts,
       pluginConfig: pluginConfigs[index],
@@ -287,6 +290,7 @@ export async function* promptConcatStream(
   };
 
   const finalContext: PromptConcatHookContext = {
+    handlerContext,
     messages,
     prompts: modifiedPrompts,
     pluginConfig: {} as Plugin, // Empty plugin for finalization
@@ -345,17 +349,19 @@ export async function* promptConcatStream(
  *
  * @param agentConfig Prompt configuration
  * @param messages Message history
+ * @param handlerContext Handler context with agent and other state
  * @returns Processed prompt array and original prompt tree
  */
 export async function promptConcat(
   agentConfig: Pick<AgentPromptDescription, 'handlerConfig'>,
   messages: AgentInstanceMessage[],
+  handlerContext: AgentHandlerContext,
 ): Promise<{
   flatPrompts: CoreMessage[];
   processedPrompts: IPrompt[];
 }> {
   // Use the streaming version and just return the final result
-  const stream = promptConcatStream(agentConfig, messages);
+  const stream = promptConcatStream(agentConfig, messages, handlerContext);
   let finalResult: PromptConcatStreamState;
 
   // Consume all intermediate states to get the final result

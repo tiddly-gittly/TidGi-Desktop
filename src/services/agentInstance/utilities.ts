@@ -59,7 +59,7 @@ export function createAgentInstanceData(agentDefinition: {
 export function createAgentMessage(
   id: string,
   agentId: string,
-  message: Pick<AgentInstanceMessage, 'role' | 'content' | 'contentType' | 'metadata'>,
+  message: Pick<AgentInstanceMessage, 'role' | 'content' | 'contentType' | 'metadata' | 'duration'>,
 ): AgentInstanceMessage {
   return {
     id,
@@ -69,13 +69,40 @@ export function createAgentMessage(
     contentType: message.contentType || 'text/plain',
     modified: new Date(),
     metadata: message.metadata,
+    // Convert null to undefined for database compatibility
+    duration: message.duration === null ? undefined : message.duration,
   };
 }
 
 /**
  * Message fields to be extracted when creating message entities
  */
-export const MESSAGE_FIELDS = ['id', 'agentId', 'role', 'content', 'contentType', 'metadata'] as const;
+export const MESSAGE_FIELDS = ['id', 'agentId', 'role', 'content', 'contentType', 'metadata', 'duration'] as const;
+
+/**
+ * Convert AgentInstanceMessage to database-compatible format
+ * Handles null duration values by converting them to undefined
+ */
+export function toDatabaseCompatibleMessage(message: AgentInstanceMessage): Omit<AgentInstanceMessage, 'duration'> & { duration?: number } {
+  const { duration, ...rest } = message;
+  return {
+    ...rest,
+    duration: duration === null ? undefined : duration,
+  };
+}
+
+/**
+ * Convert AgentInstance data to database-compatible format
+ * Handles null duration values in messages by converting them to undefined
+ */
+export function toDatabaseCompatibleInstance(
+  instance: Omit<AgentInstance, 'created' | 'modified'>,
+): Omit<AgentInstance, 'created' | 'modified' | 'messages'> & { messages: Array<Omit<AgentInstanceMessage, 'duration'> & { duration?: number }> } {
+  return {
+    ...instance,
+    messages: instance.messages.map(toDatabaseCompatibleMessage),
+  };
+}
 
 /**
  * Agent instance fields to be extracted when retrieving instances

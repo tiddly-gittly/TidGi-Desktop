@@ -115,10 +115,6 @@ export const AutoReplyParameterSchema = z.object({
     title: t('Schema.AutoReply.TextTitle'),
     description: t('Schema.AutoReply.Text'),
   }),
-  maxAutoReply: z.number().optional().meta({
-    title: t('Schema.AutoReply.MaxAutoReplyTitle'),
-    description: t('Schema.AutoReply.MaxAutoReply'),
-  }),
 }).meta({
   title: t('Schema.AutoReply.Title'),
   description: t('Schema.AutoReply.Description'),

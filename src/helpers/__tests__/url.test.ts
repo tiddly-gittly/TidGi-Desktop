@@ -83,9 +83,9 @@ describe('URL Helper Functions', () => {
     });
 
     test('should handle non-string inputs', () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(equivalentDomain(null as any)).toBeUndefined();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(equivalentDomain(123 as any)).toBeUndefined();
     });
   });

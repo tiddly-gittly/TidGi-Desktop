@@ -90,6 +90,13 @@ export interface AgentInstanceMessage {
   metadata?: Record<string, unknown>;
   /** Whether this message should be hidden from UI/history (default: false) */
   hidden?: boolean;
+  /**
+   * Duration in rounds that this message should be included in AI context
+   * When set to a number > 0, the message will only be sent to AI for that many rounds from current position
+   * undefined/null means the message persists in AI context indefinitely (default behavior)
+   * 0 means the message is excluded from AI context immediately but remains visible in UI
+   */
+  duration?: number | null;
 }
 
 /**

@@ -2,7 +2,7 @@
  * Tests for the enhanced plugin system after refactoring
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createHandlerHooks, registerBuiltInHandlerPlugins } from '../index';
+import { createHandlerHooks, registerAllBuiltInPlugins } from '../index';
 
 describe('Plugin System', () => {
   beforeEach(() => {
@@ -22,12 +22,12 @@ describe('Plugin System', () => {
     });
   });
 
-  describe('registerBuiltInHandlerPlugins', () => {
+  describe('registerAllBuiltInPlugins', () => {
     it('should register plugins without throwing', () => {
       const hooks = createHandlerHooks();
 
       expect(() => {
-        registerBuiltInHandlerPlugins(hooks);
+        registerAllBuiltInPlugins(hooks);
       }).not.toThrow();
     });
   });

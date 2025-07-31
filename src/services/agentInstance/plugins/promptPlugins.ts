@@ -6,7 +6,8 @@ import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
 import { findPromptById } from '../promptConcat/promptConcat';
 import { IPrompt } from '../promptConcat/promptConcatSchema';
-import { AgentResponse, ResponseHookContext, PromptConcatPlugin } from './types';
+import { filterMessagesByDuration } from '../utilities/messageDurationFilter';
+import { AgentResponse, PromptConcatPlugin, ResponseHookContext } from './types';
 
 /**
  * Full replacement plugin
@@ -37,14 +38,16 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
     // Get all messages except the last one which is the user message
     const messagesCopy = cloneDeep(messages);
     messagesCopy.pop(); // Last message is the user message
-    const history = messagesCopy; // Remaining messages are history
+
+    // Apply duration filtering to exclude expired messages from AI context
+    const filteredHistory = filterMessagesByDuration(messagesCopy);
 
     switch (sourceType) {
       case 'historyOfSession':
-        if (history.length > 0) {
-          // Insert history messages as Prompt children (full Prompt type)
+        if (filteredHistory.length > 0) {
+          // Insert filtered history messages as Prompt children (full Prompt type)
           found.prompt.children = [];
-          history.forEach((message, index: number) => {
+          filteredHistory.forEach((message, index: number) => {
             // Use the role type from Prompt
             type PromptRole = NonNullable<IPrompt['role']>;
             const role: PromptRole = message.role === 'agent'

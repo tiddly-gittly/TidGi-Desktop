@@ -335,7 +335,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
           required: ['workspaceId', 'query'],
         },
       });
-      
+
       return Promise.resolve([wikiSearchTool]);
     } catch (error) {
       logger.error(`Failed to get available tools: ${error as Error}`);

@@ -4,7 +4,8 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { merge } from 'lodash';
 import { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
-import { createHandlerHooks, registerBuiltInHandlerPlugins } from '../plugins';
+import { createHandlerHooks, registerAllBuiltInPlugins } from '../plugins';
+import { YieldNextRoundTarget } from '../plugins/types';
 import { AgentPromptDescription, AiAPIConfig, HandlerConfig } from '../promptConcat/promptConcatSchema';
 import { responseConcat } from '../promptConcat/responseConcat';
 import { getFinalPromptResult } from '../promptConcat/utils';
@@ -34,7 +35,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
 
   // Create and register handler hooks
   const handlerHooks = createHandlerHooks();
-  registerBuiltInHandlerPlugins(handlerHooks);
+  registerAllBuiltInPlugins(handlerHooks);
 
   // Log the start of handler execution with context information
   logger.debug('Starting prompt handler execution', {
@@ -108,7 +109,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
     const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
     // Generate AI response
     // Function to process a single LLM call with retry support
-    async function* processLLMCall(_userMessage: string): AsyncGenerator<AgentInstanceLatestStatus> {
+    async function* processLLMCall(): AsyncGenerator<AgentInstanceLatestStatus> {
       try {
         // Delegate prompt concatenation to plugin system
         // Re-generate prompts to trigger middleware (including retrievalAugmentedGenerationHandler)
@@ -163,24 +164,40 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
               });
 
               // Delegate final response processing to handler hooks
-              await handlerHooks.responseComplete.promise({
+              const responseCompleteContext = {
                 handlerContext: context,
                 response,
                 requestId: currentRequestId,
                 isFinal: true,
-              });
+                actions: undefined as { yieldNextRoundTo?: 'self' | 'human'; newUserMessage?: string } | undefined,
+              };
+              
+              await handlerHooks.responseComplete.promise(responseCompleteContext);
+
+              // Check if responseComplete hooks set yieldNextRoundTo
+              let yieldNextRoundFromHooks: YieldNextRoundTarget | undefined;
+              if (responseCompleteContext.actions?.yieldNextRoundTo) {
+                yieldNextRoundFromHooks = responseCompleteContext.actions.yieldNextRoundTo;
+                logger.debug('Response complete hooks triggered yield next round', {
+                  method: 'processLLMCall',
+                  retryCount,
+                  yieldNextRoundTo: yieldNextRoundFromHooks,
+                });
+              }
 
               // Delegate response processing to plugin system
               // Plugins can set yieldNextRoundTo actions to control conversation flow
               const processedResult = await responseConcat(agentPromptDescription, response.content, context, context.agent.messages);
 
-              // Handle control flow based on plugin decisions
-              if (processedResult.needsNewLLMCall) {
+              // Handle control flow based on plugin decisions or responseComplete hooks
+              const shouldContinue = processedResult.yieldNextRoundTo === 'self' || yieldNextRoundFromHooks === 'self';
+              if (shouldContinue) {
                 // Control transfer: Continue with AI (yieldNextRoundTo: 'self')
                 logger.debug('Response processing triggered new LLM call', {
                   method: 'processLLMCall',
-                  hasNewUserMessage: !!processedResult.newUserMessage,
                   retryCount,
+                  fromResponseConcat: processedResult.yieldNextRoundTo,
+                  fromResponseCompleteHooks: yieldNextRoundFromHooks,
                 });
 
                 // Prevent infinite loops with retry limit
@@ -200,18 +217,15 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                 // Yield current response as working state
                 yield working(processedResult.processedResponse, context, currentRequestId);
 
+                // Continue with new round
+                // The necessary messages should already be added by plugins
+                logger.debug('Continuing with next round', {
+                  method: 'basicPromptConcatHandler',
+                  agentId: context.agent.id,
+                  messageCount: context.agent.messages.length,
+                });
 
-                // Continue with new round - use provided message or last user message
-                const nextUserMessage = processedResult.newUserMessage || lastUserMessage?.content;
-                if (nextUserMessage) {
-                  yield* processLLMCall(nextUserMessage);
-                } else {
-                  logger.warn('No message provided for continue round', {
-                    method: 'basicPromptConcatHandler',
-                    agentId: context.agent.id,
-                  });
-                  yield completed(processedResult.processedResponse, context, currentRequestId);
-                }
+                yield* processLLMCall();
                 return;
               }
 
@@ -254,7 +268,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
     }
 
     // Start processing with the initial user message
-    yield* processLLMCall(lastUserMessage.content);
+    yield* processLLMCall();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('Error processing prompt', {

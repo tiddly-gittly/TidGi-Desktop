@@ -6,6 +6,7 @@ import { z } from 'zod/v4';
 
 import { WikiChannel } from '@/constants/channels';
 import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
+import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -14,9 +15,10 @@ import { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 
+import type { AgentInstanceMessage } from '../interface';
 import { findPromptById } from '../promptConcat/promptConcat';
 import type { IPrompt } from '../promptConcat/promptConcatSchema';
-import type { ResponseHookContext, PromptConcatPlugin } from './types';
+import type { AIResponseContext, PromptConcatPlugin } from './types';
 
 /**
  * Parameter schema for Wiki search tool
@@ -131,15 +133,24 @@ async function executeWikiSearchTool(
     // Format results as text
     let content = `Wiki search completed successfully. Found ${tiddlerTitles.length} total results, showing ${results.length}:\n\n`;
 
-    for (const result of results) {
-      content += `**Tiddler: ${result.title}**\n\n`;
-      if (result.text) {
-        content += '```tiddlywiki\n';
-        content += result.text;
-        content += '\n```\n\n';
-      } else {
-        content += '(Content not available)\n\n';
+    if (includeText) {
+      // Format with content
+      for (const result of results) {
+        content += `**Tiddler: ${result.title}**\n\n`;
+        if (result.text) {
+          content += '```tiddlywiki\n';
+          content += result.text;
+          content += '\n```\n\n';
+        } else {
+          content += '(Content not available)\n\n';
+        }
       }
+    } else {
+      // Format titles only
+      for (const result of results) {
+        content += `- ${result.title}\n`;
+      }
+      content += '\n(includeText set to false)\n';
     }
 
     return {
@@ -209,7 +220,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
             .join('\n');
 
           const toolPromptContent =
-            `Available Wiki Workspaces:\n${workspaceList}\n\nAvailable Tools:\n- Tool ID: wiki-search\n- Tool Name: Wiki Search\n- Description: Search content in wiki workspaces\n- Parameters: {\n  "workspaceName": "string (required) - The name of the wiki workspace to search in",\n  "filter": "string (required) - TiddlyWiki filter expression for searching",\n  "maxResults": "number (optional, default: 10) - Maximum number of results to return",\n  "includeText": "boolean (optional, default: true) - Whether to include tiddler text content"\n}`;
+            `Available Wiki Workspaces:\n${workspaceList}\n\nAvailable Tools:\n- Tool ID: wiki-search\n- Tool Name: Wiki Search\n- Description: Search content in wiki workspaces\n- Parameters: {\n  "workspaceName": "string (required) - The name of the wiki workspace to search in",\n  "filter": "string (required) - TiddlyWiki filter expression for searching, like [title[Index]]""\n}`;
 
           const toolPrompt: IPrompt = {
             id: `wiki-tool-list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -268,6 +279,26 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         agentId: handlerContext.agent.id,
       });
 
+      // Set duration=1 for the AI message containing the tool call
+      // Find the most recent AI message (should be the one containing the tool call)
+      const aiMessages = handlerContext.agent.messages.filter(message => message.role === 'assistant');
+      if (aiMessages.length > 0) {
+        const latestAiMessage = aiMessages[aiMessages.length - 1];
+        if (latestAiMessage.content === response.content) {
+          latestAiMessage.duration = 1;
+          latestAiMessage.metadata = {
+            ...latestAiMessage.metadata,
+            containsToolCall: true,
+            toolId: 'wiki-search',
+          };
+          
+          logger.debug('Set duration=1 for AI tool call message', {
+            messageId: latestAiMessage.id,
+            toolId: 'wiki-search',
+          });
+        }
+      }
+
       // Execute the wiki search tool call
       try {
         // Validate parameters against schema
@@ -300,21 +331,65 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
 
         // Format the tool result for display
         let toolResultText: string;
+        let isError = false;
+
         if (result.success && result.data) {
           toolResultText = `<functions_result>\nTool: wiki-search\nParameters: ${JSON.stringify(validatedParameters)}\nResult: ${result.data}\n</functions_result>`;
         } else {
+          isError = true;
           toolResultText = `<functions_result>\nTool: wiki-search\nParameters: ${JSON.stringify(validatedParameters)}\nError: ${
             result.error || 'Unknown error'
           }\n</functions_result>`;
         }
 
         // Set up actions to continue the conversation with tool results
-        const responseContext = context as unknown as ResponseHookContext;
+        const responseContext = context as unknown as AIResponseContext;
         if (!responseContext.actions) {
           responseContext.actions = {};
         }
         responseContext.actions.yieldNextRoundTo = 'self';
-        responseContext.actions.newUserMessage = toolResultText;
+        
+        logger.debug('Wiki search setting yieldNextRoundTo=self', {
+          toolId: 'wiki-search',
+          agentId: handlerContext.agent.id,
+          messageCount: handlerContext.agent.messages.length,
+        });
+
+        // Immediately add the tool result message to history
+        // Use a slight delay to ensure timestamp is after the tool call message
+        const toolResultTime = new Date(Date.now() + 1); // Add 1ms to ensure proper ordering
+        const toolResultMessage: AgentInstanceMessage = {
+          id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          agentId: handlerContext.agent.id,
+          role: 'user',
+          content: toolResultText,
+          modified: toolResultTime,
+          duration: 1, // Tool results are only visible to AI for 1 round to save context
+          metadata: {
+            isToolResult: true,
+            isError,
+            toolId: 'wiki-search',
+            toolParameters: validatedParameters,
+          },
+        };
+        handlerContext.agent.messages.push(toolResultMessage);
+
+        // Save tool result message to database
+        try {
+          const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+          await agentInstanceService.saveUserMessage(toolResultMessage);
+        } catch (saveError) {
+          logger.warn('Failed to save tool result message to database', {
+            error: saveError instanceof Error ? saveError.message : String(saveError),
+            messageId: toolResultMessage.id,
+          });
+        }
+
+        logger.debug('Wiki search tool execution result', {
+          toolResultText,
+          actions: responseContext.actions,
+          toolResultMessageId: toolResultMessage.id,
+        });
       } catch (error) {
         logger.error('Wiki search tool execution failed', {
           error: error instanceof Error ? error.message : String(error),
@@ -322,15 +397,44 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         });
 
         // Set up error response for next round
-        const responseContext = context as unknown as ResponseHookContext;
+        const responseContext = context as unknown as AIResponseContext;
         if (!responseContext.actions) {
           responseContext.actions = {};
         }
         responseContext.actions.yieldNextRoundTo = 'self';
-        responseContext.actions.newUserMessage = `<functions_result>
+        const errorMessage = `<functions_result>
 Tool: wiki-search
 Error: ${error instanceof Error ? error.message : String(error)}
 </functions_result>`;
+
+        // Add error message to history
+        // Use a slight delay to ensure timestamp is after the tool call message
+        const errorResultTime = new Date(Date.now() + 1); // Add 1ms to ensure proper ordering
+        const errorResultMessage: AgentInstanceMessage = {
+          id: `tool-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          agentId: handlerContext.agent.id,
+          role: 'user',
+          content: errorMessage,
+          modified: errorResultTime,
+          duration: 1, // Error messages are only visible to AI for 1 round
+          metadata: {
+            isToolResult: true,
+            isError: true,
+            toolId: 'wiki-search',
+          },
+        };
+        handlerContext.agent.messages.push(errorResultMessage);
+
+        // Save error message to database
+        try {
+          const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+          await agentInstanceService.saveUserMessage(errorResultMessage);
+        } catch (saveError) {
+          logger.warn('Failed to save tool error message to database', {
+            error: saveError instanceof Error ? saveError.message : String(saveError),
+            messageId: errorResultMessage.id,
+          });
+        }
       }
 
       callback();

@@ -1,19 +1,9 @@
 import { logger } from '@services/libs/log';
 import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
-import { 
-  AgentResponse, 
-  PromptConcatHooks,
-  PromptConcatHookContext, 
-  PromptConcatPlugin, 
-  ResponseHookContext,
-  UserMessageContext,
-  AgentStatusContext,
-  ToolExecutionContext,
-  AIResponseContext
-} from './types';
+import { AgentResponse, PromptConcatHookContext, PromptConcatHooks, PromptConcatPlugin, ResponseHookContext } from './types';
 
 // Re-export types for convenience
-export type { AgentResponse, PromptConcatHooks, PromptConcatHookContext, PromptConcatPlugin, ResponseHookContext };
+export type { AgentResponse, PromptConcatHookContext, PromptConcatHooks, PromptConcatPlugin, ResponseHookContext };
 
 /**
  * Registry for built-in plugins
@@ -26,40 +16,6 @@ export const builtInPlugins = new Map<string, PromptConcatPlugin>();
 export function registerBuiltInPlugin(pluginId: string, plugin: PromptConcatPlugin): void {
   builtInPlugins.set(pluginId, plugin);
   logger.debug(`Registered built-in plugin: ${pluginId}`);
-}
-
-/**
- * Register all built-in plugins
- */
-export function registerAllBuiltInPlugins(): void {
-  // Use dynamic imports to avoid circular dependency issues
-  Promise.all([
-    import('./promptPlugins'),
-    import('./responsePlugins'),
-    import('./wikiSearchPlugin'),
-  ]).then(([promptPluginsModule, responsePluginsModule, wikiSearchModule]) => {
-    // Prompt processing plugins
-    registerBuiltInPlugin('fullReplacement', promptPluginsModule.fullReplacementPlugin);
-    registerBuiltInPlugin('dynamicPosition', promptPluginsModule.dynamicPositionPlugin);
-    registerBuiltInPlugin('modelContextProtocol', promptPluginsModule.modelContextProtocolPlugin);
-    
-    // Wiki search plugin - handles both prompt and response processing
-    registerBuiltInPlugin('wikiSearch', wikiSearchModule.wikiSearchPlugin);
-
-    // Response processing plugins
-    registerBuiltInPlugin('autoReply', responsePluginsModule.autoReplyPlugin);
-
-    logger.debug('All built-in plugins registered successfully');
-  }).catch((error: unknown) => {
-    logger.error('Failed to register built-in plugins:', error);
-  });
-}
-
-/**
- * Initialize plugin system
- */
-export function initializePluginSystem(): void {
-  registerAllBuiltInPlugins();
 }
 
 /**
@@ -81,24 +37,67 @@ export function createHandlerHooks(): PromptConcatHooks {
 }
 
 /**
- * Register built-in handler plugins
+ * Register all built-in plugins to hooks
  */
-export function registerBuiltInHandlerPlugins(hooks: PromptConcatHooks): void {
-  // Import and register persistence plugin first (handles database operations)
-  import('./persistencePlugin').then(module => {
-    module.persistencePlugin(hooks);
-    logger.debug('Registered persistencePlugin');
-  }).catch((error: unknown) => {
-    logger.error('Failed to register persistencePlugin:', error);
-  });
+export function registerAllBuiltInPlugins(hooks?: PromptConcatHooks): void {
+  // If hooks provided, register plugins directly to hooks for immediate use
+  if (hooks) {
+    // Import and register message management plugin first (handles database operations, message persistence, and UI updates)
+    import('./messageManagementPlugin').then(module => {
+      module.messageManagementPlugin(hooks);
+      logger.debug('Registered messageManagementPlugin to hooks');
+    }).catch((error: unknown) => {
+      logger.error('Failed to register messageManagementPlugin to hooks:', error);
+    });
 
-  // Import and register wiki search handler plugin
-  import('./wikiSearchPlugin').then(module => {
-    module.wikiSearchPlugin(hooks);
-    logger.debug('Registered wikiSearchPlugin');
-  }).catch((error: unknown) => {
-    logger.error('Failed to register wikiSearchPlugin:', error);
-  });
+    // Import and register wiki search handler plugin
+    import('./wikiSearchPlugin').then(module => {
+      module.wikiSearchPlugin(hooks);
+      logger.debug('Registered wikiSearchPlugin to hooks');
+    }).catch((error: unknown) => {
+      logger.error('Failed to register wikiSearchPlugin to hooks:', error);
+    });
 
-  logger.debug('Built-in handler plugins registration initiated');
+    // Temporarily disable auto reply plugin to debug
+    // import('./responsePlugins').then(module => {
+    //   module.autoReplyPlugin(hooks);
+    //   logger.debug('Registered autoReplyPlugin to hooks');
+    // }).catch((error: unknown) => {
+    //   logger.error('Failed to register autoReplyPlugin to hooks:', error);
+    // });
+
+    logger.debug('Built-in plugins registration to hooks initiated');
+    return;
+  }
+
+  // Otherwise, register plugins to global registry for plugin discovery
+  Promise.all([
+    import('./promptPlugins'),
+    import('./responsePlugins'),
+    import('./wikiSearchPlugin'),
+    import('./messageManagementPlugin'),
+  ]).then(([promptPluginsModule, _responsePluginsModule, wikiSearchModule, messageManagementModule]) => {
+    // Message management plugin (should be first to handle message persistence and UI updates)
+    registerBuiltInPlugin('messageManagement', messageManagementModule.messageManagementPlugin);
+
+    // Prompt processing plugins
+    registerBuiltInPlugin('fullReplacement', promptPluginsModule.fullReplacementPlugin);
+
+    // Wiki search plugin - handles both prompt and response processing
+    registerBuiltInPlugin('wikiSearch', wikiSearchModule.wikiSearchPlugin);
+
+    // Temporarily disable auto reply plugin
+    // registerBuiltInPlugin('autoReply', responsePluginsModule.autoReplyPlugin);
+
+    logger.debug('All built-in plugins registered to global registry successfully');
+  }).catch((error: unknown) => {
+    logger.error('Failed to register built-in plugins to global registry:', error);
+  });
+}
+
+/**
+ * Initialize plugin system
+ */
+export function initializePluginSystem(): void {
+  registerAllBuiltInPlugins();
 }

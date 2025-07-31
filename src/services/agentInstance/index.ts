@@ -8,7 +8,7 @@ import { DataSource, Repository } from 'typeorm';
 import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { basicPromptConcatHandler } from '@services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler';
 import { AgentHandler, AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
-import { createHandlerHooks, initializePluginSystem, registerBuiltInHandlerPlugins } from '@services/agentInstance/plugins';
+import { createHandlerHooks, initializePluginSystem, registerAllBuiltInPlugins } from '@services/agentInstance/plugins';
 import { promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { promptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
@@ -21,7 +21,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
 
 import { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from './interface';
-import { AGENT_INSTANCE_FIELDS, createAgentInstanceData, createAgentMessage, MESSAGE_FIELDS } from './utilities';
+import { AGENT_INSTANCE_FIELDS, createAgentInstanceData, createAgentMessage, MESSAGE_FIELDS, toDatabaseCompatibleInstance, toDatabaseCompatibleMessage } from './utilities';
 
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {
@@ -78,7 +78,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     initializePluginSystem();
 
     // Register built-in handler plugins
-    registerBuiltInHandlerPlugins(this.handlerHooks);
+    registerAllBuiltInPlugins(this.handlerHooks);
 
     // Register basic prompt concatenation handler with its schema
     this.registerHandler('basicPromptConcatHandler', basicPromptConcatHandler, promptConcatHandlerConfigJsonSchema);
@@ -139,7 +139,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       const { instanceData, instanceId, now } = createAgentInstanceData(agentDef);
 
       // Create and save entity
-      const instanceEntity = this.agentInstanceRepository!.create(instanceData);
+      const instanceEntity = this.agentInstanceRepository!.create(toDatabaseCompatibleInstance(instanceData));
       await this.agentInstanceRepository!.save(instanceEntity);
       logger.info(`Created agent instance: ${instanceId}`);
 
@@ -232,9 +232,8 @@ export class AgentInstanceService implements IAgentInstanceService {
             await this.agentMessageRepository!.save(existingMessage);
           } else {
             // Create new message
-            const messageEntity = this.agentMessageRepository!.create(
-              pick(message, MESSAGE_FIELDS) as AgentInstanceMessage,
-            );
+            const messageData = pick(message, MESSAGE_FIELDS) as AgentInstanceMessage;
+            const messageEntity = this.agentMessageRepository!.create(toDatabaseCompatibleMessage(messageData));
 
             await this.agentMessageRepository!.save(messageEntity);
 
@@ -631,7 +630,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   public async saveUserMessage(userMessage: AgentInstanceMessage): Promise<void> {
     this.ensureRepositories();
     try {
-      await this.agentMessageRepository!.save(this.agentMessageRepository!.create(userMessage));
+      await this.agentMessageRepository!.save(this.agentMessageRepository!.create(toDatabaseCompatibleMessage(userMessage)));
       logger.debug('User message saved to database', {
         messageId: userMessage.id,
         agentId: userMessage.agentId,
@@ -691,14 +690,13 @@ export class AgentInstanceService implements IAgentInstanceService {
               } else if (aid) {
                 // Create new message if it doesn't exist and agentId provided
                 // Create message using utility function
-                const newMessage = messageRepo.create(
-                  createAgentMessage(messageId, aid, {
-                    role: msgData.role,
-                    content: msgData.content,
-                    contentType: msgData.contentType,
-                    metadata: msgData.metadata,
-                  }),
-                );
+                const messageData = createAgentMessage(messageId, aid, {
+                  role: msgData.role,
+                  content: msgData.content,
+                  contentType: msgData.contentType,
+                  metadata: msgData.metadata,
+                });
+                const newMessage = messageRepo.create(toDatabaseCompatibleMessage(messageData));
 
                 await messageRepo.save(newMessage);
 
@@ -770,7 +768,20 @@ export class AgentInstanceService implements IAgentInstanceService {
     return new Observable<PromptConcatStreamState>((observer) => {
       const processStream = async () => {
         try {
-          const streamGenerator = promptConcatStream(promptDescription as AgentPromptDescription, messages);
+          // Create a minimal handler context for prompt concatenation
+          const handlerContext = {
+            agent: {
+              id: 'temp',
+              messages,
+              agentDefId: 'temp',
+              status: { state: 'working' as const, modified: new Date() },
+              created: new Date(),
+            },
+            agentDef: { id: 'temp', name: 'temp' },
+            isCancelled: () => false,
+          };
+
+          const streamGenerator = promptConcatStream(promptDescription as AgentPromptDescription, messages, handlerContext);
           for await (const state of streamGenerator) {
             observer.next(state);
             if (state.isComplete) {

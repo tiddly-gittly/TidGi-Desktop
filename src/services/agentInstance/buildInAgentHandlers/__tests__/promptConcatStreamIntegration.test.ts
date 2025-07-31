@@ -3,6 +3,7 @@
  * Tests the complete workflow: tool list injection -> AI response -> tool execution -> next round
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AgentInstanceMessage } from '../../interface';
 
 import { WikiChannel } from '@/constants/channels';
 import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
@@ -104,6 +105,11 @@ describe('WikiSearch Plugin Integration', () => {
 
       // Phase 1: Tool List Injection
       const promptContext = {
+        handlerContext: {
+          agent: { id: 'test', messages: [], agentDefId: 'test', status: { state: 'working' as const, modified: new Date() }, created: new Date() },
+          agentDef: { id: 'test', name: 'test' },
+          isCancelled: () => false,
+        },
         pluginConfig: wikiPlugin as any, // Cast to avoid type complexity in tests
         prompts,
         messages: [
@@ -207,10 +213,14 @@ describe('WikiSearch Plugin Integration', () => {
 
       // Verify tool results were set up for next round
       expect(responseContext.actions.yieldNextRoundTo).toBe('self');
-      expect(responseContext.actions.newUserMessage).toContain('<functions_result>');
-      expect(responseContext.actions.newUserMessage).toContain('Tool: wiki-search');
-      expect(responseContext.actions.newUserMessage).toContain('Important Note 1');
-      expect(responseContext.actions.newUserMessage).toContain('Important Note 2');
+
+      // Verify tool result message was added to agent history
+      expect(responseContext.handlerContext.agent.messages.length).toBeGreaterThan(0);
+      const toolResultMessage = responseContext.handlerContext.agent.messages[responseContext.handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
+      expect(toolResultMessage.role).toBe('user');
+      expect(toolResultMessage.content).toContain('<functions_result>');
+      expect(toolResultMessage.content).toContain('Tool: wiki-search');
+      expect(toolResultMessage.content).toContain('Important Note 1');
     });
 
     it('should handle errors in wiki search gracefully', async () => {
@@ -274,8 +284,13 @@ describe('WikiSearch Plugin Integration', () => {
 
       // Should still set up next round even with error
       expect(responseContext.actions.yieldNextRoundTo).toBe('self');
-      expect(responseContext.actions.newUserMessage).toContain('Error:');
-      expect(responseContext.actions.newUserMessage).toContain('does not exist');
+
+      // Verify error message was added to agent history
+      expect(responseContext.handlerContext.agent.messages.length).toBeGreaterThan(0);
+      const errorResultMessage = responseContext.handlerContext.agent.messages[responseContext.handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
+      expect(errorResultMessage.role).toBe('user');
+      expect(errorResultMessage.content).toContain('Error:');
+      expect(errorResultMessage.content).toContain('does not exist');
     });
   });
 });

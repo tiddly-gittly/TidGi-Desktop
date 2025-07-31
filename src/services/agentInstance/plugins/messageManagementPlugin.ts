@@ -1,21 +1,22 @@
 /**
- * Persistence plugin for database operations and UI updates
- * Handles user message storage, agent status updates, AI response management and UI synchronization
+ * Message management plugin
+ * Unified plugin for handling message persistence, streaming updates, and UI synchronization
+ * Combines functionality from persistencePlugin and aiResponseHistoryPlugin
  */
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IAgentInstanceService } from '../interface';
+import type { IAgentInstanceService } from '../interface';
 import { createAgentMessage } from '../utilities';
-import { AgentStatusContext, AIResponseContext, PromptConcatPlugin, UserMessageContext } from './types';
+import type { AgentStatusContext, AIResponseContext, PromptConcatPlugin, ToolExecutionContext, UserMessageContext } from './types';
 
 /**
- * Persistence plugin
- * Manages database operations, message history and UI updates for all agent interactions
+ * Message management plugin
+ * Handles all message-related operations: persistence, streaming, UI updates, and duration-based filtering
  */
-export const persistencePlugin: PromptConcatPlugin = (hooks) => {
+export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
   // Handle user message persistence
-  hooks.userMessageReceived.tapAsync('persistencePlugin', async (context: UserMessageContext, callback) => {
+  hooks.userMessageReceived.tapAsync('messageManagementPlugin', async (context: UserMessageContext, callback) => {
     try {
       const { handlerContext, content, messageId } = context;
 
@@ -25,6 +26,7 @@ export const persistencePlugin: PromptConcatPlugin = (hooks) => {
         content: content.text,
         contentType: 'text/plain',
         metadata: content.file ? { file: content.file } : undefined,
+        duration: undefined, // User messages persist indefinitely by default
       });
 
       // Get the agent instance service to access repositories
@@ -44,7 +46,7 @@ export const persistencePlugin: PromptConcatPlugin = (hooks) => {
 
       callback();
     } catch (error) {
-      logger.error('Persistence plugin error in userMessageReceived', {
+      logger.error('Message management plugin error in userMessageReceived', {
         error: error instanceof Error ? error.message : String(error),
         messageId: context.messageId,
         agentId: context.handlerContext.agent.id,
@@ -54,7 +56,7 @@ export const persistencePlugin: PromptConcatPlugin = (hooks) => {
   });
 
   // Handle agent status persistence
-  hooks.agentStatusChanged.tapAsync('persistencePlugin', async (context: AgentStatusContext, callback) => {
+  hooks.agentStatusChanged.tapAsync('messageManagementPlugin', async (context: AgentStatusContext, callback) => {
     try {
       const { handlerContext, status } = context;
 
@@ -76,7 +78,7 @@ export const persistencePlugin: PromptConcatPlugin = (hooks) => {
 
       callback();
     } catch (error) {
-      logger.error('Persistence plugin error in agentStatusChanged', {
+      logger.error('Message management plugin error in agentStatusChanged', {
         error: error instanceof Error ? error.message : String(error),
         agentId: context.handlerContext.agent.id,
         status: context.status,
@@ -86,7 +88,7 @@ export const persistencePlugin: PromptConcatPlugin = (hooks) => {
   });
 
   // Handle AI response updates during streaming
-  hooks.responseUpdate.tapAsync('persistencePlugin', (context: AIResponseContext, callback) => {
+  hooks.responseUpdate.tapAsync('messageManagementPlugin', (context: AIResponseContext, callback) => {
     try {
       const { handlerContext, response } = context;
 
@@ -105,6 +107,7 @@ export const persistencePlugin: PromptConcatPlugin = (hooks) => {
             content: response.content,
             modified: new Date(),
             metadata: { isComplete: false },
+            duration: undefined, // AI responses persist indefinitely by default
           };
           handlerContext.agent.messages.push(aiMessage);
         } else {
@@ -123,16 +126,11 @@ export const persistencePlugin: PromptConcatPlugin = (hooks) => {
             messageId: aiMessage.id,
           });
         }
-
-        logger.debug('AI response message updated during streaming', {
-          messageId: aiMessage.id,
-          contentLength: response.content.length,
-        });
       }
 
       callback();
     } catch (error) {
-      logger.error('Persistence plugin error in responseUpdate', {
+      logger.error('Message management plugin error in responseUpdate', {
         error: error instanceof Error ? error.message : String(error),
       });
       callback();
@@ -140,7 +138,7 @@ export const persistencePlugin: PromptConcatPlugin = (hooks) => {
   });
 
   // Handle AI response completion
-  hooks.responseComplete.tapAsync('persistencePlugin', async (context: AIResponseContext, callback) => {
+  hooks.responseComplete.tapAsync('messageManagementPlugin', async (context: AIResponseContext, callback) => {
     try {
       const { handlerContext, response } = context;
 
@@ -163,7 +161,10 @@ export const persistencePlugin: PromptConcatPlugin = (hooks) => {
             role: 'assistant',
             content: response.content,
             modified: new Date(),
-            metadata: { isComplete: true },
+            metadata: {
+              isComplete: true,
+            },
+            duration: undefined, // Default duration for AI responses
           };
           handlerContext.agent.messages.push(aiMessage);
         }
@@ -192,7 +193,47 @@ export const persistencePlugin: PromptConcatPlugin = (hooks) => {
 
       callback();
     } catch (error) {
-      logger.error('Persistence plugin error in responseComplete', {
+      logger.error('Message management plugin error in responseComplete', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      callback();
+    }
+  });
+
+  // Handle tool result messages persistence and UI updates
+  hooks.toolExecuted.tapAsync('messageManagementPlugin', (context: ToolExecutionContext, callback) => {
+    try {
+      const { handlerContext } = context;
+
+      // Update UI for any newly added messages with duration settings
+      const newMessages = handlerContext.agent.messages.filter(
+        (message) => message.metadata?.isToolResult && !message.metadata.uiUpdated,
+      );
+
+      for (const message of newMessages) {
+        try {
+          const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+          agentInstanceService.debounceUpdateMessage(message, handlerContext.agent.id);
+          // Mark as UI updated to avoid duplicate updates
+          message.metadata = { ...message.metadata, uiUpdated: true };
+        } catch (serviceError) {
+          logger.warn('Failed to update UI for tool result message', {
+            error: serviceError instanceof Error ? serviceError.message : String(serviceError),
+            messageId: message.id,
+          });
+        }
+      }
+
+      if (newMessages.length > 0) {
+        logger.debug('Tool result messages UI updated', {
+          count: newMessages.length,
+          messageIds: newMessages.map(m => m.id),
+        });
+      }
+
+      callback();
+    } catch (error) {
+      logger.error('Message management plugin error in toolExecuted', {
         error: error instanceof Error ? error.message : String(error),
       });
       callback();

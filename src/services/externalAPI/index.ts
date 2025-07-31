@@ -155,6 +155,7 @@ export class ExternalAPIService implements IExternalAPIService {
   ): AsyncGenerator<AIStreamResponse, void, unknown> {
     // Prepare request with minimal context
     const { requestId, controller } = this.prepareAIRequest();
+    logger.debug(`[${requestId}] Starting generateFromAI with config`, messages);
 
     try {
       // Send start event
