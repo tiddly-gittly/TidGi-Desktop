@@ -1,7 +1,7 @@
 import { Box, Chip, LinearProgress, Typography } from '@mui/material';
 import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useAgentChatStore } from '../../store/agentChatStore';
+import { useAgentChatStore } from '../../../Agent/store/agentChatStore';
 
 interface PreviewProgressBarProps {
   /**
