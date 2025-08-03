@@ -111,7 +111,7 @@ describe('WikiSearch Plugin Integration', () => {
           {
             id: 'user-1',
             role: 'user' as const,
-            content: 'Help me search for information in my wiki',
+            content: '帮我在我的wiki中搜索信息',
             agentId: 'test-agent',
             contentType: 'text/plain',
             modified: new Date(),
@@ -132,30 +132,28 @@ describe('WikiSearch Plugin Integration', () => {
 
       // Phase 2: Tool Execution
       // Use real tool calling detection with mocked AI response containing tool call
-      const llmResponseWithToolCall = `I will search for important content using the wiki-search tool.
-
-<tool_use name="wiki-search">
+      const llmResponseWithToolCall = `<tool_use name="wiki-search">
 {
   "workspaceName": "Test Wiki 1",
-  "filter": "[tag[important]]"
+  "filter": "[title[Index]]"
 }
 </tool_use>
 
-Let me find the relevant information for you.`;
+在wiki中找到了关于 \`Index\` 的条目。\`Index\` 是一个TiddlyWiki的索引条目，点击右上角的笔形图标可以开始编辑这个条目。如果你想了解更多关于TiddlyWiki的信息，可以访问中文教程 [[教程 (Chinese)|https://tw-cn.netlify.app/]] 或者官方英文网站 [[Official Site (English)|https://tiddlywiki.com/]]。`;
 
       // Mock wiki search results
       mockWikiService.wikiOperationInServer.mockImplementation(
         (channel: WikiChannel, _workspaceId: string, args: string[]) => {
           if (channel === WikiChannel.runFilter) {
-            return Promise.resolve(['Important Note 1', 'Important Note 2']);
+            return Promise.resolve(['Index']);
           }
           if (channel === WikiChannel.getTiddlersAsJson) {
             const title = args[0];
             return Promise.resolve([
               {
                 title,
-                text: `Content of ${title}`,
-                tags: ['important'],
+                text: `这是 ${title} 条目的内容。这是一个TiddlyWiki的索引条目，点击右上角的笔形图标可以开始编辑这个条目。`,
+                tags: ['$:/tags/Index'],
               },
             ]);
           }
@@ -195,8 +193,15 @@ Let me find the relevant information for you.`;
 
       // Execute the response complete hook
       await responseHooks.responseComplete.promise(responseContext);
+
+      // Verify filter call was made
       expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(WikiChannel.runFilter, 'test-wiki-1', [
-        '[tag[important]]',
+        '[title[Index]]',
+      ]);
+
+      // Verify tiddler content call was made
+      expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(WikiChannel.getTiddlersAsJson, 'test-wiki-1', [
+        'Index',
       ]);
 
       // Verify tool results were set up for next round
@@ -208,7 +213,7 @@ Let me find the relevant information for you.`;
       expect(toolResultMessage.role).toBe('user');
       expect(toolResultMessage.content).toContain('<functions_result>');
       expect(toolResultMessage.content).toContain('Tool: wiki-search');
-      expect(toolResultMessage.content).toContain('Important Note 1');
+      expect(toolResultMessage.content).toContain('Index');
     });
 
     it('should handle errors in wiki search gracefully', async () => {
@@ -221,16 +226,14 @@ Let me find the relevant information for you.`;
       expect(wikiPlugin).toBeDefined();
 
       // Use a real AI response with tool call for nonexistent workspace
-      const llmResponseWithNonexistentWorkspace = `I will search in a nonexistent wiki.
-
-<tool_use name="wiki-search">
+      const llmResponseWithNonexistentWorkspace = `<tool_use name="wiki-search">
 {
-  "workspaceName": "Nonexistent Wiki",
+  "workspaceName": "不存在的Wiki",
   "filter": "[tag[test]]"
 }
 </tool_use>
 
-Let me search for information.`;
+让我在wiki中搜索相关信息。`;
 
       const responseContext: AIResponseContext = {
         handlerContext: {

@@ -171,7 +171,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                 isFinal: true,
                 actions: undefined as { yieldNextRoundTo?: 'self' | 'human'; newUserMessage?: string } | undefined,
               };
-              
+
               await handlerHooks.responseComplete.promise(responseCompleteContext);
 
               // Check if responseComplete hooks set yieldNextRoundTo

@@ -266,7 +266,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
             containsToolCall: true,
             toolId: 'wiki-search',
           };
-          
+
           logger.debug('Set duration=1 for AI tool call message', {
             messageId: latestAiMessage.id,
             toolId: 'wiki-search',
@@ -323,7 +323,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
           responseContext.actions = {};
         }
         responseContext.actions.yieldNextRoundTo = 'self';
-        
+
         logger.debug('Wiki search setting yieldNextRoundTo=self', {
           toolId: 'wiki-search',
           agentId: handlerContext.agent.id,
