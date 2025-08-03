@@ -3,7 +3,7 @@ import { AgentHandlerContext } from '@services/agentInstance/buildInAgentHandler
 import { AgentInstanceMessage } from '@services/agentInstance/interface';
 import { AIStreamResponse } from '@services/externalAPI/interface';
 import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
-import type { IPrompt, Plugin } from '../promptConcat/promptConcatSchema/';
+import type { IPrompt, IPromptConcatPlugin } from '../promptConcat/promptConcatSchema/';
 
 /**
  * Next round target options
@@ -43,7 +43,7 @@ export interface PromptConcatHookContext extends BasePluginContext {
   /** Current prompt tree */
   prompts: IPrompt[];
   /** Plugin configuration */
-  pluginConfig: Plugin;
+  pluginConfig: IPromptConcatPlugin;
 }
 
 /**

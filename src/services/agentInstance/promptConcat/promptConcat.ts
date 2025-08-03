@@ -20,7 +20,7 @@ import { AgentHandlerContext } from '../buildInAgentHandlers/type';
 import { AgentInstanceMessage } from '../interface';
 import { builtInPlugins, createHandlerHooks, initializePluginSystem, PromptConcatHookContext } from '../plugins';
 import { AgentPromptDescription, IPrompt } from './promptConcatSchema';
-import { Plugin } from './promptConcatSchema/plugin';
+import { IPromptConcatPlugin } from './promptConcatSchema/plugin';
 
 // Initialize plugin system on module load
 initializePluginSystem();
@@ -40,7 +40,7 @@ export interface PromptConcatContext {
  * Generate ID-based path mapping for prompts to enable source tracking
  * Uses actual node IDs instead of indices to avoid path conflicts with dynamic content
  */
-function generateSourcePaths(prompts: IPrompt[], plugins: Plugin[] = []): Map<string, string[]> {
+function generateSourcePaths(prompts: IPrompt[], plugins: IPromptConcatPlugin[] = []): Map<string, string[]> {
   const pathMap = new Map<string, string[]>();
   function traversePrompts(items: IPrompt[], currentPath: string[]): void {
     items.forEach((item) => {
@@ -51,7 +51,7 @@ function generateSourcePaths(prompts: IPrompt[], plugins: Plugin[] = []): Map<st
       }
     });
   }
-  function traversePlugins(items: Plugin[], currentPath: string[]): void {
+  function traversePlugins(items: IPromptConcatPlugin[], currentPath: string[]): void {
     items.forEach((item) => {
       const itemPath = [...currentPath, item.id];
       pathMap.set(item.id, itemPath);
@@ -203,7 +203,7 @@ export interface PromptConcatStreamState {
   /** Current processing step */
   step: 'plugin' | 'finalize' | 'flatten' | 'complete';
   /** Current plugin being processed (if step is 'plugin') */
-  currentPlugin?: Plugin;
+  currentPlugin?: IPromptConcatPlugin;
   /** Processing progress (0-1) */
   progress: number;
   /** Whether processing is complete */
@@ -293,7 +293,7 @@ export async function* promptConcatStream(
     handlerContext,
     messages,
     prompts: modifiedPrompts,
-    pluginConfig: {} as Plugin, // Empty plugin for finalization
+    pluginConfig: {} as IPromptConcatPlugin, // Empty plugin for finalization
     metadata: { sourcePaths },
   };
 

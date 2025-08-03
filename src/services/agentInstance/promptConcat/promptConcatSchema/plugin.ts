@@ -120,7 +120,7 @@ export const AutoReplyParameterSchema = z.object({
   description: t('Schema.AutoReply.Description'),
 });
 
-export const PluginSchema = z.object({
+export const PromptConcatPluginSchema = z.object({
   id: z.string().meta({
     title: t('Schema.Plugin.IdTitle'),
     description: t('Schema.Plugin.Id'),
@@ -184,4 +184,5 @@ export const PluginSchema = z.object({
   }),
 });
 
-export type Plugin = z.infer<typeof PluginSchema>;
+// Allow pluginId to be a string so less error on test.
+export type IPromptConcatPlugin = Omit<z.infer<typeof PromptConcatPluginSchema>, 'pluginId'> & { pluginId: string };

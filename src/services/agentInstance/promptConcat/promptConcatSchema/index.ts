@@ -1,7 +1,7 @@
 import { identity } from 'lodash';
 import { z } from 'zod/v4';
 import { ModelParametersSchema, ProviderModelSchema } from './modelParameters';
-import { PluginSchema } from './plugin';
+import { PromptConcatPluginSchema } from './plugin';
 import { PromptSchema } from './prompts';
 import { ResponseSchema } from './response';
 import { HANDLER_CONFIG_UI_SCHEMA } from './uiSchema';
@@ -49,7 +49,7 @@ export const HandlerConfigSchema = z.object({
     description: t('Schema.AgentConfig.PromptConfig.Response'),
     title: t('PromptConfig.Tabs.Response'),
   }),
-  plugins: z.array(PluginSchema).meta({
+  plugins: z.array(PromptConcatPluginSchema).meta({
     description: t('Schema.AgentConfig.PromptConfig.Plugins'),
     title: t('PromptConfig.Tabs.Plugins'),
   }),
