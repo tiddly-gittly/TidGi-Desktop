@@ -15,7 +15,7 @@ export async function initRendererI18N(): Promise<void> {
       backend: {
         loadPath: 'locales/{{lng}}/{{ns}}.json',
       },
-      debug: isDevelopment,
+      debug: false, // isDevelopment,
       defaultNS: ['translation', 'agent'],
       interpolation: { escapeValue: false },
       saveMissing: false,

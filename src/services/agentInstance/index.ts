@@ -394,6 +394,9 @@ export class AgentInstanceService implements IAgentInstanceService {
         timestamp: now,
       });
 
+      // Notify agent update after user message is added
+      this.notifyAgentUpdate(agentId, handlerContext.agent);
+
       try {
         // Create async generator
         const generator = handler(handlerContext);
@@ -414,6 +417,9 @@ export class AgentInstanceService implements IAgentInstanceService {
             if (this.statusSubjects.has(statusKey)) {
               this.statusSubjects.get(statusKey)?.next(result);
             }
+
+            // Notify agent update with latest messages for real-time UI updates
+            this.notifyAgentUpdate(agentId, handlerContext.agent);
           }
 
           // Store the last result for completion handling
@@ -438,6 +444,9 @@ export class AgentInstanceService implements IAgentInstanceService {
               this.statusSubjects.delete(statusKey);
             }
           }
+
+          // Final agent update notification
+          this.notifyAgentUpdate(agentId, handlerContext.agent);
 
           // Trigger agentStatusChanged hook for completion
           await this.handlerHooks.agentStatusChanged.promise({
@@ -687,6 +696,32 @@ export class AgentInstanceService implements IAgentInstanceService {
                 messageEntity.modified = new Date();
 
                 await messageRepo.save(messageEntity);
+
+                // After updating message, notify agent subscribers if agentId is provided
+                if (aid) {
+                  // Get updated agent data to notify subscribers
+                  const agentRepo = transaction.getRepository(AgentInstanceEntity);
+                  const agentEntity = await agentRepo.findOne({
+                    where: { id: aid },
+                    relations: ['messages'],
+                  });
+
+                  if (agentEntity) {
+                    const updatedAgent: AgentInstance = {
+                      ...pick(agentEntity, AGENT_INSTANCE_FIELDS),
+                      messages: agentEntity.messages || [],
+                    };
+
+                    // Notify subscribers after updating message
+                    if (this.agentInstanceSubjects.has(aid)) {
+                      this.agentInstanceSubjects.get(aid)?.next(updatedAgent);
+                      logger.debug(`Notified agent subscribers of updated message: ${messageId}`, {
+                        method: 'debounceUpdateMessage',
+                        agentId: aid,
+                      });
+                    }
+                  }
+                }
               } else if (aid) {
                 // Create new message if it doesn't exist and agentId provided
                 // Create message using utility function

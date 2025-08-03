@@ -163,8 +163,13 @@ describe('Wiki Search Plugin', () => {
       const originalPromptsText = JSON.stringify(prompts);
 
       const context: PromptConcatHookContext = {
+        handlerContext: {
+          agent: { id: 'test', messages: [], agentDefId: 'test', status: { state: 'working', modified: new Date() }, created: new Date() },
+          agentDef: { id: 'test', name: 'test' },
+          isCancelled: () => false,
+        },
         pluginConfig: wikiPlugin,
-        prompts,
+        prompts: prompts as unknown as PromptConcatHookContext['prompts'], // Type assertion needed due to JSON parsing
         messages: [
           {
             id: 'user-1',

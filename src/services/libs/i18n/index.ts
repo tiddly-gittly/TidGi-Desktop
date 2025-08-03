@@ -19,7 +19,7 @@ export async function initRendererI18NHandler(): Promise<void> {
       loadPath: path.join(LOCALIZATION_FOLDER, 'locales/{{lng}}/{{ns}}.json'),
       addPath: path.join(LOCALIZATION_FOLDER, 'locales/{{lng}}/{{ns}}.missing.json'),
     },
-    debug: isElectronDevelopment,
+    debug: false, // isElectronDevelopment,
     defaultNS: ['translation', 'agent'],
     interpolation: { escapeValue: false },
     saveMissing: false,

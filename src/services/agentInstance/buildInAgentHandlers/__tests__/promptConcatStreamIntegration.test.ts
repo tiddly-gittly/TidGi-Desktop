@@ -49,7 +49,7 @@ describe('WikiSearch Plugin Integration', () => {
     mockWorkspaceService.getWorkspacesAsList.mockResolvedValue([
       {
         id: 'test-wiki-1',
-        name: 'Test Wiki 1',
+        name: 'wiki', // Changed to match real usage
         wikiFolderLocation: '/path/to/test-wiki-1',
         homeUrl: 'http://localhost:5212/',
         port: 5212,
@@ -125,19 +125,15 @@ describe('WikiSearch Plugin Integration', () => {
 
       // Check if tool was injected by looking for wiki tool in prompts
       const promptTexts = JSON.stringify(promptConcatHookContext.prompts);
-      const toolListInjected = promptTexts.includes('Test Wiki 1') && promptTexts.includes('wiki-search');
+      const toolListInjected = promptTexts.includes('wiki (ID: test-wiki-1)') && promptTexts.includes('wiki-search');
 
       expect(toolListInjected).toBe(true);
       expect(mockWorkspaceService.getWorkspacesAsList).toHaveBeenCalled();
 
       // Phase 2: Tool Execution
-      // Use real tool calling detection with mocked AI response containing tool call
-      const llmResponseWithToolCall = `<tool_use name="wiki-search">
-{
-  "workspaceName": "Test Wiki 1",
-  "filter": "[title[Index]]"
-}
-</tool_use>
+      // Use realistic AI response order: 1) functions_result 2) tool_use 3) AI explanation
+      // This reflects the actual behavior where tool results appear before the tool call explanation
+      const llmResponseWithToolCall = `<tool_use name="wiki-search">{"workspaceName": "wiki", "filter": "[title[Index]]"}</tool_use>
 
 在wiki中找到了关于 \`Index\` 的条目。\`Index\` 是一个TiddlyWiki的索引条目，点击右上角的笔形图标可以开始编辑这个条目。如果你想了解更多关于TiddlyWiki的信息，可以访问中文教程 [[教程 (Chinese)|https://tw-cn.netlify.app/]] 或者官方英文网站 [[Official Site (English)|https://tiddlywiki.com/]]。`;
 

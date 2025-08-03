@@ -24,7 +24,7 @@ import type { AIResponseContext, PromptConcatPlugin } from './types';
  * Parameter schema for Wiki search tool
  */
 const WikiSearchToolParameterSchema = z.object({
-  workspaceName: z.string().describe('The name of the wiki workspace to search in'),
+  workspaceName: z.string().describe('The name or ID of the wiki workspace to search in'),
   filter: z.string().describe('TiddlyWiki filter expression for searching'),
 });
 
@@ -44,14 +44,14 @@ async function executeWikiSearchTool(
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 
-    // Look up workspace ID from workspace name
+    // Look up workspace ID from workspace name or ID
     const workspaces = await workspaceService.getWorkspacesAsList();
-    const targetWorkspace = workspaces.find(ws => ws.name === workspaceName);
+    const targetWorkspace = workspaces.find(ws => ws.name === workspaceName || ws.id === workspaceName);
 
     if (!targetWorkspace) {
       return {
         success: false,
-        error: `Workspace with name "${workspaceName}" does not exist`,
+        error: `Workspace with name or ID "${workspaceName}" does not exist`,
       };
     }
 
@@ -194,8 +194,18 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
             .map(workspace => `- ${workspace.name} (ID: ${workspace.id})`)
             .join('\n');
 
-          const toolPromptContent =
-            `Available Wiki Workspaces:\n${workspaceList}\n\nAvailable Tools:\n- Tool ID: wiki-search\n- Tool Name: Wiki Search\n- Description: Search content in wiki workspaces\n- Parameters: {\n  "workspaceName": "string (required) - The name of the wiki workspace to search in",\n  "filter": "string (required) - TiddlyWiki filter expression for searching, like [title[Index]]"\n}`;
+          const toolPromptContent = `Wiki Tools:
+- Tool ID: wiki-search
+- Description: Search content in wiki workspaces
+- Parameters: {
+  "workspaceName": "string (required) - The name OR ID of the wiki workspace to search in. Usually use name, when have duplication, use id.",
+  "filter": "string (required) - TiddlyWiki filter expression for searching, like [title[Index]]"
+}
+Example usage:
+<tool_use name="wiki-search">{"workspaceName": "wiki", "filter": "[tag[SomeTag]]"}</tool_use>
+Available Wiki Workspaces:
+${workspaceList}
+`;
 
           const toolPrompt: IPrompt = {
             id: `wiki-tool-list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
