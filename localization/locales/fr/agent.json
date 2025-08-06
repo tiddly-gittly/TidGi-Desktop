@@ -240,18 +240,6 @@
       },
       "Title": ""
     },
-    "AutoReply": {
-      "Description": "Configuration des paramètres de réponse automatique",
-      "MaxAutoReply": "Nombre maximum de réponses automatiques",
-      "MaxAutoReplyTitle": "",
-      "TargetId": "ID de l'élément cible",
-      "TargetIdTitle": "",
-      "Text": "texte de réponse",
-      "TextTitle": "",
-      "Title": "",
-      "Trigger": "Condition de déclenchement",
-      "TriggerTitle": ""
-    },
     "AutoReroll": {
       "Description": "Regénération automatique des paramètres de configuration",
       "MaxRetry": "Nombre maximum de tentatives",
@@ -467,8 +455,6 @@
       "Title": ""
     },
     "ResponseDynamicModification": {
-      "AutoReplyParam": "paramètres de réponse automatique",
-      "AutoReplyParamTitle": "",
       "AutoRerollParam": "Paramètres de régénération automatique",
       "AutoRerollParamTitle": "",
       "Caption": "brève description",
@@ -488,7 +474,6 @@
       "ResponseProcessingType": "Type de réponse au traitement",
       "ResponseProcessingTypeTitle": "",
       "ResponseProcessingTypes": {
-        "AutoReply": "",
         "AutoReroll": "",
         "ToolCalling": ""
       },

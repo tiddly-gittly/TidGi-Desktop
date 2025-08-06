@@ -21,7 +21,6 @@ The `promptConcat` function uses a tapable hooks-based plugin system. Built-in p
    - `retrievalAugmentedGeneration`: Retrieves content from wiki/external sources
    - `modelContextProtocol`: Integrates with external MCP servers
    - `toolCalling`: Processes function calls in responses
-   - `autoReply`: Automatic follow-up response generation
 
 3. **Plugin Registration**:
    - Plugins are registered by `pluginId` field in the `plugins` array

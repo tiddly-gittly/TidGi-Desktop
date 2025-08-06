@@ -86,13 +86,6 @@ export const HANDLER_CONFIG_UI_SCHEMA: UiSchema = {
           showWhen: 'toolCalling',
         },
       },
-      autoReplyParam: {
-        'ui:field': 'ConditionalField',
-        'ui:condition': {
-          dependsOn: 'pluginId',
-          showWhen: 'autoReply',
-        },
-      },
     },
   },
   response: {

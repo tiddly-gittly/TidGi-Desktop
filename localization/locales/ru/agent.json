@@ -241,18 +241,6 @@
       },
       "Title": ""
     },
-    "AutoReply": {
-      "Description": "Автоматическая настройка параметров ответа",
-      "MaxAutoReply": "Максимальное количество автоответов",
-      "MaxAutoReplyTitle": "",
-      "TargetId": "ID целевого элемента",
-      "TargetIdTitle": "",
-      "Text": "текст ответа",
-      "TextTitle": "",
-      "Title": "",
-      "Trigger": "условие срабатывания",
-      "TriggerTitle": ""
-    },
     "AutoReroll": {
       "Description": "автоматическое пересоздание конфигурации параметров",
       "MaxRetry": "максимальное количество попыток",
@@ -468,8 +456,6 @@
       "Title": ""
     },
     "ResponseDynamicModification": {
-      "AutoReplyParam": "автоматический ответ параметры",
-      "AutoReplyParamTitle": "",
       "AutoRerollParam": "автоматически перегенерировать параметры",
       "AutoRerollParamTitle": "",
       "Caption": "краткое описание",
@@ -489,7 +475,6 @@
       "ResponseProcessingType": "тип обработки ответа",
       "ResponseProcessingTypeTitle": "",
       "ResponseProcessingTypes": {
-        "AutoReply": "",
         "AutoReroll": "",
         "ToolCalling": ""
       },

@@ -241,18 +241,6 @@
       },
       "Title": ""
     },
-    "AutoReply": {
-      "Description": "自動返信パラメータ設定",
-      "MaxAutoReply": "最大自動返信回数",
-      "MaxAutoReplyTitle": "",
-      "TargetId": "ターゲット要素ID",
-      "TargetIdTitle": "",
-      "Text": "返信テキスト",
-      "TextTitle": "",
-      "Title": "",
-      "Trigger": "トリガー条件",
-      "TriggerTitle": ""
-    },
     "AutoReroll": {
       "Description": "自動再生成パラメータ設定",
       "MaxRetry": "最大再試行回数",
@@ -468,8 +456,6 @@
       "Title": ""
     },
     "ResponseDynamicModification": {
-      "AutoReplyParam": "自動返信パラメータ",
-      "AutoReplyParamTitle": "",
       "AutoRerollParam": "自動再生成パラメータ",
       "AutoRerollParamTitle": "",
       "Caption": "簡単な説明",
@@ -489,7 +475,6 @@
       "ResponseProcessingType": "応答処理タイプ",
       "ResponseProcessingTypeTitle": "",
       "ResponseProcessingTypes": {
-        "AutoReply": "",
         "AutoReroll": "",
         "ToolCalling": ""
       },

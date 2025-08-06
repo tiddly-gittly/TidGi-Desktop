@@ -106,20 +106,6 @@ export const ToolCallingParameterSchema = z.object({
   description: t('Schema.ToolCalling.Description'),
 });
 
-export const AutoReplyParameterSchema = z.object({
-  targetId: z.string().meta({
-    title: t('Schema.AutoReply.TargetIdTitle'),
-    description: t('Schema.AutoReply.TargetId'),
-  }),
-  text: z.string().meta({
-    title: t('Schema.AutoReply.TextTitle'),
-    description: t('Schema.AutoReply.Text'),
-  }),
-}).meta({
-  title: t('Schema.AutoReply.Title'),
-  description: t('Schema.AutoReply.Description'),
-});
-
 export const PromptConcatPluginSchema = z.object({
   id: z.string().meta({
     title: t('Schema.Plugin.IdTitle'),
@@ -144,7 +130,6 @@ export const PromptConcatPluginSchema = z.object({
     'wikiSearch',
     'modelContextProtocol',
     'toolCalling',
-    'autoReply',
   ]).meta({
     title: t('Schema.Plugin.PluginIdTitle'),
     description: t('Schema.Plugin.PluginId'),
@@ -154,7 +139,6 @@ export const PromptConcatPluginSchema = z.object({
       { value: 'retrievalAugmentedGeneration', label: t('Schema.Plugin.RAGParamTitle') },
       { value: 'modelContextProtocol', label: t('Schema.Plugin.MCPParamTitle') },
       { value: 'toolCalling', label: t('Schema.Plugin.ToolCallingParamTitle') },
-      { value: 'autoReply', label: t('Schema.Plugin.AutoReplyParamTitle') },
     ],
   }),
   // 参数配置
@@ -177,10 +161,6 @@ export const PromptConcatPluginSchema = z.object({
   toolCallingParam: ToolCallingParameterSchema.optional().meta({
     title: t('Schema.Plugin.ToolCallingParamTitle'),
     description: t('Schema.Plugin.ToolCallingParam'),
-  }),
-  autoReplyParam: AutoReplyParameterSchema.optional().meta({
-    title: t('Schema.Plugin.AutoReplyParamTitle'),
-    description: t('Schema.Plugin.AutoReplyParam'),
   }),
 });
 

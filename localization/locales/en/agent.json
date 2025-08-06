@@ -241,18 +241,6 @@
       },
       "Title": ""
     },
-    "AutoReply": {
-      "Description": "Auto-reply parameter configuration",
-      "MaxAutoReply": "Maximum number of automatic replies",
-      "MaxAutoReplyTitle": "",
-      "TargetId": "Target element ID",
-      "TargetIdTitle": "",
-      "Text": "Reply text",
-      "TextTitle": "",
-      "Title": "",
-      "Trigger": "Trigger condition",
-      "TriggerTitle": ""
-    },
     "AutoReroll": {
       "Description": "Automatically regenerate parameter configuration",
       "MaxRetry": "Maximum retry attempts",
@@ -468,8 +456,6 @@
       "Title": ""
     },
     "ResponseDynamicModification": {
-      "AutoReplyParam": "auto-reply parameters",
-      "AutoReplyParamTitle": "",
       "AutoRerollParam": "Automatically regenerate parameters",
       "AutoRerollParamTitle": "",
       "Caption": "brief description",
@@ -489,7 +475,6 @@
       "ResponseProcessingType": "Response Processing Type",
       "ResponseProcessingTypeTitle": "",
       "ResponseProcessingTypes": {
-        "AutoReply": "",
         "AutoReroll": "",
         "ToolCalling": ""
       },

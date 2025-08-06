@@ -241,18 +241,6 @@
       },
       "Title": "智能体配置"
     },
-    "AutoReply": {
-      "Description": "自动回复参数配置",
-      "MaxAutoReply": "最大自动回复次数",
-      "MaxAutoReplyTitle": "最大回复次数",
-      "TargetId": "目标元素ID",
-      "TargetIdTitle": "目标ID",
-      "Text": "回复文本",
-      "TextTitle": "回复文本",
-      "Title": "自动回复参数",
-      "Trigger": "触发条件",
-      "TriggerTitle": "触发条件"
-    },
     "AutoReroll": {
       "Description": "自动重新生成参数配置",
       "MaxRetry": "最大重试次数",
@@ -468,8 +456,6 @@
       "Title": "响应"
     },
     "ResponseDynamicModification": {
-      "AutoReplyParam": "自动回复参数",
-      "AutoReplyParamTitle": "自动回复参数",
       "AutoRerollParam": "自动重新生成参数",
       "AutoRerollParamTitle": "自动重新生成参数",
       "Caption": "简短描述",
@@ -489,7 +475,6 @@
       "ResponseProcessingType": "响应处理类型",
       "ResponseProcessingTypeTitle": "处理类型",
       "ResponseProcessingTypes": {
-        "AutoReply": "自动回复 - 根据条件自动发送后续消息",
         "AutoReroll": "自动重新生成 - 检测到不当内容时自动重新生成",
         "ToolCalling": "工具调用 - 解析响应中的工具调用并执行"
       },

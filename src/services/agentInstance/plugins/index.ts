@@ -32,9 +32,8 @@ export function createHandlerHooks(): PromptConcatHooks {
  * Get all available plugins
  */
 async function getAllPlugins() {
-  const [promptPluginsModule, responsePluginsModule, wikiSearchModule, messageManagementModule] = await Promise.all([
+  const [promptPluginsModule, wikiSearchModule, messageManagementModule] = await Promise.all([
     import('./promptPlugins'),
-    import('./responsePlugins'),
     import('./wikiSearchPlugin'),
     import('./messageManagementPlugin'),
   ]);
@@ -43,7 +42,6 @@ async function getAllPlugins() {
     messageManagementPlugin: messageManagementModule.messageManagementPlugin,
     fullReplacementPlugin: promptPluginsModule.fullReplacementPlugin,
     wikiSearchPlugin: wikiSearchModule.wikiSearchPlugin,
-    autoReplyPlugin: responsePluginsModule.autoReplyPlugin,
   };
 }
 
@@ -88,8 +86,6 @@ export async function initializePluginSystem(): Promise<void> {
   builtInPlugins.set('messageManagement', plugins.messageManagementPlugin);
   builtInPlugins.set('fullReplacement', plugins.fullReplacementPlugin);
   builtInPlugins.set('wikiSearch', plugins.wikiSearchPlugin);
-  builtInPlugins.set('autoReply', plugins.autoReplyPlugin);
-
   logger.debug('All built-in plugins registered to global registry successfully');
 }
 
