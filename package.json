@@ -184,6 +184,7 @@
     "tw5-typed": "^0.6.3",
     "typescript": "5.8.3",
     "typesync": "0.14.3",
+    "unplugin-swc": "^1.5.5",
     "vitest": "^3.2.3",
     "webpack-bundle-analyzer": "4.10.2",
     "webpack-cli": "^6.0.1",

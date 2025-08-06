@@ -11,14 +11,6 @@ export type { AgentResponse, PromptConcatHookContext, PromptConcatHooks, PromptC
 export const builtInPlugins = new Map<string, PromptConcatPlugin>();
 
 /**
- * Register a built-in plugin
- */
-export function registerBuiltInPlugin(pluginId: string, plugin: PromptConcatPlugin): void {
-  builtInPlugins.set(pluginId, plugin);
-  logger.debug(`Registered built-in plugin: ${pluginId}`);
-}
-
-/**
  * Create unified hooks instance for the complete plugin system
  */
 export function createHandlerHooks(): PromptConcatHooks {
@@ -37,67 +29,78 @@ export function createHandlerHooks(): PromptConcatHooks {
 }
 
 /**
- * Register all built-in plugins to hooks
+ * Get all available plugins
  */
-export function registerAllBuiltInPlugins(hooks?: PromptConcatHooks): void {
-  // If hooks provided, register plugins directly to hooks for immediate use
-  if (hooks) {
-    // Import and register message management plugin first (handles database operations, message persistence, and UI updates)
-    import('./messageManagementPlugin').then(module => {
-      module.messageManagementPlugin(hooks);
-      logger.debug('Registered messageManagementPlugin to hooks');
-    }).catch((error: unknown) => {
-      logger.error('Failed to register messageManagementPlugin to hooks:', error);
-    });
-
-    // Import and register wiki search handler plugin
-    import('./wikiSearchPlugin').then(module => {
-      module.wikiSearchPlugin(hooks);
-      logger.debug('Registered wikiSearchPlugin to hooks');
-    }).catch((error: unknown) => {
-      logger.error('Failed to register wikiSearchPlugin to hooks:', error);
-    });
-
-    // Temporarily disable auto reply plugin to debug
-    // import('./responsePlugins').then(module => {
-    //   module.autoReplyPlugin(hooks);
-    //   logger.debug('Registered autoReplyPlugin to hooks');
-    // }).catch((error: unknown) => {
-    //   logger.error('Failed to register autoReplyPlugin to hooks:', error);
-    // });
-
-    logger.debug('Built-in plugins registration to hooks initiated');
-    return;
-  }
-
-  // Otherwise, register plugins to global registry for plugin discovery
-  Promise.all([
+async function getAllPlugins() {
+  const [promptPluginsModule, responsePluginsModule, wikiSearchModule, messageManagementModule] = await Promise.all([
     import('./promptPlugins'),
     import('./responsePlugins'),
     import('./wikiSearchPlugin'),
     import('./messageManagementPlugin'),
-  ]).then(([promptPluginsModule, _responsePluginsModule, wikiSearchModule, messageManagementModule]) => {
-    // Message management plugin (should be first to handle message persistence and UI updates)
-    registerBuiltInPlugin('messageManagement', messageManagementModule.messageManagementPlugin);
+  ]);
 
-    // Prompt processing plugins
-    registerBuiltInPlugin('fullReplacement', promptPluginsModule.fullReplacementPlugin);
-
-    // Wiki search plugin - handles both prompt and response processing
-    registerBuiltInPlugin('wikiSearch', wikiSearchModule.wikiSearchPlugin);
-
-    // Temporarily disable auto reply plugin
-    // registerBuiltInPlugin('autoReply', responsePluginsModule.autoReplyPlugin);
-
-    logger.debug('All built-in plugins registered to global registry successfully');
-  }).catch((error: unknown) => {
-    logger.error('Failed to register built-in plugins to global registry:', error);
-  });
+  return {
+    messageManagementPlugin: messageManagementModule.messageManagementPlugin,
+    fullReplacementPlugin: promptPluginsModule.fullReplacementPlugin,
+    wikiSearchPlugin: wikiSearchModule.wikiSearchPlugin,
+    autoReplyPlugin: responsePluginsModule.autoReplyPlugin,
+  };
 }
 
 /**
- * Initialize plugin system
+ * Register plugins to hooks based on handler configuration
+ * @param hooks - The hooks instance to register plugins to
+ * @param handlerConfig - The handler configuration containing plugin settings
  */
-export function initializePluginSystem(): void {
-  registerAllBuiltInPlugins();
+export async function registerPluginsToHooksFromConfig(
+  hooks: PromptConcatHooks,
+  handlerConfig: { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
+): Promise<void> {
+  // Always register core plugins that are needed for basic functionality
+  const messageManagementModule = await import('./messageManagementPlugin');
+  messageManagementModule.messageManagementPlugin(hooks);
+  logger.debug('Registered messageManagementPlugin to hooks');
+
+  // Register plugins based on handler configuration
+  if (handlerConfig.plugins) {
+    for (const pluginConfig of handlerConfig.plugins) {
+      const { pluginId } = pluginConfig;
+
+      // Get plugin from global registry (supports both built-in and dynamic plugins)
+      const plugin = builtInPlugins.get(pluginId);
+      if (plugin) {
+        plugin(hooks);
+        logger.debug(`Registered plugin ${pluginId} to hooks`);
+      } else {
+        logger.warn(`Plugin not found in registry: ${pluginId}`);
+      }
+    }
+  }
+}
+
+/**
+ * Initialize plugin system - register all built-in plugins to global registry
+ * This should be called once during service initialization
+ */
+export async function initializePluginSystem(): Promise<void> {
+  const plugins = await getAllPlugins();
+  // Register all built-in plugins to global registry for discovery
+  builtInPlugins.set('messageManagement', plugins.messageManagementPlugin);
+  builtInPlugins.set('fullReplacement', plugins.fullReplacementPlugin);
+  builtInPlugins.set('wikiSearch', plugins.wikiSearchPlugin);
+  builtInPlugins.set('autoReply', plugins.autoReplyPlugin);
+
+  logger.debug('All built-in plugins registered to global registry successfully');
+}
+
+/**
+ * Create hooks and register plugins based on handler configuration
+ * This creates a new hooks instance and registers plugins for that specific context
+ */
+export async function createHooksWithPlugins(
+  handlerConfig: { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
+): Promise<PromptConcatHooks> {
+  const hooks = createHandlerHooks();
+  await registerPluginsToHooksFromConfig(hooks, handlerConfig);
+  return hooks;
 }

@@ -8,7 +8,7 @@ import { DataSource, Repository } from 'typeorm';
 import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { basicPromptConcatHandler } from '@services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler';
 import { AgentHandler, AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
-import { createHandlerHooks, initializePluginSystem, registerAllBuiltInPlugins } from '@services/agentInstance/plugins';
+import { createHandlerHooks, createHooksWithPlugins, initializePluginSystem } from '@services/agentInstance/plugins';
 import { promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { promptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
@@ -60,6 +60,11 @@ export class AgentInstanceService implements IAgentInstanceService {
       this.agentInstanceRepository = this.dataSource.getRepository(AgentInstanceEntity);
       this.agentMessageRepository = this.dataSource.getRepository(AgentInstanceMessageEntity);
       logger.debug('AgentInstance repositories initialized');
+
+      // Register plugins to global registry once during initialization
+      await initializePluginSystem();
+      logger.debug('AgentInstance Plugin system initialized and plugins registered to global registry');
+
       // Register built-in handlers
       this.registerBuiltinHandlers();
       logger.debug('AgentInstance handlers registered');
@@ -73,13 +78,8 @@ export class AgentInstanceService implements IAgentInstanceService {
   /**
    * Register built-in agent handlers
    */
-  private registerBuiltinHandlers(): void {
-    // Initialize the new plugin system
-    initializePluginSystem();
-
-    // Register built-in handler plugins
-    registerAllBuiltInPlugins(this.handlerHooks);
-
+  public registerBuiltinHandlers(): void {
+    // Plugins are already registered in initialize(), so we only register handlers here
     // Register basic prompt concatenation handler with its schema
     this.registerHandler('basicPromptConcatHandler', basicPromptConcatHandler, promptConcatHandlerConfigJsonSchema);
   }
@@ -386,8 +386,11 @@ export class AgentInstanceService implements IAgentInstanceService {
         isCancelled: () => cancelToken.value,
       };
 
-      // Trigger userMessageReceived hook
-      await this.handlerHooks.userMessageReceived.promise({
+      // Create fresh hooks for this handler execution and register plugins based on handlerConfig
+      const handlerHooks = await createHooksWithPlugins(agentDefinition.handlerConfig || {});
+
+      // Trigger userMessageReceived hook with the configured plugins
+      await handlerHooks.userMessageReceived.promise({
         handlerContext,
         content,
         messageId,
@@ -445,11 +448,8 @@ export class AgentInstanceService implements IAgentInstanceService {
             }
           }
 
-          // Final agent update notification
-          this.notifyAgentUpdate(agentId, handlerContext.agent);
-
           // Trigger agentStatusChanged hook for completion
-          await this.handlerHooks.agentStatusChanged.promise({
+          await handlerHooks.agentStatusChanged.promise({
             handlerContext,
             status: {
               state: 'completed',
@@ -465,7 +465,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         logger.error(`Agent handler execution failed: ${errorMessage}`);
 
         // Trigger agentStatusChanged hook for failure
-        await this.handlerHooks.agentStatusChanged.promise({
+        await handlerHooks.agentStatusChanged.promise({
           handlerContext,
           status: {
             state: 'failed',
@@ -696,32 +696,6 @@ export class AgentInstanceService implements IAgentInstanceService {
                 messageEntity.modified = new Date();
 
                 await messageRepo.save(messageEntity);
-
-                // After updating message, notify agent subscribers if agentId is provided
-                if (aid) {
-                  // Get updated agent data to notify subscribers
-                  const agentRepo = transaction.getRepository(AgentInstanceEntity);
-                  const agentEntity = await agentRepo.findOne({
-                    where: { id: aid },
-                    relations: ['messages'],
-                  });
-
-                  if (agentEntity) {
-                    const updatedAgent: AgentInstance = {
-                      ...pick(agentEntity, AGENT_INSTANCE_FIELDS),
-                      messages: agentEntity.messages || [],
-                    };
-
-                    // Notify subscribers after updating message
-                    if (this.agentInstanceSubjects.has(aid)) {
-                      this.agentInstanceSubjects.get(aid)?.next(updatedAgent);
-                      logger.debug(`Notified agent subscribers of updated message: ${messageId}`, {
-                        method: 'debounceUpdateMessage',
-                        agentId: aid,
-                      });
-                    }
-                  }
-                }
               } else if (aid) {
                 // Create new message if it doesn't exist and agentId provided
                 // Create message using utility function

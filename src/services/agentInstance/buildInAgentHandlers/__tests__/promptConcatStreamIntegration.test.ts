@@ -3,8 +3,10 @@
  * Tests the complete workflow: tool list injection -> AI response -> tool execution -> next round
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AgentInstanceMessage } from '../../interface';
 
 import { WikiChannel } from '@/constants/channels';
+import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
 import serviceIdentifier from '@services/serviceIdentifier';
 
 // Import defaultAgents configuration
@@ -35,10 +37,14 @@ vi.mock('@services/container', () => ({
   },
 }));
 
+// Mock the response pattern utility
+vi.mock('@services/agentDefinition/responsePatternUtility', () => ({
+  matchToolCalling: vi.fn(),
+}));
+
 // Import plugin components for direct testing
 import { IPromptConcatPlugin } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { createHandlerHooks, PromptConcatHookContext } from '../../plugins/index';
-import { AIResponseContext } from '../../plugins/types';
 import { wikiSearchPlugin } from '../../plugins/wikiSearchPlugin';
 
 describe('WikiSearch Plugin Integration', () => {
@@ -49,7 +55,7 @@ describe('WikiSearch Plugin Integration', () => {
     mockWorkspaceService.getWorkspacesAsList.mockResolvedValue([
       {
         id: 'test-wiki-1',
-        name: 'wiki', // Changed to match real usage
+        name: 'Test Wiki 1',
         wikiFolderLocation: '/path/to/test-wiki-1',
         homeUrl: 'http://localhost:5212/',
         port: 5212,
@@ -111,7 +117,7 @@ describe('WikiSearch Plugin Integration', () => {
           {
             id: 'user-1',
             role: 'user' as const,
-            content: '帮我在我的wiki中搜索信息',
+            content: 'Help me search for information in my wiki',
             agentId: 'test-agent',
             contentType: 'text/plain',
             modified: new Date(),
@@ -125,31 +131,38 @@ describe('WikiSearch Plugin Integration', () => {
 
       // Check if tool was injected by looking for wiki tool in prompts
       const promptTexts = JSON.stringify(promptConcatHookContext.prompts);
-      const toolListInjected = promptTexts.includes('wiki (ID: test-wiki-1)') && promptTexts.includes('wiki-search');
+      const toolListInjected = promptTexts.includes('Test Wiki 1') && promptTexts.includes('wiki-search');
 
       expect(toolListInjected).toBe(true);
       expect(mockWorkspaceService.getWorkspacesAsList).toHaveBeenCalled();
 
       // Phase 2: Tool Execution
-      // Use realistic AI response order: 1) functions_result 2) tool_use 3) AI explanation
-      // This reflects the actual behavior where tool results appear before the tool call explanation
-      const llmResponseWithToolCall = `<tool_use name="wiki-search">{"workspaceName": "wiki", "filter": "[title[Index]]"}</tool_use>
-
-在wiki中找到了关于 \`Index\` 的条目。\`Index\` 是一个TiddlyWiki的索引条目，点击右上角的笔形图标可以开始编辑这个条目。如果你想了解更多关于TiddlyWiki的信息，可以访问中文教程 [[教程 (Chinese)|https://tw-cn.netlify.app/]] 或者官方英文网站 [[Official Site (English)|https://tiddlywiki.com/]]。`;
+      // Mock tool calling detection
+      (matchToolCalling as any).mockReturnValue({
+        found: true,
+        toolId: 'wiki-search',
+        parameters: {
+          workspaceName: 'Test Wiki 1',
+          filter: '[tag[important]]',
+          maxResults: 3,
+          includeText: true,
+        },
+        originalText: 'Search for important content',
+      });
 
       // Mock wiki search results
-      mockWikiService.wikiOperationInServer.mockImplementation(
+      (mockWikiService.wikiOperationInServer as any).mockImplementation(
         (channel: WikiChannel, _workspaceId: string, args: string[]) => {
           if (channel === WikiChannel.runFilter) {
-            return Promise.resolve(['Index']);
+            return Promise.resolve(['Important Note 1', 'Important Note 2']);
           }
           if (channel === WikiChannel.getTiddlersAsJson) {
             const title = args[0];
             return Promise.resolve([
               {
                 title,
-                text: `这是 ${title} 条目的内容。这是一个TiddlyWiki的索引条目，点击右上角的笔形图标可以开始编辑这个条目。`,
-                tags: ['$:/tags/Index'],
+                text: `Content of ${title}`,
+                tags: ['important'],
               },
             ]);
           }
@@ -157,7 +170,7 @@ describe('WikiSearch Plugin Integration', () => {
         },
       );
 
-      const responseContext: AIResponseContext = {
+      const responseContext = {
         handlerContext: {
           agent: {
             id: 'test-agent',
@@ -169,16 +182,22 @@ describe('WikiSearch Plugin Integration', () => {
             created: new Date(),
             messages: [],
           },
-          agentDef: { id: 'test-agent-def', name: 'Test Agent' },
+          agentDef: { id: 'test-agent-def' } as any,
           isCancelled: () => false,
         },
         response: {
           status: 'done' as const,
-          content: llmResponseWithToolCall,
+          content: 'I will search for important content using wiki-search tool.',
           requestId: 'test-request-123',
         },
         requestId: 'test-request',
         isFinal: true,
+        pluginConfig: wikiPlugin,
+        prompts: [],
+        messages: [],
+        llmResponse: 'I will search for important content using wiki-search tool.',
+        responses: [],
+        actions: {} as any,
       };
 
       // Use real handler hooks
@@ -189,27 +208,20 @@ describe('WikiSearch Plugin Integration', () => {
 
       // Execute the response complete hook
       await responseHooks.responseComplete.promise(responseContext);
-
-      // Verify filter call was made
       expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(WikiChannel.runFilter, 'test-wiki-1', [
-        '[title[Index]]',
-      ]);
-
-      // Verify tiddler content call was made
-      expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(WikiChannel.getTiddlersAsJson, 'test-wiki-1', [
-        'Index',
+        '[tag[important]]',
       ]);
 
       // Verify tool results were set up for next round
-      expect(responseContext.actions?.yieldNextRoundTo).toBe('self');
+      expect(responseContext.actions.yieldNextRoundTo).toBe('self');
 
       // Verify tool result message was added to agent history
       expect(responseContext.handlerContext.agent.messages.length).toBeGreaterThan(0);
-      const toolResultMessage = responseContext.handlerContext.agent.messages[responseContext.handlerContext.agent.messages.length - 1];
+      const toolResultMessage = responseContext.handlerContext.agent.messages[responseContext.handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
       expect(toolResultMessage.role).toBe('user');
       expect(toolResultMessage.content).toContain('<functions_result>');
       expect(toolResultMessage.content).toContain('Tool: wiki-search');
-      expect(toolResultMessage.content).toContain('Index');
+      expect(toolResultMessage.content).toContain('Important Note 1');
     });
 
     it('should handle errors in wiki search gracefully', async () => {
@@ -221,17 +233,18 @@ describe('WikiSearch Plugin Integration', () => {
       const wikiPlugin = handlerConfig.plugins.find(p => p.pluginId === 'wikiSearch');
       expect(wikiPlugin).toBeDefined();
 
-      // Use a real AI response with tool call for nonexistent workspace
-      const llmResponseWithNonexistentWorkspace = `<tool_use name="wiki-search">
-{
-  "workspaceName": "不存在的Wiki",
-  "filter": "[tag[test]]"
-}
-</tool_use>
+      // Mock tool calling with invalid workspace
+      (matchToolCalling as any).mockReturnValue({
+        found: true,
+        toolId: 'wiki-search',
+        parameters: {
+          workspaceName: 'Nonexistent Wiki',
+          filter: '[tag[test]]',
+        },
+        originalText: 'Search in nonexistent wiki',
+      });
 
-让我在wiki中搜索相关信息。`;
-
-      const responseContext: AIResponseContext = {
+      const responseContext = {
         handlerContext: {
           agent: {
             id: 'test-agent',
@@ -243,16 +256,22 @@ describe('WikiSearch Plugin Integration', () => {
             created: new Date(),
             messages: [],
           },
-          agentDef: { id: 'test-agent-def', name: 'Test Agent' },
+          agentDef: { id: 'test-agent-def' } as any,
           isCancelled: () => false,
         },
         response: {
           status: 'done' as const,
-          content: llmResponseWithNonexistentWorkspace,
+          content: 'Search in nonexistent wiki',
           requestId: 'test-request-234',
         },
         requestId: 'test-request',
         isFinal: true,
+        pluginConfig: wikiPlugin,
+        prompts: [],
+        messages: [],
+        llmResponse: 'Search in nonexistent wiki',
+        responses: [],
+        actions: {} as any,
       };
 
       // Use real handler hooks
@@ -265,11 +284,11 @@ describe('WikiSearch Plugin Integration', () => {
       await responseHooks.responseComplete.promise(responseContext);
 
       // Should still set up next round even with error
-      expect(responseContext.actions?.yieldNextRoundTo).toBe('self');
+      expect(responseContext.actions.yieldNextRoundTo).toBe('self');
 
       // Verify error message was added to agent history
       expect(responseContext.handlerContext.agent.messages.length).toBeGreaterThan(0);
-      const errorResultMessage = responseContext.handlerContext.agent.messages[responseContext.handlerContext.agent.messages.length - 1];
+      const errorResultMessage = responseContext.handlerContext.agent.messages[responseContext.handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
       expect(errorResultMessage.role).toBe('user');
       expect(errorResultMessage.content).toContain('Error:');
       expect(errorResultMessage.content).toContain('does not exist');

@@ -2,6 +2,7 @@
  * Tests for Wiki Search plugin
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AgentInstanceMessage } from '../../interface';
 
 import { WikiChannel } from '@/constants/channels';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -10,7 +11,6 @@ import { AgentPromptDescription } from '@services/agentInstance/promptConcat/pro
 import { cloneDeep } from 'lodash';
 import defaultAgents from '../../buildInAgentHandlers/defaultAgents.json';
 import { createHandlerHooks, PromptConcatHookContext } from '../index';
-import { AIResponseContext } from '../types';
 import { wikiSearchPlugin } from '../wikiSearchPlugin';
 
 // Use the real agent config
@@ -104,7 +104,7 @@ describe('Wiki Search Plugin', () => {
         {
           id: 'user-1',
           role: 'user' as const,
-          content: '帮我在我的wiki中搜索信息',
+          content: 'Help me search for information in my wiki',
           agentId: 'test-agent',
           contentType: 'text/plain',
           modified: new Date(),
@@ -113,12 +113,12 @@ describe('Wiki Search Plugin', () => {
 
       const context: PromptConcatHookContext = {
         handlerContext: {
-          agent: { id: 'test', messages: [], agentDefId: 'test', status: { state: 'working', modified: new Date() }, created: new Date() },
+          agent: { id: 'test', messages: [], agentDefId: 'test', status: { state: 'working' as const, modified: new Date() }, created: new Date() },
           agentDef: { id: 'test', name: 'test' },
           isCancelled: () => false,
         },
         pluginConfig: wikiPlugin,
-        prompts,
+        prompts: prompts,
         messages,
       };
 
@@ -128,9 +128,6 @@ describe('Wiki Search Plugin', () => {
 
       // Execute the processPrompts hook
       await promptHooks.processPrompts.promise(context);
-
-      // Debug: Print the results
-      console.log('Final prompts:', JSON.stringify(prompts, null, 2));
 
       // Verify that tool information was injected into the prompts
       const promptTexts = JSON.stringify(prompts);
@@ -162,18 +159,13 @@ describe('Wiki Search Plugin', () => {
       const prompts = cloneDeep(defaultAgents[0].handlerConfig.prompts);
       const originalPromptsText = JSON.stringify(prompts);
 
-      const context: PromptConcatHookContext = {
-        handlerContext: {
-          agent: { id: 'test', messages: [], agentDefId: 'test', status: { state: 'working', modified: new Date() }, created: new Date() },
-          agentDef: { id: 'test', name: 'test' },
-          isCancelled: () => false,
-        },
+      const context = {
         pluginConfig: wikiPlugin,
-        prompts: prompts as unknown as PromptConcatHookContext['prompts'], // Type assertion needed due to JSON parsing
+        prompts,
         messages: [
           {
             id: 'user-1',
-            role: 'user',
+            role: 'user' as const,
             content: 'Hello, how are you?',
             agentId: 'test-agent',
             contentType: 'text/plain',
@@ -184,7 +176,7 @@ describe('Wiki Search Plugin', () => {
 
       const hooks = {
         processPrompts: {
-          tapAsync: (name: string, callback: (ctx: PromptConcatHookContext, cb: () => void) => Promise<void>) => {
+          tapAsync: (name: string, callback: (ctx: any, cb: () => void) => Promise<void>) => {
             if (name === 'wikiSearchPlugin-toolList') {
               return callback(context, () => {});
             }
@@ -196,7 +188,7 @@ describe('Wiki Search Plugin', () => {
         },
       };
 
-      wikiSearchPlugin(hooks as unknown as Parameters<typeof wikiSearchPlugin>[0]);
+      wikiSearchPlugin(hooks as any);
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Prompts should not be modified since trigger condition wasn't met
@@ -211,15 +203,15 @@ describe('Wiki Search Plugin', () => {
       mockWikiService.wikiOperationInServer.mockImplementation(
         (channel: WikiChannel, _workspaceId: string, args: string[]) => {
           if (channel === WikiChannel.runFilter) {
-            return Promise.resolve(['Index']);
+            return Promise.resolve(['Important Note 1', 'Important Note 2']);
           }
           if (channel === WikiChannel.getTiddlersAsJson) {
             const title = args[0];
             return Promise.resolve([
               {
                 title,
-                text: `这是 ${title} 条目的内容。这是一个TiddlyWiki的索引条目，点击右上角的笔形图标可以开始编辑这个条目。`,
-                tags: ['$:/tags/Index'],
+                text: `Content of ${title}: This contains important information.`,
+                tags: ['important'],
               },
             ]);
           }
@@ -227,34 +219,46 @@ describe('Wiki Search Plugin', () => {
         },
       );
 
-      const handlerContext: AIResponseContext['handlerContext'] = {
+      const handlerContext = {
         agent: {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
           status: {
-            state: 'working',
+            state: 'working' as const,
             modified: new Date(),
           },
           created: new Date(),
           messages: [],
         },
-        agentDef: { id: 'test-agent-def', name: 'Test Agent' },
+        agentDef: { id: 'test-agent-def' } as any,
         isCancelled: () => false,
       };
 
       // Create a response that contains a valid tool call
-      const response: AIResponseContext['response'] = {
-        status: 'done',
-        content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[title[Index]]"}</tool_use>',
+      const response = {
+        status: 'done' as const,
+        content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[tag[important]]", "maxResults": 3, "includeText": true}</tool_use>',
         requestId: 'test-request-123',
       };
 
-      const context: AIResponseContext = {
+      const context = {
         handlerContext,
         response,
         requestId: 'test-request',
         isFinal: true,
-        actions: {},
+        pluginConfig: {
+          id: 'test-plugin',
+          pluginId: 'wikiSearch' as const,
+          forbidOverrides: false,
+        },
+        prompts: [],
+        messages: [],
+        llmResponse: response.content,
+        responses: [],
+        actions: {
+          yieldNextRoundTo: undefined as any,
+          newUserMessage: undefined as any,
+        },
       };
 
       // Use real handler hooks
@@ -267,60 +271,72 @@ describe('Wiki Search Plugin', () => {
       await hooks.responseComplete.promise(context);
 
       // Verify that the search was executed and results were set up for next round
-      expect(context.actions?.yieldNextRoundTo).toBe('self');
+      expect(context.actions.yieldNextRoundTo).toBe('self');
 
       // Verify tool result message was added to agent history
-      expect(context.handlerContext.agent.messages.length).toBeGreaterThan(0);
-      const toolResultMessage = context.handlerContext.agent.messages[context.handlerContext.agent.messages.length - 1];
+      expect(handlerContext.agent.messages.length).toBeGreaterThan(0);
+      const toolResultMessage = handlerContext.agent.messages[handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
       expect(toolResultMessage.role).toBe('user');
       expect(toolResultMessage.content).toContain('<functions_result>');
       expect(toolResultMessage.content).toContain('Tool: wiki-search');
-      expect(toolResultMessage.content).toContain('Index');
+      expect(toolResultMessage.content).toContain('Important Note 1');
       expect(toolResultMessage.metadata?.isToolResult).toBe(true);
     });
 
     it('should handle wiki search errors gracefully', async () => {
-      const handlerContext2: AIResponseContext['handlerContext'] = {
+      const handlerContext = {
         agent: {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
           status: {
-            state: 'working',
+            state: 'working' as const,
             modified: new Date(),
           },
           created: new Date(),
           messages: [],
         },
-        agentDef: { id: 'test-agent-def', name: 'Test Agent' },
+        agentDef: { id: 'test-agent-def' } as any,
         isCancelled: () => false,
       };
 
       // Tool call with nonexistent workspace
-      const response2: AIResponseContext['response'] = {
-        status: 'done',
-        content: '<tool_use name="wiki-search">{"workspaceName": "不存在的Wiki", "filter": "[tag[test]]"}</tool_use>',
+      const response = {
+        status: 'done' as const,
+        content: '<tool_use name="wiki-search">{"workspaceName": "Nonexistent Wiki", "filter": "[tag[test]]"}</tool_use>',
         requestId: 'test-request-234',
       };
 
-      const context2: AIResponseContext = {
-        handlerContext: handlerContext2,
-        response: response2,
+      const context = {
+        handlerContext,
+        response,
         requestId: 'test-request',
         isFinal: true,
-        actions: {},
+        pluginConfig: {
+          id: 'test-plugin',
+          pluginId: 'wikiSearch' as const,
+          forbidOverrides: false,
+        },
+        prompts: [],
+        messages: [],
+        llmResponse: response.content,
+        responses: [],
+        actions: {
+          yieldNextRoundTo: undefined,
+          newUserMessage: undefined,
+        },
       };
 
       const hooks = createHandlerHooks();
       wikiSearchPlugin(hooks);
 
-      await hooks.responseComplete.promise(context2);
+      await hooks.responseComplete.promise(context);
 
       // Should still set up next round with error message
-      expect(context2.actions?.yieldNextRoundTo).toBe('self');
+      expect(context.actions.yieldNextRoundTo).toBe('self');
 
       // Verify error message was added to agent history
-      expect(context2.handlerContext.agent.messages.length).toBeGreaterThan(0);
-      const errorResultMessage = context2.handlerContext.agent.messages[context2.handlerContext.agent.messages.length - 1];
+      expect(handlerContext.agent.messages.length).toBeGreaterThan(0);
+      const errorResultMessage = handlerContext.agent.messages[handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
       expect(errorResultMessage.role).toBe('user');
       expect(errorResultMessage.content).toContain('<functions_result>');
       expect(errorResultMessage.content).toContain('Error:');
@@ -330,37 +346,46 @@ describe('Wiki Search Plugin', () => {
     });
 
     it('should skip execution when no tool call is detected', async () => {
-      const context3: AIResponseContext = {
+      const context = {
         handlerContext: {
           agent: {
             id: 'test-agent',
             agentDefId: 'test-agent-def',
             status: {
-              state: 'working',
+              state: 'working' as const,
               modified: new Date(),
             },
             created: new Date(),
             messages: [],
           },
-          agentDef: { id: 'test-agent-def', name: 'Test Agent' },
+          agentDef: { id: 'test-agent-def' } as any,
           isCancelled: () => false,
         },
         response: {
-          status: 'done',
+          status: 'done' as const,
           content: 'Just a regular response without any tool calls',
           requestId: 'test-request-345',
         },
         requestId: 'test-request',
         isFinal: true,
+        pluginConfig: {
+          id: 'test-plugin',
+          pluginId: 'wikiSearch' as const,
+          forbidOverrides: false,
+        },
+        prompts: [],
+        messages: [],
+        llmResponse: 'Just a regular response without any tool calls',
+        responses: [],
       };
 
       const hooks = createHandlerHooks();
       wikiSearchPlugin(hooks);
 
-      await hooks.responseComplete.promise(context3);
+      await hooks.responseComplete.promise(context);
 
       // Context should not be modified
-      expect(context3.actions).toBeUndefined();
+      expect((context as any).actions).toBeUndefined();
     });
   });
 });

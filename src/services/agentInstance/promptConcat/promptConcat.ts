@@ -18,12 +18,9 @@ import { CoreMessage } from 'ai';
 import { cloneDeep } from 'lodash';
 import { AgentHandlerContext } from '../buildInAgentHandlers/type';
 import { AgentInstanceMessage } from '../interface';
-import { builtInPlugins, createHandlerHooks, initializePluginSystem, PromptConcatHookContext } from '../plugins';
+import { builtInPlugins, createHandlerHooks, PromptConcatHookContext } from '../plugins';
 import { AgentPromptDescription, IPrompt } from './promptConcatSchema';
 import { IPromptConcatPlugin } from './promptConcatSchema/plugin';
-
-// Initialize plugin system on module load
-initializePluginSystem();
 
 /**
  * Context type specific for prompt concatenation operations

@@ -4,7 +4,7 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { merge } from 'lodash';
 import { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
-import { createHandlerHooks, registerAllBuiltInPlugins } from '../plugins';
+import { createHooksWithPlugins } from '../plugins';
 import { YieldNextRoundTarget } from '../plugins/types';
 import { AgentPromptDescription, AiAPIConfig, HandlerConfig } from '../promptConcat/promptConcatSchema';
 import { responseConcat } from '../promptConcat/responseConcat';
@@ -33,9 +33,8 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
   const maxRetries = 3;
   const lastUserMessage: AgentInstanceMessage | undefined = context.agent.messages[context.agent.messages.length - 1];
 
-  // Create and register handler hooks
-  const handlerHooks = createHandlerHooks();
-  registerAllBuiltInPlugins(handlerHooks);
+  // Create and register handler hooks based on handler config
+  const handlerHooks = await createHooksWithPlugins(context.agentDef.handlerConfig || {});
 
   // Log the start of handler execution with context information
   logger.debug('Starting prompt handler execution', {

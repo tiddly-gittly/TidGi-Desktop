@@ -24,8 +24,10 @@ import type { AIResponseContext, PromptConcatPlugin } from './types';
  * Parameter schema for Wiki search tool
  */
 const WikiSearchToolParameterSchema = z.object({
-  workspaceName: z.string().describe('The name or ID of the wiki workspace to search in'),
+  workspaceName: z.string().describe('The name of the wiki workspace to search in'),
   filter: z.string().describe('TiddlyWiki filter expression for searching'),
+  maxResults: z.number().optional().default(10).describe('Maximum number of results to return'),
+  includeText: z.boolean().optional().default(true).describe('Whether to include tiddler text content'),
 });
 
 type WikiSearchToolParameter = z.infer<typeof WikiSearchToolParameterSchema>;
@@ -38,20 +40,20 @@ async function executeWikiSearchTool(
   context?: { agentId?: string; messageId?: string },
 ): Promise<{ success: boolean; data?: string; error?: string; metadata?: Record<string, unknown> }> {
   try {
-    const { workspaceName, filter } = parameters;
+    const { workspaceName, filter, maxResults, includeText } = parameters;
 
     // Get workspace service
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 
-    // Look up workspace ID from workspace name or ID
+    // Look up workspace ID from workspace name
     const workspaces = await workspaceService.getWorkspacesAsList();
-    const targetWorkspace = workspaces.find(ws => ws.name === workspaceName || ws.id === workspaceName);
+    const targetWorkspace = workspaces.find(ws => ws.name === workspaceName);
 
     if (!targetWorkspace) {
       return {
         success: false,
-        error: `Workspace with name or ID "${workspaceName}" does not exist`,
+        error: `Workspace with name "${workspaceName}" does not exist`,
       };
     }
 
@@ -68,6 +70,8 @@ async function executeWikiSearchTool(
       workspaceID,
       workspaceName,
       filter,
+      maxResults,
+      includeText,
       agentId: context?.agentId,
     });
 
@@ -87,47 +91,66 @@ async function executeWikiSearchTool(
       };
     }
 
-    logger.debug(`Found ${tiddlerTitles.length} tiddlers`, {
+    // Limit results if needed
+    const limitedTitles = tiddlerTitles.slice(0, maxResults);
+
+    logger.debug(`Found ${tiddlerTitles.length} tiddlers, returning ${limitedTitles.length}`, {
       totalFound: tiddlerTitles.length,
+      returning: limitedTitles.length,
     });
 
-    // Retrieve full tiddler content
+    // Retrieve full tiddler content if requested
     const results: Array<{ title: string; text?: string; fields?: ITiddlerFields }> = [];
 
-    // Retrieve full tiddler content for each tiddler
-    for (const title of tiddlerTitles) {
-      try {
-        const tiddlerFields = await wikiService.wikiOperationInServer(WikiChannel.getTiddlersAsJson, workspaceID, [title]);
-        if (tiddlerFields.length > 0) {
-          results.push({
-            title,
-            text: tiddlerFields[0].text,
-            fields: tiddlerFields[0],
+    if (includeText) {
+      // Retrieve full tiddler content for each tiddler
+      for (const title of limitedTitles) {
+        try {
+          const tiddlerFields = await wikiService.wikiOperationInServer(WikiChannel.getTiddlersAsJson, workspaceID, [title]);
+          if (tiddlerFields.length > 0) {
+            results.push({
+              title,
+              text: tiddlerFields[0].text,
+              fields: tiddlerFields[0],
+            });
+          } else {
+            results.push({ title });
+          }
+        } catch (error) {
+          logger.warn(`Error retrieving tiddler content for ${title}`, {
+            error: error instanceof Error ? error.message : String(error),
           });
-        } else {
           results.push({ title });
         }
-      } catch (error) {
-        logger.warn(`Error retrieving tiddler content for ${title}`, {
-          error: error instanceof Error ? error.message : String(error),
-        });
+      }
+    } else {
+      // Just return titles
+      for (const title of limitedTitles) {
         results.push({ title });
       }
     }
 
     // Format results as text
-    let content = `Wiki search completed successfully. Found ${tiddlerTitles.length} results:\n\n`;
+    let content = `Wiki search completed successfully. Found ${tiddlerTitles.length} total results, showing ${results.length}:\n\n`;
 
-    // Format with content
-    for (const result of results) {
-      content += `**Tiddler: ${result.title}**\n\n`;
-      if (result.text) {
-        content += '```tiddlywiki\n';
-        content += result.text;
-        content += '\n```\n\n';
-      } else {
-        content += '(Content not available)\n\n';
+    if (includeText) {
+      // Format with content
+      for (const result of results) {
+        content += `**Tiddler: ${result.title}**\n\n`;
+        if (result.text) {
+          content += '```tiddlywiki\n';
+          content += result.text;
+          content += '\n```\n\n';
+        } else {
+          content += '(Content not available)\n\n';
+        }
       }
+    } else {
+      // Format titles only
+      for (const result of results) {
+        content += `- ${result.title}\n`;
+      }
+      content += '\n(includeText set to false)\n';
     }
 
     return {
@@ -137,6 +160,8 @@ async function executeWikiSearchTool(
         filter,
         workspaceID,
         workspaceName,
+        maxResults,
+        includeText,
         resultCount: tiddlerTitles.length,
         returnedCount: results.length,
       },
@@ -194,18 +219,8 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
             .map(workspace => `- ${workspace.name} (ID: ${workspace.id})`)
             .join('\n');
 
-          const toolPromptContent = `Wiki Tools:
-- Tool ID: wiki-search
-- Description: Search content in wiki workspaces
-- Parameters: {
-  "workspaceName": "string (required) - The name OR ID of the wiki workspace to search in. Usually use name, when have duplication, use id.",
-  "filter": "string (required) - TiddlyWiki filter expression for searching, like [title[Index]]"
-}
-Example usage:
-<tool_use name="wiki-search">{"workspaceName": "wiki", "filter": "[tag[SomeTag]]"}</tool_use>
-Available Wiki Workspaces:
-${workspaceList}
-`;
+          const toolPromptContent =
+            `Available Wiki Workspaces:\n${workspaceList}\n\nAvailable Tools:\n- Tool ID: wiki-search\n- Tool Name: Wiki Search\n- Description: Search content in wiki workspaces\n- Parameters: {\n  "workspaceName": "string (required) - The name of the wiki workspace to search in",\n  "filter": "string (required) - TiddlyWiki filter expression for searching, like [title[Index]]""\n}`;
 
           const toolPrompt: IPrompt = {
             id: `wiki-tool-list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
