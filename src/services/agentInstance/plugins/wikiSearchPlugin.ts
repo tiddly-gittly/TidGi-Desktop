@@ -6,7 +6,6 @@ import { z } from 'zod/v4';
 
 import { WikiChannel } from '@/constants/channels';
 import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
-import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -15,7 +14,7 @@ import { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 
-import type { AgentInstanceMessage } from '../interface';
+import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { findPromptById } from '../promptConcat/promptConcat';
 import type { IPrompt } from '../promptConcat/promptConcatSchema';
 import type { AIResponseContext, PromptConcatPlugin } from './types';
@@ -24,10 +23,9 @@ import type { AIResponseContext, PromptConcatPlugin } from './types';
  * Parameter schema for Wiki search tool
  */
 const WikiSearchToolParameterSchema = z.object({
-  workspaceName: z.string().describe('The name of the wiki workspace to search in'),
-  filter: z.string().describe('TiddlyWiki filter expression for searching'),
+  workspaceName: z.string().describe('Name of the workspace to search'),
+  filter: z.string().describe('TiddlyWiki filter expression'),
   maxResults: z.number().optional().default(10).describe('Maximum number of results to return'),
-  includeText: z.boolean().optional().default(true).describe('Whether to include tiddler text content'),
 });
 
 type WikiSearchToolParameter = z.infer<typeof WikiSearchToolParameterSchema>;
@@ -40,7 +38,7 @@ async function executeWikiSearchTool(
   context?: { agentId?: string; messageId?: string },
 ): Promise<{ success: boolean; data?: string; error?: string; metadata?: Record<string, unknown> }> {
   try {
-    const { workspaceName, filter, maxResults, includeText } = parameters;
+    const { workspaceName, filter, maxResults } = parameters;
 
     // Get workspace service
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
@@ -71,7 +69,6 @@ async function executeWikiSearchTool(
       workspaceName,
       filter,
       maxResults,
-      includeText,
       agentId: context?.agentId,
     });
 
@@ -100,57 +97,40 @@ async function executeWikiSearchTool(
     });
 
     // Retrieve full tiddler content if requested
+    // Retrieve full tiddler content for each tiddler
     const results: Array<{ title: string; text?: string; fields?: ITiddlerFields }> = [];
-
-    if (includeText) {
-      // Retrieve full tiddler content for each tiddler
-      for (const title of limitedTitles) {
-        try {
-          const tiddlerFields = await wikiService.wikiOperationInServer(WikiChannel.getTiddlersAsJson, workspaceID, [title]);
-          if (tiddlerFields.length > 0) {
-            results.push({
-              title,
-              text: tiddlerFields[0].text,
-              fields: tiddlerFields[0],
-            });
-          } else {
-            results.push({ title });
-          }
-        } catch (error) {
-          logger.warn(`Error retrieving tiddler content for ${title}`, {
-            error: error instanceof Error ? error.message : String(error),
+    for (const title of limitedTitles) {
+      try {
+        const tiddlerFields = await wikiService.wikiOperationInServer(WikiChannel.getTiddlersAsJson, workspaceID, [title]);
+        if (tiddlerFields.length > 0) {
+          results.push({
+            title,
+            text: tiddlerFields[0].text,
+            fields: tiddlerFields[0],
           });
+        } else {
           results.push({ title });
         }
-      }
-    } else {
-      // Just return titles
-      for (const title of limitedTitles) {
+      } catch (error) {
+        logger.warn(`Error retrieving tiddler content for ${title}`, {
+          error: error instanceof Error ? error.message : String(error),
+        });
         results.push({ title });
       }
     }
 
-    // Format results as text
+    // Format results as text with content
     let content = `Wiki search completed successfully. Found ${tiddlerTitles.length} total results, showing ${results.length}:\n\n`;
 
-    if (includeText) {
-      // Format with content
-      for (const result of results) {
-        content += `**Tiddler: ${result.title}**\n\n`;
-        if (result.text) {
-          content += '```tiddlywiki\n';
-          content += result.text;
-          content += '\n```\n\n';
-        } else {
-          content += '(Content not available)\n\n';
-        }
+    for (const result of results) {
+      content += `**Tiddler: ${result.title}**\n\n`;
+      if (result.text) {
+        content += '```tiddlywiki\n';
+        content += result.text;
+        content += '\n```\n\n';
+      } else {
+        content += '(Content not available)\n\n';
       }
-    } else {
-      // Format titles only
-      for (const result of results) {
-        content += `- ${result.title}\n`;
-      }
-      content += '\n(includeText set to false)\n';
     }
 
     return {
@@ -161,7 +141,6 @@ async function executeWikiSearchTool(
         workspaceID,
         workspaceName,
         maxResults,
-        includeText,
         resultCount: tiddlerTitles.length,
         returnedCount: results.length,
       },
@@ -292,6 +271,10 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
             toolId: 'wiki-search',
           };
 
+          // Notify frontend about the duration change
+          const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+          agentInstanceService.debounceUpdateMessage(latestAiMessage, handlerContext.agent.id);
+
           logger.debug('Set duration=1 for AI tool call message', {
             messageId: latestAiMessage.id,
             toolId: 'wiki-search',
@@ -374,21 +357,11 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         };
         handlerContext.agent.messages.push(toolResultMessage);
 
-        // Save tool result message to database
-        try {
-          const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-          await agentInstanceService.saveUserMessage(toolResultMessage);
-        } catch (saveError) {
-          logger.warn('Failed to save tool result message to database', {
-            error: saveError instanceof Error ? saveError.message : String(saveError),
-            messageId: toolResultMessage.id,
-          });
-        }
-
-        logger.debug('Wiki search tool execution result', {
+        logger.debug('Wiki search tool execution completed', {
           toolResultText,
           actions: responseContext.actions,
           toolResultMessageId: toolResultMessage.id,
+          aiMessageDuration: aiMessages[aiMessages.length - 1]?.duration,
         });
       } catch (error) {
         logger.error('Wiki search tool execution failed', {
@@ -425,16 +398,10 @@ Error: ${error instanceof Error ? error.message : String(error)}
         };
         handlerContext.agent.messages.push(errorResultMessage);
 
-        // Save error message to database
-        try {
-          const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-          await agentInstanceService.saveUserMessage(errorResultMessage);
-        } catch (saveError) {
-          logger.warn('Failed to save tool error message to database', {
-            error: saveError instanceof Error ? saveError.message : String(saveError),
-            messageId: errorResultMessage.id,
-          });
-        }
+        logger.debug('Wiki search tool execution failed but error result added', {
+          errorResultMessageId: errorResultMessage.id,
+          aiMessageDuration: aiMessages[aiMessages.length - 1]?.duration,
+        });
       }
 
       callback();

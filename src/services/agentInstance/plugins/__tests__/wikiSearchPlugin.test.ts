@@ -237,7 +237,7 @@ describe('Wiki Search Plugin', () => {
       // Create a response that contains a valid tool call
       const response = {
         status: 'done' as const,
-        content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[tag[important]]", "maxResults": 3, "includeText": true}</tool_use>',
+        content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[tag[important]]", "maxResults": 3}</tool_use>',
         requestId: 'test-request-123',
       };
 

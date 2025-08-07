@@ -95,7 +95,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
   const isExpired = isMessageExpiredForAI(message, messageIndex, totalMessages);
 
   return (
-    <BubbleContainer $isUser={isUser} $isExpired={isExpired}>
+    <BubbleContainer $isUser={isUser} $isExpired={isExpired} data-testid='message-bubble'>
       {!isUser && (
         <MessageAvatar $isUser={isUser} $isExpired={isExpired}>
           <SmartToyIcon />
