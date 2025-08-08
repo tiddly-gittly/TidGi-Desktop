@@ -25,9 +25,9 @@ interface TabItemProps {
 
 interface StyledTabProps {
   /** Whether this is the currently active tab */
-  $isActive: boolean;
+  $active: boolean;
   /** Whether the tab is pinned to the sidebar */
-  $isPinned?: boolean;
+  $pinned?: boolean;
 }
 
 const TabButton = styled(ButtonBase)<StyledTabProps>`
@@ -39,11 +39,11 @@ const TabButton = styled(ButtonBase)<StyledTabProps>`
   position: relative;
   transition: all 0.2s ease;
   padding: 0 12px;
-  background-color: ${props => props.$isActive ? props.theme.palette.primary.main : 'transparent'};
+  background-color: ${props => props.$active ? props.theme.palette.primary.main : 'transparent'};
   
   &:hover {
     background-color: ${props =>
-  props.$isActive
+  props.$active
     ? props.theme.palette.primary.main
     : props.theme.palette.action.hover};
   }
@@ -54,7 +54,7 @@ const TabButton = styled(ButtonBase)<StyledTabProps>`
 `;
 
 const TabIcon = styled('div')<StyledTabProps>`
-  color: ${props => props.$isActive ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
+  color: ${props => props.$active ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
   font-size: 20px;
   display: flex;
   align-items: center;
@@ -70,7 +70,7 @@ const TabLabel = styled(Typography)<StyledTabProps>`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: ${props => props.$isActive ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
+  color: ${props => props.$active ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
 `;
 
 const TabActions = styled('div')`
@@ -151,15 +151,15 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewT
   return (
     <Tooltip title={tab.title} placement='right'>
       <TabButton
-        $isActive={isActive}
+        $active={isActive}
         onClick={handleClick}
         data-tab-id={isNewTabButton ? 'new-tab-button' : tab.id}
-        $isPinned={!isNewTabButton && (tab as TabItemType).isPinned}
+        $pinned={!isNewTabButton && (tab as TabItemType).isPinned}
       >
-        <TabIcon $isActive={isActive}>
+        <TabIcon $active={isActive}>
           {getTabIcon()}
         </TabIcon>
-        <TabLabel $isActive={isActive} variant='caption'>
+        <TabLabel $active={isActive} variant='caption'>
           {tab.title}
         </TabLabel>
 

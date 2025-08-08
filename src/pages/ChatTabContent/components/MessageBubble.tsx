@@ -9,48 +9,48 @@ import { isMessageExpiredForAI } from '../../../services/agentInstance/utilities
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
 import { MessageRenderer } from './MessageRenderer';
 
-const BubbleContainer = styled(Box)<{ $isUser: boolean; $isExpired?: boolean }>`
+const BubbleContainer = styled(Box)<{ $user: boolean; $expired?: boolean }>`
   display: flex;
   gap: 12px;
   max-width: 80%;
-  align-self: ${props => props.$isUser ? 'flex-end' : 'flex-start'};
-  opacity: ${props => props.$isExpired ? 0.5 : 1};
+  align-self: ${props => props.$user ? 'flex-end' : 'flex-start'};
+  opacity: ${props => props.$expired ? 0.5 : 1};
   transition: opacity 0.3s ease-in-out;
 `;
 
-const MessageAvatar = styled(Avatar)<{ $isUser: boolean; $isExpired?: boolean }>`
-  background-color: ${props => props.$isUser ? props.theme.palette.primary.main : props.theme.palette.secondary.main};
-  color: ${props => props.$isUser ? props.theme.palette.primary.contrastText : props.theme.palette.secondary.contrastText};
-  opacity: ${props => props.$isExpired ? 0.7 : 1};
+const MessageAvatar = styled(Avatar)<{ $user: boolean; $expired?: boolean }>`
+  background-color: ${props => props.$user ? props.theme.palette.primary.main : props.theme.palette.secondary.main};
+  color: ${props => props.$user ? props.theme.palette.primary.contrastText : props.theme.palette.secondary.contrastText};
+  opacity: ${props => props.$expired ? 0.7 : 1};
   transition: opacity 0.3s ease-in-out;
 `;
 
-const MessageContent = styled(Box)<{ $isUser: boolean; $isStreaming?: boolean; $isExpired?: boolean }>`
-  background-color: ${props => props.$isUser ? props.theme.palette.primary.light : props.theme.palette.background.paper};
-  color: ${props => props.$isUser ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
+const MessageContent = styled(Box)<{ $user: boolean; $streaming?: boolean; $expired?: boolean }>`
+  background-color: ${props => props.$user ? props.theme.palette.primary.light : props.theme.palette.background.paper};
+  color: ${props => props.$user ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
   padding: 12px 16px;
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
   position: relative;
   transition: all 0.3s ease-in-out;
-  opacity: ${props => props.$isExpired ? 0.6 : 1};
+  opacity: ${props => props.$expired ? 0.6 : 1};
   
   /* Add visual indicators for expired messages */
   ${props =>
-  props.$isExpired && `
+  props.$expired && `
     border: 1px dashed ${props.theme.palette.divider};
     filter: grayscale(0.3);
   `}
   
   /* Add a subtle highlight for completed assistant messages */
   ${props =>
-  !props.$isUser && !props.$isStreaming && !props.$isExpired && `
+  !props.$user && !props.$streaming && !props.$expired && `
     border-left: 2px solid ${props.theme.palette.divider};
   `}
   
   /* Enhanced animation for streaming messages with eventual fade out */
   ${props =>
-  props.$isStreaming && `
+  props.$streaming && `
     box-shadow: 0 1px 5px rgba(0,100,255,0.3);
     border-left: 2px solid ${props.theme.palette.primary.main};
     
@@ -95,19 +95,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
   const isExpired = isMessageExpiredForAI(message, messageIndex, totalMessages);
 
   return (
-    <BubbleContainer $isUser={isUser} $isExpired={isExpired} data-testid='message-bubble'>
+    <BubbleContainer $user={isUser} $expired={isExpired} data-testid='message-bubble'>
       {!isUser && (
-        <MessageAvatar $isUser={isUser} $isExpired={isExpired}>
+        <MessageAvatar $user={isUser} $expired={isExpired}>
           <SmartToyIcon />
         </MessageAvatar>
       )}
 
-      <MessageContent $isUser={isUser} $isStreaming={isStreaming} $isExpired={isExpired}>
+      <MessageContent $user={isUser} $streaming={isStreaming} $expired={isExpired}>
         <MessageRenderer message={message} isUser={isUser} />
       </MessageContent>
 
       {isUser && (
-        <MessageAvatar $isUser={isUser} $isExpired={isExpired}>
+        <MessageAvatar $user={isUser} $expired={isExpired}>
           <PersonIcon />
         </MessageAvatar>
       )}

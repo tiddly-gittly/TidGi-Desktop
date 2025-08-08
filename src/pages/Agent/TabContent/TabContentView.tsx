@@ -19,15 +19,15 @@ interface TabContentViewProps {
 }
 
 /** Content container styled component */
-const ContentContainer = styled(Box)<{ $isSplitView?: boolean }>`
+const ContentContainer = styled(Box)<{ $splitview?: boolean }>`
   display: flex;
   flex-direction: column;
   height: 100%;
   width: 100%;
   position: relative;
   overflow: hidden;
-  border-radius: ${props => props.$isSplitView ? '8px' : '0'};
-  box-shadow: ${props => props.$isSplitView ? '0 0 10px rgba(0,0,0,0.1)' : 'none'};
+  border-radius: ${props => props.$splitview ? '8px' : '0'};
+  box-shadow: ${props => props.$splitview ? '0 0 10px rgba(0,0,0,0.1)' : 'none'};
 `;
 
 /** Header bar for split view mode */
@@ -68,7 +68,7 @@ export const TabContentView: React.FC<TabContentViewProps> = ({ tab, isSplitView
   };
 
   return (
-    <ContentContainer $isSplitView={isSplitView}>
+    <ContentContainer $splitview={isSplitView}>
       {isSplitView && (
         <SplitViewHeader>
           <IconButton size='small' onClick={handleRemoveFromSplitView}>
