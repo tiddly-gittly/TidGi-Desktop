@@ -44,13 +44,12 @@ export default defineConfig({
       ],
     },
 
-    // Parallel testing configuration
-    pool: 'threads',
+    // Parallel testing configuration - use single fork for database consistency
+    pool: 'forks',
     poolOptions: {
-      threads: {
-        useAtomics: true,
+      forks: {
+        singleFork: true, // Important for in-memory database tests
       },
-      isolate: true,
     },
 
     // Performance settings
@@ -67,4 +66,10 @@ export default defineConfig({
 
   // Handle CSS and static assets
   assetsInclude: ['**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.svg'],
+
+  // Set environment variables for better-sqlite3 compatibility
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'test'),
+    'process.env.ELECTRON_RUN_AS_NODE': JSON.stringify(process.env.ELECTRON_RUN_AS_NODE || 'true'),
+  },
 });

@@ -29,7 +29,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
       );
       expect(historyPlugin).toBeDefined();
       expect(historyPlugin!.fullReplacementParam!.targetId).toBe('default-history'); // Real target ID
-      
+
       // Use real prompts structure from defaultAgents.json
       const testPrompts = cloneDeep(realHandlerConfig.prompts) as IPrompt[];
 
@@ -121,7 +121,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
       const targetId = historyPlugin!.fullReplacementParam!.targetId; // 'default-history'
       const historyPrompt = testPrompts.find(p => p.id === 'history');
       expect(historyPrompt).toBeDefined();
-      
+
       const targetPrompt = historyPrompt!.children?.find(child => child.id === targetId);
       expect(targetPrompt).toBeDefined();
 
@@ -149,7 +149,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
       const historyPlugin = realHandlerConfig.plugins.find(
         p => p.pluginId === 'fullReplacement' && p.fullReplacementParam?.sourceType === 'historyOfSession',
       );
-      
+
       const messages: AgentInstanceMessage[] = [
         {
           id: 'user-msg-1',
@@ -298,7 +298,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
       expect(childrenText).toContain('Message 1 - no duration');
       expect(childrenText).toContain('Message 2 - duration 3');
       expect(childrenText).toContain('Message 3 - duration 1'); // roundsFromCurrent(0) < duration(1)
-      
+
       // Last message should be removed by fullReplacement
       expect(childrenText).not.toContain('Message 4 - latest');
     });

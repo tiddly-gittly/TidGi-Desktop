@@ -201,33 +201,46 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
   });
 
   // Handle tool result messages persistence and UI updates
-  hooks.toolExecuted.tapAsync('messageManagementPlugin', (context: ToolExecutionContext, callback) => {
+  hooks.toolExecuted.tapAsync('messageManagementPlugin', async (context: ToolExecutionContext, callback) => {
     try {
       const { handlerContext } = context;
 
-      // Update UI for any newly added messages with duration settings
-      const newMessages = handlerContext.agent.messages.filter(
-        (message) => message.metadata?.isToolResult && !message.metadata.uiUpdated,
+      // Find newly added tool result messages that need to be persisted
+      const newToolResultMessages = handlerContext.agent.messages.filter(
+        (message) => message.metadata?.isToolResult && !message.metadata.isPersisted,
       );
 
-      for (const message of newMessages) {
+      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+
+      // Save tool result messages to database and update UI
+      for (const message of newToolResultMessages) {
         try {
-          const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+          // Save to database using the same method as user messages
+          await agentInstanceService.saveUserMessage(message);
+
+          // Update UI
           agentInstanceService.debounceUpdateMessage(message, handlerContext.agent.id);
-          // Mark as UI updated to avoid duplicate updates
-          message.metadata = { ...message.metadata, uiUpdated: true };
+
+          // Mark as persisted to avoid duplicate saves
+          message.metadata = { ...message.metadata, isPersisted: true, uiUpdated: true };
+
+          logger.debug('Tool result message persisted to database', {
+            messageId: message.id,
+            toolId: message.metadata.toolId,
+            duration: message.duration,
+          });
         } catch (serviceError) {
-          logger.warn('Failed to update UI for tool result message', {
+          logger.error('Failed to persist tool result message', {
             error: serviceError instanceof Error ? serviceError.message : String(serviceError),
             messageId: message.id,
           });
         }
       }
 
-      if (newMessages.length > 0) {
-        logger.debug('Tool result messages UI updated', {
-          count: newMessages.length,
-          messageIds: newMessages.map(m => m.id),
+      if (newToolResultMessages.length > 0) {
+        logger.debug('Tool result messages processed', {
+          count: newToolResultMessages.length,
+          messageIds: newToolResultMessages.map(m => m.id),
         });
       }
 
