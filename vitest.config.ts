@@ -46,12 +46,12 @@ export default defineConfig({
       ],
     },
 
-    // Parallel testing configuration - use single fork for database consistency
-    pool: 'forks',
+    pool: 'threads',
     poolOptions: {
-      forks: {
-        singleFork: true, // Important for in-memory database tests
+      threads: {
+        useAtomics: true,
       },
+      isolate: true,
     },
 
     // Performance settings
