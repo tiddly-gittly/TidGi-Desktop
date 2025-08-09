@@ -1,4 +1,6 @@
 import path from 'path';
+// Ensure ELECTRON_RUN_AS_NODE is set during vitest execution
+process.env.ELECTRON_RUN_AS_NODE = 'true';
 import swc from 'unplugin-swc';
 import { defineConfig } from 'vitest/config';
 
@@ -70,6 +72,5 @@ export default defineConfig({
   // Set environment variables for better-sqlite3 compatibility
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'test'),
-    'process.env.ELECTRON_RUN_AS_NODE': JSON.stringify(process.env.ELECTRON_RUN_AS_NODE || 'true'),
   },
 });

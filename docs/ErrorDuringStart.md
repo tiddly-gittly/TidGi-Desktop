@@ -93,6 +93,24 @@ Solution:
 node_modules/.bin/electron-rebuild -f -w better-sqlite3
 ```
 
+## During test, The module 'node_modules\better-sqlite3\build\Release\better_sqlite3.node' was compiled against a different Node.js version using
+
+```
+NODE_MODULE_VERSION 135. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+```
+
+Don't need to recompile, nodejs and electron have different NODE_MODULE_VERSION. You need to run test using electron as nodejs.
+
+```sh
+cross-env ELECTRON_RUN_AS_NODE=true ./node_modules/.bin/electron ./node_modules/vitest/vitest.mjs run
+```
+
+### 测试运行有中文乱码 `鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆[4/4]鈳?`
+
+救急可以用 `chcp 65001 && pnpm run test:unit`，如果有空重启电脑，则在时区设置里找到「系统区域设置」里勾选「Unicode Beta版」，重启即可。
+
 ## Error: The module '/Users/linonetwo/Desktop/repo/TidGi-Desktop/node_modules/opencv4nodejs-prebuilt/build/Release/opencv4nodejs.node'
 
 was compiled against a different Node.js version using
