@@ -61,13 +61,11 @@ export function NewWikiForm({
             select
             error={errorInWhichComponent.mainWikiToLink}
             label={t('AddWorkspace.MainWorkspaceLocation')}
-            helperText={
-              // text here should have the same text as `folderToContainSymlinks` in src/services/wiki/index.ts
-              form.mainWikiToLink.wikiFolderLocation &&
+            helperText={form.mainWikiToLink.wikiFolderLocation &&
               `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
-                    ${form.mainWikiToLink.wikiFolderLocation}/tiddlers/subwiki/${form.wikiFolderName}`
-            }
+                    ${form.mainWikiToLink.wikiFolderLocation}/tiddlers/subwiki/${form.wikiFolderName}`}
             value={form.mainWikiToLinkIndex}
+            inputProps={{ 'data-testid': 'main-wiki-select' }}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
               const index = event.target.value as unknown as number;
               const selectedWorkspace = form.mainWorkspaceList[index];
@@ -99,6 +97,7 @@ export function NewWikiForm({
                 {...parameters}
                 label={t('AddWorkspace.TagName')}
                 helperText={t('AddWorkspace.TagNameHelp')}
+                inputProps={{ ...parameters.inputProps, 'data-testid': 'tagname-autocomplete-input' }}
               />
             )}
           />

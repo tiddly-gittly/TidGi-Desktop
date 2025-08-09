@@ -100,8 +100,8 @@ describe('Main Page', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     renderMain();
-    // Wait for initial async state updates to complete, to avoid `act` warnings
-    await screen.findByText('Guide Page Content');
+    // Wait for at least one guide-page to render
+    await screen.findByTestId('guide-page');
   });
 
   it('should display workspace names and icons in sidebar', async () => {
@@ -118,8 +118,9 @@ describe('Main Page', () => {
   });
 
   it('should display Guide content and preferences button by default', async () => {
-    // Use findByText for async content
-    expect(await screen.findByText('Guide Page Content')).toBeInTheDocument();
+    // Only one guide-page should exist
+    const guides = screen.getAllByTestId('guide-page');
+    expect(guides.length).toBe(1);
 
     // Should show preferences button
     const settingsIcon = await screen.findByTestId('SettingsIcon');
@@ -129,8 +130,9 @@ describe('Main Page', () => {
   });
 
   it('should handle workspace switching', async () => {
-    // Wait for main content to be loaded by checking for the Guide page content
-    expect(await screen.findByText('Guide Page Content')).toBeInTheDocument();
+    // Only one guide-page should exist
+    const guides = screen.getAllByTestId('guide-page');
+    expect(guides.length).toBe(1);
 
     // Check that all workspace elements are present (2 wiki + 4 built-in pages)
     expect(await screen.findByText('我的维基')).toBeInTheDocument();
@@ -144,29 +146,33 @@ describe('Main Page', () => {
   it('should switch to Help page content when clicking Help workspace', async () => {
     const user = userEvent.setup();
 
-    // Initially should show Guide page content
-    expect(await screen.findByText('Guide Page Content')).toBeInTheDocument();
+    // Only one guide-page should exist
+    const guides = screen.getAllByTestId('guide-page');
+    expect(guides.length).toBe(1);
 
     // Find and click the Help workspace text directly - more realistic user interaction
     const helpText = await screen.findByText('WorkspaceSelector.Help');
     await user.click(helpText);
 
-    // Wait for the Help page content to appear
-    expect(await screen.findByText('Help Page Content')).toBeInTheDocument();
+    // Only one help-page should exist
+    const helps = screen.getAllByTestId('help-page');
+    expect(helps.length).toBe(1);
   });
 
   it('should switch to Agent page content when clicking Agent workspace', async () => {
     const user = userEvent.setup();
 
-    // Initially should show Guide page content
-    expect(await screen.findByText('Guide Page Content')).toBeInTheDocument();
+    // Only one guide-page should exist
+    const guides = screen.getAllByTestId('guide-page');
+    expect(guides.length).toBe(1);
 
     // Find and click the Agent workspace text directly - more realistic user interaction
     const agentText = await screen.findByText('WorkspaceSelector.Agent');
     await user.click(agentText);
 
-    // Wait for the Agent page content to appear
-    expect(await screen.findByText('Agent Page Content')).toBeInTheDocument();
-    expect(screen.queryByText('Guide Page Content')).not.toBeInTheDocument();
+    // Only one agent-page should exist
+    const agents = screen.getAllByTestId('agent-page');
+    expect(agents.length).toBe(1);
+    expect(screen.queryAllByTestId('guide-page').length).toBe(0);
   });
 });
