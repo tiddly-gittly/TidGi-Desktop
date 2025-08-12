@@ -9,7 +9,9 @@ import { isMessageExpiredForAI } from '../../../services/agentInstance/utilities
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
 import { MessageRenderer } from './MessageRenderer';
 
-const BubbleContainer = styled(Box)<{ $user: boolean; $expired?: boolean }>`
+const BubbleContainer = styled(Box, {
+  shouldForwardProp: (property) => property !== '$user' && property !== '$expired',
+})<{ $user: boolean; $expired?: boolean }>`
   display: flex;
   gap: 12px;
   max-width: 80%;
@@ -18,14 +20,18 @@ const BubbleContainer = styled(Box)<{ $user: boolean; $expired?: boolean }>`
   transition: opacity 0.3s ease-in-out;
 `;
 
-const MessageAvatar = styled(Avatar)<{ $user: boolean; $expired?: boolean }>`
+const MessageAvatar = styled(Avatar, {
+  shouldForwardProp: (property) => property !== '$user' && property !== '$expired',
+})<{ $user: boolean; $expired?: boolean }>`
   background-color: ${props => props.$user ? props.theme.palette.primary.main : props.theme.palette.secondary.main};
   color: ${props => props.$user ? props.theme.palette.primary.contrastText : props.theme.palette.secondary.contrastText};
   opacity: ${props => props.$expired ? 0.7 : 1};
   transition: opacity 0.3s ease-in-out;
 `;
 
-const MessageContent = styled(Box)<{ $user: boolean; $streaming?: boolean; $expired?: boolean }>`
+const MessageContent = styled(Box, {
+  shouldForwardProp: (property) => property !== '$user' && property !== '$streaming' && property !== '$expired',
+})<{ $user: boolean; $streaming?: boolean; $expired?: boolean }>`
   background-color: ${props => props.$user ? props.theme.palette.primary.light : props.theme.palette.background.paper};
   color: ${props => props.$user ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
   padding: 12px 16px;
