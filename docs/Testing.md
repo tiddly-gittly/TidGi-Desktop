@@ -94,13 +94,12 @@ Object.defineProperty(window.observables.workspace, 'workspaces$', {
 
 ### Global Mock Management
 
-**Centralize common mocks** in `src/__tests__/setup-vitest.ts`:
+**Centralize common mocks** in `src/__tests__/__mocks__/` directory, and import them in `src/__tests__/setup-vitest.ts`:
 
-- Services from window APIs (`window.service`, `window.remote`, `window.observables`) and container APIs (`@services/container`)
-- Electron APIs (`ipcRenderer`, `shell`)
-- Common libraries (`react-i18next`)
+- Services from window APIs (`window.service`, `window.remote`, `window.observables`) and container APIs (`@services/container`) are now mocked in `src/__tests__/__mocks__/window.ts` 和 `services-container.ts`
+- Common libraries (`react-i18next` in `react-i18next.ts`, logger in `services-log.ts`)
 
-Most of services should be here. Only mock specific small set of service API in new test files.
+Most of services should be in these mock files. Only mock specific small set of service API in new test files if needed.
 
 **Override in test files** only when you need test-specific data:
 
