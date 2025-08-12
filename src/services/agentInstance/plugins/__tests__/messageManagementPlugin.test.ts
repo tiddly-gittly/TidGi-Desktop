@@ -289,8 +289,6 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
     });
 
     it('should handle multiple tool results in one execution', async () => {
-      console.log('🧪 Testing multiple tool results persistence...');
-
       const handlerContext = createHandlerContext();
 
       // Add multiple tool result messages
@@ -354,8 +352,6 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       // Verify both messages marked as persisted
       expect(toolResult1.metadata?.isPersisted).toBe(true);
       expect(toolResult2.metadata?.isPersisted).toBe(true);
-
-      console.log('✅ Multiple tool results test passed');
     });
   });
 });
