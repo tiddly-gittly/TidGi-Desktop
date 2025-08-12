@@ -95,11 +95,13 @@ node_modules/.bin/electron-rebuild -f -w better-sqlite3
 
 ## During test, The module 'node_modules\better-sqlite3\build\Release\better_sqlite3.node' was compiled against a different Node.js version using
 
-```
+```log
 NODE_MODULE_VERSION 135. This version of Node.js requires
 NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
 the module (for instance, using `npm rebuild` or `npm install`).
 ```
+
+(The number above is larger)
 
 Don't need to recompile, nodejs and electron have different NODE_MODULE_VERSION. You need to run test using electron as nodejs.
 
@@ -113,13 +115,20 @@ cross-env ELECTRON_RUN_AS_NODE=true ./node_modules/.bin/electron ./node_modules/
 
 ## Error: The module '/Users/linonetwo/Desktop/repo/TidGi-Desktop/node_modules/opencv4nodejs-prebuilt/build/Release/opencv4nodejs.node'
 
+```log
 was compiled against a different Node.js version using
-
-NODE_MODULE_VERSION 88. This version of Node.js requires
-
-NODE_MODULE_VERSION 93. Please try re-compiling or re-installing
-
+NODE_MODULE_VERSION 127. This version of Node.js requires
+NODE_MODULE_VERSION 135. Please try re-compiling or re-installing
 the module (for instance, using `npm rebuild` or `npm install`).
+```
+
+(The number above is smaller)
+
+Don't use `npm rebuild` or `npm install`, it doesn't works, it will still build for nodejs. We need to build with electron:
+
+```sh
+./node_modules/.bin/electron-rebuild
+```
 
 See <https://github.com/justadudewhohacks/opencv4nodejs/issues/401#issuecomment-463434713> if you still have problem rebuild opencv for @nut-tree/nut-js
 
