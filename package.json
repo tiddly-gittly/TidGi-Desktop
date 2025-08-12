@@ -14,7 +14,7 @@
     "start:dev:debug-react": "cross-env NODE_ENV=development DEBUG_REACT=true electron-forge start",
     "build:plugin": "zx scripts/compilePlugins.mjs",
     "test": "pnpm run test:unit && pnpm run package && pnpm run test:e2e",
-    "test:unit": "pnpm exec ./node_modules/.bin/electron ./node_modules/vitest/vitest.mjs run",
+    "test:unit": "cross-env ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest.mjs run",
     "test:unit:coverage": "pnpm run test:unit --coverage",
     "test:e2e": "cross-env NODE_ENV=test cucumber-js --config features/cucumber.config.js",
     "package": "pnpm run build:plugin && cross-env NODE_ENV=test electron-forge package",

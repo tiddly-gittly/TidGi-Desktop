@@ -1,6 +1,4 @@
 import path from 'path';
-// Ensure ELECTRON_RUN_AS_NODE is set during vitest execution
-process.env.ELECTRON_RUN_AS_NODE = 'true';
 import swc from 'unplugin-swc';
 import { defineConfig } from 'vitest/config';
 
@@ -57,6 +55,7 @@ export default defineConfig({
     // Performance settings
     testTimeout: 5000,
     hookTimeout: 5000,
+    reporters: ['default', 'hanging-process'],
   },
 
   resolve: {

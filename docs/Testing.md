@@ -215,3 +215,19 @@ await user.click(button);
 ```
 
 For complete Testing Library guidance, see [Testing Library docs](https://testing-library.com/docs/queries/about).
+
+## Errors
+
+### close timed out after 10000ms / FILEHANDLE (unknown stack trace)
+
+This happens because Electron/Vitest child processes do not inherit the ELECTRON_RUN_AS_NODE environment variable, so resources cannot be cleaned up and handles leak.
+
+Do not set `ELECTRON_RUN_AS_NODE` in `vitest.config.ts` via `process.env.ELECTRON_RUN_AS_NODE = 'true'` — this only affects the main process, not child processes.
+
+Always use cross-env in your test script. For example:
+
+`cross-env ELECTRON_RUN_AS_NODE=1 pnpm exec ./node_modules/.bin/electron ./node_modules/vitest/vitest.mjs run`
+
+Or run manually in shell: `$env:ELECTRON_RUN_AS_NODE=1; pnpm run test:unit`
+
+We use `ELECTRON_RUN_AS_NODE` to solve native modules (like better-sqlite3) being compiled for the wrong Node.js version, see the section in [ErrorDuringStart.md](./ErrorDuringStart.md#during-test-the-module-node_modulesbetter-sqlite3buildreleasebetter_sqlite3node-was-compiled-against-a-different-nodejs-version-using).
