@@ -61,6 +61,10 @@ export const WikiSearchParameterSchema = z.object({
     title: t('Schema.WikiSearch.ToolListPositionTitle'),
     description: t('Schema.WikiSearch.ToolListPosition'),
   }),
+  toolResultDuration: z.number().optional().default(1).meta({
+    title: t('Schema.WikiSearch.ToolResultDurationTitle'),
+    description: t('Schema.WikiSearch.ToolResultDuration'),
+  }),
 }).meta({
   title: t('Schema.WikiSearch.Title'),
   description: t('Schema.WikiSearch.Description'),

@@ -387,7 +387,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       };
 
       // Create fresh hooks for this handler execution and register plugins based on handlerConfig
-      const handlerHooks = await createHooksWithPlugins(agentDefinition.handlerConfig || {});
+      const { hooks: handlerHooks } = await createHooksWithPlugins(agentDefinition.handlerConfig || {});
 
       // Trigger userMessageReceived hook with the configured plugins
       await handlerHooks.userMessageReceived.promise({
@@ -693,6 +693,7 @@ export class AgentInstanceService implements IAgentInstanceService {
                 messageEntity.content = msgData.content;
                 if (msgData.contentType) messageEntity.contentType = msgData.contentType;
                 if (msgData.metadata) messageEntity.metadata = msgData.metadata;
+                if (msgData.duration !== undefined) messageEntity.duration = msgData.duration ?? undefined; // Fix: Update duration field
                 messageEntity.modified = new Date();
 
                 await messageRepo.save(messageEntity);
@@ -704,6 +705,7 @@ export class AgentInstanceService implements IAgentInstanceService {
                   content: msgData.content,
                   contentType: msgData.contentType,
                   metadata: msgData.metadata,
+                  duration: msgData.duration, // Include duration for new messages
                 });
                 const newMessage = messageRepo.create(toDatabaseCompatibleMessage(messageData));
 

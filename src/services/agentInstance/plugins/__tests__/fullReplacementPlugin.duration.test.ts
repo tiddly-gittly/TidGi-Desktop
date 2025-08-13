@@ -253,12 +253,12 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
         },
         {
           id: 'msg-4',
-          role: 'assistant' as const,
-          content: 'Message 4 - latest',
+          role: 'user' as const, // Changed to user so it gets removed by fullReplacement
+          content: 'Message 4 - latest user message',
           agentId: 'test-agent',
           contentType: 'text/plain',
           modified: new Date(),
-          duration: undefined, // Will be removed as last message
+          duration: undefined, // Will be removed as last user message
         },
       ];
 
@@ -299,8 +299,8 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
       expect(childrenText).toContain('Message 2 - duration 3');
       expect(childrenText).toContain('Message 3 - duration 1'); // roundsFromCurrent(0) < duration(1)
 
-      // Last message should be removed by fullReplacement
-      expect(childrenText).not.toContain('Message 4 - latest');
+      // Last message should be removed by fullReplacement (only if it's a user message)
+      expect(childrenText).not.toContain('Message 4 - latest user message');
     });
   });
 

@@ -60,6 +60,10 @@ export interface PostProcessContext extends PromptConcatHookContext {
  * Context for AI response hooks (responseUpdate, responseComplete)
  */
 export interface AIResponseContext extends BasePluginContext {
+  /** Plugin configuration - for backward compatibility */
+  pluginConfig: IPromptConcatPlugin;
+  /** Complete handler configuration - allows plugins to access all configs */
+  handlerConfig?: { plugins?: Array<{ pluginId: string; [key: string]: unknown }> };
   /** AI streaming response */
   response: AIStreamResponse;
   /** Current request ID */

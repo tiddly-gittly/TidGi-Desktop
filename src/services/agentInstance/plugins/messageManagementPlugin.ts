@@ -145,7 +145,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
       if (response.status === 'done' && response.content) {
         // Find and finalize AI response message
         let aiMessage = handlerContext.agent.messages.find(
-          (message) => message.role === 'assistant' && !message.metadata?.isComplete,
+          (message) => message.role === 'assistant' && !message.metadata?.isComplete && !message.metadata?.isToolResult,
         );
 
         if (aiMessage) {

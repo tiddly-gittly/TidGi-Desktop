@@ -95,8 +95,11 @@ export async function initializePluginSystem(): Promise<void> {
  */
 export async function createHooksWithPlugins(
   handlerConfig: { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
-): Promise<PromptConcatHooks> {
+): Promise<{ hooks: PromptConcatHooks; pluginConfigs: Array<{ pluginId: string; [key: string]: unknown }> }> {
   const hooks = createHandlerHooks();
   await registerPluginsToHooksFromConfig(hooks, handlerConfig);
-  return hooks;
+  return {
+    hooks,
+    pluginConfigs: handlerConfig.plugins || [],
+  };
 }

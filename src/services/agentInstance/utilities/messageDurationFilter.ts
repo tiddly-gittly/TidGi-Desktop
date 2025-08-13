@@ -56,17 +56,17 @@ export function isMessageExpiredForAI(
   currentPosition: number,
   totalMessages: number,
 ): boolean {
-  // If duration is undefined, message never expires
+  // If duration is undefined or null, message is always visible
   if (message.duration === undefined || message.duration === null) {
     return false;
   }
 
-  // If duration is 0, message is immediately expired
+  // If duration is 0, message is never sent to AI (always expired)
   if (message.duration === 0) {
     return true;
   }
 
-  // Calculate rounds from current position
+  // Calculate rounds from current position (how many rounds ago this message was)
   const roundsFromCurrent = totalMessages - 1 - currentPosition;
 
   // Message is expired if it's beyond its duration window

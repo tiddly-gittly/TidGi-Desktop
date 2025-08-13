@@ -37,7 +37,12 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
 
     // Get all messages except the last one which is the user message
     const messagesCopy = cloneDeep(messages);
-    messagesCopy.pop(); // Last message is the user message
+    
+    // FIXED: Only pop if the last message is actually a user message
+    // In tool calling scenarios, the last message might be a tool result
+    if (messagesCopy.length > 0 && messagesCopy[messagesCopy.length - 1].role === 'user') {
+      messagesCopy.pop(); // Remove the current user message
+    }
 
     // Apply duration filtering to exclude expired messages from AI context
     const filteredHistory = filterMessagesByDuration(messagesCopy);

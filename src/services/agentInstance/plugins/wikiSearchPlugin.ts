@@ -23,7 +23,7 @@ import type { AIResponseContext, PromptConcatPlugin } from './types';
  * Parameter schema for Wiki search tool
  */
 const WikiSearchToolParameterSchema = z.object({
-  workspaceName: z.string().describe('Name of the workspace to search'),
+  workspaceName: z.string().describe('Name or ID of the workspace to search'),
   filter: z.string().describe('TiddlyWiki filter expression'),
   maxResults: z.number().optional().default(10).describe('Maximum number of results to return'),
 });
@@ -44,14 +44,14 @@ async function executeWikiSearchTool(
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 
-    // Look up workspace ID from workspace name
+    // Look up workspace ID from workspace name or ID
     const workspaces = await workspaceService.getWorkspacesAsList();
-    const targetWorkspace = workspaces.find(ws => ws.name === workspaceName);
+    const targetWorkspace = workspaces.find(ws => ws.name === workspaceName || ws.id === workspaceName);
 
     if (!targetWorkspace) {
       return {
         success: false,
-        error: `Workspace with name "${workspaceName}" does not exist`,
+        error: `Workspace with name or ID "${workspaceName}" does not exist. Available workspaces: ${workspaces.map(w => `${w.name} (${w.id})`).join(', ')}`,
       };
     }
 
@@ -199,7 +199,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
             .join('\n');
 
           const toolPromptContent =
-            `Available Wiki Workspaces:\n${workspaceList}\n\nAvailable Tools:\n- Tool ID: wiki-search\n- Tool Name: Wiki Search\n- Description: Search content in wiki workspaces\n- Parameters: {\n  "workspaceName": "string (required) - The name of the wiki workspace to search in",\n  "filter": "string (required) - TiddlyWiki filter expression for searching, like [title[Index]]""\n}`;
+            `Available Wiki Workspaces:\n${workspaceList}\n\nAvailable Tools:\n- Tool ID: wiki-search\n- Tool Name: Wiki Search\n- Description: Search content in wiki workspaces\n- Parameters: {\n  "workspaceName": "string (required) - The name or ID of the wiki workspace to search in",\n  "filter": "string (required) - TiddlyWiki filter expression for searching, like [title[Index]]""\n}`;
 
           const toolPrompt: IPrompt = {
             id: `wiki-tool-list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -238,7 +238,12 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
   // 2. Tool execution when AI response is complete
   hooks.responseComplete.tapAsync('wikiSearchPlugin-handler', async (context, callback) => {
     try {
-      const { handlerContext, response } = context;
+      const { handlerContext, response, handlerConfig } = context;
+      
+      // Find this plugin's configuration from handlerConfig
+      const wikiSearchPluginConfig = handlerConfig?.plugins?.find(p => p.pluginId === 'wikiSearch');
+      const wikiSearchParameter = wikiSearchPluginConfig?.wikiSearchParam as { toolResultDuration?: number } | undefined;
+      const toolResultDuration = wikiSearchParameter?.toolResultDuration || 1; // Default to 1 round
 
       if (response.status !== 'done' || !response.content) {
         callback();
@@ -271,9 +276,9 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
             toolId: 'wiki-search',
           };
 
-          // Notify frontend about the duration change
+          // Notify frontend about the duration change immediately (no debounce delay)
           const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-          agentInstanceService.debounceUpdateMessage(latestAiMessage, handlerContext.agent.id);
+          agentInstanceService.debounceUpdateMessage(latestAiMessage, handlerContext.agent.id, 0); // No delay
 
           logger.debug('Set duration=1 for AI tool call message', {
             messageId: latestAiMessage.id,
@@ -295,22 +300,6 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
             messageId: handlerContext.agent.messages[handlerContext.agent.messages.length - 1]?.id,
           },
         );
-
-        // Signal that tool was executed
-        await hooks.toolExecuted.promise({
-          handlerContext,
-          toolResult: {
-            success: true,
-            data: result.success ? result.data : result.error,
-            metadata: { toolCount: 1 },
-          },
-          toolInfo: {
-            toolId: 'wiki-search',
-            parameters: validatedParameters,
-            originalText: toolMatch.originalText || '',
-          },
-          requestId: context.requestId,
-        });
 
         // Format the tool result for display
         let toolResultText: string;
@@ -338,24 +327,43 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
           messageCount: handlerContext.agent.messages.length,
         });
 
-        // Immediately add the tool result message to history
-        // Use a slight delay to ensure timestamp is after the tool call message
-        const toolResultTime = new Date(Date.now() + 1); // Add 1ms to ensure proper ordering
+        // Immediately add the tool result message to history BEFORE calling toolExecuted
+        // Use a slight delay to ensure timestamp is after the tool call message and ensure proper ordering
+        const toolResultTime = new Date(Date.now() + 10); // Add 10ms to ensure proper ordering
         const toolResultMessage: AgentInstanceMessage = {
           id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           agentId: handlerContext.agent.id,
-          role: 'user',
+          role: 'assistant', // Changed from 'user' to 'assistant' to avoid user confusion
           content: toolResultText,
           modified: toolResultTime,
-          duration: 1, // Tool results are only visible to AI for 1 round to save context
+          duration: toolResultDuration, // Use configurable duration - default 1 round for tool results
           metadata: {
             isToolResult: true,
             isError,
             toolId: 'wiki-search',
             toolParameters: validatedParameters,
+            isPersisted: false, // Required by messageManagementPlugin to identify new tool results
+            isComplete: true, // Mark as complete to prevent messageManagementPlugin from overwriting content
+            artificialOrder: Date.now() + 10, // Additional ordering hint
           },
         };
         handlerContext.agent.messages.push(toolResultMessage);
+
+        // Signal that tool was executed AFTER adding the message
+        await hooks.toolExecuted.promise({
+          handlerContext,
+          toolResult: {
+            success: true,
+            data: result.success ? result.data : result.error,
+            metadata: { toolCount: 1 },
+          },
+          toolInfo: {
+            toolId: 'wiki-search',
+            parameters: validatedParameters,
+            originalText: toolMatch.originalText || '',
+          },
+          requestId: context.requestId,
+        });
 
         logger.debug('Wiki search tool execution completed', {
           toolResultText,
@@ -380,23 +388,38 @@ Tool: wiki-search
 Error: ${error instanceof Error ? error.message : String(error)}
 </functions_result>`;
 
-        // Add error message to history
+        // Add error message to history BEFORE calling toolExecuted
         // Use a slight delay to ensure timestamp is after the tool call message
         const errorResultTime = new Date(Date.now() + 1); // Add 1ms to ensure proper ordering
         const errorResultMessage: AgentInstanceMessage = {
           id: `tool-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           agentId: handlerContext.agent.id,
-          role: 'user',
+          role: 'assistant', // Changed from 'user' to 'assistant' to avoid user confusion
           content: errorMessage,
           modified: errorResultTime,
-          duration: 1, // Error messages are only visible to AI for 1 round
+          duration: 2, // Error messages are visible to AI for 2 rounds: immediate + next round to allow explanation
           metadata: {
             isToolResult: true,
             isError: true,
             toolId: 'wiki-search',
+            isPersisted: false, // Required by messageManagementPlugin to identify new tool results
+            isComplete: true, // Mark as complete to prevent messageManagementPlugin from overwriting content
           },
         };
         handlerContext.agent.messages.push(errorResultMessage);
+
+        // Signal that tool was executed (with error) AFTER adding the message
+        await hooks.toolExecuted.promise({
+          handlerContext,
+          toolResult: {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          toolInfo: {
+            toolId: 'wiki-search',
+            parameters: {},
+          },
+        });
 
         logger.debug('Wiki search tool execution failed but error result added', {
           errorResultMessageId: errorResultMessage.id,

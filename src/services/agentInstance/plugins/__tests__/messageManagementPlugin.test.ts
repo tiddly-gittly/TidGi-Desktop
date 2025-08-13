@@ -180,7 +180,7 @@ describe('Message Management Plugin - Real Database Integration', () => {
       const toolResultMessage: AgentInstanceMessage = {
         id: `tool-result-${Date.now()}`,
         agentId: testAgentId,
-        role: 'user',
+        role: 'assistant', // Changed from 'user' to 'assistant' to match the fix
         content: `<functions_result>
 Tool: wiki-search
 Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内容：
@@ -278,7 +278,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       expect(allMessages[1].role).toBe('assistant'); // AI tool call
       expect(allMessages[1].content).toContain('<tool_use name="wiki-search">');
 
-      expect(allMessages[2].role).toBe('user'); // Tool result (THIS WAS MISSING!)
+      expect(allMessages[2].role).toBe('assistant'); // Tool result (changed from 'user' to 'assistant')
       expect(allMessages[2].content).toContain('<functions_result>');
       expect(allMessages[2].metadata?.isToolResult).toBe(true);
 
@@ -295,7 +295,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       const toolResult1: AgentInstanceMessage = {
         id: `tool-result-1-${Date.now()}`,
         agentId: testAgentId,
-        role: 'user',
+        role: 'assistant', // Changed from 'user' to 'assistant'
         content: '<functions_result>Tool: wiki-search\nResult: Found Index page</functions_result>',
         contentType: 'text/plain',
         modified: new Date(),
@@ -310,7 +310,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       const toolResult2: AgentInstanceMessage = {
         id: `tool-result-2-${Date.now()}`,
         agentId: testAgentId,
-        role: 'user',
+        role: 'assistant', // Changed from 'user' to 'assistant'
         content: '<functions_result>Tool: wiki-search\nResult: Found related pages</functions_result>',
         contentType: 'text/plain',
         modified: new Date(),
@@ -347,11 +347,109 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
 
       expect(allMessages).toHaveLength(2);
       expect(allMessages.every((m) => m.metadata?.isToolResult)).toBe(true);
-      expect(allMessages.every((m) => m.role === 'user')).toBe(true);
+      expect(allMessages.every((m) => m.role === 'assistant')).toBe(true); // Changed from 'user' to 'assistant'
 
       // Verify both messages marked as persisted
       expect(toolResult1.metadata?.isPersisted).toBe(true);
       expect(toolResult2.metadata?.isPersisted).toBe(true);
+    });
+
+    it('should maintain message integrity when reloading from database (simulating page refresh)', async () => {
+      // This test simulates the issue where tool results are missing after page refresh
+      const handlerContext = createHandlerContext();
+
+      // Step 1: Complete chat flow with user message → AI tool call → tool result → AI response
+      const userMessage: AgentInstanceMessage = {
+        id: `user-${Date.now()}`,
+        agentId: testAgentId,
+        role: 'user',
+        content: '搜索 wiki 中的 Index 条目并解释',
+        contentType: 'text/plain',
+        modified: new Date(),
+        metadata: { processed: true },
+        duration: undefined,
+      };
+
+      const aiToolCallMessage: AgentInstanceMessage = {
+        id: `ai-tool-call-${Date.now()}`,
+        agentId: testAgentId,
+        role: 'assistant',
+        content: '<tool_use name="wiki-search">{"workspaceName": "wiki", "filter": "[title[Index]]"}</tool_use>',
+        contentType: 'text/plain',
+        modified: new Date(),
+        metadata: { isComplete: true, containsToolCall: true, toolId: 'wiki-search' },
+        duration: 1, // Tool call message expires after 1 round
+      };
+
+      const toolResultMessage: AgentInstanceMessage = {
+        id: `tool-result-${Date.now()}`,
+        agentId: testAgentId,
+        role: 'assistant',
+        content: '<functions_result>\nTool: wiki-search\nResult: Found Index page with navigation links\n</functions_result>',
+        contentType: 'text/plain',
+        modified: new Date(),
+        metadata: {
+          isToolResult: true,
+          toolId: 'wiki-search',
+          isPersisted: false,
+        },
+        duration: 1, // Tool result expires after 1 round
+      };
+
+      const aiFinalMessage: AgentInstanceMessage = {
+        id: `ai-final-${Date.now()}`,
+        agentId: testAgentId,
+        role: 'assistant',
+        content: '基于搜索结果，Index页面是wiki的主要导航入口...',
+        contentType: 'text/plain',
+        modified: new Date(),
+        metadata: { isComplete: true },
+        duration: undefined,
+      };
+
+      // Save all messages to database
+      await realAgentInstanceService.saveUserMessage(userMessage);
+      await realAgentInstanceService.saveUserMessage(aiToolCallMessage);
+
+      // Add tool result to context and trigger persistence via toolExecuted hook
+      handlerContext.agent.messages.push(toolResultMessage);
+      const toolContext: ToolExecutionContext = {
+        handlerContext,
+        toolResult: { success: true, data: 'Search completed' },
+        toolInfo: { toolId: 'wiki-search', parameters: {} },
+      };
+      await hooks.toolExecuted.promise(toolContext);
+
+      await realAgentInstanceService.saveUserMessage(aiFinalMessage);
+
+      // Step 2: Simulate loading from database (page refresh scenario)
+      const messageRepo = dataSource.getRepository(AgentInstanceMessageEntity);
+      const savedMessages = await messageRepo.find({
+        where: { agentId: testAgentId },
+        order: { modified: 'ASC' },
+      });
+
+      // Verify ALL messages were saved, including tool result
+      expect(savedMessages).toHaveLength(4);
+
+      const messageRoles = savedMessages.map(m => m.role);
+      expect(messageRoles).toEqual(['user', 'assistant', 'assistant', 'assistant']);
+
+      const messageContents = savedMessages.map(m => m.content);
+      expect(messageContents[0]).toContain('搜索 wiki 中的 Index 条目');
+      expect(messageContents[1]).toContain('<tool_use name="wiki-search">');
+      expect(messageContents[2]).toContain('<functions_result>'); // This was missing before the fix!
+      expect(messageContents[3]).toContain('基于搜索结果');
+
+      // Verify tool result message has correct metadata
+      const savedToolResult = savedMessages.find(m => m.metadata?.isToolResult);
+      expect(savedToolResult).toBeTruthy();
+      expect(savedToolResult?.metadata?.toolId).toBe('wiki-search');
+      expect(savedToolResult?.duration).toBe(1);
+      expect(savedToolResult?.role).toBe('assistant'); // Verify role is 'assistant', not 'user'
+
+      // Step 3: Verify that the tool result message has been marked as persisted
+      expect(toolResultMessage.metadata?.isPersisted).toBe(true);
     });
   });
 });

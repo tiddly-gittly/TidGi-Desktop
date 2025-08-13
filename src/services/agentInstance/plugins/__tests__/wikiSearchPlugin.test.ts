@@ -276,11 +276,12 @@ describe('Wiki Search Plugin', () => {
       // Verify tool result message was added to agent history
       expect(handlerContext.agent.messages.length).toBeGreaterThan(0);
       const toolResultMessage = handlerContext.agent.messages[handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
-      expect(toolResultMessage.role).toBe('user');
+      expect(toolResultMessage.role).toBe('assistant'); // Changed from 'user' to 'assistant'
       expect(toolResultMessage.content).toContain('<functions_result>');
       expect(toolResultMessage.content).toContain('Tool: wiki-search');
       expect(toolResultMessage.content).toContain('Important Note 1');
       expect(toolResultMessage.metadata?.isToolResult).toBe(true);
+      expect(toolResultMessage.metadata?.isPersisted).toBe(false); // Should be false initially
     });
 
     it('should handle wiki search errors gracefully', async () => {
@@ -337,12 +338,13 @@ describe('Wiki Search Plugin', () => {
       // Verify error message was added to agent history
       expect(handlerContext.agent.messages.length).toBeGreaterThan(0);
       const errorResultMessage = handlerContext.agent.messages[handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
-      expect(errorResultMessage.role).toBe('user');
+      expect(errorResultMessage.role).toBe('assistant'); // Changed from 'user' to 'assistant'
       expect(errorResultMessage.content).toContain('<functions_result>');
       expect(errorResultMessage.content).toContain('Error:');
       expect(errorResultMessage.content).toContain('does not exist');
       expect(errorResultMessage.metadata?.isToolResult).toBe(true);
       expect(errorResultMessage.metadata?.isError).toBe(true);
+      expect(errorResultMessage.metadata?.isPersisted).toBe(false); // Should be false initially
     });
 
     it('should skip execution when no tool call is detected', async () => {

@@ -167,13 +167,14 @@ describe('Wiki Search Plugin - Duration Mechanism', () => {
       // Execute the response complete hook
       await hooks.responseComplete.promise(context);
 
-      // Verify that debounceUpdateMessage was called to notify frontend
+      // Verify that debounceUpdateMessage was called to notify frontend immediately (no delay)
       expect(mockAgentInstanceService.debounceUpdateMessage).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'ai-tool-call-msg',
           duration: 1,
         }),
         'test-agent',
+        0, // No delay for immediate update
       );
 
       // Check that tool result was added
@@ -186,10 +187,10 @@ describe('Wiki Search Plugin - Duration Mechanism', () => {
       expect(aiToolCallMessage.metadata?.containsToolCall).toBe(true);
       expect(aiToolCallMessage.metadata?.toolId).toBe('wiki-search');
 
-      // Check that tool result message has duration=1
+      // Check that tool result message has duration=1 (from config)
       const toolResultMessage = handlerContext.agent.messages[2] as AgentInstanceMessage;
-      expect(toolResultMessage.role).toBe('user');
-      expect(toolResultMessage.duration).toBe(1); // Tool result should also have duration=1
+      expect(toolResultMessage.role).toBe('assistant'); // Changed from 'user' to 'assistant'
+      expect(toolResultMessage.duration).toBe(1); // Tool result uses configurable toolResultDuration (default 1)
       expect(toolResultMessage.metadata?.isToolResult).toBe(true);
 
       // Check that previous user message is unchanged
@@ -263,8 +264,8 @@ describe('Wiki Search Plugin - Duration Mechanism', () => {
 
       // Check that error result message was added with duration=1
       const errorResultMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
-      expect(errorResultMessage.role).toBe('user');
-      expect(errorResultMessage.duration).toBe(1);
+      expect(errorResultMessage.role).toBe('assistant'); // Changed from 'user' to 'assistant'
+      expect(errorResultMessage.duration).toBe(1); // Now uses configurable toolResultDuration (default 1)
       expect(errorResultMessage.metadata?.isToolResult).toBe(true);
       expect(errorResultMessage.metadata?.isError).toBe(true);
     });

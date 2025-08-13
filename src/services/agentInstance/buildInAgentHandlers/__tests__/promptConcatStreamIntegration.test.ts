@@ -192,7 +192,7 @@ describe('WikiSearch Plugin Integration', () => {
         },
         requestId: 'test-request',
         isFinal: true,
-        pluginConfig: wikiPlugin,
+        pluginConfig: wikiPlugin as IPromptConcatPlugin,
         prompts: [],
         messages: [],
         llmResponse: 'I will search for important content using wiki-search tool.',
@@ -218,7 +218,7 @@ describe('WikiSearch Plugin Integration', () => {
       // Verify tool result message was added to agent history
       expect(responseContext.handlerContext.agent.messages.length).toBeGreaterThan(0);
       const toolResultMessage = responseContext.handlerContext.agent.messages[responseContext.handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
-      expect(toolResultMessage.role).toBe('user');
+      expect(toolResultMessage.role).toBe('assistant'); // Changed from 'user' to 'assistant'
       expect(toolResultMessage.content).toContain('<functions_result>');
       expect(toolResultMessage.content).toContain('Tool: wiki-search');
       expect(toolResultMessage.content).toContain('Important Note 1');
@@ -266,7 +266,7 @@ describe('WikiSearch Plugin Integration', () => {
         },
         requestId: 'test-request',
         isFinal: true,
-        pluginConfig: wikiPlugin,
+        pluginConfig: wikiPlugin as IPromptConcatPlugin,
         prompts: [],
         messages: [],
         llmResponse: 'Search in nonexistent wiki',
@@ -289,7 +289,7 @@ describe('WikiSearch Plugin Integration', () => {
       // Verify error message was added to agent history
       expect(responseContext.handlerContext.agent.messages.length).toBeGreaterThan(0);
       const errorResultMessage = responseContext.handlerContext.agent.messages[responseContext.handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
-      expect(errorResultMessage.role).toBe('user');
+      expect(errorResultMessage.role).toBe('assistant'); // Changed from 'user' to 'assistant'
       expect(errorResultMessage.content).toContain('Error:');
       expect(errorResultMessage.content).toContain('does not exist');
     });

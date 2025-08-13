@@ -7,6 +7,7 @@ import { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService 
 import { createHooksWithPlugins } from '../plugins';
 import { YieldNextRoundTarget } from '../plugins/types';
 import { AgentPromptDescription, AiAPIConfig, HandlerConfig } from '../promptConcat/promptConcatSchema';
+import { IPromptConcatPlugin } from '../promptConcat/promptConcatSchema/plugin';
 import { responseConcat } from '../promptConcat/responseConcat';
 import { getFinalPromptResult } from '../promptConcat/utils';
 import { canceled, completed, error, working } from './statusUtilities';
@@ -34,7 +35,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
   const lastUserMessage: AgentInstanceMessage | undefined = context.agent.messages[context.agent.messages.length - 1];
 
   // Create and register handler hooks based on handler config
-  const handlerHooks = await createHooksWithPlugins(context.agentDef.handlerConfig || {});
+  const { hooks: handlerHooks, pluginConfigs } = await createHooksWithPlugins(context.agentDef.handlerConfig || {});
 
   // Log the start of handler execution with context information
   logger.debug('Starting prompt handler execution', {
@@ -147,11 +148,14 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
 
             // Delegate response processing to handler hooks
             if (response.status === 'update') {
+              // For responseUpdate, we'll skip plugin-specific config for now
+              // since it's called frequently during streaming
               await handlerHooks.responseUpdate.promise({
                 handlerContext: context,
                 response,
                 requestId: currentRequestId,
                 isFinal: false,
+                pluginConfig: {} as IPromptConcatPlugin, // Empty config for streaming updates
               });
             }
 
@@ -168,6 +172,8 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                 response,
                 requestId: currentRequestId,
                 isFinal: true,
+                pluginConfig: (pluginConfigs.length > 0 ? pluginConfigs[0] : {}) as IPromptConcatPlugin, // First config for compatibility
+                handlerConfig: context.agentDef.handlerConfig, // Pass complete config for plugin access
                 actions: undefined as { yieldNextRoundTo?: 'self' | 'human'; newUserMessage?: string } | undefined,
               };
 

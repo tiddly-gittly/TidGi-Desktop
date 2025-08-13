@@ -526,7 +526,18 @@
       "IncludeTextTitle": "包含文本",
       "MaxResults": "返回的最大搜索结果数量",
       "MaxResultsTitle": "最大结果数",
+      "SourceType": "数据源类型",
+      "SourceTypeTitle": "源类型",
       "Title": "Wiki 搜索",
+      "ToolListPositionTitle": "工具列表位置",
+      "ToolListPosition": {
+        "Position": "相对于目标位置的插入位置",
+        "PositionTitle": "插入位置",
+        "TargetId": "目标元素的ID，工具列表将相对于此元素插入",
+        "TargetIdTitle": "目标ID"
+      },
+      "ToolResultDuration": "工具执行结果在对话中保持可见的轮数，超过此轮数后结果将变灰显示",
+      "ToolResultDurationTitle": "工具结果持续轮数",
       "WorkspaceName": "要搜索的 TiddlyWiki 工作区名称",
       "WorkspaceNameTitle": "工作区名称"
     }
