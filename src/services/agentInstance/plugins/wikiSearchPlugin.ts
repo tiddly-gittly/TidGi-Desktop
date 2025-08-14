@@ -289,6 +289,16 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
 
       // Execute the wiki search tool call
       try {
+        // Check if cancelled before starting tool execution
+        if (handlerContext.isCancelled()) {
+          logger.debug('Wiki search cancelled before execution', {
+            toolId: 'wiki-search',
+            agentId: handlerContext.agent.id,
+          });
+          callback();
+          return;
+        }
+
         // Validate parameters against schema
         const validatedParameters = WikiSearchToolParameterSchema.parse(toolMatch.parameters);
 
@@ -300,6 +310,16 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
             messageId: handlerContext.agent.messages[handlerContext.agent.messages.length - 1]?.id,
           },
         );
+
+        // Check if cancelled after tool execution
+        if (handlerContext.isCancelled()) {
+          logger.debug('Wiki search cancelled after execution', {
+            toolId: 'wiki-search',
+            agentId: handlerContext.agent.id,
+          });
+          callback();
+          return;
+        }
 
         // Format the tool result for display
         let toolResultText: string;
@@ -325,6 +345,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
           toolId: 'wiki-search',
           agentId: handlerContext.agent.id,
           messageCount: handlerContext.agent.messages.length,
+          toolResultPreview: toolResultText.slice(0, 200),
         });
 
         // Immediately add the tool result message to history BEFORE calling toolExecuted

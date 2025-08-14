@@ -90,10 +90,6 @@ export function findPromptById(
  * @returns Flattened array of prompts
  */
 export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
-  logger.debug('Starting prompt flattening', {
-    promptCount: prompts.length,
-  });
-
   const result: CoreMessage[] = [];
 
   // Process prompt tree recursively - collect non-role children text
@@ -178,14 +174,6 @@ export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
   }
 
   collectRolePrompts(prompts);
-
-  logger.debug('Skipping any empty content');
-
-  logger.debug('Prompt flattening completed', {
-    resultCount: result.length,
-    roles: result.map(r => r.role),
-  });
-
   return result;
 }
 

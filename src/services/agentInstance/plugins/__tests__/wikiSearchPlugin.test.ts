@@ -1,5 +1,6 @@
 /**
- * Tests for Wiki Search plugin
+ * Comprehensive tests for Wiki Search plugin
+ * Covers tool list injection, tool execution, duration mechanism, message persistence, and integration scenarios
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentInstanceMessage } from '../../interface';
@@ -12,6 +13,7 @@ import { cloneDeep } from 'lodash';
 import defaultAgents from '../../buildInAgentHandlers/defaultAgents.json';
 import { createHandlerHooks, PromptConcatHookContext } from '../index';
 import { wikiSearchPlugin } from '../wikiSearchPlugin';
+import { messageManagementPlugin } from '../messageManagementPlugin';
 
 // Use the real agent config
 const exampleAgent = defaultAgents[0];
@@ -26,6 +28,12 @@ const mockWorkspaceService = {
   exists: vi.fn(),
 };
 
+const mockAgentInstanceService = {
+  saveUserMessage: vi.fn(),
+  debounceUpdateMessage: vi.fn(),
+  updateAgent: vi.fn(),
+};
+
 vi.mock('@services/container', () => ({
   container: {
     get: vi.fn((identifier: symbol) => {
@@ -35,12 +43,15 @@ vi.mock('@services/container', () => ({
       if (identifier === serviceIdentifier.Workspace) {
         return mockWorkspaceService;
       }
+      if (identifier === serviceIdentifier.AgentInstance) {
+        return mockAgentInstanceService;
+      }
       return {};
     }),
   },
 }));
 
-describe('Wiki Search Plugin', () => {
+describe('Wiki Search Plugin - Comprehensive Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -82,9 +93,10 @@ describe('Wiki Search Plugin', () => {
       },
     ]);
     mockWorkspaceService.exists.mockResolvedValue(true);
+    mockAgentInstanceService.saveUserMessage.mockResolvedValue(undefined);
   });
 
-  describe('wikiSearchPlugin - Tool List Injection', () => {
+  describe('Tool List Injection', () => {
     it('should inject wiki tools into prompts when configured', async () => {
       // Find the wiki search plugin config, make sure our default config
       const wikiPlugin = handlerConfig.plugins.find(p => p.pluginId === 'wikiSearch');
@@ -197,8 +209,8 @@ describe('Wiki Search Plugin', () => {
     });
   });
 
-  describe('wikiSearchHandlerPlugin - Tool Execution', () => {
-    it('should execute wiki search and set up next round when tool call is detected', async () => {
+  describe('Tool Execution & Duration Mechanism', () => {
+    beforeEach(() => {
       // Mock wiki search results
       mockWikiService.wikiOperationInServer.mockImplementation(
         (channel: WikiChannel, _workspaceId: string, args: string[]) => {
@@ -218,6 +230,13 @@ describe('Wiki Search Plugin', () => {
           return Promise.resolve([]);
         },
       );
+    });
+
+    it('should execute wiki search with correct duration=1 and trigger next round', async () => {
+      // Find the real wikiSearch plugin config from defaultAgents.json
+      const wikiPlugin = handlerConfig.plugins.find(p => p.pluginId === 'wikiSearch');
+      expect(wikiPlugin).toBeDefined();
+      expect(wikiPlugin!.wikiSearchParam).toBeDefined();
 
       const handlerContext = {
         agent: {
@@ -228,9 +247,30 @@ describe('Wiki Search Plugin', () => {
             modified: new Date(),
           },
           created: new Date(),
-          messages: [],
+          messages: [
+            // Previous user message
+            {
+              id: 'user-msg-1',
+              role: 'user' as const,
+              content: 'Search for information',
+              agentId: 'test-agent',
+              contentType: 'text/plain',
+              modified: new Date(),
+              duration: undefined, // Should stay visible
+            },
+            // AI tool call message (this is the message we're testing)
+            {
+              id: 'ai-tool-call-msg',
+              role: 'assistant' as const,
+              content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[tag[important]]", "maxResults": 3}</tool_use>',
+              agentId: 'test-agent',
+              contentType: 'text/plain',
+              modified: new Date(),
+              duration: undefined, // Should be set to 1 after tool execution
+            },
+          ],
         },
-        agentDef: { id: 'test-agent-def' } as any,
+        agentDef: { id: 'test-agent-def', name: 'test' },
         isCancelled: () => false,
       };
 
@@ -244,13 +284,9 @@ describe('Wiki Search Plugin', () => {
       const context = {
         handlerContext,
         response,
-        requestId: 'test-request',
+        requestId: 'test-request-123',
         isFinal: true,
-        pluginConfig: {
-          id: 'test-plugin',
-          pluginId: 'wikiSearch' as const,
-          forbidOverrides: false,
-        },
+        pluginConfig: wikiPlugin!,
         prompts: [],
         messages: [],
         llmResponse: response.content,
@@ -273,18 +309,41 @@ describe('Wiki Search Plugin', () => {
       // Verify that the search was executed and results were set up for next round
       expect(context.actions.yieldNextRoundTo).toBe('self');
 
-      // Verify tool result message was added to agent history
-      expect(handlerContext.agent.messages.length).toBeGreaterThan(0);
-      const toolResultMessage = handlerContext.agent.messages[handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
+      // Verify that debounceUpdateMessage was called to notify frontend immediately (no delay)
+      expect(mockAgentInstanceService.debounceUpdateMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'ai-tool-call-msg',
+          duration: 1,
+        }),
+        'test-agent',
+        0, // No delay for immediate update
+      );
+
+      // Check that AI tool call message now has duration=1 (should gray out immediately)
+      const aiToolCallMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
+      expect(aiToolCallMessage.id).toBe('ai-tool-call-msg');
+      expect(aiToolCallMessage.duration).toBe(1); // Should be 1 to gray out immediately
+      expect(aiToolCallMessage.metadata?.containsToolCall).toBe(true);
+      expect(aiToolCallMessage.metadata?.toolId).toBe('wiki-search');
+
+      // Verify tool result message was added to agent history with correct settings
+      expect(handlerContext.agent.messages.length).toBe(3); // user + ai + tool_result
+      const toolResultMessage = handlerContext.agent.messages[2] as AgentInstanceMessage;
       expect(toolResultMessage.role).toBe('assistant'); // Changed from 'user' to 'assistant'
       expect(toolResultMessage.content).toContain('<functions_result>');
       expect(toolResultMessage.content).toContain('Tool: wiki-search');
       expect(toolResultMessage.content).toContain('Important Note 1');
       expect(toolResultMessage.metadata?.isToolResult).toBe(true);
       expect(toolResultMessage.metadata?.isPersisted).toBe(false); // Should be false initially
+      expect(toolResultMessage.duration).toBe(1); // Tool result uses configurable toolResultDuration (default 1)
+
+      // Check that previous user message is unchanged
+      const userMessage = handlerContext.agent.messages[0] as AgentInstanceMessage;
+      expect(userMessage.id).toBe('user-msg-1');
+      expect(userMessage.duration).toBeUndefined(); // Should stay visible
     });
 
-    it('should handle wiki search errors gracefully', async () => {
+    it('should handle wiki search errors gracefully and set duration=1 for both messages', async () => {
       const handlerContext = {
         agent: {
           id: 'test-agent',
@@ -294,9 +353,19 @@ describe('Wiki Search Plugin', () => {
             modified: new Date(),
           },
           created: new Date(),
-          messages: [],
+          messages: [
+            {
+              id: 'ai-error-tool-call',
+              role: 'assistant' as const,
+              content: '<tool_use name="wiki-search">{"workspaceName": "Nonexistent Wiki", "filter": "[tag[test]]"}</tool_use>',
+              agentId: 'test-agent',
+              contentType: 'text/plain',
+              modified: new Date(),
+              duration: undefined, // Should be set to 1 after error handling
+            },
+          ],
         },
-        agentDef: { id: 'test-agent-def' } as any,
+        agentDef: { id: 'test-agent-def', name: 'test' },
         isCancelled: () => false,
       };
 
@@ -304,13 +373,13 @@ describe('Wiki Search Plugin', () => {
       const response = {
         status: 'done' as const,
         content: '<tool_use name="wiki-search">{"workspaceName": "Nonexistent Wiki", "filter": "[tag[test]]"}</tool_use>',
-        requestId: 'test-request-234',
+        requestId: 'test-request-error',
       };
 
       const context = {
         handlerContext,
         response,
-        requestId: 'test-request',
+        requestId: 'test-request-error',
         isFinal: true,
         pluginConfig: {
           id: 'test-plugin',
@@ -335,9 +404,15 @@ describe('Wiki Search Plugin', () => {
       // Should still set up next round with error message
       expect(context.actions.yieldNextRoundTo).toBe('self');
 
+      // Check that AI tool call message has duration=1 even after error (should gray out immediately)
+      const aiToolCallMessage = handlerContext.agent.messages[0] as AgentInstanceMessage;
+      expect(aiToolCallMessage.id).toBe('ai-error-tool-call');
+      expect(aiToolCallMessage.duration).toBe(1); // Should be 1 to gray out immediately
+      expect(aiToolCallMessage.metadata?.containsToolCall).toBe(true);
+
       // Verify error message was added to agent history
-      expect(handlerContext.agent.messages.length).toBeGreaterThan(0);
-      const errorResultMessage = handlerContext.agent.messages[handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
+      expect(handlerContext.agent.messages.length).toBe(2); // tool_call + error_result
+      const errorResultMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
       expect(errorResultMessage.role).toBe('assistant'); // Changed from 'user' to 'assistant'
       expect(errorResultMessage.content).toContain('<functions_result>');
       expect(errorResultMessage.content).toContain('Error:');
@@ -345,6 +420,95 @@ describe('Wiki Search Plugin', () => {
       expect(errorResultMessage.metadata?.isToolResult).toBe(true);
       expect(errorResultMessage.metadata?.isError).toBe(true);
       expect(errorResultMessage.metadata?.isPersisted).toBe(false); // Should be false initially
+      expect(errorResultMessage.duration).toBe(1); // Now uses configurable toolResultDuration (default 1)
+    });
+
+    it('should not modify duration of unrelated messages', async () => {
+      const handlerContext = {
+        agent: {
+          id: 'test-agent',
+          agentDefId: 'test-agent-def',
+          status: {
+            state: 'working' as const,
+            modified: new Date(),
+          },
+          created: new Date(),
+          messages: [
+            {
+              id: 'unrelated-user-msg',
+              role: 'user' as const,
+              content: 'This is an unrelated message',
+              agentId: 'test-agent',
+              contentType: 'text/plain',
+              modified: new Date(),
+              duration: 5, // Should remain unchanged
+            },
+            {
+              id: 'unrelated-ai-msg',
+              role: 'assistant' as const,
+              content: 'This is a regular AI response without tool calls',
+              agentId: 'test-agent',
+              contentType: 'text/plain',
+              modified: new Date(),
+              duration: undefined, // Should remain unchanged
+            },
+            {
+              id: 'ai-tool-call-msg',
+              role: 'assistant' as const,
+              content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[tag[test]]"}</tool_use>',
+              agentId: 'test-agent',
+              contentType: 'text/plain',
+              modified: new Date(),
+              duration: undefined, // This should be modified to 1
+            },
+          ],
+        },
+        agentDef: { id: 'test-agent-def', name: 'test' },
+        isCancelled: () => false,
+      };
+
+      const response = {
+        status: 'done' as const,
+        content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[tag[test]]"}</tool_use>',
+        requestId: 'test-request-selective',
+      };
+
+      const context = {
+        handlerContext,
+        response,
+        requestId: 'test-request-selective',
+        isFinal: true,
+        pluginConfig: {
+          id: 'test-plugin',
+          pluginId: 'wikiSearch' as const,
+          forbidOverrides: false,
+        },
+        prompts: [],
+        messages: [],
+        llmResponse: response.content,
+        responses: [],
+        actions: {
+          yieldNextRoundTo: undefined,
+          newUserMessage: undefined,
+        },
+      };
+
+      const hooks = createHandlerHooks();
+      wikiSearchPlugin(hooks);
+
+      await hooks.responseComplete.promise(context);
+
+      // Check that unrelated messages were not modified
+      const unrelatedUserMsg = handlerContext.agent.messages[0] as AgentInstanceMessage;
+      expect(unrelatedUserMsg.duration).toBe(5); // Should remain unchanged
+
+      const unrelatedAiMsg = handlerContext.agent.messages[1] as AgentInstanceMessage;
+      expect(unrelatedAiMsg.duration).toBeUndefined(); // Should remain unchanged
+
+      // Check that only the tool call message was modified
+      const toolCallMsg = handlerContext.agent.messages[2] as AgentInstanceMessage;
+      expect(toolCallMsg.duration).toBe(1); // Should be set to 1
+      expect(toolCallMsg.metadata?.containsToolCall).toBe(true);
     });
 
     it('should skip execution when no tool call is detected', async () => {
@@ -388,6 +552,118 @@ describe('Wiki Search Plugin', () => {
 
       // Context should not be modified
       expect((context as any).actions).toBeUndefined();
+    });
+  });
+
+  describe('Message Persistence Integration', () => {
+    it('should work with messageManagementPlugin for complete persistence flow', async () => {
+      // This test ensures wikiSearchPlugin works well with messageManagementPlugin
+      const handlerContext = {
+        agent: {
+          id: 'test-agent',
+          agentDefId: 'test-agent-def',
+          status: {
+            state: 'working' as const,
+            modified: new Date(),
+          },
+          created: new Date(),
+          messages: [
+            {
+              id: 'ai-tool-msg',
+              role: 'assistant' as const,
+              content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[tag[test]]"}</tool_use>',
+              agentId: 'test-agent',
+              contentType: 'text/plain',
+              modified: new Date(),
+              duration: undefined,
+            },
+          ],
+        },
+        agentDef: { id: 'test-agent-def', name: 'test' },
+        isCancelled: () => false,
+      };
+
+      const response = {
+        status: 'done' as const,
+        content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[tag[test]]"}</tool_use>',
+        requestId: 'test-request-integration',
+      };
+
+      const context = {
+        handlerContext,
+        response,
+        requestId: 'test-request-integration',
+        isFinal: true,
+        pluginConfig: {
+          id: 'test-plugin',
+          pluginId: 'wikiSearch' as const,
+          forbidOverrides: false,
+        },
+        prompts: [],
+        messages: [],
+        llmResponse: response.content,
+        responses: [],
+        actions: {
+          yieldNextRoundTo: undefined,
+          newUserMessage: undefined,
+        },
+      };
+
+      const hooks = createHandlerHooks();
+      wikiSearchPlugin(hooks);
+      messageManagementPlugin(hooks);
+
+      await hooks.responseComplete.promise(context);
+
+      // Verify integration works
+      expect(context.actions.yieldNextRoundTo).toBe('self');
+      expect(handlerContext.agent.messages.length).toBe(2); // original + tool result
+
+      const toolResultMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
+      expect(toolResultMessage.metadata?.isToolResult).toBe(true);
+      expect(toolResultMessage.metadata?.isPersisted).toBe(true); // Should be true after messageManagementPlugin processing
+    });
+
+    it('should prevent regression: tool result not filtered in second round', async () => {
+      // Root cause test to prevent regression of the original bug
+      // Bug: Tool result messages were filtered out in second round due to duration=1
+      const messages: AgentInstanceMessage[] = [
+        {
+          id: 'user-1',
+          agentId: 'test',
+          role: 'user',
+          content: '搜索 wiki 中的 Index 条目并解释',
+          modified: new Date(),
+          duration: undefined,
+        },
+        {
+          id: 'ai-tool-1',
+          agentId: 'test',
+          role: 'assistant',
+          content: '<tool_use name="wiki-search">{workspaceName:"wiki", filter:"[title[Index]]"}</tool_use>',
+          modified: new Date(),
+          duration: 1,
+          metadata: { containsToolCall: true, toolId: 'wiki-search' },
+        },
+        {
+          id: 'tool-result-1',
+          agentId: 'test',
+          role: 'assistant',
+          content: '<functions_result>\nTool: wiki-search\nResult: Found Index page...\n</functions_result>',
+          modified: new Date(),
+          duration: 1,
+          metadata: { isToolResult: true, toolId: 'wiki-search' },
+        },
+      ];
+
+      // Test duration filtering - this is where the bug was
+      const { filterMessagesByDuration } = await import('../../utilities/messageDurationFilter');
+      const filtered = filterMessagesByDuration(messages);
+
+      // Root cause: Both tool call and tool result should be included for proper AI context
+      expect(filtered.length).toBe(3); // user + tool call + tool result
+      expect(filtered.some((m: AgentInstanceMessage) => m.metadata?.containsToolCall)).toBe(true);
+      expect(filtered.some((m: AgentInstanceMessage) => m.metadata?.isToolResult)).toBe(true);
     });
   });
 });

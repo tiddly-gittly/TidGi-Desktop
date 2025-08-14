@@ -30,7 +30,7 @@
               "children": [
                 {
                   "id": "default-before-tool",
-                  "text": "<tools>\n以下是可用的工具。请在使用工具时，遵循以下规则：\n1. 当用户要求搜索、查找、检索wiki内容或询问特定条目时，你必须使用相应的搜索工具。\n2. 工具调用必须严格使用如下格式：\n<tool_use name=\"工具ID\">{参数:值, ...}</tool_use>\n其中工具ID必须是下方列出的英文ID（如wiki-search），参数内容必须是JSON对象格式。\n3. 不要用自然语言描述你要做什么，直接使用工具调用格式。\n4. 工具调用返回内容将用 <functions_result>...</functions_result> 包裹。\n5. 收到工具返回结果后，基于结果内容回答用户问题。"
+                  "text": "<tools>\n以下是可用的工具。请在使用工具时，遵循以下规则：\n1. 当用户要求搜索、查找、检索wiki内容或询问特定条目时，你必须使用相应的搜索工具。\n2. 工具调用必须严格使用如下格式：\n<tool_use name=\"工具ID\">{参数:值, ...}</tool_use>\n其中工具ID必须是下方列出的英文ID（如wiki-search），参数内容必须是JSON对象格式。\n3. 不要用自然语言描述你要做什么，直接使用工具调用格式。\n4. 工具调用返回内容将用 <functions_result>...</functions_result> 包裹。\n5. 收到工具返回结果后，基于结果内容回答用户问题。\n6. 重要：使用工具并收到结果后，你必须对工具结果进行分析和解释，不能返回空白内容。"
                 },
                 {
                   "id": "default-post-tool",
@@ -41,7 +41,7 @@
             {
               "id": "b1f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
               "caption": "AI回复没有完全解决问题时，继续工作直到它自己觉得满意。",
-              "text": "继续工作直到你自己觉得工作已经完全完成。如果根据之前的对话你认为任务已完成，则总结并结束对话。如果任务还未完成，你可以继续调用工具。"
+              "text": "继续工作直到你自己觉得工作已经完全完成。如果根据之前的对话你认为任务已完成，则总结并结束对话。如果任务还未完成，你可以继续调用工具。重要提醒：如果你刚刚使用了工具并收到了结果，你必须对结果进行解释和说明，绝不能返回空白内容。"
             }
           ]
         },
@@ -90,24 +90,6 @@
             "toolListPosition": {
               "position": "after",
               "targetId": "default-before-tool"
-            }
-          }
-        },
-        {
-          "id": "c0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
-          "caption": "地图服务MCP工具提示",
-          "pluginId": "modelContextProtocol",
-          "modelContextProtocolParam": {
-            "id": "@amap/amap-maps-mcp-server",
-            "timeoutSecond": 1.5,
-            "timeoutMessage": "",
-            "responseProcessing": {
-              "id": ["a0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5"]
-            },
-            "position": "after",
-            "targetId": "default-before-tool",
-            "trigger": {
-              "search": "地图,规划行程,路线,导航,交通,出行,天气,地点,位置,坐标,经纬度,地址,城市,省份,国家"
             }
           }
         },

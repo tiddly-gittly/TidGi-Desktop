@@ -35,13 +35,31 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
       return;
     }
 
-    // Get all messages except the last one which is the user message
+    // Get all messages except the last user message being processed
+    // We need to find and exclude only the current user message being processed, not just the last message
     const messagesCopy = cloneDeep(messages);
     
-    // FIXED: Only pop if the last message is actually a user message
-    // In tool calling scenarios, the last message might be a tool result
-    if (messagesCopy.length > 0 && messagesCopy[messagesCopy.length - 1].role === 'user') {
-      messagesCopy.pop(); // Remove the current user message
+    // Find the last user message (which is the one being processed in this round)
+    let lastUserMessageIndex = -1;
+    for (let index = messagesCopy.length - 1; index >= 0; index--) {
+      if (messagesCopy[index].role === 'user') {
+        lastUserMessageIndex = index;
+        break;
+      }
+    }
+    
+    // Remove only the last user message if found (this is the current message being processed)
+    if (lastUserMessageIndex >= 0) {
+      messagesCopy.splice(lastUserMessageIndex, 1);
+      logger.debug('Removed current user message from history', {
+        removedMessageId: messages[lastUserMessageIndex].id,
+        remainingMessages: messagesCopy.length,
+      });
+    } else {
+      logger.debug('No user message found to remove from history', {
+        totalMessages: messagesCopy.length,
+        messageRoles: messagesCopy.map(m => m.role),
+      });
     }
 
     // Apply duration filtering to exclude expired messages from AI context

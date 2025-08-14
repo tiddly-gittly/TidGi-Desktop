@@ -624,7 +624,6 @@ export class AgentInstanceService implements IAgentInstanceService {
       if (this.agentInstanceSubjects.has(agentId)) {
         // Use the provided data for notification (no database query)
         this.agentInstanceSubjects.get(agentId)?.next(agentData);
-        logger.debug(`Notified subscribers for agent ${agentId}`, { method: 'notifyAgentUpdate' });
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

@@ -122,6 +122,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
           modelName: aiApiConfig.api.model,
           promptCount: flatPrompts.length,
           messageCount: context.agent.messages.length,
+          retryCount,
         });
 
         // Delegate AI API calls to externalAPIService
