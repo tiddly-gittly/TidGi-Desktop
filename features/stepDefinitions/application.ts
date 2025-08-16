@@ -136,7 +136,6 @@ Then('I should see a(n) {string} element with selector {string}', async function
     if (!isVisible) {
       throw new Error(`Element "${elementName}" with selector "${selector}" is not visible`);
     }
-    console.log(`✓ Found ${elementName}: ${selector}`);
   } catch (error) {
     throw new Error(`Failed to find ${elementName} with selector "${selector}": ${error as Error}`);
   }
@@ -144,24 +143,23 @@ Then('I should see a(n) {string} element with selector {string}', async function
 
 When('I click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementName: string, selector: string) {
   try {
-    console.log(`Trying to find element "${elementName}" with selector: ${selector}`);
     await this.mainWindow?.waitForSelector(selector, { timeout: 10000 });
     const isVisible = await this.mainWindow?.isVisible(selector);
     if (!isVisible) {
       throw new Error(`Element "${elementName}" with selector "${selector}" is not visible`);
     }
     await this.mainWindow?.click(selector);
-    console.log(`✓ Clicked ${elementName}: ${selector}`);
   } catch (error) {
     // Debug: log all buttons on the page when click fails
-    const allButtons = await this.mainWindow?.$$eval('button', buttons => 
-      buttons.map(button => ({
-        text: button.textContent?.trim(),
-        ariaLabel: button.getAttribute('aria-label'),
-        title: button.getAttribute('title'),
-        className: button.className,
-        visible: button.offsetParent !== null,
-      })).filter(btn => btn.visible)
+    const allButtons = await this.mainWindow?.locator('button').evaluateAll(buttons =>
+      buttons
+        .filter(button => button instanceof HTMLElement && button.offsetParent !== null)
+        .map(button => ({
+          text: button.textContent?.trim(),
+          ariaLabel: button.getAttribute('aria-label'),
+          title: button.getAttribute('title'),
+          className: button.getAttribute('class'),
+        }))
     );
     console.log('All visible buttons on page:', allButtons);
     throw new Error(`Failed to find and click ${elementName} with selector "${selector}": ${error as Error}`);
