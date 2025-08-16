@@ -3,7 +3,7 @@ import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
 import { getPackedAppPath } from '../supports/paths';
 
-class ApplicationWorld {
+export class ApplicationWorld {
   app: ElectronApplication | undefined;
   mainWindow: Page | undefined;
 }
@@ -86,15 +86,17 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
         '--run-all-compositor-stages-before-draw',
         '--disable-checker-imaging',
         // Linux CI specific arguments
-        ...(process.env.CI && process.platform === 'linux' ? [
-          '--disable-background-mode',
-          '--disable-features=VizDisplayCompositor',
-          '--use-gl=swiftshader',
-          '--disable-accelerated-2d-canvas',
-          '--disable-accelerated-jpeg-decoding',
-          '--disable-accelerated-mjpeg-decode',
-          '--disable-accelerated-video-decode',
-        ] : []),
+        ...(process.env.CI && process.platform === 'linux'
+          ? [
+            '--disable-background-mode',
+            '--disable-features=VizDisplayCompositor',
+            '--use-gl=swiftshader',
+            '--disable-accelerated-2d-canvas',
+            '--disable-accelerated-jpeg-decoding',
+            '--disable-accelerated-mjpeg-decode',
+            '--disable-accelerated-video-decode',
+          ]
+          : []),
       ],
       env: {
         ...process.env,
@@ -127,15 +129,42 @@ When('I wait for the page to load completely', async function(this: ApplicationW
   await this.mainWindow?.waitForLoadState('networkidle', { timeout: 30000 });
 });
 
-Then('I should see an element with selector {string}', async function(this: ApplicationWorld, selector: string) {
+Then('I should see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementName: string, selector: string) {
   try {
     await this.mainWindow?.waitForSelector(selector, { timeout: 10000 });
     const isVisible = await this.mainWindow?.isVisible(selector);
     if (!isVisible) {
-      throw new Error(`Element with selector "${selector}" is not visible`);
+      throw new Error(`Element "${elementName}" with selector "${selector}" is not visible`);
     }
+    console.log(`✓ Found ${elementName}: ${selector}`);
   } catch (error) {
-    throw new Error(`Failed to find visible element with selector "${selector}": ${error as Error}`);
+    throw new Error(`Failed to find ${elementName} with selector "${selector}": ${error as Error}`);
+  }
+});
+
+When('I click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementName: string, selector: string) {
+  try {
+    console.log(`Trying to find element "${elementName}" with selector: ${selector}`);
+    await this.mainWindow?.waitForSelector(selector, { timeout: 10000 });
+    const isVisible = await this.mainWindow?.isVisible(selector);
+    if (!isVisible) {
+      throw new Error(`Element "${elementName}" with selector "${selector}" is not visible`);
+    }
+    await this.mainWindow?.click(selector);
+    console.log(`✓ Clicked ${elementName}: ${selector}`);
+  } catch (error) {
+    // Debug: log all buttons on the page when click fails
+    const allButtons = await this.mainWindow?.$$eval('button', buttons => 
+      buttons.map(button => ({
+        text: button.textContent?.trim(),
+        ariaLabel: button.getAttribute('aria-label'),
+        title: button.getAttribute('title'),
+        className: button.className,
+        visible: button.offsetParent !== null,
+      })).filter(btn => btn.visible)
+    );
+    console.log('All visible buttons on page:', allButtons);
+    throw new Error(`Failed to find and click ${elementName} with selector "${selector}": ${error as Error}`);
   }
 });
 
