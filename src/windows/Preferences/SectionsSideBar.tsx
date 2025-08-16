@@ -47,7 +47,11 @@ export function SectionSideBar(props: ISectionProps): React.JSX.Element {
           return (
             <React.Fragment key={sectionKey}>
               {index > 0 && <Divider />}
-              <SideMenuListItem index={index} onClick={() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+              <SideMenuListItem
+                index={index}
+                onClick={() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                data-testid={`preference-section-${sectionKey}`}
+              >
                 <ListItemIcon>
                   <Icon />
                 </ListItemIcon>

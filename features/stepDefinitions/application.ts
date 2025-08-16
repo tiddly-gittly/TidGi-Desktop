@@ -1,17 +1,40 @@
-import { After, AfterStep, Before, setWorldConstructor, Then, When } from '@cucumber/cucumber';
+import { After, Before, setWorldConstructor, Then, When } from '@cucumber/cucumber';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
+import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getPackedAppPath } from '../supports/paths';
 
 export class ApplicationWorld {
   app: ElectronApplication | undefined;
-  mainWindow: Page | undefined;
+  mainWindow: Page | undefined; // Keep for compatibility during transition
+  currentWindow: Page | undefined; // New state-managed current window
+  mockOpenAIServer: MockOpenAIServer | undefined;
+
+  getWindow(windowType: string = 'main'): Page | undefined {
+    if (!this.app) return undefined;
+
+    const pages = this.app.windows();
+    switch (windowType) {
+      case 'main':
+        return pages[0]; // First window is usually main
+      case 'preferences':
+        return pages.length > 1 ? pages[1] : pages[0]; // Second window for preferences
+      case 'current':
+      default:
+        return this.currentWindow || this.mainWindow; // Use currentWindow first, fallback to mainWindow
+    }
+  }
 }
 
 setWorldConstructor(ApplicationWorld);
 
 Before(async function(this: ApplicationWorld) {
   console.log('Starting test scenario');
+
+  // Start mock OpenAI server
+  this.mockOpenAIServer = new MockOpenAIServer();
+  await this.mockOpenAIServer.start();
+  console.log(`Mock OpenAI server running at: ${this.mockOpenAIServer.baseUrl}`);
 
   // Create necessary directories
   const fs = await import('fs');
@@ -34,28 +57,35 @@ After(async function(this: ApplicationWorld) {
     }
     this.app = undefined;
     this.mainWindow = undefined;
+    this.currentWindow = undefined;
+  }
+
+  // Stop mock OpenAI server
+  if (this.mockOpenAIServer) {
+    await this.mockOpenAIServer.stop();
+    this.mockOpenAIServer = undefined;
   }
 });
 
-AfterStep(async function(this: ApplicationWorld, { pickleStep }) {
-  // Take screenshot after each step
-  if (this.mainWindow) {
-    try {
-      // Extract step text and clean it for filename
-      const stepText = pickleStep.text || 'unknown-step';
-      const cleanStepText = stepText
-        .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
-        .substring(0, 100);
+// AfterStep(async function(this: ApplicationWorld, { pickleStep }) {
+//   // Take screenshot after each step
+//   if (this.mainWindow) {
+//     try {
+//       // Extract step text and clean it for filename
+//       const stepText = pickleStep.text || 'unknown-step';
+//       const cleanStepText = stepText
+//         .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+//         .substring(0, 100);
 
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const screenshotPath = `logs/screenshots/${timestamp}-${cleanStepText}.png`;
-      await this.mainWindow.screenshot({ path: screenshotPath, fullPage: true, quality: 10, type: 'jpeg', scale: 'css', caret: 'initial' });
-      console.log(`Screenshot saved to: ${screenshotPath}`);
-    } catch (screenshotError) {
-      console.warn('Failed to take screenshot:', screenshotError);
-    }
-  }
-});
+//       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+//       const screenshotPath = `logs/screenshots/${timestamp}-${cleanStepText}.png`;
+//       await this.mainWindow.screenshot({ path: screenshotPath, fullPage: true, quality: 10, type: 'jpeg', scale: 'css', caret: 'initial' });
+//       console.log(`Screenshot saved to: ${screenshotPath}`);
+//     } catch (screenshotError) {
+//       console.warn('Failed to take screenshot:', screenshotError);
+//     }
+//   }
+// });
 
 When('I launch the TidGi application', async function(this: ApplicationWorld) {
   // For E2E tests on dev mode, use the packaged test version with NODE_ENV environment variable baked in
@@ -114,6 +144,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
     // Wait longer for window in CI environment
     const windowTimeout = process.env.CI ? 45000 : 10000;
     this.mainWindow = await this.app.firstWindow({ timeout: windowTimeout });
+    this.currentWindow = this.mainWindow; // Initialize currentWindow
   } catch (error) {
     throw new Error(
       `Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package\` before running the tests to ensure the app is built, and build with binaries like "dugite" and "tiddlywiki", see scripts/afterPack.js for more details.`,
@@ -126,106 +157,141 @@ When('I wait for {int} seconds', async function(seconds: number) {
 });
 
 When('I wait for the page to load completely', async function(this: ApplicationWorld) {
-  await this.mainWindow?.waitForLoadState('networkidle', { timeout: 30000 });
+  const currentWindow = this.currentWindow || this.mainWindow;
+  await currentWindow?.waitForLoadState('networkidle', { timeout: 30000 });
 });
 
-Then('I should see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementName: string, selector: string) {
+Then('I should see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
+  const currentWindow = this.currentWindow || this.mainWindow;
   try {
-    await this.mainWindow?.waitForSelector(selector, { timeout: 10000 });
-    const isVisible = await this.mainWindow?.isVisible(selector);
+    await currentWindow?.waitForSelector(selector, { timeout: 10000 });
+    const isVisible = await currentWindow?.isVisible(selector);
     if (!isVisible) {
-      throw new Error(`Element "${elementName}" with selector "${selector}" is not visible`);
+      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
     }
   } catch (error) {
-    throw new Error(`Failed to find ${elementName} with selector "${selector}": ${error as Error}`);
+    throw new Error(`Failed to find ${elementComment} with selector "${selector}": ${error as Error}`);
   }
 });
 
-When('I click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementName: string, selector: string) {
+When('I click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
+  const targetWindow = this.getWindow('current');
+
+  if (!targetWindow) {
+    throw new Error(`Window "current" is not available`);
+  }
+
   try {
-    await this.mainWindow?.waitForSelector(selector, { timeout: 10000 });
-    const isVisible = await this.mainWindow?.isVisible(selector);
+    console.log(`Trying to find element "${elementComment}" with selector: ${selector} in current window`);
+    await targetWindow.waitForSelector(selector, { timeout: 10000 });
+    const isVisible = await targetWindow.isVisible(selector);
     if (!isVisible) {
-      throw new Error(`Element "${elementName}" with selector "${selector}" is not visible`);
+      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
     }
-    await this.mainWindow?.click(selector);
+    await targetWindow.click(selector);
+    console.log(`✓ Clicked ${elementComment}: ${selector} in current window`);
   } catch (error) {
-    // Debug: log all buttons on the page when click fails
-    const allButtons = await this.mainWindow?.locator('button').evaluateAll(buttons =>
-      buttons
-        .filter(button => button instanceof HTMLElement && button.offsetParent !== null)
-        .map(button => ({
-          text: button.textContent?.trim(),
-          ariaLabel: button.getAttribute('aria-label'),
-          title: button.getAttribute('title'),
-          className: button.getAttribute('class'),
-        }))
-    );
-    console.log('All visible buttons on page:', allButtons);
-    throw new Error(`Failed to find and click ${elementName} with selector "${selector}": ${error as Error}`);
+    throw new Error(`Failed to find and click ${elementComment} with selector "${selector}" in current window: ${error as Error}`);
   }
 });
 
-Then('I should {word} see text {string}', async function(this: ApplicationWorld, modifier: string, text: string) {
-  switch (modifier) {
-    case 'always':
-    case '': {
-      // For "I should see text" - wait for text to appear
-      try {
-        await this.mainWindow?.waitForFunction(
-          (searchText) => document.body.textContent?.includes(searchText),
-          text,
-          { timeout: 10000 },
-        );
-      } catch (error) {
-        throw new Error(`Failed to find text "${text}" on the page: ${error as Error}`);
-      }
-      break;
-    }
-    case 'not': {
-      // For "I should not see text" - check text is not present
-      const bodyContent = await this.mainWindow?.textContent('body');
-      if (bodyContent?.includes(text)) {
-        throw new Error(`Text "${text}" should not be visible but was found on the page`);
-      }
-      break;
-    }
-    default:
-      throw new Error(`Unsupported text modifier: "${modifier}". Use "not" or leave empty`);
+When('I type {string} in {string} element with selector {string}', async function(this: ApplicationWorld, text: string, elementComment: string, selector: string) {
+  const currentWindow = this.currentWindow || this.mainWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
   }
-});
 
-Then('I should see text {string}', async function(this: ApplicationWorld, text: string) {
   try {
-    // Wait for the text to appear on the page
-    await this.mainWindow?.waitForFunction(
-      (searchText) => document.body.textContent?.includes(searchText),
-      text,
-      { timeout: 10000 },
-    );
+    await currentWindow.waitForSelector(selector, { timeout: 10000 });
+    const element = currentWindow.locator(selector);
+    
+    // Handle mock server URL special case
+    if (text === 'MOCK_SERVER_URL' && this.mockOpenAIServer) {
+      await element.click();
+      await element.selectText();
+      await element.fill(this.mockOpenAIServer.baseUrl + '/v1');
+      console.log(`✓ Set API address to: ${this.mockOpenAIServer.baseUrl}/v1`);
+    } else {
+      await element.fill(text);
+      console.log(`✓ Typed "${text}" in ${elementComment} element: ${selector}`);
+    }
   } catch (error) {
-    throw new Error(`Failed to find text "${text}" on the page: ${error as Error}`);
+    throw new Error(`Failed to type in ${elementComment} element with selector "${selector}": ${error as Error}`);
   }
 });
 
-Then('the window title should {word} {string}', async function(this: ApplicationWorld, action: string, value: string) {
-  const actualTitle = await this.mainWindow?.title();
+When('the window title should contain {string}', async function(this: ApplicationWorld, expectedTitle: string) {
+  const currentWindow = this.currentWindow || this.mainWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
 
-  switch (action) {
-    case 'contain':
-      if (!actualTitle?.includes(value)) {
-        throw new Error(`Expected window title to contain "${value}" but got "${actualTitle}"`);
-      }
-      console.log(`✓ Window title contains "${value}"`);
-      break;
-    case 'equal':
-    case 'be':
-      if (actualTitle !== value) {
-        throw new Error(`Expected window title to be "${value}" but got "${actualTitle}"`);
-      }
-      console.log(`✓ Window title is "${value}"`);
-      break;
-    default:
-      throw new Error(`Unsupported title action: "${action}". Use "contain", "equal", or "be"`);
+  try {
+    const title = await currentWindow.title();
+    if (!title.includes(expectedTitle)) {
+      throw new Error(`Window title "${title}" does not contain "${expectedTitle}"`);
+    }
+    console.log(`✓ Window title contains "${expectedTitle}"`);
+  } catch (error) {
+    throw new Error(`Failed to check window title: ${error as Error}`);
+  }
+});
+
+// Generic keyboard action
+When('I press {string} key', async function(this: ApplicationWorld, key: string) {
+  const currentWindow = this.currentWindow || this.mainWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  await currentWindow.keyboard.press(key);
+  console.log(`✓ Pressed ${key} key`);
+});
+
+// Generic window switching - sets currentWindow state for subsequent operations
+When('I switch to {string} window', async function(this: ApplicationWorld, windowType: string) {
+  if (!this.app) {
+    throw new Error('Application is not available');
+  }
+
+  // Wait a bit for the window to potentially open
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  
+  // Get all windows
+  const pages = this.app.windows();
+  console.log(`Found ${pages.length} windows after waiting`);
+  
+  const targetWindow = this.getWindow(windowType);
+  if (targetWindow) {
+    this.currentWindow = targetWindow; // Set currentWindow state
+    console.log(`✓ Switched to ${windowType} window - currentWindow set`);
+  } else {
+    throw new Error(`Could not find ${windowType} window`);
+  }
+});
+
+// Generic window closing
+When('I close {string} window', async function(this: ApplicationWorld, windowType: string) {
+  if (!this.app) {
+    throw new Error('Application is not available');
+  }
+
+  const pages = this.app.windows();
+  console.log(`Found ${pages.length} windows`);
+  
+  const targetWindow = this.getWindow(windowType);
+  if (targetWindow) {
+    await targetWindow.close();
+    console.log(`✓ Closed ${windowType} window`);
+    
+    // Switch back to main window after closing
+    const remainingWindows = this.app.windows();
+    if (remainingWindows.length > 0) {
+      this.mainWindow = remainingWindows[0];
+      this.currentWindow = remainingWindows[0]; // Update currentWindow too
+      console.log('✓ Switched back to main window');
+    }
+  } else {
+    throw new Error(`Could not find ${windowType} window to close`);
   }
 });
