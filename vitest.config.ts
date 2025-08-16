@@ -24,6 +24,7 @@ export default defineConfig({
     include: [
       'src/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
       'src/**/*.(test|spec).(ts|tsx|js)',
+      'features/**/*.(test|spec).(ts|tsx|js)',
     ],
 
     // Global test settings - this makes vi, expect, etc. available globally
