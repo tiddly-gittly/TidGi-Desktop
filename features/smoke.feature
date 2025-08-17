@@ -7,6 +7,6 @@ Feature: TidGi Application Launch
   Scenario: Application starts and shows interface
     When I launch the TidGi application
     And I wait for the page to load completely
-    And I should see an element with selector "body"
+    And I should see a "page body" element with selector "body"
     And the window title should contain "太记"
     And I should not see text "Error"

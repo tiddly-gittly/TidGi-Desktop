@@ -72,6 +72,7 @@ export function NewProviderForm({
         fullWidth
         margin='normal'
         placeholder='my-ai-provider'
+        slotProps={{ htmlInput: { 'data-testid': 'new-provider-name-input' } }}
       />
 
       <FormControl fullWidth margin='normal'>
@@ -104,6 +105,7 @@ export function NewProviderForm({
           placeholder={formState.providerClass === 'ollama'
             ? 'http://localhost:11434'
             : 'https://api.example.com/v1'}
+          slotProps={{ htmlInput: { 'data-testid': 'new-provider-base-url-input' } }}
         />
       )}
 
@@ -113,6 +115,7 @@ export function NewProviderForm({
         onClick={onSubmit}
         fullWidth
         sx={{ mt: 2 }}
+        data-testid='add-provider-submit-button'
       >
         {t('Preference.AddProvider')}
       </Button>

@@ -1,7 +1,7 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "rootDir": ".",
+    "rootDir": "..",
     "outDir": "../out/features",
     "noEmit": true,
     "skipLibCheck": true,
@@ -12,7 +12,8 @@
   },
   "include": [
     "**/*.ts",
-    "**/*.js"
+    "**/*.js",
+    "../src/constants/pageTypes.ts"
   ],
   "exclude": [
     "node_modules",

@@ -12,33 +12,36 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   Scenario: Complete agent workflow with tool usage and multi-round conversation
     # Step 1: Configure AI settings first - Open preferences window
     When I click on a "settings button" element with selector "#open-preferences-button"
-    And I wait for 2 seconds
     When I switch to "preferences" window
     
     # Step 2: Navigate to External Services section (wait for sidebar animation)
-    And I wait for 3 seconds
+    And I wait for 0.5 seconds
     When I switch to "preferences" window
     When I click on an "external services section" element with selector "[data-testid='preference-section-externalAPI']"
     
     # Step 3: Add new provider
-    When I click on an "add provider button" element with selector "button:has-text('添加新提供商')"
+    When I click on an "add provider button" element with selector "[data-testid='add-new-provider-button']"
     
     # Step 4: Fill provider form with mock server details (interface type already selected as openAICompatible)
-    When I type "TestProvider" in "provider name input" element with selector "label:has-text('提供商名称') + div input"
-    And I type "MOCK_SERVER_URL" in "API endpoint input" element with selector "label:has-text('API 地址') + div input"
-    When I click on an "add provider submit" element with selector "button:has-text('添加提供商')"
+    When I type "TestProvider" in "provider name input" element with selector "[data-testid='new-provider-name-input']"
+    And I type "MOCK_SERVER_URL" in "API endpoint input" element with selector "[data-testid='new-provider-base-url-input']"
+    When I click on an "add provider submit" element with selector "[data-testid='add-provider-submit-button']"
+    And I wait for 0.2 seconds
     
     # Step 5: Select the new provider and add a model
     When I click on a "provider tab" element with selector "button[role='tab']:has-text('TestProvider')"
-    When I click on an "add model button" element with selector "button:has-text('添加新模型')"
+    When I click on an "add model button" element with selector "[data-testid='add-new-model-button']"
+    And I wait for 0.2 seconds
     
     # Step 6: Fill model form (simple - just model name)
-    When I type "test-model" in "model name input" element with selector ".MuiDialogContent-root input[type='text']:first-of-type"
-    When I click on a "save model button" element with selector "button:has-text('保存')"
+    When I type "test-model" in "model name input" element with selector "[data-testid='new-model-name-input']"
+    When I click on a "save model button" element with selector "[data-testid='save-model-button']"
+    And I wait for 0.2 seconds
     
     # Step 7: Set default model
     When I type "test-model" in "default model autocomplete" element with selector ".MuiAutocomplete-input"
     And I press "Enter" key
+    And I wait for 0.5 seconds
     
     # Step 8: Close preferences window
     When I close "preferences" window

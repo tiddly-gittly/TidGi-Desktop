@@ -20,3 +20,10 @@ export enum PageType {
    */
   add = 'add',
 }
+export function isMainWindowPage(pageType: PageType | undefined): boolean {
+  return pageType === PageType.guide ||
+    pageType === PageType.help ||
+    pageType === PageType.wiki ||
+    pageType === PageType.agent ||
+    pageType === PageType.add;
+}

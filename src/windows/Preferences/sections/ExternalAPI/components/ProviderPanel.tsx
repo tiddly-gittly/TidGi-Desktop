@@ -89,6 +89,7 @@ export function ProviderPanel({
         fullWidth
         margin='normal'
         disabled={provider.providerClass === 'ollama'} // Ollama doesn't require API key
+        slotProps={{ htmlInput: { 'data-testid': 'provider-api-key-input' } }}
       />
 
       {/* Show baseURL field (if needed) */}
@@ -104,6 +105,7 @@ export function ProviderPanel({
           placeholder={provider.providerClass === 'ollama'
             ? 'http://localhost:11434'
             : 'https://api.example.com/v1'}
+          slotProps={{ htmlInput: { 'data-testid': 'provider-base-url-input' } }}
         />
       )}
 
@@ -129,6 +131,7 @@ export function ProviderPanel({
           startIcon={<AddIcon />}
           onClick={onOpenAddModelDialog}
           fullWidth
+          data-testid='add-new-model-button'
         >
           {t('Preference.AddNewModel')}
         </Button>

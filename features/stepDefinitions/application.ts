@@ -1,6 +1,7 @@
 import { After, Before, setWorldConstructor, Then, When } from '@cucumber/cucumber';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
+import { isMainWindowPage, PageType } from '../../src/constants/pageTypes';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getPackedAppPath } from '../supports/paths';
 
@@ -14,15 +15,19 @@ export class ApplicationWorld {
     if (!this.app) return undefined;
 
     const pages = this.app.windows();
-    switch (windowType) {
-      case 'main':
-        return pages[0]; // First window is usually main
-      case 'preferences':
-        return pages.length > 1 ? pages[1] : pages[0]; // Second window for preferences
-      case 'current':
-      default:
-        return this.currentWindow || this.mainWindow; // Use currentWindow first, fallback to mainWindow
+
+    if (windowType === 'main') {
+      return pages.find(page => {
+        const pageType = page.url().split('#/').pop();
+        // file:///C:/Users/linonetwo/Documents/repo-c/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.webpack/renderer/main_window/index.html#/guide
+        return isMainWindowPage(pageType as PageType | undefined);
+      });
     }
+    // file:///C:/Users/linonetwo/Documents/repo-c/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.webpack/renderer/main_window/index.html#/preferences
+    return pages.find(page => {
+      const pageType = page.url().split('#/').pop();
+      return pageType === windowType;
+    });
   }
 }
 
@@ -155,6 +160,9 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
 When('I wait for {int} seconds', async function(seconds: number) {
   await new Promise(resolve => setTimeout(resolve, seconds * 1000));
 });
+When('I wait for {float} seconds', async function(seconds: number) {
+  await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+});
 
 When('I wait for the page to load completely', async function(this: ApplicationWorld) {
   const currentWindow = this.currentWindow || this.mainWindow;
@@ -204,7 +212,7 @@ When('I type {string} in {string} element with selector {string}', async functio
   try {
     await currentWindow.waitForSelector(selector, { timeout: 10000 });
     const element = currentWindow.locator(selector);
-    
+
     // Handle mock server URL special case
     if (text === 'MOCK_SERVER_URL' && this.mockOpenAIServer) {
       await element.click();
@@ -217,6 +225,19 @@ When('I type {string} in {string} element with selector {string}', async functio
     }
   } catch (error) {
     throw new Error(`Failed to type in ${elementComment} element with selector "${selector}": ${error as Error}`);
+  }
+});
+
+// Minimal text checking for smoke test
+When('I should not see text {string}', async function(this: ApplicationWorld, text: string) {
+  const currentWindow = this.currentWindow || this.mainWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  const bodyContent = await currentWindow.textContent('body');
+  if (bodyContent?.includes(text)) {
+    throw new Error(`Text "${text}" should not be visible but was found on the page`);
   }
 });
 
@@ -254,13 +275,12 @@ When('I switch to {string} window', async function(this: ApplicationWorld, windo
     throw new Error('Application is not available');
   }
 
-  // Wait a bit for the window to potentially open
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  
+  await new Promise(resolve => setTimeout(resolve, 100));
+
   // Get all windows
   const pages = this.app.windows();
   console.log(`Found ${pages.length} windows after waiting`);
-  
+
   const targetWindow = this.getWindow(windowType);
   if (targetWindow) {
     this.currentWindow = targetWindow; // Set currentWindow state
@@ -278,12 +298,13 @@ When('I close {string} window', async function(this: ApplicationWorld, windowTyp
 
   const pages = this.app.windows();
   console.log(`Found ${pages.length} windows`);
-  
+
   const targetWindow = this.getWindow(windowType);
   if (targetWindow) {
+    const urlLastPart = targetWindow.url().split('/').pop();
     await targetWindow.close();
-    console.log(`✓ Closed ${windowType} window`);
-    
+    console.log(`✓ Closed ${urlLastPart} window`);
+
     // Switch back to main window after closing
     const remainingWindows = this.app.windows();
     if (remainingWindows.length > 0) {

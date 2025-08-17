@@ -114,6 +114,7 @@ export function NewModelDialog({
                 }}
                 fullWidth
                 margin='normal'
+                slotProps={{ htmlInput: { 'data-testid': 'new-model-name-input' } }}
               />
 
               <TextField
@@ -153,7 +154,7 @@ export function NewModelDialog({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>{t('Cancel')}</Button>
-        <Button onClick={onAddModel} variant='contained' color='primary'>
+        <Button onClick={onAddModel} variant='contained' color='primary' data-testid='save-model-button'>
           {t('Save')}
         </Button>
       </DialogActions>

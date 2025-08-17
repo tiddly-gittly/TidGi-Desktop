@@ -450,6 +450,7 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
         onClick={() => {
           setShowAddProviderForm(!showAddProviderForm);
         }}
+        data-testid='add-new-provider-button'
       >
         {showAddProviderForm ? t('Preference.CancelAddProvider') : t('Preference.AddNewProvider')}
       </AddProviderButton>
