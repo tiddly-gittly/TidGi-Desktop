@@ -16,7 +16,9 @@ export default [
         tsconfigRootDir: __dirname,
       },
     },
-    rules: {},
+    rules: {
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+    },
   },
   {
     files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
