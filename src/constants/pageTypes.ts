@@ -20,10 +20,9 @@ export enum PageType {
    */
   add = 'add',
 }
+export const defaultCreatedPageTypes: PageType[] = [PageType.agent, PageType.help, PageType.guide, PageType.add];
 export function isMainWindowPage(pageType: PageType | undefined): boolean {
-  return pageType === PageType.guide ||
-    pageType === PageType.help ||
-    pageType === PageType.wiki ||
-    pageType === PageType.agent ||
-    pageType === PageType.add;
+  if (!pageType) return false;
+  return defaultCreatedPageTypes.includes(pageType) ||
+    pageType === PageType.wiki;
 }

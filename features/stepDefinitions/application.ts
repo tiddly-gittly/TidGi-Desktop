@@ -1,4 +1,4 @@
-import { After, Before, setWorldConstructor, Then, When } from '@cucumber/cucumber';
+import { After, AfterStep, Before, setWorldConstructor, Then, When } from '@cucumber/cucumber';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
 import { isMainWindowPage, PageType } from '../../src/constants/pageTypes';
@@ -22,6 +22,9 @@ export class ApplicationWorld {
         // file:///C:/Users/linonetwo/Documents/repo-c/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.webpack/renderer/main_window/index.html#/guide
         return isMainWindowPage(pageType as PageType | undefined);
       });
+    }
+    if (windowType === 'current') {
+      return this.currentWindow;
     }
     // file:///C:/Users/linonetwo/Documents/repo-c/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.webpack/renderer/main_window/index.html#/preferences
     return pages.find(page => {
@@ -72,25 +75,25 @@ After(async function(this: ApplicationWorld) {
   }
 });
 
-// AfterStep(async function(this: ApplicationWorld, { pickleStep }) {
-//   // Take screenshot after each step
-//   if (this.mainWindow) {
-//     try {
-//       // Extract step text and clean it for filename
-//       const stepText = pickleStep.text || 'unknown-step';
-//       const cleanStepText = stepText
-//         .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
-//         .substring(0, 100);
+AfterStep(async function(this: ApplicationWorld, { pickleStep }) {
+  // Only take screenshots in CI environment
+  if (process.env.CI && this.currentWindow) {
+    try {
+      // Extract step text and clean it for filename
+      const stepText = pickleStep.text || 'unknown-step';
+      const cleanStepText = stepText
+        .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+        .substring(0, 100);
 
-//       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-//       const screenshotPath = `logs/screenshots/${timestamp}-${cleanStepText}.png`;
-//       await this.mainWindow.screenshot({ path: screenshotPath, fullPage: true, quality: 10, type: 'jpeg', scale: 'css', caret: 'initial' });
-//       console.log(`Screenshot saved to: ${screenshotPath}`);
-//     } catch (screenshotError) {
-//       console.warn('Failed to take screenshot:', screenshotError);
-//     }
-//   }
-// });
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const screenshotPath = `logs/screenshots/${timestamp}-${cleanStepText}.png`;
+      await this.currentWindow.screenshot({ path: screenshotPath, fullPage: true, quality: 10, type: 'jpeg', scale: 'css', caret: 'initial' });
+      console.log(`Screenshot saved to: ${screenshotPath}`);
+    } catch (screenshotError) {
+      console.warn('Failed to take screenshot:', screenshotError);
+    }
+  }
+});
 
 When('I launch the TidGi application', async function(this: ApplicationWorld) {
   // For E2E tests on dev mode, use the packaged test version with NODE_ENV environment variable baked in
@@ -149,7 +152,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
     // Wait longer for window in CI environment
     const windowTimeout = process.env.CI ? 45000 : 10000;
     this.mainWindow = await this.app.firstWindow({ timeout: windowTimeout });
-    this.currentWindow = this.mainWindow; // Initialize currentWindow
+    this.currentWindow = this.mainWindow;
   } catch (error) {
     throw new Error(
       `Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package\` before running the tests to ensure the app is built, and build with binaries like "dugite" and "tiddlywiki", see scripts/afterPack.js for more details.`,
@@ -157,9 +160,6 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
   }
 });
 
-When('I wait for {int} seconds', async function(seconds: number) {
-  await new Promise(resolve => setTimeout(resolve, seconds * 1000));
-});
 When('I wait for {float} seconds', async function(seconds: number) {
   await new Promise(resolve => setTimeout(resolve, seconds * 1000));
 });
@@ -270,12 +270,11 @@ When('I press {string} key', async function(this: ApplicationWorld, key: string)
 });
 
 // Generic window switching - sets currentWindow state for subsequent operations
-When('I switch to {string} window', async function(this: ApplicationWorld, windowType: string) {
+// You may need to wait a second before switch, otherwise window's URL may not set yet.
+When('I switch to {string} window', function(this: ApplicationWorld, windowType: string) {
   if (!this.app) {
     throw new Error('Application is not available');
   }
-
-  await new Promise(resolve => setTimeout(resolve, 100));
 
   // Get all windows
   const pages = this.app.windows();
@@ -296,22 +295,11 @@ When('I close {string} window', async function(this: ApplicationWorld, windowTyp
     throw new Error('Application is not available');
   }
 
-  const pages = this.app.windows();
-  console.log(`Found ${pages.length} windows`);
-
   const targetWindow = this.getWindow(windowType);
   if (targetWindow) {
     const urlLastPart = targetWindow.url().split('/').pop();
     await targetWindow.close();
     console.log(`✓ Closed ${urlLastPart} window`);
-
-    // Switch back to main window after closing
-    const remainingWindows = this.app.windows();
-    if (remainingWindows.length > 0) {
-      this.mainWindow = remainingWindows[0];
-      this.currentWindow = remainingWindows[0]; // Update currentWindow too
-      console.log('✓ Switched back to main window');
-    }
   } else {
     throw new Error(`Could not find ${windowType} window to close`);
   }
