@@ -37,13 +37,10 @@ export class ApplicationWorld {
 setWorldConstructor(ApplicationWorld);
 
 Before(async function(this: ApplicationWorld) {
-  console.log('Starting test scenario');
-
   // Start mock OpenAI server
   this.mockOpenAIServer = new MockOpenAIServer();
   await this.mockOpenAIServer.start();
   console.log(`Mock OpenAI server running at: ${this.mockOpenAIServer.baseUrl}`);
-
   // Create necessary directories
   const fs = await import('fs');
   if (!fs.existsSync('logs')) {
@@ -59,7 +56,6 @@ After(async function(this: ApplicationWorld) {
   if (this.app) {
     try {
       await this.app.close();
-      console.log('Application closed successfully');
     } catch (error) {
       console.error('Error during cleanup:', error);
     }
@@ -88,7 +84,6 @@ AfterStep(async function(this: ApplicationWorld, { pickleStep }) {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const screenshotPath = `logs/screenshots/${timestamp}-${cleanStepText}.png`;
       await this.currentWindow.screenshot({ path: screenshotPath, fullPage: true, quality: 10, type: 'jpeg', scale: 'css', caret: 'initial' });
-      console.log(`Screenshot saved to: ${screenshotPath}`);
     } catch (screenshotError) {
       console.warn('Failed to take screenshot:', screenshotError);
     }
@@ -190,14 +185,12 @@ When('I click on a(n) {string} element with selector {string}', async function(t
   }
 
   try {
-    console.log(`Trying to find element "${elementComment}" with selector: ${selector} in current window`);
     await targetWindow.waitForSelector(selector, { timeout: 10000 });
     const isVisible = await targetWindow.isVisible(selector);
     if (!isVisible) {
       throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
     }
     await targetWindow.click(selector);
-    console.log(`✓ Clicked ${elementComment}: ${selector} in current window`);
   } catch (error) {
     throw new Error(`Failed to find and click ${elementComment} with selector "${selector}" in current window: ${error as Error}`);
   }
@@ -218,10 +211,8 @@ When('I type {string} in {string} element with selector {string}', async functio
       await element.click();
       await element.selectText();
       await element.fill(this.mockOpenAIServer.baseUrl + '/v1');
-      console.log(`✓ Set API address to: ${this.mockOpenAIServer.baseUrl}/v1`);
     } else {
       await element.fill(text);
-      console.log(`✓ Typed "${text}" in ${elementComment} element: ${selector}`);
     }
   } catch (error) {
     throw new Error(`Failed to type in ${elementComment} element with selector "${selector}": ${error as Error}`);
@@ -252,7 +243,6 @@ When('the window title should contain {string}', async function(this: Applicatio
     if (!title.includes(expectedTitle)) {
       throw new Error(`Window title "${title}" does not contain "${expectedTitle}"`);
     }
-    console.log(`✓ Window title contains "${expectedTitle}"`);
   } catch (error) {
     throw new Error(`Failed to check window title: ${error as Error}`);
   }
@@ -266,7 +256,6 @@ When('I press {string} key', async function(this: ApplicationWorld, key: string)
   }
 
   await currentWindow.keyboard.press(key);
-  console.log(`✓ Pressed ${key} key`);
 });
 
 // Generic window switching - sets currentWindow state for subsequent operations
@@ -275,15 +264,9 @@ When('I switch to {string} window', function(this: ApplicationWorld, windowType:
   if (!this.app) {
     throw new Error('Application is not available');
   }
-
-  // Get all windows
-  const pages = this.app.windows();
-  console.log(`Found ${pages.length} windows after waiting`);
-
   const targetWindow = this.getWindow(windowType);
   if (targetWindow) {
     this.currentWindow = targetWindow; // Set currentWindow state
-    console.log(`✓ Switched to ${windowType} window - currentWindow set`);
   } else {
     throw new Error(`Could not find ${windowType} window`);
   }
@@ -294,12 +277,9 @@ When('I close {string} window', async function(this: ApplicationWorld, windowTyp
   if (!this.app) {
     throw new Error('Application is not available');
   }
-
   const targetWindow = this.getWindow(windowType);
   if (targetWindow) {
-    const urlLastPart = targetWindow.url().split('/').pop();
     await targetWindow.close();
-    console.log(`✓ Closed ${urlLastPart} window`);
   } else {
     throw new Error(`Could not find ${windowType} window to close`);
   }
