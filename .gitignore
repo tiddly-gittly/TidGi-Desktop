@@ -67,6 +67,7 @@ out/
 deb2appimage_cache/
 deb2appimage.json
 userData-dev/
+userData-test/
 wiki-dev/
 *.tsbuildinfo
 tsconfig.test.json.tsbuildinfo

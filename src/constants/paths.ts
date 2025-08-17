@@ -1,8 +1,8 @@
 import os from 'os';
 import path from 'path';
 import { isMac } from '../helpers/system';
-import { isDevelopmentOrTest } from './environment';
-import { developmentWikiFolderName, localizationFolderName } from './fileNames';
+import { isDevelopmentOrTest, isTest } from './environment';
+import { developmentWikiFolderName, localizationFolderName, testWikiFolderName } from './fileNames';
 
 /** src folder */
 export const sourcePath = path.resolve(__dirname, '..');
@@ -30,7 +30,7 @@ export const TIDDLYWIKI_PACKAGE_FOLDER = path.resolve(PACKAGE_PATH_BASE, 'tiddly
 export const LOCALIZATION_FOLDER = isDevelopmentOrTest
   ? path.resolve(sourcePath, '..', localizationFolderName)
   : path.resolve(process.resourcesPath, localizationFolderName);
-export const DEFAULT_WIKI_FOLDER = isDevelopmentOrTest ? path.resolve(sourcePath, '..', developmentWikiFolderName) : DESKTOP_PATH;
+export const DEFAULT_WIKI_FOLDER = isDevelopmentOrTest ? path.resolve(sourcePath, '..', isTest ? testWikiFolderName : developmentWikiFolderName) : DESKTOP_PATH;
 export const DEFAULT_FIRST_WIKI_NAME = 'wiki';
 export const DEFAULT_FIRST_WIKI_PATH = path.join(DEFAULT_WIKI_FOLDER, DEFAULT_FIRST_WIKI_NAME);
 export const SQLITE_BINARY_PATH = path.resolve(PACKAGE_PATH_BASE, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');

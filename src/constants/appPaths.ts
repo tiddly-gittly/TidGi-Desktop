@@ -1,13 +1,15 @@
 import { app } from 'electron';
 import path from 'path';
 import { __TEST__ as v8CompileCacheLibrary } from 'v8-compile-cache-lib';
-import { isDevelopmentOrTest } from './environment';
+import { isDevelopmentOrTest, isElectronDevelopment, isTest } from './environment';
 import { cacheDatabaseFolderName, httpsCertKeyFolderName, settingFolderName } from './fileNames';
 import { sourcePath } from './paths';
 
-// in dev mode, set userData to a different folder, so gotTheLock will be true, we can run dev instance and normal instance.
-if (isDevelopmentOrTest) {
+// in dev/test mode, set userData to a different folder, so gotTheLock will be true, we can run dev instance and normal instance.
+if (isElectronDevelopment) {
   app.setPath('userData', path.resolve(sourcePath, '..', 'userData-dev'));
+} else if (isTest) {
+  app.setPath('userData', path.resolve(sourcePath, '..', 'userData-test'));
 }
 export const USER_DATA_FOLDER = app.getPath('userData');
 export const SETTINGS_FOLDER = path.resolve(USER_DATA_FOLDER, settingFolderName);
