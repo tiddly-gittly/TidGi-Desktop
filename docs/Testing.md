@@ -11,8 +11,12 @@ pnpm test
 # Run unit tests only
 pnpm test:unit
 
-# Run E2E tests (requires packaged app)
-pnpm run package:dev && pnpm test:e2e
+# Run E2E tests (requires prepare packaged app, but only when you modify code in ./src)
+pnpm run test:prepare-e2e
+# (When only modify tests in ./features folder, and you have packaged app before, only need to run this.)
+pnpm test:e2e
+# Or run a specific e2e test by using same `@xxx` as in the `.feature` file.
+pnpm test:e2e --tags="@smoke"
 
 # Run with coverage
 pnpm test:unit -- --coverage
@@ -23,13 +27,13 @@ pnpm test:unit src/services/agentDefinition/__tests__/responsePatternUtility.tes
 
 ## Project Setup
 
-**Test Configuration**: TypeScript-first with `vitest.config.ts`
+Test Configuration: TypeScript-first with `vitest.config.ts`
 
 - Unit tests: Vitest + React Testing Library + jsdom
 - E2E tests: Playwright + Cucumber
 - Coverage: HTML reports in `coverage/`
 
-**File Structure**:
+File Structure:
 
 ```tree
 src/
@@ -46,6 +50,8 @@ features/                # E2E tests
 ```
 
 ## Writing Unit Tests
+
+Code here are truncated or shorten. You should always read actuarial test file to learn how to write.
 
 ### Component Testing Best Practices
 
@@ -94,14 +100,14 @@ Object.defineProperty(window.observables.workspace, 'workspaces$', {
 
 ### Global Mock Management
 
-**Centralize common mocks** in `src/__tests__/__mocks__/` directory, and import them in `src/__tests__/setup-vitest.ts`:
+Centralize common mocks in `src/__tests__/__mocks__/` directory, and import them in `src/__tests__/setup-vitest.ts`:
 
 - Services from window APIs (`window.service`, `window.remote`, `window.observables`) and container APIs (`@services/container`) are now mocked in `src/__tests__/__mocks__/window.ts` 和 `services-container.ts`
 - Common libraries (`react-i18next` in `react-i18next.ts`, logger in `services-log.ts`)
 
 Most of services should be in these mock files. Only mock specific small set of service API in new test files if needed.
 
-**Override in test files** only when you need test-specific data:
+Override in test files only when you need test-specific data:
 
 ```typescript
 // Only override what's specific to this test
@@ -137,57 +143,63 @@ expect(await screen.findByText('Content')).toBeInTheDocument();
 ### Feature File Example
 
 ```gherkin
-# features/workspace-management.feature
-Feature: Workspace Management
-  
-  Scenario: Create new workspace
-    Given TidGi application is launched
-    When I click "Add Workspace" button
-    And I enter workspace name "Test Wiki"
-    And I click "Create" button
-    Then I should see "Test Wiki" in workspace list
+# features/agent.feature
+Feature: Agent Workflow
+  Background:
+    Given I launch the TidGi application
+    And I wait for the page to load completely
+
+  @agent
+  Scenario: Complete agent workflow
+    # Use generic steps for common UI interactions
+    When I click on a "settings button" element with selector "#open-preferences-button"
+    When I switch to "preferences" window
+    When I type "TestProvider" in "provider name input" element with selector "[data-testid='new-provider-name-input']"
+    # ... more generic steps
+    Then I should see 4 messages in chat history
 ```
 
-### Step Definitions
+### Step Definitions Architecture
+
+The E2E testing framework uses a World-based architecture with Playwright + Cucumber:
 
 ```typescript
-// features/stepDefinitions/application.ts
-import { Given, When, Then, Before, After } from '@cucumber/cucumber';
-import { expect } from '@playwright/test';
-import { ElectronApplication, _electron as electron } from 'playwright';
+// features/stepDefinitions/application.ts - Generic application steps
+export class ApplicationWorld {
+  app: ElectronApplication | undefined;
+  // ...
+}
 
-let electronApp: ElectronApplication;
-let page: Page;
+// Generic step definitions you usually must reuse.
+When('I click on a(n) {string} element with selector {string}', 
+  async function(elementComment: string, selector: string) {
+    // ...
+  }
+);
 
-Before(async function () {
-  electronApp = await electron.launch({
-    args: [path.join(__dirname, '../../out/TidGi-Desktop/TidGi-Desktop.exe')],
-    timeout: 30000,
-  });
-  page = await electronApp.firstWindow();
-});
-
-Given('TidGi application is launched', async function () {
-  await page.waitForSelector('[data-testid="main-window"]');
-});
-
-When('I click {string} button', async function (buttonText: string) {
-  await page.click(`button:has-text("${buttonText}")`);
-});
-
-Then('I should see {string} in workspace list', async function (text: string) {
-  await expect(page.locator(`[data-testid="workspace-item"]:has-text("${text}")`))
-    .toBeVisible();
-});
+// Don't define specific step only for you own use, that would be selfish.
+When('(Dont do this) I click on a specific button and wait for 2 seconds.', 
+  async function() {
+    // Strictly forbidden.
+  }
+);
 ```
+
+### Key E2E Testing Patterns
+
+1. Window Management: Use `getWindow()` with retry logic for reliable window switching
+2. Generic Steps: Reusable steps for common UI interactions with descriptive selectors
+3. Domain Steps: Specific steps for complex workflows (like agent conversations)
+4. Mock Services: Use tagged cleanup for feature-specific resources
+5. Streaming Support: Special handling for real-time updates in chat interfaces
 
 ## Testing Library Best Practices
 
 ### Query Priority (use in this order)
 
-1. **Accessible queries** - `getByRole`, `getByLabelText`, `getByPlaceholderText`
-2. **Semantic queries** - `getByAltText`, `getByTitle`
-3. **Test IDs** - `getByTestId` (when accessibility queries aren't practical)
+1. Accessible queries - `getByRole`, `getByLabelText`, `getByPlaceholderText`
+2. Semantic queries - `getByAltText`, `getByTitle`
+3. Test IDs - `getByTestId` (when accessibility queries aren't practical)
 
 ### Async Patterns
 
