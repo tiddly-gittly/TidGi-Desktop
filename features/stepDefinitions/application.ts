@@ -1,8 +1,11 @@
 import { After, AfterStep, Before, setWorldConstructor, Then, When } from '@cucumber/cucumber';
+import fs from 'fs';
+import path from 'path';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
 import { isMainWindowPage, PageType } from '../../src/constants/pageTypes';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
+import { logsDirectory, screenshotsDirectory } from '../supports/paths';
 import { getPackedAppPath } from '../supports/paths';
 
 export class ApplicationWorld {
@@ -49,15 +52,15 @@ export class ApplicationWorld {
 
 setWorldConstructor(ApplicationWorld);
 
-Before(async function(this: ApplicationWorld) {
-  // Create necessary directories
-  const fs = await import('fs');
-  if (!fs.existsSync('logs')) {
-    fs.mkdirSync('logs', { recursive: true });
+Before(function(this: ApplicationWorld) {
+  // Create necessary directories under userData-test/logs to match appPaths in dev/test
+  if (!fs.existsSync(logsDirectory)) {
+    fs.mkdirSync(logsDirectory, { recursive: true });
   }
+
   // Create screenshots subdirectory in logs
-  if (!fs.existsSync('logs/screenshots')) {
-    fs.mkdirSync('logs/screenshots', { recursive: true });
+  if (!fs.existsSync(screenshotsDirectory)) {
+    fs.mkdirSync(screenshotsDirectory, { recursive: true });
   }
 });
 
@@ -85,7 +88,7 @@ AfterStep(async function(this: ApplicationWorld, { pickleStep }) {
         .substring(0, 100);
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const screenshotPath = `logs/screenshots/${timestamp}-${cleanStepText}.png`;
+      const screenshotPath = path.resolve(screenshotsDirectory, `${timestamp}-${cleanStepText}.png`);
       await this.currentWindow.screenshot({ path: screenshotPath, fullPage: true, quality: 10, type: 'jpeg', scale: 'css', caret: 'initial' });
     } catch (screenshotError) {
       console.warn('Failed to take screenshot:', screenshotError);

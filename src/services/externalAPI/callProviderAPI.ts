@@ -58,8 +58,14 @@ export function streamFromProvider(
   logger.info(`Using AI provider: ${provider}, model: ${model}`);
 
   try {
-    if (!providerConfig?.apiKey && providerConfig?.providerClass !== 'ollama') {
-      // Ollama doesn't require API key
+    // Check if API key is required
+    const isOllama = providerConfig?.providerClass === 'ollama';
+    const isLocalOpenAICompatible = providerConfig?.providerClass === 'openAICompatible' &&
+      providerConfig?.baseURL &&
+      (providerConfig.baseURL.includes('localhost') || providerConfig.baseURL.includes('127.0.0.1'));
+
+    if (!providerConfig?.apiKey && !isOllama && !isLocalOpenAICompatible) {
+      // Ollama and local OpenAI-compatible servers don't require API key
       throw new MissingAPIKeyError(provider);
     }
 
@@ -77,7 +83,6 @@ export function streamFromProvider(
     });
   } catch (error) {
     if (!error) {
-      logger.error(`${provider} streaming error:`, error);
       throw new Error(`${provider} error: Unknown error`);
     } else if ((error as Error).message.includes('401')) {
       throw new AuthenticationError(provider);

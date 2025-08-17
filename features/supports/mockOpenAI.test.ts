@@ -101,20 +101,63 @@ describe('Mock OpenAI Server', () => {
         Authorization: 'Bearer test-key',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo', // Different model name
+        model: 'custom-model-name',
         messages: [
           {
             role: 'user',
-            content: '搜索 wiki 中的 index 条目并解释',
+            content: 'Hello',
           },
         ],
       }),
     });
 
     expect(response.status).toBe(200);
-    
+
     const data = await response.json();
-    expect(data.model).toBe('gpt-3.5-turbo'); // Should return the requested model name
-    expect(data.choices[0].message.tool_calls[0].function.name).toBe('wiki-search');
+    expect(data.model).toBe('custom-model-name');
+    expect(data.choices[0].message.role).toBe('assistant');
+    expect(data.choices[0].message.content).toContain('测试响应');
+  });
+
+  it('should support streaming response', async () => {
+    const response = await fetch(`${server.baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-key',
+      },
+      body: JSON.stringify({
+        model: 'test-model',
+        stream: true,
+        messages: [
+          {
+            role: 'user',
+            content: 'Hello',
+          },
+        ],
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('text/plain; charset=utf-8');
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let chunks = '';
+    
+    if (reader) {
+      let done = false;
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          chunks += decoder.decode(value);
+        }
+      }
+    }
+
+    expect(chunks).toContain('data:');
+    expect(chunks).toContain('[DONE]');
+    expect(chunks).toContain('chat.completion.chunk');
   });
 });

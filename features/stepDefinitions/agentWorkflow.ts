@@ -4,8 +4,8 @@ import type { ApplicationWorld } from './application';
 
 // Agent-specific Given steps
 Given('I have started the mock OpenAI server', async function(this: ApplicationWorld) {
-  // Start mock OpenAI server
-  this.mockOpenAIServer = new MockOpenAIServer();
+  // Start mock OpenAI server with fixed port 15121 for consistency
+  this.mockOpenAIServer = new MockOpenAIServer(15121);
   await this.mockOpenAIServer.start();
   console.log(`Mock OpenAI server running at: ${this.mockOpenAIServer.baseUrl}`);
 });

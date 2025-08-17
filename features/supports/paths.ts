@@ -43,3 +43,7 @@ export function getPackedAppPath(): string {
     `TidGi executable not found. Checked paths:\n${possiblePaths.join('\n')}\n\nYou should run \`pnpm run package:dev\` before running the tests to ensure the app is built.`,
   );
 }
+
+// E2E logs paths used by tests
+export const logsDirectory = path.resolve(process.cwd(), 'userData-test', 'logs');
+export const screenshotsDirectory = path.resolve(logsDirectory, 'screenshots');
