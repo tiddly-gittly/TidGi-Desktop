@@ -186,15 +186,13 @@ app.on(
   },
 );
 
-if (!isTest) {
-  unhandled({
-    showDialog: true,
-    logger: logger.error.bind(logger),
-    reportButton: (error) => {
-      reportErrorToGithubWithTemplates(error);
-    },
-  });
-}
+unhandled({
+  showDialog: !isTest,
+  logger: logger.error.bind(logger),
+  reportButton: (error) => {
+    reportErrorToGithubWithTemplates(error);
+  },
+});
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 if (require('electron-squirrel-startup')) {

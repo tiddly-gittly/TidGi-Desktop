@@ -156,10 +156,14 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       homeUrl: '',
       gitUrl: null,
     };
-    // Copy the wiki template first
-    await this.wikiService.copyWikiTemplate(DEFAULT_WIKI_FOLDER, 'wiki');
-    // Create the workspace
-    await this.initWikiGitTransaction(defaultConfig);
+    try {
+      // Copy the wiki template first
+      await this.wikiService.copyWikiTemplate(DEFAULT_WIKI_FOLDER, 'wiki');
+      // Create the workspace
+      await this.initWikiGitTransaction(defaultConfig);
+    } catch (error) {
+      logger.error((error as Error).message, error);
+    }
   }
 
   public async removeWorkspace(workspaceID: string): Promise<void> {
