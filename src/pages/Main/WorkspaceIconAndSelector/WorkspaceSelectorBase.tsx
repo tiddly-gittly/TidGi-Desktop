@@ -126,6 +126,7 @@ interface Props {
   id: string;
   index?: number;
   onClick?: () => void;
+  pageType?: string;
   picturePath?: string | null;
   restarting?: boolean;
   showSideBarIcon: boolean;
@@ -144,6 +145,7 @@ export function WorkspaceSelectorBase({
   showSideBarIcon = true,
   id,
   index = 0,
+  pageType,
   picturePath,
   showSidebarTexts = true,
   transparentBackground = false,
@@ -186,6 +188,7 @@ export function WorkspaceSelectorBase({
       $active={active}
       $workspaceClickedLoading={workspaceClickedLoading}
       onClick={workspaceClickedLoading ? () => {} : onClick}
+      data-testid={pageType ? `workspace-${pageType}` : `workspace-${id}`}
     >
       <Badge color='secondary' badgeContent={badgeCount} max={99}>
         {icon}

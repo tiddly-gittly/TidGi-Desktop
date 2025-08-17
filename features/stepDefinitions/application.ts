@@ -11,36 +11,45 @@ export class ApplicationWorld {
   currentWindow: Page | undefined; // New state-managed current window
   mockOpenAIServer: MockOpenAIServer | undefined;
 
-  getWindow(windowType: string = 'main'): Page | undefined {
+  async getWindow(windowType: string = 'main'): Promise<Page | undefined> {
     if (!this.app) return undefined;
 
-    const pages = this.app.windows();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const pages = this.app.windows();
 
-    if (windowType === 'main') {
-      return pages.find(page => {
-        const pageType = page.url().split('#/').pop();
-        // file:///C:/Users/linonetwo/Documents/repo-c/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.webpack/renderer/main_window/index.html#/guide
-        return isMainWindowPage(pageType as PageType | undefined);
-      });
+      if (windowType === 'main') {
+        const mainWindow = pages.find(page => {
+          const pageType = page.url().split('#/').pop();
+          // file:///C:/Users/linonetwo/Documents/repo-c/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.webpack/renderer/main_window/index.html#/guide
+          return isMainWindowPage(pageType as PageType | undefined);
+        });
+        if (mainWindow) return mainWindow;
+      } else if (windowType === 'current') {
+        if (this.currentWindow) return this.currentWindow;
+      } else {
+        // file:///C:/Users/linonetwo/Documents/repo-c/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.webpack/renderer/main_window/index.html#/preferences
+        const specificWindow = pages.find(page => {
+          const pageType = page.url().split('#/').pop();
+          return pageType === windowType;
+        });
+        if (specificWindow) return specificWindow;
+      }
+
+      // If window not found, wait 1 second and retry (except for the last attempt)
+      if (attempt < 2) {
+        console.log(`Window "${windowType}" not found, waiting 1 second before retry ${attempt + 1}/3...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
     }
-    if (windowType === 'current') {
-      return this.currentWindow;
-    }
-    // file:///C:/Users/linonetwo/Documents/repo-c/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.webpack/renderer/main_window/index.html#/preferences
-    return pages.find(page => {
-      const pageType = page.url().split('#/').pop();
-      return pageType === windowType;
-    });
+
+    console.log(`Window "${windowType}" not found after 3 attempts`);
+    return undefined;
   }
 }
 
 setWorldConstructor(ApplicationWorld);
 
 Before(async function(this: ApplicationWorld) {
-  // Start mock OpenAI server
-  this.mockOpenAIServer = new MockOpenAIServer();
-  await this.mockOpenAIServer.start();
-  console.log(`Mock OpenAI server running at: ${this.mockOpenAIServer.baseUrl}`);
   // Create necessary directories
   const fs = await import('fs');
   if (!fs.existsSync('logs')) {
@@ -62,12 +71,6 @@ After(async function(this: ApplicationWorld) {
     this.app = undefined;
     this.mainWindow = undefined;
     this.currentWindow = undefined;
-  }
-
-  // Stop mock OpenAI server
-  if (this.mockOpenAIServer) {
-    await this.mockOpenAIServer.stop();
-    this.mockOpenAIServer = undefined;
   }
 });
 
@@ -178,7 +181,7 @@ Then('I should see a(n) {string} element with selector {string}', async function
 });
 
 When('I click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  const targetWindow = this.getWindow('current');
+  const targetWindow = await this.getWindow('current');
 
   if (!targetWindow) {
     throw new Error(`Window "current" is not available`);
@@ -260,11 +263,11 @@ When('I press {string} key', async function(this: ApplicationWorld, key: string)
 
 // Generic window switching - sets currentWindow state for subsequent operations
 // You may need to wait a second before switch, otherwise window's URL may not set yet.
-When('I switch to {string} window', function(this: ApplicationWorld, windowType: string) {
+When('I switch to {string} window', async function(this: ApplicationWorld, windowType: string) {
   if (!this.app) {
     throw new Error('Application is not available');
   }
-  const targetWindow = this.getWindow(windowType);
+  const targetWindow = await this.getWindow(windowType);
   if (targetWindow) {
     this.currentWindow = targetWindow; // Set currentWindow state
   } else {
@@ -277,7 +280,7 @@ When('I close {string} window', async function(this: ApplicationWorld, windowTyp
   if (!this.app) {
     throw new Error('Application is not available');
   }
-  const targetWindow = this.getWindow(windowType);
+  const targetWindow = await this.getWindow(windowType);
   if (targetWindow) {
     await targetWindow.close();
   } else {

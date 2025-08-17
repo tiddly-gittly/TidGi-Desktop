@@ -93,6 +93,7 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
         active={active}
         id={id}
         key={id}
+        pageType={pageType || undefined}
         workspaceName={displayName}
         picturePath={picturePath}
         customIcon={customIcon}

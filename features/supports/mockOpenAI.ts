@@ -103,14 +103,17 @@ export class MockOpenAIServer {
   private generateChatCompletionResponse(chatRequest: ChatRequest): any {
     const lastMessage = chatRequest.messages[chatRequest.messages.length - 1];
     const userMessage = lastMessage?.content || '';
+    
+    // Use the requested model name, or fallback to a default
+    const modelName = chatRequest.model || 'test-model';
 
-    // Check if this is a wiki search request
+        // Check if this is a wiki search request
     if (userMessage.includes('搜索 wiki 中的 index 条目并解释')) {
       return {
-        id: 'chatcmpl-test-' + Date.now(),
+        id: 'chatcmpl-test-' + String(Date.now()),
         object: 'chat.completion',
         created: Math.floor(Date.now() / 1000),
-        model: 'gpt-3.5-turbo',
+        model: modelName,
         choices: [
           {
             index: 0,
@@ -125,69 +128,70 @@ export class MockOpenAIServer {
                     name: 'wiki-search',
                     arguments: JSON.stringify({
                       workspaceName: '-VPTqPdNOEZHGO5vkwllY',
-                      filter: '[title[Index]]'
-                    })
-                  }
-                }
-              ]
+                      filter: '[title[Index]]',
+                    }),
+                  },
+                },
+              ],
             },
-            finish_reason: 'tool_calls'
-          }
+            finish_reason: 'tool_calls',
+          },
         ],
         usage: {
           prompt_tokens: 50,
           completion_tokens: 25,
-          total_tokens: 75
-        }
+          total_tokens: 75,
+        },
       };
     }
 
     // Check if this is a tool result response
-    if (chatRequest.messages.some((msg: ChatMessage) => msg.role === 'tool')) {
+    if (chatRequest.messages.some((message: ChatMessage) => message.role === 'tool')) {
       return {
-        id: 'chatcmpl-test-' + Date.now(),
+        id: 'chatcmpl-test-' + String(Date.now()),
         object: 'chat.completion',
         created: Math.floor(Date.now() / 1000),
-        model: 'gpt-3.5-turbo',
+        model: modelName,
         choices: [
           {
             index: 0,
             message: {
               role: 'assistant',
-              content: '在 TiddlyWiki 中，`Index` 条目提供了编辑卡片的方法说明，点击右上角的编辑按钮可以开始对当前卡片进行编辑。此外，它还引导您访问中文教程页面 [[教程 (Chinese)|https://tw-cn.netlify.app/]] 和官方英文站点 [[Official Site (English)|https://tiddlywiki.com/]] 以获取更多信息。'
+              content:
+                '在 TiddlyWiki 中，`Index` 条目提供了编辑卡片的方法说明，点击右上角的编辑按钮可以开始对当前卡片进行编辑。此外，它还引导您访问中文教程页面 [[教程 (Chinese)|https://tw-cn.netlify.app/]] 和官方英文站点 [[Official Site (English)|https://tiddlywiki.com/]] 以获取更多信息。',
             },
-            finish_reason: 'stop'
-          }
+            finish_reason: 'stop',
+          },
         ],
         usage: {
           prompt_tokens: 200,
           completion_tokens: 80,
-          total_tokens: 280
-        }
+          total_tokens: 280,
+        },
       };
     }
 
     // Default response
     return {
-      id: 'chatcmpl-test-' + Date.now(),
+      id: 'chatcmpl-test-' + String(Date.now()),
       object: 'chat.completion',
       created: Math.floor(Date.now() / 1000),
-      model: 'gpt-3.5-turbo',
+      model: modelName,
       choices: [
         {
           index: 0,
           message: {
             role: 'assistant',
-            content: '这是一个测试响应。'
+            content: '这是一个测试响应。',
           },
-          finish_reason: 'stop'
-        }
+          finish_reason: 'stop',
+        },
       ],
       usage: {
         prompt_tokens: 10,
         completion_tokens: 5,
-        total_tokens: 15
-      }
+        total_tokens: 15,
+      },
     };
   }
 }

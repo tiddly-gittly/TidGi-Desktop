@@ -1,5 +1,23 @@
-import { Then } from '@cucumber/cucumber';
+import { After, Given, Then } from '@cucumber/cucumber';
+import { MockOpenAIServer } from '../supports/mockOpenAI';
 import type { ApplicationWorld } from './application';
+
+// Agent-specific Given steps
+Given('I have started the mock OpenAI server', async function(this: ApplicationWorld) {
+  // Start mock OpenAI server
+  this.mockOpenAIServer = new MockOpenAIServer();
+  await this.mockOpenAIServer.start();
+  console.log(`Mock OpenAI server running at: ${this.mockOpenAIServer.baseUrl}`);
+});
+
+// Agent-specific cleanup - only for agent scenarios
+After({ tags: '@agent' }, async function(this: ApplicationWorld) {
+  // Stop mock OpenAI server
+  if (this.mockOpenAIServer) {
+    await this.mockOpenAIServer.stop();
+    this.mockOpenAIServer = undefined;
+  }
+});
 
 // Only keep agent-specific steps that can't use generic ones
 

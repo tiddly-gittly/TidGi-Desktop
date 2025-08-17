@@ -21,7 +21,7 @@ describe('Mock OpenAI Server', () => {
         Authorization: 'Bearer test-key',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'test-model', // Use the same model as in feature test
         messages: [
           {
             role: 'user',
@@ -37,7 +37,7 @@ describe('Mock OpenAI Server', () => {
     expect(data).toHaveProperty('id');
     expect(data).toHaveProperty('object', 'chat.completion');
     expect(data).toHaveProperty('created');
-    expect(data).toHaveProperty('model');
+    expect(data).toHaveProperty('model', 'test-model'); // Verify it returns the requested model
     expect(data).toHaveProperty('choices');
     expect(data.choices).toHaveLength(1);
     expect(data.choices[0]).toHaveProperty('message');
@@ -55,7 +55,7 @@ describe('Mock OpenAI Server', () => {
         Authorization: 'Bearer test-key',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'test-model', // Use the same model as in feature test
         messages: [
           {
             role: 'user',
@@ -90,5 +90,31 @@ describe('Mock OpenAI Server', () => {
     expect(data.choices[0].message.role).toBe('assistant');
     expect(data.choices[0].message.content).toContain('TiddlyWiki');
     expect(data.choices[0].finish_reason).toBe('stop');
+    expect(data.model).toBe('test-model'); // Verify it returns the requested model
+  });
+
+  it('should work with different model names', async () => {
+    const response = await fetch(`${server.baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-key',
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo', // Different model name
+        messages: [
+          {
+            role: 'user',
+            content: '搜索 wiki 中的 index 条目并解释',
+          },
+        ],
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    
+    const data = await response.json();
+    expect(data.model).toBe('gpt-3.5-turbo'); // Should return the requested model name
+    expect(data.choices[0].message.tool_calls[0].function.name).toBe('wiki-search');
   });
 });

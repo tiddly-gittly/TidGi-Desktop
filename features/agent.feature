@@ -4,6 +4,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   So that I can get AI-powered explanations of wiki entries
 
   Background:
+    Given I have started the mock OpenAI server
     Given I launch the TidGi application
     And I wait for the page to load completely
     And I should see a "page body" element with selector "body"
@@ -48,7 +49,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I wait for 0.5 seconds
 
     # Step 9: Now proceed with agent workflow in main window
-    When I click on an "agent workspace button" element with selector "button"
+    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
 
     # Step 10: Click new tab button
@@ -65,7 +66,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
 
     # Step 13: Send message to agent - using generic steps combination
     When I click on a "message input textarea" element with selector "textarea.MuiInputBase-input"
-    When I type "搜索 wiki 中的 index 条目并解释" in "chat input" element with selector "textarea.MuiInputBase-input"
+    When I type "搜索 wiki 中的 index 条目并解释" in "chat input" element with selector "textarea.MuiInputBase-input:not([readonly])"
     And I press "Enter" key
     And I should see a "user message" element with selector "*:has-text('搜索 wiki 中的 index 条目并解释')"
     And I should see a "tool use indicator" element with selector "*:has-text('tool_use')"
