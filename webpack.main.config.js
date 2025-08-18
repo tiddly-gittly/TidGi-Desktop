@@ -34,7 +34,7 @@ module.exports = {
           },
         },
       },
-      ...require('./webpack.rules'),
+    ...require('./webpack.rules').main,
     ],
   },
   plugins: plugins.main,
@@ -47,6 +47,8 @@ module.exports = {
       return `file:///${encodeURI(info.absoluteResourcePath)}`;
     },
   },
+  // main process doesn't need watch in dev; electron-forge restarts main when rebuilt
+  watch: false,
   externals: [
     // simply external all things will make require can't find things. Only exclude what we copied in scripts/afterPack.js
     // nodeExternals({

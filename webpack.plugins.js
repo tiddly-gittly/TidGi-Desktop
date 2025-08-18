@@ -16,7 +16,8 @@ const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
 exports.main = _.compact([
   // we only need one instance of TsChecker, it will check main and renderer all together
-  new ForkTsCheckerWebpackPlugin(),
+  // disable heavy type checking in development to speed up dev server startup
+  process.env.NODE_ENV === 'development' ? undefined : new ForkTsCheckerWebpackPlugin(),
   new CopyPlugin({
     // to is relative to ./.webpack/main/
     patterns: [{ from: 'localization', to: 'localization' }],

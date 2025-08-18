@@ -6,7 +6,7 @@
   "license": "MPL 2.0",
   "scripts": {
     "start": "pnpm run clean && pnpm run init:git-submodule && pnpm run build:plugin && pnpm run start:dev",
-    "start:dev": "cross-env NODE_ENV=development electron-forge start",
+    "start:dev": "cross-env NODE_ENV=development DEBUG=electron-forge:* electron-forge start",
     "clean": "rimraf -- ./out ./logs ./userData-dev ./node_modules/tiddlywiki/plugins/linonetwo && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts && pnpm run clean:cache",
     "clean:cache": "rimraf -- ./.webpack ./node_modules/.cache",
     "start:dev:debug-worker": "cross-env NODE_ENV=development DEBUG_WORKER=true electron-forge start",
