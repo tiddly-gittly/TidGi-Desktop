@@ -1,12 +1,10 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable unicorn/prefer-module */
-/* eslint-disable @typescript-eslint/no-var-requires */
+
 const { webpackAlias } = require('./webpack.alias');
-const plugins = require('./webpack.plugins');
-const nodeExternals = require('webpack-node-externals');
+const { main: plugins } = require('./webpack.plugins');
+const { main: rules, isDevelopmentOrTest } = require('./webpack.rules');
 
 module.exports = {
   target: 'electron-main',
@@ -17,27 +15,9 @@ module.exports = {
   entry: './src/main.ts',
   // Put your normal webpack config below here
   module: {
-    rules: [
-      {
-        // We're specifying native_modules in the test because the asset relocator loader generates a
-        // "fake" .node file which is really a cjs file.
-        test: /native_modules\/.+\.node$/,
-        use: 'node-loader',
-      },
-      {
-        test: /\.(m?js|node)$/,
-        parser: { amd: false },
-        use: {
-          loader: '@vercel/webpack-asset-relocator-loader',
-          options: {
-            outputAssetBase: 'native_modules',
-          },
-        },
-      },
-    ...require('./webpack.rules').main,
-    ],
+    rules,
   },
-  plugins: plugins.main,
+  plugins,
   resolve: {
     alias: webpackAlias,
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.json'],
@@ -66,12 +46,12 @@ module.exports = {
     __filename: true,
     __dirname: true,
   },
-  cache: process.platform === 'darwin'
+  cache: isDevelopmentOrTest
     ? {
       type: 'filesystem',
       buildDependencies: {
         config: [__filename],
       },
     }
-    : undefined,
+    : false,
 };

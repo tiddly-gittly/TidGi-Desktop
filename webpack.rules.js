@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable security/detect-unsafe-regex */
 /* eslint-disable unicorn/prefer-module */
 /* eslint-disable unicorn/no-null */
@@ -28,10 +29,29 @@ const assetRules = [
 ];
 
 const cssRule = {
-  // used to load css from npm package, we use styled-components
+  // used to load css from npm package, we use styled-components but some dependencies may require css files
   test: /\.css$/,
   use: [{ loader: 'style-loader' }, { loader: 'css-loader' }],
 };
+
+const nativeRules = [
+  {
+    // We're specifying native_modules in the test because the asset relocator loader generates a
+    // "fake" .node file which is really a cjs file.
+    test: /native_modules\/.+\.node$/,
+    use: 'node-loader',
+  },
+  {
+    test: /\.(m?js|node)$/,
+    parser: { amd: false },
+    use: {
+      loader: '@vercel/webpack-asset-relocator-loader',
+      options: {
+        outputAssetBase: 'native_modules',
+      },
+    },
+  },
+];
 
 // ts-loader based rule used for main process (safer for node/electron main)
 const tsLoaderRule = {
@@ -84,20 +104,16 @@ const tsLoaderRule = {
 const esbuildLoaderRule = {
   test: /\.(t|j)sx?$/,
   exclude: /(node_modules|\.webpack)/,
-  use: isDevelopmentOrTest
-    ? {
-        loader: 'esbuild-loader',
-        options: {
-          loader: 'tsx',
-          target: 'ES2022',
-          tsconfigRaw: JSON5.parse(fs.readFileSync('./tsconfig.json')),
-        },
-      }
-    : tsLoaderRule.use,
+  loader: 'esbuild-loader',
+  options: {
+    loader: 'tsx',
+    target: 'ES2022',
+    tsconfigRaw: JSON5.parse(fs.readFileSync('./tsconfig.json')),
+  },
 };
 
 module.exports = {
-  renderer: [cssRule, esbuildLoaderRule, ...assetRules],
-  main: [cssRule, tsLoaderRule, ...assetRules],
+  renderer: [cssRule, isDevelopmentOrTest ? esbuildLoaderRule : tsLoaderRule, ...assetRules],
+  main: [...nativeRules, tsLoaderRule],
   isDevelopmentOrTest,
 };

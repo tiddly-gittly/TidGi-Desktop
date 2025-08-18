@@ -155,7 +155,6 @@
     "@types/semver": "7.5.8",
     "@types/source-map-support": "0.5.10",
     "@types/webpack-bundle-analyzer": "4.7.0",
-    "@types/webpack-node-externals": "3.0.4",
     "@vercel/webpack-asset-relocator-loader": "1.7.3",
     "@vitest/coverage-v8": "^3.2.3",
     "@vitest/ui": "^3.2.3",
@@ -190,7 +189,6 @@
     "vitest": "^3.2.3",
     "webpack-bundle-analyzer": "4.10.2",
     "webpack-cli": "^6.0.1",
-    "webpack-node-externals": "3.0.0",
     "webpack5-externals-plugin": "1.0.4",
     "webpackbar": "7.0.0"
   },

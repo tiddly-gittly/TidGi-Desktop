@@ -358,9 +358,6 @@ importers:
       '@types/webpack-bundle-analyzer':
         specifier: 4.7.0
         version: 4.7.0(@swc/core@1.12.0)(esbuild@0.25.2)(webpack-cli@6.0.1)
-      '@types/webpack-node-externals':
-        specifier: 3.0.4
-        version: 3.0.4(@swc/core@1.12.0)(esbuild@0.25.2)(webpack-cli@6.0.1)
       '@vercel/webpack-asset-relocator-loader':
         specifier: 1.7.3
         version: 1.7.3
@@ -463,9 +460,6 @@ importers:
       webpack-cli:
         specifier: ^6.0.1
         version: 6.0.1(webpack-bundle-analyzer@4.10.2)(webpack@5.88.1)
-      webpack-node-externals:
-        specifier: 3.0.0
-        version: 3.0.0
       webpack5-externals-plugin:
         specifier: 1.0.4
         version: 1.0.4
@@ -2401,9 +2395,6 @@ packages:
 
   '@types/webpack-bundle-analyzer@4.7.0':
     resolution: {integrity: sha512-c5i2ThslSNSG8W891BRvOd/RoCjI2zwph8maD22b1adtSns20j+0azDDMCK06DiVrzTgnwiDl5Ntmu1YRJw8Sg==}
-
-  '@types/webpack-node-externals@3.0.4':
-    resolution: {integrity: sha512-8Z3/edqxE3RRlOJwKSgOFxLZRt/i1qFlv/Bi308ZUKo9jh8oGngd9r8GR0ZNKW5AEJq8QNQE3b17CwghTjQ0Uw==}
 
   '@types/ws@8.5.5':
     resolution: {integrity: sha512-lwhs8hktwxSjf9UaZ9tG5M03PGogvFaH8gUgLNbN9HKIg0dvv6q+gkSuJ8HN4/VbyxkuLzCjlN7GquQ0gUJfIg==}
@@ -7959,10 +7950,6 @@ packages:
     resolution: {integrity: sha512-hXXvrjtx2PLYx4qruKl+kyRSLc52V+cCvMxRjmKwoA+CBbbF5GfIBtR6kCvl0fYGqTUPKB+1ktVmTHqMOzgCBg==}
     engines: {node: '>=18.0.0'}
 
-  webpack-node-externals@3.0.0:
-    resolution: {integrity: sha512-LnL6Z3GGDPht/AigwRh2dvL9PQPFQ8skEpVrWZXLWBYmqcaojHNN0onvHzie6rq7EWKrrBfPYqNEzTJgiwEQDQ==}
-    engines: {node: '>=6'}
-
   webpack-sources@1.4.3:
     resolution: {integrity: sha512-lgTS3Xhv1lCOKo7SA5TjKXMjpSM4sBjNV5+q2bqesbSPs5FjGmU6jjtBSkX9b4qW87vDIsCIlUPOEhbZrMdjeQ==}
 
@@ -10526,16 +10513,6 @@ snapshots:
     dependencies:
       '@types/node': 22.13.0
       tapable: 2.2.2
-      webpack: 5.88.1(@swc/core@1.12.0)(esbuild@0.25.2)(webpack-cli@6.0.1)
-    transitivePeerDependencies:
-      - '@swc/core'
-      - esbuild
-      - uglify-js
-      - webpack-cli
-
-  '@types/webpack-node-externals@3.0.4(@swc/core@1.12.0)(esbuild@0.25.2)(webpack-cli@6.0.1)':
-    dependencies:
-      '@types/node': 22.13.0
       webpack: 5.88.1(@swc/core@1.12.0)(esbuild@0.25.2)(webpack-cli@6.0.1)
     transitivePeerDependencies:
       - '@swc/core'
@@ -16768,8 +16745,6 @@ snapshots:
       clone-deep: 4.0.1
       flat: 5.0.2
       wildcard: 2.0.1
-
-  webpack-node-externals@3.0.0: {}
 
   webpack-sources@1.4.3:
     dependencies:

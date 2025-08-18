@@ -1,23 +1,20 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable unicorn/prefer-module */
-/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 const _ = require('lodash');
-const webpack = require('webpack');
+const { EsbuildPlugin } = require('esbuild-loader');
 const CopyPlugin = require('copy-webpack-plugin');
 const ThreadsPlugin = require('threads-plugin');
 const ExternalsPlugin = require('webpack5-externals-plugin');
 const WebpackBar = require('webpackbar');
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+const { isDevelopmentOrTest } = require('./webpack.rules');
 
 exports.main = _.compact([
   // we only need one instance of TsChecker, it will check main and renderer all together
-  // disable heavy type checking in development to speed up dev server startup
-  process.env.NODE_ENV === 'development' ? undefined : new ForkTsCheckerWebpackPlugin(),
+  new ForkTsCheckerWebpackPlugin(),
   new CopyPlugin({
     // to is relative to ./.webpack/main/
     patterns: [{ from: 'localization', to: 'localization' }],
@@ -33,9 +30,10 @@ exports.main = _.compact([
     // set the current working directory for displaying module paths
     cwd: process.cwd(),
   }),
-  new webpack.DefinePlugin({
-    'process.env.NODE_ENV': `"${process.env.NODE_ENV ?? 'production'}"`,
-    'const __dirname = path.dirname(fileURLToPath(import.meta.url));': '',
+  new EsbuildPlugin({
+    define: {
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
+    },
   }),
   new ExternalsPlugin({
     type: 'commonjs',
@@ -55,20 +53,22 @@ exports.main = _.compact([
     target: 'electron-node-worker',
     plugins: ['ExternalsPlugin'],
   }),
-  process.env.NODE_ENV === 'production' ? undefined : new WebpackBar(),
-  process.env.NODE_ENV === 'production'
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    ? new BundleAnalyzerPlugin({
+  // WebpackBar progress bar need `DEBUG=electron-forge:*` to work.
+  isDevelopmentOrTest ? new WebpackBar() : undefined,
+  isDevelopmentOrTest
+    ? undefined
+    : new BundleAnalyzerPlugin({
       generateStatsFile: true,
       analyzerMode: 'disabled',
       statsFilename: '../../out/webpack-stats-main.json',
-    })
-    : undefined,
+    }),
 ]);
 
 exports.renderer = _.compact([
-  new webpack.DefinePlugin({
-    'process.env.NODE_ENV': `"${process.env.NODE_ENV ?? 'production'}"`,
+  new EsbuildPlugin({
+    define: {
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
+    },
   }),
   // new CspHtmlWebpackPlugin(
   //   {
@@ -86,15 +86,15 @@ exports.renderer = _.compact([
   //     },
   //   },
   // ),
-  process.env.NODE_ENV === 'production' ? undefined : new WebpackBar(),
-  process.env.NODE_ENV === 'production'
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    ? new BundleAnalyzerPlugin({
+  isDevelopmentOrTest
+    ? undefined
+    : new BundleAnalyzerPlugin({
       generateStatsFile: true,
       analyzerMode: 'disabled',
       statsFilename: '../../out/webpack-stats-renderer.json',
-    })
-    : undefined,
+    }),
+  // WebpackBar progress bar need `DEBUG=electron-forge:*` to work.
+  isDevelopmentOrTest ? new WebpackBar() : undefined,
   // Example: copy files for webWorker to use
   // new CopyPlugin({
   //   patterns: [
