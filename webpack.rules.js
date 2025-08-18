@@ -1,17 +1,10 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-/* eslint-disable security/detect-unsafe-regex */
-/* eslint-disable unicorn/prefer-module */
-/* eslint-disable unicorn/no-null */
-/* eslint-disable @typescript-eslint/no-var-requires */
-/* eslint-disable @typescript-eslint/restrict-plus-operands */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
+
 const tsImportPluginFactory = require('ts-import-plugin');
 const fs = require('fs');
 const JSON5 = require('json5');
+const esbuild = require('esbuild')
 
 const isTest = process.env.NODE_ENV === 'test';
 const isDevelopmentOrTest = process.env.NODE_ENV === 'development' || isTest;
@@ -109,6 +102,7 @@ const esbuildLoaderRule = {
     loader: 'tsx',
     target: 'ES2022',
     tsconfigRaw: JSON5.parse(fs.readFileSync('./tsconfig.json')),
+    implementation: esbuild,
   },
 };
 
