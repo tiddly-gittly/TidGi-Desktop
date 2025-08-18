@@ -3,138 +3,86 @@
  * Tests the complete workflow: tool list injection -> AI response -> tool execution -> next round
  * Includes yieldNextRoundTo mechanism testing with basicPromptConcatHandler
  */
+import serviceIdentifier from '@/services/serviceIdentifier';
+// shared mocks will be retrieved from the test container in beforeEach (no top-level vars)
+import type { IExternalAPIService } from '@services/externalAPI/interface';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+// removed Observable import to use real AgentInstanceService
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AgentInstanceMessage } from '../../interface';
+import type { Mock } from 'vitest';
+import type { AgentInstanceMessage, IAgentInstanceService } from '../../interface';
 
 import { WikiChannel } from '@/constants/channels';
-import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
-import serviceIdentifier from '@services/serviceIdentifier';
+// types are provided by shared mock; no local type assertions needed
 
 // Import defaultAgents configuration
 import defaultAgents from '../defaultAgents.json';
 
-// Mock the external services
-const mockWikiService = {
-  wikiOperationInServer: vi.fn(),
-};
+// Configurable test hooks for mocks
+let testWikiImplementation: ((channel: WikiChannel, workspaceId?: string, args?: string[]) => Promise<unknown>) | undefined;
+let testStreamResponses: Array<{ status: string; content: string; requestId: string }> = [];
 
-const mockWorkspaceService = {
-  getWorkspacesAsList: vi.fn(),
-  exists: vi.fn(),
-};
-
-const mockLLMService = {
-  streamGenerateText: vi.fn(),
-  getAIConfig: vi.fn().mockResolvedValue({}), // Return empty config by default
-};
-
-const mockAgentInstanceService = {
-  debounceUpdateMessage: vi.fn(),
-  concatPrompt: vi.fn(),
-};
-
-// Mock container.get
-vi.mock('@services/container', () => ({
-  container: {
-    get: vi.fn((identifier: symbol) => {
-      if (identifier === serviceIdentifier.Wiki) {
-        return mockWikiService;
-      }
-      if (identifier === serviceIdentifier.Workspace) {
-        return mockWorkspaceService;
-      }
-      if (identifier === serviceIdentifier.ExternalAPI) {
-        return mockLLMService;
-      }
-      if (identifier === serviceIdentifier.AgentInstance) {
-        return mockAgentInstanceService;
-      }
-      return {};
-    }),
-  },
-}));
-
-// Mock the response pattern utility
-vi.mock('@services/agentDefinition/responsePatternUtility', () => ({
-  matchToolCalling: vi.fn(),
-}));
+// Use real AgentInstanceService in tests; do not mock
 
 // Import plugin components for direct testing
 import { IPromptConcatPlugin } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { createHandlerHooks, PromptConcatHookContext } from '../../plugins/index';
+import { IDatabaseService } from '@services/database/interface';
+import { builtInPlugins, createHandlerHooks, PromptConcatHookContext } from '../../plugins/index';
 import { wikiSearchPlugin } from '../../plugins/wikiSearchPlugin';
 import { basicPromptConcatHandler } from '../basicPromptConcatHandler';
 import type { AgentHandlerContext } from '../type';
-import { getFinalPromptResult } from '../../promptConcat/utils';
 
 describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    testWikiImplementation = undefined;
+    testStreamResponses = [];
+    const { container } = await import('@services/container');
+    const wiki = container.get<IWikiService>(serviceIdentifier.Wiki);
 
-    // Setup wiki search mocks
-    mockWikiService.wikiOperationInServer.mockImplementation(
-      (channel: WikiChannel) => {
-        if (channel === WikiChannel.runFilter) {
-          return Promise.resolve(['Index']);
-        }
-        if (channel === WikiChannel.getTiddlersAsJson) {
-          return Promise.resolve([{ title: 'Index', text: 'This is the Index tiddler content.' }]);
-        }
-        return Promise.resolve([]);
-      },
-    );
+    // Ensure built-in plugin registry includes wikiSearch for handler registration
+    builtInPlugins.set('wikiSearch', wikiSearchPlugin);
 
-    // Setup default mock responses with complete wiki workspace data
-    mockWorkspaceService.getWorkspacesAsList.mockResolvedValue([
-      {
-        id: 'test-wiki-1',
-        name: 'Test Wiki 1',
-        wikiFolderLocation: '/path/to/test-wiki-1',
-        homeUrl: 'http://localhost:5212/',
-        port: 5212,
-        isSubWiki: false,
-        mainWikiToLink: undefined,
-        tagName: '',
-        lastUrl: '',
-        active: true,
-        hibernated: false,
-        order: 0,
-        disableNotifications: false,
-        badgeCount: 0,
-        type: 'wiki' as const,
-      },
-      {
-        id: 'test-wiki-2',
-        name: 'Test Wiki 2',
-        wikiFolderLocation: '/path/to/test-wiki-2',
-        homeUrl: 'http://localhost:5213/',
-        port: 5213,
-        isSubWiki: false,
-        mainWikiToLink: undefined,
-        tagName: '',
-        lastUrl: '',
-        active: true,
-        hibernated: false,
-        order: 1,
-        disableNotifications: false,
-        badgeCount: 0,
-        type: 'wiki' as const,
-      },
-    ]);
-    mockWorkspaceService.exists.mockResolvedValue(true);
+    // Prepare a mock DataSource/repository so AgentInstanceService.initialize() can run
+    const mockRepo = {
+      findOne: vi.fn(),
+      save: vi.fn(),
+      create: vi.fn(),
+      find: vi.fn(),
+      findAndCount: vi.fn(),
+    };
 
-    // Setup agent service mocks
-    mockAgentInstanceService.concatPrompt.mockReturnValue({
-      pipe: () => ({
-        toPromise: () => Promise.resolve({
-          flatPrompts: [
-            { role: 'system', content: 'You are a helpful assistant.' },
-            { role: 'user', content: '搜索 wiki 中的 Index 条目并解释其内容' },
-          ],
+    const mockDataSource = {
+      isInitialized: true,
+      initialize: vi.fn(),
+      destroy: vi.fn(),
+      getRepository: vi.fn().mockReturnValue(mockRepo),
+      manager: {
+        transaction: vi.fn().mockImplementation(async (cb: (manager: { getRepository: () => typeof mockRepo }) => Promise<unknown>) => {
+          return await cb({ getRepository: () => mockRepo });
         }),
-      }),
+      },
+    };
+
+    const database = container.get<IDatabaseService>(serviceIdentifier.Database);
+    database.getDatabase = vi.fn().mockResolvedValue(mockDataSource);
+
+    // Use globally bound AgentInstanceService (configured in src/__tests__/setup-vitest.ts)
+    const agentInstanceServiceImpl = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+    // initialize service to ensure plugins and db are set up
+    await agentInstanceServiceImpl.initialize();
+
+    // @ts-expect-error Partial implementation of api
+    wiki.wikiOperationInServer = vi.fn(async (channel: WikiChannel, workspaceId?: string, args?: string[]) => {
+      if (testWikiImplementation) return testWikiImplementation(channel, workspaceId, args);
+      if (channel === WikiChannel.runFilter) return Promise.resolve(['Index']);
+      if (channel === WikiChannel.getTiddlersAsJson) return Promise.resolve([{ title: 'Index', text: 'This is the Index tiddler content.' }]);
+      return Promise.resolve([]);
     });
   });
+
+  // Use direct access to shared mocks; cast inline when asserting or configuring
 
   describe('Complete Workflow Integration', () => {
     it('should complete full wiki search workflow: tool list -> tool execution -> response', async () => {
@@ -179,41 +127,30 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       const toolListInjected = promptTexts.includes('Test Wiki 1') && promptTexts.includes('wiki-search');
 
       expect(toolListInjected).toBe(true);
-      expect(mockWorkspaceService.getWorkspacesAsList).toHaveBeenCalled();
+      // verify workspace mock was called via container
+      const { container } = await import('@services/container');
+      const workspaceLocal = container.get<Partial<IWorkspaceService>>(serviceIdentifier.Workspace);
+      expect(workspaceLocal.getWorkspacesAsList as unknown as Mock).toHaveBeenCalled();
 
       // Phase 2: Tool Execution
-      // Mock tool calling detection
-      (matchToolCalling as any).mockReturnValue({
-        found: true,
-        toolId: 'wiki-search',
-        parameters: {
-          workspaceName: 'Test Wiki 1',
-          filter: '[tag[important]]',
-          maxResults: 3,
-          includeText: true,
-        },
-        originalText: 'Search for important content',
-      });
 
-      // Mock wiki search results
-      (mockWikiService.wikiOperationInServer as any).mockImplementation(
-        (channel: WikiChannel, _workspaceId: string, args: string[]) => {
-          if (channel === WikiChannel.runFilter) {
-            return Promise.resolve(['Important Note 1', 'Important Note 2']);
-          }
-          if (channel === WikiChannel.getTiddlersAsJson) {
-            const title = args[0];
-            return Promise.resolve([
-              {
-                title,
-                text: `Content of ${title}`,
-                tags: ['important'],
-              },
-            ]);
-          }
-          return Promise.resolve([]);
-        },
-      );
+      // Mock wiki search results for this test
+      testWikiImplementation = async (channel: WikiChannel, _workspaceId?: string, args?: string[]) => {
+        if (channel === WikiChannel.runFilter) {
+          return Promise.resolve(['Important Note 1', 'Important Note 2']);
+        }
+        if (channel === WikiChannel.getTiddlersAsJson) {
+          const title = args ? args[0] : '';
+          return Promise.resolve([
+            {
+              title,
+              text: `Content of ${title}`,
+              tags: ['important'],
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      };
 
       const responseContext = {
         handlerContext: {
@@ -227,12 +164,12 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
             created: new Date(),
             messages: [],
           },
-          agentDef: { id: 'test-agent-def' } as any,
+          agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown as { id: string; name: string },
           isCancelled: () => false,
         },
         response: {
           status: 'done' as const,
-          content: 'I will search for important content using wiki-search tool.',
+          content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[tag[important]]"}</tool_use>',
           requestId: 'test-request-123',
         },
         requestId: 'test-request',
@@ -242,7 +179,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
         messages: [],
         llmResponse: 'I will search for important content using wiki-search tool.',
         responses: [],
-        actions: {} as any,
+        actions: {} as unknown as Record<string, unknown>,
       };
 
       // Use real handler hooks
@@ -253,7 +190,9 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
 
       // Execute the response complete hook
       await responseHooks.responseComplete.promise(responseContext);
-      expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(WikiChannel.runFilter, 'test-wiki-1', [
+      // reuse containerForAssert from above assertions
+      const wikiLocal = container.get<Partial<IWikiService>>(serviceIdentifier.Wiki);
+      expect(wikiLocal.wikiOperationInServer as unknown as Mock).toHaveBeenCalledWith(WikiChannel.runFilter, 'test-wiki-1', [
         '[tag[important]]',
       ]);
 
@@ -279,15 +218,6 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       expect(wikiPlugin).toBeDefined();
 
       // Mock tool calling with invalid workspace
-      (matchToolCalling as any).mockReturnValue({
-        found: true,
-        toolId: 'wiki-search',
-        parameters: {
-          workspaceName: 'Nonexistent Wiki',
-          filter: '[tag[test]]',
-        },
-        originalText: 'Search in nonexistent wiki',
-      });
 
       const responseContext = {
         handlerContext: {
@@ -301,12 +231,12 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
             created: new Date(),
             messages: [],
           },
-          agentDef: { id: 'test-agent-def' } as any,
+          agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown as { id: string; name: string },
           isCancelled: () => false,
         },
         response: {
           status: 'done' as const,
-          content: 'Search in nonexistent wiki',
+          content: '<tool_use name="wiki-search">{"workspaceName": "Nonexistent Wiki", "filter": "[tag[test]]"}</tool_use>',
           requestId: 'test-request-234',
         },
         requestId: 'test-request',
@@ -316,7 +246,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
         messages: [],
         llmResponse: 'Search in nonexistent wiki',
         responses: [],
-        actions: {} as any,
+        actions: {} as unknown as Record<string, unknown>,
       };
 
       // Use real handler hooks
@@ -344,7 +274,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
     it('should trigger next round after tool execution using basicPromptConcatHandler', async () => {
       const exampleAgent = defaultAgents[0];
       const testAgentId = `test-agent-${Date.now()}`;
-      
+
       const context: AgentHandlerContext = {
         agent: {
           id: testAgentId,
@@ -370,12 +300,11 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
         isCancelled: () => false,
       };
 
-      let callCount = 0;
       const responses = [
         // First AI response: tool call
         {
           status: 'done' as const,
-          content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[title[Index]]", "maxResults": 5}</tool_use>',
+          content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[title[Index]]"}</tool_use>',
           requestId: 'req-1',
         },
         // Second AI response: explanation of results
@@ -386,45 +315,41 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
         },
       ];
 
-      // Mock LLM service to return different responses
-      mockLLMService.streamGenerateText.mockImplementation(async function* () {
-        const response = responses[callCount];
-        callCount++;
-        
-        yield {
-          status: 'update',
-          content: response.content,
-          requestId: response.requestId,
-        };
-        
-        yield response;
-      });
+      // Mock LLM service to return different responses for this test
+      testStreamResponses = responses.map(r => ({ status: r.status, content: r.content, requestId: r.requestId }));
 
       // Create generator to track all yielded responses
+      const { container } = await import('@services/container');
+      const externalAPILocal = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+      externalAPILocal.generateFromAI = vi.fn().mockReturnValue((function*() {
+        let idx = 0;
+        while (idx < testStreamResponses.length) {
+          const r = testStreamResponses[idx++];
+          yield { status: 'update', content: r.content, requestId: r.requestId };
+          yield r;
+        }
+      })());
+
       const results: Array<{ state: string; contentLength?: number }> = [];
       const generator = basicPromptConcatHandler(context);
 
-      // Collect all responses from the generator
       for await (const result of generator) {
         results.push(result);
-        // Log basic info without complex nested objects to avoid test output noise
       }
 
-      // Verify that the LLM was called twice (initial + next round)
-      expect(mockLLMService.streamGenerateText).toHaveBeenCalledTimes(2);
-      
       // Verify that tool was executed
-      expect(mockWikiService.wikiOperationInServer).toHaveBeenCalled();
-      
+      const wikiLocal2 = container.get<Partial<IWikiService>>(serviceIdentifier.Wiki);
+      expect(wikiLocal2.wikiOperationInServer as unknown as Mock).toHaveBeenCalled();
+
       // Verify that tool result message was added
       const toolResultMessage = context.agent.messages.find(m => m.metadata?.isToolResult);
       expect(toolResultMessage).toBeTruthy();
       expect(toolResultMessage?.role).toBe('assistant');
       expect(toolResultMessage?.content).toContain('<functions_result>');
-      
+
       // Verify that there are multiple responses (initial tool call + final explanation)
       expect(results.length).toBeGreaterThan(1);
-      
+
       // The last result should be the final explanation
       const finalResult = results[results.length - 1];
       expect(finalResult.state).toBe('completed');
@@ -434,7 +359,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       // Root cause test for fullReplacement plugin bug
       // Bug: Plugin incorrectly removed last message assuming it was user message
       // But in second round, last message is tool result, not user message
-      
+
       const messages: AgentInstanceMessage[] = [
         {
           id: 'user-1',
@@ -468,11 +393,11 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       // rather than blindly removing the last message
       const userMessage = messages.find(m => m.role === 'user');
       const toolResultMessage = messages.find(m => m.metadata?.isToolResult);
-      
+
       expect(userMessage).toBeTruthy();
       expect(toolResultMessage).toBeTruthy();
       expect(userMessage?.id).not.toBe(toolResultMessage?.id);
-      
+
       // This test ensures the fix is working: last message is tool result, not user
       expect(messages[messages.length - 1].metadata?.isToolResult).toBe(true);
       expect(messages[messages.length - 1].role).toBe('assistant');

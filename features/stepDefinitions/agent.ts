@@ -7,7 +7,6 @@ Given('I have started the mock OpenAI server', async function(this: ApplicationW
   // Start mock OpenAI server with fixed port 15121 for consistency
   this.mockOpenAIServer = new MockOpenAIServer(15121);
   await this.mockOpenAIServer.start();
-  console.log(`Mock OpenAI server running at: ${this.mockOpenAIServer.baseUrl}`);
 });
 
 // Agent-specific cleanup - only for agent scenarios
@@ -30,8 +29,6 @@ Then('I should see {int} messages in chat history', async function(this: Applica
   // Use precise selector based on the provided HTML structure
   const messageSelector = '[data-testid="message-bubble"]';
 
-  console.log(`Looking for ${expectedCount} messages with selector: ${messageSelector}`);
-
   try {
     // Wait for messages to reach expected count, checking periodically for streaming
     for (let attempt = 1; attempt <= expectedCount * 3; attempt++) {
@@ -43,10 +40,7 @@ Then('I should see {int} messages in chat history', async function(this: Applica
         const messages = currentWindow.locator(messageSelector);
         const currentCount = await messages.count();
 
-        console.log(`Attempt ${attempt}: Found ${currentCount} messages (expecting ${expectedCount})`);
-
         if (currentCount === expectedCount) {
-          console.log(`✓ Found exactly ${expectedCount} messages in chat history`);
           return;
         } else if (currentCount > expectedCount) {
           throw new Error(`Expected ${expectedCount} messages but found ${currentCount} (too many)`);
@@ -60,7 +54,6 @@ Then('I should see {int} messages in chat history', async function(this: Applica
         if (attempt === expectedCount * 3) {
           throw timeoutError;
         }
-        console.log(`Waiting for more messages... (attempt ${attempt})`);
       }
     }
 

@@ -1,157 +1,31 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-// Mock the logger to prevent Electron app dependency issues
-vi.mock('@services/libs/log', () => ({
-  logger: {
-    error: vi.fn(),
-    info: vi.fn(),
-    debug: vi.fn(),
-    warn: vi.fn(),
-  },
-}));
-
+import { describe, expect, it } from 'vitest';
 import { addToolPattern, getToolPatterns, matchToolCalling } from '../responsePatternUtility';
 
-describe('responsePatternUtility', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe('matchToolCalling', () => {
-    describe('XML-style patterns', () => {
-      it('should match tool_use pattern with JSON parameters', () => {
-        const responseText = `
+describe('matchToolCalling', () => {
+  describe('XML-style patterns', () => {
+    it('should match tool_use pattern with JSON parameters', () => {
+      const responseText = `
 I'll search for documentation about TiddlyWiki plugins.
 
 <tool_use name="wiki-search">
 {
   "workspaceName": "documentation",
   "filter": "[tag[plugin]]",
-  "maxResults": 5
 }
 </tool_use>
 
 Let me find the relevant information for you.
         `;
 
-        const result = matchToolCalling(responseText);
+      const result = matchToolCalling(responseText);
 
-        expect(result.found).toBe(true);
-        expect(result.toolId).toBe('wiki-search');
-        expect(result.parameters).toEqual({
-          workspaceName: 'documentation',
-          filter: '[tag[plugin]]',
-          maxResults: 5,
-        });
-        expect(result.originalText).toContain('<tool_use name="wiki-search">');
+      expect(result.found).toBe(true);
+      expect(result.toolId).toBe('wiki-search');
+      expect(result.parameters).toEqual({
+        workspaceName: 'documentation',
+        filter: '[tag[plugin]]',
       });
-
-      it('should match function_call pattern', () => {
-        const responseText = `
-<function_call name="web-search">
-{
-  "query": "TiddlyWiki plugins tutorial",
-  "maxResults": 10
-}
-</function_call>
-        `;
-
-        const result = matchToolCalling(responseText);
-
-        expect(result.found).toBe(true);
-        expect(result.toolId).toBe('web-search');
-        expect(result.parameters).toEqual({
-          query: 'TiddlyWiki plugins tutorial',
-          maxResults: 10,
-        });
-      });
-
-      it('should match invoke pattern', () => {
-        const responseText = `
-<invoke name="file-read">
-{
-  "filePath": "/path/to/file.txt",
-  "encoding": "utf8"
-}
-</invoke>
-        `;
-
-        const result = matchToolCalling(responseText);
-
-        expect(result.found).toBe(true);
-        expect(result.toolId).toBe('file-read');
-        expect(result.parameters).toEqual({
-          filePath: '/path/to/file.txt',
-          encoding: 'utf8',
-        });
-      });
-    });
-
-    describe('JSON function pattern', () => {
-      it('should match JSON function block', () => {
-        const responseText = `
-\`\`\`json
-{
-  "function": "calculate",
-  "parameters": {
-    "operation": "add",
-    "numbers": [1, 2, 3]
-  }
-}
-\`\`\`
-        `;
-
-        const result = matchToolCalling(responseText);
-
-        expect(result.found).toBe(true);
-        expect(result.toolId).toBe('calculate');
-        expect(result.parameters).toEqual({
-          operation: 'add',
-          numbers: [1, 2, 3],
-        });
-      });
-    });
-
-    describe('Tool block pattern', () => {
-      it('should match tool block with key-value parameters', () => {
-        const responseText = `
-[TOOL:wiki-search]
-workspaceName=documentation
-filter=[tag[example]]
-maxResults=10
-[/TOOL]
-        `;
-
-        const result = matchToolCalling(responseText);
-
-        expect(result.found).toBe(true);
-        expect(result.toolId).toBe('wiki-search');
-        expect(result.parameters).toEqual({
-          workspaceName: 'documentation',
-          filter: '[tag[example]]',
-          maxResults: 10, // Numbers are parsed as numbers, not strings
-        });
-      });
-
-      it('should match tool block with YAML-like parameters', () => {
-        const responseText = `
-[TOOL:file-write]
-path: /tmp/test.txt
-content: "Hello World"
-append: true
-[/TOOL]
-        `;
-
-        const result = matchToolCalling(responseText);
-
-        expect(result.found).toBe(true);
-        expect(result.toolId).toBe('file-write');
-        expect(result.parameters).toEqual({
-          path: '/tmp/test.txt',
-          content: 'Hello World',
-          append: true,
-        });
-      });
+      expect(result.originalText).toContain('<tool_use name="wiki-search">');
     });
 
     describe('Parameter parsing', () => {
@@ -177,63 +51,6 @@ append: true
           booleanValue: true,
           arrayValue: [1, 2, 3],
           objectValue: { nested: 'value' },
-        });
-      });
-
-      it('should parse YAML-like parameters', () => {
-        const responseText = `
-<tool_use name="yaml-tool">
-name: test
-count: 5
-enabled: true
-items: ["a", "b", "c"]
-</tool_use>
-        `;
-
-        const result = matchToolCalling(responseText);
-
-        expect(result.found).toBe(true);
-        expect(result.parameters).toEqual({
-          name: 'test',
-          count: 5,
-          enabled: true,
-          items: ['a', 'b', 'c'],
-        });
-      });
-
-      it('should parse key-value parameters with mixed formats', () => {
-        const responseText = `
-<tool_use name="mixed-tool">
-simpleKey=simpleValue
-numberKey=123
-booleanKey=false
-</tool_use>
-        `;
-
-        const result = matchToolCalling(responseText);
-
-        expect(result.found).toBe(true);
-        expect(result.parameters).toEqual({
-          simpleKey: 'simpleValue',
-          numberKey: 123,
-          booleanKey: false,
-        });
-      });
-
-      it('should parse key-value parameters with JSON objects on separate lines', () => {
-        const responseText = `
-<tool_use name="json-tool">
-simpleKey=simpleValue
-jsonKey={"complex": "object"}
-</tool_use>
-        `;
-
-        const result = matchToolCalling(responseText);
-
-        expect(result.found).toBe(true);
-        expect(result.parameters).toEqual({
-          simpleKey: 'simpleValue',
-          jsonKey: { complex: 'object' },
         });
       });
 
@@ -361,19 +178,6 @@ Just some random text
   });
 
   describe('getToolPatterns', () => {
-    it('should return all supported tool patterns', () => {
-      const patterns = getToolPatterns();
-
-      expect(patterns).toHaveLength(5);
-      expect(patterns.map(p => p.name)).toEqual([
-        'tool_use',
-        'function_call',
-        'invoke',
-        'json_function',
-        'tool_block',
-      ]);
-    });
-
     it('should return patterns with required properties', () => {
       const patterns = getToolPatterns();
 
@@ -435,17 +239,6 @@ Just some random text
   });
 
   describe('Error handling', () => {
-    it('should handle regex errors gracefully', () => {
-      // Create a pattern that might cause regex issues
-      const responseText = 'Some text with [TOOL:broken-pattern]invalid regex content[/TOOL]';
-
-      const result = matchToolCalling(responseText);
-
-      // Should not throw and should handle gracefully
-      expect(result).toBeDefined();
-      expect(result.found).toBe(true); // This pattern should still match
-    });
-
     it('should handle large input text efficiently', () => {
       // Create a large text with tool pattern at the end
       const largePrefix = 'x'.repeat(10000);

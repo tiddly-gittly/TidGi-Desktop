@@ -2,101 +2,51 @@
  * Comprehensive tests for Wiki Search plugin
  * Covers tool list injection, tool execution, duration mechanism, message persistence, and integration scenarios
  */
+import type { AgentDefinition } from '@services/agentDefinition/interface';
+import type { IWikiService } from '@services/wiki/interface';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AgentInstance } from '../../interface';
 import type { AgentInstanceMessage } from '../../interface';
+import type { IAgentInstanceService } from '../../interface';
+import type { AIResponseContext, YieldNextRoundTarget } from '../types';
 
 import { WikiChannel } from '@/constants/channels';
 import serviceIdentifier from '@services/serviceIdentifier';
 
+import type { AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { IPromptConcatPlugin } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { cloneDeep } from 'lodash';
 import defaultAgents from '../../buildInAgentHandlers/defaultAgents.json';
 import { createHandlerHooks, PromptConcatHookContext } from '../index';
-import { wikiSearchPlugin } from '../wikiSearchPlugin';
 import { messageManagementPlugin } from '../messageManagementPlugin';
+import { wikiSearchPlugin } from '../wikiSearchPlugin';
 
 // Use the real agent config
 const exampleAgent = defaultAgents[0];
 const handlerConfig = exampleAgent.handlerConfig as AgentPromptDescription['handlerConfig'];
 
-const mockWikiService = {
-  wikiOperationInServer: vi.fn(),
-};
+// Services will be retrieved from container on demand inside each test/describe
 
-const mockWorkspaceService = {
-  getWorkspacesAsList: vi.fn(),
-  exists: vi.fn(),
-};
-
-const mockAgentInstanceService = {
-  saveUserMessage: vi.fn(),
-  debounceUpdateMessage: vi.fn(),
-  updateAgent: vi.fn(),
-};
-
-vi.mock('@services/container', () => ({
-  container: {
-    get: vi.fn((identifier: symbol) => {
-      if (identifier === serviceIdentifier.Wiki) {
-        return mockWikiService;
-      }
-      if (identifier === serviceIdentifier.Workspace) {
-        return mockWorkspaceService;
-      }
-      if (identifier === serviceIdentifier.AgentInstance) {
-        return mockAgentInstanceService;
-      }
-      return {};
-    }),
-  },
-}));
+type ActionBag = { yieldNextRoundTo?: YieldNextRoundTarget; newUserMessage?: string | undefined };
 
 describe('Wiki Search Plugin - Comprehensive Tests', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-
-    // Setup default mock responses
-    mockWorkspaceService.getWorkspacesAsList.mockResolvedValue([
-      {
-        id: 'test-wiki-1',
-        name: 'Test Wiki 1',
-        wikiFolderLocation: '/path/to/test-wiki-1',
-        homeUrl: 'http://localhost:5212/',
-        port: 5212,
-        isSubWiki: false,
-        mainWikiToLink: undefined,
-        tagName: '',
-        lastUrl: '',
-        active: true,
-        hibernated: false,
-        order: 0,
-        disableNotifications: false,
-        badgeCount: 0,
-        type: 'wiki' as const,
-      },
-      {
-        id: 'test-wiki-2',
-        name: 'Test Wiki 2',
-        wikiFolderLocation: '/path/to/test-wiki-2',
-        homeUrl: 'http://localhost:5213/',
-        port: 5213,
-        isSubWiki: false,
-        mainWikiToLink: undefined,
-        tagName: '',
-        lastUrl: '',
-        active: true,
-        hibernated: false,
-        order: 1,
-        disableNotifications: false,
-        badgeCount: 0,
-        type: 'wiki' as const,
-      },
-    ]);
-    mockWorkspaceService.exists.mockResolvedValue(true);
-    mockAgentInstanceService.saveUserMessage.mockResolvedValue(undefined);
   });
 
   describe('Tool List Injection', () => {
+    beforeEach(async () => {
+      const { container } = await import('@services/container');
+      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+      // Replace agent instance methods with spies
+      vi.spyOn(agentInstanceService, 'saveUserMessage').mockResolvedValue(undefined);
+      vi.spyOn(agentInstanceService, 'debounceUpdateMessage').mockImplementation(() => undefined);
+      // updateAgent returns Promise<AgentInstance> - return a minimal stub
+      vi.spyOn(agentInstanceService, 'updateAgent').mockResolvedValue({} as AgentInstance);
+    });
+
     it('should inject wiki tools into prompts when configured', async () => {
       // Find the wiki search plugin config, make sure our default config
       const wikiPlugin = handlerConfig.plugins.find(p => p.pluginId === 'wikiSearch');
@@ -186,39 +136,51 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         ],
       };
 
-      const hooks = {
-        processPrompts: {
-          tapAsync: (name: string, callback: (ctx: any, cb: () => void) => Promise<void>) => {
-            if (name === 'wikiSearchPlugin-toolList') {
-              return callback(context, () => {});
-            }
-            return Promise.resolve();
-          },
-        },
-        responseComplete: {
-          tapAsync: () => Promise.resolve(),
-        },
+      const hooks = createHandlerHooks();
+      wikiSearchPlugin(hooks);
+      // build a minimal PromptConcatHookContext to run the plugin's processPrompts
+      const handlerCtx: AgentHandlerContext = {
+        agent: {
+          id: 'test',
+          agentDefId: 'test',
+          messages: [],
+          status: { state: 'working' as const, modified: new Date() },
+          created: new Date(),
+        } as AgentInstance,
+        agentDef: { id: 'test', name: 'test' } as AgentDefinition,
+        isCancelled: () => false,
       };
-
-      wikiSearchPlugin(hooks as any);
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      const hookContext: PromptConcatHookContext = {
+        handlerContext: handlerCtx,
+        pluginConfig: wikiPlugin as IPromptConcatPlugin,
+        prompts: prompts as IPrompt[],
+        messages: context.messages as AgentInstanceMessage[],
+      };
+      await hooks.processPrompts.promise(hookContext);
 
       // Prompts should not be modified since trigger condition wasn't met
       const modifiedPromptsText = JSON.stringify(prompts);
       expect(modifiedPromptsText).toBe(originalPromptsText);
     });
   });
-
   describe('Tool Execution & Duration Mechanism', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       // Mock wiki search results
-      mockWikiService.wikiOperationInServer.mockImplementation(
-        (channel: WikiChannel, _workspaceId: string, args: string[]) => {
+      const { container } = await import('@services/container');
+      const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+      if (!wikiService.wikiOperationInServer) {
+        // ensure method exists for spying (exception allowed)
+        (wikiService as unknown as { wikiOperationInServer: (...p: unknown[]) => Promise<unknown> }).wikiOperationInServer = async () => [];
+      }
+      vi.spyOn(wikiService, 'wikiOperationInServer').mockImplementation(
+        ((...args: unknown[]) => {
+          const channel = args[0] as WikiChannel;
+          const opArgs = args[2] as string[] | undefined;
           if (channel === WikiChannel.runFilter) {
             return Promise.resolve(['Important Note 1', 'Important Note 2']);
           }
-          if (channel === WikiChannel.getTiddlersAsJson) {
-            const title = args[0];
+          if (channel === WikiChannel.getTiddlersAsJson && opArgs && opArgs.length > 0) {
+            const title = opArgs[0];
             return Promise.resolve([
               {
                 title,
@@ -228,7 +190,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             ]);
           }
           return Promise.resolve([]);
-        },
+        }) as unknown as IWikiService['wikiOperationInServer'],
       );
     });
 
@@ -262,7 +224,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             {
               id: 'ai-tool-call-msg',
               role: 'assistant' as const,
-              content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[tag[important]]", "maxResults": 3}</tool_use>',
+              content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[tag[important]]"}</tool_use>',
               agentId: 'test-agent',
               contentType: 'text/plain',
               modified: new Date(),
@@ -277,7 +239,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       // Create a response that contains a valid tool call
       const response = {
         status: 'done' as const,
-        content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[tag[important]]", "maxResults": 3}</tool_use>',
+        content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "filter": "[tag[important]]"}</tool_use>',
         requestId: 'test-request-123',
       };
 
@@ -291,10 +253,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         messages: [],
         llmResponse: response.content,
         responses: [],
-        actions: {
-          yieldNextRoundTo: undefined as any,
-          newUserMessage: undefined as any,
-        },
+        actions: {} as ActionBag,
       };
 
       // Use real handler hooks
@@ -310,7 +269,9 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       expect(context.actions.yieldNextRoundTo).toBe('self');
 
       // Verify that debounceUpdateMessage was called to notify frontend immediately (no delay)
-      expect(mockAgentInstanceService.debounceUpdateMessage).toHaveBeenCalledWith(
+      const { container } = await import('@services/container');
+      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+      expect(agentInstanceService.debounceUpdateMessage).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'ai-tool-call-msg',
           duration: 1,
@@ -512,37 +473,24 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
     });
 
     it('should skip execution when no tool call is detected', async () => {
-      const context = {
-        handlerContext: {
-          agent: {
-            id: 'test-agent',
-            agentDefId: 'test-agent-def',
-            status: {
-              state: 'working' as const,
-              modified: new Date(),
-            },
-            created: new Date(),
-            messages: [],
-          },
-          agentDef: { id: 'test-agent-def' } as any,
-          isCancelled: () => false,
-        },
-        response: {
-          status: 'done' as const,
-          content: 'Just a regular response without any tool calls',
-          requestId: 'test-request-345',
-        },
+      const handlerCtx = {
+        agent: {
+          id: 'test-agent',
+          agentDefId: 'test-agent-def',
+          messages: [],
+          status: { state: 'working' as const, modified: new Date() },
+          created: new Date(),
+        } as AgentInstance,
+        agentDef: { id: 'test-agent-def', name: 'test' } as AgentDefinition,
+        isCancelled: () => false,
+      };
+
+      const context: AIResponseContext = {
+        handlerContext: handlerCtx,
+        pluginConfig: { id: 'test-plugin', pluginId: 'wikiSearch' } as IPromptConcatPlugin,
+        response: { requestId: 'test-request-345', content: 'Just a regular response without any tool calls', status: 'done' },
         requestId: 'test-request',
         isFinal: true,
-        pluginConfig: {
-          id: 'test-plugin',
-          pluginId: 'wikiSearch' as const,
-          forbidOverrides: false,
-        },
-        prompts: [],
-        messages: [],
-        llmResponse: 'Just a regular response without any tool calls',
-        responses: [],
       };
 
       const hooks = createHandlerHooks();
@@ -551,7 +499,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       await hooks.responseComplete.promise(context);
 
       // Context should not be modified
-      expect((context as any).actions).toBeUndefined();
+      expect(context.actions).toBeUndefined();
     });
   });
 

@@ -2,11 +2,10 @@
  * Tests for AgentInstanceService streaming behavior
  * Tests that sendMsgToAgent properly triggers streaming updates through observables
  */
-import { Container } from 'inversify';
-import getDecorators from 'inversify-inject-decorators';
 import { nanoid } from 'nanoid';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Use shared mocks via test container (setup-vitest binds serviceInstances into the container)
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentInstance } from '@services/agentInstance/interface';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
@@ -18,19 +17,6 @@ import type { IWikiService } from '@services/wiki/interface';
 // Import test data
 import defaultAgents from '../buildInAgentHandlers/defaultAgents.json';
 
-// Create test container
-const testContainer = new Container();
-const { lazyInject: testLazyInject } = getDecorators(testContainer);
-
-// Mock the container module to use our test container
-vi.mock('@services/container', () => ({
-  container: testContainer,
-  lazyInject: testLazyInject,
-}));
-
-// Now import AgentInstanceService after mocking the container
-const { AgentInstanceService } = await import('@services/agentInstance/index');
-
 describe('AgentInstanceService Streaming Behavior', () => {
   let agentInstanceService: IAgentInstanceService;
   let testAgentInstance: AgentInstance;
@@ -41,31 +27,19 @@ describe('AgentInstanceService Streaming Behavior', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    // Retrieve shared mocks from the test container
+    const { container } = await import('@services/container');
+    mockAgentDefinitionService = container.get(serviceIdentifier.AgentDefinition);
+    mockDatabaseService = container.get(serviceIdentifier.Database);
+    mockExternalAPIService = container.get(serviceIdentifier.ExternalAPI);
+    mockWikiService = container.get(serviceIdentifier.Wiki);
 
-    // Mock services that AgentInstanceService depends on
-    mockAgentDefinitionService = {
-      getAgentDef: vi.fn(),
-    };
+    // ensure generateFromAI/cancelAIRequest are spies that tests can override
+    mockExternalAPIService.generateFromAI = vi.fn();
+    mockExternalAPIService.cancelAIRequest = vi.fn();
 
-    mockDatabaseService = {
-      getDatabase: vi.fn(),
-      initializeDatabase: vi.fn(),
-      closeAppDatabase: vi.fn(),
-      getSetting: vi.fn(),
-      setSetting: vi.fn(),
-      initializeForApp: vi.fn(),
-      immediatelyStoreSettingsToFile: vi.fn(),
-    };
-
-    mockExternalAPIService = {
-      generateFromAI: vi.fn(),
-      getAIConfig: vi.fn(),
-      cancelAIRequest: vi.fn(),
-    };
-
-    mockWikiService = {
-      wikiOperationInServer: vi.fn(),
-    };
+    // ensure wikiOperationInServer is spyable
+    mockWikiService.wikiOperationInServer = vi.fn();
 
     // Setup mock database service with in-memory SQLite
     const mockRepo = {
@@ -93,27 +67,17 @@ describe('AgentInstanceService Streaming Behavior', () => {
 
     mockDatabaseService.getDatabase = vi.fn().mockResolvedValue(mockDataSource);
 
-    // Create service instance first
-    const agentInstanceServiceImpl = new AgentInstanceService();
+    // Bind real AgentInstance implementation into the test container (mocks already bound by setup)
+    if (container.isBound(serviceIdentifier.AgentInstance)) {
+      container.unbind(serviceIdentifier.AgentInstance);
+    }
+    const { AgentInstanceService } = await import('@services/agentInstance/index');
+    container.bind(serviceIdentifier.AgentInstance).to(AgentInstanceService).inSingletonScope();
+
+    // Create service instance after binding dependencies
+    const agentInstanceServiceImpl = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+
     agentInstanceService = agentInstanceServiceImpl;
-
-    // Bind mock services to test container
-    testContainer.unbindAll();
-    testContainer.bind(serviceIdentifier.AgentDefinition).toConstantValue(mockAgentDefinitionService);
-    testContainer.bind(serviceIdentifier.Database).toConstantValue(mockDatabaseService);
-    testContainer.bind(serviceIdentifier.ExternalAPI).toConstantValue(mockExternalAPIService);
-    testContainer.bind(serviceIdentifier.Wiki).toConstantValue(mockWikiService);
-
-    // Bind the service instance to the container so plugins can access it
-    testContainer.bind(serviceIdentifier.AgentInstance).toConstantValue(agentInstanceService);
-
-    // Manually assign mock services to bypass dependency injection issues
-    Object.assign(agentInstanceServiceImpl, {
-      databaseService: mockDatabaseService,
-      agentDefinitionService: mockAgentDefinitionService,
-      externalAPIService: mockExternalAPIService,
-      wikiService: mockWikiService,
-    });
 
     await agentInstanceService.initialize();
     // Note: We don't mock the plugin system here - we let the real plugins (like messageManagementPlugin)
@@ -139,19 +103,6 @@ describe('AgentInstanceService Streaming Behavior', () => {
       ...exampleAgent,
       handlerID: 'basicPromptConcatHandler',
     });
-
-    // Mock external API service
-    mockExternalAPIService.getAIConfig = vi.fn().mockResolvedValue({
-      api: {
-        model: 'test-model',
-        endpoint: 'http://test.com',
-      },
-      modelParameters: {},
-    });
-
-    // Mock database service - simulate no database operations for now
-    // mockDatabaseService.getDataSource = vi.fn().mockReturnValue(null);
-
     // Mock the getAgent method to return our test instance
     vi.spyOn(agentInstanceService, 'getAgent').mockResolvedValue(testAgentInstance);
   });

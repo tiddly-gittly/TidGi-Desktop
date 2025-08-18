@@ -1,5 +1,5 @@
 /* eslint-disable unicorn/prevent-abbreviations */
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { debounce, pick } from 'lodash';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject, Observable } from 'rxjs';
@@ -12,29 +12,21 @@ import { createHandlerHooks, createHooksWithPlugins, initializePluginSystem } fr
 import { promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { promptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
-import { lazyInject } from '@services/container';
+import { container, lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
-import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWikiService } from '@services/wiki/interface';
 
 import { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from './interface';
 import { AGENT_INSTANCE_FIELDS, createAgentInstanceData, createAgentMessage, MESSAGE_FIELDS, toDatabaseCompatibleInstance, toDatabaseCompatibleMessage } from './utilities';
 
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {
-  @lazyInject(serviceIdentifier.Database)
+  @inject(serviceIdentifier.Database)
   private readonly databaseService!: IDatabaseService;
 
-  @lazyInject(serviceIdentifier.ExternalAPI)
-  private readonly externalAPIService!: IExternalAPIService;
-
-  @lazyInject(serviceIdentifier.Wiki)
-  private readonly wikiService!: IWikiService;
-
-  @lazyInject(serviceIdentifier.AgentDefinition)
+  @inject(serviceIdentifier.AgentDefinition)
   private readonly agentDefinitionService!: IAgentDefinitionService;
 
   private dataSource: DataSource | null = null;

@@ -54,8 +54,6 @@ export class MockOpenAIServer {
   async start(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.server = createServer((request, response) => {
-        console.log(`${request.method} ${request.url}`); // 添加请求日志
-
         // Enable CORS
         response.setHeader('Access-Control-Allow-Origin', '*');
         response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -101,8 +99,6 @@ export class MockOpenAIServer {
         const address = this.server!.address() as AddressInfo;
         this.port = address.port;
         this.baseUrl = `http://localhost:${this.port}`;
-        console.log(`Mock OpenAI server started at ${this.baseUrl}`);
-        console.log(`Health check: ${this.baseUrl}/health`);
         resolve();
       });
 
@@ -121,7 +117,6 @@ export class MockOpenAIServer {
     if (this.server) {
       return new Promise((resolve) => {
         this.server!.close(() => {
-          console.log('Mock OpenAI server stopped');
           this.server = null;
           resolve();
         });
@@ -138,7 +133,7 @@ export class MockOpenAIServer {
     request.on('end', () => {
       try {
         const chatRequest = JSON.parse(body) as ChatRequest;
-        
+
         // Check if streaming is requested
         if (chatRequest.stream === true) {
           this.handleStreamingChatCompletions(chatRequest, response);
@@ -322,16 +317,16 @@ export class MockOpenAIServer {
       const content = '在 TiddlyWiki 中，`Index` 条目提供了编辑卡片的方法说明，点击右上角的编辑按钮可以开始对当前卡片进行编辑。' +
         '此外，它还引导您访问中文教程页面 [[教程 (Chinese)|https://tw-cn.netlify.app/]] 和官方英文站点 ' +
         '[[Official Site (English)|https://tiddlywiki.com/]] 以获取更多信息。';
-      
+
       // Stream content in chunks
       let sentLength = 0;
       const chunkSize = 10; // Characters per chunk
-      
+
       const sendChunk = () => {
         if (sentLength < content.length) {
           const chunk = content.slice(sentLength, sentLength + chunkSize);
           sentLength += chunkSize;
-          
+
           const streamChunk = {
             id: 'chatcmpl-test-' + String(Date.now()),
             object: 'chat.completion.chunk',
@@ -376,7 +371,7 @@ export class MockOpenAIServer {
     } else {
       // Default streaming response
       const content = '这是一个测试响应。';
-      
+
       const streamChunk = {
         id: 'chatcmpl-test-' + String(Date.now()),
         object: 'chat.completion.chunk',

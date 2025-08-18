@@ -34,29 +34,12 @@ export function filterMessagesByDuration(messages: AgentInstanceMessage[]): Agen
     // If duration is undefined or null, include the message (default behavior - persist indefinitely)
     if (message.duration === undefined || message.duration === null) {
       shouldInclude = true;
-    }
-    // If duration is 0, exclude from AI context (but still visible in UI)
+    } // If duration is 0, exclude from AI context (but still visible in UI)
     else if (message.duration === 0) {
       shouldInclude = false;
-    }
-    // If message is within its duration window, include it
+    } // If message is within its duration window, include it
     else if (roundsFromCurrent < message.duration) {
       shouldInclude = true;
-    }
-
-    // Debug logging for duration filtering
-    if (message.metadata?.isToolResult || message.metadata?.containsToolCall) {
-      console.debug('Duration filtering check', {
-        messageId: message.id,
-        role: message.role,
-        isToolResult: message.metadata?.isToolResult,
-        containsToolCall: message.metadata?.containsToolCall,
-        toolId: message.metadata?.toolId,
-        duration: message.duration,
-        roundsFromCurrent,
-        shouldInclude,
-        contentPreview: message.content.slice(0, 100),
-      });
     }
 
     if (shouldInclude) {
@@ -72,7 +55,7 @@ export function filterMessagesByDuration(messages: AgentInstanceMessage[]): Agen
   // Second pass: force include tool call messages for included tool results
   for (let index = messages.length - 1; index >= 0; index--) {
     const message = messages[index];
-    
+
     if (
       message.metadata?.containsToolCall &&
       typeof message.metadata?.toolId === 'string' &&
@@ -80,12 +63,8 @@ export function filterMessagesByDuration(messages: AgentInstanceMessage[]): Agen
       !messagesToInclude.has(message.id)
     ) {
       messagesToInclude.set(message.id, message);
-      
-      console.debug('Force including tool call for corresponding tool result', {
-        messageId: message.id,
-        toolId: message.metadata.toolId,
-        contentPreview: message.content.slice(0, 100),
-      });
+
+      // Force-include debug log removed to reduce test output noise
     }
   }
 

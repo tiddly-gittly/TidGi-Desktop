@@ -40,12 +40,10 @@ export class ApplicationWorld {
 
       // If window not found, wait 1 second and retry (except for the last attempt)
       if (attempt < 2) {
-        console.log(`Window "${windowType}" not found, waiting 1 second before retry ${attempt + 1}/3...`);
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
-    console.log(`Window "${windowType}" not found after 3 attempts`);
     return undefined;
   }
 }
@@ -99,7 +97,6 @@ AfterStep(async function(this: ApplicationWorld, { pickleStep }) {
 When('I launch the TidGi application', async function(this: ApplicationWorld) {
   // For E2E tests on dev mode, use the packaged test version with NODE_ENV environment variable baked in
   const packedAppPath = getPackedAppPath();
-  console.log('Launching packaged test app at:', packedAppPath);
 
   try {
     this.app = await electron.launch({

@@ -74,7 +74,6 @@ function parseToolParameters(parametersText: string): Record<string, unknown> {
   // Check which format is most likely being used
   const lines = trimmedText.split('\n').map(line => line.trim()).filter(Boolean);
   const hasEqualSigns = lines.some(line => line.includes('='));
-  const hasColons = lines.some(line => line.includes(':'));
 
   // If we have equal signs, prefer key=value parsing
   if (hasEqualSigns) {
@@ -101,31 +100,6 @@ function parseToolParameters(parametersText: string): Record<string, unknown> {
     }
   }
 
-  // Try YAML-like parsing (key: value) if no equal signs or equal parsing failed
-  if (hasColons) {
-    const result: Record<string, unknown> = {};
-    let hasValidYamlPairs = false;
-
-    for (const line of lines) {
-      const colonIndex = line.indexOf(':');
-      if (colonIndex > 0) {
-        const key = line.slice(0, colonIndex).trim();
-        const value = line.slice(colonIndex + 1).trim();
-        // Try to parse as JSON value, fallback to string
-        try {
-          result[key] = JSON.parse(value);
-        } catch {
-          result[key] = value;
-        }
-        hasValidYamlPairs = true;
-      }
-    }
-
-    if (hasValidYamlPairs) {
-      return result;
-    }
-  }
-
   // Return as single parameter if all parsing failed
   return { input: trimmedText };
 }
@@ -144,27 +118,6 @@ const toolPatterns: ToolPattern[] = [
   {
     name: 'function_call',
     pattern: /<function_call\s+name="([^"]+)"[^>]*>(.*?)<\/function_call>/gis,
-    extractToolId: (match) => match[1],
-    extractParams: (match) => match[2],
-    extractOriginalText: (match) => match[0],
-  },
-  {
-    name: 'invoke',
-    pattern: /<invoke\s+name="([^"]+)"[^>]*>(.*?)<\/invoke>/gis,
-    extractToolId: (match) => match[1],
-    extractParams: (match) => match[2],
-    extractOriginalText: (match) => match[0],
-  },
-  {
-    name: 'json_function',
-    pattern: /```json\s*{\s*"function":\s*"([^"]+)",\s*"parameters":\s*({[^}]*})\s*}\s*```/gis,
-    extractToolId: (match) => match[1],
-    extractParams: (match) => match[2],
-    extractOriginalText: (match) => match[0],
-  },
-  {
-    name: 'tool_block',
-    pattern: /\[TOOL:([^\]]+)\](.*?)\[\/TOOL\]/gis,
     extractToolId: (match) => match[1],
     extractParams: (match) => match[2],
     extractOriginalText: (match) => match[0],

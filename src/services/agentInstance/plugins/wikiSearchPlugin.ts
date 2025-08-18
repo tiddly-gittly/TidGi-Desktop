@@ -25,7 +25,6 @@ import type { AIResponseContext, PromptConcatPlugin } from './types';
 const WikiSearchToolParameterSchema = z.object({
   workspaceName: z.string().describe('Name or ID of the workspace to search'),
   filter: z.string().describe('TiddlyWiki filter expression'),
-  maxResults: z.number().optional().default(10).describe('Maximum number of results to return'),
 });
 
 type WikiSearchToolParameter = z.infer<typeof WikiSearchToolParameterSchema>;
@@ -38,7 +37,7 @@ async function executeWikiSearchTool(
   context?: { agentId?: string; messageId?: string },
 ): Promise<{ success: boolean; data?: string; error?: string; metadata?: Record<string, unknown> }> {
   try {
-    const { workspaceName, filter, maxResults } = parameters;
+    const { workspaceName, filter } = parameters;
 
     // Get workspace service
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
@@ -68,7 +67,6 @@ async function executeWikiSearchTool(
       workspaceID,
       workspaceName,
       filter,
-      maxResults,
       agentId: context?.agentId,
     });
 
@@ -88,18 +86,10 @@ async function executeWikiSearchTool(
       };
     }
 
-    // Limit results if needed
-    const limitedTitles = tiddlerTitles.slice(0, maxResults);
-
-    logger.debug(`Found ${tiddlerTitles.length} tiddlers, returning ${limitedTitles.length}`, {
-      totalFound: tiddlerTitles.length,
-      returning: limitedTitles.length,
-    });
-
     // Retrieve full tiddler content if requested
     // Retrieve full tiddler content for each tiddler
     const results: Array<{ title: string; text?: string; fields?: ITiddlerFields }> = [];
-    for (const title of limitedTitles) {
+    for (const title of tiddlerTitles) {
       try {
         const tiddlerFields = await wikiService.wikiOperationInServer(WikiChannel.getTiddlersAsJson, workspaceID, [title]);
         if (tiddlerFields.length > 0) {
@@ -140,7 +130,6 @@ async function executeWikiSearchTool(
         filter,
         workspaceID,
         workspaceName,
-        maxResults,
         resultCount: tiddlerTitles.length,
         returnedCount: results.length,
       },

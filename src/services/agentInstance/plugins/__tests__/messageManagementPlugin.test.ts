@@ -2,26 +2,13 @@
  * Deep integration tests for messageManagementPlugin with real SQLite database
  * Tests actual message persistence scenarios using defaultAgents.json configuration
  */
+import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
+import serviceIdentifier from '@services/serviceIdentifier';
 import { DataSource } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import defaultAgents from '../../buildInAgentHandlers/defaultAgents.json';
-import type { AgentInstanceMessage } from '../../interface';
-
-// Mock the dependencies BEFORE importing the plugin
-vi.mock('@services/container', () => ({
-  container: {
-    get: vi.fn(),
-  },
-}));
-
-vi.mock('@services/serviceIdentifier', () => ({
-  default: {
-    AgentInstance: Symbol.for('AgentInstance'),
-  },
-}));
-
-// Import plugin after mocks are set up
+import type { AgentInstanceMessage, IAgentInstanceService } from '../../interface';
 import { createHandlerHooks } from '../index';
 import { messageManagementPlugin } from '../messageManagementPlugin';
 import type { ToolExecutionContext, UserMessageContext } from '../types';
@@ -32,17 +19,8 @@ const exampleAgent = defaultAgents[0];
 describe('Message Management Plugin - Real Database Integration', () => {
   let dataSource: DataSource;
   let testAgentId: string;
-  let realAgentInstanceService: {
-    saveUserMessage: (message: AgentInstanceMessage) => Promise<void>;
-    debounceUpdateMessage: (
-      message: AgentInstanceMessage,
-      agentId?: string,
-    ) => void;
-    updateAgent: (
-      agentId: string,
-      updates: Record<string, unknown>,
-    ) => Promise<void>;
-  };
+  // agentInstanceServiceImpl available to test blocks
+  let agentInstanceServiceImpl: IAgentInstanceService;
   let hooks: ReturnType<typeof createHandlerHooks>;
 
   beforeEach(async () => {
@@ -81,30 +59,15 @@ describe('Message Management Plugin - Real Database Integration', () => {
       closed: false,
     });
 
-    // Create real service with spy for database operations
-    realAgentInstanceService = {
-      saveUserMessage: vi.fn(async (message: AgentInstanceMessage) => {
-        const messageRepo = dataSource.getRepository(
-          AgentInstanceMessageEntity,
-        );
-        await messageRepo.save({
-          id: message.id,
-          agentId: message.agentId,
-          role: message.role,
-          content: message.content,
-          contentType: message.contentType || 'text/plain',
-          modified: message.modified || new Date(),
-          metadata: message.metadata,
-          duration: message.duration ?? undefined,
-        });
-      }),
-      debounceUpdateMessage: vi.fn(),
-      updateAgent: vi.fn(),
-    };
-
-    // Configure mock container to return our service
+    // Use globally bound AgentInstanceService (configured in src/__tests__/setup-vitest.ts)
     const { container } = await import('@services/container');
-    vi.mocked(container.get).mockReturnValue(realAgentInstanceService);
+    // Make sure Database.getDatabase returns our in-memory dataSource
+    const database = container.get<IDatabaseService>(serviceIdentifier.Database);
+    database.getDatabase = vi.fn().mockResolvedValue(dataSource);
+
+    agentInstanceServiceImpl = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+    // Initialize AgentInstanceService so repositories are set
+    await agentInstanceServiceImpl.initialize();
 
     // Initialize plugin
     hooks = createHandlerHooks();
@@ -172,7 +135,7 @@ describe('Message Management Plugin - Real Database Integration', () => {
         duration: undefined,
       };
 
-      await realAgentInstanceService.saveUserMessage(aiToolCallMessage);
+      await agentInstanceServiceImpl.saveUserMessage(aiToolCallMessage);
       handlerContext.agent.messages.push(aiToolCallMessage);
 
       // Step 3: Tool result message (THIS IS THE MISSING PIECE!)
@@ -260,7 +223,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
         duration: undefined,
       };
 
-      await realAgentInstanceService.saveUserMessage(aiFinalMessage);
+      await agentInstanceServiceImpl.saveUserMessage(aiFinalMessage);
 
       // Final verification: All 4 messages should be in database
       messageRepo = dataSource.getRepository(AgentInstanceMessageEntity);
@@ -408,8 +371,8 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       };
 
       // Save all messages to database
-      await realAgentInstanceService.saveUserMessage(userMessage);
-      await realAgentInstanceService.saveUserMessage(aiToolCallMessage);
+      await agentInstanceServiceImpl.saveUserMessage(userMessage);
+      await agentInstanceServiceImpl.saveUserMessage(aiToolCallMessage);
 
       // Add tool result to context and trigger persistence via toolExecuted hook
       handlerContext.agent.messages.push(toolResultMessage);
@@ -420,7 +383,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       };
       await hooks.toolExecuted.promise(toolContext);
 
-      await realAgentInstanceService.saveUserMessage(aiFinalMessage);
+      await agentInstanceServiceImpl.saveUserMessage(aiFinalMessage);
 
       // Step 2: Simulate loading from database (page refresh scenario)
       const messageRepo = dataSource.getRepository(AgentInstanceMessageEntity);
