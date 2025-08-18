@@ -21,7 +21,7 @@ pnpm test:e2e --tags="@smoke"
 # Run with coverage
 pnpm test:unit -- --coverage
 
-# Run a test file you newly written
+# Run a single test file to reduce execution time when fixing an issue.
 pnpm test:unit src/services/agentDefinition/__tests__/responsePatternUtility.test.ts
 ```
 
