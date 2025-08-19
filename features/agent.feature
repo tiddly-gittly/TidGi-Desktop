@@ -75,3 +75,4 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see a "function result" element with selector "*:has-text('functions_result')"
     And I should see a "tool indicator" element with selector "*:has-text('Tool: wiki-search')"
     Then I should see 4 messages in chat history
+    And I wait for 5 seconds

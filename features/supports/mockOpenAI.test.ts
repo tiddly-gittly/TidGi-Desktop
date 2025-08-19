@@ -21,7 +21,7 @@ describe('Mock OpenAI Server', () => {
         Authorization: 'Bearer test-key',
       },
       body: JSON.stringify({
-        model: 'test-model', // Use the same model as in feature test
+        model: 'test-model',
         messages: [
           {
             role: 'user',
@@ -41,10 +41,11 @@ describe('Mock OpenAI Server', () => {
     expect(data).toHaveProperty('choices');
     expect(data.choices).toHaveLength(1);
     expect(data.choices[0]).toHaveProperty('message');
-    expect(data.choices[0].message).toHaveProperty('tool_calls');
-    expect(data.choices[0].message.tool_calls).toHaveLength(1);
-    expect(data.choices[0].message.tool_calls[0].function.name).toBe('wiki-search');
-    expect(data.choices[0].finish_reason).toBe('tool_calls');
+    expect(data.choices[0].message).toHaveProperty('content');
+    expect(data.choices[0].message.content).toContain('<tool_use name="wiki-search">');
+    expect(data.choices[0].message.content).toContain('workspaceName');
+    expect(data.choices[0].message.content).toContain('-VPTqPdNOEZHGO5vkwllY');
+    expect(data.choices[0].finish_reason).toBe('stop');
   });
 
   it('should return valid chat completion with tool result response', async () => {
@@ -63,17 +64,7 @@ describe('Mock OpenAI Server', () => {
           },
           {
             role: 'assistant',
-            content: null,
-            tool_calls: [
-              {
-                id: 'call_test_wiki_search',
-                type: 'function',
-                function: {
-                  name: 'wiki-search',
-                  arguments: '{"workspaceName":"-VPTqPdNOEZHGO5vkwllY","filter":"[title[Index]]"}',
-                },
-              },
-            ],
+            content: '<tool_use name="wiki-search">{"workspaceName":"-VPTqPdNOEZHGO5vkwllY","filter":"[title[Index]]"}</tool_use>',
           },
           {
             role: 'tool',
@@ -144,7 +135,7 @@ describe('Mock OpenAI Server', () => {
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let chunks = '';
-    
+
     if (reader) {
       let done = false;
       while (!done) {

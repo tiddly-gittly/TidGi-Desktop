@@ -160,6 +160,9 @@ export class MockOpenAIServer {
 
     // Check if this is a wiki search request
     if (userMessage.includes('搜索 wiki 中的 index 条目并解释')) {
+      // Return tool_use format instead of tool_calls
+      const toolUseContent = `<tool_use name="wiki-search">{"workspaceName": "-VPTqPdNOEZHGO5vkwllY", "filter": "[title[Index]]"}</tool_use>`;
+      
       return {
         id: 'chatcmpl-test-' + String(Date.now()),
         object: 'chat.completion',
@@ -170,22 +173,9 @@ export class MockOpenAIServer {
             index: 0,
             message: {
               role: 'assistant',
-              content: null,
-              tool_calls: [
-                {
-                  id: 'call_test_wiki_search',
-                  type: 'function',
-                  function: {
-                    name: 'wiki-search',
-                    arguments: JSON.stringify({
-                      workspaceName: '-VPTqPdNOEZHGO5vkwllY',
-                      filter: '[title[Index]]',
-                    }),
-                  },
-                },
-              ],
+              content: toolUseContent,
             },
-            finish_reason: 'tool_calls',
+            finish_reason: 'stop',
           },
         ],
         usage: {
@@ -259,8 +249,10 @@ export class MockOpenAIServer {
 
     // Check if this is a wiki search request
     if (userMessage.includes('搜索 wiki 中的 index 条目并解释')) {
-      // First, send tool call chunk
-      const toolCallChunk = {
+      // Return tool_use format instead of tool_calls in streaming
+      const toolUseContent = `<tool_use name="wiki-search">{"workspaceName": "-VPTqPdNOEZHGO5vkwllY", "filter": "[title[Index]]"}</tool_use>`;
+
+      const streamChunk = {
         id: 'chatcmpl-test-' + String(Date.now()),
         object: 'chat.completion.chunk',
         created: Math.floor(Date.now() / 1000),
@@ -270,27 +262,14 @@ export class MockOpenAIServer {
             index: 0,
             delta: {
               role: 'assistant',
-              content: null,
-              tool_calls: [
-                {
-                  id: 'call_test_wiki_search',
-                  type: 'function',
-                  function: {
-                    name: 'wiki-search',
-                    arguments: JSON.stringify({
-                      workspaceName: '-VPTqPdNOEZHGO5vkwllY',
-                      filter: '[title[Index]]',
-                    }),
-                  },
-                },
-              ],
+              content: toolUseContent,
             },
             finish_reason: null,
           },
         ],
       };
 
-      response.write(`data: ${JSON.stringify(toolCallChunk)}\n\n`);
+      response.write(`data: ${JSON.stringify(streamChunk)}\n\n`);
 
       // Send finish chunk after a short delay
       setTimeout(() => {
@@ -303,7 +282,7 @@ export class MockOpenAIServer {
             {
               index: 0,
               delta: {},
-              finish_reason: 'tool_calls',
+              finish_reason: 'stop',
             },
           ],
         };

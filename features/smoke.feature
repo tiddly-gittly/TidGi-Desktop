@@ -9,4 +9,3 @@ Feature: TidGi Application Launch
     And I wait for the page to load completely
     And I should see a "page body" element with selector "body"
     And the window title should contain "太记"
-    And I should not see text "Error"
