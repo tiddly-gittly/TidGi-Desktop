@@ -151,3 +151,13 @@ Error: listen EACCES: permission denied 0.0.0.0:9000
 ```
 
 This means the port 9000 is not accessible, possibly due to permission issues or the port already being in use. Try disable some startup service and restart computer. Some app may occupies port for its own use on startup.
+
+## RangeError: Maximum call stack size exceeded at cloneObjectDeep
+
+```js
+const esbuild = require('esbuild');
+//...
+    implementation: esbuild,
+```
+
+If tried to add this to `esbuildLoaderRule` will cause this error. The object contains an internal reference chain (`.default.default`) that triggers recursion when webpack-merge/clone-deep attempts to merge it.

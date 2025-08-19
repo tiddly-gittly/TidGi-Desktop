@@ -4,7 +4,6 @@
 const tsImportPluginFactory = require('ts-import-plugin');
 const fs = require('fs');
 const JSON5 = require('json5');
-const esbuild = require('esbuild')
 
 const isTest = process.env.NODE_ENV === 'test';
 const isDevelopmentOrTest = process.env.NODE_ENV === 'development' || isTest;
@@ -102,7 +101,6 @@ const esbuildLoaderRule = {
     loader: 'tsx',
     target: 'ES2022',
     tsconfigRaw: JSON5.parse(fs.readFileSync('./tsconfig.json')),
-    implementation: esbuild,
   },
 };
 

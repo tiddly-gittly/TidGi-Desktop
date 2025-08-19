@@ -39,14 +39,12 @@ module.exports = {
   ...(isDevelopmentOrTest
     ? {
       watchOptions: {
-        // Ignore node_modules, root-level config files and backend service folders.
-        // Use an array of patterns/paths instead of a function for simplicity.
         ignored: [
-          /node_modules/,
-          // match root-level config files by suffix to avoid listing specific names
-          // this matches files ending with .json, .js, .cjs, .yaml, .yml, .md, and lock files
-          new RegExp(`^${path.resolve(__dirname).replace(/\\/g, '\\\\')}.*\\.(json|js|cjs|yaml|yml|md|lock)$`),
-          path.resolve(__dirname, 'src/services'),
+          // Ignore node_modules, root-level config files and backend service folders.
+          'node_modules/**',
+          // Ignore main process code, since they can't hot reload at all.
+          `${path.resolve(__dirname).replace(/\\/g, '/')}/**/*.{json,js,cjs,yaml,yml,md,lock}`,
+          `${path.resolve(__dirname).replace(/\\/g, '/')}/src/services/**`,
         ],
         aggregateTimeout: 300,
         poll: 1000,
