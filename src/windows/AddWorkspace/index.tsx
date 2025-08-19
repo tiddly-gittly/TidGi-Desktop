@@ -99,7 +99,6 @@ export default function AddWorkspace(): React.JSX.Element {
 
   return (
     <Box>
-      <div id='test' data-usage='For spectron automating testing' />
       <Helmet>
         <title>
           {t('AddWorkspace.AddWorkspace')} {wikiFolderName}

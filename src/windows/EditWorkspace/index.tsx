@@ -188,7 +188,6 @@ export default function EditWorkspace(): React.JSX.Element {
   const isCreateSyncedWorkspace = storageService !== SupportedStorageServices.local;
   return (
     <Root>
-      <div id='test' data-usage='For spectron automating testing' />
       {RestartSnackbar}
       <Helmet>
         <title>

@@ -51,7 +51,6 @@ export default function Preferences(): React.JSX.Element {
 
   return (
     <Root>
-      <div id='test' data-usage='For spectron automating testing' />
       {RestartSnackbar}
 
       <Helmet>

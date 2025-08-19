@@ -185,7 +185,6 @@ export default function Notifications(): React.JSX.Element {
 
   return (
     <Root>
-      <div id='test' data-usage='For spectron automating testing' />
       <Helmet>
         <title>{t('ContextMenu.Notifications')}</title>
       </Helmet>
