@@ -6,10 +6,10 @@ import { cacheDatabaseFolderName, httpsCertKeyFolderName, settingFolderName } fr
 import { sourcePath } from './paths';
 
 // in dev/test mode, set userData to a different folder, so gotTheLock will be true, we can run dev instance and normal instance.
-if (isElectronDevelopment) {
-  app.setPath('userData', path.resolve(sourcePath, '..', 'userData-dev'));
-} else if (isTest) {
+if (isTest) {
   app.setPath('userData', path.resolve(sourcePath, '..', 'userData-test'));
+} else if (isElectronDevelopment) {
+  app.setPath('userData', path.resolve(sourcePath, '..', 'userData-dev'));
 }
 export const USER_DATA_FOLDER = app.getPath('userData');
 export const SETTINGS_FOLDER = path.resolve(USER_DATA_FOLDER, settingFolderName);

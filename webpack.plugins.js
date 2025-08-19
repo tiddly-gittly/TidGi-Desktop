@@ -3,16 +3,17 @@
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 const _ = require('lodash');
-const { EsbuildPlugin } = require('esbuild-loader');
 const CopyPlugin = require('copy-webpack-plugin');
 const ThreadsPlugin = require('threads-plugin');
 const ExternalsPlugin = require('webpack5-externals-plugin');
 const WebpackBar = require('webpackbar');
+const { EnvironmentPlugin } = require('webpack');
 
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 const { isDevelopmentOrTest } = require('./webpack.rules');
 
 exports.main = _.compact([
+  new EnvironmentPlugin(['NODE_ENV']),
   // we only need one instance of TsChecker, it will check main and renderer all together
   new ForkTsCheckerWebpackPlugin(),
   new CopyPlugin({
@@ -29,11 +30,6 @@ exports.main = _.compact([
     allowAsyncCycles: true,
     // set the current working directory for displaying module paths
     cwd: process.cwd(),
-  }),
-  new EsbuildPlugin({
-    define: {
-      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
-    },
   }),
   new ExternalsPlugin({
     type: 'commonjs',
@@ -65,11 +61,7 @@ exports.main = _.compact([
 ]);
 
 exports.renderer = _.compact([
-  new EsbuildPlugin({
-    define: {
-      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
-    },
-  }),
+  new EnvironmentPlugin(['NODE_ENV']),
   // new CspHtmlWebpackPlugin(
   //   {
   //     'base-uri': ["'self'"],

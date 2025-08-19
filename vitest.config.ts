@@ -68,9 +68,4 @@ export default defineConfig({
 
   // Handle CSS and static assets
   assetsInclude: ['**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.svg'],
-
-  // Set environment variables for better-sqlite3 compatibility
-  define: {
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'test'),
-  },
 });

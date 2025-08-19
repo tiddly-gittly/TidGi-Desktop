@@ -260,3 +260,9 @@ Always use cross-env in your test script. For example:
 Or run manually in shell: `$env:ELECTRON_RUN_AS_NODE=1; pnpm run test:unit`
 
 We use `ELECTRON_RUN_AS_NODE` to solve native modules (like better-sqlite3) being compiled for the wrong Node.js version, see the section in [ErrorDuringStart.md](./ErrorDuringStart.md#during-test-the-module-node_modulesbetter-sqlite3buildreleasebetter_sqlite3node-was-compiled-against-a-different-nodejs-version-using).
+
+### E2E test open production app
+
+See User profile section above, we need to set `NODE_ENV` as `test` to open with correct profile.
+
+This is done by using `EnvironmentPlugin` in [webpack.plugins.js](../webpack.plugins.js). Note that EsbuildPlugin's `define` doesn't work, it won't set env properly.
