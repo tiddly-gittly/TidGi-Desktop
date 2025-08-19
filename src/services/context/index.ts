@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
 import { isElectronDevelopment } from '@/constants/isElectronDevelopment';
 import { app, net } from 'electron';
 import { injectable } from 'inversify';

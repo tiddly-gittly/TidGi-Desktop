@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable n/no-callback-literal */
-/* eslint-disable @typescript-eslint/require-await */
 
 import { BrowserWindow, ipcMain, WebContentsView, WebPreferences } from 'electron';
 import { injectable } from 'inversify';

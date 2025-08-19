@@ -228,7 +228,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
   hooks.responseComplete.tapAsync('wikiSearchPlugin-handler', async (context, callback) => {
     try {
       const { handlerContext, response, handlerConfig } = context;
-      
+
       // Find this plugin's configuration from handlerConfig
       const wikiSearchPluginConfig = handlerConfig?.plugins?.find(p => p.pluginId === 'wikiSearch');
       const wikiSearchParameter = wikiSearchPluginConfig?.wikiSearchParam as { toolResultDuration?: number } | undefined;

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
 import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';

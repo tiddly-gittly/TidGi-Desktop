@@ -12,7 +12,6 @@ import { createHandlerHooks, createHooksWithPlugins, initializePluginSystem } fr
 import { promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { promptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
-import { container, lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';

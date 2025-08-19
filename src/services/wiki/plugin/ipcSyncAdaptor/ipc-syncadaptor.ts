@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import type { Logger } from '$:/core/modules/utils/logger.js';
 import type { IWikiServerStatusObject } from '@services/wiki/wikiWorker/ipcServerRoutes';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';

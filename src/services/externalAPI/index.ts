@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
 import { injectable } from 'inversify';
 import { cloneDeep, mergeWith } from 'lodash';
 import { nanoid } from 'nanoid';

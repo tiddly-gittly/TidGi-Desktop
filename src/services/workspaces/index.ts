@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
-
 import { app } from 'electron';
 import fsExtra from 'fs-extra';
 import { injectable } from 'inversify';

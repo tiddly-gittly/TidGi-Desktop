@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
-/* eslint-disable @typescript-eslint/require-await */
 import { app, dialog, ipcMain, MessageBoxOptions, shell } from 'electron';
 import fs from 'fs-extra';
 import { inject, injectable } from 'inversify';

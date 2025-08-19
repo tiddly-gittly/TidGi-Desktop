@@ -685,7 +685,7 @@ export class Wiki implements IWikiService {
     logger.debug(`Get ${operationType}`, { workspaceID, method: 'wikiOperationInServer' });
     // This will never await if workspaceID isn't exist in user's workspace list. So prefer to check workspace existence before use this method.
     const worker = await this.getWorkerEnsure(workspaceID);
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+
     logger.debug(`Get worker ${operationType}`, { workspaceID, hasWorker: worker !== undefined, method: 'wikiOperationInServer', arguments_ });
     // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556)
     const result = await (worker.wikiOperation(operationType, ...arguments_) as unknown as ReturnType<IWorkerWikiOperations[OP]>);

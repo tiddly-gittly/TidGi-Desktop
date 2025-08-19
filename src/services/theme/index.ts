@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
 import { nativeTheme } from 'electron';
 import { injectable } from 'inversify';
 import { BehaviorSubject } from 'rxjs';

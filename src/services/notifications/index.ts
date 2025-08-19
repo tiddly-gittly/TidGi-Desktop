@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
 import { lazyInject } from '@services/container';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';

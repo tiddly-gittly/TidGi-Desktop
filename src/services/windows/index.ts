@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
-
 import { app, BrowserWindow, BrowserWindowConstructorOptions } from 'electron';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
 import { injectable } from 'inversify';

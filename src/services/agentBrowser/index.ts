@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import { injectable } from 'inversify';
 import { pick } from 'lodash';
 

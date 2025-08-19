@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
-
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import { IGitUserInfos } from '@services/git/interface';

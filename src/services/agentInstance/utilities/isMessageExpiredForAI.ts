@@ -1,4 +1,4 @@
-import { AgentInstanceMessage } from "../interface";
+import { AgentInstanceMessage } from '../interface';
 
 /**
  * Check if a message should be displayed with reduced opacity in UI

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
 /**
  * Built-in plugins for prompt concatenation
  */
@@ -38,7 +37,7 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
     // Get all messages except the last user message being processed
     // We need to find and exclude only the current user message being processed, not just the last message
     const messagesCopy = cloneDeep(messages);
-    
+
     // Find the last user message (which is the one being processed in this round)
     let lastUserMessageIndex = -1;
     for (let index = messagesCopy.length - 1; index >= 0; index--) {
@@ -47,7 +46,7 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
         break;
       }
     }
-    
+
     // Remove only the last user message if found (this is the current message being processed)
     if (lastUserMessageIndex >= 0) {
       messagesCopy.splice(lastUserMessageIndex, 1);
