@@ -42,6 +42,7 @@ export interface TabsState {
 
   // Utility methods
   getTabIndex: (tabId: string) => number;
+  createAgentChatTab: (agentDefinitionId?: string) => Promise<TabItem>;
 }
 
 // Constants

@@ -165,7 +165,7 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewT
 
         {!isNewTabButton && (
           <TabActions className='tab-actions'>
-            <ActionIcon onClick={handleClose}>
+            <ActionIcon data-testid='tab-close-button' onClick={handleClose}>
               <CloseIcon fontSize='inherit' />
             </ActionIcon>
           </TabActions>

@@ -199,6 +199,27 @@ When('I click on a(n) {string} element with selector {string}', async function(t
   }
 });
 
+When('I click all {string} elements matching selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
+  const win = this.currentWindow || this.mainWindow;
+  if (!win) throw new Error('No active window available to click elements');
+
+  const locator = win.locator(selector);
+  const count = await locator.count();
+  if (count === 0) {
+    throw new Error(`No elements found for ${elementComment} with selector "${selector}"`);
+  }
+
+  // Single-pass reverse iteration to avoid index shift issues
+  for (let index = count - 1; index >= 0; index--) {
+    try {
+      await locator.nth(index).scrollIntoViewIfNeeded().catch(() => {});
+      await locator.nth(index).click({ force: true, timeout: 500 });
+    } catch (error) {
+      throw new Error(`Failed to click ${elementComment} at index ${index} with selector "${selector}": ${error as Error}`);
+    }
+  }
+});
+
 When('I type {string} in {string} element with selector {string}', async function(this: ApplicationWorld, text: string, elementComment: string, selector: string) {
   const currentWindow = this.currentWindow || this.mainWindow;
   if (!currentWindow) {

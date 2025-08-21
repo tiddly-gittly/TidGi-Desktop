@@ -8,6 +8,9 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     Given I launch the TidGi application
     And I wait for the page to load completely
     And I should see a "page body" element with selector "body"
+    # Ensure we are in the correct workspace before each scenario to avoid wrong starting state
+    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
+    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
 
   @agent
   Scenario: Complete agent workflow with tool usage and multi-round conversation
@@ -49,8 +52,6 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I wait for 0.5 seconds
 
     # Step 9: Now proceed with agent workflow in main window
-    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
-    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
 
     # Step 10: Click new tab button
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
@@ -62,11 +63,11 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
 
     # Step 12: Select agent from autocomplete (not new tab)
     When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
-    And I should see a "message input box" element with selector 'textarea.MuiInputBase-input'
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
 
     # Step 13: Send message to agent - using generic steps combination
-    When I click on a "message input textarea" element with selector "textarea.MuiInputBase-input"
-    When I type "搜索 wiki 中的 index 条目并解释" in "chat input" element with selector "textarea.MuiInputBase-input:not([readonly])"
+    When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
+    When I type "搜索 wiki 中的 index 条目并解释" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     And I should see a "user message" element with selector "*:has-text('搜索 wiki 中的 index 条目并解释')"
     And I should see a "tool use indicator" element with selector "*:has-text('tool_use')"
@@ -75,4 +76,28 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see a "function result" element with selector "*:has-text('functions_result')"
     And I should see a "tool indicator" element with selector "*:has-text('Tool: wiki-search')"
     Then I should see 4 messages in chat history
-    And I wait for 5 seconds
+
+  @agent
+  Scenario: Create default agent from New Tab quick access
+    # NOTE: Tests must ensure the correct workspace is active before clicking new tab.
+    # In CI the app may start in a different workspace; switch to the agent workspace first.
+    # This prevents flaky assumptions that the app already opened the desired workspace.
+    # Ensure we are in the correct workspace: switch to Agent workspace explicitly to avoid CI flakiness
+  When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+  And I wait for 0.2 seconds
+  And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
+    When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
+
+  @agent
+  Scenario: Close all tabs then create default agent from fallback page
+    # Ensure starting from black/fallback page with no open tabs
+  When I click all "tab" elements matching selector "[data-testid='tab']"
+  When I click all "close tab button" elements matching selector "[data-testid='tab-close-button']"
+  And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+  # Click the new tab button (fallback UI) and wait briefly for the quick access buttons to render
+  When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+  And I wait for 0.2 seconds
+  And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
+  When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"

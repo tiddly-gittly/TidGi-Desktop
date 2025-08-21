@@ -2,9 +2,7 @@ import { AutocompletePlugin } from '@algolia/autocomplete-js';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
 import { getI18n } from 'react-i18next';
 
-import { TEMP_TAB_ID_PREFIX } from '../../../constants/tab';
 import { useTabStore } from '../../../store/tabStore';
-import { TabType } from '../../../types/tab';
 
 export const createAgentsPlugin = (): AutocompletePlugin<AgentDefinition & Record<string, unknown>, unknown> => {
   const { t } = getI18n();
@@ -110,27 +108,9 @@ export const createAgentsPlugin = (): AutocompletePlugin<AgentDefinition & Recor
           onSelect: async ({ item }) => {
             try {
               const tabStore = useTabStore.getState();
-              const { activeTabId, tabs } = tabStore;
 
-              // Handle current active tab
-              if (activeTabId) {
-                const activeTab = tabs.find(tab => tab.id === activeTabId);
-                // Always close temp tabs or NEW_TAB type tabs when selecting from search
-                if (activeTab && (activeTab.id.startsWith(TEMP_TAB_ID_PREFIX) || activeTab.type === TabType.NEW_TAB)) {
-                  // tabStore.closeTab is void, not a Promise, so can't await it
-                  tabStore.closeTab(activeTabId);
-                }
-              }
-
-              // Create agent instance
-              const agent = await window.service.agentInstance.createAgent(item.id);
-
-              // Use tabStore.addTab with TabType.CHAT and initialData
-              void tabStore.addTab(TabType.CHAT, {
-                title: item.name,
-                agentId: agent.id,
-                agentDefId: agent.agentDefId,
-              });
+              // Use the shared utility function to create agent chat tab
+              await tabStore.createAgentChatTab(item.id);
             } catch (error) {
               console.error(t('Search.FailedToCreateChatWithAgent', { ns: 'agent' }), error);
             }

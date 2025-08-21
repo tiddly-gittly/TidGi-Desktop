@@ -92,6 +92,7 @@
   },
   "NewTab": {
     "CodeTools": "code tool",
+    "CreateDefaultAgent": "Create Default Agent",
     "Explore": "explore",
     "Favorites": "Favorites",
     "NewChat": "New Conversation",

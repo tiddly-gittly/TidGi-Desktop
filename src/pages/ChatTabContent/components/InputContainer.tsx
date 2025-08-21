@@ -62,6 +62,7 @@ export const InputContainer: React.FC<InputContainerProps> = ({
         disabled={disabled}
         slotProps={{
           input: {
+            inputProps: { 'data-testid': 'agent-message-input' },
             endAdornment: (
               <IconButton
                 onClick={isStreaming ? onCancel : onSend}

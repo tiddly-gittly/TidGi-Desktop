@@ -1,10 +1,6 @@
-/* eslint-disable @typescript-eslint/no-confusing-void-expression */
 import AddIcon from '@mui/icons-material/Add';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import ChatIcon from '@mui/icons-material/Chat';
-import CodeIcon from '@mui/icons-material/Code';
-import TravelExploreIcon from '@mui/icons-material/TravelExplore';
-import WebIcon from '@mui/icons-material/Web';
 import { Box, Card, IconButton, Typography } from '@mui/material';
 import { Grid } from '@mui/material';
 import { styled } from '@mui/material/styles';
@@ -12,6 +8,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Search } from '../../components/Search/Search';
+import { TEMP_TAB_ID_PREFIX } from '../../constants/tab';
 import { useTabStore } from '../../store/tabStore';
 import { INewTab, TabType } from '../../types/tab';
 
@@ -108,20 +105,20 @@ const defaultFavorites = [
 
 export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
   const { t } = useTranslation('agent');
-  const { transformTabType } = useTabStore();
+  const { transformTabType, addTab, createAgentChatTab } = useTabStore();
 
   const favorites = tab.favorites && tab.favorites.length > 0
     ? tab.favorites
     : defaultFavorites;
-
   const handleOpenWebTab = (url: string, title: string) => {
-    // Transform current tab to web tab
-    transformTabType(tab.id, TabType.WEB, { url, title });
-  };
-
-  const handleOpenChatTab = () => {
-    // Transform current tab to chat tab
-    transformTabType(tab.id, TabType.CHAT);
+    // Check if current tab is a temporary tab (fallback page)
+    if (tab.id.startsWith(TEMP_TAB_ID_PREFIX)) {
+      // For temporary tabs, create a new web tab instead of transforming
+      void addTab(TabType.WEB, { url, title });
+    } else {
+      // For real tabs, transform current tab to web tab
+      transformTabType(tab.id, TabType.WEB, { url, title });
+    }
   };
 
   return (
@@ -138,38 +135,11 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
         <QuickAccessGrid>
           <Grid container spacing={3}>
             <Grid width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
-              <ShortcutCard onClick={() => transformTabType(tab.id, TabType.WEB)}>
-                <ShortcutIcon>
-                  <WebIcon fontSize='inherit' />
-                </ShortcutIcon>
-                <Typography variant='subtitle1'>{t('NewTab.NewWebTab')}</Typography>
-              </ShortcutCard>
-            </Grid>
-
-            <Grid width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
-              <ShortcutCard onClick={handleOpenChatTab}>
+              <ShortcutCard onClick={() => createAgentChatTab()} data-testid={'create-default-agent-button'}>
                 <ShortcutIcon>
                   <ChatIcon fontSize='inherit' />
                 </ShortcutIcon>
-                <Typography variant='subtitle1'>{t('NewTab.NewChat')}</Typography>
-              </ShortcutCard>
-            </Grid>
-
-            <Grid width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
-              <ShortcutCard>
-                <ShortcutIcon>
-                  <TravelExploreIcon fontSize='inherit' />
-                </ShortcutIcon>
-                <Typography variant='subtitle1'>{t('NewTab.Explore')}</Typography>
-              </ShortcutCard>
-            </Grid>
-
-            <Grid width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
-              <ShortcutCard>
-                <ShortcutIcon>
-                  <CodeIcon fontSize='inherit' />
-                </ShortcutIcon>
-                <Typography variant='subtitle1'>{t('NewTab.CodeTools')}</Typography>
+                <Typography variant='subtitle1'>{t('NewTab.CreateDefaultAgent')}</Typography>
               </ShortcutCard>
             </Grid>
           </Grid>

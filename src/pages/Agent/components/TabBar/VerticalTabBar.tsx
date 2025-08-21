@@ -55,14 +55,15 @@ export const VerticalTabBar = () => {
           <TabContextMenu>
             <TabsSection>
               {pinnedTabs.map(tab => (
-                <TabItem
-                  key={tab.id}
-                  tab={tab}
-                  isActive={tab.id === activeTabId}
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                  }}
-                />
+                <Box key={tab.id} data-testid='tab'>
+                  <TabItem
+                    tab={tab}
+                    isActive={tab.id === activeTabId}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                    }}
+                  />
+                </Box>
               ))}
             </TabsSection>
           </TabContextMenu>
@@ -70,7 +71,7 @@ export const VerticalTabBar = () => {
         </>
       )}
 
-      {/* 新标签页按钮 - 永远位于顶部 */}
+      {/* New Tab Button - Always at the top */}
       <NewTabButton>
         <TabItem
           tab={{ id: 'new-tab-button', title: t('NewTab.NewTab'), type: TabType.NEW_TAB }}
@@ -82,14 +83,15 @@ export const VerticalTabBar = () => {
       <TabContextMenu>
         <TabsSection>
           {sortedUnpinnedTabs.map(tab => (
-            <TabItem
-              key={tab.id}
-              tab={tab}
-              isActive={tab.id === activeTabId}
-              onClick={() => {
-                setActiveTab(tab.id);
-              }}
-            />
+            <Box key={tab.id} data-testid='tab'>
+              <TabItem
+                tab={tab}
+                isActive={tab.id === activeTabId}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                }}
+              />
+            </Box>
           ))}
         </TabsSection>
       </TabContextMenu>

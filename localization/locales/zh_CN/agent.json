@@ -92,6 +92,7 @@
   },
   "NewTab": {
     "CodeTools": "代码工具",
+    "CreateDefaultAgent": "创建默认智能体",
     "Explore": "探索",
     "Favorites": "收藏夹",
     "NewChat": "新建对话",
