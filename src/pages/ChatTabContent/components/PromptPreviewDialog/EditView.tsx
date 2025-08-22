@@ -11,7 +11,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { useAgentChatStore } from '../../../Agent/store/agentChatStore/index';
-import { PromptConfigForm } from '../PromptConfigForm';
+import { PromptConfigForm } from './PromptConfigForm';
 
 const EditorTabs = styled(Tabs)`
   margin-bottom: ${({ theme }) => theme.spacing(2)};
