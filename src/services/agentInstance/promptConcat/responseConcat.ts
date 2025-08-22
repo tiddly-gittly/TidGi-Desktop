@@ -10,6 +10,7 @@ import { AgentHandlerContext } from '../buildInAgentHandlers/type';
 import { AgentInstanceMessage } from '../interface';
 import { builtInPlugins, createHandlerHooks } from '../plugins';
 import { AgentResponse, PostProcessContext, YieldNextRoundTarget } from '../plugins/types';
+import type { IPromptConcatPlugin } from './promptConcatSchema';
 import { AgentPromptDescription, HandlerConfig } from './promptConcatSchema';
 
 /**
@@ -39,7 +40,7 @@ export async function responseConcat(
 
   const { handlerConfig } = agentConfig;
   const responses: HandlerConfig['response'] = Array.isArray(handlerConfig.response) ? handlerConfig.response : [];
-  const plugins = Array.isArray(handlerConfig.plugins) ? handlerConfig.plugins : [];
+  const plugins = (Array.isArray(handlerConfig.plugins) ? handlerConfig.plugins : []) as IPromptConcatPlugin[];
 
   let modifiedResponses = cloneDeep(responses) as AgentResponse[];
   // Create hooks instance

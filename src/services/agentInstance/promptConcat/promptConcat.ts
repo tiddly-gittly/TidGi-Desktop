@@ -205,7 +205,7 @@ export async function* promptConcatStream(
   handlerContext: AgentHandlerContext,
 ): AsyncGenerator<PromptConcatStreamState, PromptConcatStreamState, unknown> {
   const promptConfigs = Array.isArray(agentConfig.handlerConfig.prompts) ? agentConfig.handlerConfig.prompts : [];
-  const pluginConfigs = Array.isArray(agentConfig.handlerConfig.plugins) ? agentConfig.handlerConfig.plugins : [];
+  const pluginConfigs = (Array.isArray(agentConfig.handlerConfig.plugins) ? agentConfig.handlerConfig.plugins : []) as IPromptConcatPlugin[];
   const promptsCopy = cloneDeep(promptConfigs);
   const sourcePaths = generateSourcePaths(promptsCopy, pluginConfigs);
 

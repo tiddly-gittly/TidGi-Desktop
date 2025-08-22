@@ -1,5 +1,11 @@
-import { BehaviorSubject } from 'rxjs';
+import { AgentInstanceService } from '@services/agentInstance';
+import { AgentInstanceMessage } from '@services/agentInstance/interface';
+import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import serviceIdentifier from '@services/serviceIdentifier';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { vi } from 'vitest';
+import { serviceInstances } from './services-container';
+import { container } from './services-container';
 
 // Mock window.meta
 globalThis.window = globalThis.window || {};
@@ -39,11 +45,32 @@ Object.defineProperty(window, 'observables', {
     auth: {
       userInfo$: new BehaviorSubject(undefined).asObservable(),
     },
+    agentInstance: {
+      concatPrompt: vi.fn((promptDescription: Pick<AgentPromptDescription, 'handlerConfig'>, messages: AgentInstanceMessage[]) => {
+        const agentInstanceService = container.get<AgentInstanceService>(serviceIdentifier.AgentInstance);
+        // Initialize handlers (plugins and built-in handlers) before calling concatPrompt
+        // We need to wrap this in an Observable since concatPrompt returns an Observable
+        return new Observable((observer) => {
+          const initAndCall = async () => {
+            try {
+              // Need to register plugins first. In test environment, this needs to be called manually. While in real
+              // environment, this is handled in `main.ts` when app start.
+              await agentInstanceService.initializeHandlers();
+              const resultObservable = agentInstanceService.concatPrompt(promptDescription, messages);
+              // Subscribe to the result and forward to our observer
+              resultObservable.subscribe(observer);
+            } catch (error) {
+              observer.error(error);
+            }
+          };
+          void initAndCall();
+        });
+      }),
+    },
   },
 });
 
 // Mock window.service
-import { serviceInstances } from './services-container';
 Object.defineProperty(window, 'service', {
   writable: true,
   value: serviceInstances,

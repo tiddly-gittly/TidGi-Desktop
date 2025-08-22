@@ -96,7 +96,7 @@ export const serviceInstances: {
   },
 };
 
-const container = new Container();
+export const container = new Container();
 const { lazyInject } = getDecorators(container, false);
 
 // Bind the shared mocks into container so real services resolved from container.get()

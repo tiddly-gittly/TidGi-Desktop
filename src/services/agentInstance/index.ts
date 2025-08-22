@@ -46,12 +46,37 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   public async initialize(): Promise<void> {
     try {
+      await this.initializeDatabase();
+      await this.initializeHandlers();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`Failed to initialize agent instance service: ${errorMessage}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Initialize database repositories
+   */
+  public async initializeDatabase(): Promise<void> {
+    try {
       // Database is already initialized in the agent definition service
       this.dataSource = await this.databaseService.getDatabase('agent-default');
       this.agentInstanceRepository = this.dataSource.getRepository(AgentInstanceEntity);
       this.agentMessageRepository = this.dataSource.getRepository(AgentInstanceMessageEntity);
       logger.debug('AgentInstance repositories initialized');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`Failed to initialize agent instance database: ${errorMessage}`);
+      throw error;
+    }
+  }
 
+  /**
+   * Initialize plugins and handlers (can be used independently in tests)
+   */
+  public async initializeHandlers(): Promise<void> {
+    try {
       // Register plugins to global registry once during initialization
       await initializePluginSystem();
       logger.debug('AgentInstance Plugin system initialized and plugins registered to global registry');
@@ -61,7 +86,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       logger.debug('AgentInstance handlers registered');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to initialize agent instance service: ${errorMessage}`);
+      logger.error(`Failed to initialize agent instance handlers: ${errorMessage}`);
       throw error;
     }
   }
