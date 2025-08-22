@@ -79,13 +79,6 @@ export const HANDLER_CONFIG_UI_SCHEMA: UiSchema = {
           showWhen: 'modelContextProtocol',
         },
       },
-      toolCallingParam: {
-        'ui:field': 'ConditionalField',
-        'ui:condition': {
-          dependsOn: 'pluginId',
-          showWhen: 'toolCalling',
-        },
-      },
     },
   },
   response: {

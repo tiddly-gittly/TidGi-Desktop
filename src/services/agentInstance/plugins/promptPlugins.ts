@@ -1,12 +1,75 @@
 /**
  * Built-in plugins for prompt concatenation
  */
+import { identity } from 'lodash';
+import { z } from 'zod/v4';
+
 import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
 import { findPromptById } from '../promptConcat/promptConcat';
 import { IPrompt } from '../promptConcat/promptConcatSchema';
 import { filterMessagesByDuration } from '../utilities/messageDurationFilter';
 import { AgentResponse, PromptConcatPlugin, ResponseHookContext } from './types';
+
+const t = identity;
+
+/**
+ * Full Replacement Parameter Schema
+ * Configuration parameters for the full replacement plugin
+ */
+export const FullReplacementParameterSchema = z.object({
+  targetId: z.string().meta({
+    title: t('Schema.FullReplacement.TargetIdTitle'),
+    description: t('Schema.FullReplacement.TargetId'),
+  }),
+  sourceType: z.enum(['historyOfSession', 'llmResponse']).meta({
+    title: t('Schema.FullReplacement.SourceTypeTitle'),
+    description: t('Schema.FullReplacement.SourceType'),
+  }),
+}).meta({
+  title: t('Schema.FullReplacement.Title'),
+  description: t('Schema.FullReplacement.Description'),
+});
+
+/**
+ * Dynamic Position Parameter Schema
+ * Configuration parameters for the dynamic position plugin
+ */
+export const DynamicPositionParameterSchema = z.object({
+  targetId: z.string().meta({
+    title: t('Schema.Position.TargetIdTitle'),
+    description: t('Schema.Position.TargetId'),
+  }),
+  position: z.enum(['before', 'after', 'relative']).meta({
+    title: t('Schema.Position.TypeTitle'),
+    description: t('Schema.Position.Type'),
+  }),
+}).meta({
+  title: t('Schema.Position.Title'),
+  description: t('Schema.Position.Description'),
+});
+
+/**
+ * Type definitions
+ */
+export type FullReplacementParameter = z.infer<typeof FullReplacementParameterSchema>;
+export type DynamicPositionParameter = z.infer<typeof DynamicPositionParameterSchema>;
+
+/**
+ * Get the full replacement parameter schema
+ * @returns The schema for full replacement parameters
+ */
+export function getFullReplacementParameterSchema() {
+  return FullReplacementParameterSchema;
+}
+
+/**
+ * Get the dynamic position parameter schema
+ * @returns The schema for dynamic position parameters
+ */
+export function getDynamicPositionParameterSchema() {
+  return DynamicPositionParameterSchema;
+}
 
 /**
  * Full replacement plugin
@@ -22,6 +85,11 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
     }
 
     const fullReplacementConfig = pluginConfig.fullReplacementParam;
+    if (!fullReplacementConfig) {
+      callback();
+      return;
+    }
+    
     const { targetId, sourceType } = fullReplacementConfig;
     const found = findPromptById(prompts, targetId);
 
@@ -116,7 +184,13 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
       return;
     }
 
-    const { targetId, sourceType } = pluginConfig.fullReplacementParam;
+    const fullReplacementParameter = pluginConfig.fullReplacementParam;
+    if (!fullReplacementParameter) {
+      callback();
+      return;
+    }
+    
+    const { targetId, sourceType } = fullReplacementParameter;
 
     // Only handle llmResponse in response phase
     if (sourceType !== 'llmResponse') {
@@ -168,6 +242,11 @@ export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
     }
 
     const dynamicPositionConfig = pluginConfig.dynamicPositionParam;
+    if (!dynamicPositionConfig) {
+      callback();
+      return;
+    }
+    
     const { targetId, position } = dynamicPositionConfig;
     const found = findPromptById(prompts, targetId);
 
@@ -215,82 +294,5 @@ export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
     });
 
     callback();
-  });
-};
-
-/**
- * Model Context Protocol plugin
- * Integrates with external MCP servers
- */
-export const modelContextProtocolPlugin: PromptConcatPlugin = (hooks) => {
-  hooks.processPrompts.tapAsync('modelContextProtocolPlugin', async (context, callback) => {
-    const { pluginConfig, prompts } = context;
-
-    if (pluginConfig.pluginId !== 'modelContextProtocol' || !pluginConfig.modelContextProtocolParam) {
-      callback();
-      return;
-    }
-
-    const parameter = pluginConfig.modelContextProtocolParam;
-    const { targetId, position, id, timeoutSecond = 10, timeoutMessage = 'MCP server call timed out' } = parameter;
-    const found = findPromptById(prompts, targetId);
-
-    if (!found) {
-      logger.warn('Target prompt not found for modelContextProtocol', {
-        targetId,
-        pluginId: pluginConfig.id,
-      });
-      callback();
-      return;
-    }
-
-    try {
-      // TODO: Implement actual MCP server call with timeout
-      // For now, create a placeholder that indicates MCP integration
-      const content = `MCP Server Call: ${id}
-Timeout: ${timeoutSecond} seconds
-Timeout Message: ${timeoutMessage}
-
-This is where the actual Model Context Protocol server would be called.
-The MCP server would provide additional context or capabilities to the AI model.`;
-
-      // Simulate timeout handling in future implementation
-      logger.debug('MCP plugin - simulating server call', {
-        mcpId: id,
-        timeout: timeoutSecond,
-        pluginId: pluginConfig.id,
-      });
-
-      const newPart: IPrompt = {
-        id: `mcp-${pluginConfig.id}-${Date.now()}`,
-        caption: pluginConfig.caption || 'MCP Content',
-        text: content,
-      };
-
-      // Insert based on position
-      switch (position) {
-        case 'before':
-          found.parent.splice(found.index, 0, newPart);
-          break;
-        case 'after':
-          found.parent.splice(found.index + 1, 0, newPart);
-          break;
-        default:
-          logger.warn(`Unknown position: ${position as string}`);
-          callback();
-          return;
-      }
-
-      logger.debug('MCP plugin completed', {
-        targetId,
-        position,
-        mcpId: id,
-      });
-
-      callback();
-    } catch (error) {
-      logger.error('MCP plugin error', error);
-      callback();
-    }
   });
 };

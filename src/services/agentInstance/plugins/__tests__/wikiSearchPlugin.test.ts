@@ -49,7 +49,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
 
     it('should inject wiki tools into prompts when configured', async () => {
       // Find the wiki search plugin config, make sure our default config
-      const wikiPlugin = handlerConfig.plugins.find(p => p.pluginId === 'wikiSearch');
+      const wikiPlugin = handlerConfig.plugins.find((p: unknown): p is IPromptConcatPlugin => (p as IPromptConcatPlugin).pluginId === 'wikiSearch');
       expect(wikiPlugin).toBeDefined();
       if (!wikiPlugin) {
         // throw error to keep ts believe the plugin exists
@@ -194,7 +194,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
 
     it('should execute wiki search with correct duration=1 and trigger next round', async () => {
       // Find the real wikiSearch plugin config from defaultAgents.json
-      const wikiPlugin = handlerConfig.plugins.find(p => p.pluginId === 'wikiSearch');
+      const wikiPlugin = handlerConfig.plugins.find((p: unknown): p is IPromptConcatPlugin => (p as IPromptConcatPlugin).pluginId === 'wikiSearch');
       expect(wikiPlugin).toBeDefined();
       expect(wikiPlugin!.wikiSearchParam).toBeDefined();
 

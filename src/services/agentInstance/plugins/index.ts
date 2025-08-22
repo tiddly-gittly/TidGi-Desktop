@@ -1,5 +1,6 @@
 import { logger } from '@services/libs/log';
 import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
+import { registerPluginParameterSchema } from './schemaRegistry';
 import { AgentResponse, PromptConcatHookContext, PromptConcatHooks, PromptConcatPlugin, ResponseHookContext } from './types';
 
 // Re-export types for convenience
@@ -85,6 +86,76 @@ export async function registerPluginsToHooksFromConfig(
  * This should be called once during service initialization
  */
 export async function initializePluginSystem(): Promise<void> {
+  // Import plugin schemas and register them
+  const [
+    promptPluginsModule,
+    wikiSearchModule,
+    wikiOperationModule,
+    workspacesListModule,
+    modelContextProtocolModule,
+  ] = await Promise.all([
+    import('./promptPlugins'),
+    import('./wikiSearchPlugin'),
+    import('./wikiOperationPlugin'),
+    import('./workspacesListPlugin'),
+    import('./modelContextProtocolPlugin'),
+  ]);
+
+  // Register plugin parameter schemas
+  registerPluginParameterSchema(
+    'fullReplacement',
+    promptPluginsModule.getFullReplacementParameterSchema(),
+    {
+      displayName: 'Full Replacement',
+      description: 'Replace target content with content from specified source',
+    },
+  );
+
+  registerPluginParameterSchema(
+    'dynamicPosition',
+    promptPluginsModule.getDynamicPositionParameterSchema(),
+    {
+      displayName: 'Dynamic Position',
+      description: 'Insert content at a specific position relative to a target element',
+    },
+  );
+
+  registerPluginParameterSchema(
+    'wikiSearch',
+    wikiSearchModule.getWikiSearchParameterSchema(),
+    {
+      displayName: 'Wiki Search',
+      description: 'Search content in wiki workspaces',
+    },
+  );
+
+  registerPluginParameterSchema(
+    'wikiOperation',
+    wikiOperationModule.getWikiOperationParameterSchema(),
+    {
+      displayName: 'Wiki Operation',
+      description: 'Perform operations on wiki workspaces (create, update, delete tiddlers)',
+    },
+  );
+
+  registerPluginParameterSchema(
+    'workspacesList',
+    workspacesListModule.getWorkspacesListParameterSchema(),
+    {
+      displayName: 'Workspaces List',
+      description: 'Inject available wiki workspaces list into prompts',
+    },
+  );
+
+  registerPluginParameterSchema(
+    'modelContextProtocol',
+    modelContextProtocolModule.getModelContextProtocolParameterSchema(),
+    {
+      displayName: 'Model Context Protocol',
+      description: 'MCP (Model Context Protocol) integration',
+    },
+  );
+
   const plugins = await getAllPlugins();
   // Register all built-in plugins to global registry for discovery
   builtInPlugins.set('messageManagement', plugins.messageManagementPlugin);
@@ -92,7 +163,7 @@ export async function initializePluginSystem(): Promise<void> {
   builtInPlugins.set('wikiSearch', plugins.wikiSearchPlugin);
   builtInPlugins.set('wikiOperation', plugins.wikiOperationPlugin);
   builtInPlugins.set('workspacesList', plugins.workspacesListPlugin);
-  logger.debug('All built-in plugins registered to global registry successfully');
+  logger.debug('All built-in plugins and schemas registered successfully');
 }
 
 /**

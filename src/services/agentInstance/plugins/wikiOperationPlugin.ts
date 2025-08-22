@@ -3,7 +3,50 @@
  * Handles wiki operation tool list injection, tool calling detection and response processing
  * Supports creating, updating, and deleting tiddlers in wiki workspaces
  */
+import { identity } from 'lodash';
 import { z } from 'zod/v4';
+
+const t = identity;
+
+/**
+ * Wiki Operation Parameter Schema
+ * Configuration parameters for the wiki operation plugin
+ */
+export const WikiOperationParameterSchema = z.object({
+  toolListPosition: z.object({
+    targetId: z.string().meta({
+      title: t('Schema.WikiOperation.ToolListPosition.TargetIdTitle'),
+      description: t('Schema.WikiOperation.ToolListPosition.TargetId'),
+    }),
+    position: z.enum(['before', 'after']).meta({
+      title: t('Schema.WikiOperation.ToolListPosition.PositionTitle'),
+      description: t('Schema.WikiOperation.ToolListPosition.Position'),
+    }),
+  }).optional().meta({
+    title: t('Schema.WikiOperation.ToolListPositionTitle'),
+    description: t('Schema.WikiOperation.ToolListPosition'),
+  }),
+  toolResultDuration: z.number().optional().default(1).meta({
+    title: t('Schema.WikiOperation.ToolResultDurationTitle'),
+    description: t('Schema.WikiOperation.ToolResultDuration'),
+  }),
+}).meta({
+  title: t('Schema.WikiOperation.Title'),
+  description: t('Schema.WikiOperation.Description'),
+});
+
+/**
+ * Type definition for wiki operation parameters
+ */
+export type WikiOperationParameter = z.infer<typeof WikiOperationParameterSchema>;
+
+/**
+ * Get the wiki operation parameter schema
+ * @returns The schema for wiki operation parameters
+ */
+export function getWikiOperationParameterSchema() {
+  return WikiOperationParameterSchema;
+}
 
 import { WikiChannel } from '@/constants/channels';
 import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
@@ -62,7 +105,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
         // Get available wikis - now handled by workspacesListPlugin
         // The workspaces list will be injected separately by workspacesListPlugin
 
-  const wikiOperationToolContent = `
+        const wikiOperationToolContent = `
 ## wiki-operation
 **描述**: 在Wiki工作空间中执行操作（添加、删除或设置Tiddler文本）
 **参数**:

@@ -1,7 +1,7 @@
+import { createDynamicPromptConcatPluginSchema } from '@services/agentInstance/plugins/schemaRegistry';
 import { identity } from 'lodash';
 import { z } from 'zod/v4';
 import { ModelParametersSchema, ProviderModelSchema } from './modelParameters';
-import { PromptConcatPluginSchema } from './plugin';
 import { PromptSchema } from './prompts';
 import { ResponseSchema } from './response';
 import { HANDLER_CONFIG_UI_SCHEMA } from './uiSchema';
@@ -39,27 +39,33 @@ export const AIConfigSchema = BaseAPIConfigSchema
 /**
  * Handler configuration schema
  * Contains the handler-related configuration fields for prompts, responses, and plugins
+ * This is dynamically generated to include all registered plugins
  */
-export const HandlerConfigSchema = z.object({
-  prompts: z.array(PromptSchema).meta({
-    description: t('Schema.AgentConfig.PromptConfig.Prompts'),
-    title: t('PromptConfig.Tabs.Prompts'),
-  }),
-  response: z.array(ResponseSchema).meta({
-    description: t('Schema.AgentConfig.PromptConfig.Response'),
-    title: t('PromptConfig.Tabs.Response'),
-  }),
-  plugins: z.array(PromptConcatPluginSchema).meta({
-    description: t('Schema.AgentConfig.PromptConfig.Plugins'),
-    title: t('PromptConfig.Tabs.Plugins'),
-  }),
-}).meta({
-  title: t('Schema.AgentConfig.PromptConfig.Title'),
-  description: t('Schema.AgentConfig.PromptConfig.Description'),
-  uiSchema: HANDLER_CONFIG_UI_SCHEMA,
-});
+export function getHandlerConfigSchema() {
+  const dynamicPluginSchema = createDynamicPromptConcatPluginSchema();
+
+  return z.object({
+    prompts: z.array(PromptSchema).meta({
+      description: t('Schema.AgentConfig.PromptConfig.Prompts'),
+      title: t('PromptConfig.Tabs.Prompts'),
+    }),
+    response: z.array(ResponseSchema).meta({
+      description: t('Schema.AgentConfig.PromptConfig.Response'),
+      title: t('PromptConfig.Tabs.Response'),
+    }),
+    plugins: z.array(dynamicPluginSchema).meta({
+      description: t('Schema.AgentConfig.PromptConfig.Plugins'),
+      title: t('PromptConfig.Tabs.Plugins'),
+    }),
+  }).meta({
+    title: t('Schema.AgentConfig.PromptConfig.Title'),
+    description: t('Schema.AgentConfig.PromptConfig.Description'),
+    uiSchema: HANDLER_CONFIG_UI_SCHEMA,
+  });
+}
+
 /**
- * Agent configuration schema
+ * Agent configuration schema (dynamic)
  * @example
  * ```json
  * {
@@ -77,30 +83,37 @@ export const HandlerConfigSchema = z.object({
  * }
  * ```
  */
-export const AgentConfigSchema = BaseAPIConfigSchema.extend({
-  id: z.string().meta({
-    title: t('Schema.AgentConfig.IdTitle'),
-    description: t('Schema.AgentConfig.Id'),
-  }),
-  handlerConfig: HandlerConfigSchema,
-}).meta({
-  title: t('Schema.AgentConfig.Title'),
-  description: t('Schema.AgentConfig.Description'),
-});
+export function getAgentConfigSchema() {
+  const dynamicHandlerConfigSchema = getHandlerConfigSchema();
+
+  return BaseAPIConfigSchema.extend({
+    id: z.string().meta({
+      title: t('Schema.AgentConfig.IdTitle'),
+      description: t('Schema.AgentConfig.Id'),
+    }),
+    handlerConfig: dynamicHandlerConfigSchema,
+  }).meta({
+    title: t('Schema.AgentConfig.Title'),
+    description: t('Schema.AgentConfig.Description'),
+  });
+}
 
 /**
- * Default agents list schema
+ * Default agents list schema (dynamic)
  * Contains an array of agent configurations
  */
-export const DefaultAgentsSchema = z.array(AgentConfigSchema).meta({
-  title: t('Schema.DefaultAgents.Title'),
-  description: t('Schema.DefaultAgents.Description'),
-});
+export function getDefaultAgentsSchema() {
+  const dynamicAgentConfigSchema = getAgentConfigSchema();
+  return z.array(dynamicAgentConfigSchema).meta({
+    title: t('Schema.DefaultAgents.Title'),
+    description: t('Schema.DefaultAgents.Description'),
+  });
+}
 
-export type DefaultAgents = z.infer<typeof DefaultAgentsSchema>;
-export type AgentPromptDescription = z.infer<typeof AgentConfigSchema>;
+export type DefaultAgents = z.infer<ReturnType<typeof getDefaultAgentsSchema>>;
+export type AgentPromptDescription = z.infer<ReturnType<typeof getAgentConfigSchema>>;
 export type AiAPIConfig = z.infer<typeof AIConfigSchema>;
-export type HandlerConfig = z.infer<typeof HandlerConfigSchema>;
+export type HandlerConfig = z.infer<ReturnType<typeof getHandlerConfigSchema>>;
 
 // Re-export all schemas and types
 export * from './modelParameters';

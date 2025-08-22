@@ -2,6 +2,42 @@
  * Workspaces List plugin
  * Handles injection of available wiki workspaces list into prompts
  */
+import { identity } from 'lodash';
+import { z } from 'zod/v4';
+
+const t = identity;
+
+/**
+ * Workspaces List Parameter Schema
+ * Configuration parameters for the workspaces list plugin
+ */
+export const WorkspacesListParameterSchema = z.object({
+  targetId: z.string().meta({
+    title: t('Schema.WorkspacesList.TargetIdTitle'),
+    description: t('Schema.WorkspacesList.TargetId'),
+  }),
+  position: z.enum(['before', 'after']).meta({
+    title: t('Schema.WorkspacesList.PositionTitle'),
+    description: t('Schema.WorkspacesList.Position'),
+  }),
+}).meta({
+  title: t('Schema.WorkspacesList.Title'),
+  description: t('Schema.WorkspacesList.Description'),
+});
+
+/**
+ * Type definition for workspaces list parameters
+ */
+export type WorkspacesListParameter = z.infer<typeof WorkspacesListParameterSchema>;
+
+/**
+ * Get the workspaces list parameter schema
+ * @returns The schema for workspaces list parameters
+ */
+export function getWorkspacesListParameterSchema() {
+  return WorkspacesListParameterSchema;
+}
+
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -29,7 +65,7 @@ export const workspacesListPlugin: PromptConcatPlugin = (hooks) => {
 
     try {
       // Handle workspaces list injection if targetId is configured
-      if (workspacesListParameter.targetId) {
+      if (workspacesListParameter?.targetId) {
         const target = findPromptById(prompts, workspacesListParameter.targetId);
         if (!target) {
           logger.warn('Workspaces list target prompt not found', {

@@ -11,7 +11,7 @@ import { AgentHandler, AgentHandlerContext } from '@services/agentInstance/build
 import { createHandlerHooks, createHooksWithPlugins, initializePluginSystem } from '@services/agentInstance/plugins';
 import { promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { promptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
+import { getPromptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
 import { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
@@ -72,7 +72,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   public registerBuiltinHandlers(): void {
     // Plugins are already registered in initialize(), so we only register handlers here
     // Register basic prompt concatenation handler with its schema
-    this.registerHandler('basicPromptConcatHandler', basicPromptConcatHandler, promptConcatHandlerConfigJsonSchema);
+    this.registerHandler('basicPromptConcatHandler', basicPromptConcatHandler, getPromptConcatHandlerConfigJsonSchema());
   }
 
   /**

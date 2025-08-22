@@ -1,222 +1,26 @@
-import { identity } from 'lodash';
-import { z } from 'zod/v4';
+// Import parameter types from plugin files
+import type { ModelContextProtocolParameter } from '@services/agentInstance/plugins/modelContextProtocolPlugin';
+import type { DynamicPositionParameter, FullReplacementParameter } from '@services/agentInstance/plugins/promptPlugins';
+import type { WikiOperationParameter } from '@services/agentInstance/plugins/wikiOperationPlugin';
+import type { WikiSearchParameter } from '@services/agentInstance/plugins/wikiSearchPlugin';
+import type { WorkspacesListParameter } from '@services/agentInstance/plugins/workspacesListPlugin';
 
-const t = identity;
+/**
+ * Type definition for prompt concat plugin
+ * This includes all possible parameter fields for type safety
+ */
+export type IPromptConcatPlugin = {
+  id: string;
+  caption?: string;
+  content?: string;
+  forbidOverrides?: boolean;
+  pluginId: string;
 
-export const FullReplacementParameterSchema = z.object({
-  targetId: z.string().meta({
-    title: t('Schema.FullReplacement.TargetIdTitle'),
-    description: t('Schema.FullReplacement.TargetId'),
-  }),
-  sourceType: z.enum(['historyOfSession', 'llmResponse']).meta({
-    title: t('Schema.FullReplacement.SourceTypeTitle'),
-    description: t('Schema.FullReplacement.SourceType'),
-  }),
-}).meta({
-  title: t('Schema.FullReplacement.Title'),
-  description: t('Schema.FullReplacement.Description'),
-});
-
-export const DynamicPositionParameterSchema = z.object({
-  targetId: z.string().meta({
-    title: t('Schema.Position.TargetIdTitle'),
-    description: t('Schema.Position.TargetId'),
-  }),
-  position: z.enum(['before', 'after', 'relative']).meta({
-    title: t('Schema.Position.TypeTitle'),
-    description: t('Schema.Position.Type'),
-  }),
-}).meta({
-  title: t('Schema.Position.Title'),
-  description: t('Schema.Position.Description'),
-});
-
-export const WikiSearchParameterSchema = z.object({
-  position: z.enum(['relative', 'absolute', 'before', 'after']).meta({
-    title: t('Schema.Position.TypeTitle'),
-    description: t('Schema.Position.Type'),
-  }),
-  targetId: z.string().meta({
-    title: t('Schema.Position.TargetIdTitle'),
-    description: t('Schema.Position.TargetId'),
-  }),
-  bottom: z.number().optional().meta({
-    title: t('Schema.Position.BottomTitle'),
-    description: t('Schema.Position.Bottom'),
-  }),
-  sourceType: z.enum(['wiki']).meta({
-    title: t('Schema.WikiSearch.SourceTypeTitle'),
-    description: t('Schema.WikiSearch.SourceType'),
-  }),
-  toolListPosition: z.object({
-    targetId: z.string().meta({
-      title: t('Schema.WikiSearch.ToolListPosition.TargetIdTitle'),
-      description: t('Schema.WikiSearch.ToolListPosition.TargetId'),
-    }),
-    position: z.enum(['before', 'after']).meta({
-      title: t('Schema.WikiSearch.ToolListPosition.PositionTitle'),
-      description: t('Schema.WikiSearch.ToolListPosition.Position'),
-    }),
-  }).optional().meta({
-    title: t('Schema.WikiSearch.ToolListPositionTitle'),
-    description: t('Schema.WikiSearch.ToolListPosition'),
-  }),
-  toolResultDuration: z.number().optional().default(1).meta({
-    title: t('Schema.WikiSearch.ToolResultDurationTitle'),
-    description: t('Schema.WikiSearch.ToolResultDuration'),
-  }),
-}).meta({
-  title: t('Schema.WikiSearch.Title'),
-  description: t('Schema.WikiSearch.Description'),
-});
-
-export const WikiOperationParameterSchema = z.object({
-  toolListPosition: z.object({
-    targetId: z.string().meta({
-      title: t('Schema.WikiOperation.ToolListPosition.TargetIdTitle'),
-      description: t('Schema.WikiOperation.ToolListPosition.TargetId'),
-    }),
-    position: z.enum(['before', 'after']).meta({
-      title: t('Schema.WikiOperation.ToolListPosition.PositionTitle'),
-      description: t('Schema.WikiOperation.ToolListPosition.Position'),
-    }),
-  }).optional().meta({
-    title: t('Schema.WikiOperation.ToolListPositionTitle'),
-    description: t('Schema.WikiOperation.ToolListPosition'),
-  }),
-  toolResultDuration: z.number().optional().default(1).meta({
-    title: t('Schema.WikiOperation.ToolResultDurationTitle'),
-    description: t('Schema.WikiOperation.ToolResultDuration'),
-  }),
-}).meta({
-  title: t('Schema.WikiOperation.Title'),
-  description: t('Schema.WikiOperation.Description'),
-});
-
-export const WorkspacesListParameterSchema = z.object({
-  targetId: z.string().meta({
-    title: t('Schema.WorkspacesList.TargetIdTitle'),
-    description: t('Schema.WorkspacesList.TargetId'),
-  }),
-  position: z.enum(['before', 'after']).meta({
-    title: t('Schema.WorkspacesList.PositionTitle'),
-    description: t('Schema.WorkspacesList.Position'),
-  }),
-}).meta({
-  title: t('Schema.WorkspacesList.Title'),
-  description: t('Schema.WorkspacesList.Description'),
-});
-
-export const ModelContextProtocolParameterSchema = z.object({
-  id: z.string().meta({
-    title: t('Schema.MCP.IdTitle'),
-    description: t('Schema.MCP.Id'),
-  }),
-  timeoutSecond: z.number().optional().meta({
-    title: t('Schema.MCP.TimeoutSecondTitle'),
-    description: t('Schema.MCP.TimeoutSecond'),
-  }),
-  timeoutMessage: z.string().optional().meta({
-    title: t('Schema.MCP.TimeoutMessageTitle'),
-    description: t('Schema.MCP.TimeoutMessage'),
-  }),
-  position: z.enum(['before', 'after']).meta({
-    title: t('Schema.Position.TypeTitle'),
-    description: t('Schema.Position.Type'),
-  }),
-  targetId: z.string().meta({
-    title: t('Schema.Position.TargetIdTitle'),
-    description: t('Schema.Position.TargetId'),
-  }),
-}).meta({
-  title: t('Schema.MCP.Title'),
-  description: t('Schema.MCP.Description'),
-});
-
-export const ToolCallingParameterSchema = z.object({
-  targetId: z.string().meta({
-    title: t('Schema.ToolCalling.TargetIdTitle'),
-    description: t('Schema.ToolCalling.TargetId'),
-  }),
-  match: z.string().meta({
-    title: t('Schema.ToolCalling.MatchTitle'),
-    description: t('Schema.ToolCalling.Match'),
-  }),
-}).meta({
-  title: t('Schema.ToolCalling.Title'),
-  description: t('Schema.ToolCalling.Description'),
-});
-
-export const PromptConcatPluginSchema = z.object({
-  id: z.string().meta({
-    title: t('Schema.Plugin.IdTitle'),
-    description: t('Schema.Plugin.Id'),
-  }),
-  caption: z.string().optional().meta({
-    title: t('Schema.Plugin.CaptionTitle'),
-    description: t('Schema.Plugin.Caption'),
-  }),
-  content: z.string().optional().meta({
-    title: t('Schema.Plugin.ContentTitle'),
-    description: t('Schema.Plugin.Content'),
-  }),
-  forbidOverrides: z.boolean().optional().default(false).meta({
-    title: t('Schema.Plugin.ForbidOverridesTitle'),
-    description: t('Schema.Plugin.ForbidOverrides'),
-  }),
-  pluginId: z.enum([
-    'fullReplacement',
-    'dynamicPosition',
-    'retrievalAugmentedGeneration',
-    'wikiSearch',
-    'wikiOperation',
-    'workspacesList',
-    'modelContextProtocol',
-    'toolCalling',
-  ]).meta({
-    title: t('Schema.Plugin.PluginIdTitle'),
-    description: t('Schema.Plugin.PluginId'),
-    enumOptions: [
-      { value: 'fullReplacement', label: t('Schema.Plugin.FullReplacementParamTitle') },
-      { value: 'dynamicPosition', label: t('Schema.Plugin.DynamicPositionParamTitle') },
-      { value: 'retrievalAugmentedGeneration', label: t('Schema.Plugin.RAGParamTitle') },
-      { value: 'wikiSearch', label: t('Schema.Plugin.WikiSearchParamTitle') },
-      { value: 'wikiOperation', label: t('Schema.Plugin.WikiOperationParamTitle') },
-      { value: 'workspacesList', label: t('Schema.Plugin.WorkspacesListParamTitle') },
-      { value: 'modelContextProtocol', label: t('Schema.Plugin.MCPParamTitle') },
-      { value: 'toolCalling', label: t('Schema.Plugin.ToolCallingParamTitle') },
-    ],
-  }),
-  // 参数配置
-  fullReplacementParam: FullReplacementParameterSchema.optional().meta({
-    title: t('Schema.Plugin.FullReplacementParamTitle'),
-    description: t('Schema.Plugin.FullReplacementParam'),
-  }),
-  dynamicPositionParam: DynamicPositionParameterSchema.optional().meta({
-    title: t('Schema.Plugin.DynamicPositionParamTitle'),
-    description: t('Schema.Plugin.DynamicPositionParam'),
-  }),
-  wikiSearchParam: WikiSearchParameterSchema.optional().meta({
-    title: t('Schema.Plugin.WikiSearchParamTitle'),
-    description: t('Schema.Plugin.WikiSearchParam'),
-  }),
-  wikiOperationParam: WikiOperationParameterSchema.optional().meta({
-    title: t('Schema.Plugin.WikiOperationParamTitle'),
-    description: t('Schema.Plugin.WikiOperationParam'),
-  }),
-  workspacesListParam: WorkspacesListParameterSchema.optional().meta({
-    title: t('Schema.Plugin.WorkspacesListParamTitle'),
-    description: t('Schema.Plugin.WorkspacesListParam'),
-  }),
-  modelContextProtocolParam: ModelContextProtocolParameterSchema.optional().meta({
-    title: t('Schema.Plugin.MCPParamTitle'),
-    description: t('Schema.Plugin.MCPParam'),
-  }),
-  toolCallingParam: ToolCallingParameterSchema.optional().meta({
-    title: t('Schema.Plugin.ToolCallingParamTitle'),
-    description: t('Schema.Plugin.ToolCallingParam'),
-  }),
-});
-
-// Allow pluginId to be a string so less error on test.
-export type IPromptConcatPlugin = Omit<z.infer<typeof PromptConcatPluginSchema>, 'pluginId'> & { pluginId: string };
+  // Plugin-specific parameters
+  fullReplacementParam?: FullReplacementParameter;
+  dynamicPositionParam?: DynamicPositionParameter;
+  wikiOperationParam?: WikiOperationParameter;
+  wikiSearchParam?: WikiSearchParameter;
+  workspacesListParam?: WorkspacesListParameter;
+  modelContextProtocolParam?: ModelContextProtocolParameter;
+};

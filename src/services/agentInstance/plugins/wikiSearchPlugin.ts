@@ -2,7 +2,66 @@
  * Wiki Search plugin
  * Handles wiki search tool list injection, tool calling detection and response processing
  */
+import { identity } from 'lodash';
 import { z } from 'zod/v4';
+
+const t = identity;
+
+/**
+ * Wiki Search Parameter Schema
+ * Configuration parameters for the wiki search plugin
+ */
+export const WikiSearchParameterSchema = z.object({
+  position: z.enum(['relative', 'absolute', 'before', 'after']).meta({
+    title: t('Schema.Position.TypeTitle'),
+    description: t('Schema.Position.Type'),
+  }),
+  targetId: z.string().meta({
+    title: t('Schema.Position.TargetIdTitle'),
+    description: t('Schema.Position.TargetId'),
+  }),
+  bottom: z.number().optional().meta({
+    title: t('Schema.Position.BottomTitle'),
+    description: t('Schema.Position.Bottom'),
+  }),
+  sourceType: z.enum(['wiki']).meta({
+    title: t('Schema.WikiSearch.SourceTypeTitle'),
+    description: t('Schema.WikiSearch.SourceType'),
+  }),
+  toolListPosition: z.object({
+    targetId: z.string().meta({
+      title: t('Schema.WikiSearch.ToolListPosition.TargetIdTitle'),
+      description: t('Schema.WikiSearch.ToolListPosition.TargetId'),
+    }),
+    position: z.enum(['before', 'after']).meta({
+      title: t('Schema.WikiSearch.ToolListPosition.PositionTitle'),
+      description: t('Schema.WikiSearch.ToolListPosition.Position'),
+    }),
+  }).optional().meta({
+    title: t('Schema.WikiSearch.ToolListPositionTitle'),
+    description: t('Schema.WikiSearch.ToolListPosition'),
+  }),
+  toolResultDuration: z.number().optional().default(1).meta({
+    title: t('Schema.WikiSearch.ToolResultDurationTitle'),
+    description: t('Schema.WikiSearch.ToolResultDuration'),
+  }),
+}).meta({
+  title: t('Schema.WikiSearch.Title'),
+  description: t('Schema.WikiSearch.Description'),
+});
+
+/**
+ * Type definition for wiki search parameters
+ */
+export type WikiSearchParameter = z.infer<typeof WikiSearchParameterSchema>;
+
+/**
+ * Get the wiki search parameter schema
+ * @returns The schema for wiki search parameters
+ */
+export function getWikiSearchParameterSchema() {
+  return WikiSearchParameterSchema;
+}
 
 import { WikiChannel } from '@/constants/channels';
 import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';

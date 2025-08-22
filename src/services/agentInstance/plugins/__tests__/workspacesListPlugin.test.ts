@@ -152,8 +152,8 @@ describe('workspacesListPlugin', () => {
 
     it('should handle empty workspaces list', async () => {
       // Override the workspace service implementation returned by the global container mock
-  const workspaceService = container.get<Partial<IWorkspaceService>>(serviceIdentifier.Workspace);
-  workspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([]) as unknown as IWorkspaceService['getWorkspacesAsList'];
+      const workspaceService = container.get<Partial<IWorkspaceService>>(serviceIdentifier.Workspace);
+      workspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([]) as unknown as IWorkspaceService['getWorkspacesAsList'];
 
       const hooks = createHandlerHooks();
       workspacesListPlugin(hooks);
