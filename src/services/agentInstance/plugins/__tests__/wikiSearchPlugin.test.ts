@@ -93,8 +93,6 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
 
       // Verify that tool information was injected into the prompts
       const promptTexts = JSON.stringify(prompts);
-      expect(promptTexts).toContain('Test Wiki 1');
-      expect(promptTexts).toContain('Test Wiki 2');
       expect(promptTexts).toContain('wiki-search');
       expect(promptTexts).toContain('workspaceName');
       expect(promptTexts).toContain('filter');

@@ -70,6 +70,43 @@ export const WikiSearchParameterSchema = z.object({
   description: t('Schema.WikiSearch.Description'),
 });
 
+export const WikiOperationParameterSchema = z.object({
+  toolListPosition: z.object({
+    targetId: z.string().meta({
+      title: t('Schema.WikiOperation.ToolListPosition.TargetIdTitle'),
+      description: t('Schema.WikiOperation.ToolListPosition.TargetId'),
+    }),
+    position: z.enum(['before', 'after']).meta({
+      title: t('Schema.WikiOperation.ToolListPosition.PositionTitle'),
+      description: t('Schema.WikiOperation.ToolListPosition.Position'),
+    }),
+  }).optional().meta({
+    title: t('Schema.WikiOperation.ToolListPositionTitle'),
+    description: t('Schema.WikiOperation.ToolListPosition'),
+  }),
+  toolResultDuration: z.number().optional().default(1).meta({
+    title: t('Schema.WikiOperation.ToolResultDurationTitle'),
+    description: t('Schema.WikiOperation.ToolResultDuration'),
+  }),
+}).meta({
+  title: t('Schema.WikiOperation.Title'),
+  description: t('Schema.WikiOperation.Description'),
+});
+
+export const WorkspacesListParameterSchema = z.object({
+  targetId: z.string().meta({
+    title: t('Schema.WorkspacesList.TargetIdTitle'),
+    description: t('Schema.WorkspacesList.TargetId'),
+  }),
+  position: z.enum(['before', 'after']).meta({
+    title: t('Schema.WorkspacesList.PositionTitle'),
+    description: t('Schema.WorkspacesList.Position'),
+  }),
+}).meta({
+  title: t('Schema.WorkspacesList.Title'),
+  description: t('Schema.WorkspacesList.Description'),
+});
+
 export const ModelContextProtocolParameterSchema = z.object({
   id: z.string().meta({
     title: t('Schema.MCP.IdTitle'),
@@ -132,6 +169,8 @@ export const PromptConcatPluginSchema = z.object({
     'dynamicPosition',
     'retrievalAugmentedGeneration',
     'wikiSearch',
+    'wikiOperation',
+    'workspacesList',
     'modelContextProtocol',
     'toolCalling',
   ]).meta({
@@ -141,6 +180,9 @@ export const PromptConcatPluginSchema = z.object({
       { value: 'fullReplacement', label: t('Schema.Plugin.FullReplacementParamTitle') },
       { value: 'dynamicPosition', label: t('Schema.Plugin.DynamicPositionParamTitle') },
       { value: 'retrievalAugmentedGeneration', label: t('Schema.Plugin.RAGParamTitle') },
+      { value: 'wikiSearch', label: t('Schema.Plugin.WikiSearchParamTitle') },
+      { value: 'wikiOperation', label: t('Schema.Plugin.WikiOperationParamTitle') },
+      { value: 'workspacesList', label: t('Schema.Plugin.WorkspacesListParamTitle') },
       { value: 'modelContextProtocol', label: t('Schema.Plugin.MCPParamTitle') },
       { value: 'toolCalling', label: t('Schema.Plugin.ToolCallingParamTitle') },
     ],
@@ -157,6 +199,14 @@ export const PromptConcatPluginSchema = z.object({
   wikiSearchParam: WikiSearchParameterSchema.optional().meta({
     title: t('Schema.Plugin.WikiSearchParamTitle'),
     description: t('Schema.Plugin.WikiSearchParam'),
+  }),
+  wikiOperationParam: WikiOperationParameterSchema.optional().meta({
+    title: t('Schema.Plugin.WikiOperationParamTitle'),
+    description: t('Schema.Plugin.WikiOperationParam'),
+  }),
+  workspacesListParam: WorkspacesListParameterSchema.optional().meta({
+    title: t('Schema.Plugin.WorkspacesListParamTitle'),
+    description: t('Schema.Plugin.WorkspacesListParam'),
   }),
   modelContextProtocolParam: ModelContextProtocolParameterSchema.optional().meta({
     title: t('Schema.Plugin.MCPParamTitle'),

@@ -11,7 +11,6 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { IWorkspaceService } from '@services/workspaces/interface';
-import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 
 import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
@@ -177,41 +176,32 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
           return;
         }
 
-        // Get available wikis
-        const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-        const workspaces = await workspaceService.getWorkspacesAsList();
-        const wikiWorkspaces = workspaces.filter(isWikiWorkspace);
+        // Get available wikis - now handled by workspacesListPlugin
+        // The workspaces list will be injected separately by workspacesListPlugin
 
-        if (wikiWorkspaces.length > 0) {
-          const workspaceList = wikiWorkspaces
-            .map(workspace => `- ${workspace.name} (ID: ${workspace.id})`)
-            .join('\n');
+        const toolPromptContent =
+          `Available Tools:\n- Tool ID: wiki-search\n- Tool Name: Wiki Search\n- Description: Search content in wiki workspaces\n- Parameters: {\n  "workspaceName": "string (required) - The name or ID of the wiki workspace to search in",\n  "filter": "string (required) - TiddlyWiki filter expression for searching, like [title[Index]]""\n}`;
 
-          const toolPromptContent =
-            `Available Wiki Workspaces:\n${workspaceList}\n\nAvailable Tools:\n- Tool ID: wiki-search\n- Tool Name: Wiki Search\n- Description: Search content in wiki workspaces\n- Parameters: {\n  "workspaceName": "string (required) - The name or ID of the wiki workspace to search in",\n  "filter": "string (required) - TiddlyWiki filter expression for searching, like [title[Index]]""\n}`;
+        const toolPrompt: IPrompt = {
+          id: `wiki-tool-list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          text: toolPromptContent,
+          tags: ['toolList', 'wikiSearch'],
+          caption: 'Wiki search tool',
+          enabled: true,
+        };
 
-          const toolPrompt: IPrompt = {
-            id: `wiki-tool-list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            text: toolPromptContent,
-            tags: ['toolList', 'wikiSearch'],
-            caption: 'Wiki workspaces and search tool',
-            enabled: true,
-          };
-
-          // Insert at specified position
-          if (toolListPosition.position === 'before') {
-            toolListTarget.parent.splice(toolListTarget.index, 0, toolPrompt);
-          } else {
-            toolListTarget.parent.splice(toolListTarget.index + 1, 0, toolPrompt);
-          }
-
-          logger.debug('Wiki tool list injected successfully', {
-            targetId: toolListPosition.targetId,
-            position: toolListPosition.position,
-            wikiCount: wikiWorkspaces.length,
-            pluginId: pluginConfig.id,
-          });
+        // Insert at specified position
+        if (toolListPosition.position === 'before') {
+          toolListTarget.parent.splice(toolListTarget.index, 0, toolPrompt);
+        } else {
+          toolListTarget.parent.splice(toolListTarget.index + 1, 0, toolPrompt);
         }
+
+        logger.debug('Wiki tool list injected successfully', {
+          targetId: toolListPosition.targetId,
+          position: toolListPosition.position,
+          pluginId: pluginConfig.id,
+        });
       }
 
       callback();

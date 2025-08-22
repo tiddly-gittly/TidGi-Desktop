@@ -28,7 +28,7 @@ let testStreamResponses: Array<{ status: string; content: string; requestId: str
 // Import plugin components for direct testing
 import { IPromptConcatPlugin } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { IDatabaseService } from '@services/database/interface';
-import { builtInPlugins, createHandlerHooks, PromptConcatHookContext } from '../../plugins/index';
+import { createHandlerHooks, createHooksWithPlugins, initializePluginSystem, PromptConcatHookContext } from '../../plugins/index';
 import { wikiSearchPlugin } from '../../plugins/wikiSearchPlugin';
 import { basicPromptConcatHandler } from '../basicPromptConcatHandler';
 import type { AgentHandlerContext } from '../type';
@@ -41,8 +41,8 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
     const { container } = await import('@services/container');
     const wiki = container.get<IWikiService>(serviceIdentifier.Wiki);
 
-    // Ensure built-in plugin registry includes wikiSearch for handler registration
-    builtInPlugins.set('wikiSearch', wikiSearchPlugin);
+    // Ensure built-in plugin registry includes all built-in plugins
+    await initializePluginSystem();
 
     // Prepare a mock DataSource/repository so AgentInstanceService.initialize() can run
     const mockRepo = {
@@ -100,8 +100,14 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       // Phase 1: Tool List Injection
       const promptConcatHookContext: PromptConcatHookContext = {
         handlerContext: {
-          agent: { id: 'test', messages: [], agentDefId: 'test', status: { state: 'working' as const, modified: new Date() }, created: new Date() },
-          agentDef: { id: 'test', name: 'test' },
+          agent: {
+            id: 'test-agent',
+            messages: [],
+            agentDefId: exampleAgent.id,
+            status: { state: 'working' as const, modified: new Date() },
+            created: new Date(),
+          },
+          agentDef: { id: exampleAgent.id, name: exampleAgent.name },
           isCancelled: () => false,
         },
         pluginConfig: wikiPlugin as IPromptConcatPlugin,
@@ -118,14 +124,20 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
         ],
       };
 
-      const promptHooks = createHandlerHooks();
-      wikiSearchPlugin(promptHooks);
+      // Create hooks and register plugins as defined in handlerConfig
+      const { hooks: promptHooks } = await createHooksWithPlugins(handlerConfig);
+      // First run workspacesList plugin to inject available workspaces (if present)
+      const workspacesPlugin = handlerConfig.plugins?.find(p => p.pluginId === 'workspacesList');
+      if (workspacesPlugin) {
+        const workspacesContext = { ...promptConcatHookContext, pluginConfig: workspacesPlugin } as unknown as PromptConcatHookContext;
+        await promptHooks.processPrompts.promise(workspacesContext);
+      }
+      // Then run wikiSearch plugin to inject the tool list
       await promptHooks.processPrompts.promise(promptConcatHookContext);
 
       // Check if tool was injected by looking for wiki tool in prompts
       const promptTexts = JSON.stringify(promptConcatHookContext.prompts);
       const toolListInjected = promptTexts.includes('Test Wiki 1') && promptTexts.includes('wiki-search');
-
       expect(toolListInjected).toBe(true);
       // verify workspace mock was called via container
       const { container } = await import('@services/container');
@@ -182,12 +194,8 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
         actions: {} as unknown as Record<string, unknown>,
       };
 
-      // Use real handler hooks
-      const responseHooks = createHandlerHooks();
-
-      // Register the plugin
-      wikiSearchPlugin(responseHooks);
-
+      // Use hooks registered with all plugins from handlerConfig
+      const { hooks: responseHooks } = await createHooksWithPlugins(handlerConfig);
       // Execute the response complete hook
       await responseHooks.responseComplete.promise(responseContext);
       // reuse containerForAssert from above assertions
