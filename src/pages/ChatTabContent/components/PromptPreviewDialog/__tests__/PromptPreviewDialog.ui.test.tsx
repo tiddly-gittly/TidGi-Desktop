@@ -2,7 +2,7 @@
  * Tests for PromptPreviewDialog component
  * Testing tool information rendering for wikiOperationPlugin, wikiSearchPlugin, workspacesListPlugin
  */
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
@@ -32,24 +32,22 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 describe('PromptPreviewDialog - Tool Information Rendering', () => {
   beforeEach(async () => {
     // Reset store to initial state before each test using real store
-    useAgentChatStore.setState({
-      agent: {
-        id: 'test-agent',
-        agentDefId: 'example-agent',
-        status: { state: 'working', modified: new Date() },
-        created: new Date(),
-      },
-      messages: new Map(),
-      previewDialogOpen: true,
-      previewDialogTab: 'tree',
-      previewLoading: false,
-      previewResult: null,
-      previewProgress: 0,
-      previewCurrentStep: '',
-      previewCurrentPlugin: null,
-      lastUpdated: null,
-      formFieldsToScrollTo: [],
-      expandedArrayItems: new Map(),
+    // Set agent to null to avoid automatic preview generation during tests
+    act(() => {
+      useAgentChatStore.setState({
+        agent: null,
+        messages: new Map(),
+        previewDialogOpen: true,
+        previewDialogTab: 'tree',
+        previewLoading: false,
+        previewResult: null,
+        previewProgress: 0,
+        previewCurrentStep: '',
+        previewCurrentPlugin: null,
+        lastUpdated: null,
+        formFieldsToScrollTo: [],
+        expandedArrayItems: new Map(),
+      });
     });
 
     // Clear all mock calls
@@ -72,9 +70,9 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     // Check dialog title is visible
     expect(screen.getByText(/Prompt.*Preview/)).toBeInTheDocument();
 
-    // Check that tabs are visible
-    expect(screen.getByText('Prompt.Tree')).toBeInTheDocument();
-    expect(screen.getByText('Prompt.Flat')).toBeInTheDocument();
+    // Check that tabs are visible (labels come from translation keys)
+    expect(screen.getByRole('tab', { name: /Tree/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Flat/ })).toBeInTheDocument();
   });
 
   it('should handle close dialog', async () => {
@@ -125,10 +123,13 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
 
   // IMPROVED: Example of testing with state changes using real store
   it('should handle loading states properly', async () => {
-    // Set initial loading state using real store
-    useAgentChatStore.setState({
-      previewLoading: true,
-      previewProgress: 0.5,
+    // Set initial loading state using real store (wrap in act)
+    act(() => {
+      useAgentChatStore.setState({
+        previewLoading: true,
+        previewProgress: 0.5,
+        previewCurrentStep: 'Starting...',
+      });
     });
 
     render(
@@ -141,17 +142,20 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
       </TestWrapper>,
     );
 
-    // Should show loading indicator
-    expect(screen.queryByTestId('preview-progress-bar')).toBeInTheDocument();
+    // Should show loading indicator via visible text
+    expect(screen.getByText('Starting...')).toBeInTheDocument();
+    expect(screen.getByText('⚡ Live preview - this is not the final version and is still loading')).toBeInTheDocument();
+    expect(screen.getByText(/50%/)).toBeInTheDocument();
 
     // Simulate loading completion using real store
-    useAgentChatStore.setState({
-      previewLoading: false,
-      previewProgress: 1,
+    act(() => {
+      useAgentChatStore.setState({
+        previewLoading: false,
+        previewProgress: 1,
+      });
     });
 
-    // Re-render to see changes - with real store this would happen automatically via subscription
-    // In this test we verify the state was updated correctly
+    // Verify the store updated
     const currentState = useAgentChatStore.getState();
     expect(currentState.previewLoading).toBe(false);
     expect(currentState.previewProgress).toBe(1);
