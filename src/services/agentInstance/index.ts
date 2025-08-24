@@ -58,7 +58,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   /**
    * Initialize database repositories
    */
-  public async initializeDatabase(): Promise<void> {
+  private async initializeDatabase(): Promise<void> {
     try {
       // Database is already initialized in the agent definition service
       this.dataSource = await this.databaseService.getDatabase('agent-default');

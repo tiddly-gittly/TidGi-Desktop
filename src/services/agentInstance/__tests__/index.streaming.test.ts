@@ -14,7 +14,7 @@ import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 
-// Import test data
+// Must use defaultAgents
 import defaultAgents from '../buildInAgentHandlers/defaultAgents.json';
 
 describe('AgentInstanceService Streaming Behavior', () => {

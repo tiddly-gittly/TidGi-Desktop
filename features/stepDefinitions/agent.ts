@@ -1,12 +1,31 @@
-import { After, Given, Then } from '@cucumber/cucumber';
+import { After, DataTable, Given, Then } from '@cucumber/cucumber';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import type { ApplicationWorld } from './application';
 
 // Agent-specific Given steps
-Given('I have started the mock OpenAI server', async function(this: ApplicationWorld) {
-  // Start mock OpenAI server with fixed port 15121 for consistency
-  this.mockOpenAIServer = new MockOpenAIServer(15121);
-  await this.mockOpenAIServer.start();
+Given('I have started the mock OpenAI server', function(this: ApplicationWorld, dataTable: DataTable | undefined, done: (error?: Error) => void) {
+  try {
+    const rules: Array<{ response: string; stream?: boolean }> = [];
+    if (dataTable && typeof dataTable.raw === 'function') {
+      const rows = dataTable.raw();
+      // Skip header row
+      for (let index = 1; index < rows.length; index++) {
+        const row = rows[index];
+        const response = String(row[0] ?? '').trim();
+        const stream = String(row[1] ?? '').trim().toLowerCase() === 'true';
+        if (response) rules.push({ response, stream });
+      }
+    }
+
+    this.mockOpenAIServer = new MockOpenAIServer(15121, rules);
+    this.mockOpenAIServer.start().then(() => {
+      done();
+    }).catch((error_: unknown) => {
+      done(error_ as Error);
+    });
+  } catch (error) {
+    done(error as Error);
+  }
 });
 
 // Agent-specific cleanup - only for agent scenarios

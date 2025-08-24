@@ -17,6 +17,8 @@ pnpm run test:prepare-e2e
 pnpm test:e2e
 # Or run a specific e2e test by using same `@xxx` as in the `.feature` file.
 pnpm test:e2e --tags="@smoke"
+# Or run a single e2e
+pnpm test:e2e --name "Wiki-search tool usage"
 
 # Run with coverage
 pnpm test:unit -- --coverage

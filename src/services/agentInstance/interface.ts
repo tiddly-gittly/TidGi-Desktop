@@ -107,6 +107,10 @@ export interface IAgentInstanceService {
    * Initialize the service on application startup
    */
   initialize(): Promise<void>;
+  /**
+   * For testing purposes, only initialize the built-in handlers without database
+   */
+  initializeHandlers(): Promise<void>;
 
   /**
    * Create a new agent instance from an agent definition

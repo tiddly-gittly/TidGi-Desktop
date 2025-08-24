@@ -4,217 +4,185 @@ import { AddressInfo } from 'net';
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string | null;
-  tool_calls?: ToolCall[];
-}
-
-interface ToolCall {
-  id: string;
-  type: 'function';
-  function: {
-    name: string;
-    arguments: string;
-  };
 }
 
 interface ChatRequest {
   messages: ChatMessage[];
   model?: string;
-  tools?: unknown[];
-  stream?: boolean; // Add support for streaming
+  stream?: boolean;
 }
 
-interface ChatResponse {
-  id: string;
-  object: string;
-  created: number;
-  model: string;
-  choices: Array<{
-    index: number;
-    message: {
-      role: string;
-      content: string | null;
-      tool_calls?: ToolCall[];
-    };
-    finish_reason: string;
-  }>;
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
+interface Rule {
+  response: string;
+  stream?: boolean;
 }
 
 export class MockOpenAIServer {
   private server: Server | null = null;
-  public port: number = 0;
-  public baseUrl: string = '';
+  public port = 0;
+  public baseUrl = '';
+  private rules: Rule[] = [];
+  private callCount = 0; // Track total API calls
 
-  constructor(private fixedPort?: number) {}
+  constructor(private fixedPort?: number, rules?: Rule[]) {
+    if (rules && Array.isArray(rules)) this.rules = rules;
+  }
 
   async start(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.server = createServer((request, response) => {
-        // Enable CORS
+      this.server = createServer((request: IncomingMessage, response: ServerResponse) => {
         response.setHeader('Access-Control-Allow-Origin', '*');
-        response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
         if (request.method === 'OPTIONS') {
-          response.writeHead(200);
-          response.end();
+          if (!response.writableEnded && !response.headersSent) {
+            response.writeHead(200);
+            response.end();
+          }
           return;
         }
 
-        // Add a health check endpoint
-        if (request.method === 'GET' && request.url === '/health') {
-          response.writeHead(200, { 'Content-Type': 'application/json' });
-          response.end(JSON.stringify({ status: 'ok', message: 'Mock OpenAI server is running' }));
-          return;
-        }
-
-        // Parse request URL safely
         try {
-          const url = new URL(request.url!, `http://localhost:${this.port}`);
+          const url = new URL(request.url || '', `http://127.0.0.1:${this.port}`);
+
+          if (request.method === 'GET' && url.pathname === '/health') {
+            if (!response.writableEnded && !response.headersSent) {
+              response.writeHead(200, { 'Content-Type': 'application/json' });
+              response.end(JSON.stringify({ status: 'ok' }));
+            }
+            return;
+          }
 
           if (request.method === 'POST' && url.pathname === '/v1/chat/completions') {
-            this.handleChatCompletions(request, response);
-          } else {
-            response.writeHead(404, { 'Content-Type': 'application/json' });
-            response.end(JSON.stringify({ error: 'Not found', path: request.url }));
+            void this.handleChatCompletions(request, response);
+            return;
           }
-        } catch (error) {
-          console.error('Error parsing URL:', error);
-          response.writeHead(400, { 'Content-Type': 'application/json' });
-          response.end(JSON.stringify({ error: 'Invalid URL' }));
+
+          if (request.method === 'POST' && url.pathname === '/reset') {
+            // Reset call count for testing
+            this.callCount = 0;
+            if (!response.writableEnded && !response.headersSent) {
+              response.writeHead(200, { 'Content-Type': 'application/json' });
+              response.end(JSON.stringify({ success: true, message: 'Call count reset' }));
+            }
+            return;
+          }
+
+          if (!response.writableEnded && !response.headersSent) {
+            response.writeHead(404, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify({ error: 'Not found' }));
+          }
+        } catch {
+          if (!response.writableEnded && !response.headersSent) {
+            response.writeHead(400, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify({ error: 'Bad request' }));
+          }
         }
       });
 
-      // 添加服务器事件监听
-      this.server.on('error', (error: Error) => {
-        console.error('Mock OpenAI server error:', error);
-        reject(new Error(`Server error: ${error.message}`));
+      this.server.on('error', (error) => {
+        reject(new Error(String(error)));
       });
 
       this.server.on('listening', () => {
-        const address = this.server!.address() as AddressInfo;
-        this.port = address.port;
-        this.baseUrl = `http://localhost:${this.port}`;
+        const addr = this.server!.address() as AddressInfo;
+        this.port = addr.port;
+        this.baseUrl = `http://127.0.0.1:${this.port}`;
         resolve();
       });
 
-      // 尝试监听端口 - 使用固定端口或随机端口
       try {
-        const portToUse = this.fixedPort || 0;
-        this.server.listen(portToUse, '127.0.0.1'); // 使用 127.0.0.1 而不是 localhost
+        this.server.listen(this.fixedPort || 0, '127.0.0.1');
       } catch (error) {
-        console.error('Failed to start server:', error);
-        reject(new Error(`Failed to start server: ${error instanceof Error ? error.message : String(error)}`));
+        reject(new Error(String(error)));
       }
     });
   }
 
   async stop(): Promise<void> {
-    if (this.server) {
-      return new Promise((resolve) => {
-        this.server!.close(() => {
-          this.server = null;
-          resolve();
-        });
+    if (!this.server) return;
+    return new Promise((resolve) => {
+      this.server!.close(() => {
+        this.server = null;
+        resolve();
       });
-    }
+    });
   }
 
-  private handleChatCompletions(request: IncomingMessage, response: ServerResponse): void {
+  private async handleChatCompletions(request: IncomingMessage, response: ServerResponse) {
     let body = '';
     request.on('data', (chunk: Buffer) => {
       body += chunk.toString();
     });
-
     request.on('end', () => {
       try {
+        // Parse request and handle each request based on provided rules
         const chatRequest = JSON.parse(body) as ChatRequest;
 
-        // Check if streaming is requested
-        if (chatRequest.stream === true) {
+        // Debug log: incoming request summary
+        try {
+          const summary = chatRequest.messages.map((m) => `${m.role}:${String(m.content)}`).join(' || ');
+          console.log('[mockOpenAI] Received chat request:', { model: chatRequest.model, stream: chatRequest.stream, summary });
+        } catch {
+          console.log('[mockOpenAI] Received chat request (unable to stringify messages)');
+        }
+
+        if (chatRequest.stream) {
           this.handleStreamingChatCompletions(chatRequest, response);
-        } else {
-          const chatResponse: ChatResponse = this.generateChatCompletionResponse(chatRequest);
+          return;
+        }
+
+        const resp = this.generateChatCompletionResponse(chatRequest);
+        if (!response.writableEnded && !response.headersSent) {
           response.setHeader('Content-Type', 'application/json');
           response.writeHead(200);
-          response.end(JSON.stringify(chatResponse));
+          response.end(JSON.stringify(resp));
         }
-      } catch (error) {
-        console.error('Error processing chat completion:', error);
-        response.writeHead(400, { 'Content-Type': 'application/json' });
-        response.end(JSON.stringify({ error: 'Invalid JSON' }));
+      } catch {
+        if (!response.writableEnded && !response.headersSent) {
+          response.writeHead(400, { 'Content-Type': 'application/json' });
+          response.end(JSON.stringify({ error: 'Invalid JSON' }));
+        }
       }
     });
   }
 
-  private generateChatCompletionResponse(chatRequest: ChatRequest): ChatResponse {
-    const lastMessage = chatRequest.messages[chatRequest.messages.length - 1];
-    const userMessage = lastMessage?.content || '';
-
-    // Use the requested model name, or fallback to a default
+  private generateChatCompletionResponse(chatRequest: ChatRequest) {
     const modelName = chatRequest.model || 'test-model';
+    
+    // Increment call count for each API request
+    this.callCount++;
+    
+    console.log('[mockOpenAI] generateChatCompletionResponse');
+    console.log('  - model:', modelName);
+    console.log('  - callCount:', this.callCount);
+    console.log('  - total messages:', chatRequest.messages.length);
+    console.log(
+      '  - message types:',
+      chatRequest.messages.map(m => `${m.role}:${String(m.content).includes('<functions_result>') ? 'FUNCTIONS_RESULT' : (String(m.content).substring(0, 30) + '...')}`),
+    );
 
-    // Check if this is a wiki search request
-    if (userMessage.includes('搜索 wiki 中的 index 条目并解释')) {
-      // Return tool_use format instead of tool_calls
-      const toolUseContent = `<tool_use name="wiki-search">{"workspaceName": "-VPTqPdNOEZHGO5vkwllY", "filter": "[title[Index]]"}</tool_use>`;
-      
+    // Use call count to determine which response to return (1-indexed)
+    const ruleIndex = this.callCount - 1;
+    const responseRule = this.rules[ruleIndex];
+    
+    if (!responseRule) {
+      console.log('[mockOpenAI] No more responses available for call', this.callCount);
       return {
-        id: 'chatcmpl-test-' + String(Date.now()),
+        id: 'chatcmpl-test-' + Date.now().toString(),
         object: 'chat.completion',
         created: Math.floor(Date.now() / 1000),
         model: modelName,
-        choices: [
-          {
-            index: 0,
-            message: {
-              role: 'assistant',
-              content: toolUseContent,
-            },
-            finish_reason: 'stop',
-          },
-        ],
-        usage: {
-          prompt_tokens: 50,
-          completion_tokens: 25,
-          total_tokens: 75,
-        },
+        choices: [],
+        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
       };
     }
 
-    // Check if this is a tool result response
-    if (chatRequest.messages.some((message: ChatMessage) => message.role === 'tool')) {
-      return {
-        id: 'chatcmpl-test-' + String(Date.now()),
-        object: 'chat.completion',
-        created: Math.floor(Date.now() / 1000),
-        model: modelName,
-        choices: [
-          {
-            index: 0,
-            message: {
-              role: 'assistant',
-              content:
-                '在 TiddlyWiki 中，`Index` 条目提供了编辑卡片的方法说明，点击右上角的编辑按钮可以开始对当前卡片进行编辑。此外，它还引导您访问中文教程页面 [[教程 (Chinese)|https://tw-cn.netlify.app/]] 和官方英文站点 [[Official Site (English)|https://tiddlywiki.com/]] 以获取更多信息。',
-            },
-            finish_reason: 'stop',
-          },
-        ],
-        usage: {
-          prompt_tokens: 200,
-          completion_tokens: 80,
-          total_tokens: 280,
-        },
-      };
-    }
+    console.log('[mockOpenAI] Using rule for call', this.callCount, ':', responseRule.response.substring(0, 100) + '...');
 
-    // Default response
     return {
-      id: 'chatcmpl-test-' + String(Date.now()),
+      id: 'chatcmpl-test-' + Date.now().toString(),
       object: 'chat.completion',
       created: Math.floor(Date.now() / 1000),
       model: modelName,
@@ -223,172 +191,137 @@ export class MockOpenAIServer {
           index: 0,
           message: {
             role: 'assistant',
-            content: '这是一个测试响应。',
+            content: responseRule.response,
           },
           finish_reason: 'stop',
         },
       ],
-      usage: {
-        prompt_tokens: 10,
-        completion_tokens: 5,
-        total_tokens: 15,
-      },
+      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
     };
   }
 
-  private handleStreamingChatCompletions(chatRequest: ChatRequest, response: ServerResponse): void {
-    // Set headers for Server-Sent Events
+  private handleStreamingChatCompletions(chatRequest: ChatRequest, response: ServerResponse) {
+    if (response.writableEnded) return;
+
+    const modelName = chatRequest.model || 'test-model';
+    
+    // Increment call count for streaming requests too
+    this.callCount++;
+    
+    // Use call count to determine which response to return (1-indexed)
+    const ruleIndex = this.callCount - 1;
+    const responseRule = this.rules[ruleIndex];
+
+    console.log('[mockOpenAI] handleStreamingChatCompletions - model=', modelName, 'callCount=', this.callCount, 'matched=', responseRule ? 'yes' : 'no');
+
+    // If matched: honor client's stream request. If client requests stream, always stream the matched.response.
+    if (responseRule && chatRequest.stream) {
+      response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      response.setHeader('Cache-Control', 'no-cache');
+      response.setHeader('Connection', 'keep-alive');
+      response.writeHead(200);
+
+      // Send first chunk with role
+      const roleChunk = {
+        id: 'chatcmpl-test-' + Date.now().toString(),
+        object: 'chat.completion.chunk',
+        created: Math.floor(Date.now() / 1000),
+        model: modelName,
+        choices: [
+          {
+            index: 0,
+            delta: { role: 'assistant' },
+            finish_reason: null,
+          },
+        ],
+      };
+
+      // Send content chunk
+      const contentChunk = {
+        id: 'chatcmpl-test-' + Date.now().toString(),
+        object: 'chat.completion.chunk',
+        created: Math.floor(Date.now() / 1000),
+        model: modelName,
+        choices: [
+          {
+            index: 0,
+            delta: { content: responseRule.response },
+            finish_reason: null,
+          },
+        ],
+      };
+
+      // Send final chunk
+      const finalChunk = {
+        id: 'chatcmpl-test-' + Date.now().toString(),
+        object: 'chat.completion.chunk',
+        created: Math.floor(Date.now() / 1000),
+        model: modelName,
+        choices: [
+          {
+            index: 0,
+            delta: {},
+            finish_reason: 'stop',
+          },
+        ],
+      };
+
+      const roleLine = `data: ${JSON.stringify(roleChunk)}\n\n`;
+      const contentLine = `data: ${JSON.stringify(contentChunk)}\n\n`;
+      const finalLine = `data: ${JSON.stringify(finalChunk)}\n\n`;
+      
+      console.log('[mockOpenAI] Sending streaming chunks:', {
+        responseContent: responseRule.response,
+        role: roleLine.substring(0, 100) + '...',
+        content: contentLine.substring(0, 200) + '...',
+        final: finalLine.substring(0, 100) + '...',
+      });
+      
+      response.write(roleLine);
+      response.write(contentLine);
+      response.write(finalLine);
+      response.write('data: [DONE]\n\n');
+      console.log('[mockOpenAI] stream finished for call=', this.callCount);
+      response.end();
+      return;
+    }
+
+    // If matched but client did not request stream, return a regular JSON chat completion
+    if (responseRule && !chatRequest.stream) {
+      console.log('[mockOpenAI] Using non-stream rule for call', this.callCount, ':', responseRule.response.substring(0, 100) + '...');
+      const resp = {
+        id: 'chatcmpl-test-' + Date.now().toString(),
+        object: 'chat.completion',
+        created: Math.floor(Date.now() / 1000),
+        model: modelName,
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: responseRule.response,
+            },
+            finish_reason: 'stop',
+          },
+        ],
+        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+      };
+      
+      if (!response.writableEnded) {
+        response.setHeader('Content-Type', 'application/json');
+        response.writeHead(200);
+        response.end(JSON.stringify(resp));
+      }
+      return;
+    }
+
+    // Default for unmatched stream requests: send only DONE so client can close stream without producing assistant content
     response.setHeader('Content-Type', 'text/plain; charset=utf-8');
     response.setHeader('Cache-Control', 'no-cache');
     response.setHeader('Connection', 'keep-alive');
     response.writeHead(200);
-
-    const lastMessage = chatRequest.messages[chatRequest.messages.length - 1];
-    const userMessage = lastMessage?.content || '';
-    const modelName = chatRequest.model || 'test-model';
-
-    // Check if this is a wiki search request
-    if (userMessage.includes('搜索 wiki 中的 index 条目并解释')) {
-      // Return tool_use format instead of tool_calls in streaming
-      const toolUseContent = `<tool_use name="wiki-search">{"workspaceName": "-VPTqPdNOEZHGO5vkwllY", "filter": "[title[Index]]"}</tool_use>`;
-
-      const streamChunk = {
-        id: 'chatcmpl-test-' + String(Date.now()),
-        object: 'chat.completion.chunk',
-        created: Math.floor(Date.now() / 1000),
-        model: modelName,
-        choices: [
-          {
-            index: 0,
-            delta: {
-              role: 'assistant',
-              content: toolUseContent,
-            },
-            finish_reason: null,
-          },
-        ],
-      };
-
-      response.write(`data: ${JSON.stringify(streamChunk)}\n\n`);
-
-      // Send finish chunk after a short delay
-      setTimeout(() => {
-        const finishChunk = {
-          id: 'chatcmpl-test-' + String(Date.now()),
-          object: 'chat.completion.chunk',
-          created: Math.floor(Date.now() / 1000),
-          model: modelName,
-          choices: [
-            {
-              index: 0,
-              delta: {},
-              finish_reason: 'stop',
-            },
-          ],
-        };
-
-        response.write(`data: ${JSON.stringify(finishChunk)}\n\n`);
-        response.write('data: [DONE]\n\n');
-        response.end();
-      }, 100);
-    } else if (chatRequest.messages.some((message: ChatMessage) => message.role === 'tool')) {
-      // Handle tool result response - stream the final answer
-      const content = '在 TiddlyWiki 中，`Index` 条目提供了编辑卡片的方法说明，点击右上角的编辑按钮可以开始对当前卡片进行编辑。' +
-        '此外，它还引导您访问中文教程页面 [[教程 (Chinese)|https://tw-cn.netlify.app/]] 和官方英文站点 ' +
-        '[[Official Site (English)|https://tiddlywiki.com/]] 以获取更多信息。';
-
-      // Stream content in chunks
-      let sentLength = 0;
-      const chunkSize = 10; // Characters per chunk
-
-      const sendChunk = () => {
-        if (sentLength < content.length) {
-          const chunk = content.slice(sentLength, sentLength + chunkSize);
-          sentLength += chunkSize;
-
-          const streamChunk = {
-            id: 'chatcmpl-test-' + String(Date.now()),
-            object: 'chat.completion.chunk',
-            created: Math.floor(Date.now() / 1000),
-            model: modelName,
-            choices: [
-              {
-                index: 0,
-                delta: {
-                  content: chunk,
-                },
-                finish_reason: null,
-              },
-            ],
-          };
-
-          response.write(`data: ${JSON.stringify(streamChunk)}\n\n`);
-          setTimeout(sendChunk, 50); // Send next chunk after 50ms
-        } else {
-          // Send final chunk
-          const finishChunk = {
-            id: 'chatcmpl-test-' + String(Date.now()),
-            object: 'chat.completion.chunk',
-            created: Math.floor(Date.now() / 1000),
-            model: modelName,
-            choices: [
-              {
-                index: 0,
-                delta: {},
-                finish_reason: 'stop',
-              },
-            ],
-          };
-
-          response.write(`data: ${JSON.stringify(finishChunk)}\n\n`);
-          response.write('data: [DONE]\n\n');
-          response.end();
-        }
-      };
-
-      sendChunk();
-    } else {
-      // Default streaming response
-      const content = '这是一个测试响应。';
-
-      const streamChunk = {
-        id: 'chatcmpl-test-' + String(Date.now()),
-        object: 'chat.completion.chunk',
-        created: Math.floor(Date.now() / 1000),
-        model: modelName,
-        choices: [
-          {
-            index: 0,
-            delta: {
-              role: 'assistant',
-              content,
-            },
-            finish_reason: null,
-          },
-        ],
-      };
-
-      response.write(`data: ${JSON.stringify(streamChunk)}\n\n`);
-
-      setTimeout(() => {
-        const finishChunk = {
-          id: 'chatcmpl-test-' + String(Date.now()),
-          object: 'chat.completion.chunk',
-          created: Math.floor(Date.now() / 1000),
-          model: modelName,
-          choices: [
-            {
-              index: 0,
-              delta: {},
-              finish_reason: 'stop',
-            },
-          ],
-        };
-
-        response.write(`data: ${JSON.stringify(finishChunk)}\n\n`);
-        response.write('data: [DONE]\n\n');
-        response.end();
-      }, 100);
-    }
+    response.write('data: [DONE]\n\n');
+    response.end();
   }
 }
+

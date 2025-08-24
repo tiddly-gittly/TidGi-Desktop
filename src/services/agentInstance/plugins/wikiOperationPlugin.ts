@@ -249,7 +249,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
               title,
               text || '',
               extraMeta || '{}',
-              options || '{}',
+              options || '{"withDate": true}',
             ]);
             result = `Successfully added tiddler "${title}" in wiki workspace "${workspaceName}".`;
             break;
