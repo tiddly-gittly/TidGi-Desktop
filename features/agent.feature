@@ -58,11 +58,11 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | 在 TiddlyWiki 中，Index 条目提供了编辑卡片的方法说明，点击右上角的编辑按钮可以开始对当前卡片进行编辑。此外，它还引导您访问中文教程页面和官方英文站点以获取更多信息。 | false  |
     # (Configuration performed in the shared setup scenario)
 
-  # Proceed with agent workflow in main window
-  # Step 1: Click new tab button
+    # Proceed with agent workflow in main window
+    # Step 1: Click new tab button
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     And I should see a "search interface" element with selector ".aa-Autocomplete"
-  # Step 2: Click search box and wait for autocomplete
+    # Step 2: Click search box and wait for autocomplete
     When I click on a "search input box" element with selector ".aa-Input"
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
 
@@ -91,17 +91,17 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | <tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"}</tool_use> | false  |
       | 已成功在工作区 wiki 中创建条目 "test"。                                                                                                 | false  |
 
-  # Step 1: Start a fresh tab and run the two-round wiki operation flow
-  When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-  And I should see a "search interface" element with selector ".aa-Autocomplete"
+    # Step 1: Start a fresh tab and run the two-round wiki operation flow
+    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    And I should see a "search interface" element with selector ".aa-Autocomplete"
 
-  # Step 2: Click search box and wait for autocomplete
-  When I click on a "search input box" element with selector ".aa-Input"
-  And I should see an "autocomplete panel" element with selector ".aa-Panel"
+    # Step 2: Click search box and wait for autocomplete
+    When I click on a "search input box" element with selector ".aa-Input"
+    And I should see an "autocomplete panel" element with selector ".aa-Panel"
 
-  # Step 3: Select agent from autocomplete (not new tab)
-  When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
-  And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
+    # Step 3: Select agent from autocomplete (not new tab)
+    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
 
     # First round: try create note using default workspace (expected to fail)
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
