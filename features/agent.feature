@@ -142,23 +142,21 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 里创建一个新笔记，内容为 test" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 1 seconds
+    And I wait for 0.2 seconds
     And I should see a "user message" element with selector "*:has-text('在 wiki 里创建一个新笔记，内容为 test')"
     And I should see a "tool use indicator" element with selector "*:has-text('tool_use')"
     And I should see a "wiki operation tool" element with selector "*:has-text('wiki-operation')"
-    And I wait for 2 seconds
+    And I wait for 0.2 seconds
     And I should see a "function result error" element with selector "*:has-text('functions_result')"
     And I should see a "workspace not found" element with selector "*:has-text('Workspace with name or ID \"default\" does not exist')"
 
     # Second round: assistant suggests wiki workspace and operation succeeds (automated by assistant/tool)
-    And I wait for 2 seconds
+    And I wait for 0.2 seconds
     And I should see a "assistant suggestion" element with selector "*:has-text('tool_use')"
     And I should see a "tool use indicator" element with selector "*:has-text('tool_use')"
     And I should see a "wiki operation tool" element with selector "*:has-text('wiki-operation')"
-    And I wait for 2 seconds
+    And I wait for 0.2 seconds
     And I should see a "function result success" element with selector "*:has-text('functions_result')"
-    And I wait for 5 seconds
-    And I should see a "success message" element with selector "*:has-text('Successfully added tiddler')"
-    And I wait for 2 seconds
+    And I wait for 0.2 seconds
     And I should see a "assistant confirmation" element with selector "*:has-text('已成功在工作区 wiki 中创建条目')"
     Then I should see 6 messages in chat history

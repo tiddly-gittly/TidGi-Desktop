@@ -161,3 +161,25 @@ const esbuild = require('esbuild');
 ```
 
 If tried to add this to `esbuildLoaderRule` will cause this error. The object contains an internal reference chain (`.default.default`) that triggers recursion when webpack-merge/clone-deep attempts to merge it.
+
+## Error: Can't resolve 'os' in
+
+```log
+ @ ./src/services/libs/i18n/i18next-electron-fs-backend.ts 3:0-44 147:10-22 172:10-22
+ @ ./src/services/libs/i18n/renderer.ts 4:0-77 8:20-37
+ @ ./src/renderer.tsx 20:0-65 36:5-21
+
+ERROR in ./node_modules/winston/dist/winston/transports/stream.js 26:9-22
+Module not found: Error: Can't resolve 'os' in 'C:\Users\linonetwo\Documents\repo-c\TidGi-Desktop\node_modules\winston\dist\winston\transports'
+
+BREAKING CHANGE: webpack < 5 used to include polyfills for node.js core modules by default.
+This is no longer the case. Verify if you need this module and configure a polyfill for it.
+
+If you want to include a polyfill, you need to:
+        - add a fallback 'resolve.fallback: { "os": require.resolve("os-browserify/browser") }'
+        - install 'os-browserify'
+If you don't want to include a polyfill, you can use an empty module like this:
+        resolve.fallback: { "os": false }
+```
+
+Usually because you import the server-side `logger` in renderer process code. You have to use `console` or add new transport in [rendererTransport.ts](src/services/libs/log/rendererTransport.ts).

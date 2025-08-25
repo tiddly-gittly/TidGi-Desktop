@@ -1,5 +1,4 @@
 import { I18NChannels } from '@/constants/channels';
-import { logger } from '@services/libs/log';
 import type { BackendModule, InitOptions, MultiReadCallback, ReadCallback, Services } from 'i18next';
 import { cloneDeep, merge, Object } from 'lodash';
 
@@ -188,7 +187,7 @@ export class Backend implements BackendModule {
       // }
       const { keys } = payload;
       if (!keys) return;
-  for (const key of keys) {
+      for (const key of keys) {
         // Write methods don't have any callbacks from what I've seen,
         // so this is called more than I thought; but necessary!
         const entry = this.writeCallbacks[key];
@@ -217,7 +216,7 @@ export class Backend implements BackendModule {
     for (const element of toWork as Array<{ key: string; values: Array<{ key: string; fallbackValue: string; callback?: (error?: unknown) => void }> }>) {
       const anonymous = (error: unknown, data: unknown) => {
         if (error) {
-          logger.error(`${this.rendererLog} encountered error when trying to read file '${element.key}' before writing missing translation`, { error });
+          console.error(`${this.rendererLog} encountered error when trying to read file '${element.key}' before writing missing translation`, { error });
           return;
         }
         const keySeparator = Boolean(this.i18nextOptions.keySeparator); // Do we have a key separator or not?
@@ -245,7 +244,7 @@ export class Backend implements BackendModule {
         }
         // Send out the message to the ipcMain process
         if (debug) {
-          logger.debug(`${this.rendererLog} requesting the missing key '${String(writeKeys)}' be written to file '${element.key}'.`);
+          console.debug(`${this.rendererLog} requesting the missing key '${String(writeKeys)}' be written to file '${element.key}'.`);
         }
         i18nextElectronBackend.send(I18NChannels.writeFileRequest, {
           keys: writeKeys,
@@ -280,7 +279,7 @@ export class Backend implements BackendModule {
 
   // Reads a given translation file
   read(language: string, namespace: string, callback: ReadCallback) {
-  const loadPathString = String(this.backendOptions.loadPath ?? defaultOptions.loadPath);
+    const loadPathString = String(this.backendOptions.loadPath ?? defaultOptions.loadPath);
     const filename = safeInterpolate(this.services.interpolator, loadPathString, { lng: language, ns: namespace });
     this.requestFileRead(filename, (error?: unknown, data?: unknown) => {
       type ReadCallbackParameters = Parameters<ReadCallback>;

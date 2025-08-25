@@ -1,4 +1,3 @@
-import { logger } from '@services/libs/log';
 import { createServer, IncomingMessage, Server, ServerResponse } from 'http';
 import { AddressInfo } from 'net';
 
@@ -143,27 +142,13 @@ export class MockOpenAIServer {
 
   private generateChatCompletionResponse(chatRequest: ChatRequest) {
     const modelName = chatRequest.model || 'test-model';
-
     // Increment call count for each API request
     this.callCount++;
-
-    logger.debug('[mockOpenAI] generateChatCompletionResponse', {
-      modelName,
-      callCount: this.callCount,
-      totalMessages: chatRequest.messages.length,
-    });
-    logger.debug('mockOpenAI message types', {
-      messageTypes: chatRequest.messages.map((m) =>
-        `${m.role}:${String(m.content).includes('<functions_result>') ? 'FUNCTIONS_RESULT' : String(m.content).substring(0, 30) + '...'}`
-      ),
-    });
 
     // Use call count to determine which response to return (1-indexed)
     const ruleIndex = this.callCount - 1;
     const responseRule = this.rules[ruleIndex];
-
     if (!responseRule) {
-      logger.debug('[mockOpenAI] No more responses available for call', { callCount: this.callCount });
       return {
         id: 'chatcmpl-test-' + Date.now().toString(),
         object: 'chat.completion',
@@ -173,8 +158,6 @@ export class MockOpenAIServer {
         usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
       };
     }
-
-    logger.debug('[mockOpenAI] Using rule for call', { callCount: this.callCount, preview: responseRule.response.substring(0, 100) + '...' });
 
     return {
       id: 'chatcmpl-test-' + Date.now().toString(),
@@ -199,19 +182,11 @@ export class MockOpenAIServer {
     if (response.writableEnded) return;
 
     const modelName = chatRequest.model || 'test-model';
-
     // Increment call count for streaming requests too
     this.callCount++;
-
     // Use call count to determine which response to return (1-indexed)
     const ruleIndex = this.callCount - 1;
     const responseRule = this.rules[ruleIndex];
-
-    logger.debug('mockOpenAI streaming check', {
-      modelName,
-      callCount: this.callCount,
-      matched: !!responseRule,
-    });
 
     // If matched: honor client's stream request. If client requests stream, always stream the matched.response.
     if (responseRule && chatRequest.stream) {
@@ -268,26 +243,16 @@ export class MockOpenAIServer {
       const roleLine = `data: ${JSON.stringify(roleChunk)}\n\n`;
       const contentLine = `data: ${JSON.stringify(contentChunk)}\n\n`;
       const finalLine = `data: ${JSON.stringify(finalChunk)}\n\n`;
-
-      logger.debug('mockOpenAI sending streaming chunks', {
-        responseContentPreview: responseRule.response.substring(0, 200),
-        role: roleLine.substring(0, 100) + '...',
-        contentPreview: contentLine.substring(0, 200) + '...',
-        finalPreview: finalLine.substring(0, 100) + '...',
-      });
-
       response.write(roleLine);
       response.write(contentLine);
       response.write(finalLine);
       response.write('data: [DONE]\n\n');
-      logger.debug('mockOpenAI stream finished', { callCount: this.callCount });
       response.end();
       return;
     }
 
     // If matched but client did not request stream, return a regular JSON chat completion
     if (responseRule && !chatRequest.stream) {
-      logger.debug('[mockOpenAI] Using non-stream rule for call', { callCount: this.callCount, preview: responseRule.response.substring(0, 100) + '...' });
       const resp = {
         id: 'chatcmpl-test-' + Date.now().toString(),
         object: 'chat.completion',
@@ -305,7 +270,6 @@ export class MockOpenAIServer {
         ],
         usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
       };
-
       if (!response.writableEnded) {
         response.setHeader('Content-Type', 'application/json');
         response.writeHead(200);
