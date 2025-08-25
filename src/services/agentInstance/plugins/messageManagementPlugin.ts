@@ -29,14 +29,14 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
         duration: undefined, // User messages persist indefinitely by default
       });
 
+      // Add message to the agent's message array for immediate use (do this before persistence so plugins see it)
+      handlerContext.agent.messages.push(userMessage);
+
       // Get the agent instance service to access repositories
       const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
-      // Save user message to database
+      // Save user message to database (if persistence fails, we still keep the in-memory message)
       await agentInstanceService.saveUserMessage(userMessage);
-
-      // Add message to the agent's message array for immediate use
-      handlerContext.agent.messages.push(userMessage);
 
       logger.debug('User message persisted to database', {
         messageId,
