@@ -30,8 +30,6 @@ import { AgentHandlerContext } from './type';
 export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
   // Initialize variables for request tracking
   let currentRequestId: string | undefined;
-  let retryCount = 0;
-  const maxRetries = 3;
   const lastUserMessage: AgentInstanceMessage | undefined = context.agent.messages[context.agent.messages.length - 1];
   // Create and register handler hooks based on handler config
   const { hooks: handlerHooks, pluginConfigs } = await createHooksWithPlugins(context.agentDef.handlerConfig || {});
@@ -120,7 +118,6 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
           modelName: aiApiConfig.api.model,
           promptCount: flatPrompts.length,
           messageCount: context.agent.messages.length,
-          retryCount,
         });
 
         // Delegate AI API calls to externalAPIService
@@ -184,7 +181,6 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                 yieldNextRoundFromHooks = responseCompleteContext.actions.yieldNextRoundTo;
                 logger.debug('Response complete hooks triggered yield next round', {
                   method: 'processLLMCall',
-                  retryCount,
                   yieldNextRoundTo: yieldNextRoundFromHooks,
                 });
               }
@@ -199,23 +195,11 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                 // Control transfer: Continue with AI (yieldNextRoundTo: 'self')
                 logger.debug('Response processing triggered new LLM call', {
                   method: 'processLLMCall',
-                  retryCount,
                   fromResponseConcat: processedResult.yieldNextRoundTo,
                   fromResponseCompleteHooks: yieldNextRoundFromHooks,
                 });
 
-                // Prevent infinite loops with retry limit
-                if (retryCount >= maxRetries) {
-                  logger.warn('Maximum retry limit reached, returning final response', {
-                    maxRetries,
-                    retryCount,
-                  });
-                  yield completed(processedResult.processedResponse, context, currentRequestId);
-                  return;
-                }
-
-                // Increment retry counter
-                retryCount++;
+                // Continue without retry counter
                 // Reset request ID for new call
                 currentRequestId = undefined;
                 // Yield current response as working state
