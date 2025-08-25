@@ -231,10 +231,18 @@ When('I type {string} in {string} element with selector {string}', async functio
     const element = currentWindow.locator(selector);
 
     // Handle mock server URL special case
-    if (text === 'MOCK_SERVER_URL' && this.mockOpenAIServer) {
-      await element.click();
-      await element.selectText();
-      await element.fill(this.mockOpenAIServer.baseUrl + '/v1');
+    if (text === 'MOCK_SERVER_URL') {
+      if (this.mockOpenAIServer) {
+        await element.click();
+        await element.selectText();
+        await element.fill(this.mockOpenAIServer.baseUrl + '/v1');
+      } else {
+        // Fallback to fixed localhost port so tests can use a known endpoint
+        const fallback = 'http://127.0.0.1:15121/v1';
+        await element.click();
+        await element.selectText();
+        await element.fill(fallback);
+      }
     } else {
       await element.fill(text);
     }
