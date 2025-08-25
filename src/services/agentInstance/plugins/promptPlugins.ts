@@ -89,7 +89,7 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
       callback();
       return;
     }
-    
+
     const { targetId, sourceType } = fullReplacementConfig;
     const found = findPromptById(prompts, targetId);
 
@@ -189,7 +189,7 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
       callback();
       return;
     }
-    
+
     const { targetId, sourceType } = fullReplacementParameter;
 
     // Only handle llmResponse in response phase
@@ -246,7 +246,7 @@ export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
       callback();
       return;
     }
-    
+
     const { targetId, position } = dynamicPositionConfig;
     const found = findPromptById(prompts, targetId);
 

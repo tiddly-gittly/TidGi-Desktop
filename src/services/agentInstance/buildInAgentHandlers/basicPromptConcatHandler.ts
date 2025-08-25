@@ -33,7 +33,6 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
   let retryCount = 0;
   const maxRetries = 3;
   const lastUserMessage: AgentInstanceMessage | undefined = context.agent.messages[context.agent.messages.length - 1];
-
   // Create and register handler hooks based on handler config
   const { hooks: handlerHooks, pluginConfigs } = await createHooksWithPlugins(context.agentDef.handlerConfig || {});
 
@@ -45,10 +44,9 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
     handlerId: context.agentDef.handlerID,
     messageCount: context.agent.messages.length,
   });
-
   // Check if there's a new user message to process - trigger user message received hook
   // This is determined by checking if the last message is from user and hasn't been processed yet
-  const isNewUserMessage = lastUserMessage.role === 'user' && !lastUserMessage.metadata?.processed;
+  const isNewUserMessage = !!lastUserMessage && lastUserMessage.role === 'user' && !lastUserMessage.metadata?.processed;
 
   if (isNewUserMessage) {
     // Trigger user message received hook
@@ -75,7 +73,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
     });
   }
 
-  if (!lastUserMessage.content || lastUserMessage.role !== 'user') {
+  if (!lastUserMessage || !lastUserMessage.content || lastUserMessage.role !== 'user') {
     logger.warn('No valid user message found', { method: 'basicPromptConcatHandler' });
     yield completed('No user message found to process.', context);
     return;

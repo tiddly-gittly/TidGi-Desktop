@@ -4,17 +4,14 @@
  */
 import { nanoid } from 'nanoid';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
 // Use shared mocks via test container (setup-vitest binds serviceInstances into the container)
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentInstance } from '@services/agentInstance/interface';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
+import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IWikiService } from '@services/wiki/interface';
-
-// Must use defaultAgents
 import defaultAgents from '../buildInAgentHandlers/defaultAgents.json';
 
 describe('AgentInstanceService Streaming Behavior', () => {
@@ -23,23 +20,13 @@ describe('AgentInstanceService Streaming Behavior', () => {
   let mockAgentDefinitionService: Partial<IAgentDefinitionService>;
   let mockExternalAPIService: Partial<IExternalAPIService>;
   let mockDatabaseService: Partial<IDatabaseService>;
-  let mockWikiService: Partial<IWikiService>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
     // Retrieve shared mocks from the test container
-    const { container } = await import('@services/container');
     mockAgentDefinitionService = container.get(serviceIdentifier.AgentDefinition);
     mockDatabaseService = container.get(serviceIdentifier.Database);
     mockExternalAPIService = container.get(serviceIdentifier.ExternalAPI);
-    mockWikiService = container.get(serviceIdentifier.Wiki);
-
-    // ensure generateFromAI/cancelAIRequest are spies that tests can override
-    mockExternalAPIService.generateFromAI = vi.fn();
-    mockExternalAPIService.cancelAIRequest = vi.fn();
-
-    // ensure wikiOperationInServer is spyable
-    mockWikiService.wikiOperationInServer = vi.fn();
 
     // Setup mock database service with in-memory SQLite
     const mockRepo = {
@@ -49,7 +36,6 @@ describe('AgentInstanceService Streaming Behavior', () => {
       find: vi.fn(),
       findAndCount: vi.fn(),
     };
-
     const mockDataSource = {
       isInitialized: true,
       initialize: vi.fn(),
@@ -64,25 +50,11 @@ describe('AgentInstanceService Streaming Behavior', () => {
         }),
       },
     };
-
     mockDatabaseService.getDatabase = vi.fn().mockResolvedValue(mockDataSource);
 
-    // Bind real AgentInstance implementation into the test container (mocks already bound by setup)
-    if (container.isBound(serviceIdentifier.AgentInstance)) {
-      container.unbind(serviceIdentifier.AgentInstance);
-    }
-    const { AgentInstanceService } = await import('@services/agentInstance/index');
-    container.bind(serviceIdentifier.AgentInstance).to(AgentInstanceService).inSingletonScope();
-
-    // Create service instance after binding dependencies
-    const agentInstanceServiceImpl = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-
-    agentInstanceService = agentInstanceServiceImpl;
+    agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
     await agentInstanceService.initialize();
-    // Note: We don't mock the plugin system here - we let the real plugins (like messageManagementPlugin)
-    // handle the user message processing. This is important for testing the actual streaming behavior.
-
     // Setup test agent instance using data from defaultAgents.json
     const exampleAgent = defaultAgents[0];
     testAgentInstance = {

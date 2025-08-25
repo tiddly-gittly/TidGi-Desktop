@@ -1,13 +1,12 @@
-import { nanoid } from 'nanoid';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { WikiChannel } from '@/constants/channels';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentInstance, IAgentInstanceService } from '@services/agentInstance/interface';
+import { container } from '@services/container';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
-
-import { WikiChannel } from '@/constants/channels';
+import { nanoid } from 'nanoid';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import defaultAgents from '../buildInAgentHandlers/defaultAgents.json';
 
 // Follow structure of index.streaming.test.ts
@@ -17,61 +16,17 @@ describe('AgentInstanceService Wiki Operation', () => {
   let mockAgentDefinitionService: Partial<IAgentDefinitionService>;
   let mockExternalAPIService: Partial<IExternalAPIService>;
   let mockWikiService: Partial<IWikiService>;
-  let mockDatabaseService: any;
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    const { container } = await import('@services/container');
     mockAgentDefinitionService = container.get(serviceIdentifier.AgentDefinition);
     mockExternalAPIService = container.get(serviceIdentifier.ExternalAPI);
     mockWikiService = container.get(serviceIdentifier.Wiki);
-    mockDatabaseService = container.get(serviceIdentifier.Database);
 
-    // Ensure methods are spyable
-    // ensure generateFromAI/cancelAIRequest are spies that tests can override
-    mockExternalAPIService.generateFromAI = vi.fn();
-    mockExternalAPIService.cancelAIRequest = vi.fn();
-
-    // ensure wikiOperationInServer is spyable
-    mockWikiService.wikiOperationInServer = vi.fn().mockResolvedValue({ success: true });
-
-    // Setup mock database service with in-memory-like mock (same pattern as streaming test)
-    const mockRepo = {
-      findOne: vi.fn(),
-      save: vi.fn(),
-      create: vi.fn(),
-      find: vi.fn(),
-      findAndCount: vi.fn(),
-      delete: vi.fn(),
-    };
-
-    const mockDataSource = {
-      isInitialized: true,
-      initialize: vi.fn(),
-      destroy: vi.fn(),
-      getRepository: vi.fn().mockReturnValue(mockRepo),
-      manager: {
-        transaction: vi.fn().mockImplementation(async (cb: (manager: { getRepository: () => typeof mockRepo }) => Promise<unknown>) => {
-          return await cb({ getRepository: () => mockRepo });
-        }),
-      },
-    };
-
-    mockDatabaseService.getDatabase = vi.fn().mockResolvedValue(mockDataSource);
-
-    // Bind real AgentInstance implementation into the test container (mocks already bound by setup)
-    if (container.isBound(serviceIdentifier.AgentInstance)) {
-      container.unbind(serviceIdentifier.AgentInstance);
-    }
-    const { AgentInstanceService } = await import('@services/agentInstance/index');
-    container.bind(serviceIdentifier.AgentInstance).to(AgentInstanceService).inSingletonScope();
-
-    // Create service instance after binding dependencies
-    const agentInstanceServiceImpl = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-    agentInstanceService = agentInstanceServiceImpl;
+    agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
     // Initialize both database repositories and handlers
-    await agentInstanceService.initialize();
+    await agentInstanceService.initializeHandlers();
 
     // Setup test agent instance using data from defaultAgents.json
     const exampleAgent = defaultAgents[0];
@@ -90,8 +45,6 @@ describe('AgentInstanceService Wiki Operation', () => {
 
     // Mock agent definition service to return our test agent definition
     mockAgentDefinitionService.getAgentDef = vi.fn().mockResolvedValue(exampleAgent);
-
-    // Mock getAgent to return our in-memory test instance
     vi.spyOn(agentInstanceService, 'getAgent').mockResolvedValue(testAgentInstance);
   });
 
