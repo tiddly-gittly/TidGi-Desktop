@@ -52,7 +52,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I close "preferences" window
     And I switch to "main" window
     And I wait for 0.5 seconds
-    Given I ensure test ai settings exists
+    And I ensure test ai settings exists
 
   @agent
   Scenario: Wiki-search tool usage
@@ -133,10 +133,6 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
 
   @agent
   Scenario: Create default agent from New Tab quick access
-    # NOTE: Tests must ensure the correct workspace is active before clicking new tab.
-    # In CI the app may start in a different workspace; switch to the agent workspace first.
-    # This prevents flaky assumptions that the app already opened the desired workspace.
-    # Ensure we are in the correct workspace: switch to Agent workspace explicitly to avoid CI flakiness
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     And I wait for 0.2 seconds
     And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
