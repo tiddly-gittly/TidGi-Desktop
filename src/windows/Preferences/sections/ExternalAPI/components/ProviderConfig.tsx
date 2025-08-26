@@ -352,19 +352,17 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
         return;
       }
 
-      // Find similar preset provider to get appropriate default model
+      // Find selected default provider (user explicit choice) to get appropriate default model
       let defaultModel: ModelInfo | undefined;
-      const similarPresetProvider = defaultProvidersConfig.providers.find(
-        p => p.providerClass === newProviderForm.providerClass,
-      );
+      const selectedPresetProvider = availableDefaultProviders.find(p => p.provider === selectedDefaultProvider);
 
-      // If there's a similar provider, use its first model as the default
-      if (similarPresetProvider && similarPresetProvider.models.length > 0) {
+      // If the user selected a preset provider, use its first model as the default
+      if (selectedPresetProvider && selectedPresetProvider.models.length > 0) {
         // Clone the first model from the similar provider using explicit typing for features
-        const baseModel = similarPresetProvider.models[0];
+        const baseModel = selectedPresetProvider.models[0];
 
-        // Ensure features are properly typed as ModelFeature[]
-        const typedFeatures = baseModel.features.map(feature => feature as ModelFeature);
+        // Ensure features exist and are properly typed as ModelFeature[]
+        const typedFeatures: ModelFeature[] = Array.isArray(baseModel.features) ? baseModel.features.map(f => f) : [];
 
         // Create the default model with proper type safety
         defaultModel = {

@@ -28,6 +28,16 @@ export class MockOpenAIServer {
     if (rules && Array.isArray(rules)) this.rules = rules;
   }
 
+  /**
+   * Update rules at runtime. This allows tests to reuse a running server
+   * and swap the response rules without creating a new server instance.
+   */
+  public setRules(rules: Rule[]): void {
+    if (Array.isArray(rules)) {
+      this.rules = rules;
+    }
+  }
+
   async start(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.server = createServer((request: IncomingMessage, response: ServerResponse) => {
@@ -210,44 +220,66 @@ export class MockOpenAIServer {
         ],
       };
 
-      // Send content chunk
-      const contentChunk = {
-        id: 'chatcmpl-test-' + Date.now().toString(),
-        object: 'chat.completion.chunk',
-        created: Math.floor(Date.now() / 1000),
-        model: modelName,
-        choices: [
-          {
-            index: 0,
-            delta: { content: responseRule.response },
-            finish_reason: null,
-          },
-        ],
-      };
-
-      // Send final chunk
-      const finalChunk = {
-        id: 'chatcmpl-test-' + Date.now().toString(),
-        object: 'chat.completion.chunk',
-        created: Math.floor(Date.now() / 1000),
-        model: modelName,
-        choices: [
-          {
-            index: 0,
-            delta: {},
-            finish_reason: 'stop',
-          },
-        ],
-      };
+      // Send content chunks. Support multiple chunks separated by '<stream_split>'
+      const rawResponse = typeof responseRule.response === 'string'
+        ? responseRule.response
+        : String(responseRule.response);
+      const chunks = rawResponse.split('<stream_split>');
 
       const roleLine = `data: ${JSON.stringify(roleChunk)}\n\n`;
-      const contentLine = `data: ${JSON.stringify(contentChunk)}\n\n`;
-      const finalLine = `data: ${JSON.stringify(finalChunk)}\n\n`;
       response.write(roleLine);
-      response.write(contentLine);
-      response.write(finalLine);
-      response.write('data: [DONE]\n\n');
-      response.end();
+
+      // Helper to write a chunk line
+      const writeChunkLine = (content: string) => {
+        const contentChunk = {
+          id: 'chatcmpl-test-' + Date.now().toString(),
+          object: 'chat.completion.chunk',
+          created: Math.floor(Date.now() / 1000),
+          model: modelName,
+          choices: [
+            {
+              index: 0,
+              delta: { content },
+              finish_reason: null,
+            },
+          ],
+        };
+        const contentLine = `data: ${JSON.stringify(contentChunk)}\n\n`;
+        response.write(contentLine);
+      };
+
+      // Stream each chunk with a small delay to simulate streaming
+      // Chunks separator: '###' is used to denote chunk boundaries in the rule string
+      void (async () => {
+        for (let index = 0; index < chunks.length; index++) {
+          // If client closed connection, stop streaming
+          if (response.writableEnded) return;
+          writeChunkLine(chunks[index]);
+          // Short delay between chunks (simulate pacing). Keep at 100ms for tests.
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        // Send final empty chunk with finish_reason
+        if (!response.writableEnded) {
+          const finalChunk = {
+            id: 'chatcmpl-test-' + Date.now().toString(),
+            object: 'chat.completion.chunk',
+            created: Math.floor(Date.now() / 1000),
+            model: modelName,
+            choices: [
+              {
+                index: 0,
+                delta: {},
+                finish_reason: 'stop',
+              },
+            ],
+          };
+          const finalLine = `data: ${JSON.stringify(finalChunk)}\n\n`;
+          response.write(finalLine);
+          response.write('data: [DONE]\n\n');
+          response.end();
+        }
+      })();
       return;
     }
 

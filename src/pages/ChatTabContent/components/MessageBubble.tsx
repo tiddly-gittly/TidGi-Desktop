@@ -108,7 +108,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
         </MessageAvatar>
       )}
 
-      <MessageContent $user={isUser} $streaming={isStreaming} $expired={isExpired}>
+      <MessageContent
+        $user={isUser}
+        $streaming={isStreaming}
+        $expired={isExpired}
+        data-testid={!isUser ? (isStreaming ? 'assistant-streaming-text' : 'assistant-message') : undefined}
+      >
         <MessageRenderer message={message} isUser={isUser} />
       </MessageContent>
 

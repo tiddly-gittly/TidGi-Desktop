@@ -1,5 +1,8 @@
 import { After, DataTable, Given, Then } from '@cucumber/cucumber';
+import fs from 'fs-extra';
+import { isEqual, omit } from 'lodash';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
+import { settingsPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
 
 // Agent-specific Given steps
@@ -82,4 +85,56 @@ Then('I should see {int} messages in chat history', async function(this: Applica
   } catch (error) {
     throw new Error(`Could not find expected ${expectedCount} messages. Error: ${(error as Error).message}`);
   }
+});
+
+// Shared provider config used across steps (kept at module scope for reuse)
+const providerConfig = {
+  provider: 'TestProvider',
+  baseURL: 'http://127.0.0.1:15121/v1',
+  models: [{ name: 'test-model', features: ['language'] }],
+  providerClass: 'openAICompatible',
+  isPreset: false,
+  enabled: true,
+} as Record<string, unknown>;
+
+const desiredModelParameters = { temperature: 0.7, systemPrompt: 'You are a helpful assistant.', topP: 0.95 };
+
+Given('I ensure test ai settings', function() {
+  // Build expected aiSettings from shared providerConfig and compare strictly with actual using isEqual
+  const modelsArray = (providerConfig.models as Array<Record<string, string>> | undefined) || [];
+  const modelName = modelsArray[0]?.name;
+  const providerName = providerConfig.provider as string;
+
+  const expected = {
+    providers: [providerConfig],
+    defaultConfig: { api: { provider: providerName, model: modelName }, modelParameters: desiredModelParameters },
+  } as Record<string, unknown>;
+
+  const parsed = fs.readJsonSync(settingsPath) as Record<string, unknown>;
+  const actual = (parsed.aiSettings as Record<string, unknown> | undefined) || null;
+
+  if (!isEqual(actual, expected)) {
+    console.error('aiSettings mismatch. expected:', JSON.stringify(expected, null, 2));
+    console.error('aiSettings actual:', JSON.stringify(actual, null, 2));
+    throw new Error('aiSettings do not match expected TestProvider configuration');
+  }
+});
+
+Given('I add test ai settings', function() {
+  // Overwrite aiSettings with minimal desired configuration (simple insert)
+  const existing = fs.readJsonSync(settingsPath) as Record<string, unknown>;
+  const modelsArray = (providerConfig.models as Array<Record<string, string>> | undefined) || [];
+  const modelName = modelsArray[0]?.name;
+  const newAi = {
+    providers: [providerConfig],
+    defaultConfig: { api: { provider: providerConfig.provider as string, model: modelName }, modelParameters: desiredModelParameters },
+  } as Record<string, unknown>;
+  fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi }, { spaces: 2 });
+});
+
+Given('I clear test ai settings', function() {
+  if (!fs.existsSync(settingsPath)) return;
+  const parsed = fs.readJsonSync(settingsPath) as Record<string, unknown>;
+  const cleaned = omit(parsed, ['aiSettings']);
+  fs.writeJsonSync(settingsPath, cleaned, { spaces: 2 });
 });

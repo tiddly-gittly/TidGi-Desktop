@@ -1,4 +1,8 @@
+import type { CoreMessage } from 'ai';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import type { AiAPIConfig } from '../../src/services/agentInstance/promptConcat/promptConcatSchema';
+import { streamFromProvider } from '../../src/services/externalAPI/callProviderAPI';
+import type { AIProviderConfig } from '../../src/services/externalAPI/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 
 describe('Mock OpenAI Server', () => {
@@ -244,5 +248,68 @@ describe('Mock OpenAI Server', () => {
     expect(String(data.choices[0].message.content)).toBe(
       '<tool_use name="wiki-operation">{"workspaceName":"default","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>',
     );
+  });
+
+  it('should integrate with streamFromProvider (SDK) for streaming responses', async () => {
+    // Reuse the existing server and update its rules to a single streaming rule
+    const streamingRule = [{ response: 'chunkA<stream_split>chunkB<stream_split>chunkC', stream: true }];
+    server.setRules(streamingRule);
+
+    // Build provider config that points to our mock server as openAICompatible
+    const providerConfig: AIProviderConfig = {
+      provider: 'TestProvider',
+      providerClass: 'openAICompatible',
+      baseURL: `${server.baseUrl}/v1`,
+      apiKey: 'test-key',
+      models: [{ name: 'test-model' }],
+      enabled: true,
+    };
+
+    const messages: CoreMessage[] = [
+      { role: 'user', content: 'Start streaming' },
+    ];
+
+    // streamFromProvider returns an object from streamText; call it and iterate
+    const aiConfig: AiAPIConfig = { api: { provider: 'TestProvider', model: 'test-model' }, modelParameters: {} } as AiAPIConfig;
+    const stream = streamFromProvider(aiConfig, messages, new AbortController().signal, providerConfig);
+
+    // The returned stream should expose `.textStream` as an AsyncIterable
+    // We'll collect chunks as they arrive and assert intermediate states are streaming
+    const receivedChunks: string[] = [];
+    if (!stream.textStream) throw new Error('Expected stream.textStream to be present');
+
+    for await (const chunk of stream.textStream) {
+      if (!chunk) continue;
+      let contentPiece: string | undefined;
+      if (typeof chunk === 'string') contentPiece = chunk;
+      else if (typeof chunk === 'object' && chunk !== null && 'content' in (chunk as Record<string, unknown>)) {
+        const c = (chunk as Record<string, unknown>).content;
+        if (typeof c === 'string') contentPiece = c;
+      }
+
+      if (contentPiece) {
+        // Append to receivedChunks and assert intermediate streaming behavior
+        receivedChunks.push(contentPiece);
+
+        // Intermediate assertions:
+        // - After first chunk: should contain only chunkA and not yet contain chunkC
+        if (receivedChunks.length === 1) {
+          expect(receivedChunks.join('')).toContain('chunkA');
+          expect(receivedChunks.join('')).not.toContain('chunkC');
+        }
+
+        // - After second chunk: should contain chunkA and chunkB, but not chunkC
+        if (receivedChunks.length === 2) {
+          expect(receivedChunks.join('')).toContain('chunkA');
+          expect(receivedChunks.join('')).toContain('chunkB');
+          expect(receivedChunks.join('')).not.toContain('chunkC');
+        }
+      }
+    }
+
+    // After stream completion, assemble chunks using the same '<stream_split>' separator used by rules
+    const assembled = receivedChunks.join('<stream_split>');
+    // streamingRule[0].response uses '<stream_split>' as separator, verify equality
+    expect(assembled).toBe(streamingRule[0].response);
   });
 });

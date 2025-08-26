@@ -47,3 +47,10 @@ export function getPackedAppPath(): string {
 // E2E logs paths used by tests
 export const logsDirectory = path.resolve(process.cwd(), 'userData-test', 'logs');
 export const screenshotsDirectory = path.resolve(logsDirectory, 'screenshots');
+// Test settings paths used by E2E
+export const settingsDirectory = path.resolve(process.cwd(), 'userData-test', 'settings');
+export const settingsPath = path.resolve(settingsDirectory, 'settings.json');
+
+// Repo root and test wiki paths
+export const repoRoot = path.resolve(process.cwd());
+export const wikiTestWikiPath = path.resolve(repoRoot, 'wiki-test', 'wiki');

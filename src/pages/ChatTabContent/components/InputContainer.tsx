@@ -65,6 +65,7 @@ export const InputContainer: React.FC<InputContainerProps> = ({
             inputProps: { 'data-testid': 'agent-message-input' },
             endAdornment: (
               <IconButton
+                data-testid='agent-send-button'
                 onClick={isStreaming ? onCancel : onSend}
                 // During streaming, cancel button should always be enabled
                 // Only disable the button when not streaming and the input is empty

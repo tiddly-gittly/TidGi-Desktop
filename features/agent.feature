@@ -13,6 +13,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   # Shared setup: configure AI provider and default model once (not @agent so cleanup won't stop server)
   @setup
   Scenario: Configure AI provider and default model
+    Given I clear test ai settings
     # Step 1: Configure AI settings first - Open preferences window, wait a second so its URL settle down.
     When I click on a "settings button" element with selector "#open-preferences-button"
     And I wait for 0.5 seconds
@@ -26,7 +27,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
 
     # Step 4: Fill provider form with mock server details (interface type already selected as openAICompatible)
     When I type "TestProvider" in "provider name input" element with selector "[data-testid='new-provider-name-input']"
-    And I type "MOCK_SERVER_URL" in "API endpoint input" element with selector "[data-testid='new-provider-base-url-input']"
+    And I type "http://127.0.0.1:15121/v1" in "API endpoint input" element with selector "[data-testid='new-provider-base-url-input']"
     When I click on an "add provider submit" element with selector "[data-testid='add-provider-submit-button']"
     And I wait for 0.2 seconds
 
@@ -42,13 +43,16 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
 
     # Step 7: Set default model
     When I type "test-model" in "default model autocomplete" element with selector ".MuiAutocomplete-input"
-    And I press "Enter" key
+    And I wait for 1 seconds
+    And I click on a "default model autocomplete" element with selector ".MuiAutocomplete-input"
+    And I click on a "default model option in MUI Autocomplete listbox that contains the model name" element with selector "ul[role='listbox'] li.MuiAutocomplete-option:has-text('test-model')"
     And I wait for 0.5 seconds
 
     # Step 8: Close preferences window
     When I close "preferences" window
     And I switch to "main" window
     And I wait for 0.5 seconds
+    Given I ensure test ai settings
 
   @agent
   Scenario: Wiki-search tool usage
@@ -86,6 +90,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   @agent
   Scenario: Wiki operation
     Given I have started the mock OpenAI server
+    And I cleanup test wiki
       | response                                                                                                                                | stream |
       | <tool_use name="wiki-operation">{"workspaceName":"default","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>  | false  |
       | <tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"}</tool_use> | false  |
@@ -125,3 +130,28 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I wait for 0.2 seconds
     And I should see a "assistant confirmation" element with selector "*:has-text('已成功在工作区 wiki 中创建条目')"
     Then I should see 6 messages in chat history
+
+  @agent
+  Scenario: Create default agent from New Tab quick access
+    # NOTE: Tests must ensure the correct workspace is active before clicking new tab.
+    # In CI the app may start in a different workspace; switch to the agent workspace first.
+    # This prevents flaky assumptions that the app already opened the desired workspace.
+    # Ensure we are in the correct workspace: switch to Agent workspace explicitly to avoid CI flakiness
+    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    And I wait for 0.2 seconds
+    And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
+    When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
+
+  @agent
+  Scenario: Close all tabs then create default agent from fallback page
+    # Ensure starting from black/fallback page with no open tabs
+    When I click all "tab" elements matching selector "[data-testid='tab']"
+    When I click all "close tab button" elements matching selector "[data-testid='tab-close-button']"
+    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    # Click the new tab button (fallback UI) and wait briefly for the quick access buttons to render
+    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    And I wait for 0.2 seconds
+    And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
+    When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"

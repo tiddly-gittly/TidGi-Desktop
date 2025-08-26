@@ -1,11 +1,12 @@
 import { After, AfterStep, Before, setWorldConstructor, Then, When } from '@cucumber/cucumber';
-import fs from 'fs';
+import fs from 'fs-extra';
 import path from 'path';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
 import { isMainWindowPage, PageType } from '../../src/constants/pageTypes';
+import type { IWorkspace } from '../../src/services/workspaces/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
-import { logsDirectory, screenshotsDirectory } from '../supports/paths';
+import { logsDirectory, screenshotsDirectory, settingsPath, wikiTestWikiPath } from '../supports/paths';
 import { getPackedAppPath } from '../supports/paths';
 
 export class ApplicationWorld {
@@ -49,6 +50,8 @@ export class ApplicationWorld {
 }
 
 setWorldConstructor(ApplicationWorld);
+
+// setDefaultTimeout(50000);
 
 Before(function(this: ApplicationWorld) {
   // Create necessary directories under userData-test/logs to match appPaths in dev/test
@@ -158,6 +161,21 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
   }
 });
 
+When('I cleanup test wiki', async function() {
+  if (fs.existsSync(wikiTestWikiPath)) fs.removeSync(wikiTestWikiPath);
+
+  type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
+  const settings = fs.readJsonSync(settingsPath) as SettingsFile;
+  const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
+  const filtered: Record<string, IWorkspace> = {};
+  for (const [id, ws] of Object.entries(workspaces)) {
+    const name = ws.name;
+    if (name === 'wiki' || id === 'wiki') continue;
+    filtered[id] = ws;
+  }
+  fs.writeJsonSync(settingsPath, { ...settings, workspaces: filtered }, { spaces: 2 });
+});
+
 When('I wait for {float} seconds', async function(seconds: number) {
   await new Promise(resolve => setTimeout(resolve, seconds * 1000));
 });
@@ -229,23 +247,7 @@ When('I type {string} in {string} element with selector {string}', async functio
   try {
     await currentWindow.waitForSelector(selector, { timeout: 10000 });
     const element = currentWindow.locator(selector);
-
-    // Handle mock server URL special case
-    if (text === 'MOCK_SERVER_URL') {
-      if (this.mockOpenAIServer) {
-        await element.click();
-        await element.selectText();
-        await element.fill(this.mockOpenAIServer.baseUrl + '/v1');
-      } else {
-        // Fallback to fixed localhost port so tests can use a known endpoint
-        const fallback = 'http://127.0.0.1:15121/v1';
-        await element.click();
-        await element.selectText();
-        await element.fill(fallback);
-      }
-    } else {
-      await element.fill(text);
-    }
+    await element.fill(text);
   } catch (error) {
     throw new Error(`Failed to type in ${elementComment} element with selector "${selector}": ${error as Error}`);
   }
@@ -282,7 +284,7 @@ When('the window title should contain {string}', async function(this: Applicatio
 
 // Generic keyboard action
 When('I press {string} key', async function(this: ApplicationWorld, key: string) {
-  const currentWindow = this.currentWindow || this.mainWindow;
+  const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
   }
