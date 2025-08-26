@@ -1,6 +1,8 @@
 import { After, DataTable, Given, Then } from '@cucumber/cucumber';
 import fs from 'fs-extra';
 import { isEqual, omit } from 'lodash';
+import path from 'path';
+import type { ISettingFile } from '../../src/services/database/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { settingsPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
@@ -121,20 +123,25 @@ Given('I ensure test ai settings exists', function() {
 });
 
 Given('I add test ai settings', function() {
-  // Overwrite aiSettings with minimal desired configuration (simple insert)
-  const existing = fs.readJsonSync(settingsPath) as Record<string, unknown>;
+  let existing = {} as ISettingFile;
+  if (fs.existsSync(settingsPath)) {
+    existing = fs.readJsonSync(settingsPath) as ISettingFile;
+  } else {
+    // ensure settings directory exists so writeJsonSync won't fail
+    fs.ensureDirSync(path.dirname(settingsPath));
+  }
   const modelsArray = (providerConfig.models as Array<Record<string, string>> | undefined) || [];
   const modelName = modelsArray[0]?.name;
   const newAi = {
     providers: [providerConfig],
     defaultConfig: { api: { provider: providerConfig.provider as string, model: modelName }, modelParameters: desiredModelParameters },
-  } as Record<string, unknown>;
-  fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi }, { spaces: 2 });
+  } as unknown;
+  fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi } as ISettingFile, { spaces: 2 });
 });
 
 Given('I clear test ai settings', function() {
   if (!fs.existsSync(settingsPath)) return;
-  const parsed = fs.readJsonSync(settingsPath) as Record<string, unknown>;
+  const parsed = fs.readJsonSync(settingsPath) as ISettingFile;
   const cleaned = omit(parsed, ['aiSettings']);
   fs.writeJsonSync(settingsPath, cleaned, { spaces: 2 });
 });
