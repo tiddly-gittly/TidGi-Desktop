@@ -99,7 +99,7 @@ const providerConfig = {
 
 const desiredModelParameters = { temperature: 0.7, systemPrompt: 'You are a helpful assistant.', topP: 0.95 };
 
-Given('I ensure test ai settings', function() {
+Given('I ensure test ai settings exists', function() {
   // Build expected aiSettings from shared providerConfig and compare strictly with actual using isEqual
   const modelsArray = (providerConfig.models as Array<Record<string, string>> | undefined) || [];
   const modelName = modelsArray[0]?.name;

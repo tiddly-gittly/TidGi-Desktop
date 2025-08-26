@@ -4,9 +4,8 @@ import path from 'path';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
 import { isMainWindowPage, PageType } from '../../src/constants/pageTypes';
-import type { IWorkspace } from '../../src/services/workspaces/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
-import { logsDirectory, screenshotsDirectory, settingsPath, wikiTestWikiPath } from '../supports/paths';
+import { logsDirectory, screenshotsDirectory } from '../supports/paths';
 import { getPackedAppPath } from '../supports/paths';
 
 export class ApplicationWorld {
@@ -159,21 +158,6 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
       `Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package\` before running the tests to ensure the app is built, and build with binaries like "dugite" and "tiddlywiki", see scripts/afterPack.js for more details.`,
     );
   }
-});
-
-When('I cleanup test wiki', async function() {
-  if (fs.existsSync(wikiTestWikiPath)) fs.removeSync(wikiTestWikiPath);
-
-  type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
-  const settings = fs.readJsonSync(settingsPath) as SettingsFile;
-  const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
-  const filtered: Record<string, IWorkspace> = {};
-  for (const [id, ws] of Object.entries(workspaces)) {
-    const name = ws.name;
-    if (name === 'wiki' || id === 'wiki') continue;
-    filtered[id] = ws;
-  }
-  fs.writeJsonSync(settingsPath, { ...settings, workspaces: filtered }, { spaces: 2 });
 });
 
 When('I wait for {float} seconds', async function(seconds: number) {
