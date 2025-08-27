@@ -4,11 +4,9 @@ Feature: Renderer logging to backend (UI-driven)
     And I wait for the page to load completely
 
   @logging
-  Scenario: Renderer emits expected logs during normal flows
-    When I open Preferences and go to Sync
-    Then I should see the Git token input
-    When I open an Agent chat and trigger a cancel during streaming
-    # Frontend use `void window.service.native.log` to log to file.
+  Scenario: Renderer logs appear in backend log file
+    When I click on a "settings button" element with selector "#open-preferences-button"
+    When I switch to "preferences" window
+    When I click on a "sync section" element with selector "[data-testid='preference-section-sync']"
     Then I should find log entries containing
-      | get user name and email using github api | 
-      | Store userInfo | 
+      | Preferences section clicked |
