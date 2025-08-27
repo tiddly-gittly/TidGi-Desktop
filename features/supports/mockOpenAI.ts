@@ -255,8 +255,8 @@ export class MockOpenAIServer {
           // If client closed connection, stop streaming
           if (response.writableEnded) return;
           writeChunkLine(chunks[index]);
-          // Short delay between chunks (simulate pacing). Keep at 100ms for tests.
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Short delay between chunks (simulate pacing).
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
 
         // Send final empty chunk with finish_reason

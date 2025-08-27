@@ -113,8 +113,8 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   @agent
   Scenario: Streamed assistant response can be cancelled mid-stream and send button returns
     Given I have started the mock OpenAI server
-      | response                                                                  | stream |
-      | partial_chunk_1<stream_split>partial_chunk_2<stream_split>partial_chunk_3 | true   |
+      | response                                                                                               | stream |
+      | partial_chunk_1<stream_split>partial_chunk_2<stream_split>partial_chunk_3<stream_split>partial_chunk_4 | true   |
     And I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
@@ -126,13 +126,16 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
 
     # Wait for streaming container to appear and contain the first chunk
     Then I should see a "assistant streaming container" element with selector "[data-testid='assistant-streaming-text']"
-    And I wait for 0.3 seconds
+    And I wait for 0.2 seconds
     Then I should see a "partial assistant text" element with selector "*:has-text('partial_chunk_1')"
+    And I should see a "cancel icon" element with selector "[data-testid='cancel-icon']"
 
     # Click cancel button mid-stream
     When I click on a "cancel button" element with selector "[data-testid='agent-send-button']"
     And I wait for 0.2 seconds
 
+    And I should see a "send icon" element with selector "[data-testid='send-icon']"
+
     # Verify send button returned and stream stopped (no further chunks)
     Then I should see a "send button" element with selector "[data-testid='agent-send-button']"
-    And I should not see text "partial_chunk_3"
+    And I should not see text "partial_chunk_4"

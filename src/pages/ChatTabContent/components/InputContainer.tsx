@@ -73,7 +73,7 @@ export const InputContainer: React.FC<InputContainerProps> = ({
                 color={isStreaming ? 'error' : 'primary'}
                 title={isStreaming ? t('Chat.Cancel') : t('Chat.Send')}
               >
-                {isStreaming ? <CancelIcon /> : <SendIcon />}
+                {isStreaming ? <CancelIcon data-testid='cancel-icon' /> : <SendIcon data-testid='send-icon' />}
               </IconButton>
             ),
           },

@@ -198,6 +198,8 @@ When('(Dont do this) I click on a specific button and wait for 2 seconds.',
 3. Domain Steps: Specific steps for complex workflows (like agent conversations)
 4. Mock Services: Use tagged cleanup for feature-specific resources
 5. Streaming Support: Special handling for real-time updates in chat interfaces
+6. **Don't think about adding new step definitions** or **change timeout duration**, unless human ask you to do. You should always reuse existing steps, and debug the fundamental reason that causes timeout. Timeout usually because of expected element not percent.
+7. If you forget to run `pnpm run test:prepare-e2e` after modify code in `./src` folder, you may find expected elements missing.
 
 ## Testing Library Best Practices
 
