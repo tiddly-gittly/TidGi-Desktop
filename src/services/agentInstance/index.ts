@@ -513,12 +513,51 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       try {
         // Update agent status to canceled
+        logger.debug(`cancelAgent called for ${agentId} - updating agent status to canceled`);
         await this.updateAgent(agentId, {
           status: {
             state: 'canceled',
             modified: new Date(),
           },
         });
+        logger.debug(`updateAgent returned for cancelAgent ${agentId}`);
+
+        // Propagate canceled status to any message-specific subscriptions so UI can react
+        try {
+          logger.debug(`Propagating canceled status to message-specific subscriptions for agent ${agentId}`);
+          const agent = await this.getAgent(agentId);
+          if (agent && agent.messages) {
+            for (const key of Array.from(this.statusSubjects.keys())) {
+              if (key.startsWith(`${agentId}:`)) {
+                const parts = key.split(':');
+                const messageId = parts[1];
+                const subject = this.statusSubjects.get(key);
+                const message = agent.messages.find(m => m.id === messageId);
+                if (subject) {
+                  try {
+                    const msg = message || ({} as AgentInstanceMessage);
+                    logger.debug(`Propagate canceled -> ${key}`);
+                    subject.next({
+                      state: 'canceled',
+                      message: msg,
+                      modified: new Date(),
+                    });
+                  } catch {
+                    // ignore
+                  }
+                  try {
+                    subject.complete();
+                  } catch {
+                    // ignore
+                  }
+                  this.statusSubjects.delete(key);
+                }
+              }
+            }
+          }
+        } catch (err) {
+          logger.warn(`Failed to propagate cancel status to message subscriptions: ${String(err)}`);
+        }
 
         // Remove cancel token from map
         this.cancelTokenMap.delete(agentId);
