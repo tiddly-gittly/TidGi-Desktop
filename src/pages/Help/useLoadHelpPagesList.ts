@@ -28,7 +28,7 @@ export function useLoadHelpPagesList(language = 'en-GB') {
         const newItems = responses.flat();
         setItems(currentItems => uniqBy([...currentItems, ...newItems], 'url'));
       } catch (error) {
-        console.error('Failed to load online sources:', error);
+        void window.service.native.log('error', 'Failed to load online sources', { function: 'useLoadHelpPagesList.loadMoreItems', error: String(error) });
       }
     };
 

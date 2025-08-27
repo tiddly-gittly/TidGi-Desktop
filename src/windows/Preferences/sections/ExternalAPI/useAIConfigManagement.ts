@@ -65,7 +65,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
 
         setLoading(false);
       } catch (error) {
-        console.error('Failed to load AI configuration:', error);
+        void window.service.native.log('error', 'Failed to load AI configuration', { function: 'useAIConfigManagement.fetchConfig', error: String(error) });
         setLoading(false);
       }
     };
@@ -104,7 +104,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
       setConfig(updatedConfig);
       await updateConfig(updatedConfig);
     } catch (error) {
-      console.error('Failed to update model configuration:', error);
+      void window.service.native.log('error', 'Failed to update model configuration', { function: 'useAIConfigManagement.handleModelChange', error: String(error) });
     }
   }, [config, updateConfig]);
 
@@ -113,7 +113,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
       setConfig(newConfig);
       await updateConfig(newConfig);
     } catch (error) {
-      console.error('Failed to update configuration:', error);
+      void window.service.native.log('error', 'Failed to update configuration', { function: 'useAIConfigManagement.handleConfigChange', error: String(error) });
     }
   }, [updateConfig]);
 

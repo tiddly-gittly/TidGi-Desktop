@@ -45,7 +45,11 @@ export const messageActions = (
       await window.service.agentInstance.sendMsgToAgent(storeAgent.id, { text: content });
     } catch (error) {
       set({ error: error instanceof Error ? error : new Error(String(error)) });
-      console.error('Failed to send message:', error);
+      void window.service.native.log(
+        'error',
+        'Failed to send message',
+        { function: 'messageActions.sendMessage', error: String(error) },
+      );
     } finally {
       set({ loading: false });
     }

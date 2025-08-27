@@ -45,7 +45,14 @@ export const agentActions = (
         const fetchedDef = await window.service.agentDefinition.getAgentDef(agentWithoutMessages.agentDefId);
         agentDef = fetchedDef || null;
       } catch (error) {
-        console.error(`Failed to fetch agent definition for ${agentWithoutMessages.agentDefId}:`, error);
+        void window.service.native.log(
+          'error',
+          `Failed to fetch agent definition for ${agentWithoutMessages.agentDefId}`,
+          {
+            function: 'agentActions.processAgentData',
+            error: String(error),
+          },
+        );
       }
     }
 
@@ -82,9 +89,9 @@ export const agentActions = (
         error: null,
         loading: false,
       });
-    } catch (error) {
-      set({ error: error instanceof Error ? error : new Error(String(error)) });
-      console.error('Failed to load agent:', error);
+    } catch (error_) {
+      set({ error: error_ instanceof Error ? error_ : new Error(String(error_)) });
+      void window.service.native.log('error', 'Failed to load agent', { function: 'agentActions.loadAgent', error: String(error_) });
     } finally {
       set({ loading: false });
     }
@@ -108,9 +115,9 @@ export const agentActions = (
       });
 
       return processedData.agent;
-    } catch (error) {
-      set({ error: error instanceof Error ? error : new Error(String(error)) });
-      console.error('Failed to create agent:', error);
+    } catch (error_) {
+      set({ error: error_ instanceof Error ? error_ : new Error(String(error_)) });
+      void window.service.native.log('error', 'Failed to create agent', { function: 'agentActions.createAgent', error: String(error_) });
       return null;
     } finally {
       set({ loading: false });
@@ -141,9 +148,9 @@ export const agentActions = (
       });
 
       return processedData.agent;
-    } catch (error) {
-      set({ error: error instanceof Error ? error : new Error(String(error)) });
-      console.error('Failed to update agent:', error);
+    } catch (error_) {
+      set({ error: error_ instanceof Error ? error_ : new Error(String(error_)) });
+      void window.service.native.log('error', 'Failed to update agent', { function: 'agentActions.updateAgent', error: String(error_) });
       return null;
     } finally {
       set({ loading: false });
@@ -218,14 +225,31 @@ export const agentActions = (
                       if (status?.message) {
                         // Update the message in our map
                         get().messages.set(status.message.id, status.message);
-                        // Check if completed
-                        if (status.state === 'completed') {
-                          get().setMessageStreaming(status.message.id, false);
+                        // If status indicates stream is finished (completed, canceled, failed), clear streaming flag
+                        if (status.state !== 'working') {
+                          try {
+                            get().setMessageStreaming(status.message.id, false);
+                            // Unsubscribe and clean up subscription for this message
+                            const sub = messageSubscriptions.get(status.message.id);
+                            if (sub) {
+                              sub.unsubscribe();
+                              messageSubscriptions.delete(status.message.id);
+                            }
+                          } catch {
+                            // Ignore cleanup errors
+                          }
                         }
                       }
                     },
-                    error: (error) => {
-                      console.error(`Error in message subscription for ${message.id}:`, error);
+                    error: (error_) => {
+                      void window.service.native.log(
+                        'error',
+                        `Error in message subscription for ${message.id}`,
+                        {
+                          function: 'agentActions.subscribeToUpdates.messageSubscription',
+                          error: String(error_),
+                        },
+                      );
                     },
                     complete: () => {
                       get().setMessageStreaming(message.id, false);
@@ -252,9 +276,16 @@ export const agentActions = (
             set({ agent: agentWithoutMessages });
           }
         },
-        error: (error) => {
-          console.error('Error in agent subscription:', error);
-          set({ error: error instanceof Error ? error : new Error(String(error)) });
+        error: (error_) => {
+          void window.service.native.log(
+            'error',
+            'Error in agent subscription',
+            {
+              function: 'agentActions.subscribeToUpdates.agentSubscription',
+              error: String(error_),
+            },
+          );
+          set({ error: error_ instanceof Error ? error_ : new Error(String(error_)) });
         },
       });
 
@@ -265,9 +296,9 @@ export const agentActions = (
           subscription.unsubscribe();
         });
       };
-    } catch (error) {
-      console.error('Failed to subscribe to agent updates:', error);
-      set({ error: error instanceof Error ? error : new Error(String(error)) });
+    } catch (error_) {
+      void window.service.native.log('error', 'Failed to subscribe to agent updates', { function: 'agentActions.subscribeToUpdates', error: String(error_) });
+      set({ error: error_ instanceof Error ? error_ : new Error(String(error_)) });
       return undefined;
     }
   },
@@ -306,6 +337,19 @@ export const agentActions = (
       const finalError = new Error(`Failed to get handler schema: ${errorMessage}`);
       set({ error: finalError });
       throw finalError;
+    }
+  },
+
+  cancelAgent: async (): Promise<void> => {
+    const storeAgent = get().agent;
+    if (!storeAgent?.id) {
+      return;
+    }
+
+    try {
+      await window.service.agentInstance.cancelAgent(storeAgent.id);
+    } catch (error_) {
+      void window.service.native.log('error', 'Store: cancelAgent backend call failed', { function: 'agentActions.cancelAgent', agentId: storeAgent.id, error: String(error_) });
     }
   },
 });

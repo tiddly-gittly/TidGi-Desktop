@@ -155,7 +155,7 @@ export function Search({ placeholder }: SearchProps) {
       openOnFocus: true,
       navigator: {
         navigate: ({ itemUrl }) => {
-          console.log('Default navigation requested to:', itemUrl);
+          void window.service.native.log('warn', 'Default navigation requested', { function: 'Search.navigator.navigate', itemUrl });
           // This should not be called as each plugin handles its own navigation
         },
       },

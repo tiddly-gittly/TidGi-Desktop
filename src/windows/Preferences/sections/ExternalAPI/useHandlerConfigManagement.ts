@@ -53,14 +53,14 @@ export const useHandlerConfigManagement = ({ agentDefId, agentId }: UseHandlerCo
             const handlerSchema = await window.service.agentInstance.getHandlerConfigSchema(handlerID);
             setSchema(handlerSchema);
           } catch (error) {
-            console.error('Failed to load handler schema:', error);
+            void window.service.native.log('error', 'Failed to load handler schema', { function: 'useHandlerConfigManagement.fetchConfig', error: String(error) });
           }
         }
 
         setConfig(finalConfig);
         setLoading(false);
       } catch (error) {
-        console.error('Failed to load handler configuration:', error);
+        void window.service.native.log('error', 'Failed to load handler configuration', { function: 'useHandlerConfigManagement.fetchConfig', error: String(error) });
         setLoading(false);
       }
     };
@@ -85,10 +85,10 @@ export const useHandlerConfigManagement = ({ agentDefId, agentId }: UseHandlerCo
           });
         }
       } else {
-        console.error('No agent ID or definition ID provided for updating handler config');
+        void window.service.native.log('error', 'No agent ID or definition ID provided for updating handler config', { function: 'useHandlerConfigManagement.handleConfigChange' });
       }
     } catch (error) {
-      console.error('Failed to update handler configuration:', error);
+      void window.service.native.log('error', 'Failed to update handler configuration', { function: 'useHandlerConfigManagement.handleConfigChange', error: String(error) });
     }
   }, [agentId, agentDefId]);
 

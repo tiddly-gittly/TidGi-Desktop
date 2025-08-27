@@ -18,8 +18,8 @@ export function Notifications(props: Required<ISectionProps>): React.JSX.Element
   const preference = usePreferenceObservable();
   const [platform, oSVersion] = usePromiseValue<[string | undefined, string | undefined], [string | undefined, string | undefined]>(
     async () =>
-      await Promise.all([window.service.context.get('platform'), window.service.context.get('oSVersion')]).catch((error) => {
-        console.error(error);
+      await Promise.all([window.service.context.get('platform'), window.service.context.get('oSVersion')]).catch((error_: unknown) => {
+        void window.service.native.log('error', 'Preferences: Notifications load failed', { function: 'Notifications.useEffect', error: String(error_) });
         return [undefined, undefined];
       }),
     [undefined, undefined],

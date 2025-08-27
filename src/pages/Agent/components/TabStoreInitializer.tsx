@@ -11,8 +11,8 @@ export function TabStoreInitializer() {
 
   useEffect(() => {
     // Initialize the tab store when the component mounts
-    initialize().catch(error => {
-      console.error('Failed to initialize tab store:', error);
+    initialize().catch((error: unknown) => {
+      void window.service.native.log('error', 'Failed to initialize tab store', { function: 'TabStoreInitializer.initialize', error: String(error) });
     });
   }, [initialize]);
 

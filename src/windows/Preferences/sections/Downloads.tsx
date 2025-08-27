@@ -28,8 +28,8 @@ export function Downloads(props: Required<ISectionProps>): React.JSX.Element {
                         await window.service.preference.set('downloadPath', filePaths[0]);
                       }
                     })
-                    .catch((error: Error) => {
-                      console.log(error);
+                    .catch((error: unknown) => {
+                      void window.service.native.log('error', 'Preferences: pickDirectory failed', { function: 'Downloads.pickDirectory', error: String(error) });
                     });
                 }}
               >

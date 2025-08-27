@@ -48,8 +48,15 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                   if (V8_CACHE_FOLDER !== undefined) {
                     try {
                       await window.service.native.openPath(V8_CACHE_FOLDER, true);
-                    } catch (error) {
-                      console.error(error);
+                    } catch (error: unknown) {
+                      void window.service.native.log(
+                        'error',
+                        'DeveloperTools: open V8 cache folder failed',
+                        {
+                          function: 'DeveloperTools.openV8CacheFolder',
+                          error: String(error),
+                        },
+                      );
                     }
                   }
                 }}
