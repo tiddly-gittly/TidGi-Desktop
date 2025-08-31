@@ -20,6 +20,11 @@
           "name": "gpt-3.5-turbo",
           "caption": "GPT-3.5 Turbo",
           "features": ["language"]
+        },
+        {
+          "name": "text-embedding-3-small",
+          "caption": "Text Embedding 3 Small",
+          "features": ["embedding"]
         }
       ]
     },
@@ -39,6 +44,11 @@
           "name": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
           "caption": "DeepSeek-R1",
           "features": ["language", "reasoning"]
+        },
+        {
+          "name": "BAAI/bge-m3",
+          "caption": "bge-m3",
+          "features": ["embedding"]
         }
       ]
     },

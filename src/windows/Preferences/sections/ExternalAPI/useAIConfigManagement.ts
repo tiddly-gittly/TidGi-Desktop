@@ -15,6 +15,7 @@ interface UseAIConfigManagementResult {
   providers: AIProviderConfig[];
   setProviders: React.Dispatch<React.SetStateAction<AIProviderConfig[]>>;
   handleModelChange: (provider: string, model: string) => Promise<void>;
+  handleEmbeddingModelChange: (provider: string, model: string) => Promise<void>;
   handleConfigChange: (newConfig: AiAPIConfig) => Promise<void>;
 }
 
@@ -108,6 +109,27 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     }
   }, [config, updateConfig]);
 
+  const handleEmbeddingModelChange = useCallback(async (provider: string, model: string) => {
+    if (!config) return;
+
+    try {
+      const updatedConfig = cloneDeep(config);
+      if (typeof updatedConfig.api === 'undefined') {
+        updatedConfig.api = { provider, model, embeddingModel: model };
+      } else {
+        updatedConfig.api.embeddingModel = model;
+      }
+
+      setConfig(updatedConfig);
+      await updateConfig(updatedConfig);
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to update embedding model configuration', {
+        function: 'useAIConfigManagement.handleEmbeddingModelChange',
+        error: String(error),
+      });
+    }
+  }, [config, updateConfig]);
+
   const handleConfigChange = useCallback(async (newConfig: AiAPIConfig) => {
     try {
       setConfig(newConfig);
@@ -123,6 +145,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     providers,
     setProviders,
     handleModelChange,
+    handleEmbeddingModelChange,
     handleConfigChange,
   };
 };

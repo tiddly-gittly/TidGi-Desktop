@@ -12,6 +12,7 @@ import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import PowerIcon from '@mui/icons-material/Power';
 import RouterIcon from '@mui/icons-material/Router';
+import SearchIcon from '@mui/icons-material/Search';
 import SecurityIcon from '@mui/icons-material/Security';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
@@ -51,6 +52,11 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
     [PreferenceSections.externalAPI]: {
       text: t('Preference.ExternalAPI', { ns: 'agent' }),
       Icon: ApiIcon,
+      ref: useRef<SectionTitleElement>(null),
+    },
+    [PreferenceSections.search]: {
+      text: t('Preference.Search'),
+      Icon: SearchIcon,
       ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.notifications]: {

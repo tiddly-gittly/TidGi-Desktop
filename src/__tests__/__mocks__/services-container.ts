@@ -82,7 +82,9 @@ export const serviceInstances: {
     ),
     cancelAIRequest: vi.fn(async () => undefined),
     updateProvider: vi.fn(async () => undefined),
+    deleteProvider: vi.fn(async () => undefined),
     updateDefaultAIConfig: vi.fn(async () => undefined),
+    deleteFieldFromDefaultAIConfig: vi.fn(async () => undefined),
   },
   agentDefinition: { getAgentDef: vi.fn() },
   database: {

@@ -17,6 +17,7 @@ interface ProviderConfigProps {
   providers: AIProviderConfig[];
   setProviders: Dispatch<SetStateAction<AIProviderConfig[]>>;
   changeDefaultModel?: (provider: string, model: string) => Promise<void>;
+  changeDefaultEmbeddingModel?: (provider: string, model: string) => Promise<void>;
 }
 
 // Add provider button styling
@@ -37,7 +38,7 @@ interface ProviderFormState {
   };
 }
 
-export function ProviderConfig({ providers, setProviders, changeDefaultModel }: ProviderConfigProps) {
+export function ProviderConfig({ providers, setProviders, changeDefaultModel, changeDefaultEmbeddingModel }: ProviderConfigProps) {
   const { t } = useTranslation('agent');
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -132,6 +133,9 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
     try {
       setProviders(previous => previous.map(p => p.provider === providerName ? { ...p, enabled } : p));
       await window.service.externalAPI.updateProvider(providerName, { enabled });
+
+      // existing logic: enabled flag saved and UI updated
+
       showMessage(enabled ? t('Preference.ProviderEnabled') : t('Preference.ProviderDisabled'), 'success');
     } catch (error) {
       void window.service.native.log('error', 'Failed to update provider status', { function: 'ProviderConfig.handleProviderEnabledChange', error: String(error) });
@@ -352,8 +356,9 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
         return;
       }
 
-      // Find selected default provider (user explicit choice) to get appropriate default model
+      // Find selected default provider (user explicit choice) to get appropriate default models
       let defaultModel: ModelInfo | undefined;
+      let embeddingModel: ModelInfo | undefined;
       const selectedPresetProvider = availableDefaultProviders.find(p => p.provider === selectedDefaultProvider);
 
       // If the user selected a preset provider, use its first model as the default
@@ -376,16 +381,45 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
           // Using type assertion after checking existence with 'in' operator
           defaultModel.metadata = { ...baseModel.metadata };
         }
+
+        // Look for an embedding model in the same provider
+        const baseEmbeddingModel = selectedPresetProvider.models.find(model => Array.isArray(model.features) && model.features.includes('embedding'));
+
+        if (baseEmbeddingModel) {
+          // Ensure features exist and are properly typed as ModelFeature[]
+          const embeddingFeatures: ModelFeature[] = Array.isArray(baseEmbeddingModel.features)
+            ? baseEmbeddingModel.features.map(f => f)
+            : [];
+
+          // Create the embedding model with proper type safety
+          embeddingModel = {
+            name: baseEmbeddingModel.name,
+            caption: `${baseEmbeddingModel.caption || baseEmbeddingModel.name} (${newProviderForm.provider})`,
+            features: embeddingFeatures,
+          } satisfies ModelInfo;
+
+          // Safely handle metadata if it exists
+          if ('metadata' in baseEmbeddingModel && baseEmbeddingModel.metadata) {
+            embeddingModel.metadata = { ...baseEmbeddingModel.metadata };
+          }
+        }
       }
-      // If no similar provider found, don't create a default model
+      // If no similar provider found, don't create default models
 
       // Create new provider configuration with type checking using satisfies
+      const modelsToAdd: ModelInfo[] = [];
+      if (defaultModel) modelsToAdd.push(defaultModel);
+      if (embeddingModel && embeddingModel.name !== defaultModel?.name) {
+        modelsToAdd.push(embeddingModel);
+      }
+
       const newProvider = {
         provider: newProviderForm.provider,
         providerClass: newProviderForm.providerClass,
         baseURL: newProviderForm.baseURL,
-        models: defaultModel ? [defaultModel] : [], // Only add model if one was found
-        isPreset: false,
+        models: modelsToAdd, // Add both default and embedding models if available
+        // If user selected a preset provider, mark new provider as preset
+        isPreset: Boolean(selectedPresetProvider),
         enabled: true,
       } satisfies AIProviderConfig;
 
@@ -423,11 +457,65 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
           );
         }
       }
+
+      // Set the embedding model as the default embedding model if it was found and no embedding model is currently set
+      if (embeddingModel && changeDefaultEmbeddingModel) {
+        try {
+          const currentAiConfig = await window.service.externalAPI.getAIConfig();
+          if (!currentAiConfig.api.embeddingModel) {
+            await changeDefaultEmbeddingModel(newProvider.provider, embeddingModel.name);
+          }
+        } catch (error_) {
+          void window.service.native.log(
+            'error',
+            'Failed to set default embedding model for new provider',
+            {
+              function: 'ProviderConfig.handleAddProvider.setDefaultEmbeddingModel',
+              error: String(error_),
+            },
+          );
+        }
+      }
       setShowAddProviderForm(false);
       showMessage(t('Preference.ProviderAddedSuccessfully'), 'success');
     } catch (error_) {
       void window.service.native.log('error', 'Failed to add provider', { function: 'ProviderConfig.handleAddProvider', error: String(error_) });
       showMessage(t('Preference.FailedToAddProvider'), 'error');
+    }
+  };
+
+  const handleDeleteProvider = async (providerName: string) => {
+    try {
+      if (!window.confirm(t('Preference.ConfirmDeleteProvider', { providerName }))) {
+        return;
+      }
+
+      // Remove provider from backend
+      await window.service.externalAPI.deleteProvider(providerName);
+
+      const updatedProviders = providers.filter(p => p.provider !== providerName);
+      setProviders(updatedProviders);
+
+      // Remove from local forms state
+      setProviderForms(previous => {
+        const { [providerName]: _, ...newForms } = previous;
+        return newForms;
+      });
+
+      // Adjust selected tab if needed
+      if (selectedTabIndex >= updatedProviders.length && updatedProviders.length > 0) {
+        setSelectedTabIndex(updatedProviders.length - 1);
+      } else if (updatedProviders.length === 0) {
+        setSelectedTabIndex(0);
+      }
+
+      showMessage(t('Preference.ProviderDeleted', { providerName }), 'success');
+    } catch (error_) {
+      void window.service.native.log('error', 'Failed to delete provider', {
+        function: 'ProviderConfig.handleDeleteProvider',
+        error: String(error_),
+      });
+      showMessage(t('Preference.FailedToDeleteProvider', { providerName }), 'error');
     }
   };
 
@@ -539,6 +627,9 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel }: 
                 onRemoveModel={modelName => removeModel(provider.provider, modelName)}
                 onOpenAddModelDialog={() => {
                   openAddModelDialog(provider.provider);
+                }}
+                onDeleteProvider={() => {
+                  void handleDeleteProvider(provider.provider);
                 }}
               />
             </TabPanel>

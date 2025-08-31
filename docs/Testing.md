@@ -142,6 +142,33 @@ await waitFor(() => {
 
 // ✅ Do this instead
 expect(await screen.findByText('Content')).toBeInTheDocument();
+
+// Handle async component initialization to avoid act(...) warnings
+// ✅ Create helper that waits for async loading
+const renderComponent = async () => {
+  const result = render(<AsyncComponent />);
+  await waitFor(() => {
+    expect(screen.queryByText('Loading')).not.toBeInTheDocument();
+  });
+  return result;
+};
+
+// ✅ Use in tests
+it('should test feature after loading', async () => {
+  await renderComponent();
+  // Now safe to test without act warnings
+});
+
+// ✅ For loading state tests, wait after assertion
+it('should show loading initially', async () => {
+  render(<AsyncComponent />);
+  expect(screen.getByText('Loading')).toBeInTheDocument();
+  
+  // Wait for completion to prevent warnings in subsequent async updates
+  await waitFor(() => {
+    expect(screen.queryByText('Loading')).not.toBeInTheDocument();
+  });
+});
 ```
 
 ## Writing E2E Tests
@@ -232,6 +259,17 @@ act(() => {
 // ✅ Using proper async testing
 const user = userEvent.setup();
 await user.click(button);
+
+// ❌ Not handling async component initialization
+render(<AsyncComponent />);
+expect(screen.getByText('Content')).toBeInTheDocument(); // May cause act warnings
+
+// ✅ Wait for async initialization to complete
+const renderAsync = async () => {
+  const result = render(<AsyncComponent />);
+  await waitFor(() => expect(screen.queryByText('Loading')).not.toBeInTheDocument());
+  return result;
+};
 ```
 
 For complete Testing Library guidance, see [Testing Library docs](https://testing-library.com/docs/queries/about).
@@ -267,6 +305,36 @@ Always use cross-env in your test script. For example:
 Or run manually in shell: `$env:ELECTRON_RUN_AS_NODE=1; pnpm run test:unit`
 
 We use `ELECTRON_RUN_AS_NODE` to solve native modules (like better-sqlite3) being compiled for the wrong Node.js version, see the section in [ErrorDuringStart.md](./ErrorDuringStart.md#during-test-the-module-node_modulesbetter-sqlite3buildreleasebetter_sqlite3node-was-compiled-against-a-different-nodejs-version-using).
+
+### An update to Component inside a test was not wrapped in act(...)
+
+This warning occurs when React components perform asynchronous state updates during test execution. Common causes:
+
+- Components with `useEffect` that fetch data on mount
+- Async API calls that update component state
+- Timers or intervals that trigger state changes
+
+**Solution**: Wait for async operations to complete using helper functions:
+
+```typescript
+// Create async render helper
+const renderAsyncComponent = async () => {
+  const result = render(<AsyncComponent />);
+  // Wait for loading to complete
+  await waitFor(() => {
+    expect(screen.queryByText('Loading')).not.toBeInTheDocument();
+  });
+  return result;
+};
+
+// Use in tests
+it('should test feature', async () => {
+  await renderAsyncComponent();
+  // Now safe to interact without warnings
+});
+```
+
+Avoid explicitly using `act()` - React Testing Library handles most cases automatically when using proper async patterns.
 
 ### E2E test open production app
 

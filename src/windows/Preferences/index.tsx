@@ -3,6 +3,7 @@ import { styled } from '@mui/material/styles';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useInfoSnackbar } from '@/components/InfoSnackbar';
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
@@ -17,6 +18,7 @@ import { Network } from './sections/Network';
 import { Notifications } from './sections/Notifications';
 import { Performance } from './sections/Performance';
 import { PrivacyAndSecurity } from './sections/PrivacyAndSecurity';
+import { Search } from './sections/Search';
 import { Sync } from './sections/Sync';
 import { System } from './sections/System';
 import { TiddlyWiki } from './sections/TiddlyWiki';
@@ -38,6 +40,7 @@ export default function Preferences(): React.JSX.Element {
   const { t } = useTranslation();
   const sections = usePreferenceSections();
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
+  const [showInfoSnackbar, InfoSnackbarComponent] = useInfoSnackbar();
 
   // handle open preference from other window, and goto some tab
   useEffect(() => {
@@ -52,6 +55,7 @@ export default function Preferences(): React.JSX.Element {
   return (
     <Root>
       {RestartSnackbar}
+      {InfoSnackbarComponent}
 
       <Helmet>
         <title>{t('ContextMenu.Preferences')}</title>
@@ -63,6 +67,7 @@ export default function Preferences(): React.JSX.Element {
         <General sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <Sync sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <ExternalAPI sections={sections} />
+        <Search sections={sections} requestRestartCountDown={requestRestartCountDown} showInfoSnackbar={showInfoSnackbar} />
         <Notifications sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <System sections={sections} />
         <Languages sections={sections} requestRestartCountDown={requestRestartCountDown} />

@@ -25,6 +25,7 @@ import { initializeObservables } from '@services/libs/initializeObservables';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IUpdaterService } from '@services/updater/interface';
 import { IWikiService } from '@services/wiki/interface';
+import { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
 import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import EventEmitter from 'events';
 import { initDevelopmentExtension } from './debug';
@@ -59,6 +60,7 @@ const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Pr
 const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater);
 const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);
 const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+const wikiEmbeddingService = container.get<IWikiEmbeddingService>(serviceIdentifier.WikiEmbedding);
 const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
@@ -99,6 +101,7 @@ const commonInit = async (): Promise<void> => {
     }),
     databaseService.initializeForApp().then(async () => {
       await agentDefinitionService.initialize();
+      await wikiEmbeddingService.initialize();
     }),
   ]);
   initializeObservables();

@@ -23,6 +23,7 @@ import { IThemeService, ThemeServiceIPCDescriptor } from '@services/theme/interf
 import { IUpdaterService, UpdaterServiceIPCDescriptor } from '@services/updater/interface';
 import { IViewService, ViewServiceIPCDescriptor } from '@services/view/interface';
 import { IWikiService, WikiServiceIPCDescriptor } from '@services/wiki/interface';
+import { IWikiEmbeddingService, WikiEmbeddingServiceIPCDescriptor } from '@services/wikiEmbedding/interface';
 import { IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
 import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows/interface';
 import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
@@ -47,6 +48,7 @@ export const theme = createProxy<IThemeService>(ThemeServiceIPCDescriptor);
 export const updater = createProxy<IUpdaterService>(UpdaterServiceIPCDescriptor);
 export const view = createProxy<AsyncifyProxy<IViewService>>(ViewServiceIPCDescriptor);
 export const wiki = createProxy<IWikiService>(WikiServiceIPCDescriptor);
+export const wikiEmbedding = createProxy<IWikiEmbeddingService>(WikiEmbeddingServiceIPCDescriptor);
 export const wikiGitWorkspace = createProxy<IWikiGitWorkspaceService>(WikiGitWorkspaceServiceIPCDescriptor);
 export const window = createProxy<IWindowService>(WindowServiceIPCDescriptor);
 export const workspace = createProxy<AsyncifyProxy<IWorkspaceService>>(WorkspaceServiceIPCDescriptor);
@@ -70,6 +72,7 @@ export const descriptors = {
   updater: UpdaterServiceIPCDescriptor,
   view: ViewServiceIPCDescriptor,
   wiki: WikiServiceIPCDescriptor,
+  wikiEmbedding: WikiEmbeddingServiceIPCDescriptor,
   wikiGitWorkspace: WikiGitWorkspaceServiceIPCDescriptor,
   window: WindowServiceIPCDescriptor,
   workspace: WorkspaceServiceIPCDescriptor,

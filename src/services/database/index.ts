@@ -1,9 +1,11 @@
+import type { Database } from 'better-sqlite3';
 import settings from 'electron-settings';
 import fs from 'fs-extra';
 import { injectable } from 'inversify';
 import { debounce } from 'lodash';
 import path from 'path';
 import * as rotateFs from 'rotating-file-stream';
+import * as sqliteVec from 'sqlite-vec';
 import { DataSource } from 'typeorm';
 
 import { CACHE_DATABASE_FOLDER } from '@/constants/appPaths';
@@ -16,6 +18,7 @@ import { IDatabaseService, ISettingFile } from './interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from './schema/agent';
 import { AgentBrowserTabEntity } from './schema/agentBrowser';
 import { WikiTiddler } from './schema/wiki';
+import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from './schema/wikiEmbedding';
 
 // Schema config interface
 interface SchemaConfig {
@@ -67,6 +70,13 @@ export class DatabaseService implements IDatabaseService {
     // Register wiki database schema example
     this.registerSchema('wiki', {
       entities: [WikiTiddler], // Wiki related entities
+      synchronize: true,
+      migrationsRun: false,
+    });
+
+    // Register wiki-embedding database schema
+    this.registerSchema('wiki-embedding', {
+      entities: [WikiEmbeddingEntity, WikiEmbeddingStatusEntity],
       synchronize: true,
       migrationsRun: false,
     });
@@ -131,6 +141,11 @@ export class DatabaseService implements IDatabaseService {
 
       await dataSource.initialize();
 
+      // Load sqlite-vec extension for embedding databases
+      if (key.includes('embedding')) {
+        await this.loadSqliteVecExtension(dataSource);
+      }
+
       if (schemaConfig.migrationsRun) {
         await dataSource.runMigrations();
       }
@@ -163,6 +178,12 @@ export class DatabaseService implements IDatabaseService {
         });
 
         await dataSource.initialize();
+
+        // Load sqlite-vec extension for embedding databases
+        if (key.includes('embedding')) {
+          await this.loadSqliteVecExtension(dataSource);
+        }
+
         this.dataSources.set(key, dataSource);
         logger.debug(`Database connection established for key: ${key}`);
 
@@ -263,6 +284,37 @@ export class DatabaseService implements IDatabaseService {
     void this.debouncedStoreSettingsToFile();
     // Make infrequent backup of setting file, preventing re-install/upgrade from corrupting the file.
     this.debouncedStoreSettingsToBackupFile();
+  }
+
+  /**
+   * Load sqlite-vec extension for vector operations
+   */
+  private async loadSqliteVecExtension(dataSource: DataSource): Promise<void> {
+    try {
+      // Get the underlying better-sqlite3 database instance
+      const driver = dataSource.driver as { databaseConnection?: Database };
+      const database = driver.databaseConnection;
+
+      if (!database) {
+        throw new Error('Could not get underlying SQLite database connection');
+      }
+
+      // Load sqlite-vec extension
+      sqliteVec.load(database);
+
+      // Test that sqlite-vec is working
+      const result: unknown = await dataSource.query('SELECT vec_version() as version');
+      const version = Array.isArray(result) && result.length > 0 && result[0] && typeof result[0] === 'object' && 'version' in result[0]
+        ? String((result[0] as { version: unknown }).version)
+        : 'unknown';
+      logger.info(`sqlite-vec loaded successfully, version: ${version}`);
+
+      // The vec0 virtual tables will be created dynamically by WikiEmbeddingService
+      // based on the dimensions needed
+    } catch (error) {
+      logger.error('Failed to load sqlite-vec extension:', error);
+      throw new Error(`sqlite-vec extension failed to load: ${(error as Error).message}`);
+    }
   }
 
   public setSettingImmediately<K extends keyof ISettingFile>(key: K, value: ISettingFile[K]) {

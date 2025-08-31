@@ -95,6 +95,7 @@ exports.default = async (
       ['app-path', 'main'],
       // node binary
       ['better-sqlite3', 'build', 'Release', 'better_sqlite3.node'],
+      [`sqlite-vss-${process.platform}-${process.arch}`],
     ];
     console.log(`Copying packagePathsToCopyDereferenced`);
     for (const packagePathInNodeModules of packagePathsToCopyDereferenced) {

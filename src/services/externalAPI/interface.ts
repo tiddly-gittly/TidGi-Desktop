@@ -28,6 +28,34 @@ export interface AIStreamResponse {
 }
 
 /**
+ * AI embedding response interface
+ */
+export interface AIEmbeddingResponse {
+  requestId: string;
+  embeddings: number[][];
+  model: string;
+  object: string;
+  usage?: {
+    prompt_tokens: number;
+    total_tokens: number;
+  };
+  status: 'done' | 'error';
+  /**
+   * Structured error details, provided when status is 'error'
+   */
+  errorDetail?: {
+    /** Error type name */
+    name: string;
+    /** Error code */
+    code: string;
+    /** Provider name associated with the error */
+    provider: string;
+    /** Human readable error message */
+    message?: string;
+  };
+}
+
+/**
  * Supported AI providers
  */
 export type AIProvider = string;
@@ -94,6 +122,20 @@ export interface IExternalAPIService {
   generateFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AiAPIConfig): AsyncGenerator<AIStreamResponse, void, unknown>;
 
   /**
+   * Generate embeddings from AI provider
+   */
+  generateEmbeddings(
+    inputs: string[],
+    config: AiAPIConfig,
+    options?: {
+      /** Dimensions for the embedding (supported by some providers) */
+      dimensions?: number;
+      /** Encoding format for the embedding */
+      encoding_format?: 'float' | 'base64';
+    },
+  ): Promise<AIEmbeddingResponse>;
+
+  /**
    * Cancel an ongoing AI request
    */
   cancelAIRequest(requestId: string): Promise<void>;
@@ -114,20 +156,35 @@ export interface IExternalAPIService {
   updateProvider(provider: string, config: Partial<AIProviderConfig>): Promise<void>;
 
   /**
+   * Delete a provider configuration
+   */
+  deleteProvider(provider: string): Promise<void>;
+
+  /**
    * Update default AI configuration settings
    */
   updateDefaultAIConfig(config: Partial<AiAPIConfig>): Promise<void>;
+
+  /**
+   * Delete a field from default AI configuration
+   * @param fieldPath - Dot-separated path to the field (e.g., 'api.embeddingModel')
+   */
+  deleteFieldFromDefaultAIConfig(fieldPath: string): Promise<void>;
 }
 
 export const ExternalAPIServiceIPCDescriptor = {
   channel: ExternalAPIChannel.name,
   properties: {
+    initialize: ProxyPropertyType.Function,
     streamFromAI: ProxyPropertyType.Function$,
+    generateEmbeddings: ProxyPropertyType.Function,
     cancelAIRequest: ProxyPropertyType.Function,
     getAIProviders: ProxyPropertyType.Function,
     getAIConfig: ProxyPropertyType.Function,
     updateProvider: ProxyPropertyType.Function,
+    deleteProvider: ProxyPropertyType.Function,
     updateDefaultAIConfig: ProxyPropertyType.Function,
+    deleteFieldFromDefaultAIConfig: ProxyPropertyType.Function,
     // generateFromAI is intentionally not exposed via IPC as AsyncGenerators
     // aren't directly supported by electron-ipc-cat
   },

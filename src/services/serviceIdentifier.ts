@@ -1,6 +1,7 @@
 export default {
   AgentBrowser: Symbol.for('AgentBrowser'),
   AgentDefinition: Symbol.for('AgentDefinition'),
+  AgentInstance: Symbol.for('AgentInstance'),
   Authentication: Symbol.for('Authentication'),
   Context: Symbol.for('Context'),
   Database: Symbol.for('Database'),
@@ -17,9 +18,9 @@ export default {
   Updater: Symbol.for('Updater'),
   View: Symbol.for('View'),
   Wiki: Symbol.for('Wiki'),
+  WikiEmbedding: Symbol.for('WikiEmbedding'),
   WikiGitWorkspace: Symbol.for('WikiGitWorkspace'),
   Window: Symbol.for('Window'),
   Workspace: Symbol.for('Workspace'),
   WorkspaceView: Symbol.for('WorkspaceView'),
-  AgentInstance: Symbol.for('AgentInstance'),
 };

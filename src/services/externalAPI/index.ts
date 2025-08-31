@@ -10,9 +10,10 @@ import { IDatabaseService } from '@services/database/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { CoreMessage, Message } from 'ai';
+import { generateEmbeddingsFromProvider } from './callEmbeddingAPI';
 import { streamFromProvider } from './callProviderAPI';
 import { extractErrorDetails } from './errorHandlers';
-import type { AIGlobalSettings, AIProviderConfig, AIStreamResponse, IExternalAPIService } from './interface';
+import type { AIEmbeddingResponse, AIGlobalSettings, AIProviderConfig, AIStreamResponse, IExternalAPIService } from './interface';
 
 /**
  * Simplified request context
@@ -96,6 +97,15 @@ export class ExternalAPIService implements IExternalAPIService {
     this.saveSettingsToDatabase();
   }
 
+  async deleteProvider(provider: string): Promise<void> {
+    this.ensureSettingsLoaded();
+    const index = this.userSettings.providers.findIndex(p => p.provider === provider);
+    if (index !== -1) {
+      this.userSettings.providers.splice(index, 1);
+      this.saveSettingsToDatabase();
+    }
+  }
+
   async updateDefaultAIConfig(config: Partial<AiAPIConfig>): Promise<void> {
     this.ensureSettingsLoaded();
     this.userSettings.defaultConfig = mergeWith(
@@ -104,6 +114,33 @@ export class ExternalAPIService implements IExternalAPIService {
       config,
     ) as typeof this.userSettings.defaultConfig;
     this.saveSettingsToDatabase();
+  }
+
+  async deleteFieldFromDefaultAIConfig(fieldPath: string): Promise<void> {
+    this.ensureSettingsLoaded();
+
+    // Support nested field deletion like 'api.embeddingModel'
+    const pathParts = fieldPath.split('.');
+    let current: Record<string, unknown> = this.userSettings.defaultConfig;
+
+    // Navigate to the parent object
+    for (let index = 0; index < pathParts.length - 1; index++) {
+      const part = pathParts[index];
+      if (current && typeof current === 'object' && part in current) {
+        current = current[part] as Record<string, unknown>;
+      } else {
+        // Path doesn't exist, nothing to delete
+        return;
+      }
+    }
+
+    // Delete the final field
+    const finalField = pathParts[pathParts.length - 1];
+    if (current && typeof current === 'object' && finalField in current) {
+      // Use Reflect.deleteProperty for safe dynamic property deletion
+      Reflect.deleteProperty(current, finalField);
+      this.saveSettingsToDatabase();
+    }
   }
 
   /**
@@ -246,6 +283,63 @@ export class ExternalAPIService implements IExternalAPIService {
     if (controller) {
       controller.abort();
       this.activeRequests.delete(requestId);
+    }
+  }
+
+  async generateEmbeddings(
+    inputs: string[],
+    config: AiAPIConfig,
+    options?: {
+      dimensions?: number;
+      encoding_format?: 'float' | 'base64';
+    },
+  ): Promise<AIEmbeddingResponse> {
+    // Prepare request context
+    const { requestId, controller } = this.prepareAIRequest();
+    logger.debug(`[${requestId}] Starting generateEmbeddings with config`, { inputCount: inputs.length });
+
+    try {
+      // Get provider configuration
+      const providerConfig = await this.getProviderConfig(config.api.provider);
+      if (!providerConfig) {
+        return {
+          requestId,
+          embeddings: [],
+          model: config.api.model,
+          object: 'error',
+          status: 'error',
+          errorDetail: {
+            name: 'MissingProviderError',
+            code: 'PROVIDER_NOT_FOUND',
+            provider: config.api.provider,
+          },
+        };
+      }
+
+      // Generate embeddings
+      const result = await generateEmbeddingsFromProvider(
+        inputs,
+        config,
+        controller.signal,
+        providerConfig,
+        options,
+      );
+
+      return result;
+    } catch (error) {
+      // Handle errors and categorize them
+      const errorDetail = extractErrorDetails(error, config.api.provider);
+
+      return {
+        requestId,
+        embeddings: [],
+        model: config.api.model,
+        object: 'error',
+        status: 'error',
+        errorDetail,
+      };
+    } finally {
+      this.cleanupAIRequest(requestId);
     }
   }
 }

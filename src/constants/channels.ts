@@ -148,6 +148,10 @@ export enum ExternalAPIChannel {
   name = 'ExternalAPIChannel',
 }
 
+export enum WikiEmbeddingChannel {
+  name = 'WikiEmbeddingChannel',
+}
+
 export type Channels =
   | MainChannel
   | AuthenticationChannel
@@ -170,4 +174,5 @@ export type Channels =
   | I18NChannels
   | MetaDataChannel
   | SyncChannel
-  | AgentChannel;
+  | AgentChannel
+  | WikiEmbeddingChannel;

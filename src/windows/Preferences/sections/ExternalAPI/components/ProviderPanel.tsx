@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { Box, Button, Chip, FormControlLabel, Switch, Typography } from '@mui/material';
 import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
 import React from 'react';
@@ -21,6 +22,7 @@ interface ProviderPanelProps {
   onEnabledChange: (enabled: boolean) => void;
   onRemoveModel: (modelName: string) => void;
   onOpenAddModelDialog: () => void;
+  onDeleteProvider?: () => void;
 }
 
 export function ProviderPanel({
@@ -30,6 +32,7 @@ export function ProviderPanel({
   onEnabledChange,
   onRemoveModel,
   onOpenAddModelDialog,
+  onDeleteProvider,
 }: ProviderPanelProps) {
   const { t } = useTranslation('agent');
   const isEnabled = provider.enabled !== false;
@@ -48,19 +51,35 @@ export function ProviderPanel({
             </Typography>
           )}
         </Box>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={isEnabled}
-              onChange={(event) => {
-                onEnabledChange(event.target.checked);
-              }}
-              name='providerEnabled'
-              color='primary'
-            />
-          }
-          label={t('Preference.EnableProvider')}
-        />
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isEnabled}
+                onChange={(event) => {
+                  onEnabledChange(event.target.checked);
+                }}
+                name='providerEnabled'
+                color='primary'
+              />
+            }
+            label={t('Preference.EnableProvider')}
+          />
+          {/* Delete Provider Button - show when delete handler provided (allow deleting presets) */}
+          {onDeleteProvider && (
+            <Button
+              variant='text'
+              color='error'
+              size='small'
+              startIcon={<DeleteIcon />}
+              onClick={onDeleteProvider}
+              sx={{ fontSize: '0.75rem', minWidth: 'auto' }}
+              data-testid='delete-provider-button'
+            >
+              {t('Preference.DeleteProvider')}
+            </Button>
+          )}
+        </Box>
       </Box>
 
       {!isEnabled && (

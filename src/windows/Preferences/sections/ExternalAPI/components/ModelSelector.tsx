@@ -9,12 +9,14 @@ interface ModelSelectorProps {
   selectedConfig: AiAPIConfig | null;
   modelOptions: Array<[AIProviderConfig, ModelInfo]>;
   onChange: (provider: string, model: string) => void;
+  onClear?: () => void;
   onlyShowEnabled?: boolean;
 }
 
-export function ModelSelector({ selectedConfig, modelOptions, onChange, onlyShowEnabled }: ModelSelectorProps) {
+export function ModelSelector({ selectedConfig, modelOptions, onChange, onClear, onlyShowEnabled }: ModelSelectorProps) {
   const { t } = useTranslation('agent');
-  const selectedValue = selectedConfig
+  const selectedValue = selectedConfig && selectedConfig.api.model && selectedConfig.api.provider &&
+      selectedConfig.api.model !== '' && selectedConfig.api.provider !== ''
     ? modelOptions.find(m => m[0].provider === selectedConfig.api.provider && m[1].name === selectedConfig.api.model) || null
     : null;
   const filteredModelOptions = onlyShowEnabled
@@ -26,6 +28,8 @@ export function ModelSelector({ selectedConfig, modelOptions, onChange, onlyShow
       onChange={(_, value) => {
         if (value) {
           onChange(value[0].provider, value[1].name);
+        } else if (onClear) {
+          onClear();
         }
       }}
       options={filteredModelOptions}

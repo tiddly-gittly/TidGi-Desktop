@@ -124,6 +124,9 @@
     "Deepseek": "DeepSeek Official Interface",
     "DefaultAIModelSelection": "Default AI Model Selection",
     "DefaultAIModelSelectionDescription": "Choose the default AI provider and model to use when not specifically set",
+    "DefaultEmbeddingModelSelection": "Default Embedding Model Selection",
+    "DefaultEmbeddingModelSelectionDescription": "Choose the default embedding model to use for semantic search and vector operations",
+    "DeleteProvider": "",
     "DisabledProviderInfo": "This provider is disabled, and its models will not appear in the model selection list",
     "EnableProvider": "Enable this provider",
     "ExternalAPI": "External API",
@@ -168,7 +171,9 @@
     "ProviderName": "Provider Name",
     "ProviderNameRequired": "Provider name is required",
     "SaveProviderConfig": "Save Provider Configuration",
+    "SearchEmbeddingNoEmbeddingModelError": "",
     "SelectDefaultProvider": "Select default provider",
+    "SelectEmbeddingModel": "Select Embedding Model",
     "SelectFromPresets": "Select from Preset Models",
     "SelectModel": "Select Model",
     "SelectProvider": "Select Provider",
@@ -527,7 +532,18 @@
       "IncludeTextTitle": "",
       "MaxResults": "",
       "MaxResultsTitle": "",
+      "SourceType": "",
+      "SourceTypeTitle": "",
       "Title": "",
+      "ToolListPosition": {
+        "Position": "",
+        "PositionTitle": "",
+        "TargetId": "",
+        "TargetIdTitle": ""
+      },
+      "ToolListPositionTitle": "",
+      "ToolResultDuration": "",
+      "ToolResultDurationTitle": "",
       "WorkspaceName": "",
       "WorkspaceNameTitle": ""
     }

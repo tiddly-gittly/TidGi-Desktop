@@ -16,6 +16,10 @@ export const ProviderModelSchema = z.object({
     title: t('Schema.ProviderModel.ModelTitle'),
     description: t('Schema.ProviderModel.Model'),
   }),
+  embeddingModel: z.string().optional().meta({
+    title: t('Schema.ProviderModel.EmbeddingModelTitle'),
+    description: t('Schema.ProviderModel.EmbeddingModel'),
+  }),
 })
   .catchall(z.unknown())
   .meta({
