@@ -1,5 +1,5 @@
 /* eslint-disable unicorn/prevent-abbreviations */
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
 import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
@@ -11,16 +11,16 @@ import { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { AgentDefinition, AgentToolConfig, IAgentDefinitionService } from './interface';
 import { optimizeToolForLLM } from './llmToolSchemaOptimizer';
+import { AgentDefinition, IAgentDefinitionService } from './interface';
 
 @injectable()
 export class AgentDefinitionService implements IAgentDefinitionService {
-  @lazyInject(serviceIdentifier.Database)
+  @inject(serviceIdentifier.Database)
   private readonly databaseService!: IDatabaseService;
   @lazyInject(serviceIdentifier.AgentInstance)
   private readonly agentInstanceService!: IAgentDefinitionService;
-  @lazyInject(serviceIdentifier.AgentBrowser)
+  @inject(serviceIdentifier.AgentBrowser)
   private readonly agentBrowserService!: IAgentBrowserService;
 
   private dataSource: DataSource | null = null;
@@ -51,6 +51,16 @@ export class AgentDefinitionService implements IAgentDefinitionService {
     if (!this.agentDefRepository) {
       throw new Error('Agent repositories not initialized');
     }
+  }
+
+  /**
+   * Helper to pick field from DB entity or fallback to default.
+   * Treat empty string as missing so default can be used.
+   */
+  private pickField<T>(dbVal: T | null | undefined, defVal: T | undefined): T | undefined {
+    if (dbVal === null || dbVal === undefined) return defVal;
+    if (typeof dbVal === 'string' && dbVal.trim() === '') return defVal;
+    return dbVal as T;
   }
 
   /**
@@ -131,20 +141,33 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       // Get agent definitions from database
       const agentDefsFromDB = await this.agentDefRepository!.find(queryOptions);
 
+      // Default agents list and map for fallback values
+      const defaultAgentsList = defaultAgents as AgentDefinition[];
+      const defaultAgentsMap = new Map<string, AgentDefinition>(defaultAgentsList.map(a => [a.id, a]));
+
       // Convert entities to agent definitions and create a map for quick lookup
       const agentDefsMap = new Map<string, AgentDefinition>();
       agentDefsFromDB.forEach(entity => {
-        agentDefsMap.set(entity.id, {
-          ...pick(entity, ['id', 'description', 'avatarUrl', 'handlerID', 'handlerConfig', 'aiApiConfig']),
-          name: entity.name || '',
-        });
+        const def = defaultAgentsMap.get(entity.id);
+        // prefer stored values; fallback to default agent fields when stored values are nullish
+        const merged: AgentDefinition = {
+          id: entity.id,
+          name: this.pickField(entity.name, def?.name),
+          description: this.pickField(entity.description, def?.description),
+          avatarUrl: this.pickField(entity.avatarUrl, def?.avatarUrl),
+          handlerID: this.pickField(entity.handlerID, def?.handlerID),
+          handlerConfig: this.pickField(entity.handlerConfig, def?.handlerConfig),
+          aiApiConfig: this.pickField(entity.aiApiConfig, def?.aiApiConfig),
+          agentTools: this.pickField(entity.agentTools, def?.agentTools),
+        };
+
+        agentDefsMap.set(entity.id, merged);
       });
 
-      // Default agents to be added to database
-      const defaultAgentsToSave = [];
+      // Default agents to be added to database (persist only minimal record)
+      const defaultAgentsToSave: Array<Partial<AgentDefinition>> = [];
 
       // Add default agents if they don't exist in the database
-      const defaultAgentsList = defaultAgents as AgentDefinition[];
       for (const defaultAgent of defaultAgentsList) {
         // Skip if this agent exists in the database (user might have customized it)
         if (agentDefsMap.has(defaultAgent.id)) {
@@ -152,23 +175,29 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         }
 
         // If searchName is provided, filter default agents by name
-        if (options?.searchName && !defaultAgent.name.toLowerCase().includes(options.searchName.toLowerCase())) {
+        if (
+          options?.searchName &&
+          // only include if defaultAgent has a name and it matches
+          defaultAgent.name &&
+          !defaultAgent.name.toLowerCase().includes(options.searchName.toLowerCase())
+        ) {
           continue;
         }
 
         // Add default agent to the map and to the save list
         agentDefsMap.set(defaultAgent.id, defaultAgent);
-        defaultAgentsToSave.push(defaultAgent);
+        // Persist only id to avoid persisting stale default fields
+        defaultAgentsToSave.push({ id: defaultAgent.id });
       }
 
       // Save default agents to database in bulk if any were found
       // This ensures that foreign key constraints are satisfied when creating agent instances
       if (defaultAgentsToSave.length > 0) {
         try {
-          // Create agent definition entities
+          // Create minimal agent definition entities (only id)
           const agentDefEntities = defaultAgentsToSave.map(agent =>
             this.agentDefRepository!.create({
-              ...agent,
+              id: agent.id,
             })
           );
 
@@ -209,33 +238,43 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         where: { id: defId },
       });
 
-      // If found in database, return it
+      // If found in database, return it with fallback to default agent fields when missing.
       if (entity) {
-        return {
-          ...pick(entity, ['id', 'description', 'avatarUrl', 'handlerID', 'handlerConfig', 'aiApiConfig']),
-          name: entity.name || '',
+        const defaultAgentsList = defaultAgents as AgentDefinition[];
+        const defaultAgent = defaultAgentsList.find(agent => agent.id === defId);
+
+        // Merge entity with default agent fields for any nullish or empty values
+        const merged: AgentDefinition = {
+          id: entity.id,
+          name: this.pickField(entity.name, defaultAgent?.name),
+          description: this.pickField(entity.description, defaultAgent?.description),
+          avatarUrl: this.pickField(entity.avatarUrl, defaultAgent?.avatarUrl),
+          handlerID: this.pickField(entity.handlerID, defaultAgent?.handlerID),
+          handlerConfig: this.pickField(entity.handlerConfig, defaultAgent?.handlerConfig),
+          aiApiConfig: this.pickField(entity.aiApiConfig, defaultAgent?.aiApiConfig),
+          agentTools: this.pickField(entity.agentTools, defaultAgent?.agentTools),
         };
+
+        return merged;
       }
 
       // If not found in database, check default agents
       const defaultAgentsList = defaultAgents as AgentDefinition[];
       const defaultAgent = defaultAgentsList.find(agent => agent.id === defId);
 
-      // If found in default agents, save to database first to satisfy foreign key constraints
+      // If found in default agents, persist only id to DB to satisfy FK constraints
       if (defaultAgent) {
-        logger.info(`Default agent "${defaultAgent.name}" (${defId}) not found in database, creating it`);
+        logger.info(`Default agent "${defaultAgent.name}" (${defId}) not found in database, creating minimal record`);
         try {
-          // Create agent definition in database
+          // Create minimal agent definition in database (only id)
           const agentDefEntity = this.agentDefRepository!.create({
-            ...defaultAgent,
+            id: defaultAgent.id,
           });
           await this.agentDefRepository!.save(agentDefEntity);
-          logger.info(`Created default agent definition in database: ${defId}`);
+          logger.info(`Created minimal default agent definition in database: ${defId}`);
         } catch (saveError) {
           logger.error(`Failed to save default agent to database: ${saveError as Error}`);
           // Continue and return the default agent even if save fails
-          // This might lead to foreign key constraint errors later,
-          // but at least we tried to save it
         }
       }
 

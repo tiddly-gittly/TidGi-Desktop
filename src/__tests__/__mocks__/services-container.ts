@@ -1,5 +1,9 @@
 import type { AIStreamResponse, IExternalAPIService } from '@/services/externalAPI/interface';
+import { AgentBrowserService } from '@services/agentBrowser';
+import type { IAgentBrowserService } from '@services/agentBrowser/interface';
+import { AgentDefinitionService } from '@services/agentDefinition';
 import { AgentInstanceService } from '@services/agentInstance';
+import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
 import type { INativeService } from '@services/native/interface';
@@ -10,10 +14,14 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { Container } from 'inversify';
-import getDecorators from 'inversify-inject-decorators';
 import { Observable } from 'rxjs';
 import { vi } from 'vitest';
+
+// Mock bindServiceAndProxy to be an empty function
+// This allows us to control service bindings in tests instead of using production bindings (while currently it is not called because it is called in `main.ts` and it is not executed during test.)
+vi.mock('@services/libs/bindServiceAndProxy', () => ({
+  bindServiceAndProxy: vi.fn(),
+}));
 
 // Provide properly-typed default implementations so tests can use vi.fn(impl)
 // Inline default implementations will be provided directly in mocked serviceInstances below
@@ -28,7 +36,6 @@ export const serviceInstances: {
   context: Partial<IContextService>;
   preference: Partial<IPreferenceService>;
   externalAPI: Partial<IExternalAPIService>;
-  agentDefinition: { getAgentDef?: unknown };
   database: Partial<IDatabaseService>;
 } = {
   workspace: {
@@ -86,7 +93,6 @@ export const serviceInstances: {
     updateDefaultAIConfig: vi.fn(async () => undefined),
     deleteFieldFromDefaultAIConfig: vi.fn(async () => undefined),
   },
-  agentDefinition: { getAgentDef: vi.fn() },
   database: {
     getDatabase: vi.fn().mockResolvedValue(undefined),
     initializeDatabase: vi.fn(),
@@ -97,9 +103,6 @@ export const serviceInstances: {
     immediatelyStoreSettingsToFile: vi.fn(),
   },
 };
-
-export const container = new Container();
-const { lazyInject } = getDecorators(container, false);
 
 // Bind the shared mocks into container so real services resolved from container.get()
 // will receive these mocks during tests.
@@ -112,18 +115,10 @@ container.bind(serviceIdentifier.ExternalAPI).toConstantValue(serviceInstances.e
 container.bind(serviceIdentifier.Preference).toConstantValue(serviceInstances.preference);
 container.bind(serviceIdentifier.Context).toConstantValue(serviceInstances.context);
 container.bind(serviceIdentifier.Authentication).toConstantValue(serviceInstances.auth);
-container.bind(serviceIdentifier.AgentDefinition).toConstantValue(serviceInstances.agentDefinition);
+container.bind(serviceIdentifier.AgentDefinition).to(AgentDefinitionService).inSingletonScope();
+container.bind(serviceIdentifier.AgentBrowser).to(AgentBrowserService).inSingletonScope();
 container.bind(serviceIdentifier.Database).toConstantValue(serviceInstances.database);
 container.bind(serviceIdentifier.AgentInstance).to(AgentInstanceService).inSingletonScope();
-
-vi.mock('@services/container', () => ({
-  get lazyInject() {
-    return lazyInject;
-  },
-  get container() {
-    return container;
-  },
-}));
 
 // Shared workspace fixtures used by many tests
 const defaultWorkspaces: IWorkspace[] = [

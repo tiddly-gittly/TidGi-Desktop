@@ -11,6 +11,7 @@ import { TabItem } from '../../pages/Agent/types/tab';
  */
 export interface IAgentBrowserService {
   tabs$: BehaviorSubject<TabItem[]>;
+  updateTabsObservable(): Promise<void>;
   /**
    * Initialize the service on application startup
    */
@@ -89,6 +90,7 @@ export const AgentBrowserServiceIPCDescriptor = {
   channel: AgentChannel.browser,
   properties: {
     tabs$: ProxyPropertyType.Value$,
+    updateTabsObservable: ProxyPropertyType.Function,
     getAllTabs: ProxyPropertyType.Function,
     getActiveTabId: ProxyPropertyType.Function,
     setActiveTab: ProxyPropertyType.Function,

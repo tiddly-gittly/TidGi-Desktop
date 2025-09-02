@@ -20,7 +20,7 @@ export const createAgentsPlugin = (): AutocompletePlugin<AgentDefinition & Recor
 
               const lowerCaseQuery = query.toLowerCase();
               return agents.filter(agent =>
-                agent.name.toLowerCase().includes(lowerCaseQuery) ||
+                (agent.name && agent.name.toLowerCase().includes(lowerCaseQuery)) ||
                 (agent.description && agent.description.toLowerCase().includes(lowerCaseQuery))
               ) as (AgentDefinition & Record<string, unknown>)[];
             } catch (error) {

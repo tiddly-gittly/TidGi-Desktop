@@ -1,11 +1,11 @@
 import { AgentInstanceService } from '@services/agentInstance';
 import { AgentInstanceMessage } from '@services/agentInstance/interface';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { vi } from 'vitest';
 import { serviceInstances } from './services-container';
-import { container } from './services-container';
 
 // Mock window.meta
 globalThis.window = globalThis.window || {};

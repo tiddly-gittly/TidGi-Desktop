@@ -152,7 +152,12 @@ export class AgentInstanceService implements IAgentInstanceService {
       }
 
       // Create new agent instance using utility function
-      const { instanceData, instanceId, now } = createAgentInstanceData(agentDef);
+      // Ensure required fields exist before creating instance
+      if (!agentDef.name) {
+        throw new Error(`Agent definition missing required field 'name': ${agentDefinitionID}`);
+      }
+
+      const { instanceData, instanceId, now } = createAgentInstanceData(agentDef as Required<Pick<typeof agentDef, 'name'>> & typeof agentDef);
 
       // Create and save entity
       const instanceEntity = this.agentInstanceRepository!.create(toDatabaseCompatibleInstance(instanceData));

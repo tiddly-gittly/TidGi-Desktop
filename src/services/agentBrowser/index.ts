@@ -1,11 +1,10 @@
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
 
 import { DataSource, Equal, Not, Repository } from 'typeorm';
 
 import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
 import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
-import { lazyInject } from '@services/container';
 import { logger } from '@services/libs/log';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject } from 'rxjs';
@@ -24,7 +23,7 @@ export class AgentBrowserService implements IAgentBrowserService {
    */
   public tabs$ = new BehaviorSubject<TabItem[]>([]);
 
-  @lazyInject(serviceIdentifier.Database)
+  @inject(serviceIdentifier.Database)
   private readonly databaseService!: IDatabaseService;
 
   private dataSource: DataSource | null = null;
@@ -34,7 +33,7 @@ export class AgentBrowserService implements IAgentBrowserService {
    * Update the tabs$ BehaviorSubject with the latest tabs from the database
    * This method is called after any operation that modifies tabs
    */
-  private async updateTabsObservable(): Promise<void> {
+  public async updateTabsObservable(): Promise<void> {
     const tabs = await this.getAllTabs();
     this.tabs$.next(tabs);
   }
@@ -47,10 +46,6 @@ export class AgentBrowserService implements IAgentBrowserService {
       // Get repositories
       this.dataSource = await this.databaseService.getDatabase('agent-default');
       this.tabRepository = this.dataSource.getRepository(AgentBrowserTabEntity);
-
-      // Initialize tabs$ BehaviorSubject with current tabs
-      await this.updateTabsObservable();
-
       logger.debug('Agent browser repository initialized');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

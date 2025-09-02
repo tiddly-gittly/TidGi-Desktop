@@ -28,6 +28,7 @@ export const initializeActionsMiddleware: StateCreator<
       const closedTabs = await window.service.agentBrowser.getClosedTabs();
 
       // Initialize tabs and subscribe to tabs$ stream for real-time updates
+      await window.service.agentBrowser.updateTabsObservable();
       const tabs = await window.service.agentBrowser.getAllTabs();
       const activeTab = tabs.find(tab => tab.state === TabState.ACTIVE);
 

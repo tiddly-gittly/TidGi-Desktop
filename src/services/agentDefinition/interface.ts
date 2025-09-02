@@ -38,7 +38,7 @@ export interface AgentDefinition {
   /** Unique identifier for the agent */
   id: string;
   /** Agent name */
-  name: string;
+  name?: string;
   /** Agent description */
   description?: string;
   /** Agent icon or avatar URL */
