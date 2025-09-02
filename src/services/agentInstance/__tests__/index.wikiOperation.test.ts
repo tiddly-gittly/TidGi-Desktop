@@ -94,7 +94,7 @@ describe('AgentInstanceService Wiki Operation', () => {
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       WikiChannel.addTiddler,
       'test-wiki-1',
-      ['test', '这是测试内容', '{}', '{}'],
+      ['test', '这是测试内容', '{}', '{"withDate":true}'],
     );
   });
 });

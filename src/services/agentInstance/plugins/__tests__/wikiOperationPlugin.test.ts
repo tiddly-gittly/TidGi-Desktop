@@ -195,7 +195,7 @@ describe('wikiOperationPlugin', () => {
       expect(container.get<Partial<IWikiService>>(serviceIdentifier.Wiki).wikiOperationInServer).toHaveBeenCalledWith(
         WikiChannel.addTiddler,
         'test-wiki-1',
-        ['Test Note', 'Test content', '{"tags":["tag1","tag2"]}', '{}'],
+        ['Test Note', 'Test content', '{"tags":["tag1","tag2"]}', '{"withDate":true}'],
       );
 
       // Verify a tool result message was added to agent history
@@ -375,6 +375,8 @@ describe('wikiOperationPlugin', () => {
       const errResult = handlerContext.agent.messages.find(m => m.metadata?.isToolResult);
       expect(errResult).toBeTruthy();
       expect(errResult?.content).toContain('Workspace with name or ID "Non-existent Wiki" does not exist');
+      // Ensure control is yielded to self on error so AI gets the next round
+      expect(respCtx4.actions?.yieldNextRoundTo).toBe('self');
     });
 
     it('should not execute when tool call is not found', async () => {

@@ -13,7 +13,7 @@ Feature: TidGi Preference
   Scenario: Configure AI provider and default model
     # Step 1: Configure AI settings first - Open preferences window, wait a second so its URL settle down.
     When I click on a "settings button" element with selector "#open-preferences-button"
-    And I wait for 0.5 seconds
+    And I wait for 0.2 seconds
     When I switch to "preferences" window
 
     # Step 2: Navigate to External Services section (wait for sidebar animation)
@@ -38,15 +38,36 @@ Feature: TidGi Preference
     When I click on a "save model button" element with selector "[data-testid='save-model-button']"
     And I wait for 0.2 seconds
 
+    # Create a second model to be used as the default embedding model
+    When I click on an "add model button" element with selector "[data-testid='add-new-model-button']"
+    And I wait for 0.2 seconds
+    When I type "test-embedding-model" in "model name input" element with selector "[data-testid='new-model-name-input']"
+    # Select embedding feature checkbox so this model can be used as embedding model
+    When I click on a "embedding feature checkbox" element with selector "[data-testid='feature-checkbox-embedding']"
+    When I click on a "save model button" element with selector "[data-testid='save-model-button']"
+    And I wait for 0.2 seconds
+
     # Step 7: Set default model
-    When I type "test-model" in "default model autocomplete" element with selector ".MuiAutocomplete-input"
-    And I wait for 1 seconds
-    And I click on a "default model autocomplete" element with selector ".MuiAutocomplete-input"
+    # Fill the primary default model autocomplete (first matching input)
+    When I type "test-model" in "default model autocomplete" element with selector "xpath=(//input[contains(@class,'MuiAutocomplete-input')])[1]"
+    And I wait for 0.2 seconds
+    And I click on a "default model autocomplete" element with selector "xpath=(//input[contains(@class,'MuiAutocomplete-input')])[1]"
     And I click on a "default model option in MUI Autocomplete listbox that contains the model name" element with selector "ul[role='listbox'] li.MuiAutocomplete-option:has-text('test-model')"
-    And I wait for 0.5 seconds
+    And I wait for 0.2 seconds
+
+    # Fill the embedding default model autocomplete (second matching input)
+    When I type "test-embedding-model" in "default embedding model autocomplete" element with selector "xpath=(//input[contains(@class,'MuiAutocomplete-input')])[2]"
+    And I wait for 0.2 seconds
+    And I click on a "default embedding model autocomplete" element with selector "xpath=(//input[contains(@class,'MuiAutocomplete-input')])[2]"
+    And I click on a "default embedding model option in MUI Autocomplete listbox that contains the model name" element with selector "ul[role='listbox'] li.MuiAutocomplete-option:has-text('test-embedding-model')"
+    And I wait for 0.2 seconds
+
+    # Ensure embedding feature checkbox is checked for embedding-capable model
+    # (already set when creating the model above; redundant step removed to avoid timing issues)
 
     # Step 8: Close preferences window
     When I close "preferences" window
+    And I wait for 0.2 seconds
     And I switch to "main" window
-    And I wait for 0.5 seconds
+    And I wait for 0.2 seconds
     And I ensure test ai settings exists

@@ -4,8 +4,6 @@ import type { IWorkspace } from '../../src/services/workspaces/interface';
 import { settingsPath, wikiTestWikiPath } from '../supports/paths';
 
 When('I cleanup test wiki', async function() {
-  // DEBUG: console
-  console.log(`'I cleanup test wiki'`);
   if (fs.existsSync(wikiTestWikiPath)) fs.removeSync(wikiTestWikiPath);
 
   type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;

@@ -136,6 +136,7 @@ export function NewModelDialog({
                 {defaultProvidersConfig.modelFeatures.map((feature) => (
                   <FormControlLabel
                     key={feature.value}
+                    data-testid={`feature-checkbox-${feature.value}`}
                     control={
                       <Checkbox
                         checked={newModelForm.features.includes(feature.value as ModelFeature)}

@@ -113,11 +113,11 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
         const concatStream = agentInstanceService.concatPrompt(agentPromptDescription, context.agent.messages);
         const { flatPrompts } = await getFinalPromptResult(concatStream);
 
-        logger.info('Starting AI generation', {
+        logger.debug('Starting AI generation', {
           method: 'processLLMCall',
           modelName: aiApiConfig.api.model,
-          promptCount: flatPrompts.length,
-          messageCount: context.agent.messages.length,
+          flatPrompts,
+          messages: context.agent.messages,
         });
 
         // Delegate AI API calls to externalAPIService
@@ -199,7 +199,6 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                   fromResponseCompleteHooks: yieldNextRoundFromHooks,
                 });
 
-                // Continue without retry counter
                 // Reset request ID for new call
                 currentRequestId = undefined;
                 // Yield current response as working state

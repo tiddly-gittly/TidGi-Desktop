@@ -214,8 +214,8 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
 
         // Use parameters returned by matchToolCalling directly. Let zod schema validate.
         const validatedParameters = WikiOperationToolParameterSchema.parse(toolMatch.parameters as Record<string, unknown>);
-        const { workspaceName, operation, title, text, extraMeta, options } = validatedParameters;
-
+        const { workspaceName, operation, title, text, extraMeta, options: optionsString } = validatedParameters;
+        const options = JSON.parse(optionsString || '{}') as Record<string, unknown>;
         // Get workspace service
         const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
         const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
@@ -249,7 +249,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
               title,
               text || '',
               extraMeta || '{}',
-              options || '{"withDate": true}',
+              JSON.stringify({ withDate: true, ...options }),
             ]);
             result = `Successfully added tiddler "${title}" in wiki workspace "${workspaceName}".`;
             break;

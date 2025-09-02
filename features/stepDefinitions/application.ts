@@ -20,20 +20,32 @@ export class ApplicationWorld {
     for (let attempt = 0; attempt < 3; attempt++) {
       const pages = this.app.windows();
 
+      const extractFragment = (url: string) => {
+        if (!url) return '';
+        const afterHash = url.includes('#') ? url.split('#').slice(1).join('#') : '';
+        // remove leading slashes or colons like '/preferences' or ':Index'
+        return afterHash.replace(/^[:/]+/, '').split(/[/?#]/)[0] || '';
+      };
+
       if (windowType === 'main') {
         const mainWindow = pages.find(page => {
-          const pageType = page.url().split('#/').pop();
+          const pageType = extractFragment(page.url());
           // file:///C:/Users/linonetwo/Documents/repo-c/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.webpack/renderer/main_window/index.html#/guide
+          // file:///...#/guide or tidgi://.../#:Index based on different workspace
           return isMainWindowPage(pageType as PageType | undefined);
         });
         if (mainWindow) return mainWindow;
       } else if (windowType === 'current') {
         if (this.currentWindow) return this.currentWindow;
       } else {
-        // file:///C:/Users/linonetwo/Documents/repo-c/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.webpack/renderer/main_window/index.html#/preferences
+        // match windows more flexibly by checking the full URL and fragment for the windowType
         const specificWindow = pages.find(page => {
-          const pageType = page.url().split('#/').pop();
-          return pageType === windowType;
+          const rawUrl = page.url() || '';
+          const frag = extractFragment(rawUrl);
+          // Case-insensitive full-url match first (handles variants like '#:Index' or custom schemes)
+          if (rawUrl.toLowerCase().includes(windowType.toLowerCase())) return true;
+          // Fallback to fragment inclusion
+          return frag.toLowerCase().includes(windowType.toLowerCase());
         });
         if (specificWindow) return specificWindow;
       }

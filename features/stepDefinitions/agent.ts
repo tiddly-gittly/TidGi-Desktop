@@ -1,4 +1,5 @@
 import { After, DataTable, Given, Then } from '@cucumber/cucumber';
+import { AIGlobalSettings, AIProviderConfig } from '@services/externalAPI/interface';
 import fs from 'fs-extra';
 import { isEqual, omit } from 'lodash';
 import path from 'path';
@@ -90,26 +91,29 @@ Then('I should see {int} messages in chat history', async function(this: Applica
 });
 
 // Shared provider config used across steps (kept at module scope for reuse)
-const providerConfig = {
+const providerConfig: AIProviderConfig = {
   provider: 'TestProvider',
   baseURL: 'http://127.0.0.1:15121/v1',
-  models: [{ name: 'test-model', features: ['language'] }],
+  models: [
+    { name: 'test-model', features: ['language'] },
+    { name: 'test-embedding-model', features: ['language', 'embedding'] },
+  ],
   providerClass: 'openAICompatible',
   isPreset: false,
   enabled: true,
-} as Record<string, unknown>;
+};
 
 const desiredModelParameters = { temperature: 0.7, systemPrompt: 'You are a helpful assistant.', topP: 0.95 };
 
 Given('I ensure test ai settings exists', function() {
   // Build expected aiSettings from shared providerConfig and compare strictly with actual using isEqual
-  const modelsArray = (providerConfig.models as Array<Record<string, string>> | undefined) || [];
+  const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
-  const providerName = providerConfig.provider as string;
+  const providerName = providerConfig.provider;
 
   const expected = {
     providers: [providerConfig],
-    defaultConfig: { api: { provider: providerName, model: modelName }, modelParameters: desiredModelParameters },
+    defaultConfig: { api: { provider: providerName, model: modelName, embeddingModel: modelsArray[1]?.name }, modelParameters: desiredModelParameters },
   } as Record<string, unknown>;
 
   const parsed = fs.readJsonSync(settingsPath) as Record<string, unknown>;
@@ -130,12 +134,12 @@ Given('I add test ai settings', function() {
     // ensure settings directory exists so writeJsonSync won't fail
     fs.ensureDirSync(path.dirname(settingsPath));
   }
-  const modelsArray = (providerConfig.models as Array<Record<string, string>> | undefined) || [];
+  const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
-  const newAi = {
+  const newAi: AIGlobalSettings = {
     providers: [providerConfig],
-    defaultConfig: { api: { provider: providerConfig.provider as string, model: modelName }, modelParameters: desiredModelParameters },
-  } as unknown;
+    defaultConfig: { api: { provider: providerConfig.provider, model: modelName }, modelParameters: desiredModelParameters },
+  };
   fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi } as ISettingFile, { spaces: 2 });
 });
 
