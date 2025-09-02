@@ -11,7 +11,6 @@ import { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { optimizeToolForLLM } from './llmToolSchemaOptimizer';
 import { AgentDefinition, IAgentDefinitionService } from './interface';
 
 @injectable()
@@ -298,86 +297,6 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       logger.info(`Deleted agent definition: ${id}`);
     } catch (error) {
       logger.error(`Failed to delete agent definition: ${error as Error}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Register tools for an agent
-   * @param agentId Agent ID
-   * @param tools Tool configurations
-   */
-  public async registerAgentTools(agentId: string, tools: AgentToolConfig[]): Promise<void> {
-    this.ensureRepositories();
-
-    try {
-      // Get the existing agent
-      const existingAgent = await this.agentDefRepository!.findOne({ where: { id: agentId } });
-      if (!existingAgent) {
-        throw new Error(`Agent ${agentId} not found`);
-      }
-
-      // Update the agent with new tools
-      existingAgent.agentTools = tools;
-
-      await this.agentDefRepository!.save(existingAgent);
-      logger.info(`Registered ${tools.length} tools for agent: ${agentId}`);
-    } catch (error) {
-      logger.error(`Failed to register tools for agent: ${error as Error}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Get tools for an agent
-   * @param agentId Agent ID
-   */
-  public async getAgentTools(agentId: string): Promise<AgentToolConfig[]> {
-    this.ensureRepositories();
-
-    try {
-      const agent = await this.agentDefRepository!.findOne({ where: { id: agentId } });
-      if (!agent) {
-        throw new Error(`Agent ${agentId} not found`);
-      }
-
-      return agent.agentTools || [];
-    } catch (error) {
-      logger.error(`Failed to get tools for agent: ${error as Error}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Get all available tools that can be registered
-   * @deprecated Tools are now managed by individual plugins
-   */
-  public getAvailableTools() {
-    try {
-      // Tools are now managed by individual plugins, return wiki search tool as example
-      const wikiSearchTool = optimizeToolForLLM({
-        id: 'wiki-search',
-        name: 'Wiki Search',
-        description: 'Search content in wiki workspaces',
-        parameterSchema: {
-          type: 'object',
-          properties: {
-            workspaceId: {
-              type: 'string',
-              description: 'The ID of the wiki workspace to search in',
-            },
-            query: {
-              type: 'string',
-              description: 'The search query',
-            },
-          },
-          required: ['workspaceId', 'query'],
-        },
-      });
-
-      return Promise.resolve([wikiSearchTool]);
-    } catch (error) {
-      logger.error(`Failed to get available tools: ${error as Error}`);
       throw error;
     }
   }

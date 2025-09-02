@@ -1,7 +1,6 @@
 import { AgentChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { AiAPIConfig } from '../agentInstance/promptConcat/promptConcatSchema';
-import type { OptimizedToolSchema } from './llmToolSchemaOptimizer';
 
 /**
  * Agent tool configuration
@@ -90,21 +89,6 @@ export interface IAgentDefinitionService {
    * @param id Agent definition ID
    */
   deleteAgentDef(id: string): Promise<void>;
-  /**
-   * Register tools for an agent
-   * @param agentId Agent ID
-   * @param tools Tool configurations
-   */
-  registerAgentTools(agentId: string, tools: AgentToolConfig[]): Promise<void>;
-  /**
-   * Get tools for an agent
-   * @param agentId Agent ID
-   */
-  getAgentTools(agentId: string): Promise<AgentToolConfig[]>;
-  /**
-   * Get all available tools that can be registered
-   */
-  getAvailableTools(): Promise<Array<{ id: string; name: string; description: string; schema: OptimizedToolSchema }>>;
 }
 
 export const AgentDefinitionServiceIPCDescriptor = {
@@ -115,8 +99,5 @@ export const AgentDefinitionServiceIPCDescriptor = {
     getAgentDefs: ProxyPropertyType.Function,
     getAgentDef: ProxyPropertyType.Function,
     deleteAgentDef: ProxyPropertyType.Function,
-    registerAgentTools: ProxyPropertyType.Function,
-    getAgentTools: ProxyPropertyType.Function,
-    getAvailableTools: ProxyPropertyType.Function,
   },
 };
