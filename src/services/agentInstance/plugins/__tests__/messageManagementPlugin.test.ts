@@ -5,8 +5,8 @@
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { DataSource } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { clearTestDatabase, initializeTestDatabase, testDataSource } from '../../../../__tests__/__mocks__/services-container';
 import defaultAgents from '../../buildInAgentHandlers/defaultAgents.json';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../../interface';
 import { createHandlerHooks } from '../index';
@@ -17,7 +17,6 @@ import type { ToolExecutionContext, UserMessageContext } from '../types';
 const exampleAgent = defaultAgents[0];
 
 describe('Message Management Plugin - Real Database Integration', () => {
-  let dataSource: DataSource;
   let testAgentId: string;
   // agentInstanceServiceImpl available to test blocks
   let agentInstanceServiceImpl: IAgentInstanceService;
@@ -27,29 +26,20 @@ describe('Message Management Plugin - Real Database Integration', () => {
     vi.clearAllMocks();
     testAgentId = `test-agent-${Date.now()}`;
 
-    // Create in-memory SQLite database
-    dataSource = new DataSource({
-      type: 'better-sqlite3',
-      database: ':memory:',
-      entities: [
-        AgentDefinitionEntity,
-        AgentInstanceEntity,
-        AgentInstanceMessageEntity,
-      ],
-      synchronize: true,
-      logging: false,
-    });
+    // Initialize the shared test database
+    await initializeTestDatabase();
 
-    await dataSource.initialize();
+    // Clear database before each test
+    await clearTestDatabase();
 
     // Create test data using defaultAgent structure
-    const agentDefRepo = dataSource.getRepository(AgentDefinitionEntity);
+    const agentDefRepo = testDataSource.getRepository(AgentDefinitionEntity);
     await agentDefRepo.save({
       id: exampleAgent.id,
       name: exampleAgent.name,
     });
 
-    const agentRepo = dataSource.getRepository(AgentInstanceEntity);
+    const agentRepo = testDataSource.getRepository(AgentInstanceEntity);
     await agentRepo.save({
       id: testAgentId,
       agentDefId: exampleAgent.id,
@@ -63,7 +53,7 @@ describe('Message Management Plugin - Real Database Integration', () => {
     const { container } = await import('@services/container');
     // Make sure Database.getDatabase returns our in-memory dataSource
     const database = container.get<IDatabaseService>(serviceIdentifier.Database);
-    database.getDatabase = vi.fn().mockResolvedValue(dataSource);
+    database.getDatabase = vi.fn().mockResolvedValue(testDataSource);
 
     agentInstanceServiceImpl = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
     // Initialize AgentInstanceService so repositories are set
@@ -75,9 +65,7 @@ describe('Message Management Plugin - Real Database Integration', () => {
   });
 
   afterEach(async () => {
-    if (dataSource.isInitialized) {
-      await dataSource.destroy();
-    }
+    // Database cleanup is handled by clearTestDatabase in beforeEach
   });
 
   const createHandlerContext = (messages: AgentInstanceMessage[] = []) => ({
@@ -115,7 +103,7 @@ describe('Message Management Plugin - Real Database Integration', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify user message was saved
-      let messageRepo = dataSource.getRepository(AgentInstanceMessageEntity);
+      let messageRepo = testDataSource.getRepository(AgentInstanceMessageEntity);
       let allMessages = await messageRepo.find({
         where: { agentId: testAgentId },
       });
@@ -188,7 +176,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify tool result message was persisted
-      messageRepo = dataSource.getRepository(AgentInstanceMessageEntity);
+      messageRepo = testDataSource.getRepository(AgentInstanceMessageEntity);
       allMessages = await messageRepo.find({
         where: { agentId: testAgentId },
         order: { modified: 'ASC' },
@@ -196,7 +184,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
 
       expect(allMessages).toHaveLength(3); // user + ai tool call + tool result
 
-      const savedToolResult = allMessages.find((m) => m.metadata?.isToolResult);
+      const savedToolResult = allMessages.find((m: AgentInstanceMessage) => m.metadata?.isToolResult);
       expect(savedToolResult).toBeTruthy();
       expect(savedToolResult?.content).toContain('<functions_result>');
       expect(savedToolResult?.content).toContain('Tool: wiki-search');
@@ -226,7 +214,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       await agentInstanceServiceImpl.saveUserMessage(aiFinalMessage);
 
       // Final verification: All 4 messages should be in database
-      messageRepo = dataSource.getRepository(AgentInstanceMessageEntity);
+      messageRepo = testDataSource.getRepository(AgentInstanceMessageEntity);
       allMessages = await messageRepo.find({
         where: { agentId: testAgentId },
         order: { modified: 'ASC' },
@@ -303,14 +291,14 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify both tool results were persisted
-      const messageRepo = dataSource.getRepository(AgentInstanceMessageEntity);
+      const messageRepo = testDataSource.getRepository(AgentInstanceMessageEntity);
       const allMessages = await messageRepo.find({
         where: { agentId: testAgentId },
       });
 
       expect(allMessages).toHaveLength(2);
-      expect(allMessages.every((m) => m.metadata?.isToolResult)).toBe(true);
-      expect(allMessages.every((m) => m.role === 'assistant')).toBe(true); // Changed from 'user' to 'assistant'
+      expect(allMessages.every((m: AgentInstanceMessage) => m.metadata?.isToolResult)).toBe(true);
+      expect(allMessages.every((m: AgentInstanceMessage) => m.role === 'assistant')).toBe(true); // Changed from 'user' to 'assistant'
 
       // Verify both messages marked as persisted
       expect(toolResult1.metadata?.isPersisted).toBe(true);
@@ -386,7 +374,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       await agentInstanceServiceImpl.saveUserMessage(aiFinalMessage);
 
       // Step 2: Simulate loading from database (page refresh scenario)
-      const messageRepo = dataSource.getRepository(AgentInstanceMessageEntity);
+      const messageRepo = testDataSource.getRepository(AgentInstanceMessageEntity);
       const savedMessages = await messageRepo.find({
         where: { agentId: testAgentId },
         order: { modified: 'ASC' },
@@ -395,17 +383,17 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       // Verify ALL messages were saved, including tool result
       expect(savedMessages).toHaveLength(4);
 
-      const messageRoles = savedMessages.map(m => m.role);
+      const messageRoles = savedMessages.map((m: AgentInstanceMessage) => m.role);
       expect(messageRoles).toEqual(['user', 'assistant', 'assistant', 'assistant']);
 
-      const messageContents = savedMessages.map(m => m.content);
+      const messageContents = savedMessages.map((m: AgentInstanceMessage) => m.content);
       expect(messageContents[0]).toContain('搜索 wiki 中的 Index 条目');
       expect(messageContents[1]).toContain('<tool_use name="wiki-search">');
       expect(messageContents[2]).toContain('<functions_result>'); // This was missing before the fix!
       expect(messageContents[3]).toContain('基于搜索结果');
 
       // Verify tool result message has correct metadata
-      const savedToolResult = savedMessages.find(m => m.metadata?.isToolResult);
+      const savedToolResult = savedMessages.find((m: AgentInstanceMessage) => m.metadata?.isToolResult);
       expect(savedToolResult).toBeTruthy();
       expect(savedToolResult?.metadata?.toolId).toBe('wiki-search');
       expect(savedToolResult?.duration).toBe(1);

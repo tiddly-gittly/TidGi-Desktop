@@ -14,6 +14,8 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
+import { DataSource } from 'typeorm';
 import { Observable } from 'rxjs';
 import { vi } from 'vitest';
 
@@ -22,6 +24,34 @@ import { vi } from 'vitest';
 vi.mock('@services/libs/bindServiceAndProxy', () => ({
   bindServiceAndProxy: vi.fn(),
 }));
+
+// Create a shared in-memory SQLite database for all tests
+export const testDataSource = new DataSource({
+  type: 'better-sqlite3',
+  database: ':memory:',
+  entities: [AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity],
+  synchronize: true,
+  logging: false,
+});
+
+// Initialize the test database
+let isInitialized = false;
+
+export const initializeTestDatabase = async (): Promise<void> => {
+  if (!isInitialized) {
+    await testDataSource.initialize();
+    isInitialized = true;
+  }
+};
+
+export const clearTestDatabase = async (): Promise<void> => {
+  if (testDataSource.isInitialized) {
+    // Clear all tables
+    await testDataSource.getRepository(AgentInstanceMessageEntity).clear();
+    await testDataSource.getRepository(AgentInstanceEntity).clear();
+    await testDataSource.getRepository(AgentDefinitionEntity).clear();
+  }
+};
 
 // Provide properly-typed default implementations so tests can use vi.fn(impl)
 // Inline default implementations will be provided directly in mocked serviceInstances below
@@ -94,7 +124,7 @@ export const serviceInstances: {
     deleteFieldFromDefaultAIConfig: vi.fn(async () => undefined),
   },
   database: {
-    getDatabase: vi.fn().mockResolvedValue(undefined),
+    getDatabase: vi.fn().mockResolvedValue(testDataSource),
     initializeDatabase: vi.fn(),
     closeAppDatabase: vi.fn(),
     getSetting: vi.fn(),
