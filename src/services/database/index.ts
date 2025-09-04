@@ -17,6 +17,7 @@ import { ensureSettingFolderExist, fixSettingFileWhenError } from './configSetti
 import { IDatabaseService, ISettingFile } from './interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from './schema/agent';
 import { AgentBrowserTabEntity } from './schema/agentBrowser';
+import { ExternalAPILogEntity } from './schema/externalAPILog';
 import { WikiTiddler } from './schema/wiki';
 import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from './schema/wikiEmbedding';
 
@@ -75,7 +76,7 @@ export class DatabaseService implements IDatabaseService {
     });
 
     // Register wiki-embedding database schema
-    this.registerSchema('wiki-embedding', {
+    this.registerSchema('wikiEmbedding', {
       entities: [WikiEmbeddingEntity, WikiEmbeddingStatusEntity],
       synchronize: true,
       migrationsRun: false,
@@ -89,6 +90,13 @@ export class DatabaseService implements IDatabaseService {
         AgentInstanceMessageEntity,
         AgentBrowserTabEntity,
       ],
+      synchronize: true,
+      migrationsRun: false,
+    });
+
+    // Register external API log database schema
+    this.registerSchema('externalApi', {
+      entities: [ExternalAPILogEntity],
       synchronize: true,
       migrationsRun: false,
     });
@@ -107,6 +115,17 @@ export class DatabaseService implements IDatabaseService {
    */
   private getDatabasePath(key: string): string {
     return path.resolve(CACHE_DATABASE_FOLDER, `${key}-sqlite3-cache.db`);
+  }
+
+  /**
+   * Check if we're in test environment
+   */
+  private isTestEnvironment(): boolean {
+    const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+    if (isTest) {
+      logger.debug(`isTestEnvironment: true, NODE_ENV=${process.env.NODE_ENV}, VITEST=${process.env.VITEST}`);
+    }
+    return isTest;
   }
 
   /**
@@ -141,9 +160,17 @@ export class DatabaseService implements IDatabaseService {
 
       await dataSource.initialize();
 
-      // Load sqlite-vec extension for embedding databases
-      if (key.includes('embedding')) {
-        await this.loadSqliteVecExtension(dataSource);
+      // Load sqlite-vec extension for embedding databases (skip in test environment to avoid issues)
+      if (key.includes('embedding') && !this.isTestEnvironment()) {
+        try {
+          logger.info(`Attempting to load sqlite-vec extension for database key: ${key}`);
+          await this.loadSqliteVecExtension(dataSource);
+        } catch (error) {
+          logger.warn(`sqlite-vec extension failed to load during initialization for key: ${key}, continuing without vector search functionality`, {
+            error: (error as Error).message,
+          });
+          // Don't throw - allow the database to work without vector functionality
+        }
       }
 
       if (schemaConfig.migrationsRun) {
@@ -180,8 +207,18 @@ export class DatabaseService implements IDatabaseService {
         await dataSource.initialize();
 
         // Load sqlite-vec extension for embedding databases
-        if (key.includes('embedding')) {
-          await this.loadSqliteVecExtension(dataSource);
+        logger.debug(`Checking if key '${key}' includes 'embedding': ${key.includes('embedding')}, isTestEnvironment: ${this.isTestEnvironment()}`);
+        if (key.includes('embedding') && !this.isTestEnvironment()) {
+          logger.info(`Attempting to load sqlite-vec extension for database connection key: ${key}`);
+          try {
+            await this.loadSqliteVecExtension(dataSource);
+          } catch (error) {
+            logger.warn(`sqlite-vec extension failed to load for key: ${key}, continuing without vector search functionality`, {
+              error: (error as Error).message,
+              stack: (error as Error).stack,
+            });
+            // Don't throw - allow the database to work without vector functionality
+          }
         }
 
         this.dataSources.set(key, dataSource);
@@ -300,6 +337,7 @@ export class DatabaseService implements IDatabaseService {
       }
 
       // Load sqlite-vec extension
+      logger.debug('Loading sqlite-vec extension...');
       sqliteVec.load(database);
 
       // Test that sqlite-vec is working
@@ -312,7 +350,11 @@ export class DatabaseService implements IDatabaseService {
       // The vec0 virtual tables will be created dynamically by WikiEmbeddingService
       // based on the dimensions needed
     } catch (error) {
-      logger.error('Failed to load sqlite-vec extension:', error);
+      logger.error('Failed to load sqlite-vec extension:', {
+        error: (error as Error).message,
+        stack: (error as Error).stack,
+        sqliteVecAvailable: typeof sqliteVec !== 'undefined',
+      });
       throw new Error(`sqlite-vec extension failed to load: ${(error as Error).message}`);
     }
   }

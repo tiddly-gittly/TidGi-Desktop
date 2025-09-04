@@ -121,7 +121,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
         });
 
         // Delegate AI API calls to externalAPIService
-        for await (const response of externalAPIService.generateFromAI(flatPrompts, aiApiConfig)) {
+        for await (const response of externalAPIService.generateFromAI(flatPrompts, aiApiConfig, { agentInstanceId: context.agent.id })) {
           if (!currentRequestId && response.requestId) {
             currentRequestId = response.requestId;
           }

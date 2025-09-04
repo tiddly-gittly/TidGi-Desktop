@@ -5,7 +5,6 @@ import { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { Repository } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearTestDatabase, initializeTestDatabase, testDataSource } from '../../../__tests__/__mocks__/services-container';
 

@@ -11,6 +11,7 @@ export const defaultPreferences: IPreferences = {
   disableAntiAntiLeech: false,
   disableAntiAntiLeechForUrls: [],
   downloadPath: DEFAULT_DOWNLOADS_PATH,
+  externalAPIDebug: false,
   hibernateUnusedWorkspacesAtLaunch: false,
   hideMenuBar: false,
   ignoreCertificateErrors: false,

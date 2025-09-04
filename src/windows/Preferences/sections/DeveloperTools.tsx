@@ -1,15 +1,17 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { Divider, List, ListItemButton } from '@mui/material';
+import { Divider, List, ListItemButton, Switch } from '@mui/material';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import { usePreferenceObservable } from '@services/preferences/hooks';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 export function DeveloperTools(props: ISectionProps): React.JSX.Element {
   const { t } = useTranslation();
+  const preference = usePreferenceObservable();
 
   const [LOG_FOLDER, SETTINGS_FOLDER, V8_CACHE_FOLDER] = usePromiseValue<[string | undefined, string | undefined, string | undefined]>(
     async () => await Promise.all([window.service.context.get('LOG_FOLDER'), window.service.context.get('SETTINGS_FOLDER'), window.service.context.get('V8_CACHE_FOLDER')]),
@@ -73,6 +75,22 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                 <ListItemText primary={t('Preference.RestorePreferences')} />
                 <ChevronRightIcon color='action' />
               </ListItemButton>
+              <Divider />
+              <ListItem>
+                <ListItemText
+                  primary={t('Preference.ExternalAPIDebug')}
+                  secondary={t('Preference.ExternalAPIDebugDescription')}
+                />
+                <Switch
+                  edge='end'
+                  checked={preference?.externalAPIDebug || false}
+                  disabled={preference === undefined}
+                  onChange={async () => {
+                    await window.service.preference.set('externalAPIDebug', !preference?.externalAPIDebug);
+                  }}
+                  name='externalAPIDebug'
+                />
+              </ListItem>
             </>
           )}
         </List>

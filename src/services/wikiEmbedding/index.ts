@@ -73,8 +73,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
   private async initializeDatabase(): Promise<void> {
     try {
       // Initialize database for wiki embeddings
-      await this.databaseService.initializeDatabase('wiki-embedding');
-      this.dataSource = await this.databaseService.getDatabase('wiki-embedding');
+      await this.databaseService.initializeDatabase('wikiEmbedding');
+      this.dataSource = await this.databaseService.getDatabase('wikiEmbedding');
       this.embeddingRepository = this.dataSource.getRepository(WikiEmbeddingEntity);
       this.statusRepository = this.dataSource.getRepository(WikiEmbeddingStatusEntity);
 
@@ -99,6 +99,13 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
 
     try {
       const queryRunner = this.dataSource.createQueryRunner();
+      try {
+        await queryRunner.query('SELECT vec_version() as version');
+      } catch (error) {
+        logger.warn('sqlite-vec extension not available, skipping vector table creation', { error });
+        await queryRunner.release();
+        return;
+      }
 
       // Common embedding dimensions used by popular models
       // We create tables for different dimensions to optimize performance

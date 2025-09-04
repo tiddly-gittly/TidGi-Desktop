@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 
 import { ExternalAPIChannel } from '@/constants/channels';
 import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { ExternalAPILogEntity } from '@services/database/schema/externalAPILog';
 import { CoreMessage, Message } from 'ai';
 
 /**
@@ -109,17 +110,30 @@ export interface AIGlobalSettings {
  */
 export interface IExternalAPIService {
   /**
+   * Initialize the external API service
+   */
+  initialize(): Promise<void>;
+
+  /**
    * Send messages to AI provider and get streaming response as an Observable
    * requestId will be automatically generated and returned in the AIStreamResponse
    */
-  streamFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AiAPIConfig): Observable<AIStreamResponse>;
+  streamFromAI(
+    messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>,
+    config: AiAPIConfig,
+    options?: { agentInstanceId?: string; awaitLogs?: boolean },
+  ): Observable<AIStreamResponse>;
 
   /**
    * Send messages to AI provider and get streaming response as an AsyncGenerator
    * This is a more direct approach than Observable for certain use cases
    * requestId will be automatically generated and returned in the AIStreamResponse
    */
-  generateFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AiAPIConfig): AsyncGenerator<AIStreamResponse, void, unknown>;
+  generateFromAI(
+    messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>,
+    config: AiAPIConfig,
+    options?: { agentInstanceId?: string; awaitLogs?: boolean },
+  ): AsyncGenerator<AIStreamResponse, void, unknown>;
 
   /**
    * Generate embeddings from AI provider
@@ -170,6 +184,14 @@ export interface IExternalAPIService {
    * @param fieldPath - Dot-separated path to the field (e.g., 'api.embeddingModel')
    */
   deleteFieldFromDefaultAIConfig(fieldPath: string): Promise<void>;
+
+  /**
+   * Get API call logs for debugging purposes (only available when externalAPIDebug is enabled)
+   * @param agentInstanceId - Optional agent instance ID to filter logs
+   * @param limit - Maximum number of records to return (default: 100)
+   * @param offset - Number of records to skip (default: 0)
+   */
+  getAPILogs(agentInstanceId?: string, limit?: number, offset?: number): Promise<ExternalAPILogEntity[]>;
 }
 
 export const ExternalAPIServiceIPCDescriptor = {
@@ -185,7 +207,7 @@ export const ExternalAPIServiceIPCDescriptor = {
     deleteProvider: ProxyPropertyType.Function,
     updateDefaultAIConfig: ProxyPropertyType.Function,
     deleteFieldFromDefaultAIConfig: ProxyPropertyType.Function,
-    // generateFromAI is intentionally not exposed via IPC as AsyncGenerators
-    // aren't directly supported by electron-ipc-cat
+    getAPILogs: ProxyPropertyType.Function,
+    // generateFromAI is intentionally not exposed via IPC as AsyncGenerators aren't directly supported by electron-ipc-cat
   },
 };

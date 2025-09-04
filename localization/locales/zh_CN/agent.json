@@ -130,6 +130,8 @@
     "DisabledProviderInfo": "此提供商已禁用，其模型不会在模型选择列表中显示",
     "EnableProvider": "启用此提供商",
     "ExternalAPI": "外部服务接口",
+    "ExternalAPIDebug": "启用 API 调试日志",
+    "ExternalAPIDebugDescription": "开启后，所有 API 请求和响应将被记录到数据库中以便调试",
     "FailedToAddModel": "无法添加模型",
     "FailedToAddProvider": "添加提供商失败",
     "FailedToRemoveModel": "无法删除模型",
@@ -184,6 +186,21 @@
     "TemperatureDescription": "较低的值会产生更确定性、更集中的响应，较高的值会产生更多样化、更创造性的响应",
     "TopP": "Top P",
     "TopPDescription": "控制响应的随机性。较低的值使响应更确定，较高的值允许更多的可能性"
+  },
+  "APILogs": {
+    "Title": "API 调试日志",
+    "Description": "此智能体的外部 API 调用调试日志。在偏好设置中启用 '外部 API 调试' 以开始记录。",
+    "CurrentAgent": "显示智能体日志: {{agentId}}",
+    "NoLogs": "未找到此智能体的 API 日志",
+    "StatusStart": "已开始",
+    "StatusUpdate": "处理中",
+    "StatusDone": "已完成",
+    "StatusError": "错误",
+    "StatusCancel": "已取消",
+    "RequestDetails": "请求详情",
+    "ResponseContent": "响应内容",
+    "ResponseMetadata": "响应元数据",
+    "ErrorDetails": "错误详情"
   },
   "Prompt": {
     "AutoRefresh": "预览会随输入文本的变化自动刷新",

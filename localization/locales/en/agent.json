@@ -8,7 +8,7 @@
   },
   "Browser": {
     "Back": "Step back",
-    "Bookmark": "Collection",
+    "Bookmark": "Bookmark",
     "CurrentUrl": "Current URL",
     "EnterUrlPlaceholder": "Enter URL",
     "Forward": "forward",
@@ -130,6 +130,8 @@
     "DisabledProviderInfo": "This provider is disabled, and its models will not appear in the model selection list",
     "EnableProvider": "Enable this provider",
     "ExternalAPI": "External API",
+    "ExternalAPIDebug": "Enable API Debug Logging",
+    "ExternalAPIDebugDescription": "When enabled, all API requests and responses will be logged to the database for debugging purposes",
     "FailedToAddModel": "Failed to add model",
     "FailedToAddProvider": "Failed to add provider",
     "FailedToRemoveModel": "Failed to remove model",
@@ -184,6 +186,21 @@
     "TemperatureDescription": "Lower values produce more deterministic and focused responses, while higher values yield more diverse and creative responses.",
     "TopP": "Top P",
     "TopPDescription": "Control the randomness of responses. Lower values make responses more deterministic, while higher values allow for greater variability."
+  },
+  "APILogs": {
+    "Title": "API Debug Logs",
+    "Description": "Debug logs for external API calls made by this agent. Enable 'External API Debug' in preferences to start logging.",
+    "CurrentAgent": "Showing logs for agent: {{agentId}}",
+    "NoLogs": "No API logs found for this agent",
+    "StatusStart": "Started",
+    "StatusUpdate": "Processing",
+    "StatusDone": "Completed",
+    "StatusError": "Error",
+    "StatusCancel": "Cancelled",
+    "RequestDetails": "Request Details",
+    "ResponseContent": "Response Content",
+    "ResponseMetadata": "Response Metadata",
+    "ErrorDetails": "Error Details"
   },
   "Prompt": {
     "AutoRefresh": "Preview auto-refreshes with input text changes",

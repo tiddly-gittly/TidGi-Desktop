@@ -21,6 +21,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { IDatabaseService } from '@services/database/interface';
 import { IDeepLinkService } from '@services/deepLink/interface';
+import { IExternalAPIService } from '@services/externalAPI/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IUpdaterService } from '@services/updater/interface';
@@ -67,6 +68,7 @@ const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentif
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
 const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
+const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
 app.on('second-instance', async () => {
   // see also src/helpers/singleInstance.ts
   // Someone tried to run a second instance, for example, when `runOnBackground` is true, we should focus our window.
@@ -102,6 +104,7 @@ const commonInit = async (): Promise<void> => {
     databaseService.initializeForApp().then(async () => {
       await agentDefinitionService.initialize();
       await wikiEmbeddingService.initialize();
+      await externalAPIService.initialize();
     }),
   ]);
   initializeObservables();

@@ -1,15 +1,17 @@
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { cloneDeep, mergeWith } from 'lodash';
 import { nanoid } from 'nanoid';
 import { defer, from, Observable } from 'rxjs';
 import { filter, finalize, startWith } from 'rxjs/operators';
 
 import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
+import { ExternalAPICallType, ExternalAPILogEntity, RequestMetadata, ResponseMetadata } from '@services/database/schema/externalAPILog';
 import { logger } from '@services/libs/log';
+import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { CoreMessage, Message } from 'ai';
+import { DataSource, Repository } from 'typeorm';
 import { generateEmbeddingsFromProvider } from './callEmbeddingAPI';
 import { streamFromProvider } from './callProviderAPI';
 import { extractErrorDetails } from './errorHandlers';
@@ -25,9 +27,14 @@ interface AIRequestContext {
 
 @injectable()
 export class ExternalAPIService implements IExternalAPIService {
-  @lazyInject(serviceIdentifier.Database)
+  @inject(serviceIdentifier.Preference)
+  private readonly preferenceService!: IPreferenceService;
+
+  @inject(serviceIdentifier.Database)
   private readonly databaseService!: IDatabaseService;
 
+  private dataSource: DataSource | null = null;
+  private apiLogRepository: Repository<ExternalAPILogEntity> | null = null;
   private activeRequests: Map<string, AbortController> = new Map();
   private settingsLoaded = false;
 
@@ -46,6 +53,23 @@ export class ExternalAPIService implements IExternalAPIService {
     },
   };
 
+  /**
+   * Initialize the external API service
+   */
+  public async initialize(): Promise<void> {
+    /**
+     * Initialize database connection for API logging
+     */
+    // Only initialize if debug logging is enabled
+    const externalAPIDebug = await this.preferenceService.get('externalAPIDebug');
+    if (!externalAPIDebug) return;
+    // Get or initialize the external API database
+    await this.databaseService.initializeDatabase('externalApi');
+    this.dataSource = await this.databaseService.getDatabase('externalApi');
+    this.apiLogRepository = this.dataSource.getRepository(ExternalAPILogEntity);
+    logger.debug('External API logging initialized');
+  }
+
   private loadSettingsFromDatabase(): void {
     const savedSettings = this.databaseService.getSetting('aiSettings');
     this.userSettings = savedSettings ?? this.userSettings;
@@ -60,6 +84,64 @@ export class ExternalAPIService implements IExternalAPIService {
 
   private saveSettingsToDatabase(): void {
     this.databaseService.setSetting('aiSettings', this.userSettings);
+  }
+
+  /**
+   * Log API request/response if debug mode is enabled
+   */
+  private async logAPICall(
+    requestId: string,
+    callType: ExternalAPICallType,
+    status: 'start' | 'update' | 'done' | 'error' | 'cancel',
+    options: {
+      agentInstanceId?: string;
+      requestMetadata?: RequestMetadata;
+      requestPayload?: Record<string, unknown>;
+      responseContent?: string;
+      responseMetadata?: ResponseMetadata;
+      errorDetail?: { name: string; code: string; provider: string; message?: string };
+    } = {},
+  ): Promise<void> {
+    try {
+      // Check if debug logging is enabled
+      const externalAPIDebug = await this.preferenceService.get('externalAPIDebug');
+      if (!externalAPIDebug) return;
+
+      // Ensure API logging is initialized.
+      // For 'update' events we skip writes to avoid expensive DB churn.
+      if (!this.apiLogRepository) {
+        // If repository isn't initialized, skip all log writes (including start/error/done/cancel).
+        // Tests that require logs should explicitly call `initialize()` before invoking generateFromAI.
+        logger.warn('API log repository not initialized; skipping ExternalAPI log write');
+        return;
+      }
+
+      // Check if log entry already exists (for updates)
+      let logEntity = await this.apiLogRepository.findOne({ where: { id: requestId } });
+
+      if (!logEntity) {
+        // Create new log entry
+        logEntity = this.apiLogRepository.create({
+          id: requestId,
+          callType,
+          status,
+          agentInstanceId: options.agentInstanceId,
+          requestMetadata: options.requestMetadata || { provider: 'unknown', model: 'unknown' },
+          requestPayload: options.requestPayload,
+        });
+      } else {
+        // Update existing log entry
+        logEntity.status = status;
+        if (options.responseContent !== undefined) logEntity.responseContent = options.responseContent;
+        if (options.responseMetadata !== undefined) logEntity.responseMetadata = options.responseMetadata;
+        if (options.errorDetail !== undefined) logEntity.errorDetail = options.errorDetail;
+      }
+
+      await this.apiLogRepository.save(logEntity);
+    } catch (error) {
+      logger.warn(`Failed to log API call: ${error as Error}`);
+      // Don't throw - logging failures shouldn't break main functionality
+    }
   }
 
   async getAIProviders(): Promise<AIProviderConfig[]> {
@@ -160,14 +242,14 @@ export class ExternalAPIService implements IExternalAPIService {
     this.activeRequests.delete(requestId);
   }
 
-  streamFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AiAPIConfig): Observable<AIStreamResponse> {
+  streamFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AiAPIConfig, options?: { agentInstanceId?: string }): Observable<AIStreamResponse> {
     // Use defer to create a new observable stream for each subscription
     return defer(() => {
       // Prepare request context
       const { requestId, controller } = this.prepareAIRequest();
 
       // Get AsyncGenerator from generateFromAI and convert to Observable
-      return from(this.generateFromAI(messages, config)).pipe(
+      return from(this.generateFromAI(messages, config, options)).pipe(
         // Skip the first 'start' event since we'll emit our own
         // to ensure it happens immediately (AsyncGenerator might delay it)
         filter((response, index) => !(index === 0 && response.status === 'start')),
@@ -188,10 +270,40 @@ export class ExternalAPIService implements IExternalAPIService {
   async *generateFromAI(
     messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>,
     config: AiAPIConfig,
+    options?: { agentInstanceId?: string; awaitLogs?: boolean },
   ): AsyncGenerator<AIStreamResponse, void, unknown> {
     // Prepare request with minimal context
     const { requestId, controller } = this.prepareAIRequest();
     logger.debug(`[${requestId}] Starting generateFromAI with messages`, messages);
+
+    // Log request start. If caller requested blocking logs (tests), await the DB write so it's visible synchronously.
+    if (options?.awaitLogs) {
+      await this.logAPICall(requestId, 'streaming', 'start', {
+        agentInstanceId: options?.agentInstanceId,
+        requestMetadata: {
+          provider: config.api.provider,
+          model: config.api.model,
+          messageCount: messages.length,
+        },
+        requestPayload: {
+          messages: messages,
+          config: config,
+        },
+      });
+    } else {
+      void this.logAPICall(requestId, 'streaming', 'start', {
+        agentInstanceId: options?.agentInstanceId,
+        requestMetadata: {
+          provider: config.api.provider,
+          model: config.api.model,
+          messageCount: messages.length,
+        },
+        requestPayload: {
+          messages: messages,
+          config: config,
+        },
+      });
+    }
 
     try {
       // Send start event
@@ -201,16 +313,26 @@ export class ExternalAPIService implements IExternalAPIService {
       const providerConfig = await this.getProviderConfig(config.api.provider);
       if (!providerConfig) {
         const errorMessage = `Provider ${config.api.provider} not found or not configured`;
-        yield {
+        const errorResponse = {
           requestId,
           content: errorMessage,
-          status: 'error',
+          status: 'error' as const,
           errorDetail: {
             name: 'MissingProviderError',
             code: 'PROVIDER_NOT_FOUND',
             provider: config.api.provider,
           },
         };
+        if (options?.awaitLogs) {
+          await this.logAPICall(requestId, 'streaming', 'error', {
+            errorDetail: errorResponse.errorDetail,
+          });
+        } else {
+          void this.logAPICall(requestId, 'streaming', 'error', {
+            errorDetail: errorResponse.errorDetail,
+          });
+        }
+        yield errorResponse;
         return;
       }
 
@@ -226,6 +348,11 @@ export class ExternalAPIService implements IExternalAPIService {
       } catch (providerError) {
         // Handle provider creation errors directly
         const errorDetail = extractErrorDetails(providerError, config.api.provider);
+        if (options?.awaitLogs) {
+          await this.logAPICall(requestId, 'streaming', 'error', { errorDetail });
+        } else {
+          void this.logAPICall(requestId, 'streaming', 'error', { errorDetail });
+        }
 
         yield {
           requestId,
@@ -238,11 +365,16 @@ export class ExternalAPIService implements IExternalAPIService {
 
       // Process the stream
       let fullResponse = '';
+      const startTime = Date.now();
 
       // Iterate through stream chunks
       for await (const chunk of result.textStream) {
-        // Check cancellation
+        // Process content
+        fullResponse += chunk;
+
+        // Check cancellation after processing chunk so we capture the latest partial content
         if (controller.signal.aborted) {
+          void this.logAPICall(requestId, 'streaming', 'cancel', { responseContent: fullResponse });
           yield {
             requestId,
             content: 'Request cancelled',
@@ -251,8 +383,6 @@ export class ExternalAPIService implements IExternalAPIService {
           return;
         }
 
-        // Process content
-        fullResponse += chunk;
         yield {
           requestId,
           content: fullResponse,
@@ -261,10 +391,25 @@ export class ExternalAPIService implements IExternalAPIService {
       }
 
       // Stream completed
+      const duration = Date.now() - startTime;
+      // Log done (optional, and async; awaiting can be expensive for long responses)
+      void this.logAPICall(requestId, 'streaming', 'done', {
+        responseContent: fullResponse,
+        responseMetadata: {
+          duration,
+        },
+      });
+
       yield { requestId, content: fullResponse, status: 'done' };
     } catch (error) {
       // Handle errors and categorize them
       const errorDetail = extractErrorDetails(error, config.api.provider);
+
+      if (options?.awaitLogs) {
+        await this.logAPICall(requestId, 'streaming', 'error', { errorDetail });
+      } else {
+        void this.logAPICall(requestId, 'streaming', 'error', { errorDetail });
+      }
 
       // Yield error with details
       yield {
@@ -340,6 +485,49 @@ export class ExternalAPIService implements IExternalAPIService {
       };
     } finally {
       this.cleanupAIRequest(requestId);
+    }
+  }
+
+  /**
+   * Get API call logs for debugging purposes
+   */
+  async getAPILogs(agentInstanceId?: string, limit = 100, offset = 0): Promise<ExternalAPILogEntity[]> {
+    try {
+      // Check if debug logging is enabled
+      const externalAPIDebug = await this.preferenceService.get('externalAPIDebug');
+      if (!externalAPIDebug) {
+        logger.warn('External API debug logging is disabled, returning empty results');
+        return [];
+      }
+
+      // Ensure API logging is initialized. If not initialized yet, return empty results and warn.
+      if (!this.apiLogRepository) {
+        logger.warn('API log repository not initialized; returning empty log results');
+        return [];
+      }
+
+      // Build query
+      const queryBuilder = this.apiLogRepository
+        .createQueryBuilder('log')
+        .orderBy('log.createdAt', 'DESC')
+        .limit(limit)
+        .offset(offset);
+
+      // Filter by agent instance ID if provided
+      if (agentInstanceId) {
+        queryBuilder.where('log.agentInstanceId = :agentInstanceId', { agentInstanceId });
+      }
+
+      // Only return streaming and immediate calls (not embedding)
+      queryBuilder.andWhere('log.callType IN (:...callTypes)', {
+        callTypes: ['streaming', 'immediate'],
+      });
+
+      const logs = await queryBuilder.getMany();
+      return logs;
+    } catch (error) {
+      logger.error(`Failed to get API logs: ${error as Error}`);
+      return [];
     }
   }
 }

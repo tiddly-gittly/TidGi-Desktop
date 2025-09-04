@@ -18,6 +18,10 @@ export interface IPreferences {
    */
   disableAntiAntiLeechForUrls: string[];
   downloadPath: string;
+  /**
+   * Enable debug logging for external API requests and responses
+   */
+  externalAPIDebug: boolean;
   hibernateUnusedWorkspacesAtLaunch: boolean;
   hideMenuBar: boolean;
   ignoreCertificateErrors: boolean;

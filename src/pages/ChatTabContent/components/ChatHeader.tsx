@@ -1,11 +1,14 @@
 import ArticleIcon from '@mui/icons-material/Article';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import TuneIcon from '@mui/icons-material/Tune';
 import { Box, CircularProgress, IconButton, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import React from 'react';
+import { usePreferenceObservable } from '@services/preferences/hooks';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
+import { APILogsDialog } from './APILogsDialog';
 import { CompactModelSelector } from './CompactModelSelector';
 import { PromptPreviewDialog } from './PromptPreviewDialog';
 
@@ -45,6 +48,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   inputText,
 }) => {
   const { t } = useTranslation('agent');
+  const preference = usePreferenceObservable();
+  const [apiLogsDialogOpen, setApiLogsDialogOpen] = useState(false);
+
   const { agent, previewDialogOpen, openPreviewDialog, closePreviewDialog } = useAgentChatStore(
     useShallow((state) => ({
       agent: state.agent,
@@ -53,6 +59,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       closePreviewDialog: state.closePreviewDialog,
     })),
   );
+
+  const handleOpenAPILogs = () => {
+    setApiLogsDialogOpen(true);
+  };
+
+  const handleCloseAPILogs = () => {
+    setApiLogsDialogOpen(false);
+  };
+
+  // Show debug button only when debug is enabled and agent exists
+  const showDebugButton = preference?.externalAPIDebug && agent?.id;
 
   return (
     <Header>
@@ -65,6 +82,15 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         >
           <ArticleIcon />
         </IconButton>
+        {showDebugButton && (
+          <IconButton
+            size='small'
+            onClick={handleOpenAPILogs}
+            title={t('APILogs.Title')}
+          >
+            <BugReportIcon />
+          </IconButton>
+        )}
         {loading && <CircularProgress size={20} sx={{ mr: 1 }} color='primary' />}
         <CompactModelSelector agentDefId={agent?.agentDefId} />
         <IconButton
@@ -79,6 +105,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         open={previewDialogOpen}
         onClose={closePreviewDialog}
         inputText={inputText}
+      />
+      <APILogsDialog
+        open={apiLogsDialogOpen}
+        onClose={handleCloseAPILogs}
+        agentInstanceId={agent?.id}
       />
     </Header>
   );

@@ -1,11 +1,13 @@
 import type { AIStreamResponse, IExternalAPIService } from '@/services/externalAPI/interface';
 import { AgentBrowserService } from '@services/agentBrowser';
-import type { IAgentBrowserService } from '@services/agentBrowser/interface';
 import { AgentDefinitionService } from '@services/agentDefinition';
 import { AgentInstanceService } from '@services/agentInstance';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
-import type { IDatabaseService } from '@services/database/interface';
+import { DatabaseService } from '@services/database';
+import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
+import { ExternalAPILogEntity } from '@services/database/schema/externalAPILog';
+import { ExternalAPIService } from '@services/externalAPI';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -14,9 +16,8 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
-import { DataSource } from 'typeorm';
 import { Observable } from 'rxjs';
+import { DataSource } from 'typeorm';
 import { vi } from 'vitest';
 
 // Mock bindServiceAndProxy to be an empty function
@@ -29,7 +30,7 @@ vi.mock('@services/libs/bindServiceAndProxy', () => ({
 export const testDataSource = new DataSource({
   type: 'better-sqlite3',
   database: ':memory:',
-  entities: [AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity],
+  entities: [AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, ExternalAPILogEntity],
   synchronize: true,
   logging: false,
 });
@@ -42,6 +43,10 @@ export const initializeTestDatabase = async (): Promise<void> => {
     await testDataSource.initialize();
     isInitialized = true;
   }
+
+  // Initialize real DatabaseService for tests that need it
+  const realDatabaseService = container.get<DatabaseService>(serviceIdentifier.Database);
+  await realDatabaseService.initializeForApp();
 };
 
 export const clearTestDatabase = async (): Promise<void> => {
@@ -50,10 +55,9 @@ export const clearTestDatabase = async (): Promise<void> => {
     await testDataSource.getRepository(AgentInstanceMessageEntity).clear();
     await testDataSource.getRepository(AgentInstanceEntity).clear();
     await testDataSource.getRepository(AgentDefinitionEntity).clear();
+    await testDataSource.getRepository(ExternalAPILogEntity).clear();
   }
-};
-
-// Provide properly-typed default implementations so tests can use vi.fn(impl)
+}; // Provide properly-typed default implementations so tests can use vi.fn(impl)
 // Inline default implementations will be provided directly in mocked serviceInstances below
 
 export const serviceInstances: {
@@ -66,7 +70,6 @@ export const serviceInstances: {
   context: Partial<IContextService>;
   preference: Partial<IPreferenceService>;
   externalAPI: Partial<IExternalAPIService>;
-  database: Partial<IDatabaseService>;
 } = {
   workspace: {
     countWorkspaces: vi.fn().mockResolvedValue(5),
@@ -98,9 +101,16 @@ export const serviceInstances: {
   context: {
     get: vi.fn().mockResolvedValue(undefined),
   },
-  preference: {
-    get: vi.fn().mockResolvedValue(undefined),
-  },
+  preference: (() => {
+    const store: Record<string, unknown> = {};
+    return {
+      get: vi.fn(async (key: string) => store[key]),
+      set: vi.fn(async (key: string, value: unknown) => {
+        store[key] = value;
+      }),
+      resetWithConfirm: vi.fn(async () => undefined),
+    } as Partial<IPreferenceService>;
+  })(),
   externalAPI: {
     getAIConfig: vi.fn(async () => ({ api: { model: 'test-model', provider: 'test-provider' }, modelParameters: {} })),
     getAIProviders: vi.fn(async () => []),
@@ -123,15 +133,6 @@ export const serviceInstances: {
     updateDefaultAIConfig: vi.fn(async () => undefined),
     deleteFieldFromDefaultAIConfig: vi.fn(async () => undefined),
   },
-  database: {
-    getDatabase: vi.fn().mockResolvedValue(testDataSource),
-    initializeDatabase: vi.fn(),
-    closeAppDatabase: vi.fn(),
-    getSetting: vi.fn(),
-    setSetting: vi.fn(),
-    initializeForApp: vi.fn(),
-    immediatelyStoreSettingsToFile: vi.fn(),
-  },
 };
 
 // Bind the shared mocks into container so real services resolved from container.get()
@@ -141,13 +142,14 @@ container.bind(serviceIdentifier.WorkspaceView).toConstantValue(serviceInstances
 container.bind(serviceIdentifier.Window).toConstantValue(serviceInstances.window);
 container.bind(serviceIdentifier.NativeService).toConstantValue(serviceInstances.native);
 container.bind(serviceIdentifier.Wiki).toConstantValue(serviceInstances.wiki);
-container.bind(serviceIdentifier.ExternalAPI).toConstantValue(serviceInstances.externalAPI);
+container.bind(serviceIdentifier.ExternalAPI).to(ExternalAPIService).inSingletonScope();
 container.bind(serviceIdentifier.Preference).toConstantValue(serviceInstances.preference);
 container.bind(serviceIdentifier.Context).toConstantValue(serviceInstances.context);
 container.bind(serviceIdentifier.Authentication).toConstantValue(serviceInstances.auth);
 container.bind(serviceIdentifier.AgentDefinition).to(AgentDefinitionService).inSingletonScope();
 container.bind(serviceIdentifier.AgentBrowser).to(AgentBrowserService).inSingletonScope();
-container.bind(serviceIdentifier.Database).toConstantValue(serviceInstances.database);
+// Bind real DatabaseService instead of mock
+container.bind(serviceIdentifier.Database).to(DatabaseService).inSingletonScope();
 container.bind(serviceIdentifier.AgentInstance).to(AgentInstanceService).inSingletonScope();
 
 // Shared workspace fixtures used by many tests
