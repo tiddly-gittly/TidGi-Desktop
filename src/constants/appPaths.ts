@@ -5,6 +5,20 @@ import { isDevelopmentOrTest, isElectronDevelopment, isTest } from './environmen
 import { cacheDatabaseFolderName, httpsCertKeyFolderName, settingFolderName } from './fileNames';
 import { sourcePath } from './paths';
 
+/**
+ * Application Path Configuration
+ *
+ * This module sets up different userData directories for different environments:
+ * - Test: userData-test/ (isolated from dev/prod data)
+ * - Development: userData-dev/ (isolated from production data)
+ * - Production: default system userData directory
+ *
+ * In test environment, app.setPath() calls below rely on the electron mock
+ * defined in src/__tests__/setup-vitest.ts to work correctly. The mock ensures that
+ * setPath() actually stores path values and getPath() retrieves them, enabling proper
+ * test isolation.
+ */
+
 // in dev/test mode, set userData to a different folder, so gotTheLock will be true, we can run dev instance and normal instance.
 if (isTest) {
   app.setPath('userData', path.resolve(sourcePath, '..', 'userData-test'));
