@@ -98,6 +98,8 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   @agent
   Scenario: Close all tabs then create default agent from fallback page
     # Ensure starting from black/fallback page with no open tabs
+    When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
+    And I wait for 0.2 seconds
     When I click all "tab" elements matching selector "[data-testid='tab']"
     When I click all "close tab button" elements matching selector "[data-testid='tab-close-button']"
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
