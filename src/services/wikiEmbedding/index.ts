@@ -67,7 +67,7 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
     try {
       // Initialize database for wiki embeddings with vector search enabled
       await this.databaseService.initializeDatabase('wikiEmbedding', { enableVectorSearch: true });
-      this.dataSource = await this.databaseService.getDatabase('wikiEmbedding');
+      this.dataSource = await this.databaseService.getDatabase('wikiEmbedding', { enableVectorSearch: true });
       this.embeddingRepository = this.dataSource.getRepository(WikiEmbeddingEntity);
       this.statusRepository = this.dataSource.getRepository(WikiEmbeddingStatusEntity);
 
@@ -91,22 +91,22 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
     }
 
     try {
-      const queryRunner = this.dataSource.createQueryRunner();
+      // Use dataSource directly instead of creating a new queryRunner
+      // since sqlite-vec extension is loaded on the main connection
       try {
-        // Type for sqlite-vec version query result
-        const versionResults = await queryRunner.query(
+        // Test sqlite-vec extension availability
+        const versionResults = await this.dataSource.query<VecVersionResult[]>(
           'select vec_version() as vec_version;',
-        ) as VecVersionResult[];
+        );
 
         if (!Array.isArray(versionResults) || versionResults.length === 0) {
           throw new Error('No version result returned from vec_version()');
         }
 
         const { vec_version } = versionResults[0];
-        logger.info(`sqlite-vec extension loaded with version: ${vec_version}`);
+        logger.info(`sqlite-vec extension verified with version: ${vec_version}`);
       } catch (error) {
         logger.warn('sqlite-vec extension not available, skipping vector table creation', { error });
-        await queryRunner.release();
         return;
       }
 
@@ -118,21 +118,19 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
         const tableName = `wiki_embeddings_vec_${dim}`;
 
         // Check if table already exists
-        const tableExists = await queryRunner.query(
+        const tableExists = await this.dataSource.query<TableExistsResult[]>(
           "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
           [tableName],
-        ) as TableExistsResult[];
+        );
 
         if (tableExists.length === 0) {
           // Create vec0 virtual table for this dimension
-          await queryRunner.query(
+          await this.dataSource.query(
             `CREATE VIRTUAL TABLE ${tableName} USING vec0(embedding float[${dim}])`,
           );
           logger.debug(`Created sqlite-vec table: ${tableName}`);
         }
       }
-
-      await queryRunner.release();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Failed to initialize sqlite-vec tables: ${errorMessage}`);

@@ -26,7 +26,7 @@ describe('WikiEmbeddingService Integration Tests', () => {
 
     // Clean up any existing test data from previous tests
     try {
-      const realDataSource = await databaseService.getDatabase('wikiEmbedding');
+      const realDataSource = await databaseService.getDatabase('wikiEmbedding', { enableVectorSearch: true });
       const embeddingRepo = realDataSource.getRepository(WikiEmbeddingEntity);
       const statusRepo = realDataSource.getRepository(WikiEmbeddingStatusEntity);
       await embeddingRepo.clear();
@@ -143,7 +143,7 @@ describe('WikiEmbeddingService Integration Tests', () => {
       // Verify embeddings were stored in the real database
       // WikiEmbeddingService uses its own database with sqlite-vec support
       const realDatabaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-      const realDataSource = await realDatabaseService.getDatabase('wikiEmbedding');
+      const realDataSource = await realDatabaseService.getDatabase('wikiEmbedding', { enableVectorSearch: true });
       const embeddingRepository = realDataSource.getRepository(WikiEmbeddingEntity);
 
       const storedEmbeddings = await embeddingRepository.find({
@@ -248,7 +248,7 @@ describe('WikiEmbeddingService Integration Tests', () => {
 
       // Check if the document was chunked
       const realDatabaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-      const realDataSource = await realDatabaseService.getDatabase('wikiEmbedding');
+      const realDataSource = await realDatabaseService.getDatabase('wikiEmbedding', { enableVectorSearch: true });
       const embeddingRepository = realDataSource.getRepository(WikiEmbeddingEntity);
       const chunks = await embeddingRepository.find({
         where: { workspaceId: testWorkspaceId, tiddlerTitle: 'Long Document' },
@@ -329,7 +329,7 @@ describe('WikiEmbeddingService Integration Tests', () => {
       // With our improved error handling, the process should complete even if some chunks fail
       // But we might have partial success (some chunks could have processed before the error mock was applied)
       const realDatabaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-      const realDataSource = await realDatabaseService.getDatabase('wikiEmbedding');
+      const realDataSource = await realDatabaseService.getDatabase('wikiEmbedding', { enableVectorSearch: true });
       const embeddingRepository = realDataSource.getRepository(WikiEmbeddingEntity);
       const storedEmbeddings = await embeddingRepository.find({
         where: { workspaceId: testWorkspaceId },
@@ -478,7 +478,7 @@ describe('WikiEmbeddingService Integration Tests', () => {
 
       // Verify embeddings exist
       const realDatabaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-      const realDataSource = await realDatabaseService.getDatabase('wikiEmbedding');
+      const realDataSource = await realDatabaseService.getDatabase('wikiEmbedding', { enableVectorSearch: true });
       const embeddingRepository = realDataSource.getRepository(WikiEmbeddingEntity);
       const embeddingsBeforeDelete = await embeddingRepository.find({
         where: { workspaceId: testWorkspaceId },

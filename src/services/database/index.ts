@@ -182,7 +182,7 @@ export class DatabaseService implements IDatabaseService {
   /**
    * Get database connection for a given key
    */
-  public async getDatabase(key: string, isRetry = false): Promise<DataSource> {
+  public async getDatabase(key: string, options: DatabaseInitOptions = {}, isRetry = false): Promise<DataSource> {
     if (!this.dataSources.has(key)) {
       try {
         const schemaConfig = this.getSchemaConfigForKey(key);
@@ -200,7 +200,16 @@ export class DatabaseService implements IDatabaseService {
 
         await dataSource.initialize();
 
-        // Load sqlite-vec extension for embedding databases
+        // Load sqlite-vec extension if vector search is enabled
+        if (options.enableVectorSearch) {
+          try {
+            await this.loadSqliteVecExtension(dataSource);
+          } catch (error) {
+            logger.warn(`sqlite-vec extension failed to load for key: ${key}, continuing without vector search functionality`, {
+              error: (error as Error).message,
+            });
+          }
+        }
 
         this.dataSources.set(key, dataSource);
         logger.debug(`Database connection established for key: ${key}`);
@@ -213,7 +222,7 @@ export class DatabaseService implements IDatabaseService {
           try {
             // Try to fix database lock issue
             await this.fixDatabaseLock(key);
-            return await this.getDatabase(key, true);
+            return await this.getDatabase(key, {}, true);
           } catch (retryError) {
             logger.error(`Failed to retry getting database for key: ${key}`, { error: (retryError as Error).message });
           }
