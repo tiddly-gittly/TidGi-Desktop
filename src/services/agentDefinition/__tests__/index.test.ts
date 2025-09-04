@@ -3,10 +3,10 @@ import { AgentDefinition } from '@services/agentDefinition/interface';
 import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
 import { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
+import { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearTestDatabase, initializeTestDatabase, testDataSource } from '../../../__tests__/__mocks__/services-container';
 
 describe('AgentDefinitionService getAgentDefs integration', () => {
   let agentDefinitionService: AgentDefinitionService;
@@ -14,11 +14,9 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
 
-    // Initialize the shared test database
-    await initializeTestDatabase();
-
-    // Clear database before each test
-    await clearTestDatabase();
+    // Ensure DatabaseService is initialized with all schemas
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    await databaseService.initializeForApp();
 
     // Use globally bound AgentDefinitionService (configured in src/__tests__/setup-vitest.ts)
     agentDefinitionService = container.get<AgentDefinitionService>(serviceIdentifier.AgentDefinition);
@@ -28,16 +26,30 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
     };
     // Manually inject agentInstanceService to avoid lazyInject issues
     serviceWithPrivate.agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-    // Initialize the service to set up dataSource and repositories
+
+    // Initialize the service to set up dataSource and repositories using real database service
     await agentDefinitionService.initialize();
+
+    // Clean up any existing test data from the real database
+    try {
+      const realDatabaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+      const realDataSource = await realDatabaseService.getDatabase('agent');
+      const agentDefRepo = realDataSource.getRepository(AgentDefinitionEntity);
+      await agentDefRepo.clear();
+    } catch {
+      // Ignore errors during cleanup
+    }
   });
 
   afterEach(async () => {
-    // Database cleanup is handled by clearTestDatabase in beforeEach
+    // Clean up is handled automatically by beforeEach for each test
   });
 
   it('should fallback missing DB fields to defaultAgents when only id persisted for build-in agent', async () => {
-    const agentDefRepo = testDataSource.getRepository(AgentDefinitionEntity);
+    // Get the real database repository that the service uses
+    const realDatabaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    const realDataSource = await realDatabaseService.getDatabase('agent');
+    const agentDefRepo = realDataSource.getRepository(AgentDefinitionEntity);
 
     // Save only minimal record (id only) as per new behavior
     const example = (defaultAgents as AgentDefinition[])[0];
@@ -56,7 +68,10 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
   });
 
   it('should have only id field populated when directly querying database entity for build-in agent', async () => {
-    const agentDefRepo = testDataSource.getRepository(AgentDefinitionEntity);
+    // Get the real database repository that the service uses
+    const realDatabaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    const realDataSource = await realDatabaseService.getDatabase('agent');
+    const agentDefRepo = realDataSource.getRepository(AgentDefinitionEntity);
 
     // Save only minimal record (id only) as per new behavior
     const example = (defaultAgents as AgentDefinition[])[0];

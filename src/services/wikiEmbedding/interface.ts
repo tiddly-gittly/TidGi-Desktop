@@ -8,16 +8,12 @@ import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptCon
  * Embedding record in the database
  */
 export interface EmbeddingRecord {
-  /** Unique identifier */
-  id: string;
+  /** Unique identifier - Changed to number for sqlite-vec compatibility */
+  id: number;
   /** Workspace ID that this embedding belongs to */
   workspaceId: string;
   /** Original tiddler title */
   tiddlerTitle: string;
-  /** Content that was embedded (may be chunked) */
-  content: string;
-  /** Content hash for change detection */
-  contentHash: string;
   /** Chunk index if content was split */
   chunkIndex?: number;
   /** Total chunks if content was split */

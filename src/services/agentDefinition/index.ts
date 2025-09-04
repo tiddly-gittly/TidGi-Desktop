@@ -28,9 +28,9 @@ export class AgentDefinitionService implements IAgentDefinitionService {
   public async initialize(): Promise<void> {
     try {
       // Initialize the database
-      await this.databaseService.initializeDatabase('agent-default');
+      await this.databaseService.initializeDatabase('agent');
       logger.debug('Agent database initialized');
-      this.dataSource = await this.databaseService.getDatabase('agent-default');
+      this.dataSource = await this.databaseService.getDatabase('agent');
       this.agentDefRepository = this.dataSource.getRepository(AgentDefinitionEntity);
       logger.debug('Agent repositories initialized');
       logger.debug('Agent handlers registered');

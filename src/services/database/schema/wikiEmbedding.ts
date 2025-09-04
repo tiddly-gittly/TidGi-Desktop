@@ -1,15 +1,17 @@
 import type { EmbeddingRecord, EmbeddingStatus } from '@services/wikiEmbedding/interface';
-import { Column, CreateDateColumn, Entity, Index, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 /**
  * Database entity: Stores metadata for embedding vectors
  * The actual vectors are stored in sqlite-vec virtual tables
+ *
+ * IMPORTANT: Uses integer primary key to match sqlite-vec rowid requirements
  */
 @Entity('wiki_embeddings')
 @Index(['workspaceId', 'model', 'provider'])
 export class WikiEmbeddingEntity implements EmbeddingRecord {
-  @PrimaryColumn()
-  id!: string;
+  @PrimaryGeneratedColumn()
+  id!: number; // number for sqlite-vec compatibility
 
   @Column()
   @Index()
@@ -18,13 +20,6 @@ export class WikiEmbeddingEntity implements EmbeddingRecord {
   @Column()
   @Index()
   tiddlerTitle!: string;
-
-  @Column({ type: 'text' })
-  content!: string;
-
-  @Column()
-  @Index()
-  contentHash!: string;
 
   @Column({ type: 'integer', nullable: true })
   chunkIndex?: number;

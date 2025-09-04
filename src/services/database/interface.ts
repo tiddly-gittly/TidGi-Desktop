@@ -14,6 +14,13 @@ export interface ISettingFile {
 }
 
 /**
+ * Database initialization options
+ */
+export interface DatabaseInitOptions {
+  enableVectorSearch?: boolean;
+}
+
+/**
  * Allow wiki or external app to save/search external non-tiddlywiki store like sqlite (removed) or config file.
  */
 export interface IDatabaseService {
@@ -43,7 +50,7 @@ export interface IDatabaseService {
   /**
    * Initialize database for specific key
    */
-  initializeDatabase(key: string): Promise<void>;
+  initializeDatabase(key: string, options?: DatabaseInitOptions): Promise<void>;
 
   /**
    * Get database connection for specific key

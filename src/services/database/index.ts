@@ -9,12 +9,13 @@ import * as sqliteVec from 'sqlite-vec';
 import { DataSource } from 'typeorm';
 
 import { CACHE_DATABASE_FOLDER } from '@/constants/appPaths';
+import { isTest } from '@/constants/environment';
 import { DEBOUNCE_SAVE_SETTING_BACKUP_FILE, DEBOUNCE_SAVE_SETTING_FILE } from '@/constants/parameters';
 import { SQLITE_BINARY_PATH } from '@/constants/paths';
 import { logger } from '@services/libs/log';
 import { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions.js';
 import { ensureSettingFolderExist, fixSettingFileWhenError } from './configSetting';
-import { IDatabaseService, ISettingFile } from './interface';
+import { DatabaseInitOptions, IDatabaseService, ISettingFile } from './interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from './schema/agent';
 import { AgentBrowserTabEntity } from './schema/agentBrowser';
 import { ExternalAPILogEntity } from './schema/externalAPILog';
@@ -114,28 +115,21 @@ export class DatabaseService implements IDatabaseService {
    * Get database file path for a given key
    */
   private getDatabasePath(key: string): string {
-    return path.resolve(CACHE_DATABASE_FOLDER, `${key}-sqlite3-cache.db`);
-  }
-
-  /**
-   * Check if we're in test environment
-   */
-  private isTestEnvironment(): boolean {
-    const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
-    if (isTest) {
-      logger.debug(`isTestEnvironment: true, NODE_ENV=${process.env.NODE_ENV}, VITEST=${process.env.VITEST}`);
+    // Use in-memory database for tests
+    if (process.env.NODE_ENV === 'test') {
+      return ':memory:';
     }
-    return isTest;
+    return path.resolve(CACHE_DATABASE_FOLDER, `${key}-sqlite3-cache.db`);
   }
 
   /**
    * Initialize database for a given key
    */
-  public async initializeDatabase(key: string): Promise<void> {
+  public async initializeDatabase(key: string, options: DatabaseInitOptions = {}): Promise<void> {
     const databasePath = this.getDatabasePath(key);
 
-    // Skip if database already exists
-    if (await fs.exists(databasePath)) {
+    // Skip if database already exists (except in test environment where we always use fresh in-memory DB)
+    if (!isTest && await fs.exists(databasePath)) {
       logger.debug(`Database already exists for key: ${key} at ${databasePath}`);
       return;
     }
@@ -160,8 +154,8 @@ export class DatabaseService implements IDatabaseService {
 
       await dataSource.initialize();
 
-      // Load sqlite-vec extension for embedding databases (skip in test environment to avoid issues)
-      if (key.includes('embedding') && !this.isTestEnvironment()) {
+      // Load sqlite-vec extension for embedding databases if enabled
+      if (options.enableVectorSearch) {
         try {
           logger.info(`Attempting to load sqlite-vec extension for database key: ${key}`);
           await this.loadSqliteVecExtension(dataSource);
@@ -207,19 +201,6 @@ export class DatabaseService implements IDatabaseService {
         await dataSource.initialize();
 
         // Load sqlite-vec extension for embedding databases
-        logger.debug(`Checking if key '${key}' includes 'embedding': ${key.includes('embedding')}, isTestEnvironment: ${this.isTestEnvironment()}`);
-        if (key.includes('embedding') && !this.isTestEnvironment()) {
-          logger.info(`Attempting to load sqlite-vec extension for database connection key: ${key}`);
-          try {
-            await this.loadSqliteVecExtension(dataSource);
-          } catch (error) {
-            logger.warn(`sqlite-vec extension failed to load for key: ${key}, continuing without vector search functionality`, {
-              error: (error as Error).message,
-              stack: (error as Error).stack,
-            });
-            // Don't throw - allow the database to work without vector functionality
-          }
-        }
 
         this.dataSources.set(key, dataSource);
         logger.debug(`Database connection established for key: ${key}`);
@@ -280,15 +261,19 @@ export class DatabaseService implements IDatabaseService {
    * Get schema config for a given key
    */
   private getSchemaConfigForKey(key: string): SchemaConfig {
-    // Extract prefix, e.g. "wiki-123" => "wiki"
-    const prefix = key.split('-')[0];
+    // First, try to find exact match for the key
+    if (this.schemaRegistry.has(key)) {
+      return this.schemaRegistry.get(key)!;
+    }
 
-    if (this.schemaRegistry.has(prefix)) {
+    // Special handling for wiki databases: extract prefix, e.g. "wiki-123" => "wiki"
+    const prefix = key.split('-')[0];
+    if (prefix === 'wiki' && this.schemaRegistry.has(prefix)) {
       return this.schemaRegistry.get(prefix)!;
     }
 
     // If no schema config found, return default config
-    logger.warn(`No schema config found for key prefix: ${prefix}, using default config`);
+    logger.warn(`No schema config found for key: ${key}, using default config`);
     return {
       entities: [],
       synchronize: false,

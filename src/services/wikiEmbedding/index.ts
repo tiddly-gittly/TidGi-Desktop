@@ -1,5 +1,4 @@
 import { inject, injectable } from 'inversify';
-import { nanoid } from 'nanoid';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
@@ -14,25 +13,19 @@ import { IWikiService } from '@services/wiki/interface';
 import { IWorkspaceService } from '@services/workspaces/interface';
 
 import type { ITiddlerFields } from 'tiddlywiki';
-import type { EmbeddingRecord, EmbeddingStatus, IWikiEmbeddingService, SearchResult } from './interface';
+import type { EmbeddingStatus, IWikiEmbeddingService, SearchResult } from './interface';
 
 // Type definitions for database queries
 interface TableExistsResult {
   name: string;
 }
 
-interface VectorSearchResult {
-  rowid: string;
-  distance: number;
-}
-
-// Type definitions for database queries
-interface TableExistsResult {
-  name: string;
+interface VecVersionResult {
+  vec_version: string;
 }
 
 interface VectorSearchResult {
-  rowid: string;
+  rowid: number; // Changed from string to number for integer rowid compatibility
   distance: number;
 }
 
@@ -72,8 +65,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
    */
   private async initializeDatabase(): Promise<void> {
     try {
-      // Initialize database for wiki embeddings
-      await this.databaseService.initializeDatabase('wikiEmbedding');
+      // Initialize database for wiki embeddings with vector search enabled
+      await this.databaseService.initializeDatabase('wikiEmbedding', { enableVectorSearch: true });
       this.dataSource = await this.databaseService.getDatabase('wikiEmbedding');
       this.embeddingRepository = this.dataSource.getRepository(WikiEmbeddingEntity);
       this.statusRepository = this.dataSource.getRepository(WikiEmbeddingStatusEntity);
@@ -100,7 +93,17 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
     try {
       const queryRunner = this.dataSource.createQueryRunner();
       try {
-        await queryRunner.query('SELECT vec_version() as version');
+        // Type for sqlite-vec version query result
+        const versionResults = await queryRunner.query(
+          'select vec_version() as vec_version;',
+        ) as VecVersionResult[];
+
+        if (!Array.isArray(versionResults) || versionResults.length === 0) {
+          throw new Error('No version result returned from vec_version()');
+        }
+
+        const { vec_version } = versionResults[0];
+        logger.info(`sqlite-vec extension loaded with version: ${vec_version}`);
       } catch (error) {
         logger.warn('sqlite-vec extension not available, skipping vector table creation', { error });
         await queryRunner.release();
@@ -353,53 +356,56 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
       for await (const note of this.getWikiNotesIterator(workspaceId)) {
         const noteTitle = String(note.title || '');
         const noteContent = String(note.text || '');
-        const modifiedTime = String(note.modified || '');
+        // const modifiedTime = String(note.modified || '');
 
-        try {
-          // Re-ensure repositories before each note processing
-          this.ensureRepositories();
+        // Re-ensure repositories before each note processing
+        this.ensureRepositories();
 
-          await this.updateEmbeddingStatus(workspaceId, {
-            status: 'generating',
-            progress: { total: totalCount, completed, current: noteTitle },
+        await this.updateEmbeddingStatus(workspaceId, {
+          status: 'generating',
+          progress: { total: totalCount, completed, current: noteTitle },
+        });
+
+        // Skip empty content
+        if (!noteContent.trim()) {
+          logger.debug(`Skipping note with empty content: ${noteTitle}`);
+          continue;
+        }
+
+        // Check if embedding already exists and is up-to-date
+        if (!forceUpdate) {
+          const existingEmbedding = await this.embeddingRepository!.findOne({
+            where: {
+              workspaceId,
+              tiddlerTitle: noteTitle,
+              model: config.api.model,
+              provider: config.api.provider,
+            },
           });
 
-          // Generate content signature for change detection
-          const contentHash = this.generateContentSignature(noteContent, modifiedTime);
-
-          // Check if embedding already exists and is up-to-date
-          if (!forceUpdate) {
-            const existingEmbedding = await this.embeddingRepository!.findOne({
-              where: {
-                workspaceId,
-                tiddlerTitle: noteTitle,
-                contentHash,
-                model: config.api.model,
-                provider: config.api.provider,
-              },
-            });
-
-            if (existingEmbedding) {
-              logger.debug(`Embedding up-to-date for: ${noteTitle}`);
-              completed++;
-              continue;
-            }
+          if (existingEmbedding) {
+            logger.debug(`Embedding up-to-date for: ${noteTitle}`);
+            completed++;
+            continue;
           }
+        }
 
-          // Delete existing embeddings for this note
-          await this.embeddingRepository!.delete({
-            workspaceId,
-            tiddlerTitle: noteTitle,
-            model: config.api.model,
-            provider: config.api.provider,
-          });
+        // Delete existing embeddings for this note
+        await this.embeddingRepository!.delete({
+          workspaceId,
+          tiddlerTitle: noteTitle,
+          model: config.api.model,
+          provider: config.api.provider,
+        });
 
-          // Chunk content if necessary
-          const chunks = this.chunkContent(noteContent);
+        // Chunk content if necessary
+        const chunks = this.chunkContent(noteContent);
+        let chunkSuccessCount = 0;
 
-          for (let index = 0; index < chunks.length; index++) {
-            const chunk = chunks[index];
+        for (let index = 0; index < chunks.length; index++) {
+          const chunk = chunks[index];
 
+          try {
             // Generate embeddings using embeddingModel if available, otherwise use regular model
             const embeddingModel = config.api.embeddingModel || config.api.model;
             const embeddingConfig = {
@@ -423,13 +429,11 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
             const embeddingArray = embeddingResponse.embeddings[0];
             const dimensions = embeddingArray.length;
 
-            // Create embedding record
-            const embeddingRecord: EmbeddingRecord = {
-              id: nanoid(),
+            // Create embedding record - Let database auto-generate integer ID
+            const embeddingRecord = {
+              // id is now auto-generated by database (PrimaryGeneratedColumn)
               workspaceId,
               tiddlerTitle: noteTitle,
-              content: chunk,
-              contentHash,
               chunkIndex: chunks.length > 1 ? index : undefined,
               totalChunks: chunks.length > 1 ? chunks.length : undefined,
               created: new Date(),
@@ -443,41 +447,54 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
               // Re-ensure repositories before saving
               this.ensureRepositories();
 
-              // Save metadata to database
+              // Save metadata to database and get auto-generated ID
               const entity = this.embeddingRepository!.create(embeddingRecord);
-              await this.embeddingRepository!.save(entity);
+              const savedEntity = await this.embeddingRepository!.save(entity);
 
-              // Store vector in sqlite-vec table
-              await this.storeEmbeddingVector(embeddingRecord.id, embeddingArray, dimensions);
+              // Store vector in sqlite-vec table using the auto-generated ID
+              try {
+                await this.storeEmbeddingVector(savedEntity.id, embeddingArray, dimensions);
+                chunkSuccessCount++;
+              } catch (vectorError) {
+                // If vector storage fails, clean up the metadata record to avoid orphans
+                await this.embeddingRepository!.delete(savedEntity.id);
+                throw vectorError;
+              }
             } catch (databaseError) {
               const databaseErrorMessage = databaseError instanceof Error ? databaseError.message : String(databaseError);
-              logger.error(`Database error while saving embedding for "${noteTitle}": ${databaseErrorMessage}`);
+              logger.error(`Database error while saving embedding for "${noteTitle}" chunk ${index + 1}: ${databaseErrorMessage}`);
 
-              // Try to reinitialize database connection
+              // Try to reinitialize database connection and retry the entire operation
               try {
                 logger.info('Attempting to reinitialize database connection...');
                 await this.initializeDatabase();
 
-                // Retry saving after reinitialization
-                const entity = this.embeddingRepository!.create(embeddingRecord);
-                await this.embeddingRepository!.save(entity);
-                await this.storeEmbeddingVector(embeddingRecord.id, embeddingArray, dimensions);
+                // Retry the entire operation (metadata + vector) after reinitialization
+                const retryEntity = this.embeddingRepository!.create(embeddingRecord);
+                const retrySavedEntity = await this.embeddingRepository!.save(retryEntity);
+                await this.storeEmbeddingVector(retrySavedEntity.id, embeddingArray, dimensions);
 
-                logger.info(`Successfully saved embedding for "${noteTitle}" after database reinitialization`);
+                logger.info(`Successfully saved embedding for "${noteTitle}" chunk ${index + 1} after database reinitialization`);
+                chunkSuccessCount++;
               } catch (retryError) {
                 const retryErrorMessage = retryError instanceof Error ? retryError.message : String(retryError);
-                logger.error(`Failed to save embedding for "${noteTitle}" even after database reinitialization: ${retryErrorMessage}`);
-                throw retryError; // Re-throw to be caught by outer try-catch
+                logger.error(`Failed to save embedding for "${noteTitle}" chunk ${index + 1} even after database reinitialization: ${retryErrorMessage}`);
+                // Continue with next chunk instead of failing the entire document
               }
             }
+          } catch (chunkError) {
+            const chunkErrorMessage = chunkError instanceof Error ? chunkError.message : String(chunkError);
+            logger.error(`Failed to process chunk ${index + 1} of "${noteTitle}": ${chunkErrorMessage}`);
+            // Continue with next chunk instead of failing the entire document
           }
+        }
 
+        // Only increment completed count if at least one chunk succeeded
+        if (chunkSuccessCount > 0) {
           completed++;
-          logger.debug(`Generated embeddings for: ${noteTitle} (${chunks.length} chunks)`);
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          logger.error(`Failed to generate embedding for note "${noteTitle}": ${errorMessage}`);
-          // Continue with other notes instead of stopping
+          logger.debug(`Generated embeddings for: ${noteTitle} (${chunkSuccessCount}/${chunks.length} chunks successful)`);
+        } else {
+          logger.warn(`Failed to generate any embeddings for: ${noteTitle}`);
         }
       }
 
@@ -503,9 +520,15 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
 
   /**
    * Store embedding vector in sqlite-vec table
+   *
+   * According to sqlite-vec documentation (https://alexgarcia.xyz/sqlite-vec/js.html):
+   * - Vectors should be passed as Float32Array objects, not JSON strings
+   * - better-sqlite3 automatically handles Float32Array conversion
+   * - No need to use vec_f32() function when passing Float32Array directly
+   * IMPROVED: Now uses integer embeddingId that matches sqlite-vec rowid requirements
    */
   private async storeEmbeddingVector(
-    embeddingId: string,
+    embeddingId: number, // Changed from string to number for direct rowid compatibility
     embedding: number[],
     dimensions: number,
   ): Promise<void> {
@@ -518,12 +541,14 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
     // Ensure the table exists for this dimension
     await this.ensureVectorTableExists(dimensions);
 
-    const embeddingJson = JSON.stringify(embedding);
+    // Convert number array to Float32Array as required by sqlite-vec
+    const embeddingFloat32 = new Float32Array(embedding);
 
     // Insert or replace the vector in sqlite-vec table
+    // Now embeddingId is integer, directly compatible with sqlite-vec rowid
     await this.dataSource.query(
-      `INSERT OR REPLACE INTO ${tableName}(rowid, embedding) VALUES (?, vec_f32(?))`,
-      [embeddingId, embeddingJson],
+      `INSERT OR REPLACE INTO ${tableName}(rowid, embedding) VALUES (?, ?)`,
+      [embeddingId, embeddingFloat32],
     );
   }
 
@@ -606,18 +631,19 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
       const placeholders = embeddingIds.map(() => '?').join(',');
 
       // Perform vector similarity search using sqlite-vec
-      const queryEmbeddingJson = JSON.stringify(queryEmbedding);
+      // Convert query embedding to Float32Array as required by sqlite-vec
+      const queryEmbeddingFloat32 = new Float32Array(queryEmbedding);
 
       const vectorResults = await this.dataSource!.query<VectorSearchResult[]>(
         `
-        SELECT rowid, distance 
-        FROM ${tableName} 
+        SELECT rowid, distance
+        FROM ${tableName}
         WHERE rowid IN (${placeholders})
-          AND embedding MATCH vec_f32(?)
-        ORDER BY distance 
+          AND embedding MATCH ?
+        ORDER BY distance
         LIMIT ?
         `,
-        [...embeddingIds, queryEmbeddingJson, limit],
+        [...embeddingIds, queryEmbeddingFloat32, limit],
       );
 
       // Convert distance to similarity (sqlite-vec returns distance, we want similarity)
@@ -636,8 +662,6 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
                 id: metadataRecord.id,
                 workspaceId: metadataRecord.workspaceId,
                 tiddlerTitle: metadataRecord.tiddlerTitle,
-                content: metadataRecord.content,
-                contentHash: metadataRecord.contentHash,
                 chunkIndex: metadataRecord.chunkIndex,
                 totalChunks: metadataRecord.totalChunks,
                 created: metadataRecord.created,
@@ -740,32 +764,38 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
         where: { workspaceId },
       });
 
-      // Group embeddings by dimensions
-      const embeddingsByDimension = new Map<number, string[]>();
+      // Group embeddings by dimensions - Updated for integer IDs
+      const embeddingsByDimension = new Map<number, number[]>(); // Changed string[] to number[]
       for (const embedding of embeddings) {
         if (!embeddingsByDimension.has(embedding.dimensions)) {
           embeddingsByDimension.set(embedding.dimensions, []);
         }
-        embeddingsByDimension.get(embedding.dimensions)!.push(embedding.id);
+        embeddingsByDimension.get(embedding.dimensions)!.push(embedding.id); // Now number type matches
       }
 
-      // Delete vectors from sqlite-vec tables
+      // Delete vectors from sqlite-vec tables (may fail if tables don't exist)
       for (const [dimensions, embeddingIds] of embeddingsByDimension) {
         if (embeddingIds.length > 0) {
-          const tableName = this.getVectorTableName(dimensions);
-          const placeholders = embeddingIds.map(() => '?').join(',');
+          try {
+            const tableName = this.getVectorTableName(dimensions);
+            const placeholders = embeddingIds.map(() => '?').join(',');
 
-          await this.dataSource!.query(
-            `DELETE FROM ${tableName} WHERE rowid IN (${placeholders})`,
-            embeddingIds,
-          );
+            await this.dataSource!.query(
+              `DELETE FROM ${tableName} WHERE rowid IN (${placeholders})`,
+              embeddingIds,
+            );
+          } catch (vectorDeleteError) {
+            const errorMessage = vectorDeleteError instanceof Error ? vectorDeleteError.message : String(vectorDeleteError);
+            logger.warn(`Failed to delete vectors from table for dimension ${dimensions}: ${errorMessage}. Continuing with metadata cleanup.`);
+            // Continue with metadata deletion even if vector deletion fails
+          }
         }
       }
 
-      // Delete metadata from regular table
+      // Delete metadata from regular table (always attempt this)
       await this.embeddingRepository!.delete({ workspaceId });
 
-      // Delete status record
+      // Delete status record (always attempt this)
       await this.statusRepository!.delete({ workspaceId });
 
       // Clean up subscription

@@ -44,7 +44,7 @@ export class AgentBrowserService implements IAgentBrowserService {
   public async initialize(): Promise<void> {
     try {
       // Get repositories
-      this.dataSource = await this.databaseService.getDatabase('agent-default');
+      this.dataSource = await this.databaseService.getDatabase('agent');
       this.tabRepository = this.dataSource.getRepository(AgentBrowserTabEntity);
       logger.debug('Agent browser repository initialized');
     } catch (error) {

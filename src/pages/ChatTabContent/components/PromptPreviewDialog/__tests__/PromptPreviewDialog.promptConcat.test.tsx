@@ -164,7 +164,6 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
       for (const r of results) {
         if (isPreviewResult(r) && containsPluginInfo(r)) {
           finalResult = r;
-          console.log('Using streamed result with plugin info as finalResult');
           break;
         }
       }
@@ -173,7 +172,6 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
         const last = results[results.length - 1];
         if (isPreviewResult(last)) {
           finalResult = last;
-          console.log('Using last streamed result as finalResult');
         }
       }
     }
@@ -189,7 +187,7 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
         });
       });
     } else {
-      console.log('No final result received from concatPrompt');
+      // No final result received from concatPrompt
     }
 
     render(

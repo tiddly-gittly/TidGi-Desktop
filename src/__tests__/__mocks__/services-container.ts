@@ -5,19 +5,17 @@ import { AgentInstanceService } from '@services/agentInstance';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
 import { DatabaseService } from '@services/database';
-import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
-import { ExternalAPILogEntity } from '@services/database/schema/externalAPILog';
 import { ExternalAPIService } from '@services/externalAPI';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IWikiService } from '@services/wiki/interface';
+import { WikiEmbeddingService } from '@services/wikiEmbedding';
 import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { Observable } from 'rxjs';
-import { DataSource } from 'typeorm';
 import { vi } from 'vitest';
 
 // Mock bindServiceAndProxy to be an empty function
@@ -25,40 +23,6 @@ import { vi } from 'vitest';
 vi.mock('@services/libs/bindServiceAndProxy', () => ({
   bindServiceAndProxy: vi.fn(),
 }));
-
-// Create a shared in-memory SQLite database for all tests
-export const testDataSource = new DataSource({
-  type: 'better-sqlite3',
-  database: ':memory:',
-  entities: [AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, ExternalAPILogEntity],
-  synchronize: true,
-  logging: false,
-});
-
-// Initialize the test database
-let isInitialized = false;
-
-export const initializeTestDatabase = async (): Promise<void> => {
-  if (!isInitialized) {
-    await testDataSource.initialize();
-    isInitialized = true;
-  }
-
-  // Initialize real DatabaseService for tests that need it
-  const realDatabaseService = container.get<DatabaseService>(serviceIdentifier.Database);
-  await realDatabaseService.initializeForApp();
-};
-
-export const clearTestDatabase = async (): Promise<void> => {
-  if (testDataSource.isInitialized) {
-    // Clear all tables
-    await testDataSource.getRepository(AgentInstanceMessageEntity).clear();
-    await testDataSource.getRepository(AgentInstanceEntity).clear();
-    await testDataSource.getRepository(AgentDefinitionEntity).clear();
-    await testDataSource.getRepository(ExternalAPILogEntity).clear();
-  }
-}; // Provide properly-typed default implementations so tests can use vi.fn(impl)
-// Inline default implementations will be provided directly in mocked serviceInstances below
 
 export const serviceInstances: {
   workspace: Partial<IWorkspaceService>;
@@ -77,6 +41,7 @@ export const serviceInstances: {
     // typed mocks for common methods tests will override; default returns shared fixtures
     getWorkspacesAsList: vi.fn(async () => defaultWorkspaces),
     exists: vi.fn(async (_id: string) => true),
+    get: vi.fn(async (id: string) => defaultWorkspaces.find(w => w.id === id) || defaultWorkspaces[0]),
     // agent-instance functionality is provided under `agentInstance` key
   },
   workspaceView: {
@@ -127,6 +92,17 @@ export const serviceInstances: {
         subscriber.complete();
       })
     ),
+    generateEmbeddings: vi.fn(async () => ({
+      requestId: 'test-request',
+      embeddings: [[0.1, 0.2, 0.3, 0.4]], // Default 4D embedding
+      model: 'test-embedding-model',
+      object: 'embedding',
+      usage: {
+        prompt_tokens: 10,
+        total_tokens: 10,
+      },
+      status: 'done' as const,
+    })),
     cancelAIRequest: vi.fn(async () => undefined),
     updateProvider: vi.fn(async () => undefined),
     deleteProvider: vi.fn(async () => undefined),
@@ -151,6 +127,7 @@ container.bind(serviceIdentifier.AgentBrowser).to(AgentBrowserService).inSinglet
 // Bind real DatabaseService instead of mock
 container.bind(serviceIdentifier.Database).to(DatabaseService).inSingletonScope();
 container.bind(serviceIdentifier.AgentInstance).to(AgentInstanceService).inSingletonScope();
+container.bind(serviceIdentifier.WikiEmbedding).to(WikiEmbeddingService).inSingletonScope();
 
 // Shared workspace fixtures used by many tests
 const defaultWorkspaces: IWorkspace[] = [

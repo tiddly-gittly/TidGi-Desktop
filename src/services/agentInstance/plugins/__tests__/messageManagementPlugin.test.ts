@@ -2,11 +2,12 @@
  * Deep integration tests for messageManagementPlugin with real SQLite database
  * Tests actual message persistence scenarios using defaultAgents.json configuration
  */
+import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { DataSource } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearTestDatabase, initializeTestDatabase, testDataSource } from '../../../../__tests__/__mocks__/services-container';
 import defaultAgents from '../../buildInAgentHandlers/defaultAgents.json';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../../interface';
 import { createHandlerHooks } from '../index';
@@ -21,25 +22,35 @@ describe('Message Management Plugin - Real Database Integration', () => {
   // agentInstanceServiceImpl available to test blocks
   let agentInstanceServiceImpl: IAgentInstanceService;
   let hooks: ReturnType<typeof createHandlerHooks>;
+  let realDataSource: DataSource;
 
   beforeEach(async () => {
     vi.clearAllMocks();
     testAgentId = `test-agent-${Date.now()}`;
 
-    // Initialize the shared test database
-    await initializeTestDatabase();
+    // Ensure DatabaseService is initialized with all schemas
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    await databaseService.initializeForApp();
 
-    // Clear database before each test
-    await clearTestDatabase();
+    // Get the real agent database
+    realDataSource = await databaseService.getDatabase('agent');
+
+    // Clean up in correct order to avoid foreign key constraints
+    const messageRepo = realDataSource.getRepository(AgentInstanceMessageEntity);
+    const agentRepo = realDataSource.getRepository(AgentInstanceEntity);
+    const agentDefRepo = realDataSource.getRepository(AgentDefinitionEntity);
+
+    // Clear dependent tables first
+    await messageRepo.clear();
+    await agentRepo.clear();
+    await agentDefRepo.clear();
 
     // Create test data using defaultAgent structure
-    const agentDefRepo = testDataSource.getRepository(AgentDefinitionEntity);
     await agentDefRepo.save({
       id: exampleAgent.id,
       name: exampleAgent.name,
     });
 
-    const agentRepo = testDataSource.getRepository(AgentInstanceEntity);
     await agentRepo.save({
       id: testAgentId,
       agentDefId: exampleAgent.id,
@@ -50,10 +61,8 @@ describe('Message Management Plugin - Real Database Integration', () => {
     });
 
     // Use globally bound AgentInstanceService (configured in src/__tests__/setup-vitest.ts)
-    const { container } = await import('@services/container');
-    // Make sure Database.getDatabase returns our in-memory dataSource
-    const database = container.get<IDatabaseService>(serviceIdentifier.Database);
-    database.getDatabase = vi.fn().mockResolvedValue(testDataSource);
+    // Make sure Database.getDatabase returns our real dataSource
+    databaseService.getDatabase = vi.fn().mockResolvedValue(realDataSource);
 
     agentInstanceServiceImpl = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
     // Initialize AgentInstanceService so repositories are set
@@ -65,7 +74,7 @@ describe('Message Management Plugin - Real Database Integration', () => {
   });
 
   afterEach(async () => {
-    // Database cleanup is handled by clearTestDatabase in beforeEach
+    // Clean up is handled automatically by beforeEach for each test
   });
 
   const createHandlerContext = (messages: AgentInstanceMessage[] = []) => ({
@@ -103,7 +112,7 @@ describe('Message Management Plugin - Real Database Integration', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify user message was saved
-      let messageRepo = testDataSource.getRepository(AgentInstanceMessageEntity);
+      let messageRepo = realDataSource.getRepository(AgentInstanceMessageEntity);
       let allMessages = await messageRepo.find({
         where: { agentId: testAgentId },
       });
@@ -176,7 +185,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify tool result message was persisted
-      messageRepo = testDataSource.getRepository(AgentInstanceMessageEntity);
+      messageRepo = realDataSource.getRepository(AgentInstanceMessageEntity);
       allMessages = await messageRepo.find({
         where: { agentId: testAgentId },
         order: { modified: 'ASC' },
@@ -214,7 +223,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       await agentInstanceServiceImpl.saveUserMessage(aiFinalMessage);
 
       // Final verification: All 4 messages should be in database
-      messageRepo = testDataSource.getRepository(AgentInstanceMessageEntity);
+      messageRepo = realDataSource.getRepository(AgentInstanceMessageEntity);
       allMessages = await messageRepo.find({
         where: { agentId: testAgentId },
         order: { modified: 'ASC' },
@@ -291,7 +300,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify both tool results were persisted
-      const messageRepo = testDataSource.getRepository(AgentInstanceMessageEntity);
+      const messageRepo = realDataSource.getRepository(AgentInstanceMessageEntity);
       const allMessages = await messageRepo.find({
         where: { agentId: testAgentId },
       });
@@ -374,7 +383,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       await agentInstanceServiceImpl.saveUserMessage(aiFinalMessage);
 
       // Step 2: Simulate loading from database (page refresh scenario)
-      const messageRepo = testDataSource.getRepository(AgentInstanceMessageEntity);
+      const messageRepo = realDataSource.getRepository(AgentInstanceMessageEntity);
       const savedMessages = await messageRepo.find({
         where: { agentId: testAgentId },
         order: { modified: 'ASC' },

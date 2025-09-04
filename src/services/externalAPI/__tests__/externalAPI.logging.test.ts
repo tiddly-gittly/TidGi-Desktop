@@ -8,17 +8,23 @@ import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { CoreMessage } from 'ai';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearTestDatabase, initializeTestDatabase, testDataSource } from '../../../__tests__/__mocks__/services-container';
 
 describe('ExternalAPIService logging', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    await initializeTestDatabase();
-    await clearTestDatabase();
+
+    // Ensure DatabaseService is initialized with all schemas
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    await databaseService.initializeForApp();
 
     await container.get<IPreferenceService>(serviceIdentifier.Preference).set('externalAPIDebug', true);
 
-    const agentDefRepo = testDataSource.getRepository(AgentDefinitionEntity);
+    // Use the real agent database
+    const dataSource = await databaseService.getDatabase('agent');
+    const agentDefRepo = dataSource.getRepository(AgentDefinitionEntity);
+
+    // Clear existing data and add test data
+    await agentDefRepo.clear();
     const example = (defaultAgents as unknown as AgentDefinition[])[0];
     await agentDefRepo.save({ id: example.id });
   });
