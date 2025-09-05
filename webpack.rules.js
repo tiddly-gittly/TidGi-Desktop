@@ -6,7 +6,8 @@ const fs = require('fs');
 const JSON5 = require('json5');
 
 const isTest = process.env.NODE_ENV === 'test';
-const isDevelopmentOrTest = process.env.NODE_ENV === 'development' || isTest;
+const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopmentOrTest = isDevelopment || isTest;
 
 // shared asset rules
 const assetRules = [
@@ -108,4 +109,5 @@ module.exports = {
   renderer: [cssRule, isDevelopmentOrTest ? esbuildLoaderRule : tsLoaderRule, ...assetRules],
   main: [...nativeRules, tsLoaderRule],
   isDevelopmentOrTest,
+  isDevelopment,
 };

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-const { renderer: rules, isDevelopmentOrTest } = require('./webpack.rules');
+const { renderer: rules, isDevelopmentOrTest, isDevelopment } = require('./webpack.rules');
 const { renderer: plugins } = require('./webpack.plugins');
 const { webpackAlias } = require('./webpack.alias');
 const path = require('path');
@@ -36,7 +36,7 @@ module.exports = {
       },
     }
     : false,
-  ...(isDevelopmentOrTest
+  ...(isDevelopment
     ? {
       watchOptions: {
         ignored: [
@@ -57,8 +57,8 @@ module.exports = {
           overlay: false,
         },
         hot: true,
-        liveReload: false,
-        compress: true,
+        liveReload: true,
+        compress: false,
       },
     }
     : {}),
