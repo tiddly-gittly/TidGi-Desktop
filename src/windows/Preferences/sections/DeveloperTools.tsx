@@ -78,8 +78,8 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
               <Divider />
               <ListItem>
                 <ListItemText
-                  primary={t('Preference.ExternalAPIDebug')}
-                  secondary={t('Preference.ExternalAPIDebugDescription')}
+                  primary={t('Preference.ExternalAPIDebug', { ns: 'agent' })}
+                  secondary={t('Preference.ExternalAPIDebugDescription', { ns: 'agent' })}
                 />
                 <Switch
                   edge='end'
