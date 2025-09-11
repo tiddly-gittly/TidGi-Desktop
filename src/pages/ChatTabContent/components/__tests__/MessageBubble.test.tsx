@@ -333,4 +333,92 @@ describe('MessageBubble - Duration-based Graying', () => {
       screen.getByText('Message 3 - duration 1').parentElement?.parentElement;
     expect(bubbleContainer).toHaveStyle({ opacity: '0.5' }); // Should be grayed out
   });
+
+  it('should not display avatar for tool role messages', () => {
+    const toolMessage: AgentInstanceMessage = {
+      id: 'tool-msg',
+      role: 'tool',
+      content: '<functions_result>Tool: wiki-search\nResult: Found some content</functions_result>',
+      agentId: 'test-agent',
+      contentType: 'text/plain',
+      modified: new Date(),
+      duration: undefined,
+      metadata: {
+        isToolResult: true,
+        toolId: 'wiki-search',
+      },
+    };
+
+    // Setup store state
+    mockMessages.set('tool-msg', toolMessage);
+    mockOrderedMessageIds.push('tool-msg');
+
+    // Render the tool message
+    render(
+      <TestWrapper>
+        <MessageBubble messageId='tool-msg' />
+      </TestWrapper>,
+    );
+
+    // Check that the message content is rendered
+    expect(screen.getByText(/functions_result/)).toBeInTheDocument();
+
+    // Check that no avatar is displayed for tool messages
+    const avatars = screen.queryAllByRole('img'); // Avatars are typically rendered as img elements
+    expect(avatars.length).toBe(0); // Should have no avatars for tool messages
+  });
+
+  it('should use same background color for tool and assistant messages', () => {
+    const assistantMessage: AgentInstanceMessage = {
+      id: 'assistant-msg',
+      role: 'assistant',
+      content: 'This is an assistant response',
+      agentId: 'test-agent',
+      contentType: 'text/plain',
+      modified: new Date(),
+      duration: undefined,
+    };
+
+    const toolMessage: AgentInstanceMessage = {
+      id: 'tool-msg',
+      role: 'tool',
+      content: '<functions_result>Tool result</functions_result>',
+      agentId: 'test-agent',
+      contentType: 'text/plain',
+      modified: new Date(),
+      duration: undefined,
+      metadata: {
+        isToolResult: true,
+        toolId: 'test-tool',
+      },
+    };
+
+    // Setup store state
+    mockMessages.set('assistant-msg', assistantMessage);
+    mockMessages.set('tool-msg', toolMessage);
+    mockOrderedMessageIds.push('assistant-msg', 'tool-msg');
+
+    // Render assistant message
+    const { rerender } = render(
+      <TestWrapper>
+        <MessageBubble messageId='assistant-msg' />
+      </TestWrapper>,
+    );
+
+    const assistantContent = screen.getByText('This is an assistant response');
+    const assistantBackgroundColor = window.getComputedStyle(assistantContent.parentElement!).backgroundColor;
+
+    // Render tool message
+    rerender(
+      <TestWrapper>
+        <MessageBubble messageId='tool-msg' />
+      </TestWrapper>,
+    );
+
+    const toolContent = screen.getByText(/Tool result/);
+    const toolBackgroundColor = window.getComputedStyle(toolContent.parentElement!).backgroundColor;
+
+    // Both should have the same background color
+    expect(assistantBackgroundColor).toBe(toolBackgroundColor);
+  });
 });

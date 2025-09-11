@@ -2,10 +2,22 @@
  * Wiki Search plugin
  * Handles wiki search tool list injection, tool calling detection and response processing
  */
-import { identity } from 'lodash';
+import { WikiChannel } from '@/constants/channels';
+import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
+import { container } from '@services/container';
+import { i18n } from '@services/libs/i18n';
+import { t } from '@services/libs/i18n/placeholder';
+import { logger } from '@services/libs/log';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWikiService } from '@services/wiki/interface';
+import { IWorkspaceService } from '@services/workspaces/interface';
+import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
-
-const t = identity;
+import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
+import { findPromptById } from '../promptConcat/promptConcat';
+import type { IPrompt } from '../promptConcat/promptConcatSchema';
+import { schemaToToolContent } from '../utilities/schemaToToolContent';
+import type { AIResponseContext, PromptConcatPlugin } from './types';
 
 /**
  * Wiki Search Parameter Schema
@@ -63,26 +75,24 @@ export function getWikiSearchParameterSchema() {
   return WikiSearchParameterSchema;
 }
 
-import { WikiChannel } from '@/constants/channels';
-import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
-import { container } from '@services/container';
-import { logger } from '@services/libs/log';
-import serviceIdentifier from '@services/serviceIdentifier';
-import type { IWikiService } from '@services/wiki/interface';
-import { IWorkspaceService } from '@services/workspaces/interface';
-import type { ITiddlerFields } from 'tiddlywiki';
-
-import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
-import { findPromptById } from '../promptConcat/promptConcat';
-import type { IPrompt } from '../promptConcat/promptConcatSchema';
-import type { AIResponseContext, PromptConcatPlugin } from './types';
-
 /**
  * Parameter schema for Wiki search tool
  */
 const WikiSearchToolParameterSchema = z.object({
-  workspaceName: z.string().describe('Name or ID of the workspace to search'),
-  filter: z.string().describe('TiddlyWiki filter expression'),
+  workspaceName: z.string().meta({
+    title: t('Schema.WikiSearch.Tool.Parameters.workspaceName.Title'),
+    description: t('Schema.WikiSearch.Tool.Parameters.workspaceName.Description'),
+  }),
+  filter: z.string().meta({
+    title: t('Schema.WikiSearch.Tool.Parameters.filter.Title'),
+    description: t('Schema.WikiSearch.Tool.Parameters.filter.Description'),
+  }),
+}).meta({
+  title: 'wiki-search',
+  description: '在Wiki工作空间中搜索Tiddler内容',
+  examples: [
+    { workspaceName: '我的知识库', filter: '[tag[示例]]' },
+  ],
 });
 
 type WikiSearchToolParameter = z.infer<typeof WikiSearchToolParameterSchema>;
@@ -108,7 +118,10 @@ async function executeWikiSearchTool(
     if (!targetWorkspace) {
       return {
         success: false,
-        error: `Workspace with name or ID "${workspaceName}" does not exist. Available workspaces: ${workspaces.map(w => `${w.name} (${w.id})`).join(', ')}`,
+        error: i18n.t('Tool.WikiSearch.Error.WorkspaceNotFound', {
+          workspaceName,
+          availableWorkspaces: workspaces.map(w => `${w.name} (${w.id})`).join(', '),
+        }) || `Workspace with name or ID "${workspaceName}" does not exist. Available workspaces: ${workspaces.map(w => `${w.name} (${w.id})`).join(', ')}`,
       };
     }
 
@@ -117,7 +130,7 @@ async function executeWikiSearchTool(
     if (!await workspaceService.exists(workspaceID)) {
       return {
         success: false,
-        error: `Workspace ${workspaceID} does not exist`,
+        error: i18n.t('Tool.WikiSearch.Error.WorkspaceNotExist', { workspaceID }),
       };
     }
 
@@ -134,7 +147,7 @@ async function executeWikiSearchTool(
     if (tiddlerTitles.length === 0) {
       return {
         success: true,
-        data: `No results found for filter "${filter}" in wiki workspace "${workspaceName}".`,
+        data: i18n.t('Tool.WikiSearch.Success.NoResults', { filter, workspaceName }),
         metadata: {
           filter,
           workspaceID,
@@ -144,7 +157,6 @@ async function executeWikiSearchTool(
       };
     }
 
-    // Retrieve full tiddler content if requested
     // Retrieve full tiddler content for each tiddler
     const results: Array<{ title: string; text?: string; fields?: ITiddlerFields }> = [];
     for (const title of tiddlerTitles) {
@@ -168,7 +180,10 @@ async function executeWikiSearchTool(
     }
 
     // Format results as text with content
-    let content = `Wiki search completed successfully. Found ${tiddlerTitles.length} total results, showing ${results.length}:\n\n`;
+    let content = i18n.t('Tool.WikiSearch.Success.Completed', {
+      totalResults: tiddlerTitles.length,
+      shownResults: results.length,
+    }) + '\n\n';
 
     for (const result of results) {
       content += `**Tiddler: ${result.title}**\n\n`;
@@ -180,7 +195,6 @@ async function executeWikiSearchTool(
         content += '(Content not available)\n\n';
       }
     }
-
     return {
       success: true,
       data: content,
@@ -200,7 +214,9 @@ async function executeWikiSearchTool(
 
     return {
       success: false,
-      error: `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`,
+      error: i18n.t('Tool.WikiSearch.Error.ExecutionFailed', {
+        error: error instanceof Error ? error.message : String(error),
+      }) || `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 }
@@ -238,8 +254,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         // Get available wikis - now handled by workspacesListPlugin
         // The workspaces list will be injected separately by workspacesListPlugin
 
-        const toolPromptContent =
-          `Available Tools:\n- Tool ID: wiki-search\n- Tool Name: Wiki Search\n- Description: Search content in wiki workspaces\n- Parameters: {\n  "workspaceName": "string (required) - The name or ID of the wiki workspace to search in",\n  "filter": "string (required) - TiddlyWiki filter expression for searching, like [title[Index]]""\n}`;
+        const toolPromptContent = schemaToToolContent(WikiSearchToolParameterSchema);
 
         const toolPrompt: IPrompt = {
           id: `wiki-tool-list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -392,7 +407,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         const toolResultMessage: AgentInstanceMessage = {
           id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           agentId: handlerContext.agent.id,
-          role: 'assistant', // Changed from 'user' to 'assistant' to avoid user confusion
+          role: 'tool', // Tool result message
           content: toolResultText,
           modified: toolResultTime,
           duration: toolResultDuration, // Use configurable duration - default 1 round for tool results
@@ -453,7 +468,7 @@ Error: ${error instanceof Error ? error.message : String(error)}
         const errorResultMessage: AgentInstanceMessage = {
           id: `tool-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           agentId: handlerContext.agent.id,
-          role: 'assistant', // Changed from 'user' to 'assistant' to avoid user confusion
+          role: 'tool', // Tool error message
           content: errorMessage,
           modified: errorResultTime,
           duration: 2, // Error messages are visible to AI for 2 rounds: immediate + next round to allow explanation

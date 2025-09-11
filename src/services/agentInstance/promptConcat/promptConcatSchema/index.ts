@@ -1,13 +1,10 @@
 import { createDynamicPromptConcatPluginSchema } from '@services/agentInstance/plugins/schemaRegistry';
-import { identity } from 'lodash';
+import { t } from '@services/libs/i18n/placeholder';
 import { z } from 'zod/v4';
 import { ModelParametersSchema, ProviderModelSchema } from './modelParameters';
 import { PromptSchema } from './prompts';
 import { ResponseSchema } from './response';
 import { HANDLER_CONFIG_UI_SCHEMA } from './uiSchema';
-
-/** Placeholder to trigger VSCode i18nAlly extension to show translated text. */
-const t = identity;
 
 /**
  * Base API configuration schema

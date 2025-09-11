@@ -13,11 +13,13 @@ export function useInitialPage() {
       hasInitialized.current = true;
       const activeWorkspace = workspacesList.find(workspace => workspace.active);
       if (!activeWorkspace) {
-        setLocation(`/${PageType.guide}`);
+        // If there's no active workspace, navigate to root instead of guide.
+        // Root lets the UI stay neutral and prevents forcing the guide view.
+        setLocation(`/`);
       } else if (activeWorkspace.pageType) {
         // Don't navigate to add page, fallback to guide instead
         if (activeWorkspace.pageType === PageType.add) {
-          setLocation(`/${PageType.guide}`);
+          setLocation(`/`);
         } else {
           setLocation(`/${activeWorkspace.pageType}`);
         }

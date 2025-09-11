@@ -25,7 +25,6 @@ const LogHeader = styled(Box)`
 const LogContent = styled(Box)`
   font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
   font-size: 12px;
-  background-color: ${props => props.theme.palette.grey[100]};
   padding: 12px;
   border-radius: 4px;
   overflow-x: auto;
@@ -220,17 +219,17 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
                         </LogContent>
                       </Box>
 
-                      {/* Response Content */}
-                      {log.responseContent && (
-                        <Box>
-                          <Typography variant='subtitle2' gutterBottom>
-                            {t('APILogs.ResponseContent')}
-                          </Typography>
-                          <LogContent>
-                            {log.responseContent}
-                          </LogContent>
-                        </Box>
-                      )}
+                      {/* Response Content: always show block; display placeholder when missing */}
+                      <Box>
+                        <Typography variant='subtitle2' gutterBottom>
+                          {t('APILogs.ResponseContent')}
+                        </Typography>
+                        <LogContent>
+                          {log.responseContent && String(log.responseContent).length > 0
+                            ? log.responseContent
+                            : t('APILogs.NoResponse')}
+                        </LogContent>
+                      </Box>
 
                       {/* Response Metadata */}
                       {log.responseMetadata && (

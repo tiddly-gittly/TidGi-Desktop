@@ -22,6 +22,34 @@ import type { AIResponseContext, PluginActions, PromptConcatHookContext } from '
 import { wikiOperationPlugin } from '../wikiOperationPlugin';
 import { workspacesListPlugin } from '../workspacesListPlugin';
 
+// Mock i18n
+vi.mock('@services/libs/i18n', () => ({
+  i18n: {
+    t: vi.fn((key: string, options?: Record<string, unknown>) => {
+      const translations: Record<string, string> = {
+        'Tool.WikiOperation.Success.Added': '成功在Wiki工作空间"{{workspaceName}}"中添加了Tiddler"{{title}}"',
+        'Tool.WikiOperation.Success.Deleted': '成功从Wiki工作空间"{{workspaceName}}"中删除了Tiddler"{{title}}"',
+        'Tool.WikiOperation.Success.Updated': '成功在Wiki工作空间"{{workspaceName}}"中设置了Tiddler"{{title}}"的文本',
+        'Tool.WikiOperation.Error.WorkspaceNotFound': '工作空间名称或ID"{{workspaceName}}"不存在。可用工作空间：{{availableWorkspaces}}',
+        'Tool.WikiOperation.Error.WorkspaceNotExist': '工作空间{{workspaceID}}不存在',
+      };
+
+      let translation = translations[key] || key;
+
+      // Handle interpolation
+      if (options && typeof options === 'object') {
+        Object.keys(options).forEach(optionKey => {
+          if (optionKey !== 'ns' && optionKey !== 'defaultValue') {
+            translation = translation.replace(new RegExp(`{{${optionKey}}}`, 'g'), String(options[optionKey]));
+          }
+        });
+      }
+
+      return translation;
+    }),
+  },
+}));
+
 // Helper to construct a complete AgentHandlerContext for tests
 const makeHandlerContext = (agentId = 'test-agent'): AgentHandlerContext => ({
   agent: {
@@ -203,7 +231,7 @@ describe('wikiOperationPlugin', () => {
       expect(toolResultMessage).toBeTruthy();
       expect(toolResultMessage?.content).toContain('<functions_result>');
       // Check for general success wording and tiddler title
-      expect(toolResultMessage?.content).toContain('Successfully');
+      expect(toolResultMessage?.content).toContain('成功在Wiki工作空间');
       expect(toolResultMessage?.content).toContain('Test Note');
       expect(toolResultMessage?.metadata?.isToolResult).toBe(true);
       expect(toolResultMessage?.metadata?.toolId).toBe('wiki-operation');
@@ -265,7 +293,7 @@ describe('wikiOperationPlugin', () => {
       // Check general update success wording and tiddler title
       const updateResult = handlerContext.agent.messages.find(m => m.metadata?.isToolResult);
       expect(updateResult).toBeTruthy();
-      expect(updateResult?.content).toContain('Successfully');
+      expect(updateResult?.content).toContain('成功在Wiki工作空间');
       expect(updateResult?.content).toContain('Existing Note');
     });
 
@@ -323,7 +351,7 @@ describe('wikiOperationPlugin', () => {
 
       const deleteResult = handlerContext.agent.messages.find(m => m.metadata?.isToolResult);
       expect(deleteResult).toBeTruthy();
-      expect(deleteResult?.content).toContain('Successfully deleted tiddler "Note to Delete"');
+      expect(deleteResult?.content).toContain('成功从Wiki工作空间');
     });
 
     it('should handle workspace not found error', async () => {
@@ -374,7 +402,7 @@ describe('wikiOperationPlugin', () => {
 
       const errResult = handlerContext.agent.messages.find(m => m.metadata?.isToolResult);
       expect(errResult).toBeTruthy();
-      expect(errResult?.content).toContain('Workspace with name or ID "Non-existent Wiki" does not exist');
+      expect(errResult?.content).toContain('工作空间名称或ID');
       // Ensure control is yielded to self on error so AI gets the next round
       expect(respCtx4.actions?.yieldNextRoundTo).toBe('self');
     });

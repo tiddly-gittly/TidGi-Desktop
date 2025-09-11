@@ -541,6 +541,56 @@
       "WorkspaceName": "Workspace name",
       "WorkspaceNameTitle": ""
     },
+    "WikiOperation": {
+      "Title": "Wiki Operation",
+      "Description": "Execute Tiddler operations (add, delete, or set text) in wiki workspaces",
+      "ToolListPosition": {
+        "TargetIdTitle": "Target ID",
+        "TargetId": "ID of the target element where the tool list will be inserted",
+        "PositionTitle": "Insert Position",
+        "Position": "Position relative to target element (before/after)"
+      },
+      "ToolResultDurationTitle": "Tool Result Duration",
+      "ToolResultDuration": "Number of rounds tool execution results remain visible in conversation, after which they become grayed out",
+      "Tool": {
+        "Name": "wiki-operation",
+        "Caption": "Wiki Operation Tool",
+        "Description": "Execute operations (add, delete, or set Tiddler text) in wiki workspaces",
+        "ParametersTitle": "Parameters",
+        "Parameters": {
+          "workspaceName": {
+            "Title": "Workspace Name",
+            "Description": "Name or ID of the workspace to operate on"
+          },
+          "operation": {
+            "Title": "Operation Type",
+            "Description": "Type of operation to execute"
+          },
+          "title": {
+            "Title": "Tiddler Title",
+            "Description": "Title of the Tiddler"
+          },
+          "text": {
+            "Title": "Tiddler Content",
+            "Description": "Text content of the Tiddler"
+          },
+          "extraMeta": {
+            "Title": "Extra Metadata",
+            "Description": "JSON string of extra metadata such as tags and fields, defaults to \"{}\""
+          },
+          "options": {
+            "Title": "Operation Options",
+            "Description": "JSON string of operation options, defaults to \"{}\""
+          }
+        },
+        "ExamplesTitle": "Usage Examples",
+        "Examples": {
+          "add": "Add note: <tool_use name=\"wiki-operation\">{\"workspaceName\": \"My Knowledge Base\", \"operation\": \"addTiddler\", \"title\": \"New Note\", \"text\": \"This is note content\", \"extraMeta\": \"{\\\"tags\\\":[\\\"tag1\\\",\\\"tag2\\\"]}\"}</tool_use>",
+          "set": "Set text: <tool_use name=\"wiki-operation\">{\"workspaceName\": \"My Knowledge Base\", \"operation\": \"setTiddlerText\", \"title\": \"Existing Note\", \"text\": \"Updated content\"}</tool_use>",
+          "delete": "Delete note: <tool_use name=\"wiki-operation\">{\"workspaceName\": \"My Knowledge Base\", \"operation\": \"deleteTiddler\", \"title\": \"Note to Delete\"}</tool_use>"
+        }
+      }
+    },
     "WikiSearch": {
       "Description": "Search for content in TiddlyWiki workspaces using filter expressions",
       "Filter": "",
@@ -583,6 +633,37 @@
     "Title": {
       "NewTab": "New Tab",
       "NewWeb": "Create a new webpage"
+    }
+  },
+  "Tool": {
+    "WikiOperation": {
+      "Success": {
+        "Added": "Successfully added tiddler \"{{title}}\" in wiki workspace \"{{workspaceName}}\"",
+        "Deleted": "Successfully deleted tiddler \"{{title}}\" from wiki workspace \"{{workspaceName}}\"",
+        "Updated": "Successfully set text for tiddler \"{{title}}\" in wiki workspace \"{{workspaceName}}\""
+      },
+      "Error": {
+        "WorkspaceNotFound": "Workspace with name or ID \"{{workspaceName}}\" does not exist. Available workspaces: {{availableWorkspaces}}",
+        "WorkspaceNotExist": "Workspace {{workspaceID}} does not exist"
+      }
+    },
+    "WikiSearch": {
+      "Success": {
+        "NoResults": "No results found for filter \"{{filter}}\" in wiki workspace \"{{workspaceName}}\"",
+        "Completed": "Wiki search completed successfully. Found {{totalResults}} total results, showing {{shownResults}}:\n\n"
+      },
+      "Error": {
+        "WorkspaceNotFound": "Workspace with name or ID \"{{workspaceName}}\" does not exist. Available workspaces: {{availableWorkspaces}}",
+        "WorkspaceNotExist": "Workspace {{workspaceID}} does not exist",
+        "ExecutionFailed": "Tool execution failed: {{error}}"
+      }
+    },
+    "Schema": {
+      "Required": "Required",
+      "Optional": "Optional",
+      "Description": "Description",
+      "Parameters": "Parameters",
+      "Examples": "Usage Examples"
     }
   }
 }

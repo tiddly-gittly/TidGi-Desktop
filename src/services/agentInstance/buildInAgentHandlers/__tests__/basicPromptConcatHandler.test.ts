@@ -210,7 +210,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       // Verify tool result message was added to agent history
       expect(responseContext.handlerContext.agent.messages.length).toBeGreaterThan(0);
       const toolResultMessage = responseContext.handlerContext.agent.messages[responseContext.handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
-      expect(toolResultMessage.role).toBe('assistant'); // Changed from 'user' to 'assistant'
+      expect(toolResultMessage.role).toBe('tool'); // Tool result message
       expect(toolResultMessage.content).toContain('<functions_result>');
       expect(toolResultMessage.content).toContain('Tool: wiki-search');
       expect(toolResultMessage.content).toContain('Important Note 1');
@@ -272,7 +272,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       // Verify error message was added to agent history
       expect(responseContext.handlerContext.agent.messages.length).toBeGreaterThan(0);
       const errorResultMessage = responseContext.handlerContext.agent.messages[responseContext.handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
-      expect(errorResultMessage.role).toBe('assistant'); // Changed from 'user' to 'assistant'
+      expect(errorResultMessage.role).toBe('tool'); // Tool error message
       expect(errorResultMessage.content).toContain('Error:');
       expect(errorResultMessage.content).toContain('does not exist');
     });
@@ -352,7 +352,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       // Verify that tool result message was added
       const toolResultMessage = context.agent.messages.find(m => m.metadata?.isToolResult);
       expect(toolResultMessage).toBeTruthy();
-      expect(toolResultMessage?.role).toBe('assistant');
+      expect(toolResultMessage?.role).toBe('tool');
       expect(toolResultMessage?.content).toContain('<functions_result>');
 
       // Verify that there are multiple responses (initial tool call + final explanation)

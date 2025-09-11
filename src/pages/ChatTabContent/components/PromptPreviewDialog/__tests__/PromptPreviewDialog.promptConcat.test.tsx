@@ -287,8 +287,8 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     }
     expect(wikiSearchElement).toBeDefined();
     const wikiSearchText = `${wikiSearchElement?.caption ?? ''} ${wikiSearchElement?.text ?? ''}`;
-    expect(wikiSearchText).toContain('Available Tools:');
-    expect(wikiSearchText).toContain('Tool ID: wiki-search');
+    expect(wikiSearchText).toContain('Wiki search tool');
+    expect(wikiSearchText).toContain('## wiki-search');
 
     // Verify the order: before-tool -> workspaces -> wiki-operation -> wiki-search -> post-tool
     const postToolElement: IPrompt | undefined = toolsSection?.children?.find((c: IPrompt) => c.id === 'default-post-tool');

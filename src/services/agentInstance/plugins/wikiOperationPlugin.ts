@@ -3,10 +3,20 @@
  * Handles wiki operation tool list injection, tool calling detection and response processing
  * Supports creating, updating, and deleting tiddlers in wiki workspaces
  */
-import { identity } from 'lodash';
+import { WikiChannel } from '@/constants/channels';
+import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
+import { container } from '@services/container';
+import { i18n } from '@services/libs/i18n';
+import { t } from '@services/libs/i18n/placeholder';
+import { logger } from '@services/libs/log';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWikiService } from '@services/wiki/interface';
+import { IWorkspaceService } from '@services/workspaces/interface';
 import { z } from 'zod/v4';
-
-const t = identity;
+import type { AgentInstanceMessage } from '../interface';
+import { findPromptById } from '../promptConcat/promptConcat';
+import { schemaToToolContent } from '../utilities/schemaToToolContent';
+import type { PromptConcatPlugin } from './types';
 
 /**
  * Wiki Operation Parameter Schema
@@ -48,29 +58,44 @@ export function getWikiOperationParameterSchema() {
   return WikiOperationParameterSchema;
 }
 
-import { WikiChannel } from '@/constants/channels';
-import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
-import { container } from '@services/container';
-import { logger } from '@services/libs/log';
-import serviceIdentifier from '@services/serviceIdentifier';
-import type { IWikiService } from '@services/wiki/interface';
-import { IWorkspaceService } from '@services/workspaces/interface';
-
-import type { AgentInstanceMessage } from '../interface';
-import { findPromptById } from '../promptConcat/promptConcat';
-import type { PromptConcatPlugin } from './types';
-
 /**
  * Parameter schema for Wiki operation tool
  */
 const WikiOperationToolParameterSchema = z.object({
-  workspaceName: z.string().describe('Name or ID of the workspace to operate on'),
-  operation: z.enum([WikiChannel.addTiddler, WikiChannel.deleteTiddler, WikiChannel.setTiddlerText]).describe('Type of wiki operation to perform'),
-  title: z.string().describe('Title of the tiddler'),
-  text: z.string().optional().describe('Content/text of the tiddler (for addTiddler/setTiddlerText operations)'),
-  extraMeta: z.string().optional().default('{}').describe('JSON string of additional metadata (tags, fields, etc.)'),
-  options: z.string().optional().default('{}').describe('JSON string of operation options'),
-});
+  workspaceName: z.string().meta({
+    title: t('Schema.WikiOperation.Tool.Parameters.workspaceName.Title'),
+    description: t('Schema.WikiOperation.Tool.Parameters.workspaceName.Description'),
+  }),
+  operation: z.enum([WikiChannel.addTiddler, WikiChannel.deleteTiddler, WikiChannel.setTiddlerText]).meta({
+    title: t('Schema.WikiOperation.Tool.Parameters.operation.Title'),
+    description: t('Schema.WikiOperation.Tool.Parameters.operation.Description'),
+  }),
+  title: z.string().meta({
+    title: t('Schema.WikiOperation.Tool.Parameters.title.Title'),
+    description: t('Schema.WikiOperation.Tool.Parameters.title.Description'),
+  }),
+  text: z.string().optional().meta({
+    title: t('Schema.WikiOperation.Tool.Parameters.text.Title'),
+    description: t('Schema.WikiOperation.Tool.Parameters.text.Description'),
+  }),
+  extraMeta: z.string().optional().default('{}').meta({
+    title: t('Schema.WikiOperation.Tool.Parameters.extraMeta.Title'),
+    description: t('Schema.WikiOperation.Tool.Parameters.extraMeta.Description'),
+  }),
+  options: z.string().optional().default('{}').meta({
+    title: t('Schema.WikiOperation.Tool.Parameters.options.Title'),
+    description: t('Schema.WikiOperation.Tool.Parameters.options.Description'),
+  }),
+})
+  .meta({
+    title: 'wiki-operation',
+    description: '在Wiki工作空间中执行操作（添加、删除或设置Tiddler文本）',
+    examples: [
+      { workspaceName: '我的知识库', operation: WikiChannel.addTiddler, title: '示例笔记', text: '示例内容', extraMeta: '{}', options: '{}' },
+      { workspaceName: '我的知识库', operation: WikiChannel.setTiddlerText, title: '现有笔记', text: '更新后的内容', extraMeta: '{}', options: '{}' },
+      { workspaceName: '我的知识库', operation: WikiChannel.deleteTiddler, title: '要删除的笔记', extraMeta: '{}', options: '{}' },
+    ],
+  });
 
 /**
  * Wiki Operation plugin - Prompt processing
@@ -105,22 +130,8 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
         // Get available wikis - now handled by workspacesListPlugin
         // The workspaces list will be injected separately by workspacesListPlugin
 
-        const wikiOperationToolContent = `
-## wiki-operation
-**描述**: 在Wiki工作空间中执行操作（添加、删除或设置Tiddler文本）
-**参数**:
-- workspaceName (string, 必需): 要操作的工作空间名称或ID
-- operation (string, 必需): 要执行的操作类型，可选值: "${WikiChannel.addTiddler}", "${WikiChannel.deleteTiddler}", "${WikiChannel.setTiddlerText}"
-- title (string, 必需): Tiddler的标题
-- text (string, 可选): Tiddler的内容/文本（用于 addTiddler / setTiddlerText 操作）
-- extraMeta (string, 可选): 额外元数据的JSON字符串，如标签和字段，默认为"{}"
-- options (string, 可选): 操作选项的JSON字符串，默认为"{}"
-
-**使用示例**:
-- 添加笔记: <tool_use name="wiki-operation">{"workspaceName": "我的知识库", "operation": "${WikiChannel.addTiddler}", "title": "新笔记", "text": "这是笔记内容", "extraMeta": "{\\"tags\\":[\\"标签1\\",\\"标签2\\"]}"}</tool_use>
-- 设置文本: <tool_use name="wiki-operation">{"workspaceName": "我的知识库", "operation": "${WikiChannel.setTiddlerText}", "title": "现有笔记", "text": "更新后的内容"}</tool_use>
-- 删除笔记: <tool_use name="wiki-operation">{"workspaceName": "我的知识库", "operation": "${WikiChannel.deleteTiddler}", "title": "要删除的笔记"}</tool_use>
-`;
+        // Build tool content using shared utility (schema contains title/examples meta)
+        const wikiOperationToolContent = schemaToToolContent(WikiOperationToolParameterSchema);
 
         // Insert the tool content based on position
         if (toolListPosition.position === 'after') {
@@ -224,12 +235,17 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
         const workspaces = await workspaceService.getWorkspacesAsList();
         const targetWorkspace = workspaces.find(ws => ws.name === workspaceName || ws.id === workspaceName);
         if (!targetWorkspace) {
-          throw new Error(`Workspace with name or ID "${workspaceName}" does not exist. Available workspaces: ${workspaces.map(w => `${w.name} (${w.id})`).join(', ')}`);
+          throw new Error(
+            i18n.t('Tool.WikiOperation.Error.WorkspaceNotFound', {
+              workspaceName,
+              availableWorkspaces: workspaces.map(w => `${w.name} (${w.id})`).join(', '),
+            }) || `Workspace with name or ID "${workspaceName}" does not exist. Available workspaces: ${workspaces.map(w => `${w.name} (${w.id})`).join(', ')}`,
+          );
         }
         const workspaceID = targetWorkspace.id;
 
         if (!await workspaceService.exists(workspaceID)) {
-          throw new Error(`Workspace ${workspaceID} does not exist`);
+          throw new Error(i18n.t('Tool.WikiOperation.Error.WorkspaceNotExist', { workspaceID }));
         }
 
         logger.debug('Executing wiki operation', {
@@ -251,19 +267,19 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
               extraMeta || '{}',
               JSON.stringify({ withDate: true, ...options }),
             ]);
-            result = `Successfully added tiddler "${title}" in wiki workspace "${workspaceName}".`;
+            result = i18n.t('Tool.WikiOperation.Success.Added', { title, workspaceName });
             break;
           }
 
           case WikiChannel.deleteTiddler: {
             await wikiService.wikiOperationInServer(WikiChannel.deleteTiddler, workspaceID, [title]);
-            result = `Successfully deleted tiddler "${title}" from wiki workspace "${workspaceName}".`;
+            result = i18n.t('Tool.WikiOperation.Success.Deleted', { title, workspaceName });
             break;
           }
 
           case WikiChannel.setTiddlerText: {
             await wikiService.wikiOperationInServer(WikiChannel.setTiddlerText, workspaceID, [title, text || '']);
-            result = `Successfully set text for tiddler "${title}" in wiki workspace "${workspaceName}".`;
+            result = i18n.t('Tool.WikiOperation.Success.Updated', { title, workspaceName });
             break;
           }
 
@@ -302,7 +318,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
         const toolResultMessage: AgentInstanceMessage = {
           id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           agentId: handlerContext.agent.id,
-          role: 'assistant', // Changed from 'user' to 'assistant' to avoid user confusion
+          role: 'tool', // Tool result message
           content: toolResultText,
           modified: toolResultTime,
           duration: toolResultDuration, // Use configurable duration - default 1 round for tool results
@@ -363,7 +379,7 @@ Error: ${error instanceof Error ? error.message : String(error)}
         const errorResultMessage: AgentInstanceMessage = {
           id: `tool-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           agentId: handlerContext.agent.id,
-          role: 'assistant', // Changed from 'user' to 'assistant' to avoid user confusion
+          role: 'tool', // Tool error message
           content: errorMessage,
           modified: errorResultTime,
           duration: 2, // Error messages are visible to AI for 2 rounds: immediate + next round to allow explanation

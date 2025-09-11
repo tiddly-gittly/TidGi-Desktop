@@ -87,6 +87,11 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                   disabled={preference === undefined}
                   onChange={async () => {
                     await window.service.preference.set('externalAPIDebug', !preference?.externalAPIDebug);
+                    const info = await window.service.database.getDatabaseInfo('externalApi');
+                    if (!info?.exists) {
+                      // if database didn't exist before, enabling externalAPIDebug requires application restart to initialize the database table
+                      props.requestRestartCountDown?.();
+                    }
                   }}
                   name='externalAPIDebug'
                 />

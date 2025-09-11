@@ -138,8 +138,6 @@ export function Search(props: SearchProps): React.JSX.Element {
       // Get AI config from external API service
       const aiConfig = await window.service.externalAPI.getAIConfig();
 
-      // DEBUG: console aiConfig
-      console.log(`aiConfig`, aiConfig);
       if (!aiConfig.api.provider) {
         showInfoSnackbar({
           message: t('Preference.SearchEmbeddingNoAIConfigError'),

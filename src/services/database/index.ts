@@ -243,6 +243,52 @@ export class DatabaseService implements IDatabaseService {
   }
 
   /**
+   * Get database file information like whether it exists and its size in bytes.
+   */
+  public async getDatabaseInfo(key: string): Promise<{ exists: boolean; size?: number }> {
+    const databasePath = this.getDatabasePath(key);
+    if (databasePath === ':memory:') {
+      return { exists: true, size: undefined };
+    }
+
+    try {
+      const exists = await fs.pathExists(databasePath);
+      if (!exists) return { exists: false };
+      const stat = await fs.stat(databasePath);
+      return { exists: true, size: stat.size };
+    } catch (error) {
+      logger.error(`getDatabaseInfo failed for key: ${key}`, { error: (error as Error).message });
+      return { exists: false };
+    }
+  }
+
+  /**
+   * Delete the database file for a given key and close any active connection.
+   */
+  public async deleteDatabase(key: string): Promise<void> {
+    try {
+      // Close and remove from pool if exists
+      if (this.dataSources.has(key)) {
+        try {
+          await this.dataSources.get(key)?.destroy();
+        } catch (error) {
+          logger.warn(`Failed to destroy datasource for key: ${key} before deletion`, { error: (error as Error).message });
+        }
+        this.dataSources.delete(key);
+      }
+
+      const databasePath = this.getDatabasePath(key);
+      if (databasePath !== ':memory:' && await fs.pathExists(databasePath)) {
+        await fs.unlink(databasePath);
+        logger.info(`Database file deleted for key: ${key}`);
+      }
+    } catch (error) {
+      logger.error(`deleteDatabase failed for key: ${key}`, { error: (error as Error).message });
+      throw error;
+    }
+  }
+
+  /**
    * Close database connection for a given key
    */
   public async closeAppDatabase(key: string, drop = false): Promise<void> {

@@ -1,8 +1,5 @@
-import { identity } from 'lodash';
+import { t } from '@services/libs/i18n/placeholder';
 import { z } from 'zod/v4';
-
-/** Placeholder to trigger VSCode i18nAlly extension to show translated text. */
-const t = identity;
 
 /**
  * Provider and model selection schema

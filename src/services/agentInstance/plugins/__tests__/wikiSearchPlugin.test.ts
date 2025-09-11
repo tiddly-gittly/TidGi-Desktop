@@ -23,6 +23,34 @@ import { createHandlerHooks, PromptConcatHookContext } from '../index';
 import { messageManagementPlugin } from '../messageManagementPlugin';
 import { wikiSearchPlugin } from '../wikiSearchPlugin';
 
+// Mock i18n
+vi.mock('@services/libs/i18n', () => ({
+  i18n: {
+    t: vi.fn((key: string, options?: Record<string, unknown>) => {
+      const translations: Record<string, string> = {
+        'Tool.WikiSearch.Success.NoResults': '在Wiki工作空间"{{workspaceName}}"中未找到过滤器"{{filter}}"的结果',
+        'Tool.WikiSearch.Success.Completed': 'Wiki搜索完成。找到{{totalResults}}个总结果，显示{{shownResults}}个：\n\n',
+        'Tool.WikiSearch.Error.WorkspaceNotFound': '工作空间名称或ID"{{workspaceName}}"不存在。可用工作空间：{{availableWorkspaces}}',
+        'Tool.WikiSearch.Error.WorkspaceNotExist': '工作空间{{workspaceID}}不存在',
+        'Tool.WikiSearch.Error.ExecutionFailed': '工具执行失败：{{error}}',
+      };
+
+      let translation = translations[key] || key;
+
+      // Handle interpolation
+      if (options && typeof options === 'object') {
+        Object.keys(options).forEach(optionKey => {
+          if (optionKey !== 'ns' && optionKey !== 'defaultValue') {
+            translation = translation.replace(new RegExp(`{{${optionKey}}}`, 'g'), String(options[optionKey]));
+          }
+        });
+      }
+
+      return translation;
+    }),
+  },
+}));
+
 // Use the real agent config
 const exampleAgent = defaultAgents[0];
 const handlerConfig = exampleAgent.handlerConfig as AgentPromptDescription['handlerConfig'];
@@ -288,7 +316,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       // Verify tool result message was added to agent history with correct settings
       expect(handlerContext.agent.messages.length).toBe(3); // user + ai + tool_result
       const toolResultMessage = handlerContext.agent.messages[2] as AgentInstanceMessage;
-      expect(toolResultMessage.role).toBe('assistant'); // Changed from 'user' to 'assistant'
+      expect(toolResultMessage.role).toBe('tool'); // Tool result message
       expect(toolResultMessage.content).toContain('<functions_result>');
       expect(toolResultMessage.content).toContain('Tool: wiki-search');
       expect(toolResultMessage.content).toContain('Important Note 1');
@@ -372,10 +400,10 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       // Verify error message was added to agent history
       expect(handlerContext.agent.messages.length).toBe(2); // tool_call + error_result
       const errorResultMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
-      expect(errorResultMessage.role).toBe('assistant'); // Changed from 'user' to 'assistant'
+      expect(errorResultMessage.role).toBe('tool'); // Tool error message
       expect(errorResultMessage.content).toContain('<functions_result>');
       expect(errorResultMessage.content).toContain('Error:');
-      expect(errorResultMessage.content).toContain('does not exist');
+      expect(errorResultMessage.content).toContain('工作空间名称或ID');
       expect(errorResultMessage.metadata?.isToolResult).toBe(true);
       expect(errorResultMessage.metadata?.isError).toBe(true);
       expect(errorResultMessage.metadata?.isPersisted).toBe(false); // Should be false initially
