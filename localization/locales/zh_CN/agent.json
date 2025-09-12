@@ -1,4 +1,20 @@
 {
+  "APILogs": {
+    "CurrentAgent": "显示智能体日志: {{agentId}}",
+    "Description": "此智能体的外部 API 调用调试日志。在偏好设置中启用 '外部 API 调试' 以开始记录。",
+    "ErrorDetails": "错误详情",
+    "NoLogs": "未找到此智能体的 API 日志",
+    "NoResponse": "无响应",
+    "RequestDetails": "请求详情",
+    "ResponseContent": "响应内容",
+    "ResponseMetadata": "响应元数据",
+    "StatusCancel": "已取消",
+    "StatusDone": "已完成",
+    "StatusError": "错误",
+    "StatusStart": "已开始",
+    "StatusUpdate": "处理中",
+    "Title": "API 调试日志"
+  },
   "Add": "添加",
   "Agent": {
     "InvalidTabType": "无效的标签页类型。需要聊天标签页。",
@@ -102,6 +118,9 @@
     "SearchPlaceholder": "搜索标签页或智能体..."
   },
   "Preference": {
+    "AIAgent": "智能体",
+    "AIAgentDescription": "管理 AI Agent 对话记录数据库",
+    "AIAgentDescriptionDetail": "这里可以查看和删除 AI Agent 对话记录数据库的大小和位置信息",
     "AIModelSelection": "AI 模型选择",
     "AIModelSelectionDescription": "选择您想要使用的 AI 提供商和模型",
     "AITemperature": "温度参数",
@@ -111,6 +130,7 @@
     "AddNewModel": "添加新模型",
     "AddNewProvider": "添加新提供商",
     "AddProvider": "添加提供商",
+    "AgentDatabaseDescription": "所有 AI Agent 对话记录都保存在这个数据库里，仅涉及与 AI 的交谈，不影响 Wiki 内容，占用空间为 {{size}}",
     "Anthropic": "Anthropic 官方接口",
     "BaseURL": "API 地址",
     "BaseURLRequired": "API 地址为必填项",
@@ -118,6 +138,7 @@
     "CancelAddProvider": "取消添加",
     "ConfigureModelParameters": "配置参数",
     "ConfigureProvider": "配置 {{provider}}",
+    "ConfirmDeleteAgentDatabase": "确定要删除包含所有 AI 对话记录的数据库吗？此操作无法撤销。",
     "CreateCustomModel": "创建自定义模型",
     "Custom": "自定义接口",
     "CustomProvider": "自定义提供方",
@@ -126,12 +147,15 @@
     "DefaultAIModelSelectionDescription": "选择在未具体设置时默认使用 AI 提供商和模型",
     "DefaultEmbeddingModelSelection": "默认嵌入模型选择",
     "DefaultEmbeddingModelSelectionDescription": "选择用于语义搜索和向量操作的默认嵌入模型",
+    "DeleteAgentDatabase": "删除 AI 对话数据库",
+    "DeleteDatabase": "删除数据库",
     "DeleteProvider": "删除提供商",
     "DisabledProviderInfo": "此提供商已禁用，其模型不会在模型选择列表中显示",
     "EnableProvider": "启用此提供商",
     "ExternalAPI": "外部服务接口",
     "ExternalAPIDebug": "启用 API 调试日志",
     "ExternalAPIDebugDescription": "开启后，所有 API 请求和响应将被记录到数据库中以便调试",
+    "ExternalApiDatabaseDescription": "包含外部 API Debug 信息的数据库，占用空间为 {{size}}",
     "FailedToAddModel": "无法添加模型",
     "FailedToAddProvider": "添加提供商失败",
     "FailedToRemoveModel": "无法删除模型",
@@ -156,6 +180,7 @@
     "NoProvidersAvailable": "没有可用的提供商",
     "Ollama": "Ollama 本地接口",
     "OpenAICompatible": "OpenAI 兼容接口",
+    "OpenDatabaseFolder": "打开数据库文件夹",
     "Openai": "OpenAI 官方接口",
     "OrCreateCustom": "或创建自定义模型",
     "Preferences": "设置...",
@@ -186,22 +211,6 @@
     "TemperatureDescription": "较低的值会产生更确定性、更集中的响应，较高的值会产生更多样化、更创造性的响应",
     "TopP": "Top P",
     "TopPDescription": "控制响应的随机性。较低的值使响应更确定，较高的值允许更多的可能性"
-  },
-  "APILogs": {
-    "Title": "API 调试日志",
-    "Description": "此智能体的外部 API 调用调试日志。在偏好设置中启用 '外部 API 调试' 以开始记录。",
-    "CurrentAgent": "显示智能体日志: {{agentId}}",
-    "NoLogs": "未找到此智能体的 API 日志",
-    "NoResponse": "无响应",
-    "StatusStart": "已开始",
-    "StatusUpdate": "处理中",
-    "StatusDone": "已完成",
-    "StatusError": "错误",
-    "StatusCancel": "已取消",
-    "RequestDetails": "请求详情",
-    "ResponseContent": "响应内容",
-    "ResponseMetadata": "响应元数据",
-    "ErrorDetails": "错误详情"
   },
   "Prompt": {
     "AutoRefresh": "预览会随输入文本的变化自动刷新",
@@ -542,6 +551,51 @@
       "WorkspaceName": "工作区名称",
       "WorkspaceNameTitle": "工作区名称"
     },
+    "WikiOperation": {
+      "Description": "在 Wiki 工作空间中执行 Tiddler 操作（添加、删除或设置文本）",
+      "Title": "Wiki 操作",
+      "Tool": {
+        "Caption": "Wiki 操作工具",
+        "Description": "在Wiki工作空间中执行操作（添加、删除或设置Tiddler文本）",
+        "ExamplesTitle": "使用示例",
+        "Name": "wiki-operation",
+        "Parameters": {
+          "extraMeta": {
+            "Description": "额外元数据的 JSON 字符串，如标签和字段，默认为 \"{}\"",
+            "Title": "额外元数据"
+          },
+          "operation": {
+            "Description": "要执行的操作类型",
+            "Title": "操作类型"
+          },
+          "options": {
+            "Description": "操作选项的 JSON 字符串，默认为 \"{}\"",
+            "Title": "操作选项"
+          },
+          "text": {
+            "Description": "Tiddler 的文本内容",
+            "Title": "Tiddler 内容"
+          },
+          "title": {
+            "Description": "Tiddler 的标题",
+            "Title": "Tiddler 标题"
+          },
+          "workspaceName": {
+            "Description": "要操作的工作空间名称或ID",
+            "Title": "工作空间名称"
+          }
+        },
+        "ParametersTitle": "参数"
+      },
+      "ToolListPosition": {
+        "Position": "相对于目标元素的插入位置（before/after）",
+        "PositionTitle": "插入位置",
+        "TargetId": "要插入工具列表的目标元素的ID",
+        "TargetIdTitle": "目标ID"
+      },
+      "ToolResultDuration": "工具执行结果在对话中保持可见的轮数，超过此轮数后结果将变灰显示",
+      "ToolResultDurationTitle": "工具结果持续轮数"
+    },
     "WikiSearch": {
       "Description": "使用筛选器表达式搜索 TiddlyWiki 工作区内容",
       "Filter": "TiddlyWiki 筛选器表达式，用于指定搜索条件",
@@ -553,6 +607,18 @@
       "SourceType": "数据源类型",
       "SourceTypeTitle": "源类型",
       "Title": "Wiki 搜索",
+      "Tool": {
+        "Parameters": {
+          "filter": {
+            "Description": "TiddlyWiki 过滤器表达式",
+            "Title": "过滤器"
+          },
+          "workspaceName": {
+            "Description": "要搜索的工作空间名称或ID",
+            "Title": "工作空间名称"
+          }
+        }
+      },
       "ToolListPosition": {
         "Position": "相对于目标位置的插入位置",
         "PositionTitle": "插入位置",
@@ -562,70 +628,8 @@
       "ToolListPositionTitle": "工具列表位置",
       "ToolResultDuration": "工具执行结果在对话中保持可见的轮数，超过此轮数后结果将变灰显示",
       "ToolResultDurationTitle": "工具结果持续轮数",
-      "Tool": {
-        "Parameters": {
-          "workspaceName": {
-            "Title": "工作空间名称",
-            "Description": "要搜索的工作空间名称或ID"
-          },
-          "filter": {
-            "Title": "过滤器",
-            "Description": "TiddlyWiki 过滤器表达式"
-          }
-        }
-      },
       "WorkspaceName": "要搜索的 TiddlyWiki 工作区名称",
       "WorkspaceNameTitle": "工作区名称"
-    },
-    "WikiOperation": {
-      "Title": "Wiki 操作",
-      "Description": "在 Wiki 工作空间中执行 Tiddler 操作（添加、删除或设置文本）",
-      "ToolListPosition": {
-        "TargetIdTitle": "目标ID",
-        "TargetId": "要插入工具列表的目标元素的ID",
-        "PositionTitle": "插入位置",
-        "Position": "相对于目标元素的插入位置（before/after）"
-      },
-      "ToolResultDurationTitle": "工具结果持续轮数",
-      "ToolResultDuration": "工具执行结果在对话中保持可见的轮数，超过此轮数后结果将变灰显示",
-      "Tool": {
-        "Name": "wiki-operation",
-        "Caption": "Wiki 操作工具",
-        "Description": "在Wiki工作空间中执行操作（添加、删除或设置Tiddler文本）",
-        "ParametersTitle": "参数",
-        "Parameters": {
-          "workspaceName": {
-            "Title": "工作空间名称",
-            "Description": "要操作的工作空间名称或ID"
-          },
-          "operation": {
-            "Title": "操作类型",
-            "Description": "要执行的操作类型"
-          },
-          "title": {
-            "Title": "Tiddler 标题",
-            "Description": "Tiddler 的标题"
-          },
-          "text": {
-            "Title": "Tiddler 内容",
-            "Description": "Tiddler 的文本内容"
-          },
-          "extraMeta": {
-            "Title": "额外元数据",
-            "Description": "额外元数据的 JSON 字符串，如标签和字段，默认为 \"{}\""
-          },
-          "options": {
-            "Title": "操作选项",
-            "Description": "操作选项的 JSON 字符串，默认为 \"{}\""
-          }
-        },
-        "ExamplesTitle": "使用示例",
-        "Examples": {
-          "add": "添加笔记: <tool_use name=\"wiki-operation\">{\"workspaceName\": \"我的知识库\", \"operation\": \"addTiddler\", \"title\": \"新笔记\", \"text\": \"这是笔记内容\", \"extraMeta\": \"{\\\"tags\\\":[\\\"标签1\\\",\\\"标签2\\\"]}\"}</tool_use>",
-          "set": "设置文本: <tool_use name=\"wiki-operation\">{\"workspaceName\": \"我的知识库\", \"operation\": \"setTiddlerText\", \"title\": \"现有笔记\", \"text\": \"更新后的内容\"}</tool_use>",
-          "delete": "删除笔记: <tool_use name=\"wiki-operation\">{\"workspaceName\": \"我的知识库\", \"operation\": \"deleteTiddler\", \"title\": \"要删除的笔记\"}</tool_use>"
-        }
-      }
     }
   },
   "Search": {
@@ -649,34 +653,34 @@
     }
   },
   "Tool": {
+    "Schema": {
+      "Description": "描述",
+      "Examples": "使用示例",
+      "Optional": "可选",
+      "Parameters": "参数",
+      "Required": "必需"
+    },
     "WikiOperation": {
+      "Error": {
+        "WorkspaceNotExist": "工作空间{{workspaceID}}不存在",
+        "WorkspaceNotFound": "工作空间名称或ID\"{{workspaceName}}\"不存在。可用工作空间：{{availableWorkspaces}}"
+      },
       "Success": {
         "Added": "成功在Wiki工作空间\"{{workspaceName}}\"中添加了Tiddler\"{{title}}\"",
         "Deleted": "成功从Wiki工作空间\"{{workspaceName}}\"中删除了Tiddler\"{{title}}\"",
         "Updated": "成功在Wiki工作空间\"{{workspaceName}}\"中设置了Tiddler\"{{title}}\"的文本"
-      },
-      "Error": {
-        "WorkspaceNotFound": "工作空间名称或ID\"{{workspaceName}}\"不存在。可用工作空间：{{availableWorkspaces}}",
-        "WorkspaceNotExist": "工作空间{{workspaceID}}不存在"
       }
     },
     "WikiSearch": {
-      "Success": {
-        "NoResults": "在Wiki工作空间\"{{workspaceName}}\"中未找到过滤器\"{{filter}}\"的结果",
-        "Completed": "Wiki搜索完成。找到{{totalResults}}个总结果，显示{{shownResults}}个：\n\n"
-      },
       "Error": {
-        "WorkspaceNotFound": "工作空间名称或ID\"{{workspaceName}}\"不存在。可用工作空间：{{availableWorkspaces}}",
+        "ExecutionFailed": "工具执行失败：{{error}}",
         "WorkspaceNotExist": "工作空间{{workspaceID}}不存在",
-        "ExecutionFailed": "工具执行失败：{{error}}"
+        "WorkspaceNotFound": "工作空间名称或ID\"{{workspaceName}}\"不存在。可用工作空间：{{availableWorkspaces}}"
+      },
+      "Success": {
+        "Completed": "Wiki搜索完成。找到{{totalResults}}个总结果，显示{{shownResults}}个：\n\n",
+        "NoResults": "在Wiki工作空间\"{{workspaceName}}\"中未找到过滤器\"{{filter}}\"的结果"
       }
-    },
-    "Schema": {
-      "Required": "必需",
-      "Optional": "可选",
-      "Description": "描述",
-      "Parameters": "参数",
-      "Examples": "使用示例"
     }
   }
 }

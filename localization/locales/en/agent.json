@@ -1,4 +1,20 @@
 {
+  "APILogs": {
+    "CurrentAgent": "Showing logs for agent: {{agentId}}",
+    "Description": "Debug logs for external API calls made by this agent. Enable 'External API Debug' in preferences to start logging.",
+    "ErrorDetails": "Error Details",
+    "NoLogs": "No API logs found for this agent",
+    "NoResponse": "",
+    "RequestDetails": "Request Details",
+    "ResponseContent": "Response Content",
+    "ResponseMetadata": "Response Metadata",
+    "StatusCancel": "Cancelled",
+    "StatusDone": "Completed",
+    "StatusError": "Error",
+    "StatusStart": "Started",
+    "StatusUpdate": "Processing",
+    "Title": "API Debug Logs"
+  },
   "Add": "Add",
   "Agent": {
     "InvalidTabType": "",
@@ -102,6 +118,9 @@
     "SearchPlaceholder": "Search for tabs or agents..."
   },
   "Preference": {
+    "AIAgent": "AI Agent",
+    "AIAgentDescription": "Manage AI Agent conversation records database",
+    "AIAgentDescriptionDetail": "Here you can view and delete the size and location information of the AI Agent conversation records database",
     "AIModelSelection": "AI Model Selection",
     "AIModelSelectionDescription": "Select the AI provider and model you want to use",
     "AITemperature": "Temperature Parameter",
@@ -111,6 +130,7 @@
     "AddNewModel": "Add New Model",
     "AddNewProvider": "Add New Provider",
     "AddProvider": "Add Provider",
+    "AgentDatabaseDescription": "All AI Agent conversation records are stored in this database, involving only conversations with AI, without affecting Wiki content, occupying {{size}}",
     "Anthropic": "Anthropic Official Interface",
     "BaseURL": "API Base URL",
     "BaseURLRequired": "API Base URL is required",
@@ -118,6 +138,7 @@
     "CancelAddProvider": "Cancel Adding",
     "ConfigureModelParameters": "configuration parameters",
     "ConfigureProvider": "Configure {{provider}}",
+    "ConfirmDeleteAgentDatabase": "Are you sure you want to delete the database containing all AI conversation records? This action cannot be undone.",
     "CreateCustomModel": "Create Custom Model",
     "Custom": "Custom Interface",
     "CustomProvider": "Custom Provider",
@@ -126,12 +147,15 @@
     "DefaultAIModelSelectionDescription": "Choose the default AI provider and model to use when not specifically set",
     "DefaultEmbeddingModelSelection": "Default Embedding Model Selection",
     "DefaultEmbeddingModelSelectionDescription": "Choose the default embedding model to use for semantic search and vector operations",
+    "DeleteAgentDatabase": "Delete AI Conversation Database",
+    "DeleteDatabase": "Delete Database",
     "DeleteProvider": "",
     "DisabledProviderInfo": "This provider is disabled, and its models will not appear in the model selection list",
     "EnableProvider": "Enable this provider",
     "ExternalAPI": "External API",
     "ExternalAPIDebug": "Enable API Debug Logging",
     "ExternalAPIDebugDescription": "When enabled, all API requests and responses will be logged to the database for debugging purposes",
+    "ExternalApiDatabaseDescription": "Database containing external API debug information, occupying {{size}}",
     "FailedToAddModel": "Failed to add model",
     "FailedToAddProvider": "Failed to add provider",
     "FailedToRemoveModel": "Failed to remove model",
@@ -156,6 +180,7 @@
     "NoProvidersAvailable": "No providers available",
     "Ollama": "Ollama Local Interface",
     "OpenAICompatible": "OpenAI-Compatible Interface",
+    "OpenDatabaseFolder": "Open Database Folder",
     "Openai": "OpenAI Official Interface",
     "OrCreateCustom": "Or Create a Custom Model",
     "Preferences": "Preferences",
@@ -186,21 +211,6 @@
     "TemperatureDescription": "Lower values produce more deterministic and focused responses, while higher values yield more diverse and creative responses.",
     "TopP": "Top P",
     "TopPDescription": "Control the randomness of responses. Lower values make responses more deterministic, while higher values allow for greater variability."
-  },
-  "APILogs": {
-    "Title": "API Debug Logs",
-    "Description": "Debug logs for external API calls made by this agent. Enable 'External API Debug' in preferences to start logging.",
-    "CurrentAgent": "Showing logs for agent: {{agentId}}",
-    "NoLogs": "No API logs found for this agent",
-    "StatusStart": "Started",
-    "StatusUpdate": "Processing",
-    "StatusDone": "Completed",
-    "StatusError": "Error",
-    "StatusCancel": "Cancelled",
-    "RequestDetails": "Request Details",
-    "ResponseContent": "Response Content",
-    "ResponseMetadata": "Response Metadata",
-    "ErrorDetails": "Error Details"
   },
   "Prompt": {
     "AutoRefresh": "Preview auto-refreshes with input text changes",
@@ -542,54 +552,49 @@
       "WorkspaceNameTitle": ""
     },
     "WikiOperation": {
-      "Title": "Wiki Operation",
       "Description": "Execute Tiddler operations (add, delete, or set text) in wiki workspaces",
-      "ToolListPosition": {
-        "TargetIdTitle": "Target ID",
-        "TargetId": "ID of the target element where the tool list will be inserted",
-        "PositionTitle": "Insert Position",
-        "Position": "Position relative to target element (before/after)"
-      },
-      "ToolResultDurationTitle": "Tool Result Duration",
-      "ToolResultDuration": "Number of rounds tool execution results remain visible in conversation, after which they become grayed out",
+      "Title": "Wiki Operation",
       "Tool": {
-        "Name": "wiki-operation",
         "Caption": "Wiki Operation Tool",
         "Description": "Execute operations (add, delete, or set Tiddler text) in wiki workspaces",
-        "ParametersTitle": "Parameters",
+        "ExamplesTitle": "Usage Examples",
+        "Name": "wiki-operation",
         "Parameters": {
-          "workspaceName": {
-            "Title": "Workspace Name",
-            "Description": "Name or ID of the workspace to operate on"
+          "extraMeta": {
+            "Description": "JSON string of extra metadata such as tags and fields, defaults to \"{}\"",
+            "Title": "Extra Metadata"
           },
           "operation": {
-            "Title": "Operation Type",
-            "Description": "Type of operation to execute"
-          },
-          "title": {
-            "Title": "Tiddler Title",
-            "Description": "Title of the Tiddler"
-          },
-          "text": {
-            "Title": "Tiddler Content",
-            "Description": "Text content of the Tiddler"
-          },
-          "extraMeta": {
-            "Title": "Extra Metadata",
-            "Description": "JSON string of extra metadata such as tags and fields, defaults to \"{}\""
+            "Description": "Type of operation to execute",
+            "Title": "Operation Type"
           },
           "options": {
-            "Title": "Operation Options",
-            "Description": "JSON string of operation options, defaults to \"{}\""
+            "Description": "JSON string of operation options, defaults to \"{}\"",
+            "Title": "Operation Options"
+          },
+          "text": {
+            "Description": "Text content of the Tiddler",
+            "Title": "Tiddler Content"
+          },
+          "title": {
+            "Description": "Title of the Tiddler",
+            "Title": "Tiddler Title"
+          },
+          "workspaceName": {
+            "Description": "Name or ID of the workspace to operate on",
+            "Title": "Workspace Name"
           }
         },
-        "ExamplesTitle": "Usage Examples",
-        "Examples": {
-          "add": "Add note: <tool_use name=\"wiki-operation\">{\"workspaceName\": \"My Knowledge Base\", \"operation\": \"addTiddler\", \"title\": \"New Note\", \"text\": \"This is note content\", \"extraMeta\": \"{\\\"tags\\\":[\\\"tag1\\\",\\\"tag2\\\"]}\"}</tool_use>",
-          "set": "Set text: <tool_use name=\"wiki-operation\">{\"workspaceName\": \"My Knowledge Base\", \"operation\": \"setTiddlerText\", \"title\": \"Existing Note\", \"text\": \"Updated content\"}</tool_use>",
-          "delete": "Delete note: <tool_use name=\"wiki-operation\">{\"workspaceName\": \"My Knowledge Base\", \"operation\": \"deleteTiddler\", \"title\": \"Note to Delete\"}</tool_use>"
-        }
-      }
+        "ParametersTitle": "Parameters"
+      },
+      "ToolListPosition": {
+        "Position": "Position relative to target element (before/after)",
+        "PositionTitle": "Insert Position",
+        "TargetId": "ID of the target element where the tool list will be inserted",
+        "TargetIdTitle": "Target ID"
+      },
+      "ToolResultDuration": "Number of rounds tool execution results remain visible in conversation, after which they become grayed out",
+      "ToolResultDurationTitle": "Tool Result Duration"
     },
     "WikiSearch": {
       "Description": "Search for content in TiddlyWiki workspaces using filter expressions",
@@ -602,6 +607,18 @@
       "SourceType": "",
       "SourceTypeTitle": "",
       "Title": "",
+      "Tool": {
+        "Parameters": {
+          "filter": {
+            "Description": "",
+            "Title": ""
+          },
+          "workspaceName": {
+            "Description": "",
+            "Title": ""
+          }
+        }
+      },
       "ToolListPosition": {
         "Position": "",
         "PositionTitle": "",
@@ -636,34 +653,34 @@
     }
   },
   "Tool": {
+    "Schema": {
+      "Description": "Description",
+      "Examples": "Usage Examples",
+      "Optional": "Optional",
+      "Parameters": "Parameters",
+      "Required": "Required"
+    },
     "WikiOperation": {
+      "Error": {
+        "WorkspaceNotExist": "Workspace {{workspaceID}} does not exist",
+        "WorkspaceNotFound": "Workspace with name or ID \"{{workspaceName}}\" does not exist. Available workspaces: {{availableWorkspaces}}"
+      },
       "Success": {
         "Added": "Successfully added tiddler \"{{title}}\" in wiki workspace \"{{workspaceName}}\"",
         "Deleted": "Successfully deleted tiddler \"{{title}}\" from wiki workspace \"{{workspaceName}}\"",
         "Updated": "Successfully set text for tiddler \"{{title}}\" in wiki workspace \"{{workspaceName}}\""
-      },
-      "Error": {
-        "WorkspaceNotFound": "Workspace with name or ID \"{{workspaceName}}\" does not exist. Available workspaces: {{availableWorkspaces}}",
-        "WorkspaceNotExist": "Workspace {{workspaceID}} does not exist"
       }
     },
     "WikiSearch": {
-      "Success": {
-        "NoResults": "No results found for filter \"{{filter}}\" in wiki workspace \"{{workspaceName}}\"",
-        "Completed": "Wiki search completed successfully. Found {{totalResults}} total results, showing {{shownResults}}:\n\n"
-      },
       "Error": {
-        "WorkspaceNotFound": "Workspace with name or ID \"{{workspaceName}}\" does not exist. Available workspaces: {{availableWorkspaces}}",
+        "ExecutionFailed": "Tool execution failed: {{error}}",
         "WorkspaceNotExist": "Workspace {{workspaceID}} does not exist",
-        "ExecutionFailed": "Tool execution failed: {{error}}"
+        "WorkspaceNotFound": "Workspace with name or ID \"{{workspaceName}}\" does not exist. Available workspaces: {{availableWorkspaces}}"
+      },
+      "Success": {
+        "Completed": "Wiki search completed successfully. Found {{totalResults}} total results, showing {{shownResults}}:\n\n",
+        "NoResults": "No results found for filter \"{{filter}}\" in wiki workspace \"{{workspaceName}}\""
       }
-    },
-    "Schema": {
-      "Required": "Required",
-      "Optional": "Optional",
-      "Description": "Description",
-      "Parameters": "Parameters",
-      "Examples": "Usage Examples"
     }
   }
 }

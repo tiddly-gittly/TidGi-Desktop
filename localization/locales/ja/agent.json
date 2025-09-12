@@ -1,4 +1,20 @@
 {
+  "APILogs": {
+    "CurrentAgent": "",
+    "Description": "",
+    "ErrorDetails": "",
+    "NoLogs": "",
+    "NoResponse": "",
+    "RequestDetails": "",
+    "ResponseContent": "",
+    "ResponseMetadata": "",
+    "StatusCancel": "",
+    "StatusDone": "",
+    "StatusError": "",
+    "StatusStart": "",
+    "StatusUpdate": "",
+    "Title": ""
+  },
   "Add": "追加",
   "Agent": {
     "InvalidTabType": "",
@@ -102,6 +118,9 @@
     "SearchPlaceholder": "タブまたはインテリジェントエージェントを検索..."
   },
   "Preference": {
+    "AIAgent": "",
+    "AIAgentDescription": "",
+    "AIAgentDescriptionDetail": "",
     "AIModelSelection": "AIモデル選択",
     "AIModelSelectionDescription": "使用するAIプロバイダーとモデルを選択してください",
     "AITemperature": "温度パラメータ",
@@ -111,6 +130,7 @@
     "AddNewModel": "新しいモデルを追加",
     "AddNewProvider": "新しいプロバイダーを追加",
     "AddProvider": "プロバイダーを追加",
+    "AgentDatabaseDescription": "",
     "Anthropic": "Anthropic公式インターフェース",
     "BaseURL": "APIベースURL",
     "BaseURLRequired": "APIベースURLは必須です",
@@ -118,6 +138,9 @@
     "CancelAddProvider": "追加をキャンセル",
     "ConfigureModelParameters": "設定パラメータ",
     "ConfigureProvider": "{{provider}}を設定",
+    "ConfirmDelete": "",
+    "ConfirmDeleteAgentDatabase": "",
+    "ConfirmDeleteExternalApiDatabase": "",
     "CreateCustomModel": "カスタムモデルを作成",
     "Custom": "カスタムインターフェース",
     "CustomProvider": "カスタムプロバイダ",
@@ -126,10 +149,16 @@
     "DefaultAIModelSelectionDescription": "特に設定されていない場合に使用するデフォルトのAIプロバイダーとモデルを選択してください",
     "DefaultEmbeddingModelSelection": "",
     "DefaultEmbeddingModelSelectionDescription": "",
+    "DeleteAgentDatabase": "",
+    "DeleteDatabase": "",
+    "DeleteExternalApiDatabase": "",
     "DeleteProvider": "",
     "DisabledProviderInfo": "このプロバイダーは無効になっており、そのモデルはモデル選択リストに表示されません",
     "EnableProvider": "このプロバイダーを有効にする",
     "ExternalAPI": "外部APIインターフェース",
+    "ExternalAPIDebug": "",
+    "ExternalAPIDebugDescription": "",
+    "ExternalApiDatabaseDescription": "",
     "FailedToAddModel": "モデルの追加に失敗しました",
     "FailedToAddProvider": "プロバイダーの追加に失敗しました",
     "FailedToRemoveModel": "モデルの削除に失敗しました",
@@ -154,6 +183,7 @@
     "NoProvidersAvailable": "利用可能なプロバイダーがありません",
     "Ollama": "Ollamaローカルインターフェース",
     "OpenAICompatible": "OpenAI互換インターフェース",
+    "OpenDatabaseFolder": "",
     "Openai": "OpenAI公式インターフェース",
     "OrCreateCustom": "またはカスタムモデルを作成",
     "Preferences": "設定...",
@@ -539,6 +569,56 @@
       "WorkspaceName": "ワークスペース名",
       "WorkspaceNameTitle": ""
     },
+    "WikiOperation": {
+      "Description": "",
+      "Title": "",
+      "Tool": {
+        "Caption": "",
+        "Description": "",
+        "Examples": {
+          "add": "",
+          "delete": "",
+          "set": ""
+        },
+        "ExamplesTitle": "",
+        "Name": "",
+        "Parameters": {
+          "extraMeta": {
+            "Description": "",
+            "Title": ""
+          },
+          "operation": {
+            "Description": "",
+            "Title": ""
+          },
+          "options": {
+            "Description": "",
+            "Title": ""
+          },
+          "text": {
+            "Description": "",
+            "Title": ""
+          },
+          "title": {
+            "Description": "",
+            "Title": ""
+          },
+          "workspaceName": {
+            "Description": "",
+            "Title": ""
+          }
+        },
+        "ParametersTitle": ""
+      },
+      "ToolListPosition": {
+        "Position": "",
+        "PositionTitle": "",
+        "TargetId": "",
+        "TargetIdTitle": ""
+      },
+      "ToolResultDuration": "",
+      "ToolResultDurationTitle": ""
+    },
     "WikiSearch": {
       "Description": "",
       "Filter": "",
@@ -550,6 +630,18 @@
       "SourceType": "",
       "SourceTypeTitle": "",
       "Title": "",
+      "Tool": {
+        "Parameters": {
+          "filter": {
+            "Description": "",
+            "Title": ""
+          },
+          "workspaceName": {
+            "Description": "",
+            "Title": ""
+          }
+        }
+      },
       "ToolListPosition": {
         "Position": "",
         "PositionTitle": "",
@@ -582,5 +674,37 @@
       "NewTab": "新しいタブ",
       "NewWeb": "新しいウェブページを作成"
     }
-  }
+  },
+  "Tool": {
+    "Schema": {
+      "Description": "",
+      "Examples": "",
+      "Optional": "",
+      "Parameters": "",
+      "Required": ""
+    },
+    "WikiOperation": {
+      "Error": {
+        "WorkspaceNotExist": "",
+        "WorkspaceNotFound": ""
+      },
+      "Success": {
+        "Added": "",
+        "Deleted": "",
+        "Updated": ""
+      }
+    },
+    "WikiSearch": {
+      "Error": {
+        "ExecutionFailed": "",
+        "WorkspaceNotExist": "",
+        "WorkspaceNotFound": ""
+      },
+      "Success": {
+        "Completed": "",
+        "NoResults": ""
+      }
+    }
+  },
+  "Unknown": ""
 }

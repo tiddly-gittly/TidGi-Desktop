@@ -14,6 +14,7 @@ import PowerIcon from '@mui/icons-material/Power';
 import RouterIcon from '@mui/icons-material/Router';
 import SearchIcon from '@mui/icons-material/Search';
 import SecurityIcon from '@mui/icons-material/Security';
+import StorageIcon from '@mui/icons-material/Storage';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
 import WidgetsIcon from '@mui/icons-material/Widgets';
@@ -52,6 +53,11 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
     [PreferenceSections.externalAPI]: {
       text: t('Preference.ExternalAPI', { ns: 'agent' }),
       Icon: ApiIcon,
+      ref: useRef<SectionTitleElement>(null),
+    },
+    [PreferenceSections.aiAgent]: {
+      text: t('Preference.AIAgent', { ns: 'agent' }),
+      Icon: StorageIcon,
       ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.search]: {

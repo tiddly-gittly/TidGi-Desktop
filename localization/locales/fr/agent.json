@@ -1,4 +1,20 @@
 {
+  "APILogs": {
+    "CurrentAgent": "",
+    "Description": "",
+    "ErrorDetails": "",
+    "NoLogs": "",
+    "NoResponse": "",
+    "RequestDetails": "",
+    "ResponseContent": "",
+    "ResponseMetadata": "",
+    "StatusCancel": "",
+    "StatusDone": "",
+    "StatusError": "",
+    "StatusStart": "",
+    "StatusUpdate": "",
+    "Title": ""
+  },
   "Agent": {
     "InvalidTabType": "",
     "LoadingChat": "",
@@ -101,6 +117,9 @@
     "SearchPlaceholder": "Rechercher un onglet ou un agent intelligent..."
   },
   "Preference": {
+    "AIAgent": "",
+    "AIAgentDescription": "",
+    "AIAgentDescriptionDetail": "",
     "AIModelSelection": "Sélection du modèle AI",
     "AIModelSelectionDescription": "Sélectionnez le fournisseur AI et le modèle que vous souhaitez utiliser",
     "AITemperature": "Paramètre de température",
@@ -110,6 +129,7 @@
     "AddNewModel": "Ajouter un nouveau modèle",
     "AddNewProvider": "Ajouter un nouveau fournisseur",
     "AddProvider": "Ajouter un fournisseur",
+    "AgentDatabaseDescription": "",
     "Anthropic": "Interface officielle Anthropic",
     "BaseURL": "URL de base de l'API",
     "BaseURLRequired": "L'URL de base de l'API est requise",
@@ -117,6 +137,8 @@
     "CancelAddProvider": "Annuler l'ajout",
     "ConfigureModelParameters": "paramètres de configuration",
     "ConfigureProvider": "Configurer {{provider}}",
+    "ConfirmDelete": "",
+    "ConfirmDeleteAgentDatabase": "",
     "CreateCustomModel": "Créer un modèle personnalisé",
     "Custom": "Interface personnalisée",
     "CustomProvider": "Fournisseur personnalisé",
@@ -125,10 +147,16 @@
     "DefaultAIModelSelectionDescription": "Choisissez le fournisseur AI et le modèle par défaut à utiliser lorsqu'aucun n'est spécifiquement défini",
     "DefaultEmbeddingModelSelection": "",
     "DefaultEmbeddingModelSelectionDescription": "",
+    "DeleteAgentDatabase": "",
+    "DeleteDatabase": "",
+    "DeleteExternalApiDatabase": "",
     "DeleteProvider": "",
     "DisabledProviderInfo": "Ce fournisseur est désactivé et ses modèles n'apparaîtront pas dans la liste de sélection des modèles",
     "EnableProvider": "Activer ce fournisseur",
     "ExternalAPI": "API externe",
+    "ExternalAPIDebug": "",
+    "ExternalAPIDebugDescription": "",
+    "ExternalApiDatabaseDescription": "",
     "FailedToAddModel": "Échec de l'ajout du modèle",
     "FailedToAddProvider": "Échec de l'ajout du fournisseur",
     "FailedToRemoveModel": "Échec de la suppression du modèle",
@@ -153,6 +181,7 @@
     "NoProvidersAvailable": "Aucun fournisseur disponible",
     "Ollama": "Interface locale Ollama",
     "OpenAICompatible": "Interface compatible OpenAI",
+    "OpenDatabaseFolder": "",
     "Openai": "Interface officielle OpenAI",
     "OrCreateCustom": "Ou créer un modèle personnalisé",
     "Preferences": "configurer...",
@@ -538,6 +567,56 @@
       "WorkspaceName": "Nom de l'espace de travail",
       "WorkspaceNameTitle": ""
     },
+    "WikiOperation": {
+      "Description": "",
+      "Title": "",
+      "Tool": {
+        "Caption": "",
+        "Description": "",
+        "Examples": {
+          "add": "",
+          "delete": "",
+          "set": ""
+        },
+        "ExamplesTitle": "",
+        "Name": "",
+        "Parameters": {
+          "extraMeta": {
+            "Description": "",
+            "Title": ""
+          },
+          "operation": {
+            "Description": "",
+            "Title": ""
+          },
+          "options": {
+            "Description": "",
+            "Title": ""
+          },
+          "text": {
+            "Description": "",
+            "Title": ""
+          },
+          "title": {
+            "Description": "",
+            "Title": ""
+          },
+          "workspaceName": {
+            "Description": "",
+            "Title": ""
+          }
+        },
+        "ParametersTitle": ""
+      },
+      "ToolListPosition": {
+        "Position": "",
+        "PositionTitle": "",
+        "TargetId": "",
+        "TargetIdTitle": ""
+      },
+      "ToolResultDuration": "",
+      "ToolResultDurationTitle": ""
+    },
     "WikiSearch": {
       "Description": "",
       "Filter": "",
@@ -549,6 +628,18 @@
       "SourceType": "",
       "SourceTypeTitle": "",
       "Title": "",
+      "Tool": {
+        "Parameters": {
+          "filter": {
+            "Description": "",
+            "Title": ""
+          },
+          "workspaceName": {
+            "Description": "",
+            "Title": ""
+          }
+        }
+      },
       "ToolListPosition": {
         "Position": "",
         "PositionTitle": "",
@@ -581,5 +672,37 @@
       "NewTab": "Nouvel onglet",
       "NewWeb": "nouvelle page web"
     }
-  }
+  },
+  "Tool": {
+    "Schema": {
+      "Description": "",
+      "Examples": "",
+      "Optional": "",
+      "Parameters": "",
+      "Required": ""
+    },
+    "WikiOperation": {
+      "Error": {
+        "WorkspaceNotExist": "",
+        "WorkspaceNotFound": ""
+      },
+      "Success": {
+        "Added": "",
+        "Deleted": "",
+        "Updated": ""
+      }
+    },
+    "WikiSearch": {
+      "Error": {
+        "ExecutionFailed": "",
+        "WorkspaceNotExist": "",
+        "WorkspaceNotFound": ""
+      },
+      "Success": {
+        "Completed": "",
+        "NoResults": ""
+      }
+    }
+  },
+  "Unknown": ""
 }

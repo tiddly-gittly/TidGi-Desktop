@@ -114,7 +114,7 @@ export class DatabaseService implements IDatabaseService {
   /**
    * Get database file path for a given key
    */
-  private getDatabasePath(key: string): string {
+  private getDatabasePathSync(key: string): string {
     // Use in-memory database for tests
     if (process.env.NODE_ENV === 'test') {
       return ':memory:';
@@ -126,7 +126,7 @@ export class DatabaseService implements IDatabaseService {
    * Initialize database for a given key
    */
   public async initializeDatabase(key: string, options: DatabaseInitOptions = {}): Promise<void> {
-    const databasePath = this.getDatabasePath(key);
+    const databasePath = this.getDatabasePathSync(key);
 
     // Skip if database already exists (except in test environment where we always use fresh in-memory DB)
     if (!isTest && await fs.exists(databasePath)) {
@@ -189,7 +189,7 @@ export class DatabaseService implements IDatabaseService {
 
         const dataSource = new DataSource({
           type: 'better-sqlite3',
-          database: this.getDatabasePath(key),
+          database: this.getDatabasePathSync(key),
           entities: schemaConfig.entities,
           migrations: schemaConfig.migrations,
           synchronize: schemaConfig.synchronize,
@@ -246,7 +246,7 @@ export class DatabaseService implements IDatabaseService {
    * Get database file information like whether it exists and its size in bytes.
    */
   public async getDatabaseInfo(key: string): Promise<{ exists: boolean; size?: number }> {
-    const databasePath = this.getDatabasePath(key);
+    const databasePath = this.getDatabasePathSync(key);
     if (databasePath === ':memory:') {
       return { exists: true, size: undefined };
     }
@@ -260,6 +260,13 @@ export class DatabaseService implements IDatabaseService {
       logger.error(`getDatabaseInfo failed for key: ${key}`, { error: (error as Error).message });
       return { exists: false };
     }
+  }
+
+  /**
+   * Get the database file path for a given key
+   */
+  public async getDatabasePath(key: string): Promise<string> {
+    return this.getDatabasePathSync(key);
   }
 
   /**
@@ -277,7 +284,7 @@ export class DatabaseService implements IDatabaseService {
         this.dataSources.delete(key);
       }
 
-      const databasePath = this.getDatabasePath(key);
+      const databasePath = this.getDatabasePathSync(key);
       if (databasePath !== ':memory:' && await fs.pathExists(databasePath)) {
         await fs.unlink(databasePath);
         logger.info(`Database file deleted for key: ${key}`);
@@ -299,7 +306,7 @@ export class DatabaseService implements IDatabaseService {
 
         if (drop) {
           await dataSource.dropDatabase();
-          await fs.unlink(this.getDatabasePath(key));
+          await fs.unlink(this.getDatabasePathSync(key));
           logger.info(`Database dropped and file deleted for key: ${key}`);
         } else {
           await dataSource.destroy();
@@ -340,7 +347,7 @@ export class DatabaseService implements IDatabaseService {
    * Fix database lock issue
    */
   private async fixDatabaseLock(key: string): Promise<void> {
-    const databasePath = this.getDatabasePath(key);
+    const databasePath = this.getDatabasePathSync(key);
     const temporaryPath = `${databasePath}.temp`;
 
     try {

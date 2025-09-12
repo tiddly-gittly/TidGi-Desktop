@@ -7,6 +7,7 @@ import { useInfoSnackbar } from '@/components/InfoSnackbar';
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { AIAgent } from './sections/AIAgent';
 import { DeveloperTools } from './sections/DeveloperTools';
 import { Downloads } from './sections/Downloads';
 import { ExternalAPI } from './sections/ExternalAPI';
@@ -67,6 +68,7 @@ export default function Preferences(): React.JSX.Element {
         <General sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <Sync sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <ExternalAPI sections={sections} />
+        <AIAgent sections={sections} />
         <Search sections={sections} requestRestartCountDown={requestRestartCountDown} showInfoSnackbar={showInfoSnackbar} />
         <Notifications sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <System sections={sections} />

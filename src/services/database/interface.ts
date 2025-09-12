@@ -68,6 +68,11 @@ export interface IDatabaseService {
   getDatabaseInfo(key: string): Promise<{ exists: boolean; size?: number }>;
 
   /**
+   * Get the database file path for a given key
+   */
+  getDatabasePath(key: string): Promise<string>;
+
+  /**
    * Delete the database file for a given key and close any active connection.
    */
   deleteDatabase(key: string): Promise<void>;
@@ -81,6 +86,7 @@ export const DatabaseServiceIPCDescriptor = {
     getDatabase: ProxyPropertyType.Function,
     closeAppDatabase: ProxyPropertyType.Function,
     getDatabaseInfo: ProxyPropertyType.Function,
+    getDatabasePath: ProxyPropertyType.Function,
     deleteDatabase: ProxyPropertyType.Function,
   },
 };

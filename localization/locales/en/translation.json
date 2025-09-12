@@ -340,6 +340,7 @@
     "ZoomOut": "Zoom Out"
   },
   "No": "No",
+  "Unknown": "Unknown",
   "Open": "Open",
   "Preference": {
     "AlwaysOnTop": "Always on top",
@@ -400,6 +401,9 @@
     "OpenMetaDataFolderDetail": "TiddlyWiki's data and TidGi's workspace metadata are stored separately. TidGi's metadata includes workspace settings, etc., which are stored in this folder in JSON format.",
     "OpenV8CacheFolder": "Open the V8 cache folder",
     "OpenV8CacheFolderDetail": "The V8 cache folder stores cached files that accelerate application startup",
+    "DeleteExternalApiDatabase": "Delete External API Database",
+    "ConfirmDelete": "Confirm Delete",
+    "ConfirmDeleteExternalApiDatabase": "Are you sure you want to delete the database containing external API debug information? This action cannot be undone.",
     "Performance": "Performance",
     "PrivacyAndSecurity": "Privacy & Security",
     "ReceivePreReleaseUpdates": "Receive pre-release updates",

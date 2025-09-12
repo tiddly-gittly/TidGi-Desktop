@@ -1,6 +1,6 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { Divider, List, ListItemButton, Switch } from '@mui/material';
-import React from 'react';
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, List, ListItemButton, Switch } from '@mui/material';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
@@ -17,6 +17,29 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
     async () => await Promise.all([window.service.context.get('LOG_FOLDER'), window.service.context.get('SETTINGS_FOLDER'), window.service.context.get('V8_CACHE_FOLDER')]),
     [undefined, undefined, undefined],
   )!;
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [externalApiInfo, setExternalApiInfo] = useState<{ exists: boolean; size?: number; path?: string }>({ exists: false });
+
+  useEffect(() => {
+    const fetchInfo = async () => {
+      try {
+        const info = await window.service.database.getDatabaseInfo('externalApi');
+        const path = await window.service.database.getDatabasePath('externalApi');
+        setExternalApiInfo({ ...info, path });
+      } catch (error) {
+        void window.service.native.log(
+          'error',
+          'DeveloperTools: fetch externalApi database info failed',
+          {
+            function: 'DeveloperTools.fetchInfo',
+            error: String(error),
+          },
+        );
+      }
+    };
+    void fetchInfo();
+  }, []);
 
   return (
     <>
@@ -96,10 +119,100 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                   name='externalAPIDebug'
                 />
               </ListItem>
+              {preference?.externalAPIDebug && (
+                <>
+                  <Divider />
+                  <ListItemButton
+                    onClick={async () => {
+                      if (externalApiInfo.path) {
+                        try {
+                          await window.service.native.openPath(externalApiInfo.path, true);
+                        } catch (error) {
+                          void window.service.native.log(
+                            'error',
+                            'DeveloperTools: open externalApi database folder failed',
+                            {
+                              function: 'DeveloperTools.openExternalApiDatabaseFolder',
+                              error: String(error),
+                              path: externalApiInfo.path,
+                            },
+                          );
+                        }
+                      }
+                    }}
+                  >
+                    <ListItemText
+                      primary={t('Preference.OpenDatabaseFolder', { ns: 'agent' })}
+                      secondary={externalApiInfo.path || t('Unknown')}
+                    />
+                    <ChevronRightIcon color='action' />
+                  </ListItemButton>
+                  <ListItemButton
+                    onClick={() => {
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
+                    <ListItemText
+                      primary={t('Preference.DeleteExternalApiDatabase')}
+                      secondary={t('Preference.ExternalApiDatabaseDescription', {
+                        size: externalApiInfo.size ? (externalApiInfo.size / 1024 / 1024).toFixed(2) + ' MB' : t('Unknown'),
+                      })}
+                    />
+                    <ChevronRightIcon color='action' />
+                  </ListItemButton>
+                </>
+              )}
             </>
           )}
         </List>
       </Paper>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+        }}
+      >
+        <DialogTitle>{t('Preference.ConfirmDelete')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t('Preference.ConfirmDeleteExternalApiDatabase')}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setDeleteDialogOpen(false);
+            }}
+          >
+            {t('Cancel')}
+          </Button>
+          <Button
+            onClick={async () => {
+              try {
+                await window.service.database.deleteDatabase('externalApi');
+                setDeleteDialogOpen(false);
+                // Refresh info after deletion
+                const info = await window.service.database.getDatabaseInfo('externalApi');
+                const path = await window.service.database.getDatabasePath('externalApi');
+                setExternalApiInfo({ ...info, path });
+              } catch (error) {
+                void window.service.native.log(
+                  'error',
+                  'DeveloperTools: delete externalApi database failed',
+                  {
+                    function: 'DeveloperTools.handleDelete',
+                    error: String(error),
+                  },
+                );
+              }
+            }}
+            color='error'
+          >
+            {t('Delete')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
