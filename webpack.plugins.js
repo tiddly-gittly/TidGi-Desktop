@@ -31,15 +31,17 @@ exports.main = _.compact([
     // set the current working directory for displaying module paths
     cwd: process.cwd(),
   }),
-  new ExternalsPlugin({
-    type: 'commonjs',
-    // use regex works.
-    // include: /@tiddlygit\+tiddlywiki@(.+)|dugite(.+)/,
-    include: /tiddlywiki(.+)|dugite(.+)/,
-    // when using npm, we can use this. But with pnpm, this won't work ↓
-    // include: path.join(__dirname, 'node_modules', '.pnpm', '@tiddlygit', 'tiddlywiki'),
-  }),
-  process.platform === 'win32'
+  isDevelopmentOrTest
+    ? undefined
+    : new ExternalsPlugin({
+      type: 'commonjs',
+      // use regex works.
+      // include: /@tiddlygit\+tiddlywiki@(.+)|dugite(.+)/,
+      include: /tiddlywiki(.+)|dugite(.+)/,
+      // when using npm, we can use this. But with pnpm, this won't work ↓
+      // include: path.join(__dirname, 'node_modules', '.pnpm', '@tiddlygit', 'tiddlywiki'),
+    }),
+  (process.platform === 'win32' || isDevelopmentOrTest)
     ? undefined
     : new ExternalsPlugin({
       type: 'commonjs',
@@ -47,7 +49,9 @@ exports.main = _.compact([
     }),
   new ThreadsPlugin({
     target: 'electron-node-worker',
-    plugins: ['ExternalsPlugin'],
+    plugins: isDevelopmentOrTest
+      ? []
+      : ['ExternalsPlugin'],
   }),
   // WebpackBar progress bar need `DEBUG=electron-forge:*` to work.
   isDevelopmentOrTest ? new WebpackBar() : undefined,
