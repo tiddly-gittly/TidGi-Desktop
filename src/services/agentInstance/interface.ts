@@ -66,6 +66,8 @@ export interface AgentInstanceLatestStatus {
    */
   message?: AgentInstanceMessage;
 
+  /** Creation time (converted from ISO string) */
+  created?: Date;
   /** Last update time (converted from ISO string) */
   modified?: Date;
 }
@@ -75,7 +77,7 @@ export interface AgentInstanceMessage {
   id: string;
   agentId: string;
   /** Message role */
-  role: 'user' | 'assistant' | 'agent' | 'tool';
+  role: 'user' | 'assistant' | 'agent' | 'tool' | 'error';
   /** Message content */
   content: string;
   /**
@@ -84,6 +86,8 @@ export interface AgentInstanceMessage {
    */
   reasoning_content?: string;
   contentType?: string; // 'text/plain' | 'text/markdown' | 'text/html' | 'application/json' | 'application/json+ndjson';
+  /** Creation time (converted from ISO string) */
+  created?: Date;
   /** Last update time (converted from ISO string) */
   modified?: Date;
   /** Message metadata */

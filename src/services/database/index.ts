@@ -119,7 +119,7 @@ export class DatabaseService implements IDatabaseService {
     if (process.env.NODE_ENV === 'test') {
       return ':memory:';
     }
-    return path.resolve(CACHE_DATABASE_FOLDER, `${key}-sqlite3-cache.db`);
+    return path.resolve(CACHE_DATABASE_FOLDER, `${key}-cache.db`);
   }
 
   /**

@@ -10,28 +10,28 @@ import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
 import { MessageRenderer } from './MessageRenderer';
 
 const BubbleContainer = styled(Box, {
-  shouldForwardProp: (property) => property !== '$user' && property !== '$tool' && property !== '$expired',
-})<{ $user: boolean; $tool: boolean; $expired?: boolean }>`
+  shouldForwardProp: (property) => property !== '$user' && property !== '$centered' && property !== '$expired',
+})<{ $user: boolean; $centered: boolean; $expired?: boolean }>`
   display: flex;
   gap: 12px;
   max-width: 80%;
-  align-self: ${props => props.$tool ? 'center' : props.$user ? 'flex-end' : 'flex-start'};
+  align-self: ${props => props.$centered ? 'center' : props.$user ? 'flex-end' : 'flex-start'};
   opacity: ${props => props.$expired ? 0.5 : 1};
   transition: opacity 0.3s ease-in-out;
 `;
 
 const MessageAvatar = styled(Avatar, {
-  shouldForwardProp: (property) => property !== '$user' && property !== '$tool' && property !== '$expired',
-})<{ $user: boolean; $tool: boolean; $expired?: boolean }>`
-  background-color: ${props => props.$tool ? props.theme.palette.info.main : props.$user ? props.theme.palette.primary.main : props.theme.palette.secondary.main};
-  color: ${props => props.$tool ? props.theme.palette.info.contrastText : props.$user ? props.theme.palette.primary.contrastText : props.theme.palette.secondary.contrastText};
+  shouldForwardProp: (property) => property !== '$user' && property !== '$centered' && property !== '$expired',
+})<{ $user: boolean; $centered: boolean; $expired?: boolean }>`
+  background-color: ${props => props.$centered ? props.theme.palette.info.main : props.$user ? props.theme.palette.primary.main : props.theme.palette.secondary.main};
+  color: ${props => props.$centered ? props.theme.palette.info.contrastText : props.$user ? props.theme.palette.primary.contrastText : props.theme.palette.secondary.contrastText};
   opacity: ${props => props.$expired ? 0.7 : 1};
   transition: opacity 0.3s ease-in-out;
 `;
 
 const MessageContent = styled(Box, {
-  shouldForwardProp: (property) => property !== '$user' && property !== '$tool' && property !== '$streaming' && property !== '$expired',
-})<{ $user: boolean; $tool: boolean; $streaming?: boolean; $expired?: boolean }>`
+  shouldForwardProp: (property) => property !== '$user' && property !== '$centered' && property !== '$streaming' && property !== '$expired',
+})<{ $user: boolean; $centered: boolean; $streaming?: boolean; $expired?: boolean }>`
   background-color: ${props => props.$user ? props.theme.palette.primary.light : props.theme.palette.background.paper};
   color: ${props => props.$user ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
   padding: 12px 16px;
@@ -94,24 +94,24 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
   if (!message) return null;
 
   const isUser = message.role === 'user';
-  const isTool = message.role === 'tool';
-
+  // Treat 'error' and tool centered, no avatar, differenciate it from normal chat bubbles
+  const isCentered = message.role === 'tool' || message.role === 'error';
   // Calculate if message is expired for AI context
   const messageIndex = orderedMessageIds.indexOf(messageId);
   const totalMessages = orderedMessageIds.length;
   const isExpired = isMessageExpiredForAI(message, messageIndex, totalMessages);
 
   return (
-    <BubbleContainer $user={isUser} $tool={isTool} $expired={isExpired} data-testid='message-bubble'>
-      {!isUser && !isTool && (
-        <MessageAvatar $user={isUser} $tool={isTool} $expired={isExpired}>
+    <BubbleContainer $user={isUser} $centered={isCentered} $expired={isExpired} data-testid='message-bubble'>
+      {!isUser && !isCentered && (
+        <MessageAvatar $user={isUser} $centered={isCentered} $expired={isExpired}>
           <SmartToyIcon />
         </MessageAvatar>
       )}
 
       <MessageContent
         $user={isUser}
-        $tool={isTool}
+        $centered={isCentered}
         $streaming={isStreaming}
         $expired={isExpired}
         data-testid={!isUser ? (isStreaming ? 'assistant-streaming-text' : 'assistant-message') : undefined}
@@ -120,7 +120,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
       </MessageContent>
 
       {isUser && (
-        <MessageAvatar $user={isUser} $tool={isTool} $expired={isExpired}>
+        <MessageAvatar $user={isUser} $centered={isCentered} $expired={isExpired}>
           <PersonIcon />
         </MessageAvatar>
       )}

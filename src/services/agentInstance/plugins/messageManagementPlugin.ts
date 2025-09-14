@@ -88,7 +88,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
   });
 
   // Handle AI response updates during streaming
-  hooks.responseUpdate.tapAsync('messageManagementPlugin', (context: AIResponseContext, callback) => {
+  hooks.responseUpdate.tapAsync('messageManagementPlugin', async (context: AIResponseContext, callback) => {
     try {
       const { handlerContext, response } = context;
 
@@ -100,16 +100,29 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
 
         if (!aiMessage) {
           // Create new AI message for streaming updates
+          const now = new Date();
           aiMessage = {
             id: `ai-response-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             agentId: handlerContext.agent.id,
             role: 'assistant',
             content: response.content,
-            modified: new Date(),
+            created: now,
+            modified: now,
             metadata: { isComplete: false },
             duration: undefined, // AI responses persist indefinitely by default
           };
           handlerContext.agent.messages.push(aiMessage);
+          // Persist immediately so DB timestamp reflects conversation order
+          try {
+            const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+            await agentInstanceService.saveUserMessage(aiMessage);
+            aiMessage.metadata = { ...aiMessage.metadata, isPersisted: true };
+          } catch (persistError) {
+            logger.warn('Failed to persist initial streaming AI message', {
+              error: persistError instanceof Error ? persistError.message : String(persistError),
+              messageId: aiMessage.id,
+            });
+          }
         } else {
           // Update existing message content
           aiMessage.content = response.content;
@@ -127,12 +140,11 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
           });
         }
       }
-
-      callback();
     } catch (error) {
       logger.error('Message management plugin error in responseUpdate', {
         error: error instanceof Error ? error.message : String(error),
       });
+    } finally {
       callback();
     }
   });
@@ -155,12 +167,14 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
           aiMessage.metadata = { ...aiMessage.metadata, isComplete: true };
         } else {
           // Create final message if streaming message wasn't found
+          const nowFinal = new Date();
           aiMessage = {
             id: `ai-response-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             agentId: handlerContext.agent.id,
             role: 'assistant',
             content: response.content,
-            modified: new Date(),
+            created: nowFinal,
+            modified: nowFinal,
             metadata: {
               isComplete: true,
             },

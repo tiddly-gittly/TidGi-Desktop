@@ -189,16 +189,21 @@ export class AgentInstanceService implements IAgentInstanceService {
         relations: ['messages'],
         order: {
           messages: {
-            modified: 'ASC', // Ensure messages are sorted in ascending order by modified time
+            created: 'ASC', // Ensure messages are sorted in ascending order by creation time
           },
         },
       });
       if (!instanceEntity) {
         return undefined;
       }
+      const messages = (instanceEntity.messages || []).slice().sort((a, b) => {
+        const aTime = a.created ? new Date(a.created).getTime() : (a.modified ? new Date(a.modified).getTime() : 0);
+        const bTime = b.created ? new Date(b.created).getTime() : (b.modified ? new Date(b.modified).getTime() : 0);
+        return aTime - bTime;
+      });
       return {
         ...pick(instanceEntity, AGENT_INSTANCE_FIELDS),
-        messages: instanceEntity.messages || [],
+        messages,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -220,7 +225,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         relations: ['messages'],
         order: {
           messages: {
-            modified: 'ASC', // Ensure messages are sorted in ascending order by modified time
+            created: 'ASC', // Ensure messages are sorted in ascending order by creation time
           },
         },
       });
@@ -349,9 +354,14 @@ export class AgentInstanceService implements IAgentInstanceService {
       });
 
       return instances.map(entity => {
+        const sortedMessages = (entity.messages || []).slice().sort((a, b) => {
+          const aTime = a.created ? new Date(a.created).getTime() : (a.modified ? new Date(a.modified).getTime() : 0);
+          const bTime = b.created ? new Date(b.created).getTime() : (b.modified ? new Date(b.modified).getTime() : 0);
+          return aTime - bTime;
+        });
         return {
           ...pick(entity, AGENT_INSTANCE_FIELDS),
-          messages: entity.messages || [],
+          messages: sortedMessages,
         };
       });
     } catch (error) {
@@ -696,14 +706,34 @@ export class AgentInstanceService implements IAgentInstanceService {
   public async saveUserMessage(userMessage: AgentInstanceMessage): Promise<void> {
     this.ensureRepositories();
     try {
-      await this.agentMessageRepository!.save(this.agentMessageRepository!.create(toDatabaseCompatibleMessage(userMessage)));
-      logger.debug('User message saved to database', {
-        messageId: userMessage.id,
+      const now = new Date();
+      const summary = {
+        id: userMessage.id,
+        role: userMessage.role,
         agentId: userMessage.agentId,
+        isToolResult: !!userMessage.metadata?.isToolResult,
+        isPersisted: !!userMessage.metadata?.isPersisted,
+      };
+      logger.debug('Saving user message to DB (start)', {
+        when: now.toISOString(),
+        ...summary,
+        source: 'saveUserMessage',
+        stack: new Error().stack?.split('\n').slice(0, 4).join('\n'),
+      });
+
+      await this.agentMessageRepository!.save(this.agentMessageRepository!.create(toDatabaseCompatibleMessage(userMessage)));
+
+      logger.debug('User message saved to database', {
+        when: new Date().toISOString(),
+        ...summary,
+        source: 'saveUserMessage',
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to save user message: ${errorMessage}`);
+      logger.error(`Failed to save user message: ${errorMessage}`, {
+        messageId: userMessage.id,
+        agentId: userMessage.agentId,
+      });
       throw error;
     }
   }
@@ -751,9 +781,29 @@ export class AgentInstanceService implements IAgentInstanceService {
                 if (msgData.contentType) messageEntity.contentType = msgData.contentType;
                 if (msgData.metadata) messageEntity.metadata = msgData.metadata;
                 if (msgData.duration !== undefined) messageEntity.duration = msgData.duration ?? undefined; // Fix: Update duration field
-                messageEntity.modified = new Date();
+                // Preserve provided modified; if not provided, keep existing DB value to avoid late overwrites
+                // Only adjust modified if the incoming timestamp is earlier; otherwise leave DB value unchanged
+                if (msgData.modified instanceof Date) {
+                  if (!messageEntity.modified || msgData.modified.getTime() < new Date(messageEntity.modified).getTime()) {
+                    messageEntity.modified = msgData.modified;
+                  }
+                }
 
+                const startSave = new Date();
+                logger.debug('Updating existing message (start save)', {
+                  when: startSave.toISOString(),
+                  messageId,
+                  agentId: aid,
+                  source: 'debounceUpdateMessage:update',
+                  stack: new Error().stack?.split('\n').slice(0, 4).join('\n'),
+                });
                 await messageRepo.save(messageEntity);
+                logger.debug('Updating existing message (saved)', {
+                  when: new Date().toISOString(),
+                  messageId,
+                  agentId: aid,
+                  source: 'debounceUpdateMessage:update',
+                });
               } else if (aid) {
                 // Create new message if it doesn't exist and agentId provided
                 // Create message using utility function
@@ -766,7 +816,21 @@ export class AgentInstanceService implements IAgentInstanceService {
                 });
                 const newMessage = messageRepo.create(toDatabaseCompatibleMessage(messageData));
 
+                const startSaveNew = new Date();
+                logger.debug('Creating new message (start save)', {
+                  when: startSaveNew.toISOString(),
+                  messageId,
+                  agentId: aid,
+                  source: 'debounceUpdateMessage:create',
+                  stack: new Error().stack?.split('\n').slice(0, 4).join('\n'),
+                });
                 await messageRepo.save(newMessage);
+                logger.debug('Creating new message (saved)', {
+                  when: new Date().toISOString(),
+                  messageId,
+                  agentId: aid,
+                  source: 'debounceUpdateMessage:create',
+                });
 
                 // Get agent instance repository for transaction
                 const agentRepo = transaction.getRepository(AgentInstanceEntity);

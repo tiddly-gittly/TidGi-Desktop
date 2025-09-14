@@ -26,7 +26,7 @@ export interface IPrompt {
   id: string;
   caption: string;
   enabled?: boolean;
-  role?: 'system' | 'user' | 'assistant';
+  role?: 'system' | 'user' | 'assistant' | 'tool';
   tags?: string[];
   text?: string;
   children?: IPrompt[];
@@ -46,13 +46,14 @@ export const PromptSchema: z.ZodType<IPrompt> = z.object({
     title: t('Schema.Prompt.EnabledTitle'),
     description: t('Schema.Prompt.Enabled'),
   }),
-  role: z.enum(['system', 'user', 'assistant']).optional().meta({
+  role: z.enum(['system', 'user', 'assistant', 'tool']).optional().meta({
     title: t('Schema.Prompt.RoleTitle'),
     description: t('Schema.Prompt.Role'),
     enumOptions: [
       { value: 'system', label: t('Schema.Prompt.RoleType.System') },
       { value: 'user', label: t('Schema.Prompt.RoleType.User') },
       { value: 'assistant', label: t('Schema.Prompt.RoleType.Assistant') },
+      { value: 'tool', label: 'Tool' },
     ],
   }),
   tags: z.array(z.string()).optional().meta({

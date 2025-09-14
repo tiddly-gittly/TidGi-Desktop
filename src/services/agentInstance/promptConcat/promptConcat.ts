@@ -136,10 +136,12 @@ export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
           });
         }
 
-        result.push({
-          role: prompt.role || 'system',
-          content: content.trim() || '',
-        });
+        result.push(
+          {
+            role: prompt.role || 'system' as const,
+            content: content.trim() || '',
+          } as CoreMessage,
+        );
       }
 
       // Depth-first traversal for all children with a role
@@ -164,9 +166,10 @@ export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
           const childContent = processPrompt(child);
           if (childContent.trim() || child.role) {
             result.push({
-              role: child.role as 'system' | 'user' | 'assistant',
+              // Support 'tool' role in child prompts
+              role: child.role,
               content: childContent.trim() || '',
-            });
+            } as CoreMessage);
           }
         }
       }

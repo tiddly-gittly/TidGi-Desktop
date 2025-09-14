@@ -121,7 +121,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
         });
 
         // Delegate AI API calls to externalAPIService
-        for await (const response of externalAPIService.generateFromAI(flatPrompts, aiApiConfig, { agentInstanceId: context.agent.id })) {
+        for await (const response of externalAPIService.generateFromAI(flatPrompts, aiApiConfig, { agentInstanceId: context.agent.id, awaitLogs: true })) {
           if (!currentRequestId && response.requestId) {
             currentRequestId = response.requestId;
           }
@@ -222,13 +222,60 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
               yield working(response.content, context, currentRequestId);
             }
           } else if (response.status === 'error') {
-            // Create message with error details in metadata
-            const errorMessage = `Error: ${response.errorDetail?.message || 'Unknown error'}`;
+            // Create message with error details and emit as role='error'
+            const errorText = response.errorDetail?.message || 'Unknown error';
+            const errorMessage = `Error: ${errorText}`;
             logger.error('Error in AI response', {
               errorMessage,
               errorDetail: response.errorDetail,
               requestId: currentRequestId,
             });
+
+            // Before persisting the error, ensure any pending tool result messages are persisted
+            try {
+              const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+              const pendingToolMessages = context.agent.messages.filter(m => m.metadata?.isToolResult && !m.metadata?.isPersisted);
+              for (const tm of pendingToolMessages) {
+                try {
+                  await agentInstanceService.saveUserMessage(tm);
+                  (tm).metadata = { ...(tm).metadata, isPersisted: true };
+                } catch (error1) {
+                  logger.warn('Failed to persist pending tool result before error', {
+                    error: error1 instanceof Error ? error1.message : String(error1),
+                    messageId: tm.id,
+                  });
+                }
+              }
+            } catch (error2) {
+              logger.warn('Failed to flush pending tool messages before persisting error', { error: error2 instanceof Error ? error2.message : String(error2) });
+            }
+
+            // Push an explicit error message into history for UI rendering
+            const errorMessageForHistory: AgentInstanceMessage = {
+              id: `ai-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              agentId: context.agent.id,
+              role: 'error',
+              content: errorMessage,
+              metadata: { errorDetail: response.errorDetail },
+              created: new Date(),
+              modified: new Date(),
+              // Expire after one round in AI context
+              duration: 1,
+            };
+            context.agent.messages.push(errorMessageForHistory);
+            // Persist error message to database so it appears in history like others
+            try {
+              const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+              await agentInstanceService.saveUserMessage(errorMessageForHistory);
+            } catch (persistError) {
+              logger.warn('Failed to persist error message to database', {
+                error: persistError instanceof Error ? persistError.message : String(persistError),
+                messageId: errorMessageForHistory.id,
+                agentId: context.agent.id,
+              });
+            }
+
+            // Also yield completed with error state for status panel
             yield error(errorMessage, response.errorDetail, context, currentRequestId);
             return;
           }

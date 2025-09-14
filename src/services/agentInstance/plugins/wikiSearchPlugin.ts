@@ -331,6 +331,19 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
 
           // Notify frontend about the duration change immediately (no debounce delay)
           const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+          // Persist the AI message right away so DB ordering reflects this message before tool results
+          try {
+            if (!latestAiMessage.created) latestAiMessage.created = new Date();
+            await agentInstanceService.saveUserMessage(latestAiMessage);
+            latestAiMessage.metadata = { ...latestAiMessage.metadata, isPersisted: true };
+          } catch (error) {
+            logger.warn('Failed to persist AI message containing tool call immediately', {
+              error: error instanceof Error ? error.message : String(error),
+              messageId: latestAiMessage.id,
+            });
+          }
+
+          // Also update UI immediately
           agentInstanceService.debounceUpdateMessage(latestAiMessage, handlerContext.agent.id, 0); // No delay
 
           logger.debug('Set duration=1 for AI tool call message', {
@@ -402,14 +415,14 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         });
 
         // Immediately add the tool result message to history BEFORE calling toolExecuted
-        // Use a slight delay to ensure timestamp is after the tool call message and ensure proper ordering
-        const toolResultTime = new Date(Date.now() + 10); // Add 10ms to ensure proper ordering
+        const nowTool = new Date();
         const toolResultMessage: AgentInstanceMessage = {
           id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           agentId: handlerContext.agent.id,
           role: 'tool', // Tool result message
           content: toolResultText,
-          modified: toolResultTime,
+          created: nowTool,
+          modified: nowTool,
           duration: toolResultDuration, // Use configurable duration - default 1 round for tool results
           metadata: {
             isToolResult: true,
@@ -423,7 +436,9 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         };
         handlerContext.agent.messages.push(toolResultMessage);
 
-        // Signal that tool was executed AFTER adding the message
+        // Do not persist immediately here. Let messageManagementPlugin handle persistence
+
+        // Signal that tool was executed AFTER adding and persisting the message
         await hooks.toolExecuted.promise({
           handlerContext,
           toolResult: {
@@ -462,15 +477,16 @@ Tool: wiki-search
 Error: ${error instanceof Error ? error.message : String(error)}
 </functions_result>`;
 
-        // Add error message to history BEFORE calling toolExecuted
-        // Use a slight delay to ensure timestamp is after the tool call message
-        const errorResultTime = new Date(Date.now() + 1); // Add 1ms to ensure proper ordering
+  // Add error message to history BEFORE calling toolExecuted
+        // Use the current time; order will be determined by save order
+        const nowError = new Date();
         const errorResultMessage: AgentInstanceMessage = {
           id: `tool-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           agentId: handlerContext.agent.id,
           role: 'tool', // Tool error message
           content: errorMessage,
-          modified: errorResultTime,
+          created: nowError,
+          modified: nowError,
           duration: 2, // Error messages are visible to AI for 2 rounds: immediate + next round to allow explanation
           metadata: {
             isToolResult: true,
@@ -482,7 +498,7 @@ Error: ${error instanceof Error ? error.message : String(error)}
         };
         handlerContext.agent.messages.push(errorResultMessage);
 
-        // Signal that tool was executed (with error) AFTER adding the message
+  // Do not persist immediately; let messageManagementPlugin handle it during toolExecuted
         await hooks.toolExecuted.promise({
           handlerContext,
           toolResult: {

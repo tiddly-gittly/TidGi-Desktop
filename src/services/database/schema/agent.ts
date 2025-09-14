@@ -77,7 +77,8 @@ export class AgentInstanceEntity implements Partial<AgentInstance> {
   @CreateDateColumn()
   created!: Date;
 
-  @UpdateDateColumn()
+  // Controlled by service logic to preserve message ordering; do not auto-update
+  @Column({ type: 'datetime', nullable: true })
   modified?: Date;
 
   @Column({ type: 'simple-json', nullable: true })
@@ -119,10 +120,10 @@ export class AgentInstanceMessageEntity implements AgentInstanceMessage {
 
   @Column({
     type: 'varchar',
-    enum: ['user', 'assistant', 'agent', 'tool'],
+    enum: ['user', 'assistant', 'agent', 'tool', 'error'],
     default: 'user',
   })
-  role!: 'user' | 'assistant' | 'agent' | 'tool';
+  role!: 'user' | 'assistant' | 'agent' | 'tool' | 'error';
 
   @Column({ type: 'text' })
   content!: string;
@@ -133,6 +134,9 @@ export class AgentInstanceMessageEntity implements AgentInstanceMessage {
     default: 'text/plain',
   })
   contentType?: string;
+
+  @CreateDateColumn({ type: 'datetime' })
+  created!: Date;
 
   @UpdateDateColumn()
   modified?: Date;

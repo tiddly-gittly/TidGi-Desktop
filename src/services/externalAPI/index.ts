@@ -92,7 +92,8 @@ export class ExternalAPIService implements IExternalAPIService {
   private async logAPICall(
     requestId: string,
     callType: ExternalAPICallType,
-    status: 'start' | 'update' | 'done' | 'error' | 'cancel',
+    // Skip frequent 'update' logs
+    status: 'start' | 'done' | 'error' | 'cancel',
     options: {
       agentInstanceId?: string;
       requestMetadata?: RequestMetadata;
@@ -116,28 +117,42 @@ export class ExternalAPIService implements IExternalAPIService {
         return;
       }
 
-      // Check if log entry already exists (for updates)
-      let logEntity = await this.apiLogRepository.findOne({ where: { id: requestId } });
-
-      if (!logEntity) {
-        // Create new log entry
-        logEntity = this.apiLogRepository.create({
-          id: requestId,
-          callType,
-          status,
-          agentInstanceId: options.agentInstanceId,
-          requestMetadata: options.requestMetadata || { provider: 'unknown', model: 'unknown' },
-          requestPayload: options.requestPayload,
-        });
-      } else {
-        // Update existing log entry
-        logEntity.status = status;
-        if (options.responseContent !== undefined) logEntity.responseContent = options.responseContent;
-        if (options.responseMetadata !== undefined) logEntity.responseMetadata = options.responseMetadata;
-        if (options.errorDetail !== undefined) logEntity.errorDetail = options.errorDetail;
+      // Try save; on UNIQUE race, fetch existing and merge, then save again
+      const existing = await this.apiLogRepository.findOne({ where: { id: requestId } });
+      const entity = this.apiLogRepository.create({
+        id: requestId,
+        callType,
+        status,
+        agentInstanceId: options.agentInstanceId ?? existing?.agentInstanceId,
+        requestMetadata: options.requestMetadata || existing?.requestMetadata || { provider: 'unknown', model: 'unknown' },
+        requestPayload: options.requestPayload ?? existing?.requestPayload,
+        responseContent: options.responseContent ?? existing?.responseContent,
+        responseMetadata: options.responseMetadata ?? existing?.responseMetadata,
+        errorDetail: options.errorDetail ?? existing?.errorDetail,
+      });
+      try {
+        await this.apiLogRepository.save(entity);
+      } catch (error) {
+        const message = String((error as Error).message || error);
+        if (message.includes('UNIQUE') || message.includes('unique')) {
+          const already = await this.apiLogRepository.findOne({ where: { id: requestId } });
+          if (already) {
+            // Merge fields and persist
+            already.status = status;
+            if (options.requestMetadata) already.requestMetadata = options.requestMetadata;
+            if (options.requestPayload) already.requestPayload = options.requestPayload;
+            if (options.responseContent !== undefined) already.responseContent = options.responseContent;
+            if (options.responseMetadata) already.responseMetadata = options.responseMetadata;
+            if (options.errorDetail) already.errorDetail = options.errorDetail;
+            await this.apiLogRepository.save(already);
+          } else {
+            // Last resort: rethrow to warn handler
+            throw error;
+          }
+        } else {
+          throw error;
+        }
       }
-
-      await this.apiLogRepository.save(logEntity);
     } catch (error) {
       logger.warn(`Failed to log API call: ${error as Error}`);
       // Don't throw - logging failures shouldn't break main functionality

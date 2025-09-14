@@ -9,6 +9,7 @@ import { cloneDeep } from 'lodash';
 import { findPromptById } from '../promptConcat/promptConcat';
 import { IPrompt } from '../promptConcat/promptConcatSchema';
 import { filterMessagesByDuration } from '../utilities/messageDurationFilter';
+import { normalizeRole } from '../utilities/normalizeRole';
 import { AgentResponse, PromptConcatPlugin, ResponseHookContext } from './types';
 
 const t = identity;
@@ -76,6 +77,7 @@ export function getDynamicPositionParameterSchema() {
  * Replaces target content with content from specified source
  */
 export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
+  // Normalize an AgentInstanceMessage role to Prompt role
   hooks.processPrompts.tapAsync('fullReplacementPlugin', async (context, callback) => {
     const { pluginConfig, prompts, messages } = context;
 
@@ -138,13 +140,9 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
           // Insert filtered history messages as Prompt children (full Prompt type)
           found.prompt.children = [];
           filteredHistory.forEach((message, index: number) => {
-            // Use the role type from Prompt
+            // Map AgentInstanceMessage role to Prompt role via normalizeRole
             type PromptRole = NonNullable<IPrompt['role']>;
-            const role: PromptRole = message.role === 'agent'
-              ? 'assistant'
-              : message.role === 'user'
-              ? 'user'
-              : 'assistant';
+            const role: PromptRole = normalizeRole(message.role);
             delete found.prompt.text;
             found.prompt.children!.push({
               id: `history-${index}`,

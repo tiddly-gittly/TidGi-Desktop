@@ -13,7 +13,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { IWorkspaceService } from '@services/workspaces/interface';
 import { z } from 'zod/v4';
-import type { AgentInstanceMessage } from '../interface';
+import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { findPromptById } from '../promptConcat/promptConcat';
 import { schemaToToolContent } from '../utilities/schemaToToolContent';
 import type { PromptConcatPlugin } from './types';
@@ -313,8 +313,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
         });
 
         // Immediately add the tool result message to history BEFORE calling toolExecuted
-        // Use a slight delay to ensure timestamp is after the tool call message and ensure proper ordering
-        const toolResultTime = new Date(Date.now() + 10); // Add 10ms to ensure proper ordering
+        const toolResultTime = new Date();
         const toolResultMessage: AgentInstanceMessage = {
           id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           agentId: handlerContext.agent.id,
@@ -334,7 +333,19 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
         };
         handlerContext.agent.messages.push(toolResultMessage);
 
-        // Signal that tool was executed AFTER adding the message
+        // Persist tool result immediately so DB ordering matches in-memory order
+        try {
+          const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+          await agentInstanceService.saveUserMessage(toolResultMessage);
+          toolResultMessage.metadata = { ...toolResultMessage.metadata, isPersisted: true };
+        } catch (persistError) {
+          logger.warn('Failed to persist tool result immediately in wikiOperationPlugin', {
+            error: persistError instanceof Error ? persistError.message : String(persistError),
+            messageId: toolResultMessage.id,
+          });
+        }
+
+        // Signal that tool was executed AFTER adding and persisting the message
         await hooks.toolExecuted.promise({
           handlerContext,
           toolResult: {
@@ -374,8 +385,8 @@ Error: ${error instanceof Error ? error.message : String(error)}
 </functions_result>`;
 
         // Add error message to history BEFORE calling toolExecuted
-        // Use a slight delay to ensure timestamp is after the tool call message
-        const errorResultTime = new Date(Date.now() + 1); // Add 1ms to ensure proper ordering
+        // Use the current time; order will be determined by save order
+        const errorResultTime = new Date();
         const errorResultMessage: AgentInstanceMessage = {
           id: `tool-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           agentId: handlerContext.agent.id,

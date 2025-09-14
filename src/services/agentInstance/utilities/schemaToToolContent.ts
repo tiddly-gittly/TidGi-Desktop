@@ -78,8 +78,8 @@ export function schemaToToolContent(schema: z.ZodType) {
   // Try to translate schema description if it looks like an i18n key
   const finalDescription = schemaDescription
     ? (schemaDescription.startsWith('在Wiki')
-        ? schemaDescription // Already translated Chinese text
-        : i18n.t(schemaDescription))
+      ? schemaDescription // Already translated Chinese text
+      : i18n.t(schemaDescription))
     : schemaTitle; // Fallback to title if no description
 
   const descriptionLabel = i18n.t('Tool.Schema.Description');

@@ -67,6 +67,7 @@ export function createAgentMessage(
     role: message.role,
     content: message.content,
     contentType: message.contentType || 'text/plain',
+    created: new Date(),
     modified: new Date(),
     metadata: message.metadata,
     // Convert null to undefined for database compatibility
@@ -77,7 +78,7 @@ export function createAgentMessage(
 /**
  * Message fields to be extracted when creating message entities
  */
-export const MESSAGE_FIELDS = ['id', 'agentId', 'role', 'content', 'contentType', 'metadata', 'duration'] as const;
+export const MESSAGE_FIELDS = ['id', 'agentId', 'role', 'content', 'contentType', 'metadata', 'created', 'duration'] as const;
 
 /**
  * Convert AgentInstanceMessage to database-compatible format
@@ -87,6 +88,7 @@ export function toDatabaseCompatibleMessage(message: AgentInstanceMessage): Omit
   const { duration, ...rest } = message;
   return {
     ...rest,
+    created: rest.created ?? new Date(),
     duration: duration === null ? undefined : duration,
   };
 }

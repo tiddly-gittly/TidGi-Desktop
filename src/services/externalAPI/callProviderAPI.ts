@@ -77,16 +77,7 @@ export function streamFromProvider(
     return streamText({
       model: client(model),
       system: systemPrompt,
-      // Convert tool role messages to user role for API compatibility
-      messages: messages.map(message => {
-        if (message.role === 'tool') {
-          return {
-            ...message,
-            role: 'user' as const,
-          };
-        }
-        return message;
-      }) as typeof messages,
+      messages,
       temperature,
       abortSignal: signal,
     });
