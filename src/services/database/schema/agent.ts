@@ -77,8 +77,7 @@ export class AgentInstanceEntity implements Partial<AgentInstance> {
   @CreateDateColumn()
   created!: Date;
 
-  // Controlled by service logic to preserve message ordering; do not auto-update
-  @Column({ type: 'datetime', nullable: true })
+  @UpdateDateColumn()
   modified?: Date;
 
   @Column({ type: 'simple-json', nullable: true })

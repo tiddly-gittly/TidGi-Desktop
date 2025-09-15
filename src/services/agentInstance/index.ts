@@ -189,7 +189,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         relations: ['messages'],
         order: {
           messages: {
-            created: 'ASC', // Ensure messages are sorted in ascending order by creation time
+            modified: 'ASC', // Ensure messages are sorted in ascending order by creation time, otherwise streaming will update it and cause wrong order
           },
         },
       });
@@ -225,7 +225,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         relations: ['messages'],
         order: {
           messages: {
-            created: 'ASC', // Ensure messages are sorted in ascending order by creation time
+            modified: 'ASC', // Ensure messages are sorted in ascending order by creation time, otherwise streaming will update it and cause wrong order
           },
         },
       });
@@ -354,14 +354,9 @@ export class AgentInstanceService implements IAgentInstanceService {
       });
 
       return instances.map(entity => {
-        const sortedMessages = (entity.messages || []).slice().sort((a, b) => {
-          const aTime = a.created ? new Date(a.created).getTime() : (a.modified ? new Date(a.modified).getTime() : 0);
-          const bTime = b.created ? new Date(b.created).getTime() : (b.modified ? new Date(b.modified).getTime() : 0);
-          return aTime - bTime;
-        });
         return {
           ...pick(entity, AGENT_INSTANCE_FIELDS),
-          messages: sortedMessages,
+          messages: entity.messages ?? [],
         };
       });
     } catch (error) {
