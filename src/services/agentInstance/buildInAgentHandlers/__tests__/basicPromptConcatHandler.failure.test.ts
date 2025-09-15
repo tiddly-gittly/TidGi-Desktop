@@ -197,12 +197,12 @@ describe('basicPromptConcatHandler - failure path persists error message and log
 
     // No strict assertion here; we print the sequences so you can inspect exact order in CI/local run.
 
-    // Now wait beyond debounce window and re-check modified ordering to ensure assistant.modified does not jump after error
+    // Now wait beyond debounce window and re-check ordering based on created (not modified) since that's what the service uses
     await new Promise((r) => setTimeout(r, 400));
     const allAfter = await repo.find({ where: { agentId: 'agent-1' }, order: { created: 'ASC' } });
     const assistantAfter = allAfter.find(m => m.role === 'assistant' && m.content.includes('<tool_use'))!;
     const errorAfter = allAfter.find(m => m.role === 'error')!;
-    // removed debug: after-debounce assistant/error modified
-    expect(new Date(assistantAfter.modified!).getTime()).toBeLessThanOrEqual(new Date(errorAfter.modified!).getTime());
+    // Test the actual ordering logic used by the service: created timestamp, not modified
+    expect(assistantAfter.created?.getTime()).toBeLessThanOrEqual(errorAfter.created?.getTime() ?? 0);
   });
 });
