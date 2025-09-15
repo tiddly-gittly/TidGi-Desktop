@@ -39,7 +39,6 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
     testWikiImplementation = undefined;
     testStreamResponses = [];
     const { container } = await import('@services/container');
-    const wiki = container.get<IWikiService>(serviceIdentifier.Wiki);
 
     // Ensure built-in plugin registry includes all built-in plugins
     await initializePluginSystem();
@@ -73,8 +72,10 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
     // initialize service to ensure plugins and db are set up
     await agentInstanceServiceImpl.initialize();
 
-    // @ts-expect-error Partial implementation of api
-    wiki.wikiOperationInServer = vi.fn(async (channel: WikiChannel, workspaceId?: string, args?: string[]) => {
+    // Override the wiki service mock for this test suite - use existing mock from container
+    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+    // Reset the existing mock to our test-specific implementation
+    (wikiService.wikiOperationInServer as ReturnType<typeof vi.fn>).mockImplementation(async (channel: WikiChannel, workspaceId?: string, args?: string[]) => {
       if (testWikiImplementation) return testWikiImplementation(channel, workspaceId, args);
       if (channel === WikiChannel.runFilter) return Promise.resolve(['Index']);
       if (channel === WikiChannel.getTiddlersAsJson) return Promise.resolve([{ title: 'Index', text: 'This is the Index tiddler content.' }]);
@@ -140,6 +141,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       const toolListInjected = promptTexts.includes('Test Wiki 1') && promptTexts.includes('wiki-search');
       expect(toolListInjected).toBe(true);
       // verify workspace mock was called via container
+      // Verify workspace service was called to get available workspaces
       const { container } = await import('@services/container');
       const workspaceLocal = container.get<Partial<IWorkspaceService>>(serviceIdentifier.Workspace);
       expect(workspaceLocal.getWorkspacesAsList as unknown as Mock).toHaveBeenCalled();
