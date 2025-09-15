@@ -8,7 +8,7 @@ import { DataSource, Repository } from 'typeorm';
 import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { basicPromptConcatHandler } from '@services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler';
 import { AgentHandler, AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
-import { createHandlerHooks, createHooksWithPlugins, initializePluginSystem } from '@services/agentInstance/plugins';
+import { createHooksWithPlugins, initializePluginSystem } from '@services/agentInstance/plugins';
 import { promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { getPromptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
@@ -32,7 +32,6 @@ export class AgentInstanceService implements IAgentInstanceService {
   private agentInstanceRepository: Repository<AgentInstanceEntity> | null = null;
   private agentMessageRepository: Repository<AgentInstanceMessageEntity> | null = null;
 
-  // Subjects for subscription updates
   private agentInstanceSubjects: Map<string, BehaviorSubject<AgentInstance | undefined>> = new Map();
   private statusSubjects: Map<string, BehaviorSubject<AgentInstanceLatestStatus | undefined>> = new Map();
 
@@ -40,9 +39,6 @@ export class AgentInstanceService implements IAgentInstanceService {
   private handlerSchemas: Map<string, Record<string, unknown>> = new Map();
   private cancelTokenMap: Map<string, { value: boolean }> = new Map();
   private debouncedUpdateFunctions: Map<string, (message: AgentInstanceLatestStatus['message'] & { id: string }, agentId?: string) => void> = new Map();
-
-  // Handler hooks for plugin system
-  private handlerHooks = createHandlerHooks();
 
   public async initialize(): Promise<void> {
     try {
@@ -55,9 +51,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Initialize database repositories
-   */
   private async initializeDatabase(): Promise<void> {
     try {
       // Database is already initialized in the agent definition service
@@ -72,9 +65,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Initialize plugins and handlers (can be used independently in tests)
-   */
   public async initializeHandlers(): Promise<void> {
     try {
       // Register plugins to global registry once during initialization
@@ -91,9 +81,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Register built-in agent handlers
-   */
   public registerBuiltinHandlers(): void {
     // Plugins are already registered in initialize(), so we only register handlers here
     // Register basic prompt concatenation handler with its schema
@@ -138,9 +125,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Create a new agent instance from a definition
-   */
   public async createAgent(agentDefinitionID?: string): Promise<AgentInstance> {
     this.ensureRepositories();
 
@@ -177,9 +161,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Get agent instance data by ID
-   */
   public async getAgent(agentId: string): Promise<AgentInstance | undefined> {
     this.ensureRepositories();
     try {
@@ -212,9 +193,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Update agent instance data
-   */
   public async updateAgent(agentId: string, data: Partial<AgentInstance>): Promise<AgentInstance> {
     this.ensureRepositories();
 
@@ -291,9 +269,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Delete agent instance and all its messages
-   */
   public async deleteAgent(agentId: string): Promise<void> {
     this.ensureRepositories();
 
@@ -315,14 +290,11 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Get all agent instances with pagination and optional filters
-   */
   public async getAgents(
     page: number,
     pageSize: number,
     options?: { closed?: boolean; searchName?: string },
-  ): Promise<AgentInstance[]> {
+  ): Promise<Omit<AgentInstance, 'messages'>[]> {
     this.ensureRepositories();
 
     try {
@@ -346,19 +318,13 @@ export class AgentInstanceService implements IAgentInstanceService {
         where: Object.keys(whereCondition).length > 0 ? whereCondition : undefined,
         skip,
         take,
-        relations: ['messages'],
         order: {
           // Sort by creation time descending
           created: 'DESC',
         },
       });
 
-      return instances.map(entity => {
-        return {
-          ...pick(entity, AGENT_INSTANCE_FIELDS),
-          messages: entity.messages ?? [],
-        };
-      });
+      return instances.map(entity => pick(entity, AGENT_INSTANCE_FIELDS));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Failed to get agent instances: ${errorMessage}`);
@@ -510,9 +476,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Cancel current operations for agent instance
-   */
   public async cancelAgent(agentId: string): Promise<void> {
     // Try to get cancel token
     const cancelToken = this.cancelTokenMap.get(agentId);
@@ -583,9 +546,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Close agent instance without deleting it
-   */
   public async closeAgent(agentId: string): Promise<void> {
     this.ensureRepositories();
 
@@ -623,9 +583,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Subscribe to agent instance updates
-   */
   public subscribeToAgentUpdates(agentId: string): Observable<AgentInstance | undefined>;
   /**
    * Subscribe to agent instance message status updates
@@ -694,10 +651,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Save user message to database
-   * Made public so plugins can use it for message persistence
-   */
   public async saveUserMessage(userMessage: AgentInstanceMessage): Promise<void> {
     this.ensureRepositories();
     try {
@@ -733,10 +686,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  /**
-   * Debounced message update to reduce database writes
-   * Made public so plugins can use it for UI updates
-   */
   public debounceUpdateMessage(
     message: AgentInstanceMessage,
     agentId?: string,
@@ -929,12 +878,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     });
   }
 
-  /**
-   * Get JSON Schema for handler configuration
-   * This allows frontend to generate a form based on the schema for a specific handler
-   * @param handlerId ID of the handler to get schema for
-   * @returns JSON Schema for the handler configuration
-   */
   public getHandlerConfigSchema(handlerId: string): Record<string, unknown> {
     try {
       logger.debug('AgentInstanceService.getHandlerConfigSchema called', { handlerId });

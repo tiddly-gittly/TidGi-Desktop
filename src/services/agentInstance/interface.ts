@@ -117,7 +117,7 @@ export interface IAgentInstanceService {
   initializeHandlers(): Promise<void>;
 
   /**
-   * Create a new agent instance from an agent definition
+   * Create a new agent instance from a definition
    * @param agentDefinitionID Agent definition ID, if not provided, will use the default agent
    */
   createAgent(agentDefinitionID?: string): Promise<AgentInstance>;
@@ -131,28 +131,32 @@ export interface IAgentInstanceService {
   sendMsgToAgent(agentId: string, content: { text: string; file?: File }): Promise<void>;
 
   /**
-   * Subscribe to full streamed updates from an agent instance.
-   * On every token generated, this will send full agent data to the subscriber.
+   * Subscribe to agent instance updates
    * @param agentId Agent instance ID
    */
   subscribeToAgentUpdates(agentId: string): Observable<AgentInstance | undefined>;
+  /**
+   * Subscribe to agent instance message status updates
+   * @param agentId Agent instance ID
+   * @param messageId Message ID
+   */
   subscribeToAgentUpdates(agentId: string, messageId: string): Observable<AgentInstanceLatestStatus | undefined>;
 
   /**
-   * Get latest data of an agent instance.
+   * Get agent instance data by ID
    * @param agentId Agent instance ID
    */
   getAgent(agentId: string): Promise<AgentInstance | undefined>;
 
   /**
-   * Update an agent instance
+   * Update agent instance data
    * @param agentId Agent instance ID
    * @param data Updated data
    */
   updateAgent(agentId: string, data: Partial<AgentInstance>): Promise<AgentInstance>;
 
   /**
-   * Delete an agent instance and all its messages
+   * Delete agent instance and all its messages
    * @param agentId Agent instance ID
    */
   deleteAgent(agentId: string): Promise<void>;
@@ -164,15 +168,16 @@ export interface IAgentInstanceService {
   cancelAgent(agentId: string): Promise<void>;
 
   /**
-   * Get all agent instances with pagination
+   * Get all agent instances with pagination and optional filters
+   * Only return light-weight instance data without messages to avoid unnecessary payload.
    * @param page Page number
    * @param pageSize Number of items per page
    * @param options Filter options
    */
-  getAgents(page: number, pageSize: number, options?: { closed?: boolean; searchName?: string }): Promise<AgentInstance[]>;
+  getAgents(page: number, pageSize: number, options?: { closed?: boolean; searchName?: string }): Promise<Omit<AgentInstance, 'messages'>[]>;
 
   /**
-   * Clean up subscriptions and cancel the agent, not deleting it, simply free the in-memory resources it uses.
+   * Close agent instance without deleting it
    * @param agentId Agent instance ID
    */
   closeAgent(agentId: string): Promise<void>;
@@ -188,7 +193,8 @@ export interface IAgentInstanceService {
   concatPrompt(promptDescription: Pick<AgentPromptDescription, 'handlerConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState>;
 
   /**
-   * Get handler configuration schema for validation and form generation
+   * Get JSON Schema for handler configuration
+   * This allows frontend to generate a form based on the schema for a specific handler
    * @param handlerId Handler ID to get schema for
    * @returns JSON Schema for handler configuration
    */
@@ -196,14 +202,14 @@ export interface IAgentInstanceService {
 
   /**
    * Save user message to database
-   * This method is used by plugins for message persistence
+   * Made public so plugins can use it for message persistence
    * @param userMessage User message to save
    */
   saveUserMessage(userMessage: AgentInstanceMessage): Promise<void>;
 
   /**
-   * Debounced message update for UI notifications
-   * This method is used by plugins to update UI without direct database writes
+   * Debounced message update to reduce database writes
+   * Made public so plugins can use it for UI updates
    * @param message Message to update
    * @param agentId Agent ID for status subscribers
    * @param debounceMs Debounce delay in milliseconds
