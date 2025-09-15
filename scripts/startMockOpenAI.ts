@@ -1,5 +1,4 @@
-// pnpm dlx ts-node scripts/startMockOpenAI.ts
-
+// pnpm dlx tsx scripts/startMockOpenAI.ts
 import { MockOpenAIServer } from '../features/supports/mockOpenAI';
 
 async function main() {

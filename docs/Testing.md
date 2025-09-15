@@ -25,6 +25,9 @@ pnpm test:unit -- --coverage
 
 # Run a single test file to reduce execution time when fixing an issue.
 pnpm test:unit src/services/agentDefinition/__tests__/responsePatternUtility.test.ts
+
+# Start packed e2e electron app manually to see what's going on as a human
+cross-env NODE_ENV=test pnpm dlx tsx ./scripts/start-e2e-app.ts
 ```
 
 ## Project Setup

@@ -47,10 +47,10 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   @agent
   Scenario: Wiki operation
     Given I have started the mock OpenAI server
-      | response                                                                                                                                | stream |
-      | <tool_use name="wiki-operation">{"workspaceName":"default","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>  | false  |
-      | <tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"}</tool_use> | false  |
-      | 已成功在工作区 wiki 中创建条目 "test"。                                                                                                 | false  |
+      | response                                                                                                                                                                                | stream |
+      | 先测试失败情况<tool_use name="wiki-operation">{"workspaceName":"default","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>                                    | false  |
+      | 然后测试成功情况<tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"}</tool_use>使用启动时自动创建的 wiki 工作区 | false  |
+      | 已成功在工作区 wiki 中创建条目 "test"。                                                                                                                                                 | false  |
 
     # Step 1: Start a fresh tab and run the two-round wiki operation flow
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
@@ -74,7 +74,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see a "wiki operation tool" element with selector "*:has-text('wiki-operation')"
     And I wait for 0.2 seconds
     And I should see a "function result error" element with selector "*:has-text('functions_result')"
-    And I should see a "workspace not found" element with selector "*:has-text('Workspace with name or ID \"default\" does not exist')"
+    And I should see a "workspace not found" element with selector "*:has-text('工作空间名称或ID\"default\"不存在')"
 
     # Second round: assistant suggests wiki workspace and operation succeeds (automated by assistant/tool)
     And I wait for 0.2 seconds
@@ -84,7 +84,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I wait for 0.2 seconds
     And I should see a "function result success" element with selector "*:has-text('functions_result')"
     And I wait for 0.2 seconds
-    And I should see a "assistant confirmation" element with selector "*:has-text('已成功在工作区 wiki 中创建条目')"
+    And I should see a "assistant confirmation" element with selector "*:has-text('functions_result') >> :has-text('已成功在工作区 wiki 中创建条目')"
     Then I should see 6 messages in chat history
 
   @agent
