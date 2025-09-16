@@ -151,6 +151,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
       env: {
         ...process.env,
         NODE_ENV: 'test',
+        E2E_TEST: 'true',
         // Ensure tests run in Chinese locale so i18n UI strings match expectations
         // set multiple variables for cross-platform coverage
         LANG: process.env.LANG || 'zh_CN.UTF-8',
@@ -163,7 +164,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
           ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
         }),
       },
-      timeout: 60000, // Increase timeout to 60 seconds for CI
+      timeout: 30000, // Increase timeout to 30 seconds for CI
     });
 
     // Wait longer for window in CI environment

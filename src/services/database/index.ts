@@ -115,8 +115,8 @@ export class DatabaseService implements IDatabaseService {
    * Get database file path for a given key
    */
   private getDatabasePathSync(key: string): string {
-    // Use in-memory database for tests
-    if (process.env.NODE_ENV === 'test') {
+    // Use in-memory database for unit tests to speed up
+    if (process.env.NODE_ENV === 'test' && !process.env.E2E_TEST) {
       return ':memory:';
     }
     return path.resolve(CACHE_DATABASE_FOLDER, `${key}-cache.db`);
