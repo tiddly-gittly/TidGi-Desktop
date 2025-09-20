@@ -7,6 +7,7 @@ import type { AgentDefinition } from '@services/agentDefinition/interface';
 import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { nanoid } from 'nanoid';
 import React, { useEffect, useState } from 'react';
+import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { useTranslation } from 'react-i18next';
 import { TemplateSearch } from '../../components/Search/TemplateSearch';
 import { useTabStore } from '../../store/tabStore';
@@ -64,13 +65,13 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
       if (tab.agentDefId && window.service?.agentDefinition?.getAgentDef) {
         try {
           setIsLoading(true);
-          
+
           // Load the temporary agent definition
           const agentDefinition = await window.service.agentDefinition.getAgentDef(tab.agentDefId);
           if (agentDefinition) {
             setTemporaryAgentDefinition(agentDefinition);
             setAgentName(agentDefinition.name ?? '');
-            
+
             // If there's a template agent def ID, load it as selected template
             if (tab.templateAgentDefId) {
               const templateDefinition = await window.service.agentDefinition.getAgentDef(tab.templateAgentDefId);
@@ -113,13 +114,8 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
       if (currentStep === 2 && temporaryAgentDefinition && !previewAgentId) {
         try {
           setIsLoading(true);
-          
           // Force save the latest agent definition before creating preview agent
           await window.service.agentDefinition.updateAgentDef(temporaryAgentDefinition);
-          
-          // Wait a bit to ensure database write is committed
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
           const previewAgent = await window.service.agentInstance.createAgent(
             temporaryAgentDefinition.id,
             { preview: true },
@@ -136,9 +132,9 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
     void createPreviewAgent();
   }, [currentStep, temporaryAgentDefinition, previewAgentId]);
 
-  // Auto-save to backend whenever temporaryAgentDefinition changes
-  useEffect(() => {
-    const saveToBackend = async () => {
+  // Auto-save to backend whenever temporaryAgentDefinition changes (debounced)
+  const saveToBackendDebounced = useDebouncedCallback(
+    async () => {
       if (temporaryAgentDefinition?.id) {
         try {
           await window.service.agentDefinition.updateAgentDef(temporaryAgentDefinition);
@@ -146,15 +142,16 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
           console.error('Failed to auto-save agent definition:', error);
         }
       }
-    };
+    },
+    [temporaryAgentDefinition],
+    500,
+  );
 
+  useEffect(() => {
     if (temporaryAgentDefinition) {
-      const timeoutId = setTimeout(saveToBackend, 1000); // Debounce saves
-      return () => {
-        clearTimeout(timeoutId);
-      };
+      void saveToBackendDebounced();
     }
-  }, [temporaryAgentDefinition]);
+  }, [temporaryAgentDefinition, saveToBackendDebounced]);
 
   // Update current step when tab changes
   useEffect(() => {
@@ -190,23 +187,13 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
       // Force save before advancing to next step (especially step 3)
       if (temporaryAgentDefinition?.id) {
         try {
-          console.log('🔄 Force saving agent definition before next step:', {
-            currentStep,
-            nextStep: currentStep + 1,
-            agentDefId: temporaryAgentDefinition.id,
-            agentDefName: temporaryAgentDefinition.name,
-          });
           await window.service.agentDefinition.updateAgentDef(temporaryAgentDefinition);
-          console.log('✅ Force save completed successfully');
         } catch (error) {
           console.error('❌ Failed to force save agent definition:', error);
         }
-      } else {
-        console.log('⚠️ No temporaryAgentDefinition.id found, skipping force save:', temporaryAgentDefinition);
       }
 
       const nextStep = currentStep + 1;
-      console.log('📍 Advancing to step:', nextStep);
       setCurrentStep(nextStep);
       updateTabData(tab.id, { currentStep: nextStep });
     }
@@ -254,7 +241,6 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
   };
 
   const handleAgentDefinitionChange = (updatedDefinition: AgentDefinition) => {
-    console.log('DEBUG: handleAgentDefinitionChange called with handlerConfig:', JSON.stringify(updatedDefinition.handlerConfig, null, 2));
     setTemporaryAgentDefinition(updatedDefinition);
   };
 

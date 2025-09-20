@@ -402,21 +402,17 @@ describe('CreateNewAgentContent', () => {
               name: 'My Agent',
             };
 
-            console.log('Simulating createAgentDef call');
             const createdDefinition = await window.service.agentDefinition.createAgentDef(newAgentDefinition);
-            console.log('Created definition:', createdDefinition);
             setDefinition(createdDefinition);
 
-            // Simulate auto-save after 100ms (shorter than real 1000ms)
+            // Simulate auto-save after 50ms (shorter than real 500ms)
             setTimeout(async () => {
               if (createdDefinition?.id) {
-                console.log('Simulating auto-save call');
                 await window.service.agentDefinition.updateAgentDef(createdDefinition);
-                console.log('Auto-save completed');
               }
-            }, 100);
-          } catch (error) {
-            console.error('Template selection error:', error);
+            }, 50);
+          } catch {
+            // Template selection error handling
           }
         };
 
@@ -502,10 +498,10 @@ describe('CreateNewAgentContent', () => {
     // Step 1: Create agent definition (simulates template selection)
     const createdDef = await window.service.agentDefinition.createAgentDef(mockCreatedDefinition);
     expect(createdDef).toBeDefined();
-    const prompts = (createdDef.handlerConfig as Record<string, unknown>)?.prompts as Array<{
+    const prompts = (createdDef.handlerConfig).prompts as Array<{
       children?: Array<{ text?: string }>;
     }>;
-    expect(prompts[0]?.children?.[0]?.text).toBe('You are a helpful assistant for Tiddlywiki user.');
+    expect((prompts as Array<{ children?: Array<{ text?: string }> }>)[0]?.children?.[0]?.text).toBe('You are a helpful assistant for Tiddlywiki user.');
 
     // Step 2: Update system prompt in nested structure
     const updatedDefinition = {

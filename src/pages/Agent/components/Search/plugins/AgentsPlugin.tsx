@@ -9,6 +9,8 @@ import { TabType } from '../../../types/tab';
 interface AgentsPluginOptions {
   onSelect?: (agent: AgentDefinition) => void;
   sourceTitle?: string;
+  /** If true, search agent templates instead of existing agent definitions */
+  searchTemplates?: boolean;
 }
 
 export const createAgentsPlugin = (options: AgentsPluginOptions = {}): AutocompletePlugin<AgentDefinition & Record<string, unknown>, unknown> => {
@@ -26,17 +28,24 @@ export const createAgentsPlugin = (options: AgentsPluginOptions = {}): Autocompl
         {
           sourceId: options.onSelect ? 'templateAgentsSource' : 'agentsSource',
           getItems: async () => {
-            try { // Get agents list using window.service.agent.getAgents
-              const agents = await window.service.agentDefinition.getAgentDefs();
+            try {
+              // Choose between agent definitions and templates based on options
+              // Note: getAgentTemplates no longer performs server-side search filtering,
+              // so always fetch the full list and apply client-side filtering here.
+              const agents = options.searchTemplates
+                ? await window.service.agentDefinition.getAgentTemplates()
+                : await window.service.agentDefinition.getAgentDefs();
+
               if (!query) {
                 return agents as (AgentDefinition & Record<string, unknown>)[];
               }
 
+              // Apply client-side filtering for both templates and definitions
               const lowerCaseQuery = query.toLowerCase();
-              return agents.filter(agent =>
+              return (agents as (AgentDefinition & Record<string, unknown>)[]).filter(agent =>
                 (agent.name && agent.name.toLowerCase().includes(lowerCaseQuery)) ||
                 (agent.description && agent.description.toLowerCase().includes(lowerCaseQuery))
-              ) as (AgentDefinition & Record<string, unknown>)[];
+              );
             } catch (error) {
               console.error(t('Search.FailedToFetchAgents'), error);
               return [];

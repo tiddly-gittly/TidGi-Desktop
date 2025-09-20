@@ -104,7 +104,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       const context: PromptConcatHookContext = {
         handlerContext: {
           agent: { id: 'test', messages: [], agentDefId: 'test', status: { state: 'working' as const, modified: new Date() }, created: new Date() },
-          agentDef: { id: 'test', name: 'test' },
+          agentDef: { id: 'test', name: 'test', handlerConfig: {} },
           isCancelled: () => false,
         },
         pluginConfig: wikiPlugin,
@@ -173,7 +173,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
           status: { state: 'working' as const, modified: new Date() },
           created: new Date(),
         } as AgentInstance,
-        agentDef: { id: 'test', name: 'test' } as AgentDefinition,
+        agentDef: { id: 'test', name: 'test', handlerConfig: {} } as AgentDefinition,
         isCancelled: () => false,
       };
       const hookContext: PromptConcatHookContext = {
@@ -258,7 +258,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test' },
+        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
         isCancelled: () => false,
       };
 
@@ -352,7 +352,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test' },
+        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
         isCancelled: () => false,
       };
 
@@ -450,7 +450,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test' },
+        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
         isCancelled: () => false,
       };
 
@@ -507,7 +507,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
           status: { state: 'working' as const, modified: new Date() },
           created: new Date(),
         } as AgentInstance,
-        agentDef: { id: 'test-agent-def', name: 'test' } as AgentDefinition,
+        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} } as AgentDefinition,
         isCancelled: () => false,
       };
 
@@ -553,7 +553,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test' },
+        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
         isCancelled: () => false,
       };
 

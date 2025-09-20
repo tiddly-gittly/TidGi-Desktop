@@ -5,6 +5,7 @@
  */
 import serviceIdentifier from '@/services/serviceIdentifier';
 // shared mocks will be retrieved from the test container in beforeEach (no top-level vars)
+import { AgentDefinition } from '@services/agentDefinition/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
@@ -107,8 +108,9 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
             agentDefId: exampleAgent.id,
             status: { state: 'working' as const, modified: new Date() },
             created: new Date(),
+            handlerConfig: {},
           },
-          agentDef: { id: exampleAgent.id, name: exampleAgent.name },
+          agentDef: { id: exampleAgent.id, name: exampleAgent.name, handlerConfig: exampleAgent.handlerConfig },
           isCancelled: () => false,
         },
         pluginConfig: wikiPlugin as IPromptConcatPlugin,
@@ -177,8 +179,9 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
             },
             created: new Date(),
             messages: [],
+            handlerConfig: {},
           },
-          agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown as { id: string; name: string },
+          agentDef: { id: 'test-agent-def', name: 'test-agent-def', handlerConfig: {} } as AgentDefinition,
           isCancelled: () => false,
         },
         response: {
@@ -240,8 +243,9 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
             },
             created: new Date(),
             messages: [],
+            handlerConfig: {},
           },
-          agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown as { id: string; name: string },
+          agentDef: { id: 'test-agent-def', name: 'test-agent-def', handlerConfig: {} } as AgentDefinition,
           isCancelled: () => false,
         },
         response: {

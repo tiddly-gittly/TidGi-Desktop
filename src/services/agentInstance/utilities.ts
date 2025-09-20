@@ -36,11 +36,12 @@ export function createAgentInstanceData(agentDefinition: {
   const instanceData = {
     id: instanceId,
     agentDefId: agentDefinition.id,
-    name: `${agentDefinition.name} - ${new Date().toLocaleString()}`,
+    name: agentDefinition.name,
     status: initialStatus,
     avatarUrl,
     aiApiConfig,
-    handlerConfig: undefined, // Agent instance handlerConfig should be empty by default
+    // Don't copy handlerConfig to instance - it should fallback to definition
+    handlerConfig: undefined,
     handlerID,
     messages: [],
     closed: false,

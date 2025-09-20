@@ -860,8 +860,9 @@ export class AgentInstanceService implements IAgentInstanceService {
               agentDefId: 'temp',
               status: { state: 'working' as const, modified: new Date() },
               created: new Date(),
+              handlerConfig: {},
             },
-            agentDef: { id: 'temp', name: 'temp' },
+            agentDef: { id: 'temp', name: 'temp', handlerConfig: promptDescription.handlerConfig },
             isCancelled: () => false,
           };
 

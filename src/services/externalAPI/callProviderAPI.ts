@@ -77,7 +77,7 @@ export function streamFromProvider(
     // Extract system message from messages if present, otherwise use fallback
     const systemMessage = messages.find(message => message.role === 'system');
     const systemPrompt = (typeof systemMessage?.content === 'string' ? systemMessage.content : undefined) || fallbackSystemPrompt;
-    
+
     // Filter out system messages from the messages array since we're handling them separately
     const nonSystemMessages = messages.filter(message => message.role !== 'system') as typeof messages;
 

@@ -65,7 +65,6 @@ vi.mock('electron', () => {
 // app.setPath('userData', 'userData-test') won't be called!
 import '@/constants/appPaths';
 
-
 /**
  * Mock matchMedia and other DOM APIs for components using autocomplete search functionality
  *

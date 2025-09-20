@@ -6,10 +6,10 @@ import { styled } from '@mui/material/styles';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Search } from '../../components/Search/Search';
 import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
 import { useTabStore } from '@/pages/Agent/store/tabStore';
 import { TabType } from '@/pages/Agent/types/tab';
+import { Search } from '../../components/Search/Search';
 import { INewTab } from '../../types/tab';
 
 interface NewTabContentProps {
@@ -68,7 +68,7 @@ const ShortcutIcon = styled(Box)`
 export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
   const { t } = useTranslation('agent');
   const { addTab, closeTab, activeTabId, tabs } = useTabStore();
-  
+
   const createAgentChatTab = async (agentDefinitionId?: string) => {
     try {
       const agentDefinitionIdToUse = agentDefinitionId || 'example-agent';

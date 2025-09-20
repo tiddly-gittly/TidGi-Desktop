@@ -167,7 +167,11 @@ export function TemplateSearch({ placeholder, onTemplateSelect, testId }: Templa
         },
       },
       plugins: [
-        createAgentsPlugin({ onSelect: onTemplateSelect, sourceTitle: '选择模板' }),
+        createAgentsPlugin({
+          onSelect: onTemplateSelect,
+          sourceTitle: '选择模板',
+          searchTemplates: true,
+        }),
       ],
     });
 

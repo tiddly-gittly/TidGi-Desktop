@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createAgentInstanceData } from '../utilities';
 
 describe('createAgentInstanceData', () => {
-  it('should create agent instance with empty handlerConfig by default', () => {
+  it('should create agent instance with undefined handlerConfig (fallback to definition)', () => {
     const agentDefinition = {
       id: 'test-agent-def',
       name: 'Test Agent',
@@ -25,11 +25,12 @@ describe('createAgentInstanceData', () => {
     expect(instanceData.name).toContain('Test Agent');
   });
 
-  it('should create agent instance even when agent definition has no handlerConfig', () => {
+  it('should create agent instance with undefined handlerConfig even when definition has required handlerConfig', () => {
     const agentDefinition = {
       id: 'test-agent-def-no-config',
       name: 'Test Agent No Config',
       handlerID: 'basicPromptConcatHandler',
+      handlerConfig: {}, // Required by AgentDefinition interface
     };
 
     const { instanceData } = createAgentInstanceData(agentDefinition);

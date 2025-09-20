@@ -103,7 +103,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
             status: { state: 'working' as const, modified: new Date() },
             created: new Date(),
           },
-          agentDef: { id: 'test-agent-def', name: 'test' },
+          agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
           isCancelled: () => false,
         },
         pluginConfig: historyPlugin! as any, // Type cast due to JSON import limitations
@@ -191,7 +191,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
             status: { state: 'working' as const, modified: new Date() },
             created: new Date(),
           },
-          agentDef: { id: 'test-agent-def', name: 'test' },
+          agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
           isCancelled: () => false,
         },
         pluginConfig: historyPlugin! as any, // Type cast for JSON import
@@ -273,7 +273,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
             status: { state: 'working' as const, modified: new Date() },
             created: new Date(),
           },
-          agentDef: { id: 'test-agent-def', name: 'test' },
+          agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
           isCancelled: () => false,
         },
         pluginConfig: historyPlugin! as any, // Type cast for JSON import

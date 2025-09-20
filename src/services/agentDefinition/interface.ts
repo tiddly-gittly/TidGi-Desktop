@@ -44,8 +44,8 @@ export interface AgentDefinition {
   avatarUrl?: string;
   /** Agent handler function's id, we will find function by this id */
   handlerID?: string;
-  /** Agent handler's config, specific to the handler. */
-  handlerConfig?: Record<string, unknown>;
+  /** Agent handler's config, specific to the handler. This is required to ensure agent has valid configuration. */
+  handlerConfig: Record<string, unknown>;
   /**
    * Overwrite the default AI configuration for this agent.
    * Priority is higher than the global default agent config.
@@ -66,24 +66,36 @@ export interface IAgentDefinitionService {
    */
   initialize(): Promise<void>;
   /**
-   * Create a new agent
-   * @param agent Agent definition
+   * Create a new agent definition and persist it to the database.
+   * Generates a new id when `agent.id` is not provided.
+   * @param agent Agent definition to create
+   * @returns The created AgentDefinition (including generated id)
    */
   createAgentDef(agent: AgentDefinition): Promise<AgentDefinition>;
   /**
-   * Update an existing agent
-   * @param agent Partial agent definition with id required
+   * Update an existing agent definition. Only the provided fields will be updated.
+   * @param agent Partial agent definition containing the required `id` field
+   * @returns The updated AgentDefinition
    */
   updateAgentDef(agent: Partial<AgentDefinition> & { id: string }): Promise<AgentDefinition>;
   /**
-   * Get all available agents (simplified, without handler)
+   * Get all available agent definitions.
+   * This returns simplified definitions (without handler instances). No server-side
+   * search is performed; clients should apply any filtering required.
    */
-  getAgentDefs(options?: { searchName?: string }): Promise<AgentDefinition[]>;
+  getAgentDefs(): Promise<AgentDefinition[]>;
   /**
-   * Get a specific agent. No id means get default agent that config in the preference.
-   * @param id Agent ID
+   * Get a specific agent definition by id. When `id` is omitted, returns the default
+   * agent definition (currently the first agent in the repository as a temporary solution).
+   * @param id Optional agent id
    */
   getAgentDef(id?: string): Promise<AgentDefinition | undefined>;
+  /**
+   * Get all available agent templates from built-in defaults and active main workspaces.
+   * This returns fully populated templates suitable for creating new agents. No server-side
+   * search filtering is performed; clients should filter templates as needed.
+   */
+  getAgentTemplates(): Promise<AgentDefinition[]>;
   /**
    * Delete an agent definition
    * @param id Agent definition ID
@@ -98,6 +110,7 @@ export const AgentDefinitionServiceIPCDescriptor = {
     updateAgentDef: ProxyPropertyType.Function,
     getAgentDefs: ProxyPropertyType.Function,
     getAgentDef: ProxyPropertyType.Function,
+    getAgentTemplates: ProxyPropertyType.Function,
     deleteAgentDef: ProxyPropertyType.Function,
   },
 };

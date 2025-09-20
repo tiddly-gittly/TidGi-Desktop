@@ -59,7 +59,7 @@ const makeHandlerContext = (agentId = 'test-agent'): AgentHandlerContext => ({
     status: { state: 'working', modified: new Date() },
     created: new Date(),
   } as unknown as AgentInstance,
-  agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown as { id: string; name: string },
+  agentDef: { id: 'test-agent-def', name: 'test-agent-def', handlerConfig: {} } as unknown as { id: string; name: string; handlerConfig: Record<string, unknown> },
   isCancelled: () => false,
 });
 
@@ -90,7 +90,7 @@ describe('wikiOperationPlugin', () => {
     const workspacesContext: PromptConcatHookContext = {
       handlerContext: {
         agent: { id: 'test-agent', messages: [], agentDefId: 'test', status: { state: 'working' as const, modified: new Date() }, created: new Date() },
-        agentDef: { id: 'test', name: 'test' },
+        agentDef: { id: 'test', name: 'test', handlerConfig: {} },
         isCancelled: () => false,
       },
       messages: [],

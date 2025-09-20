@@ -8,16 +8,16 @@ import { AgentPromptDescription } from '@services/agentInstance/promptConcat/pro
 
 /**
  * Content of a session instance that user chat with an agent.
- * Extends AgentDefinition to inherit properties like handlerConfig,
- * which allows sharing configuration schema between definitions and instances.
- * This inheritance ensures that type safety is maintained when passing
- * handlerConfig between agent definitions and instances.
+ * Inherits from AgentDefinition but makes handlerConfig optional to allow fallback.
+ * The instance can override the definition's configuration, or fall back to using it.
  */
-export interface AgentInstance extends Omit<AgentDefinition, 'name'> {
+export interface AgentInstance extends Omit<AgentDefinition, 'name' | 'handlerConfig'> {
   /** Agent description ID that generates this instance */
   agentDefId: string;
   /** Session name, optional in instance unlike definition */
   name?: string;
+  /** Agent handler's config - optional, falls back to AgentDefinition.handlerConfig if not set */
+  handlerConfig?: Record<string, unknown>;
   /**
    * Message history.
    * latest on top, so it's easy to get first one as user's latest input, and rest as history.
