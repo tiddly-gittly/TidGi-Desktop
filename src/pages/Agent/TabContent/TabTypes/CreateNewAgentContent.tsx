@@ -5,9 +5,9 @@ import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
 import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { nanoid } from 'nanoid';
 import React, { useEffect, useState } from 'react';
-import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { useTranslation } from 'react-i18next';
 import { TemplateSearch } from '../../components/Search/TemplateSearch';
 import { useTabStore } from '../../store/tabStore';
@@ -114,6 +114,9 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
       if (currentStep === 2 && temporaryAgentDefinition && !previewAgentId) {
         try {
           setIsLoading(true);
+          // Flush any pending debounced saves before creating preview agent
+          await saveToBackendDebounced.flush();
+
           // Force save the latest agent definition before creating preview agent
           await window.service.agentDefinition.updateAgentDef(temporaryAgentDefinition);
           const previewAgent = await window.service.agentInstance.createAgent(
@@ -123,6 +126,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
           setPreviewAgentId(previewAgent.id);
         } catch (error) {
           console.error('Failed to create preview agent:', error);
+          void window.service.native.log('error', 'CreateNewAgentContent: Failed to create preview agent', { error });
         } finally {
           setIsLoading(false);
         }
@@ -144,7 +148,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
       }
     },
     [temporaryAgentDefinition],
-    500,
+    1000,
   );
 
   useEffect(() => {
@@ -240,7 +244,8 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
     }
   };
 
-  const handleAgentDefinitionChange = (updatedDefinition: AgentDefinition) => {
+  const handleAgentDefinitionChange = async (updatedDefinition: AgentDefinition) => {
+    // Immediately update React state
     setTemporaryAgentDefinition(updatedDefinition);
   };
 
@@ -362,7 +367,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
                     schema={promptSchema || undefined}
                     formData={temporaryAgentDefinition.handlerConfig as HandlerConfig}
                     onChange={(updatedConfig) => {
-                      handleAgentDefinitionChange({
+                      void handleAgentDefinitionChange({
                         ...temporaryAgentDefinition,
                         handlerConfig: updatedConfig as Record<string, unknown>,
                       });

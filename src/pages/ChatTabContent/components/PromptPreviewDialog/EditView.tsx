@@ -100,16 +100,18 @@ export const EditView: FC<EditViewProps> = ({
   const handleFormChange = useDebouncedCallback(
     async (updatedConfig: HandlerConfig) => {
       try {
+        // Ensure the config change is fully persisted before proceeding
         await handleConfigChange(updatedConfig);
         if (agent?.agentDefId) {
           void getPreviewPromptResult(inputText, updatedConfig);
         }
       } catch (error) {
-        console.error('EditView: Error auto-saving config:', error);
+        await window.service.native.log('error', 'EditView: Error auto-saving config:', { error });
       }
     },
     [handleConfigChange, agent?.agentDefId, getPreviewPromptResult, inputText],
     1000,
+    { leading: true },
   );
 
   const handleEditorModeChange = useCallback((_event: SyntheticEvent, newValue: 'form' | 'code') => {
@@ -122,7 +124,7 @@ export const EditView: FC<EditViewProps> = ({
       const parsedConfig = JSON.parse(value) as HandlerConfig;
       void handleFormChange(parsedConfig);
     } catch (error) {
-      console.error('Invalid JSON in code editor:', error);
+      void window.service.native.log('error', 'EditView: Invalid JSON in code editor:', { error });
     }
   }, [handleFormChange]);
 
