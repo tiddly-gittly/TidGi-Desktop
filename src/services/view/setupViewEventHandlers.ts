@@ -110,14 +110,12 @@ export default function setupViewEventHandlers(
     if (view.webContents === null) {
       return;
     }
-    logger.debug(`throttledDidFinishedLoad(), now workspaceViewService.realignActiveWorkspace() then set isLoading to false`, { reason, id: workspace.id });
+    logger.debug(`throttledDidFinishedLoad(), set isLoading to false`, { reason, id: workspace.id });
     // focus on initial load
     // https://github.com/atomery/webcatalog/issues/398
     if (workspace.active && !browserWindow.isDestroyed() && browserWindow.isFocused() && !view.webContents.isFocused()) {
       view.webContents.focus();
     }
-    // fix https://github.com/atomery/webcatalog/issues/870
-    // await workspaceViewService.realignActiveWorkspace();
     // update isLoading to false when load succeed
     await workspaceService.updateMetaData(workspace.id, {
       isLoading: false,

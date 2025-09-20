@@ -313,6 +313,10 @@ export class View implements IViewService {
     const debouncedOnResize = debounce(async () => {
       logger.debug('debouncedOnResize');
       if (browserWindow === undefined) return;
+      const updatedWorkspace = await this.workspaceService.get(workspace.id);
+      if (updatedWorkspace === undefined) return;
+      // Prevent update non-active (hiding) wiki workspace, so it won't pop up to cover other active agent workspace
+      if (windowName === WindowNames.main && !updatedWorkspace.active) return;
       if ([WindowNames.secondary, WindowNames.main, WindowNames.menuBar].includes(windowName)) {
         const contentSize = browserWindow.getContentSize();
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
