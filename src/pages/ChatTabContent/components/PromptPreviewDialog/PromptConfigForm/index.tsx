@@ -131,7 +131,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
 
   return (
     <ArrayItemProvider isInArrayItem={false} arrayItemCollapsible={false}>
-      <Box>
+      <Box data-testid='prompt-config-form'>
         <Form
           schema={schema}
           uiSchema={uiSchema}

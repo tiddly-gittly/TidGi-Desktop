@@ -477,7 +477,7 @@ Tool: wiki-search
 Error: ${error instanceof Error ? error.message : String(error)}
 </functions_result>`;
 
-  // Add error message to history BEFORE calling toolExecuted
+        // Add error message to history BEFORE calling toolExecuted
         // Use the current time; order will be determined by save order
         const nowError = new Date();
         const errorResultMessage: AgentInstanceMessage = {
@@ -498,7 +498,7 @@ Error: ${error instanceof Error ? error.message : String(error)}
         };
         handlerContext.agent.messages.push(errorResultMessage);
 
-  // Do not persist immediately; let messageManagementPlugin handle it during toolExecuted
+        // Do not persist immediately; let messageManagementPlugin handle it during toolExecuted
         await hooks.toolExecuted.promise({
           handlerContext,
           toolResult: {

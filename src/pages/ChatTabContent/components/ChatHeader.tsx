@@ -1,7 +1,7 @@
 import ArticleIcon from '@mui/icons-material/Article';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import TuneIcon from '@mui/icons-material/Tune';
-import { Box, CircularProgress, IconButton, Typography } from '@mui/material';
+import { Box, CircularProgress, IconButton } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import React, { useState } from 'react';
@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
 import { APILogsDialog } from './APILogsDialog';
+import ChatTitle from './ChatTitle';
 import { CompactModelSelector } from './CompactModelSelector';
 import { PromptPreviewDialog } from './PromptPreviewDialog';
 
@@ -18,11 +19,6 @@ const Header = styled(Box)`
   justify-content: space-between;
   padding: 12px 16px;
   border-bottom: 1px solid ${props => props.theme.palette.divider};
-`;
-
-const Title = styled(Typography)`
-  font-weight: 600;
-  flex: 1;
 `;
 
 const ControlsContainer = styled(Box)`
@@ -51,10 +47,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const preference = usePreferenceObservable();
   const [apiLogsDialogOpen, setApiLogsDialogOpen] = useState(false);
 
-  const { agent, previewDialogOpen, openPreviewDialog, closePreviewDialog } = useAgentChatStore(
+  const { agent, previewDialogOpen, openPreviewDialog, closePreviewDialog, updateAgent } = useAgentChatStore(
     useShallow((state) => ({
       agent: state.agent,
       previewDialogOpen: state.previewDialogOpen,
+      updateAgent: state.updateAgent,
       openPreviewDialog: state.openPreviewDialog,
       closePreviewDialog: state.closePreviewDialog,
     })),
@@ -73,7 +70,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
   return (
     <Header>
-      <Title variant='h6'>{title || t('Agent.Untitled')}</Title>
+      <ChatTitle title={title} agent={agent} updateAgent={updateAgent} />
       <ControlsContainer>
         <IconButton
           size='small'

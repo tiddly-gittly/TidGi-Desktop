@@ -17,6 +17,7 @@
   },
   "Add": "追加",
   "Agent": {
+    "EditTitle": "",
     "InvalidTabType": "",
     "LoadingChat": "",
     "StartConversation": "",

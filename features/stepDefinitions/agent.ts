@@ -43,6 +43,15 @@ After({ tags: '@agent' }, async function(this: ApplicationWorld) {
   }
 });
 
+// NewAgent-specific cleanup - for newAgent scenarios
+After({ tags: '@newAgent' }, async function(this: ApplicationWorld) {
+  // Stop mock OpenAI server
+  if (this.mockOpenAIServer) {
+    await this.mockOpenAIServer.stop();
+    this.mockOpenAIServer = undefined;
+  }
+});
+
 // Only keep agent-specific steps that can't use generic ones
 
 Then('I should see {int} messages in chat history', async function(this: ApplicationWorld, expectedCount: number) {
@@ -87,6 +96,43 @@ Then('I should see {int} messages in chat history', async function(this: Applica
     throw new Error(`Expected ${expectedCount} messages but found ${finalCount} after waiting for streaming to complete`);
   } catch (error) {
     throw new Error(`Could not find expected ${expectedCount} messages. Error: ${(error as Error).message}`);
+  }
+});
+
+Then('the last AI request should contain system prompt {string}', async function(this: ApplicationWorld, expectedPrompt: string) {
+  if (!this.mockOpenAIServer) {
+    throw new Error('Mock OpenAI server is not running');
+  }
+
+  const lastRequest = this.mockOpenAIServer.getLastRequest();
+  if (!lastRequest) {
+    throw new Error('No AI request has been made yet');
+  }
+
+  // Find system message in the request
+  const systemMessage = lastRequest.messages.find(message => message.role === 'system');
+  if (!systemMessage) {
+    throw new Error('No system message found in the AI request');
+  }
+
+  if (!systemMessage.content || !systemMessage.content.includes(expectedPrompt)) {
+    throw new Error(`Expected system prompt to contain "${expectedPrompt}", but got: "${systemMessage.content}"`);
+  }
+});
+
+Then('the last AI request should have {int} messages', async function(this: ApplicationWorld, expectedCount: number) {
+  if (!this.mockOpenAIServer) {
+    throw new Error('Mock OpenAI server is not running');
+  }
+
+  const lastRequest = this.mockOpenAIServer.getLastRequest();
+  if (!lastRequest) {
+    throw new Error('No AI request has been made yet');
+  }
+
+  const actualCount = lastRequest.messages.length;
+  if (actualCount !== expectedCount) {
+    throw new Error(`Expected ${expectedCount} messages in the AI request, but got ${actualCount}`);
   }
 });
 

@@ -36,6 +36,11 @@ export interface AgentInstance extends Omit<AgentDefinition, 'name'> {
    * but are hidden from the default list and don't consume resources.
    */
   closed?: boolean;
+  /**
+   * Indicates whether this agent instance is a preview instance used for testing during agent creation.
+   * Preview instances are excluded from normal agent instance lists and should be cleaned up automatically.
+   */
+  volatile?: boolean;
 }
 
 /**
@@ -119,8 +124,9 @@ export interface IAgentInstanceService {
   /**
    * Create a new agent instance from a definition
    * @param agentDefinitionID Agent definition ID, if not provided, will use the default agent
+   * @param options Additional options for creating the agent instance
    */
-  createAgent(agentDefinitionID?: string): Promise<AgentInstance>;
+  createAgent(agentDefinitionID?: string, options?: { preview?: boolean }): Promise<AgentInstance>;
 
   /**
    * Send a message or file to an agent instance, and put response to observables. Persistence and tool calling is handled by the plugins.

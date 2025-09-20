@@ -6,6 +6,7 @@ export enum TabType {
   CHAT = 'chat', // AI chat type tab
   NEW_TAB = 'new_tab', // New tab
   SPLIT_VIEW = 'split_view', // Split view container tab
+  CREATE_NEW_AGENT = 'create_new_agent', // Create new agent definition tab
 }
 
 /**
@@ -72,6 +73,19 @@ export interface ISplitViewTab extends ITab {
   splitRatio: number;
 }
 
+/**
+ * Create new agent definition tab type
+ */
+export interface ICreateNewAgentTab extends ITab {
+  type: TabType.CREATE_NEW_AGENT;
+  /** Temporary agent definition being created */
+  agentDefId?: string;
+  /** Current step in the creation process */
+  currentStep: number;
+  /** Template agent def ID to base the new agent on */
+  templateAgentDefId?: string;
+}
+
 export type INewTabButton = {
   id: string;
   title: string;
@@ -81,4 +95,4 @@ export type INewTabButton = {
 /**
  * Union type for any type of tab
  */
-export type TabItem = IWebTab | IChatTab | INewTab | ISplitViewTab;
+export type TabItem = IWebTab | IChatTab | INewTab | ISplitViewTab | ICreateNewAgentTab;

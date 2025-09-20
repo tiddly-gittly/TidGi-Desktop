@@ -11,10 +11,10 @@ export class AgentBrowserTabEntity {
   @PrimaryColumn()
   id!: string;
 
-  /** Tab type: web, chat, new_tab, split_view */
+  /** Tab type: web, chat, new_tab, split_view, create_new_agent */
   @Column({
     type: 'varchar',
-    enum: [TabType.WEB, TabType.CHAT, TabType.NEW_TAB, TabType.SPLIT_VIEW],
+    enum: [TabType.WEB, TabType.CHAT, TabType.NEW_TAB, TabType.SPLIT_VIEW, TabType.CREATE_NEW_AGENT],
     name: 'tab_type',
   })
   tabType!: TabType;

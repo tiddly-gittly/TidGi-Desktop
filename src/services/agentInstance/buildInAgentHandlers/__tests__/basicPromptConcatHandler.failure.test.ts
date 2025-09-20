@@ -88,7 +88,7 @@ describe('basicPromptConcatHandler - failure path persists error message and log
     await agentSvc.initialize();
 
     // Stub AgentDefinitionService.getAgentDef to return our saved agent definition
-  const agentDefSvc: any = container.get(serviceIdentifier.AgentDefinition);
+    const agentDefSvc: any = container.get(serviceIdentifier.AgentDefinition);
     if (agentDefSvc && typeof agentDefSvc.getAgentDef === 'function') {
       vi.spyOn(agentDefSvc, 'getAgentDef').mockResolvedValue({
         id: 'def-1',
@@ -171,7 +171,7 @@ describe('basicPromptConcatHandler - failure path persists error message and log
 
     // Spy repository.save to record the exact order DB rows are saved (do NOT mock/replace behaviour)
     const repo = dataSource.getRepository(AgentInstanceMessageEntity);
-  vi.spyOn(repo, 'save');
+    vi.spyOn(repo, 'save');
 
     // Send message via service which will run the handler and plugins across two rounds
     await agentSvc.sendMsgToAgent('agent-1', { text: '触发工具并继续' });

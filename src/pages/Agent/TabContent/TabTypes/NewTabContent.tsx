@@ -1,3 +1,4 @@
+import AddIcon from '@mui/icons-material/Add';
 import ChatIcon from '@mui/icons-material/Chat';
 import { Box, Card, Typography } from '@mui/material';
 import { Grid } from '@mui/material';
@@ -6,7 +7,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Search } from '../../components/Search/Search';
-import { useTabStore } from '../../store/tabStore';
+import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
+import { useTabStore } from '@/pages/Agent/store/tabStore';
+import { TabType } from '@/pages/Agent/types/tab';
 import { INewTab } from '../../types/tab';
 
 interface NewTabContentProps {
@@ -64,7 +67,51 @@ const ShortcutIcon = styled(Box)`
 
 export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
   const { t } = useTranslation('agent');
-  const { createAgentChatTab } = useTabStore();
+  const { addTab, closeTab, activeTabId, tabs } = useTabStore();
+  
+  const createAgentChatTab = async (agentDefinitionId?: string) => {
+    try {
+      const agentDefinitionIdToUse = agentDefinitionId || 'example-agent';
+
+      // Handle current active tab - close temp tabs or NEW_TAB type tabs
+      if (activeTabId) {
+        const activeTab = tabs.find(tab => tab.id === activeTabId);
+        if (activeTab && (activeTab.id.startsWith(TEMP_TAB_ID_PREFIX) || activeTab.type === TabType.NEW_TAB)) {
+          closeTab(activeTabId);
+        }
+      }
+
+      // Create new chat tab directly using addTab
+      return await addTab(TabType.CHAT, {
+        agentDefId: agentDefinitionIdToUse,
+      });
+    } catch (error) {
+      console.error('Failed to create agent chat tab:', error);
+      throw error;
+    }
+  };
+
+  const createNewAgentTab = async (templateAgentDefinitionId?: string) => {
+    try {
+      // Handle current active tab - close temp tabs or NEW_TAB type tabs
+      if (activeTabId) {
+        const activeTab = tabs.find(tab => tab.id === activeTabId);
+        if (activeTab && (activeTab.id.startsWith(TEMP_TAB_ID_PREFIX) || activeTab.type === TabType.NEW_TAB)) {
+          closeTab(activeTabId);
+        }
+      }
+
+      // Create new agent definition tab directly using addTab
+      return await addTab(TabType.CREATE_NEW_AGENT, {
+        title: 'Create New Agent',
+        currentStep: 1,
+        templateAgentDefId: templateAgentDefinitionId,
+      });
+    } catch (error) {
+      console.error('Failed to create new agent tab:', error);
+      throw error;
+    }
+  };
 
   return (
     <Container>
@@ -85,6 +132,19 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
                   <ChatIcon fontSize='inherit' />
                 </ShortcutIcon>
                 <Typography variant='subtitle1'>{t('NewTab.CreateDefaultAgent')}</Typography>
+              </ShortcutCard>
+            </Grid>
+            <Grid width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
+              <ShortcutCard
+                onClick={() => {
+                  void createNewAgentTab();
+                }}
+                data-testid={'create-new-agent-button'}
+              >
+                <ShortcutIcon>
+                  <AddIcon fontSize='inherit' />
+                </ShortcutIcon>
+                <Typography variant='subtitle1'>{t('NewTab.CreateNewAgent')}</Typography>
               </ShortcutCard>
             </Grid>
           </Grid>

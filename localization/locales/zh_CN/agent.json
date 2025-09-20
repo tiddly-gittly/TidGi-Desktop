@@ -17,6 +17,7 @@
   },
   "Add": "添加",
   "Agent": {
+    "EditTitle": "编辑智能体名字",
     "InvalidTabType": "无效的标签页类型。需要聊天标签页。",
     "LoadingChat": "正在加载对话...",
     "StartConversation": "开始对话",
@@ -69,6 +70,42 @@
     "Use": "使用",
     "WaitingForResponse": "等待响应中..."
   },
+  "CreateAgent": {
+    "AgentName": "智能体名称",
+    "AgentNameHelper": "为您的智能体起一个描述性的名字",
+    "AgentNamePlaceholder": "输入智能体名称...",
+    "AgentReadyToUse": "智能体 \"{{name}}\" 已准备就绪",
+    "Back": "上一步",
+    "ChatPreview": "聊天预览",
+    "ChatPreviewDescription": "在这里测试 {{name}} 的功能",
+    "ClickSaveToStart": "点击\"保存并使用\"按钮来开始对话",
+    "EditPrompt": "编辑提示词",
+    "EditPromptDescription": "自定义您的智能体的系统提示词和行为",
+    "FailedToSelectTemplate": "选择模板失败",
+    "HandlerConfig": "处理器配置",
+    "ImmediateUse": "测试并使用",
+    "ImmediateUseDescription": "测试您的智能体并立即开始使用",
+    "NameAgent": "命名智能体",
+    "NameAgentDescription": "为您的智能体起一个描述性的名字",
+    "Next": "下一步",
+    "NoTemplateSelected": "请先选择一个模板",
+    "PromptEditor": "提示词编辑器",
+    "SaveAndUse": "保存并使用智能体",
+    "SearchTemplates": "搜索智能体模板...",
+    "SelectedTemplate": "已选择模板",
+    "SelectTemplate": "选择模板",
+    "SelectTemplateDescription": "选择一个现有的智能体作为起始模板",
+    "SetupAgent": "设置智能体",
+    "SetupAgentDescription": "为您的智能体命名并选择一个模板作为起点",
+    "Steps": {
+      "selectTemplate": "选择模板",
+      "nameAgent": "命名智能体",
+      "editPrompt": "编辑提示词",
+      "immediateUse": "立即使用"
+    },
+    "SystemPrompt": "系统提示词",
+    "Title": "创建新智能体"
+  },
   "Common": {
     "Apply": "应用",
     "Applying": "应用中...",
@@ -109,6 +146,7 @@
   "NewTab": {
     "CodeTools": "代码工具",
     "CreateDefaultAgent": "创建默认智能体",
+    "CreateNewAgent": "创建新智能体",
     "Explore": "探索",
     "Favorites": "收藏夹",
     "NewChat": "新建对话",
@@ -557,6 +595,11 @@
       "Tool": {
         "Caption": "Wiki 操作工具",
         "Description": "在Wiki工作空间中执行操作（添加、删除或设置Tiddler文本）",
+        "Examples": {
+          "add": "",
+          "delete": "",
+          "set": ""
+        },
         "ExamplesTitle": "使用示例",
         "Name": "wiki-operation",
         "Parameters": {
@@ -648,6 +691,7 @@
   },
   "Tab": {
     "Title": {
+      "CreateNewAgent": "创建新智能体",
       "NewTab": "新建标签页",
       "NewWeb": "新建网页"
     }

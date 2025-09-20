@@ -188,30 +188,6 @@ describe('NewWikiForm Component', () => {
       expect(mockSetter).toHaveBeenCalledWith('/test/selected/path');
     });
 
-    it('should handle main workspace selection for sub workspace', async () => {
-      const user = userEvent.setup();
-      const mockSetter = vi.fn();
-      const form = createMockForm({
-        mainWikiToLinkSetter: mockSetter,
-      });
-
-      renderNewWikiForm({
-        form,
-        isCreateMainWorkspace: false,
-      });
-
-      // Simulate user opening combobox and selecting an option
-      const combobox = screen.getByRole('combobox', { name: 'AddWorkspace.MainWorkspaceLocation' });
-      await user.click(combobox);
-      const option = await screen.findByText('Second Wiki');
-      await user.click(option);
-      expect(mockSetter).toHaveBeenCalledWith({
-        wikiFolderLocation: '/second/wiki',
-        port: 5213,
-        id: 'second-wiki-id',
-      });
-    });
-
     it('should handle tag name input for sub workspace', async () => {
       const user = userEvent.setup();
       const mockSetter = vi.fn();

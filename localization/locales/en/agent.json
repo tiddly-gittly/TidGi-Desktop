@@ -17,6 +17,7 @@
   },
   "Add": "Add",
   "Agent": {
+    "EditTitle": "Edit agent name",
     "InvalidTabType": "",
     "LoadingChat": "",
     "StartConversation": "",
@@ -69,6 +70,31 @@
     "Use": "Use",
     "WaitingForResponse": "Waiting for response..."
   },
+  "CreateAgent": {
+    "AgentName": "Agent Name",
+    "Back": "Back",
+    "EditPrompt": "Edit Prompt",
+    "EditPromptDescription": "Customize the system prompt and behavior of your agent",
+    "ImmediateUse": "Test & Use",
+    "ImmediateUseDescription": "Test your agent and start using it immediately",
+    "NameAgent": "Name Your Agent",
+    "NameAgentDescription": "Give your agent a descriptive name",
+    "Next": "Next",
+    "NoTemplateSelected": "Please select a template first",
+    "ChatPreview": "Chat Preview",
+    "ChatPreviewDescription": "Test {{name}}'s functionality here",
+    "SaveAndUse": "Save & Use Agent",
+    "SearchTemplates": "Search for agent templates...",
+    "SelectTemplate": "Choose Template",
+    "SelectTemplateDescription": "Select an existing agent as a starting template",
+    "Steps": {
+      "editPrompt": "Edit Prompt",
+      "immediateUse": "Test & Use",
+      "nameAgent": "Name Agent",
+      "selectTemplate": "Select Template"
+    },
+    "Title": "Create New Agent"
+  },
   "Common": {
     "Apply": "",
     "Applying": "",
@@ -109,6 +135,7 @@
   "NewTab": {
     "CodeTools": "code tool",
     "CreateDefaultAgent": "Create Default Agent",
+    "CreateNewAgent": "Create New Agent",
     "Explore": "explore",
     "Favorites": "Favorites",
     "NewChat": "New Conversation",
@@ -557,6 +584,11 @@
       "Tool": {
         "Caption": "Wiki Operation Tool",
         "Description": "Execute operations (add, delete, or set Tiddler text) in wiki workspaces",
+        "Examples": {
+          "add": "",
+          "delete": "",
+          "set": ""
+        },
         "ExamplesTitle": "Usage Examples",
         "Name": "wiki-operation",
         "Parameters": {
@@ -648,6 +680,7 @@
   },
   "Tab": {
     "Title": {
+      "CreateNewAgent": "Create New Agent",
       "NewTab": "New Tab",
       "NewWeb": "Create a new webpage"
     }

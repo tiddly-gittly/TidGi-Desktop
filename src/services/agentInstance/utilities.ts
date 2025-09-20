@@ -31,7 +31,7 @@ export function createAgentInstanceData(agentDefinition: {
   };
 
   // Extract necessary fields from agent definition
-  const { avatarUrl, aiApiConfig, handlerConfig, handlerID } = agentDefinition;
+  const { avatarUrl, aiApiConfig, handlerID } = agentDefinition;
 
   const instanceData = {
     id: instanceId,
@@ -40,7 +40,7 @@ export function createAgentInstanceData(agentDefinition: {
     status: initialStatus,
     avatarUrl,
     aiApiConfig,
-    handlerConfig,
+    handlerConfig: undefined, // Agent instance handlerConfig should be empty by default
     handlerID,
     messages: [],
     closed: false,

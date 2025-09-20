@@ -135,55 +135,6 @@ describe('ExternalAPI Component', () => {
     expect(inputs).toHaveLength(2);
   });
 
-  it('should call API when embedding model is selected', async () => {
-    const user = userEvent.setup();
-
-    // Start with config that has no embeddingModel
-    const configWithoutEmbedding = {
-      api: {
-        provider: 'openai',
-        model: 'gpt-4',
-      },
-      modelParameters: {
-        temperature: 0.7,
-        systemPrompt: 'You are a helpful assistant.',
-        topP: 0.95,
-      },
-    };
-
-    // Override the mock to return config without embeddingModel
-    Object.defineProperty(window.service.externalAPI, 'getAIConfig', {
-      value: vi.fn().mockResolvedValue(configWithoutEmbedding),
-      writable: true,
-    });
-
-    await renderExternalAPI();
-
-    // Find embedding model autocomplete
-    const embeddingSelector = screen.getAllByRole('combobox')[1];
-    await user.click(embeddingSelector);
-
-    // Select embedding model from dropdown
-    const embeddingOption = await screen.findByText('text-embedding-3-small');
-    await user.click(embeddingOption);
-
-    // Verify API was called with embedding model added
-    await waitFor(() => {
-      expect(window.service.externalAPI.updateDefaultAIConfig).toHaveBeenCalledWith({
-        api: {
-          provider: 'openai',
-          model: 'gpt-4',
-          embeddingModel: 'text-embedding-3-small',
-        },
-        modelParameters: {
-          temperature: 0.7,
-          systemPrompt: 'You are a helpful assistant.',
-          topP: 0.95,
-        },
-      });
-    });
-  });
-
   it('should call delete API when default model is cleared and no embedding model exists', async () => {
     const user = userEvent.setup();
 

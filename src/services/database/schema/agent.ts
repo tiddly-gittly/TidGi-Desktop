@@ -93,6 +93,10 @@ export class AgentInstanceEntity implements Partial<AgentInstance> {
   @Column({ default: false })
   closed: boolean = false;
 
+  /** Indicate this agent instance is temporary, like forked instance to do sub-jobs, or for preview when editing agent definitions. */
+  @Column({ default: false })
+  volatile: boolean = false;
+
   // Relation to AgentDefinition
   @ManyToOne(() => AgentDefinitionEntity, definition => definition.instances)
   @JoinColumn({ name: 'agentDefId' })

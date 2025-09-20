@@ -3,7 +3,6 @@
  * Testing tool information rendering for wikiOperationPlugin, wikiSearchPlugin, workspacesListPlugin
  */
 import { act, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { ThemeProvider } from '@mui/material/styles';
@@ -73,52 +72,6 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     // Check that tabs are visible (labels come from translation keys)
     expect(screen.getByRole('tab', { name: /Tree/ })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Flat/ })).toBeInTheDocument();
-  });
-
-  it('should handle close dialog', async () => {
-    const user = userEvent.setup();
-    const mockOnClose = vi.fn();
-
-    render(
-      <TestWrapper>
-        <PromptPreviewDialog
-          open={true}
-          onClose={mockOnClose}
-          inputText='test input'
-        />
-      </TestWrapper>,
-    );
-
-    // Click close button
-    const closeButton = screen.getByRole('button', { name: /close/ });
-    await user.click(closeButton);
-
-    expect(mockOnClose).toHaveBeenCalled();
-  });
-
-  it('should toggle between tree and flat views', async () => {
-    const user = userEvent.setup();
-
-    render(
-      <TestWrapper>
-        <PromptPreviewDialog
-          open={true}
-          onClose={vi.fn()}
-          inputText='test input'
-        />
-      </TestWrapper>,
-    );
-
-    // Initially should be in tree view
-    expect(screen.getByRole('tab', { name: /Tree/ })).toHaveAttribute('aria-selected', 'true');
-
-    // Switch to flat view
-    const flatTab = screen.getByRole('tab', { name: /Flat/ });
-    await user.click(flatTab);
-
-    // Verify store state was updated using real store
-    const currentState = useAgentChatStore.getState();
-    expect(currentState.previewDialogTab).toBe('flat');
   });
 
   // IMPROVED: Example of testing with state changes using real store

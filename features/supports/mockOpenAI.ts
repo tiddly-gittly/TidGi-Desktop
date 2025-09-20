@@ -23,6 +23,8 @@ export class MockOpenAIServer {
   public baseUrl = '';
   private rules: Rule[] = [];
   private callCount = 0; // Track total API calls
+  private lastRequest: ChatRequest | null = null; // Store the most recent request
+  private allRequests: ChatRequest[] = []; // Store all requests for debugging
 
   constructor(private fixedPort?: number, rules?: Rule[]) {
     if (rules && Array.isArray(rules)) this.rules = rules;
@@ -36,6 +38,28 @@ export class MockOpenAIServer {
     if (Array.isArray(rules)) {
       this.rules = rules;
     }
+  }
+
+  /**
+   * Get the most recent request received by the server
+   */
+  public getLastRequest(): ChatRequest | null {
+    return this.lastRequest;
+  }
+
+  /**
+   * Get all requests received by the server (for debugging)
+   */
+  public getAllRequests(): ChatRequest[] {
+    return this.allRequests;
+  }
+
+  /**
+   * Clear all stored requests
+   */
+  public clearAllRequests(): void {
+    this.lastRequest = null;
+    this.allRequests = [];
   }
 
   async start(): Promise<void> {
@@ -72,9 +96,19 @@ export class MockOpenAIServer {
           if (request.method === 'POST' && url.pathname === '/reset') {
             // Reset call count for testing
             this.callCount = 0;
+            this.lastRequest = null;
             if (!response.writableEnded && !response.headersSent) {
               response.writeHead(200, { 'Content-Type': 'application/json' });
               response.end(JSON.stringify({ success: true, message: 'Call count reset' }));
+            }
+            return;
+          }
+
+          if (request.method === 'GET' && url.pathname === '/last-request') {
+            // Return the last received request for testing
+            if (!response.writableEnded && !response.headersSent) {
+              response.writeHead(200, { 'Content-Type': 'application/json' });
+              response.end(JSON.stringify({ lastRequest: this.lastRequest }));
             }
             return;
           }
@@ -129,6 +163,10 @@ export class MockOpenAIServer {
       try {
         // Parse request and handle each request based on provided rules
         const chatRequest = JSON.parse(body) as ChatRequest;
+        
+        // Store the request for testing validation
+        this.lastRequest = chatRequest;
+        this.allRequests.push(chatRequest);
 
         if (chatRequest.stream) {
           this.handleStreamingChatCompletions(chatRequest, response);

@@ -16,6 +16,7 @@
     "Title": ""
   },
   "Agent": {
+    "EditTitle": "",
     "InvalidTabType": "",
     "LoadingChat": "",
     "StartConversation": "",

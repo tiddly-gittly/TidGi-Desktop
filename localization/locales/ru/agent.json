@@ -17,6 +17,7 @@
   },
   "Add": "Добавить",
   "Agent": {
+    "EditTitle": "",
     "InvalidTabType": "",
     "LoadingChat": "",
     "StartConversation": "",

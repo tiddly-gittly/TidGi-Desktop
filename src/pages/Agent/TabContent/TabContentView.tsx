@@ -6,6 +6,7 @@ import React from 'react';
 import { ChatTabContent } from '../../ChatTabContent';
 import { useTabStore } from '../store/tabStore';
 import { TabItem, TabType } from '../types/tab';
+import { CreateNewAgentContent } from './TabTypes/CreateNewAgentContent';
 import { NewTabContent } from './TabTypes/NewTabContent';
 import { SplitViewTabContent } from './TabTypes/SplitViewTabContent';
 import { WebTabContent } from './TabTypes/WebTabContent';
@@ -57,6 +58,8 @@ export const TabContentView: React.FC<TabContentViewProps> = ({ tab, isSplitView
         return <NewTabContent tab={tab} />;
       case TabType.SPLIT_VIEW:
         return <SplitViewTabContent tab={tab} />;
+      case TabType.CREATE_NEW_AGENT:
+        return <CreateNewAgentContent tab={tab} />;
       default:
         return null;
     }

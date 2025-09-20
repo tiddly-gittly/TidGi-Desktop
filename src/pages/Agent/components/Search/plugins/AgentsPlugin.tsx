@@ -2,15 +2,29 @@ import { AutocompletePlugin } from '@algolia/autocomplete-js';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
 import { getI18n } from 'react-i18next';
 
+import { TEMP_TAB_ID_PREFIX } from '../../../constants/tab';
 import { useTabStore } from '../../../store/tabStore';
+import { TabType } from '../../../types/tab';
 
-export const createAgentsPlugin = (): AutocompletePlugin<AgentDefinition & Record<string, unknown>, unknown> => {
-  const { t } = getI18n();
+interface AgentsPluginOptions {
+  onSelect?: (agent: AgentDefinition) => void;
+  sourceTitle?: string;
+}
+
+export const createAgentsPlugin = (options: AgentsPluginOptions = {}): AutocompletePlugin<AgentDefinition & Record<string, unknown>, unknown> => {
+  // Get translation function, but fallback gracefully in test environment
+  let t: (key: string) => string;
+  try {
+    t = getI18n().t;
+  } catch {
+    // Fallback for test environment
+    t = (key: string) => key;
+  }
   const plugin = {
     getSources({ query }) {
       return [
         {
-          sourceId: 'agentsSource',
+          sourceId: options.onSelect ? 'templateAgentsSource' : 'agentsSource',
           getItems: async () => {
             try { // Get agents list using window.service.agent.getAgents
               const agents = await window.service.agentDefinition.getAgentDefs();
@@ -24,7 +38,7 @@ export const createAgentsPlugin = (): AutocompletePlugin<AgentDefinition & Recor
                 (agent.description && agent.description.toLowerCase().includes(lowerCaseQuery))
               ) as (AgentDefinition & Record<string, unknown>)[];
             } catch (error) {
-              console.error(t('Search.FailedToFetchAgents', { ns: 'agent' }), error);
+              console.error(t('Search.FailedToFetchAgents'), error);
               return [];
             }
           },
@@ -32,7 +46,7 @@ export const createAgentsPlugin = (): AutocompletePlugin<AgentDefinition & Recor
             header() {
               return (
                 <div className='aa-SourceHeader'>
-                  <div className='aa-SourceHeaderTitle'>{t('Search.AvailableAgents', { ns: 'agent' })}</div>
+                  <div className='aa-SourceHeaderTitle'>{options.sourceTitle || t('Search.AvailableAgents')}</div>
                 </div>
               );
             },
@@ -100,19 +114,37 @@ export const createAgentsPlugin = (): AutocompletePlugin<AgentDefinition & Recor
             noResults() {
               return (
                 <div className='aa-ItemWrapper'>
-                  <div className='aa-ItemContent'>{t('Search.NoAgentsFound', { ns: 'agent' })}</div>
+                  <div className='aa-ItemContent'>{t('Search.NoAgentsFound')}</div>
                 </div>
               );
             },
           },
           onSelect: async ({ item }) => {
             try {
-              const tabStore = useTabStore.getState();
+              // If custom onSelect callback is provided, use it
+              if (options.onSelect) {
+                options.onSelect(item as AgentDefinition);
+                return;
+              }
 
-              // Use the shared utility function to create agent chat tab
-              await tabStore.createAgentChatTab(item.id);
+              // Default behavior: create chat tab
+              const tabStore = useTabStore.getState();
+              const { addTab, closeTab, activeTabId, tabs } = tabStore;
+
+              // Handle current active tab - close temp tabs or NEW_TAB type tabs
+              if (activeTabId) {
+                const activeTab = tabs.find(tab => tab.id === activeTabId);
+                if (activeTab && (activeTab.id.startsWith(TEMP_TAB_ID_PREFIX) || activeTab.type === TabType.NEW_TAB)) {
+                  closeTab(activeTabId);
+                }
+              }
+
+              // Create new chat tab directly using addTab
+              await addTab(TabType.CHAT, {
+                agentDefId: item.id,
+              });
             } catch (error) {
-              console.error(t('Search.FailedToCreateChatWithAgent', { ns: 'agent' }), error);
+              console.error(t('Search.FailedToCreateChatWithAgent'), error);
             }
           },
         },

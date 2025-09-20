@@ -125,7 +125,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async createAgent(agentDefinitionID?: string): Promise<AgentInstance> {
+  public async createAgent(agentDefinitionID?: string, options?: { preview?: boolean }): Promise<AgentInstance> {
     this.ensureRepositories();
 
     try {
@@ -143,10 +143,15 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       const { instanceData, instanceId, now } = createAgentInstanceData(agentDef as Required<Pick<typeof agentDef, 'name'>> & typeof agentDef);
 
+      // Mark as preview if specified
+      if (options?.preview) {
+        instanceData.volatile = true;
+      }
+
       // Create and save entity
       const instanceEntity = this.agentInstanceRepository!.create(toDatabaseCompatibleInstance(instanceData));
       await this.agentInstanceRepository!.save(instanceEntity);
-      logger.info(`Created agent instance: ${instanceId}`);
+      logger.info(`Created agent instance: ${instanceId}${options?.preview ? ' (preview)' : ''}`);
 
       // Return complete instance object
       return {
@@ -303,6 +308,9 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       // Build query conditions
       const whereCondition: Record<string, unknown> = {};
+
+      // Always exclude preview instances from normal listing
+      whereCondition.preview = false;
 
       // Add closed filter if provided
       if (options && options.closed !== undefined) {

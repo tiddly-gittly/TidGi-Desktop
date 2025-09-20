@@ -64,3 +64,75 @@ vi.mock('electron', () => {
 // This is critical - without this import, appPaths.ts won't be evaluated and
 // app.setPath('userData', 'userData-test') won't be called!
 import '@/constants/appPaths';
+
+
+/**
+ * Mock matchMedia and other DOM APIs for components using autocomplete search functionality
+ *
+ * Why this mock is necessary:
+ * - @algolia/autocomplete-js uses matchMedia() to detect mobile devices for responsive behavior
+ * - @algolia/autocomplete-js also tries to access document/window event properties that don't exist in JSDOM
+ * - JSDOM test environment doesn't provide matchMedia() API by default
+ * - Without this mock, components using TemplateSearch or Search will throw errors
+ * - This enables CreateNewAgentContent and other search-related components to render in tests
+ *
+ * Components that need this:
+ * - CreateNewAgentContent (uses TemplateSearch)
+ * - NewTabContent (uses Search)
+ * - Any component using Search.tsx or autocomplete functionality
+ */
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(), // deprecated
+    removeListener: vi.fn(), // deprecated
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
+// Mock document and window with comprehensive event handling for autocomplete components
+Object.defineProperty(document, 'documentElement', {
+  writable: true,
+  value: Object.assign(document.documentElement || document.createElement('html'), {
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    mousedown: vi.fn(),
+    ontouchstart: vi.fn(),
+  }),
+});
+
+Object.defineProperty(document, 'body', {
+  writable: true,
+  value: Object.assign(document.body || document.createElement('body'), {
+    mousedown: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    ontouchstart: vi.fn(),
+  }),
+});
+
+// Enhanced window mock with comprehensive event support
+Object.defineProperty(window, 'addEventListener', {
+  writable: true,
+  value: vi.fn(),
+});
+
+Object.defineProperty(window, 'removeEventListener', {
+  writable: true,
+  value: vi.fn(),
+});
+
+// Mock touch events for autocomplete
+Object.defineProperty(window, 'ontouchstart', {
+  writable: true,
+  value: vi.fn(),
+});
+
+// Prevent unhandled promise rejections from autocomplete
+window.addEventListener = vi.fn();
+window.removeEventListener = vi.fn();

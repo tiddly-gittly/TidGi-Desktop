@@ -110,7 +110,7 @@ describe('AgentInstance failure path - external API logs on error', () => {
     const refreshed = await agentSvc.getAgent('agent-1');
     const repoOrder = allRepo.map(m => m.id);
     const refreshedOrder = (refreshed?.messages || []).map(m => m.id);
-  // removed debug logs in test
+    // removed debug logs in test
     expect(refreshedOrder).toEqual(repoOrder);
   });
 });

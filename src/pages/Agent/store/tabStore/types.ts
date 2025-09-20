@@ -40,9 +40,8 @@ export interface TabsState {
   restoreClosedTab: () => void;
   hasClosedTabs: () => boolean;
 
-  // Utility methods
+  // Utility functions
   getTabIndex: (tabId: string) => number;
-  createAgentChatTab: (agentDefinitionId?: string) => Promise<TabItem>;
 }
 
 // Constants
