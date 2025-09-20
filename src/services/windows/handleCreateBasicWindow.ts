@@ -1,3 +1,4 @@
+import { isTest } from '@/constants/environment';
 import { container } from '@services/container';
 import { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -37,7 +38,8 @@ export async function handleCreateBasicWindow<N extends WindowNames>(
           return;
         }
         const { wasOpenedAsHidden } = app.getLoginItemSettings();
-        if (!wasOpenedAsHidden) {
+        // Don't bring up window when running e2e test, otherwise it will annoy the developer who is doing other things.
+        if (!wasOpenedAsHidden && !isTest) {
           mainWindow.show();
         }
         // ensure redux is loaded first

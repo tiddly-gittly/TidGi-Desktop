@@ -165,7 +165,10 @@ export class Window implements IWindowService {
         if (existedWindow.isMinimized()) {
           existedWindow.restore();
         }
-        existedWindow.show();
+        if (!isTest) {
+          // Don't bring up window when running e2e test, otherwise it will annoy the developer who is doing other things.
+          existedWindow.show();
+        }
         if (returnWindow === true) {
           return existedWindow;
         }

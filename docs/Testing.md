@@ -279,6 +279,10 @@ const renderAsync = async () => {
 
 For complete Testing Library guidance, see [Testing Library docs](https://testing-library.com/docs/queries/about).
 
+### Viewing e2e tests
+
+We check `isTest` when `xxxWindow.show()`, so it won't popup while testing. You can clear the desktop windows so you can see it.
+
 ### Log
 
 When AI is fixing issues, you can let it add more logs for troubleshooting, and then show the [latest test log files](../userData-test/logs) or [dev log files](../userData-dev/logs) to the AI. Of course, it's best to run tests using `pnpm test:unit`, as it's fast and can be automated by AI without manual intervention. The logs should also be visible in the test, just change the mock of [logger](../src/__tests__/__mocks__/services-log.ts) to use console log, and run a single test to get minimal logs.
