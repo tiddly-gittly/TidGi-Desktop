@@ -1,9 +1,10 @@
 import AddIcon from '@mui/icons-material/Add';
 import ChatIcon from '@mui/icons-material/Chat';
-import { Box, Card, Typography } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import { Box, Card, ListItemIcon, ListItemText, Menu, MenuItem, Typography } from '@mui/material';
 import { Grid } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
@@ -69,6 +70,20 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
   const { t } = useTranslation('agent');
   const { addTab, closeTab, activeTabId, tabs } = useTabStore();
 
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    position: { top: number; left: number };
+  }>({
+    isOpen: false,
+    position: { top: 0, left: 0 },
+  });
+
+  // Close context menu
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu(previous => ({ ...previous, isOpen: false }));
+  }, []);
+
   const createAgentChatTab = async (agentDefinitionId?: string) => {
     try {
       const agentDefinitionIdToUse = agentDefinitionId || 'example-agent';
@@ -104,7 +119,7 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
       // Create new agent definition tab directly using addTab
       return await addTab(TabType.CREATE_NEW_AGENT, {
         title: 'Create New Agent',
-        currentStep: 1,
+        currentStep: 0,
         templateAgentDefId: templateAgentDefinitionId,
       });
     } catch (error) {
@@ -112,6 +127,52 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
       throw error;
     }
   };
+
+  const editAgentDefinitionTab = async (agentDefinitionId: string) => {
+    try {
+      void window.service.native.log('info', 'editAgentDefinitionTab called', { agentDefinitionId });
+
+      // Handle current active tab - close temp tabs or NEW_TAB type tabs
+      if (activeTabId) {
+        const activeTab = tabs.find(tab => tab.id === activeTabId);
+        if (activeTab && (activeTab.id.startsWith(TEMP_TAB_ID_PREFIX) || activeTab.type === TabType.NEW_TAB)) {
+          closeTab(activeTabId);
+        }
+      }
+
+      // Create edit agent definition tab directly using addTab
+      const result = await addTab(TabType.EDIT_AGENT_DEFINITION, {
+        title: 'Edit Agent',
+        agentDefId: agentDefinitionId,
+      });
+
+      void window.service.native.log('info', 'editAgentDefinitionTab result', { result });
+      return result;
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to create edit agent tab', { error, agentDefinitionId });
+      console.error('Failed to create edit agent tab:', error);
+      throw error;
+    }
+  };
+
+  const handleCreateInstance = useCallback(() => {
+    void createAgentChatTab();
+    handleCloseContextMenu();
+  }, []);
+
+  const handleEditDefinition = useCallback(() => {
+    // Use the example agent ID for now - in the future this could be configurable
+    void editAgentDefinitionTab('example-agent');
+    handleCloseContextMenu();
+  }, []);
+
+  const handleRightClick = useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({
+      isOpen: true,
+      position: { top: event.clientY, left: event.clientX },
+    });
+  }, []);
 
   return (
     <Container>
@@ -127,7 +188,11 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
         <QuickAccessGrid>
           <Grid container spacing={3}>
             <Grid width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
-              <ShortcutCard onClick={() => createAgentChatTab()} data-testid={'create-default-agent-button'}>
+              <ShortcutCard
+                onClick={() => createAgentChatTab()}
+                onContextMenu={handleRightClick}
+                data-testid={'create-default-agent-button'}
+              >
                 <ShortcutIcon>
                   <ChatIcon fontSize='inherit' />
                 </ShortcutIcon>
@@ -150,6 +215,29 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
           </Grid>
         </QuickAccessGrid>
       </Box>
+
+      {/* Context Menu */}
+      <Menu
+        open={contextMenu.isOpen}
+        onClose={handleCloseContextMenu}
+        anchorReference='anchorPosition'
+        anchorPosition={contextMenu.isOpen
+          ? { top: contextMenu.position.top, left: contextMenu.position.left }
+          : undefined}
+      >
+        <MenuItem onClick={handleCreateInstance} data-testid='create-instance-menu-item'>
+          <ListItemIcon>
+            <ChatIcon fontSize='small' />
+          </ListItemIcon>
+          <ListItemText>{t('NewTab.CreateInstance')}</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleEditDefinition} data-testid='edit-definition-menu-item'>
+          <ListItemIcon>
+            <EditIcon fontSize='small' />
+          </ListItemIcon>
+          <ListItemText>{t('NewTab.EditDefinition')}</ListItemText>
+        </MenuItem>
+      </Menu>
     </Container>
   );
 };

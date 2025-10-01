@@ -112,6 +112,13 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
   useEffect(() => {
     if (!tab.agentId) return;
 
+    // Log the agentId being used for debugging
+    void window.service.native.log('info', 'ChatTabContent: Setting up agent subscription', {
+      agentId: tab.agentId,
+      tabId: tab.id,
+      tabTitle: tab.title,
+    });
+
     // Fetch agent first
     void fetchAgent(tab.agentId);
 

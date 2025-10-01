@@ -7,6 +7,7 @@ export enum TabType {
   NEW_TAB = 'new_tab', // New tab
   SPLIT_VIEW = 'split_view', // Split view container tab
   CREATE_NEW_AGENT = 'create_new_agent', // Create new agent definition tab
+  EDIT_AGENT_DEFINITION = 'edit_agent_definition', // Edit existing agent definition tab
 }
 
 /**
@@ -86,6 +87,17 @@ export interface ICreateNewAgentTab extends ITab {
   templateAgentDefId?: string;
 }
 
+/**
+ * Edit existing agent definition tab type
+ */
+export interface IEditAgentDefinitionTab extends ITab {
+  type: TabType.EDIT_AGENT_DEFINITION;
+  /** Agent definition ID being edited */
+  agentDefId: string;
+  /** Current step in the editing process */
+  currentStep?: number;
+}
+
 export type INewTabButton = {
   id: string;
   title: string;
@@ -95,4 +107,4 @@ export type INewTabButton = {
 /**
  * Union type for any type of tab
  */
-export type TabItem = IWebTab | IChatTab | INewTab | ISplitViewTab | ICreateNewAgentTab;
+export type TabItem = IWebTab | IChatTab | INewTab | ISplitViewTab | ICreateNewAgentTab | IEditAgentDefinitionTab;

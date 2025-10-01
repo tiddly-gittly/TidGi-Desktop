@@ -1,6 +1,6 @@
 import { ChatTabContent } from '@/pages/ChatTabContent';
 import { PromptConfigForm } from '@/pages/ChatTabContent/components/PromptPreviewDialog/PromptConfigForm';
-import { Box, Button, Card, CardContent, Container, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
+import { Box, Button, Container, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
@@ -22,13 +22,18 @@ const Container_ = styled(Container)`
   flex-direction: column;
   height: 100%;
   width: 100%;
+  max-width: none !important;
   padding: 32px;
   overflow-y: auto;
   background-color: ${props => props.theme.palette.background.default};
 `;
 
-const StepCard = styled(Card)`
-  margin-bottom: 24px;
+const StepSection = styled(Box)`
+  margin-bottom: 32px;
+  padding: 24px;
+  border-radius: 8px;
+  background-color: ${props => props.theme.palette.background.paper};
+  border: 1px solid ${props => props.theme.palette.divider};
 `;
 
 const StepContainer = styled(Box)`
@@ -290,6 +295,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
   };
 
   const renderStepContent = () => {
+    void window.service.native.log('debug', 'renderStepContent: ', { step: STEPS[currentStep] });
     switch (STEPS[currentStep]) {
       case 'setupAgent':
         return (
@@ -447,11 +453,9 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
         ))}
       </Stepper>
 
-      <StepCard>
-        <CardContent>
-          {renderStepContent()}
-        </CardContent>
-      </StepCard>
+      <StepSection>
+        {renderStepContent()}
+      </StepSection>
 
       <ActionBar>
         <Button

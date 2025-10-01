@@ -219,6 +219,25 @@ When('I click on a(n) {string} element with selector {string}', async function(t
   }
 });
 
+When('I right-click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
+  const targetWindow = await this.getWindow('current');
+
+  if (!targetWindow) {
+    throw new Error(`Window "current" is not available`);
+  }
+
+  try {
+    await targetWindow.waitForSelector(selector, { timeout: 10000 });
+    const isVisible = await targetWindow.isVisible(selector);
+    if (!isVisible) {
+      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
+    }
+    await targetWindow.click(selector, { button: 'right' });
+  } catch (error) {
+    throw new Error(`Failed to find and right-click ${elementComment} with selector "${selector}" in current window: ${error as Error}`);
+  }
+});
+
 When('I click all {string} elements matching selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
   const win = this.currentWindow || this.mainWindow;
   if (!win) throw new Error('No active window available to click elements');

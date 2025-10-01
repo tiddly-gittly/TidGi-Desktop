@@ -72,11 +72,14 @@
   },
   "CreateAgent": {
     "AgentName": "Agent Name",
+    "AgentNameHelper": "Enter a descriptive name for your agent",
+    "AgentNamePlaceholder": "My Custom Agent",
     "Back": "Back",
     "EditPrompt": "Edit Prompt",
     "EditPromptDescription": "Customize the system prompt and behavior of your agent",
     "ImmediateUse": "Test & Use",
     "ImmediateUseDescription": "Test your agent and start using it immediately",
+    "Loading": "Loading...",
     "NameAgent": "Name Your Agent",
     "NameAgentDescription": "Give your agent a descriptive name",
     "Next": "Next",
@@ -87,13 +90,41 @@
     "SearchTemplates": "Search for agent templates...",
     "SelectTemplate": "Choose Template",
     "SelectTemplateDescription": "Select an existing agent as a starting template",
+    "SelectedTemplate": "Selected Template",
+    "SetupAgent": "Setup Agent",
+    "SetupAgentDescription": "Configure your new agent by choosing a name and template",
     "Steps": {
       "editPrompt": "Edit Prompt",
       "immediateUse": "Test & Use",
-      "nameAgent": "Name Agent",
-      "selectTemplate": "Select Template"
+      "setupAgent": "Setup Agent"
     },
-    "Title": "Create New Agent"
+    "Title": "Create New Agent",
+    "UnknownStep": "Unknown step"
+  },
+  "EditAgent": {
+    "AgentName": "Agent Name",
+    "AgentNameHelper": "Enter a descriptive name for your agent",
+    "AgentNamePlaceholder": "My Custom Agent",
+    "Back": "Back",
+    "CurrentAgent": "Current Agent",
+    "EditBasic": "Edit Basic Info",
+    "EditBasicDescription": "Edit the basic information of your agent",
+    "EditPrompt": "Edit Prompt",
+    "EditPromptDescription": "Customize the system prompt and behavior of your agent",
+    "HandlerType": "Handler Type",
+    "ImmediateUse": "Test & Use",
+    "ImmediateUseDescription": "Test your agent and start using it immediately",
+    "Loading": "Loading...",
+    "Next": "Next",
+    "Save": "Save",
+    "SaveAndUse": "Save & Use Agent",
+    "Steps": {
+      "editBasic": "Edit Basic Info",
+      "editPrompt": "Edit Prompt",
+      "immediateUse": "Test & Use"
+    },
+    "Title": "Edit Agent",
+    "UnknownStep": "Unknown step"
   },
   "Common": {
     "Apply": "",
@@ -135,7 +166,9 @@
   "NewTab": {
     "CodeTools": "code tool",
     "CreateDefaultAgent": "Create Default Agent",
+    "CreateInstance": "Create Instance",
     "CreateNewAgent": "Create New Agent",
+    "EditDefinition": "Edit Definition",
     "Explore": "explore",
     "Favorites": "Favorites",
     "NewChat": "New Conversation",
@@ -681,6 +714,7 @@
   "Tab": {
     "Title": {
       "CreateNewAgent": "Create New Agent",
+      "EditAgentDefinition": "Edit Agent",
       "NewTab": "New Tab",
       "NewWeb": "Create a new webpage"
     }

@@ -13,7 +13,7 @@ Feature: Create New Agent Workflow
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
 
   @newAgent
-  Scenario: Verify step navigation and content rendering
+  Scenario: Create new agent definition and edit prompt and check server request
     # Setup mock OpenAI server first
     Given I have started the mock OpenAI server
       | response | stream |
@@ -93,3 +93,76 @@ Feature: Create New Agent Workflow
 
     # Verify agent was created and separate chat tab opened
     Then I should see a "message input box" element with selector "[data-testid='agent-message-input']"
+
+  @editAgentDefinition
+  Scenario: Edit existing agent definition workflow
+    # Setup mock OpenAI server first
+    Given I have started the mock OpenAI server
+      | response | stream |
+      | 作为已编辑的代码助手，我可以帮您解决编程问题。请问需要什么帮助？ | false |
+    
+    # Step 1: Open new tab to access create default agent card
+    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    And I wait for 0.2 seconds
+    
+    # Step 2: Right-click on create default agent card to open context menu
+    When I right-click on a "create default agent card" element with selector "[data-testid='create-default-agent-button']"
+    And I wait for 0.1 seconds
+    
+    # Step 3: Click on edit definition option in context menu
+    When I click on a "edit definition menu item" element with selector "[data-testid='edit-definition-menu-item']"
+    And I wait for 0.2 seconds
+    
+    # Step 4: Verify direct edit interface (no steps - all content visible)
+    And I should see a "edit agent title" element with selector "*:has-text('编辑智能体定义')"
+    And I should see a "basic info section" element with selector "*:has-text('编辑基本信息')"
+    And I should see a "edit prompt section" element with selector "*:has-text('编辑提示词')"
+    And I should see a "immediate use section" element with selector "*:has-text('测试并使用')"
+    And I wait for 0.1 seconds
+    
+    # Step 5: Edit agent name in the basic info section
+    And I should see a "agent name input" element with selector "[data-testid='edit-agent-name-input']"
+    When I clear text in "agent name input" element with selector "[data-testid='edit-agent-name-input-field']"
+    When I type "编辑后的示例智能体" in "agent name input" element with selector "[data-testid='edit-agent-name-input-field']"
+    And I wait for 0.1 seconds
+    
+    # Step 6: Edit the prompt configuration - Wait for PromptConfigForm to load
+    # Verify the PromptConfigForm is present
+    And I should see a "prompt config form" element with selector "[data-testid='edit-agent-prompt-form']"
+    
+    # Step 6.1: Navigate to the correct tab and expand array items to edit prompt
+    # Look for tabs in the PromptConfigForm
+    And I should see a "config tabs" element with selector "[data-testid='edit-agent-prompt-form'] .MuiTabs-root"
+    # Click on the first tab (which should contain the system prompt)
+    When I click on a "first config tab" element with selector "[data-testid='edit-agent-prompt-form'] .MuiTab-root:first-of-type"
+    And I wait for 0.1 seconds
+    
+    # Step 6.2: Expand the first array item (prompt item) by clicking the expand button
+    When I click on a "expand array item button" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon']"
+    And I wait for 0.1 seconds
+    
+    # Step 6.3: Now find and edit the system prompt text field (textarea)
+    When I click on a "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
+    When I clear text in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
+    When I type "你是一个经过编辑的专业代码助手，请用中文详细回答编程问题。" in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
+    And I wait for 0.1 seconds
+    
+    # Step 7: Test in the immediate use section (embedded chat)
+    # The immediate use section should show an embedded chat interface
+    # Find a message input in the immediate use section and test the agent
+    When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
+    When I type "你好，请介绍一下自己" in "chat input" element with selector "[data-testid='agent-message-input']"
+    And I press "Enter" key
+    And I wait for 0.1 seconds
+    
+    # Verify the agent responds in the embedded chat
+    Then I should see a "user message" element with selector "*:has-text('你好，请介绍一下自己')"
+    And I should see a "assistant message" element with selector "*:has-text('已编辑的代码助手')"
+    
+    # Verify that the server received the request with the modified system prompt
+    And the last AI request should contain system prompt "你是一个经过编辑的专业代码助手，请用中文详细回答编程问题。"
+    
+    # Step 8: Save the edited agent definition
+    And I should see a "save button" element with selector "[data-testid='edit-agent-save-button']"
+    When I click on a "save button" element with selector "[data-testid='edit-agent-save-button']"
+    And I wait for 0.2 seconds

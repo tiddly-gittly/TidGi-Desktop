@@ -127,4 +127,52 @@ describe('NewTabContent', () => {
     expect(screen.getByTestId('create-default-agent-button')).toBeInTheDocument();
     expect(screen.getByTestId('create-new-agent-button')).toBeInTheDocument();
   });
+
+  it('should show context menu on right click of default agent button', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    const createDefaultAgentButton = screen.getByTestId('create-default-agent-button');
+
+    // Right click to open context menu
+    await user.pointer({ keys: '[MouseRight]', target: createDefaultAgentButton });
+
+    // Context menu should appear
+    expect(screen.getByText('NewTab.CreateInstance')).toBeInTheDocument();
+    expect(screen.getByText('NewTab.EditDefinition')).toBeInTheDocument();
+  });
+
+  it('should handle create instance option from context menu', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    const createDefaultAgentButton = screen.getByTestId('create-default-agent-button');
+
+    // Right click to open context menu
+    await user.pointer({ keys: '[MouseRight]', target: createDefaultAgentButton });
+
+    // Verify context menu options are clickable
+    const createInstanceOption = screen.getByText('NewTab.CreateInstance');
+    expect(createInstanceOption).toBeInTheDocument();
+
+    // Verify the option is clickable (won't test the actual close behavior in this environment)
+    await user.click(createInstanceOption);
+  });
+
+  it('should handle edit definition option from context menu', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    const createDefaultAgentButton = screen.getByTestId('create-default-agent-button');
+
+    // Right click to open context menu
+    await user.pointer({ keys: '[MouseRight]', target: createDefaultAgentButton });
+
+    // Verify context menu options are clickable
+    const editDefinitionOption = screen.getByText('NewTab.EditDefinition');
+    expect(editDefinitionOption).toBeInTheDocument();
+
+    // Verify the option is clickable (won't test the actual close behavior in this environment)
+    await user.click(editDefinitionOption);
+  });
 });

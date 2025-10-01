@@ -113,6 +113,21 @@ export class AgentBrowserService implements IAgentBrowserService {
           childTabs: data.childTabs as TabItem[] || [],
           splitRatio: data.splitRatio as number || 50,
         };
+      case TabType.CREATE_NEW_AGENT:
+        return {
+          ...baseTab,
+          type: TabType.CREATE_NEW_AGENT,
+          agentDefId: data.agentDefId as string | undefined,
+          currentStep: data.currentStep as number || 0,
+          templateAgentDefId: data.templateAgentDefId as string | undefined,
+        };
+      case TabType.EDIT_AGENT_DEFINITION:
+        return {
+          ...baseTab,
+          type: TabType.EDIT_AGENT_DEFINITION,
+          agentDefId: data.agentDefId as string,
+          currentStep: data.currentStep as number || 0,
+        };
       default:
         return baseTab as TabItem;
     }
@@ -161,6 +176,23 @@ export class AgentBrowserService implements IAgentBrowserService {
         entity.data = {
           childTabs: splitViewTab.childTabs || [],
           splitRatio: splitViewTab.splitRatio || 50,
+        };
+        break;
+      }
+      case TabType.CREATE_NEW_AGENT: {
+        const createAgentTab = tab as { agentDefId?: string; currentStep: number; templateAgentDefId?: string };
+        entity.data = {
+          agentDefId: createAgentTab.agentDefId,
+          currentStep: createAgentTab.currentStep || 0,
+          templateAgentDefId: createAgentTab.templateAgentDefId,
+        };
+        break;
+      }
+      case TabType.EDIT_AGENT_DEFINITION: {
+        const editAgentTab = tab as { agentDefId: string; currentStep?: number };
+        entity.data = {
+          agentDefId: editAgentTab.agentDefId,
+          currentStep: editAgentTab.currentStep || 0,
         };
         break;
       }
@@ -333,6 +365,16 @@ export class AgentBrowserService implements IAgentBrowserService {
         case TabType.SPLIT_VIEW: {
           const splitViewData = pick(data, ['childTabs', 'splitRatio']);
           Object.assign(existingTab.data, splitViewData);
+          break;
+        }
+        case TabType.CREATE_NEW_AGENT: {
+          const createAgentData = pick(data, ['agentDefId', 'currentStep', 'templateAgentDefId']);
+          Object.assign(existingTab.data, createAgentData);
+          break;
+        }
+        case TabType.EDIT_AGENT_DEFINITION: {
+          const editAgentData = pick(data, ['agentDefId', 'currentStep']);
+          Object.assign(existingTab.data, editAgentData);
           break;
         }
       }

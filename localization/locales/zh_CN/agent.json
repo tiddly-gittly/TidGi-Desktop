@@ -85,6 +85,7 @@
     "HandlerConfig": "处理器配置",
     "ImmediateUse": "测试并使用",
     "ImmediateUseDescription": "测试您的智能体并立即开始使用",
+    "Loading": "加载中...",
     "NameAgent": "命名智能体",
     "NameAgentDescription": "为您的智能体起一个描述性的名字",
     "Next": "下一步",
@@ -98,13 +99,44 @@
     "SetupAgent": "设置智能体",
     "SetupAgentDescription": "为您的智能体命名并选择一个模板作为起点",
     "Steps": {
-      "selectTemplate": "选择模板",
-      "nameAgent": "命名智能体",
       "editPrompt": "编辑提示词",
-      "immediateUse": "立即使用"
+      "immediateUse": "立即使用",
+      "setupAgent": "设置智能体"
     },
     "SystemPrompt": "系统提示词",
-    "Title": "创建新智能体"
+    "Title": "创建新智能体",
+    "UnknownStep": "未知步骤"
+  },
+  "EditAgent": {
+    "AgentName": "智能体名称",
+    "AgentNameHelper": "为您的智能体起一个描述性的名字",
+    "AgentNamePlaceholder": "输入智能体名称...",
+    "AgentDescriptionHelper": "描述您的智能体的功能和用途",
+    "AgentDescriptionPlaceholder": "输入智能体描述...",
+    "AgentNotFound": "智能体未找到",
+    "Back": "上一步",
+    "CurrentAgent": "当前智能体",
+    "EditBasic": "编辑基本信息",
+    "EditBasicDescription": "编辑您的智能体的基本信息",
+    "LoadingPromptConfig": "正在加载提示词配置...",
+    "PreviewChat": "预览聊天",
+    "Saving": "保存中...",
+    "EditPrompt": "编辑提示词",
+    "EditPromptDescription": "自定义您的智能体的系统提示词和行为",
+    "HandlerType": "处理器类型",
+    "ImmediateUse": "测试并使用",
+    "ImmediateUseDescription": "测试您的智能体并立即开始使用",
+    "Loading": "加载中...",
+    "Next": "下一步",
+    "Save": "保存",
+    "SaveAndUse": "保存并使用智能体",
+    "Steps": {
+      "editBasic": "编辑基本信息",
+      "editPrompt": "编辑提示词",
+      "immediateUse": "测试并使用"
+    },
+    "Title": "编辑智能体定义",
+    "UnknownStep": "未知步骤"
   },
   "Common": {
     "Apply": "应用",
@@ -146,7 +178,9 @@
   "NewTab": {
     "CodeTools": "代码工具",
     "CreateDefaultAgent": "创建默认智能体",
+    "CreateInstance": "创建实例",
     "CreateNewAgent": "创建新智能体",
+    "EditDefinition": "编辑定义",
     "Explore": "探索",
     "Favorites": "收藏夹",
     "NewChat": "新建对话",
@@ -692,6 +726,7 @@
   "Tab": {
     "Title": {
       "CreateNewAgent": "创建新智能体",
+      "EditAgentDefinition": "编辑智能体",
       "NewTab": "新建标签页",
       "NewWeb": "新建网页"
     }

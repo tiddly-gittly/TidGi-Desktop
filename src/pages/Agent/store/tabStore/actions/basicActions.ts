@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 import { nanoid } from 'nanoid';
 import { StateCreator } from 'zustand';
-import { IChatTab, ICreateNewAgentTab, INewTab, ISplitViewTab, IWebTab, TabItem, TabState, TabType } from '../../../types/tab';
+import { IChatTab, ICreateNewAgentTab, IEditAgentDefinitionTab, INewTab, ISplitViewTab, IWebTab, TabItem, TabState, TabType } from '../../../types/tab';
 import { TabsState } from '../types';
 
 /**
@@ -46,10 +46,18 @@ export const createBasicActions = (): Pick<
         ...tabBase,
         type: TabType.CREATE_NEW_AGENT,
         title: dataWithoutPosition.title || i18next.t('Tab.Title.CreateNewAgent'),
-        currentStep: (dataWithoutPosition as Partial<ICreateNewAgentTab>).currentStep || 1,
+        currentStep: (dataWithoutPosition as Partial<ICreateNewAgentTab>).currentStep || 0,
         templateAgentDefId: (dataWithoutPosition as Partial<ICreateNewAgentTab>).templateAgentDefId,
         agentDefId: (dataWithoutPosition as Partial<ICreateNewAgentTab>).agentDefId,
       } as ICreateNewAgentTab;
+    } else if (tabType === TabType.EDIT_AGENT_DEFINITION) {
+      newTab = {
+        ...tabBase,
+        type: TabType.EDIT_AGENT_DEFINITION,
+        title: dataWithoutPosition.title || i18next.t('Tab.Title.EditAgentDefinition'),
+        agentDefId: (dataWithoutPosition as Partial<IEditAgentDefinitionTab>).agentDefId!,
+        currentStep: (dataWithoutPosition as Partial<IEditAgentDefinitionTab>).currentStep || 0,
+      } as IEditAgentDefinitionTab;
     } else if (tabType === TabType.WEB) {
       newTab = {
         ...tabBase,
@@ -187,6 +195,13 @@ export const createBasicActions = (): Pick<
           currentStep: (initialData.currentStep as number) || 1,
           templateAgentDefId: initialData.templateAgentDefId as string,
           agentDefId: initialData.agentDefId as string,
+        };
+      } else if (newType === TabType.EDIT_AGENT_DEFINITION) {
+        newTabData = {
+          ...baseProps,
+          title: initialData.title as string || 'agent.tabTitle.editAgentDefinition',
+          agentDefId: initialData.agentDefId as string,
+          currentStep: (initialData.currentStep as number) || 1,
         };
       } else {
         // Default to NEW_TAB
@@ -400,7 +415,7 @@ export const basicActionsMiddleware: StateCreator<
           };
         } else if (newType === TabType.CREATE_NEW_AGENT) {
           const titleValue = initialData.title as string || 'agent.tabTitle.createNewAgent';
-          const currentStepValue = (initialData.currentStep as number) || 1;
+          const currentStepValue = (initialData.currentStep as number) || 0;
           const templateAgentDefinitionIdValue = initialData.templateAgentDefId as string;
           const agentDefinitionIdValue = initialData.agentDefId as string;
 
@@ -409,6 +424,24 @@ export const basicActionsMiddleware: StateCreator<
             title: titleValue,
             currentStep: currentStepValue,
             templateAgentDefId: templateAgentDefinitionIdValue,
+            agentDefId: agentDefinitionIdValue,
+          };
+        } else if (newType === TabType.EDIT_AGENT_DEFINITION) {
+          const titleValue = initialData.title as string || 'agent.tabTitle.editAgentDefinition';
+          const currentStepValue = (initialData.currentStep as number) || 0;
+          const agentDefinitionIdValue = initialData.agentDefId as string;
+
+          void window.service.native.log('info', 'Creating EDIT_AGENT_DEFINITION tab', {
+            titleValue,
+            currentStepValue,
+            agentDefinitionIdValue,
+            initialData,
+          });
+
+          newTabData = {
+            ...baseProps,
+            title: titleValue,
+            currentStep: currentStepValue,
             agentDefId: agentDefinitionIdValue,
           };
         } else {
