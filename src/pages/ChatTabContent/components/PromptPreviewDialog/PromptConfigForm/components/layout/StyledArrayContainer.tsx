@@ -24,7 +24,9 @@ export const EmptyState = styled((props: React.ComponentProps<typeof Box>) => <B
 `;
 
 // Array item styles
-export const ArrayItemCard = styled(StyledCard)<{ $isDragging?: boolean }>`
+export const ArrayItemCard = styled(StyledCard, {
+  shouldForwardProp: (property) => property !== '$isDragging',
+})<{ $isDragging?: boolean }>`
   border: none;
   padding-left: 0;
   padding-right: 0;
@@ -46,7 +48,9 @@ export const ArrayItemCard = styled(StyledCard)<{ $isDragging?: boolean }>`
   }
 `;
 
-export const ArrayItemHeader = styled(Box)<{ $isCollapsible?: boolean }>`
+export const ArrayItemHeader = styled(Box, {
+  shouldForwardProp: (property) => property !== '$isCollapsible',
+})<{ $isCollapsible?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing(1)};
