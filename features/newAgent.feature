@@ -12,7 +12,7 @@ Feature: Create New Agent Workflow
     When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
 
-  @newAgent
+  @newAgent @mockOpenAI
   Scenario: Create new agent definition and edit prompt and check server request
     # Setup mock OpenAI server first
     Given I have started the mock OpenAI server
@@ -94,7 +94,7 @@ Feature: Create New Agent Workflow
     # Verify agent was created and separate chat tab opened
     Then I should see a "message input box" element with selector "[data-testid='agent-message-input']"
 
-  @editAgentDefinition
+  @editAgentDefinition @mockOpenAI
   Scenario: Edit existing agent definition workflow
     # Setup mock OpenAI server first
     Given I have started the mock OpenAI server

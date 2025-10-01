@@ -126,9 +126,9 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
 
       try {
         setIsSaving(true);
-        
+
         // Auto-save agent definition changes
-        
+
         await window.service.agentDefinition.updateAgentDef(agentDefinition);
 
         // Agent definition auto-saved successfully
@@ -178,7 +178,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
           { preview: true },
         );
         setPreviewAgentId(agent.id);
-        
+
         // Preview agent created successfully
 
         // Preview agent creation completed
@@ -232,7 +232,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
     setAgentDefinition(
       previous => {
         if (!previous) return null;
-        
+
         return {
           ...previous,
           handlerConfig: formData as Record<string, unknown>,

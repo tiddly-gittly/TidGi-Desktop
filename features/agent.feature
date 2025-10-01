@@ -12,7 +12,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
 
-  @agent
+  @agent @mockOpenAI
   Scenario: Wiki-search tool usage
     Given I have started the mock OpenAI server
       | response                                                                                                                                                             | stream |
@@ -44,7 +44,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see a "tool indicator" element with selector "*:has-text('Tool: wiki-search')"
     Then I should see 4 messages in chat history
 
-  @agent
+  @agent @mockOpenAI
   Scenario: Wiki operation
     Given I have started the mock OpenAI server
       | response                                                                                                                                                                                | stream |
@@ -113,7 +113,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     Then I click all "close tab button" elements matching selector "[data-testid='tab-close-button']"
 
-  @agent
+  @agent @mockOpenAI
   Scenario: Streamed assistant response can be cancelled mid-stream and send button returns
     Given I have started the mock OpenAI server
       | response                                                                                               | stream |

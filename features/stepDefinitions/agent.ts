@@ -34,21 +34,20 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
   }
 });
 
-// Agent-specific cleanup - only for agent scenarios
-After({ tags: '@agent' }, async function(this: ApplicationWorld) {
-  // Stop mock OpenAI server
+// Mock OpenAI server cleanup - for scenarios using mock OpenAI
+After({ tags: '@mockOpenAI' }, async function(this: ApplicationWorld) {
+  // Stop mock OpenAI server with timeout protection
   if (this.mockOpenAIServer) {
-    await this.mockOpenAIServer.stop();
-    this.mockOpenAIServer = undefined;
-  }
-});
-
-// NewAgent-specific cleanup - for newAgent scenarios
-After({ tags: '@newAgent' }, async function(this: ApplicationWorld) {
-  // Stop mock OpenAI server
-  if (this.mockOpenAIServer) {
-    await this.mockOpenAIServer.stop();
-    this.mockOpenAIServer = undefined;
+    try {
+      await Promise.race([
+        this.mockOpenAIServer.stop(),
+        new Promise<void>((resolve) => setTimeout(resolve, 2000)),
+      ]);
+    } catch {
+      // Ignore errors during cleanup
+    } finally {
+      this.mockOpenAIServer = undefined;
+    }
   }
 });
 

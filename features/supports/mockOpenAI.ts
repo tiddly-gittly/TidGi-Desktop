@@ -147,10 +147,21 @@ export class MockOpenAIServer {
   async stop(): Promise<void> {
     if (!this.server) return;
     return new Promise((resolve) => {
+      // Force close all connections before closing server
+      this.server!.closeAllConnections?.();
+      
       this.server!.close(() => {
         this.server = null;
         resolve();
       });
+      
+      // Fallback: force resolve after timeout to prevent hanging
+      setTimeout(() => {
+        if (this.server) {
+          this.server = null;
+          resolve();
+        }
+      }, 1000);
     });
   }
 
