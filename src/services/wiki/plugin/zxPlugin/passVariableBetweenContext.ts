@@ -50,6 +50,7 @@ export function getSerializeAllVariablesInContextSnippet(content: string): strin
         return accumulator;
       }
     }, {});
+    return variableMap;
   };
   // after minify, the `() => {` will become `()=>{`, so we need to replace both, otherwise after bundle, this will cause error.
   const stringScriptWithoutPrefix = toStringHelper.toString().replace('() => {', '').replace('()=>{', '');

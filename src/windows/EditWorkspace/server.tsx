@@ -123,7 +123,9 @@ export function ServerOptions(props: IServerOptionsProps) {
                   {t('EditWorkspace.URL')}{' '}
                   <Link
                     onClick={async () => {
-                      actualIP && (await window.service.native.openURI(actualIP));
+                      if (actualIP) {
+                        await window.service.native.openURI(actualIP);
+                      }
                     }}
                     style={{ cursor: 'pointer' }}
                   >
@@ -356,6 +358,7 @@ export function ServerOptions(props: IServerOptionsProps) {
           value={rootTiddler}
           defaultValue={rootTiddlers[0]}
           onInputChange={(event: React.SyntheticEvent, value: string) => {
+            void event;
             workspaceSetter({ ...workspace, rootTiddler: value });
             // void requestSaveAndRestart();
           }}
@@ -421,18 +424,22 @@ function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSe
             {option}
           </li>
         )}
-        ChipProps={{
-          onDelete: (event) => {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-            let node = (event.target).parentNode;
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            if (node.tagName !== 'DIV') {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-              node = node.parentNode;
-            }
+        slotProps={{
+          chip: {
+            onDelete: (event: Event) => {
+              // Be defensive: event.target can be null and EventTarget doesn't have DOM properties in TS.
+              const target = event.target as HTMLElement | null;
+              if (!target) return;
+              let node = target.parentNode as HTMLElement | null;
+              if (!node) return;
+              if (node.tagName !== 'DIV') {
+                node = node.parentNode as HTMLElement | null;
+                if (!node) return;
+              }
 
-            const value = (node as HTMLDivElement).innerText;
-            workspaceSetter({ ...workspace, excludedPlugins: excludedPlugins.filter(item => item !== value) }, true);
+              const value = node.innerText;
+              workspaceSetter({ ...workspace, excludedPlugins: excludedPlugins.filter(item => item !== value) }, true);
+            },
           },
         }}
         filterOptions={(options, parameters) => {

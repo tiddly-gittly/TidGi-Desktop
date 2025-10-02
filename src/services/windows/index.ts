@@ -145,7 +145,9 @@ export class Window implements IWindowService {
   }
 
   public async open<N extends WindowNames>(windowName: N, meta?: WindowMeta[N], config?: IWindowOpenConfig<N>): Promise<undefined>;
+
   public async open<N extends WindowNames>(windowName: N, meta: WindowMeta[N] | undefined, config: IWindowOpenConfig<N> | undefined, returnWindow: true): Promise<BrowserWindow>;
+
   public async open<N extends WindowNames>(
     windowName: N,
     meta: WindowMeta[N] = {} as WindowMeta[N],
@@ -272,7 +274,7 @@ export class Window implements IWindowService {
   /**
    * When using `loadURL`, window meta will be clear. And we can only append meta to a new window. So we need to push meta to window after `loadURL`.
    */
-  private async pushWindowMetaToWindow<N extends WindowNames>(win: BrowserWindow, meta: WindowMeta[N]): Promise<void> {
+  private async pushWindowMetaToWindow(win: BrowserWindow, meta: unknown): Promise<void> {
     win.webContents.send(MetaDataChannel.pushViewMetaData, meta);
   }
 

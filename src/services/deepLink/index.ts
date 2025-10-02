@@ -65,8 +65,8 @@ export class DeepLinkService implements IDeepLinkService {
   }
 
   private setupMacOSHandler(): void {
-    app.on('open-url', (event, url) => {
-      event.preventDefault();
+    app.on('open-url', (_event, url) => {
+      _event.preventDefault();
       void this.deepLinkHandler(url);
     });
   }
@@ -75,7 +75,7 @@ export class DeepLinkService implements IDeepLinkService {
     const gotTheLock = app.requestSingleInstanceLock();
 
     if (gotTheLock) {
-      app.on('second-instance', (event, commandLine) => {
+      app.on('second-instance', (_event, commandLine) => {
         const url = commandLine.pop();
         if (url !== undefined && url !== '') {
           void this.deepLinkHandler(url);

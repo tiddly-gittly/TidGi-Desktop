@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { container } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from '@services/database/schema/wikiEmbedding';
@@ -13,9 +14,9 @@ vi.mock('@services/externalAPI/callEmbeddingAPI', () => ({
 
 describe('WikiEmbeddingService Integration Tests', () => {
   let wikiEmbeddingService: IWikiEmbeddingService;
-  let mockWikiService: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-  let mockWorkspaceService: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-  let mockExternalAPIService: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  let mockWikiService: any;
+  let mockWorkspaceService: any;
+  let mockExternalAPIService: any;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -45,7 +46,7 @@ describe('WikiEmbeddingService Integration Tests', () => {
     await wikiEmbeddingService.initialize();
 
     // Mock workspace service with correct method
-    vi.spyOn(mockWorkspaceService, 'get').mockResolvedValue({
+    vi.spyOn((mockWorkspaceService as unknown) as Record<string, any>, 'get').mockResolvedValue({
       id: 'test-workspace',
       name: 'Test Workspace',
       wikiFolderLocation: '/path/to/wiki',

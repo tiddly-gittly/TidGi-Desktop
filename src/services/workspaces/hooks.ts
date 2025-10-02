@@ -2,7 +2,7 @@ import useObservable from 'beautiful-react-hooks/useObservable';
 import { useMemo, useState } from 'react';
 import { map } from 'rxjs/operators';
 import { IWorkspace, IWorkspacesWithMetadata, IWorkspaceWithMetadata } from './interface';
-import { workspaceSorter } from './utils';
+import { workspaceSorter } from './utilities';
 
 export function useWorkspacesListObservable(): IWorkspaceWithMetadata[] | undefined {
   const [workspaces, workspacesSetter] = useState<IWorkspaceWithMetadata[] | undefined>();
@@ -15,13 +15,13 @@ export function useWorkspacesListObservable(): IWorkspaceWithMetadata[] | undefi
       ),
     [],
   );
-  useObservable(workspacesList$, workspacesSetter as any);
+  useObservable(workspacesList$, workspacesSetter);
   return workspaces;
 }
 
 export function useWorkspaceObservable(id: string): IWorkspace | undefined {
   const [workspace, workspaceSetter] = useState<IWorkspace | undefined>();
   const workspace$ = useMemo(() => window.observables.workspace.get$(id), [id]);
-  useObservable(workspace$, workspaceSetter as any);
+  useObservable(workspace$, workspaceSetter);
   return workspace;
 }

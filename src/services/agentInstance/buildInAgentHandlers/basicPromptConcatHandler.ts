@@ -9,7 +9,7 @@ import { YieldNextRoundTarget } from '../plugins/types';
 import { AgentPromptDescription, AiAPIConfig, HandlerConfig } from '../promptConcat/promptConcatSchema';
 import { IPromptConcatPlugin } from '../promptConcat/promptConcatSchema/plugin';
 import { responseConcat } from '../promptConcat/responseConcat';
-import { getFinalPromptResult } from '../promptConcat/utils';
+import { getFinalPromptResult } from '../promptConcat/utilities';
 import { canceled, completed, error, working } from './statusUtilities';
 import { AgentHandlerContext } from './type';
 

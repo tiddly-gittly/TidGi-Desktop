@@ -1,5 +1,3 @@
-/* eslint-disable n/no-callback-literal */
-
 import { BrowserWindow, ipcMain, WebContentsView, WebPreferences } from 'electron';
 import { injectable } from 'inversify';
 
@@ -60,7 +58,7 @@ export class View implements IViewService {
   }
 
   private initIPCHandlers(): void {
-    ipcMain.handle(ViewChannel.onlineStatusChanged, async (_event, online: boolean) => {
+    ipcMain.handle(ViewChannel.onlineStatusChanged, async (_event, _online: boolean) => {
       // try to fix when wifi status changed when wiki startup, causing wiki not loaded properly.
       // if (online) {
       //   await this.reloadViewsWebContentsIfDidFailLoad();
@@ -575,7 +573,7 @@ export class View implements IViewService {
       }
     } else if (isRetry === true) {
       logger.error(
-        `realignActiveView() ${activeId} failed view?.webContents is ${String(view?.webContents)} and isRetry is ${String(isRetry)} stack: ${
+        `realignActiveView() ${activeId} failed view?.webContents is ${view?.webContents ? '[WebContents]' : 'undefined'} and isRetry is ${String(isRetry)} stack: ${
           new Error('stack').stack?.replace('Error:', '') ?? 'no stack'
         }`,
       );

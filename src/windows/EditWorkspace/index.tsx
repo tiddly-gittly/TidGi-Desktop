@@ -129,7 +129,7 @@ const AvatarPicture = styled('img')`
   width: 100%;
 `;
 const PictureButton = styled((props: React.ComponentProps<typeof ButtonRaw>) => <ButtonRaw variant='outlined' size='small' {...props} />)``;
-const Caption = styled((props: { children?: ReactNode } & React.ComponentProps<typeof Typography>) => <Typography variant='caption' {...props} />)`
+const _Caption = styled((props: { children?: ReactNode } & React.ComponentProps<typeof Typography>) => <Typography variant='caption' {...props} />)`
   display: block;
 `;
 
@@ -301,7 +301,8 @@ export default function EditWorkspace(): React.JSX.Element {
                 freeSolo
                 options={fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
                 value={tagName}
-                onInputChange={(event: React.SyntheticEvent, value: string) => {
+                onInputChange={(_event: React.SyntheticEvent, value: string) => {
+                  void _event;
                   workspaceSetter({ ...workspace, tagName: value }, true);
                 }}
                 renderInput={(parameters: AutocompleteRenderInputParams) => (

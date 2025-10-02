@@ -52,7 +52,12 @@ export function handleNewWindow(
   // open external url in browser
   if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
     logger.debug('handleNewWindow() openExternal', { nextUrl, nextDomain, disposition });
-    void shell.openExternal(nextUrl).catch((error) => logger.error(`handleNewWindow() openExternal error ${(error as Error).message}`, error));
+    void shell.openExternal(nextUrl).catch((_error: unknown) => {
+      logger.error(
+        `handleNewWindow() openExternal error ${_error instanceof Error ? _error.message : String(_error)}`,
+        _error instanceof Error ? _error : new Error(String(_error)),
+      );
+    });
     return {
       action: 'deny',
     };

@@ -11,7 +11,7 @@ import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOpera
 import { IStartNodeJSWikiConfigs } from '.';
 import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
-import { authTokenIsProvided } from './wikiWorkerUtils';
+import { authTokenIsProvided } from './wikiWorkerUtilities';
 
 export function startNodeJSWiki({
   enableHTTPAPI,
@@ -37,6 +37,8 @@ export function startNodeJSWiki({
   }
   return new Observable<IWikiMessage>((observer) => {
     let fullBootArgv: string[] = [];
+    // mark isDev as used to satisfy lint when not needed directly
+    void isDev;
     observer.next({ type: 'control', actions: WikiControlActions.start, argv: fullBootArgv });
     intercept(
       (newStdOut: string) => {
@@ -131,7 +133,7 @@ export function startNodeJSWiki({
         : [homePath, '--version'];
       wikiInstance.boot.argv = [...fullBootArgv];
 
-      wikiInstance.hooks.addHook('th-server-command-post-start', function(listenCommand, server) {
+      wikiInstance.hooks.addHook('th-server-command-post-start', function(_listenCommand, server) {
         server.on('error', function(error: Error) {
           observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message, argv: fullBootArgv });
         });

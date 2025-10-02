@@ -1,5 +1,6 @@
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { ITiddlerFields } from 'tiddlywiki';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getWikiAgentTemplates, validateAndConvertWikiTiddlerToAgentTemplate } from '../getAgentDefinitionTemplatesFromWikis';
 
@@ -20,7 +21,7 @@ describe('wikiTemplates helpers', () => {
   });
 
   it('validateAndConvertWikiTiddlerToAgentTemplate should convert valid tiddler', () => {
-    const converted = validateAndConvertWikiTiddlerToAgentTemplate(mockTiddlers[0] as unknown as any, 'Main Wiki');
+    const converted = validateAndConvertWikiTiddlerToAgentTemplate(mockTiddlers[0] as unknown as ITiddlerFields, 'Main Wiki');
     expect(converted).toBeTruthy();
     expect(converted?.name).toBe('Tpl1');
   });

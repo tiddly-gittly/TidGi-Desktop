@@ -91,7 +91,7 @@ export function useRestartSnackbar(
       <Snackbar
         anchorOrigin={anchorOrigin}
         open={opened}
-        onClose={(event, reason) => {
+        onClose={(_event, reason) => {
           switch (reason) {
             case 'timeout': {
               if (inCountDown) {

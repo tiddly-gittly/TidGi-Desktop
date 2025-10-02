@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-types */
-
+// ...existing code...
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

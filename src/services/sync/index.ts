@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prevent-abbreviations */
 import { injectable } from 'inversify';
 
 import { WikiChannel } from '@/constants/channels';
@@ -45,7 +44,7 @@ export class Sync implements ISyncService {
       return;
     }
 
-    const { gitUrl, storageService, id, isSubWiki, wikiFolderLocation: dir } = workspace;
+    const { gitUrl, storageService, id, isSubWiki, wikiFolderLocation } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
     const defaultCommitMessage = i18n.t('LOG.CommitMessage');
     const defaultCommitBackupMessage = i18n.t('LOG.CommitBackupMessage');
@@ -63,12 +62,12 @@ export class Sync implements ISyncService {
     }
     if (storageService === SupportedStorageServices.local) {
       // for local workspace, commitOnly, no sync and no force pull.
-      await this.gitService.commitAndSync(workspace, { commitOnly: true, dir, commitMessage: defaultCommitBackupMessage });
+      await this.gitService.commitAndSync(workspace, { commitOnly: true, dir: wikiFolderLocation, commitMessage: defaultCommitBackupMessage });
     } else if (
       typeof gitUrl === 'string' &&
       userInfo !== undefined
     ) {
-      const syncOrForcePullConfigs = { remoteUrl: gitUrl, userInfo, dir, commitMessage: defaultCommitMessage } satisfies ICommitAndSyncConfigs;
+      const syncOrForcePullConfigs = { remoteUrl: gitUrl, userInfo, dir: wikiFolderLocation, commitMessage: defaultCommitMessage } satisfies ICommitAndSyncConfigs;
       // sync current workspace first
       const hasChanges = await this.gitService.syncOrForcePull(workspace, syncOrForcePullConfigs);
       if (isSubWiki) {
@@ -82,14 +81,14 @@ export class Sync implements ISyncService {
         const subWorkspaces = await this.workspaceService.getSubWorkspacesAsList(id);
         const subHasChangesPromise = subWorkspaces.map(async (subWorkspace) => {
           if (!isWikiWorkspace(subWorkspace)) return false;
-          const { gitUrl: subGitUrl, storageService: subStorageService, wikiFolderLocation: subGitDir } = subWorkspace;
+          const { gitUrl: subGitUrl, storageService: subStorageService, wikiFolderLocation: subGitFolderLocation } = subWorkspace;
 
           if (!subGitUrl) return false;
           const subUserInfo = await this.authService.getStorageServiceUserInfo(subStorageService);
           const hasChanges = await this.gitService.syncOrForcePull(subWorkspace, {
             remoteUrl: subGitUrl,
             userInfo: subUserInfo,
-            dir: subGitDir,
+            dir: subGitFolderLocation,
             commitMessage: defaultCommitMessage,
           });
           return hasChanges;

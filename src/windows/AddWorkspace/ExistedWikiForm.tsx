@@ -22,8 +22,6 @@ export function ExistedWikiForm({
     wikiFolderNameSetter,
     parentFolderLocation,
     parentFolderLocationSetter,
-    wikiPortSetter,
-    wikiPort,
     mainWikiToLink,
     wikiFolderName,
     mainWikiToLinkIndex,

@@ -108,7 +108,17 @@ export function ViewLoadErrorMessages(props: IViewLoadErrorMessagesProps): React
             <HelperTextsList>
               <li>
                 Click{' '}
-                <b onClick={requestReload} onKeyPress={requestReload} role='button' tabIndex={0} style={{ cursor: 'pointer' }}>
+                <b
+                  onClick={requestReload}
+                  onKeyDown={(event: React.KeyboardEvent) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      void requestReload();
+                    }
+                  }}
+                  role='button'
+                  tabIndex={0}
+                  style={{ cursor: 'pointer' }}
+                >
                   Reload
                 </b>{' '}
                 button below or press <b>CMD_or_Ctrl + R</b> to reload the page.
@@ -119,8 +129,10 @@ export function ViewLoadErrorMessages(props: IViewLoadErrorMessagesProps): React
                   onClick={async () => {
                     await window.service.native.openPath(await window.service.context.get('LOG_FOLDER'), true);
                   }}
-                  onKeyPress={async () => {
-                    await window.service.native.openPath(await window.service.context.get('LOG_FOLDER'), true);
+                  onKeyDown={async (event: React.KeyboardEvent) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      await window.service.native.openPath(await window.service.context.get('LOG_FOLDER'), true);
+                    }
                   }}
                   role='button'
                   tabIndex={0}

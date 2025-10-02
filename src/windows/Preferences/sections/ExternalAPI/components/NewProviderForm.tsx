@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prevent-abbreviations */
 import { Box, Button, FormControl, InputLabel, MenuItem, Select, TextField, Typography } from '@mui/material';
 import { AIProviderConfig } from '@services/externalAPI/interface';
 import React from 'react';
@@ -47,8 +46,8 @@ export function NewProviderForm({
         <Select
           labelId='default-provider-label'
           value={selectedDefaultProvider}
-          onChange={(e) => {
-            onDefaultProviderSelect(e.target.value);
+          onChange={(event) => {
+            onDefaultProviderSelect(event.target.value);
           }}
           label={t('Preference.SelectDefaultProvider')}
         >
@@ -66,8 +65,8 @@ export function NewProviderForm({
       <TextField
         label={t('Preference.ProviderName')}
         value={formState.provider}
-        onChange={(e) => {
-          onChange({ provider: e.target.value });
+        onChange={(event) => {
+          onChange({ provider: event.target.value });
         }}
         fullWidth
         margin='normal'
@@ -80,8 +79,8 @@ export function NewProviderForm({
         <Select
           labelId='provider-class-label'
           value={formState.providerClass}
-          onChange={(e) => {
-            onChange({ providerClass: e.target.value });
+          onChange={(event) => {
+            onChange({ providerClass: event.target.value });
           }}
           label={t('Preference.ProviderClass')}
         >
@@ -97,8 +96,8 @@ export function NewProviderForm({
         <TextField
           label={t('Preference.BaseURL')}
           value={formState.baseURL}
-          onChange={(e) => {
-            onChange({ baseURL: e.target.value });
+          onChange={(event) => {
+            onChange({ baseURL: event.target.value });
           }}
           fullWidth
           margin='normal'

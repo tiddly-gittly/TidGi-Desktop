@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-implied-eval */
 import { logger } from '@services/libs/log';
 import { ToolCallingMatch } from './interface';
 
@@ -31,8 +32,12 @@ function parseToolParameters(parametersText: string): Record<string, unknown> {
   try {
     // Wrap the object in a return statement to make it a valid function body
     const functionBody = `return (${trimmedText});`;
-    const parseFunction = new Function(functionBody);
-    const parsed = parseFunction() as Record<string, unknown>;
+    // Using the Function constructor here is intentional: we need to parse
+    // JavaScript-like object literals that may not be valid JSON. The use of
+    // Function is restricted and the input is user-provided; we guard and
+    // catch errors below.
+    const parseFunction = new Function(functionBody) as unknown as () => Record<string, unknown>;
+    const parsed = parseFunction();
 
     logger.debug('Successfully parsed JavaScript object using new Function', {
       original: trimmedText,

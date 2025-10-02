@@ -27,7 +27,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IDedicatedWorkspace, INewWikiWorkspaceConfig, IWorkspace, IWorkspaceMetaData, IWorkspaceService, IWorkspacesWithMetadata, IWorkspaceWithMetadata } from './interface';
 import { isWikiWorkspace } from './interface';
 import { registerMenu } from './registerMenu';
-import { workspaceSorter } from './utils';
+import { workspaceSorter } from './utilities';
 
 @injectable()
 export class Workspace implements IWorkspaceService {

@@ -81,13 +81,13 @@ function initWikiGit(
       () => {
         observer.complete();
       },
-      (error) => {
-        if (error instanceof Error) {
-          observer.next({ message: `${error.message} ${error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'initWikiGit' } });
-          translateAndLogErrorMessage(error, errorI18NDict);
-          observer.next({ level: 'error', error });
+      (_error: unknown) => {
+        if (_error instanceof Error) {
+          observer.next({ message: `${_error.message} ${_error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'initWikiGit' } });
+          translateAndLogErrorMessage(_error, errorI18NDict);
+          observer.next({ level: 'error', error: _error });
         } else {
-          observer.next({ message: String(error), level: 'warn', meta: { callerFunction: 'initWikiGit' } });
+          observer.next({ message: String(_error), level: 'warn', meta: { callerFunction: 'initWikiGit' } });
         }
         observer.complete();
       },
@@ -121,13 +121,13 @@ function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs
       () => {
         observer.complete();
       },
-      (error) => {
-        if (error instanceof Error) {
-          observer.next({ message: `${error.message} ${error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'commitAndSync' } });
-          translateAndLogErrorMessage(error, errorI18NDict);
-          observer.next({ level: 'error', error });
+      (_error: unknown) => {
+        if (_error instanceof Error) {
+          observer.next({ message: `${_error.message} ${_error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'commitAndSync' } });
+          translateAndLogErrorMessage(_error, errorI18NDict);
+          observer.next({ level: 'error', error: _error });
         } else {
-          observer.next({ message: String(error), level: 'warn', meta: { callerFunction: 'commitAndSync' } });
+          observer.next({ message: String(_error), level: 'warn', meta: { callerFunction: 'commitAndSync' } });
         }
         observer.complete();
       },
@@ -165,13 +165,13 @@ function forcePullWiki(workspace: IWorkspace, configs: IForcePullConfigs, errorI
       () => {
         observer.complete();
       },
-      (error) => {
-        if (error instanceof Error) {
-          observer.next({ message: `${error.message} ${error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'forcePull' } });
-          translateAndLogErrorMessage(error, errorI18NDict);
-          observer.next({ level: 'error', error });
+      (_error: unknown) => {
+        if (_error instanceof Error) {
+          observer.next({ message: `${_error.message} ${_error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'forcePull' } });
+          translateAndLogErrorMessage(_error, errorI18NDict);
+          observer.next({ level: 'error', error: _error });
         } else {
-          observer.next({ message: String(error), level: 'warn', meta: { callerFunction: 'forcePull' } });
+          observer.next({ message: String(_error), level: 'warn', meta: { callerFunction: 'forcePull' } });
         }
         observer.complete();
       },
@@ -201,13 +201,13 @@ function cloneWiki(repoFolderPath: string, remoteUrl: string, userInfo: IGitUser
       () => {
         observer.complete();
       },
-      (error) => {
-        if (error instanceof Error) {
-          observer.next({ message: `${error.message} ${error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'clone' } });
-          translateAndLogErrorMessage(error, errorI18NDict);
-          observer.next({ level: 'error', error });
+      (_error: unknown) => {
+        if (_error instanceof Error) {
+          observer.next({ message: `${_error.message} ${_error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'clone' } });
+          translateAndLogErrorMessage(_error, errorI18NDict);
+          observer.next({ level: 'error', error: _error });
         } else {
-          observer.next({ message: String(error), level: 'warn', meta: { callerFunction: 'clone' } });
+          observer.next({ message: String(_error), level: 'warn', meta: { callerFunction: 'clone' } });
         }
         observer.complete();
       },

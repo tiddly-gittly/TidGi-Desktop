@@ -88,9 +88,9 @@ describe('basicPromptConcatHandler - failure path persists error message and log
     await agentSvc.initialize();
 
     // Stub AgentDefinitionService.getAgentDef to return our saved agent definition
-    const agentDefSvc: any = container.get(serviceIdentifier.AgentDefinition);
+    const agentDefSvc = container.get(serviceIdentifier.AgentDefinition);
     if (agentDefSvc && typeof agentDefSvc.getAgentDef === 'function') {
-      vi.spyOn(agentDefSvc, 'getAgentDef').mockResolvedValue({
+      vi.spyOn(agentDefSvc as { getAgentDef: (...args: unknown[]) => Promise<unknown> }, 'getAgentDef').mockResolvedValue({
         id: 'def-1',
         name: 'Def 1',
         handlerID: 'basicPromptConcatHandler',

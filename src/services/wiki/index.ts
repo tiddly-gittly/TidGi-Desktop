@@ -389,7 +389,9 @@ export class Wiki implements IWikiService {
     try {
       try {
         await remove(subwikiSymlinkPath);
-      } catch {}
+      } catch (_error: unknown) {
+        void _error;
+      }
       await mkdirp(mainWikiTiddlersFolderSubWikisPath);
       await createSymlink(subWikiPath, subwikiSymlinkPath, 'junction');
       this.logProgress(i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiSucceed'));
@@ -412,7 +414,7 @@ export class Wiki implements IWikiService {
     }
     try {
       await copy(TIDDLYWIKI_TEMPLATE_FOLDER_PATH, newWikiPath, {
-        filter: (source: string, destination: string) => {
+        filter: (source: string, _destination: string) => {
           // xxx/template/wiki/.gitignore
           // xxx/template/wiki/.github
           // xxx/template/wiki/.git

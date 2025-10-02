@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prevent-abbreviations */
 import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -28,24 +27,24 @@ export const useHandlerConfigManagement = ({ agentDefId, agentId }: UseHandlerCo
 
         if (agentId) {
           const agentInstance = await window.service.agentInstance.getAgent(agentId);
-          let agentDef: Awaited<ReturnType<typeof window.service.agentDefinition.getAgentDef>> | undefined;
+          let agentDefinition: Awaited<ReturnType<typeof window.service.agentDefinition.getAgentDef>> | undefined;
           if (agentInstance?.agentDefId) {
-            agentDef = await window.service.agentDefinition.getAgentDef(agentInstance.agentDefId);
+            agentDefinition = await window.service.agentDefinition.getAgentDef(agentInstance.agentDefId);
           }
           // Use instance config if available, otherwise fallback to definition config
           if (agentInstance?.handlerConfig && Object.keys(agentInstance.handlerConfig).length > 0) {
             finalConfig = agentInstance.handlerConfig as HandlerConfig;
-          } else if (agentDef?.handlerConfig) {
-            finalConfig = agentDef.handlerConfig as HandlerConfig;
+          } else if (agentDefinition?.handlerConfig) {
+            finalConfig = agentDefinition.handlerConfig as HandlerConfig;
           }
           // Use handlerID from instance, fallback to definition
-          handlerID = agentInstance?.handlerID || agentDef?.handlerID;
+          handlerID = agentInstance?.handlerID || agentDefinition?.handlerID;
         } else if (agentDefId) {
-          const agentDef = await window.service.agentDefinition.getAgentDef(agentDefId);
-          if (agentDef?.handlerConfig) {
-            finalConfig = agentDef.handlerConfig as HandlerConfig;
+          const agentDefinition = await window.service.agentDefinition.getAgentDef(agentDefId);
+          if (agentDefinition?.handlerConfig) {
+            finalConfig = agentDefinition.handlerConfig as HandlerConfig;
           }
-          handlerID = agentDef?.handlerID;
+          handlerID = agentDefinition?.handlerID;
         }
 
         if (handlerID) {
@@ -77,10 +76,10 @@ export const useHandlerConfigManagement = ({ agentDefId, agentId }: UseHandlerCo
           handlerConfig: newConfig,
         });
       } else if (agentDefId) {
-        const agentDef = await window.service.agentDefinition.getAgentDef(agentDefId);
-        if (agentDef) {
+        const agentDefinition = await window.service.agentDefinition.getAgentDef(agentDefId);
+        if (agentDefinition) {
           await window.service.agentDefinition.updateAgentDef({
-            ...agentDef,
+            ...agentDefinition,
             handlerConfig: newConfig,
           });
         }

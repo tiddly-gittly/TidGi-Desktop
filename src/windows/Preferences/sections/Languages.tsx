@@ -14,11 +14,13 @@ export function Languages(props: Partial<ISectionProps> & { languageSelectorOnly
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();
-  const [platform, supportedLanguagesMap]: [string | undefined, Record<string, string> | undefined] = usePromiseValue(
+  const platformAndMap = usePromiseValue(
     async (): Promise<[string | undefined, Record<string, string> | undefined]> =>
       await Promise.all([window.service.context.get('platform'), window.service.context.get('supportedLanguagesMap')]),
     [undefined, undefined],
   );
+  const platform = platformAndMap?.[0];
+  const supportedLanguagesMap = platformAndMap?.[1];
 
   return (
     <>

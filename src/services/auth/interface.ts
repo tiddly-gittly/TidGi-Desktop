@@ -86,11 +86,11 @@ export const AuthenticationServiceIPCDescriptor = {
 
 export interface IGithubOAuthResult {
   avatar_url: string;
-  bio: any;
+  bio: string | null;
   blog: string;
-  company: any;
+  company: string | null;
   created_at: string;
-  email: any;
+  email: string | null;
   events_url: string;
   followers: number;
   followers_url: string;
@@ -98,12 +98,12 @@ export interface IGithubOAuthResult {
   following_url: string;
   gists_url: string;
   gravatar_id: string;
-  hireable: any;
+  hireable: string | null;
   html_url: string;
   id: number;
-  location: any;
+  location: string | null;
   login: string;
-  name: any;
+  name: string | null;
   node_id: string;
   organizations_url: string;
   public_gists: number;
@@ -113,7 +113,7 @@ export interface IGithubOAuthResult {
   site_admin: boolean;
   starred_url: string;
   subscriptions_url: string;
-  twitter_username: any;
+  twitter_username: string | null;
   type: string;
   updated_at: string;
   url: string;

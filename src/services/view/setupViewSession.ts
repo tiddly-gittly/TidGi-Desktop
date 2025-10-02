@@ -1,4 +1,3 @@
-/* eslint-disable n/no-callback-literal */
 import { session } from 'electron';
 
 import { isMac } from '@/helpers/system';

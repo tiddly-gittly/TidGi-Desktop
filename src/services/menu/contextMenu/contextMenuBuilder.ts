@@ -357,7 +357,7 @@ export default class ContextMenuBuilder {
   /**
    * Adds the "Developer Tools" menu item.
    */
-  addDeveloperTools(menu: Menu, menuInfo: IOnContextMenuInfo, needsSeparator = false): Menu {
+  addDeveloperTools(menu: Menu, _menuInfo: IOnContextMenuInfo, needsSeparator = false): Menu {
     if (needsSeparator) {
       this.addSeparator(menu);
     }

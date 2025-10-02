@@ -63,7 +63,8 @@ export function reportErrorToGithubWithTemplates(error: Error): void {
       const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
       return nativeService.openPath(LOG_FOLDER, true);
     })
-    .catch(async (error) => {
+    .catch(async (_error: unknown) => {
+      const error = _error instanceof Error ? _error : new Error(String(_error));
       await import('@services/libs/log').then(({ logger }) => {
         logger.error(`Failed to open LOG_FOLDER in reportErrorToGithubWithTemplates`, error);
       });

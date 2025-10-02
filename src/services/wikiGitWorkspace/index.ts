@@ -74,7 +74,8 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
             }),
           ]);
         }
-      } catch (error) {
+      } catch (_error: unknown) {
+        const error = _error instanceof Error ? _error : new Error(String(_error));
         logger.error(`SyncBeforeShutdown failed`, { error });
       } finally {
         app.quit();
@@ -111,9 +112,10 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         }
       }
       return newWorkspace;
-    } catch (error) {
+    } catch (_error: unknown) {
       // prepare to rollback changes
-      const errorMessage = `initWikiGitTransaction failed, ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+      const error = _error instanceof Error ? _error : new Error(String(_error));
+      const errorMessage = `initWikiGitTransaction failed, ${error.message} ${error.stack ?? ''}`;
       logger.error(errorMessage);
       await this.workspaceService.remove(workspaceID);
       try {
@@ -122,8 +124,9 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         } else if (typeof mainWikiToLink === 'string') {
           await this.wikiService.removeWiki(wikiFolderLocation, mainWikiToLink);
         }
-      } catch (error_) {
-        throw new InitWikiGitRevertError((error_ as Error).message);
+      } catch (_error_) {
+        const error_ = _error_ instanceof Error ? _error_ : new Error(String(_error_));
+        throw new InitWikiGitRevertError(error_.message);
       }
       throw new InitWikiGitError(errorMessage);
     }
@@ -161,8 +164,9 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       await this.wikiService.copyWikiTemplate(DEFAULT_WIKI_FOLDER, 'wiki');
       // Create the workspace
       await this.initWikiGitTransaction(defaultConfig);
-    } catch (error) {
-      logger.error((error as Error).message, error);
+    } catch (_error: unknown) {
+      const error = _error instanceof Error ? _error : new Error(String(_error));
+      logger.error(error.message, error);
     }
   }
 
@@ -189,7 +193,10 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         if (!onlyRemoveWorkspace && !removeWorkspaceAndDelete) {
           return;
         }
-        await this.wikiService.stopWiki(id).catch((error: Error) => logger.error(error.message, error));
+        await this.wikiService.stopWiki(id).catch((_error: unknown) => {
+          const error = _error instanceof Error ? _error : new Error(String(_error));
+          logger.error(error.message, error);
+        });
         if (isSubWiki) {
           if (mainWikiToLink === null) {
             throw new Error(`workspace.mainWikiToLink is null in WikiGitWorkspace.removeWorkspace ${JSON.stringify(workspace)}`);
@@ -214,8 +221,9 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         if (firstWorkspace !== undefined) {
           await this.workspaceViewService.setActiveWorkspaceView(firstWorkspace.id);
         }
-      } catch (error) {
-        logger.error((error as Error).message, error);
+      } catch (_error: unknown) {
+        const error = _error instanceof Error ? _error : new Error(String(_error));
+        logger.error(error.message, error);
       }
     }
   }

@@ -30,7 +30,10 @@ export async function internalIpV4(): Promise<string | undefined> {
     if (defaultGatewayResult?.gateway) {
       return findIp(defaultGatewayResult.gateway);
     }
-  } catch {}
+  } catch (_error) {
+    // noop: best-effort to get default gateway, ignore errors
+    void _error;
+  }
   return 'localhost';
 }
 

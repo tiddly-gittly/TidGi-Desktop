@@ -27,8 +27,7 @@ export interface IErrorGitLogMessage {
   level: 'error';
 }
 
-export interface ICommitAndSyncConfigs extends ICommitAndSyncOptions {
-}
+export type ICommitAndSyncConfigs = ICommitAndSyncOptions;
 
 export interface IForcePullConfigs {
   remoteUrl?: string;

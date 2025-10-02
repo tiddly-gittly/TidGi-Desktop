@@ -176,7 +176,7 @@ export const createBasicActions = (): Pick<
           ...baseProps,
           title: initialData.title as string || 'agent.tabTitle.newChat',
           agentId: initialData.agentId as string,
-          agentDefId: initialData.agentDefId as string,
+          agentDefId: initialData.agentDefinitionId as string,
         };
       } else if (newType === TabType.SPLIT_VIEW) {
         const childTabsData = initialData.childTabs as TabItem[] | undefined;
@@ -194,13 +194,13 @@ export const createBasicActions = (): Pick<
           title: initialData.title as string || 'agent.tabTitle.createNewAgent',
           currentStep: (initialData.currentStep as number) || 1,
           templateAgentDefId: initialData.templateAgentDefId as string,
-          agentDefId: initialData.agentDefId as string,
+          agentDefId: initialData.agentDefinitionId as string,
         };
       } else if (newType === TabType.EDIT_AGENT_DEFINITION) {
         newTabData = {
           ...baseProps,
           title: initialData.title as string || 'agent.tabTitle.editAgentDefinition',
-          agentDefId: initialData.agentDefId as string,
+          agentDefId: initialData.agentDefinitionId as string,
           currentStep: (initialData.currentStep as number) || 1,
         };
       } else {
@@ -393,14 +393,14 @@ export const basicActionsMiddleware: StateCreator<
         } else if (newType === TabType.CHAT) {
           const titleValue = initialData.title as string || 'agent.tabTitle.newChat';
           const agentIdValue = initialData.agentId as string;
-          // eslint-disable-next-line unicorn/prevent-abbreviations
-          const agentDefIdValue = initialData.agentDefId as string;
+
+          const agentDefinitionIdValue = initialData.agentDefId as string;
 
           newTabData = {
             ...baseProps,
             title: titleValue,
             agentId: agentIdValue,
-            agentDefId: agentDefIdValue,
+            agentDefId: agentDefinitionIdValue,
           };
         } else if (newType === TabType.SPLIT_VIEW) {
           const titleValue = initialData.title as string || 'agent.tabTitle.splitView';

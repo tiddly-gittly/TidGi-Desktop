@@ -37,6 +37,7 @@ export async function handleCreateBasicWindow<N extends WindowNames>(
           reject(new Error("Main window is undefined in newWindow.once('ready-to-show'"));
           return;
         }
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
         const { wasOpenedAsHidden } = app.getLoginItemSettings();
         // Don't bring up window when running e2e test, otherwise it will annoy the developer who is doing other things.
         if (!wasOpenedAsHidden && !isTest) {

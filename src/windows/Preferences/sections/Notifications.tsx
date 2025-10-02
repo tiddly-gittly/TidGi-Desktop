@@ -16,7 +16,7 @@ export function Notifications(props: Required<ISectionProps>): React.JSX.Element
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();
-  const [platform, oSVersion] = usePromiseValue<[string | undefined, string | undefined], [string | undefined, string | undefined]>(
+  const platformAndVersion = usePromiseValue(
     async () =>
       await Promise.all([window.service.context.get('platform'), window.service.context.get('oSVersion')]).catch((error_: unknown) => {
         void window.service.native.log('error', 'Preferences: Notifications load failed', { function: 'Notifications.useEffect', error: String(error_) });
@@ -24,6 +24,8 @@ export function Notifications(props: Required<ISectionProps>): React.JSX.Element
       }),
     [undefined, undefined],
   );
+  const platform = platformAndVersion?.[0];
+  const oSVersion = platformAndVersion?.[1];
 
   return (
     <>

@@ -5,6 +5,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentInstanceMessage } from '../../interface';
+import type { IPromptConcatPlugin } from '../../promptConcat/promptConcatSchema';
 import type { IPrompt } from '../../promptConcat/promptConcatSchema/prompts';
 
 import { cloneDeep } from 'lodash';
@@ -106,7 +107,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
           agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
           isCancelled: () => false,
         },
-        pluginConfig: historyPlugin! as any, // Type cast due to JSON import limitations
+        pluginConfig: historyPlugin! as unknown as IPromptConcatPlugin, // Type cast due to JSON import limitations
         prompts: testPrompts,
         messages,
       };
@@ -127,7 +128,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
 
       // The fullReplacementPlugin puts filtered messages in children array
       // Note: fullReplacementPlugin removes the last message (current user message)
-      const children = (targetPrompt as any).children || [];
+      const children = (targetPrompt as unknown as { children?: IPrompt[] }).children || [];
       expect(children.length).toBe(2); // Only non-expired messages (user1, ai-response), excluding last user message
 
       // Check the content of the children
@@ -194,7 +195,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
           agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
           isCancelled: () => false,
         },
-        pluginConfig: historyPlugin! as any, // Type cast for JSON import
+        pluginConfig: historyPlugin! as unknown as IPromptConcatPlugin, // Type cast for JSON import
         prompts: testPrompts,
         messages,
       };
@@ -207,7 +208,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
       const targetId = historyPlugin!.fullReplacementParam!.targetId;
       const historyPrompt = testPrompts.find(p => p.id === 'history');
       const targetPrompt = historyPrompt!.children?.find(child => child.id === targetId);
-      const children = (targetPrompt as any).children || [];
+      const children = (targetPrompt as unknown as { children?: IPrompt[] }).children || [];
       const childrenText = children.map((child: IPrompt) => child.text || '').join(' ');
 
       // Duration=0 messages are excluded from AI context by filterMessagesByDuration
@@ -276,7 +277,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
           agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
           isCancelled: () => false,
         },
-        pluginConfig: historyPlugin! as any, // Type cast for JSON import
+        pluginConfig: historyPlugin! as unknown as IPromptConcatPlugin, // Type cast for JSON import
         prompts: testPrompts,
         messages,
       };
@@ -289,7 +290,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
       const targetId = historyPlugin!.fullReplacementParam!.targetId;
       const historyPrompt = testPrompts.find(p => p.id === 'history');
       const targetPrompt = historyPrompt!.children?.find(child => child.id === targetId);
-      const children = (targetPrompt as any).children || [];
+      const children = (targetPrompt as unknown as { children?: IPrompt[] }).children || [];
       const childrenText = children.map((child: IPrompt) => child.text || '').join(' ');
 
       // Should include messages without duration and with duration values that haven't expired

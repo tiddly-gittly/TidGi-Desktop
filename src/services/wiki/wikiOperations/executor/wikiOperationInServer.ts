@@ -37,9 +37,11 @@ export class WikiOperationsInWikiWorker {
     return await new Promise((resolve, reject) => {
       setTimeout(() => {
         try {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
           const result = new Function('$tw', script)(this.wikiInstance) as unknown;
           resolve(result);
-        } catch (error) {
+        } catch (_error: unknown) {
+          const error = _error instanceof Error ? _error : new Error(String(_error));
           reject(error);
         }
       }, 1);
@@ -96,7 +98,7 @@ export class WikiOperationsInWikiWorker {
   // ██    ██ ██████  █████   ██████  ███████    ██    ██ ██    ██ ██ ██  ██ ███████
   // ██    ██ ██      ██      ██   ██ ██   ██    ██    ██ ██    ██ ██  ██ ██      ██
   //  ██████  ██      ███████ ██   ██ ██   ██    ██    ██  ██████  ██   ████ ███████
-  public wikiOperation<OP extends keyof typeof this.wikiOperationsInServer, T = string[]>(
+  public wikiOperation<OP extends keyof typeof this.wikiOperationsInServer>(
     operationType: OP,
     ...arguments_: Parameters<IWorkerWikiOperations[OP]>
   ): undefined | ReturnType<IWorkerWikiOperations[OP]> {

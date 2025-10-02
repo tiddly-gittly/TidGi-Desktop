@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prevent-abbreviations */
 import { AgentDefinition } from '@services/agentDefinition/interface';
 import type { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
 import { Subscription } from 'rxjs';
@@ -39,11 +38,11 @@ export const agentActions = (
     });
 
     // If there's an agentDefId, load the agentDef
-    let agentDef: AgentDefinition | null = null;
+    let agentDefinition: AgentDefinition | null = null;
     if (agentWithoutMessages.agentDefId) {
       try {
-        const fetchedDef = await window.service.agentDefinition.getAgentDef(agentWithoutMessages.agentDefId);
-        agentDef = fetchedDef || null;
+        const fetchedAgentDefinition = await window.service.agentDefinition.getAgentDef(agentWithoutMessages.agentDefId);
+        agentDefinition = fetchedAgentDefinition || null;
       } catch (error) {
         void window.service.native.log(
           'error',
@@ -58,7 +57,7 @@ export const agentActions = (
 
     return {
       agent: agentWithoutMessages as AgentWithoutMessages,
-      agentDef,
+      agentDef: agentDefinition,
       messages: messagesMap,
       orderedMessageIds: orderedIds,
     };
@@ -310,9 +309,9 @@ export const agentActions = (
         return agentDef.handlerID;
       }
       if (agent?.agentDefId) {
-        const agentDef = await window.service.agentDefinition.getAgentDef(agent.agentDefId);
-        if (agentDef?.handlerID) {
-          return agentDef.handlerID;
+        const fetchedAgentDefinition = await window.service.agentDefinition.getAgentDef(agent.agentDefId);
+        if (fetchedAgentDefinition?.handlerID) {
+          return fetchedAgentDefinition.handlerID;
         }
       }
 

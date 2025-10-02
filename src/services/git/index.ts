@@ -163,7 +163,9 @@ export class Git implements IGitService {
             await this.nativeService.openInGitGuiApp(wikiFolderPath);
           }
         })
-        .catch((error) => logger.error('createFailedDialog failed', error));
+        .catch((_error: unknown) => {
+          logger.error('createFailedDialog failed', _error instanceof Error ? _error : new Error(String(_error)));
+        });
     }
   }
 
@@ -188,13 +190,14 @@ export class Git implements IGitService {
     try {
       try {
         await this.updateGitInfoTiddler(workspace, configs.remoteUrl, configs.userInfo?.branch);
-      } catch (error) {
-        logger.error('updateGitInfoTiddler failed when commitAndSync', error);
+      } catch (_error: unknown) {
+        logger.error('updateGitInfoTiddler failed when commitAndSync', _error instanceof Error ? _error : new Error(String(_error)));
       }
       const observable = this.gitWorker?.commitAndSyncWiki(workspace, configs, getErrorMessageI18NDict());
       return await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
-    } catch (error) {
-      this.createFailedNotification((error as Error).message, workspaceIDToShowNotification);
+    } catch (_error: unknown) {
+      const error = _error instanceof Error ? _error : new Error(String(_error));
+      this.createFailedNotification(error.message, workspaceIDToShowNotification);
       return true;
     }
   }

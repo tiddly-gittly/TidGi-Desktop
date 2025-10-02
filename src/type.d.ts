@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable unicorn/prevent-abbreviations */
 
 declare module 'errio' {
   export function parse(error: Error): Error;
@@ -53,6 +52,7 @@ declare module 'threads-plugin' {
 declare module 'v8-compile-cache-lib' {
   export namespace __TEST__ {
     export function getMainName(): string;
+    // eslint-disable-next-line unicorn/prevent-abbreviations
     export function getCacheDir(): string;
     export function supportsCachedData(): boolean;
   }

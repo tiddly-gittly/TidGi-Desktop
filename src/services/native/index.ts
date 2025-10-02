@@ -65,7 +65,11 @@ export class NativeService implements INativeService {
 
   public async openURI(uri: string, showItemInFolder = false): Promise<void> {
     logger.debug(`NativeService.open() Opening ${uri}`, { showItemInFolder });
-    showItemInFolder ? shell.showItemInFolder(uri) : await shell.openExternal(uri);
+    if (showItemInFolder) {
+      shell.showItemInFolder(uri);
+    } else {
+      await shell.openExternal(uri);
+    }
   }
 
   public async openPath(filePath: string, showItemInFolder?: boolean): Promise<void> {
@@ -75,12 +79,20 @@ export class NativeService implements INativeService {
     logger.debug(`NativeService.openPath() Opening ${filePath}`);
     // TODO: add a switch that tell user these are dangerous features, use at own risk.
     if (path.isAbsolute(filePath)) {
-      showItemInFolder ? shell.showItemInFolder(filePath) : await shell.openPath(filePath);
+      if (showItemInFolder) {
+        shell.showItemInFolder(filePath);
+      } else {
+        await shell.openPath(filePath);
+      }
     } else {
       const activeWorkspace = this.workspaceService.getActiveWorkspaceSync();
       if (activeWorkspace && isWikiWorkspace(activeWorkspace) && activeWorkspace.wikiFolderLocation !== undefined) {
         const absolutePath = path.resolve(path.join(activeWorkspace.wikiFolderLocation, filePath));
-        showItemInFolder ? shell.showItemInFolder(absolutePath) : await shell.openPath(absolutePath);
+        if (showItemInFolder) {
+          shell.showItemInFolder(absolutePath);
+        } else {
+          await shell.openPath(absolutePath);
+        }
       }
     }
   }

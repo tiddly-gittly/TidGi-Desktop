@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prevent-abbreviations */
 import { inject, injectable } from 'inversify';
 import { debounce, pick } from 'lodash';
 import { nanoid } from 'nanoid';
@@ -130,18 +129,18 @@ export class AgentInstanceService implements IAgentInstanceService {
 
     try {
       // Get agent definition
-      const agentDef = await this.agentDefinitionService.getAgentDef(agentDefinitionID);
-      if (!agentDef) {
+      const agentDefinition = await this.agentDefinitionService.getAgentDef(agentDefinitionID);
+      if (!agentDefinition) {
         throw new Error(`Agent definition not found: ${agentDefinitionID}`);
       }
 
       // Create new agent instance using utility function
       // Ensure required fields exist before creating instance
-      if (!agentDef.name) {
+      if (!agentDefinition.name) {
         throw new Error(`Agent definition missing required field 'name': ${agentDefinitionID}`);
       }
 
-      const { instanceData, instanceId, now } = createAgentInstanceData(agentDef as Required<Pick<typeof agentDef, 'name'>> & typeof agentDef);
+      const { instanceData, instanceId, now } = createAgentInstanceData(agentDefinition as Required<Pick<typeof agentDefinition, 'name'>> & typeof agentDefinition);
 
       // Mark as preview if specified
       if (options?.preview) {
@@ -516,11 +515,11 @@ export class AgentInstanceService implements IAgentInstanceService {
                 const message = agent.messages.find(m => m.id === messageId);
                 if (subject) {
                   try {
-                    const msg = message || ({} as AgentInstanceMessage);
+                    const message_ = message || ({} as AgentInstanceMessage);
                     logger.debug(`Propagate canceled -> ${key}`);
                     subject.next({
                       state: 'canceled',
-                      message: msg,
+                      message: message_,
                       modified: new Date(),
                     });
                   } catch {
@@ -536,8 +535,8 @@ export class AgentInstanceService implements IAgentInstanceService {
               }
             }
           }
-        } catch (err) {
-          logger.warn(`Failed to propagate cancel status to message subscriptions: ${String(err)}`);
+        } catch (error) {
+          logger.warn(`Failed to propagate cancel status to message subscriptions: ${String(error)}`);
         }
 
         // Remove cancel token from map
@@ -717,7 +716,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     if (!this.debouncedUpdateFunctions.has(messageId)) {
       // Create debounced function for each message ID
       const debouncedUpdate = debounce(
-        async (msgData: AgentInstanceMessage, aid?: string) => {
+        async (messageData_: AgentInstanceMessage, aid?: string) => {
           try {
             this.ensureRepositories();
             // ensureRepositories guarantees dataSource is available
@@ -729,15 +728,15 @@ export class AgentInstanceService implements IAgentInstanceService {
 
               if (messageEntity) {
                 // Update message content
-                messageEntity.content = msgData.content;
-                if (msgData.contentType) messageEntity.contentType = msgData.contentType;
-                if (msgData.metadata) messageEntity.metadata = msgData.metadata;
-                if (msgData.duration !== undefined) messageEntity.duration = msgData.duration ?? undefined; // Fix: Update duration field
+                messageEntity.content = messageData_.content;
+                if (messageData_.contentType) messageEntity.contentType = messageData_.contentType;
+                if (messageData_.metadata) messageEntity.metadata = messageData_.metadata;
+                if (messageData_.duration !== undefined) messageEntity.duration = messageData_.duration ?? undefined; // Fix: Update duration field
                 // Preserve provided modified; if not provided, keep existing DB value to avoid late overwrites
                 // Only adjust modified if the incoming timestamp is earlier; otherwise leave DB value unchanged
-                if (msgData.modified instanceof Date) {
-                  if (!messageEntity.modified || msgData.modified.getTime() < new Date(messageEntity.modified).getTime()) {
-                    messageEntity.modified = msgData.modified;
+                if (messageData_.modified instanceof Date) {
+                  if (!messageEntity.modified || messageData_.modified.getTime() < new Date(messageEntity.modified).getTime()) {
+                    messageEntity.modified = messageData_.modified;
                   }
                 }
 
@@ -760,11 +759,11 @@ export class AgentInstanceService implements IAgentInstanceService {
                 // Create new message if it doesn't exist and agentId provided
                 // Create message using utility function
                 const messageData = createAgentMessage(messageId, aid, {
-                  role: msgData.role,
-                  content: msgData.content,
-                  contentType: msgData.contentType,
-                  metadata: msgData.metadata,
-                  duration: msgData.duration, // Include duration for new messages
+                  role: messageData_.role,
+                  content: messageData_.content,
+                  contentType: messageData_.contentType,
+                  metadata: messageData_.metadata,
+                  duration: messageData_.duration, // Include duration for new messages
                 });
                 const newMessage = messageRepo.create(toDatabaseCompatibleMessage(messageData));
 
@@ -836,9 +835,9 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
 
     // Call debounced function
-    const debouncedFn = this.debouncedUpdateFunctions.get(messageId);
-    if (debouncedFn) {
-      debouncedFn(message, agentId);
+    const debouncedFunction = this.debouncedUpdateFunctions.get(messageId);
+    if (debouncedFunction) {
+      debouncedFunction(message, agentId);
     }
   }
 

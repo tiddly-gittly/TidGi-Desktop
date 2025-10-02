@@ -22,8 +22,10 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
 
         if (view) {
           if (direction === 'left') {
+            // eslint-disable-next-line @typescript-eslint/no-deprecated
             view.webContents.goBack();
           } else if (direction === 'right') {
+            // eslint-disable-next-line @typescript-eslint/no-deprecated
             view.webContents.goForward();
           }
         }

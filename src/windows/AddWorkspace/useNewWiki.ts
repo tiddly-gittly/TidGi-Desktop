@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-types */
-
 import { WikiCreationMethod } from '@/constants/wikiCreation';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -59,7 +57,7 @@ export function useValidateNewWiki(
   return [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter];
 }
 
-export type INewWikiRequiredFormData = ConditionalExcept<IWikiWorkspaceForm, Function>;
+export type INewWikiRequiredFormData = ConditionalExcept<IWikiWorkspaceForm, (...arguments_: unknown[]) => unknown>;
 export function useNewWiki(
   isCreateMainWorkspace: boolean,
   isCreateSyncedWorkspace: boolean,
@@ -86,7 +84,9 @@ export function useNewWiki(
       await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo, { notClose: options?.notClose, from: WikiCreationMethod.Create });
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
-      errorInWhichComponentSetter && updateErrorInWhichComponentSetterByErrorMessage(t, (error as Error).message, errorInWhichComponentSetter);
+      if (errorInWhichComponentSetter) {
+        updateErrorInWhichComponentSetterByErrorMessage(t, (error as Error).message, errorInWhichComponentSetter);
+      }
       hasErrorSetter?.(true);
     }
   }, [wikiCreationMessageSetter, t, hasErrorSetter, form, isCreateMainWorkspace, isCreateSyncedWorkspace, options, errorInWhichComponentSetter]);

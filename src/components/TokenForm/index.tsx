@@ -75,7 +75,7 @@ export function TokenForm({ storageProvider, storageProviderSetter }: Props): Re
       <Box sx={{ display: 'flex', width: '100%' }}>
         <TabsContainer>
           <Tabs
-            onChange={(event: React.SyntheticEvent, newValue: SupportedStorageServices) => {
+            onChange={(_event: React.SyntheticEvent, newValue: SupportedStorageServices) => {
               currentTabSetter(newValue);
             }}
             orientation='vertical'

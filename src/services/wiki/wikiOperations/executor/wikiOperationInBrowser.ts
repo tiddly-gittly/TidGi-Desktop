@@ -53,23 +53,23 @@ export const wikiOperations = {
     const renderResult = await (executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.renderTiddlerOuterHTML](content)));
     ipcRenderer.send(WikiChannel.renderTiddlerOuterHTML, nonceReceived, renderResult);
   },
-  [WikiChannel.openTiddler]: async (nonceReceived: number, tiddlerName: string) => {
+  [WikiChannel.openTiddler]: async (_nonceReceived: number, tiddlerName: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.openTiddler](tiddlerName));
   },
-  [WikiChannel.dispatchEvent]: async (nonceReceived: number, actionMessage: string) => {
+  [WikiChannel.dispatchEvent]: async (_nonceReceived: number, actionMessage: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.dispatchEvent](actionMessage));
   },
-  [WikiChannel.invokeActionsByTag]: async (nonceReceived: number, tag: string, stringifiedData: string) => {
+  [WikiChannel.invokeActionsByTag]: async (_nonceReceived: number, tag: string, stringifiedData: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.invokeActionsByTag](tag, stringifiedData));
   },
-  [WikiChannel.deleteTiddler]: async (nonceReceived: number, title: string) => {
+  [WikiChannel.deleteTiddler]: async (_nonceReceived: number, title: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.deleteTiddler](title));
   },
   // web only methods from src/services/wiki/wikiOperations/web.ts
-  [WikiChannel.syncProgress]: async (nonceReceived: number, message: string) => {
+  [WikiChannel.syncProgress]: async (_nonceReceived: number, message: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.syncProgress](message));
   },
-  [WikiChannel.generalNotification]: async (nonceReceived: number, message: string) => {
+  [WikiChannel.generalNotification]: async (_nonceReceived: number, message: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.generalNotification](message));
   },
 };
@@ -121,7 +121,7 @@ async function executeTWJavaScriptWhenIdle<T>(script: string, options?: { onlyWh
 
 // Attaching the ipcRenderer listeners
 for (const [channel, operation] of Object.entries(wikiOperations)) {
-  ipcRenderer.on(channel, async (event, ...arguments_) => {
+  ipcRenderer.on(channel, async (_event, ...arguments_) => {
     try {
       // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556) this maybe a bug of ts... try remove this comment after upgrade ts. And the result become void is weird too.
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument

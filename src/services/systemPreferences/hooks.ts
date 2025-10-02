@@ -6,7 +6,7 @@ import { IUsedElectionSettings } from './interface';
 
 export function useSystemPreferenceObservable(): IUsedElectionSettings | undefined {
   const [systemPreference, systemPreferenceSetter] = useState<IUsedElectionSettings | undefined>();
-  useObservable(window.observables.systemPreference.systemPreference$, systemPreferenceSetter as any);
+  useObservable(window.observables.systemPreference.systemPreference$, systemPreferenceSetter);
   return systemPreference;
 }
 

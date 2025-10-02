@@ -2,36 +2,26 @@ import { Button, LinearProgress, List, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ShowInfoSnackbarOptions } from '@/components/InfoSnackbar';
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { PageType } from '@/constants/pageTypes';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import type { EmbeddingStatus } from '@services/wikiEmbedding/interface';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
-interface SearchProps extends ISectionProps {
-  showInfoSnackbar: (options: ShowInfoSnackbarOptions) => void;
-}
-
-interface WorkspaceEmbeddingStatus {
+type WorkspaceEmbeddingStatus = Partial<EmbeddingStatus> & {
   workspaceId: string;
-  workspaceName: string;
-  status: 'idle' | 'generating' | 'completed' | 'error';
-  progress?: {
-    total: number;
-    completed: number;
-    current?: string;
-  };
-  error?: string;
+  workspaceName?: string;
   totalEmbeddings?: number;
   totalNotes?: number;
-  lastUpdated?: Date;
-}
+};
 
-export function Search(props: SearchProps): React.JSX.Element {
-  const { sections, requestRestartCountDown, showInfoSnackbar } = props;
+export function Search(
+  props: Partial<ISectionProps> & { showInfoSnackbar?: (payload: { message: string; severity?: 'error' | 'warning' | 'info' | 'success' }) => void },
+): React.JSX.Element {
+  const { sections, requestRestartCountDown: _requestRestartCountDown, showInfoSnackbar } = props;
   const { t } = useTranslation();
-  const [embeddingStatuses, setEmbeddingStatuses] = useState<WorkspaceEmbeddingStatus[]>([]);
+  const [_embeddingStatuses, _setEmbeddingStatuses] = useState<WorkspaceEmbeddingStatus[]>([]);
   const [loading, setLoading] = useState(false);
   const [workspaceStatuses, setWorkspaceStatuses] = useState<WorkspaceEmbeddingStatus[]>([]);
   const pollingIntervalReference = useRef<NodeJS.Timeout | null>(null);
@@ -61,19 +51,21 @@ export function Search(props: SearchProps): React.JSX.Element {
             workspaceId: workspace.id,
             workspaceName: workspace.name,
             status: embeddingStatus.status,
-            progress: embeddingStatus.progress,
             error: embeddingStatus.error,
             totalEmbeddings: embeddingStats.totalEmbeddings,
             totalNotes: embeddingStats.totalNotes,
             lastUpdated: embeddingStatus.lastUpdated,
           });
-        } catch (error) {
-          console.error(`Failed to load embedding status for workspace ${workspace.name}:`, error);
+        } catch (_error: unknown) {
+          // Log and mark error status
+
+          console.error(`Failed to load embedding status for workspace ${workspace.name}:`, _error);
+          void _error;
           statuses.push({
             workspaceId: workspace.id,
             workspaceName: workspace.name,
             status: 'error',
-            error: error instanceof Error ? error.message : String(error),
+            error: _error instanceof Error ? _error.message : String(_error),
           });
         }
       }
@@ -109,8 +101,9 @@ export function Search(props: SearchProps): React.JSX.Element {
                   totalNotes: embeddingStats.totalNotes,
                   lastUpdated: embeddingStatus.lastUpdated,
                 };
-              } catch (error) {
-                console.error(`Failed to update status for workspace ${ws.workspaceName}:`, error);
+              } catch (_error: unknown) {
+                console.error(`Failed to update status for workspace ${ws.workspaceName}:`, _error);
+                void _error;
                 return ws;
               }
             }
@@ -139,23 +132,23 @@ export function Search(props: SearchProps): React.JSX.Element {
       const aiConfig = await window.service.externalAPI.getAIConfig();
 
       if (!aiConfig.api.provider) {
-        showInfoSnackbar({
+        showInfoSnackbar?.({
           message: t('Preference.SearchEmbeddingNoAIConfigError'),
           severity: 'error',
         });
         // Scroll to external API section
-        sections.externalAPI?.ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        sections?.externalAPI?.ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
 
       // Check if embeddingModel is configured, otherwise use regular model
       if (!aiConfig.api.embeddingModel) {
-        showInfoSnackbar({
+        showInfoSnackbar?.({
           message: t('Preference.SearchEmbeddingNoEmbeddingModelError'),
           severity: 'warning',
         });
         // Scroll to external API section
-        sections.externalAPI?.ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        sections?.externalAPI?.ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
 
@@ -240,7 +233,7 @@ export function Search(props: SearchProps): React.JSX.Element {
       );
     } catch (error) {
       console.error(`Failed to delete embeddings for ${workspaceName}:`, error);
-      showInfoSnackbar({
+      showInfoSnackbar?.({
         message: t('Preference.SearchEmbeddingDeleteError', { error: error instanceof Error ? error.message : String(error) }),
         severity: 'error',
       });
@@ -274,7 +267,7 @@ export function Search(props: SearchProps): React.JSX.Element {
 
   return (
     <>
-      <SectionTitle ref={props.sections.search.ref}>{t('Preference.Search')}</SectionTitle>
+      <SectionTitle ref={props.sections?.search?.ref}>{t('Preference.Search')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           {loading
@@ -301,7 +294,7 @@ export function Search(props: SearchProps): React.JSX.Element {
                         <Button
                           size='small'
                           variant='outlined'
-                          onClick={() => handleGenerateEmbeddings(workspace.workspaceId, workspace.workspaceName)}
+                          onClick={() => workspace.workspaceId && handleGenerateEmbeddings(workspace.workspaceId, workspace.workspaceName ?? '')}
                           disabled={workspace.status === 'generating'}
                           style={{ marginRight: 8 }}
                         >
@@ -316,7 +309,7 @@ export function Search(props: SearchProps): React.JSX.Element {
                             size='small'
                             variant='outlined'
                             color='error'
-                            onClick={() => handleDeleteEmbeddings(workspace.workspaceId, workspace.workspaceName)}
+                            onClick={() => workspace.workspaceId && handleDeleteEmbeddings(workspace.workspaceId, workspace.workspaceName ?? '')}
                             disabled={workspace.status === 'generating'}
                           >
                             {t('Preference.SearchEmbeddingDelete')}

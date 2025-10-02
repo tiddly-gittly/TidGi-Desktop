@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prevent-abbreviations */
 import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
 import { nanoid } from 'nanoid';
@@ -62,7 +61,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         logger.info('Agent database is empty, initializing with default agents');
         const defaultAgentsList = defaultAgents as AgentDefinition[];
         // Create agent definition entities with complete data from defaultAgents.json
-        const agentDefEntities = defaultAgentsList.map(defaultAgent =>
+        const agentDefinitionEntities = defaultAgentsList.map(defaultAgent =>
           this.agentDefRepository!.create({
             id: defaultAgent.id,
             name: defaultAgent.name,
@@ -75,7 +74,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
           })
         );
         // Save all default agents to database
-        await this.agentDefRepository.save(agentDefEntities);
+        await this.agentDefRepository.save(agentDefinitionEntities);
         logger.info(`Initialized ${defaultAgentsList.length} default agents in database`);
       } else {
         logger.debug(`Agent database already contains ${existingCount} agents, skipping default initialization`);
@@ -105,11 +104,11 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         agent.id = nanoid();
       }
 
-      const agentDefEntity = this.agentDefRepository!.create({
+      const agentDefinitionEntity = this.agentDefRepository!.create({
         ...agent,
       });
 
-      await this.agentDefRepository!.save(agentDefEntity);
+      await this.agentDefRepository!.save(agentDefinitionEntity);
       logger.info(`Created agent definition: ${agent.id}`);
 
       return agent;
@@ -175,13 +174,13 @@ export class AgentDefinitionService implements IAgentDefinitionService {
   }
 
   // Get specific agent definition by ID or default agent if ID not provided
-  public async getAgentDef(defId?: string): Promise<AgentDefinition | undefined> {
+  public async getAgentDef(definitionId?: string): Promise<AgentDefinition | undefined> {
     this.ensureRepositories();
 
     try {
       // Get default agent definition if ID not provided
       // TODO: Get default agent from preferences
-      if (!defId) {
+      if (!definitionId) {
         // Temporary solution: get the first agent definition
         const agents = await this.getAgentDefs();
         return agents.length > 0 ? agents[0] : undefined;
@@ -189,7 +188,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
 
       // Find agent in database
       const entity = await this.agentDefRepository!.findOne({
-        where: { id: defId },
+        where: { id: definitionId },
       });
 
       if (!entity) {
@@ -197,7 +196,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       }
 
       // Convert entity to agent definition
-      const agentDef: AgentDefinition = {
+      const agentDefinition: AgentDefinition = {
         id: entity.id,
         name: entity.name || undefined,
         description: entity.description || undefined,
@@ -208,7 +207,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         agentTools: entity.agentTools || undefined,
       };
 
-      return agentDef;
+      return agentDefinition;
     } catch (error) {
       logger.error(`Failed to get agent definition: ${error as Error}`);
       throw error;

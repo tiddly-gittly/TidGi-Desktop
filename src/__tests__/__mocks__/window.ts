@@ -59,8 +59,12 @@ Object.defineProperty(window, 'observables', {
               const resultObservable = agentInstanceService.concatPrompt(promptDescription, messages);
               // Subscribe to the result and forward to our observer
               resultObservable.subscribe(observer);
-            } catch (error) {
-              observer.error(error);
+            } catch (_error: unknown) {
+              // Log but keep test mocks resilient
+
+              console.warn(`Error while inserting dom node in react widget, this might be cause by use transclude widget for the wikitext contains widget.`, _error);
+              void _error;
+              observer.error(_error);
             }
           };
           void initAndCall();

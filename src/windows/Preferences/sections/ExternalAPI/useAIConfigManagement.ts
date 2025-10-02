@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prevent-abbreviations */
 import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { AIProviderConfig } from '@services/externalAPI/interface';
 import { cloneDeep } from 'lodash';
@@ -41,16 +40,16 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
             finalConfig = agentInstance.aiApiConfig as AiAPIConfig;
           } else if (agentInstance?.agentDefId) {
             // Auto-resolve agentDefId from agentId and get definition config
-            const agentDef = await window.service.agentDefinition.getAgentDef(agentInstance.agentDefId);
-            if (agentDef?.aiApiConfig && Object.keys(agentDef.aiApiConfig).length > 0) {
-              finalConfig = agentDef.aiApiConfig as AiAPIConfig;
+            const agentDefinition = await window.service.agentDefinition.getAgentDef(agentInstance.agentDefId);
+            if (agentDefinition?.aiApiConfig && Object.keys(agentDefinition.aiApiConfig).length > 0) {
+              finalConfig = agentDefinition.aiApiConfig as AiAPIConfig;
             }
           }
         } else if (agentDefId) {
           // Get definition config
-          const agentDef = await window.service.agentDefinition.getAgentDef(agentDefId);
-          if (agentDef?.aiApiConfig && Object.keys(agentDef.aiApiConfig).length > 0) {
-            finalConfig = agentDef.aiApiConfig as AiAPIConfig;
+          const agentDefinition = await window.service.agentDefinition.getAgentDef(agentDefId);
+          if (agentDefinition?.aiApiConfig && Object.keys(agentDefinition.aiApiConfig).length > 0) {
+            finalConfig = agentDefinition.aiApiConfig as AiAPIConfig;
           }
         }
 

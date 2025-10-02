@@ -1,5 +1,5 @@
 {
-  "exclude": ["template/**/*.js", "src/services/wiki/plugin/**/*.js", "features/cucumber.config.js", "**/__mocks__/**/*.js"],
+  "exclude": ["template/**/*.js", "features/cucumber.config.js", "**/__mocks__/**/*.js"],
   "include": ["src", "features", "test", "./*.*.ts", "./*.*.js"],
   "ts-node": {
     "files": true,

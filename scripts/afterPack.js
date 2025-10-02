@@ -1,11 +1,7 @@
-/* eslint-disable security-node/detect-crlf */
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
-/* eslint-disable unicorn/import-style */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
+
 /* eslint-disable unicorn/prevent-abbreviations */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /**
  * Remove all .lproj files
@@ -95,7 +91,8 @@ exports.default = async (
       ['app-path', 'main'],
       // node binary
       ['better-sqlite3', 'build', 'Release', 'better_sqlite3.node'],
-      [`sqlite-vec-${process.platform}-${process.arch}`],
+      // Refer to `node_modules\sqlite-vec\index.cjs` for latest file names
+      [`sqlite-vec-${process.platform === 'win32' ? 'windows' : process.platform}-${process.arch}`],
     ];
     console.log(`Copying packagePathsToCopyDereferenced`);
     for (const packagePathInNodeModules of packagePathsToCopyDereferenced) {

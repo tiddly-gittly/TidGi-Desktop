@@ -112,7 +112,9 @@ function SearchGithubRepoResultList({
   const onSelectRepo = useCallback(
     (url: string, name: string) => {
       githubWikiUrlSetter(url);
-      typeof wikiFolderNameSetter === 'function' && wikiFolderNameSetter(name);
+      if (typeof wikiFolderNameSetter === 'function') {
+        wikiFolderNameSetter(name);
+      }
     },
     [githubWikiUrlSetter, wikiFolderNameSetter],
   );
@@ -149,7 +151,7 @@ function SearchGithubRepoResultList({
         clearTimeout(timeoutHandle);
       };
     }
-    return () => {};
+    return undefined;
   }, [error, githubUsername, accessToken, retryInterval]);
 
   const [createRepository] = useMutation(CREATE_REPO_MUTATION);
@@ -240,7 +242,7 @@ function SearchGithubRepoResultList({
         )}
       </List>
       {repoList.length === 0 && (
-        <ReloadButton color='secondary' endIcon={<CachedIcon />} onClick={async () => await refetchDebounced()}>
+        <ReloadButton color='secondary' endIcon={<CachedIcon />} onClick={() => void refetchDebounced()}>
           {t('AddWorkspace.Reload')}
         </ReloadButton>
       )}

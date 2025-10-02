@@ -65,7 +65,7 @@ export function NewWikiForm({
               `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
                     ${form.mainWikiToLink.wikiFolderLocation}/tiddlers/subwiki/${form.wikiFolderName}`}
             value={form.mainWikiToLinkIndex}
-            inputProps={{ 'data-testid': 'main-wiki-select' }}
+            slotProps={{ htmlInput: { 'data-testid': 'main-wiki-select' } }}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
               const index = event.target.value as unknown as number;
               const selectedWorkspace = form.mainWorkspaceList[index];
@@ -97,7 +97,7 @@ export function NewWikiForm({
                 {...parameters}
                 label={t('AddWorkspace.TagName')}
                 helperText={t('AddWorkspace.TagNameHelp')}
-                inputProps={{ ...parameters.inputProps, 'data-testid': 'tagname-autocomplete-input' }}
+                slotProps={{ htmlInput: { ...parameters.inputProps, 'data-testid': 'tagname-autocomplete-input' } }}
               />
             )}
           />

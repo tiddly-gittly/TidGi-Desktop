@@ -118,6 +118,7 @@ export async function registerMenu(): Promise<void> {
           // TODO: test if we really can get this isPopup value, and it works for help page popup and menubar window
           // const { isPopup = false } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
           // const windowName = isPopup ? WindowNames.menuBar : WindowNames.main
+
           await windowService.goForward();
         }
         ipcMain.emit('request-go-forward');

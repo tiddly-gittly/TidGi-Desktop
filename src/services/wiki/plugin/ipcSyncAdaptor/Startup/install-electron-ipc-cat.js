@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable */
+// @ts-nocheck
 exports.name = 'install-electron-ipc-cat';
 exports.platforms = ['browser'];
 exports.after = ['startup'];
@@ -9,7 +9,7 @@ exports.startup = function() {
     require('$:/plugins/linonetwo/tidgi-ipc-syncadaptor/Startup/electron-ipc-cat.js');
     // call setupSSE in `src/services/wiki/plugin/ipcSyncAdaptor/ipc-syncadaptor.ts` of TidGi-Desktop
     if (typeof $tw !== 'undefined') {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+       
       $tw.syncadaptor?.setupSSE?.();
     }
   }

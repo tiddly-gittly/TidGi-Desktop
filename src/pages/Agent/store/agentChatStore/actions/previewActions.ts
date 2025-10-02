@@ -1,4 +1,5 @@
-import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { CoreMessage } from 'ai';
 import { StateCreator } from 'zustand';
 import { AgentChatStoreType, PreviewActions } from '../types';
 
@@ -101,11 +102,12 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
         previewCurrentPlugin: null,
       });
 
-      let finalResult: any = null;
+      type PreviewResult = { flatPrompts: CoreMessage[]; processedPrompts: IPrompt[] } | null;
+      let finalResult: PreviewResult = null;
       let completed = false;
 
       // Create a promise that resolves when the stream completes
-      const streamPromise = new Promise<any>((resolve, reject) => {
+      const streamPromise = new Promise<PreviewResult>((resolve, reject) => {
         // Subscribe to the stream and update progress in real-time
         const subscription = concatStream.subscribe({
           next: (state) => {
@@ -146,7 +148,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
               previewCurrentStep: 'Error occurred',
               previewCurrentPlugin: null,
             });
-            reject(error);
+            reject(error instanceof Error ? error : new Error(String(error)));
           },
           complete: () => {
             completed = true;
@@ -178,9 +180,10 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
         }, 15000);
       });
 
-      return streamPromise;
-    } catch (error) {
-      console.error('Error generating preview prompt result:', error);
+      return await streamPromise;
+    } catch (_error: unknown) {
+      console.error('Error generating preview prompt result:', _error);
+      void _error;
       set({
         previewResult: null,
         previewLoading: false,
