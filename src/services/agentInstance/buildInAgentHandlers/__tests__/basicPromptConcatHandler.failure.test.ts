@@ -1,3 +1,4 @@
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
@@ -88,9 +89,9 @@ describe('basicPromptConcatHandler - failure path persists error message and log
     await agentSvc.initialize();
 
     // Stub AgentDefinitionService.getAgentDef to return our saved agent definition
-    const agentDefSvc = container.get(serviceIdentifier.AgentDefinition);
+    const agentDefSvc = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
     if (agentDefSvc && typeof agentDefSvc.getAgentDef === 'function') {
-      vi.spyOn(agentDefSvc as { getAgentDef: (...args: unknown[]) => Promise<unknown> }, 'getAgentDef').mockResolvedValue({
+      vi.spyOn(agentDefSvc, 'getAgentDef').mockResolvedValue({
         id: 'def-1',
         name: 'Def 1',
         handlerID: 'basicPromptConcatHandler',

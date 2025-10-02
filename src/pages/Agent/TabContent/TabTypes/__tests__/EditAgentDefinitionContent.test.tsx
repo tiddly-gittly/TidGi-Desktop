@@ -314,6 +314,9 @@ describe('EditAgentDefinitionContent', () => {
   });
 
   it('should handle missing agent definition gracefully', async () => {
+    // Mock console.error to suppress expected error output
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
     mockGetAgentDef.mockRejectedValueOnce(new Error('Agent not found'));
 
     await renderComponent();
@@ -326,5 +329,13 @@ describe('EditAgentDefinitionContent', () => {
     await waitFor(() => {
       expect(screen.getByText('EditAgent.AgentNotFound')).toBeInTheDocument();
     });
+
+    // Verify that the error was logged
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to load agent definition:',
+      expect.any(Error),
+    );
+
+    consoleErrorSpy.mockRestore();
   });
 });

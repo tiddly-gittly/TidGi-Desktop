@@ -1,4 +1,5 @@
 Feature: Renderer logging to backend (UI-driven)
+
   Background:
     Given I launch the TidGi application
     And I wait for the page to load completely
