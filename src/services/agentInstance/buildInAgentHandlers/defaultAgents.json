@@ -92,8 +92,8 @@
         },
         {
           "id": "d0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
-          "caption": "Wiki工具和搜索结果",
-          "description": "自动在提示词中注入可用的Wiki工具信息，并将工具执行结果插入到下一轮对话中",
+          "caption": "Wiki搜索和向量索引工具",
+          "description": "提供Wiki搜索（filter和vector）以及向量嵌入索引管理功能",
           "pluginId": "wikiSearch",
           "wikiSearchParam": {
             "sourceType": "wiki",

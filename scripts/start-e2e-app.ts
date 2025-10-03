@@ -1,4 +1,4 @@
-// `cross-env NODE_ENV=test pnpm dlx tsx ./scripts/start-e2e-app.ts`
+// pnpm exec cross-env NODE_ENV=test pnpm dlx tsx ./scripts/start-e2e-app.ts
 import { spawn } from 'child_process';
 import { getPackedAppPath } from '../features/supports/paths';
 

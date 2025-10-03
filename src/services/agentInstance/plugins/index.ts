@@ -33,7 +33,13 @@ export function createHandlerHooks(): PromptConcatHooks {
  * Get all available plugins
  */
 async function getAllPlugins() {
-  const [promptPluginsModule, wikiSearchModule, wikiOperationModule, workspacesListModule, messageManagementModule] = await Promise.all([
+  const [
+    promptPluginsModule,
+    wikiSearchModule,
+    wikiOperationModule,
+    workspacesListModule,
+    messageManagementModule,
+  ] = await Promise.all([
     import('./promptPlugins'),
     import('./wikiSearchPlugin'),
     import('./wikiOperationPlugin'),
@@ -125,7 +131,7 @@ export async function initializePluginSystem(): Promise<void> {
     wikiSearchModule.getWikiSearchParameterSchema(),
     {
       displayName: 'Wiki Search',
-      description: 'Search content in wiki workspaces',
+      description: 'Search content in wiki workspaces and manage vector embeddings',
     },
   );
 

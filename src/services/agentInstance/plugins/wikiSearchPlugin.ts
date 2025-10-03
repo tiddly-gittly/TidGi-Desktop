@@ -10,11 +10,13 @@ import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
+import type { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
 import { IWorkspaceService } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { findPromptById } from '../promptConcat/promptConcat';
+import type { AiAPIConfig } from '../promptConcat/promptConcatSchema';
 import type { IPrompt } from '../promptConcat/promptConcatSchema';
 import { schemaToToolContent } from '../utilities/schemaToToolContent';
 import type { AIResponseContext, PromptConcatPlugin } from './types';
@@ -83,29 +85,70 @@ const WikiSearchToolParameterSchema = z.object({
     title: t('Schema.WikiSearch.Tool.Parameters.workspaceName.Title'),
     description: t('Schema.WikiSearch.Tool.Parameters.workspaceName.Description'),
   }),
-  filter: z.string().meta({
+  searchType: z.enum(['filter', 'vector']).optional().default('filter').meta({
+    title: t('Schema.WikiSearch.Tool.Parameters.searchType.Title'),
+    description: t('Schema.WikiSearch.Tool.Parameters.searchType.Description'),
+  }),
+  filter: z.string().optional().meta({
     title: t('Schema.WikiSearch.Tool.Parameters.filter.Title'),
     description: t('Schema.WikiSearch.Tool.Parameters.filter.Description'),
   }),
+  query: z.string().optional().meta({
+    title: t('Schema.WikiSearch.Tool.Parameters.query.Title'),
+    description: t('Schema.WikiSearch.Tool.Parameters.query.Description'),
+  }),
+  limit: z.number().optional().default(10).meta({
+    title: t('Schema.WikiSearch.Tool.Parameters.limit.Title'),
+    description: t('Schema.WikiSearch.Tool.Parameters.limit.Description'),
+  }),
+  threshold: z.number().optional().default(0.7).meta({
+    title: t('Schema.WikiSearch.Tool.Parameters.threshold.Title'),
+    description: t('Schema.WikiSearch.Tool.Parameters.threshold.Description'),
+  }),
 }).meta({
   title: 'wiki-search',
-  description: '在Wiki工作空间中搜索Tiddler内容',
+  description: '在Wiki工作空间中搜索Tiddler内容（支持传统filter搜索和向量语义搜索）',
   examples: [
-    { workspaceName: '我的知识库', filter: '[tag[示例]]' },
+    { workspaceName: '我的知识库', searchType: 'filter' as const, filter: '[tag[示例]]', limit: 10, threshold: 0.7 },
+    { workspaceName: '我的知识库', searchType: 'vector' as const, query: '如何使用智能体', limit: 5, threshold: 0.7 },
   ],
 });
 
 type WikiSearchToolParameter = z.infer<typeof WikiSearchToolParameterSchema>;
 
 /**
+ * Parameter schema for Wiki update embeddings tool
+ */
+const WikiUpdateEmbeddingsToolParameterSchema = z.object({
+  workspaceName: z.string().meta({
+    title: t('Schema.WikiSearch.Tool.UpdateEmbeddings.workspaceName.Title'),
+    description: t('Schema.WikiSearch.Tool.UpdateEmbeddings.workspaceName.Description'),
+  }),
+  forceUpdate: z.boolean().optional().default(false).meta({
+    title: t('Schema.WikiSearch.Tool.UpdateEmbeddings.forceUpdate.Title'),
+    description: t('Schema.WikiSearch.Tool.UpdateEmbeddings.forceUpdate.Description'),
+  }),
+})
+  .meta({
+    title: 'wiki-update-embeddings',
+    description: '为Wiki工作空间生成或更新向量嵌入索引，用于语义搜索',
+    examples: [
+      { workspaceName: '我的知识库', forceUpdate: false },
+      { workspaceName: 'wiki', forceUpdate: true },
+    ],
+  });
+
+type WikiUpdateEmbeddingsToolParameter = z.infer<typeof WikiUpdateEmbeddingsToolParameterSchema>;
+
+/**
  * Execute wiki search tool
  */
 async function executeWikiSearchTool(
   parameters: WikiSearchToolParameter,
-  context?: { agentId?: string; messageId?: string },
+  context?: { agentId?: string; messageId?: string; config?: AiAPIConfig },
 ): Promise<{ success: boolean; data?: string; error?: string; metadata?: Record<string, unknown> }> {
   try {
-    const { workspaceName, filter } = parameters;
+    const { workspaceName, searchType = 'filter', filter, query, limit = 10, threshold = 0.7 } = parameters;
 
     // Get workspace service
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
@@ -137,56 +180,188 @@ async function executeWikiSearchTool(
     logger.debug('Executing wiki search', {
       workspaceID,
       workspaceName,
+      searchType,
       filter,
+      query,
       agentId: context?.agentId,
     });
 
-    // Retrieve tiddlers using the filter expression
-    const tiddlerTitles = await wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, [filter]);
+    // Execute search based on type
+    let results: Array<{ title: string; text?: string; fields?: ITiddlerFields; similarity?: number }> = [];
+    let searchMetadata: Record<string, unknown> = {
+      workspaceID,
+      workspaceName,
+      searchType,
+    };
 
-    if (tiddlerTitles.length === 0) {
-      return {
-        success: true,
-        data: i18n.t('Tool.WikiSearch.Success.NoResults', { filter, workspaceName }),
-        metadata: {
-          filter,
+    if (searchType === 'vector') {
+      // Vector search
+      if (!query) {
+        return {
+          success: false,
+          error: i18n.t('Tool.WikiSearch.Error.VectorSearchRequiresQuery') || 'Vector search requires a query parameter',
+        };
+      }
+
+      if (!context?.config) {
+        return {
+          success: false,
+          error: i18n.t('Tool.WikiSearch.Error.VectorSearchRequiresConfig') || 'Vector search requires AI configuration',
+        };
+      }
+
+      const wikiEmbeddingService = container.get<IWikiEmbeddingService>(serviceIdentifier.WikiEmbedding);
+
+      try {
+        const vectorResults = await wikiEmbeddingService.searchSimilar(
           workspaceID,
-          workspaceName,
-          resultCount: 0,
-        },
+          query,
+          context.config,
+          limit,
+          threshold,
+        );
+
+        if (vectorResults.length === 0) {
+          return {
+            success: true,
+            data: i18n.t('Tool.WikiSearch.Success.NoVectorResults', { query, workspaceName, threshold }) ||
+              `No similar content found for query: "${query}" in workspace "${workspaceName}" (threshold: ${threshold})`,
+            metadata: {
+              ...searchMetadata,
+              query,
+              limit,
+              threshold,
+              resultCount: 0,
+            },
+          };
+        }
+
+        // Convert vector search results to standard format
+        results = vectorResults.map(vr => ({
+          title: vr.record.tiddlerTitle,
+          text: '', // Vector search returns chunks, full text needs separate retrieval
+          similarity: vr.similarity,
+        }));
+
+        // Retrieve full tiddler content for vector results
+        const fullContentResults: typeof results = [];
+        for (const result of results) {
+          try {
+            const tiddlerFields = await wikiService.wikiOperationInServer(
+              WikiChannel.getTiddlersAsJson,
+              workspaceID,
+              [result.title],
+            );
+            if (tiddlerFields.length > 0) {
+              fullContentResults.push({
+                ...result,
+                text: tiddlerFields[0].text,
+                fields: tiddlerFields[0],
+              });
+            } else {
+              fullContentResults.push(result);
+            }
+          } catch (error) {
+            logger.warn(`Error retrieving full tiddler content for ${result.title}`, {
+              error: error instanceof Error ? error.message : String(error),
+            });
+            fullContentResults.push(result);
+          }
+        }
+        results = fullContentResults;
+
+        searchMetadata = {
+          ...searchMetadata,
+          query,
+          limit,
+          threshold,
+          resultCount: results.length,
+        };
+      } catch (error) {
+        logger.error('Vector search failed', {
+          error: error instanceof Error ? error.message : String(error),
+          workspaceID,
+          query,
+        });
+        return {
+          success: false,
+          error: i18n.t('Tool.WikiSearch.Error.VectorSearchFailed', {
+            error: error instanceof Error ? error.message : String(error),
+          }) || `Vector search failed: ${error instanceof Error ? error.message : String(error)}`,
+        };
+      }
+    } else {
+      // Traditional filter search
+      if (!filter) {
+        return {
+          success: false,
+          error: i18n.t('Tool.WikiSearch.Error.FilterSearchRequiresFilter') || 'Filter search requires a filter parameter',
+        };
+      }
+
+      const tiddlerTitles = await wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, [filter]);
+
+      if (tiddlerTitles.length === 0) {
+        return {
+          success: true,
+          data: i18n.t('Tool.WikiSearch.Success.NoResults', { filter, workspaceName }),
+          metadata: {
+            ...searchMetadata,
+            filter,
+            resultCount: 0,
+          },
+        };
+      }
+
+      // Retrieve full tiddler content for each tiddler
+      for (const title of tiddlerTitles) {
+        try {
+          const tiddlerFields = await wikiService.wikiOperationInServer(WikiChannel.getTiddlersAsJson, workspaceID, [title]);
+          if (tiddlerFields.length > 0) {
+            results.push({
+              title,
+              text: tiddlerFields[0].text,
+              fields: tiddlerFields[0],
+            });
+          } else {
+            results.push({ title });
+          }
+        } catch (error) {
+          logger.warn(`Error retrieving tiddler content for ${title}`, {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          results.push({ title });
+        }
+      }
+
+      searchMetadata = {
+        ...searchMetadata,
+        filter,
+        resultCount: tiddlerTitles.length,
+        returnedCount: results.length,
       };
     }
 
-    // Retrieve full tiddler content for each tiddler
-    const results: Array<{ title: string; text?: string; fields?: ITiddlerFields }> = [];
-    for (const title of tiddlerTitles) {
-      try {
-        const tiddlerFields = await wikiService.wikiOperationInServer(WikiChannel.getTiddlersAsJson, workspaceID, [title]);
-        if (tiddlerFields.length > 0) {
-          results.push({
-            title,
-            text: tiddlerFields[0].text,
-            fields: tiddlerFields[0],
-          });
-        } else {
-          results.push({ title });
-        }
-      } catch (error) {
-        logger.warn(`Error retrieving tiddler content for ${title}`, {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        results.push({ title });
-      }
+    // Format results as text with content
+    let content = '';
+    if (searchType === 'vector') {
+      content = i18n.t('Tool.WikiSearch.Success.VectorCompleted', {
+        totalResults: results.length,
+        query,
+      }) || `Found ${results.length} similar results for query: "${query}"\n\n`;
+    } else {
+      content = i18n.t('Tool.WikiSearch.Success.Completed', {
+        totalResults: results.length,
+        shownResults: results.length,
+      }) + '\n\n';
     }
 
-    // Format results as text with content
-    let content = i18n.t('Tool.WikiSearch.Success.Completed', {
-      totalResults: tiddlerTitles.length,
-      shownResults: results.length,
-    }) + '\n\n';
-
     for (const result of results) {
-      content += `**Tiddler: ${result.title}**\n\n`;
+      content += `**Tiddler: ${result.title}**`;
+      if (result.similarity !== undefined) {
+        content += ` (Similarity: ${(result.similarity * 100).toFixed(1)}%)`;
+      }
+      content += '\n\n';
       if (result.text) {
         content += '```tiddlywiki\n';
         content += result.text;
@@ -195,16 +370,11 @@ async function executeWikiSearchTool(
         content += '(Content not available)\n\n';
       }
     }
+
     return {
       success: true,
       data: content,
-      metadata: {
-        filter,
-        workspaceID,
-        workspaceName,
-        resultCount: tiddlerTitles.length,
-        returnedCount: results.length,
-      },
+      metadata: searchMetadata,
     };
   } catch (error) {
     logger.error('Wiki search tool execution error', {
@@ -222,8 +392,102 @@ async function executeWikiSearchTool(
 }
 
 /**
+ * Execute wiki update embeddings tool
+ */
+async function executeWikiUpdateEmbeddingsTool(
+  parameters: WikiUpdateEmbeddingsToolParameter,
+  context?: { agentId?: string; messageId?: string; aiConfig?: unknown },
+): Promise<{ success: boolean; data?: string; error?: string; metadata?: Record<string, unknown> }> {
+  try {
+    const { workspaceName, forceUpdate = false } = parameters;
+
+    // Get workspace service
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const wikiEmbeddingService = container.get<IWikiEmbeddingService>(serviceIdentifier.WikiEmbedding);
+
+    // Look up workspace ID from workspace name or ID
+    const workspaces = await workspaceService.getWorkspacesAsList();
+    const targetWorkspace = workspaces.find(ws => ws.name === workspaceName || ws.id === workspaceName);
+
+    if (!targetWorkspace) {
+      return {
+        success: false,
+        error: i18n.t('Tool.WikiSearch.UpdateEmbeddings.Error.WorkspaceNotFound', {
+          workspaceName,
+          availableWorkspaces: workspaces.map(w => `${w.name} (${w.id})`).join(', '),
+        }) || `Workspace with name or ID "${workspaceName}" does not exist. Available workspaces: ${workspaces.map(w => `${w.name} (${w.id})`).join(', ')}`,
+      };
+    }
+
+    const workspaceID = targetWorkspace.id;
+
+    if (!await workspaceService.exists(workspaceID)) {
+      return {
+        success: false,
+        error: i18n.t('Tool.WikiSearch.UpdateEmbeddings.Error.WorkspaceNotExist', { workspaceID }),
+      };
+    }
+
+    // Check if AI config is available
+    if (!context?.aiConfig) {
+      return {
+        success: false,
+        error: i18n.t('Tool.WikiSearch.UpdateEmbeddings.Error.NoAIConfig') || 'AI configuration is required for generating embeddings',
+      };
+    }
+
+    logger.debug('Executing wiki embedding generation', {
+      workspaceID,
+      workspaceName,
+      forceUpdate,
+      agentId: context?.agentId,
+    });
+
+    // Generate embeddings
+    await wikiEmbeddingService.generateEmbeddings(
+      workspaceID,
+      context.aiConfig as Parameters<IWikiEmbeddingService['generateEmbeddings']>[1],
+      forceUpdate,
+    );
+
+    // Get stats after generation
+    const stats = await wikiEmbeddingService.getEmbeddingStats(workspaceID);
+
+    const result = i18n.t('Tool.WikiSearch.UpdateEmbeddings.Success.Generated', {
+      workspaceName,
+      totalEmbeddings: stats.totalEmbeddings,
+      totalNotes: stats.totalNotes,
+    }) || `Successfully generated embeddings for workspace "${workspaceName}". Total embeddings: ${stats.totalEmbeddings}, Total notes: ${stats.totalNotes}`;
+
+    return {
+      success: true,
+      data: result,
+      metadata: {
+        workspaceID,
+        workspaceName,
+        totalEmbeddings: stats.totalEmbeddings,
+        totalNotes: stats.totalNotes,
+        forceUpdate,
+      },
+    };
+  } catch (error) {
+    logger.error('Wiki update embeddings tool execution error', {
+      error: error instanceof Error ? error.message : String(error),
+      parameters,
+    });
+
+    return {
+      success: false,
+      error: i18n.t('Tool.WikiSearch.UpdateEmbeddings.Error.ExecutionFailed', {
+        error: error instanceof Error ? error.message : String(error),
+      }) || `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+}
+
+/**
  * Wiki Search plugin - Prompt processing
- * Handles tool list injection for wiki search functionality
+ * Handles tool list injection for wiki search and update embeddings functionality
  */
 export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
   // First tapAsync: Tool list injection
@@ -254,13 +518,18 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         // Get available wikis - now handled by workspacesListPlugin
         // The workspaces list will be injected separately by workspacesListPlugin
 
-        const toolPromptContent = schemaToToolContent(WikiSearchToolParameterSchema);
+        // Inject both wiki-search and wiki-update-embeddings tools
+        const wikiSearchToolContent = schemaToToolContent(WikiSearchToolParameterSchema);
+        const wikiUpdateEmbeddingsToolContent = schemaToToolContent(WikiUpdateEmbeddingsToolParameterSchema);
+
+        // Combine both tools into one prompt
+        const combinedToolContent = `${wikiSearchToolContent}\n\n${wikiUpdateEmbeddingsToolContent}`;
 
         const toolPrompt: IPrompt = {
           id: `wiki-tool-list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          text: toolPromptContent,
-          tags: ['toolList', 'wikiSearch'],
-          caption: 'Wiki search tool',
+          text: combinedToolContent,
+          tags: ['toolList', 'wikiSearch', 'wikiEmbedding'],
+          caption: 'Wiki search and embedding tools',
           enabled: true,
         };
 
@@ -274,6 +543,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         logger.debug('Wiki tool list injected successfully', {
           targetId: toolListPosition.targetId,
           position: toolListPosition.position,
+          toolCount: 2, // wiki-search and wiki-update-embeddings
           pluginId: pluginConfig.id,
         });
       }
@@ -303,15 +573,15 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         return;
       }
 
-      // Check for wiki search tool calls in the AI response
+      // Check for wiki search or update embeddings tool calls in the AI response
       const toolMatch = matchToolCalling(response.content);
 
-      if (!toolMatch.found || toolMatch.toolId !== 'wiki-search') {
+      if (!toolMatch.found || (toolMatch.toolId !== 'wiki-search' && toolMatch.toolId !== 'wiki-update-embeddings')) {
         callback();
         return;
       }
 
-      logger.debug('Wiki search tool call detected', {
+      logger.debug('Wiki tool call detected', {
         toolId: toolMatch.toolId,
         agentId: handlerContext.agent.id,
       });
@@ -326,7 +596,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
           latestAiMessage.metadata = {
             ...latestAiMessage.metadata,
             containsToolCall: true,
-            toolId: 'wiki-search',
+            toolId: toolMatch.toolId,
           };
 
           // Notify frontend about the duration change immediately (no debounce delay)
@@ -348,39 +618,54 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
 
           logger.debug('Set duration=1 for AI tool call message', {
             messageId: latestAiMessage.id,
-            toolId: 'wiki-search',
+            toolId: toolMatch.toolId,
           });
         }
       }
 
-      // Execute the wiki search tool call
+      // Execute the appropriate tool
       try {
         // Check if cancelled before starting tool execution
         if (handlerContext.isCancelled()) {
-          logger.debug('Wiki search cancelled before execution', {
-            toolId: 'wiki-search',
+          logger.debug('Wiki tool cancelled before execution', {
+            toolId: toolMatch.toolId,
             agentId: handlerContext.agent.id,
           });
           callback();
           return;
         }
 
-        // Validate parameters against schema
-        const validatedParameters = WikiSearchToolParameterSchema.parse(toolMatch.parameters);
+        // Validate parameters and execute based on tool type
+        let result: { success: boolean; data?: string; error?: string; metadata?: Record<string, unknown> };
+        let validatedParameters: WikiSearchToolParameter | WikiUpdateEmbeddingsToolParameter;
 
-        // Execute the tool
-        const result = await executeWikiSearchTool(
-          validatedParameters,
-          {
-            agentId: handlerContext.agent.id,
-            messageId: handlerContext.agent.messages[handlerContext.agent.messages.length - 1]?.id,
-          },
-        );
+        if (toolMatch.toolId === 'wiki-search') {
+          validatedParameters = WikiSearchToolParameterSchema.parse(toolMatch.parameters);
+          result = await executeWikiSearchTool(
+            validatedParameters,
+            {
+              agentId: handlerContext.agent.id,
+              messageId: handlerContext.agent.messages[handlerContext.agent.messages.length - 1]?.id,
+              config: handlerContext.agent.aiApiConfig as AiAPIConfig | undefined,
+            },
+          );
+        } else {
+          // wiki-update-embeddings
+          validatedParameters = WikiUpdateEmbeddingsToolParameterSchema.parse(toolMatch.parameters);
+          result = await executeWikiUpdateEmbeddingsTool(
+            validatedParameters,
+            {
+              agentId: handlerContext.agent.id,
+              messageId: handlerContext.agent.messages[handlerContext.agent.messages.length - 1]?.id,
+              aiConfig: handlerContext.agent.aiApiConfig,
+            },
+          );
+        }
 
         // Check if cancelled after tool execution
         if (handlerContext.isCancelled()) {
-          logger.debug('Wiki search cancelled after execution', {
-            toolId: 'wiki-search',
+          logger.debug('Wiki tool cancelled after execution', {
+            toolId: toolMatch.toolId,
             agentId: handlerContext.agent.id,
           });
           callback();
@@ -392,10 +677,10 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         let isError = false;
 
         if (result.success && result.data) {
-          toolResultText = `<functions_result>\nTool: wiki-search\nParameters: ${JSON.stringify(validatedParameters)}\nResult: ${result.data}\n</functions_result>`;
+          toolResultText = `<functions_result>\nTool: ${toolMatch.toolId}\nParameters: ${JSON.stringify(validatedParameters)}\nResult: ${result.data}\n</functions_result>`;
         } else {
           isError = true;
-          toolResultText = `<functions_result>\nTool: wiki-search\nParameters: ${JSON.stringify(validatedParameters)}\nError: ${
+          toolResultText = `<functions_result>\nTool: ${toolMatch.toolId}\nParameters: ${JSON.stringify(validatedParameters)}\nError: ${
             result.error || 'Unknown error'
           }\n</functions_result>`;
         }

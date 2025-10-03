@@ -8,10 +8,54 @@ import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { settingsPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
 
+/**
+ * Generate deterministic embedding vector based on a semantic tag
+ * This allows us to control similarity in tests without writing full 384-dim vectors
+ *
+ * Strategy:
+ * - Similar tags (note1, note1-similar) -> similar vectors (high similarity)
+ * - Different tags (note1, note2) -> different vectors (medium similarity)
+ * - Unrelated tags (note1, unrelated) -> very different vectors (low similarity)
+ */
+function generateSemanticEmbedding(tag: string): number[] {
+  const vector: number[] = [];
+  
+  // Parse tag to determine semantic relationship
+  // Format: "note1", "note2", "query-note1", "unrelated"
+  const baseTag = tag.replace(/-similar$/, '').replace(/^query-/, '');
+  const isSimilar = tag.includes('-similar');
+  const isQuery = tag.startsWith('query-');
+  const isUnrelated = tag === 'unrelated';
+  
+  // Generate base vector from tag
+  const seed = Array.from(baseTag).reduce((hash, char) => {
+    return ((hash << 5) - hash) + char.charCodeAt(0);
+  }, 0);
+  
+  for (let dimension = 0; dimension < 384; dimension++) {
+    const x = Math.sin((seed + dimension) * 0.1) * 10000;
+    let value = x - Math.floor(x);
+    
+    // Adjust vector based on semantic relationship
+    if (isUnrelated) {
+      // Completely different direction
+      value = -value;
+    } else if (isSimilar || isQuery) {
+      // Very similar (>95% similarity) - add small noise
+      value = value + (Math.sin(dimension * 0.01) * 0.05);
+    }
+    
+    // Normalize to [-1, 1]
+    vector.push(value * 2 - 1);
+  }
+  
+  return vector;
+}
+
 // Agent-specific Given steps
 Given('I have started the mock OpenAI server', function(this: ApplicationWorld, dataTable: DataTable | undefined, done: (error?: Error) => void) {
   try {
-    const rules: Array<{ response: string; stream?: boolean }> = [];
+    const rules: Array<{ response: string; stream?: boolean; embedding?: number[] }> = [];
     if (dataTable && typeof dataTable.raw === 'function') {
       const rows = dataTable.raw();
       // Skip header row
@@ -19,7 +63,15 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
         const row = rows[index];
         const response = String(row[0] ?? '').trim();
         const stream = String(row[1] ?? '').trim().toLowerCase() === 'true';
-        if (response) rules.push({ response, stream });
+        const embeddingTag = String(row[2] ?? '').trim();
+        
+        // Generate embedding from semantic tag if provided
+        let embedding: number[] | undefined;
+        if (embeddingTag) {
+          embedding = generateSemanticEmbedding(embeddingTag);
+        }
+        
+        if (response) rules.push({ response, stream, embedding });
       }
     }
 
@@ -181,9 +233,13 @@ Given('I add test ai settings', function() {
   }
   const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
+  const embeddingModelName = modelsArray[1]?.name; // Add embedding model
   const newAi: AIGlobalSettings = {
     providers: [providerConfig],
-    defaultConfig: { api: { provider: providerConfig.provider, model: modelName }, modelParameters: desiredModelParameters },
+    defaultConfig: {
+      api: { provider: providerConfig.provider, model: modelName, embeddingModel: embeddingModelName },
+      modelParameters: desiredModelParameters,
+    },
   };
   fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi } as ISettingFile, { spaces: 2 });
 });

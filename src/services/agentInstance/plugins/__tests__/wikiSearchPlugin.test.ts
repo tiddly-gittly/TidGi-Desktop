@@ -529,6 +529,309 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
     });
   });
 
+  describe('Vector Search Functionality', () => {
+    beforeEach(async () => {
+      const { container } = await import('@services/container');
+      // Mock WikiEmbeddingService
+      const mockWikiEmbeddingService = {
+        searchSimilar: vi.fn(),
+      };
+      // Replace the service in container
+      container.rebind(serviceIdentifier.WikiEmbedding).toConstantValue(mockWikiEmbeddingService);
+    });
+
+    it('should execute vector search when searchType=vector', async () => {
+      const { container } = await import('@services/container');
+      const wikiEmbeddingService = container.get(serviceIdentifier.WikiEmbedding);
+
+      // Mock vector search results
+      (wikiEmbeddingService as { searchSimilar: ReturnType<typeof vi.fn> }).searchSimilar.mockResolvedValue([
+        {
+          record: {
+            id: 1,
+            workspaceId: 'test-workspace',
+            tiddlerTitle: 'Vector Result 1',
+            model: 'test-model',
+            provider: 'test-provider',
+            dimensions: 384,
+            created: new Date(),
+            modified: new Date(),
+          },
+          similarity: 0.95,
+        },
+        {
+          record: {
+            id: 2,
+            workspaceId: 'test-workspace',
+            tiddlerTitle: 'Vector Result 2',
+            model: 'test-model',
+            provider: 'test-provider',
+            dimensions: 384,
+            created: new Date(),
+            modified: new Date(),
+          },
+          similarity: 0.85,
+        },
+      ]);
+
+      // Mock wiki service to return full tiddler content
+      const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+      vi.spyOn(wikiService, 'wikiOperationInServer').mockImplementation(
+        ((...args: unknown[]) => {
+          const channel = args[0] as WikiChannel;
+          const opArgs = args[2] as string[] | undefined;
+          if (channel === WikiChannel.getTiddlersAsJson && opArgs && opArgs.length > 0) {
+            const title = opArgs[0];
+            return Promise.resolve([
+              {
+                title,
+                text: `Full content of ${title}`,
+                tags: ['test'],
+              },
+            ]);
+          }
+          return Promise.resolve([]);
+        }) as unknown as IWikiService['wikiOperationInServer'],
+      );
+
+      const handlerContext = {
+        agent: {
+          id: 'test-agent',
+          agentDefId: 'test-agent-def',
+          aiApiConfig: {
+            api: {
+              provider: 'openai',
+              model: 'gpt-4',
+              embeddingModel: 'text-embedding-ada-002',
+            },
+            modelParameters: {},
+          },
+          status: {
+            state: 'working' as const,
+            modified: new Date(),
+          },
+          created: new Date(),
+          messages: [
+            {
+              id: 'ai-vector-tool-call',
+              role: 'assistant' as const,
+              content:
+                '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "searchType": "vector", "query": "How to use AI agents", "limit": 10, "threshold": 0.7}</tool_use>',
+              agentId: 'test-agent',
+              contentType: 'text/plain',
+              modified: new Date(),
+              duration: undefined,
+            },
+          ],
+        },
+        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        isCancelled: () => false,
+      };
+
+      const response = {
+        status: 'done' as const,
+        content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "searchType": "vector", "query": "How to use AI agents", "limit": 10, "threshold": 0.7}</tool_use>',
+        requestId: 'test-request-vector',
+      };
+
+      const context = {
+        handlerContext,
+        response,
+        requestId: 'test-request-vector',
+        isFinal: true,
+        pluginConfig: {
+          id: 'test-plugin',
+          pluginId: 'wikiSearch' as const,
+          forbidOverrides: false,
+        },
+        prompts: [],
+        messages: [],
+        llmResponse: response.content,
+        responses: [],
+        actions: {} as ActionBag,
+      };
+
+      const hooks = createHandlerHooks();
+      wikiSearchPlugin(hooks);
+
+      await hooks.responseComplete.promise(context);
+
+      // Verify vector search was called
+      const mockService = wikiEmbeddingService as { searchSimilar: ReturnType<typeof vi.fn> };
+      expect(mockService.searchSimilar).toHaveBeenCalledWith(
+        expect.any(String), // workspaceID
+        'How to use AI agents',
+        expect.objectContaining({
+          api: expect.objectContaining({
+            provider: 'openai',
+            model: 'gpt-4',
+          }),
+        }),
+        10,
+        0.7,
+      );
+
+      // Verify results were processed
+      expect(context.actions.yieldNextRoundTo).toBe('self');
+      expect(handlerContext.agent.messages.length).toBe(2);
+
+      const toolResultMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
+      expect(toolResultMessage.content).toContain('<functions_result>');
+      expect(toolResultMessage.content).toContain('Vector Result 1');
+      expect(toolResultMessage.content).toContain('Vector Result 2');
+      expect(toolResultMessage.content).toContain('Similarity:');
+      expect(toolResultMessage.content).toContain('95.0%');
+      expect(toolResultMessage.content).toContain('85.0%');
+    });
+
+    it('should handle vector search errors gracefully', async () => {
+      const { container } = await import('@services/container');
+      const wikiEmbeddingService = container.get(serviceIdentifier.WikiEmbedding);
+
+      // Mock vector search to throw error
+      (wikiEmbeddingService as { searchSimilar: ReturnType<typeof vi.fn> }).searchSimilar.mockRejectedValue(
+        new Error('Vector database not initialized'),
+      );
+
+      const handlerContext = {
+        agent: {
+          id: 'test-agent',
+          agentDefId: 'test-agent-def',
+          aiApiConfig: {
+            api: {
+              provider: 'openai',
+              model: 'gpt-4',
+            },
+            modelParameters: {},
+          },
+          status: {
+            state: 'working' as const,
+            modified: new Date(),
+          },
+          created: new Date(),
+          messages: [
+            {
+              id: 'ai-vector-error-call',
+              role: 'assistant' as const,
+              content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "searchType": "vector", "query": "test query", "limit": 10, "threshold": 0.7}</tool_use>',
+              agentId: 'test-agent',
+              contentType: 'text/plain',
+              modified: new Date(),
+              duration: undefined,
+            },
+          ],
+        },
+        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        isCancelled: () => false,
+      };
+
+      const response = {
+        status: 'done' as const,
+        content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "searchType": "vector", "query": "test query", "limit": 10, "threshold": 0.7}</tool_use>',
+        requestId: 'test-request-vector-error',
+      };
+
+      const context = {
+        handlerContext,
+        response,
+        requestId: 'test-request-vector-error',
+        isFinal: true,
+        pluginConfig: {
+          id: 'test-plugin',
+          pluginId: 'wikiSearch' as const,
+          forbidOverrides: false,
+        },
+        prompts: [],
+        messages: [],
+        llmResponse: response.content,
+        responses: [],
+        actions: {} as ActionBag,
+      };
+
+      const hooks = createHandlerHooks();
+      wikiSearchPlugin(hooks);
+
+      await hooks.responseComplete.promise(context);
+
+      // Should still set up next round with error message
+      expect(context.actions.yieldNextRoundTo).toBe('self');
+
+      const errorResultMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
+      expect(errorResultMessage.content).toContain('Error:');
+      // Error message contains i18n key or actual error
+      expect(errorResultMessage.content).toMatch(/Vector database not initialized|Tool\.WikiSearch\.Error\.VectorSearchFailed/);
+      expect(errorResultMessage.metadata?.isError).toBe(true);
+    });
+
+    it('should require query parameter for vector search', async () => {
+      const handlerContext = {
+        agent: {
+          id: 'test-agent',
+          agentDefId: 'test-agent-def',
+          aiApiConfig: {
+            api: {
+              provider: 'openai',
+              model: 'gpt-4',
+            },
+            modelParameters: {},
+          },
+          status: {
+            state: 'working' as const,
+            modified: new Date(),
+          },
+          created: new Date(),
+          messages: [
+            {
+              id: 'ai-no-query',
+              role: 'assistant' as const,
+              content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "searchType": "vector", "limit": 10, "threshold": 0.7}</tool_use>',
+              agentId: 'test-agent',
+              contentType: 'text/plain',
+              modified: new Date(),
+              duration: undefined,
+            },
+          ],
+        },
+        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        isCancelled: () => false,
+      };
+
+      const response = {
+        status: 'done' as const,
+        content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki 1", "searchType": "vector", "limit": 10, "threshold": 0.7}</tool_use>',
+        requestId: 'test-request-no-query',
+      };
+
+      const context = {
+        handlerContext,
+        response,
+        requestId: 'test-request-no-query',
+        isFinal: true,
+        pluginConfig: {
+          id: 'test-plugin',
+          pluginId: 'wikiSearch' as const,
+          forbidOverrides: false,
+        },
+        prompts: [],
+        messages: [],
+        llmResponse: response.content,
+        responses: [],
+        actions: {} as ActionBag,
+      };
+
+      const hooks = createHandlerHooks();
+      wikiSearchPlugin(hooks);
+
+      await hooks.responseComplete.promise(context);
+
+      // Should return error about missing query
+      const errorMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
+      expect(errorMessage.content).toContain('Error:');
+      // Error message contains i18n key or translated text
+      expect(errorMessage.content).toMatch(/query|Tool\.WikiSearch\.Error\.VectorSearchRequiresQuery/);
+    });
+  });
+
   describe('Message Persistence Integration', () => {
     it('should work with messageManagementPlugin for complete persistence flow', async () => {
       // This test ensures wikiSearchPlugin works well with messageManagementPlugin

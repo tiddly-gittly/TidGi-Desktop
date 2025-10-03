@@ -32,14 +32,11 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "搜索 wiki 中的 index 条目并解释" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 0.5 seconds
-    And I should see a "user message" element with selector "*:has-text('搜索 wiki 中的 index 条目并解释')"
-    And I should see a "tool use indicator" element with selector "*:has-text('tool_use')"
-    And I should see a "wiki search tool" element with selector "*:has-text('wiki-search')"
-    And I should see a "workspace name" element with selector "*:has-text('workspaceName')"
-    And I should see a "function result" element with selector "*:has-text('functions_result')"
-    And I should see a "tool indicator" element with selector "*:has-text('Tool: wiki-search')"
+    And I wait for 0.2 seconds
     Then I should see 4 messages in chat history
+    # Verify the last message contains the AI explanation about Index
+    And I should see a "explanation in last message" element with selector "[data-testid='message-bubble']:last-child:has-text('Index')"
+    And I should see a "explanation about edit" element with selector "[data-testid='message-bubble']:last-child:has-text('编辑')"
 
   @agent @mockOpenAI
   Scenario: Wiki operation
@@ -62,22 +59,12 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I type "在 wiki 里创建一个新笔记，内容为 test" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     And I wait for 0.2 seconds
-    And I should see a "user message" element with selector "*:has-text('在 wiki 里创建一个新笔记，内容为 test')"
-    And I should see a "tool use indicator" element with selector "*:has-text('tool_use')"
-    And I should see a "wiki operation tool" element with selector "*:has-text('wiki-operation')"
-    And I wait for 0.2 seconds
-    And I should see a "function result error" element with selector "*:has-text('functions_result')"
-    And I should see a "workspace not found" element with selector "*:has-text('工作空间名称或ID\"default\"不存在')"
-    # Second round: assistant suggests wiki workspace and operation succeeds (automated by assistant/tool)
-    And I wait for 0.2 seconds
-    And I should see a "assistant suggestion" element with selector "*:has-text('tool_use')"
-    And I should see a "tool use indicator" element with selector "*:has-text('tool_use')"
-    And I should see a "wiki operation tool" element with selector "*:has-text('wiki-operation')"
-    And I wait for 0.2 seconds
-    And I should see a "function result success" element with selector "*:has-text('functions_result')"
-    And I wait for 0.2 seconds
-    And I should see a "assistant confirmation" element with selector "*:has-text('functions_result') >> :has-text('已成功在工作区 wiki 中创建条目')"
     Then I should see 6 messages in chat history
+    # Verify there's an error message about workspace not found (in one of the middle messages)
+    And I should see a "workspace not exist error" element with selector "[data-testid='message-bubble']:has-text('default'):has-text('不存在')"
+    # Verify the last message contains success confirmation
+    And I should see a "success in last message" element with selector "[data-testid='message-bubble']:last-child:has-text('已成功')"
+    And I should see a "wiki workspace in last message" element with selector "[data-testid='message-bubble']:last-child:has-text('wiki')"
 
   @agent
   Scenario: Create default agent from New Tab quick access

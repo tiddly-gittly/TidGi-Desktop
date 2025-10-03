@@ -297,6 +297,7 @@ export function Search(
                           onClick={() => workspace.workspaceId && handleGenerateEmbeddings(workspace.workspaceId, workspace.workspaceName ?? '')}
                           disabled={workspace.status === 'generating'}
                           style={{ marginRight: 8 }}
+                          data-testid={`generate-embeddings-button-${workspace.workspaceId}`}
                         >
                           {workspace.status === 'generating'
                             ? t('Preference.SearchEmbeddingGenerating')

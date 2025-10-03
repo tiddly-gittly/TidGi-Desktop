@@ -687,12 +687,40 @@
       "Tool": {
         "Parameters": {
           "filter": {
-            "Description": "TiddlyWiki 过滤器表达式",
+            "Description": "TiddlyWiki 筛选器表达式",
             "Title": "过滤器"
           },
           "workspaceName": {
             "Description": "要搜索的工作空间名称或ID",
             "Title": "工作空间名称"
+          },
+          "searchType": {
+            "Description": "选择基于规则或基于相似度的一个搜索模式",
+            "Title": "搜索类型"
+          },
+          "query": {
+            "Description": "向量搜索时使用的查询文本（自然语言）",
+            "Title": "查询"
+          },
+          "limit": {
+            "Description": "返回的最大结果数量",
+            "Title": "限制"
+          },
+          "threshold": {
+            "Description": "相似度阈值（0-1），低于此阈值的向量结果将被过滤",
+            "Title": "阈值"
+          }
+        },
+        "UpdateEmbeddings": {
+          "Parameters": {
+            "workspaceName": {
+              "Description": "要为其生成或更新嵌入索引的工作空间名称或ID",
+              "Title": "工作空间名称"
+            },
+            "forceUpdate": {
+              "Description": "是否强制重新生成已存在的嵌入（true/false）",
+              "Title": "强制更新"
+            }
           }
         }
       },
@@ -758,7 +786,20 @@
       },
       "Success": {
         "Completed": "Wiki搜索完成。找到{{totalResults}}个总结果，显示{{shownResults}}个：\n\n",
-        "NoResults": "在Wiki工作空间\"{{workspaceName}}\"中未找到过滤器\"{{filter}}\"的结果"
+        "NoResults": "在Wiki工作空间\"{{workspaceName}}\"中未找到过滤器\"{{filter}}\"的结果",
+        "NoVectorResults": "在Wiki工作空间\"{{workspaceName}}\"中未找到符合条件的向量搜索结果（相似度阈值：{{threshold}}）。",
+        "VectorCompleted": "根据向量搜索，在工作区 {{workspaceName}} 中找到以下相关内容：\n\n"
+      },
+      "UpdateEmbeddings": {
+        "Success": {
+          "Generated": "已成功为工作区 {{workspaceName}} 生成向量嵌入索引。总计{{totalNotes}}个笔记，{{totalEmbeddings}}个嵌入。"
+        },
+        "Error": {
+          "WorkspaceNotFound": "工作空间名称或ID\"{{workspaceName}}\"不存在。可用工作空间：{{availableWorkspaces}}",
+          "WorkspaceNotExist": "工作空间{{workspaceID}}不存在",
+          "NoAIConfig": "请先配置 AI 提供商和嵌入模型（在设置中）。",
+          "ExecutionFailed": "生成嵌入失败：{{error}}"
+        }
       }
     }
   }
