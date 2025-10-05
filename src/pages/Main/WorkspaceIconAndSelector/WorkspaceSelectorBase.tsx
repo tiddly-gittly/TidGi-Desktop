@@ -12,7 +12,8 @@ import defaultIcon from '../../../images/default-icon.png';
 
 Promise.config({ cancellation: true });
 
-const Root = styled('div')<{ $active?: boolean; $hibernated?: boolean; $workspaceClickedLoading?: boolean }>`
+// Prevent transient props (starting with $) from being forwarded to the DOM
+const Root = styled('div', { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<{ $active?: boolean; $hibernated?: boolean; $workspaceClickedLoading?: boolean }>`
   height: fit-content;
   width: auto;
   padding: 10px 0;
@@ -55,7 +56,7 @@ interface IAvatarProps {
   $large?: boolean;
   $transparent?: boolean;
 }
-const Avatar = styled('div')<IAvatarProps>`
+const Avatar = styled('div', { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<IAvatarProps>`
   height: 36px;
   width: 36px;
   border-radius: 4px;
@@ -91,7 +92,7 @@ const Avatar = styled('div')<IAvatarProps>`
   `}
 `;
 
-const AvatarPicture = styled('img')<{ $large?: boolean }>`
+const AvatarPicture = styled('img', { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<{ $large?: boolean }>`
   height: calc(36px - 2px);
   width: calc(36px - 2px);
   ${is('$large')`
@@ -100,7 +101,7 @@ const AvatarPicture = styled('img')<{ $large?: boolean }>`
   `}
 `;
 
-const ShortcutText = styled('p')<{ $active?: boolean }>`
+const ShortcutText = styled('p', { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<{ $active?: boolean }>`
   margin-top: 2px;
   margin-bottom: 0;
   padding: 0;

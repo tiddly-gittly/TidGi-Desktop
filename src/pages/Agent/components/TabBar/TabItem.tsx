@@ -30,7 +30,7 @@ interface StyledTabProps {
   $pinned?: boolean;
 }
 
-const TabButton = styled(ButtonBase)<StyledTabProps>`
+const TabButton = styled(ButtonBase, { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<StyledTabProps>`
   display: flex;
   align-items: center;
   width: 100%;
@@ -53,7 +53,7 @@ const TabButton = styled(ButtonBase)<StyledTabProps>`
   }
 `;
 
-const TabIcon = styled('div')<StyledTabProps>`
+const TabIcon = styled('div', { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<StyledTabProps>`
   color: ${props => props.$active ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
   font-size: 20px;
   display: flex;
@@ -63,7 +63,7 @@ const TabIcon = styled('div')<StyledTabProps>`
   flex-shrink: 0;
 `;
 
-const TabLabel = styled(Typography)<StyledTabProps>`
+const TabLabel = styled(Typography, { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<StyledTabProps>`
   font-size: 12px;
   text-align: left;
   flex: 1;

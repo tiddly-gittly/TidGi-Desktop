@@ -529,7 +529,8 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
           id: `wiki-tool-list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           text: combinedToolContent,
           tags: ['toolList', 'wikiSearch', 'wikiEmbedding'],
-          caption: 'Wiki search and embedding tools',
+          // Use singular caption to match test expectations
+          caption: 'Wiki search tool',
           enabled: true,
         };
 
