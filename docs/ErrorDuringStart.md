@@ -183,3 +183,9 @@ If you don't want to include a polyfill, you can use an empty module like this:
 ```
 
 Usually because you import the server-side `logger` in renderer process code. You have to use `console` or add new transport in [rendererTransport.ts](src/services/libs/log/rendererTransport.ts).
+
+## Startup stalled at `Launching dev servers for renderer process code`
+
+Hangs here doesn't mean it stop working, just wait around 2 mins. Webpack dev server is quite slow, but will finally finished.
+
+If you are not sure, try `pnpm run start:dev:debug-webpack`, which will also enables `WebpackBar` plugin.

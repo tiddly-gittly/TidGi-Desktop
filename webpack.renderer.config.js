@@ -47,7 +47,7 @@ module.exports = {
           `${path.resolve(__dirname).replace(/\\/g, '/')}/src/services/**`,
         ],
         aggregateTimeout: 300,
-        poll: 1000,
+        poll: false, // use native file watching instead of polling
       },
       performance: { hints: false },
       // Tweak devServer to reduce runtime noise and some overhead during development.
@@ -55,6 +55,7 @@ module.exports = {
         client: {
           logging: 'none',
           overlay: false,
+          progress: false,
         },
         hot: true,
         liveReload: true,

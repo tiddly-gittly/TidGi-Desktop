@@ -49,6 +49,7 @@ module.exports = {
   cache: isDevelopmentOrTest
     ? {
       type: 'filesystem',
+      compression: false,
       buildDependencies: {
         config: [__filename],
       },

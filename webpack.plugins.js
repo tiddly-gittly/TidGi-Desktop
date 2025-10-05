@@ -7,30 +7,43 @@ const CopyPlugin = require('copy-webpack-plugin');
 const ThreadsPlugin = require('threads-plugin');
 const ExternalsPlugin = require('webpack5-externals-plugin');
 const WebpackBar = require('webpackbar');
-const { EnvironmentPlugin } = require('webpack');
 
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 const { isDevelopmentOrTest } = require('./webpack.rules');
 
 exports.main = _.compact([
-  new EnvironmentPlugin(['NODE_ENV']),
   // we only need one instance of TsChecker, it will check main and renderer all together
-  new ForkTsCheckerWebpackPlugin(),
+  new ForkTsCheckerWebpackPlugin({
+    async: true,
+    typescript: {
+      memoryLimit: 4096,
+    },
+    issue: {
+      exclude: [
+        { file: '**/node_modules/**' },
+        { file: '**/*.test.ts' },
+        { file: '**/*.test.tsx' },
+      ],
+    },
+  }),
   new CopyPlugin({
     // to is relative to ./.webpack/main/
     patterns: [{ from: 'localization', to: 'localization' }],
   }),
-  new CircularDependencyPlugin({
-    // exclude detection of files based on a RegExp
-    exclude: /node_modules/,
-    // add errors to webpack instead of warnings
-    failOnError: true,
-    // allow import cycles that include an asyncronous import,
-    // e.g. via import(/* webpackMode: "weak" */ './file.js')
-    allowAsyncCycles: true,
-    // set the current working directory for displaying module paths
-    cwd: process.cwd(),
-  }),
+  // CircularDependencyPlugin is slow in dev, only enable in production/CI
+  isDevelopmentOrTest
+    ? undefined
+    : new CircularDependencyPlugin({
+      // exclude detection of files based on a RegExp
+      exclude: /node_modules/,
+      // add errors to webpack instead of warnings
+      failOnError: true,
+      // allow import cycles that include an asyncronous import,
+      // e.g. via import(/* webpackMode: "weak" */ './file.js')
+      allowAsyncCycles: true,
+      // set the current working directory for displaying module paths
+      cwd: process.cwd(),
+    }),
   isDevelopmentOrTest
     ? undefined
     : new ExternalsPlugin({
@@ -54,7 +67,7 @@ exports.main = _.compact([
       : ['ExternalsPlugin'],
   }),
   // WebpackBar progress bar need `DEBUG=electron-forge:*` to work.
-  isDevelopmentOrTest ? new WebpackBar() : undefined,
+  isDevelopmentOrTest && String(process.env.DEBUG || '').includes('electron-forge:*') ? new WebpackBar() : undefined,
   isDevelopmentOrTest
     ? undefined
     : new BundleAnalyzerPlugin({
@@ -65,7 +78,6 @@ exports.main = _.compact([
 ]);
 
 exports.renderer = _.compact([
-  new EnvironmentPlugin(['NODE_ENV']),
   // new CspHtmlWebpackPlugin(
   //   {
   //     'base-uri': ["'self'"],
@@ -90,7 +102,7 @@ exports.renderer = _.compact([
       statsFilename: '../../out/webpack-stats-renderer.json',
     }),
   // WebpackBar progress bar need `DEBUG=electron-forge:*` to work.
-  isDevelopmentOrTest ? new WebpackBar() : undefined,
+  isDevelopmentOrTest && String(process.env.DEBUG || '').includes('electron-forge:*') ? new WebpackBar() : undefined,
   // Example: copy files for webWorker to use
   // new CopyPlugin({
   //   patterns: [

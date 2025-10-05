@@ -24,12 +24,12 @@ nvm use
 pnpm install
 
 # Full setup with all checks
-pnpm start
+pnpm start:init
 ```
 
 Development Workflow
 
-1. First run: Use `pnpm start` to ensure everything is properly set up
+1. First run: Use `pnpm start:init` to ensure everything is properly set up
 2. Daily development: Use `pnpm run start:dev` for faster iteration
 3. After pulling changes: Run `pnpm run build:plugin` if plugins were updated
 4. Before committing: Run `pnpm run lint` and `pnpm run test`
