@@ -122,17 +122,20 @@ describe('ExternalAPI Component', () => {
   it('should render AI model selectors after loading', async () => {
     await renderExternalAPI();
 
-    // Should show both model selectors using translation keys
+    // Should show all five model selectors using translation keys
     expect(screen.getByText('Preference.DefaultAIModelSelection')).toBeInTheDocument();
     expect(screen.getByText('Preference.DefaultEmbeddingModelSelection')).toBeInTheDocument();
+    expect(screen.getByText('Preference.DefaultSpeechModelSelection')).toBeInTheDocument();
+    expect(screen.getByText('Preference.DefaultImageGenerationModelSelection')).toBeInTheDocument();
+    expect(screen.getByText('Preference.DefaultTranscriptionsModelSelection')).toBeInTheDocument();
   });
 
   it('should show model selectors with autocomplete inputs', async () => {
     await renderExternalAPI();
 
-    // Should have two autocomplete inputs for models
+    // Should have five autocomplete inputs for models (language, embedding, speech, image generation, transcriptions)
     const inputs = screen.getAllByRole('combobox');
-    expect(inputs).toHaveLength(2);
+    expect(inputs).toHaveLength(5);
   });
 
   it('should call delete API when default model is cleared and no embedding model exists', async () => {

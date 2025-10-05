@@ -25,16 +25,19 @@ interface ModelDialogProps {
   onClose: () => void;
   onAddModel: () => void;
   currentProvider: string | null;
+  providerClass?: string;
   newModelForm: {
     name: string;
     caption: string;
     features: ModelFeature[];
+    parameters?: Record<string, unknown>;
   };
   availableDefaultModels: ModelInfo[];
   selectedDefaultModel: string;
   onSelectDefaultModel: (model: string) => void;
-  onModelFormChange: (field: string, value: string | ModelFeature[]) => void;
+  onModelFormChange: (field: string, value: string | ModelFeature[] | Record<string, unknown>) => void;
   onFeatureChange: (feature: ModelFeature, checked: boolean) => void;
+  editMode?: boolean;
 }
 
 export function NewModelDialog({
@@ -42,15 +45,28 @@ export function NewModelDialog({
   onClose,
   onAddModel,
   currentProvider,
+  providerClass,
   newModelForm,
   availableDefaultModels,
   selectedDefaultModel,
   onSelectDefaultModel,
   onModelFormChange,
   onFeatureChange,
+  editMode = false,
 }: ModelDialogProps) {
   const { t } = useTranslation(['translation', 'agent']);
   const lastSelectedModelReference = useRef<string | null>(null);
+
+  // Handle workflow file selection for ComfyUI
+  const handleSelectWorkflowFile = async () => {
+    const result = await window.service.native.pickFile([{ name: 'JSON Files', extensions: ['json'] }]);
+
+    if (result.length > 0) {
+      const workflowPath = result[0];
+      const parameters = { ...(newModelForm.parameters || {}), workflowPath };
+      onModelFormChange('parameters', parameters);
+    }
+  };
 
   // When a preset model is selected, fill in its details to the form
   useEffect(() => {
@@ -149,6 +165,37 @@ export function NewModelDialog({
                   />
                 ))}
               </FormGroup>
+
+              {/* ComfyUI workflow path */}
+              {providerClass === 'comfyui' && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant='subtitle2' gutterBottom>
+                    {t('Preference.WorkflowFile', { ns: 'agent' })}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <TextField
+                      label={t('Preference.WorkflowFilePath', { ns: 'agent' })}
+                      value={(newModelForm.parameters?.workflowPath as string) || ''}
+                      onChange={(event) => {
+                        const parameters = { ...(newModelForm.parameters || {}), workflowPath: event.target.value };
+                        onModelFormChange('parameters', parameters);
+                      }}
+                      fullWidth
+                      margin='normal'
+                      slotProps={{ htmlInput: { 'data-testid': 'workflow-path-input' } }}
+                      helperText={t('Preference.WorkflowFileHelp', { ns: 'agent' })}
+                    />
+                    <Button
+                      variant='outlined'
+                      onClick={handleSelectWorkflowFile}
+                      data-testid='select-workflow-button'
+                      sx={{ mt: 1 }}
+                    >
+                      {t('Preference.Browse', { ns: 'agent' })}
+                    </Button>
+                  </Box>
+                </Box>
+              )}
             </Box>
           </>
         )}
@@ -156,7 +203,7 @@ export function NewModelDialog({
       <DialogActions>
         <Button onClick={onClose}>{t('Cancel')}</Button>
         <Button onClick={onAddModel} variant='contained' color='primary' data-testid='save-model-button'>
-          {t('Save')}
+          {editMode ? t('Update') : t('Save')}
         </Button>
       </DialogActions>
     </Dialog>

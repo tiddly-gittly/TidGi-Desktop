@@ -17,6 +17,18 @@ export const ProviderModelSchema = z.object({
     title: t('Schema.ProviderModel.EmbeddingModelTitle'),
     description: t('Schema.ProviderModel.EmbeddingModel'),
   }),
+  speechModel: z.string().optional().meta({
+    title: t('Schema.ProviderModel.SpeechModelTitle'),
+    description: t('Schema.ProviderModel.SpeechModel'),
+  }),
+  imageGenerationModel: z.string().optional().meta({
+    title: t('Schema.ProviderModel.ImageGenerationModelTitle'),
+    description: t('Schema.ProviderModel.ImageGenerationModel'),
+  }),
+  transcriptionsModel: z.string().optional().meta({
+    title: t('Schema.ProviderModel.TranscriptionsModelTitle'),
+    description: t('Schema.ProviderModel.TranscriptionsModel'),
+  }),
 })
   .catchall(z.unknown())
   .meta({

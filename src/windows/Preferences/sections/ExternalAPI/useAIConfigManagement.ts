@@ -15,6 +15,9 @@ interface UseAIConfigManagementResult {
   setProviders: React.Dispatch<React.SetStateAction<AIProviderConfig[]>>;
   handleModelChange: (provider: string, model: string) => Promise<void>;
   handleEmbeddingModelChange: (provider: string, model: string) => Promise<void>;
+  handleSpeechModelChange: (provider: string, model: string) => Promise<void>;
+  handleImageGenerationModelChange: (provider: string, model: string) => Promise<void>;
+  handleTranscriptionsModelChange: (provider: string, model: string) => Promise<void>;
   handleConfigChange: (newConfig: AiAPIConfig) => Promise<void>;
 }
 
@@ -129,6 +132,69 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     }
   }, [config, updateConfig]);
 
+  const handleSpeechModelChange = useCallback(async (provider: string, model: string) => {
+    if (!config) return;
+
+    try {
+      const updatedConfig = cloneDeep(config);
+      if (typeof updatedConfig.api === 'undefined') {
+        updatedConfig.api = { provider, model, speechModel: model };
+      } else {
+        updatedConfig.api.speechModel = model;
+      }
+
+      setConfig(updatedConfig);
+      await updateConfig(updatedConfig);
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to update speech model configuration', {
+        function: 'useAIConfigManagement.handleSpeechModelChange',
+        error: String(error),
+      });
+    }
+  }, [config, updateConfig]);
+
+  const handleImageGenerationModelChange = useCallback(async (provider: string, model: string) => {
+    if (!config) return;
+
+    try {
+      const updatedConfig = cloneDeep(config);
+      if (typeof updatedConfig.api === 'undefined') {
+        updatedConfig.api = { provider, model, imageGenerationModel: model };
+      } else {
+        updatedConfig.api.imageGenerationModel = model;
+      }
+
+      setConfig(updatedConfig);
+      await updateConfig(updatedConfig);
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to update image generation model configuration', {
+        function: 'useAIConfigManagement.handleImageGenerationModelChange',
+        error: String(error),
+      });
+    }
+  }, [config, updateConfig]);
+
+  const handleTranscriptionsModelChange = useCallback(async (provider: string, model: string) => {
+    if (!config) return;
+
+    try {
+      const updatedConfig = cloneDeep(config);
+      if (typeof updatedConfig.api === 'undefined') {
+        updatedConfig.api = { provider, model, transcriptionsModel: model };
+      } else {
+        updatedConfig.api.transcriptionsModel = model;
+      }
+
+      setConfig(updatedConfig);
+      await updateConfig(updatedConfig);
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to update transcriptions model configuration', {
+        function: 'useAIConfigManagement.handleTranscriptionsModelChange',
+        error: String(error),
+      });
+    }
+  }, [config, updateConfig]);
+
   const handleConfigChange = useCallback(async (newConfig: AiAPIConfig) => {
     try {
       setConfig(newConfig);
@@ -145,6 +211,9 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     setProviders,
     handleModelChange,
     handleEmbeddingModelChange,
+    handleSpeechModelChange,
+    handleImageGenerationModelChange,
+    handleTranscriptionsModelChange,
     handleConfigChange,
   };
 };

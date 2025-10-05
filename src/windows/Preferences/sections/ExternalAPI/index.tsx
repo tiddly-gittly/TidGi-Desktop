@@ -15,7 +15,18 @@ import { useAIConfigManagement } from './useAIConfigManagement';
 
 export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
   const { t } = useTranslation('agent');
-  const { loading, config, providers, setProviders, handleModelChange, handleEmbeddingModelChange, handleConfigChange } = useAIConfigManagement();
+  const {
+    loading,
+    config,
+    providers,
+    setProviders,
+    handleModelChange,
+    handleEmbeddingModelChange,
+    handleSpeechModelChange,
+    handleImageGenerationModelChange,
+    handleTranscriptionsModelChange,
+    handleConfigChange,
+  } = useAIConfigManagement();
   const [parametersDialogOpen, setParametersDialogOpen] = useState(false);
 
   const openParametersDialog = () => {
@@ -74,6 +85,45 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
     await handleConfigChange(updatedConfig);
   };
 
+  const handleSpeechModelClear = async () => {
+    if (!config) return;
+
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.speechModel');
+
+    const { speechModel: _, ...apiWithoutSpeechModel } = config.api;
+    const updatedConfig = {
+      ...config,
+      api: apiWithoutSpeechModel,
+    };
+    await handleConfigChange(updatedConfig);
+  };
+
+  const handleImageGenerationModelClear = async () => {
+    if (!config) return;
+
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.imageGenerationModel');
+
+    const { imageGenerationModel: _, ...apiWithoutImageGenerationModel } = config.api;
+    const updatedConfig = {
+      ...config,
+      api: apiWithoutImageGenerationModel,
+    };
+    await handleConfigChange(updatedConfig);
+  };
+
+  const handleTranscriptionsModelClear = async () => {
+    if (!config) return;
+
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.transcriptionsModel');
+
+    const { transcriptionsModel: _, ...apiWithoutTranscriptionsModel } = config.api;
+    const updatedConfig = {
+      ...config,
+      api: apiWithoutTranscriptionsModel,
+    };
+    await handleConfigChange(updatedConfig);
+  };
+
   // Create embedding config from current AI config
   const embeddingConfig = config
     ? {
@@ -81,6 +131,42 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
         provider: config.api.provider,
         model: config.api.embeddingModel || config.api.model,
         embeddingModel: config.api.embeddingModel,
+      },
+      modelParameters: config.modelParameters,
+    }
+    : null;
+
+  // Create speech config from current AI config
+  const speechConfig = config
+    ? {
+      api: {
+        provider: config.api.provider,
+        model: config.api.speechModel || config.api.model,
+        speechModel: config.api.speechModel,
+      },
+      modelParameters: config.modelParameters,
+    }
+    : null;
+
+  // Create image generation config from current AI config
+  const imageGenerationConfig = config
+    ? {
+      api: {
+        provider: config.api.provider,
+        model: config.api.imageGenerationModel || config.api.model,
+        imageGenerationModel: config.api.imageGenerationModel,
+      },
+      modelParameters: config.modelParameters,
+    }
+    : null;
+
+  // Create transcriptions config from current AI config
+  const transcriptionsConfig = config
+    ? {
+      api: {
+        provider: config.api.provider,
+        model: config.api.transcriptionsModel || config.api.model,
+        transcriptionsModel: config.api.transcriptionsModel,
       },
       modelParameters: config.modelParameters,
     }
@@ -131,6 +217,57 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
 
                   <ListItemVertical>
                     <ListItemText
+                      primary={t('Preference.DefaultSpeechModelSelection')}
+                      secondary={t('Preference.DefaultSpeechModelSelectionDescription')}
+                    />
+                    <ModelSelector
+                      selectedConfig={speechConfig}
+                      modelOptions={providers.flatMap(provider =>
+                        provider.models
+                          .filter(model => Array.isArray(model.features) && model.features.includes('speech'))
+                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
+                      )}
+                      onChange={handleSpeechModelChange}
+                      onClear={handleSpeechModelClear}
+                    />
+                  </ListItemVertical>
+
+                  <ListItemVertical>
+                    <ListItemText
+                      primary={t('Preference.DefaultImageGenerationModelSelection')}
+                      secondary={t('Preference.DefaultImageGenerationModelSelectionDescription')}
+                    />
+                    <ModelSelector
+                      selectedConfig={imageGenerationConfig}
+                      modelOptions={providers.flatMap(provider =>
+                        provider.models
+                          .filter(model => Array.isArray(model.features) && model.features.includes('imageGeneration'))
+                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
+                      )}
+                      onChange={handleImageGenerationModelChange}
+                      onClear={handleImageGenerationModelClear}
+                    />
+                  </ListItemVertical>
+
+                  <ListItemVertical>
+                    <ListItemText
+                      primary={t('Preference.DefaultTranscriptionsModelSelection')}
+                      secondary={t('Preference.DefaultTranscriptionsModelSelectionDescription')}
+                    />
+                    <ModelSelector
+                      selectedConfig={transcriptionsConfig}
+                      modelOptions={providers.flatMap(provider =>
+                        provider.models
+                          .filter(model => Array.isArray(model.features) && model.features.includes('transcriptions'))
+                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
+                      )}
+                      onChange={handleTranscriptionsModelChange}
+                      onClear={handleTranscriptionsModelClear}
+                    />
+                  </ListItemVertical>
+
+                  <ListItemVertical>
+                    <ListItemText
                       primary={t('Preference.ModelParameters', { ns: 'agent' })}
                       secondary={t('Preference.ModelParametersDescription', { ns: 'agent' })}
                     />
@@ -152,6 +289,9 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
                 providers={providers}
                 changeDefaultModel={handleModelChange}
                 changeDefaultEmbeddingModel={handleEmbeddingModelChange}
+                changeDefaultSpeechModel={handleSpeechModelChange}
+                changeDefaultImageGenerationModel={handleImageGenerationModelChange}
+                changeDefaultTranscriptionsModel={handleTranscriptionsModelChange}
                 setProviders={setProviders}
               />
             </>

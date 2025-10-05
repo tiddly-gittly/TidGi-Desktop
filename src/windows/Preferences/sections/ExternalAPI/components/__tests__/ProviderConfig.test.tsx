@@ -42,6 +42,9 @@ describe('ProviderConfig Component', () => {
   const mockSetProviders = vi.fn();
   const mockChangeDefaultModel = vi.fn();
   const mockChangeDefaultEmbeddingModel = vi.fn();
+  const mockChangeDefaultSpeechModel = vi.fn();
+  const mockChangeDefaultImageGenerationModel = vi.fn();
+  const mockChangeDefaultTranscriptionsModel = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -90,6 +93,9 @@ describe('ProviderConfig Component', () => {
           setProviders={mockSetProviders}
           changeDefaultModel={mockChangeDefaultModel}
           changeDefaultEmbeddingModel={mockChangeDefaultEmbeddingModel}
+          changeDefaultSpeechModel={mockChangeDefaultSpeechModel}
+          changeDefaultImageGenerationModel={mockChangeDefaultImageGenerationModel}
+          changeDefaultTranscriptionsModel={mockChangeDefaultTranscriptionsModel}
         />
       </TestWrapper>,
     );

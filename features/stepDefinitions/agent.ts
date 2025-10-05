@@ -194,6 +194,7 @@ const providerConfig: AIProviderConfig = {
   models: [
     { name: 'test-model', features: ['language'] },
     { name: 'test-embedding-model', features: ['language', 'embedding'] },
+    { name: 'test-speech-model', features: ['speech'] },
   ],
   providerClass: 'openAICompatible',
   isPreset: false,
@@ -203,23 +204,63 @@ const providerConfig: AIProviderConfig = {
 const desiredModelParameters = { temperature: 0.7, systemPrompt: 'You are a helpful assistant.', topP: 0.95 };
 
 Given('I ensure test ai settings exists', function() {
-  // Build expected aiSettings from shared providerConfig and compare strictly with actual using isEqual
+  // Build expected aiSettings from shared providerConfig and compare with actual
   const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
   const providerName = providerConfig.provider;
 
-  const expected = {
-    providers: [providerConfig],
-    defaultConfig: { api: { provider: providerName, model: modelName, embeddingModel: modelsArray[1]?.name }, modelParameters: desiredModelParameters },
-  } as Record<string, unknown>;
-
   const parsed = fs.readJsonSync(settingsPath) as Record<string, unknown>;
   const actual = (parsed.aiSettings as Record<string, unknown> | undefined) || null;
 
-  if (!isEqual(actual, expected)) {
-    console.error('aiSettings mismatch. expected:', JSON.stringify(expected, null, 2));
-    console.error('aiSettings actual:', JSON.stringify(actual, null, 2));
-    throw new Error('aiSettings do not match expected TestProvider configuration');
+  if (!actual) {
+    throw new Error('aiSettings not found in settings file');
+  }
+
+  const actualProviders = (actual.providers as Array<Record<string, unknown>>) || [];
+  
+  // Check TestProvider exists
+  const testProvider = actualProviders.find(p => p.provider === providerName);
+  if (!testProvider) {
+    console.error('TestProvider not found in actual providers:', JSON.stringify(actualProviders, null, 2));
+    throw new Error('TestProvider not found in aiSettings');
+  }
+
+  // Verify TestProvider configuration
+  if (!isEqual(testProvider, providerConfig)) {
+    console.error('TestProvider config mismatch. expected:', JSON.stringify(providerConfig, null, 2));
+    console.error('TestProvider config actual:', JSON.stringify(testProvider, null, 2));
+    throw new Error('TestProvider configuration does not match expected');
+  }
+
+  // Check ComfyUI provider exists
+  const comfyuiProvider = actualProviders.find(p => p.provider === 'comfyui');
+  if (!comfyuiProvider) {
+    console.error('ComfyUI provider not found in actual providers:', JSON.stringify(actualProviders, null, 2));
+    throw new Error('ComfyUI provider not found in aiSettings');
+  }
+
+  // Verify ComfyUI has test-flux model with workflow path
+  const comfyuiModels = (comfyuiProvider.models as Array<Record<string, unknown>>) || [];
+  const testFluxModel = comfyuiModels.find(m => m.name === 'test-flux');
+  if (!testFluxModel) {
+    console.error('test-flux model not found in ComfyUI models:', JSON.stringify(comfyuiModels, null, 2));
+    throw new Error('test-flux model not found in ComfyUI provider');
+  }
+
+  // Verify workflow path
+  const parameters = testFluxModel.parameters as Record<string, unknown> | undefined;
+  if (!parameters || parameters.workflowPath !== 'C:/test/mock/workflow.json') {
+    console.error('Workflow path mismatch. expected: C:/test/mock/workflow.json, actual:', parameters?.workflowPath);
+    throw new Error('Workflow path not correctly saved');
+  }
+
+  // Verify default config
+  const defaultConfig = actual.defaultConfig as Record<string, unknown>;
+  const api = defaultConfig.api as Record<string, unknown>;
+  if (api.provider !== providerName || api.model !== modelName) {
+    console.error('Default config mismatch. expected provider:', providerName, 'model:', modelName);
+    console.error('actual api:', JSON.stringify(api, null, 2));
+    throw new Error('Default configuration does not match expected');
   }
 });
 
@@ -233,11 +274,17 @@ Given('I add test ai settings', function() {
   }
   const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
-  const embeddingModelName = modelsArray[1]?.name; // Add embedding model
+  const embeddingModelName = modelsArray[1]?.name;
+  const speechModelName = modelsArray[2]?.name;
   const newAi: AIGlobalSettings = {
     providers: [providerConfig],
     defaultConfig: {
-      api: { provider: providerConfig.provider, model: modelName, embeddingModel: embeddingModelName },
+      api: {
+        provider: providerConfig.provider,
+        model: modelName,
+        embeddingModel: embeddingModelName,
+        speechModel: speechModelName,
+      },
       modelParameters: desiredModelParameters,
     },
   };

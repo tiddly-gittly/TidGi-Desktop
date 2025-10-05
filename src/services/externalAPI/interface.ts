@@ -57,6 +57,95 @@ export interface AIEmbeddingResponse {
 }
 
 /**
+ * AI speech generation (text-to-speech) response interface
+ */
+export interface AISpeechResponse {
+  requestId: string;
+  /** Audio data as ArrayBuffer */
+  audio: ArrayBuffer;
+  /** Audio format (mp3, wav, etc.) */
+  format: string;
+  model: string;
+  status: 'done' | 'error';
+  /**
+   * Structured error details, provided when status is 'error'
+   */
+  errorDetail?: {
+    /** Error type name */
+    name: string;
+    /** Error code */
+    code: string;
+    /** Provider name associated with the error */
+    provider: string;
+    /** Human readable error message */
+    message?: string;
+  };
+}
+
+/**
+ * AI transcription (speech-to-text) response interface
+ */
+export interface AITranscriptionResponse {
+  requestId: string;
+  /** Transcribed text */
+  text: string;
+  /** Language detected (if available) */
+  language?: string;
+  /** Duration in seconds (if available) */
+  duration?: number;
+  model: string;
+  status: 'done' | 'error';
+  /**
+   * Structured error details, provided when status is 'error'
+   */
+  errorDetail?: {
+    /** Error type name */
+    name: string;
+    /** Error code */
+    code: string;
+    /** Provider name associated with the error */
+    provider: string;
+    /** Human readable error message */
+    message?: string;
+  };
+}
+
+/**
+ * AI image generation response interface
+ */
+export interface AIImageGenerationResponse {
+  requestId: string;
+  /** Generated images as base64 or URLs */
+  images: Array<{
+    /** Image data (base64 or URL) */
+    data: string;
+    /** Image format (png, jpg, etc.) */
+    format?: string;
+    /** Width in pixels */
+    width?: number;
+    /** Height in pixels */
+    height?: number;
+  }>;
+  model: string;
+  /** Prompt ID (for ComfyUI) */
+  promptId?: string;
+  status: 'done' | 'error';
+  /**
+   * Structured error details, provided when status is 'error'
+   */
+  errorDetail?: {
+    /** Error type name */
+    name: string;
+    /** Error code */
+    code: string;
+    /** Provider name associated with the error */
+    provider: string;
+    /** Human readable error message */
+    message?: string;
+  };
+}
+
+/**
  * Supported AI providers
  */
 export type AIProvider = string;
@@ -64,7 +153,7 @@ export type AIProvider = string;
 /**
  * Model feature types
  */
-export type ModelFeature = 'language' | 'imageGeneration' | 'toolCalling' | 'reasoning' | 'vision' | 'embedding';
+export type ModelFeature = 'language' | 'imageGeneration' | 'toolCalling' | 'reasoning' | 'vision' | 'embedding' | 'speech' | 'transcriptions';
 
 /**
  * Extended model information
@@ -76,6 +165,8 @@ export interface ModelInfo {
   caption?: string;
   /** Features supported by the model */
   features?: ModelFeature[];
+  /** Model-specific parameters (e.g., ComfyUI workflow path) */
+  parameters?: Record<string, unknown>;
   /** Additional metadata */
   metadata?: Record<string, unknown>;
 }
@@ -150,6 +241,64 @@ export interface IExternalAPIService {
   ): Promise<AIEmbeddingResponse>;
 
   /**
+   * Generate speech from text using AI provider (text-to-speech)
+   */
+  generateSpeech(
+    input: string,
+    config: AiAPIConfig,
+    options?: {
+      /** Response audio format (mp3, wav, opus, etc.) */
+      responseFormat?: string;
+      /** Audio sample rate */
+      sampleRate?: number;
+      /** Speaking speed (0.5 - 2.0) */
+      speed?: number;
+      /** Audio gain/volume adjustment */
+      gain?: number;
+      /** Voice identifier (provider-specific) */
+      voice?: string;
+      /** Whether to stream the response */
+      stream?: boolean;
+      /** Maximum tokens for generation (for some providers) */
+      maxTokens?: number;
+    },
+  ): Promise<AISpeechResponse>;
+
+  /**
+   * Transcribe audio to text using AI provider (speech-to-text)
+   */
+  generateTranscription(
+    audioFile: File | Blob,
+    config: AiAPIConfig,
+    options?: {
+      /** Language of the audio (ISO-639-1 format, e.g., 'en', 'zh') */
+      language?: string;
+      /** Response format (json, text, srt, vtt, verbose_json) */
+      responseFormat?: string;
+      /** Temperature for sampling (0-1) */
+      temperature?: number;
+      /** Optional prompt to guide the model */
+      prompt?: string;
+    },
+  ): Promise<AITranscriptionResponse>;
+
+  /**
+   * Generate images using AI provider (text-to-image)
+   */
+  generateImage(
+    prompt: string,
+    config: AiAPIConfig,
+    options?: {
+      /** Number of images to generate */
+      numImages?: number;
+      /** Image width */
+      width?: number;
+      /** Image height */
+      height?: number;
+    },
+  ): Promise<AIImageGenerationResponse>;
+
+  /**
    * Cancel an ongoing AI request
    */
   cancelAIRequest(requestId: string): Promise<void>;
@@ -200,6 +349,9 @@ export const ExternalAPIServiceIPCDescriptor = {
     initialize: ProxyPropertyType.Function,
     streamFromAI: ProxyPropertyType.Function$,
     generateEmbeddings: ProxyPropertyType.Function,
+    generateSpeech: ProxyPropertyType.Function,
+    generateTranscription: ProxyPropertyType.Function,
+    generateImage: ProxyPropertyType.Function,
     cancelAIRequest: ProxyPropertyType.Function,
     getAIProviders: ProxyPropertyType.Function,
     getAIConfig: ProxyPropertyType.Function,

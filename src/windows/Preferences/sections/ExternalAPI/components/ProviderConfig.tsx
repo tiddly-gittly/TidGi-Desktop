@@ -18,6 +18,9 @@ interface ProviderConfigProps {
   setProviders: Dispatch<SetStateAction<AIProviderConfig[]>>;
   changeDefaultModel?: (provider: string, model: string) => Promise<void>;
   changeDefaultEmbeddingModel?: (provider: string, model: string) => Promise<void>;
+  changeDefaultSpeechModel?: (provider: string, model: string) => Promise<void>;
+  changeDefaultImageGenerationModel?: (provider: string, model: string) => Promise<void>;
+  changeDefaultTranscriptionsModel?: (provider: string, model: string) => Promise<void>;
 }
 
 // Add provider button styling
@@ -35,10 +38,90 @@ interface ProviderFormState {
     name: string;
     caption: string;
     features: ModelFeature[];
+    parameters?: Record<string, unknown>;
   };
 }
 
-export function ProviderConfig({ providers, setProviders, changeDefaultModel, changeDefaultEmbeddingModel }: ProviderConfigProps) {
+/**
+ * Auto-fill default models based on model features
+ * This function is reused by both handleAddModel and handleAddProvider
+ */
+async function autoFillDefaultModels(
+  providerName: string,
+  model: ModelInfo,
+  options: {
+    changeDefaultModel?: (provider: string, model: string) => Promise<void>;
+    changeDefaultEmbeddingModel?: (provider: string, model: string) => Promise<void>;
+    changeDefaultSpeechModel?: (provider: string, model: string) => Promise<void>;
+    changeDefaultImageGenerationModel?: (provider: string, model: string) => Promise<void>;
+    changeDefaultTranscriptionsModel?: (provider: string, model: string) => Promise<void>;
+    isFirstModel?: boolean;
+  },
+) {
+  try {
+    const defaultConfig = await window.service.externalAPI.getAIConfig();
+
+    // Auto-fill default language model if empty or if this is the first model
+    if (
+      model.features?.includes('language') &&
+      (!defaultConfig.api.model || !defaultConfig.api.provider || options.isFirstModel) &&
+      options.changeDefaultModel
+    ) {
+      await options.changeDefaultModel(providerName, model.name);
+    }
+
+    // Auto-fill default embedding model if empty and this model supports embedding
+    if (
+      model.features?.includes('embedding') &&
+      !defaultConfig.api.embeddingModel &&
+      options.changeDefaultEmbeddingModel
+    ) {
+      await options.changeDefaultEmbeddingModel(providerName, model.name);
+    }
+
+    // Auto-fill default speech model if empty and this model supports speech
+    if (
+      model.features?.includes('speech') &&
+      !defaultConfig.api.speechModel &&
+      options.changeDefaultSpeechModel
+    ) {
+      await options.changeDefaultSpeechModel(providerName, model.name);
+    }
+
+    // Auto-fill default image generation model if empty and this model supports image generation
+    if (
+      model.features?.includes('imageGeneration') &&
+      !defaultConfig.api.imageGenerationModel &&
+      options.changeDefaultImageGenerationModel
+    ) {
+      await options.changeDefaultImageGenerationModel(providerName, model.name);
+    }
+
+    // Auto-fill default transcriptions model if empty and this model supports transcriptions
+    if (
+      model.features?.includes('transcriptions') &&
+      !defaultConfig.api.transcriptionsModel &&
+      options.changeDefaultTranscriptionsModel
+    ) {
+      await options.changeDefaultTranscriptionsModel(providerName, model.name);
+    }
+  } catch (error) {
+    void window.service.native.log('error', 'Failed to auto-fill default models', {
+      function: 'autoFillDefaultModels',
+      error: String(error),
+    });
+  }
+}
+
+export function ProviderConfig({
+  providers,
+  setProviders,
+  changeDefaultModel,
+  changeDefaultEmbeddingModel,
+  changeDefaultSpeechModel,
+  changeDefaultImageGenerationModel,
+  changeDefaultTranscriptionsModel,
+}: ProviderConfigProps) {
   const { t } = useTranslation('agent');
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -57,6 +140,7 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel, ch
 
   const [providerForms, setProviderForms] = useState<Record<string, ProviderFormState | undefined>>({});
   const [modelDialogOpen, setModelDialogOpen] = useState(false);
+  const [editingModelName, setEditingModelName] = useState<string | null>(null);
   const [currentProvider, setCurrentProvider] = useState<string | null>(null);
   const [selectedDefaultModel, setSelectedDefaultModel] = useState('');
   const [availableDefaultModels, setAvailableDefaultModels] = useState<ModelInfo[]>([]);
@@ -176,9 +260,11 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel, ch
   const closeModelDialog = () => {
     setModelDialogOpen(false);
     setCurrentProvider(null);
+    setEditingModelName(null);
+    setSelectedDefaultModel('');
   };
 
-  const handleModelFormChange = (providerName: string, field: string, value: string | ModelFeature[]) => {
+  const handleModelFormChange = (providerName: string, field: string, value: string | ModelFeature[] | Record<string, unknown>) => {
     setProviderForms(previous => {
       const currentForm = previous[providerName];
       if (!currentForm) return previous;
@@ -228,6 +314,38 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel, ch
     });
   };
 
+  const handleEditModel = (providerName: string, modelName: string) => {
+    const provider = providers.find(p => p.provider === providerName);
+    if (!provider) return;
+
+    const model = provider.models.find(m => m.name === modelName);
+    if (!model) return;
+
+    // Fill form with existing model data
+    setProviderForms(previous => {
+      const currentForm = previous[providerName];
+      if (!currentForm) return previous;
+
+      return {
+        ...previous,
+        [providerName]: {
+          ...currentForm,
+          newModel: {
+            name: model.name,
+            caption: model.caption || '',
+            features: model.features || ['language' as ModelFeature],
+            parameters: model.parameters || {},
+          },
+        } as ProviderFormState,
+      };
+    });
+
+    setEditingModelName(modelName);
+    setCurrentProvider(providerName);
+    setSelectedDefaultModel('');
+    setModelDialogOpen(true);
+  };
+
   const handleAddModel = async () => {
     if (!currentProvider) return;
 
@@ -243,6 +361,7 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel, ch
         name: form.newModel.name,
         caption: form.newModel.caption || undefined,
         features: form.newModel.features,
+        parameters: form.newModel.parameters,
       } satisfies ModelInfo;
 
       if (!newModel.name) {
@@ -250,12 +369,24 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel, ch
         return;
       }
 
-      if (form.models.some(m => m.name === newModel.name)) {
-        showMessage(t('Preference.ModelAlreadyExists'), 'error');
-        return;
+      // In edit mode, check for duplicate names excluding the model being edited
+      if (editingModelName) {
+        if (form.models.some(m => m.name === newModel.name && m.name !== editingModelName)) {
+          showMessage(t('Preference.ModelAlreadyExists'), 'error');
+          return;
+        }
+      } else {
+        if (form.models.some(m => m.name === newModel.name)) {
+          showMessage(t('Preference.ModelAlreadyExists'), 'error');
+          return;
+        }
       }
 
-      const updatedModels = [...form.models, newModel];
+      // In edit mode, update existing model; otherwise add new model
+      const updatedModels = editingModelName
+        ? form.models.map(m => m.name === editingModelName ? newModel : m)
+        : [...form.models, newModel];
+
       setProviderForms(previous => {
         const currentForm = previous[currentProvider];
         if (!currentForm) return previous;
@@ -269,6 +400,7 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel, ch
               name: '',
               caption: '',
               features: ['language' as ModelFeature],
+              parameters: {},
             },
           } as ProviderFormState,
         };
@@ -282,24 +414,27 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel, ch
 
         setProviders(previous => previous.map(p => p.provider === currentProvider ? { ...p, models: updatedModels } : p));
 
-        try {
-          // Get current default configuration
-          const defaultConfig = await window.service.externalAPI.getAIConfig();
-          // If default configuration doesn't have a model or provider set, or this is the first model,
-          // set the newly added model as default using the changeDefaultModel function
-          if ((!defaultConfig.api.model || !defaultConfig.api.provider || provider.models.length === 0) && changeDefaultModel) {
-            await changeDefaultModel(currentProvider, newModel.name);
-          }
-        } catch (configError) {
-          void window.service.native.log('error', 'Failed to update default model config', { function: 'ProviderConfig.handleAddModel', error: String(configError) });
+        // Auto-fill default models based on features (only for new models, not edits)
+        if (!editingModelName) {
+          await autoFillDefaultModels(currentProvider, newModel, {
+            changeDefaultModel,
+            changeDefaultEmbeddingModel,
+            changeDefaultSpeechModel,
+            changeDefaultImageGenerationModel,
+            changeDefaultTranscriptionsModel,
+            isFirstModel: provider.models.length === 0,
+          });
         }
 
-        showMessage(t('Preference.ModelAddedSuccessfully'), 'success');
+        showMessage(editingModelName ? t('Preference.ModelUpdatedSuccessfully') : t('Preference.ModelAddedSuccessfully'), 'success');
         closeModelDialog();
       }
     } catch (error_) {
-      void window.service.native.log('error', 'Failed to add model', { function: 'ProviderConfig.handleAddModel', error: String(error_) });
-      showMessage(t('Preference.FailedToAddModel'), 'error');
+      void window.service.native.log('error', editingModelName ? 'Failed to update model' : 'Failed to add model', {
+        function: 'ProviderConfig.handleAddModel',
+        error: String(error_),
+      });
+      showMessage(editingModelName ? t('Preference.FailedToUpdateModel') : t('Preference.FailedToAddModel'), 'error');
     }
   };
 
@@ -359,49 +494,61 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel, ch
       // Find selected default provider (user explicit choice) to get appropriate default models
       let defaultModel: ModelInfo | undefined;
       let embeddingModel: ModelInfo | undefined;
+      let speechModel: ModelInfo | undefined;
+      let imageGenerationModel: ModelInfo | undefined;
+      let transcriptionsModel: ModelInfo | undefined;
       const selectedPresetProvider = availableDefaultProviders.find(p => p.provider === selectedDefaultProvider);
+
+      // Helper function to clone a model with new provider name
+      const cloneModelForProvider = (baseModel: ModelInfo, newProviderName: string): ModelInfo => {
+        const typedFeatures: ModelFeature[] = Array.isArray(baseModel.features) ? baseModel.features.map(f => f) : [];
+        const clonedModel: ModelInfo = {
+          name: baseModel.name,
+          caption: `${baseModel.caption || baseModel.name} (${newProviderName})`,
+          features: typedFeatures,
+        };
+        if ('metadata' in baseModel && baseModel.metadata) {
+          clonedModel.metadata = { ...baseModel.metadata };
+        }
+        return clonedModel;
+      };
 
       // If the user selected a preset provider, use its first model as the default
       if (selectedPresetProvider && selectedPresetProvider.models.length > 0) {
-        // Clone the first model from the similar provider using explicit typing for features
+        // Clone the first model from the similar provider
         const baseModel = selectedPresetProvider.models[0];
-
-        // Ensure features exist and are properly typed as ModelFeature[]
-        const typedFeatures: ModelFeature[] = Array.isArray(baseModel.features) ? baseModel.features.map(f => f) : [];
-
-        // Create the default model with proper type safety
-        defaultModel = {
-          name: baseModel.name,
-          caption: `${baseModel.caption || baseModel.name} (${newProviderForm.provider})`,
-          features: typedFeatures,
-        } satisfies ModelInfo;
-
-        // Safely handle metadata if it exists using in operator for type checking
-        if ('metadata' in baseModel && baseModel.metadata) {
-          // Using type assertion after checking existence with 'in' operator
-          defaultModel.metadata = { ...baseModel.metadata };
-        }
+        defaultModel = cloneModelForProvider(baseModel, newProviderForm.provider);
 
         // Look for an embedding model in the same provider
-        const baseEmbeddingModel = selectedPresetProvider.models.find(model => Array.isArray(model.features) && model.features.includes('embedding'));
-
+        const baseEmbeddingModel = selectedPresetProvider.models.find(
+          model => Array.isArray(model.features) && model.features.includes('embedding'),
+        );
         if (baseEmbeddingModel) {
-          // Ensure features exist and are properly typed as ModelFeature[]
-          const embeddingFeatures: ModelFeature[] = Array.isArray(baseEmbeddingModel.features)
-            ? baseEmbeddingModel.features.map(f => f)
-            : [];
+          embeddingModel = cloneModelForProvider(baseEmbeddingModel, newProviderForm.provider);
+        }
 
-          // Create the embedding model with proper type safety
-          embeddingModel = {
-            name: baseEmbeddingModel.name,
-            caption: `${baseEmbeddingModel.caption || baseEmbeddingModel.name} (${newProviderForm.provider})`,
-            features: embeddingFeatures,
-          } satisfies ModelInfo;
+        // Look for a speech model in the same provider
+        const baseSpeechModel = selectedPresetProvider.models.find(
+          model => Array.isArray(model.features) && model.features.includes('speech'),
+        );
+        if (baseSpeechModel) {
+          speechModel = cloneModelForProvider(baseSpeechModel, newProviderForm.provider);
+        }
 
-          // Safely handle metadata if it exists
-          if ('metadata' in baseEmbeddingModel && baseEmbeddingModel.metadata) {
-            embeddingModel.metadata = { ...baseEmbeddingModel.metadata };
-          }
+        // Look for an image generation model in the same provider
+        const baseImageGenerationModel = selectedPresetProvider.models.find(
+          model => Array.isArray(model.features) && model.features.includes('imageGeneration'),
+        );
+        if (baseImageGenerationModel) {
+          imageGenerationModel = cloneModelForProvider(baseImageGenerationModel, newProviderForm.provider);
+        }
+
+        // Look for a transcriptions model in the same provider
+        const baseTranscriptionsModel = selectedPresetProvider.models.find(
+          model => Array.isArray(model.features) && model.features.includes('transcriptions'),
+        );
+        if (baseTranscriptionsModel) {
+          transcriptionsModel = cloneModelForProvider(baseTranscriptionsModel, newProviderForm.provider);
         }
       }
       // If no similar provider found, don't create default models
@@ -411,6 +558,26 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel, ch
       if (defaultModel) modelsToAdd.push(defaultModel);
       if (embeddingModel && embeddingModel.name !== defaultModel?.name) {
         modelsToAdd.push(embeddingModel);
+      }
+      if (speechModel && speechModel.name !== defaultModel?.name && speechModel.name !== embeddingModel?.name) {
+        modelsToAdd.push(speechModel);
+      }
+      if (
+        imageGenerationModel &&
+        imageGenerationModel.name !== defaultModel?.name &&
+        imageGenerationModel.name !== embeddingModel?.name &&
+        imageGenerationModel.name !== speechModel?.name
+      ) {
+        modelsToAdd.push(imageGenerationModel);
+      }
+      if (
+        transcriptionsModel &&
+        transcriptionsModel.name !== defaultModel?.name &&
+        transcriptionsModel.name !== embeddingModel?.name &&
+        transcriptionsModel.name !== speechModel?.name &&
+        transcriptionsModel.name !== imageGenerationModel?.name
+      ) {
+        modelsToAdd.push(transcriptionsModel);
       }
 
       const newProvider = {
@@ -442,40 +609,18 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel, ch
       setSelectedTabIndex(updatedProviders.length - 1);
       setNewProviderForm({ provider: '', providerClass: 'openAICompatible', baseURL: '' });
 
-      // Set the new provider and default model as the default selection if a model was found
-      if (changeDefaultModel && defaultModel) {
-        try {
-          await changeDefaultModel(newProvider.provider, defaultModel.name);
-        } catch (error_) {
-          void window.service.native.log(
-            'error',
-            'Failed to set default model for new provider',
-            {
-              function: 'ProviderConfig.handleAddProvider.setDefaultModel',
-              error: String(error_),
-            },
-          );
-        }
+      // Auto-fill default models for all added models
+      for (const model of modelsToAdd) {
+        await autoFillDefaultModels(newProvider.provider, model, {
+          changeDefaultModel,
+          changeDefaultEmbeddingModel,
+          changeDefaultSpeechModel,
+          changeDefaultImageGenerationModel,
+          changeDefaultTranscriptionsModel,
+          isFirstModel: true,
+        });
       }
 
-      // Set the embedding model as the default embedding model if it was found and no embedding model is currently set
-      if (embeddingModel && changeDefaultEmbeddingModel) {
-        try {
-          const currentAiConfig = await window.service.externalAPI.getAIConfig();
-          if (!currentAiConfig.api.embeddingModel) {
-            await changeDefaultEmbeddingModel(newProvider.provider, embeddingModel.name);
-          }
-        } catch (error_) {
-          void window.service.native.log(
-            'error',
-            'Failed to set default embedding model for new provider',
-            {
-              function: 'ProviderConfig.handleAddProvider.setDefaultEmbeddingModel',
-              error: String(error_),
-            },
-          );
-        }
-      }
       setShowAddProviderForm(false);
       showMessage(t('Preference.ProviderAddedSuccessfully'), 'success');
     } catch (error_) {
@@ -625,6 +770,9 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel, ch
                 onFormChange={(field, value) => handleFormChange(provider.provider, field as keyof AIProviderConfig, value)}
                 onEnabledChange={enabled => handleProviderEnabledChange(provider.provider, enabled)}
                 onRemoveModel={modelName => removeModel(provider.provider, modelName)}
+                onEditModel={modelName => {
+                  handleEditModel(provider.provider, modelName);
+                }}
                 onOpenAddModelDialog={() => {
                   openAddModelDialog(provider.provider);
                 }}
@@ -641,9 +789,10 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel, ch
         onClose={closeModelDialog}
         onAddModel={handleAddModel}
         currentProvider={currentProvider}
+        providerClass={currentProvider ? providers.find(p => p.provider === currentProvider)?.providerClass : undefined}
         newModelForm={currentProvider && providerForms[currentProvider]
           ? providerForms[currentProvider].newModel
-          : { name: '', caption: '', features: ['language' as ModelFeature] }}
+          : { name: '', caption: '', features: ['language' as ModelFeature], parameters: {} }}
         availableDefaultModels={availableDefaultModels}
         selectedDefaultModel={selectedDefaultModel}
         onSelectDefaultModel={setSelectedDefaultModel}
@@ -653,6 +802,7 @@ export function ProviderConfig({ providers, setProviders, changeDefaultModel, ch
         onFeatureChange={(feature, checked) => {
           if (currentProvider) handleFeatureChange(currentProvider, feature, checked);
         }}
+        editMode={!!editingModelName}
       />
       <Snackbar
         open={snackbarOpen}

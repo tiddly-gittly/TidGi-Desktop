@@ -13,9 +13,21 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { CoreMessage, Message } from 'ai';
 import { DataSource, Repository } from 'typeorm';
 import { generateEmbeddingsFromProvider } from './callEmbeddingAPI';
+import { generateImageFromProvider } from './callImageGenerationAPI';
 import { streamFromProvider } from './callProviderAPI';
+import { generateSpeechFromProvider } from './callSpeechAPI';
+import { generateTranscriptionFromProvider } from './callTranscriptionsAPI';
 import { extractErrorDetails } from './errorHandlers';
-import type { AIEmbeddingResponse, AIGlobalSettings, AIProviderConfig, AIStreamResponse, IExternalAPIService } from './interface';
+import type {
+  AIEmbeddingResponse,
+  AIGlobalSettings,
+  AIImageGenerationResponse,
+  AIProviderConfig,
+  AISpeechResponse,
+  AIStreamResponse,
+  AITranscriptionResponse,
+  IExternalAPIService,
+} from './interface';
 
 /**
  * Simplified request context
@@ -495,6 +507,181 @@ export class ExternalAPIService implements IExternalAPIService {
         embeddings: [],
         model: config.api.model,
         object: 'error',
+        status: 'error',
+        errorDetail,
+      };
+    } finally {
+      this.cleanupAIRequest(requestId);
+    }
+  }
+
+  async generateSpeech(
+    input: string,
+    config: AiAPIConfig,
+    options?: {
+      responseFormat?: string;
+      sampleRate?: number;
+      speed?: number;
+      gain?: number;
+      voice?: string;
+      stream?: boolean;
+      maxTokens?: number;
+    },
+  ): Promise<AISpeechResponse> {
+    // Prepare request context
+    const { requestId, controller } = this.prepareAIRequest();
+    logger.debug(`[${requestId}] Starting generateSpeech with config`, { inputLength: input.length });
+
+    try {
+      // Get provider configuration
+      const providerConfig = await this.getProviderConfig(config.api.provider);
+      if (!providerConfig) {
+        return {
+          requestId,
+          audio: new ArrayBuffer(0),
+          format: 'mp3',
+          model: config.api.speechModel || config.api.model,
+          status: 'error',
+          errorDetail: {
+            name: 'MissingProviderError',
+            code: 'PROVIDER_NOT_FOUND',
+            provider: config.api.provider,
+          },
+        };
+      }
+
+      // Generate speech
+      const result = await generateSpeechFromProvider(
+        input,
+        config,
+        controller.signal,
+        providerConfig,
+        options,
+      );
+
+      return result;
+    } catch (error) {
+      // Handle errors and categorize them
+      const errorDetail = extractErrorDetails(error, config.api.provider);
+
+      return {
+        requestId,
+        audio: new ArrayBuffer(0),
+        format: 'mp3',
+        model: config.api.speechModel || config.api.model,
+        status: 'error',
+        errorDetail,
+      };
+    } finally {
+      this.cleanupAIRequest(requestId);
+    }
+  }
+
+  async generateTranscription(
+    audioFile: File | Blob,
+    config: AiAPIConfig,
+    options?: {
+      language?: string;
+      responseFormat?: string;
+      temperature?: number;
+      prompt?: string;
+    },
+  ): Promise<AITranscriptionResponse> {
+    // Prepare request context
+    const { requestId, controller } = this.prepareAIRequest();
+    logger.debug(`[${requestId}] Starting generateTranscription with config`);
+
+    try {
+      // Get provider configuration
+      const providerConfig = await this.getProviderConfig(config.api.provider);
+      if (!providerConfig) {
+        return {
+          requestId,
+          text: '',
+          model: config.api.transcriptionsModel || config.api.model,
+          status: 'error',
+          errorDetail: {
+            name: 'MissingProviderError',
+            code: 'PROVIDER_NOT_FOUND',
+            provider: config.api.provider,
+          },
+        };
+      }
+
+      // Generate transcription
+      const result = await generateTranscriptionFromProvider(
+        audioFile,
+        config,
+        controller.signal,
+        providerConfig,
+        options,
+      );
+
+      return result;
+    } catch (error) {
+      // Handle errors and categorize them
+      const errorDetail = extractErrorDetails(error, config.api.provider);
+
+      return {
+        requestId,
+        text: '',
+        model: config.api.transcriptionsModel || config.api.model,
+        status: 'error',
+        errorDetail,
+      };
+    } finally {
+      this.cleanupAIRequest(requestId);
+    }
+  }
+
+  async generateImage(
+    prompt: string,
+    config: AiAPIConfig,
+    options?: {
+      numImages?: number;
+      width?: number;
+      height?: number;
+    },
+  ): Promise<AIImageGenerationResponse> {
+    // Prepare request context
+    const { requestId, controller } = this.prepareAIRequest();
+    logger.debug(`[${requestId}] Starting generateImage with config`, { promptLength: prompt.length });
+
+    try {
+      // Get provider configuration
+      const providerConfig = await this.getProviderConfig(config.api.provider);
+      if (!providerConfig) {
+        return {
+          requestId,
+          images: [],
+          model: config.api.imageGenerationModel || config.api.model,
+          status: 'error',
+          errorDetail: {
+            name: 'MissingProviderError',
+            code: 'PROVIDER_NOT_FOUND',
+            provider: config.api.provider,
+          },
+        };
+      }
+
+      // Generate image
+      const result = await generateImageFromProvider(
+        prompt,
+        config,
+        controller.signal,
+        providerConfig,
+        options,
+      );
+
+      return result;
+    } catch (error) {
+      // Handle errors and categorize them
+      const errorDetail = extractErrorDetails(error, config.api.provider);
+
+      return {
+        requestId,
+        images: [],
+        model: config.api.imageGenerationModel || config.api.model,
         status: 'error',
         errorDetail,
       };

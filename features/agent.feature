@@ -115,4 +115,4 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see a "send icon" element with selector "[data-testid='send-icon']"
     # Verify send button returned and stream stopped (no further chunks)
     Then I should see a "send button" element with selector "[data-testid='agent-send-button']"
-    And I should not see text "partial_chunk_4"
+    And I should not see a "partial chunk 4 text" element with selector "text='partial_chunk_4'"

@@ -21,6 +21,7 @@ interface ProviderPanelProps {
   onFormChange: (field: string, value: string) => void;
   onEnabledChange: (enabled: boolean) => void;
   onRemoveModel: (modelName: string) => void;
+  onEditModel?: (modelName: string) => void;
   onOpenAddModelDialog: () => void;
   onDeleteProvider?: () => void;
 }
@@ -31,6 +32,7 @@ export function ProviderPanel({
   onFormChange,
   onEnabledChange,
   onRemoveModel,
+  onEditModel,
   onOpenAddModelDialog,
   onDeleteProvider,
 }: ProviderPanelProps) {
@@ -137,10 +139,14 @@ export function ProviderPanel({
             <Chip
               key={model.name}
               label={model.caption || model.name}
+              onClick={() => {
+                onEditModel?.(model.name);
+              }}
               onDelete={() => {
                 onRemoveModel(model.name);
               }}
-              sx={{ mb: 1 }}
+              sx={{ mb: 1, cursor: 'pointer' }}
+              data-testid={`model-chip-${model.name}`}
             />
           ))}
         </Box>

@@ -49,6 +49,16 @@
           "name": "BAAI/bge-m3",
           "caption": "bge-m3",
           "features": ["embedding"]
+        },
+        {
+          "name": "IndexTeam/IndexTTS-2",
+          "caption": "IndexTTS-2",
+          "features": ["speech"]
+        },
+        {
+          "name": "TeleAI/TeleSpeechASR",
+          "caption": "TeleSpeechASR",
+          "features": ["transcriptions"]
         }
       ]
     },
@@ -122,6 +132,20 @@
           "features": ["language", "reasoning", "vision"]
         }
       ]
+    },
+    {
+      "provider": "comfyui",
+      "providerClass": "comfyui",
+      "isPreset": true,
+      "enabled": false,
+      "baseURL": "http://localhost:8188",
+      "models": [
+        {
+          "name": "flux",
+          "caption": "Flux",
+          "features": ["imageGeneration"]
+        }
+      ]
     }
   ],
   "defaultConfig": {
@@ -165,6 +189,16 @@
       "value": "embedding",
       "label": "Embedding",
       "i18nKey": "ModelFeature.Embedding"
+    },
+    {
+      "value": "speech",
+      "label": "Speech",
+      "i18nKey": "ModelFeature.Speech"
+    },
+    {
+      "value": "transcriptions",
+      "label": "Transcriptions",
+      "i18nKey": "ModelFeature.Transcriptions"
     }
   ]
 }

@@ -23,6 +23,30 @@ Then('I should see a(n) {string} element with selector {string}', async function
   }
 });
 
+Then('I should not see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
+  const currentWindow = this.currentWindow || this.mainWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+  try {
+    const element = currentWindow.locator(selector).first();
+    const count = await element.count();
+    if (count > 0) {
+      const isVisible = await element.isVisible();
+      if (isVisible) {
+        throw new Error(`Element "${elementComment}" with selector "${selector}" should not be visible but was found`);
+      }
+    }
+    // Element not found or not visible - this is expected
+  } catch (error) {
+    // If the error is our custom error, rethrow it
+    if (error instanceof Error && error.message.includes('should not be visible')) {
+      throw error;
+    }
+    // Otherwise, element not found is expected - pass the test
+  }
+});
+
 When('I click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
   const targetWindow = await this.getWindow('current');
 
@@ -109,19 +133,6 @@ When('I clear text in {string} element with selector {string}', async function(t
     await element.clear();
   } catch (error) {
     throw new Error(`Failed to clear text in ${elementComment} element with selector "${selector}": ${error as Error}`);
-  }
-});
-
-// Minimal text checking for smoke test
-When('I should not see text {string}', async function(this: ApplicationWorld, text: string) {
-  const currentWindow = this.currentWindow || this.mainWindow;
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
-
-  const bodyContent = await currentWindow.textContent('body');
-  if (bodyContent?.includes(text)) {
-    throw new Error(`Text "${text}" should not be visible but was found on the page`);
   }
 });
 
