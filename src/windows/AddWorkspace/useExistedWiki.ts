@@ -2,7 +2,8 @@ import { WikiCreationMethod } from '@/constants/wikiCreation';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { callWikiInitialization } from './useCallWikiInitialization';
-import { IErrorInWhichComponent, IWikiWorkspaceForm, workspaceConfigFromForm } from './useForm';
+import type { IErrorInWhichComponent, IWikiWorkspaceForm } from './useForm';
+import { workspaceConfigFromForm } from './useForm';
 import { updateErrorInWhichComponentSetterByErrorMessage } from './useIndicator';
 
 export function useValidateExistedWiki(

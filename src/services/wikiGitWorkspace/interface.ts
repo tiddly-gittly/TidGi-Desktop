@@ -1,6 +1,6 @@
 import { WikiGitWorkspaceChannel } from '@/constants/channels';
-import { IGitUserInfos } from '@services/git/interface';
-import { INewWikiWorkspaceConfig, IWorkspace } from '@services/workspaces/interface';
+import type { IGitUserInfos } from '@services/git/interface';
+import type { INewWikiWorkspaceConfig, IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 /**

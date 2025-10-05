@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { flattenPrompts } from '../promptConcat';
-import { IPrompt } from '../promptConcatSchema';
+import type { IPrompt } from '../promptConcatSchema';
 
 describe('flattenPrompts', () => {
   it('should flatten prompts without roles', () => {

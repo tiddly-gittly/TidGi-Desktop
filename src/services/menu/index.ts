@@ -1,6 +1,6 @@
 import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService } from '@services/auth/interface';
-import { lazyInject } from '@services/container';
+import { container, lazyInject } from '@services/container';
 import type { IContextService } from '@services/context/interface';
 import type { IGitService } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
@@ -8,7 +8,7 @@ import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { ISyncService } from '@services/sync/interface';
+import type { ISyncService } from '@services/sync/interface';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
@@ -271,8 +271,22 @@ export class MenuService implements IMenuService {
     webContentsOrWindowName: WindowNames | WebContents = WindowNames.main,
   ): Promise<void> {
     let webContents: WebContents;
+    // Get services via container to avoid lazyInject issues
+    const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+    const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
+    const contextService = container.get<IContextService>(serviceIdentifier.Context);
+    const gitService = container.get<IGitService>(serviceIdentifier.Git);
+    const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
+    const viewService = container.get<IViewService>(serviceIdentifier.View);
+    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+    const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);
+    const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+    const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
+
     if (typeof webContentsOrWindowName === 'string') {
-      const windowToPopMenu = this.windowService.get(webContentsOrWindowName);
+      const windowToPopMenu = windowService.get(webContentsOrWindowName);
       const webContentsOfWindowToPopMenu = windowToPopMenu?.webContents;
       if (windowToPopMenu === undefined || webContentsOfWindowToPopMenu === undefined) {
         return;
@@ -281,23 +295,23 @@ export class MenuService implements IMenuService {
     } else {
       webContents = webContentsOrWindowName;
     }
-    const sidebar = await this.preferenceService.get('sidebar');
+    const sidebar = await preferenceService.get('sidebar');
     const contextMenuBuilder = new ContextMenuBuilder(webContents);
     const menu = contextMenuBuilder.buildMenuForElement(info);
-    const workspaces = await this.workspaceService.getWorkspacesAsList();
-    const activeWorkspace = await this.workspaceService.getActiveWorkspace();
+    const workspaces = await workspaceService.getWorkspacesAsList();
+    const activeWorkspace = await workspaceService.getActiveWorkspace();
     const services = {
-      auth: this.authService,
-      context: this.contextService,
-      git: this.gitService,
-      native: this.nativeService,
-      view: this.viewService,
-      wiki: this.wikiService,
-      wikiGitWorkspace: this.wikiGitWorkspaceService,
-      window: this.windowService,
-      workspace: this.workspaceService,
-      workspaceView: this.workspaceViewService,
-      sync: this.syncService,
+      auth: authService,
+      context: contextService,
+      git: gitService,
+      native: nativeService,
+      view: viewService,
+      wiki: wikiService,
+      wikiGitWorkspace: wikiGitWorkspaceService,
+      window: windowService,
+      workspace: workspaceService,
+      workspaceView: workspaceViewService,
+      sync: syncService,
     };
     // workspace menus
     menu.append(new MenuItem({ type: 'separator' }));

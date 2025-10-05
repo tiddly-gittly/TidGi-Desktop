@@ -2,7 +2,7 @@ import { app, dialog, powerMonitor } from 'electron';
 import { injectable } from 'inversify';
 
 import type { IAuthenticationService } from '@services/auth/interface';
-import { lazyInject } from '@services/container';
+import { container, lazyInject } from '@services/container';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import type { INotificationService } from '@services/notifications/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -14,15 +14,15 @@ import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { DEFAULT_FIRST_WIKI_PATH, DEFAULT_WIKI_FOLDER } from '@/constants/paths';
-import { IContextService } from '@services/context/interface';
+import type { IContextService } from '@services/context/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
-import { ISyncService } from '@services/sync/interface';
+import type { ISyncService } from '@services/sync/interface';
 import { SupportedStorageServices } from '@services/types';
 import { updateGhConfig } from '@services/wiki/plugin/ghPages';
 import { hasGit } from 'git-sync-js';
 import { InitWikiGitError, InitWikiGitRevertError, InitWikiGitSyncedWikiNoGitUserInfoError } from './error';
-import { IWikiGitWorkspaceService } from './interface';
+import type { IWikiGitWorkspaceService } from './interface';
 
 @injectable()
 export class WikiGitWorkspace implements IWikiGitWorkspaceService {
@@ -37,9 +37,6 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
 
   @lazyInject(serviceIdentifier.Context)
   private readonly contextService!: IContextService;
-
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
 
   @lazyInject(serviceIdentifier.Window)
   private readonly windowService!: IWindowService;
@@ -57,7 +54,8 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
     const listener = async (): Promise<void> => {
       try {
         if (await this.contextService.isOnline()) {
-          const workspaces = await this.workspaceService.getWorkspacesAsList();
+          const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+          const workspaces = await workspaceService.getWorkspacesAsList();
           const workspacesToSync = workspaces.filter((workspace) =>
             isWikiWorkspace(workspace) &&
             workspace.storageService !== SupportedStorageServices.local &&
@@ -86,21 +84,25 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   }
 
   public initWikiGitTransaction = async (newWorkspaceConfig: INewWikiWorkspaceConfig, userInfo?: IGitUserInfos): Promise<IWorkspace | undefined> => {
-    const newWorkspace = await this.workspaceService.create(newWorkspaceConfig);
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const newWorkspace = await workspaceService.create(newWorkspaceConfig);
     if (!isWikiWorkspace(newWorkspace)) {
       throw new Error('initWikiGitTransaction can only be called with wiki workspaces');
     }
     const { gitUrl, storageService, wikiFolderLocation, isSubWiki, id: workspaceID, mainWikiToLink } = newWorkspace;
     try {
-      await this.workspaceService.setActiveWorkspace(newWorkspace.id, this.workspaceService.getActiveWorkspaceSync()?.id);
+      const previousActiveId = workspaceService.getActiveWorkspaceSync()?.id;
+      await workspaceService.setActiveWorkspace(newWorkspace.id, previousActiveId);
       const isSyncedWiki = storageService !== SupportedStorageServices.local;
       if (await hasGit(wikiFolderLocation)) {
         logger.warn('Skip git init because it already has a git setup.', { wikiFolderLocation });
       } else {
         if (isSyncedWiki) {
           if (typeof gitUrl === 'string' && userInfo !== undefined) {
-            await this.gitService.initWikiGit(wikiFolderLocation, isSyncedWiki, !isSubWiki, gitUrl, userInfo);
-            const branch = await this.authService.get(`${storageService}-branch`);
+            const gitService = container.get<IGitService>(serviceIdentifier.Git);
+            await gitService.initWikiGit(wikiFolderLocation, isSyncedWiki, !isSubWiki, gitUrl, userInfo);
+            const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
+            const branch = await authService.get(`${storageService}-branch`);
             if (branch !== undefined) {
               await updateGhConfig(wikiFolderLocation, { branch });
             }
@@ -108,7 +110,8 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
             throw new InitWikiGitSyncedWikiNoGitUserInfoError(gitUrl, userInfo);
           }
         } else {
-          await this.gitService.initWikiGit(wikiFolderLocation, false);
+          const gitService = container.get<IGitService>(serviceIdentifier.Git);
+          await gitService.initWikiGit(wikiFolderLocation, false);
         }
       }
       return newWorkspace;
@@ -117,12 +120,14 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       const error = _error instanceof Error ? _error : new Error(String(_error));
       const errorMessage = `initWikiGitTransaction failed, ${error.message} ${error.stack ?? ''}`;
       logger.error(errorMessage);
-      await this.workspaceService.remove(workspaceID);
+      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+      const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+      await workspaceService.remove(workspaceID);
       try {
         if (!isSubWiki) {
-          await this.wikiService.removeWiki(wikiFolderLocation);
+          await wikiService.removeWiki(wikiFolderLocation);
         } else if (typeof mainWikiToLink === 'string') {
-          await this.wikiService.removeWiki(wikiFolderLocation, mainWikiToLink);
+          await wikiService.removeWiki(wikiFolderLocation, mainWikiToLink);
         }
       } catch (_error_) {
         const error_ = _error_ instanceof Error ? _error_ : new Error(String(_error_));
@@ -136,7 +141,8 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
    * Automatically initialize a default wiki workspace if none exists. This matches the previous frontend logic.
    */
   public async initialize(): Promise<void> {
-    const workspaces = await this.workspaceService.getWorkspacesAsList();
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspaces = await workspaceService.getWorkspacesAsList();
     const wikiWorkspaces = workspaces.filter(w => isWikiWorkspace(w) && !w.isSubWiki);
     if (wikiWorkspaces.length > 0) return;
     // Construct minimal default config, only fill required fields, let workspaceService.create handle defaults
@@ -161,7 +167,8 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
     };
     try {
       // Copy the wiki template first
-      await this.wikiService.copyWikiTemplate(DEFAULT_WIKI_FOLDER, 'wiki');
+      const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+      await wikiService.copyWikiTemplate(DEFAULT_WIKI_FOLDER, 'wiki');
       // Create the workspace
       await this.initWikiGitTransaction(defaultConfig);
     } catch (_error: unknown) {
@@ -173,7 +180,8 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   public async removeWorkspace(workspaceID: string): Promise<void> {
     const mainWindow = this.windowService.get(WindowNames.main);
     if (mainWindow !== undefined) {
-      const workspace = await this.workspaceService.get(workspaceID);
+      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+      const workspace = await workspaceService.get(workspaceID);
       if (workspace === undefined) {
         throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
       }
@@ -193,7 +201,9 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         if (!onlyRemoveWorkspace && !removeWorkspaceAndDelete) {
           return;
         }
-        await this.wikiService.stopWiki(id).catch((_error: unknown) => {
+        const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+        const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+        await wikiService.stopWiki(id).catch((_error: unknown) => {
           const error = _error instanceof Error ? _error : new Error(String(_error));
           logger.error(error.message, error);
         });
@@ -201,23 +211,23 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           if (mainWikiToLink === null) {
             throw new Error(`workspace.mainWikiToLink is null in WikiGitWorkspace.removeWorkspace ${JSON.stringify(workspace)}`);
           }
-          await this.wikiService.removeWiki(wikiFolderLocation, mainWikiToLink, onlyRemoveWorkspace);
+          await wikiService.removeWiki(wikiFolderLocation, mainWikiToLink, onlyRemoveWorkspace);
           // remove folderName from fileSystemPaths
-          await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, wikiFolderLocation, undefined, workspace);
+          await wikiService.updateSubWikiPluginContent(mainWikiToLink, wikiFolderLocation, undefined, workspace);
         } else {
           // is main wiki, also delete all sub wikis
-          const subWikis = this.workspaceService.getSubWorkspacesAsListSync(id);
+          const subWikis = workspaceService.getSubWorkspacesAsListSync(id);
           await Promise.all(subWikis.map(async (subWiki) => {
             await this.removeWorkspace(subWiki.id);
           }));
           if (removeWorkspaceAndDelete) {
-            await this.wikiService.removeWiki(wikiFolderLocation);
+            await wikiService.removeWiki(wikiFolderLocation);
           }
         }
         await this.workspaceViewService.removeWorkspaceView(workspaceID);
-        await this.workspaceService.remove(workspaceID);
+        await workspaceService.remove(workspaceID);
         // switch to first workspace
-        const firstWorkspace = await this.workspaceService.getFirstWorkspace();
+        const firstWorkspace = await workspaceService.getFirstWorkspace();
         if (firstWorkspace !== undefined) {
           await this.workspaceViewService.setActiveWorkspaceView(firstWorkspace.id);
         }

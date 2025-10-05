@@ -6,11 +6,11 @@
 import { uninstall } from '@/helpers/installV8Cache';
 import './preload';
 import 'source-map-support/register';
+import { handleWorkerMessages } from '@services/libs/workerAdapter';
 import { mkdtemp } from 'fs-extra';
 import { tmpdir } from 'os';
 import path from 'path';
 import { Observable } from 'rxjs';
-import { expose } from 'threads/worker';
 
 import { IZxWorkerMessage, ZxWorkerControlActions } from '../interface';
 import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts, type IVariableContextList } from '../plugin/zxPlugin';
@@ -105,4 +105,6 @@ const wikiWorker = {
   ...ipcServerRoutesMethods,
 };
 export type WikiWorker = typeof wikiWorker;
-expose(wikiWorker);
+
+// Initialize worker message handling
+handleWorkerMessages(wikiWorker);

@@ -1,7 +1,7 @@
 import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IUpdaterService } from '@services/updater/interface';
+import type { IUpdaterService } from '@services/updater/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { shell } from 'electron';

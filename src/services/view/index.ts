@@ -1,3 +1,5 @@
+import { container, lazyInject } from '@services/container';
+import { getPreloadPath } from '@services/windows/viteEntry';
 import { BrowserWindow, ipcMain, WebContentsView, WebPreferences } from 'electron';
 import { injectable } from 'inversify';
 
@@ -11,20 +13,19 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { isMac, isWin } from '@/helpers/system';
-import { IAuthenticationService } from '@services/auth/interface';
-import { lazyInject } from '@services/container';
+import type { IAuthenticationService } from '@services/auth/interface';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import getViewBounds from '@services/libs/getViewBounds';
 import { i18n } from '@services/libs/i18n';
 import { isBrowserWindow } from '@services/libs/isBrowserWindow';
 import { logger } from '@services/libs/log';
-import { INativeService } from '@services/native/interface';
-import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
-import { isWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
+import type { INativeService } from '@services/native/interface';
+import { type IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
+import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
 import debounce from 'lodash/debounce';
 import { setViewEventName } from './constants';
 import { ViewLoadUrlError } from './error';
-import { IViewService } from './interface';
+import type { IViewService } from './interface';
 import { setupIpcServerRoutesHandlers } from './setupIpcServerRoutesHandlers';
 import setupViewEventHandlers from './setupViewEventHandlers';
 import { setupViewSession } from './setupViewSession';
@@ -54,7 +55,10 @@ export class View implements IViewService {
 
   constructor() {
     this.initIPCHandlers();
-    void this.registerMenu();
+  }
+
+  public async initialize(): Promise<void> {
+    await this.registerMenu();
   }
 
   private initIPCHandlers(): void {
@@ -72,19 +76,25 @@ export class View implements IViewService {
   }
 
   private async registerMenu(): Promise<void> {
-    const hasWorkspaces = async () => (await this.workspaceService.countWorkspaces()) > 0;
-    const sidebar = await this.preferenceService.get('sidebar');
-    const titleBar = await this.preferenceService.get('titleBar');
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+    const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+
+    const hasWorkspaces = async () => (await workspaceService.countWorkspaces()) > 0;
+    const sidebar = await preferenceService.get('sidebar');
+    const titleBar = await preferenceService.get('titleBar');
     // electron type forget that click can be async function
 
-    await this.menuService.insertMenu('View', [
+    await menuService.insertMenu('View', [
       {
         label: () => (sidebar ? i18n.t('Preference.HideSideBar') : i18n.t('Preference.ShowSideBar')),
         accelerator: 'CmdOrCtrl+Alt+S',
         click: async () => {
-          const sidebarLatest = await this.preferenceService.get('sidebar');
-          void this.preferenceService.set('sidebar', !sidebarLatest);
-          void this.workspaceViewService.realignActiveWorkspace();
+          const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+          const sidebarLatest = await preferenceService.get('sidebar');
+          void preferenceService.set('sidebar', !sidebarLatest);
+          void workspaceViewService.realignActiveWorkspace();
         },
       },
       {
@@ -93,9 +103,11 @@ export class View implements IViewService {
         enabled: isMac,
         visible: isMac,
         click: async () => {
-          const titleBarLatest = await this.preferenceService.get('titleBar');
-          void this.preferenceService.set('titleBar', !titleBarLatest);
-          void this.workspaceViewService.realignActiveWorkspace();
+          const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+          const titleBarLatest = await preferenceService.get('titleBar');
+          void preferenceService.set('titleBar', !titleBarLatest);
+          void workspaceViewService.realignActiveWorkspace();
         },
       },
       // same behavior as BrowserWindow with autoHideMenuBar: true
@@ -114,9 +126,11 @@ export class View implements IViewService {
             browserWindow.setMenuBarVisibility(!browserWindow.isMenuBarVisible());
             return;
           }
-          const mainWindow = this.windowService.get(WindowNames.main);
+          const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+          const mainWindow = windowService.get(WindowNames.main);
           mainWindow?.setMenuBarVisibility(!mainWindow.isMenuBarVisible());
-          void this.workspaceViewService.realignActiveWorkspace();
+          void workspaceViewService.realignActiveWorkspace();
         },
       },
       { type: 'separator' },
@@ -275,7 +289,7 @@ export class View implements IViewService {
       webSecurity: false,
       allowRunningInsecureContent: true,
       session: sessionOfView,
-      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      preload: getPreloadPath(),
       additionalArguments: [
         `${MetaDataChannel.browserViewMetaData}${WindowNames.view}`,
         `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(browserViewMetaData))}`,
@@ -527,9 +541,11 @@ export class View implements IViewService {
   }
 
   public async getActiveBrowserView(): Promise<WebContentsView | undefined> {
-    const workspace = await this.workspaceService.getActiveWorkspace();
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspace = await workspaceService.getActiveWorkspace();
     if (workspace !== undefined) {
-      const isMenubarOpen = await this.windowService.isMenubarOpen();
+      const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+      const isMenubarOpen = await windowService.isMenubarOpen();
       if (isMenubarOpen) {
         return this.getView(workspace.id, WindowNames.menuBar);
       } else {
@@ -539,7 +555,8 @@ export class View implements IViewService {
   }
 
   public async getActiveBrowserViews(): Promise<Array<WebContentsView | undefined>> {
-    const workspace = await this.workspaceService.getActiveWorkspace();
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspace = await workspaceService.getActiveWorkspace();
     if (workspace !== undefined) {
       return [this.getView(workspace.id, WindowNames.main), this.getView(workspace.id, WindowNames.menuBar)];
     }

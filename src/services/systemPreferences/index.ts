@@ -1,7 +1,7 @@
 import { app } from 'electron';
 import { injectable } from 'inversify';
 import { BehaviorSubject } from 'rxjs';
-import { ISystemPreferenceService, IUsedElectionSettings } from './interface';
+import type { ISystemPreferenceService, IUsedElectionSettings } from './interface';
 
 @injectable()
 export class SystemPreference implements ISystemPreferenceService {

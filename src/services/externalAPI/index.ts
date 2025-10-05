@@ -5,10 +5,10 @@ import { defer, from, Observable } from 'rxjs';
 import { filter, finalize, startWith } from 'rxjs/operators';
 
 import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { IDatabaseService } from '@services/database/interface';
+import type { IDatabaseService } from '@services/database/interface';
 import { ExternalAPICallType, ExternalAPILogEntity, RequestMetadata, ResponseMetadata } from '@services/database/schema/externalAPILog';
 import { logger } from '@services/libs/log';
-import { IPreferenceService } from '@services/preferences/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { CoreMessage, Message } from 'ai';
 import { DataSource, Repository } from 'typeorm';

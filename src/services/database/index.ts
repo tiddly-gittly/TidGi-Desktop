@@ -15,7 +15,7 @@ import { SQLITE_BINARY_PATH } from '@/constants/paths';
 import { logger } from '@services/libs/log';
 import { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions.js';
 import { ensureSettingFolderExist, fixSettingFileWhenError } from './configSetting';
-import { DatabaseInitOptions, IDatabaseService, ISettingFile } from './interface';
+import type { DatabaseInitOptions, IDatabaseService, ISettingFile } from './interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from './schema/agent';
 import { AgentBrowserTabEntity } from './schema/agentBrowser';
 import { ExternalAPILogEntity } from './schema/externalAPILog';
@@ -38,13 +38,19 @@ export class DatabaseService implements IDatabaseService {
   private readonly schemaRegistry = new Map<string, SchemaConfig>();
 
   // Settings related fields
-  private settingFileContent: ISettingFile = settings.getSync() as unknown as ISettingFile;
+  private settingFileContent: ISettingFile | undefined;
   private settingBackupStream: rotateFs.RotatingFileStream | undefined;
   private storeSettingsToFileLock = false;
 
   async initializeForApp(): Promise<void> {
-    // Ensure settings folder exists
+    logger.info('DatabaseService.initializeForApp() starting');
+    // Initialize settings folder and load settings
     ensureSettingFolderExist();
+    this.settingFileContent = settings.getSync() as unknown as ISettingFile;
+    logger.info('DatabaseService.initializeForApp() loaded settings', {
+      hasContent: !!this.settingFileContent,
+      keys: this.settingFileContent ? Object.keys(this.settingFileContent).length : 0,
+    });
 
     // Initialize settings backup stream
     try {
@@ -364,7 +370,12 @@ export class DatabaseService implements IDatabaseService {
 
   // Settings related methods
   public setSetting<K extends keyof ISettingFile>(key: K, value: ISettingFile[K]) {
-    this.settingFileContent[key] = value;
+    if (!this.settingFileContent) {
+      logger.error('setSetting called before initializeForApp()');
+      return;
+    }
+    const settingFile = this.settingFileContent;
+    settingFile[key] = value;
     void this.debouncedStoreSettingsToFile();
     // Make infrequent backup of setting file, preventing re-install/upgrade from corrupting the file.
     this.debouncedStoreSettingsToBackupFile();
@@ -407,23 +418,41 @@ export class DatabaseService implements IDatabaseService {
   }
 
   public setSettingImmediately<K extends keyof ISettingFile>(key: K, value: ISettingFile[K]) {
-    this.settingFileContent[key] = value;
+    if (!this.settingFileContent) {
+      logger.error('setSettingImmediately called before initializeForApp()');
+      return;
+    }
+    const settingFile = this.settingFileContent;
+    settingFile[key] = value;
     void this.debouncedStoreSettingsToFile();
   }
 
   public getSetting<K extends keyof ISettingFile>(key: K): ISettingFile[K] | undefined {
-    return this.settingFileContent[key];
+    if (!this.settingFileContent) {
+      logger.error('getSetting called before initializeForApp()', {
+        key,
+        stack: new Error().stack,
+      });
+      return undefined;
+    }
+    const settingFile = this.settingFileContent;
+    return settingFile[key];
   }
 
   private readonly debouncedStoreSettingsToFile = debounce(this.immediatelyStoreSettingsToFile.bind(this), DEBOUNCE_SAVE_SETTING_FILE);
   private readonly debouncedStoreSettingsToBackupFile = debounce(this.immediatelyStoreSettingsToBackupFile.bind(this), DEBOUNCE_SAVE_SETTING_BACKUP_FILE);
 
   public immediatelyStoreSettingsToBackupFile() {
+    if (!this.settingFileContent) return;
     this.settingBackupStream?.write(JSON.stringify(this.settingFileContent) + '\n', 'utf8');
   }
 
   public async immediatelyStoreSettingsToFile() {
     /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
+    if (!this.settingFileContent) {
+      logger.error('immediatelyStoreSettingsToFile called before initializeForApp()');
+      return;
+    }
     try {
       logger.debug('Saving settings to file start', { function: 'immediatelyStoreSettingsToFile', storeSettingsToFileLock: this.storeSettingsToFileLock });
       if (this.storeSettingsToFileLock) return;

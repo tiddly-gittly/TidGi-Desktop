@@ -2,7 +2,7 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 import { WorkspaceViewChannel } from '@/constants/channels';
 import { WikiCreationMethod } from '@/constants/wikiCreation';
-import { IWorkspace } from '@services/workspaces/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
 
 export interface IInitializeWorkspaceOptions {
   /**

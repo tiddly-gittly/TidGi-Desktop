@@ -1,13 +1,13 @@
 import { container } from '@services/container';
-import { IExternalAPIService } from '@services/externalAPI/interface';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { merge } from 'lodash';
-import { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
+import type { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { createHooksWithPlugins } from '../plugins';
 import { YieldNextRoundTarget } from '../plugins/types';
 import { AgentPromptDescription, AiAPIConfig, HandlerConfig } from '../promptConcat/promptConcatSchema';
-import { IPromptConcatPlugin } from '../promptConcat/promptConcatSchema/plugin';
+import type { IPromptConcatPlugin } from '../promptConcat/promptConcatSchema/plugin';
 import { responseConcat } from '../promptConcat/responseConcat';
 import { getFinalPromptResult } from '../promptConcat/utilities';
 import { canceled, completed, error, working } from './statusUtilities';

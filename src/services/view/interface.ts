@@ -18,6 +18,7 @@ export type INewWindowAction =
  * WebContentsView related things, the WebContentsView is the webview like frame that renders our wiki website.
  */
 export interface IViewService {
+  initialize(): Promise<void>;
   /**
    * Add a new browserView and load the url
    */

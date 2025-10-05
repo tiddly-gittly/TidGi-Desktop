@@ -1,6 +1,6 @@
-import { AgentDefinition, AgentToolConfig } from '@services/agentDefinition/interface';
-import { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage } from '@services/agentInstance/interface';
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { AgentDefinition, AgentToolConfig } from '@services/agentDefinition/interface';
+import type { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage } from '@services/agentInstance/interface';
+import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
 /**

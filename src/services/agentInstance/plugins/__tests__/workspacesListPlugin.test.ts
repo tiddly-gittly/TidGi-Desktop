@@ -12,7 +12,7 @@ import type { AgentHandlerContext } from '../../buildInAgentHandlers/type';
 import type { AgentInstance } from '../../interface';
 import type { PromptConcatHookContext } from '../types';
 
-import { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import { createHandlerHooks } from '../index';
 import { workspacesListPlugin } from '../workspacesListPlugin';
 

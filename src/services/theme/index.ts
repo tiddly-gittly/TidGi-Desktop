@@ -1,21 +1,18 @@
 import { nativeTheme } from 'electron';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { BehaviorSubject } from 'rxjs';
 
 import { WikiChannel } from '@/constants/channels';
-import { lazyInject } from '@services/container';
+import { container, lazyInject } from '@services/container';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWikiService } from '@services/wiki/interface';
-import { isWikiWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import type { IWikiService } from '@services/wiki/interface';
+import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/interface';
 import debounce from 'lodash/debounce';
-import { ITheme, IThemeService } from './interface';
+import type { ITheme, IThemeService, IThemeSource } from './interface';
 
 @injectable()
 export class ThemeService implements IThemeService {
-  @lazyInject(serviceIdentifier.Preference)
-  private readonly preferenceService!: IPreferenceService;
-
   @lazyInject(serviceIdentifier.Wiki)
   private readonly wikiService!: IWikiService;
 
@@ -24,8 +21,9 @@ export class ThemeService implements IThemeService {
 
   public theme$: BehaviorSubject<ITheme>;
 
-  constructor() {
-    void this.init();
+  constructor(
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+  ) {
     this.theme$ = new BehaviorSubject<ITheme>({ shouldUseDarkColors: this.shouldUseDarkColorsSync() });
     this.updateActiveWikiTheme = debounce(this.updateActiveWikiTheme.bind(this), 1000) as typeof this.updateActiveWikiTheme;
   }
@@ -34,8 +32,9 @@ export class ThemeService implements IThemeService {
     this.theme$.next(newTheme);
   }
 
-  private async init(): Promise<void> {
-    const themeSource = await this.preferenceService.get('themeSource');
+  public async initialize(): Promise<void> {
+    const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+    const themeSource = await preferenceService.get('themeSource');
     // apply theme
     nativeTheme.themeSource = themeSource;
     nativeTheme.addListener('updated', () => {
@@ -50,6 +49,13 @@ export class ThemeService implements IThemeService {
 
   public async shouldUseDarkColors(): Promise<boolean> {
     return this.shouldUseDarkColorsSync();
+  }
+
+  public async setThemeSource(themeSource: IThemeSource): Promise<void> {
+    nativeTheme.themeSource = themeSource;
+    await this.preferenceService.set('themeSource', themeSource);
+    this.updateThemeSubject({ shouldUseDarkColors: this.shouldUseDarkColorsSync() });
+    await this.updateActiveWikiTheme();
   }
 
   /**

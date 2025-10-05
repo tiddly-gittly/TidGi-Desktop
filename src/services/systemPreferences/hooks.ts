@@ -2,7 +2,7 @@ import useObservable from 'beautiful-react-hooks/useObservable';
 import type { TFunction } from 'i18next';
 import { useState } from 'react';
 
-import { IUsedElectionSettings } from './interface';
+import type { IUsedElectionSettings } from './interface';
 
 export function useSystemPreferenceObservable(): IUsedElectionSettings | undefined {
   const [systemPreference, systemPreferenceSetter] = useState<IUsedElectionSettings | undefined>();

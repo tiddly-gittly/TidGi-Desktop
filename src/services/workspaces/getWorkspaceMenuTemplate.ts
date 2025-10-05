@@ -1,9 +1,9 @@
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
-import { IContextService } from '@services/context/interface';
-import { IGitService } from '@services/git/interface';
+import type { IContextService } from '@services/context/interface';
+import type { IGitService } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
-import { ISyncService } from '@services/sync/interface';
+import type { ISyncService } from '@services/sync/interface';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';

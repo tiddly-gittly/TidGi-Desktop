@@ -1,6 +1,6 @@
 import { isLinux, isMac, isWin } from '@/helpers/system';
 import { logger } from '@services/libs/log';
-import { IFoundEditor } from './found-editor';
+import type { IFoundEditor } from './found-editor';
 import { ExternalEditorError } from './shared';
 
 let editorCache: ReadonlyArray<IFoundEditor<string>> | undefined;

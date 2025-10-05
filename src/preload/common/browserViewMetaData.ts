@@ -1,5 +1,6 @@
 import { MetaDataChannel } from '@/constants/channels';
-import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import type { IPossibleWindowMeta, WindowMeta } from '@services/windows/WindowProperties';
+import { WindowNames } from '@services/windows/WindowProperties';
 import { contextBridge, ipcRenderer } from 'electron';
 
 const metaDataArguments = process.argv

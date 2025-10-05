@@ -1,10 +1,11 @@
 import { isTest } from '@/constants/environment';
 import { container } from '@services/container';
-import { IMenuService } from '@services/menu/interface';
+import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IThemeService } from '@services/theme/interface';
+import type { IThemeService } from '@services/theme/interface';
 import { app, BrowserWindow, BrowserWindowConstructorOptions } from 'electron';
-import { IWindowOpenConfig, IWindowService } from './interface';
+import type { IWindowOpenConfig, IWindowService } from './interface';
+import { getMainWindowEntry } from './viteEntry';
 import { WindowMeta, WindowNames } from './WindowProperties';
 
 export async function handleCreateBasicWindow<N extends WindowNames>(
@@ -17,7 +18,7 @@ export async function handleCreateBasicWindow<N extends WindowNames>(
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 
   const newWindow = new BrowserWindow(windowConfig);
-  const newWindowURL = (windowMeta !== undefined && 'uri' in windowMeta ? windowMeta.uri : undefined) ?? MAIN_WINDOW_WEBPACK_ENTRY;
+  const newWindowURL = (windowMeta !== undefined && 'uri' in windowMeta ? windowMeta.uri : undefined) ?? getMainWindowEntry();
   if (config?.multiple !== true) {
     windowService.set(windowName, newWindow);
   }

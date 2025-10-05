@@ -7,7 +7,7 @@ import { ipcMain } from 'electron';
 import { WikiChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IViewService } from '@services/view/interface';
+import type { IViewService } from '@services/view/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 /**

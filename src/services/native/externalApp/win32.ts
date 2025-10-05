@@ -5,7 +5,7 @@ import { enumerateValues, HKEY, RegistryValue, RegistryValueType } from 'registr
 
 import { logger } from '@services/libs/log';
 import { pathExists } from 'fs-extra';
-import { IFoundEditor } from './found-editor';
+import type { IFoundEditor } from './found-editor';
 
 interface IWindowsAppInformation {
   displayName: string;

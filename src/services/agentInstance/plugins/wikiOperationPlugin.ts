@@ -11,7 +11,7 @@ import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
-import { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import { z } from 'zod/v4';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { findPromptById } from '../promptConcat/promptConcat';

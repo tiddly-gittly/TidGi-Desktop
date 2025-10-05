@@ -1,6 +1,6 @@
 import { I18NChannels } from '@/constants/channels';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
-import { IReadWriteFileRequest } from './types';
+import type { IReadWriteFileRequest } from './types';
 
 /** This is the code that will go into the preload.js file
  *  in order to set up the contextBridge api

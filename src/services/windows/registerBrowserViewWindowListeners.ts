@@ -1,10 +1,10 @@
 import { container } from '@services/container';
-import { IPreferenceService } from '@services/preferences/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IViewService } from '@services/view/interface';
-import { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { IViewService } from '@services/view/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { BrowserWindow } from 'electron';
-import { IWindowService } from './interface';
+import type { IWindowService } from './interface';
 import { WindowNames } from './WindowProperties';
 
 export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, windowName: WindowNames): void {

@@ -6,12 +6,15 @@ import { MetaDataChannel } from '@/constants/channels';
 import { extractDomain, isInternalUrl } from '@/helpers/url';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
-import { IMenuService } from '@services/menu/interface';
+import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IBrowserViewMetaData, windowDimension, WindowNames } from '@services/windows/WindowProperties';
-import { isWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
-import { INewWindowAction } from './interface';
-import { IViewMeta } from './setupViewEventHandlers';
+import { getPreloadPath } from '@services/windows/viteEntry';
+import type { IBrowserViewMetaData } from '@services/windows/WindowProperties';
+import { windowDimension, WindowNames } from '@services/windows/WindowProperties';
+import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
+import type { INewWindowAction } from './interface';
+import type { IViewMeta } from './setupViewEventHandlers';
 import { handleOpenFileExternalLink } from './setupViewFileProtocol';
 
 export interface INewWindowContext {
@@ -99,7 +102,7 @@ export function handleNewWindow(
         `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(browserViewMetaData))}`,
         '--unsafely-disable-devtools-self-xss-warnings',
       ],
-      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      preload: getPreloadPath(),
     };
     const windowWithBrowserViewState = windowStateKeeper({
       file: 'window-state-open-in-new-window.json',

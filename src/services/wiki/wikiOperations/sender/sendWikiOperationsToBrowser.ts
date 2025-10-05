@@ -8,7 +8,7 @@ import { WikiStateKey } from '@/constants/wiki';
 import { container } from '@services/container';
 import { sendToMainWindowAndAwait, sendToMainWindowNoWait } from '@services/libs/sendToMainWindow';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWindowService } from '@services/windows/interface';
+import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { ITiddlerFields } from 'tiddlywiki';
 

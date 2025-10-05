@@ -6,7 +6,7 @@
 import { isMac } from '@/helpers/system';
 import { clipboard, Menu, MenuItem, shell, WebContents } from 'electron';
 import i18next from 'i18next';
-import { IOnContextMenuInfo } from '../interface';
+import type { IOnContextMenuInfo } from '../interface';
 
 /**
  * Truncates a string to a max length of 25. Will split on a word boundary and

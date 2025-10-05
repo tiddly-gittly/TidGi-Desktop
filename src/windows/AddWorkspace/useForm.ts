@@ -5,8 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useStorageServiceUserInfoObservable } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
-import { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
-import { INewWikiWorkspaceConfig, isWikiWorkspace, IWikiWorkspace } from '@services/workspaces/interface';
+import type { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
+import type { INewWikiWorkspaceConfig, IWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { INewWikiRequiredFormData } from './useNewWiki';
 
 type IMainWikiInfo = Pick<IWikiWorkspace, 'wikiFolderLocation' | 'port' | 'id'>;

@@ -1,5 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+declare module '@fetsorn/vite-node-worker' {
+  import type { Plugin } from 'vite';
+  export function workerPlugin(): Plugin;
+}
+
+// Electron Forge Vite Plugin 提供的全局变量
+// https://www.electronforge.io/config/plugins/vite
+declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
+declare const MAIN_WINDOW_VITE_NAME: string;
+declare const MAIN_WINDOW_PRELOAD_VITE_ENTRY: string;
+
 declare module 'errio' {
   export function parse(error: Error): Error;
   export function stringify(error: Error): string;

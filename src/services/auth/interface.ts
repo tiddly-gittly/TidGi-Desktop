@@ -1,7 +1,7 @@
 import { AuthenticationChannel } from '@/constants/channels';
-import { IGitUserInfos } from '@services/git/interface';
+import type { IGitUserInfos } from '@services/git/interface';
 import { SupportedStorageServices } from '@services/types';
-import { IWorkspace } from '@services/workspaces/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { BehaviorSubject } from 'rxjs';
 

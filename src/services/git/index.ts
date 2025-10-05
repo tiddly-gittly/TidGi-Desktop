@@ -1,12 +1,10 @@
+import { createWorkerProxy } from '@services/libs/workerAdapter';
 import { dialog, net } from 'electron';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
+import path from 'path';
 import { Observer } from 'rxjs';
-import { ModuleThread, spawn, Worker } from 'threads';
-
-// @ts-expect-error it don't want .ts
-
-import workerURL from 'threads-plugin/dist/loader?name=gitWorker!./gitWorker.ts';
+import { Worker } from 'worker_threads';
 
 import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WikiChannel } from '@/constants/channels';
@@ -21,10 +19,9 @@ import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { isWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
-import { ObservablePromise } from 'node_modules/threads/dist/observable-promise';
-import { GitWorker } from './gitWorker';
-import { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
+import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
+import type { GitWorker } from './gitWorker';
+import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
 import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 
 @injectable()
@@ -44,17 +41,44 @@ export class Git implements IGitService {
   @lazyInject(serviceIdentifier.NativeService)
   private readonly nativeService!: INativeService;
 
-  private gitWorker?: ModuleThread<GitWorker>;
+  private gitWorker?: GitWorker;
+  private nativeWorker?: Worker;
 
   constructor(@inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService) {
-    void this.initWorker();
+  }
+
+  public async initialize(): Promise<void> {
+    await this.initWorker();
   }
 
   private async initWorker(): Promise<void> {
     process.env.LOCAL_GIT_DIRECTORY = LOCAL_GIT_DIRECTORY;
-    logger.debug(`initial gitWorker with  ${workerURL as string}`, { function: 'Git.initWorker', LOCAL_GIT_DIRECTORY });
-    this.gitWorker = await spawn<GitWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
-    logger.debug(`initial gitWorker done`, { function: 'Git.initWorker' });
+
+    // In development, use source file with ts-node/tsx
+    // In production, use compiled file from Vite
+    const workerPath = __dirname.includes('src')
+      ? path.resolve(__dirname, 'gitWorker.ts')
+      : path.resolve(__dirname, 'gitWorker.js');
+
+    logger.debug(`Initializing gitWorker with ${workerPath}`, {
+      function: 'Git.initWorker',
+      LOCAL_GIT_DIRECTORY,
+      __dirname,
+    });
+
+    try {
+      this.nativeWorker = new Worker(workerPath, {
+        execArgv: workerPath.endsWith('.ts') ? ['-r', 'ts-node/register'] : [],
+      });
+      this.gitWorker = createWorkerProxy<GitWorker>(this.nativeWorker);
+      logger.debug('gitWorker initialized successfully', { function: 'Git.initWorker' });
+    } catch (error) {
+      logger.error(`Failed to initialize gitWorker: ${error instanceof Error ? error.message : String(error)}`, {
+        function: 'Git.initWorker',
+        error,
+      });
+      throw error;
+    }
   }
 
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {
@@ -219,13 +243,22 @@ export class Git implements IGitService {
    * @param observable return by `this.gitWorker`'s methods.
    * @returns the `hasChanges` result.
    */
-  private async getHasChangeHandler(observable: ObservablePromise<IGitLogMessage> | undefined, wikiFolderPath: string, workspaceID?: string) {
+  private async getHasChangeHandler(
+    observable: ReturnType<GitWorker['commitAndSyncWiki']> | undefined,
+    wikiFolderPath: string,
+    workspaceID?: string,
+  ) {
     // return the `hasChanges` result.
     return await new Promise<boolean>((resolve, reject) => {
-      observable?.subscribe(this.getWorkerMessageObserver(wikiFolderPath, () => {}, reject, workspaceID));
+      if (!observable) {
+        resolve(false);
+        return;
+      }
+
+      observable.subscribe(this.getWorkerMessageObserver(wikiFolderPath, () => {}, reject, workspaceID));
       let hasChanges = false;
-      observable?.subscribe({
-        next: (messageObject) => {
+      observable.subscribe({
+        next: (messageObject: IGitLogMessage) => {
           if (messageObject.level === 'error') {
             return;
           }
@@ -238,7 +271,6 @@ export class Git implements IGitService {
           resolve(hasChanges);
         },
       });
-      return true;
     });
   }
 

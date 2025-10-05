@@ -41,7 +41,7 @@ export function getWorkspacesListParameterSchema() {
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { findPromptById } from '../promptConcat/promptConcat';

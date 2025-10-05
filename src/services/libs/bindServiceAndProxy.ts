@@ -30,9 +30,9 @@ import { Window } from '@services/windows';
 import { Workspace } from '@services/workspaces';
 import { WorkspaceView } from '@services/workspacesView';
 
-import { AgentBrowserServiceIPCDescriptor, IAgentBrowserService } from '@services/agentBrowser/interface';
-import { AgentDefinitionServiceIPCDescriptor, IAgentDefinitionService } from '@services/agentDefinition/interface';
-import { AgentInstanceServiceIPCDescriptor, IAgentInstanceService } from '@services/agentInstance/interface';
+import { AgentBrowserServiceIPCDescriptor, type IAgentBrowserService } from '@services/agentBrowser/interface';
+import { AgentDefinitionServiceIPCDescriptor, type IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { AgentInstanceServiceIPCDescriptor, type IAgentInstanceService } from '@services/agentInstance/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { AuthenticationServiceIPCDescriptor } from '@services/auth/interface';
 import type { IContextService } from '@services/context/interface';
@@ -74,7 +74,7 @@ import { WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 import { ExternalAPIService } from '../externalAPI';
-import { ExternalAPIServiceIPCDescriptor, IExternalAPIService } from '../externalAPI/interface';
+import { ExternalAPIServiceIPCDescriptor, type IExternalAPIService } from '../externalAPI/interface';
 
 export function bindServiceAndProxy(): void {
   container.bind<IAgentBrowserService>(serviceIdentifier.AgentBrowser).to(AgentBrowserService).inSingletonScope();

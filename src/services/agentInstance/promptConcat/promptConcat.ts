@@ -19,8 +19,8 @@ import { cloneDeep } from 'lodash';
 import { AgentHandlerContext } from '../buildInAgentHandlers/type';
 import { AgentInstanceMessage } from '../interface';
 import { builtInPlugins, createHandlerHooks, PromptConcatHookContext } from '../plugins';
-import { AgentPromptDescription, IPrompt } from './promptConcatSchema';
-import { IPromptConcatPlugin } from './promptConcatSchema/plugin';
+import type { AgentPromptDescription, IPrompt } from './promptConcatSchema';
+import type { IPromptConcatPlugin } from './promptConcatSchema/plugin';
 
 /**
  * Context type specific for prompt concatenation operations

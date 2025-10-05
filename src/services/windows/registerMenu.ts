@@ -3,13 +3,13 @@ import { isMac } from '@/helpers/system';
 import { container } from '@services/container';
 import getViewBounds from '@services/libs/getViewBounds';
 import { i18n } from '@services/libs/i18n';
-import { IMenuService } from '@services/menu/interface';
-import { IPreferenceService } from '@services/preferences/interface';
+import type { IMenuService } from '@services/menu/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IViewService } from '@services/view/interface';
-import { IWorkspaceService } from '@services/workspaces/interface';
+import type { IViewService } from '@services/view/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import { ipcMain } from 'electron';
-import { IWindowService } from './interface';
+import type { IWindowService } from './interface';
 import { WindowNames } from './WindowProperties';
 
 export async function registerMenu(): Promise<void> {
@@ -73,7 +73,15 @@ export async function registerMenu(): Promise<void> {
         enabled: async () => (await workspaceService.countWorkspaces()) > 0,
       },
       {
-        label: () => `${i18n.t('Preference.AlwaysOnTop')} (${i18n.t('Preference.RequireRestart')})`,
+        label: () => {
+          const alwaysOnTopText = i18n.t('Preference.AlwaysOnTop');
+          const requireRestartText = i18n.t('Preference.RequireRestart');
+          // Check if i18n is ready
+          if (!alwaysOnTopText || !requireRestartText) {
+            return 'Always on Top (Require Restart)'; // Fallback
+          }
+          return `${alwaysOnTopText} (${requireRestartText})`;
+        },
         checked: async () => await preferenceService.get('alwaysOnTop'),
         click: async () => {
           const alwaysOnTop = await preferenceService.get('alwaysOnTop');

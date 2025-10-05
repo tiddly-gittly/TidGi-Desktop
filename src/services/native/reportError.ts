@@ -3,7 +3,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { app, shell } from 'electron';
 import newGithubIssueUrl, { type Options as OpenNewGitHubIssueOptions } from 'new-github-issue-url';
 import os from 'os';
-import { INativeService } from './interface';
+import type { INativeService } from './interface';
 
 /**
 Opens the new issue view on the given GitHub repo in the browser.

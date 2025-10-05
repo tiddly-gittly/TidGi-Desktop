@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ConditionalExcept } from 'type-fest';
 import { callWikiInitialization } from './useCallWikiInitialization';
-import { IErrorInWhichComponent, IWikiWorkspaceForm, workspaceConfigFromForm } from './useForm';
+import type { IErrorInWhichComponent, IWikiWorkspaceForm } from './useForm';
+import { workspaceConfigFromForm } from './useForm';
 import { updateErrorInWhichComponentSetterByErrorMessage } from './useIndicator';
 
 export function useValidateNewWiki(

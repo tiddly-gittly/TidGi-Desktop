@@ -11,7 +11,7 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
-import { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';

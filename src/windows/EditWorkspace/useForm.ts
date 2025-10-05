@@ -2,7 +2,7 @@ import usePreviousValue from 'beautiful-react-hooks/usePreviousValue';
 import { isEqual } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 
-import { IWorkspace } from '@services/workspaces/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
 
 export function useForm(
   originalWorkspace?: IWorkspace,

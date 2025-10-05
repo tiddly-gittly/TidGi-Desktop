@@ -12,9 +12,9 @@ import { WikiChannel } from '@/constants/channels';
 import { defaultCreatedPageTypes, PageType } from '@/constants/pageTypes';
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
-import { IAuthenticationService } from '@services/auth/interface';
-import { lazyInject } from '@services/container';
-import { IDatabaseService } from '@services/database/interface';
+import type { IAuthenticationService } from '@services/auth/interface';
+import { container, lazyInject } from '@services/container';
+import type { IDatabaseService } from '@services/database/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
@@ -39,9 +39,6 @@ export class Workspace implements IWorkspaceService {
 
   @lazyInject(serviceIdentifier.Wiki)
   private readonly wikiService!: IWikiService;
-
-  @lazyInject(serviceIdentifier.Database)
-  private readonly databaseService!: IDatabaseService;
 
   @lazyInject(serviceIdentifier.View)
   private readonly viewService!: IViewService;
@@ -88,7 +85,8 @@ export class Workspace implements IWorkspaceService {
         click: async (): Promise<void> => {
           await this.workspaceViewService.setActiveWorkspaceView(workspace.id);
           // manually update menu since we have alter the active workspace
-          await this.menuService.buildMenu();
+          const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+          await menuService.buildMenu();
         },
         accelerator: `CmdOrCtrl+${index + 1}`,
       },
@@ -104,14 +102,16 @@ export class Workspace implements IWorkspaceService {
       },
     ]);
 
-    await this.menuService.insertMenu('Workspaces', newMenuItems, undefined, undefined, 'updateWorkspaceMenuItems');
+    const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+    await menuService.insertMenu('Workspaces', newMenuItems, undefined, undefined, 'updateWorkspaceMenuItems');
   }
 
   /**
    * load workspaces in sync, and ensure it is an Object
    */
   private getInitWorkspacesForCache(): Record<string, IWorkspace> {
-    const workspacesFromDisk = this.databaseService.getSetting(`workspaces`) ?? {};
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    const workspacesFromDisk = databaseService.getSetting(`workspaces`) ?? {};
     return typeof workspacesFromDisk === 'object' && !Array.isArray(workspacesFromDisk)
       ? mapValues(pickBy(workspacesFromDisk, (value) => !!value), (workspace) => this.sanitizeWorkspace(workspace))
       : {};
@@ -186,9 +186,10 @@ export class Workspace implements IWorkspaceService {
     const workspaceToSave = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspaceToSave);
     workspaces[id] = workspaceToSave;
-    this.databaseService.setSetting('workspaces', workspaces);
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    databaseService.setSetting('workspaces', workspaces);
     if (immediate === true) {
-      await this.databaseService.immediatelyStoreSettingsToFile();
+      await databaseService.immediatelyStoreSettingsToFile();
     }
     // update subject so ui can react to it
     this.updateWorkspaceSubject();
@@ -428,7 +429,8 @@ export class Workspace implements IWorkspaceService {
     if (id in workspaces) {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete workspaces[id];
-      this.databaseService.setSetting('workspaces', workspaces);
+      const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+      databaseService.setSetting('workspaces', workspaces);
     } else {
       throw new Error(`Try to remote workspace, but id ${id} is not existed`);
     }

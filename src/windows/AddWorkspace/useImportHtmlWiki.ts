@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IErrorInWhichComponent, IWikiWorkspaceForm } from './useForm';
+import type { IErrorInWhichComponent, IWikiWorkspaceForm } from './useForm';
 import { useNewWiki, useValidateNewWiki } from './useNewWiki';
 
 export function useValidateHtmlWiki(

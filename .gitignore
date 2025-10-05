@@ -58,7 +58,8 @@ template/wiki/output/
 template/wiki/settings/settings.json
 
 # web build
-.webpack
+.webpack/
+.vite/
 out/
 
 # testing and dev temp folders

@@ -17,16 +17,17 @@ import { isTest } from '@/constants/environment';
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { isMac } from '@/helpers/system';
-import { lazyInject } from '@services/container';
+import { container, lazyInject } from '@services/container';
 import getViewBounds from '@services/libs/getViewBounds';
 import { logger } from '@services/libs/log';
-import { IThemeService } from '@services/theme/interface';
-import { IViewService } from '@services/view/interface';
+import type { IThemeService } from '@services/theme/interface';
+import type { IViewService } from '@services/view/interface';
 import { handleAttachToMenuBar } from './handleAttachToMenuBar';
 import { handleCreateBasicWindow } from './handleCreateBasicWindow';
-import { IWindowOpenConfig, IWindowService } from './interface';
+import type { IWindowOpenConfig, IWindowService } from './interface';
 import { registerBrowserViewWindowListeners } from './registerBrowserViewWindowListeners';
 import { registerMenu } from './registerMenu';
+import { getPreloadPath } from './viteEntry';
 
 @injectable()
 export class Window implements IWindowService {
@@ -179,7 +180,8 @@ export class Window implements IWindowService {
     }
 
     // create new window
-    const { hideMenuBar: autoHideMenuBar, titleBar: showTitleBar, menuBarAlwaysOnTop, alwaysOnTop } = this.preferenceService.getPreferences();
+    const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+    const { hideMenuBar: autoHideMenuBar, titleBar: showTitleBar, menuBarAlwaysOnTop, alwaysOnTop } = preferenceService.getPreferences();
     let windowWithBrowserViewConfig: Partial<BrowserWindowConstructorOptions> = {};
     let windowWithBrowserViewState: windowStateKeeperState | undefined;
     const WindowToKeepPositionState = [WindowNames.main, WindowNames.menuBar];
@@ -219,7 +221,7 @@ export class Window implements IWindowService {
         webSecurity: false,
         allowRunningInsecureContent: true,
         contextIsolation: true,
-        preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+        preload: getPreloadPath(),
         additionalArguments: [
           `${MetaDataChannel.browserViewMetaData}${windowName}`,
           `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(meta))}`,

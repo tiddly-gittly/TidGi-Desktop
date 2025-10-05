@@ -11,15 +11,17 @@ import { lazyInject } from '@services/container';
 import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWikiService, ZxWorkerControlActions } from '@services/wiki/interface';
-import { IZxFileInput } from '@services/wiki/wikiWorker';
+import type { IWikiService } from '@services/wiki/interface';
+import { ZxWorkerControlActions } from '@services/wiki/interface';
+import type { IZxFileInput } from '@services/wiki/wikiWorker';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { isWikiWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import i18next from 'i18next';
 import { ZxNotInitializedError } from './error';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
-import { INativeService, IPickDirectoryOptions } from './interface';
+import type { INativeService, IPickDirectoryOptions } from './interface';
 import { reportErrorToGithubWithTemplates } from './reportError';
 
 @injectable()

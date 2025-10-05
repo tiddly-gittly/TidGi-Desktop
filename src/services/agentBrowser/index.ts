@@ -8,11 +8,12 @@ import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
 import { logger } from '@services/libs/log';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject } from 'rxjs';
-import { ITab, TabItem, TabState, TabType } from '../../pages/Agent/types/tab';
-import { IDatabaseService } from '../database/interface';
+import type { ITab, TabItem } from '../../pages/Agent/types/tab';
+import { TabState, TabType } from '../../pages/Agent/types/tab';
+import type { IDatabaseService } from '../database/interface';
 import { AgentBrowserTabEntity } from '../database/schema/agentBrowser';
 import serviceIdentifier from '../serviceIdentifier';
-import { IAgentBrowserService } from './interface';
+import type { IAgentBrowserService } from './interface';
 
 const MAX_CLOSED_TABS = 10;
 

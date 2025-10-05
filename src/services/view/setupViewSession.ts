@@ -1,8 +1,8 @@
 import { session } from 'electron';
 
 import { isMac } from '@/helpers/system';
-import { IPreferences } from '@services/preferences/interface';
-import { IWorkspace } from '@services/workspaces/interface';
+import type { IPreferences } from '@services/preferences/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
 
 export function setupViewSession(workspace: IWorkspace, preferences: IPreferences, getPreferences: () => IPreferences) {
   const { shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = preferences;

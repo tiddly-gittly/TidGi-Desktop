@@ -165,23 +165,28 @@ at /home/runner/work/TidGi-Desktop/TidGi-Desktop/node_modules/.pnpm/@electron-fo
   plugins: [
     { name: '@electron-forge/plugin-auto-unpack-natives', config: {} },
     {
-      name: '@electron-forge/plugin-webpack',
+      name: '@electron-forge/plugin-vite',
       config: {
-        port: 3012, // default is 3000, may collide with other
-        mainConfig: './webpack.main.config.js',
-        renderer: {
-          config: './webpack.renderer.config.js',
-          entryPoints: [
-            {
-              html: './src/renderer.html',
-              js: './src/renderer.tsx',
-              preload: {
-                js: './src/preload/index.ts',
-              },
-              name: 'main_window',
-            },
-          ],
-        },
+        // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.
+        build: [
+          {
+            // `entry` is an alias for `build.lib.entry` in the corresponding file of `config`.
+            entry: 'src/main.ts',
+            config: 'vite.main.config.ts',
+            target: 'main',
+          },
+          {
+            entry: 'src/preload/index.ts',
+            config: 'vite.preload.config.ts',
+            target: 'preload',
+          },
+        ],
+        renderer: [
+          {
+            name: 'main_window',
+            config: 'vite.renderer.config.ts',
+          },
+        ],
       },
     },
   ],

@@ -2,8 +2,9 @@ import { WikiChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWikiService } from '@services/wiki/interface';
-import { isWikiWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { AgentDefinition, AgentToolConfig } from './interface';
 

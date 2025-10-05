@@ -1,9 +1,9 @@
 import { AgentDefinitionService } from '@services/agentDefinition';
 import { AgentDefinition } from '@services/agentDefinition/interface';
 import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
-import { IAgentInstanceService } from '@services/agentInstance/interface';
+import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
-import { IDatabaseService } from '@services/database/interface';
+import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

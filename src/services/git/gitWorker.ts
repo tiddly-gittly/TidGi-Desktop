@@ -1,5 +1,6 @@
 import 'source-map-support/register';
 import { WikiChannel } from '@/constants/channels';
+import { handleWorkerMessages } from '@services/libs/workerAdapter';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import {
@@ -20,7 +21,6 @@ import {
   SyncScriptIsInDeadLoopError,
 } from 'git-sync-js';
 import { Observable } from 'rxjs';
-import { expose } from 'threads/worker';
 import { defaultGitInfo } from './defaultGitInfo';
 import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitUserInfos } from './interface';
 
@@ -235,4 +235,6 @@ function translateAndLogErrorMessage(error: Error, errorI18NDict: Record<string,
 
 const gitWorker = { initWikiGit, commitAndSyncWiki, cloneWiki, forcePullWiki, getModifiedFileList, getRemoteUrl };
 export type GitWorker = typeof gitWorker;
-expose(gitWorker);
+
+// Initialize worker message handling
+handleWorkerMessages(gitWorker);

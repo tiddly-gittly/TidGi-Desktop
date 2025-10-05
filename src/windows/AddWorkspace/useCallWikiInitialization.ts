@@ -1,6 +1,6 @@
 import { WikiCreationMethod } from '@/constants/wikiCreation';
-import { IGitUserInfos } from '@services/git/interface';
-import { INewWikiWorkspaceConfig } from '@services/workspaces/interface';
+import type { IGitUserInfos } from '@services/git/interface';
+import type { INewWikiWorkspaceConfig } from '@services/workspaces/interface';
 import type { TFunction } from 'i18next';
 
 interface ICallWikiInitConfig {

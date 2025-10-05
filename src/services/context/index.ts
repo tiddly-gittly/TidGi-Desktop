@@ -8,7 +8,8 @@ import * as appPaths from '@/constants/appPaths';
 import * as auth from '@/constants/auth';
 import { supportedLanguagesMap, tiddlywikiLanguagesMap } from '@/constants/languages';
 import * as paths from '@/constants/paths';
-import { IAuthConstants, IConstants, IContext, IContextService, IPaths } from './interface';
+import { getMainWindowEntry } from '@services/windows/viteEntry';
+import type { IAuthConstants, IConstants, IContext, IContextService, IPaths } from './interface';
 
 @injectable()
 export class ContextService implements IContextService {
@@ -28,7 +29,7 @@ export class ContextService implements IContextService {
 
   private readonly context: IContext;
   constructor() {
-    this.pathConstants.MAIN_WINDOW_WEBPACK_ENTRY = MAIN_WINDOW_WEBPACK_ENTRY;
+    this.pathConstants.MAIN_WINDOW_WEBPACK_ENTRY = getMainWindowEntry();
     this.context = {
       ...this.pathConstants,
       ...this.constants,

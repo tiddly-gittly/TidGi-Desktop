@@ -3,7 +3,7 @@ import { injectable } from 'inversify';
 import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
-import { ICommitAndSyncConfigs, IGitService } from '@services/git/interface';
+import type { ICommitAndSyncConfigs, IGitService } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
@@ -11,9 +11,10 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
-import { isWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
-import { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { ISyncService } from './interface';
+import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { ISyncService } from './interface';
 
 @injectable()
 export class Sync implements ISyncService {
@@ -62,7 +63,7 @@ export class Sync implements ISyncService {
     }
     if (storageService === SupportedStorageServices.local) {
       // for local workspace, commitOnly, no sync and no force pull.
-      await this.gitService.commitAndSync(workspace, { commitOnly: true, dir: wikiFolderLocation, commitMessage: defaultCommitBackupMessage });
+      await this.gitService.commitAndSync(workspace, { dir: wikiFolderLocation, commitMessage: defaultCommitBackupMessage });
     } else if (
       typeof gitUrl === 'string' &&
       userInfo !== undefined

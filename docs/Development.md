@@ -178,6 +178,10 @@ TBD
 
 [Testing Guide](./Testing.md)
 
+## Logs
+
+Are in `userData-dev/logs/TidGi-xxxx.log`, includes all `"level":"debug"` debug logs and `"level":"error"` errors.
+
 ## FAQ
 
 [ErrorDuringStart](./ErrorDuringStart.md)

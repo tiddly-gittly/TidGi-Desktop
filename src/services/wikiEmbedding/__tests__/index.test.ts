@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { container } from '@services/container';
-import { IDatabaseService } from '@services/database/interface';
+import type { IDatabaseService } from '@services/database/interface';
 import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from '@services/database/schema/wikiEmbedding';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
-import { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
+import type { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the external API function

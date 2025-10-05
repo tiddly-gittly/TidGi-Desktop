@@ -27,8 +27,8 @@ let testStreamResponses: Array<{ status: string; content: string; requestId: str
 // Use real AgentInstanceService in tests; do not mock
 
 // Import plugin components for direct testing
-import { IPromptConcatPlugin } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { IDatabaseService } from '@services/database/interface';
+import type { IPromptConcatPlugin } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { IDatabaseService } from '@services/database/interface';
 import { createHandlerHooks, createHooksWithPlugins, initializePluginSystem, PromptConcatHookContext } from '../../plugins/index';
 import { wikiSearchPlugin } from '../../plugins/wikiSearchPlugin';
 import { basicPromptConcatHandler } from '../basicPromptConcatHandler';

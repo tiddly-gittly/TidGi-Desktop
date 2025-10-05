@@ -7,7 +7,7 @@ import { z } from 'zod/v4';
 import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
 import { findPromptById } from '../promptConcat/promptConcat';
-import { IPrompt } from '../promptConcat/promptConcatSchema';
+import type { IPrompt } from '../promptConcat/promptConcatSchema';
 import { filterMessagesByDuration } from '../utilities/messageDurationFilter';
 import { normalizeRole } from '../utilities/normalizeRole';
 import { AgentResponse, PromptConcatPlugin, ResponseHookContext } from './types';

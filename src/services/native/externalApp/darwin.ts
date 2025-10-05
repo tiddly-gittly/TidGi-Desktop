@@ -1,7 +1,7 @@
 import { logger } from '@services/libs/log';
 import { pathExists } from 'fs-extra';
 import appPath from './app-path';
-import { IFoundEditor } from './found-editor';
+import type { IFoundEditor } from './found-editor';
 
 /** Represents an external editor on macOS */
 interface IDarwinExternalEditor {

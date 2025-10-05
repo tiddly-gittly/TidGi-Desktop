@@ -1,8 +1,8 @@
 import { DatabaseChannel } from '@/constants/channels';
-import { IUserInfos } from '@services/auth/interface';
+import type { IUserInfos } from '@services/auth/interface';
 import { AIGlobalSettings } from '@services/externalAPI/interface';
-import { IPreferences } from '@services/preferences/interface';
-import { IWorkspace } from '@services/workspaces/interface';
+import type { IPreferences } from '@services/preferences/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { DataSource } from 'typeorm';
 

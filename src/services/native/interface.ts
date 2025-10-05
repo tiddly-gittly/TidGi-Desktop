@@ -2,7 +2,7 @@ import { MessageBoxOptions } from 'electron';
 import { Observable } from 'rxjs';
 
 import { NativeChannel } from '@/constants/channels';
-import { IZxFileInput } from '@services/wiki/wikiWorker';
+import type { IZxFileInput } from '@services/wiki/wikiWorker';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 

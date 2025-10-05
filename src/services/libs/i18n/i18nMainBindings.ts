@@ -7,7 +7,7 @@ import { LOCALIZATION_FOLDER } from '@/constants/paths';
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
-import { type IReadFileRequest, type IWriteFileRequest } from './types';
+import type { IReadFileRequest, IWriteFileRequest } from './types';
 
 /**
  * This is the code that will go into the main.js file

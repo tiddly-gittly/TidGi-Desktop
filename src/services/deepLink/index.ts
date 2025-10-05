@@ -1,11 +1,11 @@
 import { lazyInject } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import { app } from 'electron';
 import { injectable } from 'inversify';
 import path from 'node:path';
-import { IDeepLinkService } from './interface';
+import type { IDeepLinkService } from './interface';
 
 @injectable()
 export class DeepLinkService implements IDeepLinkService {

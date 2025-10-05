@@ -8,7 +8,7 @@ import unhandled from 'electron-unhandled';
 import inspector from 'node:inspector';
 
 import { MainChannel } from '@/constants/channels';
-import { isTest } from '@/constants/environment';
+import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 import { container } from '@services/container';
 import { initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
@@ -18,16 +18,19 @@ import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
-import { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import { IDatabaseService } from '@services/database/interface';
-import { IDeepLinkService } from '@services/deepLink/interface';
-import { IExternalAPIService } from '@services/externalAPI/interface';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IDatabaseService } from '@services/database/interface';
+import type { IDeepLinkService } from '@services/deepLink/interface';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
+import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
+import type { IThemeService } from '@services/theme/interface';
 import type { IUpdaterService } from '@services/updater/interface';
-import { IWikiService } from '@services/wiki/interface';
-import { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
-import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
+import type { IViewService } from '@services/view/interface';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
+import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import EventEmitter from 'events';
 import { initDevelopmentExtension } from './debug';
 import { isLinux } from './helpers/system';
@@ -57,6 +60,9 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'mailto', privileges: { standard: true } },
 ]);
 bindServiceAndProxy();
+
+// Get services - DO NOT use them until commonInit() is called
+const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater);
 const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);
@@ -65,10 +71,13 @@ const wikiEmbeddingService = container.get<IWikiEmbeddingService>(serviceIdentif
 const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
 const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
 const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+const gitService = container.get<IGitService>(serviceIdentifier.Git);
+const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
+const viewService = container.get<IViewService>(serviceIdentifier.View);
+
 app.on('second-instance', async () => {
   // see also src/helpers/singleInstance.ts
   // Someone tried to run a second instance, for example, when `runOnBackground` is true, we should focus our window.
@@ -77,36 +86,53 @@ app.on('second-instance', async () => {
 app.on('activate', async () => {
   await windowService.open(WindowNames.main);
 });
-void preferenceService.get('useHardwareAcceleration').then((useHardwareAcceleration) => {
+
+const commonInit = async (): Promise<void> => {
+  await app.whenReady();
+  await initDevelopmentExtension();
+
+  // Initialize database FIRST - all other services depend on it
+  await databaseService.initializeForApp();
+
+  // Initialize i18n early so error messages can be translated
+  await initRendererI18NHandler();
+
+  // Apply preferences that need to be set early
+  const useHardwareAcceleration = await preferenceService.get('useHardwareAcceleration');
   if (!useHardwareAcceleration) {
     app.disableHardwareAcceleration();
   }
-});
-void preferenceService.get('ignoreCertificateErrors').then((ignoreCertificateErrors) => {
+
+  const ignoreCertificateErrors = await preferenceService.get('ignoreCertificateErrors');
   if (ignoreCertificateErrors) {
     // https://www.electronjs.org/docs/api/command-line-switches
     app.commandLine.appendSwitch('ignore-certificate-errors');
   }
-});
-const commonInit = async (): Promise<void> => {
-  await app.whenReady();
-  await initDevelopmentExtension();
+
+  // Initialize agent-related services after database is ready
+  await Promise.all([
+    agentDefinitionService.initialize(),
+    wikiEmbeddingService.initialize(),
+    externalAPIService.initialize(),
+  ]);
+
   // if user want a menubar, we create a new window for that
   // handle workspace name + tiddler name in uri https://www.electronjs.org/docs/latest/tutorial/launch-app-from-url-in-another-app
   deepLinkService.initializeDeepLink('tidgi');
+
+  const attachToMenubar = await preferenceService.get('attachToMenubar');
   await Promise.all([
     windowService.open(WindowNames.main),
-    preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
-      if (attachToMenubar) {
-        await windowService.open(WindowNames.menuBar);
-      }
-    }),
-    databaseService.initializeForApp().then(async () => {
-      await agentDefinitionService.initialize();
-      await wikiEmbeddingService.initialize();
-      await externalAPIService.initialize();
-    }),
+    attachToMenubar ? windowService.open(WindowNames.menuBar) : Promise.resolve(),
   ]);
+
+  // Initialize services that depend on windows being created
+  await Promise.all([
+    gitService.initialize(),
+    themeService.initialize(),
+    viewService.initialize(),
+  ]);
+
   initializeObservables();
   // Auto-create default wiki workspace if none exists. Create wiki workspace first, so it is on first one
   await wikiGitWorkspaceService.initialize();
@@ -157,19 +183,19 @@ app.on('certificate-error', (event, _webContents, _url, _error, _certificate, ca
   callback(true);
 });
 app.on('ready', async () => {
-  await initRendererI18NHandler();
   powerMonitor.on('shutdown', () => {
     app.quit();
   });
   await commonInit();
   try {
+    // buildLanguageMenu needs menuService which is initialized in commonInit
     buildLanguageMenu();
     if (await preferenceService.get('syncBeforeShutdown')) {
       wikiGitWorkspaceService.registerSyncBeforeShutdown();
     }
     await updaterService.checkForUpdates();
   } catch (error) {
-    logger.error(`Error when app.on('ready'): ${(error as Error).message}`);
+    logger.error(`Error when app.on('ready'): ${(error as Error).message}`, error);
   }
 });
 app.on(MainChannel.windowAllClosed, async () => {
@@ -193,8 +219,10 @@ app.on(
 );
 
 unhandled({
-  showDialog: !isTest,
-  logger: logger.error.bind(logger),
+  showDialog: !isDevelopmentOrTest,
+  logger: (error: Error) => {
+    logger.error(error.message + (error.stack ?? ''));
+  },
   reportButton: (error) => {
     reportErrorToGithubWithTemplates(error);
   },

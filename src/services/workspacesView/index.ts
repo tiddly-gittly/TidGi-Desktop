@@ -6,7 +6,7 @@ import { WikiChannel } from '@/constants/channels';
 import { tiddlywikiLanguagesMap } from '@/constants/languages';
 import { WikiCreationMethod } from '@/constants/wikiCreation';
 import type { IAuthenticationService } from '@services/auth/interface';
-import { lazyInject } from '@services/container';
+import { container, lazyInject } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
@@ -21,7 +21,7 @@ import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interfa
 import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
-import { ISyncService } from '@services/sync/interface';
+import type { ISyncService } from '@services/sync/interface';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
 import { registerMenu } from './registerMenu';
 
@@ -58,10 +58,13 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async initializeAllWorkspaceView(): Promise<void> {
-    const workspacesList = await this.workspaceService.getWorkspacesAsList();
-    // Only set wiki start lock for regular wiki workspaces (not subwikis or page workspaces)
+    logger.debug('initializeAllWorkspaceView()', { function: 'initializeAllWorkspaceView' });
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspacesList = await workspaceService.getWorkspacesAsList();
+    // Only load workspace that is not a subwiki and not a page type
+    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
     workspacesList.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.pageType).forEach((workspace) => {
-      this.wikiService.setWikiStartLockOn(workspace.id);
+      wikiService.setWikiStartLockOn(workspace.id);
     });
     // sorting (-1 will make a in the front, b in the back)
     const sortedList = workspacesList
@@ -71,7 +74,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     await mapSeries(sortedList, async (workspace) => {
       await this.initializeWorkspaceView(workspace);
     });
-    this.wikiService.setAllWikiStartLockOff();
+    wikiService.setAllWikiStartLockOff();
   }
 
   public async initializeWorkspaceView(workspace: IWorkspace, options: IInitializeWorkspaceOptions = {}): Promise<void> {
@@ -85,7 +88,9 @@ export class WorkspaceView implements IWorkspaceViewService {
 
     const { followHibernateSettingWhenInit = true, syncImmediately = true, isNew = false } = options;
     // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
-    if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: isWikiWorkspace(workspace) && !workspace.isSubWiki, showDialog: true })) !== true) {
+    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    if ((await wikiService.checkWikiExist(workspace, { shouldBeMainWiki: isWikiWorkspace(workspace) && !workspace.isSubWiki, showDialog: true })) !== true) {
       logger.warn(`initializeWorkspaceView() checkWikiExist found workspace ${workspace.id} don't have a valid wiki, and showDialog.`);
       return;
     }
@@ -104,7 +109,7 @@ export class WorkspaceView implements IWorkspaceViewService {
           }`,
         );
         if (isWikiWorkspace(workspace) && !workspace.hibernated) {
-          await this.workspaceService.update(workspace.id, { hibernated: true });
+          await workspaceService.update(workspace.id, { hibernated: true });
         }
         return;
       }

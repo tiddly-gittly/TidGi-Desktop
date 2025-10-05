@@ -1,7 +1,7 @@
 import { DEFAULT_DOWNLOADS_PATH } from '@/constants/appPaths';
 import { app } from 'electron';
 import semver from 'semver';
-import { IPreferences } from './interface';
+import type { IPreferences } from './interface';
 
 export const defaultPreferences: IPreferences = {
   allowPrerelease: Boolean(semver.prerelease(app.getVersion())),

@@ -3,22 +3,23 @@ import { pick } from 'lodash';
 import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
 
-import { IAgentBrowserService } from '@services/agentBrowser/interface';
+import type { IAgentBrowserService } from '@services/agentBrowser/interface';
 import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
+import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { lazyInject } from '@services/container';
-import { IDatabaseService } from '@services/database/interface';
+import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { getWikiAgentTemplates } from './getAgentDefinitionTemplatesFromWikis';
-import { AgentDefinition, IAgentDefinitionService } from './interface';
+import type { AgentDefinition, IAgentDefinitionService } from './interface';
 
 @injectable()
 export class AgentDefinitionService implements IAgentDefinitionService {
   @inject(serviceIdentifier.Database)
   private readonly databaseService!: IDatabaseService;
   @lazyInject(serviceIdentifier.AgentInstance)
-  private readonly agentInstanceService!: IAgentDefinitionService;
+  private readonly agentInstanceService!: IAgentInstanceService;
   @inject(serviceIdentifier.AgentBrowser)
   private readonly agentBrowserService!: IAgentBrowserService;
 
@@ -37,8 +38,19 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       // Check if database is empty and initialize with default agents if needed
       await this.initializeDefaultAgentsIfEmpty();
       logger.debug('Agent handlers registered');
-      await this.agentInstanceService.initialize();
-      await this.agentBrowserService.initialize();
+
+      // Initialize dependent services if they're ready (lazyInject may not be ready immediately)
+      if (this.agentInstanceService) {
+        await this.agentInstanceService.initialize();
+      } else {
+        logger.warn('agentInstanceService not ready yet during AgentDefinitionService initialization');
+      }
+
+      if (this.agentBrowserService) {
+        await this.agentBrowserService.initialize();
+      } else {
+        logger.warn('agentBrowserService not ready yet during AgentDefinitionService initialization');
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Failed to initialize agent service: ${errorMessage}`);

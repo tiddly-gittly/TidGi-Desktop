@@ -19,16 +19,6 @@ const logger = winston.createLogger({
     }),
     new RendererTransport(),
   ],
-  exceptionHandlers: [
-    new winston.transports.DailyRotateFile({
-      filename: 'TidGi-Exception-%DATE%.log',
-      datePattern: 'YYYY-MM-DD',
-      zippedArchive: false,
-      maxSize: '20mb',
-      maxFiles: '14d',
-      dirname: LOG_FOLDER,
-    }),
-  ],
   format: format.combine(format.timestamp(), format.json()),
 });
 export { logger };

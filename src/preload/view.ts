@@ -1,7 +1,8 @@
 import { Channels, WorkspaceChannel } from '@/constants/channels';
 import { webFrame } from 'electron';
 import '../services/wiki/wikiOperations/executor/wikiOperationInBrowser';
-import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import type { IPossibleWindowMeta, WindowMeta } from '@services/windows/WindowProperties';
+import { WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData, windowName } from './common/browserViewMetaData';
 import { menu, preference, workspace, workspaceView } from './common/services';
 

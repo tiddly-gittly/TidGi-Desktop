@@ -1,6 +1,7 @@
 import { defaultServerIP } from '@/constants/urls';
 import { internalIpV4 } from '@/helpers/ip';
-import { isWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import { logger } from './log';
 
 /**

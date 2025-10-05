@@ -1,11 +1,12 @@
 import { WebContentsView } from 'electron';
 
-import { IAuthenticationService } from '@services/auth/interface';
+import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWikiService } from '@services/wiki/interface';
-import { isWikiWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 
 export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID: string) {

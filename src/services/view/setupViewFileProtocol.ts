@@ -2,13 +2,13 @@ import { WikiChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
-import { INativeService } from '@services/native/interface';
+import type { INativeService } from '@services/native/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { shell, WebContentsView } from 'electron';
 import fs from 'fs-extra';
 import type { INewWindowContext } from './handleNewWindow';
-import { INewWindowAction } from './interface';
+import type { INewWindowAction } from './interface';
 
 /**
  * Handles in-wiki file link opening.
