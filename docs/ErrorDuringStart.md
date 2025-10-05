@@ -189,3 +189,8 @@ Usually because you import the server-side `logger` in renderer process code. Yo
 Hangs here doesn't mean it stop working, just wait around 2 mins. Webpack dev server is quite slow, but will finally finished.
 
 If you are not sure, try `pnpm run start:dev:debug-webpack`, which will also enables `WebpackBar` plugin.
+
+### Why not using Vite?
+
+1. Wait for <https://github.com/vitejs/vite/pull/3932> to replace `ThreadsPlugin`
+2. Need to replace `inversify-inject-decorators` and `typeorm` that uses decorator first
