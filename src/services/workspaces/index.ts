@@ -13,7 +13,7 @@ import { defaultCreatedPageTypes, PageType } from '@/constants/pageTypes';
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
-import { container, lazyInject } from '@services/container';
+import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
@@ -36,21 +36,6 @@ export class Workspace implements IWorkspaceService {
    */
   private workspaces: Record<string, IWorkspace> | undefined;
   public workspaces$ = new BehaviorSubject<IWorkspacesWithMetadata | undefined>(undefined);
-
-  @lazyInject(serviceIdentifier.Wiki)
-  private readonly wikiService!: IWikiService;
-
-  @lazyInject(serviceIdentifier.View)
-  private readonly viewService!: IViewService;
-
-  @lazyInject(serviceIdentifier.WorkspaceView)
-  private readonly workspaceViewService!: IWorkspaceViewService;
-
-  @lazyInject(serviceIdentifier.MenuService)
-  private readonly menuService!: IMenuService;
-
-  @lazyInject(serviceIdentifier.Authentication)
-  private readonly authService!: IAuthenticationService;
 
   constructor() {
     setTimeout(() => {
@@ -83,7 +68,8 @@ export class Workspace implements IWorkspaceService {
         type: 'checkbox' as const,
         checked: () => workspace.active,
         click: async (): Promise<void> => {
-          await this.workspaceViewService.setActiveWorkspaceView(workspace.id);
+          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+          await workspaceViewService.setActiveWorkspaceView(workspace.id);
           // manually update menu since we have alter the active workspace
           const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
           await menuService.buildMenu();
@@ -94,7 +80,8 @@ export class Workspace implements IWorkspaceService {
         label: () => `${workspace.name || `Workspace ${index + 1}`} ${i18n.t('Menu.DeveloperToolsActiveWorkspace')}`,
         id: `${workspace.id}-devtool`,
         click: async () => {
-          const view = this.viewService.getView(workspace.id, WindowNames.main);
+          const viewService = container.get<IViewService>(serviceIdentifier.View);
+          const view = viewService.getView(workspace.id, WindowNames.main);
           if (view !== undefined) {
             view.webContents.toggleDevTools();
           }
@@ -259,7 +246,8 @@ export class Workspace implements IWorkspaceService {
       fixingValues.homeUrl = getDefaultTidGiUrl(workspaceToSanitize.id);
     }
     if (workspaceToSanitize.tokenAuth && !workspaceToSanitize.authToken) {
-      fixingValues.authToken = this.authService.generateOneTimeAdminAuthTokenForWorkspaceSync(workspaceToSanitize.id);
+      const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
+      fixingValues.authToken = authService.generateOneTimeAdminAuthTokenForWorkspaceSync(workspaceToSanitize.id);
     }
     return { ...defaultValues, ...workspaceToSanitize, ...fixingValues };
   }
@@ -289,11 +277,12 @@ export class Workspace implements IWorkspaceService {
           }`,
         );
       }
-      await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, wikiFolderLocation, newWorkspaceConfig, {
+      const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+      await wikiService.updateSubWikiPluginContent(mainWikiToLink, wikiFolderLocation, newWorkspaceConfig, {
         ...newWorkspaceConfig,
         tagName: existedWorkspace.tagName,
       });
-      await this.wikiService.wikiStartup(newWorkspaceConfig);
+      await wikiService.wikiStartup(newWorkspaceConfig);
     }
   }
 
@@ -550,22 +539,26 @@ export class Workspace implements IWorkspaceService {
     logger.log('debug', 'openWorkspaceTiddler', { workspace });
     // If is main wiki, open the wiki, and open provided title, or simply switch to it if no title provided
     if (!isSubWiki && idToActive) {
+      const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+      const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
       if (oldActiveWorkspace?.id !== idToActive) {
-        await this.workspaceViewService.setActiveWorkspaceView(idToActive);
+        await workspaceViewService.setActiveWorkspaceView(idToActive);
       }
       if (title) {
-        await this.wikiService.wikiOperationInBrowser(WikiChannel.openTiddler, idToActive, [title]);
+        await wikiService.wikiOperationInBrowser(WikiChannel.openTiddler, idToActive, [title]);
       }
       return;
     }
     // If is sub wiki, open the main wiki first and open the tag or provided title
     if (isSubWiki && mainWikiID) {
+      const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+      const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
       if (oldActiveWorkspace?.id !== mainWikiID) {
-        await this.workspaceViewService.setActiveWorkspaceView(mainWikiID);
+        await workspaceViewService.setActiveWorkspaceView(mainWikiID);
       }
       const subWikiTag = title ?? tagName;
       if (subWikiTag) {
-        await this.wikiService.wikiOperationInBrowser(WikiChannel.openTiddler, mainWikiID, [subWikiTag]);
+        await wikiService.wikiOperationInBrowser(WikiChannel.openTiddler, mainWikiID, [subWikiTag]);
       }
     }
   }

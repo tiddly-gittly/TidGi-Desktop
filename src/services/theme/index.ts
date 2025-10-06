@@ -3,7 +3,7 @@ import { inject, injectable } from 'inversify';
 import { BehaviorSubject } from 'rxjs';
 
 import { WikiChannel } from '@/constants/channels';
-import { container, lazyInject } from '@services/container';
+import { container } from '@services/container';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
@@ -13,12 +13,6 @@ import type { ITheme, IThemeService, IThemeSource } from './interface';
 
 @injectable()
 export class ThemeService implements IThemeService {
-  @lazyInject(serviceIdentifier.Wiki)
-  private readonly wikiService!: IWikiService;
-
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
-
   public theme$: BehaviorSubject<ITheme>;
 
   constructor(
@@ -62,10 +56,12 @@ export class ThemeService implements IThemeService {
    * Fix browserView on background not updating theme issue #592
    */
   private async updateActiveWikiTheme(): Promise<void> {
-    const workspaces = await this.workspaceService.getWorkspacesAsList();
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+    const workspaces = await workspaceService.getWorkspacesAsList();
     await Promise.all(
       workspaces.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.hibernated).map(async (workspace) => {
-        await this.wikiService.wikiOperationInBrowser(WikiChannel.invokeActionsByTag, workspace.id, [
+        await wikiService.wikiOperationInBrowser(WikiChannel.invokeActionsByTag, workspace.id, [
           '$:/tags/DarkLightChangeActions',
           {
             'dark-mode': this.shouldUseDarkColorsSync() ? 'yes' : 'no',

@@ -7,8 +7,6 @@ import { workerPlugin } from '@fetsorn/vite-node-worker';
 export default defineConfig({
   plugins: [
     workerPlugin(),
-    // Use SWC to handle TypeScript decorators with metadata
-    // This is the same configuration used in vitest.config.ts
     swc.vite({
       jsc: {
         parser: {
@@ -31,27 +29,28 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      // 根据官方文档，外部化原生模块和大型库
+      // 根据官方文档，只外部化原生二进制模块和特殊依赖
       // https://www.electronforge.io/config/plugins/vite#native-node-modules
       external: [
-        // Native modules - 必须外部化
+        // Native binary modules - 必须外部化
         'better-sqlite3',
-        'sqlite3',
         'sqlite-vec',
         'registry-js',
         'dugite',
-        
-        // Large libraries - 外部化以加速构建
+
+        // Large libraries with __filename/__dirname usage - 必须外部化
         'tiddlywiki',
-        'typeorm',
-        
-        // ESM modules with top-level await
-        'i18next-fs-backend',
-        'i18next-electron-fs-backend',
-        
-        // Build tools
+
+        // Build tools with binary - 必须外部化
         'zx',
         'esbuild',
+
+        // ESM modules with top-level await - 必须外部化
+        'i18next-fs-backend',
+        'i18next-electron-fs-backend',
+
+        // Libraries with many optional dependencies - 必须外部化
+        'typeorm',
       ],
     },
   },

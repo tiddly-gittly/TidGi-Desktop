@@ -1,7 +1,7 @@
-import { container, lazyInject } from '@services/container';
+import { container } from '@services/container';
 import { getPreloadPath } from '@services/windows/viteEntry';
 import { BrowserWindow, ipcMain, WebContentsView, WebPreferences } from 'electron';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 
 import type { IMenuService } from '@services/menu/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
@@ -32,29 +32,26 @@ import { setupViewSession } from './setupViewSession';
 
 @injectable()
 export class View implements IViewService {
-  @lazyInject(serviceIdentifier.Preference)
-  private readonly preferenceService!: IPreferenceService;
-
-  @lazyInject(serviceIdentifier.Window)
-  private readonly windowService!: IWindowService;
-
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
-
-  @lazyInject(serviceIdentifier.MenuService)
-  private readonly menuService!: IMenuService;
-
-  @lazyInject(serviceIdentifier.WorkspaceView)
-  private readonly workspaceViewService!: IWorkspaceViewService;
-
-  @lazyInject(serviceIdentifier.Authentication)
-  private readonly authService!: IAuthenticationService;
-
-  @lazyInject(serviceIdentifier.NativeService)
-  private readonly nativeService!: INativeService;
-
-  constructor() {
+  constructor(
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+    @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
+    @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
+    @inject(serviceIdentifier.MenuService) private readonly menuService: IMenuService,
+  ) {
     this.initIPCHandlers();
+  }
+
+  // Circular dependency services - use container.get() when needed
+  private get windowService(): IWindowService {
+    return container.get<IWindowService>(serviceIdentifier.Window);
+  }
+
+  private get workspaceService(): IWorkspaceService {
+    return container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+  }
+
+  private get workspaceViewService(): IWorkspaceViewService {
+    return container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
   }
 
   public async initialize(): Promise<void> {

@@ -2,14 +2,15 @@ import { createWorkerProxy } from '@services/libs/workerAdapter';
 import { dialog, net } from 'electron';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
-import path from 'path';
 import { Observer } from 'rxjs';
 import { Worker } from 'worker_threads';
+// @ts-expect-error - Vite worker import with ?nodeWorker query
+import GitWorkerFactory from './gitWorker?nodeWorker';
 
 import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
-import { lazyInject } from '@services/container';
+import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
@@ -26,25 +27,14 @@ import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 
 @injectable()
 export class Git implements IGitService {
-  @lazyInject(serviceIdentifier.Authentication)
-  private readonly authService!: IAuthenticationService;
-
-  @lazyInject(serviceIdentifier.Wiki)
-  private readonly wikiService!: IWikiService;
-
-  @lazyInject(serviceIdentifier.Window)
-  private readonly windowService!: IWindowService;
-
-  @lazyInject(serviceIdentifier.View)
-  private readonly viewService!: IViewService;
-
-  @lazyInject(serviceIdentifier.NativeService)
-  private readonly nativeService!: INativeService;
-
   private gitWorker?: GitWorker;
   private nativeWorker?: Worker;
 
-  constructor(@inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService) {
+  constructor(
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+    @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
+    @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
+  ) {
   }
 
   public async initialize(): Promise<void> {
@@ -54,23 +44,17 @@ export class Git implements IGitService {
   private async initWorker(): Promise<void> {
     process.env.LOCAL_GIT_DIRECTORY = LOCAL_GIT_DIRECTORY;
 
-    // In development, use source file with ts-node/tsx
-    // In production, use compiled file from Vite
-    const workerPath = __dirname.includes('src')
-      ? path.resolve(__dirname, 'gitWorker.ts')
-      : path.resolve(__dirname, 'gitWorker.js');
-
-    logger.debug(`Initializing gitWorker with ${workerPath}`, {
+    logger.debug(`Initializing gitWorker`, {
       function: 'Git.initWorker',
       LOCAL_GIT_DIRECTORY,
-      __dirname,
     });
 
     try {
-      this.nativeWorker = new Worker(workerPath, {
-        execArgv: workerPath.endsWith('.ts') ? ['-r', 'ts-node/register'] : [],
-      });
-      this.gitWorker = createWorkerProxy<GitWorker>(this.nativeWorker);
+      // Use Vite's ?nodeWorker import instead of dynamic Worker path
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      const worker = GitWorkerFactory() as Worker;
+      this.nativeWorker = worker;
+      this.gitWorker = createWorkerProxy<GitWorker>(worker);
       logger.debug('gitWorker initialized successfully', { function: 'Git.initWorker' });
     } catch (error) {
       logger.error(`Failed to initialize gitWorker: ${error instanceof Error ? error.message : String(error)}`, {
@@ -102,7 +86,8 @@ export class Git implements IGitService {
     // at least 'http://', but in some case it might be shorter, like 'a.b'
     if (remoteUrl === undefined || remoteUrl.length < 3) return;
     if (branch === undefined) return;
-    const browserView = this.viewService.getView(workspace.id, WindowNames.main);
+    const viewService = container.get<IViewService>(serviceIdentifier.View);
+    const browserView = viewService.getView(workspace.id, WindowNames.main);
     if (browserView === undefined) {
       logger.error(`no browserView in updateGitInfoTiddler for ID ${workspace.id}`);
       return;
@@ -115,17 +100,19 @@ export class Git implements IGitService {
      * similar to "linonetwo/wiki", string after "https://com/"
      */
     const githubRepoName = `${userName}/${repoName}`;
-    if (await this.wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Repo']) !== githubRepoName) {
-      await this.wikiService.wikiOperationInBrowser(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Repo', githubRepoName]);
+    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+    if (await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Repo']) !== githubRepoName) {
+      await wikiService.wikiOperationInBrowser(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Repo', githubRepoName]);
     }
-    if (await this.wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Branch']) !== branch) {
-      await this.wikiService.wikiOperationInBrowser(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Branch', branch]);
+    if (await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Branch']) !== branch) {
+      await wikiService.wikiOperationInBrowser(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Branch', branch]);
     }
   }
 
   private popGitErrorNotificationToUser(step: GitStep, message: string): void {
     if (step === GitStep.GitPushFailed && message.includes('403')) {
-      const mainWindow = this.windowService.get(WindowNames.main);
+      const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+      const mainWindow = windowService.get(WindowNames.main);
       if (mainWindow !== undefined) {
         void dialog.showMessageBox(mainWindow, {
           title: i18n.t('Log.GitTokenMissing'),
@@ -168,11 +155,13 @@ export class Git implements IGitService {
   });
 
   private createFailedNotification(message: string, workspaceID: string) {
-    void this.wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, workspaceID, [`${i18n.t('Log.SynchronizationFailed')} ${message}`]);
+    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+    void wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, workspaceID, [`${i18n.t('Log.SynchronizationFailed')} ${message}`]);
   }
 
   private createFailedDialog(message: string, wikiFolderPath: string): void {
-    const mainWindow = this.windowService.get(WindowNames.main);
+    const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+    const mainWindow = windowService.get(WindowNames.main);
     if (mainWindow !== undefined) {
       void dialog
         .showMessageBox(mainWindow, {

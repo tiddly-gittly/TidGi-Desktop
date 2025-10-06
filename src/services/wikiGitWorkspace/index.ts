@@ -1,8 +1,8 @@
 import { app, dialog, powerMonitor } from 'electron';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 
 import type { IAuthenticationService } from '@services/auth/interface';
-import { container, lazyInject } from '@services/container';
+import { container } from '@services/container';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import type { INotificationService } from '@services/notifications/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -26,29 +26,12 @@ import type { IWikiGitWorkspaceService } from './interface';
 
 @injectable()
 export class WikiGitWorkspace implements IWikiGitWorkspaceService {
-  @lazyInject(serviceIdentifier.Authentication)
-  private readonly authService!: IAuthenticationService;
-
-  @lazyInject(serviceIdentifier.Wiki)
-  private readonly wikiService!: IWikiService;
-
-  @lazyInject(serviceIdentifier.Git)
-  private readonly gitService!: IGitService;
-
-  @lazyInject(serviceIdentifier.Context)
-  private readonly contextService!: IContextService;
-
-  @lazyInject(serviceIdentifier.Window)
-  private readonly windowService!: IWindowService;
-
-  @lazyInject(serviceIdentifier.WorkspaceView)
-  private readonly workspaceViewService!: IWorkspaceViewService;
-
-  @lazyInject(serviceIdentifier.NotificationService)
-  private readonly notificationService!: INotificationService;
-
-  @lazyInject(serviceIdentifier.Sync)
-  private readonly syncService!: ISyncService;
+  constructor(
+    @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
+    @inject(serviceIdentifier.Context) private readonly contextService: IContextService,
+    @inject(serviceIdentifier.NotificationService) private readonly notificationService: INotificationService,
+  ) {
+  }
 
   public registerSyncBeforeShutdown(): void {
     const listener = async (): Promise<void> => {
@@ -68,7 +51,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
               if (workspace.readOnlyMode) {
                 return;
               }
-              await this.syncService.syncWikiIfNeeded(workspace);
+              await container.get<ISyncService>(serviceIdentifier.Sync).syncWikiIfNeeded(workspace);
             }),
           ]);
         }
@@ -178,7 +161,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   }
 
   public async removeWorkspace(workspaceID: string): Promise<void> {
-    const mainWindow = this.windowService.get(WindowNames.main);
+    const mainWindow = container.get<IWindowService>(serviceIdentifier.Window).get(WindowNames.main);
     if (mainWindow !== undefined) {
       const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
       const workspace = await workspaceService.get(workspaceID);
@@ -224,12 +207,12 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
             await wikiService.removeWiki(wikiFolderLocation);
           }
         }
-        await this.workspaceViewService.removeWorkspaceView(workspaceID);
+        await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).removeWorkspaceView(workspaceID);
         await workspaceService.remove(workspaceID);
         // switch to first workspace
         const firstWorkspace = await workspaceService.getFirstWorkspace();
         if (firstWorkspace !== undefined) {
-          await this.workspaceViewService.setActiveWorkspaceView(firstWorkspace.id);
+          await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).setActiveWorkspaceView(firstWorkspace.id);
         }
       } catch (_error: unknown) {
         const error = _error instanceof Error ? _error : new Error(String(_error));

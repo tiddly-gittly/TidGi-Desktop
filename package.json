@@ -79,7 +79,6 @@
     "immer": "^10.1.1",
     "intercept-stdout": "0.1.2",
     "inversify": "6.2.1",
-    "inversify-inject-decorators": "3.1.0",
     "ipaddr.js": "2.2.0",
     "jimp": "1.6.0",
     "json5": "^2.2.3",

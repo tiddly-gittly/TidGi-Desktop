@@ -3,6 +3,7 @@
  * Replaces threads.js with native worker_threads API
  */
 
+import { cloneDeep } from 'lodash';
 import { Observable, Subject } from 'rxjs';
 import { Worker } from 'worker_threads';
 
@@ -79,13 +80,27 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
 
   // Create proxy object
   return new Proxy({} as T, {
-    get: (_target, method: string) => {
+    get: (_target, method: string | symbol) => {
+      // Prevent proxy from being treated as a Promise
+      // When JS engine checks if object is thenable, it accesses 'then' property
+      if (method === 'then' || method === 'catch' || method === 'finally') {
+        return undefined;
+      }
+
+      // Symbol properties should not be proxied
+      if (typeof method === 'symbol') {
+        return undefined;
+      }
+
       return (...arguments_: unknown[]) => {
         const id = `${method}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
         // Check if the return type should be Observable (for compatibility with existing code)
-        // We detect this by checking if the method returns an Observable-like object
-        const isObservable = method.includes('init') || method.includes('sync') || method.includes('commit');
+        // We detect this by checking if the method name suggests streaming behavior
+        // Common patterns: init*, start*, sync*, commit*, clone*, force*, execute*, *Observer*, get*Observer
+        const isObservable = method.includes('init') || method.includes('sync') || method.includes('commit') ||
+          method.includes('start') || method.includes('clone') || method.includes('force') ||
+          method.includes('execute') || method.toLowerCase().includes('observer');
 
         if (isObservable) {
           // Return Observable for streaming responses
@@ -101,12 +116,21 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
               subject,
             });
 
-            worker.postMessage({
-              type: 'call',
-              id,
-              method,
-              args: arguments_,
-            } as WorkerMessage);
+            // Deep clone arguments to ensure they can be serialized
+            const serializedArguments = arguments_.map((argument) => cloneDeep(argument));
+
+            try {
+              worker.postMessage({
+                type: 'call',
+                id,
+                method,
+                args: serializedArguments,
+              } as WorkerMessage);
+            } catch (error) {
+              console.error(`[workerAdapter] postMessage failed for Observable method ${method}:`, error);
+              console.error(`[workerAdapter] Arguments:`, serializedArguments);
+              throw error;
+            }
 
             return () => {
               // Cleanup on unsubscribe
@@ -118,12 +142,21 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
           return new Promise((resolve, reject) => {
             pendingCalls.set(id, { resolve, reject });
 
-            worker.postMessage({
-              type: 'call',
-              id,
-              method,
-              args: arguments_,
-            } as WorkerMessage);
+            // Deep clone arguments to ensure they can be serialized
+            const serializedArguments = arguments_.map((argument) => cloneDeep(argument));
+
+            try {
+              worker.postMessage({
+                type: 'call',
+                id,
+                method,
+                args: serializedArguments,
+              } as WorkerMessage);
+            } catch (error) {
+              console.error(`[workerAdapter] postMessage failed for Promise method ${method}:`, error);
+              console.error(`[workerAdapter] Arguments:`, serializedArguments);
+              throw error;
+            }
           });
         }
       };

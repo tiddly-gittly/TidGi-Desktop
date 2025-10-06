@@ -6,7 +6,7 @@ import { DataSource, Repository } from 'typeorm';
 import type { IAgentBrowserService } from '@services/agentBrowser/interface';
 import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
-import { lazyInject } from '@services/container';
+import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
@@ -18,8 +18,6 @@ import type { AgentDefinition, IAgentDefinitionService } from './interface';
 export class AgentDefinitionService implements IAgentDefinitionService {
   @inject(serviceIdentifier.Database)
   private readonly databaseService!: IDatabaseService;
-  @lazyInject(serviceIdentifier.AgentInstance)
-  private readonly agentInstanceService!: IAgentInstanceService;
   @inject(serviceIdentifier.AgentBrowser)
   private readonly agentBrowserService!: IAgentBrowserService;
 
@@ -39,9 +37,10 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       await this.initializeDefaultAgentsIfEmpty();
       logger.debug('Agent handlers registered');
 
-      // Initialize dependent services if they're ready (lazyInject may not be ready immediately)
-      if (this.agentInstanceService) {
-        await this.agentInstanceService.initialize();
+      // Initialize dependent services (using container.get to avoid circular dependency)
+      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+      if (agentInstanceService) {
+        await agentInstanceService.initialize();
       } else {
         logger.warn('agentInstanceService not ready yet during AgentDefinitionService initialization');
       }

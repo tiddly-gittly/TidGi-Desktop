@@ -1,23 +1,21 @@
 import { app, BrowserWindow, BrowserWindowConstructorOptions } from 'electron';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { Menubar } from 'menubar';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import { windowDimension, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 
 import { Channels, MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
-import type { IMenuService } from '@services/menu/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { isTest } from '@/constants/environment';
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { isMac } from '@/helpers/system';
-import { container, lazyInject } from '@services/container';
+import { container } from '@services/container';
 import getViewBounds from '@services/libs/getViewBounds';
 import { logger } from '@services/libs/log';
 import type { IThemeService } from '@services/theme/interface';
@@ -36,32 +34,17 @@ export class Window implements IWindowService {
   /** menubar version of main window, if user set openInMenubar to true in preferences */
   private mainWindowMenuBar?: Menubar;
 
-  @lazyInject(serviceIdentifier.Preference)
-  private readonly preferenceService!: IPreferenceService;
-
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
-
-  @lazyInject(serviceIdentifier.WorkspaceView)
-  private readonly workspaceViewService!: IWorkspaceViewService;
-
-  @lazyInject(serviceIdentifier.MenuService)
-  private readonly menuService!: IMenuService;
-
-  @lazyInject(serviceIdentifier.ThemeService)
-  private readonly themeService!: IThemeService;
-
-  @lazyInject(serviceIdentifier.View)
-  private readonly viewService!: IViewService;
-
-  constructor() {
+  constructor(
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+    @inject(serviceIdentifier.ThemeService) private readonly themeService: IThemeService,
+  ) {
     setTimeout(() => {
       void registerMenu();
     }, DELAY_MENU_REGISTER);
   }
 
   public async findInPage(text: string, forward?: boolean): Promise<void> {
-    const contents = (await this.viewService.getActiveBrowserView())?.webContents;
+    const contents = (await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView())?.webContents;
     if (contents !== undefined) {
       contents.findInPage(text, {
         forward,
@@ -71,7 +54,7 @@ export class Window implements IWindowService {
 
   public async stopFindInPage(close?: boolean, windowName: WindowNames = WindowNames.main): Promise<void> {
     const mainWindow = this.get(windowName);
-    const view = await this.viewService.getActiveBrowserView();
+    const view = await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView();
 
     if (view) {
       const contents = view.webContents;
@@ -293,8 +276,8 @@ export class Window implements IWindowService {
   };
 
   public async goHome(): Promise<void> {
-    const contents = (await this.viewService.getActiveBrowserView())?.webContents;
-    const activeWorkspace = await this.workspaceService.getActiveWorkspace();
+    const contents = (await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView())?.webContents;
+    const activeWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();
     if (contents !== undefined && activeWorkspace !== undefined) {
       await contents.loadURL(getDefaultTidGiUrl(activeWorkspace.id));
       contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
@@ -303,7 +286,7 @@ export class Window implements IWindowService {
   }
 
   public async goBack(): Promise<void> {
-    const contents = (await this.viewService.getActiveBrowserView())?.webContents;
+    const contents = (await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView())?.webContents;
     if (contents?.navigationHistory.canGoBack() === true) {
       contents.navigationHistory.goBack();
       contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
@@ -312,7 +295,7 @@ export class Window implements IWindowService {
   }
 
   public async goForward(): Promise<void> {
-    const contents = (await this.viewService.getActiveBrowserView())?.webContents;
+    const contents = (await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView())?.webContents;
     if (contents?.navigationHistory.canGoForward() === true) {
       contents.navigationHistory.goForward();
       contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
@@ -336,7 +319,7 @@ export class Window implements IWindowService {
   }
 
   public async clearStorageData(workspaceID: string, windowName: WindowNames = WindowNames.main): Promise<void> {
-    const view = this.viewService.getView(workspaceID, windowName);
+    const view = container.get<IViewService>(serviceIdentifier.View).getView(workspaceID, windowName);
     const session = view?.webContents.session;
     if (session !== undefined) {
       await session.clearStorageData();

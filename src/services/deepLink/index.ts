@@ -1,17 +1,16 @@
-import { lazyInject } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { app } from 'electron';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import path from 'node:path';
 import type { IDeepLinkService } from './interface';
 
 @injectable()
 export class DeepLinkService implements IDeepLinkService {
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
-
+  constructor(
+    @inject(serviceIdentifier.Workspace) private readonly workspaceService: IWorkspaceService,
+  ) {}
   /**
    * Handle link and open the workspace.
    * @param requestUrl like `tidgi://lxqsftvfppu_z4zbaadc0/#:Index` or `tidgi://lxqsftvfppu_z4zbaadc0/#%E6%96%B0%E6%9D%A1%E7%9B%AE`

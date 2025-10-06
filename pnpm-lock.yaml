@@ -160,9 +160,6 @@ importers:
       inversify:
         specifier: 6.2.1
         version: 6.2.1(reflect-metadata@0.2.2)
-      inversify-inject-decorators:
-        specifier: 3.1.0
-        version: 3.1.0
       ipaddr.js:
         specifier: 2.2.0
         version: 2.2.0
@@ -4557,9 +4554,6 @@ packages:
   interpret@3.1.1:
     resolution: {integrity: sha512-6xwYfHbajpoF0xLW+iwLkhwgvLoZDfjYfoFNu8ftMoXINzwuymNLd9u/KmwtdT2GbR+/Cz66otEGEVVUHX9QLQ==}
     engines: {node: '>=10.13.0'}
-
-  inversify-inject-decorators@3.1.0:
-    resolution: {integrity: sha512-/seBlVp5bXrLQS3DpKEmlgeZL6C7Tf/QITd+IMQrbBBGuCbxb7k3hRAWu9XSreNpFzLgSboz3sClLSEmGwHphw==}
 
   inversify@6.2.1:
     resolution: {integrity: sha512-W6Xi0icXIiC48RWdT681+GlZVgAKmCrNTiP7hj4IVPFbcxHz+Jj8Gxz5qr/Az2cgcZMYdB8tKIr2e68LUi1LYQ==}
@@ -12315,8 +12309,6 @@ snapshots:
       side-channel: 1.1.0
 
   interpret@3.1.1: {}
-
-  inversify-inject-decorators@3.1.0: {}
 
   inversify@6.2.1(reflect-metadata@0.2.2):
     dependencies:

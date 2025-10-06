@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 import { NativeChannel } from '@/constants/channels';
 import { ZX_FOLDER } from '@/constants/paths';
 import { githubDesktopUrl } from '@/constants/urls';
-import { lazyInject } from '@services/container';
+import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -26,12 +26,6 @@ import { reportErrorToGithubWithTemplates } from './reportError';
 
 @injectable()
 export class NativeService implements INativeService {
-  @lazyInject(serviceIdentifier.Wiki)
-  private readonly wikiService!: IWikiService;
-
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
-
   constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {
     this.setupIpcHandlers();
   }
@@ -87,7 +81,8 @@ export class NativeService implements INativeService {
         await shell.openPath(filePath);
       }
     } else {
-      const activeWorkspace = this.workspaceService.getActiveWorkspaceSync();
+      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+      const activeWorkspace = workspaceService.getActiveWorkspaceSync();
       if (activeWorkspace && isWikiWorkspace(activeWorkspace) && activeWorkspace.wikiFolderLocation !== undefined) {
         const absolutePath = path.resolve(path.join(activeWorkspace.wikiFolderLocation, filePath));
         if (showItemInFolder) {
@@ -144,7 +139,9 @@ export class NativeService implements INativeService {
   }
 
   public executeZxScript$(zxWorkerArguments: IZxFileInput, workspaceID?: string): Observable<string> {
-    const zxWorker = this.wikiService.getWorker(workspaceID ?? this.workspaceService.getActiveWorkspaceSync()?.id ?? '');
+    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const zxWorker = wikiService.getWorker(workspaceID ?? workspaceService.getActiveWorkspaceSync()?.id ?? '');
     if (zxWorker === undefined) {
       const error = new ZxNotInitializedError();
       return new Observable<string>((observer) => {
@@ -262,7 +259,8 @@ ${message.message}
 
   public async getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string> {
     let replacedUrl = await getLocalHostUrlWithActualIP(urlToReplace);
-    const workspace = await this.workspaceService.get(workspaceID);
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspace = await workspaceService.get(workspaceID);
     if (workspace !== undefined && isWikiWorkspace(workspace)) {
       replacedUrl = replaceUrlPortWithSettingPort(replacedUrl, workspace.port);
       replacedUrl = getUrlWithCorrectProtocol(workspace, replacedUrl);
@@ -339,7 +337,8 @@ ${message.message}
       return filePath;
     }
     logger.info(`try find file relative to workspace folder`, { filePath, function: 'formatFileUrlToAbsolutePath' });
-    const workspace = this.workspaceService.getActiveWorkspaceSync();
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspace = workspaceService.getActiveWorkspaceSync();
     if (workspace === undefined || !isWikiWorkspace(workspace)) {
       logger.error(`No active workspace or not a wiki workspace, abort. Try loading filePath as-is.`, { filePath, function: 'formatFileUrlToAbsolutePath' });
       return filePath;
