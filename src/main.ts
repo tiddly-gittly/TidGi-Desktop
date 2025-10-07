@@ -228,7 +228,9 @@ unhandled({
   },
 });
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-if (require('electron-squirrel-startup')) {
+// Handle Windows Squirrel events (install/update/uninstall)
+// Using inline implementation to avoid ESM/CommonJS compatibility issues
+import squirrelStartup from './helpers/squirrelStartup';
+if (squirrelStartup) {
   app.quit();
 }
