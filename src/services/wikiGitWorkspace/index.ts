@@ -13,7 +13,7 @@ import type { INewWikiWorkspaceConfig, IWorkspace, IWorkspaceService } from '@se
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
-import { DEFAULT_FIRST_WIKI_PATH, DEFAULT_FIRST_WIKI_FOLDER_PATH } from '@/constants/paths';
+import { DEFAULT_FIRST_WIKI_FOLDER_PATH, DEFAULT_FIRST_WIKI_PATH } from '@/constants/paths';
 import type { IContextService } from '@services/context/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';

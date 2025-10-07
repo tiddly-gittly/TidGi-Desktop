@@ -49,6 +49,9 @@ vi.mock('electron', () => {
       if (key === 'home') return process.cwd();
       return process.cwd();
     },
+    // Provide version and name used by ContextService
+    getVersion: () => '0.0.0',
+    name: 'TidGi',
   };
 
   return {
@@ -64,6 +67,10 @@ vi.mock('electron', () => {
 // This is critical - without this import, appPaths.ts won't be evaluated and
 // app.setPath('userData', 'userData-test') won't be called!
 import '@/constants/appPaths';
+
+// Some build-time globals (injected by bundlers) are not defined in test env.
+// Provide them here to avoid ReferenceError when modules reference them.
+(global as any).MAIN_WINDOW_VITE_DEV_SERVER_URL = undefined;
 
 /**
  * Mock matchMedia and other DOM APIs for components using autocomplete search functionality

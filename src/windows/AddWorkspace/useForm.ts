@@ -84,7 +84,7 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
    */
   useEffect(() => {
     void (async function getDefaultExistedWikiFolderPathEffect() {
-      const desktopPathAsDefaultExistedWikiFolderPath = await window.service.context.get('DEFAULT_WIKI_FOLDER');
+      const desktopPathAsDefaultExistedWikiFolderPath = await window.service.context.get('DEFAULT_FIRST_WIKI_FOLDER_PATH');
       const lastMainWiki = mainWorkspaceList.at(-1);
       const defaultWikiFolderName = (lastMainWiki && isWikiWorkspace(lastMainWiki)) ? lastMainWiki.wikiFolderLocation : 'wiki';
       wikiFolderNameSetter(defaultWikiFolderName);
