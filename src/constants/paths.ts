@@ -27,12 +27,6 @@ export const sourcePath = isPackaged
 export const buildResourcePath = path.resolve(sourcePath, '..', 'build-resources');
 export const developmentImageFolderPath = path.resolve(sourcePath, 'images');
 
-// TiddlyWiki template folder
-export const TIDDLYWIKI_TEMPLATE_FOLDER_PATH = isPackaged
-  ? path.resolve(process.resourcesPath, 'wiki') // Packaged: resources/wiki
-  : path.resolve(sourcePath, 'template', 'wiki'); // Dev/Unit test: project/template/wiki
-export const TIDDLERS_PATH = 'tiddlers';
-
 // Menubar icon
 const menuBarIconFileName = isMac ? 'menubarTemplate@2x.png' : 'menubar@2x.png';
 export const MENUBAR_ICON_PATH = isPackaged
@@ -59,8 +53,19 @@ export const LOCALIZATION_FOLDER = isPackaged
   : path.resolve(sourcePath, localizationFolderName); // Dev/Unit test: project/localization
 
 // Default wiki locations
-export const DEFAULT_WIKI_FOLDER = isDevelopmentOrTest
-  ? path.resolve(sourcePath, isTest ? testWikiFolderName : developmentWikiFolderName)
-  : DESKTOP_PATH;
+// For E2E tests, always use project root's wiki-test (outside asar)
+// process.resourcesPath: out/TidGi-.../resources -> need ../../.. to get to project root
+export const DEFAULT_FIRST_WIKI_FOLDER_PATH = isTest && isPackaged
+  ? path.resolve(process.resourcesPath, '..', '..', '..', testWikiFolderName) // E2E packaged: project root
+  : isTest
+  ? path.resolve(__dirname, '..', '..', testWikiFolderName) // E2E dev: project root
+  : isDevelopmentOrTest
+  ? path.resolve(sourcePath, developmentWikiFolderName) // Dev: use sourcePath
+  : DESKTOP_PATH; // Production: use desktop
 export const DEFAULT_FIRST_WIKI_NAME = 'wiki';
-export const DEFAULT_FIRST_WIKI_PATH = path.join(DEFAULT_WIKI_FOLDER, DEFAULT_FIRST_WIKI_NAME);
+export const DEFAULT_FIRST_WIKI_PATH = path.join(DEFAULT_FIRST_WIKI_FOLDER_PATH, DEFAULT_FIRST_WIKI_NAME);
+// TiddlyWiki template folder
+export const TIDDLYWIKI_TEMPLATE_FOLDER_PATH = isPackaged
+  ? path.resolve(process.resourcesPath, 'wiki') // Packaged: resources/wiki
+  : path.resolve(sourcePath, 'template', 'wiki'); // Dev/Unit test: project/template/wiki
+export const TIDDLERS_PATH = 'tiddlers';

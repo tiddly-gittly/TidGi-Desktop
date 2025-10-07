@@ -13,7 +13,7 @@ import type { INewWikiWorkspaceConfig, IWorkspace, IWorkspaceService } from '@se
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
-import { DEFAULT_FIRST_WIKI_PATH, DEFAULT_WIKI_FOLDER } from '@/constants/paths';
+import { DEFAULT_FIRST_WIKI_PATH, DEFAULT_FIRST_WIKI_FOLDER_PATH } from '@/constants/paths';
 import type { IContextService } from '@services/context/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
@@ -151,7 +151,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
     try {
       // Copy the wiki template first
       const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-      await wikiService.copyWikiTemplate(DEFAULT_WIKI_FOLDER, 'wiki');
+      await wikiService.copyWikiTemplate(DEFAULT_FIRST_WIKI_FOLDER_PATH, 'wiki');
       // Create the workspace
       await this.initWikiGitTransaction(defaultConfig);
     } catch (_error: unknown) {

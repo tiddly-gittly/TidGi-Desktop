@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
-import { DEFAULT_WIKI_FOLDER } from '../src/constants/paths';
+import { DEFAULT_FIRST_WIKI_FOLDER_PATH } from '../src/constants/paths';
 
 try {
-  fs.removeSync(DEFAULT_WIKI_FOLDER);
+  fs.removeSync(DEFAULT_FIRST_WIKI_FOLDER_PATH);
 } catch {}
-fs.mkdirpSync(DEFAULT_WIKI_FOLDER);
+fs.mkdirpSync(DEFAULT_FIRST_WIKI_FOLDER_PATH);

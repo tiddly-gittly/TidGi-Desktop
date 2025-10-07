@@ -7,6 +7,7 @@ When('I cleanup test wiki', async function() {
   if (fs.existsSync(wikiTestWikiPath)) fs.removeSync(wikiTestWikiPath);
 
   type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
+  if (!fs.existsSync(settingsPath)) return;
   const settings = fs.readJsonSync(settingsPath) as SettingsFile;
   const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
   const filtered: Record<string, IWorkspace> = {};
