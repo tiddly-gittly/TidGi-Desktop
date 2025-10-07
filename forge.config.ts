@@ -26,7 +26,8 @@ const config: ForgeConfig = {
     ],
     icon: 'build-resources/icon.ico',
     asar: {
-      unpack: '{**/.webpack/main/*.worker.*,**/.webpack/main/native_modules/path.txt}',
+      // Unpack worker files, native modules path, and ALL .node binaries (including better-sqlite3)
+      unpack: '{**/.webpack/main/*.worker.*,**/.webpack/main/native_modules/path.txt,**/{.**,**}/**/*.node}',
     },
     extraResource: ['localization', 'template/wiki', 'build-resources/menubar@2x.png', 'build-resources/menubarTemplate@2x.png'],
     // @ts-expect-error - mac config is valid

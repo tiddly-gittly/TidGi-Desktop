@@ -13,9 +13,12 @@ export function getMainWindowEntry(): string {
     console.log('[viteEntry] Using dev server URL:', MAIN_WINDOW_VITE_DEV_SERVER_URL);
     return MAIN_WINDOW_VITE_DEV_SERVER_URL;
   }
-  const productionPath = path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`);
-  console.log('[viteEntry] Using production path:', productionPath);
-  return productionPath;
+  // In production, the built files are in app.asar/.vite/renderer/index.html
+  // Note: MAIN_WINDOW_VITE_NAME is defined but the actual path doesn't use it
+  const rendererPath = path.resolve(__dirname, '..', 'renderer', 'index.html');
+  const fileUrl = `file://${rendererPath.replace(/\\/g, '/')}`;
+  console.log('[viteEntry] Using production file URL:', fileUrl, '__dirname:', __dirname);
+  return fileUrl;
 }
 
 /**

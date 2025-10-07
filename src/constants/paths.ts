@@ -4,33 +4,63 @@ import { isMac } from '../helpers/system';
 import { isDevelopmentOrTest, isTest } from './environment';
 import { developmentWikiFolderName, localizationFolderName, testWikiFolderName } from './fileNames';
 
-/** src folder */
-export const sourcePath = path.resolve(__dirname, '..');
+/**
+ * Environment Detection & Path Resolution Strategy
+ *
+ * Three execution environments:
+ * 1. Development (pnpm start:dev) - Vite dev server
+ * 2. Unit Tests (ELECTRON_RUN_AS_NODE=1) - Vitest with Electron
+ * 3. Packaged (E2E/Production) - Built .asar file
+ *
+ * Key challenge: In unit tests, Electron sets process.resourcesPath to its internal directory,
+ * which is wrong. We detect this by checking if the path contains 'electron'.
+ */
+
+// Detect if we're in packaged app (not dev, not unit tests with electron's internal path)
+const isPackaged = process.resourcesPath && !process.resourcesPath.includes('electron');
+
+// Project root directory (outside asar in packaged apps)
+export const sourcePath = isPackaged
+  ? path.resolve(process.resourcesPath, '..') // Packaged: go up from resources/ to app root
+  : path.resolve(__dirname, '..', '..'); // Dev/Unit test: from src/constants to project root
+// Build resources (only used in dev/test)
 export const buildResourcePath = path.resolve(sourcePath, '..', 'build-resources');
 export const developmentImageFolderPath = path.resolve(sourcePath, 'images');
 
-// .app/Contents/Resources/wiki/
-export const TIDDLYWIKI_TEMPLATE_FOLDER_PATH = isDevelopmentOrTest
-  ? path.resolve(sourcePath, '..', 'template', 'wiki')
-  : path.resolve(process.resourcesPath, 'wiki');
+// TiddlyWiki template folder
+export const TIDDLYWIKI_TEMPLATE_FOLDER_PATH = isPackaged
+  ? path.resolve(process.resourcesPath, 'wiki') // Packaged: resources/wiki
+  : path.resolve(sourcePath, 'template', 'wiki'); // Dev/Unit test: project/template/wiki
 export const TIDDLERS_PATH = 'tiddlers';
 
+// Menubar icon
 const menuBarIconFileName = isMac ? 'menubarTemplate@2x.png' : 'menubar@2x.png';
-export const MENUBAR_ICON_PATH = path.resolve(isDevelopmentOrTest ? buildResourcePath : process.resourcesPath, menuBarIconFileName);
+export const MENUBAR_ICON_PATH = isPackaged
+  ? path.resolve(process.resourcesPath, menuBarIconFileName) // Packaged: resources/icon
+  : path.resolve(buildResourcePath, menuBarIconFileName); // Dev/Unit test: build-resources/icon
 
+// System paths
 export const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';
 export const DESKTOP_PATH = path.join(os.homedir(), 'Desktop');
 
-export const PACKAGE_PATH_BASE = isDevelopmentOrTest
-  ? path.resolve(__dirname, '..', '..', 'node_modules')
-  : path.resolve(process.resourcesPath, 'node_modules');
+// Node modules base (for native binaries and external packages)
+export const PACKAGE_PATH_BASE = isPackaged
+  ? path.resolve(process.resourcesPath, 'node_modules') // Packaged: resources/node_modules
+  : path.resolve(sourcePath, 'node_modules'); // Dev/Unit test: project/node_modules
+
+// Package-specific paths
 export const ZX_FOLDER = path.resolve(PACKAGE_PATH_BASE, 'zx', 'build', 'cli.js');
 export const TIDDLYWIKI_PACKAGE_FOLDER = path.resolve(PACKAGE_PATH_BASE, 'tiddlywiki', 'boot');
+export const SQLITE_BINARY_PATH = path.resolve(PACKAGE_PATH_BASE, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
 
-export const LOCALIZATION_FOLDER = isDevelopmentOrTest
-  ? path.resolve(sourcePath, '..', localizationFolderName)
-  : path.resolve(process.resourcesPath, localizationFolderName);
-export const DEFAULT_WIKI_FOLDER = isDevelopmentOrTest ? path.resolve(sourcePath, '..', isTest ? testWikiFolderName : developmentWikiFolderName) : DESKTOP_PATH;
+// Localization folder
+export const LOCALIZATION_FOLDER = isPackaged
+  ? path.resolve(process.resourcesPath, localizationFolderName) // Packaged: resources/localization
+  : path.resolve(sourcePath, localizationFolderName); // Dev/Unit test: project/localization
+
+// Default wiki locations
+export const DEFAULT_WIKI_FOLDER = isDevelopmentOrTest
+  ? path.resolve(sourcePath, isTest ? testWikiFolderName : developmentWikiFolderName)
+  : DESKTOP_PATH;
 export const DEFAULT_FIRST_WIKI_NAME = 'wiki';
 export const DEFAULT_FIRST_WIKI_PATH = path.join(DEFAULT_WIKI_FOLDER, DEFAULT_FIRST_WIKI_NAME);
-export const SQLITE_BINARY_PATH = path.resolve(PACKAGE_PATH_BASE, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');

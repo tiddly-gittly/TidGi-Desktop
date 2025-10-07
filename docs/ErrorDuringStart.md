@@ -194,3 +194,9 @@ If you are not sure, try `pnpm run start:dev:debug-webpack`, which will also ena
 
 1. Wait for <https://github.com/vitejs/vite/pull/3932> to replace `ThreadsPlugin`
 2. Need to replace `inversify-inject-decorators` and `typeorm` that uses decorator first
+
+## Error: ENOTDIR, not a directory at createError or supportedLanguages.json: ENOENT
+
+May be `src/constants/paths.ts` have wrong value of `__dirname` or `process.resourcesPath` after package, like being `C:\Users\linonetwo\Documents\repo-c\TidGi-Desktop\out\TidGi-win32-x64\resources\app.asar\xxx`
+
+Check `src/constants/appPaths.ts` and `src/constants/paths.ts`

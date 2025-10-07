@@ -441,9 +441,6 @@ importers:
       '@reforged/maker-appimage':
         specifier: ^5.0.0
         version: 5.0.0(bluebird@3.7.2)
-      electron-squirrel-startup:
-        specifier: 1.0.1
-        version: 1.0.1
 
 packages:
 
@@ -3577,9 +3574,6 @@ packages:
     resolution: {integrity: sha512-QZOtjW3mPmyDE7VM4yHPS2JCmExwqaqPrArldgOdOLz25/yrn8qXPB5ZkiqPeCTXjdB7TZc4BFbOMjUBEbatSA==}
     peerDependencies:
       electron: '>= 2'
-
-  electron-squirrel-startup@1.0.1:
-    resolution: {integrity: sha512-sTfFIHGku+7PsHLJ7v0dRcZNkALrV+YEozINTW8X1nM//e5O3L+rfYuvSW00lmGHnYmUjARZulD8F2V8ISI9RA==}
 
   electron-to-chromium@1.5.130:
     resolution: {integrity: sha512-Ou2u7L9j2XLZbhqzyX0jWDj6gA8D3jIfVzt4rikLf3cGBa0VdReuFimBKS9tQJA4+XpeCxj1NoWlfBXzbMa9IA==}
@@ -11056,13 +11050,6 @@ snapshots:
       lodash.set: 4.3.2
       lodash.unset: 4.5.2
       mkdirp: 1.0.4
-
-  electron-squirrel-startup@1.0.1:
-    dependencies:
-      debug: 2.6.9
-    transitivePeerDependencies:
-      - supports-color
-    optional: true
 
   electron-to-chromium@1.5.130: {}
 
