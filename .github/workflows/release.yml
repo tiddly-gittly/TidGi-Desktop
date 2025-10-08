@@ -54,16 +54,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Install Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: lts/*
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: "latest"
-          run_install: true
+          run_install: false
+      - name: Install Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+      - name: Install dependencies
+        run: pnpm install
 
       # Windows specific: Set up CV dependency for pngquant-bin
       - name: Set up CV dependency for pngquant-bin
