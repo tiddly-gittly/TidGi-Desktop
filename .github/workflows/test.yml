@@ -67,8 +67,8 @@ jobs:
         with:
           name: test-artifacts
           path: |
-            logs/
-            cucumber-report.json
+            userData-test/logs/
+            userData-test/settings/
           retention-days: 7
 
       # Upload application logs
@@ -78,7 +78,6 @@ jobs:
         with:
           name: application-logs
           path: |
-            ~/.local/share/TidGi/
-            userData-dev/logs/
+            userData-test/logs/
           retention-days: 7
         continue-on-error: true
