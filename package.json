@@ -106,7 +106,7 @@
     "sqlite-vec": "0.1.7-alpha.2",
     "strip-ansi": "^7.1.0",
     "tapable": "^2.2.2",
-    "tiddlywiki": "5.3.6",
+    "tiddlywiki": "5.3.7",
     "type-fest": "4.41.0",
     "typeorm": "^0.3.22",
     "typescript-styled-is": "^2.1.0",
