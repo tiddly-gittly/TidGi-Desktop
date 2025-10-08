@@ -7,7 +7,7 @@ settings:
 overrides:
   prebuild-install: latest
 
-pnpmfileChecksum: sha256-avmZn8rDPdvrDPy1irtRpETQhUnB6iRqzv3Exga6H1w=
+pnpmfileChecksum: sha256-lIFkUl44z62LBhI/qC/00DMf5xie4YLU9ldCFAHgCsA=
 
 importers:
 
