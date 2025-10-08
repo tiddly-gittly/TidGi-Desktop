@@ -7,8 +7,13 @@ import packageJson = require('./package.json');
 import beforeAsar = require('./scripts/beforeAsar');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import afterPack = require('./scripts/afterPack');
+import { readJsonSync } from 'fs-extra';
+import path from 'path';
+const supportedLanguages = readJsonSync(path.join(__dirname, 'localization', 'supportedLanguages.json')) as Record<string, string>;
 
 const { description } = packageJson;
+// Get list of supported language codes from centralized config
+const supportedLanguageCodes = Object.keys(supportedLanguages);
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -35,7 +40,7 @@ const config: ForgeConfig = {
       category: 'productivity',
       target: 'dmg',
       icon: 'build-resources/icon.icns',
-      electronLanguages: ['zh_CN', 'en', 'ja'],
+      electronLanguages: supportedLanguageCodes,
     },
     appBundleId: 'com.tidgi',
     afterPrune: [afterPack.default],

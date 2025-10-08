@@ -154,9 +154,9 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
         E2E_TEST: 'true',
         // Ensure tests run in Chinese locale so i18n UI strings match expectations
         // set multiple variables for cross-platform coverage
-        LANG: process.env.LANG || 'zh_CN.UTF-8',
-        LANGUAGE: process.env.LANGUAGE || 'zh_CN:zh',
-        LC_ALL: process.env.LC_ALL || 'zh_CN.UTF-8',
+        LANG: process.env.LANG || 'zh-Hans.UTF-8',
+        LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
+        LC_ALL: process.env.LC_ALL || 'zh-Hans.UTF-8',
         // Force display settings for CI
         ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
         ...(process.env.CI && {

@@ -15,7 +15,7 @@ export const defaultPreferences: IPreferences = {
   hibernateUnusedWorkspacesAtLaunch: false,
   hideMenuBar: false,
   ignoreCertificateErrors: false,
-  language: 'zh_CN',
+  language: 'zh-Hans',
   menuBarAlwaysOnTop: false,
   pauseNotifications: '',
   pauseNotificationsBySchedule: false,
