@@ -89,7 +89,7 @@ After(async function(this: ApplicationWorld) {
   }
 });
 
-AfterStep(async function(this: ApplicationWorld, { pickleStep }) {
+AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result }) {
   // Only take screenshots in CI environment
   if (!process.env.CI) return;
 
@@ -109,9 +109,21 @@ AfterStep(async function(this: ApplicationWorld, { pickleStep }) {
         this.currentWindow = pageToUse;
       }
     }
-    // Extract step text and clean it for filename
-    const stepText = pickleStep.text || 'unknown-step';
-    const cleanStepText = stepText.replace(/[^a-zA-Z0-9\s]/g, '').substring(0, 100);
+    // Minimal, robust filename handling:
+    // - Use pickle.name (scenario name) when available; fallback to pickleStep.pickleName or 'unknown-feature'
+    // - Preserve Unicode (including Chinese); only strip filesystem-invalid characters
+    const invalidFileChars = /[\\/:*?"<>|]/g;
+    // Use pickle.name directly (assume Cucumber provides it). Fallback to 'unknown-feature'.
+    const scenarioName = pickle.name;
+    const cleanScenarioName = scenarioName.replace(invalidFileChars, '').substring(0, 200);
+
+    const stepText = pickleStep.text;
+    const cleanStepText = stepText.replace(invalidFileChars, '').substring(0, 100);
+    const stepStatus = result && typeof result.status === 'string' ? result.status : 'unknown-status';
+
+    const featureDirectory = path.resolve(screenshotsDirectory, cleanScenarioName);
+    // Create directory asynchronously to avoid blocking the event loop in CI
+    await fs.ensureDir(featureDirectory);
 
     // Sometimes window close and don't wait for use to take picture, or window haven't open in this step, never mind, just skip.
     /**
@@ -126,7 +138,7 @@ AfterStep(async function(this: ApplicationWorld, { pickleStep }) {
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const screenshotPath = path.resolve(screenshotsDirectory, `${timestamp}-${cleanStepText}.jpg`);
+    const screenshotPath = path.resolve(featureDirectory, `${timestamp}-${cleanStepText}-${stepStatus}.jpg`);
 
     // Use conservative screenshot options for CI
     await pageToUse.screenshot({ path: screenshotPath, fullPage: true, type: 'jpeg', quality: 10 });
