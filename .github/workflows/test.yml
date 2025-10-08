@@ -29,12 +29,12 @@ jobs:
 
       # Linux specific: Initialize CodeQL (only for x64)
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: javascript-typescript
       # Linux specific: Perform CodeQL Analysis (only for x64)
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
 
       # Install minimal Linux dependencies for Electron GUI testing https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci
       - name: Install Linux GUI dependencies
