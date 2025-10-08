@@ -30,7 +30,7 @@ export const useAgentChatStore = create<AgentChatStoreType>()((set, get, api) =>
     expandedArrayItems: new Map(),
   };
 
-  // 合并所有 actions 和初始状态
+  // Merge all actions and initial state
   return {
     ...initialState,
     ...basicActions(set, get, api),

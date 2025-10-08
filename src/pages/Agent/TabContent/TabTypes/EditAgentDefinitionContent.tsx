@@ -208,7 +208,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
         clearTimeout(debounceTimer);
       };
     }
-  }, [agentDefinition, saveToBackendDebounced, forceRecreatePreview]); // 当智能体定义改变或强制重新创建时重新创建预览智能体
+  }, [agentDefinition, saveToBackendDebounced, forceRecreatePreview]); // Recreate preview agent when the agent definition changes or when forced to recreate
 
   // Cleanup preview agent when component unmounts
   useEffect(() => {
@@ -240,7 +240,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
       },
     );
 
-    // 强制重新创建预览智能体以使用新配置
+    // Force recreate the preview agent to use the new configuration
     setForceRecreatePreview(previous => previous + 1);
   }, []);
 
