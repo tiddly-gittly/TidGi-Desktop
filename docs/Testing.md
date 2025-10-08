@@ -315,6 +315,10 @@ Or run manually in shell: `$env:ELECTRON_RUN_AS_NODE=1; pnpm run test:unit`
 
 We use `ELECTRON_RUN_AS_NODE` to solve native modules (like better-sqlite3) being compiled for the wrong Node.js version, see the section in [ErrorDuringStart.md](./ErrorDuringStart.md#during-test-the-module-node_modulesbetter-sqlite3buildreleasebetter_sqlite3node-was-compiled-against-a-different-nodejs-version-using).
 
+#### Module did not self-register: '/home/runner/work/TidGi-Desktop/TidGi-Desktop/node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+
+May needs `pnpm exec electron-rebuild -f -w better-sqlite3`.
+
 ### An update to Component inside a test was not wrapped in act(...)
 
 This warning occurs when React components perform asynchronous state updates during test execution. Common causes:

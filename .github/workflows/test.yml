@@ -31,6 +31,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Rebuild native modules for Electron
+        run: pnpm exec electron-rebuild -f -w better-sqlite3
+
       - name: Run linting
         run: pnpm run lint
         continue-on-error: true
