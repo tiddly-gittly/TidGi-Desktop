@@ -58,7 +58,6 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 里创建一个新笔记，内容为 test" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 0.2 seconds
     Then I should see 6 messages in chat history
     # Verify there's an error message about workspace not found (in one of the middle messages)
     And I should see a "workspace not exist error" element with selector "[data-testid='message-bubble']:has-text('default'):has-text('不存在')"
