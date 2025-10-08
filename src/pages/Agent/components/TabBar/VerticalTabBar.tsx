@@ -49,7 +49,6 @@ export const VerticalTabBar = () => {
 
   return (
     <TabBarContainer>
-      {/* 固定的标签页 */}
       {pinnedTabs.length > 0 && (
         <>
           <TabContextMenu>

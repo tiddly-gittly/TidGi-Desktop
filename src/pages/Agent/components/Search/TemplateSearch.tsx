@@ -5,6 +5,7 @@ import { styled } from '@mui/material/styles';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
 import { createElement, Fragment, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
+import { useTranslation } from 'react-i18next';
 
 import { createAgentsPlugin } from './plugins/AgentsPlugin';
 
@@ -132,6 +133,7 @@ const SearchContainer = styled(Box)`
 `;
 
 export function TemplateSearch({ placeholder, onTemplateSelect, testId }: TemplateSearchProps) {
+  const { t } = useTranslation('agent');
   const containerReference = useRef<HTMLDivElement | null>(null);
   const panelRootReference = useRef<ReturnType<typeof createRoot> | null>(null);
 
@@ -169,7 +171,7 @@ export function TemplateSearch({ placeholder, onTemplateSelect, testId }: Templa
       plugins: [
         createAgentsPlugin({
           onSelect: onTemplateSelect,
-          sourceTitle: '选择模板',
+          sourceTitle: t('CreateAgent.SelectTemplate'),
           searchTemplates: true,
         }),
       ],

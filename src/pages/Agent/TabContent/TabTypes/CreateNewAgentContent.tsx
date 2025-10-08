@@ -407,7 +407,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
                     tab={{
                       id: `preview-${previewAgentId}`,
                       type: TabType.CHAT,
-                      title: `${temporaryAgentDefinition.name} (预览)`,
+                      title: `${temporaryAgentDefinition.name} ${t('CreateAgent.Preview')}`,
                       agentId: previewAgentId,
                       state: TabState.ACTIVE,
                       isPinned: false,
@@ -419,7 +419,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
               )
               : (
                 <Typography variant='body2' color='text.secondary'>
-                  {isLoading ? '正在创建预览智能体...' : t('CreateAgent.NoTemplateSelected')}
+                  {isLoading ? t('CreateAgent.CreatingPreview') : t('CreateAgent.NoTemplateSelected')}
                 </Typography>
               )}
           </StepContainer>

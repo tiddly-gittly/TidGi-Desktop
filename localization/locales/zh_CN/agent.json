@@ -96,6 +96,8 @@
     "SelectedTemplate": "已选择模板",
     "SelectTemplate": "选择模板",
     "SelectTemplateDescription": "选择一个现有的智能体作为起始模板",
+    "Preview": "(预览)",
+    "CreatingPreview": "正在创建预览智能体...",
     "SetupAgent": "设置智能体",
     "SetupAgentDescription": "为您的智能体命名并选择一个模板作为起点",
     "Steps": {
