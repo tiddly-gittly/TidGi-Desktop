@@ -240,7 +240,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
       },
     );
 
-    // 强制重新创建预览智能体以使用新配置
+    // Force recreate the preview agent to use the new configuration
     setForceRecreatePreview(previous => previous + 1);
   }, []);
 
