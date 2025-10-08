@@ -8,53 +8,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: lts/*
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 'latest'
-          run_install: false
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            **/node_modules
-            ~/.pnpm-store
-            ~/.npm
-          key: test-${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            test-${{ runner.os }}-node-
-      - name: Install dependencies
-        run: pnpm install
+          version: "latest"
+          run_install: true
 
       - name: Rebuild native modules for Electron
         run: pnpm exec electron-rebuild -f -w better-sqlite3
 
       - name: Run linting
         run: pnpm run lint
-        continue-on-error: true
 
-      - name: Run unit tests
-        run: pnpm run test:unit
-
-      - name: Build plugins
-        run: pnpm run build:plugin
-
-      - name: Package for testing
-        run: pnpm run package
+      # Linux specific: Initialize CodeQL (only for x64)
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript-typescript
+      # Linux specific: Perform CodeQL Analysis (only for x64)
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
 
       # Install minimal Linux dependencies for Electron GUI testing https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci
       - name: Install Linux GUI dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
-
-      - name: Run e2e tests
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" pnpm run test:e2e
+      - name: Run unit tests
+        run: xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test
         env:
           CI: true
           DISPLAY: :99

@@ -3,18 +3,18 @@ name: Release App
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
     paths-ignore:
-      - 'README.md'
-      - 'docs/**'
-      - '.vscode'
+      - "README.md"
+      - "docs/**"
+      - ".vscode"
   pull_request:
     branches:
       - master
     paths-ignore:
-      - 'docs/**'
-      - 'README.md'
-      - '.vscode'
+      - "docs/**"
+      - "README.md"
+      - ".vscode"
 
 concurrency:
   group: release-ci-group
@@ -47,42 +47,23 @@ jobs:
           - os: windows-latest
             platform: win
             arch: arm64
-    
+
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: lts/*
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 'latest'
-          run_install: false
-
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            **/node_modules
-            ~/.pnpm-store
-            ~/.npm
-          key: ${{ runner.os }}-${{ matrix.arch }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.arch }}-node-${{ hashFiles('**/package-lock.json') }}
-            ${{ runner.os }}-${{ matrix.arch }}-node-
-
-      # Linux specific: Initialize CodeQL (only for x64)
-      - name: Initialize CodeQL
-        if: matrix.platform == 'linux' && matrix.arch == 'x64'
-        uses: github/codeql-action/init@v2
-        with:
-          languages: javascript
+          version: "latest"
+          run_install: true
 
       # Windows specific: Set up CV dependency for pngquant-bin
       - name: Set up CV dependency for pngquant-bin
@@ -124,11 +105,6 @@ jobs:
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Linux specific: Perform CodeQL Analysis (only for x64)
-      - name: Perform CodeQL Analysis
-        if: matrix.platform == 'linux' && matrix.arch == 'x64'
-        uses: github/codeql-action/analyze@v2
-
       # Create Release (upload artifacts from all builds)
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -147,7 +123,7 @@ jobs:
         uses: vio/bundle-stats-action@v1
         with:
           id: renderer-${{ matrix.platform }}
-          webpack-stats-path: 'out/webpack-stats-renderer.json'
+          webpack-stats-path: "out/webpack-stats-renderer.json"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get Main Bundle Stats
@@ -155,5 +131,5 @@ jobs:
         uses: vio/bundle-stats-action@v1
         with:
           id: main-${{ matrix.platform }}
-          webpack-stats-path: 'out/webpack-stats-main.json'
+          webpack-stats-path: "out/webpack-stats-main.json"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
