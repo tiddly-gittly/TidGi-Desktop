@@ -54,3 +54,29 @@ export const settingsPath = path.resolve(settingsDirectory, 'settings.json');
 // Repo root and test wiki paths
 export const repoRoot = path.resolve(process.cwd());
 export const wikiTestWikiPath = path.resolve(repoRoot, 'wiki-test', 'wiki');
+
+// Archive-safe sanitization: generate a slug that is safe for zipping/unzipping across platforms.
+// Rules:
+// - allow Unicode letters/numbers (\p{L}\p{N}) and spaces, hyphen, underscore and parentheses
+// - remove dots completely (to avoid trailing-dot issues on Windows)
+// - replace any other char with '-' (this includes brackets, quotes, punctuation)
+// - collapse multiple '-' into one, collapse multiple spaces into one, trim, and limit length
+const unsafeChars = /[^\p{L}\p{N}\s\-_()]/gu;
+const collapseDashes = /-+/g;
+const collapseSpaces = /\s+/g;
+export const makeSlugPath = (input: string | undefined, maxLength = 120) => {
+  let s = String(input || 'unknown').normalize('NFKC');
+  // remove dots explicitly
+  s = s.replace(/\./g, '');
+  // replace unsafe characters with dashes
+  let slug = s.replace(unsafeChars, '-');
+  // collapse consecutive dashes
+  slug = slug.replace(collapseDashes, '-');
+  // collapse spaces to single space, trim edges
+  slug = slug.replace(collapseSpaces, ' ').trim();
+  // trim leading/trailing dashes or spaces
+  slug = slug.replace(/^-+|-+$/g, '').replace(/^[\s]+|[\s]+$/g, '');
+  if (slug.length > maxLength) slug = slug.substring(0, maxLength);
+  if (!slug) slug = 'unknown';
+  return slug;
+};

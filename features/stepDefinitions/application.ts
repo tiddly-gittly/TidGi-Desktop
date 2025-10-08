@@ -5,7 +5,7 @@ import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
 import { isMainWindowPage, PageType } from '../../src/constants/pageTypes';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
-import { logsDirectory, screenshotsDirectory } from '../supports/paths';
+import { logsDirectory, makeSlugPath, screenshotsDirectory } from '../supports/paths';
 import { getPackedAppPath } from '../supports/paths';
 
 export class ApplicationWorld {
@@ -91,7 +91,7 @@ After(async function(this: ApplicationWorld) {
 
 AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result }) {
   // Only take screenshots in CI environment
-  if (!process.env.CI) return;
+  // if (!process.env.CI) return;
 
   try {
     // Prefer an existing currentWindow if it's still open
@@ -109,16 +109,12 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
         this.currentWindow = pageToUse;
       }
     }
-    // Minimal, robust filename handling:
-    // - Use pickle.name (scenario name) when available; fallback to pickleStep.pickleName or 'unknown-feature'
-    // - Preserve Unicode (including Chinese); only strip filesystem-invalid characters
-    const invalidFileChars = /[\\/:*?"<>|]/g;
-    // Use pickle.name directly (assume Cucumber provides it). Fallback to 'unknown-feature'.
+
     const scenarioName = pickle.name;
-    const cleanScenarioName = scenarioName.replace(invalidFileChars, '').substring(0, 200);
+    const cleanScenarioName = makeSlugPath(scenarioName);
 
     const stepText = pickleStep.text;
-    const cleanStepText = stepText.replace(invalidFileChars, '').substring(0, 100);
+    const cleanStepText = makeSlugPath(stepText, 120);
     const stepStatus = result && typeof result.status === 'string' ? result.status : 'unknown-status';
 
     const featureDirectory = path.resolve(screenshotsDirectory, cleanScenarioName);
