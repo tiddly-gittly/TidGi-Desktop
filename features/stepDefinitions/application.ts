@@ -91,20 +91,47 @@ After(async function(this: ApplicationWorld) {
 
 AfterStep(async function(this: ApplicationWorld, { pickleStep }) {
   // Only take screenshots in CI environment
-  if (process.env.CI && this.currentWindow) {
-    try {
-      // Extract step text and clean it for filename
-      const stepText = pickleStep.text || 'unknown-step';
-      const cleanStepText = stepText
-        .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
-        .substring(0, 100);
+  if (!process.env.CI) return;
 
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const screenshotPath = path.resolve(screenshotsDirectory, `${timestamp}-${cleanStepText}.png`);
-      await this.currentWindow.screenshot({ path: screenshotPath, fullPage: true, quality: 10, type: 'jpeg', scale: 'css', caret: 'initial' });
-    } catch (screenshotError) {
-      console.warn('Failed to take screenshot:', screenshotError);
+  try {
+    // Prefer an existing currentWindow if it's still open
+    let pageToUse: Page | undefined;
+
+    if (this.currentWindow && !this.currentWindow.isClosed()) {
+      pageToUse = this.currentWindow;
     }
+
+    // If currentWindow is not available, try to re-acquire any open window from the app
+    if ((!pageToUse || pageToUse.isClosed()) && this.app) {
+      const openPages = this.app.windows().filter(p => !p.isClosed());
+      if (openPages.length > 0) {
+        pageToUse = openPages[0];
+        this.currentWindow = pageToUse;
+      }
+    }
+    // Extract step text and clean it for filename
+    const stepText = pickleStep.text || 'unknown-step';
+    const cleanStepText = stepText.replace(/[^a-zA-Z0-9\s]/g, '').substring(0, 100);
+
+    // Sometimes window close and don't wait for use to take picture, or window haven't open in this step, never mind, just skip.
+    /**
+     * Typical steps like:
+     * - I add test ai settings
+     * - I cleanup test wiki
+     * - I clear test ai settings
+     */
+    if (!pageToUse || pageToUse.isClosed()) {
+      // console.warn(`Skipping screenshot: ${cleanStepText}`);
+      return;
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const screenshotPath = path.resolve(screenshotsDirectory, `${timestamp}-${cleanStepText}.jpg`);
+
+    // Use conservative screenshot options for CI
+    await pageToUse.screenshot({ path: screenshotPath, fullPage: true, type: 'jpeg', quality: 10 });
+  } catch (screenshotError) {
+    console.warn('Failed to take screenshot:', screenshotError);
   }
 });
 
