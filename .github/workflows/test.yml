@@ -50,16 +50,6 @@ jobs:
             userData-test/logs/
             userData-test/settings/
           retention-days: 7
-
-      # Upload application logs
-      - name: Upload application logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: application-logs
-          path: |
-            userData-test/logs/
-          retention-days: 7
         continue-on-error: true
 
   codeql:
