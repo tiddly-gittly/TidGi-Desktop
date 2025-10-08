@@ -4,7 +4,7 @@
     "Description": "Debug logs for external API calls made by this agent. Enable 'External API Debug' in preferences to start logging.",
     "ErrorDetails": "Error Details",
     "NoLogs": "No API logs found for this agent",
-    "NoResponse": "",
+    "NoResponse": "No response",
     "RequestDetails": "Request Details",
     "ResponseContent": "Response Content",
     "ResponseMetadata": "Response Metadata",
@@ -15,13 +15,12 @@
     "StatusUpdate": "Processing",
     "Title": "API Debug Logs"
   },
-  "Add": "Add",
   "Agent": {
     "EditTitle": "Edit agent name",
-    "InvalidTabType": "",
-    "LoadingChat": "",
-    "StartConversation": "",
-    "Untitled": ""
+    "InvalidTabType": "Invalid tab type. A chat tab is required.",
+    "LoadingChat": "Loading conversation...",
+    "StartConversation": "Start a conversation",
+    "Untitled": "Untitled"
   },
   "Browser": {
     "Back": "Step back",
@@ -34,107 +33,20 @@
     "RenderPlaceholder": "This is the webpage rendering area."
   },
   "Chat": {
-    "AiReplyPlaceholder": "I am processing your request...",
     "Cancel": "Cancel",
-    "ChangeMetadata": "Change Metadata",
     "ConfigError": {
-      "AuthenticationFailed": "Authentication failed for {{provider}}, please check your settings.",
-      "GeneralError": "There's an issue with {{provider}} configuration, please check your settings.",
       "GoToSettings": "Go to Settings",
-      "MissingAPIKey": "API key for {{provider}} is required to use this feature.",
-      "MissingBaseURL": "Base URL for {{provider}} is required to use this feature.",
-      "MissingProviderError": "Missing provider configuration, please check the settings.",
-      "ModelNotFound": "Model not found for {{provider}}, please check your settings.",
-      "ProviderNotFound": "Provider {{provider}} not found, please check your settings.",
-      "RateLimitExceeded": "Rate limit exceeded for {{provider}}, please try again later.",
       "Title": "Configuration Issue"
     },
-    "EmptyStateDescription": "Create a new session or select an existing one from the left to start chatting.",
-    "Error": "Dialogue error",
     "InputPlaceholder": "Type a message, Ctrl+Enter to send",
-    "Loading": "Dialogue loading",
-    "NewSession": "New Session",
-    "OpenInWorkspaceTiddler": "Open {{title}} in {{workspace}} workspace",
     "Send": "Send",
-    "Session": "Session",
     "SessionGroup": {
-      "Older": "Older",
-      "Today": "Today",
-      "Yesterday": "Yesterday"
-    },
-    "StartConversation": "Start a new conversation",
-    "StartNewConversation": "Start a new conversation",
-    "Thinking": "Thinking...",
-    "TypePlaceholder": "Enter message...",
-    "Typing": "Typing...",
-    "Use": "Use",
-    "WaitingForResponse": "Waiting for response..."
-  },
-  "CreateAgent": {
-    "AgentName": "Agent Name",
-    "AgentNameHelper": "Enter a descriptive name for your agent",
-    "AgentNamePlaceholder": "My Custom Agent",
-    "Back": "Back",
-    "EditPrompt": "Edit Prompt",
-    "EditPromptDescription": "Customize the system prompt and behavior of your agent",
-    "ImmediateUse": "Test & Use",
-    "ImmediateUseDescription": "Test your agent and start using it immediately",
-    "Loading": "Loading...",
-    "NameAgent": "Name Your Agent",
-    "NameAgentDescription": "Give your agent a descriptive name",
-    "Next": "Next",
-    "NoTemplateSelected": "Please select a template first",
-    "ChatPreview": "Chat Preview",
-    "ChatPreviewDescription": "Test {{name}}'s functionality here",
-    "SaveAndUse": "Save & Use Agent",
-    "SearchTemplates": "Search for agent templates...",
-    "SelectTemplate": "Choose Template",
-    "SelectTemplateDescription": "Select an existing agent as a starting template",
-    "SelectedTemplate": "Selected Template",
-    "SetupAgent": "Setup Agent",
-    "SetupAgentDescription": "Configure your new agent by choosing a name and template",
-    "Steps": {
-      "editPrompt": "Edit Prompt",
-      "immediateUse": "Test & Use",
-      "setupAgent": "Setup Agent"
-    },
-    "Title": "Create New Agent",
-    "UnknownStep": "Unknown step"
-  },
-  "EditAgent": {
-    "AgentName": "Agent Name",
-    "AgentNameHelper": "Enter a descriptive name for your agent",
-    "AgentNamePlaceholder": "My Custom Agent",
-    "Back": "Back",
-    "CurrentAgent": "Current Agent",
-    "EditBasic": "Edit Basic Info",
-    "EditBasicDescription": "Edit the basic information of your agent",
-    "EditPrompt": "Edit Prompt",
-    "EditPromptDescription": "Customize the system prompt and behavior of your agent",
-    "HandlerType": "Handler Type",
-    "ImmediateUse": "Test & Use",
-    "ImmediateUseDescription": "Test your agent and start using it immediately",
-    "Loading": "Loading...",
-    "Next": "Next",
-    "Save": "Save",
-    "SaveAndUse": "Save & Use Agent",
-    "Steps": {
-      "editBasic": "Edit Basic Info",
-      "editPrompt": "Edit Prompt",
-      "immediateUse": "Test & Use"
-    },
-    "Title": "Edit Agent",
-    "UnknownStep": "Unknown step"
+    }
   },
   "Common": {
-    "Apply": "",
-    "Applying": "",
-    "Save": "",
-    "Saving": ""
   },
   "ContextMenu": {
     "AddToCurrentSplitView": "Add to current split view",
-    "AddToSplitView": "Add to side-by-side view",
     "Close": "Close",
     "CloseAbove": "Close the tab above",
     "CloseBelow": "Close the tab below",
@@ -149,33 +61,66 @@
     "RestoreClosed": "Restore closed tab",
     "Unpin": "Unpin"
   },
+  "CreateAgent": {
+    "AgentName": "Agent Name",
+    "AgentNameHelper": "Enter a descriptive name for your agent",
+    "AgentNamePlaceholder": "My Custom Agent",
+    "Back": "Back",
+    "CreatingPreview": "Creating preview agent...",
+    "EditPrompt": "Edit Prompt",
+    "EditPromptDescription": "Customize the system prompt and behavior of your agent",
+    "ImmediateUse": "Test & Use",
+    "ImmediateUseDescription": "Test your agent and start using it immediately",
+    "Next": "Next",
+    "NoTemplateSelected": "Please select a template first",
+    "Preview": "(Preview)",
+    "SaveAndUse": "Save & Use Agent",
+    "SearchTemplates": "Search for agent templates...",
+    "SelectTemplate": "Choose Template",
+    "SelectTemplateDescription": "Select an existing agent as a starting template",
+    "SelectedTemplate": "Selected Template",
+    "SetupAgent": "Setup Agent",
+    "SetupAgentDescription": "Configure your new agent by choosing a name and template",
+    "Steps": {
+    },
+    "Title": "Create New Agent"
+  },
+  "EditAgent": {
+    "AgentDescriptionHelper": "Describe the functionality and purpose of your intelligent agent.",
+    "AgentDescriptionPlaceholder": "Enter agent description...",
+    "AgentName": "Agent Name",
+    "AgentNameHelper": "Enter a descriptive name for your agent",
+    "AgentNamePlaceholder": "My Custom Agent",
+    "AgentNotFound": "Agent not found",
+    "EditBasic": "Edit Basic Info",
+    "EditBasicDescription": "Edit the basic information of your agent",
+    "EditPrompt": "Edit Prompt",
+    "EditPromptDescription": "Customize the system prompt and behavior of your agent",
+    "ImmediateUse": "Test & Use",
+    "ImmediateUseDescription": "Test your agent and start using it immediately",
+    "Loading": "Loading...",
+    "LoadingPromptConfig": "Loading prompt configuration...",
+    "PreviewChat": "Preview Chat",
+    "Save": "Save",
+    "Saving": "Saving...",
+    "Steps": {
+    },
+    "Title": "Edit Agent"
+  },
   "ModelFeature": {
-    "Embedding": "Embedding",
-    "ImageGeneration": "Image Generation",
-    "Language": "Language",
-    "Reasoning": "Reasoning",
-    "Speech": "Speech",
-    "ToolCalling": "Tool Calling",
-    "Transcriptions": "Transcriptions",
-    "Vision": "Vision"
   },
   "ModelSelector": {
-    "Model": "",
-    "NoModelSelected": "",
-    "SelectModel": "",
-    "Title": ""
+    "Model": "model",
+    "NoModelSelected": "No model selected",
+    "SelectModel": "Select Model",
+    "Title": "model selection"
   },
   "NewTab": {
-    "CodeTools": "code tool",
     "CreateDefaultAgent": "Create Default Agent",
     "CreateInstance": "Create Instance",
     "CreateNewAgent": "Create New Agent",
     "EditDefinition": "Edit Definition",
-    "Explore": "explore",
-    "Favorites": "Favorites",
-    "NewChat": "New Conversation",
     "NewTab": "New Tab",
-    "NewWebTab": "Create a new webpage",
     "QuickAccess": "quick access",
     "SearchPlaceholder": "Search for tabs or agents..."
   },
@@ -183,45 +128,31 @@
     "AIAgent": "AI Agent",
     "AIAgentDescription": "Manage AI Agent conversation records database",
     "AIAgentDescriptionDetail": "Here you can view and delete the size and location information of the AI Agent conversation records database",
-    "AIModelSelection": "AI Model Selection",
-    "AIModelSelectionDescription": "Select the AI provider and model you want to use",
-    "AITemperature": "Temperature Parameter",
-    "AITemperatureDescription": "Lower values make responses more deterministic and consistent, while higher values make responses more diverse and creative",
     "APIKey": "API Key",
-    "AddCustomModel": "Add Custom Model",
     "AddNewModel": "Add New Model",
     "AddNewProvider": "Add New Provider",
     "AddProvider": "Add Provider",
     "AgentDatabaseDescription": "All AI Agent conversation records are stored in this database, involving only conversations with AI, without affecting Wiki content, occupying {{size}}",
-    "Anthropic": "Anthropic Official Interface",
     "BaseURL": "API Base URL",
     "BaseURLRequired": "API Base URL is required",
-    "Cancel": "Cancel",
+    "Browse": "Browse",
     "CancelAddProvider": "Cancel Adding",
     "ConfigureModelParameters": "configuration parameters",
     "ConfigureProvider": "Configure {{provider}}",
     "ConfirmDeleteAgentDatabase": "Are you sure you want to delete the database containing all AI conversation records? This action cannot be undone.",
-    "CreateCustomModel": "Create Custom Model",
-    "Custom": "Custom Interface",
     "CustomProvider": "Custom Provider",
-    "Deepseek": "DeepSeek Official Interface",
     "DefaultAIModelSelection": "Default AI Model Selection",
     "DefaultAIModelSelectionDescription": "Choose the default AI provider and model to use when not specifically set",
     "DefaultEmbeddingModelSelection": "Default Embedding Model Selection",
     "DefaultEmbeddingModelSelectionDescription": "Choose the default embedding model to use for semantic search and vector operations",
-    "DefaultSpeechModelSelection": "Default Speech Generation Model Selection",
-    "DefaultSpeechModelSelectionDescription": "Choose the default speech generation model to use for text-to-speech operations",
     "DefaultImageGenerationModelSelection": "Default Image Generation Model Selection",
     "DefaultImageGenerationModelSelectionDescription": "Choose the default image generation model to use for creating images from text",
+    "DefaultSpeechModelSelection": "Default Speech Generation Model Selection",
+    "DefaultSpeechModelSelectionDescription": "Choose the default speech generation model to use for text-to-speech operations",
     "DefaultTranscriptionsModelSelection": "Default Transcriptions Model Selection",
     "DefaultTranscriptionsModelSelectionDescription": "Choose the default transcriptions model to use for speech-to-text operations",
-    "WorkflowFile": "Workflow File",
-    "WorkflowFilePath": "Workflow File Path",
-    "WorkflowFileHelp": "Path to the ComfyUI workflow JSON file",
-    "Browse": "Browse",
     "DeleteAgentDatabase": "Delete AI Conversation Database",
-    "DeleteDatabase": "Delete Database",
-    "DeleteProvider": "",
+    "DeleteProvider": "Delete provider",
     "DisabledProviderInfo": "This provider is disabled, and its models will not appear in the model selection list",
     "EnableProvider": "Enable this provider",
     "ExternalAPI": "External API",
@@ -229,16 +160,14 @@
     "ExternalAPIDebugDescription": "When enabled, all API requests and responses will be logged to the database for debugging purposes",
     "ExternalApiDatabaseDescription": "Database containing external API debug information, occupying {{size}}",
     "FailedToAddModel": "Failed to add model",
-    "FailedToUpdateModel": "Failed to update model",
     "FailedToAddProvider": "Failed to add provider",
     "FailedToRemoveModel": "Failed to remove model",
     "FailedToSaveSettings": "Failed to save settings",
-    "FailedToUpdateProviderConfig": "Failed to update provider configuration",
+    "FailedToUpdateModel": "Failed to update model",
     "FailedToUpdateProviderStatus": "Failed to update provider status",
     "MaxTokens": "Maximum generation length",
     "MaxTokensDescription": "The maximum number of characters (measured in tokens) that the model can generate in a single request.",
     "ModelAddedSuccessfully": "Model added successfully",
-    "ModelUpdatedSuccessfully": "Model updated successfully",
     "ModelAlreadyExists": "Model already exists",
     "ModelCaption": "Model Display Name",
     "ModelCaptionHelp": "A friendly name to display in the interface; if left blank, the model name will be used",
@@ -249,403 +178,226 @@
     "ModelParameters": "model parameters",
     "ModelParametersDescription": "Configure the behavior parameters of generative AI models, such as temperature and token limits.",
     "ModelRemovedSuccessfully": "Model removed successfully",
+    "ModelUpdatedSuccessfully": "Model updated successfully",
     "Models": "Available Models",
     "NoPresetSelected": "No preset model selected",
     "NoProvidersAvailable": "No providers available",
-    "Ollama": "Ollama Local Interface",
-    "OpenAICompatible": "OpenAI-Compatible Interface",
     "OpenDatabaseFolder": "Open Database Folder",
-    "Openai": "OpenAI Official Interface",
-    "OrCreateCustom": "Or Create a Custom Model",
-    "Preferences": "Preferences",
-    "PresetBaseURL": "Preset API Base URL, cannot be modified",
     "PresetModels": "Preset Models",
     "PresetProvider": "Preset Provider",
     "ProviderAddedSuccessfully": "Provider added successfully",
     "ProviderAlreadyExists": "Provider name already exists",
     "ProviderClass": "Provider Interface Type",
-    "ProviderConfigUpdated": "Provider configuration updated",
     "ProviderConfiguration": "Provider Configuration",
     "ProviderConfigurationDescription": "Configure the API key and other settings for AI providers",
     "ProviderDisabled": "Provider disabled",
     "ProviderEnabled": "Provider enabled",
     "ProviderName": "Provider Name",
     "ProviderNameRequired": "Provider name is required",
-    "SaveProviderConfig": "Save Provider Configuration",
-    "SearchEmbeddingNoEmbeddingModelError": "",
+    "SearchEmbeddingNoEmbeddingModelError": "Please configure the default embedding model settings in the external API section first.",
     "SelectDefaultProvider": "Select default provider",
-    "SelectEmbeddingModel": "Select Embedding Model",
     "SelectFromPresets": "Select from Preset Models",
     "SelectModel": "Select Model",
-    "SelectProvider": "Select Provider",
     "SettingsSaved": "Settings saved",
     "SystemPrompt": "System Prompt",
     "SystemPromptDescription": "Set the system instructions sent to the AI to define its behavior and capabilities",
     "Temperature": "Temperature",
     "TemperatureDescription": "Lower values produce more deterministic and focused responses, while higher values yield more diverse and creative responses.",
     "TopP": "Top P",
-    "TopPDescription": "Control the randomness of responses. Lower values make responses more deterministic, while higher values allow for greater variability."
+    "TopPDescription": "Control the randomness of responses. Lower values make responses more deterministic, while higher values allow for greater variability.",
+    "WorkflowFile": "Workflow File",
+    "WorkflowFileHelp": "Path to the ComfyUI workflow JSON file",
+    "WorkflowFilePath": "Workflow File Path"
   },
   "Prompt": {
     "AutoRefresh": "Preview auto-refreshes with input text changes",
-    "AutoUpdate": "Auto",
-    "AutoUpdatePreview": "Auto-update preview on form changes",
     "CodeEditor": "Code Editor",
-    "Config": "Configuration",
-    "ConfigurationDescription": "Edit prompt configuration",
-    "EnterEditMode": "Enter Edit Mode",
-    "EnterFullScreen": "Enter Fullscreen",
-    "ExitEditMode": "Exit Edit Mode",
-    "ExitFullScreen": "Exit Fullscreen",
     "Flat": "Flat View",
     "FormEditor": "Form Editor",
     "LastUpdated": "Last updated",
     "Loading": "Loading preview...",
-    "NoConfigFound": "No configuration found",
-    "NoHandlerFound": "No handler found",
-    "NoMessages": "",
+    "NoMessages": "No message available for preview",
     "Preview": "Prompt Preview",
-    "RefreshPreview": "Manually refresh preview",
     "SchemaNotProvided": "Schema Not Provided",
     "SchemaNotProvidedDescription": "No JSON schema was provided or could be fetched. Form cannot be rendered.",
-    "ToggleFullScreen": "Toggle Fullscreen",
     "Tree": "Tree View",
     "ValidationErrors": "Validation Errors"
   },
   "PromptConfig": {
-    "AddItem": "",
-    "EmptyArray": "",
-    "ItemCount": "",
+    "AddItem": "Add project",
+    "EmptyArray": "No items have been added yet. Click the button below to add your first item.",
+    "ItemCount": "{{count}} items",
     "RemoveItem": "Remove item",
     "Tabs": {
-      "PromptDynamicModification": "",
-      "Prompts": "",
-      "Response": "",
-      "ResponseDynamicModification": ""
+      "Prompts": "prompt",
+      "Response": "response"
     },
     "Tags": {
-      "HelperText": "",
-      "NoOptions": "",
-      "Placeholder": ""
+      "HelperText": "Press Enter to add a tag after input, or select from predefined tags.",
+      "NoOptions": "No optional tags",
+      "Placeholder": "Input tags..."
     }
   },
   "Schema": {
     "AIConfig": {
       "Description": "AI Conversation Settings Configuration",
-      "Title": ""
+      "Title": "AI Configuration"
     },
     "AgentConfig": {
       "Description": "Agent Configuration",
       "Id": "Agent Unique Identifier",
-      "IdTitle": "",
+      "IdTitle": "Agent ID",
       "PromptConfig": {
         "Description": "Prompt configuration",
-        "PromptDynamicModification": "Dynamic Modification Configuration List for Prompt Words",
         "Prompts": "Prompt Configuration List",
         "Response": "Response Configuration List",
-        "ResponseDynamicModification": "Dynamically modify the configuration list in response",
-        "Title": ""
+        "Title": "Prompt Configuration"
       },
-      "Title": ""
+      "Title": "Agent Configuration"
     },
     "AutoReroll": {
-      "Description": "Automatically regenerate parameter configuration",
-      "MaxRetry": "Maximum retry attempts",
-      "MaxRetryTitle": "",
-      "Search": "search keywords",
-      "SearchTitle": "",
-      "TargetId": "Target element ID",
-      "TargetIdTitle": "",
-      "Title": ""
     },
     "BaseAPIConfig": {
       "API": "API providers and model configurations",
-      "APITitle": "",
+      "APITitle": "API Configuration",
       "Description": "Basic API Configuration",
       "ModelParameters": "Model parameter configuration",
-      "ModelParametersTitle": "",
-      "Title": ""
+      "ModelParametersTitle": "model parameters",
+      "Title": "Basic API Configuration"
     },
     "DefaultAgents": {
       "Description": "Default Agent Configuration List",
-      "Title": ""
+      "Title": "default intelligent agent"
     },
     "DynamicPosition": {
-      "Description": "Dynamic Position Parameter Configuration",
-      "Title": ""
     },
     "FullReplacement": {
       "Description": "Complete replacement of parameter configuration",
       "SourceType": "source type",
-      "SourceTypeTitle": "",
+      "SourceTypeTitle": "source type",
       "SourceTypes": {
-        "HistoryOfSession": "",
-        "LlmResponse": ""
       },
       "TargetId": "Target Element ID",
-      "TargetIdTitle": "",
-      "Title": ""
+      "TargetIdTitle": "Target ID",
+      "Title": "Fully replace parameters"
     },
     "Function": {
-      "Description": "Function parameter configuration",
-      "FunctionId": "Function ID",
-      "FunctionIdTitle": "",
-      "TimeoutMessage": "timeout message",
-      "TimeoutMessageTitle": "",
-      "TimeoutSecond": "Timeout (seconds)",
-      "TimeoutSecondTitle": "",
-      "Title": "",
-      "Trigger": "Trigger condition",
-      "TriggerTitle": ""
     },
     "HandlerConfig": {
-      "Description": "",
-      "Title": ""
     },
     "JavascriptTool": {
-      "Description": "JavaScript tool parameter configuration",
-      "Title": "",
-      "URI": "JavaScript Tool URI",
-      "URITitle": ""
     },
     "MCP": {
       "Description": "Model Context Protocol Parameter Configuration",
       "Id": "MCP Server ID",
-      "IdTitle": "",
+      "IdTitle": "Server ID",
       "ResponseProcessing": {
-        "Description": "Response Handling Configuration",
-        "Id": "Response Handler ID",
-        "IdTitle": "",
-        "Title": ""
       },
       "TimeoutMessage": "timeout message",
-      "TimeoutMessageTitle": "",
+      "TimeoutMessageTitle": "timeout message",
       "TimeoutSecond": "Timeout (seconds)",
-      "TimeoutSecondTitle": "",
-      "Title": "",
-      "Trigger": "Trigger condition",
-      "TriggerTitle": ""
+      "TimeoutSecondTitle": "timeout period",
+      "Title": "Model Context Protocol Parameters"
     },
     "ModelParameters": {
       "Description": "Model parameter configuration",
       "MaxTokens": "Maximum number of tokens generated",
-      "MaxTokensTitle": "",
+      "MaxTokensTitle": "Maximum token count",
       "SystemPrompt": "Model system prompt words",
-      "SystemPromptTitle": "",
+      "SystemPromptTitle": "System prompt",
       "Temperature": "Response generation temperature (higher = more creative)",
-      "TemperatureTitle": "",
-      "Title": "",
+      "TemperatureTitle": "temperature",
+      "Title": "model parameters",
       "TopP": "Top P sampling parameter",
-      "TopPTitle": ""
+      "TopPTitle": "Top P"
     },
     "Position": {
       "Bottom": "Offset a few messages from the bottom",
-      "BottomTitle": "",
+      "BottomTitle": "bottom offset",
       "Description": "Position Parameter Configuration",
       "TargetId": "target element ID",
-      "TargetIdTitle": "",
-      "Title": "",
-      "Top": "Offset a few messages from the top",
-      "TopTitle": "",
+      "TargetIdTitle": "Target ID",
+      "Title": "positional arguments",
       "Type": "Location Type",
-      "TypeTitle": "",
+      "TypeTitle": "Location Type",
       "Types": {
-        "Absolute": "",
-        "After": "",
-        "Before": "",
-        "Relative": ""
       }
     },
     "Prompt": {
       "Caption": "brief description",
-      "CaptionTitle": "",
+      "CaptionTitle": "description",
       "Children": "The sub-prompt list will be concatenated from top to bottom, and from outer to inner, to form the final prompt text.",
-      "ChildrenTitle": "",
+      "ChildrenTitle": "sub-prompt",
       "Description": "Complete prompt configuration, including type and content",
       "Enabled": "Whether to enable this prompt, only enabled ones will be incorporated into the final prompt.",
-      "EnabledTitle": "",
+      "EnabledTitle": "enable",
       "Id": "The unique identifier for the prompt configuration, facilitating reference via targetId in PromptDynamicModification.",
-      "IdTitle": "",
+      "IdTitle": "ID",
       "Role": "Prompt role for OpenAI-compatible interface",
-      "RoleTitle": "",
+      "RoleTitle": "role",
       "RoleType": {
-        "Assistant": "",
-        "System": "",
-        "User": ""
+        "Assistant": "Assistant - AI's replies and responses",
+        "System": "System - Defines the behavioral rules and background settings for AI",
+        "User": "User - Simulate user input and requests"
       },
       "Tags": "Tag List",
-      "TagsTitle": "",
+      "TagsTitle": "label",
       "Text": "The prompt content can include syntax supported by wiki text, such as <<variable name>>.",
-      "TextTitle": "",
-      "Title": ""
+      "TextTitle": "text",
+      "Title": "prompt"
     },
     "PromptDynamicModification": {
-      "Caption": "brief description",
-      "CaptionTitle": "",
-      "Content": "content",
-      "ContentTitle": "",
-      "Description": "detailed description",
-      "DynamicModificationType": "Dynamically modify types",
-      "DynamicModificationTypeTitle": "",
       "DynamicModificationTypes": {
-        "DynamicPosition": "",
-        "FullReplacement": "",
-        "Function": "",
-        "JavascriptTool": "",
-        "ModelContextProtocol": "",
-        "RetrievalAugmentedGeneration": ""
-      },
-      "DynamicPositionParam": "Dynamic Position Parameters",
-      "DynamicPositionParamTitle": "",
-      "ForbidOverrides": "Is overwriting prohibited?",
-      "ForbidOverridesTitle": "",
-      "FullReplacementParam": "completely replace parameters",
-      "FullReplacementParamTitle": "",
-      "FunctionParam": "function parameters",
-      "FunctionParamTitle": "",
-      "Id": "unique identifier",
-      "IdTitle": "",
-      "JavascriptToolParam": "JavaScript tool parameters",
-      "JavascriptToolParamTitle": "",
-      "MCPParam": "Model Context Protocol Parameters",
-      "MCPParamTitle": "",
-      "RAGParam": "Retrieval-Augmented Generation Parameters",
-      "RAGParamTitle": "",
-      "SchemaDescription": "Dynamic Modification Configuration for Prompt Words",
-      "Title": ""
+      }
     },
     "PromptPart": {
-      "Caption": "A brief description of the prompt",
-      "CaptionTitle": "",
-      "Children": "The list of sub-prompts will be concatenated from top to bottom and from outside to inside to form the final prompt text.",
-      "ChildrenTitle": "",
-      "Description": "Represents a part of the prompt, which can be text or a nested structure.",
-      "Id": "Unique identifier, convenient for referencing via targetId in PromptDynamicModification.",
-      "IdTitle": "",
-      "Tags": "Tag list, used for classification and referencing",
-      "TagsTitle": "",
-      "Text": "The prompt text content can include syntax supported by wiki text, such as <<variable name>>.",
-      "TextTitle": "",
-      "Title": ""
     },
     "ProviderModel": {
       "Description": "Provider and Model Configuration",
       "EmbeddingModel": "Embedding model name for semantic search and vector operations",
       "EmbeddingModelTitle": "Embedding Model",
+      "ImageGenerationModel": "Image generation model name for creating images from text",
+      "ImageGenerationModelTitle": "Image Generation Model",
       "Model": "AI model name",
       "ModelTitle": "Model",
       "Provider": "AI provider name",
       "ProviderTitle": "Provider",
       "SpeechModel": "Speech generation model name for text-to-speech operations",
       "SpeechModelTitle": "Speech Model",
-      "ImageGenerationModel": "Image generation model name for creating images from text",
-      "ImageGenerationModelTitle": "Image Generation Model",
+      "Title": "Provider and Model",
       "TranscriptionsModel": "Transcriptions model name for speech-to-text operations",
-      "TranscriptionsModelTitle": "Transcriptions Model",
-      "Title": "Provider and Model"
+      "TranscriptionsModelTitle": "Transcriptions Model"
     },
     "RAG": {
-      "Description": "Retrieval-Augmented Generation Parameter Configuration",
       "Removal": {
-        "CoolDownChatRound": "Number of cooling rounds since last display",
-        "CoolDownChatRoundTitle": "",
-        "Description": "Remove condition",
-        "ExpireAfterChatRound": "After how many rounds of conversation does it expire",
-        "ExpireAfterChatRoundTitle": "",
-        "Title": ""
       },
-      "SourceType": "source type",
-      "SourceTypeTitle": "",
       "SourceTypes": {
-        "Wiki": ""
-      },
-      "Title": "",
-      "Trigger": "Trigger condition",
-      "TriggerTitle": "",
-      "WikiParam": "Wiki parameters",
-      "WikiParamTitle": ""
+      }
     },
-    "Required": "Required",
     "Response": {
       "Description": "The response from an external API, typically used as the target for dynamic modifications in responses, shares the same structure as the prompt. It can be filled with preset content or serve as a placeholder or container, where ResponseDynamicModification injects the specific content from the external API's response.",
-      "Title": ""
+      "Title": "response"
     },
     "ResponseDynamicModification": {
-      "AutoRerollParam": "Automatically regenerate parameters",
-      "AutoRerollParamTitle": "",
-      "Caption": "brief description",
-      "CaptionTitle": "",
-      "Description": "Dynamic Configuration Modification Response",
-      "DynamicModificationType": "Dynamically modify types",
-      "DynamicModificationTypeTitle": "",
       "DynamicModificationTypes": {
-        "FullReplacement": ""
       },
-      "ForbidOverrides": "Is overwriting prohibited?",
-      "ForbidOverridesTitle": "",
-      "FullReplacementParam": "completely replace parameters",
-      "FullReplacementParamTitle": "",
-      "Id": "unique identifier",
-      "IdTitle": "",
-      "ResponseProcessingType": "Response Processing Type",
-      "ResponseProcessingTypeTitle": "",
       "ResponseProcessingTypes": {
-        "AutoReroll": "",
-        "ToolCalling": ""
-      },
-      "Title": "",
-      "ToolCallingParam": "Tool invocation parameters",
-      "ToolCallingParamTitle": ""
+      }
     },
     "ToolCalling": {
-      "Description": "Tool Invocation Parameter Configuration",
-      "Match": "match pattern",
-      "MatchTitle": "",
-      "TargetId": "target element ID",
-      "TargetIdTitle": "",
-      "Title": ""
     },
     "Trigger": {
-      "Description": "Trigger Condition Configuration",
-      "Filter": "Filter criteria",
-      "FilterTitle": "",
       "Model": {
-        "Description": "Trigger condition based on model judgment",
-        "Preset": "preset model",
-        "PresetTitle": "",
-        "System": "System prompt",
-        "SystemTitle": "",
-        "Title": "",
-        "User": "User prompt",
-        "UserTitle": ""
-      },
-      "RandomChance": "Random trigger probability",
-      "RandomChanceTitle": "",
-      "Search": "search keywords",
-      "SearchTitle": "",
-      "Title": ""
+      }
     },
     "Wiki": {
-      "Description": "Wiki parameter configuration",
-      "Filter": "Filter expressions can utilize the filters supported by TiddlyWiki to extract data from the knowledge base.",
-      "FilterTitle": "",
-      "Title": "",
-      "WorkspaceName": "Workspace name",
-      "WorkspaceNameTitle": ""
     },
     "WikiOperation": {
       "Description": "Execute Tiddler operations (add, delete, or set text) in wiki workspaces",
       "Title": "Wiki Operation",
       "Tool": {
-        "Caption": "Wiki Operation Tool",
-        "Description": "Execute operations (add, delete, or set Tiddler text) in wiki workspaces",
         "Examples": {
-          "add": "",
-          "delete": "",
-          "set": ""
         },
-        "ExamplesTitle": "Usage Examples",
-        "Name": "wiki-operation",
         "Parameters": {
           "extraMeta": {
             "Description": "JSON string of extra metadata such as tags and fields, defaults to \"{}\"",
@@ -671,8 +423,7 @@
             "Description": "Name or ID of the workspace to operate on",
             "Title": "Workspace Name"
           }
-        },
-        "ParametersTitle": "Parameters"
+        }
       },
       "ToolListPosition": {
         "Position": "Position relative to target element (before/after)",
@@ -685,38 +436,46 @@
     },
     "WikiSearch": {
       "Description": "Search for content in TiddlyWiki workspaces using filter expressions",
-      "Filter": "",
-      "FilterTitle": "",
-      "IncludeText": "",
-      "IncludeTextTitle": "",
-      "MaxResults": "",
-      "MaxResultsTitle": "",
-      "SourceType": "",
-      "SourceTypeTitle": "",
-      "Title": "",
+      "SourceType": "Data source type",
+      "SourceTypeTitle": "source type",
+      "Title": "Wiki Search",
       "Tool": {
         "Parameters": {
           "filter": {
-            "Description": "",
-            "Title": ""
+            "Description": "TiddlyWiki Filter Expressions",
+            "Title": "filter"
+          },
+          "limit": {
+            "Description": "Maximum number of results to return",
+            "Title": "limit"
+          },
+          "query": {
+            "Description": "Query text (natural language) used for vector search",
+            "Title": "query"
+          },
+          "searchType": {
+            "Description": "Choose a search mode based on rules or similarity.",
+            "Title": "search type"
+          },
+          "threshold": {
+            "Description": "Similarity threshold (0-1), vector results below this threshold will be filtered.",
+            "Title": "threshold"
           },
           "workspaceName": {
-            "Description": "",
-            "Title": ""
+            "Description": "Workspace name or ID to search for",
+            "Title": "Workspace Name"
           }
         }
       },
       "ToolListPosition": {
-        "Position": "",
-        "PositionTitle": "",
-        "TargetId": "",
-        "TargetIdTitle": ""
+        "Position": "Insertion position relative to the target position",
+        "PositionTitle": "insertion position",
+        "TargetId": "The ID of the target element, the tool list will be inserted relative to this element.",
+        "TargetIdTitle": "Target ID"
       },
-      "ToolListPositionTitle": "",
-      "ToolResultDuration": "",
-      "ToolResultDurationTitle": "",
-      "WorkspaceName": "",
-      "WorkspaceNameTitle": ""
+      "ToolListPositionTitle": "Tool List Location",
+      "ToolResultDuration": "The number of turns during which the tool execution result remains visible in the conversation; after exceeding this number, the result will be displayed grayed out.",
+      "ToolResultDurationTitle": "Tool Result Duration Rounds"
     }
   },
   "Search": {
@@ -730,8 +489,7 @@
     "RecentlyClosedTabs": "Recently closed tabs"
   },
   "SplitView": {
-    "NoTabs": "No tabs in split-screen view",
-    "RemoveFromSplitView": "Remove from split-screen view"
+    "NoTabs": "No tabs in split-screen view"
   },
   "Tab": {
     "Title": {
@@ -768,7 +526,20 @@
       },
       "Success": {
         "Completed": "Wiki search completed successfully. Found {{totalResults}} total results, showing {{shownResults}}:\n\n",
-        "NoResults": "No results found for filter \"{{filter}}\" in wiki workspace \"{{workspaceName}}\""
+        "NoResults": "No results found for filter \"{{filter}}\" in wiki workspace \"{{workspaceName}}\"",
+        "NoVectorResults": "No eligible vector search results were found in the Wiki workspace \"{{workspaceName}}\" (similarity threshold: {{threshold}}).",
+        "VectorCompleted": "Based on vector search, the following related content was found in the workspace {{workspaceName}}:"
+      },
+      "UpdateEmbeddings": {
+        "Error": {
+          "ExecutionFailed": "Failed to generate embedding: {{error}}",
+          "NoAIConfig": "Please configure the AI provider and embedding model first (in Settings).",
+          "WorkspaceNotExist": "Workspace {{workspaceID}} does not exist.",
+          "WorkspaceNotFound": "The workspace name or ID \"{{workspaceName}}\" does not exist. Available workspaces: {{availableWorkspaces}}"
+        },
+        "Success": {
+          "Generated": "The vector embedding index has been successfully generated for the workspace {{workspaceName}}. Total of {{totalNotes}} notes and {{totalEmbeddings}} embeddings."
+        }
       }
     }
   }

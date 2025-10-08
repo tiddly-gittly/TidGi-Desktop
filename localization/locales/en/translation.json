@@ -18,19 +18,15 @@
     "CreateWiki": "Create Wiki: ",
     "ExistedWikiLocation": "Existed Wiki Location",
     "ExtractedWikiFolderName": "Converted WIKI folder name",
-    "GitDefaultBranch": "Git Default Branch",
     "GitDefaultBranchDescription": "The default branch of your Git, Github changed it from master to main after that event",
     "GitEmailDescription": "Email used for Git commit, and is used to count daily activities on Github and other online git services",
     "GitRepoUrl": "Git repo online url",
-    "GitToken": "Git Token",
     "GitTokenDescription": "The credentials used to log in to Git. Will expire after a certain period of time",
     "GitUserNameDescription": "The account name used to log in to Git. Not the nickname",
     "ImportWiki": "Import Wiki: ",
     "LocalWikiHtml": "path to html file",
     "LocalWorkspace": "Local Workspace",
     "LocalWorkspaceDescription": "Only use locally, fully control your own data. TidGi will create a local git backup system for you, allowing you to go back to the previous versions of tiddlers, but all contents will be lost when the local folder is deleted.",
-    "LoginGithubAccount": "Login Github Account",
-    "LogoutGithubAccount": "Log out of Github account",
     "LogoutToGetStorageServiceToken": "Log in to the online storage service to obtain latest credentials",
     "MainPageReloadTip": "<0><0>Try:<1><0>Click <2>Reload</2> button below or press <5>CMD_or_Ctrl + R</5> to reload the page.</0><1>Check the <2>Log Folder</2> to see what happened.</1><2>In the worst case you can still copy to backup the folder on your computer, right click on the workspace icon and select Delete Workspace, then re-import the folder on your computer (or import the previously backed up HTML version of the wiki by dragging the HTML in).</2></1></0></0>",
     "MainPageTipWithSidebar": "<0>Click </0><1>+</1><2> button on the sidebar to start using TiddlyWiki!</2>",
@@ -38,7 +34,6 @@
     "MainWorkspace": "Main Workspace",
     "MainWorkspaceDescription": "Contains TiddlyWiki's configuration files and public content when published as a blog.",
     "MainWorkspaceLocation": "Path of main workspace",
-    "NoGitInfoAlert": "You haven't selected an online Git repo address, or you haven't successfully logged in to your Github account. Click the Create button will create a local wiki that will not be automatically sync to Github. Please be aware.",
     "NotFilled": "Not Filled",
     "NotLoggedIn": "Not logged in",
     "OmitMoreResult": "The list only shows the first {{loadCount}} results",
@@ -52,7 +47,6 @@
     "StartCloningWiki": "Start cloning Wiki",
     "StartCreatingSubWiki": "Start creating sub-wiki",
     "StartLinkingSubWikiToMainWiki": "Start linking sub-Wiki to main-Wiki",
-    "StartUpdatingWorkspace": "Updating workspace",
     "StartUsingTemplateToCreateWiki": "Start creating a wiki with templates",
     "SubWikiCreationCompleted": "Sub Wiki is created",
     "SubWorkspace": "Sub Workspace",
@@ -67,13 +61,11 @@
     "WaitForLogin": "Wait for Login",
     "WikiExisted": "Wiki already exists at this location \"{{newWikiPath}}\"",
     "WikiNotStarted": "Wiki is not started or not loaded",
-    "WikiServerPort": "WIKI server port number (change if there is a conflict, generally the default is OK)",
     "WikiTemplateCopyCompleted": "Copied the template Wiki",
     "WikiTemplateMissing": "Wiki template is missing \"{{TIDDLYWIKI_TEMPLATE_FOLDER_PATH}}\"",
     "WorkspaceFolder": "Location of workspace's folder",
     "WorkspaceFolderNameToCreate": "The name of the new workspace folder",
     "WorkspaceParentFolder": "Parent Folder of workspace's folder",
-    "WorkspaceUpdated": "The workspace is updated and the Wiki is being launching",
     "WorkspaceUserName": "Workspace User Name",
     "WorkspaceUserNameDetail": "The editor name used in the Wiki will be fill in the creator field when the Tiddler is created or edited. The editor name set in the workspace will override the global default editor name assigned in the preferences. This allows you to create Tiddlers with different identities in the same Wiki, with multiple workspace configed with different user name."
   },
@@ -99,7 +91,6 @@
     "Notifications": "Notifications...",
     "OpenCommandPalette": "Open CommandPalette",
     "OpenLinkInBrowser": "Open Link in Browser",
-    "OpenLinkInNewWindow": "Open Link in New Window",
     "OpenTidGi": "Open TidGi",
     "OpenTidGiMenuBar": "Open TidGi MenuBar",
     "OpenWorkspaceInNewWindow": "Open Workspace in New Window",
@@ -115,7 +106,6 @@
     "TidGiWebsite": "TidGi Website"
   },
   "Delete": "Delete",
-  "Description": "Description",
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed, or there is no wiki in this folder! \nDo you want to remove the workspace?",
     "DoNotCare": "No, Never Mind",
@@ -136,7 +126,6 @@
     "StorageServiceUserInfoNoFoundDetail": "Seems you haven't login to Your storage service, so we disable syncing for this wiki.",
     "WorkspaceFolderRemoved": "Workspace folder is moved or is not a wiki folder"
   },
-  "Edit": "Edit",
   "EditWorkspace": {
     "AddExcludedPlugins": "Enter the name of the plugin you want to ignore",
     "AddExcludedPluginsDescription": "You can search for installed plugins in the current wiki, or enter any plugin name.",
@@ -200,9 +189,6 @@
     "WikiRootTiddler": "Wiki Root Tiddler",
     "WikiRootTiddlerDescription": "Wiki's root tiddler determines the core behavior of the system, please read the official documentation to understand before modifying",
     "WikiRootTiddlerItems": {
-      "all": "Load all at once",
-      "lazy-all": "Load images and text on demand",
-      "lazy-images": "Load images on demand"
     }
   },
   "Error": {
@@ -239,16 +225,12 @@
     "ZxNotInitializedErrorDescription": "E-11 The Zx code execution service is not successfully initialized and will automatically try to initialize."
   },
   "ErrorMessage": "Error message",
-  "Hello": "Hello",
   "Help": {
     "Alternatives": "Alternatives",
     "Contribute": "Contribute to this site",
     "Description": "Clicking the \"Open\" button will open the page in a new window. The page needs to be loaded from the Internet for the first time (5s - 1min), so it is not available when the network is disconnected. \nYou can modify the content of the opened page at will as a sandbox playground to try out the learned features. If you want to save the modified results, you can click Tiddlywiki's save button to save it as a single-page wiki in HTML format.",
     "List": "Helps List",
     "Tags": {
-      "Docs": "Docs",
-      "FAQ": "FAQ",
-      "Intro": "Intro"
     }
   },
   "LOG": {
@@ -275,7 +257,6 @@
     "FinishForcePull": "Finish force pull",
     "GitMergeFailed": "Git merge results are not good, there may be loopholes in the merge strategy",
     "GitPushFailed": "Git push result is bad, this usually means there is a network issue.",
-    "GitRepositoryConfigurateFailed": "Git repository configuration failed, see error log for details",
     "GitRepositoryConfigurationFinished": "Git repository is configured",
     "GitTokenExpireOrWrong": "The Git credential (Token) has expired and you need to log in again, or the credential does not correspond to the user name",
     "GitTokenMissing": "Git token missing",
@@ -287,7 +268,6 @@
     "LocalStateBehindSync": "Local state is behind of the cloud, start merging data from the cloud.",
     "LocalStateDivergeRebase": "The local state is divergent from the cloud and begins to rebase (Rebase)",
     "NoNeedToSync": "No need to synchronize, the local state is consistent with the cloud",
-    "NotAGitRepository": "Not a git repository",
     "PerformLastCheckBeforeSynchronizationFinish": "Perform the final check before synchronization ends",
     "PrepareCloneOnlineWiki": "Preparing to import an online wiki.",
     "PrepareSync": "Prepare to synchronize, use the logged-in author information",
@@ -303,12 +283,10 @@
     "StartResettingLocalToRemote": "Start clearing local and override with remote content",
     "SyncFailedSystemError": "Synchronization failed, there may be a problem with the synchronization system",
     "SynchronizationFailed": "Sync failed! \nYou need to use tools such as Github Desktop to check the status of the current Git repository. \nThe failure may be caused by the network. If this is the case, you can try again after adjusting the network.",
-    "SynchronizationFinish": "Synchronization complete",
-    "UsingUrlAndUsername": "Using Git Url {{githubRepoUrl}} with username {{username}} and accessToken {{accessToken}}"
+    "SynchronizationFinish": "Synchronization complete"
   },
   "Menu": {
     "ActualSize": "Actual Size",
-    "Back": "Back",
     "Close": "Close",
     "CurrentWorkspace": "Current Workspace",
     "DeveloperToolsActiveWorkspace": "Open Developer Tools of Active Workspace",
@@ -319,7 +297,6 @@
     "FindMatches": "matches",
     "FindNext": "Find Next",
     "FindPrevious": "Find Previous",
-    "Forward": "Forward",
     "Help": "Help",
     "History": "History",
     "Home": "Home",
@@ -340,7 +317,6 @@
     "ZoomOut": "Zoom Out"
   },
   "No": "No",
-  "Unknown": "Unknown",
   "Open": "Open",
   "Preference": {
     "AlwaysOnTop": "Always on top",
@@ -357,9 +333,12 @@
     "ClearBrowsingData": "Clear Browsing Data (git isn't affected)",
     "ClearBrowsingDataDescription": "Clear cookies, cache, and more",
     "ClearBrowsingDataMessage": "Are you sure? All browsing data will be cleared. This action cannot be undone.",
+    "ConfirmDelete": "Confirm Delete",
+    "ConfirmDeleteExternalApiDatabase": "Are you sure you want to delete the database containing external API debug information? This action cannot be undone.",
     "DarkTheme": "Dark Theme",
     "DefaultUserName": "User Name",
     "DefaultUserNameDetail": "The user name in the Wiki, this only take effect after restart, this will fill in the creator field of the newly created or edited tiddlers. Can be override by user name set in the workspace setting.",
+    "DeleteExternalApiDatabase": "Delete External API Database",
     "DeveloperTools": "Developer Tools",
     "DisableAntiAntiLeech": "Disable Anti-Anti-Leech",
     "DisableAntiAntiLeechDetail": "Enable this option to completely disable anti-anti-leech functionality.",
@@ -388,7 +367,6 @@
     "MoreWorkspaceSyncSettings": "More Workspace Sync Settings",
     "MoreWorkspaceSyncSettingsDescription": "Please right-click the workspace icon, open its workspace setting by click on \"Edit Workspace\" context menu item, and configure its independent synchronization settings in it.",
     "Network": "Network",
-    "NoAttach": "Resume Window Mode",
     "Notifications": "Notifications",
     "NotificationsDetail": "Control notifications pause time",
     "NotificationsDisableSchedule": "Automatically disable notifications by schedule:",
@@ -401,9 +379,6 @@
     "OpenMetaDataFolderDetail": "TiddlyWiki's data and TidGi's workspace metadata are stored separately. TidGi's metadata includes workspace settings, etc., which are stored in this folder in JSON format.",
     "OpenV8CacheFolder": "Open the V8 cache folder",
     "OpenV8CacheFolderDetail": "The V8 cache folder stores cached files that accelerate application startup",
-    "DeleteExternalApiDatabase": "Delete External API Database",
-    "ConfirmDelete": "Confirm Delete",
-    "ConfirmDeleteExternalApiDatabase": "Are you sure you want to delete the database containing external API debug information? This action cannot be undone.",
     "Performance": "Performance",
     "PrivacyAndSecurity": "Privacy & Security",
     "ReceivePreReleaseUpdates": "Receive pre-release updates",
@@ -411,7 +386,6 @@
     "RequireRestart": "Need to restart",
     "Reset": "Are you sure? All preferences will be restored to their original defaults. Browsing data won't be affected. This action cannot be undone.",
     "ResetNow": "Reset Now",
-    "RestartToApplyUpdates": "Restart to Apply Updates",
     "RestorePreferences": "Restore preferences to their original defaults",
     "RunOnBackground": "Run On Background",
     "RunOnBackgroundDetail": "When window is closed, Continue to run in the background without exiting. Quickly restore the window when opening the app again.",
@@ -424,7 +398,6 @@
     "SearchEmbeddingGenerating": "Generating...",
     "SearchEmbeddingLastUpdated": "Last updated: {{time}}",
     "SearchEmbeddingNoAIConfigError": "Please configure AI API settings in the External API section first.",
-    "SearchEmbeddingNoEmbeddingConfigError": "Please configure an embedding model in the External API section first.",
     "SearchEmbeddingStatusCompleted": "{{totalEmbeddings}} embeddings for {{totalNotes}} notes",
     "SearchEmbeddingStatusError": "Error: {{error}}",
     "SearchEmbeddingStatusGenerating": "Generating... ({{completed}}/{{total}})",
@@ -432,8 +405,6 @@
     "SearchEmbeddingUpdate": "Update Embeddings",
     "SearchNoWorkspaces": "No workspaces found",
     "ShareBrowsingData": "Share browsing data (cookies, cache) between workspaces, if this is off, you can login into different 3rd party service in each workspace.",
-    "ShowNavigationBar": "Show navigation bar",
-    "ShowNavigationBarDetail": "Navigation bar on the top lets you go back, forward, home, reload and see the URL.",
     "ShowSideBar": "Show SideBar",
     "ShowSideBarDetail": "Sidebar lets you switch easily between workspaces.",
     "ShowSideBarIcon": "Show sidebar workspace icons",
@@ -477,28 +448,21 @@
     "ExecutingScript": "Executing Script"
   },
   "SideBar": {
-    "CommandPalette": "CmdPal",
     "Preferences": "Pref...",
     "UpdateAvailable": "Update!"
   },
-  "Tags": "Tags",
-  "Title": "Title",
+  "Unknown": "Unknown",
   "Updater": {
     "CheckUpdate": "Check Update",
     "CheckingFailed": "Checking Failed (Network Error)",
     "CheckingForUpdate": "Checking For Update...",
-    "DownloadProgress": "Download Progress",
     "UpdateAvailable": "Update Available!",
-    "UpdateCancelled": "Update Cancelled",
-    "UpdateDownloaded": "Update Downloaded",
-    "UpdateError": "Update Error",
     "UpdateNotAvailable": "You have latest version"
   },
   "WorkspaceSelector": {
     "Add": "Add",
     "Agent": "agent",
     "AreYouSure": "Are you sure you want to remove this workspace? \nRemoving the workspace will delete the workspace in this application, but will not delete the folders from the hard drive. \nBut, if you choose to delete the Wiki folder as well, all contents will be deleted.",
-    "BadWorkspacePath": "There are some problem in your workspace setup",
     "DefaultTiddlers": "Default Tiddlers",
     "EditCurrentWorkspace": "Config Current Workspace",
     "EditWorkspace": "Config Workspace",

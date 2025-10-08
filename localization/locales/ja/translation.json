@@ -1,5 +1,4 @@
 {
-  "Add": "追加",
   "AddWorkspace": {
     "AddFileSystemPath": "サブWikiのFileSystemPathsを追加する",
     "AddWorkspace": "ワークスペースを追加",
@@ -19,19 +18,15 @@
     "CreateWiki": "Wikiを作成: ",
     "ExistedWikiLocation": "既存のWikiの場所",
     "ExtractedWikiFolderName": "変換されたWIKIフォルダ名",
-    "GitDefaultBranch": "Gitデフォルトブランチ",
     "GitDefaultBranchDescription": "Gitのデフォルトブランチ。Githubはそのイベント後にmasterからmainに変更しました",
     "GitEmailDescription": "Gitコミットに使用されるメールアドレスで、GithubなどのオンラインGitサービスでの毎日のアクティビティをカウントするために使用されます",
     "GitRepoUrl": "GitリポジトリのオンラインURL",
-    "GitToken": "Gitトークン",
     "GitTokenDescription": "Gitにログインするために使用される資格情報。一定期間後に期限切れになります",
     "GitUserNameDescription": "Gitにログインするために使用されるアカウント名。ニックネームではありません",
     "ImportWiki": "Wikiをインポート: ",
     "LocalWikiHtml": "htmlファイルへのパス",
     "LocalWorkspace": "ローカルワークスペース",
     "LocalWorkspaceDescription": "ローカルでのみ使用し、データを完全に管理します。TidGiはローカルGitバックアップシステムを作成し、以前のバージョンに戻ることができますが、ローカルフォルダが削除されるとすべての内容が失われます。",
-    "LoginGithubAccount": "Githubアカウントにログイン",
-    "LogoutGithubAccount": "Githubアカウントからログアウト",
     "LogoutToGetStorageServiceToken": "最新の資格情報を取得するためにオンラインストレージサービスにログイン",
     "MainPageReloadTip": "<0><0>試してください：<1><0>下の<2>リロード</2>ボタンをクリックするか、<5>CMDまたはCtrl + R</5>を押してページをリロードします。</0><1><2>ログフォルダ</2>を開いて何が起こったかを確認します。</1><2>最悪の場合でも、コンピュータ上のフォルダをバックアップするためにコピーし、ワークスペースアイコンを右クリックしてワークスペースを削除し、コンピュータ上のフォルダを再インポートすることができます（または、以前にバックアップしたHTMLバージョンのWikiをHTMLにドラッグしてインポートします）。</2></1></0></0>",
     "MainPageTipWithSidebar": "<0>サイドバーの</0><1>+</1><2>ボタンをクリックしてTiddlyWikiを使い始めましょう！</2>",
@@ -39,7 +34,6 @@
     "MainWorkspace": "メインワークスペース",
     "MainWorkspaceDescription": "TiddlyWikiの設定ファイルとブログとして公開されたときの公開コンテンツを含みます。",
     "MainWorkspaceLocation": "メインワークスペースのパス",
-    "NoGitInfoAlert": "オンラインGitリポジトリアドレスを選択していないか、Githubアカウントに正常にログインしていません。作成ボタンをクリックすると、Githubに自動的に同期されないローカルWikiが作成されます。ご注意ください。",
     "NotFilled": "未入力",
     "NotLoggedIn": "ログインしていません",
     "OmitMoreResult": "リストには最初の{{loadCount}}件のみが表示されます",
@@ -53,7 +47,6 @@
     "StartCloningWiki": "Wikiのクローンを開始",
     "StartCreatingSubWiki": "サブWikiの作成を開始",
     "StartLinkingSubWikiToMainWiki": "サブWikiをメインWikiにリンクし始める",
-    "StartUpdatingWorkspace": "ワークスペースを更新中",
     "StartUsingTemplateToCreateWiki": "テンプレートを使用してWikiの作成を開始",
     "SubWikiCreationCompleted": "サブWikiが作成されました",
     "SubWorkspace": "サブワークスペース",
@@ -68,13 +61,11 @@
     "WaitForLogin": "ログインを待っています",
     "WikiExisted": "この場所にWikiが既に存在します \"{{newWikiPath}}\"",
     "WikiNotStarted": "Wikiが開始されていないか、読み込まれていません",
-    "WikiServerPort": "Wikiサーバーポート番号（競合が発生した場合に変更、通常はデフォルトのままでOK）",
     "WikiTemplateCopyCompleted": "テンプレートWikiをコピーしました",
     "WikiTemplateMissing": "Wikiテンプレートがありません \"{{TIDDLYWIKI_TEMPLATE_FOLDER_PATH}}\"",
     "WorkspaceFolder": "ワークスペースフォルダの場所",
     "WorkspaceFolderNameToCreate": "新しいワークスペースフォルダの名前",
     "WorkspaceParentFolder": "ワークスペースフォルダの親フォルダ",
-    "WorkspaceUpdated": "ワークスペースが更新され、Wikiが起動しています",
     "WorkspaceUserName": "ワークスペースユーザー名",
     "WorkspaceUserNameDetail": "Wikiで使用されるエディタ名は、Tiddlerが作成または編集されるときにcreatorフィールドに入力されます。ワークスペースで設定されたエディタ名は、設定で割り当てられたグローバルデフォルトのエディタ名を上書きします。これにより、異なるユーザー名で構成された複数のワークスペースを使用して、同じWikiで異なるアイデンティティでTiddlerを作成できます。"
   },
@@ -100,7 +91,6 @@
     "Notifications": "通知...",
     "OpenCommandPalette": "コマンドパレットを開く",
     "OpenLinkInBrowser": "ブラウザでリンクを開く",
-    "OpenLinkInNewWindow": "リンクを新しいウィンドウで開く",
     "OpenTidGi": "TidGiを開く",
     "OpenTidGiMenuBar": "TidGiメニューバーを開く",
     "OpenWorkspaceInNewWindow": "ワークスペースを新しいウィンドウで開く",
@@ -116,7 +106,6 @@
     "TidGiWebsite": "TidGi公式サイト"
   },
   "Delete": "削除",
-  "Description": "説明",
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "以前そこにあったワークスペースフォルダが見つかりません！\nここに存在するはずのフォルダが移動されたか、このフォルダにWikiがありません！ワークスペースを削除しますか？",
     "DoNotCare": "気にしない",
@@ -137,7 +126,6 @@
     "StorageServiceUserInfoNoFoundDetail": "ストレージサービスにログインしていないようです。このWikiの同期は無効になります。",
     "WorkspaceFolderRemoved": "ワークスペースフォルダが移動されたか、このフォルダはWikiフォルダではありません"
   },
-  "Edit": "編集",
   "EditWorkspace": {
     "AddExcludedPlugins": "無視するプラグイン名を入力",
     "AddExcludedPluginsDescription": "現在のWikiにインストールされているプラグインを検索するか、任意のプラグイン名を入力できます。",
@@ -201,9 +189,6 @@
     "WikiRootTiddler": "WikiルートTiddler",
     "WikiRootTiddlerDescription": "WikiのルートTiddlerはシステムのコア動作を決定します。変更する前に公式ドキュメントを読んで理解してください",
     "WikiRootTiddlerItems": {
-      "all": "一度にすべて読み込む",
-      "lazy-all": "必要に応じて画像とテキストを読み込む",
-      "lazy-images": "必要に応じて画像を読み込む"
     }
   },
   "Error": {
@@ -240,16 +225,12 @@
     "ZxNotInitializedErrorDescription": "E-10 Zx コード実行サービスの初期化に失敗しました。自動的に初期化を試みます。"
   },
   "ErrorMessage": "エラーメッセージ",
-  "Hello": "こんにちは",
   "Help": {
     "Alternatives": "その他のソース",
     "Contribute": "このサイトにコンテンツを提供する",
     "Description": "「開く」ボタンをクリックすると、新しいウィンドウでページが開きます。初回のページ読み込みには5秒から1分かかり、インターネットからのロードが必要です（オフラインでは利用できません）。開いたページの内容は自由に編集可能で、学んだ機能をサンドボックスプレイグラウンドとして試すことができます。変更内容を保存したい場合は、TiddlyWikiの保存ボタンをクリックしてHTML形式の単一ページWikiとして保存してください。",
     "List": "ヘルプリスト",
     "Tags": {
-      "Docs": "ドキュメント",
-      "FAQ": "質問に答える",
-      "Intro": "入門"
     }
   },
   "LOG": {
@@ -276,7 +257,6 @@
     "FinishForcePull": "強制プル完了",
     "GitMergeFailed": "Gitマージの結果が良くありません。マージ戦略に欠陥がある可能性があります",
     "GitPushFailed": "Gitプッシュの結果が良くありません。通常、ネットワークの問題を意味します。",
-    "GitRepositoryConfigurateFailed": "Gitリポジトリの設定に失敗しました。エラーログを参照してください",
     "GitRepositoryConfigurationFinished": "Gitリポジトリの設定が完了しました",
     "GitTokenExpireOrWrong": "Gitの認証情報（Token）が期限切れです。再度ログインするか、認証情報とユーザー名が一致していません。",
     "GitTokenMissing": "Git 認証情報（Token）が不足しています",
@@ -288,7 +268,6 @@
     "LocalStateBehindSync": "ローカルの状態がクラウドより遅れているため、クラウドデータをマージします",
     "LocalStateDivergeRebase": "ローカルの状態がクラウドと分岐しているため、リベースを開始します",
     "NoNeedToSync": "同期の必要はありません。ローカルの状態はクラウドと一致しています",
-    "NotAGitRepository": "Gitリポジトリではありません",
     "PerformLastCheckBeforeSynchronizationFinish": "同期終了前の最終チェックを実行します",
     "PrepareCloneOnlineWiki": "オンラインWikiのインポートを準備しています",
     "PrepareSync": "同期の準備をしています。ログインした著者情報を使用します",
@@ -304,12 +283,10 @@
     "StartResettingLocalToRemote": "ローカルをクリアし、リモートコンテンツで上書きを開始します",
     "SyncFailedSystemError": "同期に失敗しました。同期システムに問題がある可能性があります",
     "SynchronizationFailed": "同期に失敗しました！\nGithub Desktopなどのツールを使用して現在のGitリポジトリの状態を確認し、競合を手動で解決してください。",
-    "SynchronizationFinish": "同期完了",
-    "UsingUrlAndUsername": "Git URL {{githubRepoUrl}} とユーザー名 {{username}}、アクセストークン {{accessToken}} を使用する"
+    "SynchronizationFinish": "同期完了"
   },
   "Menu": {
     "ActualSize": "実際のサイズ",
-    "Back": "戻る",
     "Close": "閉じる",
     "CurrentWorkspace": "現在のワークスペース",
     "DeveloperToolsActiveWorkspace": "アクティブなワークスペースの開発者ツールを開く",
@@ -320,7 +297,6 @@
     "FindMatches": "一致",
     "FindNext": "次を検索",
     "FindPrevious": "前を検索",
-    "Forward": "進む",
     "Help": "ヘルプ",
     "History": "履歴",
     "Home": "ホーム",
@@ -388,7 +364,6 @@
     "MoreWorkspaceSyncSettings": "さらに多くのワークスペース同期設定",
     "MoreWorkspaceSyncSettingsDescription": "ワークスペースアイコンを右クリックし、右クリックメニューから「ワークスペースの編集」を選択して、ワークスペース設定を開いてください。そこで各ワークスペースの同期設定を行います。",
     "Network": "ネットワーク",
-    "NoAttach": "ウィンドウモードに戻す",
     "Notifications": "通知",
     "NotificationsDetail": "通知一時停止時間を設定",
     "NotificationsDisableSchedule": "時間による通知の自動無効化：",
@@ -408,14 +383,11 @@
     "RequireRestart": "再起動が必要",
     "Reset": "本気ですか？すべての設定が元のデフォルトに復元されます。閲覧データは影響を受けません。このアクションは元に戻せません。",
     "ResetNow": "今すぐリセット",
-    "RestartToApplyUpdates": "変更を有効にするために再起動してください",
     "RestorePreferences": "すべての設定を元のデフォルト値にリセットする",
     "RunOnBackground": "バックグラウンドで実行を維持する",
     "RunOnBackgroundDetail": "ウィンドウを閉じても終了せず、バックグラウンドで動作を継続します。再度アプリを開くと、すばやくウィンドウが復元されます。",
     "RunOnBackgroundDetailNotMac": "太記の小窓を開くことをお勧めします。これにより、メニューバー/タスクバーのアイコンからウィンドウを再び開くことができます。",
     "ShareBrowsingData": "ワークスペース間でブラウザデータ（クッキー、キャッシュなど）を共有し、閉じた後は各ワークスペースで異なるサードパーティサービスのアカウントにログインできます。",
-    "ShowNavigationBar": "ナビゲーションバーを表示する",
-    "ShowNavigationBarDetail": "上部のナビゲーションバーには、進む、戻る、ホームに戻る、再読み込み、および現在のウェブページのURLを表示する機能があります。",
     "ShowSideBar": "サイドバーを表示",
     "ShowSideBarDetail": "サイドバーを使用すると、ワークスペース間を素早く切り替えることができます。",
     "ShowSideBarIcon": "サイドバーワークスペースアイコンを表示する",
@@ -459,28 +431,20 @@
     "ExecutingScript": "スクリプトを実行中です"
   },
   "SideBar": {
-    "CommandPalette": "コマンドパレット",
     "Preferences": "設定...",
     "UpdateAvailable": "更新があります！"
   },
-  "Tags": "ラベル",
-  "Title": "タイトル",
   "Updater": {
     "CheckUpdate": "更新を確認",
     "CheckingFailed": "更新の確認に失敗しました（ネットワークエラー）",
     "CheckingForUpdate": "更新を確認中...",
-    "DownloadProgress": "ダウンロード進行中",
     "UpdateAvailable": "新しいバージョンがあります！",
-    "UpdateCancelled": "更新がキャンセルされました",
-    "UpdateDownloaded": "更新がダウンロードされました",
-    "UpdateError": "更新エラー",
     "UpdateNotAvailable": "最新バージョンです"
   },
   "WorkspaceSelector": {
     "Add": "追加",
     "Agent": "エージェント",
     "AreYouSure": "このワークスペースを削除してもよろしいですか？\nワークスペースを削除すると、このアプリケーション内のワークスペースが削除されますが、ハードドライブからフォルダは削除されません。\nただし、Wikiフォルダも削除することを選択した場合、すべての内容が削除されます。",
-    "BadWorkspacePath": "ワークスペースの設定に問題があります",
     "DefaultTiddlers": "デフォルトのTiddlers",
     "EditCurrentWorkspace": "現在のワークスペースを編集",
     "EditWorkspace": "ワークスペースを編集",

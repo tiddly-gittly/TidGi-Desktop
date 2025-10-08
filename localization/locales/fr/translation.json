@@ -1,5 +1,4 @@
 {
-  "Add": "Ajouter",
   "AddWorkspace": {
     "AddFileSystemPath": "Ajout de chemins de système de fichiers pour le sous-wiki",
     "AddWorkspace": "Ajouter un espace de travail",
@@ -19,19 +18,15 @@
     "CreateWiki": "Créer un Wiki : ",
     "ExistedWikiLocation": "Emplacement du Wiki existant",
     "ExtractedWikiFolderName": "Nom du dossier WIKI converti",
-    "GitDefaultBranch": "Branche par défaut de Git",
     "GitDefaultBranchDescription": "La branche par défaut de votre Git, Github l'a changée de master à main après cet événement",
     "GitEmailDescription": "E-mail utilisé pour les commits Git, et est utilisé pour compter les activités quotidiennes sur Github et d'autres services git en ligne",
     "GitRepoUrl": "URL du dépôt Git en ligne",
-    "GitToken": "Jeton Git",
     "GitTokenDescription": "Les informations d'identification utilisées pour se connecter à Git. Expirera après une certaine période",
     "GitUserNameDescription": "Le nom de compte utilisé pour se connecter à Git. Pas le surnom",
     "ImportWiki": "Importer un Wiki : ",
     "LocalWikiHtml": "chemin vers le fichier html",
     "LocalWorkspace": "Espace de travail local",
     "LocalWorkspaceDescription": "Utilisation uniquement locale, contrôle total de vos propres données. TidGi créera un système de sauvegarde git local pour vous, vous permettant de revenir aux versions précédentes des tiddlers, mais tout le contenu sera perdu lorsque le dossier local sera supprimé.",
-    "LoginGithubAccount": "Se connecter au compte Github",
-    "LogoutGithubAccount": "Se déconnecter du compte Github",
     "LogoutToGetStorageServiceToken": "Se connecter au service de stockage en ligne pour obtenir les dernières informations d'identification",
     "MainPageReloadTip": "<0><0>Essayez :<1><0>Cliquez sur le bouton <2>Recharger</2> ci-dessous ou appuyez sur <5>CMD_or_Ctrl + R</5> pour recharger la page.</0><1>Vérifiez le <2>Dossier de journal</2> pour voir ce qui s'est passé.</1><2>Dans le pire des cas, vous pouvez toujours copier pour sauvegarder le dossier sur votre ordinateur, cliquez avec le bouton droit sur l'icône de l'espace de travail et sélectionnez Supprimer l'espace de travail, puis réimportez le dossier sur votre ordinateur (ou importez la version HTML précédemment sauvegardée du wiki en faisant glisser le HTML dedans).</2></1></0></0>",
     "MainPageTipWithSidebar": "<0>Cliquez </0><1>+</1><2> bouton sur la barre latérale pour commencer à utiliser TiddlyWiki !</2>",
@@ -39,7 +34,6 @@
     "MainWorkspace": "Espace de travail principal",
     "MainWorkspaceDescription": "Contient les fichiers de configuration de TiddlyWiki et le contenu public lorsqu'il est publié en tant que blog.",
     "MainWorkspaceLocation": "Chemin de l'espace de travail principal",
-    "NoGitInfoAlert": "Vous n'avez pas sélectionné d'adresse de dépôt Git en ligne, ou vous ne vous êtes pas connecté avec succès à votre compte Github. Cliquer sur le bouton Créer créera un wiki local qui ne sera pas automatiquement synchronisé avec Github. Veuillez en être conscient.",
     "NotFilled": "Non rempli",
     "NotLoggedIn": "Non connecté",
     "OmitMoreResult": "La liste ne montre que les {{loadCount}} premiers résultats",
@@ -53,7 +47,6 @@
     "StartCloningWiki": "Commencer à cloner le Wiki",
     "StartCreatingSubWiki": "Commencer à créer le sous-wiki",
     "StartLinkingSubWikiToMainWiki": "Commencer à lier le sous-wiki au Wiki principal",
-    "StartUpdatingWorkspace": "Mise à jour de l'espace de travail",
     "StartUsingTemplateToCreateWiki": "Commencer à créer un wiki avec des modèles",
     "SubWikiCreationCompleted": "Le sous-wiki est créé",
     "SubWorkspace": "Espace de travail secondaire",
@@ -68,13 +61,11 @@
     "WaitForLogin": "Attendre la connexion",
     "WikiExisted": "Le Wiki existe déjà à cet emplacement \"{{newWikiPath}}\"",
     "WikiNotStarted": "Le Wiki n'est pas démarré ou n'est pas chargé",
-    "WikiServerPort": "Numéro de port du serveur WIKI (changer en cas de conflit, généralement la valeur par défaut est correcte)",
     "WikiTemplateCopyCompleted": "Le modèle Wiki a été copié",
     "WikiTemplateMissing": "Le modèle Wiki est manquant \"{{TIDDLYWIKI_TEMPLATE_FOLDER_PATH}}\"",
     "WorkspaceFolder": "Emplacement du dossier de l'espace de travail",
     "WorkspaceFolderNameToCreate": "Nom du nouveau dossier de l'espace de travail",
     "WorkspaceParentFolder": "Dossier parent du dossier de l'espace de travail",
-    "WorkspaceUpdated": "L'espace de travail est mis à jour et le Wiki est en cours de lancement",
     "WorkspaceUserName": "Nom d'utilisateur de l'espace de travail",
     "WorkspaceUserNameDetail": "Le nom de l'éditeur utilisé dans le Wiki sera rempli dans le champ créateur lorsque le Tiddler est créé ou modifié. Le nom de l'éditeur défini dans l'espace de travail remplacera le nom de l'éditeur par défaut global attribué dans les préférences. Cela vous permet de créer des Tiddlers avec différentes identités dans le même Wiki, avec plusieurs espaces de travail configurés avec des noms d'utilisateur différents."
   },
@@ -100,7 +91,6 @@
     "Notifications": "Notifications...",
     "OpenCommandPalette": "Ouvrir la palette de commandes",
     "OpenLinkInBrowser": "Ouvrir le lien dans le navigateur",
-    "OpenLinkInNewWindow": "Ouvrir le lien dans une nouvelle fenêtre",
     "OpenTidGi": "Ouvrir TidGi",
     "OpenTidGiMenuBar": "Ouvrir la barre de menu TidGi",
     "OpenWorkspaceInNewWindow": "Ouvrir l'espace de travail dans une nouvelle fenêtre",
@@ -116,7 +106,6 @@
     "TidGiWebsite": "Site web TidGi"
   },
   "Delete": "Supprimer",
-  "Description": "Description",
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Impossible de trouver le dossier de l'espace de travail qui était encore là avant ! \nLes dossiers qui devraient exister ici ont peut-être été supprimés, ou il n'y a pas de wiki dans ce dossier ! \nVoulez-vous supprimer l'espace de travail ?",
     "DoNotCare": "Non, peu importe",
@@ -137,7 +126,6 @@
     "StorageServiceUserInfoNoFoundDetail": "Il semble que vous ne vous soyez pas connecté à votre service de stockage, nous désactivons donc la synchronisation pour ce wiki.",
     "WorkspaceFolderRemoved": "Le dossier de l'espace de travail est déplacé ou n'est pas un dossier wiki"
   },
-  "Edit": "Modifier",
   "EditWorkspace": {
     "AddExcludedPlugins": "Entrez le nom du plugin que vous souhaitez ignorer",
     "AddExcludedPluginsDescription": "Vous pouvez rechercher des plugins installés dans le wiki actuel, ou entrer n'importe quel nom de plugin.",
@@ -201,9 +189,6 @@
     "WikiRootTiddler": "Tiddler racine du Wiki",
     "WikiRootTiddlerDescription": "Le tiddler racine du Wiki détermine le comportement de base du système, veuillez lire la documentation officielle pour comprendre avant de modifier",
     "WikiRootTiddlerItems": {
-      "all": "Tout charger en une fois",
-      "lazy-all": "Charger les images et le texte à la demande",
-      "lazy-images": "Charger les images à la demande"
     }
   },
   "Error": {
@@ -240,16 +225,12 @@
     "ZxNotInitializedErrorDescription": "E-11 Le service d'exécution de code Zx n'est pas initialisé avec succès et essaiera automatiquement de s'initialiser."
   },
   "ErrorMessage": "Message d'erreur",
-  "Hello": "Bonjour",
   "Help": {
     "Alternatives": "Alternatives",
     "Contribute": "Contribuer à ce site",
     "Description": "Cliquer sur le bouton \"Ouvrir\" ouvrira la page dans une nouvelle fenêtre. La page doit être chargée depuis Internet pour la première fois (5s - 1min), elle n'est donc pas disponible lorsque le réseau est déconnecté. \nVous pouvez modifier le contenu de la page ouverte à volonté comme un terrain de jeu sandbox pour essayer les fonctionnalités apprises. Si vous souhaitez enregistrer les résultats modifiés, vous pouvez cliquer sur le bouton d'enregistrement de Tiddlywiki pour l'enregistrer en tant que wiki à page unique au format HTML.",
     "List": "Liste des aides",
     "Tags": {
-      "Docs": "Docs",
-      "FAQ": "FAQ",
-      "Intro": "Intro"
     }
   },
   "LOG": {
@@ -276,7 +257,6 @@
     "FinishForcePull": "Pull forcé terminé",
     "GitMergeFailed": "Les résultats de la fusion Git ne sont pas bons, il peut y avoir des failles dans la stratégie de fusion",
     "GitPushFailed": "Le résultat du push Git est mauvais, cela signifie généralement qu'il y a un problème de réseau.",
-    "GitRepositoryConfigurateFailed": "La configuration du dépôt Git a échoué, voir le journal des erreurs pour plus de détails",
     "GitRepositoryConfigurationFinished": "Le dépôt Git est configuré",
     "GitTokenExpireOrWrong": "Le jeton Git a expiré et vous devez vous reconnecter, ou le jeton ne correspond pas au nom d'utilisateur",
     "GitTokenMissing": "Jeton Git manquant",
@@ -288,7 +268,6 @@
     "LocalStateBehindSync": "L'état local est en retard par rapport au cloud, commence à fusionner les données du cloud.",
     "LocalStateDivergeRebase": "L'état local diverge du cloud et commence à rebaser (Rebase)",
     "NoNeedToSync": "Pas besoin de synchroniser, l'état local est cohérent avec le cloud",
-    "NotAGitRepository": "Ce n'est pas un dépôt git",
     "PerformLastCheckBeforeSynchronizationFinish": "Effectuer la dernière vérification avant la fin de la synchronisation",
     "PrepareCloneOnlineWiki": "Préparation à l'importation d'un wiki en ligne.",
     "PrepareSync": "Préparation à la synchronisation, utilisation des informations d'auteur connectées",
@@ -304,12 +283,10 @@
     "StartResettingLocalToRemote": "Commencer à effacer le local et remplacer par le contenu distant",
     "SyncFailedSystemError": "La synchronisation a échoué, il peut y avoir un problème avec le système de synchronisation",
     "SynchronizationFailed": "La synchronisation a échoué ! \nVous devez utiliser des outils tels que Github Desktop pour vérifier l'état du dépôt Git actuel. \nL'échec peut être causé par le réseau. Si c'est le cas, vous pouvez réessayer après avoir ajusté le réseau.",
-    "SynchronizationFinish": "Synchronisation terminée",
-    "UsingUrlAndUsername": "Utilisation de l'URL Git {{githubRepoUrl}} avec le nom d'utilisateur {{username}} et le jeton d'accès {{accessToken}}"
+    "SynchronizationFinish": "Synchronisation terminée"
   },
   "Menu": {
     "ActualSize": "Taille réelle",
-    "Back": "Retour",
     "Close": "Fermer",
     "CurrentWorkspace": "Espace de travail actuel",
     "DeveloperToolsActiveWorkspace": "Ouvrir les outils de développement de l'espace de travail actif",
@@ -320,7 +297,6 @@
     "FindMatches": "correspondances",
     "FindNext": "Trouver suivant",
     "FindPrevious": "Trouver précédent",
-    "Forward": "Avancer",
     "Help": "Aide",
     "History": "Historique",
     "Home": "Accueil",
@@ -357,7 +333,7 @@
     "ClearBrowsingData": "Effacer les données de navigation (git n'est pas affecté)",
     "ClearBrowsingDataDescription": "Effacer les cookies, le cache, et plus",
     "ClearBrowsingDataMessage": "Êtes-vous sûr ? Toutes les données de navigation seront effacées. Cette action ne peut pas être annulée.",
-    "ConfirmDeleteExternalApiDatabase": "",
+    "ConfirmDeleteExternalApiDatabase": "Êtes-vous sûr de vouloir supprimer la base de données contenant les informations de débogage d'API externes ? Cette action est irréversible.",
     "DarkTheme": "Thème sombre",
     "DefaultUserName": "Nom d'utilisateur",
     "DefaultUserNameDetail": "Le nom d'utilisateur dans le Wiki, cela ne prend effet qu'après redémarrage, cela remplira le champ créateur des tiddlers nouvellement créés ou modifiés. Peut être remplacé par le nom d'utilisateur défini dans les paramètres de l'espace de travail.",
@@ -389,7 +365,6 @@
     "MoreWorkspaceSyncSettings": "Plus de paramètres de synchronisation de l'espace de travail",
     "MoreWorkspaceSyncSettingsDescription": "Veuillez cliquer avec le bouton droit sur l'icône de l'espace de travail, ouvrir ses paramètres d'espace de travail en cliquant sur l'élément de menu contextuel \"Modifier l'espace de travail\", et configurer ses paramètres de synchronisation indépendants.",
     "Network": "Réseau",
-    "NoAttach": "Reprendre le mode fenêtre",
     "Notifications": "Notifications",
     "NotificationsDetail": "Contrôler le temps de pause des notifications",
     "NotificationsDisableSchedule": "Désactiver automatiquement les notifications selon un horaire :",
@@ -409,14 +384,11 @@
     "RequireRestart": "Nécessite un redémarrage",
     "Reset": "Êtes-vous sûr ? Toutes les préférences seront réinitialisées à leurs valeurs par défaut d'origine. Les données de navigation ne seront pas affectées. Cette action ne peut pas être annulée.",
     "ResetNow": "Réinitialiser maintenant",
-    "RestartToApplyUpdates": "Redémarrer pour appliquer les mises à jour",
     "RestorePreferences": "Restaurer les préférences à leurs valeurs par défaut d'origine",
     "RunOnBackground": "Exécuter en arrière-plan",
     "RunOnBackgroundDetail": "Lorsque la fenêtre est fermée, continuer à s'exécuter en arrière-plan sans quitter. Restaurer rapidement la fenêtre lors de la réouverture de l'application.",
     "RunOnBackgroundDetailNotMac": "Recommandé d'activer Attacher à la barre des tâches. Vous pouvez ainsi restaurer la fenêtre en l'utilisant.",
     "ShareBrowsingData": "Partager les données de navigation (cookies, cache) entre les espaces de travail, si cette option est désactivée, vous pouvez vous connecter à différents services tiers dans chaque espace de travail.",
-    "ShowNavigationBar": "Afficher la barre de navigation",
-    "ShowNavigationBarDetail": "La barre de navigation en haut vous permet de revenir en arrière, d'avancer, d'aller à la page d'accueil, de recharger et de voir l'URL.",
     "ShowSideBar": "Afficher la barre latérale",
     "ShowSideBarDetail": "La barre latérale vous permet de basculer facilement entre les espaces de travail.",
     "ShowSideBarIcon": "Afficher les icônes des espaces de travail dans la barre latérale",
@@ -460,28 +432,20 @@
     "ExecutingScript": "Exécution du script"
   },
   "SideBar": {
-    "CommandPalette": "CmdPal",
     "Preferences": "Préférences...",
     "UpdateAvailable": "Mise à jour !"
   },
-  "Tags": "Étiquettes",
-  "Title": "Titre",
   "Updater": {
     "CheckUpdate": "Vérifier les mises à jour",
     "CheckingFailed": "Échec de la vérification (erreur réseau)",
     "CheckingForUpdate": "Vérification des mises à jour...",
-    "DownloadProgress": "Progression du téléchargement",
     "UpdateAvailable": "Mise à jour disponible !",
-    "UpdateCancelled": "Mise à jour annulée",
-    "UpdateDownloaded": "Mise à jour téléchargée",
-    "UpdateError": "Erreur de mise à jour",
     "UpdateNotAvailable": "Vous avez la dernière version"
   },
   "WorkspaceSelector": {
     "Add": "Ajouter",
     "Agent": "agent",
     "AreYouSure": "Êtes-vous sûr de vouloir supprimer cet espace de travail ? \nLa suppression de l'espace de travail supprimera l'espace de travail dans cette application, mais ne supprimera pas les dossiers du disque dur. \nMais, si vous choisissez de supprimer également le dossier Wiki, tout le contenu sera supprimé.",
-    "BadWorkspacePath": "Il y a un problème dans la configuration de votre espace de travail",
     "DefaultTiddlers": "Tiddlers par défaut",
     "EditCurrentWorkspace": "Configurer l'espace de travail actuel",
     "EditWorkspace": "Configurer l'espace de travail",

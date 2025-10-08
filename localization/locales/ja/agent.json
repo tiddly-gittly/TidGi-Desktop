@@ -1,27 +1,26 @@
 {
   "APILogs": {
-    "CurrentAgent": "",
-    "Description": "",
-    "ErrorDetails": "",
-    "NoLogs": "",
-    "NoResponse": "",
-    "RequestDetails": "",
-    "ResponseContent": "",
-    "ResponseMetadata": "",
-    "StatusCancel": "",
-    "StatusDone": "",
-    "StatusError": "",
-    "StatusStart": "",
-    "StatusUpdate": "",
-    "Title": ""
+    "CurrentAgent": "エージェントログを表示: {{agentId}}",
+    "Description": "このインテリジェントエージェントの外部API呼び出しデバッグログ。設定で「外部APIデバッグ」を有効にして記録を開始します。",
+    "ErrorDetails": "エラーの詳細",
+    "NoLogs": "このエージェントのAPIログが見つかりません",
+    "NoResponse": "応答なし",
+    "RequestDetails": "リクエストの詳細",
+    "ResponseContent": "レスポンス内容",
+    "ResponseMetadata": "応答メタデータ",
+    "StatusCancel": "キャンセル済み",
+    "StatusDone": "完了",
+    "StatusError": "エラー",
+    "StatusStart": "開始しました",
+    "StatusUpdate": "処理中",
+    "Title": "API デバッグログ"
   },
-  "Add": "追加",
   "Agent": {
-    "EditTitle": "",
-    "InvalidTabType": "",
-    "LoadingChat": "",
-    "StartConversation": "",
-    "Untitled": ""
+    "EditTitle": "編集エージェント名",
+    "InvalidTabType": "無効なタブタイプです。チャットタブが必要です。",
+    "LoadingChat": "会話を読み込んでいます...",
+    "StartConversation": "会話を開始する",
+    "Untitled": "無題"
   },
   "Browser": {
     "Back": "後退",
@@ -34,51 +33,20 @@
     "RenderPlaceholder": "これはウェブページのレンダリング領域です"
   },
   "Chat": {
-    "AiReplyPlaceholder": "私はあなたのリクエストを処理中です...",
     "Cancel": "キャンセル",
-    "ChangeMetadata": "メタデータを変更",
     "ConfigError": {
-      "AuthenticationFailed": "{{provider}}の認証に失敗しました。設定を確認してください。",
-      "GeneralError": "{{provider}}の設定に問題があります。設定を確認してください。",
       "GoToSettings": "設定へ移動",
-      "MissingAPIKey": "この機能を使用するには{{provider}}のAPIキーが必要です。",
-      "MissingBaseURL": "この機能を使用するには{{provider}}のベースURLが必要です。",
-      "MissingProviderError": "プロバイダー設定が不足しています。設定を確認してください。",
-      "ModelNotFound": "{{provider}}のモデルが見つかりません。設定を確認してください。",
-      "ProviderNotFound": "プロバイダー{{provider}}が見つかりません。設定を確認してください。",
-      "RateLimitExceeded": "{{provider}}のレート制限を超過しました。後でもう一度お試しください。",
       "Title": "設定の問題"
     },
-    "EmptyStateDescription": "新しいセッションを作成するか、左から既存のセッションを選択して会話を開始してください。",
-    "Error": "会話エラー",
     "InputPlaceholder": "メッセージを入力、Ctrl+Enterで送信",
-    "Loading": "会話を読み込み中",
-    "NewSession": "新しいセッション",
-    "OpenInWorkspaceTiddler": "{{workspace}}ワークスペースで{{title}}を開く",
     "Send": "送信",
-    "Session": "セッション",
     "SessionGroup": {
-      "Older": "以前",
-      "Today": "今日",
-      "Yesterday": "昨日"
-    },
-    "StartConversation": "新しい会話を開始する",
-    "StartNewConversation": "新しい会話を始める",
-    "Thinking": "考え中...",
-    "TypePlaceholder": "入力メッセージ...",
-    "Typing": "入力中...",
-    "Use": "使用",
-    "WaitingForResponse": "応答を待っています..."
+    }
   },
   "Common": {
-    "Apply": "",
-    "Applying": "",
-    "Save": "",
-    "Saving": ""
   },
   "ContextMenu": {
     "AddToCurrentSplitView": "現在の分割画面に追加",
-    "AddToSplitView": "サイドバイサイドビューに追加",
     "Close": "閉じる",
     "CloseAbove": "上のタブを閉じる",
     "CloseBelow": "下のタブを閉じる",
@@ -93,78 +61,108 @@
     "RestoreClosed": "閉じたタブを復元する",
     "Unpin": "ピン留めを解除"
   },
+  "CreateAgent": {
+    "AgentName": "エージェント名",
+    "AgentNameHelper": "あなたのエージェントに説明的な名前を付けます",
+    "AgentNamePlaceholder": "インテリジェントエージェント名を入力...",
+    "Back": "前のステップ",
+    "CreatingPreview": "プレビューエージェントを作成中...",
+    "EditPrompt": "編集プロンプト",
+    "EditPromptDescription": "カスタマイズ可能なインテリジェントエージェントのシステムプロンプトと動作",
+    "ImmediateUse": "テストして使用する",
+    "ImmediateUseDescription": "あなたのエージェントをテストしてすぐに使い始めましょう",
+    "Next": "次のステップ",
+    "NoTemplateSelected": "まずテンプレートを選択してください",
+    "Preview": "（プレビュー）",
+    "SaveAndUse": "保存してエージェントを使用する",
+    "SearchTemplates": "検索エージェントテンプレート...",
+    "SelectTemplate": "テンプレートを選択",
+    "SelectTemplateDescription": "既存のスマートエージェントを開始テンプレートとして選択する",
+    "SelectedTemplate": "選択されたテンプレート",
+    "SetupAgent": "エージェントを設定する",
+    "SetupAgentDescription": "あなたのエージェントに名前を付け、テンプレートを出発点として選択してください",
+    "Title": "新しいインテリジェントエージェントを作成する"
+  },
+  "EditAgent": {
+    "AgentDescriptionHelper": "あなたのエージェントの機能と用途を説明してください",
+    "AgentDescriptionPlaceholder": "入力エージェントの説明...",
+    "AgentName": "エージェント名",
+    "AgentNameHelper": "あなたのエージェントに説明的な名前を付けます",
+    "AgentNamePlaceholder": "インテリジェントエージェント名を入力...",
+    "AgentNotFound": "エージェントが見つかりません",
+    "EditBasic": "基本情報を編集",
+    "EditBasicDescription": "エージェントの基本情報を編集する",
+    "EditPrompt": "編集プロンプト",
+    "EditPromptDescription": "カスタマイズ可能なインテリジェントエージェントのシステムプロンプトと動作",
+    "ImmediateUse": "テストして使用する",
+    "ImmediateUseDescription": "あなたのエージェントをテストしてすぐに使い始めましょう",
+    "Loading": "読み込み中...",
+    "LoadingPromptConfig": "プロンプト設定を読み込み中...",
+    "PreviewChat": "チャットをプレビュー",
+    "Save": "保存",
+    "Saving": "保存中...",
+    "Title": "編集エージェントの定義"
+  },
   "ModelFeature": {
-    "Embedding": "埋め込み",
-    "ImageGeneration": "画像生成",
-    "Language": "言語",
-    "Reasoning": "推論",
-    "ToolCalling": "ツール呼び出し",
-    "Vision": "ビジョン"
   },
   "ModelSelector": {
-    "Model": "",
-    "NoModelSelected": "",
-    "SelectModel": "",
-    "Title": ""
+    "Model": "モデル",
+    "NoModelSelected": "モデルが選択されていません",
+    "SelectModel": "モデルを選択",
+    "Title": "モデル選択"
   },
   "NewTab": {
-    "CodeTools": "コードツール",
-    "CreateDefaultAgent": "",
-    "Explore": "探求",
-    "Favorites": "お気に入り",
-    "NewChat": "新しい会話",
+    "CreateDefaultAgent": "デフォルトエージェントを作成する",
+    "CreateInstance": "インスタンスを作成する",
+    "CreateNewAgent": "新しいインテリジェントエージェントを作成",
+    "EditDefinition": "定義を編集する",
     "NewTab": "新しいタブ",
-    "NewWebTab": "新しいウェブページを作成",
     "QuickAccess": "クイックアクセス",
     "SearchPlaceholder": "タブまたはインテリジェントエージェントを検索..."
   },
   "Preference": {
-    "AIAgent": "",
-    "AIAgentDescription": "",
-    "AIAgentDescriptionDetail": "",
-    "AIModelSelection": "AIモデル選択",
-    "AIModelSelectionDescription": "使用するAIプロバイダーとモデルを選択してください",
-    "AITemperature": "温度パラメータ",
-    "AITemperatureDescription": "低い値は応答をより決定的で一貫性のあるものにし、高い値は応答をより多様で創造性のあるものにします",
+    "AIAgent": "エージェント",
+    "AIAgentDescription": "AI Agentの対話記録データベースを管理する",
+    "AIAgentDescriptionDetail": "ここではAI Agentの会話記録データベースのサイズと位置情報を確認および削除できます。",
     "APIKey": "APIキー",
-    "AddCustomModel": "カスタムモデルを追加",
     "AddNewModel": "新しいモデルを追加",
     "AddNewProvider": "新しいプロバイダーを追加",
     "AddProvider": "プロバイダーを追加",
-    "AgentDatabaseDescription": "",
-    "Anthropic": "Anthropic公式インターフェース",
+    "AgentDatabaseDescription": "すべてのAI Agentとの対話記録はこのデータベースに保存されており、AIとの会話のみが対象で、Wikiの内容には影響せず、使用容量は{{size}}です。",
     "BaseURL": "APIベースURL",
     "BaseURLRequired": "APIベースURLは必須です",
-    "Cancel": "キャンセル",
+    "Browse": "閲覧",
     "CancelAddProvider": "追加をキャンセル",
     "ConfigureModelParameters": "設定パラメータ",
     "ConfigureProvider": "{{provider}}を設定",
-    "ConfirmDelete": "",
-    "ConfirmDeleteAgentDatabase": "",
-    "ConfirmDeleteExternalApiDatabase": "",
-    "CreateCustomModel": "カスタムモデルを作成",
-    "Custom": "カスタムインターフェース",
+    "ConfirmDelete": "削除を確認",
+    "ConfirmDeleteAgentDatabase": "すべてのAI対話記録を含むデータベースを削除してもよろしいですか？この操作は取り消せません。",
+    "ConfirmDeleteExternalApiDatabase": "外部APIデバッグ情報を含むデータベースを削除してもよろしいですか？この操作は取り消せません。",
     "CustomProvider": "カスタムプロバイダ",
-    "Deepseek": "DeepSeek公式インターフェース",
     "DefaultAIModelSelection": "デフォルトのAIモデル選択",
     "DefaultAIModelSelectionDescription": "特に設定されていない場合に使用するデフォルトのAIプロバイダーとモデルを選択してください",
-    "DefaultEmbeddingModelSelection": "",
-    "DefaultEmbeddingModelSelectionDescription": "",
-    "DeleteAgentDatabase": "",
-    "DeleteDatabase": "",
-    "DeleteExternalApiDatabase": "",
-    "DeleteProvider": "",
+    "DefaultEmbeddingModelSelection": "デフォルトの埋め込みモデル選択",
+    "DefaultEmbeddingModelSelectionDescription": "意味検索とベクトル操作に使用するデフォルトの埋め込みモデルの選択",
+    "DefaultImageGenerationModelSelection": "デフォルトの画像生成モデルの選択",
+    "DefaultImageGenerationModelSelectionDescription": "テキストから画像を生成する操作に使用するデフォルトの画像生成モデルを選択",
+    "DefaultSpeechModelSelection": "デフォルトの音声生成モデルの選択",
+    "DefaultSpeechModelSelectionDescription": "テキスト読み上げ操作に使用するデフォルトの音声生成モデルを選択",
+    "DefaultTranscriptionsModelSelection": "デフォルト音声認識モデルの選択",
+    "DefaultTranscriptionsModelSelectionDescription": "音声から文字への変換操作に使用するデフォルトの音声認識モデルを選択",
+    "DeleteAgentDatabase": "AI会話データベースを削除",
+    "DeleteExternalApiDatabase": "外部APIデータベースを削除する",
+    "DeleteProvider": "プロバイダーを削除する",
     "DisabledProviderInfo": "このプロバイダーは無効になっており、そのモデルはモデル選択リストに表示されません",
     "EnableProvider": "このプロバイダーを有効にする",
     "ExternalAPI": "外部APIインターフェース",
-    "ExternalAPIDebug": "",
-    "ExternalAPIDebugDescription": "",
-    "ExternalApiDatabaseDescription": "",
+    "ExternalAPIDebug": "APIデバッグログを有効にする",
+    "ExternalAPIDebugDescription": "有効にすると、すべてのAPIリクエストとレスポンスがデバッグのためにデータベースに記録されます。",
+    "ExternalApiDatabaseDescription": "外部APIデバッグ情報を含むデータベースで、占有スペースは{{size}}です",
     "FailedToAddModel": "モデルの追加に失敗しました",
     "FailedToAddProvider": "プロバイダーの追加に失敗しました",
     "FailedToRemoveModel": "モデルの削除に失敗しました",
     "FailedToSaveSettings": "設定の保存に失敗しました",
-    "FailedToUpdateProviderConfig": "プロバイダー設定の更新に失敗しました",
+    "FailedToUpdateModel": "モデルを更新できません",
     "FailedToUpdateProviderStatus": "プロバイダーのステータス更新に失敗しました",
     "MaxTokens": "最大生成長さ",
     "MaxTokensDescription": "モデルが1回のリクエストで生成できる最大文字数（トークン単位）",
@@ -179,481 +177,318 @@
     "ModelParameters": "モデルパラメータ",
     "ModelParametersDescription": "生成AIモデルの動作パラメータ（温度、トークン制限など）を設定する",
     "ModelRemovedSuccessfully": "モデルが正常に削除されました",
+    "ModelUpdatedSuccessfully": "モデル更新が成功しました",
     "Models": "利用可能なモデル",
     "NoPresetSelected": "プリセットモデルが選択されていません",
     "NoProvidersAvailable": "利用可能なプロバイダーがありません",
-    "Ollama": "Ollamaローカルインターフェース",
-    "OpenAICompatible": "OpenAI互換インターフェース",
-    "OpenDatabaseFolder": "",
-    "Openai": "OpenAI公式インターフェース",
-    "OrCreateCustom": "またはカスタムモデルを作成",
-    "Preferences": "設定...",
-    "PresetBaseURL": "プリセットAPIベースURL、変更不可",
+    "OpenDatabaseFolder": "データベースフォルダを開く",
     "PresetModels": "プリセットモデル",
     "PresetProvider": "プリセットプロバイダー",
     "ProviderAddedSuccessfully": "プロバイダーが正常に追加されました",
     "ProviderAlreadyExists": "プロバイダー名は既に存在します",
     "ProviderClass": "プロバイダーインターフェースタイプ",
-    "ProviderConfigUpdated": "プロバイダー設定が更新されました",
     "ProviderConfiguration": "プロバイダー設定",
     "ProviderConfigurationDescription": "AIプロバイダーのAPIキーやその他の設定を構成します",
     "ProviderDisabled": "プロバイダーが無効になりました",
     "ProviderEnabled": "プロバイダーが有効になりました",
     "ProviderName": "プロバイダー名",
     "ProviderNameRequired": "プロバイダー名は必須です",
-    "SaveProviderConfig": "プロバイダー設定を保存",
-    "Search": "",
-    "SearchEmbeddingDelete": "",
-    "SearchEmbeddingDeleteConfirm": "",
-    "SearchEmbeddingDeleteError": "",
-    "SearchEmbeddingGenerate": "",
-    "SearchEmbeddingGenerating": "",
-    "SearchEmbeddingLastUpdated": "",
-    "SearchEmbeddingNoAIConfigError": "",
-    "SearchEmbeddingNoEmbeddingConfigError": "",
-    "SearchEmbeddingNoEmbeddingModelError": "",
-    "SearchEmbeddingStatusCompleted": "",
-    "SearchEmbeddingStatusError": "",
-    "SearchEmbeddingStatusGenerating": "",
-    "SearchEmbeddingStatusIdle": "",
-    "SearchEmbeddingUpdate": "",
-    "SearchNoWorkspaces": "",
+    "Search": "検索と埋め込み",
+    "SearchEmbeddingDelete": "削除",
+    "SearchEmbeddingDeleteConfirm": "ワークスペース「{{workspaceName}}」のすべてのベクトル埋め込みを削除してもよろしいですか？この操作は取り消せません。",
+    "SearchEmbeddingDeleteError": "埋め込みの削除に失敗しました：{{error}}",
+    "SearchEmbeddingGenerate": "埋め込みを生成",
+    "SearchEmbeddingGenerating": "生成中...",
+    "SearchEmbeddingLastUpdated": "最終更新：{{time}}",
+    "SearchEmbeddingNoAIConfigError": "外部APIセクションでAI APIの設定を先に構成してください。",
+    "SearchEmbeddingNoEmbeddingModelError": "外部APIセクションでデフォルトの埋め込みモデル設定を先に構成してください。",
+    "SearchEmbeddingStatusCompleted": "{{totalNotes}}個のノートの{{totalEmbeddings}}個の埋め込み",
+    "SearchEmbeddingStatusError": "エラー：{{error}}",
+    "SearchEmbeddingStatusGenerating": "生成中... ({{completed}}/{{total}})",
+    "SearchEmbeddingStatusIdle": "埋め込みが生成されていません",
+    "SearchEmbeddingUpdate": "埋め込みを更新",
+    "SearchNoWorkspaces": "ワークスペースが見つかりません",
     "SelectDefaultProvider": "デフォルトプロバイダーを選択",
-    "SelectEmbeddingModel": "",
     "SelectFromPresets": "プリセットモデルから選択",
     "SelectModel": "モデルを選択",
-    "SelectProvider": "プロバイダーを選択",
     "SettingsSaved": "設定が保存されました",
     "SystemPrompt": "システムプロンプト",
     "SystemPromptDescription": "AIに送信されるシステム命令を設定し、その動作と機能を定義します",
     "Temperature": "温度",
     "TemperatureDescription": "低い値はより確定的で集中した応答を生成し、高い値はより多様で創造的な応答を生成します。",
     "TopP": "トップP",
-    "TopPDescription": "応答のランダム性を制御します。低い値は応答をより確定的にし、高い値はより多くの可能性を許容します。"
+    "TopPDescription": "応答のランダム性を制御します。低い値は応答をより確定的にし、高い値はより多くの可能性を許容します。",
+    "WorkflowFile": "ワークフローファイル",
+    "WorkflowFileHelp": "ComfyUI ワークフロー JSON ファイルのパス",
+    "WorkflowFilePath": "ワークフローファイルのパス"
   },
   "Prompt": {
-    "AutoRefresh": "",
-    "AutoUpdate": "",
-    "AutoUpdatePreview": "",
-    "CodeEditor": "",
-    "Config": "",
-    "ConfigurationDescription": "",
-    "EnterEditMode": "",
-    "EnterFullScreen": "",
-    "ExitEditMode": "",
-    "ExitFullScreen": "",
-    "Flat": "",
-    "FormEditor": "",
-    "LastUpdated": "",
-    "Loading": "",
-    "NoConfigFound": "",
-    "NoHandlerFound": "",
-    "NoMessages": "",
-    "Preview": "",
-    "RefreshPreview": "",
-    "SchemaNotProvided": "",
-    "SchemaNotProvidedDescription": "",
-    "ToggleFullScreen": "",
-    "Tree": "",
-    "ValidationErrors": ""
+    "AutoRefresh": "プレビューは入力テキストの変更に応じて自動的に更新されます",
+    "CodeEditor": "コードエディタ",
+    "Flat": "グリッドビュー",
+    "FormEditor": "フォームエディター",
+    "LastUpdated": "前回の更新時間",
+    "Loading": "プレビューを読み込み中...",
+    "NoMessages": "まだプレビューできるメッセージはありません",
+    "Preview": "プロンプトプレビュー",
+    "SchemaNotProvided": "フォーマットが提供されていません",
+    "SchemaNotProvidedDescription": "JSONスキーマが提供されていないか、正しく取得できませんでした。編集フォームを表示できません。",
+    "Tree": "ツリービュー",
+    "ValidationErrors": "エラーを発見"
   },
   "PromptConfig": {
-    "AddItem": "",
-    "EmptyArray": "",
-    "ItemCount": "",
-    "RemoveItem": "",
+    "AddItem": "プロジェクトを追加",
+    "EmptyArray": "まだアイテムが追加されていません。下のボタンをクリックして最初のアイテムを追加してください。",
+    "ItemCount": "{{count}} 件",
+    "RemoveItem": "リスト項目を削除",
     "Tabs": {
-      "PromptDynamicModification": "",
-      "Prompts": "",
-      "Response": "",
-      "ResponseDynamicModification": ""
+      "Prompts": "プロンプト",
+      "Response": "応答"
     },
     "Tags": {
-      "HelperText": "",
-      "NoOptions": "",
-      "Placeholder": ""
+      "HelperText": "入力後、Enterキーを押してタグを追加するか、事前定義されたタグから選択してください",
+      "NoOptions": "選択可能なタグがありません",
+      "Placeholder": "入力タグ..."
     }
   },
   "Schema": {
     "AIConfig": {
       "Description": "AI 会話設定の構成",
-      "Title": ""
+      "Title": "AI設定"
     },
     "AgentConfig": {
       "Description": "エージェント設定",
       "Id": "エージェント一意識別子",
-      "IdTitle": "",
+      "IdTitle": "エージェントID",
       "PromptConfig": {
         "Description": "プロンプト設定",
-        "PromptDynamicModification": "プロンプトワード動的修正設定リスト",
         "Prompts": "プロンプト設定リスト",
         "Response": "応答設定リスト",
-        "ResponseDynamicModification": "動的に構成リストを変更するように応答",
-        "Title": ""
+        "Title": "プロンプト設定"
       },
-      "Title": ""
+      "Title": "エージェント設定"
     },
     "AutoReroll": {
-      "Description": "自動再生成パラメータ設定",
-      "MaxRetry": "最大再試行回数",
-      "MaxRetryTitle": "",
-      "Search": "検索キーワード",
-      "SearchTitle": "",
-      "TargetId": "ターゲット要素ID",
-      "TargetIdTitle": "",
-      "Title": ""
     },
     "BaseAPIConfig": {
       "API": "APIプロバイダーとモデル設定",
-      "APITitle": "",
+      "APITitle": "API設定",
       "Description": "基本API設定",
       "ModelParameters": "モデルパラメータ設定",
-      "ModelParametersTitle": "",
-      "Title": ""
+      "ModelParametersTitle": "モデルパラメータ",
+      "Title": "基本API設定"
     },
     "DefaultAgents": {
       "Description": "デフォルトのインテリジェントエージェント設定リスト",
-      "Title": ""
+      "Title": "デフォルトエージェント"
     },
     "DynamicPosition": {
-      "Description": "動的位置パラメータ設定",
-      "Title": ""
     },
     "FullReplacement": {
       "Description": "完全置換パラメータ設定",
       "SourceType": "ソースタイプ",
-      "SourceTypeTitle": "",
+      "SourceTypeTitle": "ソースタイプ",
       "SourceTypes": {
-        "HistoryOfSession": "",
-        "LlmResponse": ""
       },
       "TargetId": "ターゲット要素ID",
-      "TargetIdTitle": "",
-      "Title": ""
+      "TargetIdTitle": "ターゲットID",
+      "Title": "完全置換パラメータ"
     },
     "Function": {
-      "Description": "関数パラメータ設定",
-      "FunctionId": "関数ID",
-      "FunctionIdTitle": "",
-      "TimeoutMessage": "タイムアウトメッセージ",
-      "TimeoutMessageTitle": "",
-      "TimeoutSecond": "タイムアウト時間（秒）",
-      "TimeoutSecondTitle": "",
-      "Title": "",
-      "Trigger": "トリガー条件",
-      "TriggerTitle": ""
     },
     "HandlerConfig": {
-      "Description": "",
-      "Title": ""
     },
     "JavascriptTool": {
-      "Description": "JavaScript ツールパラメータ設定",
-      "Title": "",
-      "URI": "JavaScript ツール URI",
-      "URITitle": ""
     },
     "MCP": {
       "Description": "モデルコンテキストプロトコルパラメータ設定",
       "Id": "MCP サーバー ID",
-      "IdTitle": "",
+      "IdTitle": "サーバーID",
       "ResponseProcessing": {
-        "Description": "応答処理設定",
-        "Id": "レスポンスハンドラID",
-        "IdTitle": "",
-        "Title": ""
       },
       "TimeoutMessage": "タイムアウトメッセージ",
-      "TimeoutMessageTitle": "",
+      "TimeoutMessageTitle": "タイムアウトメッセージ",
       "TimeoutSecond": "タイムアウト時間（秒）",
-      "TimeoutSecondTitle": "",
-      "Title": "",
-      "Trigger": "トリガー条件",
-      "TriggerTitle": ""
+      "TimeoutSecondTitle": "タイムアウト時間",
+      "Title": "モデルコンテキストプロトコルパラメータ"
     },
     "ModelParameters": {
       "Description": "モデルパラメータ設定",
       "MaxTokens": "生成される最大トークン数",
-      "MaxTokensTitle": "",
+      "MaxTokensTitle": "最大トークン数",
       "SystemPrompt": "モデルシステムプロンプト",
-      "SystemPromptTitle": "",
+      "SystemPromptTitle": "システムプロンプト",
       "Temperature": "応答生成温度（高いほど創造的）",
-      "TemperatureTitle": "",
-      "Title": "",
+      "TemperatureTitle": "温度",
+      "Title": "モデルパラメータ",
       "TopP": "Top P サンプリングパラメータ",
-      "TopPTitle": ""
+      "TopPTitle": "トップP"
     },
     "Position": {
       "Bottom": "下部から数件のメッセージをオフセット",
-      "BottomTitle": "",
+      "BottomTitle": "底部オフセット",
       "Description": "位置パラメータ設定",
       "TargetId": "ターゲット要素ID",
-      "TargetIdTitle": "",
-      "Title": "",
-      "Top": "上部から数件のメッセージをオフセット",
-      "TopTitle": "",
+      "TargetIdTitle": "ターゲットID",
+      "Title": "位置引数",
       "Type": "位置タイプ",
-      "TypeTitle": "",
+      "TypeTitle": "位置タイプ",
       "Types": {
-        "Absolute": "",
-        "After": "",
-        "Before": "",
-        "Relative": ""
       }
     },
     "Prompt": {
       "Caption": "簡単な説明",
-      "CaptionTitle": "",
+      "CaptionTitle": "説明",
       "Children": "サブプロンプトのリストは、上から下へ、外から内へと順に結合され、最終的なプロンプトテキストとなります。",
-      "ChildrenTitle": "",
+      "ChildrenTitle": "サブプロンプト",
       "Description": "完全なプロンプト設定、タイプと内容を含む",
       "Enabled": "このプロンプトを有効にするかどうか、有効にしたものだけが最終的なプロンプトに組み込まれます。",
-      "EnabledTitle": "",
+      "EnabledTitle": "有効化",
       "Id": "プロンプト設定の一意の識別子。PromptDynamicModificationでtargetIdを介して参照するのに便利です。",
-      "IdTitle": "",
+      "IdTitle": "ID",
       "Role": "OpenAI互換インターフェースのプロンプトロール",
-      "RoleTitle": "",
+      "RoleTitle": "キャラクター",
       "RoleType": {
-        "Assistant": "",
-        "System": "",
-        "User": ""
+        "Assistant": "アシスタント - AIの返信と応答内容",
+        "System": "システム - AIの行動ルールと背景設定を定義する",
+        "User": "ユーザー - ユーザーの入力とリクエストをシミュレートする"
       },
       "Tags": "タグリスト",
-      "TagsTitle": "",
+      "TagsTitle": "ラベル",
       "Text": "プロンプトの内容には、<<変数名>>などのウィキテキストでサポートされている構文を含めることができます。",
-      "TextTitle": "",
-      "Title": ""
+      "TextTitle": "テキスト",
+      "Title": "プロンプト"
     },
     "PromptDynamicModification": {
-      "Caption": "簡単な説明",
-      "CaptionTitle": "",
-      "Content": "内容",
-      "ContentTitle": "",
-      "Description": "詳細に説明する",
-      "DynamicModificationType": "動的に型を変更する",
-      "DynamicModificationTypeTitle": "",
       "DynamicModificationTypes": {
-        "DynamicPosition": "",
-        "FullReplacement": "",
-        "Function": "",
-        "JavascriptTool": "",
-        "ModelContextProtocol": "",
-        "RetrievalAugmentedGeneration": ""
-      },
-      "DynamicPositionParam": "動的位置パラメータ",
-      "DynamicPositionParamTitle": "",
-      "ForbidOverrides": "上書きを禁止しますか",
-      "ForbidOverridesTitle": "",
-      "FullReplacementParam": "完全置換パラメータ",
-      "FullReplacementParamTitle": "",
-      "FunctionParam": "関数の引数",
-      "FunctionParamTitle": "",
-      "Id": "一意の識別子",
-      "IdTitle": "",
-      "JavascriptToolParam": "JavaScript ツールパラメータ",
-      "JavascriptToolParamTitle": "",
-      "MCPParam": "モデルコンテキストプロトコルパラメータ",
-      "MCPParamTitle": "",
-      "RAGParam": "検索拡張生成パラメータ",
-      "RAGParamTitle": "",
-      "SchemaDescription": "プロンプトワード動的修正設定",
-      "Title": ""
+      }
     },
     "PromptPart": {
-      "Caption": "プロンプトの簡単な説明",
-      "CaptionTitle": "",
-      "Children": "サブプロンプトのリストは、上から下へ、外から内へと結合され、最終的なプロンプトテキストとなります。",
-      "ChildrenTitle": "",
-      "Description": "プロンプトの一部を表し、テキストまたはネスト構造にすることができます",
-      "Id": "一意の識別子。PromptDynamicModification内でtargetIdを介して参照するのに便利です。",
-      "IdTitle": "",
-      "Tags": "タグリスト、分類と参照用",
-      "TagsTitle": "",
-      "Text": "プロンプトテキストの内容には、<<変数名>>などのウィキテキストでサポートされている構文を含めることができます。",
-      "TextTitle": "",
-      "Title": ""
     },
     "ProviderModel": {
       "Description": "プロバイダーとモデル設定",
+      "EmbeddingModel": "意味検索とベクトル操作のための埋め込みモデルの名称",
+      "EmbeddingModelTitle": "埋め込みモデル",
+      "ImageGenerationModel": "テキストから画像を生成する操作に使用される画像生成モデルの名称",
+      "ImageGenerationModelTitle": "画像生成モデル",
       "Model": "AIモデル名",
-      "ModelTitle": "",
+      "ModelTitle": "モデル",
       "Provider": "AIプロバイダー名",
-      "ProviderTitle": "",
-      "Title": ""
+      "ProviderTitle": "プロバイダー",
+      "SpeechModel": "音声生成モデルの名称（テキスト読み上げ操作用）",
+      "SpeechModelTitle": "音声モデル",
+      "Title": "プロバイダーモデル",
+      "TranscriptionsModel": "音声をテキストに変換する操作に使用される音声認識モデルの名称",
+      "TranscriptionsModelTitle": "音声認識モデル"
     },
     "RAG": {
-      "Description": "検索拡張生成パラメータ設定",
       "Removal": {
-        "CoolDownChatRound": "前回の展示後の冷却ラウンド数",
-        "CoolDownChatRoundTitle": "",
-        "Description": "条件を削除",
-        "ExpireAfterChatRound": "何回の対話後に期限切れになりますか",
-        "ExpireAfterChatRoundTitle": "",
-        "Title": ""
       },
-      "SourceType": "ソースタイプ",
-      "SourceTypeTitle": "",
       "SourceTypes": {
-        "Wiki": ""
-      },
-      "Title": "",
-      "Trigger": "トリガー条件",
-      "TriggerTitle": "",
-      "WikiParam": "Wiki パラメータ",
-      "WikiParamTitle": ""
+      }
     },
-    "Required": "",
     "Response": {
       "Description": "外部APIのレスポンスは、通常、動的に変更される対象として応答され、その構造はプロンプトと同じです。プリセット内容を記入することもできますし、プレースホルダーやコンテナとして機能させ、ResponseDynamicModificationによって外部APIのレスポンスの具体的な内容が入力されることもあります。",
-      "Title": ""
+      "Title": "応答"
     },
     "ResponseDynamicModification": {
-      "AutoRerollParam": "自動再生成パラメータ",
-      "AutoRerollParamTitle": "",
-      "Caption": "簡単な説明",
-      "CaptionTitle": "",
-      "Description": "動的な設定変更に対応",
-      "DynamicModificationType": "動的に型を変更する",
-      "DynamicModificationTypeTitle": "",
       "DynamicModificationTypes": {
-        "FullReplacement": ""
       },
-      "ForbidOverrides": "上書きを禁止しますか",
-      "ForbidOverridesTitle": "",
-      "FullReplacementParam": "パラメータを完全に置換",
-      "FullReplacementParamTitle": "",
-      "Id": "一意の識別子",
-      "IdTitle": "",
-      "ResponseProcessingType": "応答処理タイプ",
-      "ResponseProcessingTypeTitle": "",
       "ResponseProcessingTypes": {
-        "AutoReroll": "",
-        "ToolCalling": ""
-      },
-      "Title": "",
-      "ToolCallingParam": "ツール呼び出しパラメータ",
-      "ToolCallingParamTitle": ""
+      }
     },
     "ToolCalling": {
-      "Description": "ツール呼び出しパラメータ設定",
-      "Match": "マッチングモード",
-      "MatchTitle": "",
-      "TargetId": "ターゲット要素ID",
-      "TargetIdTitle": "",
-      "Title": ""
     },
     "Trigger": {
-      "Description": "トリガー条件の設定",
-      "Filter": "フィルター条件",
-      "FilterTitle": "",
       "Model": {
-        "Description": "モデルに基づく判断のトリガー条件",
-        "Preset": "プリセットモデル",
-        "PresetTitle": "",
-        "System": "システムプロンプト",
-        "SystemTitle": "",
-        "Title": "",
-        "User": "ユーザープロンプト",
-        "UserTitle": ""
-      },
-      "RandomChance": "ランダム発動確率",
-      "RandomChanceTitle": "",
-      "Search": "検索キーワード",
-      "SearchTitle": "",
-      "Title": ""
+      }
     },
     "Wiki": {
-      "Description": "Wiki パラメータ設定",
-      "Filter": "フィルター式では、TiddlyWikiがサポートするフィルターを使用して、ナレッジベースからデータを抽出できます。",
-      "FilterTitle": "",
-      "Title": "",
-      "WorkspaceName": "ワークスペース名",
-      "WorkspaceNameTitle": ""
     },
     "WikiOperation": {
-      "Description": "",
-      "Title": "",
+      "Description": "Wiki ワークスペースで Tiddler 操作を実行する（追加、削除、またはテキストの設定）",
+      "Title": "Wiki 操作",
       "Tool": {
-        "Caption": "",
-        "Description": "",
         "Examples": {
-          "add": "",
-          "delete": "",
-          "set": ""
         },
-        "ExamplesTitle": "",
-        "Name": "",
         "Parameters": {
           "extraMeta": {
-            "Description": "",
-            "Title": ""
+            "Description": "追加メタデータのJSON文字列（例：タグやフィールド）、デフォルトは「{}」",
+            "Title": "追加メタデータ"
           },
           "operation": {
-            "Description": "",
-            "Title": ""
+            "Description": "実行する操作のタイプ",
+            "Title": "操作タイプ"
           },
           "options": {
-            "Description": "",
-            "Title": ""
+            "Description": "操作オプションのJSON文字列、デフォルトは\"{}\"",
+            "Title": "操作オプション"
           },
           "text": {
-            "Description": "",
-            "Title": ""
+            "Description": "Tiddler のテキスト内容",
+            "Title": "Tiddler コンテンツ"
           },
           "title": {
-            "Description": "",
-            "Title": ""
+            "Description": "Tiddler のタイトル",
+            "Title": "Tiddler タイトル"
           },
           "workspaceName": {
-            "Description": "",
-            "Title": ""
-          }
-        },
-        "ParametersTitle": ""
-      },
-      "ToolListPosition": {
-        "Position": "",
-        "PositionTitle": "",
-        "TargetId": "",
-        "TargetIdTitle": ""
-      },
-      "ToolResultDuration": "",
-      "ToolResultDurationTitle": ""
-    },
-    "WikiSearch": {
-      "Description": "",
-      "Filter": "",
-      "FilterTitle": "",
-      "IncludeText": "",
-      "IncludeTextTitle": "",
-      "MaxResults": "",
-      "MaxResultsTitle": "",
-      "SourceType": "",
-      "SourceTypeTitle": "",
-      "Title": "",
-      "Tool": {
-        "Parameters": {
-          "filter": {
-            "Description": "",
-            "Title": ""
-          },
-          "workspaceName": {
-            "Description": "",
-            "Title": ""
+            "Description": "操作するワークスペースの名前またはID",
+            "Title": "ワークスペース名"
           }
         }
       },
       "ToolListPosition": {
-        "Position": "",
-        "PositionTitle": "",
-        "TargetId": "",
-        "TargetIdTitle": ""
+        "Position": "ターゲット要素に対する挿入位置（before/after）",
+        "PositionTitle": "挿入位置",
+        "TargetId": "ツールリストを挿入する対象要素のID",
+        "TargetIdTitle": "ターゲットID"
       },
-      "ToolListPositionTitle": "",
-      "ToolResultDuration": "",
-      "ToolResultDurationTitle": "",
-      "WorkspaceName": "",
-      "WorkspaceNameTitle": ""
+      "ToolResultDuration": "ツールの実行結果が会話内で表示されるターン数。この数を超えると、結果はグレー表示になります。",
+      "ToolResultDurationTitle": "ツール結果の持続ターン数"
+    },
+    "WikiSearch": {
+      "Description": "フィルター式を使用してTiddlyWikiワークスペースの内容を検索する",
+      "SourceType": "データソースタイプ",
+      "SourceTypeTitle": "ソースタイプ",
+      "Title": "Wiki 検索",
+      "Tool": {
+        "Parameters": {
+          "filter": {
+            "Description": "TiddlyWiki フィルター式",
+            "Title": "フィルター"
+          },
+          "limit": {
+            "Description": "返される最大結果数",
+            "Title": "制限"
+          },
+          "query": {
+            "Description": "ベクトル検索時に使用するクエリテキスト（自然言語）",
+            "Title": "照会"
+          },
+          "searchType": {
+            "Description": "ルールベースまたは類似度ベースの検索モードを選択する",
+            "Title": "検索タイプ"
+          },
+          "threshold": {
+            "Description": "類似度閾値（0-1）、この閾値を下回るベクトル結果はフィルタリングされます",
+            "Title": "閾値"
+          },
+          "workspaceName": {
+            "Description": "検索するワークスペース名またはID",
+            "Title": "ワークスペース名"
+          }
+        }
+      },
+      "ToolListPosition": {
+        "Position": "目標位置に対する挿入位置",
+        "PositionTitle": "挿入位置",
+        "TargetId": "ターゲット要素のID、ツールリストはこの要素に対して挿入されます",
+        "TargetIdTitle": "ターゲットID"
+      },
+      "ToolListPositionTitle": "ツールリストの位置",
+      "ToolResultDuration": "ツールの実行結果が会話中に表示されるターン数。このターン数を超えると、結果はグレー表示になります。",
+      "ToolResultDurationTitle": "ツール結果の継続ラウンド数"
     }
   },
   "Search": {
@@ -667,45 +502,59 @@
     "RecentlyClosedTabs": "最近閉じたタブ"
   },
   "SplitView": {
-    "NoTabs": "分割ビューにタグがありません",
-    "RemoveFromSplitView": "分割ビューから削除"
+    "NoTabs": "分割ビューにタグがありません"
   },
   "Tab": {
     "Title": {
+      "CreateNewAgent": "新しいインテリジェントエージェントを作成",
+      "EditAgentDefinition": "編集エージェント",
       "NewTab": "新しいタブ",
       "NewWeb": "新しいウェブページを作成"
     }
   },
   "Tool": {
     "Schema": {
-      "Description": "",
-      "Examples": "",
-      "Optional": "",
-      "Parameters": "",
-      "Required": ""
+      "Description": "説明",
+      "Examples": "使用例",
+      "Optional": "オプション",
+      "Parameters": "パラメータ",
+      "Required": "必須"
     },
     "WikiOperation": {
       "Error": {
-        "WorkspaceNotExist": "",
-        "WorkspaceNotFound": ""
+        "WorkspaceNotExist": "ワークスペース{{workspaceID}}は存在しません",
+        "WorkspaceNotFound": "ワークスペース名またはID「{{workspaceName}}」は存在しません。利用可能なワークスペース：{{availableWorkspaces}}"
       },
       "Success": {
-        "Added": "",
-        "Deleted": "",
-        "Updated": ""
+        "Added": "Wikiワークスペース「{{workspaceName}}」にTiddler「{{title}}」を追加しました",
+        "Deleted": "Wikiワークスペース「{{workspaceName}}」からTiddler「{{title}}」の削除に成功しました",
+        "Updated": "Wikiワークスペース「{{workspaceName}}」でTiddler「{{title}}」のテキストを正常に設定しました"
       }
     },
     "WikiSearch": {
       "Error": {
-        "ExecutionFailed": "",
-        "WorkspaceNotExist": "",
-        "WorkspaceNotFound": ""
+        "ExecutionFailed": "ツールの実行に失敗しました：{{error}}",
+        "WorkspaceNotExist": "ワークスペース{{workspaceID}}は存在しません",
+        "WorkspaceNotFound": "ワークスペース名またはID「{{workspaceName}}」は存在しません。利用可能なワークスペース：{{availableWorkspaces}}"
       },
       "Success": {
-        "Completed": "",
-        "NoResults": ""
+        "Completed": "Wiki検索が完了しました。{{totalResults}}件の結果が見つかり、{{shownResults}}件を表示しています：",
+        "NoResults": "ワークスペース「{{workspaceName}}」でフィルター「{{filter}}」の結果が見つかりませんでした",
+        "NoVectorResults": "Wikiワークスペース「{{workspaceName}}」で条件に合致するベクトル検索結果が見つかりませんでした（類似度閾値：{{threshold}}）。",
+        "VectorCompleted": "ベクトル検索に基づいて、ワークスペース「{{workspaceName}}」で以下の関連コンテンツが見つかりました："
+      },
+      "UpdateEmbeddings": {
+        "Error": {
+          "ExecutionFailed": "埋め込みの生成に失敗しました：{{error}}",
+          "NoAIConfig": "まずAIプロバイダーと埋め込みモデルを設定してください（設定内で）。",
+          "WorkspaceNotExist": "ワークスペース{{workspaceID}}は存在しません",
+          "WorkspaceNotFound": "ワークスペース名またはID「{{workspaceName}}」は存在しません。利用可能なワークスペース：{{availableWorkspaces}}"
+        },
+        "Success": {
+          "Generated": "ワークスペース {{workspaceName}} のベクトル埋め込みインデックスの生成が成功しました。合計{{totalNotes}}個のノート、{{totalEmbeddings}}個の埋め込みです。"
+        }
       }
     }
   },
-  "Unknown": ""
+  "Unknown": "未知"
 }

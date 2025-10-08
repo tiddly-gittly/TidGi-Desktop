@@ -1,26 +1,26 @@
 {
   "APILogs": {
-    "CurrentAgent": "",
-    "Description": "",
-    "ErrorDetails": "",
-    "NoLogs": "",
-    "NoResponse": "",
-    "RequestDetails": "",
-    "ResponseContent": "",
-    "ResponseMetadata": "",
-    "StatusCancel": "",
-    "StatusDone": "",
-    "StatusError": "",
-    "StatusStart": "",
-    "StatusUpdate": "",
-    "Title": ""
+    "CurrentAgent": "Afficher les journaux de l'agent intelligent : {{agentId}}",
+    "Description": "Journal de débogage des appels API externes pour cet agent. Activez le 'Débogage des API externes' dans les préférences pour commencer l'enregistrement.",
+    "ErrorDetails": "Détails de l'erreur",
+    "NoLogs": "Journal des API de cet agent intelligent introuvable",
+    "NoResponse": "pas de réponse",
+    "RequestDetails": "Détails de la demande",
+    "ResponseContent": "contenu de réponse",
+    "ResponseMetadata": "réponse aux métadonnées",
+    "StatusCancel": "annulé",
+    "StatusDone": "terminé",
+    "StatusError": "erreur",
+    "StatusStart": "commencé",
+    "StatusUpdate": "En cours de traitement",
+    "Title": "Journal de débogage API"
   },
   "Agent": {
-    "EditTitle": "",
-    "InvalidTabType": "",
-    "LoadingChat": "",
-    "StartConversation": "",
-    "Untitled": ""
+    "EditTitle": "Modifier le nom de l'agent intelligent",
+    "InvalidTabType": "Type d'onglet non valide. Un onglet de chat est requis.",
+    "LoadingChat": "Chargement de la conversation en cours...",
+    "StartConversation": "commencer la conversation",
+    "Untitled": "Sans titre"
   },
   "Browser": {
     "Back": "reculer",
@@ -33,51 +33,20 @@
     "RenderPlaceholder": "Voici la zone de rendu de la page web."
   },
   "Chat": {
-    "AiReplyPlaceholder": "Je suis en train de traiter votre demande...",
     "Cancel": "Annuler",
-    "ChangeMetadata": "Modifier les métadonnées",
     "ConfigError": {
-      "AuthenticationFailed": "L'authentification a échoué pour {{provider}}, veuillez vérifier vos paramètres.",
-      "GeneralError": "Il y a un problème avec la configuration de {{provider}}, veuillez vérifier vos paramètres.",
       "GoToSettings": "Aller aux paramètres",
-      "MissingAPIKey": "La clé API pour {{provider}} est requise pour utiliser cette fonctionnalité.",
-      "MissingBaseURL": "L'URL de base pour {{provider}} est requise pour utiliser cette fonctionnalité.",
-      "MissingProviderError": "Configuration du fournisseur manquante, veuillez vérifier les paramètres.",
-      "ModelNotFound": "Modèle non trouvé pour {{provider}}, veuillez vérifier vos paramètres.",
-      "ProviderNotFound": "Fournisseur {{provider}} introuvable, veuillez vérifier vos paramètres.",
-      "RateLimitExceeded": "Limite de débit dépassée pour {{provider}}, veuillez réessayer plus tard.",
       "Title": "Problème de configuration"
     },
-    "EmptyStateDescription": "Créez une nouvelle session ou sélectionnez-en une existante à gauche pour commencer à discuter.",
-    "Error": "Erreur de dialogue",
     "InputPlaceholder": "Tapez un message, Ctrl+Entrée pour envoyer",
-    "Loading": "Chargement de la conversation en cours",
-    "NewSession": "Nouvelle session",
-    "OpenInWorkspaceTiddler": "Ouvrir {{title}} dans l'espace de travail {{workspace}}",
     "Send": "Envoyer",
-    "Session": "Session",
     "SessionGroup": {
-      "Older": "Plus ancien",
-      "Today": "Aujourd'hui",
-      "Yesterday": "Hier"
-    },
-    "StartConversation": "Commencer une nouvelle conversation",
-    "StartNewConversation": "Commencer une nouvelle conversation",
-    "Thinking": "En réflexion...",
-    "TypePlaceholder": "Entrer un message...",
-    "Typing": "En train d'écrire...",
-    "Use": "Utiliser",
-    "WaitingForResponse": "En attente de réponse..."
+    }
   },
   "Common": {
-    "Apply": "",
-    "Applying": "",
-    "Save": "",
-    "Saving": ""
   },
   "ContextMenu": {
     "AddToCurrentSplitView": "ajouter à la division d'écran actuelle",
-    "AddToSplitView": "Ajouter à la vue côte à côte",
     "Close": "fermer",
     "CloseAbove": "Fermer l'onglet ci-dessus",
     "CloseBelow": "Fermer l'onglet ci-dessous",
@@ -92,77 +61,107 @@
     "RestoreClosed": "récupérer l'onglet fermé",
     "Unpin": "désépingler"
   },
+  "CreateAgent": {
+    "AgentName": "Nom de l'agent intelligent",
+    "AgentNameHelper": "Donnez un nom descriptif à votre agent intelligent",
+    "AgentNamePlaceholder": "Entrez le nom de l'agent intelligent...",
+    "Back": "étape précédente",
+    "CreatingPreview": "Création de l'agent d'aperçu intelligent en cours...",
+    "EditPrompt": "Modifier l'invite",
+    "EditPromptDescription": "Personnalisez les invites système et le comportement de votre agent intelligent",
+    "ImmediateUse": "tester et utiliser",
+    "ImmediateUseDescription": "Testez votre agent et commencez à l'utiliser immédiatement",
+    "Next": "prochaine étape",
+    "NoTemplateSelected": "Veuillez d'abord sélectionner un modèle.",
+    "Preview": "(prévisualisation)",
+    "SaveAndUse": "Enregistrer et utiliser l'agent",
+    "SearchTemplates": "Modèle d'agent de recherche intelligent...",
+    "SelectTemplate": "choisir un modèle",
+    "SelectTemplateDescription": "Choisir un agent intelligent existant comme modèle de départ",
+    "SelectedTemplate": "Modèle sélectionné",
+    "SetupAgent": "configurer l'agent intelligent",
+    "SetupAgentDescription": "Nommez votre agent et choisissez un modèle comme point de départ",
+    "Title": "Créer un nouvel agent intelligent"
+  },
+  "EditAgent": {
+    "AgentDescriptionHelper": "Décrivez les fonctionnalités et l'utilité de votre agent intelligent",
+    "AgentDescriptionPlaceholder": "Entrez la description de l'agent intelligent...",
+    "AgentName": "nom de l'agent intelligent",
+    "AgentNameHelper": "Donnez un nom descriptif à votre agent intelligent",
+    "AgentNamePlaceholder": "Entrez le nom de l'agent intelligent...",
+    "AgentNotFound": "Agent non trouvé",
+    "EditBasic": "Modifier les informations de base",
+    "EditBasicDescription": "Modifier les informations de base de votre agent intelligent",
+    "EditPrompt": "Modifier les invites",
+    "EditPromptDescription": "Personnalisez les invites système et le comportement de votre agent intelligent",
+    "ImmediateUse": "tester et utiliser",
+    "ImmediateUseDescription": "Testez votre agent et commencez à l'utiliser immédiatement",
+    "Loading": "Chargement en cours...",
+    "LoadingPromptConfig": "Chargement de la configuration des invites en cours...",
+    "PreviewChat": "Aperçu du chat",
+    "Save": "sauvegarder",
+    "Saving": "Enregistrement en cours...",
+    "Title": "Définition de l'agent éditeur"
+  },
   "ModelFeature": {
-    "Embedding": "Intégration",
-    "ImageGeneration": "Génération d'images",
-    "Language": "Langue",
-    "Reasoning": "Raisonnement",
-    "ToolCalling": "Appel d'outils",
-    "Vision": "Vision"
   },
   "ModelSelector": {
-    "Model": "",
-    "NoModelSelected": "",
-    "SelectModel": "",
-    "Title": ""
+    "Model": "modèle",
+    "NoModelSelected": "Aucun modèle sélectionné",
+    "SelectModel": "choisir un modèle",
+    "Title": "sélection de modèle"
   },
   "NewTab": {
-    "CodeTools": "outil de code",
-    "CreateDefaultAgent": "",
-    "Explore": "explorer",
-    "Favorites": "favoris",
-    "NewChat": "Nouvelle conversation",
+    "CreateDefaultAgent": "Créer un agent intelligent par défaut",
+    "CreateInstance": "créer une instance",
+    "CreateNewAgent": "Créer un nouvel agent intelligent",
+    "EditDefinition": "éditer la définition",
     "NewTab": "Nouvel onglet",
-    "NewWebTab": "nouvelle page web",
     "QuickAccess": "accès rapide",
     "SearchPlaceholder": "Rechercher un onglet ou un agent intelligent..."
   },
   "Preference": {
-    "AIAgent": "",
-    "AIAgentDescription": "",
-    "AIAgentDescriptionDetail": "",
-    "AIModelSelection": "Sélection du modèle AI",
-    "AIModelSelectionDescription": "Sélectionnez le fournisseur AI et le modèle que vous souhaitez utiliser",
-    "AITemperature": "Paramètre de température",
-    "AITemperatureDescription": "Des valeurs plus faibles rendent les réponses plus déterministes et cohérentes, tandis que des valeurs plus élevées rendent les réponses plus variées et créatives",
+    "AIAgent": "agent intelligent",
+    "AIAgentDescription": "Gérer la base de données des enregistrements de conversation des agents IA",
+    "AIAgentDescriptionDetail": "Ici, vous pouvez consulter et supprimer les informations sur la taille et l'emplacement de la base de données des historiques de conversation avec l'Agent IA.",
     "APIKey": "Clé API",
-    "AddCustomModel": "Ajouter un modèle personnalisé",
     "AddNewModel": "Ajouter un nouveau modèle",
     "AddNewProvider": "Ajouter un nouveau fournisseur",
     "AddProvider": "Ajouter un fournisseur",
-    "AgentDatabaseDescription": "",
-    "Anthropic": "Interface officielle Anthropic",
+    "AgentDatabaseDescription": "Tous les historiques de conversation des agents IA sont enregistrés dans cette base de données, concernant uniquement les échanges avec l'IA, sans affecter le contenu du Wiki, et occupant un espace de {{size}}.",
     "BaseURL": "URL de base de l'API",
     "BaseURLRequired": "L'URL de base de l'API est requise",
-    "Cancel": "Annuler",
+    "Browse": "naviguer",
     "CancelAddProvider": "Annuler l'ajout",
     "ConfigureModelParameters": "paramètres de configuration",
     "ConfigureProvider": "Configurer {{provider}}",
-    "ConfirmDelete": "",
-    "ConfirmDeleteAgentDatabase": "",
-    "CreateCustomModel": "Créer un modèle personnalisé",
-    "Custom": "Interface personnalisée",
+    "ConfirmDelete": "Confirmer la suppression",
+    "ConfirmDeleteAgentDatabase": "Êtes-vous sûr de vouloir supprimer la base de données contenant tous les historiques de conversation avec l'IA ? Cette action est irréversible.",
     "CustomProvider": "Fournisseur personnalisé",
-    "Deepseek": "Interface officielle DeepSeek",
     "DefaultAIModelSelection": "Sélection par défaut du modèle AI",
     "DefaultAIModelSelectionDescription": "Choisissez le fournisseur AI et le modèle par défaut à utiliser lorsqu'aucun n'est spécifiquement défini",
-    "DefaultEmbeddingModelSelection": "",
-    "DefaultEmbeddingModelSelectionDescription": "",
-    "DeleteAgentDatabase": "",
-    "DeleteDatabase": "",
-    "DeleteExternalApiDatabase": "",
-    "DeleteProvider": "",
+    "DefaultEmbeddingModelSelection": "Choix du modèle d'intégration par défaut",
+    "DefaultEmbeddingModelSelectionDescription": "Sélectionnez le modèle d'incorporation par défaut pour la recherche sémantique et les opérations vectorielles",
+    "DefaultImageGenerationModelSelection": "Modèle de génération d'image par défaut sélectionné",
+    "DefaultImageGenerationModelSelectionDescription": "sélectionner le modèle de génération d'images par défaut pour les opérations de génération d'images à partir de texte",
+    "DefaultSpeechModelSelection": "Modèle de génération vocale par défaut sélectionné",
+    "DefaultSpeechModelSelectionDescription": "Sélectionnez le modèle de génération vocale par défaut pour les opérations de synthèse vocale",
+    "DefaultTranscriptionsModelSelection": "Sélection du modèle de reconnaissance vocale par défaut",
+    "DefaultTranscriptionsModelSelectionDescription": "Sélectionnez le modèle de reconnaissance vocale par défaut pour l'opération de conversion de la parole en texte",
+    "DeleteAgentDatabase": "Supprimer la base de données des conversations IA",
+    "DeleteExternalApiDatabase": "Supprimer la base de données API externe",
+    "DeleteProvider": "supprimer le fournisseur",
     "DisabledProviderInfo": "Ce fournisseur est désactivé et ses modèles n'apparaîtront pas dans la liste de sélection des modèles",
     "EnableProvider": "Activer ce fournisseur",
     "ExternalAPI": "API externe",
-    "ExternalAPIDebug": "",
-    "ExternalAPIDebugDescription": "",
-    "ExternalApiDatabaseDescription": "",
+    "ExternalAPIDebug": "Activer le journal de débogage de l'API",
+    "ExternalAPIDebugDescription": "Une fois activé, toutes les requêtes et réponses API seront enregistrées dans la base de données à des fins de débogage.",
+    "ExternalApiDatabaseDescription": "Base de données contenant des informations de débogage d'API externes, occupant un espace de {{size}}",
     "FailedToAddModel": "Échec de l'ajout du modèle",
     "FailedToAddProvider": "Échec de l'ajout du fournisseur",
     "FailedToRemoveModel": "Échec de la suppression du modèle",
     "FailedToSaveSettings": "Échec de l'enregistrement des paramètres",
-    "FailedToUpdateProviderConfig": "Échec de la mise à jour de la configuration du fournisseur",
+    "FailedToUpdateModel": "Impossible de mettre à jour le modèle",
     "FailedToUpdateProviderStatus": "Échec de la mise à jour du statut du fournisseur",
     "MaxTokens": "longueur maximale de génération",
     "MaxTokensDescription": "Le nombre maximum de caractères (calculé en tokens) qu'un modèle peut générer en une seule requête.",
@@ -177,481 +176,318 @@
     "ModelParameters": "paramètres du modèle",
     "ModelParametersDescription": "Configurer les paramètres de comportement des modèles d'IA générative, tels que la température et les limites de tokens.",
     "ModelRemovedSuccessfully": "Modèle supprimé avec succès",
+    "ModelUpdatedSuccessfully": "Modèle mis à jour avec succès",
     "Models": "Modèles disponibles",
     "NoPresetSelected": "Aucun modèle prédéfini sélectionné",
     "NoProvidersAvailable": "Aucun fournisseur disponible",
-    "Ollama": "Interface locale Ollama",
-    "OpenAICompatible": "Interface compatible OpenAI",
-    "OpenDatabaseFolder": "",
-    "Openai": "Interface officielle OpenAI",
-    "OrCreateCustom": "Ou créer un modèle personnalisé",
-    "Preferences": "configurer...",
-    "PresetBaseURL": "URL de base de l'API prédéfinie, ne peut pas être modifiée",
+    "OpenDatabaseFolder": "Ouvrir le dossier de la base de données",
     "PresetModels": "Modèles prédéfinis",
     "PresetProvider": "Fournisseur prédéfini",
     "ProviderAddedSuccessfully": "Fournisseur ajouté avec succès",
     "ProviderAlreadyExists": "Le nom du fournisseur existe déjà",
     "ProviderClass": "Type d'interface du fournisseur",
-    "ProviderConfigUpdated": "Configuration du fournisseur mise à jour",
     "ProviderConfiguration": "Configuration du fournisseur",
     "ProviderConfigurationDescription": "Configurer la clé API et d'autres paramètres pour les fournisseurs AI",
     "ProviderDisabled": "Fournisseur désactivé",
     "ProviderEnabled": "Fournisseur activé",
     "ProviderName": "Nom du fournisseur",
     "ProviderNameRequired": "Le nom du fournisseur est requis",
-    "SaveProviderConfig": "Enregistrer la configuration du fournisseur",
-    "Search": "",
-    "SearchEmbeddingDelete": "",
-    "SearchEmbeddingDeleteConfirm": "",
-    "SearchEmbeddingDeleteError": "",
-    "SearchEmbeddingGenerate": "",
-    "SearchEmbeddingGenerating": "",
-    "SearchEmbeddingLastUpdated": "",
-    "SearchEmbeddingNoAIConfigError": "",
-    "SearchEmbeddingNoEmbeddingConfigError": "",
-    "SearchEmbeddingNoEmbeddingModelError": "",
-    "SearchEmbeddingStatusCompleted": "",
-    "SearchEmbeddingStatusError": "",
-    "SearchEmbeddingStatusGenerating": "",
-    "SearchEmbeddingStatusIdle": "",
-    "SearchEmbeddingUpdate": "",
-    "SearchNoWorkspaces": "",
+    "Search": "recherche et intégration",
+    "SearchEmbeddingDelete": "supprimer",
+    "SearchEmbeddingDeleteConfirm": "Êtes-vous sûr de vouloir supprimer tous les vecteurs d'incorporation de l'espace de travail \"{{workspaceName}}\" ? Cette action est irréversible.",
+    "SearchEmbeddingDeleteError": "Suppression intégrée échouée : {{error}}",
+    "SearchEmbeddingGenerate": "générer des embeddings",
+    "SearchEmbeddingGenerating": "Génération en cours...",
+    "SearchEmbeddingLastUpdated": "Dernière mise à jour : {{time}}",
+    "SearchEmbeddingNoAIConfigError": "Veuillez d'abord configurer les paramètres de l'API IA dans la section API externe.",
+    "SearchEmbeddingNoEmbeddingModelError": "Veuillez d'abord configurer les paramètres du modèle d'intégration par défaut dans la section API externe.",
+    "SearchEmbeddingStatusCompleted": "{{totalEmbeddings}} embeddings de {{totalNotes}} notes",
+    "SearchEmbeddingStatusError": "Erreur : {{error}}",
+    "SearchEmbeddingStatusGenerating": "Génération en cours... ({{completed}}/{{total}})",
+    "SearchEmbeddingStatusIdle": "embedding non généré",
+    "SearchEmbeddingUpdate": "mise à jour de l'intégration",
+    "SearchNoWorkspaces": "Espace de travail introuvable",
     "SelectDefaultProvider": "choisir le fournisseur par défaut",
-    "SelectEmbeddingModel": "",
     "SelectFromPresets": "Sélectionner parmi les modèles prédéfinis",
     "SelectModel": "Sélectionner un modèle",
-    "SelectProvider": "Sélectionner un fournisseur",
     "SettingsSaved": "Paramètres enregistrés",
     "SystemPrompt": "Invite système",
     "SystemPromptDescription": "Définissez les instructions système envoyées à l'AI pour définir son comportement et ses capacités",
     "Temperature": "Température",
     "TemperatureDescription": "Une valeur plus faible produit une réponse plus déterministe et concentrée, tandis qu'une valeur plus élevée génère une réponse plus diversifiée et créative.",
     "TopP": "Top P",
-    "TopPDescription": "Contrôler l'aléatoire des réponses. Une valeur plus faible rend la réponse plus déterminée, tandis qu'une valeur plus élevée permet davantage de possibilités."
+    "TopPDescription": "Contrôler l'aléatoire des réponses. Une valeur plus faible rend la réponse plus déterminée, tandis qu'une valeur plus élevée permet davantage de possibilités.",
+    "WorkflowFile": "fichier de flux de travail",
+    "WorkflowFileHelp": "Chemin du fichier JSON du flux de travail ComfyUI",
+    "WorkflowFilePath": "chemin du fichier de flux de travail"
   },
   "Prompt": {
-    "AutoRefresh": "",
-    "AutoUpdate": "",
-    "AutoUpdatePreview": "",
-    "CodeEditor": "",
-    "Config": "",
-    "ConfigurationDescription": "",
-    "EnterEditMode": "",
-    "EnterFullScreen": "",
-    "ExitEditMode": "",
-    "ExitFullScreen": "",
-    "Flat": "",
-    "FormEditor": "",
-    "LastUpdated": "",
-    "Loading": "",
-    "NoConfigFound": "",
-    "NoHandlerFound": "",
-    "NoMessages": "",
-    "Preview": "",
-    "RefreshPreview": "",
-    "SchemaNotProvided": "",
-    "SchemaNotProvidedDescription": "",
-    "ToggleFullScreen": "",
-    "Tree": "",
-    "ValidationErrors": ""
+    "AutoRefresh": "L'aperçu se rafraîchit automatiquement en fonction des modifications du texte saisi.",
+    "CodeEditor": "Éditeur de code",
+    "Flat": "vue en mosaïque",
+    "FormEditor": "Éditeur de formulaire",
+    "LastUpdated": "Dernière mise à jour",
+    "Loading": "Chargement de l'aperçu en cours...",
+    "NoMessages": "Aucun message à prévisualiser pour le moment.",
+    "Preview": "Aperçu des mots-clés",
+    "SchemaNotProvided": "Format non fourni",
+    "SchemaNotProvidedDescription": "Aucun schéma JSON n'a été fourni ou il n'a pas pu être obtenu correctement. Le formulaire d'édition ne peut pas être affiché.",
+    "Tree": "vue arborescente",
+    "ValidationErrors": "détecter une erreur"
   },
   "PromptConfig": {
-    "AddItem": "",
-    "EmptyArray": "",
-    "ItemCount": "",
-    "RemoveItem": "",
+    "AddItem": "ajouter un projet",
+    "EmptyArray": "Aucun élément n'a encore été ajouté. Cliquez sur le bouton ci-dessous pour ajouter votre premier élément.",
+    "ItemCount": "{{count}} éléments",
+    "RemoveItem": "supprimer l'élément de la liste",
     "Tabs": {
-      "PromptDynamicModification": "",
-      "Prompts": "",
-      "Response": "",
-      "ResponseDynamicModification": ""
+      "Prompts": "mot-clé",
+      "Response": "réponse"
     },
     "Tags": {
-      "HelperText": "",
-      "NoOptions": "",
-      "Placeholder": ""
+      "HelperText": "Appuyez sur Entrée après la saisie pour ajouter une étiquette, ou choisissez parmi les étiquettes prédéfinies.",
+      "NoOptions": "aucune étiquette disponible",
+      "Placeholder": "Entrer une étiquette..."
     }
   },
   "Schema": {
     "AIConfig": {
       "Description": "Configuration des paramètres de conversation IA",
-      "Title": ""
+      "Title": "Configuration de l'IA"
     },
     "AgentConfig": {
       "Description": "Configuration de l'agent intelligent",
       "Id": "Identifiant unique de l'agent intelligent",
-      "IdTitle": "",
+      "IdTitle": "ID de l'agent intelligent",
       "PromptConfig": {
         "Description": "configuration des mots-clés",
-        "PromptDynamicModification": "Liste de configuration de modification dynamique des mots-clés",
         "Prompts": "Liste de configuration des mots-clés",
         "Response": "Liste de configuration des réponses",
-        "ResponseDynamicModification": "Répondre à la liste de configuration modifiée dynamiquement",
-        "Title": ""
+        "Title": "configuration des mots-clés"
       },
-      "Title": ""
+      "Title": "Configuration de l'agent intelligent"
     },
     "AutoReroll": {
-      "Description": "Regénération automatique des paramètres de configuration",
-      "MaxRetry": "Nombre maximum de tentatives",
-      "MaxRetryTitle": "",
-      "Search": "mot-clé de recherche",
-      "SearchTitle": "",
-      "TargetId": "ID de l'élément cible",
-      "TargetIdTitle": "",
-      "Title": ""
     },
     "BaseAPIConfig": {
       "API": "Fournisseur d'API et configuration du modèle",
-      "APITitle": "",
+      "APITitle": "Configuration de l'API",
       "Description": "Configuration de l'API de base",
       "ModelParameters": "Configuration des paramètres du modèle",
-      "ModelParametersTitle": "",
-      "Title": ""
+      "ModelParametersTitle": "paramètres du modèle",
+      "Title": "Configuration de base des API"
     },
     "DefaultAgents": {
       "Description": "Liste de configuration des agents intelligents par défaut",
-      "Title": ""
+      "Title": "agent intelligent par défaut"
     },
     "DynamicPosition": {
-      "Description": "Configuration dynamique des paramètres de position",
-      "Title": ""
     },
     "FullReplacement": {
       "Description": "remplacement complet de la configuration des paramètres",
       "SourceType": "type source",
-      "SourceTypeTitle": "",
+      "SourceTypeTitle": "type source",
       "SourceTypes": {
-        "HistoryOfSession": "",
-        "LlmResponse": ""
       },
       "TargetId": "ID de l'élément cible",
-      "TargetIdTitle": "",
-      "Title": ""
+      "TargetIdTitle": "ID cible",
+      "Title": "paramètre de remplacement complet"
     },
     "Function": {
-      "Description": "Configuration des paramètres de fonction",
-      "FunctionId": "ID de fonction",
-      "FunctionIdTitle": "",
-      "TimeoutMessage": "message en retard",
-      "TimeoutMessageTitle": "",
-      "TimeoutSecond": "Délai d'expiration (secondes)",
-      "TimeoutSecondTitle": "",
-      "Title": "",
-      "Trigger": "conditions de déclenchement",
-      "TriggerTitle": ""
     },
     "HandlerConfig": {
-      "Description": "",
-      "Title": ""
     },
     "JavascriptTool": {
-      "Description": "Configuration des paramètres des outils JavaScript",
-      "Title": "",
-      "URI": "Outil JavaScript URI",
-      "URITitle": ""
     },
     "MCP": {
       "Description": "Configuration des paramètres du protocole de contexte du modèle",
       "Id": "ID du serveur MCP",
-      "IdTitle": "",
+      "IdTitle": "ID du serveur",
       "ResponseProcessing": {
-        "Description": "Configuration de traitement des réponses",
-        "Id": "ID du processeur de réponse",
-        "IdTitle": "",
-        "Title": ""
       },
       "TimeoutMessage": "message en retard",
-      "TimeoutMessageTitle": "",
+      "TimeoutMessageTitle": "message en retard",
       "TimeoutSecond": "Délai d'expiration (secondes)",
-      "TimeoutSecondTitle": "",
-      "Title": "",
-      "Trigger": "conditions de déclenchement",
-      "TriggerTitle": ""
+      "TimeoutSecondTitle": "Délai d'expiration",
+      "Title": "Paramètres du protocole de contexte du modèle"
     },
     "ModelParameters": {
       "Description": "Configuration des paramètres du modèle",
       "MaxTokens": "nombre maximum de jetons générés",
-      "MaxTokensTitle": "",
+      "MaxTokensTitle": "nombre maximum de jetons",
       "SystemPrompt": "Mot-clé d'invite du système de modèle",
-      "SystemPromptTitle": "",
+      "SystemPromptTitle": "Invite système",
       "Temperature": "Température de génération des réponses (plus élevée = plus créatif)",
-      "TemperatureTitle": "",
-      "Title": "",
+      "TemperatureTitle": "température",
+      "Title": "paramètres du modèle",
       "TopP": "Paramètre d'échantillonnage Top P",
-      "TopPTitle": ""
+      "TopPTitle": "Top P"
     },
     "Position": {
       "Bottom": "Décaler quelques messages depuis le bas",
-      "BottomTitle": "",
+      "BottomTitle": "décalage du bas",
       "Description": "configuration des paramètres de position",
       "TargetId": "ID de l'élément cible",
-      "TargetIdTitle": "",
-      "Title": "",
-      "Top": "décaler quelques messages depuis le haut",
-      "TopTitle": "",
+      "TargetIdTitle": "ID cible",
+      "Title": "paramètre positionnel",
       "Type": "type d'emplacement",
-      "TypeTitle": "",
+      "TypeTitle": "type d'emplacement",
       "Types": {
-        "Absolute": "",
-        "After": "",
-        "Before": "",
-        "Relative": ""
       }
     },
     "Prompt": {
       "Caption": "brève description",
-      "CaptionTitle": "",
+      "CaptionTitle": "décrire",
       "Children": "Liste des sous-indices, qui seront concaténés de haut en bas et de l'extérieur vers l'intérieur pour former le texte final d'indice.",
-      "ChildrenTitle": "",
+      "ChildrenTitle": "sous-prompt",
       "Description": "Configuration complète des invites, incluant le type et le contenu.",
       "Enabled": "Activer cette invite, seules celles activées seront intégrées dans l'invite finale.",
-      "EnabledTitle": "",
+      "EnabledTitle": "activer",
       "Id": "L'identifiant unique de configuration des mots d'invite, permettant de référencer par targetId dans PromptDynamicModification.",
-      "IdTitle": "",
+      "IdTitle": "ID",
       "Role": "Rôle des invites d'interface compatible OpenAI",
-      "RoleTitle": "",
+      "RoleTitle": "rôle",
       "RoleType": {
-        "Assistant": "",
-        "System": "",
-        "User": ""
+        "Assistant": "Assistant - Réponses et contenus de l'IA",
+        "System": "Système - Définir les règles de comportement et le contexte de l'IA",
+        "User": "Utilisateur - Simuler les entrées et requêtes de l'utilisateur"
       },
       "Tags": "Liste des étiquettes",
-      "TagsTitle": "",
+      "TagsTitle": "étiquette",
       "Text": "Le contenu des mots d'invite peut inclure la syntaxe prise en charge par le texte wiki, comme <<nom de variable>>.",
-      "TextTitle": "",
-      "Title": ""
+      "TextTitle": "texte",
+      "Title": "mot-clé"
     },
     "PromptDynamicModification": {
-      "Caption": "brève description",
-      "CaptionTitle": "",
-      "Content": "contenu",
-      "ContentTitle": "",
-      "Description": "description détaillée",
-      "DynamicModificationType": "modification dynamique de type",
-      "DynamicModificationTypeTitle": "",
       "DynamicModificationTypes": {
-        "DynamicPosition": "",
-        "FullReplacement": "",
-        "Function": "",
-        "JavascriptTool": "",
-        "ModelContextProtocol": "",
-        "RetrievalAugmentedGeneration": ""
-      },
-      "DynamicPositionParam": "paramètres de position dynamiques",
-      "DynamicPositionParamTitle": "",
-      "ForbidOverrides": "Interdiction de recouvrement",
-      "ForbidOverridesTitle": "",
-      "FullReplacementParam": "remplacer complètement les paramètres",
-      "FullReplacementParamTitle": "",
-      "FunctionParam": "paramètres de fonction",
-      "FunctionParamTitle": "",
-      "Id": "identifiant unique",
-      "IdTitle": "",
-      "JavascriptToolParam": "Paramètres des outils JavaScript",
-      "JavascriptToolParamTitle": "",
-      "MCPParam": "Paramètres du protocole de contexte du modèle",
-      "MCPParamTitle": "",
-      "RAGParam": "Paramètres de génération améliorée par recherche",
-      "RAGParamTitle": "",
-      "SchemaDescription": "Configuration de modification dynamique des mots d'incitation",
-      "Title": ""
+      }
     },
     "PromptPart": {
-      "Caption": "une brève description des mots d'invite",
-      "CaptionTitle": "",
-      "Children": "Liste des sous-indices, qui seront concaténés de haut en bas et de l'extérieur vers l'intérieur pour former le texte final d'indice.",
-      "ChildrenTitle": "",
-      "Description": "représente une partie de l'invite, qui peut être du texte ou une structure imbriquée",
-      "Id": "Identifiant unique, pratique pour référencer via targetId dans PromptDynamicModification.",
-      "IdTitle": "",
-      "Tags": "Liste d'étiquettes, utilisée pour la classification et la référence",
-      "TagsTitle": "",
-      "Text": "Le texte de l'invite peut inclure une syntaxe prise en charge par le wiki, comme <<nom_variable>>.",
-      "TextTitle": "",
-      "Title": ""
     },
     "ProviderModel": {
       "Description": "Fournisseur et configuration du modèle",
+      "EmbeddingModel": "Nom du modèle d'incorporation pour la recherche sémantique et les opérations vectorielles",
+      "EmbeddingModelTitle": "modèle d'intégration",
+      "ImageGenerationModel": "Nom du modèle de génération d'images utilisé pour les opérations de génération d'images à partir de texte",
+      "ImageGenerationModelTitle": "modèle de génération d'images",
       "Model": "Nom du modèle d'IA",
-      "ModelTitle": "",
+      "ModelTitle": "modèle",
       "Provider": "Nom du fournisseur d'IA",
-      "ProviderTitle": "",
-      "Title": ""
+      "ProviderTitle": "fournisseur",
+      "SpeechModel": "Nom du modèle de génération vocale utilisé pour les opérations de synthèse vocale",
+      "SpeechModelTitle": "modèle vocal",
+      "Title": "modèle de fournisseur",
+      "TranscriptionsModel": "Nom du modèle de reconnaissance vocale utilisé pour la conversion de la parole en texte",
+      "TranscriptionsModelTitle": "modèle de reconnaissance vocale"
     },
     "RAG": {
-      "Description": "Configuration des paramètres de génération améliorée par recherche",
       "Removal": {
-        "CoolDownChatRound": "Nombre de tours de refroidissement après la dernière présentation",
-        "CoolDownChatRoundTitle": "",
-        "Description": "supprimer la condition",
-        "ExpireAfterChatRound": "Après combien de tours de dialogue cela expire-t-il ?",
-        "ExpireAfterChatRoundTitle": "",
-        "Title": ""
       },
-      "SourceType": "type source",
-      "SourceTypeTitle": "",
       "SourceTypes": {
-        "Wiki": ""
-      },
-      "Title": "",
-      "Trigger": "condition de déclenchement",
-      "TriggerTitle": "",
-      "WikiParam": "Paramètres Wiki",
-      "WikiParamTitle": ""
+      }
     },
-    "Required": "",
     "Response": {
       "Description": "La réponse de l'API externe, souvent utilisée comme cible pour des modifications dynamiques en réponse, a la même structure que les mots d'invite. Elle peut être préremplie avec du contenu prédéfini ou servir d'espace réservé (placeholder) ou de conteneur, où ResponseDynamicModification insère le contenu spécifique de la réponse de l'API externe.",
-      "Title": ""
+      "Title": "réponse"
     },
     "ResponseDynamicModification": {
-      "AutoRerollParam": "Paramètres de régénération automatique",
-      "AutoRerollParamTitle": "",
-      "Caption": "brève description",
-      "CaptionTitle": "",
-      "Description": "répondre à la modification dynamique de la configuration",
-      "DynamicModificationType": "modification dynamique de type",
-      "DynamicModificationTypeTitle": "",
       "DynamicModificationTypes": {
-        "FullReplacement": ""
       },
-      "ForbidOverrides": "Interdiction de remplacement",
-      "ForbidOverridesTitle": "",
-      "FullReplacementParam": "remplacer complètement les paramètres",
-      "FullReplacementParamTitle": "",
-      "Id": "identifiant unique",
-      "IdTitle": "",
-      "ResponseProcessingType": "Type de réponse au traitement",
-      "ResponseProcessingTypeTitle": "",
       "ResponseProcessingTypes": {
-        "AutoReroll": "",
-        "ToolCalling": ""
-      },
-      "Title": "",
-      "ToolCallingParam": "paramètres d'appel d'outil",
-      "ToolCallingParamTitle": ""
+      }
     },
     "ToolCalling": {
-      "Description": "Configuration des paramètres d'appel des outils",
-      "Match": "mode de correspondance",
-      "MatchTitle": "",
-      "TargetId": "ID de l'élément cible",
-      "TargetIdTitle": "",
-      "Title": ""
     },
     "Trigger": {
-      "Description": "Configuration des conditions de déclenchement",
-      "Filter": "Critères de sélection",
-      "FilterTitle": "",
       "Model": {
-        "Description": "Condition de déclenchement basée sur l'évaluation du modèle",
-        "Preset": "modèle prédéfini",
-        "PresetTitle": "",
-        "System": "Invite système",
-        "SystemTitle": "",
-        "Title": "",
-        "User": "prompt utilisateur",
-        "UserTitle": ""
-      },
-      "RandomChance": "probabilité de déclenchement aléatoire",
-      "RandomChanceTitle": "",
-      "Search": "mots-clés de recherche",
-      "SearchTitle": "",
-      "Title": ""
+      }
     },
     "Wiki": {
-      "Description": "Configuration des paramètres Wiki",
-      "Filter": "Expression de filtre, vous pouvez utiliser les filtres pris en charge par TiddlyWiki pour extraire des données de la base de connaissances.",
-      "FilterTitle": "",
-      "Title": "",
-      "WorkspaceName": "Nom de l'espace de travail",
-      "WorkspaceNameTitle": ""
     },
     "WikiOperation": {
-      "Description": "",
-      "Title": "",
+      "Description": "Effectuer des opérations sur les Tiddlers (ajout, suppression ou définition de texte) dans l'espace de travail Wiki",
+      "Title": "Opérations Wiki",
       "Tool": {
-        "Caption": "",
-        "Description": "",
         "Examples": {
-          "add": "",
-          "delete": "",
-          "set": ""
         },
-        "ExamplesTitle": "",
-        "Name": "",
         "Parameters": {
           "extraMeta": {
-            "Description": "",
-            "Title": ""
+            "Description": "Chaîne JSON de métadonnées supplémentaires, telles que des étiquettes et des champs, par défaut \"{}\"",
+            "Title": "métadonnées supplémentaires"
           },
           "operation": {
-            "Description": "",
-            "Title": ""
+            "Description": "Type d'opération à effectuer",
+            "Title": "Type d'opération"
           },
           "options": {
-            "Description": "",
-            "Title": ""
+            "Description": "Chaîne JSON des options d'opération, par défaut \"{}\"",
+            "Title": "options d'opération"
           },
           "text": {
-            "Description": "",
-            "Title": ""
+            "Description": "Le contenu textuel de Tiddler",
+            "Title": "Contenu de Tiddler"
           },
           "title": {
-            "Description": "",
-            "Title": ""
+            "Description": "Le titre de Tiddler",
+            "Title": "Titre du Tiddler"
           },
           "workspaceName": {
-            "Description": "",
-            "Title": ""
-          }
-        },
-        "ParametersTitle": ""
-      },
-      "ToolListPosition": {
-        "Position": "",
-        "PositionTitle": "",
-        "TargetId": "",
-        "TargetIdTitle": ""
-      },
-      "ToolResultDuration": "",
-      "ToolResultDurationTitle": ""
-    },
-    "WikiSearch": {
-      "Description": "",
-      "Filter": "",
-      "FilterTitle": "",
-      "IncludeText": "",
-      "IncludeTextTitle": "",
-      "MaxResults": "",
-      "MaxResultsTitle": "",
-      "SourceType": "",
-      "SourceTypeTitle": "",
-      "Title": "",
-      "Tool": {
-        "Parameters": {
-          "filter": {
-            "Description": "",
-            "Title": ""
-          },
-          "workspaceName": {
-            "Description": "",
-            "Title": ""
+            "Description": "Nom ou ID de l'espace de travail à manipuler",
+            "Title": "Nom de l'espace de travail"
           }
         }
       },
       "ToolListPosition": {
-        "Position": "",
-        "PositionTitle": "",
-        "TargetId": "",
-        "TargetIdTitle": ""
+        "Position": "par rapport à la position d'insertion de l'élément cible (avant/après)",
+        "PositionTitle": "position d'insertion",
+        "TargetId": "ID de l'élément cible pour insérer la liste des outils",
+        "TargetIdTitle": "ID cible"
       },
-      "ToolListPositionTitle": "",
-      "ToolResultDuration": "",
-      "ToolResultDurationTitle": "",
-      "WorkspaceName": "",
-      "WorkspaceNameTitle": ""
+      "ToolResultDuration": "Le nombre de tours pendant lesquels les résultats de l'exécution des outils restent visibles dans la conversation, après quoi ils seront affichés en gris.",
+      "ToolResultDurationTitle": "nombre de tours consécutifs des résultats de l'outil"
+    },
+    "WikiSearch": {
+      "Description": "Rechercher le contenu de l'espace de travail TiddlyWiki à l'aide d'expressions de filtre",
+      "SourceType": "type de source de données",
+      "SourceTypeTitle": "type source",
+      "Title": "Recherche Wiki",
+      "Tool": {
+        "Parameters": {
+          "filter": {
+            "Description": "Expression de filtre TiddlyWiki",
+            "Title": "filtre"
+          },
+          "limit": {
+            "Description": "nombre maximal de résultats retournés",
+            "Title": "limiter"
+          },
+          "query": {
+            "Description": "Texte de requête utilisé pour la recherche vectorielle (langage naturel)",
+            "Title": "requête"
+          },
+          "searchType": {
+            "Description": "Choisissez un mode de recherche basé sur des règles ou sur la similarité.",
+            "Title": "type de recherche"
+          },
+          "threshold": {
+            "Description": "Seuil de similarité (0-1), les résultats vectoriels en dessous de ce seuil seront filtrés.",
+            "Title": "seuil"
+          },
+          "workspaceName": {
+            "Description": "Nom ou ID de l'espace de travail à rechercher",
+            "Title": "Nom de l'espace de travail"
+          }
+        }
+      },
+      "ToolListPosition": {
+        "Position": "position d'insertion par rapport à la position cible",
+        "PositionTitle": "position d'insertion",
+        "TargetId": "ID de l'élément cible, la liste des outils sera insérée par rapport à cet élément",
+        "TargetIdTitle": "ID cible"
+      },
+      "ToolListPositionTitle": "Emplacement de la liste des outils",
+      "ToolResultDuration": "Le nombre de tours pendant lesquels les résultats de l'exécution des outils restent visibles dans la conversation, après quoi ils seront affichés en gris.",
+      "ToolResultDurationTitle": "nombre de tours consécutifs avec résultat d'outil"
     }
   },
   "Search": {
@@ -665,45 +501,59 @@
     "RecentlyClosedTabs": "Onglets récemment fermés"
   },
   "SplitView": {
-    "NoTabs": "Aucun onglet dans la vue fractionnée.",
-    "RemoveFromSplitView": "retirer de la vue fractionnée"
+    "NoTabs": "Aucun onglet dans la vue fractionnée."
   },
   "Tab": {
     "Title": {
+      "CreateNewAgent": "Créer un nouvel agent intelligent",
+      "EditAgentDefinition": "Agent éditorial intelligent",
       "NewTab": "Nouvel onglet",
       "NewWeb": "nouvelle page web"
     }
   },
   "Tool": {
     "Schema": {
-      "Description": "",
-      "Examples": "",
-      "Optional": "",
-      "Parameters": "",
-      "Required": ""
+      "Description": "décrire",
+      "Examples": "Exemple d'utilisation",
+      "Optional": "optionnel",
+      "Parameters": "paramètre",
+      "Required": "nécessaire"
     },
     "WikiOperation": {
       "Error": {
-        "WorkspaceNotExist": "",
-        "WorkspaceNotFound": ""
+        "WorkspaceNotExist": "L'espace de travail {{workspaceID}} n'existe pas.",
+        "WorkspaceNotFound": "Le nom ou l'ID de l'espace de travail \"{{workspaceName}}\" n'existe pas. Espaces de travail disponibles : {{availableWorkspaces}}"
       },
       "Success": {
-        "Added": "",
-        "Deleted": "",
-        "Updated": ""
+        "Added": "Le Tiddler \"{{title}}\" a été ajouté avec succès à l'espace de travail Wiki \"{{workspaceName}}\".",
+        "Deleted": "Le Tiddler \"{{title}}\" a été supprimé avec succès de l'espace de travail Wiki \"{{workspaceName}}\".",
+        "Updated": "Le texte du Tiddler \"{{title}}\" a été défini avec succès dans l'espace de travail Wiki \"{{workspaceName}}\"."
       }
     },
     "WikiSearch": {
       "Error": {
-        "ExecutionFailed": "",
-        "WorkspaceNotExist": "",
-        "WorkspaceNotFound": ""
+        "ExecutionFailed": "Exécution de l'outil échouée : {{error}}",
+        "WorkspaceNotExist": "L'espace de travail {{workspaceID}} n'existe pas",
+        "WorkspaceNotFound": "Le nom ou l'ID de l'espace de travail \"{{workspaceName}}\" n'existe pas. Espaces de travail disponibles : {{availableWorkspaces}}"
       },
       "Success": {
-        "Completed": "",
-        "NoResults": ""
+        "Completed": "Recherche Wiki terminée. {{totalResults}} résultats trouvés au total, affichage de {{shownResults}} :",
+        "NoResults": "Aucun résultat trouvé pour le filtre \"{{filter}}\" dans l'espace de travail Wiki \"{{workspaceName}}\".",
+        "NoVectorResults": "Aucun résultat de recherche vectorielle conforme n'a été trouvé dans l'espace de travail Wiki \"{{workspaceName}}\" (seuil de similarité : {{threshold}}).",
+        "VectorCompleted": "Selon la recherche vectorielle, les contenus suivants ont été trouvés dans l'espace de travail {{workspaceName}} :"
+      },
+      "UpdateEmbeddings": {
+        "Error": {
+          "ExecutionFailed": "Génération d'embedding échouée : {{error}}",
+          "NoAIConfig": "Veuillez d'abord configurer le fournisseur d'IA et le modèle d'intégration (dans les paramètres).",
+          "WorkspaceNotExist": "L'espace de travail {{workspaceID}} n'existe pas",
+          "WorkspaceNotFound": "Le nom ou l'ID de l'espace de travail \"{{workspaceName}}\" n'existe pas. Espaces de travail disponibles : {{availableWorkspaces}}"
+        },
+        "Success": {
+          "Generated": "L'index d'embedding vectoriel pour l'espace de travail {{workspaceName}} a été généré avec succès. Total de {{totalNotes}} notes et {{totalEmbeddings}} embeddings."
+        }
       }
     }
   },
-  "Unknown": ""
+  "Unknown": "inconnu"
 }
