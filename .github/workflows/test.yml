@@ -27,15 +27,6 @@ jobs:
       - name: Run linting
         run: pnpm run lint
 
-      # Linux specific: Initialize CodeQL (only for x64)
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript
-      # Linux specific: Perform CodeQL Analysis (only for x64)
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-
       # Install minimal Linux dependencies for Electron GUI testing https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci
       - name: Install Linux GUI dependencies
         run: |
@@ -70,3 +61,17 @@ jobs:
             userData-test/logs/
           retention-days: 7
         continue-on-error: true
+
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
