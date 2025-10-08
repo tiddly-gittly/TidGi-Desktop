@@ -279,8 +279,14 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       expect(responseContext.handlerContext.agent.messages.length).toBeGreaterThan(0);
       const errorResultMessage = responseContext.handlerContext.agent.messages[responseContext.handlerContext.agent.messages.length - 1] as AgentInstanceMessage;
       expect(errorResultMessage.role).toBe('tool'); // Tool error message
+
+      // The error should be indicated in the message content
+      expect(errorResultMessage.content).toContain('<functions_result>');
+      expect(errorResultMessage.content).toContain('Tool: wiki-search');
       expect(errorResultMessage.content).toContain('Error:');
-      expect(errorResultMessage.content).toContain('does not exist');
+
+      // Verify metadata marks this as an error
+      expect(errorResultMessage.metadata?.isError).toBe(true);
     });
   });
 

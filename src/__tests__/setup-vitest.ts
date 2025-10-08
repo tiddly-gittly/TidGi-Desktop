@@ -70,7 +70,7 @@ import '@/constants/appPaths';
 
 // Some build-time globals (injected by bundlers) are not defined in test env.
 // Provide them here to avoid ReferenceError when modules reference them.
-(global as any).MAIN_WINDOW_VITE_DEV_SERVER_URL = undefined;
+(global as unknown as Record<string, unknown>).MAIN_WINDOW_VITE_DEV_SERVER_URL = undefined;
 
 /**
  * Mock matchMedia and other DOM APIs for components using autocomplete search functionality
