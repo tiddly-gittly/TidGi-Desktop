@@ -242,8 +242,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       tiddlywiki:
-        specifier: 5.3.6
-        version: 5.3.6
+        specifier: 5.3.7
+        version: 5.3.7
       type-fest:
         specifier: 4.41.0
         version: 4.41.0
@@ -6617,8 +6617,8 @@ packages:
     resolution: {integrity: sha512-nt6AMGKW1p/70DF/hGBdJB57B8Tspmbp5gfJ8ilhLnt7kkr2ye7hzD6NVG8GGErk2HWF34igrL2CXmNIkzKqKw==}
     engines: {node: '>=18'}
 
-  tiddlywiki@5.3.6:
-    resolution: {integrity: sha512-RfWt+Bo/UsTdzP5N4nEInjaJjgAzylUMf21hE4FL5v65c3x054+A+3g3sgW1m68lTJbTbiiqSZ6q6BEIZMwhSQ==}
+  tiddlywiki@5.3.7:
+    resolution: {integrity: sha512-BVVmqGUj47BC+wFZgNLU5qKuNJbTnWWTOB9mEELHtovdKaAchMF5DEXFvZEl0SOTjhF29ljecKhjla19vmoHPA==}
     engines: {node: '>=0.8.2'}
     hasBin: true
     bundledDependencies: []
@@ -14447,7 +14447,7 @@ snapshots:
 
   throttleit@2.1.0: {}
 
-  tiddlywiki@5.3.6: {}
+  tiddlywiki@5.3.7: {}
 
   tiny-case@1.0.3: {}
 
