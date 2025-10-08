@@ -24,7 +24,7 @@
     "tidgi",
     "wouter"
   ],
-  "i18n-ally.sourceLanguage": "zh",
+  "i18n-ally.sourceLanguage": "zh-Hans",
   "i18n-ally.localesPaths": "localization/locales",
   "i18n-ally.namespace": false,
   "i18n-ally.review.user.name": "{locale}/{namespaces}.json",

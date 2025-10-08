@@ -76,7 +76,7 @@ export const SelectWidget: React.FC<WidgetProps> = (props) => {
       >
         {!required && (
           <StyledMenuItem value=''>
-            <em>{t('Common.None', 'None')}</em>
+            <em>{t('Common.None')}</em>
           </StyledMenuItem>
         )}
         {enumOptions.map((option: EnumOption, index: number) => (

@@ -177,6 +177,7 @@
     "SyncOnIntervalDescription": "When on, it will automatically sync according to the time interval in the global settings, and will still automatically sync on startup, or manually by clicking the button. Will auto backup data to local git before sync. If turned off, there is only one automatic sync when the application is opened, and one manual sync when the user triggers it by clicking the sync button in the wiki. ",
     "SyncOnStartup": "Sync On App Start",
     "SyncOnStartupDescription": "Commit and Sync once the app cold start.",
+    "TiddlyWiki": "",
     "TokenAuth": "Token Authenticate",
     "TokenAuthAutoFillUserNameDescription": "This feature requires userName to be filled in global setting or workspace setting, if its empty, a default one will be auto filled into workspace setting, you can change it later.",
     "TokenAuthCurrentHeader": "Credential authentication current request header",
@@ -452,6 +453,7 @@
     "UpdateAvailable": "Update!"
   },
   "Unknown": "Unknown",
+  "Update": "update",
   "Updater": {
     "CheckUpdate": "Check Update",
     "CheckingFailed": "Checking Failed (Network Error)",
@@ -463,6 +465,7 @@
     "Add": "Add",
     "Agent": "agent",
     "AreYouSure": "Are you sure you want to remove this workspace? \nRemoving the workspace will delete the workspace in this application, but will not delete the folders from the hard drive. \nBut, if you choose to delete the Wiki folder as well, all contents will be deleted.",
+    "DedicatedWorkspace": "special workspace",
     "DefaultTiddlers": "Default Tiddlers",
     "EditCurrentWorkspace": "Config Current Workspace",
     "EditWorkspace": "Config Workspace",

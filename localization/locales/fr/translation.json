@@ -177,6 +177,7 @@
     "SyncOnIntervalDescription": "Lorsqu'il est activé, il se synchronisera automatiquement selon l'intervalle de temps dans les paramètres globaux, et se synchronisera toujours automatiquement au démarrage, ou manuellement en cliquant sur le bouton. Sauvegardera automatiquement les données dans le git local avant la synchronisation. Si désactivé, il n'y a qu'une seule synchronisation automatique lors de l'ouverture de l'application, et une synchronisation manuelle lorsque l'utilisateur la déclenche en cliquant sur le bouton de synchronisation dans le wiki.",
     "SyncOnStartup": "Synchroniser au démarrage de l'application",
     "SyncOnStartupDescription": "Commit et synchronisation une fois l'application démarrée à froid.",
+    "TiddlyWiki": "",
     "TokenAuth": "Authentification par jeton",
     "TokenAuthAutoFillUserNameDescription": "Cette fonctionnalité nécessite que le nom d'utilisateur soit rempli dans les paramètres globaux ou les paramètres de l'espace de travail, s'il est vide, un nom par défaut sera automatiquement rempli dans les paramètres de l'espace de travail, vous pouvez le modifier plus tard.",
     "TokenAuthCurrentHeader": "En-tête d'authentification actuelle",
@@ -435,6 +436,7 @@
     "Preferences": "Préférences...",
     "UpdateAvailable": "Mise à jour !"
   },
+  "Update": "mise à jour",
   "Updater": {
     "CheckUpdate": "Vérifier les mises à jour",
     "CheckingFailed": "Échec de la vérification (erreur réseau)",
@@ -446,6 +448,7 @@
     "Add": "Ajouter",
     "Agent": "agent",
     "AreYouSure": "Êtes-vous sûr de vouloir supprimer cet espace de travail ? \nLa suppression de l'espace de travail supprimera l'espace de travail dans cette application, mais ne supprimera pas les dossiers du disque dur. \nMais, si vous choisissez de supprimer également le dossier Wiki, tout le contenu sera supprimé.",
+    "DedicatedWorkspace": "Zone de travail spéciale",
     "DefaultTiddlers": "Tiddlers par défaut",
     "EditCurrentWorkspace": "Configurer l'espace de travail actuel",
     "EditWorkspace": "Configurer l'espace de travail",

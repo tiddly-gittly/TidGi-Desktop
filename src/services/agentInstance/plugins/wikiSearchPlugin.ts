@@ -107,7 +107,7 @@ const WikiSearchToolParameterSchema = z.object({
   }),
 }).meta({
   title: 'wiki-search',
-  description: '在Wiki工作空间中搜索Tiddler内容（支持传统filter搜索和向量语义搜索）',
+  description: t('Schema.WikiSearch.Tool.Description'),
   examples: [
     { workspaceName: '我的知识库', searchType: 'filter' as const, filter: '[tag[示例]]', limit: 10, threshold: 0.7 },
     { workspaceName: '我的知识库', searchType: 'vector' as const, query: '如何使用智能体', limit: 5, threshold: 0.7 },
@@ -131,7 +131,7 @@ const WikiUpdateEmbeddingsToolParameterSchema = z.object({
 })
   .meta({
     title: 'wiki-update-embeddings',
-    description: '为Wiki工作空间生成或更新向量嵌入索引，用于语义搜索',
+    description: t('Schema.WikiSearch.Tool.UpdateEmbeddings.Description'),
     examples: [
       { workspaceName: '我的知识库', forceUpdate: false },
       { workspaceName: 'wiki', forceUpdate: true },
@@ -164,7 +164,7 @@ async function executeWikiSearchTool(
         error: i18n.t('Tool.WikiSearch.Error.WorkspaceNotFound', {
           workspaceName,
           availableWorkspaces: workspaces.map(w => `${w.name} (${w.id})`).join(', '),
-        }) || `Workspace with name or ID "${workspaceName}" does not exist. Available workspaces: ${workspaces.map(w => `${w.name} (${w.id})`).join(', ')}`,
+        }),
       };
     }
 
@@ -199,14 +199,14 @@ async function executeWikiSearchTool(
       if (!query) {
         return {
           success: false,
-          error: i18n.t('Tool.WikiSearch.Error.VectorSearchRequiresQuery') || 'Vector search requires a query parameter',
+          error: i18n.t('Tool.WikiSearch.Error.VectorSearchRequiresQuery'),
         };
       }
 
       if (!context?.config) {
         return {
           success: false,
-          error: i18n.t('Tool.WikiSearch.Error.VectorSearchRequiresConfig') || 'Vector search requires AI configuration',
+          error: i18n.t('Tool.WikiSearch.Error.VectorSearchRequiresConfig'),
         };
       }
 
@@ -224,8 +224,7 @@ async function executeWikiSearchTool(
         if (vectorResults.length === 0) {
           return {
             success: true,
-            data: i18n.t('Tool.WikiSearch.Success.NoVectorResults', { query, workspaceName, threshold }) ||
-              `No similar content found for query: "${query}" in workspace "${workspaceName}" (threshold: ${threshold})`,
+            data: i18n.t('Tool.WikiSearch.Success.NoVectorResults', { query, workspaceName, threshold }),
             metadata: {
               ...searchMetadata,
               query,
@@ -287,7 +286,7 @@ async function executeWikiSearchTool(
           success: false,
           error: i18n.t('Tool.WikiSearch.Error.VectorSearchFailed', {
             error: error instanceof Error ? error.message : String(error),
-          }) || `Vector search failed: ${error instanceof Error ? error.message : String(error)}`,
+          }),
         };
       }
     } else {
@@ -295,7 +294,7 @@ async function executeWikiSearchTool(
       if (!filter) {
         return {
           success: false,
-          error: i18n.t('Tool.WikiSearch.Error.FilterSearchRequiresFilter') || 'Filter search requires a filter parameter',
+          error: i18n.t('Tool.WikiSearch.Error.FilterSearchRequiresFilter'),
         };
       }
 
@@ -348,7 +347,7 @@ async function executeWikiSearchTool(
       content = i18n.t('Tool.WikiSearch.Success.VectorCompleted', {
         totalResults: results.length,
         query,
-      }) || `Found ${results.length} similar results for query: "${query}"\n\n`;
+      });
     } else {
       content = i18n.t('Tool.WikiSearch.Success.Completed', {
         totalResults: results.length,
@@ -386,7 +385,7 @@ async function executeWikiSearchTool(
       success: false,
       error: i18n.t('Tool.WikiSearch.Error.ExecutionFailed', {
         error: error instanceof Error ? error.message : String(error),
-      }) || `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`,
+      }),
     };
   }
 }
@@ -415,7 +414,7 @@ async function executeWikiUpdateEmbeddingsTool(
         error: i18n.t('Tool.WikiSearch.UpdateEmbeddings.Error.WorkspaceNotFound', {
           workspaceName,
           availableWorkspaces: workspaces.map(w => `${w.name} (${w.id})`).join(', '),
-        }) || `Workspace with name or ID "${workspaceName}" does not exist. Available workspaces: ${workspaces.map(w => `${w.name} (${w.id})`).join(', ')}`,
+        }),
       };
     }
 
@@ -432,7 +431,7 @@ async function executeWikiUpdateEmbeddingsTool(
     if (!context?.aiConfig) {
       return {
         success: false,
-        error: i18n.t('Tool.WikiSearch.UpdateEmbeddings.Error.NoAIConfig') || 'AI configuration is required for generating embeddings',
+        error: i18n.t('Tool.WikiSearch.UpdateEmbeddings.Error.NoAIConfig'),
       };
     }
 
@@ -457,7 +456,7 @@ async function executeWikiUpdateEmbeddingsTool(
       workspaceName,
       totalEmbeddings: stats.totalEmbeddings,
       totalNotes: stats.totalNotes,
-    }) || `Successfully generated embeddings for workspace "${workspaceName}". Total embeddings: ${stats.totalEmbeddings}, Total notes: ${stats.totalNotes}`;
+    });
 
     return {
       success: true,
@@ -480,7 +479,7 @@ async function executeWikiUpdateEmbeddingsTool(
       success: false,
       error: i18n.t('Tool.WikiSearch.UpdateEmbeddings.Error.ExecutionFailed', {
         error: error instanceof Error ? error.message : String(error),
-      }) || `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`,
+      }),
     };
   }
 }
@@ -681,9 +680,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
           toolResultText = `<functions_result>\nTool: ${toolMatch.toolId}\nParameters: ${JSON.stringify(validatedParameters)}\nResult: ${result.data}\n</functions_result>`;
         } else {
           isError = true;
-          toolResultText = `<functions_result>\nTool: ${toolMatch.toolId}\nParameters: ${JSON.stringify(validatedParameters)}\nError: ${
-            result.error || 'Unknown error'
-          }\n</functions_result>`;
+          toolResultText = `<functions_result>\nTool: ${toolMatch.toolId}\nParameters: ${JSON.stringify(validatedParameters)}\nError: ${result.error}\n</functions_result>`;
         }
 
         // Set up actions to continue the conversation with tool results
@@ -735,7 +732,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
           toolInfo: {
             toolId: 'wiki-search',
             parameters: validatedParameters,
-            originalText: toolMatch.originalText || '',
+            originalText: toolMatch.originalText,
           },
           requestId: context.requestId,
         });

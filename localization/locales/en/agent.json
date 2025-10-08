@@ -86,6 +86,7 @@
     "Title": "Create New Agent"
   },
   "EditAgent": {
+    "AgentDescription": "Agent Description",
     "AgentDescriptionHelper": "Describe the functionality and purpose of your intelligent agent.",
     "AgentDescriptionPlaceholder": "Enter agent description...",
     "AgentName": "Agent Name",
@@ -201,6 +202,7 @@
     "SettingsSaved": "Settings saved",
     "SystemPrompt": "System Prompt",
     "SystemPromptDescription": "Set the system instructions sent to the AI to define its behavior and capabilities",
+    "SystemPromptPlaceholder": "System prompt placeholder",
     "Temperature": "Temperature",
     "TemperatureDescription": "Lower values produce more deterministic and focused responses, while higher values yield more diverse and creative responses.",
     "TopP": "Top P",
@@ -496,7 +498,8 @@
       "CreateNewAgent": "Create New Agent",
       "EditAgentDefinition": "Edit Agent",
       "NewTab": "New Tab",
-      "NewWeb": "Create a new webpage"
+      "NewWeb": "Create a new webpage",
+      "SplitView": ""
     }
   },
   "Tool": {

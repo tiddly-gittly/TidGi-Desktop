@@ -84,6 +84,7 @@
     "Title": "新しいインテリジェントエージェントを作成する"
   },
   "EditAgent": {
+    "AgentDescription": "エージェントの説明",
     "AgentDescriptionHelper": "あなたのエージェントの機能と用途を説明してください",
     "AgentDescriptionPlaceholder": "入力エージェントの説明...",
     "AgentName": "エージェント名",
@@ -214,6 +215,7 @@
     "SettingsSaved": "設定が保存されました",
     "SystemPrompt": "システムプロンプト",
     "SystemPromptDescription": "AIに送信されるシステム命令を設定し、その動作と機能を定義します",
+    "SystemPromptPlaceholder": "システムプロンプトプレースホルダー",
     "Temperature": "温度",
     "TemperatureDescription": "低い値はより確定的で集中した応答を生成し、高い値はより多様で創造的な応答を生成します。",
     "TopP": "トップP",
@@ -509,7 +511,8 @@
       "CreateNewAgent": "新しいインテリジェントエージェントを作成",
       "EditAgentDefinition": "編集エージェント",
       "NewTab": "新しいタブ",
-      "NewWeb": "新しいウェブページを作成"
+      "NewWeb": "新しいウェブページを作成",
+      "SplitView": ""
     }
   },
   "Tool": {

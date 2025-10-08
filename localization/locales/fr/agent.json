@@ -84,6 +84,7 @@
     "Title": "Créer un nouvel agent intelligent"
   },
   "EditAgent": {
+    "AgentDescription": "Description de l'agent intelligent",
     "AgentDescriptionHelper": "Décrivez les fonctionnalités et l'utilité de votre agent intelligent",
     "AgentDescriptionPlaceholder": "Entrez la description de l'agent intelligent...",
     "AgentName": "nom de l'agent intelligent",
@@ -213,6 +214,7 @@
     "SettingsSaved": "Paramètres enregistrés",
     "SystemPrompt": "Invite système",
     "SystemPromptDescription": "Définissez les instructions système envoyées à l'AI pour définir son comportement et ses capacités",
+    "SystemPromptPlaceholder": "placeholder d'invite système",
     "Temperature": "Température",
     "TemperatureDescription": "Une valeur plus faible produit une réponse plus déterministe et concentrée, tandis qu'une valeur plus élevée génère une réponse plus diversifiée et créative.",
     "TopP": "Top P",
@@ -508,7 +510,8 @@
       "CreateNewAgent": "Créer un nouvel agent intelligent",
       "EditAgentDefinition": "Agent éditorial intelligent",
       "NewTab": "Nouvel onglet",
-      "NewWeb": "nouvelle page web"
+      "NewWeb": "nouvelle page web",
+      "SplitView": ""
     }
   },
   "Tool": {
