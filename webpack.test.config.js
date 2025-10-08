@@ -9,7 +9,7 @@ module.exports = {
   mode: 'development',
   target: 'node',
   devtool: 'cheap-module-source-map',
-  
+
   module: {
     rules: [
       // TypeScript rules, keep consistent with main project config
@@ -42,26 +42,26 @@ module.exports = {
       },
     ],
   },
-  
+
   resolve: {
     alias: webpackAlias,
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.json'],
-    fallback: { 
-      crypto: false, 
-      fs: false, 
+    fallback: {
+      crypto: false,
+      fs: false,
       process: false,
       path: require.resolve('path-browserify'),
     },
   },
-  
+
   externals: {
     // Exclude Electron-specific modules in test environment
-    'electron': 'commonjs electron',
-    'tiddlywiki': 'commonjs tiddlywiki',
-    'dugite': 'commonjs dugite',
+    electron: 'commonjs electron',
+    tiddlywiki: 'commonjs tiddlywiki',
+    dugite: 'commonjs dugite',
     'better-sqlite3': 'commonjs better-sqlite3',
   },
-  
+
   // Node.js settings for test environment
   node: {
     __filename: true,

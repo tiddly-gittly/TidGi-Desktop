@@ -441,7 +441,7 @@
       "SourceType": "数据源类型",
       "SourceTypeTitle": "源类型",
       "Title": "Wiki 搜索",
-        "Tool": {
+      "Tool": {
         "Parameters": {
           "filter": {
             "Description": "TiddlyWiki 筛选器表达式",
@@ -468,28 +468,28 @@
             "Title": "工作区名称"
           }
         },
-          "Description": "在Wiki工作空间中搜索Tiddler内容（支持传统filter搜索和向量语义搜索）",
-          "UpdateEmbeddings": {
-            "Parameters": {
-              "forceUpdate": {
-                "Title": "强制更新",
-                "Description": "是否强制重新生成嵌入索引，覆盖已有的嵌入数据（如果为 true 则忽略增量更新）。"
-              },
-              "workspaceName": {
-                "Title": "工作区名称",
-                "Description": "要为其生成或更新向量嵌入索引的工作区名称或 ID。"
-              }
+        "Description": "在Wiki工作空间中搜索Tiddler内容（支持传统filter搜索和向量语义搜索）",
+        "UpdateEmbeddings": {
+          "Parameters": {
+            "forceUpdate": {
+              "Title": "强制更新",
+              "Description": "是否强制重新生成嵌入索引，覆盖已有的嵌入数据（如果为 true 则忽略增量更新）。"
             },
-            "Description": "为Wiki工作区生成或更新向量嵌入索引，用于语义搜索",
             "workspaceName": {
               "Title": "工作区名称",
               "Description": "要为其生成或更新向量嵌入索引的工作区名称或 ID。"
-            },
-            "forceUpdate": {
-              "Title": "强制更新",
-              "Description": "是否强制重新生成嵌入索引，覆盖已有的嵌入数据（如果设置为 true 则忽略增量更新）。"
             }
+          },
+          "Description": "为Wiki工作区生成或更新向量嵌入索引，用于语义搜索",
+          "workspaceName": {
+            "Title": "工作区名称",
+            "Description": "要为其生成或更新向量嵌入索引的工作区名称或 ID。"
+          },
+          "forceUpdate": {
+            "Title": "强制更新",
+            "Description": "是否强制重新生成嵌入索引，覆盖已有的嵌入数据（如果设置为 true 则忽略增量更新）。"
           }
+        }
       },
       "ToolListPosition": {
         "Position": "相对于目标位置的插入位置",

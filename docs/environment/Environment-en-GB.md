@@ -1,4 +1,3 @@
-
 <!-- Exported from TiddlyWiki at 00:22, 19th 七月 2023 -->
 
 # TidGi development environment configuration (Linux)
@@ -17,10 +16,9 @@ Download link: https://github.com/BeyondDimension/SteamTools
 ### Certificate verification
 
 - firefox suggests that there is a potential security problem with the connection:
-    - Settings->Privacy and Security->Certificates->View Certificates->Certificate Authorities, import `/home/username/.local/share/Steam++/SteamTools.Certificate`, and check the box of "Trust this certificate authority to identify the website! Certificate`, check the box "Trust this certificate authority to identify the site".
+  - Settings->Privacy and Security->Certificates->View Certificates->Certificate Authorities, import `/home/username/.local/share/Steam++/SteamTools.Certificate`, and check the box of "Trust this certificate authority to identify the website! Certificate`, check the box "Trust this certificate authority to identify the site".
 - SSL certificate problem with git:
-    - You need to turn off git's certificate verification: `git config --global http.sslverify false`.
-
+  - You need to turn off git's certificate verification: `git config --global http.sslverify false`.
 
 ### 2. nvm
 
@@ -69,8 +67,8 @@ git config --global user.email "user@outlook.com"
 
 Authentication for Git push
 
-* Username: github username
-* Password: github -> setting -> Developer settings -> Personal access tokens
+- Username: github username
+- Password: github -> setting -> Developer settings -> Personal access tokens
 
 ### 6. vscode
 

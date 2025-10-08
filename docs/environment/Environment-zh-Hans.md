@@ -15,10 +15,10 @@
 
 ### 证书验证
 
--  firefox提示连接有潜在的安全问题：
-    - 设置->隐私与安全->证书->查看证书->证书颁发机构，导入`/home/username/.local/share/Steam++/SteamTools.Certificate`，勾选“信任由此证书颁发机构来标识网站”
+- firefox提示连接有潜在的安全问题：
+  - 设置->隐私与安全->证书->查看证书->证书颁发机构，导入`/home/username/.local/share/Steam++/SteamTools.Certificate`，勾选“信任由此证书颁发机构来标识网站”
 - git操作提示SSL certificate problem：
-    - 需要关闭git的证书验证：`git config --global http.sslverify false`
+  - 需要关闭git的证书验证：`git config --global http.sslverify false`
 
 ## 2. nvm
 
@@ -67,8 +67,8 @@ git config --global user.email "user@outlook.com"
 
 Git push时的鉴权
 
-* Username：github用户名
-* Password：github -> setting -> Developer settings -> Personal access tokens
+- Username：github用户名
+- Password：github -> setting -> Developer settings -> Personal access tokens
 
 ## 6. vscode
 

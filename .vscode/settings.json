@@ -34,7 +34,7 @@
   "i18n-ally.localeCountryMap": {
     "en": "br", // show UK's flag instead of US's
     "zh": "cn", // show Chinese flag for 'zh'
-    "ko": "ko", // show Korean flag for 'ko'
+    "ko": "ko" // show Korean flag for 'ko'
   },
   "i18n-ally.keySeparator": ".",
   "prettier.printWidth": 160,

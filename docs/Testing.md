@@ -75,14 +75,14 @@ describe('WorkspaceSelector', () => {
   it('should switch to Help page when clicking Help workspace', async () => {
     const user = userEvent.setup();
     render(<WorkspaceSelector />);
-    
+
     // Wait for async content to load
     expect(await screen.findByText('Guide Page Content')).toBeInTheDocument();
-    
+
     // Use realistic user interactions
     const helpText = await screen.findByText('Help');
     await user.click(helpText);
-    
+
     // Assert on user-visible changes
     expect(await screen.findByText('Help Page Content')).toBeInTheDocument();
   });
@@ -94,12 +94,12 @@ describe('WorkspaceSelector', () => {
 ```typescript
 // Mock complex components simply
 vi.mock('../ComplexComponent', () => ({
-  default: () => <div data-testid="complex-component">Mocked Component</div>,
+  default: () => <div data-testid='complex-component'>Mocked Component</div>,
 }));
 
 // Test-specific data for current test file
 const workspacesSubject = new BehaviorSubject([
-  { id: 'test-workspace', name: 'Test Wiki' }
+  { id: 'test-workspace', name: 'Test Wiki' },
 ]);
 
 // Override global observables for this test
@@ -168,7 +168,7 @@ it('should test feature after loading', async () => {
 it('should show loading initially', async () => {
   render(<AsyncComponent />);
   expect(screen.getByText('Loading')).toBeInTheDocument();
-  
+
   // Wait for completion to prevent warnings in subsequent async updates
   await waitFor(() => {
     expect(screen.queryByText('Loading')).not.toBeInTheDocument();
@@ -209,18 +209,14 @@ export class ApplicationWorld {
 }
 
 // Generic step definitions you usually must reuse.
-When('I click on a(n) {string} element with selector {string}', 
-  async function(elementComment: string, selector: string) {
-    // ...
-  }
-);
+When('I click on a(n) {string} element with selector {string}', async function(elementComment: string, selector: string) {
+  // ...
+});
 
 // Don't define specific step only for you own use, that would be selfish.
-When('(Dont do this) I click on a specific button and wait for 2 seconds.', 
-  async function() {
-    // Strictly forbidden.
-  }
-);
+When('(Dont do this) I click on a specific button and wait for 2 seconds.', async function() {
+  // Strictly forbidden.
+});
 ```
 
 ### Key E2E Testing Patterns
@@ -253,7 +249,7 @@ When('(Dont do this) I click on a specific button and wait for 2 seconds.',
 // ❌ Testing implementation details
 expect(component.state.isLoading).toBe(false);
 
-// ✅ Testing user-visible behavior  
+// ✅ Testing user-visible behavior
 expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
 
 // ❌ Using act() wrapper unnecessarily

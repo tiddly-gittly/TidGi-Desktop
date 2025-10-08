@@ -19,23 +19,23 @@ import type { ApplicationWorld } from './application';
  */
 function generateSemanticEmbedding(tag: string): number[] {
   const vector: number[] = [];
-  
+
   // Parse tag to determine semantic relationship
   // Format: "note1", "note2", "query-note1", "unrelated"
   const baseTag = tag.replace(/-similar$/, '').replace(/^query-/, '');
   const isSimilar = tag.includes('-similar');
   const isQuery = tag.startsWith('query-');
   const isUnrelated = tag === 'unrelated';
-  
+
   // Generate base vector from tag
   const seed = Array.from(baseTag).reduce((hash, char) => {
     return ((hash << 5) - hash) + char.charCodeAt(0);
   }, 0);
-  
+
   for (let dimension = 0; dimension < 384; dimension++) {
     const x = Math.sin((seed + dimension) * 0.1) * 10000;
     let value = x - Math.floor(x);
-    
+
     // Adjust vector based on semantic relationship
     if (isUnrelated) {
       // Completely different direction
@@ -44,11 +44,11 @@ function generateSemanticEmbedding(tag: string): number[] {
       // Very similar (>95% similarity) - add small noise
       value = value + (Math.sin(dimension * 0.01) * 0.05);
     }
-    
+
     // Normalize to [-1, 1]
     vector.push(value * 2 - 1);
   }
-  
+
   return vector;
 }
 
@@ -64,13 +64,13 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
         const response = String(row[0] ?? '').trim();
         const stream = String(row[1] ?? '').trim().toLowerCase() === 'true';
         const embeddingTag = String(row[2] ?? '').trim();
-        
+
         // Generate embedding from semantic tag if provided
         let embedding: number[] | undefined;
         if (embeddingTag) {
           embedding = generateSemanticEmbedding(embeddingTag);
         }
-        
+
         if (response) rules.push({ response, stream, embedding });
       }
     }
@@ -217,7 +217,7 @@ Given('I ensure test ai settings exists', function() {
   }
 
   const actualProviders = (actual.providers as Array<Record<string, unknown>>) || [];
-  
+
   // Check TestProvider exists
   const testProvider = actualProviders.find(p => p.provider === providerName);
   if (!testProvider) {

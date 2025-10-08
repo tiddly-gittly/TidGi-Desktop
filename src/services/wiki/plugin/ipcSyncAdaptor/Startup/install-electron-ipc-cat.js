@@ -9,7 +9,6 @@ exports.startup = function() {
     require('$:/plugins/linonetwo/tidgi-ipc-syncadaptor/Startup/electron-ipc-cat.js');
     // call setupSSE in `src/services/wiki/plugin/ipcSyncAdaptor/ipc-syncadaptor.ts` of TidGi-Desktop
     if (typeof $tw !== 'undefined') {
-       
       $tw.syncadaptor?.setupSSE?.();
     }
   }

@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite';
 import { builtinModules } from 'node:module';
+import { defineConfig } from 'vite';
 
 // Configuration for building worker files
 // Workers will be built as separate entry points
