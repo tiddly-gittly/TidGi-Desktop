@@ -200,3 +200,7 @@ If you are not sure, try `pnpm run start:dev:debug-webpack`, which will also ena
 May be `src/constants/paths.ts` have wrong value of `__dirname` or `process.resourcesPath` after package, like being `C:\Users\linonetwo\Documents\repo-c\TidGi-Desktop\out\TidGi-win32-x64\resources\app.asar\xxx`
 
 Check `src/constants/appPaths.ts` and `src/constants/paths.ts`
+
+## error: Your local changes to the following files would be overwritten by checkout
+
+Clean up the local `template/wiki` folder. You can simply "Discard change" of that path, using github desktop.
