@@ -61,9 +61,12 @@ export class Wiki implements IWikiService {
 
   // handlers
   public async copyWikiTemplate(newFolderPath: string, folderName: string): Promise<void> {
+    logger.info('copyWikiTemplate() starting', { newFolderPath, folderName });
     try {
       await this.createWiki(newFolderPath, folderName);
+      logger.info('copyWikiTemplate() completed successfully', { newFolderPath, folderName });
     } catch (error) {
+      logger.error('copyWikiTemplate() failed', { error: (error as Error).message, newFolderPath, folderName, stack: (error as Error).stack });
       throw new CopyWikiTemplateError(`${(error as Error).message}, (${newFolderPath}, ${folderName})`);
     }
   }
@@ -478,16 +481,27 @@ export class Wiki implements IWikiService {
   }
 
   public async ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void> {
+    logger.debug('ensureWikiExist() checking wiki folder', { wikiPath, shouldBeMainWiki });
     if (!(await pathExists(wikiPath))) {
-      throw new Error(i18n.t('AddWorkspace.PathNotExist', { path: wikiPath }));
+      const error = i18n.t('AddWorkspace.PathNotExist', { path: wikiPath });
+      logger.error('ensureWikiExist() failed - path does not exist', { wikiPath });
+      throw new Error(error);
     }
     const wikiInfoPath = path.resolve(wikiPath, 'tiddlywiki.info');
-    if (shouldBeMainWiki && !(await pathExists(wikiInfoPath))) {
+    const wikiInfoExists = await pathExists(wikiInfoPath);
+    logger.debug('ensureWikiExist() checked tiddlywiki.info', { wikiInfoPath, exists: wikiInfoExists });
+    if (shouldBeMainWiki && !wikiInfoExists) {
+      logger.error('ensureWikiExist() failed - tiddlywiki.info missing', { wikiPath, wikiInfoPath });
       throw new Error(i18n.t('AddWorkspace.ThisPathIsNotAWikiFolder', { wikiPath, wikiInfoPath }));
     }
-    if (shouldBeMainWiki && !(await pathExists(path.join(wikiPath, TIDDLERS_PATH)))) {
+    const tiddlersPath = path.join(wikiPath, TIDDLERS_PATH);
+    const tiddlersExists = await pathExists(tiddlersPath);
+    logger.debug('ensureWikiExist() checked tiddlers folder', { tiddlersPath, exists: tiddlersExists });
+    if (shouldBeMainWiki && !tiddlersExists) {
+      logger.error('ensureWikiExist() failed - tiddlers folder missing', { wikiPath, tiddlersPath });
       throw new Error(i18n.t('AddWorkspace.ThisPathIsNotAWikiFolder', { wikiPath }));
     }
+    logger.debug('ensureWikiExist() validation passed', { wikiPath });
   }
 
   public async checkWikiExist(workspace: IWorkspace, options: { shouldBeMainWiki?: boolean; showDialog?: boolean } = {}): Promise<string | true> {

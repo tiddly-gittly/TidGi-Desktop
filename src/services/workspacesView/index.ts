@@ -37,9 +37,12 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async initializeAllWorkspaceView(): Promise<void> {
-    logger.debug('initializeAllWorkspaceView()', { function: 'initializeAllWorkspaceView' });
+    logger.info('initializeAllWorkspaceView() starting', { function: 'initializeAllWorkspaceView' });
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspacesList = await workspaceService.getWorkspacesAsList();
+    logger.info(`Found ${workspacesList.length} workspaces to initialize`, {
+      workspaces: workspacesList.map(w => ({ id: w.id, name: w.name, isSubWiki: isWikiWorkspace(w) ? w.isSubWiki : false, pageType: w.pageType })),
+    });
     // Only load workspace that is not a subwiki and not a page type
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
     workspacesList.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.pageType).forEach((workspace) => {
@@ -69,11 +72,33 @@ export class WorkspaceView implements IWorkspaceViewService {
     // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    if ((await wikiService.checkWikiExist(workspace, { shouldBeMainWiki: isWikiWorkspace(workspace) && !workspace.isSubWiki, showDialog: true })) !== true) {
-      logger.warn(`initializeWorkspaceView() checkWikiExist found workspace ${workspace.id} don't have a valid wiki, and showDialog.`);
+    const shouldBeMainWiki = isWikiWorkspace(workspace) && !workspace.isSubWiki;
+    logger.info('initializeWorkspaceView() checking wiki existence', {
+      workspaceId: workspace.id,
+      shouldBeMainWiki,
+      wikiFolderLocation: isWikiWorkspace(workspace) ? workspace.wikiFolderLocation : undefined,
+      function: 'initializeWorkspaceView',
+    });
+    const checkResult = await wikiService.checkWikiExist(workspace, { shouldBeMainWiki, showDialog: true });
+    if (checkResult !== true) {
+      logger.warn('initializeWorkspaceView() checkWikiExist found invalid wiki', {
+        workspaceId: workspace.id,
+        checkResult,
+        shouldBeMainWiki,
+        wikiFolderLocation: isWikiWorkspace(workspace) ? workspace.wikiFolderLocation : undefined,
+        function: 'initializeWorkspaceView',
+      });
       return;
     }
-    logger.debug(`initializeWorkspaceView() Initializing workspace ${workspace.id}, ${JSON.stringify(options)}`);
+    logger.info('initializeWorkspaceView() wiki validation passed', {
+      workspaceId: workspace.id,
+      function: 'initializeWorkspaceView',
+    });
+    logger.debug('initializeWorkspaceView() Initializing workspace', {
+      workspaceId: workspace.id,
+      options: JSON.stringify(options),
+      function: 'initializeWorkspaceView',
+    });
     if (followHibernateSettingWhenInit) {
       const hibernateUnusedWorkspacesAtLaunch = await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch');
       if ((hibernateUnusedWorkspacesAtLaunch || (isWikiWorkspace(workspace) && workspace.hibernateWhenUnused)) && !workspace.active) {
@@ -164,7 +189,9 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
     };
 
-    logger.debug(`initializeWorkspaceView() calling wikiStartup()`);
+    logger.debug('initializeWorkspaceView() calling wikiStartup', {
+      function: 'initializeWorkspaceView',
+    });
     await Promise.all([
       container.get<IWikiService>(serviceIdentifier.Wiki).wikiStartup(workspace),
       addViewWhenInitializeWorkspaceView(),
@@ -206,7 +233,11 @@ export class WorkspaceView implements IWorkspaceViewService {
   ): Promise<void> {
     if (view?.webContents) {
       const currentUrl = view.webContents.getURL();
-      logger.debug(`updateLastUrl() Updating lastUrl for workspace ${workspaceID} to ${currentUrl}`);
+      logger.debug('updateLastUrl() Updating lastUrl for workspace', {
+        workspaceID,
+        currentUrl,
+        function: 'updateLastUrl',
+      });
       await container.get<IWorkspaceService>(serviceIdentifier.Workspace).update(workspaceID, {
         lastUrl: currentUrl,
       });
@@ -488,9 +519,16 @@ export class WorkspaceView implements IWorkspaceViewService {
     const workspaceToRealign = id === undefined
       ? await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace()
       : await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(id);
-    logger.debug(`realignActiveWorkspaceView() activeWorkspace.id: ${workspaceToRealign?.id ?? 'undefined'}`, { stack: new Error('stack').stack?.replace('Error:', '') });
+    logger.debug('realignActiveWorkspaceView() activeWorkspace.id', {
+      workspaceId: workspaceToRealign?.id ?? 'undefined',
+      stack: new Error('stack').stack?.replace('Error:', ''),
+      function: 'realignActiveWorkspaceView',
+    });
     if (workspaceToRealign && isWikiWorkspace(workspaceToRealign) && workspaceToRealign.isSubWiki) {
-      logger.debug(`realignActiveWorkspaceView() skip because ${workspaceToRealign.id} is a subwiki. Realign main wiki instead.`);
+      logger.debug('realignActiveWorkspaceView() skip because subwiki; realign main wiki instead', {
+        workspaceId: workspaceToRealign.id,
+        function: 'realignActiveWorkspaceView',
+      });
       if (workspaceToRealign.mainWikiID) {
         await this.realignActiveWorkspaceView(workspaceToRealign.mainWikiID);
       }

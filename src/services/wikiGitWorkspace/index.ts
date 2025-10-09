@@ -124,10 +124,22 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
    * Automatically initialize a default wiki workspace if none exists. This matches the previous frontend logic.
    */
   public async initialize(): Promise<void> {
+    logger.info('WikiGitWorkspaceService.initialize() checking for default wiki workspace', {
+      function: 'WikiGitWorkspace.initialize',
+    });
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspaces = await workspaceService.getWorkspacesAsList();
     const wikiWorkspaces = workspaces.filter(w => isWikiWorkspace(w) && !w.isSubWiki);
-    if (wikiWorkspaces.length > 0) return;
+    logger.info(`Found ${wikiWorkspaces.length} existing wiki workspaces`, {
+      wikiWorkspaces: wikiWorkspaces.map(w => w.id),
+      function: 'WikiGitWorkspace.initialize',
+    });
+    if (wikiWorkspaces.length > 0) {
+      logger.info('Skipping default workspace creation - workspaces already exist', {
+        function: 'WikiGitWorkspace.initialize',
+      });
+      return;
+    }
     // Construct minimal default config, only fill required fields, let workspaceService.create handle defaults
     const defaultConfig: INewWikiWorkspaceConfig = {
       order: 0,
@@ -149,14 +161,41 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       gitUrl: null,
     };
     try {
+      logger.info('Starting default wiki creation', {
+        config: {
+          name: defaultConfig.name,
+          port: defaultConfig.port,
+          path: defaultConfig.wikiFolderLocation,
+        },
+        function: 'WikiGitWorkspace.initialize',
+      });
       // Copy the wiki template first
+      logger.info('Copying wiki template...', {
+        from: 'TIDDLYWIKI_TEMPLATE_FOLDER',
+        to: DEFAULT_FIRST_WIKI_PATH,
+        function: 'WikiGitWorkspace.initialize',
+      });
       const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
       await wikiService.copyWikiTemplate(DEFAULT_FIRST_WIKI_FOLDER_PATH, 'wiki');
+      logger.info('Wiki template copied successfully', {
+        path: DEFAULT_FIRST_WIKI_PATH,
+        function: 'WikiGitWorkspace.initialize',
+      });
       // Create the workspace
+      logger.info('Initializing wiki git transaction...', {
+        function: 'WikiGitWorkspace.initialize',
+      });
       await this.initWikiGitTransaction(defaultConfig);
+      logger.info('Default wiki workspace created successfully', {
+        function: 'WikiGitWorkspace.initialize',
+      });
     } catch (_error: unknown) {
       const error = _error instanceof Error ? _error : new Error(String(_error));
-      logger.error(error.message, error);
+      logger.error('Failed to create default wiki workspace', {
+        error: error.message,
+        stack: error.stack,
+        function: 'WikiGitWorkspace.initialize',
+      });
     }
   }
 

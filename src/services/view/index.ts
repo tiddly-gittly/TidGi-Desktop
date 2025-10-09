@@ -411,13 +411,22 @@ export class View implements IViewService {
 
   public async setActiveView(workspaceID: string, windowName: WindowNames): Promise<void> {
     const browserWindow = this.windowService.get(windowName);
-    logger.debug(`setActiveView(): ${workspaceID} ${windowName} browserWindow: ${String(browserWindow !== undefined)}`);
+    logger.debug('setActiveView() set active view check', {
+        workspaceID,
+        windowName,
+        browserWindowDefined: String(browserWindow !== undefined),
+        function: 'setActiveView',
+      });
     if (browserWindow === undefined) {
       return;
     }
     const workspace = await this.workspaceService.get(workspaceID);
     const view = this.getView(workspaceID, windowName);
-    logger.debug(`setActiveView(): view: ${String(view !== undefined && view !== null)} workspace: ${String(workspace !== undefined)}`);
+    logger.debug('setActiveView() view/workspace check', {
+        viewDefined: String(view !== undefined && view !== null),
+        workspaceDefined: String(workspace !== undefined),
+        function: 'setActiveView',
+      });
     if (view === undefined || view === null) {
       if (workspace === undefined) {
         logger.error(`workspace is undefined when setActiveView(${windowName}, ${workspaceID})`);
@@ -426,13 +435,18 @@ export class View implements IViewService {
       }
     } else {
       browserWindow.contentView.addChildView(view);
-      logger.debug(`setActiveView() contentView.addChildView`);
+      logger.debug('setActiveView() contentView.addChildView', {
+          function: 'setActiveView',
+        });
       const contentSize = browserWindow.getContentSize();
       if (workspace !== undefined && (await this.workspaceService.workspaceDidFailLoad(workspace.id))) {
         view.setBounds(await getViewBounds(contentSize as [number, number], { findInPage: false, windowName }, 0, 0)); // hide browserView to show error message
       } else {
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
-        logger.debug(`setActiveView() contentSize ${JSON.stringify(newViewBounds)}`);
+        logger.debug('setActiveView() contentSize', {
+          newViewBounds: JSON.stringify(newViewBounds),
+          function: 'setActiveView',
+        });
         view.setBounds(newViewBounds);
       }
       // focus on webview
@@ -454,7 +468,11 @@ export class View implements IViewService {
       // don't clear contentView here `browserWindow.contentView.children = [];`, the "current contentView" may point to other workspace's view now, it will close other workspace's view when switching workspaces.
       browserWindow.contentView.removeChildView(view);
     } else {
-      logger.error(`removeView() view or browserWindow is undefined for workspaceID ${workspaceID} windowName ${windowName}, not destroying view properly.`);
+    logger.error('removeView() view or browserWindow is undefined, not destroying view properly', {
+        workspaceID,
+        windowName,
+        function: 'removeView',
+      });
     }
   }
 
@@ -578,11 +596,16 @@ export class View implements IViewService {
     if (view?.webContents) {
       const contentSize = browserWindow.getContentSize();
       if (await this.workspaceService.workspaceDidFailLoad(activeId)) {
-        logger.warn(`realignActiveView() hide because didFailLoad`);
+        logger.warn('realignActiveView() hide because didFailLoad', {
+            function: 'realignActiveView',
+          });
         await this.hideView(browserWindow, windowName, activeId);
       } else {
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
-        logger.debug(`realignActiveView() contentSize set to ${JSON.stringify(newViewBounds)}`);
+        logger.debug('realignActiveView() contentSize set', {
+            newViewBounds: JSON.stringify(newViewBounds),
+            function: 'realignActiveView',
+          });
         view.setBounds(newViewBounds);
       }
     } else if (isRetry === true) {
@@ -593,7 +616,9 @@ export class View implements IViewService {
       );
     } else {
       // retry one time later if webContent is not ready yet
-      logger.debug(`realignActiveView() retry one time later`);
+      logger.debug('realignActiveView() retry one time later', {
+          function: 'realignActiveView',
+        });
       setTimeout(() => void this.realignActiveView(browserWindow, activeId, windowName, true), 1000);
     }
   }
