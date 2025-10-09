@@ -2,7 +2,7 @@
 import { createWorkerProxy, terminateWorker } from '@services/libs/workerAdapter';
 import { dialog, shell } from 'electron';
 import { backOff } from 'exponential-backoff';
-import { copy, createSymlink, exists, mkdir, mkdirp, mkdirs, pathExists, readFile, remove } from 'fs-extra';
+import { copy, createSymlink, exists, mkdir, mkdirp, mkdirs, pathExists, readdir, readFile, remove } from 'fs-extra';
 import { inject, injectable } from 'inversify';
 import path from 'path';
 import { Worker } from 'worker_threads';
@@ -61,20 +61,22 @@ export class Wiki implements IWikiService {
 
   // handlers
   public async copyWikiTemplate(newFolderPath: string, folderName: string): Promise<void> {
-    logger.info('copyWikiTemplate starting', {
+    logger.info('starting', {
       newFolderPath,
       folderName,
       function: 'copyWikiTemplate',
     });
     try {
       await this.createWiki(newFolderPath, folderName);
-      logger.info('copyWikiTemplate completed', {
+      const entries = await readdir(path.join(newFolderPath, folderName));
+      logger.debug('completed', {
         newFolderPath,
         folderName,
         function: 'copyWikiTemplate',
+        entries,
       });
     } catch (error) {
-      logger.error('copyWikiTemplate failed', {
+      logger.error('failed', {
         error: (error as Error).message,
         newFolderPath,
         folderName,
@@ -462,10 +464,10 @@ export class Wiki implements IWikiService {
     try {
       await copy(TIDDLYWIKI_TEMPLATE_FOLDER_PATH, newWikiPath, {
         filter: (source: string, _destination: string) => {
-          // xxx/template/wiki/.gitignore
-          // xxx/template/wiki/.github
-          // xxx/template/wiki/.git
-          // prevent copy git submodule's .git folder
+          // keep xxx/template/wiki/.gitignore
+          // keep xxx/template/wiki/.github
+          // ignore xxx/template/wiki/.git
+          // prevent copy wiki repo's .git folder
           if (source.endsWith('.git')) {
             return false;
           }
@@ -535,10 +537,12 @@ export class Wiki implements IWikiService {
       exists: wikiInfoExists,
     });
     if (shouldBeMainWiki && !wikiInfoExists) {
+      const entries = await readdir(wikiPath);
       logger.error('tiddlywiki.info missing', {
         wikiPath,
         wikiInfoPath,
         function: 'ensureWikiExist',
+        entries,
       });
       throw new Error(i18n.t('AddWorkspace.ThisPathIsNotAWikiFolder', { wikiPath, wikiInfoPath }));
     }
