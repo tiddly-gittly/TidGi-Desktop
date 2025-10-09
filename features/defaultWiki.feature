@@ -10,6 +10,7 @@ Feature: TidGi Default Wiki
     Given I cleanup test wiki
     When I launch the TidGi application
     And I wait for the page to load completely
-    And I should see a "page body" element with selector "body"
+    Then I should see "page body and wiki workspace" elements with selectors:
+      | body                                            |
+      | div[data-testid^='workspace-']:has-text('wiki') |
     And the window title should contain "太记"
-    And I should see a "wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"

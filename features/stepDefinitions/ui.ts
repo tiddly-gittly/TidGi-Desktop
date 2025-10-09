@@ -1,4 +1,4 @@
-import { Then, When } from '@cucumber/cucumber';
+import { DataTable, Then, When } from '@cucumber/cucumber';
 import type { ApplicationWorld } from './application';
 
 When('I wait for {float} seconds', async function(this: ApplicationWorld, seconds: number) {
@@ -20,6 +20,39 @@ Then('I should see a(n) {string} element with selector {string}', async function
     }
   } catch (error) {
     throw new Error(`Failed to find ${elementComment} with selector "${selector}": ${error as Error}`);
+  }
+});
+
+Then('I should see {string} elements with selectors:', async function(this: ApplicationWorld, elementDescriptions: string, dataTable: DataTable) {
+  const currentWindow = this.currentWindow || this.mainWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  const descriptions = elementDescriptions.split(' and ').map(d => d.trim());
+  const rows = dataTable.raw();
+  const errors: string[] = [];
+
+  if (descriptions.length !== rows.length) {
+    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${rows.length} selectors provided`);
+  }
+
+  // Check all elements in parallel for better performance
+  await Promise.all(rows.map(async ([selector], index) => {
+    const elementComment = descriptions[index];
+    try {
+      await currentWindow.waitForSelector(selector, { timeout: 10000 });
+      const isVisible = await currentWindow.isVisible(selector);
+      if (!isVisible) {
+        errors.push(`Element "${elementComment}" with selector "${selector}" is not visible`);
+      }
+    } catch (error) {
+      errors.push(`Failed to find "${elementComment}" with selector "${selector}": ${error as Error}`);
+    }
+  }));
+
+  if (errors.length > 0) {
+    throw new Error(`Failed to find elements:\n${errors.join('\n')}`);
   }
 });
 
@@ -63,6 +96,43 @@ When('I click on a(n) {string} element with selector {string}', async function(t
     await targetWindow.click(selector);
   } catch (error) {
     throw new Error(`Failed to find and click ${elementComment} with selector "${selector}" in current window: ${error as Error}`);
+  }
+});
+
+When('I click on {string} elements with selectors:', async function(this: ApplicationWorld, elementDescriptions: string, dataTable: DataTable) {
+  const targetWindow = await this.getWindow('current');
+
+  if (!targetWindow) {
+    throw new Error('Window "current" is not available');
+  }
+
+  const descriptions = elementDescriptions.split(' and ').map(d => d.trim());
+  const rows = dataTable.raw();
+  const errors: string[] = [];
+
+  if (descriptions.length !== rows.length) {
+    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${rows.length} selectors provided`);
+  }
+
+  // Click elements sequentially (not in parallel) to maintain order and avoid race conditions
+  for (let index = 0; index < rows.length; index++) {
+    const [selector] = rows[index];
+    const elementComment = descriptions[index];
+    try {
+      await targetWindow.waitForSelector(selector, { timeout: 10000 });
+      const isVisible = await targetWindow.isVisible(selector);
+      if (!isVisible) {
+        errors.push(`Element "${elementComment}" with selector "${selector}" is not visible`);
+        continue;
+      }
+      await targetWindow.click(selector);
+    } catch (error) {
+      errors.push(`Failed to find and click "${elementComment}" with selector "${selector}": ${error as Error}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Failed to click elements:\n${errors.join('\n')}`);
   }
 });
 
