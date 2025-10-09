@@ -9,7 +9,6 @@ Feature: TidGi Default Wiki
     #   cross-env NODE_ENV=test pnpm dlx tsx scripts/developmentMkdir.ts
     Given I cleanup test wiki
     When I launch the TidGi application
-    And I wait for 0.5 seconds
     And I wait for the page to load completely
     And I should see a "page body" element with selector "body"
     And the window title should contain "太记"

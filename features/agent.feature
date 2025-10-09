@@ -32,7 +32,6 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "搜索 wiki 中的 index 条目并解释" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 0.2 seconds
     Then I should see 4 messages in chat history
     # Verify the last message contains the AI explanation about Index
     And I should see a "explanation in last message" element with selector "[data-testid='message-bubble']:last-child:has-text('Index')"
@@ -58,7 +57,6 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 里创建一个新笔记，内容为 test" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 0.2 seconds
     Then I should see 6 messages in chat history
     # Verify there's an error message about workspace not found (in one of the middle messages)
     And I should see a "workspace not exist error" element with selector "[data-testid='message-bubble']:has-text('default'):has-text('不存在')"
@@ -69,7 +67,6 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   @agent
   Scenario: Create default agent from New Tab quick access
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    And I wait for 0.2 seconds
     And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
     When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
@@ -78,15 +75,12 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   Scenario: Close all tabs then create default agent from fallback page
     # Ensure starting from black/fallback page with no open tabs
     Given I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    And I wait for 0.2 seconds
     When I click all "tab" elements matching selector "[data-testid='tab']"
     When I click all "close tab button" elements matching selector "[data-testid='tab-close-button']"
-    And I wait for 0.2 seconds
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # When there is no active tab, this is "fallback new tab", it has same thing as new tab.
     And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    And I wait for 0.2 seconds
     And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
     When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
@@ -102,16 +96,13 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "Start long streaming" in "chat input" element with selector "[data-testid='agent-message-input']"
-    And I wait for 0.3 seconds
     And I press "Enter" key
     # Wait for streaming container to appear and contain the first chunk
     Then I should see a "assistant streaming container" element with selector "[data-testid='assistant-streaming-text']"
-    And I wait for 0.2 seconds
     Then I should see a "partial assistant text" element with selector "*:has-text('partial_chunk_1')"
     And I should see a "cancel icon" element with selector "[data-testid='cancel-icon']"
     # Click cancel button mid-stream
     When I click on a "cancel button" element with selector "[data-testid='agent-send-button']"
-    And I wait for 0.2 seconds
     And I should see a "send icon" element with selector "[data-testid='send-icon']"
     # Verify send button returned and stream stopped (no further chunks)
     Then I should see a "send button" element with selector "[data-testid='agent-send-button']"

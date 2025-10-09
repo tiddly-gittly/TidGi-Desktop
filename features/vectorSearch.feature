@@ -38,25 +38,21 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 工作区创建一个名为 AI Agent Guide 的笔记，内容是：智能体是一种可以执行任务的AI系统，它可以使用工具、搜索信息并与用户交互。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 1 seconds
     Then I should see 4 messages in chat history
     # Step 3: Create second note
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "再创建一个名为 Vector Database Tutorial 的笔记，内容是：向量数据库用于存储和检索高维向量数据，支持语义搜索和相似度匹配。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 1 seconds
     Then I should see 8 messages in chat history
     # Step 4: Update vector embeddings using agent tool
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "为 wiki 工作区更新向量索引" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 2 seconds
     Then I should see 12 messages in chat history
     # Step 5: Perform vector search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "使用向量搜索在 wiki 中查找关于如何使用AI智能体的内容" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 1 seconds
     Then I should see 16 messages in chat history
     # Verify the last message contains vector search results
     And I should see a "search result in last message" element with selector "[data-testid='message-bubble']:last-child:has-text('Tiddler: AI Agent Guide')"
@@ -78,22 +74,18 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 工作区创建一个名为 Machine Learning Basics 的笔记，内容是：机器学习是人工智能的一个分支，通过算法让计算机从数据中学习规律。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 1 seconds
     Then I should see 4 messages in chat history
     # Step 2: Open preferences and manually generate embeddings via UI
     When I click on a "settings button" element with selector "#open-preferences-button"
-    And I wait for 0.3 seconds
     When I switch to "preferences" window
     # Navigate to Search section (which contains vector database settings)
     When I click on a "search section" element with selector "[data-testid='preference-section-search']"
-    And I wait for 0.2 seconds
     # Wait for workspace list to load
     # The Search.tsx renders workspace cards with name, status, and buttons
     And I should see a "wiki workspace card" element with selector "*:has-text('wiki')"
     # Click the generate button - use button text "生成" instead of data-testid
     # The button shows "生成" for initial generation, "更新嵌入" after generation
     When I click on a "generate button with text" element with selector "button:has-text('生成')"
-    And I wait for 0.5 seconds
     # Verify generation completed with detailed status information
     # Should show: workspace name, embedding count, note count, last updated time
     And I should see a "workspace name in status" element with selector "*:has-text('wiki')"
@@ -108,14 +100,11 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     And I should see a "delete button after generation" element with selector "button:has-text('删除')"
     # Close preferences
     When I close "preferences" window
-    And I wait for 0.2 seconds
     And I switch to "main" window
-    And I wait for 0.2 seconds
     # Step 3: Perform vector search and verify results match agent workflow
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "使用向量搜索在 wiki 中查找关于机器学习的内容" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 1 seconds
     Then I should see 8 messages in chat history
     # Verify the last message contains vector search results
     And I should see a "ML search result in last message" element with selector "[data-testid='message-bubble']:last-child:has-text('Tiddler: Machine Learning Basics')"
@@ -146,28 +135,24 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 工作区创建一个名为 AI Technology 的笔记，内容是：人工智能技术正在改变世界。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 0.5 seconds
     Then I should see 4 messages in chat history
     
     # Step 3: Create second note about ML
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "再创建一个名为 Machine Learning 的笔记，内容是：机器学习算法和应用。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 0.5 seconds
     Then I should see 8 messages in chat history
     
     # Step 4: Update vector embeddings
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "为 wiki 工作区更新向量索引" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 2 seconds
     Then I should see 12 messages in chat history
     
     # Step 5: Search for unrelated content with high threshold (should find nothing)
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "使用向量搜索在 wiki 中查找关于天气预报的内容，阈值设为0.7" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 0.5 seconds
     Then I should see 16 messages in chat history
     # Verify the 16th message contains "no results found" with threshold info
     And I should see a "no results in 16th message" element with selector "[data-testid='message-bubble']:nth-child(16):has-text('未找到符合条件')"
@@ -177,7 +162,6 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "再次搜索天气预报，但这次把阈值降低到0.1" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    And I wait for 1 seconds
     Then I should see 20 messages in chat history
     # Verify the 20th message contains low-similarity result
     And I should see a "AI Technology in 20th message" element with selector "[data-testid='message-bubble']:nth-child(20):has-text('Tiddler: AI Technology')"
