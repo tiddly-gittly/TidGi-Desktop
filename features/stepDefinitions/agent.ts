@@ -115,18 +115,11 @@ Then('I should see {int} messages in chat history', async function(this: Applica
   const messageSelector = '[data-testid="message-bubble"]';
 
   try {
-    // Adjust timeouts and attempts for CI vs local runs
-    const isCI = Boolean(process.env.CI);
-    const selectorTimeout = isCI ? 15000 : 5000; // wait longer in CI for selector
-    const waitTimeout = isCI ? 5000 : 2000; // wait between attempts
-    const attemptsMultiplier = isCI ? 5 : 3;
-
     // Wait for messages to reach expected count, checking periodically for streaming
-    const maxAttempts = Math.max(3, expectedCount * attemptsMultiplier);
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    for (let attempt = 1; attempt <= expectedCount * 3; attempt++) {
       try {
         // Wait for at least one message to exist
-        await currentWindow.waitForSelector(messageSelector, { timeout: selectorTimeout });
+        await currentWindow.waitForSelector(messageSelector, { timeout: 5000 });
 
         // Count current messages
         const messages = currentWindow.locator(messageSelector);
@@ -139,11 +132,11 @@ Then('I should see {int} messages in chat history', async function(this: Applica
         }
 
         // If not enough messages yet, wait a bit more for streaming
-        if (attempt < maxAttempts) {
-          await currentWindow.waitForTimeout(waitTimeout);
+        if (attempt < expectedCount * 3) {
+          await currentWindow.waitForTimeout(2000);
         }
       } catch (timeoutError) {
-        if (attempt === maxAttempts) {
+        if (attempt === expectedCount * 3) {
           throw timeoutError;
         }
       }
