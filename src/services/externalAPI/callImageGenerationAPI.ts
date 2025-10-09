@@ -96,7 +96,11 @@ export async function generateImageFromProvider(
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error(`Image generation API error (${response.status}):`, errorText);
+      logger.error('Image generation API error', {
+        function: 'generateImageFromProvider',
+        status: response.status,
+        errorText,
+      });
 
       if (response.status === 401) {
         throw new AuthenticationError(provider);

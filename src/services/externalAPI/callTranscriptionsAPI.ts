@@ -107,7 +107,11 @@ export async function generateTranscriptionFromProvider(
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error(`Transcription API error (${response.status}):`, errorText);
+      logger.error('Transcription API error', {
+        function: 'generateTranscriptionFromProvider',
+        status: response.status,
+        errorText,
+      });
 
       if (response.status === 401) {
         throw new AuthenticationError(provider);

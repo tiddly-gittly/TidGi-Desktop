@@ -116,7 +116,11 @@ export async function generateEmbeddingsFromProvider(
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error(`Embedding API error (${response.status}):`, errorText);
+      logger.error('Embedding API error', {
+        function: 'generateEmbeddingsFromProvider',
+        status: response.status,
+        errorText,
+      });
 
       if (response.status === 401) {
         throw new AuthenticationError(provider);

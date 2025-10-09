@@ -362,10 +362,7 @@ export class View implements IViewService {
     const homeUrl = isWikiWorkspace(workspace) ? workspace.homeUrl : null;
     const urlToLoad = uri || (rememberLastPageVisited ? lastUrl : homeUrl) || homeUrl || getDefaultTidGiUrl(workspace.id);
     try {
-      logger.debug(
-        `loadUrlForView(): view.webContents is ${view.webContents ? 'define' : 'undefined'} urlToLoad: ${urlToLoad} for workspace ${workspace.name}`,
-        { stack: new Error('stack').stack?.replace('Error:', '') },
-      );
+      logger.debug('loadUrlForView info', { stack: new Error('stack').stack?.replace('Error:', ''), urlToLoad, viewDefined: Boolean(view.webContents), workspaceName: workspace.name, function: 'loadUrlForView' });
       // if workspace failed to load, means nodejs server may have plugin error or something. Stop retrying, and show the error message in src/pages/Main/ErrorMessage.tsx
       if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
         return;
@@ -376,7 +373,9 @@ export class View implements IViewService {
         isLoading: true,
       });
       await view.webContents.loadURL(urlToLoad);
-      logger.debug('loadUrlForView() await loadURL() done');
+    logger.debug('await loadURL done', {
+      function: 'loadUrlForView',
+    });
       const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
       view.webContents.on('destroyed', () => {
         unregisterContextMenu();
@@ -411,39 +410,43 @@ export class View implements IViewService {
 
   public async setActiveView(workspaceID: string, windowName: WindowNames): Promise<void> {
     const browserWindow = this.windowService.get(windowName);
-    logger.debug('setActiveView() set active view check', {
-        workspaceID,
-        windowName,
-        browserWindowDefined: String(browserWindow !== undefined),
-        function: 'setActiveView',
-      });
+    logger.debug('set active view check', {
+      workspaceID,
+      windowName,
+      browserWindowDefined: String(browserWindow !== undefined),
+      function: 'setActiveView',
+    });
     if (browserWindow === undefined) {
       return;
     }
     const workspace = await this.workspaceService.get(workspaceID);
     const view = this.getView(workspaceID, windowName);
-    logger.debug('setActiveView() view/workspace check', {
-        viewDefined: String(view !== undefined && view !== null),
-        workspaceDefined: String(workspace !== undefined),
-        function: 'setActiveView',
-      });
-    if (view === undefined || view === null) {
+    logger.debug('view/workspace check', {
+      viewDefined: String(view !== undefined && view !== null),
+      workspaceDefined: String(workspace !== undefined),
+      function: 'setActiveView',
+    });
+      if (view === undefined || view === null) {
       if (workspace === undefined) {
-        logger.error(`workspace is undefined when setActiveView(${windowName}, ${workspaceID})`);
+        logger.error('workspace undefined in setActiveView', {
+          function: 'setActiveView',
+          windowName,
+          workspaceID,
+        });
       } else {
         await this.addView(workspace, windowName);
       }
     } else {
       browserWindow.contentView.addChildView(view);
-      logger.debug('setActiveView() contentView.addChildView', {
-          function: 'setActiveView',
-        });
+      logger.debug('contentView.addChildView', {
+        function: 'setActiveView',
+      });
       const contentSize = browserWindow.getContentSize();
       if (workspace !== undefined && (await this.workspaceService.workspaceDidFailLoad(workspace.id))) {
         view.setBounds(await getViewBounds(contentSize as [number, number], { findInPage: false, windowName }, 0, 0)); // hide browserView to show error message
       } else {
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
-        logger.debug('setActiveView() contentSize', {
+        logger.debug('content size updated', {
           newViewBounds: JSON.stringify(newViewBounds),
           function: 'setActiveView',
         });
@@ -457,7 +460,11 @@ export class View implements IViewService {
   }
 
   public removeView(workspaceID: string, windowName: WindowNames): void {
-    logger.debug(`Remove view for workspaceID ${workspaceID} via ${new Error('stack').stack ?? 'no stack'}`);
+    logger.debug('removeView called', {
+      function: 'removeView',
+      workspaceID,
+      stack: new Error('stack').stack ?? 'no stack',
+    });
     const view = this.getView(workspaceID, windowName);
     const browserWindow = this.windowService.get(windowName);
     if (view !== undefined && browserWindow !== undefined) {
@@ -468,11 +475,11 @@ export class View implements IViewService {
       // don't clear contentView here `browserWindow.contentView.children = [];`, the "current contentView" may point to other workspace's view now, it will close other workspace's view when switching workspaces.
       browserWindow.contentView.removeChildView(view);
     } else {
-    logger.error('removeView() view or browserWindow is undefined, not destroying view properly', {
-        workspaceID,
-        windowName,
-        function: 'removeView',
-      });
+          logger.error('view or browserWindow is undefined, not destroying view properly', {
+            workspaceID,
+            windowName,
+            function: 'removeView',
+          });
     }
   }
 
@@ -509,7 +516,11 @@ export class View implements IViewService {
     this.forEachView(async (view, id, _name) => {
       if (await this.workspaceService.workspaceDidFailLoad(id)) {
         if (view.webContents === null) {
-          logger.error(`view.webContents is ${String(view.webContents)} when reloadViewsWebContentsIfDidFailLoad's forEachView(${id})`);
+          logger.error('webContents null in reloadViewsWebContentsIfDidFailLoad', {
+            function: 'reloadViewsWebContentsIfDidFailLoad',
+            workspaceID: id,
+            webContents: String(view.webContents),
+          });
           return;
         }
         view.webContents.reload();
@@ -523,7 +534,11 @@ export class View implements IViewService {
       /** if workspaceID not passed means reload all views. */
       if (workspaceID === undefined || id === workspaceID) {
         if (!view.webContents) {
-          logger.error(`view.webContents is ${String(view.webContents)} when reloadViewsWebContents's forEachView(${id})`);
+          logger.error('webContents missing in reloadViewsWebContents', {
+            function: 'reloadViewsWebContents',
+            workspaceID: id,
+            webContents: String(view.webContents),
+          });
           return;
         }
         // if we can get lastUrl, use it
@@ -596,16 +611,11 @@ export class View implements IViewService {
     if (view?.webContents) {
       const contentSize = browserWindow.getContentSize();
       if (await this.workspaceService.workspaceDidFailLoad(activeId)) {
-        logger.warn('realignActiveView() hide because didFailLoad', {
-            function: 'realignActiveView',
-          });
+        logger.warn('hide because didFailLoad', { function: 'realignActiveView' });
         await this.hideView(browserWindow, windowName, activeId);
       } else {
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
-        logger.debug('realignActiveView() contentSize set', {
-            newViewBounds: JSON.stringify(newViewBounds),
-            function: 'realignActiveView',
-          });
+        logger.debug('contentSize set', { newViewBounds: JSON.stringify(newViewBounds), function: 'realignActiveView' });
         view.setBounds(newViewBounds);
       }
     } else if (isRetry === true) {
@@ -616,9 +626,7 @@ export class View implements IViewService {
       );
     } else {
       // retry one time later if webContent is not ready yet
-      logger.debug('realignActiveView() retry one time later', {
-          function: 'realignActiveView',
-        });
+      logger.debug('retry one time later', { function: 'realignActiveView' });
       setTimeout(() => void this.realignActiveView(browserWindow, activeId, windowName, true), 1000);
     }
   }

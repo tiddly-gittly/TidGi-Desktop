@@ -77,12 +77,12 @@ export function validateAndConvertWikiTiddlerToAgentTemplate(
 
       // Ensure handlerConfig is a valid object
       if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        logger.warn(`Invalid handlerConfig in tiddler ${String(tiddler.title)}: not an object`);
+        logger.warn('Invalid handlerConfig in tiddler', { function: 'validateAndConvertWikiTiddlerToAgentTemplate', title: String(tiddler.title), reason: 'not an object' });
         return null;
       }
       handlerConfig = parsed as Record<string, unknown>;
     } catch (parseError) {
-      logger.warn(`Failed to parse agent template from tiddler ${String(tiddler.title)}:`, parseError);
+      logger.warn('Failed to parse agent template from tiddler', { function: 'validateAndConvertWikiTiddlerToAgentTemplate', title: String(tiddler.title), error: parseError });
       return null;
     }
 
@@ -144,10 +144,13 @@ export function validateAndConvertWikiTiddlerToAgentTemplate(
       agentTools: parseAgentTools(tiddler.agent_tools),
     };
 
-    logger.debug(`Successfully converted wiki tiddler to agent template: ${agentTemplate.name}`);
+    logger.debug('Successfully converted wiki tiddler to agent template', {
+      function: 'validateAndConvertWikiTiddlerToAgentTemplate',
+      name: agentTemplate.name,
+    });
     return agentTemplate;
   } catch (error) {
-    logger.warn(`Failed to validate and convert wiki tiddler to agent template:`, error);
+    logger.warn('Failed to validate and convert wiki tiddler to agent template', { function: 'validateAndConvertWikiTiddlerToAgentTemplate', error });
     return null;
   }
 }

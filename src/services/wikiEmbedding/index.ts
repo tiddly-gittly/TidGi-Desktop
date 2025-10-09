@@ -233,7 +233,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
 
       return Array.isArray(countResult) && countResult.length > 0 ? Number(countResult[0]) : 0;
     } catch (error) {
-      logger.error(`Failed to get total notes count: ${error instanceof Error ? error.message : String(error)}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to get total notes count', { function: 'getTotalNotesCount', error: errorMessage });
       return 0;
     }
   }
@@ -490,7 +491,12 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
         // Only increment completed count if at least one chunk succeeded
         if (chunkSuccessCount > 0) {
           completed++;
-          logger.debug(`Generated embeddings for: ${noteTitle} (${chunkSuccessCount}/${chunks.length} chunks successful)`);
+          logger.debug('generated embeddings for note chunk', {
+            function: 'generateEmbeddings',
+            noteTitle,
+            chunkSuccessCount,
+            totalChunks: chunks.length,
+          });
         } else {
           logger.warn(`Failed to generate any embeddings for: ${noteTitle}`);
         }
@@ -503,7 +509,12 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
         lastCompleted: new Date(),
       });
 
-      logger.info(`Completed embedding generation for workspace: ${workspaceId} (${completed}/${totalCount})`);
+      logger.info('completed embedding generation', {
+        function: 'generateEmbeddings',
+        workspaceId,
+        completed,
+        totalCount,
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Failed to generate embeddings for workspace ${workspaceId}: ${errorMessage}`);
@@ -703,7 +714,7 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
           await this.statusRepository!.save(entity);
         } catch (error) {
           // If saving fails, just return the default status
-          logger.debug(`Could not save default embedding status: ${error instanceof Error ? error.message : String(error)}`);
+          logger.debug('could not save default embedding status', { function: 'getEmbeddingStatus', error: error instanceof Error ? error.message : String(error) });
         }
 
         return defaultStatus;
@@ -746,7 +757,10 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
       this.getEmbeddingStatus(workspaceId).then(status => {
         this.statusSubjects.get(workspaceId)?.next(status);
       }).catch((error: unknown) => {
-        logger.error(`Failed to initialize embedding status subscription: ${String(error)}`);
+        logger.error('Failed to initialize embedding status subscription', {
+          function: 'subscribeToEmbeddingStatus',
+          error: String(error),
+        });
       });
     }
 

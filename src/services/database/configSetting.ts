@@ -22,7 +22,8 @@ function fixEmptyAndErrorSettingFileOnStartUp() {
       fs.writeJSONSync(settings.file(), {});
     }
   } catch (error) {
-    logger.error(`Error when checking Setting file format. ${(error as Error).message} ${(error as Error).stack}`);
+    const error_ = error instanceof Error ? error : new Error(String(error));
+    logger.error('Error when checking Setting file format', { function: 'fixEmptyAndErrorSettingFileOnStartUp', error: error_.message, stack: error_.stack ?? '' });
   }
 }
 
@@ -43,7 +44,8 @@ export function fixSettingFileWhenError(jsonError: Error, providedJSONContent?: 
     fs.writeJSONSync(settings.file(), repaired);
     logger.info('Fix JSON content done, saved', { repaired });
   } catch (fixJSONError) {
-    logger.error(`Setting file format bad, and cannot be fixed: ${(fixJSONError as Error).message} ${(fixJSONError as Error).stack}`, { jsonContent });
+    const fixError = fixJSONError instanceof Error ? fixJSONError : new Error(String(fixJSONError));
+    logger.error('Setting file format bad, and cannot be fixed', { function: 'fixSettingFileWhenError', error: fixError.message, stack: fixError.stack ?? '', jsonContent });
   }
 }
 
@@ -54,6 +56,7 @@ try {
     atomicSave: !isWin,
   });
 } catch (error) {
-  logger.error(`Error when configuring settings. ${(error as Error).message} ${(error as Error).stack}`);
+  const error_ = error instanceof Error ? error : new Error(String(error));
+  logger.error('Error when configuring settings', { function: 'settings.configure', error: error_.message, stack: error_.stack ?? '' });
 }
 fixEmptyAndErrorSettingFileOnStartUp();

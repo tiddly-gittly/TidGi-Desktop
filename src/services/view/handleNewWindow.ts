@@ -41,7 +41,7 @@ export function handleNewWindow(
     }
    */
   const mightFromTiddlywikiOpenNewWindow = frameName.startsWith('external-');
-  logger.debug(`Getting url that will open externally`, { ...details, fromTW: mightFromTiddlywikiOpenNewWindow });
+  logger.debug('Getting url that will open externally', { ...details, fromTW: mightFromTiddlywikiOpenNewWindow });
   // don't show useless blank page
   if (nextUrl.startsWith('about:blank') && !mightFromTiddlywikiOpenNewWindow) {
     logger.debug('ignore about:blank');
@@ -54,7 +54,7 @@ export function handleNewWindow(
   if (handleOpenFileExternalLinkAction !== undefined) return handleOpenFileExternalLinkAction;
   // open external url in browser
   if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
-    logger.debug('handleNewWindow() openExternal', { nextUrl, nextDomain, disposition });
+    logger.debug('openExternal', { nextUrl, nextDomain, disposition, function: 'handleNewWindow' });
     void shell.openExternal(nextUrl).catch((_error: unknown) => {
       logger.error(
         `handleNewWindow() openExternal error ${_error instanceof Error ? _error.message : String(_error)}`,
@@ -89,11 +89,12 @@ export function handleNewWindow(
         decodeURIComponent(sharedWebPreferences?.additionalArguments?.[1]?.replace(MetaDataChannel.browserViewMetaData, '') ?? '{}'),
       ) as IBrowserViewMetaData),
     };
-    logger.debug(`handleNewWindow() ${meta.forceNewWindow ? 'forceNewWindow' : 'disposition'}`, {
+    logger.debug('open new window request', {
       browserViewMetaData,
       disposition,
       nextUrl,
       nextDomain,
+      function: 'handleNewWindow',
     });
     meta.forceNewWindow = false;
     const webPreferences = {

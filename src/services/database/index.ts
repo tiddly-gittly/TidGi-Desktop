@@ -43,13 +43,16 @@ export class DatabaseService implements IDatabaseService {
   private storeSettingsToFileLock = false;
 
   async initializeForApp(): Promise<void> {
-    logger.info('DatabaseService.initializeForApp() starting');
+    logger.info('starting', {
+      function: 'DatabaseService.initializeForApp',
+    });
     // Initialize settings folder and load settings
     ensureSettingFolderExist();
     this.settingFileContent = settings.getSync() as unknown as ISettingFile;
-    logger.info('DatabaseService.initializeForApp() loaded settings', {
+    logger.info('loaded settings', {
       hasContent: !!this.settingFileContent,
       keys: this.settingFileContent ? Object.keys(this.settingFileContent).length : 0,
+      function: 'DatabaseService.initializeForApp',
     });
 
     // Initialize settings backup stream
@@ -61,7 +64,8 @@ export class DatabaseService implements IDatabaseService {
         path: settings.file().replace(/settings\.json$/, ''),
       });
     } catch (error) {
-      logger.error(`DatabaseService.initializeForApp error when initializing setting backup file: ${(error as Error).message}`);
+      const error_ = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error initializing setting backup file', { function: 'DatabaseService.initializeForApp', error: error_.message, stack: error_.stack ?? '' });
     }
 
     // Ensure database folder exists

@@ -150,7 +150,11 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Create and save entity
       const instanceEntity = this.agentInstanceRepository!.create(toDatabaseCompatibleInstance(instanceData));
       await this.agentInstanceRepository!.save(instanceEntity);
-      logger.info(`Created agent instance: ${instanceId}${options?.preview ? ' (preview)' : ''}`);
+      logger.info('Created agent instance', {
+        function: 'createAgent',
+        instanceId,
+        preview: !!options?.preview,
+      });
 
       // Return complete instance object
       return {
@@ -504,7 +508,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
         // Propagate canceled status to any message-specific subscriptions so UI can react
         try {
-          logger.debug(`Propagating canceled status to message-specific subscriptions for agent ${agentId}`);
+          logger.debug('propagating canceled status to message-specific subscriptions', { function: 'cancelAgent', agentId });
           const agent = await this.getAgent(agentId);
           if (agent && agent.messages) {
             for (const key of Array.from(this.statusSubjects.keys())) {
@@ -516,7 +520,7 @@ export class AgentInstanceService implements IAgentInstanceService {
                 if (subject) {
                   try {
                     const message_ = message || ({} as AgentInstanceMessage);
-                    logger.debug(`Propagate canceled -> ${key}`);
+                    logger.debug('propagate canceled to subscription', { function: 'cancelAgent', subscriptionKey: key });
                     subject.next({
                       state: 'canceled',
                       message: message_,
@@ -536,16 +540,22 @@ export class AgentInstanceService implements IAgentInstanceService {
             }
           }
         } catch (error) {
-          logger.warn(`Failed to propagate cancel status to message subscriptions: ${String(error)}`);
+          logger.warn('Failed to propagate cancel status to message subscriptions', { function: 'cancelAgent', error: String(error) });
         }
 
         // Remove cancel token from map
         this.cancelTokenMap.delete(agentId);
 
-        logger.info(`Canceled agent instance: ${agentId}`);
+        logger.info('Canceled agent instance', {
+          function: 'cancelAgent',
+          agentId,
+        });
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error(`Failed to cancel agent instance: ${errorMessage}`);
+        logger.error('Failed to cancel agent instance', {
+          function: 'cancelAgent',
+          error: errorMessage,
+        });
         throw error;
       }
     } else {
@@ -582,10 +592,16 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Clean up subscriptions
       this.cleanupAgentSubscriptions(agentId);
 
-      logger.info(`Closed agent instance: ${agentId}`);
+      logger.info('Closed agent instance', {
+        function: 'closeAgent',
+        agentId,
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to close agent instance: ${errorMessage}`);
+      logger.error('Failed to close agent instance', {
+        function: 'closeAgent',
+        error: errorMessage,
+      });
       throw error;
     }
   }
@@ -618,7 +634,7 @@ export class AgentInstanceService implements IAgentInstanceService {
             }
           }
         }).catch((error: unknown) => {
-          logger.error(`Failed to get initial status for message: ${String(error)}`);
+          logger.error('Failed to get initial status for message', { function: 'subscribeToAgentUpdates', error: String(error) });
         });
       }
 
@@ -633,7 +649,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       this.getAgent(agentId).then(agent => {
         this.agentInstanceSubjects.get(agentId)?.next(agent);
       }).catch((error: unknown) => {
-        logger.error(`Failed to get initial agent data: ${String(error)}`);
+        logger.error('Failed to get initial agent data', { function: 'subscribeToAgentUpdates', error: String(error) });
       });
     }
 

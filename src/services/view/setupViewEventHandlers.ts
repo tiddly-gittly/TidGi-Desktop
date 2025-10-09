@@ -73,10 +73,13 @@ export default function setupViewEventHandlers(
     });
   });
   view.webContents.on('will-navigate', async (event, newUrl) => {
-    logger.debug(`will-navigate called ${newUrl}`);
+    logger.debug('will-navigate called', {
+      newUrl,
+      function: 'will-navigate',
+    });
     const currentUrl = view.webContents.getURL();
     if (isSameOrigin(newUrl, currentUrl)) {
-      logger.debug(`will-navigate skipped, isSameOrigin("${newUrl}", "${currentUrl}")`);
+      logger.debug('will-navigate skipped due to same origin', { newUrl, currentUrl, function: 'will-navigate' });
       return;
     }
     const isWiki = isWikiWorkspace(workspace);
@@ -87,7 +90,7 @@ export default function setupViewEventHandlers(
       isSameOrigin(newUrl, homeUrl) ||
       isSameOrigin(newUrl, lastUrl)
     ) {
-      logger.debug(`will-navigate skipped, isSameOrigin("${newUrl}", "${homeUrl}", "${lastUrl ?? ''}")`);
+      logger.debug('will-navigate skipped due to same origin (home/last)', { newUrl, homeUrl, lastUrl, function: 'will-navigate' });
       return;
     }
     // if is external website
@@ -115,7 +118,11 @@ export default function setupViewEventHandlers(
     if (view.webContents === null) {
       return;
     }
-    logger.debug(`throttledDidFinishedLoad(), set isLoading to false`, { reason, id: workspace.id });
+    logger.debug('set isLoading to false', {
+      reason,
+      id: workspace.id,
+      function: 'throttledDidFinishedLoad',
+    });
     // focus on initial load
     // https://github.com/atomery/webcatalog/issues/398
     if (workspace.active && !browserWindow.isDestroyed() && browserWindow.isFocused() && !view.webContents.isFocused()) {

@@ -85,12 +85,23 @@ export class MenuService implements IMenuService {
       const menu = Menu.buildFromTemplate(latestTemplate);
       Menu.setApplicationMenu(menu);
     } catch (error) {
-      logger.error(`buildMenu() failed (error): ${(error as Error).message} ${(error as Error).stack ?? ''}`);
+      logger.error('buildMenu failed', {
+        message: (error as Error).message,
+        stack: (error as Error).stack ?? '',
+        function: 'buildMenu',
+      });
       try {
         const index = Number(/Error processing argument at index (\d+)/.exec((error as Error).message)?.[1]);
-        logger.error(`buildMenu() failed (example index ${index}): \n${Number.isFinite(index) ? JSON.stringify(latestTemplate[index]) : JSON.stringify(latestTemplate)}`);
+        logger.error('buildMenu failed example', {
+          index,
+          example: Number.isFinite(index) ? JSON.stringify(latestTemplate[index]) : JSON.stringify(latestTemplate),
+          function: 'buildMenu',
+        });
       } catch (error) {
-        logger.error(error);
+        logger.error('buildMenu failed fallback', {
+          error,
+          function: 'buildMenu',
+        });
       }
     }
   }

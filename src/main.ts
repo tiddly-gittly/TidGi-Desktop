@@ -195,7 +195,8 @@ app.on('ready', async () => {
     }
     await updaterService.checkForUpdates();
   } catch (error) {
-    logger.error(`Error when app.on('ready'): ${(error as Error).message}`, error);
+    const error_ = error instanceof Error ? error : new Error(String(error));
+    logger.error('Error during app ready handler', { function: "app.on('ready')", error: error_.message, stack: error_.stack ?? '' });
   }
 });
 app.on(MainChannel.windowAllClosed, async () => {

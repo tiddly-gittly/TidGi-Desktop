@@ -60,7 +60,11 @@ export class NativeService implements INativeService {
   }
 
   public async openURI(uri: string, showItemInFolder = false): Promise<void> {
-    logger.debug(`NativeService.open() Opening ${uri}`, { showItemInFolder });
+    logger.debug('open called', {
+      function: 'open',
+      uri,
+      showItemInFolder,
+    });
     if (showItemInFolder) {
       shell.showItemInFolder(uri);
     } else {
@@ -72,7 +76,10 @@ export class NativeService implements INativeService {
     if (!filePath.trim()) {
       return;
     }
-    logger.debug(`NativeService.openPath() Opening ${filePath}`);
+    logger.debug('openPath called', {
+      function: 'openPath',
+      filePath,
+    });
     // TODO: add a switch that tell user these are dangerous features, use at own risk.
     if (path.isAbsolute(filePath)) {
       if (showItemInFolder) {
@@ -96,14 +103,19 @@ export class NativeService implements INativeService {
 
   public async copyPath(fromFilePath: string, toFilePath: string, options?: { fileToDir?: boolean }): Promise<false | string> {
     if (!fromFilePath.trim() || !toFilePath.trim()) {
-      logger.error('NativeService.copyPath() fromFilePath or toFilePath is empty', { fromFilePath, toFilePath });
+      logger.error('fromFilePath or toFilePath is empty', { fromFilePath, toFilePath, function: 'copyPath' });
       return false;
     }
     if (!(await fs.exists(fromFilePath))) {
-      logger.error('NativeService.copyPath() fromFilePath not exists', { fromFilePath, toFilePath });
+      logger.error('fromFilePath not exists', { fromFilePath, toFilePath, function: 'copyPath' });
       return false;
     }
-    logger.debug(`NativeService.openPath() copy from ${fromFilePath} to ${toFilePath}`, options);
+    logger.debug('copyPath called', {
+      function: 'copyPath',
+      fromFilePath,
+      toFilePath,
+      options,
+    });
     if (options?.fileToDir === true) {
       await fs.ensureDir(toFilePath);
       const fileName = path.basename(fromFilePath);
@@ -117,14 +129,19 @@ export class NativeService implements INativeService {
 
   public async movePath(fromFilePath: string, toFilePath: string, options?: { fileToDir?: boolean }): Promise<false | string> {
     if (!fromFilePath.trim() || !toFilePath.trim()) {
-      logger.error('NativeService.movePath() fromFilePath or toFilePath is empty', { fromFilePath, toFilePath });
+      logger.error('fromFilePath or toFilePath is empty', { fromFilePath, toFilePath, function: 'movePath' });
       return false;
     }
     if (!(await fs.exists(fromFilePath))) {
-      logger.error('NativeService.movePath() fromFilePath not exists', { fromFilePath, toFilePath });
+      logger.error('fromFilePath not exists', { fromFilePath, toFilePath, function: 'movePath' });
       return false;
     }
-    logger.debug(`NativeService.movePath() move from ${fromFilePath} to ${toFilePath}`, options);
+    logger.debug('movePath called', {
+      function: 'movePath',
+      fromFilePath,
+      toFilePath,
+      options,
+    });
     try {
       if (options?.fileToDir === true) {
         const folderPath = path.dirname(toFilePath);
@@ -133,7 +150,7 @@ export class NativeService implements INativeService {
       await fs.move(fromFilePath, toFilePath);
       return toFilePath;
     } catch (error) {
-      logger.error('NativeService.movePath() failed', { error });
+      logger.error('movePath failed', { error, function: 'movePath' });
       return false;
     }
   }
@@ -290,22 +307,28 @@ ${message.message}
 
   public async moveToTrash(filePath: string): Promise<boolean> {
     if (!filePath?.trim?.()) {
-      logger.error('NativeService.moveToTrash() filePath is empty', { filePath });
+      logger.error('filePath is empty', { filePath, function: 'moveToTrash' });
       return false;
     }
-    logger.debug(`NativeService.moveToTrash() Moving to trash: ${filePath}`);
+    logger.debug('moveToTrash called', {
+      function: 'moveToTrash',
+      filePath,
+    });
     try {
       await shell.trashItem(filePath);
       return true;
     } catch {
-      logger.debug('NativeService.moveToTrash() failed with original path, trying with decoded path');
+      logger.debug('failed with original path, trying with decoded path', { function: 'moveToTrash' });
       try {
         const decodedPath = decodeURIComponent(filePath);
-        logger.debug(`NativeService.moveToTrash() Moving to trash with decoded path: ${decodedPath}`);
+        logger.debug('moveToTrash retry with decoded path', {
+          function: 'moveToTrash',
+          decodedPath,
+        });
         await shell.trashItem(decodedPath);
         return true;
       } catch (error) {
-        logger.error('NativeService.moveToTrash() failed with decoded path', { error, filePath });
+        logger.error('failed with decoded path', { error, filePath, function: 'moveToTrash' });
       }
       return false;
     }
@@ -332,7 +355,11 @@ ${message.message}
     }
     logger.info('handle file:// or open:// This url will open file in-wiki', { hostname, pathname, filePath, function: 'formatFileUrlToAbsolutePath' });
     let fileExists = fs.existsSync(filePath);
-    logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { filePath, function: 'formatFileUrlToAbsolutePath' });
+    logger.info('file exists (decodeURI)', {
+      function: 'formatFileUrlToAbsolutePath',
+      filePath,
+      exists: fileExists,
+    });
     if (fileExists) {
       return filePath;
     }

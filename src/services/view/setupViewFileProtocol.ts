@@ -80,12 +80,18 @@ function handleFileLink(details: Electron.OnBeforeRequestListenerDetails, callba
     // also allow malformed `file:///` on `details.url` on windows, prevent infinite redirect when this check failed.
     (process.platform === 'win32' && `file:///${absolutePath}` === decodeURI(details.url))
   ) {
-    logger.debug(`Open file protocol to ${String(absolutePath)}`, { function: 'handleFileLink' });
+    logger.debug('open file protocol', {
+      function: 'handleFileLink',
+      absolutePath: String(absolutePath),
+    });
     callback({
       cancel: false,
     });
   } else {
-    logger.info(`Redirecting file protocol to ${String(absolutePath)}`, { function: 'handleFileLink' });
+    logger.info('redirecting file protocol', {
+      function: 'handleFileLink',
+      absolutePath: String(absolutePath),
+    });
     callback({
       cancel: false,
       redirectURL: `file://${absolutePath}`,

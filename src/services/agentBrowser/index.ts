@@ -218,7 +218,10 @@ export class AgentBrowserService implements IAgentBrowserService {
       // Convert entities to TabItems
       return entities.map(entity => this.entityToTabItem(entity));
     } catch (error) {
-      logger.error(`Failed to get tabs: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error('Failed to get tabs', {
+        function: 'getAllTabs',
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     }
   }
@@ -237,7 +240,10 @@ export class AgentBrowserService implements IAgentBrowserService {
 
       return activeTab?.id || null;
     } catch (error) {
-      logger.error(`Failed to get active tab: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error('Failed to get active tab', {
+        function: 'getActiveTabId',
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     }
   }
@@ -269,7 +275,10 @@ export class AgentBrowserService implements IAgentBrowserService {
 
       logger.debug(`Activated tab ${tabId}`);
     } catch (error) {
-      logger.error(`Failed to set active tab: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error('Failed to set active tab', {
+        function: 'setActiveTab',
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     }
   }
@@ -417,7 +426,11 @@ export class AgentBrowserService implements IAgentBrowserService {
       if (isTemporaryTab || isNewTab || isEmptySplitView) {
         // For tabs that are easy to create, useless for closed-tab-history, like NEW_TAB type, or empty split views, we just remove them completely
         const tabTypeLog = isTemporaryTab ? 'temporary' : isNewTab ? 'new tab' : 'empty split view';
-        logger.debug(`Removing tab: ${tabId} (${tabTypeLog})`);
+        logger.debug('Removing tab', {
+          function: 'closeTab',
+          tabId,
+          tabTypeLog,
+        });
         await this.tabRepository!.remove(tabToClose);
       } else {
         // For regular tabs, mark as closed and keep in history
@@ -545,7 +558,10 @@ export class AgentBrowserService implements IAgentBrowserService {
 
       return closedTabs.map(entity => this.entityToTabItem(entity));
     } catch (error) {
-      logger.error(`Failed to get closed tabs: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error('Failed to get closed tabs', {
+        function: 'getClosedTabs',
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     }
   }
@@ -588,7 +604,10 @@ export class AgentBrowserService implements IAgentBrowserService {
       // Return the restored tab item
       return this.entityToTabItem(closedTab);
     } catch (error) {
-      logger.error(`Failed to restore closed tab: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error('Failed to restore closed tab', {
+        function: 'restoreClosedTab',
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     }
   }
@@ -627,7 +646,10 @@ export class AgentBrowserService implements IAgentBrowserService {
       // Note: We don't need to update tabs$ here because this is a private method,
       // and all public methods that call this already update tabs$ afterwards
     } catch (error) {
-      logger.error(`Failed to reindex tab positions: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error('Failed to reindex tab positions', {
+        function: 'reindexTabPositions',
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 }

@@ -37,12 +37,12 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async initializeAllWorkspaceView(): Promise<void> {
-    logger.info('initializeAllWorkspaceView() starting', { function: 'initializeAllWorkspaceView' });
+    logger.info('starting', { function: 'initializeAllWorkspaceView' });
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspacesList = await workspaceService.getWorkspacesAsList();
     logger.info(`Found ${workspacesList.length} workspaces to initialize`, {
       workspaces: workspacesList.map(w => ({ id: w.id, name: w.name, isSubWiki: isWikiWorkspace(w) ? w.isSubWiki : false, pageType: w.pageType })),
-    });
+    }, { function: 'initializeAllWorkspaceView' });
     // Only load workspace that is not a subwiki and not a page type
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
     workspacesList.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.pageType).forEach((workspace) => {
@@ -64,7 +64,7 @@ export class WorkspaceView implements IWorkspaceViewService {
 
     // Skip initialization for page workspaces - they don't need TiddlyWiki setup
     if (workspace.pageType) {
-      logger.info(`Skipping initialization for page workspace: ${workspace.id} (${workspace.pageType})`);
+      logger.info('skipping initialization for page workspace', { function: 'initializeWorkspaceView', workspaceId: workspace.id, pageType: workspace.pageType });
       return;
     }
 
@@ -73,7 +73,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const shouldBeMainWiki = isWikiWorkspace(workspace) && !workspace.isSubWiki;
-    logger.info('initializeWorkspaceView() checking wiki existence', {
+    logger.info('checking wiki existence', {
       workspaceId: workspace.id,
       shouldBeMainWiki,
       wikiFolderLocation: isWikiWorkspace(workspace) ? workspace.wikiFolderLocation : undefined,
@@ -81,7 +81,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     });
     const checkResult = await wikiService.checkWikiExist(workspace, { shouldBeMainWiki, showDialog: true });
     if (checkResult !== true) {
-      logger.warn('initializeWorkspaceView() checkWikiExist found invalid wiki', {
+      logger.warn('checkWikiExist found invalid wiki', {
         workspaceId: workspace.id,
         checkResult,
         shouldBeMainWiki,
@@ -90,11 +90,11 @@ export class WorkspaceView implements IWorkspaceViewService {
       });
       return;
     }
-    logger.info('initializeWorkspaceView() wiki validation passed', {
+    logger.info('wiki validation passed', {
       workspaceId: workspace.id,
       function: 'initializeWorkspaceView',
     });
-    logger.debug('initializeWorkspaceView() Initializing workspace', {
+    logger.debug('Initializing workspace', {
       workspaceId: workspace.id,
       options: JSON.stringify(options),
       function: 'initializeWorkspaceView',
@@ -153,7 +153,12 @@ export class WorkspaceView implements IWorkspaceViewService {
           }
         }
       } catch (error) {
-        logger.error(`Can't sync at wikiStartup(), ${(error as Error).message}\n${(error as Error).stack ?? 'no stack'}`);
+        const error_ = error instanceof Error ? error : new Error(String(error));
+        logger.error('wikiStartup sync failed', {
+          function: 'initializeAllWorkspaceView',
+          error: error_.message,
+          stack: error_.stack ?? 'no stack',
+        });
       }
     };
 
@@ -165,7 +170,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
       // if we run this due to RestartService, then skip the view adding and the while loop, because the workspaceMetadata.isLoading will be false, because addViewForAllBrowserViews will return before it run loadInitialUrlWithCatch
       if (await container.get<IViewService>(serviceIdentifier.View).alreadyHaveView(workspace)) {
-        logger.debug('Skip initializeWorkspaceView() because alreadyHaveView');
+        logger.debug('Skip because alreadyHaveView');
         return;
       }
       // Create browserView, and if user want a menubar, we also create a new window for that
@@ -182,14 +187,14 @@ export class WorkspaceView implements IWorkspaceViewService {
               tiddlywikiLanguagesMap,
             });
           } else {
-            logger.debug(`Setting wiki language to ${currentLanguage} (${tiddlywikiLanguageName}) on init`);
+            logger.debug('setting wiki language on init', { function: 'initializeWorkspaceView', currentLanguage, tiddlywikiLanguageName });
             await container.get<IWikiService>(serviceIdentifier.Wiki).setWikiLanguage(workspace.id, tiddlywikiLanguageName);
           }
         }
       }
     };
 
-    logger.debug('initializeWorkspaceView() calling wikiStartup', {
+    logger.debug('calling wikiStartup', {
       function: 'initializeWorkspaceView',
     });
     await Promise.all([
@@ -233,7 +238,7 @@ export class WorkspaceView implements IWorkspaceViewService {
   ): Promise<void> {
     if (view?.webContents) {
       const currentUrl = view.webContents.getURL();
-      logger.debug('updateLastUrl() Updating lastUrl for workspace', {
+      logger.debug('Updating lastUrl for workspace', {
         workspaceID,
         currentUrl,
         function: 'updateLastUrl',
@@ -286,7 +291,11 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async hibernateWorkspaceView(workspaceID: string): Promise<void> {
     const workspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(workspaceID);
-    logger.debug(`Hibernating workspace ${workspaceID}, workspace.active: ${String(workspace?.active)}`);
+    logger.debug('hibernating workspace', {
+      function: 'hibernateWorkspaceView',
+      workspaceID,
+      active: String(workspace?.active),
+    });
     if (workspace !== undefined && !workspace.active) {
       await Promise.all([
         container.get<IWikiService>(serviceIdentifier.Wiki).stopWiki(workspaceID),
@@ -346,7 +355,12 @@ export class WorkspaceView implements IWorkspaceViewService {
       await container.get<IViewService>(serviceIdentifier.View).setActiveViewForAllBrowserViews(nextWorkspaceID);
       await this.realignActiveWorkspace(nextWorkspaceID);
     } catch (error) {
-      logger.error(`Error while setActiveWorkspaceView(): ${(error as Error).message}`, error);
+      const error_ = error instanceof Error ? error : new Error(String(error));
+      logger.error('setActiveWorkspaceView error', {
+        function: 'setActiveWorkspaceView',
+        error: error_.message,
+        errorObj: error_,
+      });
       throw error;
     }
     // if we are switching to a new workspace, we hide and/or hibernate old view, and activate new view
@@ -374,7 +388,12 @@ export class WorkspaceView implements IWorkspaceViewService {
     try {
       await this.hideWorkspaceView(activeWorkspace.id);
     } catch (error) {
-      logger.error(`Error while setActiveWorkspaceView(): ${(error as Error).message}`, error);
+      const error_ = error instanceof Error ? error : new Error(String(error));
+      logger.error('setActiveWorkspaceView error', {
+        function: 'clearActiveWorkspaceView',
+        error: error_.message,
+        errorObj: error_,
+      });
       throw error;
     }
     if (isWikiWorkspace(activeWorkspace) && activeWorkspace.hibernateWhenUnused) {
@@ -427,7 +446,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     await container.get<IWikiService>(serviceIdentifier.Wiki).stopWiki(workspaceToRestart.id);
     await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
     if (await container.get<IWorkspaceService>(serviceIdentifier.Workspace).workspaceDidFailLoad(workspaceToRestart.id)) {
-      logger.warn('restartWorkspaceViewService() skip because workspaceDidFailLoad');
+      logger.warn('skip because workspaceDidFailLoad', { function: 'restartWorkspaceViewService' });
       return;
     }
     await container.get<IViewService>(serviceIdentifier.View).reloadViewsWebContents(workspaceToRestart.id);
@@ -510,7 +529,12 @@ export class WorkspaceView implements IWorkspaceViewService {
     try {
       await container.get<IMenuService>(serviceIdentifier.MenuService).buildMenu();
     } catch (error) {
-      logger.error(`Error buildMenu() while realignActiveWorkspace(): ${(error as Error).message}`, error);
+      const error_ = error instanceof Error ? error : new Error(String(error));
+      logger.error('realignActiveWorkspace buildMenu error', {
+        function: 'realignActiveWorkspace',
+        error: error_.message,
+        errorObj: error_,
+      });
       throw error;
     }
   }
@@ -519,16 +543,13 @@ export class WorkspaceView implements IWorkspaceViewService {
     const workspaceToRealign = id === undefined
       ? await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace()
       : await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(id);
-    logger.debug('realignActiveWorkspaceView() activeWorkspace.id', {
+    logger.debug('activeWorkspace.id', {
       workspaceId: workspaceToRealign?.id ?? 'undefined',
       stack: new Error('stack').stack?.replace('Error:', ''),
       function: 'realignActiveWorkspaceView',
     });
     if (workspaceToRealign && isWikiWorkspace(workspaceToRealign) && workspaceToRealign.isSubWiki) {
-      logger.debug('realignActiveWorkspaceView() skip because subwiki; realign main wiki instead', {
-        workspaceId: workspaceToRealign.id,
-        function: 'realignActiveWorkspaceView',
-      });
+      logger.debug('skip because subwiki; realign main wiki instead', { workspaceId: workspaceToRealign.id, function: 'realignActiveWorkspaceView' });
       if (workspaceToRealign.mainWikiID) {
         await this.realignActiveWorkspaceView(workspaceToRealign.mainWikiID);
       }

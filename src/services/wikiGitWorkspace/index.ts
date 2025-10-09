@@ -124,9 +124,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
    * Automatically initialize a default wiki workspace if none exists. This matches the previous frontend logic.
    */
   public async initialize(): Promise<void> {
-    logger.info('WikiGitWorkspaceService.initialize() checking for default wiki workspace', {
-      function: 'WikiGitWorkspace.initialize',
-    });
+    logger.info('checking for default wiki workspace', { function: 'WikiGitWorkspace.initialize' });
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspaces = await workspaceService.getWorkspacesAsList();
     const wikiWorkspaces = workspaces.filter(w => isWikiWorkspace(w) && !w.isSubWiki);

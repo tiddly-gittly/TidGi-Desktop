@@ -57,9 +57,11 @@ export class Git implements IGitService {
       this.gitWorker = createWorkerProxy<GitWorker>(worker);
       logger.debug('gitWorker initialized successfully', { function: 'Git.initWorker' });
     } catch (error) {
-      logger.error(`Failed to initialize gitWorker: ${error instanceof Error ? error.message : String(error)}`, {
+      const error_ = error instanceof Error ? error : new Error(String(error));
+      logger.error('Failed to initialize gitWorker', {
         function: 'Git.initWorker',
-        error,
+        error: error_.message,
+        errorObj: error_,
       });
       throw error;
     }

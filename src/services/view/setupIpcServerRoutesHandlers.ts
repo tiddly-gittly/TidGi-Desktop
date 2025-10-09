@@ -117,7 +117,8 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
     const workspaceIDFromHost = parsedUrl.host;
     // When using `standard: true` in `registerSchemesAsPrivileged`, workspaceIDFromHost is lower cased, and cause this
     if (workspaceIDFromHost !== workspaceID.toLowerCase()) {
-      logger.warn(`setupIpcServerRoutesHandlers.handlerCallback: workspaceIDFromHost !== workspaceID`, {
+      logger.warn('workspaceID mismatch in setupIpcServerRoutesHandlers.handlerCallback', {
+        function: 'setupIpcServerRoutesHandlers.handlerCallback',
         workspaceIDFromHost,
         workspaceID,
       });
@@ -128,7 +129,12 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
         if (request.method === route.method && route.path.test(parsedUrl.pathname)) {
           // Get the parameters in the URL path
           const parameters = parsedUrl.pathname.match(route.path);
-          logger.debug(`setupIpcServerRoutesHandlers.handlerCallback: started`, { name: route.name, parsedUrl, parameters });
+          logger.debug('setupIpcServerRoutesHandlers.handlerCallback started', {
+            function: 'setupIpcServerRoutesHandlers.handlerCallback',
+            name: route.name,
+            parsedUrl,
+            parameters,
+          });
           // Call the handler of the route to process the request and return the result
           const responseData = await route.handler(request, workspaceID, parameters);
           if (responseData === undefined) {
@@ -136,12 +142,24 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
             logger.warn(statusText);
             return new Response(undefined, { status: 404, statusText });
           }
-          logger.debug(`setupIpcServerRoutesHandlers.handlerCallback: success`, { name: route.name, parsedUrl, parameters, status: responseData.statusCode });
+          logger.debug('setupIpcServerRoutesHandlers.handlerCallback success', {
+            function: 'setupIpcServerRoutesHandlers.handlerCallback',
+            name: route.name,
+            parsedUrl,
+            parameters,
+            status: responseData.statusCode,
+          });
           return new Response(responseData.data as string, { status: responseData.statusCode, headers: responseData.headers });
         }
       }
     } catch (error) {
-      return new Response(undefined, { status: 500, statusText: `${(error as Error).message} ${(error as Error).stack ?? ''}` });
+      const error_ = error instanceof Error ? error : new Error(String(error));
+      logger.error('setupIpcServerRoutesHandlers.handlerCallback error', {
+        function: 'setupIpcServerRoutesHandlers.handlerCallback',
+        error: error_.message,
+        stack: error_.stack ?? '',
+      });
+      return new Response(undefined, { status: 500, statusText: `${error_.message} ${error_.stack ?? ''}` });
     }
     const statusText = `setupIpcServerRoutesHandlers.handlerCallback: tidgi protocol 404 ${request.url}`;
     logger.warn(statusText);
@@ -153,10 +171,15 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
       view.webContents.session.protocol.handle(`tidgi`, handlerCallback);
       const handled = view.webContents.session.protocol.isProtocolHandled(`tidgi`);
       if (!handled) {
-        logger.warn(`setupIpcServerRoutesHandlers.handlerCallback: tidgi protocol is not handled`);
+        logger.warn('tidgi protocol is not handled', { function: 'setupIpcServerRoutesHandlers.handlerCallback' });
       }
     } catch (error) {
-      logger.error(`setupIpcServerRoutesHandlers.handlerCallback: ${(error as Error).message}`);
+      const error_ = error instanceof Error ? error : new Error(String(error));
+      logger.error('setupIpcServerRoutesHandlers.handlerCallback error', {
+        function: 'setupIpcServerRoutesHandlers.handlerCallback',
+        error: error_.message,
+        stack: error_.stack ?? '',
+      });
     }
   }
 }
