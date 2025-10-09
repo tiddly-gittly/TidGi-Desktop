@@ -362,7 +362,13 @@ export class View implements IViewService {
     const homeUrl = isWikiWorkspace(workspace) ? workspace.homeUrl : null;
     const urlToLoad = uri || (rememberLastPageVisited ? lastUrl : homeUrl) || homeUrl || getDefaultTidGiUrl(workspace.id);
     try {
-      logger.debug('loadUrlForView info', { stack: new Error('stack').stack?.replace('Error:', ''), urlToLoad, viewDefined: Boolean(view.webContents), workspaceName: workspace.name, function: 'loadUrlForView' });
+      logger.debug('view load url', {
+        stack: new Error('stack').stack?.replace('Error:', ''),
+        urlToLoad,
+        viewDefined: Boolean(view.webContents),
+        workspaceName: workspace.name,
+        function: 'loadUrlForView',
+      });
       // if workspace failed to load, means nodejs server may have plugin error or something. Stop retrying, and show the error message in src/pages/Main/ErrorMessage.tsx
       if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
         return;
@@ -373,9 +379,9 @@ export class View implements IViewService {
         isLoading: true,
       });
       await view.webContents.loadURL(urlToLoad);
-    logger.debug('await loadURL done', {
-      function: 'loadUrlForView',
-    });
+      logger.debug('await loadURL done', {
+        function: 'loadUrlForView',
+      });
       const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
       view.webContents.on('destroyed', () => {
         unregisterContextMenu();
@@ -426,7 +432,7 @@ export class View implements IViewService {
       workspaceDefined: String(workspace !== undefined),
       function: 'setActiveView',
     });
-      if (view === undefined || view === null) {
+    if (view === undefined || view === null) {
       if (workspace === undefined) {
         logger.error('workspace undefined in setActiveView', {
           function: 'setActiveView',
@@ -475,11 +481,11 @@ export class View implements IViewService {
       // don't clear contentView here `browserWindow.contentView.children = [];`, the "current contentView" may point to other workspace's view now, it will close other workspace's view when switching workspaces.
       browserWindow.contentView.removeChildView(view);
     } else {
-          logger.error('view or browserWindow is undefined, not destroying view properly', {
-            workspaceID,
-            windowName,
-            function: 'removeView',
-          });
+      logger.error('view or browserWindow is undefined, not destroying view properly', {
+        workspaceID,
+        windowName,
+        function: 'removeView',
+      });
     }
   }
 
