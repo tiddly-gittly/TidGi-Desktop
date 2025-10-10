@@ -70,5 +70,7 @@ export function stopWikiLogger(workspaceID: string) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete wikiLoggers[workspaceID];
-  } catch {}
+  } catch (_error: unknown) {
+    void _error;
+  }
 }

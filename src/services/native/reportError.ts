@@ -3,7 +3,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { app, shell } from 'electron';
 import newGithubIssueUrl, { type Options as OpenNewGitHubIssueOptions } from 'new-github-issue-url';
 import os from 'os';
-import { INativeService } from './interface';
+import type { INativeService } from './interface';
 
 /**
 Opens the new issue view on the given GitHub repo in the browser.
@@ -59,12 +59,12 @@ Locale: ${app.getLocale()}
 
 export function reportErrorToGithubWithTemplates(error: Error): void {
   void import('@services/container')
-    // eslint-disable-next-line @typescript-eslint/promise-function-async
     .then(({ container }) => {
       const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
       return nativeService.openPath(LOG_FOLDER, true);
     })
-    .catch(async (error) => {
+    .catch(async (_error: unknown) => {
+      const error = _error instanceof Error ? _error : new Error(String(_error));
       await import('@services/libs/log').then(({ logger }) => {
         logger.error(`Failed to open LOG_FOLDER in reportErrorToGithubWithTemplates`, error);
       });

@@ -1,20 +1,21 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
+import { styled } from '@mui/material/styles';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import Promise from 'bluebird';
 import { ClientContext, GraphQLClient, useMutation, useQuery } from 'graphql-hooks';
 import { trim } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
 
-import { Cached as CachedIcon, CreateNewFolder as CreateNewFolderIcon, Folder as FolderIcon } from '@mui/icons-material';
+import CachedIcon from '@mui/icons-material/Cached';
+import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
+import FolderIcon from '@mui/icons-material/Folder';
 import { Button, LinearProgress, List, ListItemButton, ListItemIcon, ListItemText, TextField } from '@mui/material';
 
 import { GITHUB_GRAPHQL_API } from '@/constants/auth';
 import { useUserInfoObservable } from '@services/auth/hooks';
 import { IGithubSearchNode, IGithubSearchRepoQuery } from './interfaces';
 
-const RepoSearchContainer = styled.div`
+const RepoSearchContainer = styled('div')`
   margin-top: 20px;
 `;
 const RepoSearchInput = styled(TextField)``;
@@ -111,7 +112,9 @@ function SearchGithubRepoResultList({
   const onSelectRepo = useCallback(
     (url: string, name: string) => {
       githubWikiUrlSetter(url);
-      typeof wikiFolderNameSetter === 'function' && wikiFolderNameSetter(name);
+      if (typeof wikiFolderNameSetter === 'function') {
+        wikiFolderNameSetter(name);
+      }
     },
     [githubWikiUrlSetter, wikiFolderNameSetter],
   );
@@ -135,7 +138,6 @@ function SearchGithubRepoResultList({
     return () => {
       clearTimeout(timeoutHandle);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [githubUsername, accessToken]);
   // try refetch on error
   const [retryInterval, retryIntervalSetter] = useState(100);
@@ -149,13 +151,12 @@ function SearchGithubRepoResultList({
         clearTimeout(timeoutHandle);
       };
     }
-    return () => {};
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return undefined;
   }, [error, githubUsername, accessToken, retryInterval]);
 
   const [createRepository] = useMutation(CREATE_REPO_MUTATION);
 
-  const repositoryCount = data?.search?.repositoryCount;
+  const repositoryCount = data?.search.repositoryCount;
   const repoList: IGithubSearchNode[] = useMemo(
     () => (data !== undefined && (repositoryCount ?? 0) > 0 ? data.search.edges.map(({ node }) => node) : []),
     [data, repositoryCount],
@@ -163,13 +164,13 @@ function SearchGithubRepoResultList({
 
   // auto select first one after first search
   useEffect(() => {
-    if (githubWikiUrl?.length === 0 && repoList.length > 0) {
+    if (githubWikiUrl.length === 0 && repoList.length > 0) {
       onSelectRepo(repoList[0].url, repoList[0].name);
     }
   }, [repoList, githubWikiUrl, onSelectRepo]);
 
   const [isCreatingRepo, isCreatingRepoSetter] = useState(false);
-  const githubUserID = data?.repositoryOwner?.id;
+  const githubUserID = data?.repositoryOwner.id;
   const wikiUrlToCreate = `https://github.com/${githubUsername ?? '???'}/${githubRepoSearchString}`;
   const isCreateNewRepo = trim(githubWikiUrl) === wikiUrlToCreate;
   const githubPagesUrl = `https://${githubUsername ?? '???'}.github.io/${githubRepoSearchString}`;
@@ -241,7 +242,7 @@ function SearchGithubRepoResultList({
         )}
       </List>
       {repoList.length === 0 && (
-        <ReloadButton color='secondary' endIcon={<CachedIcon />} onClick={async () => await refetchDebounced()}>
+        <ReloadButton color='secondary' endIcon={<CachedIcon />} onClick={() => void refetchDebounced()}>
           {t('AddWorkspace.Reload')}
         </ReloadButton>
       )}

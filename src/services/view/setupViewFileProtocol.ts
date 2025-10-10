@@ -2,13 +2,13 @@ import { WikiChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
-import { INativeService } from '@services/native/interface';
+import type { INativeService } from '@services/native/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { shell, WebContentsView } from 'electron';
 import fs from 'fs-extra';
 import type { INewWindowContext } from './handleNewWindow';
-import { INewWindowAction } from './interface';
+import type { INewWindowAction } from './interface';
 
 /**
  * Handles in-wiki file link opening.
@@ -27,21 +27,24 @@ export function handleOpenFileExternalLink(nextUrl: string, newWindowContext: IN
     const fileStat = fs.statSync(absoluteFilePath);
     if (fileStat.isDirectory()) {
       logger.info(`Opening directory ${absoluteFilePath}`, { function: 'handleOpenFileExternalLink' });
-      void shell.openPath(absoluteFilePath).catch((error) => {
-        const message = i18n.t('Log.FailedToOpenDirectory', { path: absoluteFilePath, message: (error as Error).message });
+      void shell.openPath(absoluteFilePath).catch((_error: unknown) => {
+        const error = _error instanceof Error ? _error : new Error(String(_error));
+        const message = i18n.t('Log.FailedToOpenDirectory', { path: absoluteFilePath, message: error.message });
         logger.warn(message, { function: 'handleOpenFileExternalLink' });
         void wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, newWindowContext.workspace.id, [message]);
       });
     } else if (fileStat.isFile()) {
       logger.info(`Opening file ${absoluteFilePath}`, { function: 'handleOpenFileExternalLink' });
-      void shell.openPath(absoluteFilePath).catch((error) => {
-        const message = i18n.t('Log.FailedToOpenFile', { path: absoluteFilePath, message: (error as Error).message });
+      void shell.openPath(absoluteFilePath).catch((_error: unknown) => {
+        const error = _error instanceof Error ? _error : new Error(String(_error));
+        const message = i18n.t('Log.FailedToOpenFile', { path: absoluteFilePath, message: error.message });
         logger.warn(message, { function: 'handleOpenFileExternalLink' });
         void wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, newWindowContext.workspace.id, [message]);
       });
     }
-  } catch (error) {
-    const message = `${i18n.t('AddWorkspace.PathNotExist', { path: absoluteFilePath })} ${(error as Error).message}`;
+  } catch (_error: unknown) {
+    const error = _error instanceof Error ? _error : new Error(String(_error));
+    const message = `${i18n.t('AddWorkspace.PathNotExist', { path: absoluteFilePath })} ${error.message}`;
     logger.warn(message, { function: 'handleOpenFileExternalLink' });
     void wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, newWindowContext.workspace.id, [message]);
   }
@@ -50,7 +53,6 @@ export function handleOpenFileExternalLink(nextUrl: string, newWindowContext: IN
   };
 }
 
-/* eslint-disable n/no-callback-literal */
 /**
  * Handle file protocol in webview to request file content and show in the view.
  *
@@ -78,12 +80,18 @@ function handleFileLink(details: Electron.OnBeforeRequestListenerDetails, callba
     // also allow malformed `file:///` on `details.url` on windows, prevent infinite redirect when this check failed.
     (process.platform === 'win32' && `file:///${absolutePath}` === decodeURI(details.url))
   ) {
-    logger.debug(`Open file protocol to ${String(absolutePath)}`, { function: 'handleFileLink' });
+    logger.debug('open file protocol', {
+      function: 'handleFileLink',
+      absolutePath: String(absolutePath),
+    });
     callback({
       cancel: false,
     });
   } else {
-    logger.info(`Redirecting file protocol to ${String(absolutePath)}`, { function: 'handleFileLink' });
+    logger.info('redirecting file protocol', {
+      function: 'handleFileLink',
+      absolutePath: String(absolutePath),
+    });
     callback({
       cancel: false,
       redirectURL: `file://${absolutePath}`,

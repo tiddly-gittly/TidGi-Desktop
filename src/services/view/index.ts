@@ -1,9 +1,7 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable n/no-callback-literal */
-/* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
+import { container } from '@services/container';
+import { getPreloadPath } from '@services/windows/viteEntry';
 import { BrowserWindow, ipcMain, WebContentsView, WebPreferences } from 'electron';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 
 import type { IMenuService } from '@services/menu/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
@@ -15,54 +13,53 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { isMac, isWin } from '@/helpers/system';
-import { IAuthenticationService } from '@services/auth/interface';
-import { lazyInject } from '@services/container';
+import type { IAuthenticationService } from '@services/auth/interface';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import getViewBounds from '@services/libs/getViewBounds';
 import { i18n } from '@services/libs/i18n';
 import { isBrowserWindow } from '@services/libs/isBrowserWindow';
 import { logger } from '@services/libs/log';
-import { INativeService } from '@services/native/interface';
-import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspace } from '@services/workspaces/interface';
+import type { INativeService } from '@services/native/interface';
+import { type IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
+import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
 import debounce from 'lodash/debounce';
 import { setViewEventName } from './constants';
 import { ViewLoadUrlError } from './error';
-import { IViewService } from './interface';
+import type { IViewService } from './interface';
 import { setupIpcServerRoutesHandlers } from './setupIpcServerRoutesHandlers';
 import setupViewEventHandlers from './setupViewEventHandlers';
 import { setupViewSession } from './setupViewSession';
 
 @injectable()
 export class View implements IViewService {
-  @lazyInject(serviceIdentifier.Preference)
-  private readonly preferenceService!: IPreferenceService;
-
-  @lazyInject(serviceIdentifier.Window)
-  private readonly windowService!: IWindowService;
-
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
-
-  @lazyInject(serviceIdentifier.MenuService)
-  private readonly menuService!: IMenuService;
-
-  @lazyInject(serviceIdentifier.WorkspaceView)
-  private readonly workspaceViewService!: IWorkspaceViewService;
-
-  @lazyInject(serviceIdentifier.Authentication)
-  private readonly authService!: IAuthenticationService;
-
-  @lazyInject(serviceIdentifier.NativeService)
-  private readonly nativeService!: INativeService;
-
-  constructor() {
+  constructor(
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+    @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
+    @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
+    @inject(serviceIdentifier.MenuService) private readonly menuService: IMenuService,
+  ) {
     this.initIPCHandlers();
-    void this.registerMenu();
+  }
+
+  // Circular dependency services - use container.get() when needed
+  private get windowService(): IWindowService {
+    return container.get<IWindowService>(serviceIdentifier.Window);
+  }
+
+  private get workspaceService(): IWorkspaceService {
+    return container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+  }
+
+  private get workspaceViewService(): IWorkspaceViewService {
+    return container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+  }
+
+  public async initialize(): Promise<void> {
+    await this.registerMenu();
   }
 
   private initIPCHandlers(): void {
-    ipcMain.handle(ViewChannel.onlineStatusChanged, async (_event, online: boolean) => {
+    ipcMain.handle(ViewChannel.onlineStatusChanged, async (_event, _online: boolean) => {
       // try to fix when wifi status changed when wiki startup, causing wiki not loaded properly.
       // if (online) {
       //   await this.reloadViewsWebContentsIfDidFailLoad();
@@ -76,19 +73,25 @@ export class View implements IViewService {
   }
 
   private async registerMenu(): Promise<void> {
-    const hasWorkspaces = async () => (await this.workspaceService.countWorkspaces()) > 0;
-    const sidebar = await this.preferenceService.get('sidebar');
-    const titleBar = await this.preferenceService.get('titleBar');
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+    const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+
+    const hasWorkspaces = async () => (await workspaceService.countWorkspaces()) > 0;
+    const sidebar = await preferenceService.get('sidebar');
+    const titleBar = await preferenceService.get('titleBar');
     // electron type forget that click can be async function
-    /* eslint-disable @typescript-eslint/no-misused-promises */
-    await this.menuService.insertMenu('View', [
+
+    await menuService.insertMenu('View', [
       {
         label: () => (sidebar ? i18n.t('Preference.HideSideBar') : i18n.t('Preference.ShowSideBar')),
         accelerator: 'CmdOrCtrl+Alt+S',
         click: async () => {
-          const sidebarLatest = await this.preferenceService.get('sidebar');
-          void this.preferenceService.set('sidebar', !sidebarLatest);
-          void this.workspaceViewService.realignActiveWorkspace();
+          const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+          const sidebarLatest = await preferenceService.get('sidebar');
+          void preferenceService.set('sidebar', !sidebarLatest);
+          void workspaceViewService.realignActiveWorkspace();
         },
       },
       {
@@ -97,9 +100,11 @@ export class View implements IViewService {
         enabled: isMac,
         visible: isMac,
         click: async () => {
-          const titleBarLatest = await this.preferenceService.get('titleBar');
-          void this.preferenceService.set('titleBar', !titleBarLatest);
-          void this.workspaceViewService.realignActiveWorkspace();
+          const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+          const titleBarLatest = await preferenceService.get('titleBar');
+          void preferenceService.set('titleBar', !titleBarLatest);
+          void workspaceViewService.realignActiveWorkspace();
         },
       },
       // same behavior as BrowserWindow with autoHideMenuBar: true
@@ -118,9 +123,11 @@ export class View implements IViewService {
             browserWindow.setMenuBarVisibility(!browserWindow.isMenuBarVisible());
             return;
           }
-          const mainWindow = this.windowService.get(WindowNames.main);
-          mainWindow?.setMenuBarVisibility(!mainWindow?.isMenuBarVisible());
-          void this.workspaceViewService.realignActiveWorkspace();
+          const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+          const mainWindow = windowService.get(WindowNames.main);
+          mainWindow?.setMenuBarVisibility(!mainWindow.isMenuBarVisible());
+          void workspaceViewService.realignActiveWorkspace();
         },
       },
       { type: 'separator' },
@@ -140,7 +147,7 @@ export class View implements IViewService {
           // browserWindow above is for the main window's react UI
           // modify browser view in the main window
           const view = await this.getActiveBrowserView();
-          view?.webContents?.setZoomFactor?.(1);
+          view?.webContents.setZoomFactor(1);
         },
         enabled: hasWorkspaces,
       },
@@ -160,7 +167,7 @@ export class View implements IViewService {
           }
           // modify browser view in the main window
           const view = await this.getActiveBrowserView();
-          view?.webContents?.setZoomFactor?.(view.webContents.getZoomFactor() + 0.05);
+          view?.webContents.setZoomFactor(view.webContents.getZoomFactor() + 0.05);
         },
         enabled: hasWorkspaces,
       },
@@ -179,7 +186,7 @@ export class View implements IViewService {
           }
           // modify browser view in the main window
           const view = await this.getActiveBrowserView();
-          view?.webContents?.setZoomFactor?.(view.webContents.getZoomFactor() - 0.05);
+          view?.webContents.setZoomFactor(view.webContents.getZoomFactor() - 0.05);
         },
         enabled: hasWorkspaces,
       },
@@ -202,7 +209,6 @@ export class View implements IViewService {
         enabled: hasWorkspaces,
       },
     ]);
-    /* eslint-enable @typescript-eslint/no-misused-promises */
   }
 
   /**
@@ -212,7 +218,6 @@ export class View implements IViewService {
    */
   private readonly views = new Map<string, Map<WindowNames, WebContentsView> | undefined>();
   public async getViewCount(): Promise<number> {
-    // eslint-disable-next-line @typescript-eslint/return-await
     return await Promise.resolve(Object.keys(this.views).length);
   }
 
@@ -281,10 +286,11 @@ export class View implements IViewService {
       webSecurity: false,
       allowRunningInsecureContent: true,
       session: sessionOfView,
-      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      preload: getPreloadPath(),
       additionalArguments: [
         `${MetaDataChannel.browserViewMetaData}${WindowNames.view}`,
         `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(browserViewMetaData))}`,
+        '--unsafely-disable-devtools-self-xss-warnings',
       ],
     } satisfies WebPreferences;
   }
@@ -316,6 +322,10 @@ export class View implements IViewService {
     const debouncedOnResize = debounce(async () => {
       logger.debug('debouncedOnResize');
       if (browserWindow === undefined) return;
+      const updatedWorkspace = await this.workspaceService.get(workspace.id);
+      if (updatedWorkspace === undefined) return;
+      // Prevent update non-active (hiding) wiki workspace, so it won't pop up to cover other active agent workspace
+      if (windowName === WindowNames.main && !updatedWorkspace.active) return;
       if ([WindowNames.secondary, WindowNames.main, WindowNames.menuBar].includes(windowName)) {
         const contentSize = browserWindow.getContentSize();
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
@@ -347,26 +357,31 @@ export class View implements IViewService {
 
   public async loadUrlForView(workspace: IWorkspace, view: WebContentsView, uri?: string): Promise<void> {
     const { rememberLastPageVisited } = this.preferenceService.getPreferences();
-    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/strict-boolean-expressions
-    const urlToLoad = uri || (rememberLastPageVisited ? workspace.lastUrl : workspace.homeUrl) || workspace.homeUrl || getDefaultTidGiUrl(workspace.id);
+
+    const lastUrl = isWikiWorkspace(workspace) ? workspace.lastUrl : null;
+    const homeUrl = isWikiWorkspace(workspace) ? workspace.homeUrl : null;
+    const urlToLoad = uri || (rememberLastPageVisited ? lastUrl : homeUrl) || homeUrl || getDefaultTidGiUrl(workspace.id);
     try {
-      logger.debug(
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        `loadUrlForView(): view.webContents is ${view.webContents ? 'define' : 'undefined'} urlToLoad: ${urlToLoad} for workspace ${workspace.name}`,
-        { stack: new Error('stack').stack?.replace('Error:', '') },
-      );
+      logger.debug('view load url', {
+        stack: new Error('stack').stack?.replace('Error:', ''),
+        urlToLoad,
+        viewDefined: Boolean(view.webContents),
+        workspaceName: workspace.name,
+        function: 'loadUrlForView',
+      });
       // if workspace failed to load, means nodejs server may have plugin error or something. Stop retrying, and show the error message in src/pages/Main/ErrorMessage.tsx
       if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
         return;
       }
       // will set again in view.webContents.on('did-start-loading'), but that one sometimes is too late to block services that wait for `isLoading`
       await this.workspaceService.updateMetaData(workspace.id, {
-        // eslint-disable-next-line unicorn/no-null
         didFailLoadErrorMessage: null,
         isLoading: true,
       });
       await view.webContents.loadURL(urlToLoad);
-      logger.debug('loadUrlForView() await loadURL() done');
+      logger.debug('await loadURL done', {
+        function: 'loadUrlForView',
+      });
       const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
       view.webContents.on('destroyed', () => {
         unregisterContextMenu();
@@ -401,28 +416,46 @@ export class View implements IViewService {
 
   public async setActiveView(workspaceID: string, windowName: WindowNames): Promise<void> {
     const browserWindow = this.windowService.get(windowName);
-    logger.debug(`setActiveView(): ${workspaceID} ${windowName} browserWindow: ${String(browserWindow !== undefined)}`);
+    logger.debug('set active view check', {
+      workspaceID,
+      windowName,
+      browserWindowDefined: String(browserWindow !== undefined),
+      function: 'setActiveView',
+    });
     if (browserWindow === undefined) {
       return;
     }
     const workspace = await this.workspaceService.get(workspaceID);
     const view = this.getView(workspaceID, windowName);
-    logger.debug(`setActiveView(): view: ${String(view !== undefined && view !== null)} workspace: ${String(workspace !== undefined)}`);
+    logger.debug('view/workspace check', {
+      viewDefined: String(view !== undefined && view !== null),
+      workspaceDefined: String(workspace !== undefined),
+      function: 'setActiveView',
+    });
     if (view === undefined || view === null) {
       if (workspace === undefined) {
-        logger.error(`workspace is undefined when setActiveView(${windowName}, ${workspaceID})`);
+        logger.error('workspace undefined in setActiveView', {
+          function: 'setActiveView',
+          windowName,
+          workspaceID,
+        });
       } else {
         await this.addView(workspace, windowName);
       }
     } else {
       browserWindow.contentView.addChildView(view);
-      logger.debug(`setActiveView() contentView.addChildView`);
+      logger.debug('contentView.addChildView', {
+        function: 'setActiveView',
+      });
       const contentSize = browserWindow.getContentSize();
       if (workspace !== undefined && (await this.workspaceService.workspaceDidFailLoad(workspace.id))) {
         view.setBounds(await getViewBounds(contentSize as [number, number], { findInPage: false, windowName }, 0, 0)); // hide browserView to show error message
       } else {
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
-        logger.debug(`setActiveView() contentSize ${JSON.stringify(newViewBounds)}`);
+        logger.debug('content size updated', {
+          newViewBounds: JSON.stringify(newViewBounds),
+          function: 'setActiveView',
+        });
         view.setBounds(newViewBounds);
       }
       // focus on webview
@@ -433,7 +466,11 @@ export class View implements IViewService {
   }
 
   public removeView(workspaceID: string, windowName: WindowNames): void {
-    logger.debug(`Remove view for workspaceID ${workspaceID} via ${new Error('stack').stack ?? 'no stack'}`);
+    logger.debug('removeView called', {
+      function: 'removeView',
+      workspaceID,
+      stack: new Error('stack').stack ?? 'no stack',
+    });
     const view = this.getView(workspaceID, windowName);
     const browserWindow = this.windowService.get(windowName);
     if (view !== undefined && browserWindow !== undefined) {
@@ -444,7 +481,11 @@ export class View implements IViewService {
       // don't clear contentView here `browserWindow.contentView.children = [];`, the "current contentView" may point to other workspace's view now, it will close other workspace's view when switching workspaces.
       browserWindow.contentView.removeChildView(view);
     } else {
-      logger.error(`removeView() view or browserWindow is undefined for workspaceID ${workspaceID} windowName ${windowName}, not destroying view properly.`);
+      logger.error('view or browserWindow is undefined, not destroying view properly', {
+        workspaceID,
+        windowName,
+        function: 'removeView',
+      });
     }
   }
 
@@ -466,7 +507,7 @@ export class View implements IViewService {
     this.forEachView(async (view, id) => {
       const workspace = await this.workspaceService.get(id);
       if (view !== undefined && workspace !== undefined) {
-        view.webContents.audioMuted = workspace.disableAudio || this.shouldMuteAudio;
+        view.webContents.audioMuted = (isWikiWorkspace(workspace) ? workspace.disableAudio : false) || this.shouldMuteAudio;
       }
     });
   };
@@ -481,7 +522,11 @@ export class View implements IViewService {
     this.forEachView(async (view, id, _name) => {
       if (await this.workspaceService.workspaceDidFailLoad(id)) {
         if (view.webContents === null) {
-          logger.error(`view.webContents is ${String(view.webContents)} when reloadViewsWebContentsIfDidFailLoad's forEachView(${id})`);
+          logger.error('webContents null in reloadViewsWebContentsIfDidFailLoad', {
+            function: 'reloadViewsWebContentsIfDidFailLoad',
+            workspaceID: id,
+            webContents: String(view.webContents),
+          });
           return;
         }
         view.webContents.reload();
@@ -494,32 +539,33 @@ export class View implements IViewService {
     this.forEachView(async (view, id, _name) => {
       /** if workspaceID not passed means reload all views. */
       if (workspaceID === undefined || id === workspaceID) {
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         if (!view.webContents) {
-          logger.error(`view.webContents is ${String(view.webContents)} when reloadViewsWebContents's forEachView(${id})`);
+          logger.error('webContents missing in reloadViewsWebContents', {
+            function: 'reloadViewsWebContents',
+            workspaceID: id,
+            webContents: String(view.webContents),
+          });
           return;
         }
         // if we can get lastUrl, use it
         if (workspaceID !== undefined) {
           const workspace = await this.workspaceService.get(workspaceID);
-          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-          if (rememberLastPageVisited && workspace?.lastUrl) {
+
+          if (rememberLastPageVisited && workspace && isWikiWorkspace(workspace) && workspace.lastUrl) {
             try {
               await view.webContents.loadURL(workspace.lastUrl);
-              return;
             } catch (error) {
               logger.warn(new ViewLoadUrlError(workspace.lastUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
             }
           }
         }
-        // else fallback to just reload
+        // Always trigger a reload
         view.webContents.reload();
       }
     });
   }
 
   public async getViewCurrentUrl(workspaceID?: string): Promise<string | undefined> {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!workspaceID) {
       return;
     }
@@ -531,9 +577,11 @@ export class View implements IViewService {
   }
 
   public async getActiveBrowserView(): Promise<WebContentsView | undefined> {
-    const workspace = await this.workspaceService.getActiveWorkspace();
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspace = await workspaceService.getActiveWorkspace();
     if (workspace !== undefined) {
-      const isMenubarOpen = await this.windowService.isMenubarOpen();
+      const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+      const isMenubarOpen = await windowService.isMenubarOpen();
       if (isMenubarOpen) {
         return this.getView(workspace.id, WindowNames.menuBar);
       } else {
@@ -543,7 +591,8 @@ export class View implements IViewService {
   }
 
   public async getActiveBrowserViews(): Promise<Array<WebContentsView | undefined>> {
-    const workspace = await this.workspaceService.getActiveWorkspace();
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspace = await workspaceService.getActiveWorkspace();
     if (workspace !== undefined) {
       return [this.getView(workspace.id, WindowNames.main), this.getView(workspace.id, WindowNames.menuBar)];
     }
@@ -557,7 +606,6 @@ export class View implements IViewService {
       logger.error(`reloadActiveBrowserView views.length === 0`, { stack: new Error('stack').stack?.replace('Error:', '') });
     }
     views.forEach((view) => {
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (view?.webContents) {
         view.webContents.reload();
       }
@@ -565,27 +613,26 @@ export class View implements IViewService {
   }
 
   public async realignActiveView(browserWindow: BrowserWindow, activeId: string, windowName: WindowNames, isRetry?: boolean): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
     const view = this.getView(activeId, windowName);
     if (view?.webContents) {
       const contentSize = browserWindow.getContentSize();
       if (await this.workspaceService.workspaceDidFailLoad(activeId)) {
-        logger.warn(`realignActiveView() hide because didFailLoad`);
+        logger.warn('hide because didFailLoad', { function: 'realignActiveView' });
         await this.hideView(browserWindow, windowName, activeId);
       } else {
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
-        logger.debug(`realignActiveView() contentSize set to ${JSON.stringify(newViewBounds)}`);
-        view?.setBounds(newViewBounds);
+        logger.debug('contentSize set', { newViewBounds: JSON.stringify(newViewBounds), function: 'realignActiveView' });
+        view.setBounds(newViewBounds);
       }
     } else if (isRetry === true) {
       logger.error(
-        `realignActiveView() ${activeId} failed view?.webContents is ${String(view?.webContents)} and isRetry is ${String(isRetry)} stack: ${
+        `realignActiveView() ${activeId} failed view?.webContents is ${view?.webContents ? '[WebContents]' : 'undefined'} and isRetry is ${String(isRetry)} stack: ${
           new Error('stack').stack?.replace('Error:', '') ?? 'no stack'
         }`,
       );
     } else {
       // retry one time later if webContent is not ready yet
-      logger.debug(`realignActiveView() retry one time later`);
+      logger.debug('retry one time later', { function: 'realignActiveView' });
       setTimeout(() => void this.realignActiveView(browserWindow, activeId, windowName, true), 1000);
     }
   }
@@ -600,7 +647,7 @@ export class View implements IViewService {
       view.webContents.stopFindInPage('clearSelection');
       view.webContents.send(WindowChannel.closeFindInPage);
       // make view small, hide browserView to show error message or other pages
-      view?.setBounds({
+      view.setBounds({
         x: -contentSize[0],
         y: -contentSize[1],
         width: contentSize[0],

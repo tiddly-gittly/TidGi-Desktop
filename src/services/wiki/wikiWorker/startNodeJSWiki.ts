@@ -11,7 +11,7 @@ import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOpera
 import { IStartNodeJSWikiConfigs } from '.';
 import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
-import { authTokenIsProvided } from './wikiWorkerUtils';
+import { authTokenIsProvided } from './wikiWorkerUtilities';
 
 export function startNodeJSWiki({
   enableHTTPAPI,
@@ -37,6 +37,8 @@ export function startNodeJSWiki({
   }
   return new Observable<IWikiMessage>((observer) => {
     let fullBootArgv: string[] = [];
+    // mark isDev as used to satisfy lint when not needed directly
+    void isDev;
     observer.next({ type: 'control', actions: WikiControlActions.start, argv: fullBootArgv });
     intercept(
       (newStdOut: string) => {
@@ -72,7 +74,7 @@ export function startNodeJSWiki({
        *
        * @url https://wiki.zhiheng.io/static/TiddlyWiki%253A%2520Readonly%2520for%2520Node.js%2520Server.html
        */
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
       const readonlyArguments = readOnlyMode === true ? ['gzip=yes', 'readers=(anon)', `writers=${userName || nanoid()}`, `username=${userName}`, `password=${nanoid()}`] : [];
       if (readOnlyMode === true) {
         wikiInstance.preloadTiddler({ title: '$:/info/tidgi/readOnlyMode', text: 'yes' });
@@ -94,7 +96,7 @@ export function startNodeJSWiki({
           observer.next({ type: 'control', actions: WikiControlActions.error, message: 'tokenAuth is true, but authToken is empty, this can be a bug.', argv: fullBootArgv });
         }
       }
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
       const httpsArguments = https?.enabled && https.tlsKey && https.tlsCert
         ? [`tls-key=${https.tlsKey}`, `tls-cert=${https.tlsCert}`]
         : [];
@@ -131,7 +133,7 @@ export function startNodeJSWiki({
         : [homePath, '--version'];
       wikiInstance.boot.argv = [...fullBootArgv];
 
-      wikiInstance.hooks.addHook('th-server-command-post-start', function(listenCommand, server) {
+      wikiInstance.hooks.addHook('th-server-command-post-start', function(_listenCommand, server) {
         server.on('error', function(error: Error) {
           observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message, argv: fullBootArgv });
         });

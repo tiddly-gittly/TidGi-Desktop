@@ -1,17 +1,16 @@
+import { createWorkerProxy } from '@services/libs/workerAdapter';
 import { dialog, net } from 'electron';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
 import { Observer } from 'rxjs';
-import { ModuleThread, spawn, Worker } from 'threads';
-
-// @ts-expect-error it don't want .ts
-// eslint-disable-next-line import/no-webpack-loader-syntax
-import workerURL from 'threads-plugin/dist/loader?name=gitWorker!./gitWorker.ts';
+import { Worker } from 'worker_threads';
+// @ts-expect-error - Vite worker import with ?nodeWorker query
+import GitWorkerFactory from './gitWorker?nodeWorker';
 
 import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
-import { lazyInject } from '@services/container';
+import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
@@ -21,40 +20,51 @@ import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspace } from '@services/workspaces/interface';
-import { ObservablePromise } from 'threads/dist/observable-promise';
-import { GitWorker } from './gitWorker';
-import { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
+import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
+import type { GitWorker } from './gitWorker';
+import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
 import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 
 @injectable()
 export class Git implements IGitService {
-  @lazyInject(serviceIdentifier.Authentication)
-  private readonly authService!: IAuthenticationService;
+  private gitWorker?: GitWorker;
+  private nativeWorker?: Worker;
 
-  @lazyInject(serviceIdentifier.Wiki)
-  private readonly wikiService!: IWikiService;
+  constructor(
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+    @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
+    @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
+  ) {
+  }
 
-  @lazyInject(serviceIdentifier.Window)
-  private readonly windowService!: IWindowService;
-
-  @lazyInject(serviceIdentifier.View)
-  private readonly viewService!: IViewService;
-
-  @lazyInject(serviceIdentifier.NativeService)
-  private readonly nativeService!: INativeService;
-
-  private gitWorker?: ModuleThread<GitWorker>;
-
-  constructor(@inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService) {
-    void this.initWorker();
+  public async initialize(): Promise<void> {
+    await this.initWorker();
   }
 
   private async initWorker(): Promise<void> {
     process.env.LOCAL_GIT_DIRECTORY = LOCAL_GIT_DIRECTORY;
-    logger.debug(`initial gitWorker with  ${workerURL as string}`, { function: 'Git.initWorker', LOCAL_GIT_DIRECTORY });
-    this.gitWorker = await spawn<GitWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
-    logger.debug(`initial gitWorker done`, { function: 'Git.initWorker' });
+
+    logger.debug(`Initializing gitWorker`, {
+      function: 'Git.initWorker',
+      LOCAL_GIT_DIRECTORY,
+    });
+
+    try {
+      // Use Vite's ?nodeWorker import instead of dynamic Worker path
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      const worker = GitWorkerFactory() as Worker;
+      this.nativeWorker = worker;
+      this.gitWorker = createWorkerProxy<GitWorker>(worker);
+      logger.debug('gitWorker initialized successfully', { function: 'Git.initWorker' });
+    } catch (error) {
+      const error_ = error instanceof Error ? error : new Error(String(error));
+      logger.error('Failed to initialize gitWorker', {
+        function: 'Git.initWorker',
+        error: error_.message,
+        errorObj: error_,
+      });
+      throw error;
+    }
   }
 
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {
@@ -63,7 +73,6 @@ export class Git implements IGitService {
   }
 
   public async getWorkspacesRemote(wikiFolderPath?: string): Promise<string | undefined> {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!wikiFolderPath) return;
     const branch = (await this.authService.get('git-branch' as ServiceBranchTypes)) ?? 'main';
     const defaultRemoteName = (await getRemoteName(wikiFolderPath, branch)) ?? 'origin';
@@ -79,7 +88,8 @@ export class Git implements IGitService {
     // at least 'http://', but in some case it might be shorter, like 'a.b'
     if (remoteUrl === undefined || remoteUrl.length < 3) return;
     if (branch === undefined) return;
-    const browserView = this.viewService.getView(workspace.id, WindowNames.main);
+    const viewService = container.get<IViewService>(serviceIdentifier.View);
+    const browserView = viewService.getView(workspace.id, WindowNames.main);
     if (browserView === undefined) {
       logger.error(`no browserView in updateGitInfoTiddler for ID ${workspace.id}`);
       return;
@@ -92,17 +102,19 @@ export class Git implements IGitService {
      * similar to "linonetwo/wiki", string after "https://com/"
      */
     const githubRepoName = `${userName}/${repoName}`;
-    if (await this.wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Repo']) !== githubRepoName) {
-      await this.wikiService.wikiOperationInBrowser(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Repo', githubRepoName]);
+    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+    if (await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Repo']) !== githubRepoName) {
+      await wikiService.wikiOperationInBrowser(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Repo', githubRepoName]);
     }
-    if (await this.wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Branch']) !== branch) {
-      await this.wikiService.wikiOperationInBrowser(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Branch', branch]);
+    if (await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Branch']) !== branch) {
+      await wikiService.wikiOperationInBrowser(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Branch', branch]);
     }
   }
 
   private popGitErrorNotificationToUser(step: GitStep, message: string): void {
     if (step === GitStep.GitPushFailed && message.includes('403')) {
-      const mainWindow = this.windowService.get(WindowNames.main);
+      const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+      const mainWindow = windowService.get(WindowNames.main);
       if (mainWindow !== undefined) {
         void dialog.showMessageBox(mainWindow, {
           title: i18n.t('Log.GitTokenMissing'),
@@ -145,11 +157,13 @@ export class Git implements IGitService {
   });
 
   private createFailedNotification(message: string, workspaceID: string) {
-    void this.wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, workspaceID, [`${i18n.t('Log.SynchronizationFailed')} ${message}`]);
+    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+    void wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, workspaceID, [`${i18n.t('Log.SynchronizationFailed')} ${message}`]);
   }
 
   private createFailedDialog(message: string, wikiFolderPath: string): void {
-    const mainWindow = this.windowService.get(WindowNames.main);
+    const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+    const mainWindow = windowService.get(WindowNames.main);
     if (mainWindow !== undefined) {
       void dialog
         .showMessageBox(mainWindow, {
@@ -164,12 +178,13 @@ export class Git implements IGitService {
             await this.nativeService.openInGitGuiApp(wikiFolderPath);
           }
         })
-        .catch((error) => logger.error('createFailedDialog failed', error));
+        .catch((_error: unknown) => {
+          logger.error('createFailedDialog failed', _error instanceof Error ? _error : new Error(String(_error)));
+        });
     }
   }
 
   public async initWikiGit(wikiFolderPath: string, isSyncedWiki?: boolean, isMainWiki?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const syncImmediately = !!isSyncedWiki && !!isMainWiki;
     await new Promise<void>((resolve, reject) => {
       this.gitWorker
@@ -183,23 +198,30 @@ export class Git implements IGitService {
       // If not online, will not have any change
       return false;
     }
+    if (!isWikiWorkspace(workspace)) {
+      return false;
+    }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     try {
       try {
         await this.updateGitInfoTiddler(workspace, configs.remoteUrl, configs.userInfo?.branch);
-      } catch (error) {
-        logger.error('updateGitInfoTiddler failed when commitAndSync', error);
+      } catch (_error: unknown) {
+        logger.error('updateGitInfoTiddler failed when commitAndSync', _error instanceof Error ? _error : new Error(String(_error)));
       }
       const observable = this.gitWorker?.commitAndSyncWiki(workspace, configs, getErrorMessageI18NDict());
       return await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
-    } catch (error) {
-      this.createFailedNotification((error as Error).message, workspaceIDToShowNotification);
+    } catch (_error: unknown) {
+      const error = _error instanceof Error ? _error : new Error(String(_error));
+      this.createFailedNotification(error.message, workspaceIDToShowNotification);
       return true;
     }
   }
 
   public async forcePull(workspace: IWorkspace, configs: IForcePullConfigs): Promise<boolean> {
     if (!net.isOnline()) {
+      return false;
+    }
+    if (!isWikiWorkspace(workspace)) {
       return false;
     }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
@@ -212,13 +234,22 @@ export class Git implements IGitService {
    * @param observable return by `this.gitWorker`'s methods.
    * @returns the `hasChanges` result.
    */
-  private async getHasChangeHandler(observable: ObservablePromise<IGitLogMessage> | undefined, wikiFolderPath: string, workspaceID?: string | undefined) {
+  private async getHasChangeHandler(
+    observable: ReturnType<GitWorker['commitAndSyncWiki']> | undefined,
+    wikiFolderPath: string,
+    workspaceID?: string,
+  ) {
     // return the `hasChanges` result.
     return await new Promise<boolean>((resolve, reject) => {
-      observable?.subscribe(this.getWorkerMessageObserver(wikiFolderPath, () => {}, reject, workspaceID));
+      if (!observable) {
+        resolve(false);
+        return;
+      }
+
+      observable.subscribe(this.getWorkerMessageObserver(wikiFolderPath, () => {}, reject, workspaceID));
       let hasChanges = false;
-      observable?.subscribe({
-        next: (messageObject) => {
+      observable.subscribe({
+        next: (messageObject: IGitLogMessage) => {
           if (messageObject.level === 'error') {
             return;
           }
@@ -231,7 +262,6 @@ export class Git implements IGitService {
           resolve(hasChanges);
         },
       });
-      return true;
     });
   }
 
@@ -245,6 +275,9 @@ export class Git implements IGitService {
   }
 
   public async syncOrForcePull(workspace: IWorkspace, configs: IForcePullConfigs & ICommitAndSyncConfigs): Promise<boolean> {
+    if (!isWikiWorkspace(workspace)) {
+      return false;
+    }
     // if local is in readonly mode, any things that write to local (by accident) should be completely overwrite by remote.
     if (workspace.readOnlyMode) {
       return await this.forcePull(workspace, configs);

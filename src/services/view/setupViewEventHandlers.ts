@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable unicorn/consistent-destructuring */
 import { app, BrowserWindow, BrowserWindowConstructorOptions, nativeImage, shell, WebContentsView } from 'electron';
 import fsExtra from 'fs-extra';
 import { throttle } from 'lodash';
@@ -7,7 +5,8 @@ import path from 'path';
 
 import { buildResourcePath } from '@/constants/paths';
 import getViewBounds from '@services/libs/getViewBounds';
-import { IWorkspace } from '@services/workspaces/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { ViewChannel, WindowChannel } from '@/constants/channels';
 import { isWin } from '@/helpers/system';
@@ -69,37 +68,45 @@ export default function setupViewEventHandlers(
       view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
     }
     await workspaceService.updateMetaData(workspace.id, {
-      // eslint-disable-next-line unicorn/no-null
       didFailLoadErrorMessage: null,
       isLoading: true,
     });
   });
   view.webContents.on('will-navigate', async (event, newUrl) => {
-    logger.debug(`will-navigate called ${newUrl}`);
+    logger.debug('will-navigate called', {
+      newUrl,
+      function: 'will-navigate',
+    });
     const currentUrl = view.webContents.getURL();
     if (isSameOrigin(newUrl, currentUrl)) {
-      logger.debug(`will-navigate skipped, isSameOrigin("${newUrl}", "${currentUrl}")`);
+      logger.debug('will-navigate skipped due to same origin', { newUrl, currentUrl, function: 'will-navigate' });
       return;
     }
-    const { homeUrl, lastUrl } = workspace;
+    const isWiki = isWikiWorkspace(workspace);
+    const homeUrl = isWiki ? workspace.homeUrl : '';
+    const lastUrl = isWiki ? workspace.lastUrl : null;
     // skip handling if is in-wiki link
     if (
       isSameOrigin(newUrl, homeUrl) ||
       isSameOrigin(newUrl, lastUrl)
     ) {
-      logger.debug(`will-navigate skipped, isSameOrigin("${newUrl}", "${homeUrl}", "${lastUrl ?? ''}")`);
+      logger.debug('will-navigate skipped due to same origin (home/last)', { newUrl, homeUrl, lastUrl, function: 'will-navigate' });
       return;
     }
     // if is external website
     logger.debug('will-navigate openExternal', { newUrl, currentUrl, homeUrl, lastUrl });
-    await shell.openExternal(newUrl).catch((error) => logger.error(`will-navigate openExternal error ${(error as Error).message}`, error));
+    await shell.openExternal(newUrl).catch((_error: unknown) => {
+      const error = _error instanceof Error ? _error : new Error(String(_error));
+      logger.error(`will-navigate openExternal error ${error.message}`, error);
+    });
     // if is an external website
     event.preventDefault();
     try {
       // TODO: do this until https://github.com/electron/electron/issues/31783 fixed
       await view.webContents.loadURL(currentUrl);
-    } catch (error) {
-      logger.warn(new ViewLoadUrlError(lastUrl ?? '', `${(error as Error).message} ${(error as Error).stack ?? ''}`));
+    } catch (_error: unknown) {
+      const error = _error instanceof Error ? _error : new Error(String(_error));
+      logger.warn(new ViewLoadUrlError(lastUrl ?? '', `${error.message} ${error.stack ?? ''}`));
     }
     // event.stopPropagation();
   });
@@ -111,14 +118,16 @@ export default function setupViewEventHandlers(
     if (view.webContents === null) {
       return;
     }
-    logger.debug(`throttledDidFinishedLoad(), now workspaceViewService.realignActiveWorkspace() then set isLoading to false`, { reason, id: workspace.id });
+    logger.debug('set isLoading to false', {
+      reason,
+      id: workspace.id,
+      function: 'throttledDidFinishedLoad',
+    });
     // focus on initial load
     // https://github.com/atomery/webcatalog/issues/398
     if (workspace.active && !browserWindow.isDestroyed() && browserWindow.isFocused() && !view.webContents.isFocused()) {
       view.webContents.focus();
     }
-    // fix https://github.com/atomery/webcatalog/issues/870
-    // await workspaceViewService.realignActiveWorkspace();
     // update isLoading to false when load succeed
     await workspaceService.updateMetaData(workspace.id, {
       isLoading: false,
@@ -155,7 +164,7 @@ export default function setupViewEventHandlers(
     }
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {
       // Fix nodejs wiki start slow on system startup, which cause `-102 ERR_CONNECTION_REFUSED` even if wiki said it is booted, we have to retry several times
-      if (errorCode === -102 && view.webContents.getURL().length > 0 && workspaceObject.homeUrl.startsWith('http')) {
+      if (errorCode === -102 && view.webContents.getURL().length > 0 && isWikiWorkspace(workspaceObject) && workspaceObject.homeUrl.startsWith('http')) {
         setTimeout(async () => {
           await loadInitialUrlWithCatch();
         }, 1000);
@@ -172,7 +181,7 @@ export default function setupViewEventHandlers(
       }
     }
     // edge case to handle failed auth, use setTimeout to prevent infinite loop
-    if (errorCode === -300 && view.webContents.getURL().length === 0 && workspaceObject.homeUrl.startsWith('http')) {
+    if (errorCode === -300 && view.webContents.getURL().length === 0 && isWikiWorkspace(workspaceObject) && workspaceObject.homeUrl.startsWith('http')) {
       setTimeout(async () => {
         await loadInitialUrlWithCatch();
       }, 1000);
@@ -247,7 +256,6 @@ export default function setupViewEventHandlers(
     } else {
       const finalFilePath = path.join(downloadPath, item.getFilename());
       if (!fsExtra.existsSync(finalFilePath)) {
-        // eslint-disable-next-line no-param-reassign
         item.savePath = finalFilePath;
       }
     }
@@ -259,7 +267,7 @@ export default function setupViewEventHandlers(
         const itemCountRegex = /[([{](\d*?)[)\]}]/;
         const match = itemCountRegex.exec(title);
         const incString = match === null ? '' : match[1];
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
         const inc = Number.parseInt(incString, 10) || 0;
         await workspaceService.updateMetaData(workspace.id, {
           badgeCount: inc,
@@ -267,7 +275,7 @@ export default function setupViewEventHandlers(
         let count = 0;
         const workspaceMetaData = await workspaceService.getAllMetaData();
         Object.values(workspaceMetaData).forEach((metaData) => {
-          if (typeof metaData?.badgeCount === 'number') {
+          if (typeof metaData.badgeCount === 'number') {
             count += metaData.badgeCount;
           }
         });
@@ -277,7 +285,6 @@ export default function setupViewEventHandlers(
             const icon = nativeImage.createFromPath(path.resolve(buildResourcePath, 'overlay-icon.png'));
             browserWindow.setOverlayIcon(icon, `You have ${count} new messages.`);
           } else {
-            // eslint-disable-next-line unicorn/no-null
             browserWindow.setOverlayIcon(null, '');
           }
         }
@@ -292,8 +299,9 @@ export default function setupViewEventHandlers(
   view.webContents.on('update-target-url', (_event, url) => {
     try {
       view.webContents.send('update-target-url', url);
-    } catch (error) {
-      logger.warn(error); // eslint-disable-line no-console
+    } catch (_error: unknown) {
+      const error = _error instanceof Error ? _error : new Error(String(_error));
+      logger.warn(error);
     }
   });
 }

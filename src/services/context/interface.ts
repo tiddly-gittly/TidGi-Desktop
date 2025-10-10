@@ -5,7 +5,7 @@ export interface IPaths {
   CHROME_ERROR_PATH: string;
   DEFAULT_FIRST_WIKI_NAME: string;
   DEFAULT_FIRST_WIKI_PATH: string;
-  DEFAULT_WIKI_FOLDER: string;
+  DEFAULT_FIRST_WIKI_FOLDER_PATH: string;
   DESKTOP_PATH: string;
   HTTPS_CERT_KEY_FOLDER: string;
   LOCALIZATION_FOLDER: string;

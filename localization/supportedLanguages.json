@@ -1,6 +1,7 @@
 {
   "en": "English",
-  "zh_CN": "简中",
+  "zh-Hans": "汉字",
+  "zh-Hant": "漢字",
   "ja": "日本語",
   "fr": "Français",
   "ru": "Русский"

@@ -1,6 +1,3 @@
-/* eslint-disable security-node/detect-eval-with-expr */
-/* eslint-disable no-eval */
-/* eslint-disable security/detect-eval-with-expression */
 import * as espree from 'espree';
 
 /**
@@ -24,7 +21,7 @@ export type IVariableContextList = IVariableContext[];
 export function getVariablesFromScript(scriptContent: string): string[] {
   try {
     const tree = espree.parse(scriptContent, { sourceType: 'module', ecmaVersion: 'latest' }) as EspreeASTRoot;
-    const topLevelVariables = tree.body.filter(node => node.type === 'VariableDeclaration' && node.declarations?.length > 0).flatMap(node =>
+    const topLevelVariables = tree.body.filter(node => node.type === 'VariableDeclaration' && node.declarations.length > 0).flatMap(node =>
       node.declarations.map(declaration => declaration.id.name)
     );
     return topLevelVariables;
@@ -53,6 +50,7 @@ export function getSerializeAllVariablesInContextSnippet(content: string): strin
         return accumulator;
       }
     }, {});
+    return variableMap;
   };
   // after minify, the `() => {` will become `()=>{`, so we need to replace both, otherwise after bundle, this will cause error.
   const stringScriptWithoutPrefix = toStringHelper.toString().replace('() => {', '').replace('()=>{', '');

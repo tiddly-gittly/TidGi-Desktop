@@ -1,19 +1,19 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
+import { createWorkerProxy, terminateWorker } from '@services/libs/workerAdapter';
 import { dialog, shell } from 'electron';
 import { backOff } from 'exponential-backoff';
-import { copy, createSymlink, exists, mkdir, mkdirp, mkdirs, pathExists, readFile, remove } from 'fs-extra';
-import { injectable } from 'inversify';
+import { copy, createSymlink, exists, mkdir, mkdirp, mkdirs, pathExists, readdir, readFile, remove } from 'fs-extra';
+import { inject, injectable } from 'inversify';
 import path from 'path';
-import { ModuleThread, spawn, Thread, Worker } from 'threads';
-import type { WorkerEvent } from 'threads/dist/types/master';
+import { Worker } from 'worker_threads';
+// @ts-expect-error - Vite worker import with ?nodeWorker query
+import WikiWorkerFactory from './wikiWorker?nodeWorker';
+
+import { container } from '@services/container';
 
 import { WikiChannel } from '@/constants/channels';
 import { TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
 import type { IAuthenticationService } from '@services/auth/interface';
-import { lazyInject } from '@services/container';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
 import { getWikiErrorLogFileName, logger, startWikiLogger } from '@services/libs/log';
@@ -22,59 +22,38 @@ import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { Observable } from 'rxjs';
 import type { IChangedTiddlers } from 'tiddlywiki';
 import { AlreadyExistError, CopyWikiTemplateError, DoubleWikiInstanceError, HTMLCanNotLoadError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
-import { IWikiService, WikiControlActions } from './interface';
-import { getSubWikiPluginContent, ISubWikiPluginContent, updateSubWikiPluginContent } from './plugin/subWikiPlugin';
+import type { IWikiService } from './interface';
+import { WikiControlActions } from './interface';
+import { getSubWikiPluginContent, updateSubWikiPluginContent } from './plugin/subWikiPlugin';
+import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
 import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
 import type { IpcServerRouteMethods, IpcServerRouteNames } from './wikiWorker/ipcServerRoutes';
-
-// @ts-expect-error it don't want .ts
-// eslint-disable-next-line import/no-webpack-loader-syntax
-import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker/index.ts';
 
 import { LOG_FOLDER } from '@/constants/appPaths';
 import { isDevelopmentOrTest } from '@/constants/environment';
 import { isHtmlWiki } from '@/constants/fileNames';
 import { defaultServerIP } from '@/constants/urls';
-import { IDatabaseService } from '@services/database/interface';
-import { IPreferenceService } from '@services/preferences/interface';
-import { ISyncService } from '@services/sync/interface';
-import { mapValues } from 'lodash';
+import type { IDatabaseService } from '@services/database/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
+import type { ISyncService } from '@services/sync/interface';
 import { wikiWorkerStartedEventName } from './constants';
-import { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
-import { getSendWikiOperationsToBrowser, ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
+import type { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
+import { getSendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
+import type { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 
 @injectable()
 export class Wiki implements IWikiService {
-  @lazyInject(serviceIdentifier.Preference)
-  private readonly preferenceService!: IPreferenceService;
-
-  @lazyInject(serviceIdentifier.Authentication)
-  private readonly authService!: IAuthenticationService;
-
-  @lazyInject(serviceIdentifier.Database)
-  private readonly databaseService!: IDatabaseService;
-
-  @lazyInject(serviceIdentifier.Window)
-  private readonly windowService!: IWindowService;
-
-  @lazyInject(serviceIdentifier.Git)
-  private readonly gitService!: IGitService;
-
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
-
-  @lazyInject(serviceIdentifier.View)
-  private readonly viewService!: IViewService;
-
-  @lazyInject(serviceIdentifier.WorkspaceView)
-  private readonly workspaceViewService!: IWorkspaceViewService;
-
-  @lazyInject(serviceIdentifier.Sync)
-  private readonly syncService!: ISyncService;
+  constructor(
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+    @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
+    @inject(serviceIdentifier.Database) private readonly databaseService: IDatabaseService,
+  ) {
+  }
 
   public async getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]> {
     return await getSubWikiPluginContent(mainWikiPath);
@@ -82,23 +61,49 @@ export class Wiki implements IWikiService {
 
   // handlers
   public async copyWikiTemplate(newFolderPath: string, folderName: string): Promise<void> {
+    logger.info('starting', {
+      newFolderPath,
+      folderName,
+      function: 'copyWikiTemplate',
+    });
     try {
       await this.createWiki(newFolderPath, folderName);
+      const entries = await readdir(path.join(newFolderPath, folderName));
+      logger.debug('completed', {
+        newFolderPath,
+        folderName,
+        function: 'copyWikiTemplate',
+        entries,
+      });
     } catch (error) {
+      logger.error('failed', {
+        error: (error as Error).message,
+        newFolderPath,
+        folderName,
+        stack: (error as Error).stack,
+        function: 'copyWikiTemplate',
+      });
       throw new CopyWikiTemplateError(`${(error as Error).message}, (${newFolderPath}, ${folderName})`);
     }
   }
 
   // key is same to workspace id, so we can get this worker by workspace id
-  // { [id: string]: ArbitraryThreadType }
-  private wikiWorkers: Partial<Record<string, ModuleThread<WikiWorker>>> = {};
-  public getWorker(id: string): ModuleThread<WikiWorker> | undefined {
-    return this.wikiWorkers[id];
+  private wikiWorkers: Partial<Record<string, { proxy: WikiWorker; nativeWorker: Worker }>> = {};
+  private nativeWorkers: Partial<Record<string, Worker>> = {};
+
+  public getWorker(id: string): WikiWorker | undefined {
+    return this.wikiWorkers[id]?.proxy;
+  }
+
+  private getNativeWorker(id: string): Worker | undefined {
+    return this.wikiWorkers[id]?.nativeWorker;
   }
 
   private readonly wikiWorkerStartedEventTarget = new EventTarget();
 
   public async startWiki(workspaceID: string, userName: string): Promise<void> {
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+
     if (workspaceID === undefined) {
       logger.error('Try to start wiki, but workspace ID not provided', { workspaceID });
       return;
@@ -109,9 +114,13 @@ export class Wiki implements IWikiService {
       await this.stopWiki(workspaceID);
     }
     // use Promise to handle worker callbacks
-    const workspace = await this.workspaceService.get(workspaceID);
+    const workspace = await workspaceService.get(workspaceID);
     if (workspace === undefined) {
       logger.error('Try to start wiki, but workspace not found', { workspace, workspaceID });
+      return;
+    }
+    if (!isWikiWorkspace(workspace)) {
+      logger.error('Try to start wiki, but workspace is not a wiki workspace', { workspace, workspaceID });
       return;
     }
     const { port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI, authToken } = workspace;
@@ -120,13 +129,17 @@ export class Wiki implements IWikiService {
       return;
     }
     // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
-    await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
+    await workspaceService.updateMetaData(workspaceID, { isLoading: true });
     if (tokenAuth && authToken) {
-      logger.debug(`startWiki() getOneTimeAdminAuthTokenForWorkspaceSync because tokenAuth is ${String(tokenAuth)} && authToken is ${authToken}`);
+      logger.debug('getOneTimeAdminAuthTokenForWorkspaceSync', {
+        tokenAuth: String(tokenAuth),
+        authToken,
+        function: 'startWiki',
+      });
     }
     const workerData: IStartNodeJSWikiConfigs = {
       authToken,
-      constants: { TIDDLYWIKI_PACKAGE_FOLDER },
+      constants: { TIDDLYWIKI_PACKAGE_FOLDER: String(TIDDLYWIKI_PACKAGE_FOLDER) },
       enableHTTPAPI,
       excludedPlugins,
       homePath: wikiFolderLocation,
@@ -140,48 +153,63 @@ export class Wiki implements IWikiService {
       tokenAuth,
       userName,
     };
-    logger.debug(`initial wikiWorker with  ${workerURL as string} for workspaceID ${workspaceID}`, { function: 'Wiki.startWiki' });
-    const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
-    logger.debug(`initial wikiWorker done`, { function: 'Wiki.startWiki' });
-    this.wikiWorkers[workspaceID] = worker;
+    logger.debug('initializing wikiWorker for workspace', {
+      workspaceID,
+      function: 'Wiki.startWiki',
+    });
+
+    // Create native worker using Vite's ?nodeWorker import
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const nativeWorker = WikiWorkerFactory() as Worker;
+    const worker = createWorkerProxy<WikiWorker>(nativeWorker);
+
+    logger.debug(`wikiWorker initialized`, { function: 'Wiki.startWiki' });
+    this.wikiWorkers[workspaceID] = { proxy: worker, nativeWorker };
     this.wikiWorkerStartedEventTarget.dispatchEvent(new Event(wikiWorkerStartedEventName(workspaceID)));
     const wikiLogger = startWikiLogger(workspaceID, name);
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation };
+
     await new Promise<void>((resolve, reject) => {
-      // handle native messages
-      Thread.errors(worker).subscribe(async (error) => {
-        wikiLogger.error(error.message, { function: 'Thread.errors' });
+      // Handle worker errors
+      nativeWorker.on('error', (error: Error) => {
+        wikiLogger.error(error.message, { function: 'Worker.error' });
         reject(new WikiRuntimeError(error, name, false));
       });
-      Thread.events(worker).subscribe((event: WorkerEvent) => {
-        // can't import WorkerEventType from 'threads/dist/types/master' because it's causing error
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        if (event.type === 'message') {
-          wikiLogger.info('', {
-            ...mapValues(
-              event.data,
-              (value: unknown) => typeof value === 'string' ? (value.length > 200 ? `${value.substring(0, 200)}... (substring(0, 200))` : value) : String(value),
-            ),
-          });
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        } else if (event.type === 'termination') {
-          delete this.wikiWorkers[workspaceID];
-          const warningMessage = `NodeJSWiki ${workspaceID} Worker stopped (can be normal quit, or unexpected error, see other logs to determine)`;
-          logger.info(warningMessage, loggerMeta);
-          logger.info(`startWiki() rejected with message.type === 'message' and event.type === 'termination'`, loggerMeta);
+
+      // Handle worker exit
+      nativeWorker.on('exit', (code) => {
+        delete this.wikiWorkers[workspaceID];
+        const warningMessage = `NodeJSWiki ${workspaceID} Worker stopped with code ${code}`;
+        logger.info(warningMessage, loggerMeta);
+        if (code !== 0) {
+          reject(new Error(`Worker stopped with exit code ${code}`));
+        } else {
           resolve();
+        }
+      });
+
+      // Handle worker messages (for logging)
+      nativeWorker.on('message', (message: unknown) => {
+        if (message && typeof message === 'object' && 'log' in message) {
+          wikiLogger.info('Worker message', { data: message });
         }
       });
 
       // subscribe to the Observable that startNodeJSWiki returns, handle messages send by our code
       logger.debug('startWiki calling startNodeJSWiki in the main process', { function: 'wikiWorker.startNodeJSWiki' });
+
       worker.startNodeJSWiki(workerData).subscribe(async (message) => {
         if (message.type === 'control') {
-          await this.workspaceService.update(workspaceID, { lastNodeJSArgv: message.argv }, true);
+          await workspaceService.update(workspaceID, { lastNodeJSArgv: message.argv }, true);
           switch (message.actions) {
             case WikiControlActions.booted: {
               setTimeout(async () => {
-                logger.info(`startWiki() resolved with message.type === 'control' and WikiControlActions.booted`, { ...loggerMeta, message: message.message, workspaceID });
+                logger.info('resolved with control booted', {
+                  ...loggerMeta,
+                  message: message.message,
+                  workspaceID,
+                  function: 'startWiki',
+                });
                 resolve();
               }, 100);
               break;
@@ -201,17 +229,23 @@ export class Wiki implements IWikiService {
             }
             case WikiControlActions.error: {
               const errorMessage = message.message ?? 'get WikiControlActions.error without message';
-              logger.error(`startWiki() rejected with message.type === 'control' and  WikiControlActions.error`, { ...loggerMeta, message, errorMessage, workspaceID });
-              await this.workspaceService.updateMetaData(workspaceID, { isLoading: false, didFailLoadErrorMessage: errorMessage });
+              logger.error('rejected with control error', {
+                ...loggerMeta,
+                message,
+                errorMessage,
+                workspaceID,
+                function: 'startWiki',
+              });
+              await workspaceService.updateMetaData(workspaceID, { isLoading: false, didFailLoadErrorMessage: errorMessage });
               // fix "message":"listen EADDRINUSE: address already in use 0.0.0.0:5212"
               if (errorMessage.includes('EADDRINUSE')) {
                 const portChange = {
                   port: port + 1,
                   homeUrl: homeUrl.replace(`:${port}`, `:${port + 1}`),
-                  // eslint-disable-next-line unicorn/no-null
-                  lastUrl: lastUrl?.replace?.(`:${port}`, `:${port + 1}`) ?? null,
+
+                  lastUrl: lastUrl?.replace(`:${port}`, `:${port + 1}`) ?? null,
                 };
-                await this.workspaceService.update(workspaceID, portChange, true);
+                await workspaceService.update(workspaceID, portChange, true);
                 reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
                 return;
               }
@@ -227,9 +261,13 @@ export class Wiki implements IWikiService {
   }
 
   private async afterWikiStart(workspaceID: string): Promise<void> {
-    const workspace = await this.workspaceService.get(workspaceID);
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspace = await workspaceService.get(workspaceID);
     if (workspace === undefined) {
-      logger.error('afterWikiStart() get workspace failed', { workspaceID });
+      logger.error('get workspace failed', { workspaceID, function: 'afterWikiStart' });
+      return;
+    }
+    if (!isWikiWorkspace(workspace)) {
       return;
     }
     const { isSubWiki, enableHTTPAPI } = workspace;
@@ -246,7 +284,7 @@ export class Wiki implements IWikiService {
    * Ensure you get a started worker. If not stated, it will await for it to start.
    * @param workspaceID
    */
-  private async getWorkerEnsure(workspaceID: string): Promise<ModuleThread<WikiWorker>> {
+  private async getWorkerEnsure(workspaceID: string): Promise<WikiWorker> {
     let worker = this.getWorker(workspaceID);
     if (worker === undefined) {
       // wait for wiki worker started
@@ -278,7 +316,7 @@ export class Wiki implements IWikiService {
     logger.debug(`callWikiIpcServerRoute get ${route}`, { workspaceID });
     const worker = await this.getWorkerEnsure(workspaceID);
     logger.debug(`callWikiIpcServerRoute got worker`);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore Argument of type 'string | string[] | ITiddlerFields | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.ts(2345)
     const response = await worker[route](...arguments_);
     logger.debug(`callWikiIpcServerRoute returning response`, { route, code: response.statusCode });
@@ -299,7 +337,10 @@ export class Wiki implements IWikiService {
   public async extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined> {
     // hope saveWikiFolderPath = ParentFolderPath + wikifolderPath
     // We want the folder where the WIKI is saved to be empty, and we want the input htmlWiki to be an HTML file even if it is a non-wikiHTML file. Otherwise the program will exit abnormally.
-    const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const nativeWorker = WikiWorkerFactory() as Worker;
+    const worker = createWorkerProxy<WikiWorker>(nativeWorker);
+
     try {
       if (!isHtmlWiki(htmlWikiPath)) {
         throw new HTMLCanNotLoadError(htmlWikiPath);
@@ -312,40 +353,51 @@ export class Wiki implements IWikiService {
       const result = `${(error as Error).name} ${(error as Error).message}`;
       logger.error(result, { worker: 'NodeJSWiki', method: 'extractWikiHTML', htmlWikiPath, saveWikiFolderPath });
       return result;
+    } finally {
+      // this worker is only for one time use. we will spawn a new one for starting wiki later.
+      await terminateWorker(nativeWorker);
     }
-    // this worker is only for one time use. we will spawn a new one for starting wiki later.
-    await Thread.terminate(worker);
   }
 
   public async packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void> {
-    const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
-    await worker.packetHTMLFromWikiFolder(wikiFolderLocation, pathOfNewHTML, { TIDDLYWIKI_PACKAGE_FOLDER });
-    // this worker is only for one time use. we will spawn a new one for starting wiki later.
-    await Thread.terminate(worker);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const nativeWorker = WikiWorkerFactory() as Worker;
+    const worker = createWorkerProxy<WikiWorker>(nativeWorker);
+
+    try {
+      await worker.packetHTMLFromWikiFolder(wikiFolderLocation, pathOfNewHTML, { TIDDLYWIKI_PACKAGE_FOLDER });
+    } finally {
+      // this worker is only for one time use. we will spawn a new one for starting wiki later.
+      await terminateWorker(nativeWorker);
+    }
   }
 
   public async stopWiki(id: string): Promise<void> {
     const worker = this.getWorker(id);
-    if (worker === undefined) {
+    const nativeWorker = this.getNativeWorker(id);
+
+    if (worker === undefined || nativeWorker === undefined) {
       logger.warn(`No wiki for ${id}. No running worker, means maybe tiddlywiki server in this workspace failed to start`, {
         function: 'stopWiki',
         stack: new Error('stack').stack?.replace('Error:', '') ?? 'no stack',
       });
       return;
     }
-    this.syncService.stopIntervalSync(id);
+
+    const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
+    syncService.stopIntervalSync(id);
+
     try {
       logger.debug(`worker.beforeExit for ${id}`);
-      await worker.beforeExit();
-      logger.debug(`Thread.terminate for ${id}`);
-      await Thread.terminate(worker);
-      // await delay(100);
+      worker.beforeExit();
+      logger.debug(`terminateWorker for ${id}`);
+      await terminateWorker(nativeWorker);
     } catch (error) {
-      logger.error(`Wiki-worker have error ${(error as Error).message} when try to stop`, { function: 'stopWiki' });
-      // await worker.terminate();
+      const error_ = error instanceof Error ? error : new Error(String(error));
+      logger.error('wiki worker stop failed', { function: 'stopWiki', error: error_.message, errorObj: error_ });
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.wikiWorkers[id] as any) = undefined;
+
+    delete this.wikiWorkers[id];
     logger.info(`Wiki-worker for ${id} stopped`, { function: 'stopWiki' });
   }
 
@@ -353,7 +405,9 @@ export class Wiki implements IWikiService {
    * Stop all worker_thread, use and await this before app.quit()
    */
   public async stopAllWiki(): Promise<void> {
-    logger.debug('stopAllWiki()', { function: 'stopAllWiki' });
+    logger.debug('stopAllWiki', {
+      function: 'stopAllWiki',
+    });
     const tasks = [];
     for (const id of Object.keys(this.wikiWorkers)) {
       tasks.push(this.stopWiki(id));
@@ -384,7 +438,9 @@ export class Wiki implements IWikiService {
     try {
       try {
         await remove(subwikiSymlinkPath);
-      } catch {}
+      } catch (_error: unknown) {
+        void _error;
+      }
       await mkdirp(mainWikiTiddlersFolderSubWikisPath);
       await createSymlink(subWikiPath, subwikiSymlinkPath, 'junction');
       this.logProgress(i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiSucceed'));
@@ -407,11 +463,11 @@ export class Wiki implements IWikiService {
     }
     try {
       await copy(TIDDLYWIKI_TEMPLATE_FOLDER_PATH, newWikiPath, {
-        filter: (source: string, destination: string) => {
-          // xxx/template/wiki/.gitignore
-          // xxx/template/wiki/.github
-          // xxx/template/wiki/.git
-          // prevent copy git submodule's .git folder
+        filter: (source: string, _destination: string) => {
+          // keep xxx/template/wiki/.gitignore
+          // keep xxx/template/wiki/.github
+          // ignore xxx/template/wiki/.git
+          // prevent copy wiki repo's .git folder
           if (source.endsWith('.git')) {
             return false;
           }
@@ -462,26 +518,66 @@ export class Wiki implements IWikiService {
   }
 
   public async ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void> {
+    logger.debug('checking wiki folder', {
+      wikiPath,
+      shouldBeMainWiki,
+    });
     if (!(await pathExists(wikiPath))) {
-      throw new Error(i18n.t('AddWorkspace.PathNotExist', { path: wikiPath }));
+      const error = i18n.t('AddWorkspace.PathNotExist', { path: wikiPath });
+      logger.error('path does not exist', {
+        wikiPath,
+        function: 'ensureWikiExist',
+      });
+      throw new Error(error);
     }
     const wikiInfoPath = path.resolve(wikiPath, 'tiddlywiki.info');
-    if (shouldBeMainWiki && !(await pathExists(wikiInfoPath))) {
+    const wikiInfoExists = await pathExists(wikiInfoPath);
+    logger.debug('checked tiddlywiki.info', {
+      wikiInfoPath,
+      exists: wikiInfoExists,
+    });
+    if (shouldBeMainWiki && !wikiInfoExists) {
+      const entries = await readdir(wikiPath);
+      logger.error('tiddlywiki.info missing', {
+        wikiPath,
+        wikiInfoPath,
+        function: 'ensureWikiExist',
+        entries,
+      });
       throw new Error(i18n.t('AddWorkspace.ThisPathIsNotAWikiFolder', { wikiPath, wikiInfoPath }));
     }
-    if (shouldBeMainWiki && !(await pathExists(path.join(wikiPath, TIDDLERS_PATH)))) {
+    const tiddlersPath = path.join(wikiPath, TIDDLERS_PATH);
+    const tiddlersExists = await pathExists(tiddlersPath);
+    logger.debug('checked tiddlers folder', {
+      tiddlersPath,
+      exists: tiddlersExists,
+    });
+    if (shouldBeMainWiki && !tiddlersExists) {
+      logger.error('tiddlers folder missing', {
+        wikiPath,
+        tiddlersPath,
+        function: 'ensureWikiExist',
+      });
       throw new Error(i18n.t('AddWorkspace.ThisPathIsNotAWikiFolder', { wikiPath }));
     }
+    logger.debug('validation passed', {
+      wikiPath,
+      function: 'ensureWikiExist',
+    });
   }
 
   public async checkWikiExist(workspace: IWorkspace, options: { shouldBeMainWiki?: boolean; showDialog?: boolean } = {}): Promise<string | true> {
+    if (!isWikiWorkspace(workspace)) {
+      return true; // dedicated workspaces always "exist"
+    }
     const { wikiFolderLocation, id: workspaceID } = workspace;
     const { shouldBeMainWiki, showDialog } = options;
     try {
       if (typeof wikiFolderLocation !== 'string' || wikiFolderLocation.length === 0 || !path.isAbsolute(wikiFolderLocation)) {
         const errorMessage = i18n.t('Dialog.NeedCorrectTiddlywikiFolderPath') + wikiFolderLocation;
         logger.error(errorMessage);
-        const mainWindow = this.windowService.get(WindowNames.main);
+        const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+        const mainWindow = windowService.get(WindowNames.main);
         if (mainWindow !== undefined && showDialog === true) {
           await dialog.showMessageBox(mainWindow, {
             title: i18n.t('Dialog.PathPassInCantUse'),
@@ -500,7 +596,8 @@ export class Wiki implements IWikiService {
 
       const errorMessage = `${i18n.t('Dialog.CantFindWorkspaceFolderRemoveWorkspace')} ${wikiFolderLocation} ${checkResult}`;
       logger.error(errorMessage);
-      const mainWindow = this.windowService.get(WindowNames.main);
+      const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+      const mainWindow = windowService.get(WindowNames.main);
       if (mainWindow !== undefined && showDialog === true) {
         const { response } = await dialog.showMessageBox(mainWindow, {
           title: i18n.t('Dialog.WorkspaceFolderRemoved'),
@@ -510,7 +607,8 @@ export class Wiki implements IWikiService {
           defaultId: 0,
         });
         if (response === 0) {
-          await this.workspaceViewService.removeWorkspaceView(workspaceID);
+          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+          await workspaceViewService.removeWorkspaceView(workspaceID);
         }
       }
       return errorMessage;
@@ -531,7 +629,8 @@ export class Wiki implements IWikiService {
     } catch {
       throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
     }
-    await this.gitService.clone(gitRepoUrl, path.join(parentFolderLocation, wikiFolderName), gitUserInfo);
+    const gitService = container.get<IGitService>(serviceIdentifier.Git);
+    await gitService.clone(gitRepoUrl, path.join(parentFolderLocation, wikiFolderName), gitUserInfo);
   }
 
   public async cloneSubWiki(
@@ -555,7 +654,8 @@ export class Wiki implements IWikiService {
     } catch {
       throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
     }
-    await this.gitService.clone(gitRepoUrl, path.join(parentFolderLocation, wikiFolderName), gitUserInfo);
+    const gitService = container.get<IGitService>(serviceIdentifier.Git);
+    await gitService.clone(gitRepoUrl, path.join(parentFolderLocation, wikiFolderName), gitUserInfo);
     this.logProgress(i18n.t('AddWorkspace.StartLinkingSubWikiToMainWiki'));
     await this.linkWiki(mainWikiPath, wikiFolderName, path.join(parentFolderLocation, wikiFolderName));
     if (typeof tagName === 'string' && tagName.length > 0) {
@@ -580,6 +680,9 @@ export class Wiki implements IWikiService {
   }
 
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
+    if (!isWikiWorkspace(workspace)) {
+      return;
+    }
     const { id, isSubWiki, name, mainWikiID } = workspace;
 
     const userName = await this.authService.getUserName(workspace);
@@ -589,7 +692,8 @@ export class Wiki implements IWikiService {
       // if is private repo wiki
       // if we are creating a sub-wiki just now, restart the main wiki to load content from private wiki
       if (typeof mainWikiID === 'string' && !this.checkWikiStartLock(mainWikiID)) {
-        const mainWorkspace = await this.workspaceService.get(mainWikiID);
+        const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+        const mainWorkspace = await workspaceService.get(mainWikiID);
         if (mainWorkspace === undefined) {
           throw new SubWikiSMainWikiNotExistError(name ?? id, mainWikiID);
         }
@@ -597,46 +701,59 @@ export class Wiki implements IWikiService {
       }
     } else {
       try {
-        logger.debug('startWiki() calling startWiki');
+        logger.debug('calling startWiki', {
+          function: 'startWiki',
+        });
         await this.startWiki(id, userName);
-        logger.debug('startWiki() done');
+        logger.debug('done', {
+          function: 'startWiki',
+        });
       } catch (error) {
-        logger.warn(`Get startWiki() error: ${(error as Error)?.message}`);
+        const error_ = error instanceof Error ? error : new Error(String(error));
+        logger.warn('startWiki failed', { function: 'startWiki', error: error_.message });
         if (error instanceof WikiRuntimeError && error.retry) {
-          logger.warn('Get startWiki() WikiRuntimeError, retrying...');
+          logger.warn('startWiki retry', { function: 'startWiki', error: error_.message });
           // don't want it to throw here again, so no await here.
-          // eslint-disable-next-line @typescript-eslint/return-await
-          return this.workspaceViewService.restartWorkspaceViewService(id);
+
+          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+          return workspaceViewService.restartWorkspaceViewService(id);
         } else if ((error as Error).message.includes('Did not receive an init message from worker after')) {
           // https://github.com/andywer/threads.js/issues/426
           // wait some time and restart the wiki will solve this
-          logger.warn(`Get startWiki() handle "${(error as Error)?.message}", will try restart wiki.`);
+          logger.warn('startWiki handle error, restarting', { function: 'startWiki', error: error_.message });
           await this.restartWiki(workspace);
         } else {
-          logger.warn('Get startWiki() unexpected error, throw it');
+          logger.warn('unexpected error, throw it', { function: 'startWiki' });
           throw error;
         }
       }
     }
-    await this.syncService.startIntervalSyncIfNeeded(workspace);
+    const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
+    await syncService.startIntervalSyncIfNeeded(workspace);
   }
 
   public async restartWiki(workspace: IWorkspace): Promise<void> {
+    if (!isWikiWorkspace(workspace)) {
+      return;
+    }
     const { id, isSubWiki } = workspace;
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
     const userName = await this.authService.getUserName(workspace);
 
-    this.syncService.stopIntervalSync(id);
+    const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
+    syncService.stopIntervalSync(id);
     if (!isSubWiki) {
       await this.stopWiki(id);
       await this.startWiki(id, userName);
     }
-    await this.syncService.startIntervalSyncIfNeeded(workspace);
+    await syncService.startIntervalSyncIfNeeded(workspace);
   }
 
   public async updateSubWikiPluginContent(mainWikiPath: string, subWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void> {
-    updateSubWikiPluginContent(mainWikiPath, subWikiPath, newConfig, oldConfig);
+    const newConfigTyped = newConfig && isWikiWorkspace(newConfig) ? newConfig : undefined;
+    const oldConfigTyped = oldConfig && isWikiWorkspace(oldConfig) ? oldConfig : undefined;
+    updateSubWikiPluginContent(mainWikiPath, subWikiPath, newConfigTyped, oldConfigTyped);
   }
 
   public async wikiOperationInBrowser<OP extends keyof ISendWikiOperationsToBrowser>(
@@ -646,18 +763,19 @@ export class Wiki implements IWikiService {
   ) {
     // At least wait for wiki started. Otherwise some services like theme may try to call this method even on app start.
     await this.getWorkerEnsure(workspaceID);
-    await this.viewService.getLoadedViewEnsure(workspaceID, WindowNames.main);
+    const viewService = container.get<IViewService>(serviceIdentifier.View);
+    await viewService.getLoadedViewEnsure(workspaceID, WindowNames.main);
     const sendWikiOperationsToBrowser = getSendWikiOperationsToBrowser(workspaceID);
     if (typeof sendWikiOperationsToBrowser[operationType] !== 'function') {
       throw new TypeError(`${operationType} gets no useful handler`);
     }
     if (!Array.isArray(arguments_)) {
       // TODO: better type handling here
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/restrict-template-expressions
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       throw new TypeError(`${(arguments_ as any) ?? ''} (${typeof arguments_}) is not a good argument array for ${operationType}`);
     }
     // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556) this maybe a bug of ts... try remove this comment after upgrade ts. And the result become void is weird too.
-    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
+
     return await (sendWikiOperationsToBrowser[operationType](...arguments_) as unknown as ReturnType<ISendWikiOperationsToBrowser[OP]>);
   }
 
@@ -666,9 +784,14 @@ export class Wiki implements IWikiService {
     workspaceID: string,
     arguments_: Parameters<IWorkerWikiOperations[OP]>,
   ) {
+    logger.debug(`Get ${operationType}`, { workspaceID, method: 'wikiOperationInServer' });
+    // This will never await if workspaceID isn't exist in user's workspace list. So prefer to check workspace existence before use this method.
     const worker = await this.getWorkerEnsure(workspaceID);
-    // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556)
-    return await (worker.wikiOperation(operationType, ...arguments_) as unknown as ReturnType<IWorkerWikiOperations[OP]>);
+
+    logger.debug(`Get worker ${operationType}`, { workspaceID, hasWorker: worker !== undefined, method: 'wikiOperationInServer', arguments_ });
+    const result = await (worker.wikiOperation(operationType, ...arguments_) as unknown as ReturnType<IWorkerWikiOperations[OP]>);
+    logger.debug(`Get result ${operationType}`, { workspaceID, method: 'wikiOperationInServer' });
+    return result;
   }
 
   public async setWikiLanguage(workspaceID: string, tiddlywikiLanguageName: string): Promise<void> {
@@ -686,9 +809,11 @@ export class Wiki implements IWikiService {
   }
 
   public async getTiddlerFilePath(title: string, workspaceID?: string): Promise<string | undefined> {
-    const wikiWorker = this.getWorker(workspaceID ?? (await this.workspaceService.getActiveWorkspace())?.id ?? '');
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const activeWorkspace = await workspaceService.getActiveWorkspace();
+    const wikiWorker = this.getWorker(workspaceID ?? activeWorkspace?.id ?? '');
     if (wikiWorker !== undefined) {
-      const tiddlerFileMetadata = await wikiWorker.getTiddlerFileMetadata(title);
+      const tiddlerFileMetadata = wikiWorker.getTiddlerFileMetadata(title);
       if (tiddlerFileMetadata?.filepath !== undefined) {
         return tiddlerFileMetadata.filepath;
       }

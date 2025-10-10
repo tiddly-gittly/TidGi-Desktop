@@ -1,8 +1,6 @@
-/* eslint-disable unicorn/prevent-abbreviations */
-/* eslint-disable security/detect-unsafe-regex */
 import { TIDDLERS_PATH } from '@/constants/paths';
 import { logger } from '@services/libs/log';
-import { IWorkspace } from '@services/workspaces/interface';
+import { IWikiWorkspace } from '@services/workspaces/interface';
 import fs from 'fs-extra';
 import { compact, drop, take } from 'lodash';
 import path from 'path';
@@ -13,7 +11,8 @@ import path from 'path';
 const REPLACE_SYSTEM_TIDDLER_SYMBOL = 'search-replace:g[/],[_]search-replace:g[:],[_]';
 const getMatchPart = (tagToMatch: string): string => `in-tagtree-of[${tagToMatch}]`;
 const andPart = ']:and[';
-const getPathPart = (subWikiFolderName: string, subWikiPathDirName: string): string => `${REPLACE_SYSTEM_TIDDLER_SYMBOL}addprefix[/]addprefix[${subWikiPathDirName}]addprefix[/]addprefix[${subWikiFolderName}]]`;
+const getPathPart = (subWikiFolderName: string, subWikiPathDirectoryName: string): string =>
+  `${REPLACE_SYSTEM_TIDDLER_SYMBOL}addprefix[/]addprefix[${subWikiPathDirectoryName}]addprefix[/]addprefix[${subWikiFolderName}]]`;
 const getTagNameFromMatchPart = (matchPart: string): string =>
   matchPart.replace(/\[(!is\[system]\s*)?in-tagtree-of\[/, '').replace(/](search-replace:g\[\/],\[_]search-replace:g\[:],\[_])?.*/, '');
 const getFolderNamePathPart = (pathPart: string): string => pathPart.replace(']addprefix[/]addprefix[subwiki]]', '').replace(/.+addprefix\[/, '');
@@ -40,8 +39,8 @@ const emptyFileSystemPathsTiddler = `title: $:/config/FileSystemPaths
 export function updateSubWikiPluginContent(
   mainWikiPath: string,
   subWikiPath: string,
-  newConfig?: Pick<IWorkspace, 'tagName' | 'subWikiFolderName'>,
-  oldConfig?: Pick<IWorkspace, 'tagName' | 'subWikiFolderName'>,
+  newConfig?: Pick<IWikiWorkspace, 'tagName' | 'subWikiFolderName'>,
+  oldConfig?: Pick<IWikiWorkspace, 'tagName' | 'subWikiFolderName'>,
 ): void {
   const FileSystemPathsTiddlerPath = getFileSystemPathsTiddlerPath(mainWikiPath);
 
@@ -50,34 +49,34 @@ export function updateSubWikiPluginContent(
   // ignore the tags, title and type, 3 lines, and an empty line
   const header = take(FileSystemPathsFile.split('\n\n'), 1);
   const FileSystemPaths = compact(drop(FileSystemPathsFile.split('\n\n'), 1));
-  const subWikiPathDirName = path.basename(subWikiPath);
+  const subWikiPathDirectoryName = path.basename(subWikiPath);
   // if newConfig is undefined, but oldConfig is provided, we delete the old config
   if (newConfig === undefined) {
     if (oldConfig === undefined) {
       throw new Error('Both newConfig and oldConfig are not provided in the updateSubWikiPluginContent() for\n' + JSON.stringify(mainWikiPath));
     }
     const { tagName, subWikiFolderName } = oldConfig;
-    if (typeof tagName !== 'string' || subWikiFolderName === undefined) {
+    if (typeof tagName !== 'string' || typeof subWikiFolderName !== 'string') {
       throw new Error('tagName or subWikiFolderName is not string for in the updateSubWikiPluginContent() for\n' + JSON.stringify(mainWikiPath));
     }
     // find the old line, delete it
-    const newFileSystemPaths = FileSystemPaths.filter((line) => !(line.includes(getMatchPart(tagName)) && line.includes(getPathPart(subWikiFolderName, subWikiPathDirName))));
+    const newFileSystemPaths = FileSystemPaths.filter((line) => !(line.includes(getMatchPart(tagName)) && line.includes(getPathPart(subWikiFolderName, subWikiPathDirectoryName))));
 
     newFileSystemPathsFile = `${header.join('\n')}\n\n${newFileSystemPaths.join('\n')}`;
   } else {
     // if this config already exists, just return
     const { tagName, subWikiFolderName } = newConfig;
-    if (typeof tagName !== 'string' || subWikiFolderName === undefined) {
+    if (typeof tagName !== 'string' || typeof subWikiFolderName !== 'string') {
       throw new Error('tagName or subWikiFolderName is not string for in the updateSubWikiPluginContent() for\n' + JSON.stringify(mainWikiPath));
     }
     if (FileSystemPaths.some((line) => line.includes(tagName) && line.includes(subWikiFolderName))) {
       return;
     }
     // prepare new line
-    const newConfigLine = '[' + getMatchPart(tagName) + andPart + getPathPart(subWikiFolderName, subWikiPathDirName);
+    const newConfigLine = '[' + getMatchPart(tagName) + andPart + getPathPart(subWikiFolderName, subWikiPathDirectoryName);
     // if we are just to add a new config, just append it to the end of the file
     const oldConfigTagName = oldConfig?.tagName;
-    if (oldConfig !== undefined && typeof oldConfigTagName === 'string') {
+    if (oldConfig !== undefined && typeof oldConfigTagName === 'string' && typeof oldConfig.subWikiFolderName === 'string') {
       // find the old line, replace it with the new line
       const newFileSystemPaths = FileSystemPaths.map((line) => {
         if (line.includes(oldConfigTagName) && line.includes(oldConfig.subWikiFolderName)) {
@@ -118,7 +117,7 @@ export async function getSubWikiPluginContent(mainWikiPath: string): Promise<ISu
       folderName: getFolderNamePathPart(line),
     })).filter((item) => item.folderName.length > 0 && item.tagName.length > 0);
   } catch (error) {
-    logger.error((error as Error)?.message, { function: 'getSubWikiPluginContent' });
+    logger.error((error as Error).message, { function: 'getSubWikiPluginContent' });
     return [];
   }
 }

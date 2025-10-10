@@ -68,15 +68,7 @@ export enum WikiChannel {
             "tags": "Articles",
             "type": "text/vnd.tiddlywiki",
             "url": "http://www.networkworld.com/article/3028098/open-source-tools/tiddlywiki-a-free-open-source-wiki-revisited.html",
-            "text": "Interesting article giving the perspective of someone who has been away from TiddlyWiki for a few years:nn{{!!url}}nn<<<nWay back in the mists of time (actually, January 2009) I wrote about a really cool tool called TiddlyWiki, a “non-linear personal web notebook”. Fast forward to today and I just had an out of body experience: Completely by accident I found a TiddlyWiki that I started when I wrote that piece and it still works! nnFinding code that works flawlessly after just two or three years is magical enough but after seven years?! And given that TiddlyWiki is written as a single page Web application and considering how different browsers are now than they were in 2009, the fact that the old version of TiddlyWiki still works is not short of miraculous.n<<<n"
-        },
-        {
-            "title": ""A Thesis Notebook" by Alberto Molina",
-            "created": "20130302085406905",
-            "modified": "20130302084548184",
-            "tags": "Examples",
-            "url": "http://tesis.tiddlyspot.com/",
-            "text": "A thesis notebook based on TiddlyWiki.nn{{!!url}}nn<<<nThis is an example of a thesis notebook powered by TiddlyWiki 5.0.8-beta.nnTiddlyWiki is a great piece of software created by Jeremy Ruston. It allows you, among other things, to take notes, organise ideas, store information, and display all your stuff the way you want. It is an incredibly flexible tool you can adapt to fit almost all your needs.nnThis TiddlyWiki has been customized to serve as a philosophy notebook centered around authors, books and papers, concepts and theories, and personal notes. I use it along with Zotero, which is a dedicated bibliography software. Both are free, open source projects. TiddlyWiki can be downloaded at https://tiddlywiki.com.n<<<n"
+            "text": "Interesting article"
         },
    * ```
    */
@@ -113,10 +105,6 @@ export enum PreferenceChannel {
   update = 'update',
 }
 
-export enum PagesChannel {
-  name = 'PagesChannel',
-}
-
 export enum WindowChannel {
   closeFindInPage = 'close-find-in-page',
   name = 'WindowChannel',
@@ -150,6 +138,20 @@ export enum SyncChannel {
   name = 'SyncChannel',
 }
 
+export enum AgentChannel {
+  definition = 'AgentDefinitionChannel',
+  instance = 'AgentInstanceChannel',
+  browser = 'AgentBrowserChannel',
+}
+
+export enum ExternalAPIChannel {
+  name = 'ExternalAPIChannel',
+}
+
+export enum WikiEmbeddingChannel {
+  name = 'WikiEmbeddingChannel',
+}
+
 export type Channels =
   | MainChannel
   | AuthenticationChannel
@@ -165,9 +167,12 @@ export type Channels =
   | WikiGitWorkspaceChannel
   | WorkspaceChannel
   | WorkspaceViewChannel
+  | DatabaseChannel
   | PreferenceChannel
   | WindowChannel
   | ThemeChannel
   | I18NChannels
   | MetaDataChannel
-  | SyncChannel;
+  | SyncChannel
+  | AgentChannel
+  | WikiEmbeddingChannel;

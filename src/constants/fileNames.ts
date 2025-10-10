@@ -3,6 +3,7 @@ export const httpsCertKeyFolderName = 'https-keys';
 export const cacheDatabaseFolderName = 'cache-database';
 /** Used to place mock wiki during dev and testing */
 export const developmentWikiFolderName = 'wiki-dev';
+export const testWikiFolderName = 'wiki-test';
 export const localizationFolderName = 'localization';
 
 export const wikiPictureExtensions = ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp', 'dib'];

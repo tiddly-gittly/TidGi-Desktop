@@ -1,8 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/no-var-requires */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable unicorn/prefer-module */
-
 // use `require` here, to check `typeof electron === 'string'`
 import electron from 'electron';
 

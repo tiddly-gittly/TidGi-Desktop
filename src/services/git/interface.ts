@@ -27,8 +27,7 @@ export interface IErrorGitLogMessage {
   level: 'error';
 }
 
-export interface ICommitAndSyncConfigs extends ICommitAndSyncOptions {
-}
+export type ICommitAndSyncConfigs = ICommitAndSyncOptions;
 
 export interface IForcePullConfigs {
   remoteUrl?: string;
@@ -40,6 +39,7 @@ export interface IForcePullConfigs {
  * It can be retrieved and changed using Electron APIs
  */
 export interface IGitService {
+  initialize(): Promise<void>;
   clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void>;
   /**
    * Return true if this function's execution causes local changes. Return false if is only push or nothing changed.

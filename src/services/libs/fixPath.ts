@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { isWin } from '@/helpers/system';
 import { execSync } from 'child_process';
 import { userInfo } from 'os';
@@ -15,7 +14,10 @@ const defaultShell = (() => {
     if (shell) {
       return shell;
     }
-  } catch {}
+  } catch (_error: unknown) {
+    // userInfo may throw in some environments; ignore and fallback to defaults
+    void _error;
+  }
   if (platform === 'darwin') {
     return env.SHELL ?? '/bin/zsh';
   }

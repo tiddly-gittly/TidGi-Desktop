@@ -1,0 +1,57 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Test environment optimization configuration
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+
+    // Performance optimization
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "isolatedModules": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.cache/jest/tsbuildinfo",
+
+    // Disable strict checks to improve speed
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
+
+    // Enable decorator support (required for testing)
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    // JSX settings
+    "jsx": "react-jsx",
+
+    // Enable ES module interoperability
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    // Other settings
+    "resolveJsonModule": true,
+    "declaration": false,
+    "sourceMap": false,
+
+    // Ensure correct base URL and path mappings
+    "baseUrl": "./",
+    "paths": {
+      "@services/*": ["./src/services/*"],
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "src/**/*.test.*",
+    "src/**/*.spec.*"
+  ],
+  "exclude": [
+    "node_modules",
+    "out",
+    ".webpack",
+    "features",
+    "template"
+  ]
+}

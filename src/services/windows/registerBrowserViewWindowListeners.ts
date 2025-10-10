@@ -1,10 +1,10 @@
 import { container } from '@services/container';
-import { IPreferenceService } from '@services/preferences/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IViewService } from '@services/view/interface';
-import { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { IViewService } from '@services/view/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { BrowserWindow } from 'electron';
-import { IWindowService } from './interface';
+import type { IWindowService } from './interface';
 import { WindowNames } from './WindowProperties';
 
 export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, windowName: WindowNames): void {
@@ -19,11 +19,13 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
       if (newWindow === undefined) return;
       newWindow.on('swipe', async (_event, direction) => {
         const view = await viewService.getActiveBrowserView();
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
         if (view) {
           if (direction === 'left') {
+            // eslint-disable-next-line @typescript-eslint/no-deprecated
             view.webContents.goBack();
           } else if (direction === 'right') {
+            // eslint-disable-next-line @typescript-eslint/no-deprecated
             view.webContents.goForward();
           }
         }
@@ -45,18 +47,18 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
   newWindow.on('focus', async () => {
     if (windowName !== WindowNames.main || newWindow === undefined) return;
     const view = await viewService.getActiveBrowserView();
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    view?.webContents?.focus?.();
+
+    view?.webContents.focus();
   });
 
   newWindow.on('enter-full-screen', async () => {
     if (windowName !== WindowNames.main || newWindow === undefined) return;
-    newWindow?.webContents?.send?.('is-fullscreen-updated', true);
+    newWindow.webContents.send('is-fullscreen-updated', true);
     await workspaceViewService.realignActiveWorkspace();
   });
   newWindow.on('leave-full-screen', async () => {
     if (windowName !== WindowNames.main || newWindow === undefined) return;
-    newWindow?.webContents?.send?.('is-fullscreen-updated', false);
+    newWindow.webContents.send('is-fullscreen-updated', false);
     await workspaceViewService.realignActiveWorkspace();
   });
 }

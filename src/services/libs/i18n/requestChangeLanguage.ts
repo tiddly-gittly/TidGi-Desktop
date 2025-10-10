@@ -17,8 +17,8 @@ export async function requestChangeLanguage(newLanguage: string): Promise<void> 
   const viewCount = await viewService.getViewCount();
 
   await i18n.changeLanguage(newLanguage);
-  viewService.forEachView((view) => {
-    view.webContents.send(I18NChannels.changeLanguageRequest, {
+  viewService.forEachView((_view) => {
+    _view.webContents.send(I18NChannels.changeLanguageRequest, {
       lng: newLanguage,
     });
   });
@@ -43,7 +43,7 @@ export async function requestChangeLanguage(newLanguage: string): Promise<void> 
           return;
         }
         const tasks: Array<Promise<void>> = [];
-        viewService.forEachView((view, workspaceID) => {
+        viewService.forEachView((_view, workspaceID) => {
           tasks.push(wikiService.setWikiLanguage(workspaceID, tiddlywikiLanguageName));
         });
         void Promise.all(tasks).then(resolve, reject);

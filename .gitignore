@@ -58,7 +58,8 @@ template/wiki/output/
 template/wiki/settings/settings.json
 
 # web build
-.webpack
+.webpack/
+.vite/
 out/
 
 # testing and dev temp folders
@@ -67,4 +68,8 @@ out/
 deb2appimage_cache/
 deb2appimage.json
 userData-dev/
+userData-test/
 wiki-dev/
+wiki-test/
+*.tsbuildinfo
+tsconfig.test.json.tsbuildinfo

@@ -1,0 +1,75 @@
+name: Test
+
+on:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      - name: Install Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Rebuild native modules for Electron
+        run: pnpm exec electron-rebuild -f -w better-sqlite3
+
+      - name: Run linting
+        run: pnpm run lint
+
+      # Install minimal Linux dependencies for Electron GUI testing https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci
+      - name: Install Linux GUI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          # Install Chinese fonts and locale support for i18n testing
+          sudo apt-get install -y fonts-noto-cjk fonts-wqy-zenhei language-pack-zh-hans
+          sudo locale-gen zh_CN.UTF-8
+      - name: Run tests
+        # E2E GUI tests with Electron on Linux require a virtual framebuffer, upgrade screen size from time to time.
+        run: xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test
+        env:
+          CI: true
+          DISPLAY: :99
+          # Set Chinese locale for i18n testing
+          LANG: zh_CN.UTF-8
+          LC_ALL: zh_CN.UTF-8
+        timeout-minutes: 15
+
+      # Upload test artifacts (screenshots, logs)
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts
+          path: |
+            userData-test/logs/
+            userData-test/settings/
+          retention-days: 7
+        continue-on-error: true
+
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3

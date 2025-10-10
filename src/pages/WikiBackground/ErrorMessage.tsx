@@ -1,20 +1,19 @@
-/* eslint-disable unicorn/no-null */
 import { Accordion, AccordionDetails, AccordionSummary, Button, Typography } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { useCallback } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IWorkspaceMetaData, IWorkspaceWithMetadata } from '@services/workspaces/interface';
-import { ReportErrorButton } from '../AddWorkspace/FormComponents';
+import { ReportErrorButton } from '../../windows/AddWorkspace/FormComponents';
 
-const HelperTextsList = styled.ul`
+const HelperTextsList = styled('ul')`
   margin-top: 0;
   margin-bottom: 1.5rem;
   max-width: 70vw;
 `;
 
-const WikiErrorMessagesContainer = styled.article`
+const WikiErrorMessagesContainer = styled('article')`
   width: 100%;
   margin-bottom: 20px;
 
@@ -68,7 +67,7 @@ export function WikiErrorMessages(props: IWikiErrorMessagesProps): React.JSX.Ele
   return <div />;
 }
 
-const ButtonGroup = styled.div`
+const ButtonGroup = styled('div')`
   display: flex;
   flex-direction: row;
   justify-content: flex-start;
@@ -109,7 +108,17 @@ export function ViewLoadErrorMessages(props: IViewLoadErrorMessagesProps): React
             <HelperTextsList>
               <li>
                 Click{' '}
-                <b onClick={requestReload} onKeyPress={requestReload} role='button' tabIndex={0} style={{ cursor: 'pointer' }}>
+                <b
+                  onClick={requestReload}
+                  onKeyDown={(event: React.KeyboardEvent) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      void requestReload();
+                    }
+                  }}
+                  role='button'
+                  tabIndex={0}
+                  style={{ cursor: 'pointer' }}
+                >
                   Reload
                 </b>{' '}
                 button below or press <b>CMD_or_Ctrl + R</b> to reload the page.
@@ -120,8 +129,10 @@ export function ViewLoadErrorMessages(props: IViewLoadErrorMessagesProps): React
                   onClick={async () => {
                     await window.service.native.openPath(await window.service.context.get('LOG_FOLDER'), true);
                   }}
-                  onKeyPress={async () => {
-                    await window.service.native.openPath(await window.service.context.get('LOG_FOLDER'), true);
+                  onKeyDown={async (event: React.KeyboardEvent) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      await window.service.native.openPath(await window.service.context.get('LOG_FOLDER'), true);
+                    }
                   }}
                   role='button'
                   tabIndex={0}

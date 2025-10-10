@@ -1,28 +1,31 @@
-/* eslint-disable unicorn/no-null */
-import { usePromiseValue } from '@/helpers/useServiceValue';
-import { PageType } from '@services/pages/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
-import { useEffect, useState } from 'react';
+import { PageType } from '@/constants/pageTypes';
+import { useWorkspacesListObservable } from '@services/workspaces/hooks';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 
 export function useInitialPage() {
-  const [, setLocation] = useLocation();
-  // when first open the TidGi and no workspace is active (so no WebContentsView will be on top of the React), goto the active pages route
-  const initialActivePage = usePromiseValue(async () => await window.service.pages.getActivePage(), null);
-  const initialActiveWorkspace = usePromiseValue(async () => await window.service.workspace.getActiveWorkspace(), null);
-  // only do this once, and not triggering unnecessary rerender by using ref.
-  const [alreadyInitialized, alreadyInitializedSetter] = useState(false);
+  const [location, setLocation] = useLocation();
+  const workspacesList = useWorkspacesListObservable();
+  const hasInitialized = useRef(false);
   useEffect(() => {
-    // active workspace has priority to show, so if a page is also active in settings, don't set it as active because it is hidden
-    if (initialActivePage !== null && initialActiveWorkspace !== null && !alreadyInitialized) {
-      if (initialActiveWorkspace === undefined) {
-        if (initialActivePage !== undefined) {
-          setLocation(`/${WindowNames.main}/${initialActivePage.type}/`);
+    // Only initialize once and only when at root
+    if (workspacesList && !hasInitialized.current && (location === '/' || location === '')) {
+      hasInitialized.current = true;
+      const activeWorkspace = workspacesList.find(workspace => workspace.active);
+      if (!activeWorkspace) {
+        // If there's no active workspace, navigate to root instead of guide.
+        // Root lets the UI stay neutral and prevents forcing the guide view.
+        setLocation(`/`);
+      } else if (activeWorkspace.pageType) {
+        // Don't navigate to add page, fallback to guide instead
+        if (activeWorkspace.pageType === PageType.add) {
+          setLocation(`/`);
+        } else {
+          setLocation(`/${activeWorkspace.pageType}`);
         }
       } else {
-        setLocation(`/${WindowNames.main}/${PageType.wiki}/${initialActiveWorkspace.id}/`);
+        setLocation(`/${PageType.wiki}/${activeWorkspace.id}/`);
       }
-      alreadyInitializedSetter(true);
     }
-  }, [setLocation, initialActivePage, alreadyInitialized, alreadyInitializedSetter, initialActiveWorkspace]);
+  }, [location, workspacesList, setLocation]);
 }

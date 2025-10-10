@@ -1,0 +1,599 @@
+{
+  "APILogs": {
+    "CurrentAgent": "显示智能体日志: {{agentId}}",
+    "Description": "此智能体的外部接口调用调试日志。在偏好设置中启用「外部接口调试」以开始记录。",
+    "ErrorDetails": "错误详情",
+    "NoLogs": "未找到此智能体的接口调用日志",
+    "NoResponse": "无响应",
+    "RequestDetails": "请求详情",
+    "ResponseContent": "响应内容",
+    "ResponseMetadata": "响应元数据",
+    "StatusCancel": "已取消",
+    "StatusDone": "已完成",
+    "StatusError": "错误",
+    "StatusStart": "已开始",
+    "StatusUpdate": "处理中",
+    "Title": "外部接口调试日志"
+  },
+  "Agent": {
+    "EditTitle": "编辑智能体名字",
+    "InvalidTabType": "无效的标签页类型。需要聊天标签页。",
+    "LoadingChat": "正在加载对话...",
+    "StartConversation": "开始对话",
+    "Untitled": "未命名"
+  },
+  "Browser": {
+    "Back": "后退",
+    "Bookmark": "收藏",
+    "CurrentUrl": "当前 URL",
+    "EnterUrlPlaceholder": "输入网址",
+    "Forward": "前进",
+    "Home": "主页",
+    "Refresh": "刷新",
+    "RenderPlaceholder": "这是网页渲染区域"
+  },
+  "Chat": {
+    "Cancel": "取消",
+    "ConfigError": {
+      "GoToSettings": "前往设置",
+      "Title": "配置问题"
+    },
+    "InputPlaceholder": "输入消息，Ctrl+Enter 发送",
+    "Send": "发送",
+    "SessionGroup": {
+    }
+  },
+  "Common": {
+  },
+  "ContextMenu": {
+    "AddToCurrentSplitView": "添加到当前分屏",
+    "Close": "关闭",
+    "CloseAbove": "关闭上方标签页",
+    "CloseBelow": "关闭下方标签页",
+    "CloseOther": "关闭其他标签页",
+    "CloseTabs": "关闭多个标签页",
+    "ConvertToSplitView": "转为分屏视图",
+    "CreateSplitViewWithActive": "和当前标签页创建分屏",
+    "Duplicate": "复制",
+    "NewTabBelow": "在下方新建标签页",
+    "Pin": "固定标签页",
+    "Refresh": "刷新",
+    "RestoreClosed": "恢复关闭的标签页",
+    "Unpin": "取消固定"
+  },
+  "CreateAgent": {
+    "AgentName": "智能体名称",
+    "AgentNameHelper": "为您的智能体起一个描述性的名字",
+    "AgentNamePlaceholder": "输入智能体名称...",
+    "Back": "上一步",
+    "CreatingPreview": "正在创建预览智能体...",
+    "EditPrompt": "编辑提示词",
+    "EditPromptDescription": "自定义您的智能体的系统提示词和行为",
+    "ImmediateUse": "测试并使用",
+    "ImmediateUseDescription": "测试您的智能体并立即开始使用",
+    "Next": "下一步",
+    "NoTemplateSelected": "请先选择一个模板",
+    "Preview": "(预览)",
+    "SaveAndUse": "保存并使用智能体",
+    "SearchTemplates": "搜索智能体模板...",
+    "SelectTemplate": "选择模板",
+    "SelectTemplateDescription": "选择一个现有的智能体作为起始模板",
+    "SelectedTemplate": "已选择模板",
+    "SetupAgent": "设置智能体",
+    "SetupAgentDescription": "为您的智能体命名并选择一个模板作为起点",
+    "Steps": {
+    },
+    "Title": "创建新智能体"
+  },
+  "EditAgent": {
+    "AgentDescription": "智能体描述",
+    "AgentDescriptionHelper": "描述您的智能体的功能和用途",
+    "AgentDescriptionPlaceholder": "输入智能体描述...",
+    "AgentName": "智能体名称",
+    "AgentNameHelper": "为您的智能体起一个描述性的名字",
+    "AgentNamePlaceholder": "输入智能体名称...",
+    "AgentNotFound": "智能体未找到",
+    "EditBasic": "编辑基本信息",
+    "EditBasicDescription": "编辑您的智能体的基本信息",
+    "EditPrompt": "编辑提示词",
+    "EditPromptDescription": "自定义您的智能体的系统提示词和行为",
+    "ImmediateUse": "测试并使用",
+    "ImmediateUseDescription": "测试您的智能体并立即开始使用",
+    "Loading": "加载中...",
+    "LoadingPromptConfig": "正在加载提示词配置...",
+    "PreviewChat": "预览聊天",
+    "Save": "保存",
+    "Saving": "保存中...",
+    "Steps": {
+    },
+    "Title": "编辑智能体定义"
+  },
+  "ModelFeature": {
+  },
+  "ModelSelector": {
+    "Model": "模型",
+    "NoModelSelected": "未选择模型",
+    "SelectModel": "选择模型",
+    "Title": "模型选择"
+  },
+  "NewTab": {
+    "CreateDefaultAgent": "创建默认智能体",
+    "CreateInstance": "创建实例",
+    "CreateNewAgent": "创建新智能体",
+    "EditDefinition": "编辑定义",
+    "NewTab": "新建标签页",
+    "QuickAccess": "快速访问",
+    "SearchPlaceholder": "搜索标签页或智能体..."
+  },
+  "Preference": {
+    "AIAgent": "智能体",
+    "AIAgentDescription": "管理智能体对话记录数据库",
+    "AIAgentDescriptionDetail": "这里可以查看和删除智能体对话记录数据库的大小和位置信息",
+    "APIKey": "API 密钥",
+    "AddNewModel": "添加新模型",
+    "AddNewProvider": "添加新提供商",
+    "AddProvider": "添加提供商",
+    "AgentDatabaseDescription": "所有智能体对话记录都保存在这个数据库里，仅涉及与人工智能的交谈，不影响维基内容，占用空间为 {{size}}",
+    "BaseURL": "API 地址",
+    "BaseURLRequired": "API 地址为必填项",
+    "Browse": "浏览",
+    "CancelAddProvider": "取消添加",
+    "ConfigureModelParameters": "配置参数",
+    "ConfigureProvider": "配置 {{provider}}",
+    "ConfirmDeleteAgentDatabase": "确定要删除包含所有智能体对话记录的数据库吗？此操作无法撤销。",
+    "CustomProvider": "自定义提供方",
+    "DefaultAIModelSelection": "默认人工智能模型选择",
+    "DefaultAIModelSelectionDescription": "选择在未具体设置时默认使用人工智能提供商和模型",
+    "DefaultEmbeddingModelSelection": "默认嵌入模型选择",
+    "DefaultEmbeddingModelSelectionDescription": "选择用于语义搜索和向量操作的默认嵌入模型",
+    "DefaultImageGenerationModelSelection": "默认图像生成模型选择",
+    "DefaultImageGenerationModelSelectionDescription": "选择用于文字生成图像操作的默认图像生成模型",
+    "DefaultSpeechModelSelection": "默认语音生成模型选择",
+    "DefaultSpeechModelSelectionDescription": "选择用于文字转语音操作的默认语音生成模型",
+    "DefaultTranscriptionsModelSelection": "默认语音识别模型选择",
+    "DefaultTranscriptionsModelSelectionDescription": "选择用于语音转文字操作的默认语音识别模型",
+    "DeleteAgentDatabase": "删除人工智能对话数据库",
+    "DeleteProvider": "删除提供商",
+    "DisabledProviderInfo": "此提供商已禁用，其模型不会在模型选择列表中显示",
+    "EnableProvider": "启用此提供商",
+    "ExternalAPI": "外部服务接口",
+    "ExternalAPIDebug": "启用接口调试日志",
+    "ExternalAPIDebugDescription": "开启后，所有接口请求和响应将被记录到数据库中以便调试",
+    "ExternalApiDatabaseDescription": "包含外部接口Debug 信息的数据库，占用空间为 {{size}}",
+    "FailedToAddModel": "无法添加模型",
+    "FailedToAddProvider": "添加提供商失败",
+    "FailedToRemoveModel": "无法删除模型",
+    "FailedToSaveSettings": "无法保存设置",
+    "FailedToUpdateModel": "无法更新模型",
+    "FailedToUpdateProviderStatus": "无法更新提供商状态",
+    "MaxTokens": "最大生成长度",
+    "MaxTokensDescription": "模型在一次请求中可以生成的最大字符数（以token计算）",
+    "ModelAddedSuccessfully": "模型添加成功",
+    "ModelAlreadyExists": "模型已存在",
+    "ModelCaption": "模型显示名称",
+    "ModelCaptionHelp": "在界面上显示的友好名称，如不填则使用模型名称",
+    "ModelDetails": "模型详细信息",
+    "ModelFeatures": "模型功能",
+    "ModelName": "模型名称",
+    "ModelNameRequired": "模型名称为必填项",
+    "ModelParameters": "模型参数",
+    "ModelParametersDescription": "配置生成式AI模型的行为参数，如温度、token限制等",
+    "ModelRemovedSuccessfully": "模型删除成功",
+    "ModelUpdatedSuccessfully": "模型更新成功",
+    "Models": "可用模型",
+    "NoPresetSelected": "不使用预设模型",
+    "NoProvidersAvailable": "没有可用的提供商",
+    "OpenDatabaseFolder": "打开数据库文件夹",
+    "PresetModels": "预设模型",
+    "PresetProvider": "预置提供商",
+    "ProviderAddedSuccessfully": "提供商添加成功",
+    "ProviderAlreadyExists": "提供商名称已存在",
+    "ProviderClass": "提供商接口类型",
+    "ProviderConfiguration": "提供商配置",
+    "ProviderConfigurationDescription": "配置人工智能提供商的接口密钥和其他设置",
+    "ProviderDisabled": "提供方已禁用",
+    "ProviderEnabled": "提供方已启用",
+    "ProviderName": "提供商名称",
+    "ProviderNameRequired": "提供商名称为必填项",
+    "SearchEmbeddingNoEmbeddingModelError": "请先在外部API部分配置默认嵌入模型设置。",
+    "SelectDefaultProvider": "选择默认提供商",
+    "SelectFromPresets": "从预设模型中选择",
+    "SelectModel": "选择模型",
+    "SettingsSaved": "设置已保存",
+    "SystemPrompt": "系统提示词",
+    "SystemPromptDescription": "用于初始化AI行为的系统指令，定义其行为和能力",
+    "SystemPromptPlaceholder": "系统提示词占位符",
+    "Temperature": "温度",
+    "TemperatureDescription": "较低的值会产生更确定性、更集中的响应，较高的值会产生更多样化、更创造性的响应",
+    "TopP": "Top P",
+    "TopPDescription": "控制响应的随机性。较低的值使响应更确定，较高的值允许更多的可能性",
+    "WorkflowFile": "工作流文件",
+    "WorkflowFileHelp": "ComfyUI 工作流 JSON 文件的路径",
+    "WorkflowFilePath": "工作流文件路径"
+  },
+  "Prompt": {
+    "AutoRefresh": "预览会随输入文本的变化自动刷新",
+    "CodeEditor": "代码编辑器",
+    "Flat": "平铺视图",
+    "FormEditor": "表单编辑器",
+    "LastUpdated": "上次更新时间",
+    "Loading": "加载预览中...",
+    "NoMessages": "还没有消息可以预览",
+    "Preview": "提示词预览",
+    "SchemaNotProvided": "格式未提供",
+    "SchemaNotProvidedDescription": "没有提供 JSON Schema 或无法正确获取到。编辑表单无法展示。",
+    "Tree": "树形视图",
+    "ValidationErrors": "发现错误"
+  },
+  "PromptConfig": {
+    "AddItem": "添加项目",
+    "EmptyArray": "还没有添加任何项目。点击下面的按钮添加第一个项目。",
+    "ItemCount": "{{count}} 项",
+    "RemoveItem": "删除列表项",
+    "Tabs": {
+      "Prompts": "提示词",
+      "Response": "响应"
+    },
+    "Tags": {
+      "HelperText": "输入后按 Enter 键添加标签，或从预定义标签中选择",
+      "NoOptions": "没有可选标签",
+      "Placeholder": "输入标签..."
+    }
+  },
+  "Schema": {
+    "AIConfig": {
+      "Description": "AI 会话设置配置",
+      "Title": "AI 配置"
+    },
+    "AgentConfig": {
+      "Description": "智能体配置",
+      "Id": "智能体唯一标识符",
+      "IdTitle": "智能体 ID",
+      "PromptConfig": {
+        "Description": "提示词配置",
+        "Prompts": "提示词配置列表",
+        "Response": "响应配置列表",
+        "Title": "提示词配置"
+      },
+      "Title": "智能体配置"
+    },
+    "AutoReroll": {
+    },
+    "BaseAPIConfig": {
+      "API": "API 提供商和模型配置",
+      "APITitle": "API 配置",
+      "Description": "基础接口配置",
+      "ModelParameters": "模型参数配置",
+      "ModelParametersTitle": "模型参数",
+      "Title": "基础接口配置"
+    },
+    "DefaultAgents": {
+      "Description": "默认智能体配置列表",
+      "Title": "默认智能体"
+    },
+    "DynamicPosition": {
+    },
+    "FullReplacement": {
+      "Description": "完全替换参数配置",
+      "SourceType": "数据来源类型，决定用什么内容来替换目标元素",
+      "SourceTypeTitle": "源类型",
+      "SourceTypes": {
+      },
+      "TargetId": "目标元素ID",
+      "TargetIdTitle": "目标ID",
+      "Title": "完全替换参数"
+    },
+    "Function": {
+    },
+    "HandlerConfig": {
+    },
+    "JavascriptTool": {
+    },
+    "MCP": {
+      "Description": "模型上下文协议参数配置",
+      "Id": "MCP 服务器 ID",
+      "IdTitle": "服务器 ID",
+      "ResponseProcessing": {
+      },
+      "TimeoutMessage": "超时消息",
+      "TimeoutMessageTitle": "超时消息",
+      "TimeoutSecond": "超时时间（秒）",
+      "TimeoutSecondTitle": "超时时间",
+      "Title": "模型上下文协议参数"
+    },
+    "ModelParameters": {
+      "Description": "模型参数配置",
+      "MaxTokens": "生成的最大令牌数量",
+      "MaxTokensTitle": "最大令牌数",
+      "SystemPrompt": "模型系统提示词",
+      "SystemPromptTitle": "系统提示词",
+      "Temperature": "响应生成温度（越高=越创造性）",
+      "TemperatureTitle": "温度",
+      "Title": "模型参数",
+      "TopP": "Top P 采样参数",
+      "TopPTitle": "Top P"
+    },
+    "Position": {
+      "Bottom": "自底部偏移几条消息",
+      "BottomTitle": "底部偏移",
+      "Description": "位置参数配置，用于确定内容插入的精确位置。支持相对位置、绝对位置、前置和后置四种定位方式",
+      "TargetId": "目标元素ID",
+      "TargetIdTitle": "目标ID",
+      "Title": "位置参数",
+      "Type": "位置类型，用于确定内容插入的精确位置。支持相对位置、绝对位置、前置和后置四种定位方式",
+      "TypeTitle": "位置类型",
+      "Types": {
+      }
+    },
+    "Prompt": {
+      "Caption": "简短描述",
+      "CaptionTitle": "描述",
+      "Children": "子提示词列表，将从上到下，从外到里地拼接为最终的提示词文本。",
+      "ChildrenTitle": "子提示词",
+      "Description": "完整的提示词配置，包含类型和内容",
+      "Enabled": "是否启用此提示词，启用的才会拼入到最终的提示词中",
+      "EnabledTitle": "启用",
+      "Id": "提示词配置的唯一标识符，方便在 PromptDynamicModification 里通过 targetId 引用。",
+      "IdTitle": "ID",
+      "Role": "OpenAI 兼容接口的提示词角色。system: 定义AI的行为规则和背景设定；user: 模拟用户的输入和请求；assistant: AI的回复和响应内容",
+      "RoleTitle": "角色",
+      "RoleType": {
+        "Assistant": "助手 - AI的回复和响应内容",
+        "System": "系统 - 定义AI的行为规则和背景设定",
+        "User": "用户 - 模拟用户的输入和请求"
+      },
+      "Tags": "标签列表",
+      "TagsTitle": "标签",
+      "Text": "提示词内容，可以包含维基文本支持的语法，例如<<变量名>>。",
+      "TextTitle": "文本",
+      "Title": "提示词"
+    },
+    "PromptDynamicModification": {
+      "DynamicModificationTypes": {
+      }
+    },
+    "PromptPart": {
+    },
+    "ProviderModel": {
+      "Description": "提供商和模型配置",
+      "EmbeddingModel": "用于语义搜索和向量操作的嵌入模型名称",
+      "EmbeddingModelTitle": "嵌入模型",
+      "ImageGenerationModel": "用于文字生成图像操作的图像生成模型名称",
+      "ImageGenerationModelTitle": "图像生成模型",
+      "Model": "AI 模型名称",
+      "ModelTitle": "模型",
+      "Provider": "AI 提供商名称",
+      "ProviderTitle": "提供商",
+      "SpeechModel": "用于文字转语音操作的语音生成模型名称",
+      "SpeechModelTitle": "语音模型",
+      "Title": "提供商模型",
+      "TranscriptionsModel": "用于语音转文字操作的语音识别模型名称",
+      "TranscriptionsModelTitle": "语音识别模型"
+    },
+    "RAG": {
+      "Removal": {
+      },
+      "SourceTypes": {
+      }
+    },
+    "Response": {
+      "Description": "外部API的响应，通常作为响应动态修改的目标，结构与提示词的一样，可以填写预置内容，也可以作为占位符或容器，由 ResponseDynamicModification 填入外部API的响应的具体内容。",
+      "Title": "响应"
+    },
+    "ResponseDynamicModification": {
+      "DynamicModificationTypes": {
+      },
+      "ResponseProcessingTypes": {
+      }
+    },
+    "ToolCalling": {
+    },
+    "Trigger": {
+      "Model": {
+      }
+    },
+    "Wiki": {
+    },
+    "WikiOperation": {
+      "Description": "在维基工作区中执行 条目操作（添加、删除或设置文本）",
+      "Title": "Wiki 操作",
+      "Tool": {
+        "Examples": {
+        },
+        "Parameters": {
+          "extraMeta": {
+            "Description": "额外元数据的 JSON 字符串，如标签和字段，默认为 \"{}\"",
+            "Title": "额外元数据"
+          },
+          "operation": {
+            "Description": "要执行的操作类型",
+            "Title": "操作类型"
+          },
+          "options": {
+            "Description": "操作选项的 JSON 字符串，默认为 \"{}\"",
+            "Title": "操作选项"
+          },
+          "text": {
+            "Description": "条目的文本内容",
+            "Title": "条目内容"
+          },
+          "title": {
+            "Description": "条目的标题",
+            "Title": "条目标题"
+          },
+          "workspaceName": {
+            "Description": "要操作的工作区名称或ID",
+            "Title": "工作区名称"
+          }
+        }
+      },
+      "ToolListPosition": {
+        "Position": "相对于目标元素的插入位置（before/after）",
+        "PositionTitle": "插入位置",
+        "TargetId": "要插入工具列表的目标元素的ID",
+        "TargetIdTitle": "目标ID"
+      },
+      "ToolResultDuration": "工具执行结果在对话中保持可见的轮数，超过此轮数后结果将变灰显示",
+      "ToolResultDurationTitle": "工具结果持续轮数"
+    },
+    "WikiSearch": {
+      "Description": "使用筛选器表达式搜索 TiddlyWiki 工作区内容",
+      "SourceType": "数据源类型",
+      "SourceTypeTitle": "源类型",
+      "Title": "Wiki 搜索",
+      "Tool": {
+        "Parameters": {
+          "filter": {
+            "Description": "TiddlyWiki 筛选器表达式",
+            "Title": "过滤器"
+          },
+          "limit": {
+            "Description": "返回的最大结果数量",
+            "Title": "限制"
+          },
+          "query": {
+            "Description": "向量搜索时使用的查询文本（自然语言）",
+            "Title": "查询"
+          },
+          "searchType": {
+            "Description": "选择基于规则或基于相似度的一个搜索模式",
+            "Title": "搜索类型"
+          },
+          "threshold": {
+            "Description": "相似度阈值（0-1），低于此阈值的向量结果将被过滤",
+            "Title": "阈值"
+          },
+          "workspaceName": {
+            "Description": "要搜索的工作区名称或ID",
+            "Title": "工作区名称"
+          }
+        },
+        "Description": "在Wiki工作空间中搜索Tiddler内容（支持传统filter搜索和向量语义搜索）",
+        "UpdateEmbeddings": {
+          "Parameters": {
+            "forceUpdate": {
+              "Title": "强制更新",
+              "Description": "是否强制重新生成嵌入索引，覆盖已有的嵌入数据（如果为 true 则忽略增量更新）。"
+            },
+            "workspaceName": {
+              "Title": "工作区名称",
+              "Description": "要为其生成或更新向量嵌入索引的工作区名称或 ID。"
+            }
+          },
+          "Description": "为Wiki工作区生成或更新向量嵌入索引，用于语义搜索",
+          "workspaceName": {
+            "Title": "工作区名称",
+            "Description": "要为其生成或更新向量嵌入索引的工作区名称或 ID。"
+          },
+          "forceUpdate": {
+            "Title": "强制更新",
+            "Description": "是否强制重新生成嵌入索引，覆盖已有的嵌入数据（如果设置为 true 则忽略增量更新）。"
+          }
+        }
+      },
+      "ToolListPosition": {
+        "Position": "相对于目标位置的插入位置",
+        "PositionTitle": "插入位置",
+        "TargetId": "目标元素的ID，工具列表将相对于此元素插入",
+        "TargetIdTitle": "目标ID"
+      },
+      "ToolListPositionTitle": "工具列表位置",
+      "ToolResultDuration": "工具执行结果在对话中保持可见的轮数，超过此轮数后结果将变灰显示",
+      "ToolResultDurationTitle": "工具结果持续轮数"
+    },
+    "Plugin": {
+      "IdTitle": "ID",
+      "Id": "插件 ID",
+      "CaptionTitle": "标题",
+      "Caption": "简短描述",
+      "ContentTitle": "内容",
+      "Content": "插件内容或说明",
+      "ForbidOverridesTitle": "禁止覆盖",
+      "ForbidOverrides": "是否禁止在运行时覆盖此插件的参数",
+      "PluginIdTitle": "插件标识",
+      "PluginId": "用于选择具体插件的标识符"
+    }
+  },
+  "Search": {
+    "AvailableAgents": "可用的智能体",
+    "FailedToCreateChatWithAgent": "无法创建与智能体的对话",
+    "FailedToFetchAgents": "获取智能体列表失败",
+    "NoAgentsFound": "未找到智能体",
+    "NoClosedTabsFound": "没有最近关闭的标签页",
+    "NoTabsFound": "没有找到标签页",
+    "OpenTabs": "打开的标签页",
+    "RecentlyClosedTabs": "最近关闭的标签页"
+  },
+  "SplitView": {
+    "NoTabs": "分屏视图中没有标签"
+  },
+  "Tab": {
+    "Title": {
+      "CreateNewAgent": "创建新智能体",
+      "EditAgentDefinition": "编辑智能体",
+      "NewTab": "新建标签页",
+      "NewWeb": "新建网页",
+      "SplitView": ""
+    }
+  },
+  "Tool": {
+    "Schema": {
+      "Description": "描述",
+      "Examples": "使用示例",
+      "Optional": "可选",
+      "Parameters": "参数",
+      "Required": "必需"
+    },
+    "Plugin": {
+      "IdTitle": "ID",
+      "Id": "插件 ID",
+      "CaptionTitle": "标题",
+      "Caption": "简短描述",
+      "ContentTitle": "内容",
+      "Content": "插件内容或说明",
+      "ForbidOverridesTitle": "禁止覆盖",
+      "ForbidOverrides": "是否禁止在运行时覆盖此插件的参数",
+      "PluginIdTitle": "插件标识",
+      "PluginId": "用于选择具体插件的标识符"
+    },
+    "WikiOperation": {
+      "Error": {
+        "WorkspaceNotExist": "工作区{{workspaceID}}不存在",
+        "WorkspaceNotFound": "工作区名称或ID\"{{workspaceName}}\"不存在。可用工作区：{{availableWorkspaces}}"
+      },
+      "Success": {
+        "Added": "成功在维基工作区\"{{workspaceName}}\"中添加了条目\"{{title}}\"",
+        "Deleted": "成功从维基工作区\"{{workspaceName}}\"中删除了条目\"{{title}}\"",
+        "Updated": "成功在维基工作区\"{{workspaceName}}\"中设置了条目\"{{title}}\"的文本"
+      }
+    },
+    "WikiSearch": {
+      "Error": {
+        "ExecutionFailed": "工具执行失败：{{error}}",
+        "WorkspaceNotExist": "工作区{{workspaceID}}不存在",
+        "WorkspaceNotFound": "工作区名称或ID\"{{workspaceName}}\"不存在。可用工作区：{{availableWorkspaces}}",
+        "VectorSearchRequiresQuery": "向量搜索需要提供查询参数（query）",
+        "VectorSearchRequiresConfig": "向量搜索需要 AI 配置（请在设置中配置提供商和嵌入模型）",
+        "VectorSearchFailed": "向量搜索失败：{{error}}",
+        "FilterSearchRequiresFilter": "筛选搜索需要提供过滤器参数（filter）"
+      },
+      "Success": {
+        "Completed": "Wiki搜索完成。找到{{totalResults}}个总结果，显示{{shownResults}}个：\n\n",
+        "NoResults": "在维基工作区\"{{workspaceName}}\"中未找到过滤器\"{{filter}}\"的结果",
+        "NoVectorResults": "在维基工作区\"{{workspaceName}}\"中未找到符合条件的向量搜索结果（相似度阈值：{{threshold}}）。",
+        "VectorCompleted": "根据向量搜索，在工作区 {{workspaceName}} 中找到以下相关内容：\n\n"
+      },
+      "UpdateEmbeddings": {
+        "Error": {
+          "ExecutionFailed": "生成嵌入失败：{{error}}",
+          "NoAIConfig": "请先配置人工智能提供商和嵌入模型（在设置中）。",
+          "WorkspaceNotExist": "工作区{{workspaceID}}不存在",
+          "WorkspaceNotFound": "工作区名称或ID\"{{workspaceName}}\"不存在。可用工作区：{{availableWorkspaces}}"
+        },
+        "Success": {
+          "Generated": "已成功为工作区 {{workspaceName}} 生成向量嵌入索引。总计{{totalNotes}}个笔记，{{totalEmbeddings}}个嵌入。"
+        }
+      }
+    }
+  }
+}

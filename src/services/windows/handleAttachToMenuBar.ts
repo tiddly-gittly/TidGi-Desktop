@@ -3,14 +3,15 @@ import { isMac } from '@/helpers/system';
 import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
-import { IMenuService } from '@services/menu/interface';
+import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IViewService } from '@services/view/interface';
+import type { IViewService } from '@services/view/interface';
 import { BrowserWindowConstructorOptions, Menu, nativeImage, Tray } from 'electron';
 import windowStateKeeper from 'electron-window-state';
 import { debounce, merge as mergeDeep } from 'lodash';
 import { Menubar, menubar } from 'menubar';
-import { IWindowService } from './interface';
+import type { IWindowService } from './interface';
+import { getMainWindowEntry } from './viteEntry';
 import { WindowNames } from './WindowProperties';
 
 export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstructorOptions, windowWithBrowserViewState: windowStateKeeper.State | undefined): Promise<Menubar> {
@@ -27,7 +28,7 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
   tray.setImage(MENUBAR_ICON_PATH);
 
   const menuBar = menubar({
-    index: MAIN_WINDOW_WEBPACK_ENTRY,
+    index: getMainWindowEntry(),
     tray,
     activateWithApp: false,
     showDockIcon: true,
@@ -61,7 +62,7 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
           }
         }
         const view = await viewService.getActiveBrowserView();
-        view?.webContents?.focus?.();
+        view?.webContents.focus();
       });
       menuBar.window.removeAllListeners('close');
       menuBar.window.on('close', (event) => {

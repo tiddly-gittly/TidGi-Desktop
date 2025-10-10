@@ -1,35 +1,31 @@
-/* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { app, BrowserWindow, BrowserWindowConstructorOptions } from 'electron';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { Menubar } from 'menubar';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import { windowDimension, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 
 import { Channels, MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
-import type { IMenuService } from '@services/menu/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { isTest } from '@/constants/environment';
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { isMac } from '@/helpers/system';
-import { lazyInject } from '@services/container';
+import { container } from '@services/container';
 import getViewBounds from '@services/libs/getViewBounds';
 import { logger } from '@services/libs/log';
-import { IThemeService } from '@services/theme/interface';
-import { IViewService } from '@services/view/interface';
+import type { IThemeService } from '@services/theme/interface';
+import type { IViewService } from '@services/view/interface';
 import { handleAttachToMenuBar } from './handleAttachToMenuBar';
 import { handleCreateBasicWindow } from './handleCreateBasicWindow';
-import { IWindowOpenConfig, IWindowService } from './interface';
+import type { IWindowOpenConfig, IWindowService } from './interface';
 import { registerBrowserViewWindowListeners } from './registerBrowserViewWindowListeners';
 import { registerMenu } from './registerMenu';
+import { getPreloadPath } from './viteEntry';
 
 @injectable()
 export class Window implements IWindowService {
@@ -38,32 +34,17 @@ export class Window implements IWindowService {
   /** menubar version of main window, if user set openInMenubar to true in preferences */
   private mainWindowMenuBar?: Menubar;
 
-  @lazyInject(serviceIdentifier.Preference)
-  private readonly preferenceService!: IPreferenceService;
-
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
-
-  @lazyInject(serviceIdentifier.WorkspaceView)
-  private readonly workspaceViewService!: IWorkspaceViewService;
-
-  @lazyInject(serviceIdentifier.MenuService)
-  private readonly menuService!: IMenuService;
-
-  @lazyInject(serviceIdentifier.ThemeService)
-  private readonly themeService!: IThemeService;
-
-  @lazyInject(serviceIdentifier.View)
-  private readonly viewService!: IViewService;
-
-  constructor() {
+  constructor(
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+    @inject(serviceIdentifier.ThemeService) private readonly themeService: IThemeService,
+  ) {
     setTimeout(() => {
       void registerMenu();
     }, DELAY_MENU_REGISTER);
   }
 
   public async findInPage(text: string, forward?: boolean): Promise<void> {
-    const contents = (await this.viewService.getActiveBrowserView())?.webContents;
+    const contents = (await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView())?.webContents;
     if (contents !== undefined) {
       contents.findInPage(text, {
         forward,
@@ -73,8 +54,8 @@ export class Window implements IWindowService {
 
   public async stopFindInPage(close?: boolean, windowName: WindowNames = WindowNames.main): Promise<void> {
     const mainWindow = this.get(windowName);
-    const view = await this.viewService.getActiveBrowserView();
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    const view = await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView();
+
     if (view) {
       const contents = view.webContents;
       if (contents !== undefined) {
@@ -110,7 +91,7 @@ export class Window implements IWindowService {
   }
 
   public async close(windowName: WindowNames): Promise<void> {
-    this.get(windowName)?.close?.();
+    this.get(windowName)?.close();
     // remove the window instance, let it GC
     this.windows.delete(windowName);
   }
@@ -144,11 +125,13 @@ export class Window implements IWindowService {
   }
 
   public async isMenubarOpen(): Promise<boolean> {
-    return this.mainWindowMenuBar?.window?.isFocused?.() ?? false;
+    return this.mainWindowMenuBar?.window?.isFocused() ?? false;
   }
 
   public async open<N extends WindowNames>(windowName: N, meta?: WindowMeta[N], config?: IWindowOpenConfig<N>): Promise<undefined>;
+
   public async open<N extends WindowNames>(windowName: N, meta: WindowMeta[N] | undefined, config: IWindowOpenConfig<N> | undefined, returnWindow: true): Promise<BrowserWindow>;
+
   public async open<N extends WindowNames>(
     windowName: N,
     meta: WindowMeta[N] = {} as WindowMeta[N],
@@ -168,7 +151,10 @@ export class Window implements IWindowService {
         if (existedWindow.isMinimized()) {
           existedWindow.restore();
         }
-        existedWindow.show();
+        if (!isTest) {
+          // Don't bring up window when running e2e test, otherwise it will annoy the developer who is doing other things.
+          existedWindow.show();
+        }
         if (returnWindow === true) {
           return existedWindow;
         }
@@ -177,7 +163,8 @@ export class Window implements IWindowService {
     }
 
     // create new window
-    const { hideMenuBar: autoHideMenuBar, titleBar: showTitleBar, menuBarAlwaysOnTop, alwaysOnTop } = this.preferenceService.getPreferences();
+    const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+    const { hideMenuBar: autoHideMenuBar, titleBar: showTitleBar, menuBarAlwaysOnTop, alwaysOnTop } = preferenceService.getPreferences();
     let windowWithBrowserViewConfig: Partial<BrowserWindowConstructorOptions> = {};
     let windowWithBrowserViewState: windowStateKeeperState | undefined;
     const WindowToKeepPositionState = [WindowNames.main, WindowNames.menuBar];
@@ -197,6 +184,8 @@ export class Window implements IWindowService {
         height: windowWithBrowserViewState.height,
       };
     }
+    // hide titleBar should not take effect on setting window
+    const hideTitleBar = [WindowNames.main, WindowNames.menuBar].includes(windowName) && !showTitleBar;
     const windowConfig: BrowserWindowConstructorOptions = {
       ...windowDimension[windowName],
       ...windowWithBrowserViewConfig,
@@ -205,8 +194,9 @@ export class Window implements IWindowService {
       minimizable: true,
       fullscreenable: true,
       autoHideMenuBar,
-      // hide titleBar should not take effect on setting window
-      titleBarStyle: (![WindowNames.main, WindowNames.menuBar].includes(windowName) || showTitleBar) ? 'default' : 'hidden',
+      titleBarStyle: hideTitleBar ? 'hidden' : 'default',
+      // https://www.electronjs.org/docs/latest/tutorial/custom-title-bar#add-native-window-controls-windows-linux
+      ...(hideTitleBar && process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
       alwaysOnTop: windowName === WindowNames.menuBar ? menuBarAlwaysOnTop : alwaysOnTop,
       webPreferences: {
         devTools: !isTest,
@@ -214,10 +204,11 @@ export class Window implements IWindowService {
         webSecurity: false,
         allowRunningInsecureContent: true,
         contextIsolation: true,
-        preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+        preload: getPreloadPath(),
         additionalArguments: [
           `${MetaDataChannel.browserViewMetaData}${windowName}`,
           `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(meta))}`,
+          '--unsafely-disable-devtools-self-xss-warnings',
         ],
       },
       parent: isWindowWithBrowserView ? undefined : this.get(WindowNames.main),
@@ -268,8 +259,8 @@ export class Window implements IWindowService {
   /**
    * When using `loadURL`, window meta will be clear. And we can only append meta to a new window. So we need to push meta to window after `loadURL`.
    */
-  private async pushWindowMetaToWindow<N extends WindowNames>(win: BrowserWindow, meta: WindowMeta[N]): Promise<void> {
-    win?.webContents?.send?.(MetaDataChannel.pushViewMetaData, meta);
+  private async pushWindowMetaToWindow(win: BrowserWindow, meta: unknown): Promise<void> {
+    win.webContents.send(MetaDataChannel.pushViewMetaData, meta);
   }
 
   /**
@@ -285,8 +276,8 @@ export class Window implements IWindowService {
   };
 
   public async goHome(): Promise<void> {
-    const contents = (await this.viewService.getActiveBrowserView())?.webContents;
-    const activeWorkspace = await this.workspaceService.getActiveWorkspace();
+    const contents = (await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView())?.webContents;
+    const activeWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();
     if (contents !== undefined && activeWorkspace !== undefined) {
       await contents.loadURL(getDefaultTidGiUrl(activeWorkspace.id));
       contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
@@ -295,8 +286,8 @@ export class Window implements IWindowService {
   }
 
   public async goBack(): Promise<void> {
-    const contents = (await this.viewService.getActiveBrowserView())?.webContents;
-    if (contents?.navigationHistory?.canGoBack?.() === true) {
+    const contents = (await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView())?.webContents;
+    if (contents?.navigationHistory.canGoBack() === true) {
       contents.navigationHistory.goBack();
       contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
       contents.send(WindowChannel.updateCanGoForward, contents.navigationHistory.canGoForward());
@@ -304,8 +295,8 @@ export class Window implements IWindowService {
   }
 
   public async goForward(): Promise<void> {
-    const contents = (await this.viewService.getActiveBrowserView())?.webContents;
-    if (contents?.navigationHistory?.canGoForward?.() === true) {
+    const contents = (await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView())?.webContents;
+    if (contents?.navigationHistory.canGoForward() === true) {
       contents.navigationHistory.goForward();
       contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
       contents.send(WindowChannel.updateCanGoForward, contents.navigationHistory.canGoForward());
@@ -328,8 +319,8 @@ export class Window implements IWindowService {
   }
 
   public async clearStorageData(workspaceID: string, windowName: WindowNames = WindowNames.main): Promise<void> {
-    const view = this.viewService.getView(workspaceID, windowName);
-    const session = view?.webContents?.session;
+    const view = container.get<IViewService>(serviceIdentifier.View).getView(workspaceID, windowName);
+    const session = view?.webContents.session;
     if (session !== undefined) {
       await session.clearStorageData();
       await session.clearAuthCache();

@@ -1,8 +1,7 @@
-/* eslint-disable unicorn/no-null */
 import { logger } from '@services/libs/log';
 import { pathExists } from 'fs-extra';
 import appPath from './app-path';
-import { IFoundEditor } from './found-editor';
+import type { IFoundEditor } from './found-editor';
 
 /** Represents an external editor on macOS */
 interface IDarwinExternalEditor {
@@ -133,18 +132,26 @@ const gitGUIApp: IDarwinExternalEditor[] = [
 async function findApplication(editor: IDarwinExternalEditor): Promise<string | null> {
   for (const identifier of editor.bundleIdentifiers) {
     try {
-      logger.info(`Try getting path of ${identifier} in darwin.findApplication`);
+      logger.info('Trying to get app path', {
+        identifier,
+        function: 'darwin.findApplication',
+      });
       // app-path not finding the app isn't an error, it just means the
       // bundle isn't registered on the machine.
       // https://github.com/sindresorhus/app-path/blob/0e776d4e132676976b4a64e09b5e5a4c6e99fcba/index.js#L7-L13
-      const installPath = await appPath(identifier).catch(async (error: Error) => {
-        logger.info(`findApplication() gets appPath Error: ${error?.message ?? String(error)}`);
-        if (error?.message === "Couldn't find the app") {
+      const installPath = await appPath(identifier).catch(async (_error: unknown) => {
+        const error = _error instanceof Error ? _error : new Error(String(_error));
+        logger.info('gets appPath Error', { error: error.message ?? String(error), function: 'darwin.findApplication' });
+        if (error.message === "Couldn't find the app") {
           return await Promise.resolve(null);
         }
         return await Promise.reject(error);
       });
-      logger.info(`Path of ${identifier} is ${String(installPath)} in darwin.findApplication`);
+      logger.info('Found path for identifier', {
+        identifier,
+        installPath: String(installPath),
+        function: 'darwin.findApplication',
+      });
 
       if (installPath === null) {
         return null;
@@ -154,9 +161,14 @@ async function findApplication(editor: IDarwinExternalEditor): Promise<string | 
         return installPath;
       }
 
-      logger.info(`App installation for ${editor.name} not found at '${installPath}'`);
-    } catch (error) {
-      logger.info(`findApplication() Unable to locate ${editor.name} installation. Error: ${(error as Error).message}`);
+      logger.info('App installation not found at path', {
+        editorName: editor.name,
+        installPath,
+        function: 'darwin.findApplication',
+      });
+    } catch (_error: unknown) {
+      const error = _error instanceof Error ? _error : new Error(String(_error));
+      logger.info('unable to locate installation', { editorName: editor.name, error: error.message, function: 'darwin.findApplication' });
     }
   }
 

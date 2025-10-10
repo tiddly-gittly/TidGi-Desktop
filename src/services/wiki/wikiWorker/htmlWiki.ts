@@ -19,13 +19,15 @@ export async function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: 
             resolve();
           },
         });
-      } catch (error) {
+      } catch (_error: unknown) {
+        const error = _error instanceof Error ? _error : new Error(String(_error));
         reject(error);
       }
     });
-  } catch (error) {
+  } catch (_error: unknown) {
     // removes the folder function that failed to convert.
     await remove(saveWikiFolderPath);
+    const error = _error instanceof Error ? _error : new Error(String(_error));
     throw error;
   }
 }
@@ -46,7 +48,8 @@ export async function packetHTMLFromWikiFolder(folderWikiPath: string, pathOfNew
           resolve();
         },
       });
-    } catch (error) {
+    } catch (_error: unknown) {
+      const error = _error instanceof Error ? _error : new Error(String(_error));
       reject(error);
     }
   });

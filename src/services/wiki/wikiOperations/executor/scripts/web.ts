@@ -2,7 +2,6 @@ import { WikiChannel } from '@/constants/channels';
 import { wikiOperationScripts as common } from './common';
 
 async function generateHTML(title: string, tiddlerDiv: HTMLElement): Promise<string> {
-  /* eslint-disable unicorn/prefer-spread */
   const clonedDiv = tiddlerDiv.cloneNode(true) as HTMLElement;
   const styleTags = Array.from(document.querySelectorAll('style')).map(style => style.outerHTML).join('\\n');
 
@@ -35,7 +34,6 @@ async function generateHTML(title: string, tiddlerDiv: HTMLElement): Promise<str
       </body>
     </html>
   `;
-  /* eslint-enable unicorn/prefer-spread */
 }
 
 export const wikiOperationScripts = {

@@ -10,7 +10,7 @@
       "url": "https://tidgi.fun/#TidGi-Handbook:TidGi-Handbook%20Index",
       "contribute": "https://github.com/tiddly-gittly/TidGi-Official-Website",
       "fallbackUrls": "https://tiddly-gittly.github.io/TidGi-Official-Website/#TidGi-Handbook:TidGi-Handbook%20Index",
-      "language": "zh_CN"
+      "language": "zh-Hans"
     },
     {
       "title": "TidGi Handbook",
@@ -28,7 +28,7 @@
       "url": "https://keatonlao.gitee.io/tiddlywiki-xp/",
       "contribute": "https://github.com/keatonlao/tiddlywiki-xp",
       "fallbackUrls": "https://keatonlao.github.io/tiddlywiki-xp/",
-      "language": "zh_CN"
+      "language": "zh-Hans"
     },
     {
       "title": "Grok TiddlyWiki",
@@ -45,7 +45,7 @@
       "url": "https://tw-cn.netlify.app/",
       "contribute": "https://github.com/tiddly-gittly/TiddlyWiki-Chinese-Tutorial",
       "fallbackUrls": "https://tw-cn.cpolar.top/ https://tiddly-wiki-chinese-tutorial.vercel.app/ https://tiddly-gittly.github.io/TiddlyWiki-Chinese-Tutorial/",
-      "language": "zh_CN"
+      "language": "zh-Hans"
     },
     {
       "title": "太微官方文档（中文版）",
@@ -54,7 +54,7 @@
       "url": "https://tw-cn-doc.cpolar.top/",
       "contribute": "https://github.com/BramChen/tw5-docs",
       "fallbackUrls": "https://bramchen.github.io/tw5-docs/zh_CN/",
-      "language": "zh_CN"
+      "language": "zh-Hans"
     },
     {
       "title": "TiddlyWiki",

@@ -1,0 +1,563 @@
+{
+  "APILogs": {
+    "CurrentAgent": "Показать журнал агента: {{agentId}}",
+    "Description": "Журнал отладки вызовов внешнего API этого агента. Включите параметр 'Отладка внешнего API' в настройках, чтобы начать запись.",
+    "ErrorDetails": "Подробности ошибки",
+    "NoLogs": "API-журнал этого агента не найден.",
+    "NoResponse": "не отвечает",
+    "RequestDetails": "детали запроса",
+    "ResponseContent": "ответное содержание",
+    "ResponseMetadata": "метаданные ответа",
+    "StatusCancel": "отменено",
+    "StatusDone": "завершено",
+    "StatusError": "ошибка",
+    "StatusStart": "начато",
+    "StatusUpdate": "в процессе обработки",
+    "Title": "Журнал отладки API"
+  },
+  "Agent": {
+    "EditTitle": "редактировать имя интеллектуального агента",
+    "InvalidTabType": "Неверный тип вкладки. Требуется вкладка чата.",
+    "LoadingChat": "Загрузка диалога...",
+    "StartConversation": "начать диалог",
+    "Untitled": "без названия"
+  },
+  "Browser": {
+    "Back": "назад",
+    "Bookmark": "коллекционировать",
+    "CurrentUrl": "текущий URL",
+    "EnterUrlPlaceholder": "введите URL",
+    "Forward": "вперёд",
+    "Home": "Главная страница",
+    "Refresh": "обновить",
+    "RenderPlaceholder": "Это область рендеринга веб-страницы."
+  },
+  "Chat": {
+    "Cancel": "Отмена",
+    "ConfigError": {
+      "GoToSettings": "Перейти к настройкам",
+      "Title": "Проблема с конфигурацией"
+    },
+    "InputPlaceholder": "Введите сообщение, Ctrl+Enter для отправки",
+    "Send": "Отправить",
+    "SessionGroup": {
+    }
+  },
+  "Common": {
+  },
+  "ContextMenu": {
+    "AddToCurrentSplitView": "добавить к текущему разделенному экрану",
+    "Close": "закрыть",
+    "CloseAbove": "Закрыть вкладку сверху",
+    "CloseBelow": "Закрыть вкладку ниже",
+    "CloseOther": "Закрыть другие вкладки",
+    "CloseTabs": "Закрыть несколько вкладок",
+    "ConvertToSplitView": "переключиться на разделенный экран",
+    "CreateSplitViewWithActive": "создать разделенный экран с текущей вкладкой",
+    "Duplicate": "копировать",
+    "NewTabBelow": "Открыть в новой вкладке",
+    "Pin": "Закрепленные вкладки",
+    "Refresh": "обновить",
+    "RestoreClosed": "восстановить закрытую вкладку",
+    "Unpin": "открепить"
+  },
+  "CreateAgent": {
+    "AgentName": "название агента",
+    "AgentNameHelper": "Дайте вашему агенту описательное имя",
+    "AgentNamePlaceholder": "Введите название агента...",
+    "Back": "предыдущий шаг",
+    "CreatingPreview": "Создание предварительного просмотра интеллектуального агента...",
+    "EditPrompt": "редактировать подсказку",
+    "EditPromptDescription": "Настройте системные подсказки и поведение вашего интеллектуального агента",
+    "ImmediateUse": "тестировать и использовать",
+    "ImmediateUseDescription": "Протестируйте своего агента и начните использовать немедленно",
+    "Next": "следующий шаг",
+    "NoTemplateSelected": "Пожалуйста, сначала выберите шаблон.",
+    "Preview": "(предварительный просмотр)",
+    "SaveAndUse": "Сохранить и использовать агента",
+    "SearchTemplates": "Шаблон интеллектуального агента поиска...",
+    "SelectTemplate": "Выбрать шаблон",
+    "SelectTemplateDescription": "Выберите существующего агента в качестве начального шаблона.",
+    "SelectedTemplate": "выбран шаблон",
+    "SetupAgent": "настроить интеллектуального агента",
+    "SetupAgentDescription": "Назовите своего агента и выберите шаблон в качестве отправной точки",
+    "Title": "Создать нового интеллектуального агента"
+  },
+  "EditAgent": {
+    "AgentDescription": "описание агента",
+    "AgentDescriptionHelper": "Опишите функции и назначение вашего агента.",
+    "AgentDescriptionPlaceholder": "Введите описание интеллектуального агента...",
+    "AgentName": "название агента",
+    "AgentNameHelper": "Дайте вашему агенту описательное имя",
+    "AgentNamePlaceholder": "Введите название агента...",
+    "AgentNotFound": "Агент не найден",
+    "EditBasic": "Редактировать основную информацию",
+    "EditBasicDescription": "Редактировать основную информацию вашего агента",
+    "EditPrompt": "редактировать подсказку",
+    "EditPromptDescription": "Настройте системные подсказки и поведение вашего интеллектуального агента",
+    "ImmediateUse": "тестировать и использовать",
+    "ImmediateUseDescription": "Протестируйте своего агента и начните использовать немедленно",
+    "Loading": "Загрузка...",
+    "LoadingPromptConfig": "Загружается конфигурация подсказок...",
+    "PreviewChat": "предварительный просмотр чата",
+    "Save": "сохранить",
+    "Saving": "Сохранение...",
+    "Title": "редактировать определение интеллектуального агента"
+  },
+  "ModelFeature": {
+  },
+  "ModelSelector": {
+    "Model": "модель",
+    "NoModelSelected": "модель не выбрана",
+    "SelectModel": "выбор модели",
+    "Title": "выбор модели"
+  },
+  "NewTab": {
+    "CreateDefaultAgent": "Создать агента по умолчанию",
+    "CreateInstance": "создать экземпляр",
+    "CreateNewAgent": "Создать нового интеллектуального агента",
+    "EditDefinition": "редактировать определение",
+    "NewTab": "Новая вкладка",
+    "QuickAccess": "Быстрый доступ",
+    "SearchPlaceholder": "Поиск вкладок или интеллектуальных агентов..."
+  },
+  "Preference": {
+    "AIAgent": "агент",
+    "AIAgentDescription": "Управление базой данных записей диалогов AI Agent",
+    "AIAgentDescriptionDetail": "Здесь можно просмотреть и удалить информацию о размере и местоположении базы данных записей диалогов AI Agent.",
+    "APIKey": "API ключ",
+    "AddNewModel": "Добавить новую модель",
+    "AddNewProvider": "Добавить нового поставщика",
+    "AddProvider": "Добавить поставщика",
+    "AgentDatabaseDescription": "Все записи диалогов с AI Agent хранятся в этой базе данных, касаются только общения с ИИ, не влияют на содержимое Wiki и занимают объем {{size}}.",
+    "BaseURL": "Базовый URL API",
+    "BaseURLRequired": "Базовый URL API обязателен",
+    "Browse": "просматривать",
+    "CancelAddProvider": "Отменить добавление",
+    "ConfigureModelParameters": "параметры конфигурации",
+    "ConfigureProvider": "Настроить {{provider}}",
+    "ConfirmDelete": "Подтвердить удаление",
+    "ConfirmDeleteAgentDatabase": "Вы уверены, что хотите удалить базу данных со всеми записями диалогов ИИ? Это действие нельзя отменить.",
+    "ConfirmDeleteExternalApiDatabase": "Вы уверены, что хотите удалить базу данных, содержащую отладочную информацию внешнего API? Это действие нельзя отменить.",
+    "CustomProvider": "Пользовательский поставщик",
+    "DefaultAIModelSelection": "Выбор AI модели по умолчанию",
+    "DefaultAIModelSelectionDescription": "Выберите поставщика AI и модель, которые будут использоваться по умолчанию",
+    "DefaultEmbeddingModelSelection": "выбор модели встраивания по умолчанию",
+    "DefaultEmbeddingModelSelectionDescription": "Выбор модели встраивания по умолчанию для семантического поиска и векторных операций",
+    "DefaultImageGenerationModelSelection": "выбор модели генерации изображений по умолчанию",
+    "DefaultImageGenerationModelSelectionDescription": "выбрать модель генерации изображений по умолчанию для операции создания изображения из текста",
+    "DefaultSpeechModelSelection": "выбор модели генерации голоса по умолчанию",
+    "DefaultSpeechModelSelectionDescription": "Выбрать модель генерации голоса по умолчанию для операции преобразования текста в речь",
+    "DefaultTranscriptionsModelSelection": "выбор модели распознавания речи по умолчанию",
+    "DefaultTranscriptionsModelSelectionDescription": "выбрать модель распознавания речи по умолчанию для операции преобразования голоса в текст",
+    "DeleteAgentDatabase": "Удалить базу данных диалогов ИИ",
+    "DeleteExternalApiDatabase": "удалить внешнюю базу данных API",
+    "DeleteProvider": "удалить поставщика",
+    "DisabledProviderInfo": "Этот поставщик отключен, его модели не будут отображаться в списке выбора моделей",
+    "EnableProvider": "Включить этого поставщика",
+    "ExternalAPI": "Внешний интерфейс",
+    "ExternalAPIDebug": "Включить журнал отладки API",
+    "ExternalAPIDebugDescription": "После включения все запросы и ответы API будут записываться в базу данных для отладки.",
+    "ExternalApiDatabaseDescription": "База данных, содержащая отладочную информацию внешнего API, занимает пространство размером {{size}}.",
+    "FailedToAddModel": "Не удалось добавить модель",
+    "FailedToAddProvider": "Не удалось добавить поставщика",
+    "FailedToRemoveModel": "Не удалось удалить модель",
+    "FailedToSaveSettings": "Не удалось сохранить настройки",
+    "FailedToUpdateModel": "Не удалось обновить модель",
+    "FailedToUpdateProviderStatus": "Не удалось обновить статус поставщика",
+    "MaxTokens": "максимальная длина генерации",
+    "MaxTokensDescription": "Максимальное количество символов (в токенах), которое модель может сгенерировать в одном запросе.",
+    "ModelAddedSuccessfully": "Модель успешно добавлена",
+    "ModelAlreadyExists": "Модель уже существует",
+    "ModelCaption": "Название модели для отображения",
+    "ModelCaptionHelp": "Дружественное имя для отображения в интерфейсе, если не заполнено, будет использовано имя модели",
+    "ModelDetails": "Детали модели",
+    "ModelFeatures": "Возможности модели",
+    "ModelName": "Имя модели",
+    "ModelNameRequired": "Имя модели обязательно",
+    "ModelParameters": "параметры модели",
+    "ModelParametersDescription": "Настройка параметров поведения генеративных моделей ИИ, таких как температура, ограничение токенов и другие.",
+    "ModelRemovedSuccessfully": "Модель успешно удалена",
+    "ModelUpdatedSuccessfully": "Модель успешно обновлена.",
+    "Models": "Доступные модели",
+    "NoPresetSelected": "Нет выбранной предустановленной модели",
+    "NoProvidersAvailable": "Нет доступных поставщиков",
+    "OpenDatabaseFolder": "Открыть папку базы данных",
+    "PresetModels": "Предустановленные модели",
+    "PresetProvider": "Предустановленный поставщик",
+    "ProviderAddedSuccessfully": "Поставщик успешно добавлен",
+    "ProviderAlreadyExists": "Имя поставщика уже существует",
+    "ProviderClass": "Тип интерфейса поставщика",
+    "ProviderConfiguration": "Конфигурация поставщика",
+    "ProviderConfigurationDescription": "Настройте API ключ поставщика AI и другие настройки",
+    "ProviderDisabled": "Поставщик отключен",
+    "ProviderEnabled": "Поставщик включен",
+    "ProviderName": "Имя поставщика",
+    "ProviderNameRequired": "Имя поставщика обязательно",
+    "Search": "поиск и внедрение",
+    "SearchEmbeddingDelete": "удалить",
+    "SearchEmbeddingDeleteConfirm": "Вы уверены, что хотите удалить все векторные вложения рабочей области \"{{workspaceName}}\"? Это действие нельзя отменить.",
+    "SearchEmbeddingDeleteError": "Удаление вложения не удалось: {{error}}",
+    "SearchEmbeddingGenerate": "генерировать вложения",
+    "SearchEmbeddingGenerating": "Генерация...",
+    "SearchEmbeddingLastUpdated": "Последнее обновление: {{time}}",
+    "SearchEmbeddingNoAIConfigError": "Пожалуйста, сначала настройте параметры AI API в разделе внешних API.",
+    "SearchEmbeddingNoEmbeddingModelError": "Пожалуйста, сначала настройте параметры модели встраивания по умолчанию в разделе внешних API.",
+    "SearchEmbeddingStatusCompleted": "{{totalEmbeddings}} вложений из {{totalNotes}} заметок",
+    "SearchEmbeddingStatusError": "Ошибка: {{error}}",
+    "SearchEmbeddingStatusGenerating": "Генерация... ({{completed}}/{{total}})",
+    "SearchEmbeddingStatusIdle": "встраивание не сгенерировано",
+    "SearchEmbeddingUpdate": "обновить встраивание",
+    "SearchNoWorkspaces": "Рабочая область не найдена",
+    "SelectDefaultProvider": "Выбрать поставщика по умолчанию",
+    "SelectFromPresets": "Выбрать из предустановленных моделей",
+    "SelectModel": "Выбрать модель",
+    "SettingsSaved": "Настройки сохранены",
+    "SystemPrompt": "Системная подсказка",
+    "SystemPromptDescription": "Установите системную инструкцию, отправляемую AI, определяющую его поведение и возможности",
+    "SystemPromptPlaceholder": "Заполнитель подсказки системы",
+    "Temperature": "Температура",
+    "TemperatureDescription": "Низкие значения приводят к более детерминированным и сфокусированным ответам, а высокие — к более разнообразным и творческим.",
+    "TopP": "Топ P",
+    "TopPDescription": "Управление случайностью ответов. Низкие значения делают ответы более предсказуемыми, а высокие — допускают больше вариантов.",
+    "WorkflowFile": "файл рабочего процесса",
+    "WorkflowFileHelp": "Путь к JSON-файлу рабочего процесса ComfyUI",
+    "WorkflowFilePath": "Путь к файлу рабочего процесса"
+  },
+  "Prompt": {
+    "AutoRefresh": "Предварительный просмотр автоматически обновляется при изменении введенного текста.",
+    "CodeEditor": "Редактор кода",
+    "Flat": "плиточное представление",
+    "FormEditor": "редактор форм",
+    "LastUpdated": "Дата последнего обновления",
+    "Loading": "Загрузка в предварительном просмотре...",
+    "NoMessages": "Нет сообщений для предварительного просмотра",
+    "Preview": "Предварительный просмотр подсказок",
+    "SchemaNotProvided": "Формат не предоставлен.",
+    "SchemaNotProvidedDescription": "Не предоставлена JSON Schema или не удалось её корректно получить. Форма редактирования не может быть отображена.",
+    "Tree": "Древовидное представление",
+    "ValidationErrors": "обнаружить ошибку"
+  },
+  "PromptConfig": {
+    "AddItem": "добавить проект",
+    "EmptyArray": "Еще не добавлено ни одного элемента. Нажмите на кнопку ниже, чтобы добавить первый элемент.",
+    "ItemCount": "{{count}} элементов",
+    "RemoveItem": "удалить элемент списка",
+    "Tabs": {
+      "Prompts": "подсказка",
+      "Response": "отклик"
+    },
+    "Tags": {
+      "HelperText": "После ввода нажмите Enter, чтобы добавить метку, или выберите из предопределенных меток.",
+      "NoOptions": "Нет доступных тегов",
+      "Placeholder": "Введите метку..."
+    }
+  },
+  "Schema": {
+    "AIConfig": {
+      "Description": "Настройка конфигурации AI-диалога",
+      "Title": "AI конфигурация"
+    },
+    "AgentConfig": {
+      "Description": "Конфигурация агента",
+      "Id": "уникальный идентификатор агента",
+      "IdTitle": "ID агента",
+      "PromptConfig": {
+        "Description": "настройка подсказок",
+        "Prompts": "Список конфигурации подсказок",
+        "Response": "список конфигураций ответа",
+        "Title": "настройка подсказок"
+      },
+      "Title": "Конфигурация агента"
+    },
+    "AutoReroll": {
+    },
+    "BaseAPIConfig": {
+      "API": "API-провайдеры и конфигурация моделей",
+      "APITitle": "Настройка API",
+      "Description": "Базовая настройка API",
+      "ModelParameters": "Настройка параметров модели",
+      "ModelParametersTitle": "параметры модели",
+      "Title": "Базовая настройка API"
+    },
+    "DefaultAgents": {
+      "Description": "список конфигураций агента по умолчанию",
+      "Title": "агент по умолчанию"
+    },
+    "DynamicPosition": {
+    },
+    "FullReplacement": {
+      "Description": "полная замена параметров конфигурации",
+      "SourceType": "тип источника",
+      "SourceTypeTitle": "тип источника",
+      "SourceTypes": {
+      },
+      "TargetId": "ID целевого элемента",
+      "TargetIdTitle": "ID цели",
+      "Title": "полная замена параметров"
+    },
+    "Function": {
+    },
+    "HandlerConfig": {
+    },
+    "JavascriptTool": {
+    },
+    "MCP": {
+      "Description": "Настройка параметров протокола контекста модели",
+      "Id": "Идентификатор сервера MCP",
+      "IdTitle": "ID сервера",
+      "ResponseProcessing": {
+      },
+      "TimeoutMessage": "сообщение с истекшим сроком",
+      "TimeoutMessageTitle": "сообщение о тайм-ауте",
+      "TimeoutSecond": "Таймаут (секунды)",
+      "TimeoutSecondTitle": "время ожидания",
+      "Title": "параметры протокола контекста модели"
+    },
+    "ModelParameters": {
+      "Description": "Настройка параметров модели",
+      "MaxTokens": "максимальное количество генерируемых токенов",
+      "MaxTokensTitle": "максимальное количество токенов",
+      "SystemPrompt": "системная подсказка модели",
+      "SystemPromptTitle": "системное приглашение",
+      "Temperature": "Температура генерации ответа (чем выше = тем креативнее)",
+      "TemperatureTitle": "температура",
+      "Title": "параметры модели",
+      "TopP": "Параметр выборки Top P",
+      "TopPTitle": "Топ P"
+    },
+    "Position": {
+      "Bottom": "смещение нескольких сообщений снизу",
+      "BottomTitle": "смещение дна",
+      "Description": "настройка позиционных параметров",
+      "TargetId": "ID целевого элемента",
+      "TargetIdTitle": "ID цели",
+      "Title": "позиционные аргументы",
+      "Type": "тип местоположения",
+      "TypeTitle": "тип местоположения",
+      "Types": {
+      }
+    },
+    "Prompt": {
+      "Caption": "краткое описание",
+      "CaptionTitle": "описание",
+      "Children": "Список подсказок будет объединен в итоговый текст подсказки сверху вниз, снаружи внутрь.",
+      "ChildrenTitle": "подсказка",
+      "Description": "Полная конфигурация подсказок, включая тип и содержание.",
+      "Enabled": "Включить эту подсказку? Только включенные подсказки будут добавлены в итоговый текст.",
+      "EnabledTitle": "включить",
+      "Id": "Уникальный идентификатор конфигурации подсказки, удобный для ссылки на targetId в PromptDynamicModification.",
+      "IdTitle": "ID",
+      "Role": "роль подсказки в интерфейсе, совместимом с OpenAI",
+      "RoleTitle": "персонаж",
+      "RoleType": {
+        "Assistant": "Помощник - ответы и реакции ИИ",
+        "System": "Система - определение правил поведения и фоновых установок ИИ",
+        "User": "Пользователь - имитация ввода и запросов пользователя"
+      },
+      "Tags": "список тегов",
+      "TagsTitle": "метка",
+      "Text": "Содержание подсказки может включать синтаксис, поддерживаемый вики-текстом, например <<имя_переменной>>.",
+      "TextTitle": "текст",
+      "Title": "подсказка"
+    },
+    "PromptDynamicModification": {
+      "DynamicModificationTypes": {
+      }
+    },
+    "PromptPart": {
+    },
+    "ProviderModel": {
+      "Description": "провайдер и конфигурация модели",
+      "EmbeddingModel": "Название модели встраивания для семантического поиска и векторных операций",
+      "EmbeddingModelTitle": "встраиваемая модель",
+      "ImageGenerationModel": "Название модели генерации изображений для операций создания изображений из текста",
+      "ImageGenerationModelTitle": "модель генерации изображений",
+      "Model": "Название модели ИИ",
+      "ModelTitle": "модель",
+      "Provider": "Название поставщика ИИ",
+      "ProviderTitle": "провайдер",
+      "SpeechModel": "Название модели генерации речи для операций преобразования текста в речь",
+      "SpeechModelTitle": "голосовая модель",
+      "Title": "модель поставщика",
+      "TranscriptionsModel": "Название модели распознавания речи для преобразования голоса в текст",
+      "TranscriptionsModelTitle": "модель распознавания речи"
+    },
+    "RAG": {
+      "Removal": {
+      },
+      "SourceTypes": {
+      }
+    },
+    "Response": {
+      "Description": "Ответ от внешнего API, который обычно служит целью для динамического изменения в ответе, имеет такую же структуру, как и подсказка. Можно заполнить его предустановленным содержимым или использовать в качестве заполнителя (контейнера), куда ResponseDynamicModification внесёт конкретное содержимое ответа от внешнего API.",
+      "Title": "отклик"
+    },
+    "ResponseDynamicModification": {
+      "DynamicModificationTypes": {
+      },
+      "ResponseProcessingTypes": {
+      }
+    },
+    "ToolCalling": {
+    },
+    "Trigger": {
+      "Model": {
+      }
+    },
+    "Wiki": {
+    },
+    "WikiOperation": {
+      "Description": "Выполнение операций с Tiddler (добавление, удаление или установка текста) в рабочей области Wiki",
+      "Title": "Wiki операции",
+      "Tool": {
+        "Examples": {
+        },
+        "Parameters": {
+          "extraMeta": {
+            "Description": "JSON-строка дополнительных метаданных, таких как теги и поля, по умолчанию \"{}\"",
+            "Title": "дополнительные метаданные"
+          },
+          "operation": {
+            "Description": "Тип выполняемой операции",
+            "Title": "тип операции"
+          },
+          "options": {
+            "Description": "JSON-строка параметров операции, по умолчанию \"{}\"",
+            "Title": "Опции действий"
+          },
+          "text": {
+            "Description": "Текстовое содержание Tiddler",
+            "Title": "Содержание Tiddler"
+          },
+          "title": {
+            "Description": "Заголовок Tiddler",
+            "Title": "Заголовок Tiddler"
+          },
+          "workspaceName": {
+            "Description": "Имя или идентификатор рабочей области для работы",
+            "Title": "название рабочего пространства"
+          }
+        }
+      },
+      "ToolListPosition": {
+        "Position": "относительно места вставки целевого элемента (before/after)",
+        "PositionTitle": "позиция вставки",
+        "TargetId": "ID целевого элемента для вставки списка инструментов",
+        "TargetIdTitle": "ID цели"
+      },
+      "ToolResultDuration": "Количество ходов в диалоге, в течение которых результаты выполнения инструмента остаются видимыми; после этого результаты будут отображаться серым цветом.",
+      "ToolResultDurationTitle": "количество раундов устойчивого результата инструмента"
+    },
+    "WikiSearch": {
+      "Description": "Поиск содержимого рабочей области TiddlyWiki с помощью фильтрующих выражений",
+      "SourceType": "тип источника данных",
+      "SourceTypeTitle": "тип источника",
+      "Title": "Поиск в Вики",
+      "Tool": {
+        "Parameters": {
+          "filter": {
+            "Description": "TiddlyWiki выражения фильтров",
+            "Title": "фильтр"
+          },
+          "limit": {
+            "Description": "максимальное количество возвращаемых результатов",
+            "Title": "ограничение"
+          },
+          "query": {
+            "Description": "текст запроса (естественный язык), используемый при векторном поиске",
+            "Title": "запрос"
+          },
+          "searchType": {
+            "Description": "Выберите один режим поиска на основе правил или сходства.",
+            "Title": "тип поиска"
+          },
+          "threshold": {
+            "Description": "Порог схожести (0-1), результаты векторов ниже этого порога будут отфильтрованы.",
+            "Title": "порог"
+          },
+          "workspaceName": {
+            "Description": "Имя или идентификатор рабочей области для поиска",
+            "Title": "название рабочего пространства"
+          }
+        }
+      },
+      "ToolListPosition": {
+        "Position": "Позиция вставки относительно целевой позиции",
+        "PositionTitle": "позиция вставки",
+        "TargetId": "ID целевого элемента, список инструментов будет вставлен относительно этого элемента.",
+        "TargetIdTitle": "ID цели"
+      },
+      "ToolListPositionTitle": "Расположение списка инструментов",
+      "ToolResultDuration": "Количество ходов, в течение которых результаты выполнения инструмента остаются видимыми в диалоге; после превышения этого количества результаты будут отображаться серым цветом.",
+      "ToolResultDurationTitle": "количество раундов устойчивого результата инструмента"
+    }
+  },
+  "Search": {
+    "AvailableAgents": "доступные агенты",
+    "FailedToCreateChatWithAgent": "Не удалось создать диалог с агентом.",
+    "FailedToFetchAgents": "Не удалось получить список агентов",
+    "NoAgentsFound": "Агент не найден",
+    "NoClosedTabsFound": "Нет недавно закрытых вкладок",
+    "NoTabsFound": "Вкладка не найдена.",
+    "OpenTabs": "открытые вкладки",
+    "RecentlyClosedTabs": "Недавно закрытые вкладки"
+  },
+  "SplitView": {
+    "NoTabs": "В разделенном экране нет вкладок."
+  },
+  "Tab": {
+    "Title": {
+      "CreateNewAgent": "Создать нового интеллектуального агента",
+      "EditAgentDefinition": "Редакторский интеллектуальный агент",
+      "NewTab": "Новая вкладка",
+      "NewWeb": "создать новую веб-страницу",
+      "SplitView": ""
+    }
+  },
+  "Tool": {
+    "Schema": {
+      "Description": "описание",
+      "Examples": "пример использования",
+      "Optional": "дополнительный",
+      "Parameters": "параметр",
+      "Required": "необходимый"
+    },
+    "WikiOperation": {
+      "Error": {
+        "WorkspaceNotExist": "Рабочее пространство {{workspaceID}} не существует",
+        "WorkspaceNotFound": "Название или идентификатор рабочего пространства \"{{workspaceName}}\" не существует. Доступные рабочие пространства: {{availableWorkspaces}}"
+      },
+      "Success": {
+        "Added": "Успешно добавлен Tiddler \"{{title}}\" в рабочее пространство Wiki \"{{workspaceName}}\".",
+        "Deleted": "Успешно удален Tiddler \"{{title}}\" из рабочего пространства Wiki \"{{workspaceName}}\".",
+        "Updated": "Текст Tiddler \"{{title}}\" успешно установлен в рабочем пространстве Wiki \"{{workspaceName}}\"."
+      }
+    },
+    "WikiSearch": {
+      "Error": {
+        "ExecutionFailed": "Выполнение инструмента завершилось неудачей: {{error}}",
+        "WorkspaceNotExist": "Рабочее пространство {{workspaceID}} не существует",
+        "WorkspaceNotFound": "Название или идентификатор рабочего пространства \"{{workspaceName}}\" не существует. Доступные рабочие пространства: {{availableWorkspaces}}"
+      },
+      "Success": {
+        "Completed": "Поиск в Wiki завершен. Найдено {{totalResults}} результатов, показано {{shownResults}}:",
+        "NoResults": "В рабочей области Wiki \"{{workspaceName}}\" не найдены результаты для фильтра \"{{filter}}\".",
+        "NoVectorResults": "В рабочей области Wiki \"{{workspaceName}}\" не найдено результатов векторного поиска, соответствующих условиям (порог сходства: {{threshold}}).",
+        "VectorCompleted": "По результатам векторного поиска в рабочей области {{workspaceName}} найдены следующие соответствующие материалы:"
+      },
+      "UpdateEmbeddings": {
+        "Error": {
+          "ExecutionFailed": "Не удалось создать вложение: {{error}}",
+          "NoAIConfig": "Пожалуйста, сначала настройте провайдера ИИ и модель внедрения (в настройках).",
+          "WorkspaceNotExist": "Рабочее пространство {{workspaceID}} не существует",
+          "WorkspaceNotFound": "Название или идентификатор рабочего пространства \"{{workspaceName}}\" не существует. Доступные рабочие пространства: {{availableWorkspaces}}"
+        },
+        "Success": {
+          "Generated": "Успешно создан индекс векторных вложений для рабочей области {{workspaceName}}. Всего заметок: {{totalNotes}}, вложений: {{totalEmbeddings}}."
+        }
+      }
+    }
+  },
+  "Unknown": "неизвестный"
+}

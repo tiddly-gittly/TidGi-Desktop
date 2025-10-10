@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 // on production build, if we try to redirect to http://localhost:3012 , we will reach chrome-error://chromewebdata/ , but we can easily get back
 // this happens when we are redirected by OAuth login
-import { CreateWorkspaceTabs } from '@/pages/AddWorkspace/constants';
+import { CreateWorkspaceTabs } from '@/windows/AddWorkspace/constants';
 import { PreferenceSections } from '@services/preferences/interface';
 import { SupportedStorageServices } from '@services/types';
 import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';

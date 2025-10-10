@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
-import { IContextService } from '@services/context/interface';
-import { IGitService } from '@services/git/interface';
+import type { IContextService } from '@services/context/interface';
+import type { IGitService } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
-import { IPagesService } from '@services/pages/interface';
-import { ISyncService } from '@services/sync/interface';
+import type { ISyncService } from '@services/sync/interface';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
@@ -17,13 +15,13 @@ import type { MenuItemConstructorOptions } from 'electron';
 import type { FlatNamespace, TFunction } from 'i18next';
 import type { _DefaultNamespace } from 'react-i18next/TransWithoutContext';
 import type { IWorkspace, IWorkspaceService } from './interface';
+import { isWikiWorkspace } from './interface';
 
 interface IWorkspaceMenuRequiredServices {
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
   context: Pick<IContextService, 'isOnline'>;
   git: Pick<IGitService, 'commitAndSync'>;
   native: Pick<INativeService, 'log' | 'openURI' | 'openPath' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualInfo'>;
-  pages: Pick<IPagesService, 'setActivePage' | 'getActivePage'>;
   sync: Pick<ISyncService, 'syncWikiIfNeeded'>;
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
   wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer'>;
@@ -47,8 +45,17 @@ export async function getWorkspaceMenuTemplate(
   t: TFunction<[_DefaultNamespace, ...Array<Exclude<FlatNamespace, _DefaultNamespace>>]>,
   service: IWorkspaceMenuRequiredServices,
 ): Promise<MenuItemConstructorOptions[]> {
-  const { active, id, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, name, enableHTTPAPI, lastUrl, homeUrl } = workspace;
-  /* eslint-disable @typescript-eslint/no-misused-promises */
+  const { active, id, name } = workspace;
+
+  if (!isWikiWorkspace(workspace)) {
+    return [{
+      label: t('WorkspaceSelector.DedicatedWorkspace'),
+      enabled: false,
+    }];
+  }
+
+  const { hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, enableHTTPAPI, lastUrl, homeUrl } = workspace;
+
   const template: MenuItemConstructorOptions[] = [
     {
       label: t('WorkspaceSelector.OpenWorkspaceTagTiddler', {
@@ -154,7 +161,6 @@ export async function getWorkspaceMenuTemplate(
       },
     });
   }
-  /* eslint-enable @typescript-eslint/no-misused-promises */
 
   return template;
 }

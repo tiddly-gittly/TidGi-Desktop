@@ -24,10 +24,19 @@
     "tidgi",
     "wouter"
   ],
-  "i18n-ally.sourceLanguage": "zh",
+  "i18n-ally.sourceLanguage": "zh-Hans",
   "i18n-ally.localesPaths": "localization/locales",
   "i18n-ally.namespace": false,
   "i18n-ally.review.user.name": "{locale}/{namespaces}.json",
+  "i18n-ally.enabledFrameworks": ["i18next", "react"],
+  "i18n-ally.sortKeys": true,
+  "i18n-ally.keepFulfilled": true,
+  "i18n-ally.localeCountryMap": {
+    "en": "br", // show UK's flag instead of US's
+    "zh": "cn", // show Chinese flag for 'zh'
+    "ko": "ko" // show Korean flag for 'ko'
+  },
+  "i18n-ally.keySeparator": ".",
   "prettier.printWidth": 160,
   "i18n-ally.keystyle": "nested",
   "editor.wordSeparators": "`~!@#%^&*()-=+[{]}\\|;:'\",.<>/?"

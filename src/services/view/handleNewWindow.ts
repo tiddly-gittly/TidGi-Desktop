@@ -6,12 +6,15 @@ import { MetaDataChannel } from '@/constants/channels';
 import { extractDomain, isInternalUrl } from '@/helpers/url';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
-import { IMenuService } from '@services/menu/interface';
+import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IBrowserViewMetaData, windowDimension, WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
-import { INewWindowAction } from './interface';
-import { IViewMeta } from './setupViewEventHandlers';
+import { getPreloadPath } from '@services/windows/viteEntry';
+import type { IBrowserViewMetaData } from '@services/windows/WindowProperties';
+import { windowDimension, WindowNames } from '@services/windows/WindowProperties';
+import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
+import type { INewWindowAction } from './interface';
+import type { IViewMeta } from './setupViewEventHandlers';
 import { handleOpenFileExternalLink } from './setupViewFileProtocol';
 
 export interface INewWindowContext {
@@ -38,7 +41,7 @@ export function handleNewWindow(
     }
    */
   const mightFromTiddlywikiOpenNewWindow = frameName.startsWith('external-');
-  logger.debug(`Getting url that will open externally`, { ...details, fromTW: mightFromTiddlywikiOpenNewWindow });
+  logger.debug('Getting url that will open externally', { ...details, fromTW: mightFromTiddlywikiOpenNewWindow });
   // don't show useless blank page
   if (nextUrl.startsWith('about:blank') && !mightFromTiddlywikiOpenNewWindow) {
     logger.debug('ignore about:blank');
@@ -51,8 +54,13 @@ export function handleNewWindow(
   if (handleOpenFileExternalLinkAction !== undefined) return handleOpenFileExternalLinkAction;
   // open external url in browser
   if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
-    logger.debug('handleNewWindow() openExternal', { nextUrl, nextDomain, disposition });
-    void shell.openExternal(nextUrl).catch((error) => logger.error(`handleNewWindow() openExternal error ${(error as Error).message}`, error));
+    logger.debug('openExternal', { nextUrl, nextDomain, disposition, function: 'handleNewWindow' });
+    void shell.openExternal(nextUrl).catch((_error: unknown) => {
+      logger.error(
+        `handleNewWindow() openExternal error ${_error instanceof Error ? _error.message : String(_error)}`,
+        _error instanceof Error ? _error : new Error(String(_error)),
+      );
+    });
     return {
       action: 'deny',
     };
@@ -81,19 +89,21 @@ export function handleNewWindow(
         decodeURIComponent(sharedWebPreferences?.additionalArguments?.[1]?.replace(MetaDataChannel.browserViewMetaData, '') ?? '{}'),
       ) as IBrowserViewMetaData),
     };
-    logger.debug(`handleNewWindow() ${meta.forceNewWindow ? 'forceNewWindow' : 'disposition'}`, {
+    logger.debug('open new window request', {
       browserViewMetaData,
       disposition,
       nextUrl,
       nextDomain,
+      function: 'handleNewWindow',
     });
     meta.forceNewWindow = false;
     const webPreferences = {
       additionalArguments: [
         `${MetaDataChannel.browserViewMetaData}${WindowNames.view}`,
         `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(browserViewMetaData))}`,
+        '--unsafely-disable-devtools-self-xss-warnings',
       ],
-      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      preload: getPreloadPath(),
     };
     const windowWithBrowserViewState = windowStateKeeper({
       file: 'window-state-open-in-new-window.json',
@@ -118,7 +128,8 @@ export function handleNewWindow(
       childWindow.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) => handleNewWindow(details, newWindowContext, childWindow.webContents));
       childWindow.webContents.once('will-navigate', async (_event, url) => {
         // if the window is used for the current app, then use default behavior
-        const appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
+        const currentWorkspace = await workspaceService.get(workspace.id);
+        const appUrl = currentWorkspace && isWikiWorkspace(currentWorkspace) ? currentWorkspace.homeUrl : undefined;
         if (appUrl === undefined) {
           throw new Error(`Workspace ${workspace.id} not existed, or don't have homeUrl setting`);
         }

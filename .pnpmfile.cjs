@@ -3,11 +3,11 @@ function readPackage(pkg, context) {
     delete pkg.optionalDependencies['registry-js'];
   }
 
-  return pkg
+  return pkg;
 }
 
 module.exports = {
   hooks: {
-    readPackage
-  }
-}
+    readPackage,
+  },
+};

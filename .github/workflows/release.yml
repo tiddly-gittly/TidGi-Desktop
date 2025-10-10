@@ -3,296 +3,141 @@ name: Release App
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
     paths-ignore:
-      - 'README.md'
-      - 'docs/**'
-      - '.vscode'
+      - "README.md"
+      - "docs/**"
+      - ".vscode"
   pull_request:
     branches:
       - master
     paths-ignore:
-      - 'docs/**'
-      - 'README.md'
-      - '.vscode'
+      - "docs/**"
+      - "README.md"
+      - ".vscode"
 
 concurrency:
   group: release-ci-group
   cancel-in-progress: true
 
 jobs:
-  Linux:
-    runs-on: ubuntu-latest
+  test:
+    uses: ./.github/workflows/test.yml
+
+  build:
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+          - os: ubuntu-latest
+            platform: linux
+            arch: arm64
+          - os: macos-latest
+            platform: mac
+            arch: x64
+          - os: macos-latest
+            platform: mac
+            arch: arm64
+          - os: windows-latest
+            platform: win
+            arch: x64
+          - os: windows-latest
+            platform: win
+            arch: arm64
+
+    runs-on: ${{ matrix.os }}
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          submodules: 'recursive'
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
+          submodules: recursive
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 'latest'
           run_install: false
-
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            **/node_modules
-            ~/.pnpm-store
-            ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-            ${{ runner.os }}-node-
-
-      # only run codeql on Linux
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: javascript
-
-      - name: Install dependencies (x64)
-        run: pnpm install && pnpm remove registry-js
-        env:
-          # for dugute, see node_modules/.pnpm/dugite@2.7.1/node_modules/dugite/script/config.js
-          npm_config_arch: x64
-      - name: Make Linux (x64)
-        run: pnpm run make:linux-x64
-        env:
-          CI: true
-          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install dependencies (arm64)
-        run: pnpm install dugite --force
-        env:
-          npm_config_arch: arm64
-      - name: Make Linux (arm64)
-        run: pnpm run make:linux-arm
-        env:
-          CI: true
-          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          draft: true
-          generate_release_notes: true
-          files: out/make/**/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get Renderer Bundle Stats
-        uses: vio/bundle-stats-action@v1
-        with:
-          id: renderer
-          webpack-stats-path: 'out/webpack-stats-renderer.json'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Get Main Bundle Stats
-        uses: vio/bundle-stats-action@v1
-        with:
-          id: main
-          webpack-stats-path: 'out/webpack-stats-main.json'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-  MacOS:
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: lts/*
+      - name: Install dependencies
+        run: pnpm install
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 'latest'
-          run_install: false
-
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            **/node_modules
-            ~/.pnpm-store
-            ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-            ${{ runner.os }}-node-
-
-      - name: Install dependencies (x64)
-        run: pnpm install && pnpm remove registry-js
-        env:
-          npm_config_arch: x64
-      - name: Make macOS (x64)
-        run: pnpm run make:mac-x64
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-          CI: true
-          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install dependencies (arm64)
-        run: pnpm install dugite --force
-        env:
-          npm_config_arch: arm64
-      - name: Make macOS (arm64)
-        run: pnpm run make:mac-arm
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-          CI: true
-          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          draft: true
-          generate_release_notes: true
-          files: out/make/**/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get Renderer Bundle Stats
-        uses: vio/bundle-stats-action@v1
-        with:
-          id: renderer
-          webpack-stats-path: 'out/webpack-stats-renderer.json'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Get Main Bundle Stats
-        uses: vio/bundle-stats-action@v1
-        with:
-          id: main
-          webpack-stats-path: 'out/webpack-stats-main.json'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-  Windows:
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 'latest'
-          run_install: false
-
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            **/node_modules
-            ~/.pnpm-store
-            ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-            ${{ runner.os }}-node-
-
+      # Windows specific: Set up CV dependency for pngquant-bin
       - name: Set up CV dependency for pngquant-bin
+        if: matrix.platform == 'win'
         uses: ilammy/msvc-dev-cmd@v1
 
+      # Install dependencies for x64 architectures
       - name: Install dependencies (x64)
-        run: pnpm install
+        if: matrix.arch == 'x64'
+        run: |
+          ${{ matrix.platform == 'linux' && 'pnpm install && pnpm remove registry-js' || 'pnpm install' }}
         env:
           npm_config_arch: x64
-      # - name: Add msi to path
-      #   run: echo "${env:wix}bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      # Enable x32 if someone still need it
-      # - name: Make Windows (ia32)
-      #   run: pnpm run make:win-ia32
-      #   env:
-      #     CSC_LINK: ${{ secrets.WIN_CERT }}
-      #     CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASS }}
-      #     CI: true
-      #     CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # - name: Rename (ia32)
-      #   run: |
-      #     Get-ChildItem out/make/wix/ia32
-      #     Rename-Item -Path "out/make/wix/ia32/TidGi.msi" -NewName "Install-TidGi-Windows-ia32.msi"
-      - name: Make Windows (x64)
-        run: pnpm run make:win-x64
-        env:
-          CSC_LINK: ${{ secrets.WIN_CERT }}
-          CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASS }}
-          CI: true
-          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # - name: Rename (x64)
-      #   run: |
-      #     Get-ChildItem out/make/wix/x64
-      #     Rename-Item -Path "out/make/wix/x64/TidGi.msi" -NewName "Install-TidGi-Windows-x64.msi"
+
+      # Install dependencies for arm64 architectures
       - name: Install dependencies (arm64)
+        if: matrix.arch == 'arm64'
         run: pnpm install dugite --force
         env:
-          # based on TiddlyGit-Desktop/node_modules/.pnpm/dugite@2.7.1/node_modules/dugite/script/config.js
-          npm_config_arch: ia32
-      - name: Make Windows (arm64)
-        run: pnpm run make:win-arm
+          npm_config_arch: ${{ matrix.platform == 'win' && 'ia32' || 'arm64' }}
+
+      # Build step using direct electron-forge commands
+      - name: Build plugins
+        run: pnpm run build:plugin
+
+      - name: Make ${{ matrix.platform }} (${{ matrix.arch }})
+        run: |
+          pnpm exec electron-forge make --platform=${{ matrix.platform == 'mac' && 'darwin' || matrix.platform == 'win' && 'win32' || 'linux' }} --arch=${{ matrix.arch }}
         env:
-          CSC_LINK: ${{ secrets.WIN_CERT }}
-          CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASS }}
+          NODE_ENV: production
+          # macOS specific environment variables
+          APPLE_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_ID || '' }}
+          APPLE_ID_PASSWORD: ${{ matrix.platform == 'mac' && secrets.APPLE_ID_PASSWORD || '' }}
+          # Windows specific environment variables
+          CSC_LINK: ${{ matrix.platform == 'win' && secrets.WIN_CERT || '' }}
+          CSC_KEY_PASSWORD: ${{ matrix.platform == 'win' && secrets.WIN_CERT_PASS || '' }}
+          # Common environment variables
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+          # Only need 1 set of analyzer reports (linux x64)
+          ANALYZE: ${{ matrix.platform == 'linux' && matrix.arch == 'x64' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # - name: Rename (arm64)
-      #   run: |
-      #     Get-ChildItem out/make/wix/arm64
-      #     Rename-Item -Path "out/make/wix/arm64/TidGi.msi" -NewName "Install-TidGi-Windows-arm64.msi"
 
+      # Upload analyzer reports and packaged apps as workflow artifacts (only linux x64)
+      - name: Upload analyzer reports
+        if: matrix.platform == 'linux' && matrix.arch == 'x64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: analyzer-reports-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            .vite/renderer/bundle-analyzer-renderer.html
+            .vite/main/bundle-analyzer-main.html
+          if-no-files-found: ignore
+
+      - name: Upload packaged apps
+        if: (matrix.platform == 'mac' && matrix.arch == 'x64') || (matrix.platform == 'win' && matrix.arch == 'x64')
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-apps-${{ matrix.platform }}-${{ matrix.arch }}
+          path: out/make/**
+          if-no-files-found: ignore
+
+      # Create Release (upload artifacts from all builds)
       - name: Create Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           draft: true
           generate_release_notes: true
-          # out/make/**/*.msi
           files: |
-            out/make/**/*.exe
+            ${{ matrix.platform == 'win' && 'out/make/**/*.exe' || 'out/make/**/*' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get Renderer Bundle Stats
-        uses: vio/bundle-stats-action@v1
-        with:
-          id: renderer
-          webpack-stats-path: 'out/webpack-stats-renderer.json'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Get Main Bundle Stats
-        uses: vio/bundle-stats-action@v1
-        with:
-          id: main
-          webpack-stats-path: 'out/webpack-stats-main.json'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      # Bundle analysis is handled by Vite configs when ANALYZE=true

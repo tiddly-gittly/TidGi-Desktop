@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/require-await */
 import { dialog, nativeTheme } from 'electron';
 import { injectable } from 'inversify';
 import { BehaviorSubject } from 'rxjs';
 
-import { lazyInject } from '@services/container';
-import { IDatabaseService } from '@services/database/interface';
+import { container } from '@services/container';
+import type { IDatabaseService } from '@services/database/interface';
 import { i18n } from '@services/libs/i18n';
 import { requestChangeLanguage } from '@services/libs/i18n/requestChangeLanguage';
 import type { INotificationService } from '@services/notifications/interface';
@@ -12,19 +11,10 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { defaultPreferences } from './defaultPreferences';
-import { IPreferences, IPreferenceService } from './interface';
+import type { IPreferences, IPreferenceService } from './interface';
 
 @injectable()
 export class Preference implements IPreferenceService {
-  @lazyInject(serviceIdentifier.Window)
-  private readonly windowService!: IWindowService;
-
-  @lazyInject(serviceIdentifier.NotificationService)
-  private readonly notificationService!: INotificationService;
-
-  @lazyInject(serviceIdentifier.Database)
-  private readonly databaseService!: IDatabaseService;
-
   private cachedPreferences: IPreferences | undefined;
   public preference$ = new BehaviorSubject<IPreferences | undefined>(undefined);
 
@@ -33,7 +23,8 @@ export class Preference implements IPreferenceService {
   }
 
   public async resetWithConfirm(): Promise<void> {
-    const preferenceWindow = this.windowService.get(WindowNames.preferences);
+    const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+    const preferenceWindow = windowService.get(WindowNames.preferences);
     if (preferenceWindow !== undefined) {
       await dialog
         .showMessageBox(preferenceWindow, {
@@ -45,7 +36,7 @@ export class Preference implements IPreferenceService {
         .then(async ({ response }) => {
           if (response === 0) {
             await this.reset();
-            await this.windowService.requestRestart();
+            await windowService.requestRestart();
           }
         })
         .catch(console.error);
@@ -56,7 +47,8 @@ export class Preference implements IPreferenceService {
    * load preferences in sync, and ensure it is an Object
    */
   private readonly getInitPreferencesForCache = (): IPreferences => {
-    let preferencesFromDisk = this.databaseService.getSetting(`preferences`) ?? {};
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    let preferencesFromDisk = databaseService.getSetting(`preferences`) ?? {};
     preferencesFromDisk = typeof preferencesFromDisk === 'object' && !Array.isArray(preferencesFromDisk) ? preferencesFromDisk : {};
     return { ...defaultPreferences, ...this.sanitizePreference(preferencesFromDisk) };
   };
@@ -92,7 +84,8 @@ export class Preference implements IPreferenceService {
   private async reactWhenPreferencesChanged<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void> {
     // maybe pauseNotificationsBySchedule or pauseNotifications or ...
     if (key.startsWith('pauseNotifications')) {
-      await this.notificationService.updatePauseNotificationsInfo();
+      const notificationService = container.get<INotificationService>(serviceIdentifier.NotificationService);
+      await notificationService.updatePauseNotificationsInfo();
     }
     switch (key) {
       case 'themeSource': {
@@ -111,8 +104,9 @@ export class Preference implements IPreferenceService {
    */
   private async setPreferences(newPreferences: IPreferences): Promise<void> {
     this.cachedPreferences = newPreferences;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-    this.databaseService.setSetting('preferences', newPreferences);
+
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    databaseService.setSetting('preferences', newPreferences);
     this.updatePreferenceSubject();
   }
 

@@ -19,7 +19,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     }),
   );
 
-  const workspaceIDs = workspacesList?.map((workspace) => workspace.id) ?? [];
+  const workspaceIDs = workspacesList.map((workspace) => workspace.id);
 
   return (
     <DndContext
@@ -27,8 +27,14 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       modifiers={[restrictToVerticalAxis]}
       onDragEnd={async ({ active, over }) => {
         if (over === null || active.id === over.id) return;
-        const oldIndex = workspaceIDs.indexOf(String(active.id));
-        const newIndex = workspaceIDs.indexOf(String(over.id));
+
+        const activeId = String(active.id);
+        const overId = String(over.id);
+
+        const oldIndex = workspacesList.findIndex(workspace => workspace.id === activeId);
+        const newIndex = workspacesList.findIndex(workspace => workspace.id === overId);
+
+        if (oldIndex === -1 || newIndex === -1) return;
 
         const newWorkspacesList = arrayMove(workspacesList, oldIndex, newIndex);
         const newWorkspaces: Record<string, IWorkspace> = {};

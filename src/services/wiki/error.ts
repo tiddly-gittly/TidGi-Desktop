@@ -1,5 +1,5 @@
 import { i18n } from '@services/libs/i18n';
-import { IWorkspace } from '@services/workspaces/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
 
 export class CopyWikiTemplateError extends Error {
   constructor(extraMessage?: string) {

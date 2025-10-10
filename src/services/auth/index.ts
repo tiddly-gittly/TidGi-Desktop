@@ -1,17 +1,16 @@
-/* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable unicorn/no-null */
-import { lazyInject } from '@services/container';
-import { IDatabaseService } from '@services/database/interface';
-import { IGitUserInfos } from '@services/git/interface';
+import { container } from '@services/container';
+import type { IDatabaseService } from '@services/database/interface';
+import type { IGitUserInfos } from '@services/git/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
-import { IWorkspace } from '@services/workspaces/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import { injectable } from 'inversify';
 import { truncate } from 'lodash';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject } from 'rxjs';
-import { IAuthenticationService, IUserInfos, ServiceBranchTypes, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
+import type { IAuthenticationService, IUserInfos, ServiceBranchTypes, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
 
 const defaultUserInfos = {
   userName: '',
@@ -21,9 +20,6 @@ const defaultUserInfos = {
 export class Authentication implements IAuthenticationService {
   private cachedUserInfo: IUserInfos | undefined;
   public userInfo$ = new BehaviorSubject<IUserInfos | undefined>(undefined);
-
-  @lazyInject(serviceIdentifier.Database)
-  private readonly databaseService!: IDatabaseService;
 
   public updateUserInfoSubject(): void {
     this.userInfo$.next(this.getUserInfos());
@@ -47,7 +43,7 @@ export class Authentication implements IAuthenticationService {
   public async getRandomStorageServiceUserInfo(): Promise<{ info: IGitUserInfos; name: SupportedStorageServices } | undefined> {
     for (const serviceName of Object.values(SupportedStorageServices)) {
       const info = await this.getStorageServiceUserInfo(serviceName);
-      if (info?.accessToken !== undefined && info.accessToken.length > 0 && info?.email !== undefined && info?.gitUserName !== undefined) {
+      if (info?.accessToken !== undefined && info.accessToken.length > 0 && info.email !== undefined && info.gitUserName !== undefined) {
         return { name: serviceName, info };
       }
     }
@@ -56,11 +52,12 @@ export class Authentication implements IAuthenticationService {
   /**
    * load UserInfos in sync, and ensure it is an Object
    */
-  private getInitUserInfoForCache(): IUserInfos {
-    let userInfosFromDisk: Partial<IUserInfos> = this.databaseService.getSetting('userInfos') ?? {};
-    userInfosFromDisk = typeof userInfosFromDisk === 'object' && !Array.isArray(userInfosFromDisk) ? userInfosFromDisk : ({} satisfies Partial<IUserInfos>);
-    return { ...defaultUserInfos, ...this.sanitizeUserInfo(userInfosFromDisk) };
-  }
+  private readonly getInitUserInfoForCache = (): IUserInfos => {
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    let userInfosFromDisk: Partial<IUserInfos> = databaseService.getSetting('userInfos') ?? {};
+    userInfosFromDisk = typeof userInfosFromDisk === 'object' && !Array.isArray(userInfosFromDisk) ? userInfosFromDisk : {};
+    return { ...defaultUserInfos, ...userInfosFromDisk };
+  };
 
   private sanitizeUserInfo(info: Partial<IUserInfos>): Partial<IUserInfos> {
     return { ...info, 'github-branch': info['github-branch'] ?? 'main' };
@@ -69,7 +66,8 @@ export class Authentication implements IAuthenticationService {
   public setUserInfos(newUserInfos: IUserInfos): void {
     logger.debug('Storing authInfos', { function: 'setUserInfos' });
     this.cachedUserInfo = newUserInfos;
-    this.databaseService.setSetting('userInfos', newUserInfos);
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    databaseService.setSetting('userInfos', newUserInfos);
     this.updateUserInfoSubject();
   }
 
@@ -106,7 +104,7 @@ export class Authentication implements IAuthenticationService {
 
   public generateOneTimeAdminAuthTokenForWorkspaceSync(workspaceID: string): string {
     const newAuthToken = nanoid().toLowerCase();
-    logger.debug(`generateOneTimeAdminAuthTokenForWorkspace() newAuthToken for ${workspaceID} is ${newAuthToken}`);
+    logger.debug('new auth token generated', { workspaceID, newAuthToken, function: 'generateOneTimeAdminAuthTokenForWorkspace' });
     return newAuthToken;
   }
 
@@ -115,8 +113,7 @@ export class Authentication implements IAuthenticationService {
    * @param workspace the workspace to get userName setting from
    */
   public async getUserName(workspace: IWorkspace): Promise<string> {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    const userName = (workspace.userName || (await this.get('userName'))) ?? '';
+    const userName = (isWikiWorkspace(workspace) ? workspace.userName : '') || (await this.get('userName')) || '';
     return userName;
   }
 }

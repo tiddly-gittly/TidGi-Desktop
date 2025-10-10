@@ -8,36 +8,32 @@ import { AsyncReturnType } from 'type-fest';
  * @param valuePromise A promise contain the value we want to use in React
  * @param defaultValue empty array or undefined, as initial value
  */
-export function usePromiseValue<T, DefaultValueType = T | undefined>(
-  asyncValue: () => Promise<T>,
-  defaultValue?: AsyncReturnType<typeof asyncValue>,
-  dependency: unknown[] = [],
-): T | DefaultValueType {
-  const [value, valueSetter] = useState<T | DefaultValueType>(defaultValue as T | DefaultValueType);
+export function usePromiseValue<T>(asyncValue: () => Promise<T>, defaultValue?: AsyncReturnType<typeof asyncValue>, dependency: unknown[] = []): T | (undefined) {
+  const [value, valueSetter] = useState<T | (undefined)>(defaultValue as T | (undefined));
   // use initial value
   useEffect(() => {
     void (async () => {
       try {
         valueSetter(await asyncValue());
-      } catch (error) {
-        console.error(error);
+      } catch (_error: unknown) {
+        console.warn('Service not available yet', _error);
+        void _error;
         if (defaultValue !== undefined) {
           valueSetter(defaultValue);
         }
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependency);
 
   return value;
 }
 
-export function usePromiseValueAndSetter<T, DefaultValueType = T | undefined>(
+export function usePromiseValueAndSetter<T>(
   asyncValue: () => Promise<T>,
-  asyncSetter: (newValue: T | DefaultValueType) => Promise<unknown>,
+  asyncSetter: (newValue: T | (undefined)) => Promise<unknown>,
   defaultValue?: AsyncReturnType<typeof asyncValue>,
-): [T | DefaultValueType, (newValue: T | DefaultValueType) => void] {
-  const [value, valueSetter] = useState<T | DefaultValueType>(defaultValue as T | DefaultValueType);
+): [T | (undefined), (newValue: T | (undefined)) => void] {
+  const [value, valueSetter] = useState<T | (undefined)>(defaultValue as T | (undefined));
   // use initial value
   useEffect(() => {
     void (async () => {
@@ -46,7 +42,7 @@ export function usePromiseValueAndSetter<T, DefaultValueType = T | undefined>(
   }, [asyncValue]);
   // update remote value on change
   const updateRemoteValue = useDebouncedCallback(
-    async (newValue: T | DefaultValueType) => {
+    async () => {
       const previousValue = await asyncValue();
       if (value !== previousValue) {
         void asyncSetter(value);
@@ -57,9 +53,9 @@ export function usePromiseValueAndSetter<T, DefaultValueType = T | undefined>(
   );
 
   const setter = useCallback(
-    async (newValue: T | DefaultValueType) => {
+    async (newValue: T | (undefined)) => {
       valueSetter(newValue);
-      await updateRemoteValue(newValue);
+      await updateRemoteValue();
     },
     [valueSetter, updateRemoteValue],
   );

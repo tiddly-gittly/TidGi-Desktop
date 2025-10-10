@@ -1,13 +1,13 @@
 import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
-import { IMenuService } from '@services/menu/interface';
+import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IViewService } from '@services/view/interface';
-import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
-import { IWindowService } from '@services/windows/interface';
+import type { IViewService } from '@services/view/interface';
+import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
+import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { IWorkspaceService } from './interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { IWorkspaceService } from './interface';
 
 export async function registerMenu(): Promise<void> {
   const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
@@ -17,7 +17,6 @@ export async function registerMenu(): Promise<void> {
   const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 
-  /* eslint-disable @typescript-eslint/no-misused-promises */
   await menuService.insertMenu('Workspaces', [
     {
       label: () => i18n.t('Menu.SelectNextWorkspace'),

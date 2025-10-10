@@ -1,5 +1,5 @@
 import { SyncChannel } from '@/constants/channels';
-import { IWorkspace } from '@services/workspaces/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
 
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 

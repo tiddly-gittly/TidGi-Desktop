@@ -1,27 +1,22 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { Settings as SettingsIcon, Upgrade as UpgradeIcon } from '@mui/icons-material';
+import SettingsIcon from '@mui/icons-material/Settings';
+import UpgradeIcon from '@mui/icons-material/Upgrade';
+import { css, styled } from '@mui/material/styles';
 import { t } from 'i18next';
 import SimpleBar from 'simplebar-react';
-import { styled, css } from 'styled-components';
 import is, { isNot } from 'typescript-styled-is';
 
 import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import { SortableWorkspaceSelectorList, WorkspaceSelectorBase } from '@/pages/Main/WorkspaceIconAndSelector';
+import { SortableWorkspaceSelectorList } from '@/pages/Main/WorkspaceIconAndSelector';
 import { IconButton as IconButtonRaw, Tooltip } from '@mui/material';
-import { usePagesListObservable } from '@services/pages/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useUpdaterObservable } from '@services/updater/hooks';
 import { IUpdaterStatus } from '@services/updater/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
-import { SortablePageSelectorList } from './PageIconAndSelector';
 
 const sideBarStyle = css`
   height: 100%;
-  width: ${({ theme }) => theme.sidebar.width}px;
-  min-width: ${({ theme }) => theme.sidebar.width}px;
-  background-color: ${({ theme }) => theme.palette.background.default};
   -webkit-app-region: drag;
   user-select: none;
   display: flex;
@@ -35,14 +30,20 @@ const sideBarStyle = css`
     width: 0;
   }
 `;
-const SidebarRoot = styled.div`
+const SidebarRoot = styled('div')`
   ${sideBarStyle}
+  width: ${({ theme }) => theme.sidebar.width}px;
+  min-width: ${({ theme }) => theme.sidebar.width}px;
+  background-color: ${({ theme }) => theme.palette.background.default};
 `;
 const SidebarWithStyle = styled(SimpleBar)`
   ${sideBarStyle}
+  width: ${({ theme }) => theme.sidebar.width}px;
+  min-width: ${({ theme }) => theme.sidebar.width}px;
+  background-color: ${({ theme }) => theme.palette.background.default};
 `;
 
-const SidebarTop = styled.div<{ $titleBar?: boolean }>`
+const SidebarTop = styled('div')<{ $titleBar?: boolean }>`
   overflow-y: scroll;
   &::-webkit-scrollbar {
     width: 0;
@@ -56,7 +57,7 @@ const SidebarTop = styled.div<{ $titleBar?: boolean }>`
     padding-top: 30px;
   `}
 `;
-const SideBarEnd = styled.div`
+const SideBarEnd = styled('div')`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -84,7 +85,6 @@ export function SideBar(): React.JSX.Element {
   const titleBar = usePromiseValue<boolean>(async () => await window.service.preference.get('titleBar'), false)!;
 
   const workspacesList = useWorkspacesListObservable();
-  const pagesList = usePagesListObservable();
   const preferences = usePreferenceObservable();
   const updaterMetaData = useUpdaterObservable();
   if (preferences === undefined) return <div>{t('Loading')}</div>;
@@ -97,22 +97,6 @@ export function SideBar(): React.JSX.Element {
         {workspacesList === undefined
           ? <div>{t('Loading')}</div>
           : <SortableWorkspaceSelectorList showSideBarText={showSideBarText} workspacesList={workspacesList} showSideBarIcon={showSideBarIcon} />}
-        <WorkspaceSelectorBase
-          id='add'
-          showSideBarIcon={showSideBarIcon}
-          index={workspacesList?.length ?? 0}
-          showSidebarTexts={showSideBarText}
-          onClick={() => void window.service.window.open(WindowNames.addWorkspace)}
-        />
-        {pagesList === undefined
-          ? <div>{t('Loading')}</div>
-          : (
-            <SortablePageSelectorList
-              showSideBarText={showSideBarText}
-              pagesList={pagesList}
-              showSideBarIcon={showSideBarIcon}
-            />
-          )}
       </SidebarTop>
       <SideBarEnd>
         {updaterMetaData?.status === IUpdaterStatus.updateAvailable && (

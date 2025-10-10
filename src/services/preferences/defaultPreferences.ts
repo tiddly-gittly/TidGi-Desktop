@@ -1,7 +1,7 @@
 import { DEFAULT_DOWNLOADS_PATH } from '@/constants/appPaths';
 import { app } from 'electron';
 import semver from 'semver';
-import { IPreferences } from './interface';
+import type { IPreferences } from './interface';
 
 export const defaultPreferences: IPreferences = {
   allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
@@ -11,10 +11,11 @@ export const defaultPreferences: IPreferences = {
   disableAntiAntiLeech: false,
   disableAntiAntiLeechForUrls: [],
   downloadPath: DEFAULT_DOWNLOADS_PATH,
+  externalAPIDebug: false,
   hibernateUnusedWorkspacesAtLaunch: false,
   hideMenuBar: false,
   ignoreCertificateErrors: false,
-  language: 'zh_CN',
+  language: 'zh-Hans',
   menuBarAlwaysOnTop: false,
   pauseNotifications: '',
   pauseNotificationsBySchedule: false,

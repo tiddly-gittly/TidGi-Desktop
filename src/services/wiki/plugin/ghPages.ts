@@ -6,7 +6,6 @@ interface IGhOptions {
   branch?: string;
 }
 export async function updateGhConfig(wikiPath: string, options: IGhOptions): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (options.branch && options.branch !== 'master') {
     const ghPagesConfigPath = path.join(wikiPath, '.github', 'workflows', 'gh-pages.yml');
     try {
@@ -14,7 +13,8 @@ export async function updateGhConfig(wikiPath: string, options: IGhOptions): Pro
       const newContent = content.replace(/(branches:\n\s+- )(master)$/m, `$1${options.branch}`);
       await fs.writeFile(ghPagesConfigPath, newContent, 'utf8');
     } catch (error) {
-      logger.error(`updateGhConfig Error: ${(error as Error).message}`);
+      const error_ = error instanceof Error ? error : new Error(String(error));
+      logger.error('updateGhConfig failed', { function: 'updateGhConfig', error: error_.message, errorObj: error_ });
     }
   }
 }

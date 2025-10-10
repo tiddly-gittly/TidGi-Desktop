@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/require-await */
 import { app } from 'electron';
 import { injectable } from 'inversify';
 import { BehaviorSubject } from 'rxjs';
-import { ISystemPreferenceService, IUsedElectionSettings } from './interface';
+import type { ISystemPreferenceService, IUsedElectionSettings } from './interface';
 
 @injectable()
 export class SystemPreference implements ISystemPreferenceService {
@@ -22,7 +21,9 @@ export class SystemPreference implements ISystemPreferenceService {
       case 'openAtLogin': {
         // return our custom setting enum, to be cross-platform
         const loginItemSettings = app.getLoginItemSettings();
-        const { openAtLogin, openAsHidden } = loginItemSettings;
+        const { openAtLogin } = loginItemSettings;
+        // openAsHidden may be present on some platforms; access it safely without using `any`.
+        const openAsHidden = (loginItemSettings as unknown as { openAsHidden?: boolean }).openAsHidden === true;
         if (openAtLogin && openAsHidden) return 'yes-hidden';
         if (openAtLogin) return 'yes';
         return 'no';
@@ -45,6 +46,7 @@ export class SystemPreference implements ISystemPreferenceService {
         app.setLoginItemSettings({
           openAtLogin: value.startsWith('yes'),
           // MacOS Only
+
           openAsHidden: value === 'yes-hidden',
         });
         break;

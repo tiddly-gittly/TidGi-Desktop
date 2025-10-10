@@ -3,5 +3,6 @@
   "fr": "$:/languages/fr-FR",
   "ja": "$:/languages/ja-JP",
   "ru": "$:/languages/ru-RU",
-  "zh_CN": "$:/languages/zh-Hans"
+  "zh-Hans": "$:/languages/zh-Hans",
+  "zh-Hant": "$:/languages/zh-Hant"
 }

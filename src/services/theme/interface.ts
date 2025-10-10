@@ -10,9 +10,14 @@ export interface ITheme {
  * Wrap call to electron api, so we won't need remote module in renderer process
  */
 export interface IThemeService {
+  initialize(): Promise<void>;
+  setThemeSource(themeSource: IThemeSource): Promise<void>;
   shouldUseDarkColors(): Promise<boolean>;
   theme$: BehaviorSubject<ITheme>;
 }
+
+export type IThemeSource = 'system' | 'light' | 'dark';
+
 export const ThemeServiceIPCDescriptor = {
   channel: ThemeChannel.name,
   properties: {

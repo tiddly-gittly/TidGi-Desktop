@@ -1,4 +1,3 @@
-/* eslint-disable react/display-name */
 import { ForwardedRef, forwardRef } from 'react';
 import { SVGContainer } from './SVGContainer';
 

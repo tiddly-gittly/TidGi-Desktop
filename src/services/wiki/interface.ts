@@ -1,15 +1,14 @@
 import { WikiChannel } from '@/constants/channels';
-import { IGitUserInfos } from '@services/git/interface';
-import { IWorkspace } from '@services/workspaces/interface';
+import type { IGitUserInfos } from '@services/git/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { Observable } from 'rxjs';
-import { ModuleThread } from 'threads';
 import type { IChangedTiddlers } from 'tiddlywiki';
 import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
-import { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
-import { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
-import { WikiWorker } from './wikiWorker';
-import { IWikiServerRouteResponse } from './wikiWorker/ipcServerRoutes';
+import type { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
+import type { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
+import type { WikiWorker } from './wikiWorker';
+import type { IWikiServerRouteResponse } from './wikiWorker/ipcServerRoutes';
 import type { IpcServerRouteMethods, IpcServerRouteNames } from './wikiWorker/ipcServerRoutes';
 
 /**
@@ -62,7 +61,7 @@ export interface IWikiService {
    * Get wiki worker, and you can call its methods. Only meant to be used in TidGi's services internally.
    * @param workspaceID You can get this from active workspace
    */
-  getWorker(workspaceID: string): ModuleThread<WikiWorker> | undefined;
+  getWorker(workspaceID: string): WikiWorker | undefined;
   linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
   packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
@@ -91,6 +90,8 @@ export interface IWikiService {
   ): Promise<ReturnType<ISendWikiOperationsToBrowser[OP]>>;
   /**
    * Runs wiki related JS script in nodejs server side.
+   *
+   * This will never await if workspaceID isn't exist in user's workspace list. So prefer to check workspace existence before use this method.
    */
   wikiOperationInServer<OP extends keyof IWorkerWikiOperations>(
     operationType: OP,

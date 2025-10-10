@@ -6,14 +6,16 @@ import getFromRenderer from '@services/libs/getFromRenderer';
 import { i18n } from '@services/libs/i18n';
 import { isBrowserWindow } from '@services/libs/isBrowserWindow';
 import { logger } from '@services/libs/log';
-import { IMenuService } from '@services/menu/interface';
-import { INativeService } from '@services/native/interface';
+import type { IMenuService } from '@services/menu/interface';
+import type { INativeService } from '@services/native/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IViewService } from '@services/view/interface';
-import { IWikiService } from '@services/wiki/interface';
-import { IWindowService } from '@services/windows/interface';
-import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspaceService } from '@services/workspaces/interface';
+import type { IViewService } from '@services/view/interface';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IWindowService } from '@services/windows/interface';
+import type { IBrowserViewMetaData } from '@services/windows/WindowProperties';
+import { WindowNames } from '@services/windows/WindowProperties';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import { clipboard, dialog } from 'electron';
 import { CancelError as DownloadCancelError, download } from 'electron-dl';
 import { minify } from 'html-minifier-terser';
@@ -33,7 +35,7 @@ export async function registerMenu(): Promise<void> {
     {
       label: () => i18n.t('Menu.DeveloperToolsActiveWorkspace'),
       accelerator: 'CmdOrCtrl+Option+I',
-      click: async () => (await viewService.getActiveBrowserView())?.webContents?.openDevTools?.({ mode: 'detach' }),
+      click: async () => (await viewService.getActiveBrowserView())?.webContents.openDevTools({ mode: 'detach' }),
       enabled: hasActiveWorkspaces,
     },
   ]);
@@ -45,25 +47,26 @@ export async function registerMenu(): Promise<void> {
           const browserView = await viewService.getActiveBrowserView();
           const win = windowService.get(WindowNames.main);
           logger.info(
-            `print page, browserView printToPDF method is ${browserView?.webContents?.printToPDF === undefined ? 'undefined' : 'define'}, win is ${
+            `print page, browserView printToPDF method is ${browserView?.webContents.printToPDF === undefined ? 'undefined' : 'define'}, win is ${
               win === undefined ? 'undefined' : 'define'
             }`,
           );
           if (browserView === undefined || win === undefined) {
             return;
           }
-          const pdfBuffer = await browserView?.webContents?.printToPDF({
+          const pdfBuffer = await browserView.webContents.printToPDF({
             generateTaggedPDF: true,
           });
           // turn buffer to data uri
-          const dataUri = `data:application/pdf;base64,${pdfBuffer?.toString('base64')}`;
+          const dataUri = `data:application/pdf;base64,${pdfBuffer.toString('base64')}`;
           await download(win, dataUri, { filename: 'wiki.pdf', overwrite: false });
           logger.info(`print page done`);
         } catch (error) {
           if (error instanceof DownloadCancelError) {
-            logger.debug('item.cancel() was called');
+            logger.debug('cancelled', { function: 'registerMenu.printPage' });
           } else {
-            logger.error(`print page error: ${(error as Error).message}`, error);
+            const error_ = error instanceof Error ? error : new Error(String(error));
+            logger.error('print page error', { function: 'registerMenu.printPage', error: error_.message, errorObj: error_ });
           }
         }
       },
@@ -116,6 +119,10 @@ export async function registerMenu(): Promise<void> {
           logger.error('Can not export whole wiki, activeWorkspace is undefined');
           return;
         }
+        if (!isWikiWorkspace(activeWorkspace)) {
+          logger.error('Can not export whole wiki, activeWorkspace is not a wiki workspace');
+          return;
+        }
         const pathOfNewHTML = await nativeService.pickDirectory(DEFAULT_DOWNLOADS_PATH, {
           allowOpenFile: true,
           filters: [{ name: 'HTML', extensions: wikiHtmlExtensions }],
@@ -145,7 +152,7 @@ export async function registerMenu(): Promise<void> {
           }
         }
         const view = await viewService.getActiveBrowserView();
-        const url = view?.webContents?.getURL();
+        const url = view?.webContents.getURL();
         if (typeof url === 'string') {
           clipboard.writeText(url);
         }

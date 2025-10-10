@@ -1,4 +1,3 @@
-/* eslint-disable global-require */
 import Transport from 'winston-transport';
 
 import { WikiChannel } from '@/constants/channels';
@@ -23,7 +22,7 @@ export default class RendererTransport extends Transport {
     });
 
     const sendWikiOperationsToBrowser = getSendWikiOperationsToBrowser(info.id);
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
     if (info.handler && info.handler in sendWikiOperationsToBrowser) {
       sendWikiOperationsToBrowser[info.handler](info.message);
     }

@@ -25,7 +25,7 @@ export interface IWindowService {
    * Completely close a window, destroy its all state and WebContentsView. Need more time to restore. Use `hide` if you want to hide it temporarily.
    */
   close(windowName: WindowNames): Promise<void>;
-  findInPage(text: string, forward?: boolean | undefined): Promise<void>;
+  findInPage(text: string, forward?: boolean): Promise<void>;
   /** get window, this should not be called in renderer side */
   get(windowName: WindowNames): BrowserWindow | undefined;
   getWindowMeta<N extends WindowNames>(windowName: N): Promise<WindowMeta[N] | undefined>;
@@ -54,7 +54,7 @@ export interface IWindowService {
   /** set window or delete window object by passing undefined (will not close it, only remove reference), this should not be called in renderer side */
   set(windowName: WindowNames, win: BrowserWindow | undefined): void;
   setWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;
-  stopFindInPage(close?: boolean | undefined, windowName?: WindowNames): Promise<void>;
+  stopFindInPage(close?: boolean, windowName?: WindowNames): Promise<void>;
   updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;
 }
 export const WindowServiceIPCDescriptor = {

@@ -1,23 +1,21 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { TabContext, TabPanel as TabPanelRaw } from '@mui/lab';
-import { Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
+import { Box, Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
+import { keyframes, styled, Theme } from '@mui/material/styles';
 import { SupportedStorageServices } from '@services/types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme, keyframes } from 'styled-components';
 
 import { ListItemText } from '../ListItem';
 import { GitTokenForm } from './GitTokenForm';
 
-const Container = styled.div`
+const Container = styled('div')`
   width: 100%;
   display: flex;
   flex-direction: column;
   background-color: ${({ theme }) => theme.palette.background.paper};
 `;
-const TabPanel = styled(TabPanelRaw)`
-  padding: 5px 0 !important;
-  padding-left: 16px !important;
+const TabPanel = styled(Box)`
+  padding: 5px 0;
+  padding-left: 16px;
   background-color: ${({ theme }) => theme.palette.background.paper};
 `;
 const Tabs = styled(TabsRaw)`
@@ -26,17 +24,17 @@ const Tabs = styled(TabsRaw)`
     background-color: ${({ theme }) => theme.palette.background.paper} !important;
   }
 `;
-const TabsContainer = styled.div`
+const TabsContainer = styled('div')`
   background-color: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.primary};
   display: flex;
   padding: 15px 0;
   flex-direction: row;
-  & ${Tabs} {
+  & .MuiTabs-root {
     min-width: 160px;
   }
 `;
-const backgroundColorShift = ({ theme }: { theme: DefaultTheme }) =>
+const backgroundColorShift = ({ theme }: { theme: Theme }) =>
   keyframes`
 from {background-color: ${theme.palette.background.default};}
   to {background-color: ${theme.palette.background.default};}
@@ -74,10 +72,10 @@ export function TokenForm({ storageProvider, storageProviderSetter }: Props): Re
   return (
     <Container>
       <ListItemText primary={t('Preference.Token')} secondary={t('Preference.TokenDescription')} />
-      <TabContext value={currentTab}>
+      <Box sx={{ display: 'flex', width: '100%' }}>
         <TabsContainer>
           <Tabs
-            onChange={(event: React.SyntheticEvent<Element, Event>, newValue: SupportedStorageServices) => {
+            onChange={(_event: React.SyntheticEvent, newValue: SupportedStorageServices) => {
               currentTabSetter(newValue);
             }}
             orientation='vertical'
@@ -89,17 +87,23 @@ export function TokenForm({ storageProvider, storageProviderSetter }: Props): Re
             <Tab label='GitLab' value={SupportedStorageServices.gitlab} />
             <Tab label='Gitee' value={SupportedStorageServices.gitee} />
           </Tabs>
-          <TabPanel value={SupportedStorageServices.github}>
-            <GitTokenForm storageService={SupportedStorageServices.github} />
-          </TabPanel>
-          <TabPanel value={SupportedStorageServices.gitlab}>
-            <GitTokenForm storageService={SupportedStorageServices.gitlab} />
-          </TabPanel>
-          <TabPanel value={SupportedStorageServices.gitee}>
-            Gitee（码云）一直不愿意支持 OAuth2 ，所以我们没法适配它的登录系统，如果你认识相关开发人员，请催促他们尽快支持，与国际接轨。
-          </TabPanel>
+          {currentTab === SupportedStorageServices.github && (
+            <TabPanel>
+              <GitTokenForm storageService={SupportedStorageServices.github} />
+            </TabPanel>
+          )}
+          {currentTab === SupportedStorageServices.gitlab && (
+            <TabPanel>
+              <GitTokenForm storageService={SupportedStorageServices.gitlab} />
+            </TabPanel>
+          )}
+          {currentTab === SupportedStorageServices.gitee && (
+            <TabPanel>
+              Gitee（码云）一直不愿意支持 OAuth2 ，所以我们没法适配它的登录系统，如果你认识相关开发人员，请催促他们尽快支持，与国际接轨。
+            </TabPanel>
+          )}
         </TabsContainer>
-      </TabContext>
+      </Box>
     </Container>
   );
 }

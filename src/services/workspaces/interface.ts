@@ -1,4 +1,5 @@
 import { WorkspaceChannel } from '@/constants/channels';
+import { PageType } from '@/constants/pageTypes';
 import { SupportedStorageServices } from '@services/types';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { BehaviorSubject, Observable } from 'rxjs';
@@ -8,16 +9,38 @@ import { SetOptional } from 'type-fest';
  * Fields that not part of config that user can edit. Change of these field won't show "save" button on edit page.
  */
 export const nonConfigFields = ['metadata', 'lastNodeJSArgv'];
+
+export interface IDedicatedWorkspace {
+  /**
+   * Is this workspace selected by user, and showing corresponding webview?
+   */
+  active: boolean;
+  id: string;
+  /**
+   * Display name for this wiki workspace
+   */
+  name: string;
+  /**
+   * You can drag workspaces to reorder them
+   */
+  order: number;
+  /**
+   * If this workspace represents a page (like help, guide, agent), this field indicates the page type.
+   * If null or undefined, this is a regular wiki workspace.
+   */
+  pageType?: PageType | null;
+  /**
+   * workspace icon's path in file system
+   */
+  picturePath: string | null;
+}
+
 /**
  * A workspace is basically a TiddlyWiki instance, it can be a local/online wiki (depends on git related config). Can be a mainWiki that starts a a TiddlyWiki instance or subwiki that link to a main wiki.
  *
  * New value added here can be init in `sanitizeWorkspace`
  */
-export interface IWorkspace {
-  /**
-   * Is this workspace selected by user, and showing corresponding webview?
-   */
-  active: boolean;
+export interface IWikiWorkspace extends IDedicatedWorkspace {
   authToken?: string;
   /**
    * When this workspace is a local workspace, we can still use local git to backup
@@ -54,7 +77,6 @@ export interface IWorkspace {
     tlsCert?: string;
     tlsKey?: string;
   };
-  id: string;
   /**
    * Is this workspace a subwiki that link to a main wiki, and doesn't have its own webview?
    */
@@ -76,17 +98,9 @@ export interface IWorkspace {
    */
   mainWikiToLink: string | null;
   /**
-   * Display name for this wiki workspace
+   * For wiki workspaces, pageType is restricted to wiki type or null for regular wiki workspaces
    */
-  name: string;
-  /**
-   * You can drag workspaces to reorder them
-   */
-  order: number;
-  /**
-   * workspace icon's path in file system
-   */
-  picturePath: string | null;
+  pageType?: PageType.wiki | null;
   /**
    * Localhost tiddlywiki server port
    */
@@ -136,6 +150,21 @@ export interface IWorkspace {
    */
   wikiFolderLocation: string;
 }
+export type IWorkspace = IWikiWorkspace | IDedicatedWorkspace;
+
+/**
+ * Type guard to check if a workspace is a wiki workspace
+ */
+export function isWikiWorkspace(workspace: IWorkspace): workspace is IWikiWorkspace {
+  return 'wikiFolderLocation' in workspace;
+}
+
+/**
+ * Type guard to check if a workspace is a dedicated workspace (like help, guide, agent pages)
+ */
+export function isDedicatedWorkspace(workspace: IWorkspace): workspace is IDedicatedWorkspace {
+  return !isWikiWorkspace(workspace);
+}
 
 export interface IWorkspaceMetaData {
   badgeCount?: number;
@@ -153,17 +182,17 @@ export interface IWorkspaceMetaData {
   isRestarting?: boolean;
 }
 
-export interface IWorkspaceWithMetadata extends IWorkspace {
+export type IWorkspaceWithMetadata = IWorkspace & {
   metadata: IWorkspaceMetaData;
-}
+};
 export type IWorkspacesWithMetadata = Record<string, IWorkspaceWithMetadata>;
 
 /**
  * Ignore some field that will assign default value in workspaceService.create, these field don't require to be filled in AddWorkspace form
  */
-export type INewWorkspaceConfig = SetOptional<
-  Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order' | 'lastUrl' | 'syncOnInterval' | 'syncOnStartup'>,
-  'homeUrl' | 'transparentBackground' | 'picturePath' | 'disableNotifications' | 'disableAudio' | 'hibernateWhenUnused' | 'subWikiFolderName' | 'userName'
+export type INewWikiWorkspaceConfig = SetOptional<
+  Omit<IWikiWorkspace, 'active' | 'hibernated' | 'id' | 'lastUrl' | 'syncOnInterval' | 'syncOnStartup'>,
+  'homeUrl' | 'transparentBackground' | 'picturePath' | 'disableNotifications' | 'disableAudio' | 'hibernateWhenUnused' | 'subWikiFolderName' | 'userName' | 'order'
 >;
 
 /**
@@ -172,8 +201,14 @@ export type INewWorkspaceConfig = SetOptional<
 export interface IWorkspaceService {
   /** Enter a state that no workspace is active (show welcome page) */
   clearActiveWorkspace(oldActiveWorkspaceID: string | undefined): Promise<void>;
+  /**
+   * Check if a workspace exists by id
+   * @param id workspace id to check
+   * @returns true if workspace exists, false otherwise
+   */
+  exists(id: string): Promise<boolean>;
   countWorkspaces(): Promise<number>;
-  create(newWorkspaceConfig: INewWorkspaceConfig): Promise<IWorkspace>;
+  create(newWorkspaceConfig: INewWikiWorkspaceConfig): Promise<IWorkspace>;
   get(id: string): Promise<IWorkspace | undefined>;
   get$(id: string): Observable<IWorkspace | undefined>;
   /**
@@ -207,6 +242,10 @@ export interface IWorkspaceService {
   getWorkspaces(): Promise<Record<string, IWorkspace>>;
   getWorkspacesAsList(): Promise<IWorkspace[]>;
   getWorkspacesWithMetadata(): IWorkspacesWithMetadata;
+  /**
+   * Initialize default page workspaces on first startup
+   */
+  initializeDefaultPageWorkspaces(): Promise<void>;
   /**
    * Open a tiddler in the workspace, open workspace's tag by default.
    */
@@ -249,6 +288,7 @@ export const WorkspaceServiceIPCDescriptor = {
     getWorkspaces: ProxyPropertyType.Function,
     getWorkspacesAsList: ProxyPropertyType.Function,
     getWorkspacesWithMetadata: ProxyPropertyType.Function,
+    initializeDefaultPageWorkspaces: ProxyPropertyType.Function,
     openWorkspaceTiddler: ProxyPropertyType.Function,
     remove: ProxyPropertyType.Function,
     removeWorkspacePicture: ProxyPropertyType.Function,

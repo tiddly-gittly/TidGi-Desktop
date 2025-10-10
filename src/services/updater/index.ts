@@ -1,36 +1,29 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { shell } from 'electron';
 import i18next from 'i18next';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import fetch from 'node-fetch';
 import { BehaviorSubject } from 'rxjs';
 import semver from 'semver';
 
-import { lazyInject } from '@services/container';
-import { IContextService } from '@services/context/interface';
+import { container } from '@services/container';
+import type { IContextService } from '@services/context/interface';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
-import { IPreferenceService } from '@services/preferences/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IGithubReleaseData, IUpdaterMetaData, IUpdaterService, IUpdaterStatus } from './interface';
+import type { IGithubReleaseData, IUpdaterMetaData, IUpdaterService } from './interface';
+import { IUpdaterStatus } from './interface';
 
 // TODO: use electron-forge 's auto update solution， maybe see https://headspring.com/2020/09/24/building-signing-and-publishing-electron-forge-applications-for-windows/
 @injectable()
 export class Updater implements IUpdaterService {
-  @lazyInject(serviceIdentifier.MenuService)
-  private readonly menuService!: IMenuService;
-
-  @lazyInject(serviceIdentifier.Context)
-  private readonly contextService!: IContextService;
-
-  @lazyInject(serviceIdentifier.Preference)
-  private readonly preferenceService!: IPreferenceService;
-
   private updaterMetaData = {} as IUpdaterMetaData;
   public updaterMetaData$: BehaviorSubject<IUpdaterMetaData>;
 
-  public constructor() {
+  constructor(
+    @inject(serviceIdentifier.Context) private readonly contextService: IContextService,
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+  ) {
     this.updaterMetaData$ = new BehaviorSubject<IUpdaterMetaData>(this.updaterMetaData);
   }
 
@@ -44,13 +37,15 @@ export class Updater implements IUpdaterService {
       ...newUpdaterMetaData,
     };
     this.updateUpdaterSubject();
-    void this.menuService.buildMenu();
+    const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+    void menuService.buildMenu();
   }
 
   public async checkForUpdates(): Promise<void> {
     logger.debug('Checking for updates...');
     this.setMetaData({ status: IUpdaterStatus.checkingForUpdate });
-    await this.menuService.insertMenu('TidGi', [
+    const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+    await menuService.insertMenu('TidGi', [
       {
         id: 'update',
         label: () => i18next.t('Updater.CheckingForUpdate'),
@@ -75,8 +70,12 @@ export class Updater implements IUpdaterService {
       latestReleasePageUrl = latestReleaseData.html_url;
     } catch (fetchError) {
       logger.error('Fetching latest release failed', { fetchError });
-      this.setMetaData({ status: IUpdaterStatus.checkingFailed, info: { errorMessage: (fetchError as Error).message } });
-      await this.menuService.insertMenu('TidGi', [
+      this.setMetaData({
+        status: 'error' as IUpdaterStatus,
+        info: { errorMessage: (fetchError as Error).message },
+      });
+      const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+      await menuService.insertMenu('TidGi', [
         {
           id: 'update',
           label: () => i18next.t('Updater.CheckingFailed'),
@@ -96,7 +95,8 @@ export class Updater implements IUpdaterService {
     logger.debug('Compare version', { currentVersion, isLatestRelease: hasNewRelease });
     if (hasNewRelease) {
       this.setMetaData({ status: IUpdaterStatus.updateAvailable, info: { version: latestVersion, latestReleasePageUrl } });
-      await this.menuService.insertMenu('TidGi', [
+      const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+      await menuService.insertMenu('TidGi', [
         {
           id: 'update',
           label: () => i18next.t('Updater.UpdateAvailable'),
@@ -107,7 +107,8 @@ export class Updater implements IUpdaterService {
       ]);
     } else {
       this.setMetaData({ status: IUpdaterStatus.updateNotAvailable, info: { version: latestVersion } });
-      await this.menuService.insertMenu('TidGi', [
+      const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+      await menuService.insertMenu('TidGi', [
         {
           id: 'update',
           label: () => i18next.t('Updater.UpdateNotAvailable'),

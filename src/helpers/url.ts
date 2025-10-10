@@ -1,5 +1,5 @@
 export function extractDomain(fullUrl: string | undefined): string | undefined {
-  const matches = /^([a-z\-]+):\/\/([^#/?]+)(?:[#/?]|$)/i.exec(fullUrl ?? '');
+  const matches = /^([-a-z]+):\/\/([^#/?]+)(?:[#/?]|$)/i.exec(fullUrl ?? '');
   const domain = matches === null ? undefined : matches[1];
   // https://stackoverflow.com/a/9928725
   return typeof domain === 'string' ? domain.replace(/^(www\.)/, '') : undefined;
@@ -9,7 +9,7 @@ export function extractDomain(fullUrl: string | undefined): string | undefined {
  * https://stackoverflow.com/a/14645182
  */
 export function isSubdomain(url: string): boolean {
-  const regex = /^([a-z]+:\/{2})?((?:[\w-]+\.){2}\w+)$/;
+  const regex = /^([a-z]+:\/\/)?((?:[\w-]+\.){2}\w+)$/;
   return regex.exec(url) === null;
 }
 

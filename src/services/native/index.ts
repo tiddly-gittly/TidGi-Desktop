@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/require-await */
 import { app, dialog, ipcMain, MessageBoxOptions, shell } from 'electron';
 import fs from 'fs-extra';
 import { inject, injectable } from 'inversify';
@@ -9,29 +7,25 @@ import { Observable } from 'rxjs';
 import { NativeChannel } from '@/constants/channels';
 import { ZX_FOLDER } from '@/constants/paths';
 import { githubDesktopUrl } from '@/constants/urls';
-import { lazyInject } from '@services/container';
+import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWikiService, ZxWorkerControlActions } from '@services/wiki/interface';
-import { IZxFileInput } from '@services/wiki/wikiWorker';
+import type { IWikiService } from '@services/wiki/interface';
+import { ZxWorkerControlActions } from '@services/wiki/interface';
+import type { IZxFileInput } from '@services/wiki/wikiWorker';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import i18next from 'i18next';
 import { ZxNotInitializedError } from './error';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
-import { INativeService, IPickDirectoryOptions } from './interface';
+import type { INativeService, IPickDirectoryOptions } from './interface';
 import { reportErrorToGithubWithTemplates } from './reportError';
 
 @injectable()
 export class NativeService implements INativeService {
-  @lazyInject(serviceIdentifier.Wiki)
-  private readonly wikiService!: IWikiService;
-
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
-
   constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {
     this.setupIpcHandlers();
   }
@@ -66,37 +60,62 @@ export class NativeService implements INativeService {
   }
 
   public async openURI(uri: string, showItemInFolder = false): Promise<void> {
-    logger.debug(`NativeService.open() Opening ${uri}`, { showItemInFolder });
-    showItemInFolder ? shell.showItemInFolder(uri) : await shell.openExternal(uri);
+    logger.debug('open called', {
+      function: 'open',
+      uri,
+      showItemInFolder,
+    });
+    if (showItemInFolder) {
+      shell.showItemInFolder(uri);
+    } else {
+      await shell.openExternal(uri);
+    }
   }
 
   public async openPath(filePath: string, showItemInFolder?: boolean): Promise<void> {
     if (!filePath.trim()) {
       return;
     }
-    logger.debug(`NativeService.openPath() Opening ${filePath}`);
+    logger.debug('openPath called', {
+      function: 'openPath',
+      filePath,
+    });
     // TODO: add a switch that tell user these are dangerous features, use at own risk.
     if (path.isAbsolute(filePath)) {
-      showItemInFolder ? shell.showItemInFolder(filePath) : await shell.openPath(filePath);
+      if (showItemInFolder) {
+        shell.showItemInFolder(filePath);
+      } else {
+        await shell.openPath(filePath);
+      }
     } else {
-      const activeWorkspace = this.workspaceService.getActiveWorkspaceSync();
-      if (activeWorkspace?.wikiFolderLocation !== undefined) {
+      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+      const activeWorkspace = workspaceService.getActiveWorkspaceSync();
+      if (activeWorkspace && isWikiWorkspace(activeWorkspace) && activeWorkspace.wikiFolderLocation !== undefined) {
         const absolutePath = path.resolve(path.join(activeWorkspace.wikiFolderLocation, filePath));
-        showItemInFolder ? shell.showItemInFolder(absolutePath) : await shell.openPath(absolutePath);
+        if (showItemInFolder) {
+          shell.showItemInFolder(absolutePath);
+        } else {
+          await shell.openPath(absolutePath);
+        }
       }
     }
   }
 
   public async copyPath(fromFilePath: string, toFilePath: string, options?: { fileToDir?: boolean }): Promise<false | string> {
     if (!fromFilePath.trim() || !toFilePath.trim()) {
-      logger.error('NativeService.copyPath() fromFilePath or toFilePath is empty', { fromFilePath, toFilePath });
+      logger.error('fromFilePath or toFilePath is empty', { fromFilePath, toFilePath, function: 'copyPath' });
       return false;
     }
     if (!(await fs.exists(fromFilePath))) {
-      logger.error('NativeService.copyPath() fromFilePath not exists', { fromFilePath, toFilePath });
+      logger.error('fromFilePath not exists', { fromFilePath, toFilePath, function: 'copyPath' });
       return false;
     }
-    logger.debug(`NativeService.openPath() copy from ${fromFilePath} to ${toFilePath}`, options);
+    logger.debug('copyPath called', {
+      function: 'copyPath',
+      fromFilePath,
+      toFilePath,
+      options,
+    });
     if (options?.fileToDir === true) {
       await fs.ensureDir(toFilePath);
       const fileName = path.basename(fromFilePath);
@@ -110,14 +129,19 @@ export class NativeService implements INativeService {
 
   public async movePath(fromFilePath: string, toFilePath: string, options?: { fileToDir?: boolean }): Promise<false | string> {
     if (!fromFilePath.trim() || !toFilePath.trim()) {
-      logger.error('NativeService.movePath() fromFilePath or toFilePath is empty', { fromFilePath, toFilePath });
+      logger.error('fromFilePath or toFilePath is empty', { fromFilePath, toFilePath, function: 'movePath' });
       return false;
     }
     if (!(await fs.exists(fromFilePath))) {
-      logger.error('NativeService.movePath() fromFilePath not exists', { fromFilePath, toFilePath });
+      logger.error('fromFilePath not exists', { fromFilePath, toFilePath, function: 'movePath' });
       return false;
     }
-    logger.debug(`NativeService.movePath() move from ${fromFilePath} to ${toFilePath}`, options);
+    logger.debug('movePath called', {
+      function: 'movePath',
+      fromFilePath,
+      toFilePath,
+      options,
+    });
     try {
       if (options?.fileToDir === true) {
         const folderPath = path.dirname(toFilePath);
@@ -126,13 +150,15 @@ export class NativeService implements INativeService {
       await fs.move(fromFilePath, toFilePath);
       return toFilePath;
     } catch (error) {
-      logger.error('NativeService.movePath() failed', { error });
+      logger.error('movePath failed', { error, function: 'movePath' });
       return false;
     }
   }
 
   public executeZxScript$(zxWorkerArguments: IZxFileInput, workspaceID?: string): Observable<string> {
-    const zxWorker = this.wikiService.getWorker(workspaceID ?? this.workspaceService.getActiveWorkspaceSync()?.id ?? '');
+    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const zxWorker = wikiService.getWorker(workspaceID ?? workspaceService.getActiveWorkspaceSync()?.id ?? '');
     if (zxWorker === undefined) {
       const error = new ZxNotInitializedError();
       return new Observable<string>((observer) => {
@@ -250,8 +276,9 @@ ${message.message}
 
   public async getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string> {
     let replacedUrl = await getLocalHostUrlWithActualIP(urlToReplace);
-    const workspace = await this.workspaceService.get(workspaceID);
-    if (workspace !== undefined) {
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspace = await workspaceService.get(workspaceID);
+    if (workspace !== undefined && isWikiWorkspace(workspace)) {
       replacedUrl = replaceUrlPortWithSettingPort(replacedUrl, workspace.port);
       replacedUrl = getUrlWithCorrectProtocol(workspace, replacedUrl);
     }
@@ -278,6 +305,35 @@ ${message.message}
     }
   }
 
+  public async moveToTrash(filePath: string): Promise<boolean> {
+    if (!filePath?.trim?.()) {
+      logger.error('filePath is empty', { filePath, function: 'moveToTrash' });
+      return false;
+    }
+    logger.debug('moveToTrash called', {
+      function: 'moveToTrash',
+      filePath,
+    });
+    try {
+      await shell.trashItem(filePath);
+      return true;
+    } catch {
+      logger.debug('failed with original path, trying with decoded path', { function: 'moveToTrash' });
+      try {
+        const decodedPath = decodeURIComponent(filePath);
+        logger.debug('moveToTrash retry with decoded path', {
+          function: 'moveToTrash',
+          decodedPath,
+        });
+        await shell.trashItem(decodedPath);
+        return true;
+      } catch (error) {
+        logger.error('failed with decoded path', { error, filePath, function: 'moveToTrash' });
+      }
+      return false;
+    }
+  }
+
   public formatFileUrlToAbsolutePath(urlWithFileProtocol: string): string {
     logger.info('getting url', { url: urlWithFileProtocol, function: 'formatFileUrlToAbsolutePath' });
     let pathname = '';
@@ -299,14 +355,19 @@ ${message.message}
     }
     logger.info('handle file:// or open:// This url will open file in-wiki', { hostname, pathname, filePath, function: 'formatFileUrlToAbsolutePath' });
     let fileExists = fs.existsSync(filePath);
-    logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { filePath, function: 'formatFileUrlToAbsolutePath' });
+    logger.info('file exists (decodeURI)', {
+      function: 'formatFileUrlToAbsolutePath',
+      filePath,
+      exists: fileExists,
+    });
     if (fileExists) {
       return filePath;
     }
     logger.info(`try find file relative to workspace folder`, { filePath, function: 'formatFileUrlToAbsolutePath' });
-    const workspace = this.workspaceService.getActiveWorkspaceSync();
-    if (workspace === undefined) {
-      logger.error(`No active workspace, abort. Try loading filePath as-is.`, { filePath, function: 'formatFileUrlToAbsolutePath' });
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspace = workspaceService.getActiveWorkspaceSync();
+    if (workspace === undefined || !isWikiWorkspace(workspace)) {
+      logger.error(`No active workspace or not a wiki workspace, abort. Try loading filePath as-is.`, { filePath, function: 'formatFileUrlToAbsolutePath' });
       return filePath;
     }
     // try concat workspace path + file path to get relative path

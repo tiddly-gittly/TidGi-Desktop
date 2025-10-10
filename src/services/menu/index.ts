@@ -1,17 +1,14 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable @typescript-eslint/require-await */
 import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService } from '@services/auth/interface';
-import { lazyInject } from '@services/container';
+import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
 import type { IGitService } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
-import type { IPagesService } from '@services/pages/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { ISyncService } from '@services/sync/interface';
+import type { ISyncService } from '@services/sync/interface';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
@@ -19,9 +16,10 @@ import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { app, ContextMenuParams, Menu, MenuItem, MenuItemConstructorOptions, shell, WebContents } from 'electron';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { compact, debounce, drop, remove, reverse, take } from 'lodash';
 import ContextMenuBuilder from './contextMenu/contextMenuBuilder';
 import { IpcSafeMenuItem, mainMenuItemProxy } from './contextMenu/rendererMenuItemProxy';
@@ -32,44 +30,15 @@ import { loadDefaultMenuTemplate } from './loadDefaultMenuTemplate';
 
 @injectable()
 export class MenuService implements IMenuService {
-  @lazyInject(serviceIdentifier.Authentication)
-  private readonly authService!: IAuthenticationService;
-
-  @lazyInject(serviceIdentifier.Context)
-  private readonly contextService!: IContextService;
-
-  @lazyInject(serviceIdentifier.Git)
-  private readonly gitService!: IGitService;
-
-  @lazyInject(serviceIdentifier.Pages)
-  private readonly pagesService!: IPagesService;
-
-  @lazyInject(serviceIdentifier.NativeService)
-  private readonly nativeService!: INativeService;
-
-  @lazyInject(serviceIdentifier.Preference)
-  private readonly preferenceService!: IPreferenceService;
-
-  @lazyInject(serviceIdentifier.View)
-  private readonly viewService!: IViewService;
-
-  @lazyInject(serviceIdentifier.Wiki)
-  private readonly wikiService!: IWikiService;
-
-  @lazyInject(serviceIdentifier.WikiGitWorkspace)
-  private readonly wikiGitWorkspaceService!: IWikiGitWorkspaceService;
-
-  @lazyInject(serviceIdentifier.Window)
-  private readonly windowService!: IWindowService;
-
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
-
-  @lazyInject(serviceIdentifier.WorkspaceView)
-  private readonly workspaceViewService!: IWorkspaceViewService;
-
-  @lazyInject(serviceIdentifier.Sync)
-  private readonly syncService!: ISyncService;
+  constructor(
+    @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
+    @inject(serviceIdentifier.Context) private readonly contextService: IContextService,
+    @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+  ) {
+    // debounce so build menu won't be call very frequently on app launch, where every services are registering menu items
+    this.buildMenu = debounce(this.buildMenu.bind(this), 50) as () => Promise<void>;
+  }
 
   #menuTemplate?: DeferredMenuItemConstructorOptions[];
   private get menuTemplate(): DeferredMenuItemConstructorOptions[] {
@@ -116,12 +85,23 @@ export class MenuService implements IMenuService {
       const menu = Menu.buildFromTemplate(latestTemplate);
       Menu.setApplicationMenu(menu);
     } catch (error) {
-      logger.error(`buildMenu() failed (error): ${(error as Error).message} ${(error as Error).stack ?? ''}`);
+      logger.error('buildMenu failed', {
+        message: (error as Error).message,
+        stack: (error as Error).stack ?? '',
+        function: 'buildMenu',
+      });
       try {
         const index = Number(/Error processing argument at index (\d+)/.exec((error as Error).message)?.[1]);
-        logger.error(`buildMenu() failed (example index ${index}): \n${Number.isFinite(index) ? JSON.stringify(latestTemplate[index]) : JSON.stringify(latestTemplate)}`);
+        logger.error('buildMenu failed example', {
+          index,
+          example: Number.isFinite(index) ? JSON.stringify(latestTemplate[index]) : JSON.stringify(latestTemplate),
+          function: 'buildMenu',
+        });
       } catch (error) {
-        logger.error(error);
+        logger.error('buildMenu failed fallback', {
+          error,
+          function: 'buildMenu',
+        });
       }
     }
   }
@@ -149,14 +129,9 @@ export class MenuService implements IMenuService {
     );
   }
 
-  constructor() {
-    // debounce so build menu won't be call very frequently on app launch, where every services are registering menu items
-    this.buildMenu = debounce(this.buildMenu.bind(this), 50) as () => Promise<void>;
-  }
-
   /** Register `on('context-menu', openContextMenuForWindow)` for a window, return an unregister function */
   public async initContextMenuForWindowWebContents(webContents: WebContents): Promise<() => void> {
-    const openContextMenuForWindow = async (event: Electron.Event, parameters: ContextMenuParams): Promise<void> => {
+    const openContextMenuForWindow = async (_event: Electron.Event, parameters: ContextMenuParams): Promise<void> => {
       await this.buildContextMenuAndPopup([], parameters, webContents);
     };
     webContents.on('context-menu', openContextMenuForWindow);
@@ -276,8 +251,22 @@ export class MenuService implements IMenuService {
     webContentsOrWindowName: WindowNames | WebContents = WindowNames.main,
   ): Promise<void> {
     let webContents: WebContents;
+    // Get services via container to avoid lazyInject issues
+    const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+    const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
+    const contextService = container.get<IContextService>(serviceIdentifier.Context);
+    const gitService = container.get<IGitService>(serviceIdentifier.Git);
+    const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
+    const viewService = container.get<IViewService>(serviceIdentifier.View);
+    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+    const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);
+    const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+    const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
+
     if (typeof webContentsOrWindowName === 'string') {
-      const windowToPopMenu = this.windowService.get(webContentsOrWindowName);
+      const windowToPopMenu = windowService.get(webContentsOrWindowName);
       const webContentsOfWindowToPopMenu = windowToPopMenu?.webContents;
       if (windowToPopMenu === undefined || webContentsOfWindowToPopMenu === undefined) {
         return;
@@ -286,24 +275,23 @@ export class MenuService implements IMenuService {
     } else {
       webContents = webContentsOrWindowName;
     }
-    const sidebar = await this.preferenceService.get('sidebar');
+    const sidebar = await preferenceService.get('sidebar');
     const contextMenuBuilder = new ContextMenuBuilder(webContents);
     const menu = contextMenuBuilder.buildMenuForElement(info);
-    const workspaces = await this.workspaceService.getWorkspacesAsList();
-    const activeWorkspace = await this.workspaceService.getActiveWorkspace();
+    const workspaces = await workspaceService.getWorkspacesAsList();
+    const activeWorkspace = await workspaceService.getActiveWorkspace();
     const services = {
-      auth: this.authService,
-      context: this.contextService,
-      git: this.gitService,
-      native: this.nativeService,
-      pages: this.pagesService,
-      view: this.viewService,
-      wiki: this.wikiService,
-      wikiGitWorkspace: this.wikiGitWorkspaceService,
-      window: this.windowService,
-      workspace: this.workspaceService,
-      workspaceView: this.workspaceViewService,
-      sync: this.syncService,
+      auth: authService,
+      context: contextService,
+      git: gitService,
+      native: nativeService,
+      view: viewService,
+      wiki: wikiService,
+      wikiGitWorkspace: wikiGitWorkspaceService,
+      window: windowService,
+      workspace: workspaceService,
+      workspaceView: workspaceViewService,
+      sync: syncService,
     };
     // workspace menus
     menu.append(new MenuItem({ type: 'separator' }));
@@ -322,10 +310,10 @@ export class MenuService implements IMenuService {
         new MenuItem({
           label: i18n.t('ContextMenu.RestartService'),
           click: async () => {
-            const workspace = await this.workspaceService.getActiveWorkspace();
+            const workspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();
             if (workspace !== undefined) {
-              await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
-              await this.workspaceViewService.realignActiveWorkspace(workspace.id);
+              await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).restartWorkspaceViewService(workspace.id);
+              await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).realignActiveWorkspace(workspace.id);
             }
           },
         }),
@@ -336,8 +324,8 @@ export class MenuService implements IMenuService {
           click: async () => {
             webContents.reload();
             const rememberLastPageVisited = await this.preferenceService.get('rememberLastPageVisited');
-            // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-            if (rememberLastPageVisited && activeWorkspace?.lastUrl) {
+
+            if (rememberLastPageVisited && activeWorkspace && isWikiWorkspace(activeWorkspace) && activeWorkspace.lastUrl) {
               await webContents.loadURL(activeWorkspace.lastUrl);
             }
           },
@@ -366,7 +354,7 @@ export class MenuService implements IMenuService {
             {
               label: i18n.t('WorkspaceSelector.Add'),
               click: async () => {
-                await this.windowService.open(WindowNames.addWorkspace);
+                await container.get<IWindowService>(serviceIdentifier.Window).open(WindowNames.addWorkspace);
               },
             },
           ],
@@ -377,10 +365,12 @@ export class MenuService implements IMenuService {
           label: i18n.t('WorkspaceSelector.OpenWorkspaceMenuName'),
           submenu: workspaces.map((workspace) => ({
             label: i18n.t('WorkspaceSelector.OpenWorkspaceTagTiddler', {
-              tagName: workspace.tagName ?? (workspace.isSubWiki ? workspace.name : `${workspace.name} ${i18n.t('WorkspaceSelector.DefaultTiddlers')}`),
+              tagName: isWikiWorkspace(workspace)
+                ? (workspace.tagName ?? (workspace.isSubWiki ? workspace.name : `${workspace.name} ${i18n.t('WorkspaceSelector.DefaultTiddlers')}`))
+                : workspace.name,
             }),
             click: async () => {
-              await this.workspaceService.openWorkspaceTiddler(workspace);
+              await container.get<IWorkspaceService>(serviceIdentifier.Workspace).openWorkspaceTiddler(workspace);
             },
           })),
         }),
@@ -392,7 +382,7 @@ export class MenuService implements IMenuService {
         enabled: workspaces.length > 0,
         click: () => {
           if (activeWorkspace !== undefined) {
-            void this.wikiService.wikiOperationInBrowser(WikiChannel.dispatchEvent, activeWorkspace.id, ['open-command-palette']);
+            void container.get<IWikiService>(serviceIdentifier.Wiki).wikiOperationInBrowser(WikiChannel.dispatchEvent, activeWorkspace.id, ['open-command-palette']);
           }
         },
       }),
@@ -421,7 +411,7 @@ export class MenuService implements IMenuService {
         label: sidebar ? i18n.t('Preference.HideSideBar') : i18n.t('Preference.ShowSideBar'),
         click: async () => {
           await this.preferenceService.set('sidebar', !sidebar);
-          await this.workspaceViewService.realignActiveWorkspace();
+          await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).realignActiveWorkspace();
         },
       }),
     );
@@ -433,14 +423,14 @@ export class MenuService implements IMenuService {
           {
             label: i18n.t('ContextMenu.Preferences'),
             click: async () => {
-              await this.windowService.open(WindowNames.preferences);
+              await container.get<IWindowService>(serviceIdentifier.Window).open(WindowNames.preferences);
             },
           },
           { type: 'separator' },
           {
             label: i18n.t('ContextMenu.About'),
             click: async () => {
-              await this.windowService.open(WindowNames.about);
+              await container.get<IWindowService>(serviceIdentifier.Window).open(WindowNames.about);
             },
           },
           {
@@ -469,7 +459,7 @@ export class MenuService implements IMenuService {
     // add custom menu items
     if (template !== undefined && Array.isArray(template) && template.length > 0) {
       // if our menu item config is pass from the renderer process, we reconstruct callback from the ipc.on channel id.
-      const menuItems = (typeof template?.[0]?.click === 'string'
+      const menuItems = (typeof template[0]?.click === 'string'
         ? mainMenuItemProxy(template as IpcSafeMenuItem[], webContents)
         : template) as unknown as MenuItemConstructorOptions[];
       menu.insert(0, new MenuItem({ type: 'separator' }));

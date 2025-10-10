@@ -1,3 +1,2 @@
-export function authTokenIsProvided(providedToken: string | undefined): providedToken is string {
-  return typeof providedToken === 'string' && providedToken.length > 0;
-}
+/* eslint-disable unicorn/prevent-abbreviations */
+export * from './wikiWorkerUtilities';

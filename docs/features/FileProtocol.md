@@ -59,25 +59,25 @@ async function loadFileContentHandler(request: Request) {
   }
 }
 
-  try {
+try {
+  /**
+   * This function is called for every view, but seems register on two different view will throw error, so we check if it's already registered.
+   */
+  if (!view.webContents.session.protocol.isProtocolHandled('filefix')) {
     /**
-     * This function is called for every view, but seems register on two different view will throw error, so we check if it's already registered.
+     * Electron's bug, file protocol is not handle-able, won't get any callback. But things like `filea://` `filefix` works.
      */
-    if (!view.webContents.session.protocol.isProtocolHandled('filefix')) {
-      /**
-       * Electron's bug, file protocol is not handle-able, won't get any callback. But things like `filea://` `filefix` works.
-       */
-      view.webContents.session.protocol.handle('filefix', loadFileContentHandler);
-    }
-    /**
-     * Alternative `open://` protocol for a backup if `file://` doesn't work for some reason.
-     */
-    if (!view.webContents.session.protocol.isProtocolHandled('open')) {
-      view.webContents.session.protocol.handle('open', loadFileContentHandler);
-    }
-  } catch (error) {
-    logger.error(`Failed to register protocol: ${(error as Error).message}`, { function: 'handleViewFileContentLoading' });
+    view.webContents.session.protocol.handle('filefix', loadFileContentHandler);
   }
+  /**
+   * Alternative `open://` protocol for a backup if `file://` doesn't work for some reason.
+   */
+  if (!view.webContents.session.protocol.isProtocolHandled('open')) {
+    view.webContents.session.protocol.handle('open', loadFileContentHandler);
+  }
+} catch (error) {
+  logger.error(`Failed to register protocol: ${(error as Error).message}`, { function: 'handleViewFileContentLoading' });
+}
 ```
 
 #### `protocol.handle('file')`
@@ -85,37 +85,37 @@ async function loadFileContentHandler(request: Request) {
 `protocol.handle('file'`'s handler won't receive anything.
 
 ```ts
-  public async handleFileProtocol(request: GlobalRequest): Promise<GlobalResponse> {
-    logger.info('handleFileProtocol() getting url', { url: request.url });
-    const { pathname } = new URL(request.url);
-    logger.info('handleFileProtocol() handle file:// or open:// This url will open file in-wiki', { pathname });
-    let fileExists = fs.existsSync(pathname);
-    logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { pathname });
-    if (fileExists) {
-      return await net.fetch(pathname);
-    }
-    logger.info(`try find file relative to workspace folder`);
-    const workspace = await this.workspaceService.getActiveWorkspace();
-    if (workspace === undefined) {
-      logger.error(`No active workspace, abort. Try loading pathname as-is.`, { pathname });
-      return await net.fetch(pathname);
-    }
-    const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, pathname);
-    fileExists = fs.existsSync(filePathInWorkspaceFolder);
-    logger.info(`This file ${fileExists ? '' : 'not '}exists in workspace folder.`, { filePathInWorkspaceFolder });
-    if (fileExists) {
-      return await net.fetch(filePathInWorkspaceFolder);
-    }
-    logger.info(`try find file relative to TidGi App folder`);
-    // on production, __dirname will be in .webpack/main
-    const inTidGiAppAbsoluteFilePath = path.join(app.getAppPath(), '.webpack', 'renderer', pathname);
-    fileExists = fs.existsSync(inTidGiAppAbsoluteFilePath);
-    if (fileExists) {
-      return await net.fetch(inTidGiAppAbsoluteFilePath);
-    }
-    logger.warn(`This url can't be loaded in-wiki. Try loading url as-is.`, { url: request.url });
-    return await net.fetch(request.url);
+public async handleFileProtocol(request: GlobalRequest): Promise<GlobalResponse> {
+  logger.info('handleFileProtocol() getting url', { url: request.url });
+  const { pathname } = new URL(request.url);
+  logger.info('handleFileProtocol() handle file:// or open:// This url will open file in-wiki', { pathname });
+  let fileExists = fs.existsSync(pathname);
+  logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { pathname });
+  if (fileExists) {
+    return await net.fetch(pathname);
   }
+  logger.info(`try find file relative to workspace folder`);
+  const workspace = await this.workspaceService.getActiveWorkspace();
+  if (workspace === undefined) {
+    logger.error(`No active workspace, abort. Try loading pathname as-is.`, { pathname });
+    return await net.fetch(pathname);
+  }
+  const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, pathname);
+  fileExists = fs.existsSync(filePathInWorkspaceFolder);
+  logger.info(`This file ${fileExists ? '' : 'not '}exists in workspace folder.`, { filePathInWorkspaceFolder });
+  if (fileExists) {
+    return await net.fetch(filePathInWorkspaceFolder);
+  }
+  logger.info(`try find file relative to TidGi App folder`);
+  // on production, __dirname will be in .webpack/main
+  const inTidGiAppAbsoluteFilePath = path.join(app.getAppPath(), '.webpack', 'renderer', pathname);
+  fileExists = fs.existsSync(inTidGiAppAbsoluteFilePath);
+  if (fileExists) {
+    return await net.fetch(inTidGiAppAbsoluteFilePath);
+  }
+  logger.warn(`This url can't be loaded in-wiki. Try loading url as-is.`, { url: request.url });
+  return await net.fetch(request.url);
+}
 ```
 
 if

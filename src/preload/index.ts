@@ -2,7 +2,6 @@ import 'reflect-metadata';
 import { ipcRenderer } from 'electron';
 import type { IServicesWithOnlyObservables, IServicesWithoutObservables } from 'electron-ipc-cat/common';
 
-import './common/test';
 import './common/i18n';
 import './common/log';
 import './common/remote';
@@ -10,7 +9,8 @@ import * as service from './common/services';
 import './common/exportServices';
 import 'electron-ipc-cat/fixContextIsolation';
 import { ViewChannel } from '@/constants/channels';
-import { IPossibleWindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import type { IPossibleWindowMeta } from '@services/windows/WindowProperties';
+import { WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData } from './common/browserViewMetaData';
 import './common/authRedirect';
 import './view';

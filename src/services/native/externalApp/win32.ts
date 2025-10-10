@@ -1,13 +1,11 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable unicorn/import-style */
 import * as Path from 'path';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { enumerateValues, HKEY, RegistryValue, RegistryValueType } from 'registry-js';
 
 import { logger } from '@services/libs/log';
 import { pathExists } from 'fs-extra';
-import { IFoundEditor } from './found-editor';
+import type { IFoundEditor } from './found-editor';
 
 interface IWindowsAppInformation {
   displayName: string;

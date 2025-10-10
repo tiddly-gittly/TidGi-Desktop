@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable n/no-callback-literal */
 import { session } from 'electron';
 
 import { isMac } from '@/helpers/system';
-import { IPreferences } from '@services/preferences/interface';
-import { IWorkspace } from '@services/workspaces/interface';
+import type { IPreferences } from '@services/preferences/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
 
 export function setupViewSession(workspace: IWorkspace, preferences: IPreferences, getPreferences: () => IPreferences) {
   const { shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = preferences;
@@ -40,11 +38,11 @@ function assignFakeUserAgent(details: Electron.OnBeforeSendHeadersListenerDetail
     return;
   }
   // When request is from wiki BrowserView, which is loading with tidgi:// protocol, and use ipc-syncadaptor to load content.
-  if (!(!details.frame?.url || details.frame?.url.startsWith('tidgi://'))) {
+  if (!(!details.frame?.url || details.frame.url.startsWith('tidgi://'))) {
     return;
   }
   const url = new URL(details.url);
-  if (preferences.disableAntiAntiLeechForUrls?.length > 0 && preferences.disableAntiAntiLeechForUrls.some(line => details.url.includes(line))) {
+  if (preferences.disableAntiAntiLeechForUrls.length > 0 && preferences.disableAntiAntiLeechForUrls.some(line => details.url.includes(line))) {
     return;
   }
   details.requestHeaders.Origin = url.origin;

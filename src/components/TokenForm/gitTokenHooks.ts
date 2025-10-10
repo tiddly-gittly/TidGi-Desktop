@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 /* eslint-disable @typescript-eslint/await-thenable */
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
+
 import { SupportedStorageServices } from '@services/types';
 import { truncate } from 'lodash';
 import { useCallback, useEffect } from 'react';
@@ -11,7 +11,7 @@ export function useAuth(storageService: SupportedStorageServices): [() => Promis
       await window.service.auth.set(`${storageService}-token`, '');
       // await window.service.window.clearStorageData();
     } catch (error) {
-      console.error(error);
+      void window.service.native.log('error', 'TokenForm: auth operation failed', { function: 'useAuth', error: String(error) });
     }
   }, [storageService]);
 
@@ -66,7 +66,7 @@ export function useGetGithubUserInfoOnLoad(): void {
           await window.service.auth.setUserInfos(userInfo);
         }
       } catch (error) {
-        console.error(error);
+        void window.service.native.log('error', 'TokenForm: get github user info failed', { function: 'useGetGithubUserInfoOnLoad', error: String(error) });
       }
     });
   }, []);

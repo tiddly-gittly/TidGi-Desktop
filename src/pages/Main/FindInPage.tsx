@@ -1,11 +1,11 @@
 import Button from '@mui/material/Button';
+import { styled } from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
 
-const Root = styled.div`
+const Root = styled('div')`
   display: flex;
   align-items: center;
   padding: 0 4px;
@@ -14,7 +14,7 @@ const Root = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
   width: 100%;
 `;
-const InfoContainer = styled.div`
+const InfoContainer = styled('div')`
   flex: 1;
   padding: 0 12px;
 `;
@@ -60,7 +60,6 @@ export default function FindInPage(): React.JSX.Element | null {
     };
   }, [handleCloseFindInPage, handleOpenFindInPage, updateFindInPageMatches]);
   if (!open) {
-    // eslint-disable-next-line unicorn/no-null
     return null;
   }
   return (

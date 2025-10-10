@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prefer-native-coercion-functions */
 /**
  * Worker environment is not part of electron environment, so don't import "@/constants/paths" here, as its process.resourcesPath will become undefined and throw Errors.
  *
@@ -7,11 +6,11 @@
 import { uninstall } from '@/helpers/installV8Cache';
 import './preload';
 import 'source-map-support/register';
+import { handleWorkerMessages } from '@services/libs/workerAdapter';
 import { mkdtemp } from 'fs-extra';
 import { tmpdir } from 'os';
 import path from 'path';
 import { Observable } from 'rxjs';
-import { expose } from 'threads/worker';
 
 import { IZxWorkerMessage, ZxWorkerControlActions } from '../interface';
 import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts, type IVariableContextList } from '../plugin/zxPlugin';
@@ -62,7 +61,7 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
            */
           const variableContextList: IVariableContextList = [];
           for (const [index, scriptInContext] of scriptsInDifferentContext.entries()) {
-            switch (scriptInContext?.context) {
+            switch (scriptInContext.context) {
               case 'zx': {
                 await executeScriptInZxScriptContext({ zxPath, filePathToExecute }, observer, scriptInContext.content, variableContextList, index);
                 break;
@@ -97,7 +96,7 @@ function beforeExit(): void {
 
 const wikiWorker = {
   startNodeJSWiki,
-  getTiddlerFileMetadata: (tiddlerTitle: string) => getWikiInstance()?.boot?.files?.[tiddlerTitle],
+  getTiddlerFileMetadata: (tiddlerTitle: string) => getWikiInstance()?.boot.files[tiddlerTitle],
   executeZxScript,
   extractWikiHTML,
   packetHTMLFromWikiFolder,
@@ -106,4 +105,6 @@ const wikiWorker = {
   ...ipcServerRoutesMethods,
 };
 export type WikiWorker = typeof wikiWorker;
-expose(wikiWorker);
+
+// Initialize worker message handling
+handleWorkerMessages(wikiWorker);

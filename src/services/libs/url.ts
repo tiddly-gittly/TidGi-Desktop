@@ -1,6 +1,7 @@
 import { defaultServerIP } from '@/constants/urls';
 import { internalIpV4 } from '@/helpers/ip';
-import { IWorkspace } from '@services/workspaces/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import { logger } from './log';
 
 /**
@@ -15,8 +16,7 @@ export async function getLocalHostUrlWithActualIP(originalUrl: string): Promise<
 }
 
 export function getUrlWithCorrectProtocol(workspace: IWorkspace, originalUrl: string): string {
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  const isHttps = Boolean(workspace.https?.enabled && workspace.https?.tlsKey && workspace.https?.tlsCert);
+  const isHttps = isWikiWorkspace(workspace) && Boolean(workspace.https?.enabled && workspace.https.tlsKey && workspace.https.tlsCert);
   try {
     const parsedUrl = new URL(originalUrl);
     if (isHttps) {

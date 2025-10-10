@@ -1,22 +1,22 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/promise-function-async */
-import { Helmet } from 'react-helmet';
+import { Helmet } from '@dr.pogodin/react-helmet';
+import { styled, Theme } from '@mui/material/styles';
+import { lazy } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DefaultTheme, styled } from 'styled-components';
 import is, { isNot } from 'typescript-styled-is';
 import { Route, Switch } from 'wouter';
 
-import { PageType } from '@services/pages/interface';
+import { PageType } from '@/constants/pageTypes';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { Guide } from '../Guide';
-import { Help } from '../Help';
-import { WikiBackground } from '../WikiBackground';
 import FindInPage from './FindInPage';
 import { SideBar } from './Sidebar';
 import { useInitialPage } from './useInitialPage';
 
-const OuterRoot = styled.div`
+import { subPages } from './subPages';
+
+const WikiBackground = lazy(() => import('../WikiBackground'));
+
+const OuterRoot = styled('div')`
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -24,7 +24,7 @@ const OuterRoot = styled.div`
   overflow: hidden;
 `;
 
-const Root = styled.div`
+const Root = styled('div')`
   display: flex;
   flex-direction: row;
   flex: 1;
@@ -42,19 +42,17 @@ const Root = styled.div`
   }
 `;
 
-const ContentRoot = styled.div<{ $sidebar: boolean }>`
+const ContentRoot = styled('div')<{ $sidebar: boolean }>`
   flex: 1;
   display: flex;
   flex-direction: column;
 
-  padding-right: 20px;
   ${is('$sidebar')`
-    width: calc(100% - ${({ theme }: { theme: DefaultTheme }) => theme.sidebar.width}px);
-    max-width: calc(100% - ${({ theme }: { theme: DefaultTheme }) => theme.sidebar.width}px);
+    width: calc(100% - ${({ theme }: { theme: Theme }) => theme.sidebar.width}px);
+    max-width: calc(100% - ${({ theme }: { theme: Theme }) => theme.sidebar.width}px);
   `}
   ${isNot('$sidebar')`
     width: 100%;
-    padding-left: 20px;
   `}
   height: 100%;
 `;
@@ -65,12 +63,9 @@ export default function Main(): React.JSX.Element {
   const { t } = useTranslation();
   useInitialPage();
   const preferences = usePreferenceObservable();
-  if (preferences === undefined) return <div>{t('Loading')}</div>;
-  const { sidebar, sidebarOnMenubar } = preferences;
-  const showSidebar = windowName === WindowNames.menuBar ? sidebarOnMenubar : sidebar;
+  const showSidebar = (windowName === WindowNames.menuBar ? preferences?.sidebarOnMenubar : preferences?.sidebar) ?? true;
   return (
     <OuterRoot>
-      <div id='test' data-usage='For spectron automating testing' />
       <Helmet>
         <title>{t('Menu.TidGi')}</title>
       </Helmet>
@@ -79,11 +74,12 @@ export default function Main(): React.JSX.Element {
         <ContentRoot $sidebar={showSidebar}>
           <FindInPage />
           <Switch>
-            <Route path={`/${WindowNames.main}/${PageType.wiki}/:id/`} component={WikiBackground} />
-            <Route path={`/${WindowNames.main}/${PageType.guide}/`} component={Guide} />
-            <Route path={`/${WindowNames.main}/${PageType.help}/`} component={Help} />
-            <Route path={`/${WindowNames.main}`} component={Guide} />
-            <Route component={Guide} />
+            <Route path={`/${PageType.wiki}/:id/`} component={WikiBackground} />
+            <Route path={`/${PageType.agent}`} component={subPages.Agent} />
+            <Route path={`/${PageType.guide}`} component={subPages.Guide} />
+            <Route path={`/${PageType.help}`} component={subPages.Help} />
+            <Route path='/' component={subPages.Guide} />
+            <Route component={subPages.Guide} />
           </Switch>
         </ContentRoot>
       </Root>

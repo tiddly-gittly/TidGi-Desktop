@@ -8,29 +8,9 @@
 
 </div>
 
-<hr>
-
-# TOC
-
-<a href="https://github.com/tiddly-gittly/TidGi-Desktop/">🇬🇧 English</a> | 🇨🇳 简体中文
-
-<!-- toc -->
-
-- [产品截图及试用](#产品截图及试用)
-- [相关介绍](#相关介绍)
-- [关于「太记-桌面版」](#%E5%85%B3%E4%BA%8E%E5%A4%AA%E8%AE%B0-%E6%A1%8C%E9%9D%A2%E7%89%88)
-- [下载](#下载)
-- [移动端应用](#移动端应用)
-- [数据隐私保护](#数据隐私保护)
-- [与竞品的差异](#与竞品的差异)
-- [为什么使用 Github 存储?](#为什么使用Github存储)
-- [参与开发](#参与开发)
-- [鸣谢](#鸣谢)
-  - [点个星星 ⭐️ 吧](#点个星星%EF%B8%8F吧)
-
-<!-- tocstop -->
-
----
+|                                                                       [最新版下载按钮](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                       |
+| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
 
 ## 产品截图及试用
 
@@ -45,21 +25,21 @@
 
 <details>
 
-|                     加载 NodeJS 版维基                      |
-| :---------------------------------------------------------: |
+|                   加载 NodeJS 版维基                    |
+| :-----------------------------------------------------: |
 | ![Screenshot of main-window](../images/main-window.png) |
 
-|                          新建本地维基                           |                            下载云端维基                             |
-| :-------------------------------------------------------------: | :-----------------------------------------------------------------: |
+|                        新建本地维基                         |                          下载云端维基                           |
+| :---------------------------------------------------------: | :-------------------------------------------------------------: |
 | ![Screenshot of add-workspace](../images/add-workspace.png) | ![Screenshot of clone-workspace](../images/clone-workspace.png) |
 
 |                                                                 多语言翻译和设置界面                                                                 |
 | :--------------------------------------------------------------------------------------------------------------------------------------------------: |
-|                                              ![Screenshot of preference](../images/preference.png)                                               |
+|                                                ![Screenshot of preference](../images/preference.png)                                                 |
 |                                                                    交互式代码执行                                                                    |
 | ![Screen recording of zx-script in tiddlywiki](https://user-images.githubusercontent.com/3746270/133831500-ae91164c-7948-4de4-9a81-7017ed3b65c9.gif) |
 |                                                                      社区插件源                                                                      |
-|                                      ![Screenshot of add-workspace](../images/community-plugin-library.png)                                      |
+|                                        ![Screenshot of add-workspace](../images/community-plugin-library.png)                                        |
 
 </details>
 

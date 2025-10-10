@@ -13,8 +13,9 @@ export function getErrorMessageI18NDict() {
   };
 }
 
-export function translateMessage(message: string): string {
-  switch (message) {
+export function translateMessage(message: GitStep | string): string {
+  // Narrow to GitStep for exhaustive known cases, fallback to original string
+  switch (message as GitStep) {
     case GitStep.StartGitInitialization: {
       return i18n.t('Log.StartGitInitialization');
     }

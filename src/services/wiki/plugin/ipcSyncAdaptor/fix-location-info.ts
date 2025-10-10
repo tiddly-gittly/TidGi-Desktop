@@ -1,9 +1,7 @@
-/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 
 function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: string; title: string }>) => void) {
   const mapBoolean = function(value: boolean) {
@@ -12,8 +10,8 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
   const infoTiddlerFields: Array<{ text: string; title: string }> = [];
   // Basics
   if (!$tw.browser || typeof window === 'undefined') return infoTiddlerFields;
-  const isInTidGi = typeof document !== 'undefined' && document?.location?.protocol?.startsWith('tidgi');
-  const workspaceID = (window.meta?.() as WindowMeta[WindowNames.view] | undefined)?.workspaceID;
+  const isInTidGi = typeof document !== 'undefined' && document.location.protocol.startsWith('tidgi');
+  const workspaceID = (window.meta() as WindowMeta[WindowNames.view] | undefined)?.workspaceID;
   infoTiddlerFields.push({ title: '$:/info/tidgi', text: mapBoolean(isInTidGi) });
   if (isInTidGi && workspaceID) {
     infoTiddlerFields.push({ title: '$:/info/tidgi/workspaceID', text: workspaceID });
@@ -22,6 +20,10 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
      */
     void window.service.workspace.get(workspaceID).then(async (workspace) => {
       if (workspace === undefined) return;
+
+      // Only wiki workspaces have these properties
+      if (!isWikiWorkspace(workspace)) return;
+
       const {
         https = { enabled: false },
         port,

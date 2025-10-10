@@ -1,15 +1,11 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/promise-function-async */
 import { Typography } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
-import { styled } from 'styled-components';
 
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
-import { useState } from 'react';
-import { useAutoCreateFirstWorkspace } from '../Guide/useAutoCreateFirstWorkspace';
 import { ViewLoadErrorMessages, WikiErrorMessages } from './ErrorMessage';
 
-const InnerContentRoot = styled.div`
+const InnerContentRoot = styled('div')`
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -20,19 +16,16 @@ const InnerContentRoot = styled.div`
   height: 100%;
 `;
 
-export function WikiBackground(): React.JSX.Element {
+export default function WikiBackground(): React.JSX.Element {
   const { t } = useTranslation();
   const workspacesList = useWorkspacesListObservable();
-
   const activeWorkspaceMetadata = workspacesList
     ?.map((workspace) => ({ active: workspace.active, ...workspace.metadata }))
-    ?.find((workspace) => workspace.active);
+    .find((workspace) => workspace.active);
   const activeWorkspace = workspacesList?.find((workspace) => workspace.active);
   const hasError = typeof activeWorkspaceMetadata?.didFailLoadErrorMessage === 'string' &&
-    activeWorkspaceMetadata?.didFailLoadErrorMessage.length > 0 &&
-    activeWorkspaceMetadata?.isLoading === false;
-  const [wikiCreationMessage, wikiCreationMessageSetter] = useState('');
-  useAutoCreateFirstWorkspace(workspacesList, wikiCreationMessageSetter);
+    activeWorkspaceMetadata.didFailLoadErrorMessage.length > 0 &&
+    activeWorkspaceMetadata.isLoading === false;
   return (
     <>
       <InnerContentRoot>
@@ -41,7 +34,6 @@ export function WikiBackground(): React.JSX.Element {
           <ViewLoadErrorMessages activeWorkspace={activeWorkspace} activeWorkspaceMetadata={activeWorkspaceMetadata} />
         )}
         {Array.isArray(workspacesList) && workspacesList.length > 0 && activeWorkspaceMetadata?.isLoading === true && <Typography color='textSecondary'>{t('Loading')}</Typography>}
-        {wikiCreationMessage && <Typography color='textSecondary'>{wikiCreationMessage}</Typography>}
       </InnerContentRoot>
     </>
   );

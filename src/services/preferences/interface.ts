@@ -18,6 +18,10 @@ export interface IPreferences {
    */
   disableAntiAntiLeechForUrls: string[];
   downloadPath: string;
+  /**
+   * Enable debug logging for external API requests and responses
+   */
+  externalAPIDebug: boolean;
   hibernateUnusedWorkspacesAtLaunch: boolean;
   hideMenuBar: boolean;
   ignoreCertificateErrors: boolean;
@@ -67,10 +71,13 @@ export enum PreferenceSections {
   notifications = 'notifications',
   performance = 'performance',
   privacy = 'privacy',
+  search = 'search',
   sync = 'sync',
   system = 'system',
   updates = 'updates',
   wiki = 'wiki',
+  externalAPI = 'externalAPI',
+  aiAgent = 'aiAgent',
 }
 
 /**

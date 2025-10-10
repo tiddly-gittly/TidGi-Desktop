@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import BadgeRaw from '@mui/material/Badge';
+import { keyframes, styled } from '@mui/material/styles';
 import Promise from 'bluebird';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { keyframes, styled } from 'styled-components';
 import is from 'typescript-styled-is';
 
 import { getAssetsFileUrl } from '@/helpers/url';
@@ -13,7 +12,8 @@ import defaultIcon from '../../../images/default-icon.png';
 
 Promise.config({ cancellation: true });
 
-const Root = styled.div<{ $active?: boolean; $hibernated?: boolean; $workspaceClickedLoading?: boolean }>`
+// Prevent transient props (starting with $) from being forwarded to the DOM
+const Root = styled('div', { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<{ $active?: boolean; $hibernated?: boolean; $workspaceClickedLoading?: boolean }>`
   height: fit-content;
   width: auto;
   padding: 10px 0;
@@ -56,7 +56,7 @@ interface IAvatarProps {
   $large?: boolean;
   $transparent?: boolean;
 }
-const Avatar = styled.div<IAvatarProps>`
+const Avatar = styled('div', { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<IAvatarProps>`
   height: 36px;
   width: 36px;
   border-radius: 4px;
@@ -92,7 +92,7 @@ const Avatar = styled.div<IAvatarProps>`
   `}
 `;
 
-const AvatarPicture = styled.img<{ $large?: boolean }>`
+const AvatarPicture = styled('img', { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<{ $large?: boolean }>`
   height: calc(36px - 2px);
   width: calc(36px - 2px);
   ${is('$large')`
@@ -101,7 +101,7 @@ const AvatarPicture = styled.img<{ $large?: boolean }>`
   `}
 `;
 
-const ShortcutText = styled.p<{ $active?: boolean }>`
+const ShortcutText = styled('p', { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<{ $active?: boolean }>`
   margin-top: 2px;
   margin-bottom: 0;
   padding: 0;
@@ -122,10 +122,12 @@ const Badge = styled(BadgeRaw)`
 interface Props {
   active?: boolean;
   badgeCount?: number;
+  customIcon?: React.ReactElement;
   hibernated?: boolean;
   id: string;
   index?: number;
   onClick?: () => void;
+  pageType?: string;
   picturePath?: string | null;
   restarting?: boolean;
   showSideBarIcon: boolean;
@@ -139,10 +141,12 @@ export function WorkspaceSelectorBase({
   active = false,
   restarting: loading = false,
   badgeCount = 0,
+  customIcon,
   hibernated = false,
   showSideBarIcon = true,
   id,
   index = 0,
+  pageType,
   picturePath,
   showSidebarTexts = true,
   transparentBackground = false,
@@ -151,12 +155,6 @@ export function WorkspaceSelectorBase({
   onClick = () => {},
 }: Props): React.JSX.Element {
   const { t } = useTranslation();
-  const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
-  useEffect(() => {
-    void window.service.native.path('basename', workspaceName).then((baseName) => {
-      shortWorkspaceNameSetter(baseName ?? (id + t('WorkspaceSelector.BadWorkspacePath')));
-    });
-  }, [workspaceName, t, id]);
   let icon = showSideBarIcon && (
     <Avatar
       $large={!showSidebarTexts}
@@ -173,7 +171,7 @@ export function WorkspaceSelectorBase({
           ? (
             '※'
           )
-          : <AvatarPicture alt='Icon' $large={!showSidebarTexts} src={picturePath ? getAssetsFileUrl(picturePath) : defaultIcon} draggable={false} />)}
+          : customIcon || <AvatarPicture alt='Icon' $large={!showSidebarTexts} src={picturePath ? getAssetsFileUrl(picturePath) : defaultIcon} draggable={false} />)}
     </Avatar>
   );
   if (loading) {
@@ -191,13 +189,14 @@ export function WorkspaceSelectorBase({
       $active={active}
       $workspaceClickedLoading={workspaceClickedLoading}
       onClick={workspaceClickedLoading ? () => {} : onClick}
+      data-testid={pageType ? `workspace-${pageType}` : `workspace-${id}`}
     >
       <Badge color='secondary' badgeContent={badgeCount} max={99}>
         {icon}
       </Badge>
       {showSidebarTexts && (
         <ShortcutText $active={active}>
-          {id === 'add' ? t('WorkspaceSelector.Add') : (id === 'guide' ? t('WorkspaceSelector.Guide') : shortWorkspaceName)}
+          {workspaceName}
         </ShortcutText>
       )}
     </Root>
