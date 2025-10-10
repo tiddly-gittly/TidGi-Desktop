@@ -1,10 +1,15 @@
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
+import { analyzer } from 'vite-bundle-analyzer';
 
-// https://vitejs.dev/config
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    ...(process.env.ANALYZE === 'true'
+      ? [analyzer({ analyzerMode: 'static', openAnalyzer: false, fileName: 'bundle-analyzer-renderer' })]
+      : []),
+    react(),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

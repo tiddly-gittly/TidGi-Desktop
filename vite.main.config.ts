@@ -3,9 +3,10 @@ import fs from 'fs-extra';
 import path from 'path';
 import swc from 'unplugin-swc';
 import { defineConfig } from 'vite';
+import { analyzer } from 'vite-bundle-analyzer';
 
 // Dynamically read TypeORM's optional peer dependencies to avoid hardcoding
-const typeormPackageJson = fs.readJsonSync(path.resolve(__dirname, 'node_modules/typeorm/package.json'));
+const typeormPackageJson = fs.readJsonSync(path.resolve(__dirname, 'node_modules/typeorm/package.json')) as Record<string, unknown>;
 const typeormOptionalDepNames = Object.keys(typeormPackageJson.peerDependenciesMeta || {}).filter(
   // Keep better-sqlite3 as we use it; external others
   (dep) => dep !== 'better-sqlite3',
@@ -17,13 +18,15 @@ const typeormOptionalDepsRegex = typeormOptionalDepNames.map(
   (dep) => new RegExp(`^${dep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(/.*)?$`),
 );
 
-// https://vitejs.dev/config
 export default defineConfig({
   define: {
     // Preserve NODE_ENV at build time so it's available at runtime
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
   },
   plugins: [
+    ...(process.env.ANALYZE === 'true'
+      ? [analyzer({ analyzerMode: 'static', openAnalyzer: false, fileName: 'bundle-analyzer-main' })]
+      : []),
     workerPlugin(),
     swc.vite({
       jsc: {

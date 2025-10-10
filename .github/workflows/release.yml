@@ -105,7 +105,28 @@ jobs:
           # Common environment variables
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+          # Only need 1 set of analyzer reports (linux x64)
+          ANALYZE: ${{ matrix.platform == 'linux' && matrix.arch == 'x64' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Upload analyzer reports and packaged apps as workflow artifacts (only linux x64)
+      - name: Upload analyzer reports
+        if: matrix.platform == 'linux' && matrix.arch == 'x64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: analyzer-reports-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            .vite/renderer/bundle-analyzer-renderer.html
+            .vite/main/bundle-analyzer-main.html
+          if-no-files-found: ignore
+
+      - name: Upload packaged apps
+        if: (matrix.platform == 'mac' && matrix.arch == 'x64') || (matrix.platform == 'win' && matrix.arch == 'x64')
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-apps-${{ matrix.platform }}-${{ matrix.arch }}
+          path: out/make/**
+          if-no-files-found: ignore
 
       # Create Release (upload artifacts from all builds)
       - name: Create Release
@@ -119,19 +140,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Bundle Stats (avoid duplicates by running only once per platform)
-      - name: Get Renderer Bundle Stats
-        if: matrix.arch == 'x64'
-        uses: vio/bundle-stats-action@v1
-        with:
-          id: renderer-${{ matrix.platform }}
-          webpack-stats-path: "out/webpack-stats-renderer.json"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get Main Bundle Stats
-        if: matrix.arch == 'x64'
-        uses: vio/bundle-stats-action@v1
-        with:
-          id: main-${{ matrix.platform }}
-          webpack-stats-path: "out/webpack-stats-main.json"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      # Bundle analysis is handled by Vite configs when ANALYZE=true
