@@ -57,9 +57,9 @@ export interface IPreferences {
    */
   menubarFixedWorkspaceId: string | undefined;
   /**
-   * Shortcut key to toggle menubar window
+   * Keyboard shortcuts configuration stored as serviceIdentifier.methodName -> shortcut
    */
-  menubarShortcutKey: string;
+  keyboardShortcuts: Record<string, string>;
   syncBeforeShutdown: boolean;
   syncDebounceInterval: number;
   /**

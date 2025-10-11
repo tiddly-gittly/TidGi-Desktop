@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain, MessageBoxOptions, shell } from 'electron';
+import { app, dialog, globalShortcut, ipcMain, MessageBoxOptions, shell } from 'electron';
 import fs from 'fs-extra';
 import { inject, injectable } from 'inversify';
 import path from 'path';
@@ -10,6 +10,7 @@ import { githubDesktopUrl } from '@/constants/urls';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { ZxWorkerControlActions } from '@services/wiki/interface';
@@ -22,18 +23,84 @@ import i18next from 'i18next';
 import { ZxNotInitializedError } from './error';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
 import type { INativeService, IPickDirectoryOptions } from './interface';
+import { registerShortcutByKey } from './keyboardShortcutHelpers';
 import { reportErrorToGithubWithTemplates } from './reportError';
 
 @injectable()
 export class NativeService implements INativeService {
-  constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {
+  constructor(
+    @inject(serviceIdentifier.Window) private readonly windowService: IWindowService,
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+  ) {
     this.setupIpcHandlers();
   }
 
-  setupIpcHandlers(): void {
+  public setupIpcHandlers(): void {
     ipcMain.on(NativeChannel.showElectronMessageBoxSync, (event, options: MessageBoxOptions, windowName: WindowNames = WindowNames.main) => {
       event.returnValue = this.showElectronMessageBoxSync(options, windowName);
     });
+  }
+
+  public async initialize(): Promise<void> {
+    await this.initializeKeyboardShortcuts();
+  }
+
+  private async initializeKeyboardShortcuts(): Promise<void> {
+    const shortcuts = await this.getKeyboardShortcuts();
+    logger.debug('shortcuts from preferences', { shortcuts, function: 'initializeKeyboardShortcuts' });
+    // Register all saved shortcuts
+    for (const [key, shortcut] of Object.entries(shortcuts)) {
+      if (shortcut && shortcut.trim() !== '') {
+        try {
+          await registerShortcutByKey(key, shortcut);
+        } catch (error) {
+          logger.error(`Failed to register shortcut ${key}: ${shortcut}`, { error });
+        }
+      }
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public async registerKeyboardShortcut<T>(serviceName: keyof typeof serviceIdentifier, methodName: keyof T, shortcut: string): Promise<void> {
+    try {
+      const key = `${String(serviceName)}.${String(methodName)}`;
+      // Save to preferences
+      const preferenceService = container.get<IPreferenceService>('Preference');
+      const shortcuts = await this.getKeyboardShortcuts();
+      shortcuts[key] = shortcut;
+      await preferenceService.set('keyboardShortcuts', shortcuts);
+      // Register the shortcut
+      await registerShortcutByKey(key, shortcut);
+      logger.info('Successfully registered new keyboard shortcut', { key, shortcut });
+    } catch (error) {
+      logger.error('Failed to register keyboard shortcut', { error, serviceIdentifier: serviceName, methodName, shortcut });
+      throw error;
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public async unregisterKeyboardShortcut<T>(serviceName: keyof typeof serviceIdentifier, methodName: keyof T): Promise<void> {
+    try {
+      const key = `${String(serviceName)}.${String(methodName)}`;
+
+      // Remove from preferences
+      const preferenceService = container.get<IPreferenceService>('Preference');
+      const shortcuts = await this.getKeyboardShortcuts();
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete shortcuts[key];
+      await preferenceService.set('keyboardShortcuts', shortcuts);
+      // Unregister the shortcut
+      globalShortcut.unregister(key);
+      logger.info('Successfully unregistered keyboard shortcut', { key });
+    } catch (error) {
+      logger.error('Failed to unregister keyboard shortcut', { error, serviceIdentifier: serviceName, methodName });
+      throw error;
+    }
+  }
+
+  public async getKeyboardShortcuts(): Promise<Record<string, string>> {
+    const preferences = this.preferenceService.getPreferences();
+    return preferences.keyboardShortcuts || {};
   }
 
   public async openInEditor(filePath: string, editorName?: string): Promise<boolean> {

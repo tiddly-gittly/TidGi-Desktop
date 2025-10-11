@@ -2,6 +2,7 @@ import { MessageBoxOptions } from 'electron';
 import { Observable } from 'rxjs';
 
 import { NativeChannel } from '@/constants/channels';
+import serviceIdentifier from '@services/serviceIdentifier';
 import type { IZxFileInput } from '@services/wiki/wikiWorker';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
@@ -18,6 +19,33 @@ export interface IPickDirectoryOptions {
  * Wrap call to electron api, so we won't need remote module in renderer process
  */
 export interface INativeService {
+  /**
+   * Initialize the native service
+   * This should be called during app startup
+   */
+  initialize(): Promise<void>;
+  /**
+   * Register a keyboard shortcut and save it to preferences
+   * @param serviceName The service identifier name from serviceIdentifier
+   * @param methodName The method name to call when shortcut is triggered
+   * @param shortcut The keyboard shortcut string, e.g. "Ctrl+Shift+T"
+   * @template T The service interface type that contains the method, e.g. IWindowService
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  registerKeyboardShortcut<T>(serviceName: keyof typeof serviceIdentifier, methodName: keyof T, shortcut: string): Promise<void>;
+  /**
+   * Unregister a specific keyboard shortcut
+   * @param serviceName The service identifier name from serviceIdentifier
+   * @param methodName The method name
+   * @template T The service interface type that contains the method, e.g. IWindowService
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  unregisterKeyboardShortcut<T>(serviceName: keyof typeof serviceIdentifier, methodName: keyof T): Promise<void>;
+  /**
+   * Get all registered keyboard shortcuts from preferences, key is combination of service name and method name joined by '.'
+   * @returns A record where keys are formatted as 'serviceName.methodName' and values are the shortcut strings
+   */
+  getKeyboardShortcuts(): Promise<Record<string, string>>;
   /**
    * Copy a file or directory. The directory can have contents.
    * @param fromFilePath Note that if src is a directory it will copy everything inside of this directory, not the entire directory itself (see fs.extra issue #537).
@@ -91,6 +119,11 @@ export interface INativeService {
 export const NativeServiceIPCDescriptor = {
   channel: NativeChannel.name,
   properties: {
+    initialize: ProxyPropertyType.Function,
+    initializeKeyboardShortcuts: ProxyPropertyType.Function,
+    registerKeyboardShortcut: ProxyPropertyType.Function,
+    unregisterKeyboardShortcut: ProxyPropertyType.Function,
+    getKeyboardShortcuts: ProxyPropertyType.Function,
     copyPath: ProxyPropertyType.Function,
     executeZxScript$: ProxyPropertyType.Function$,
     formatFileUrlToAbsolutePath: ProxyPropertyType.Function,

@@ -55,6 +55,7 @@ export interface IWindowService {
   set(windowName: WindowNames, win: BrowserWindow | undefined): void;
   setWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;
   stopFindInPage(close?: boolean, windowName?: WindowNames): Promise<void>;
+  toggleMenubarWindow(): Promise<void>;
   updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;
 }
 export const WindowServiceIPCDescriptor = {
@@ -78,6 +79,7 @@ export const WindowServiceIPCDescriptor = {
     sendToAllWindows: ProxyPropertyType.Function,
     setWindowMeta: ProxyPropertyType.Function,
     stopFindInPage: ProxyPropertyType.Function,
+    toggleMenubarWindow: ProxyPropertyType.Function,
     updateWindowMeta: ProxyPropertyType.Function,
   },
 };

@@ -3,6 +3,7 @@ import { ListItem } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { Box, Divider, FormControl, InputLabel, List, ListItemText, MenuItem, Select, Switch, Typography } from '@mui/material';
 import { usePreferenceObservable } from '@services/preferences/hooks';
+import type { IWindowService } from '@services/windows/interface';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Paper, SectionTitle } from '../PreferenceComponents';
@@ -130,9 +131,13 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
               <Box sx={{ p: 2 }}>
                 <KeyboardShortcutRegister
                   label={t('Preference.MenubarShortcutKey')}
-                  value={preference.menubarShortcutKey || ''}
+                  value={preference.keyboardShortcuts?.['NativeService.toggleMenubarWindow'] || ''}
                   onChange={async (value) => {
-                    await window.service.preference.set('menubarShortcutKey', value);
+                    if (value && value.trim() !== '') {
+                      await window.service.native.registerKeyboardShortcut<IWindowService>('NativeService', 'toggleMenubarWindow', value);
+                    } else {
+                      await window.service.native.unregisterKeyboardShortcut<IWindowService>('NativeService', 'toggleMenubarWindow');
+                    }
                   }}
                 />
                 <Box sx={{ mt: 1 }}>

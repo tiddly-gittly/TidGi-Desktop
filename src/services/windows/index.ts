@@ -337,4 +337,24 @@ export class Window implements IWindowService {
       }
     }
   }
+
+  public async toggleMenubarWindow(): Promise<void> {
+    try {
+      const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+
+      const isOpen = await this.isMenubarOpen();
+      if (isOpen) {
+        await this.hide(WindowNames.menuBar);
+      } else {
+        const attachToMenubar = await preferenceService.get('attachToMenubar');
+        if (attachToMenubar) {
+          await this.open(WindowNames.menuBar);
+        } else {
+          logger.warn('Cannot open menubar window: attachToMenubar preference is disabled', { function: 'toggleMenubarWindow' });
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to open/hide menubar window', { error });
+    }
+  }
 }

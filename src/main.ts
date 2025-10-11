@@ -24,6 +24,7 @@ import type { IDeepLinkService } from '@services/deepLink/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
+import type { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IThemeService } from '@services/theme/interface';
 import type { IUpdaterService } from '@services/updater/interface';
@@ -77,6 +78,7 @@ const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.
 const gitService = container.get<IGitService>(serviceIdentifier.Git);
 const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
 const viewService = container.get<IViewService>(serviceIdentifier.View);
+const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 
 app.on('second-instance', async () => {
   // see also src/helpers/singleInstance.ts
@@ -131,6 +133,7 @@ const commonInit = async (): Promise<void> => {
     gitService.initialize(),
     themeService.initialize(),
     viewService.initialize(),
+    nativeService.initialize(),
   ]);
 
   initializeObservables();
