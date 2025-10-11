@@ -10,6 +10,7 @@ import LanguageIcon from '@mui/icons-material/Language';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import PhonelinkIcon from '@mui/icons-material/Phonelink';
 import PowerIcon from '@mui/icons-material/Power';
 import RouterIcon from '@mui/icons-material/Router';
 import SearchIcon from '@mui/icons-material/Search';
@@ -28,7 +29,7 @@ export type ISectionRecord<SectionTitleElement = HTMLSpanElement> = Record<
   {
     Icon: OverridableComponent<SvgIconTypeMap<unknown>>;
     hidden?: boolean;
-    ref: React.MutableRefObject<SectionTitleElement | null>;
+    ref: React.RefObject<SectionTitleElement | null>;
     text: string;
   }
 >;
@@ -48,6 +49,11 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
     [PreferenceSections.sync]: {
       text: t('Preference.Sync'),
       Icon: GitHubIcon,
+      ref: useRef<SectionTitleElement>(null),
+    },
+    [PreferenceSections.menubar]: {
+      text: t('Menu.TidGiMenuBar'),
+      Icon: PhonelinkIcon,
       ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.externalAPI]: {

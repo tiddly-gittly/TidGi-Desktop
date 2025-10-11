@@ -406,12 +406,22 @@ export class View implements IViewService {
   }
 
   public async setActiveViewForAllBrowserViews(workspaceID: string): Promise<void> {
-    await Promise.all([
-      this.setActiveView(workspaceID, WindowNames.main),
-      this.preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
-        return await (attachToMenubar && this.setActiveView(workspaceID, WindowNames.menuBar));
-      }),
+    // Set main window workspace
+    const mainWindowTask = this.setActiveView(workspaceID, WindowNames.main);
+    const [attachToMenubar, menubarSyncWorkspaceWithMainWindow, menubarFixedWorkspaceId] = await Promise.all([
+      this.preferenceService.get('attachToMenubar'),
+      this.preferenceService.get('menubarSyncWorkspaceWithMainWindow'),
+      this.preferenceService.get('menubarFixedWorkspaceId'),
     ]);
+
+    // For menubar window, decide which workspace to show based on preferences
+    let menubarTask = Promise.resolve();
+    if (attachToMenubar) {
+      const menubarWorkspaceId = menubarSyncWorkspaceWithMainWindow ? workspaceID : (menubarFixedWorkspaceId || workspaceID);
+      menubarTask = this.setActiveView(menubarWorkspaceId, WindowNames.menuBar);
+    }
+
+    await Promise.all([mainWindowTask, menubarTask]);
   }
 
   public async setActiveView(workspaceID: string, windowName: WindowNames): Promise<void> {

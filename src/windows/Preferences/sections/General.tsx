@@ -197,42 +197,6 @@ export function General(props: Required<ISectionProps>): React.JSX.Element {
                   <Switch
                     edge='end'
                     color='primary'
-                    checked={preference.attachToMenubar}
-                    onChange={async (event) => {
-                      await window.service.preference.set('attachToMenubar', event.target.checked);
-                      props.requestRestartCountDown();
-                    }}
-                  />
-                }
-              >
-                <ListItemText
-                  primary={platform === 'win32' ? t('Preference.AttachToTaskbar') : t('Preference.AttachToMenuBar')}
-                  secondary={platform === 'linux' ? undefined : t('Preference.AttachToMenuBarTip')}
-                />
-              </ListItem>
-              <ListItem
-                secondaryAction={
-                  <Switch
-                    edge='end'
-                    color='primary'
-                    checked={preference.sidebarOnMenubar}
-                    onChange={async (event) => {
-                      await window.service.preference.set('sidebarOnMenubar', event.target.checked);
-                    }}
-                  />
-                }
-              >
-                <ListItemText
-                  primary={platform === 'win32' ? t('Preference.AttachToTaskbarShowSidebar') : t('Preference.AttachToMenuBarShowSidebar')}
-                  secondary={platform === 'linux' ? undefined : t('Preference.AttachToMenuBarShowSidebarTip')}
-                />
-              </ListItem>
-              <Divider />
-              <ListItem
-                secondaryAction={
-                  <Switch
-                    edge='end'
-                    color='primary'
                     checked={preference.runOnBackground}
                     onChange={async (event) => {
                       await window.service.preference.set('runOnBackground', event.target.checked);
@@ -244,21 +208,6 @@ export function General(props: Required<ISectionProps>): React.JSX.Element {
                   primary={t('Preference.RunOnBackground')}
                   secondary={t('Preference.RunOnBackgroundDetail') + (platform === 'darwin' ? '' : t('Preference.RunOnBackgroundDetailNotMac'))}
                 />
-              </ListItem>
-              <ListItem
-                secondaryAction={
-                  <Switch
-                    edge='end'
-                    color='primary'
-                    checked={preference.menuBarAlwaysOnTop}
-                    onChange={async (event) => {
-                      await window.service.preference.set('menuBarAlwaysOnTop', event.target.checked);
-                      props.requestRestartCountDown();
-                    }}
-                  />
-                }
-              >
-                <ListItemText primary={t('Preference.MenubarAlwaysOnTop')} secondary={t('Preference.MenubarAlwaysOnTopDetail')} />
               </ListItem>
               {platform === 'darwin' && (
                 <>

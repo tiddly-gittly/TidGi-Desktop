@@ -48,6 +48,18 @@ export interface IPreferences {
   spellcheck: boolean;
   spellcheckLanguages: HunspellLanguages[];
   swipeToNavigate: boolean;
+  /**
+   * Whether menubar window should show the same workspace as main window
+   */
+  menubarSyncWorkspaceWithMainWindow: boolean;
+  /**
+   * The workspace ID that menubar window should always show when menubarSyncWorkspaceWithMainWindow is false
+   */
+  menubarFixedWorkspaceId: string | undefined;
+  /**
+   * Shortcut key to toggle menubar window
+   */
+  menubarShortcutKey: string;
   syncBeforeShutdown: boolean;
   syncDebounceInterval: number;
   /**
@@ -66,6 +78,7 @@ export enum PreferenceSections {
   friendLinks = 'friendLinks',
   general = 'general',
   languages = 'languages',
+  menubar = 'menubar',
   misc = 'misc',
   network = 'network',
   notifications = 'notifications',
