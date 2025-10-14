@@ -45,6 +45,20 @@ export const KeyboardShortcutRegister: React.FC<KeyboardShortcutRegisterProps> =
    * Handle keyboard events to update current shortcut combination
    */
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // Handle special keys for dialog control
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setDialogOpen(false);
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      onChange(currentKeyCombo);
+      setDialogOpen(false);
+      return;
+    }
+
     // Prevent default behavior to avoid page scrolling
     event.preventDefault();
 
@@ -76,7 +90,7 @@ export const KeyboardShortcutRegister: React.FC<KeyboardShortcutRegisterProps> =
 
     // Update current shortcut combination
     setCurrentKeyCombo(combo.join('+'));
-  }, []);
+  }, [onChange, currentKeyCombo]);
 
   /**
    * Open the dialog
@@ -131,6 +145,7 @@ export const KeyboardShortcutRegister: React.FC<KeyboardShortcutRegisterProps> =
         onClick={handleOpenDialog}
         disabled={disabled}
         fullWidth
+        data-testid='shortcut-register-button'
       >
         {label}: {formatShortcutText(value)}
       </Button>
@@ -140,14 +155,16 @@ export const KeyboardShortcutRegister: React.FC<KeyboardShortcutRegisterProps> =
         onClose={handleCloseDialog}
         maxWidth='sm'
         fullWidth
+        data-testid='shortcut-dialog'
       >
         <DialogTitle>{t('KeyboardShortcut.RegisterShortcut')}</DialogTitle>
-        <DialogContent>
+        <DialogContent data-testid='shortcut-dialog-content'>
           <Typography variant='body1' gutterBottom>
             {t('KeyboardShortcut.PressKeysPrompt', { feature: label })}
           </Typography>
 
           <Box
+            data-testid='shortcut-display'
             sx={{
               padding: 2,
               border: 1,
@@ -168,13 +185,13 @@ export const KeyboardShortcutRegister: React.FC<KeyboardShortcutRegisterProps> =
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClear} color='inherit'>
+          <Button onClick={handleClear} color='inherit' data-testid='shortcut-clear-button'>
             {t('KeyboardShortcut.Clear')}
           </Button>
-          <Button onClick={handleCloseDialog}>
+          <Button onClick={handleCloseDialog} data-testid='shortcut-cancel-button'>
             {t('Cancel')}
           </Button>
-          <Button onClick={handleConfirm} variant='contained' color={color}>
+          <Button onClick={handleConfirm} variant='contained' color={color} data-testid='shortcut-confirm-button'>
             {t('Confirm')}
           </Button>
         </DialogActions>
