@@ -33,7 +33,6 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
                 checked={preference.attachToMenubar}
                 onChange={async (event) => {
                   await window.service.preference.set('attachToMenubar', event.target.checked);
-                  props.requestRestartCountDown?.();
                 }}
               />
             }
@@ -75,7 +74,6 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
                     checked={preference.menuBarAlwaysOnTop}
                     onChange={async (event) => {
                       await window.service.preference.set('menuBarAlwaysOnTop', event.target.checked);
-                      props.requestRestartCountDown?.();
                     }}
                   />
                 }

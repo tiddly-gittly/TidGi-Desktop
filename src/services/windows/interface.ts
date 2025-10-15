@@ -57,6 +57,12 @@ export interface IWindowService {
   stopFindInPage(close?: boolean, windowName?: WindowNames): Promise<void>;
   toggleMenubarWindow(): Promise<void>;
   updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;
+  /** Enable menubar without restart - hot reload */
+  enableMenubarWindow(): Promise<void>;
+  /** Disable menubar without restart - hot reload */
+  disableMenubarWindow(): Promise<void>;
+  /** Update window properties without restart - hot reload */
+  updateWindowProperties(windowName: WindowNames, properties: { alwaysOnTop?: boolean }): Promise<void>;
 }
 export const WindowServiceIPCDescriptor = {
   channel: WindowChannel.name,
@@ -81,5 +87,8 @@ export const WindowServiceIPCDescriptor = {
     stopFindInPage: ProxyPropertyType.Function,
     toggleMenubarWindow: ProxyPropertyType.Function,
     updateWindowMeta: ProxyPropertyType.Function,
+    enableMenubarWindow: ProxyPropertyType.Function,
+    disableMenubarWindow: ProxyPropertyType.Function,
+    updateWindowProperties: ProxyPropertyType.Function,
   },
 };

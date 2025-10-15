@@ -87,15 +87,31 @@ export class Preference implements IPreferenceService {
       const notificationService = container.get<INotificationService>(serviceIdentifier.NotificationService);
       await notificationService.updatePauseNotificationsInfo();
     }
+
+    const windowService = container.get<IWindowService>(serviceIdentifier.Window);
     switch (key) {
+      case 'attachToMenubar': {
+        if (value) {
+          await windowService.enableMenubarWindow();
+        } else {
+          await windowService.disableMenubarWindow();
+        }
+        return;
+      }
+      case 'menuBarAlwaysOnTop': {
+        await windowService.updateWindowProperties(WindowNames.menuBar, { alwaysOnTop: value as IPreferences['menuBarAlwaysOnTop'] });
+        return;
+      }
       case 'themeSource': {
         nativeTheme.themeSource = value as IPreferences['themeSource'];
-        break;
+        return;
       }
       case 'language': {
         await requestChangeLanguage(value as string);
-        break;
+        return;
       }
+      default:
+        break;
     }
   }
 

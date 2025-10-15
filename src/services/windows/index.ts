@@ -344,17 +344,83 @@ export class Window implements IWindowService {
 
       const isOpen = await this.isMenubarOpen();
       if (isOpen) {
-        await this.hide(WindowNames.menuBar);
+        await this.disableMenubarWindow();
       } else {
         const attachToMenubar = await preferenceService.get('attachToMenubar');
         if (attachToMenubar) {
-          await this.open(WindowNames.menuBar);
+          await this.enableMenubarWindow();
         } else {
           logger.warn('Cannot open menubar window: attachToMenubar preference is disabled', { function: 'toggleMenubarWindow' });
         }
       }
     } catch (error) {
       logger.error('Failed to open/hide menubar window', { error });
+    }
+  }
+
+  public async enableMenubarWindow(): Promise<void> {
+    try {
+      // Check if menubar is already enabled
+      if (this.mainWindowMenuBar !== undefined) {
+        logger.debug('Menubar is already enabled');
+        return;
+      }
+
+      // Create menubar window
+      await this.open(WindowNames.menuBar);
+      logger.info('Menubar enabled successfully without restart');
+    } catch (error) {
+      logger.error('Failed to enable menubar', { error });
+      throw error;
+    }
+  }
+
+  public async disableMenubarWindow(): Promise<void> {
+    try {
+      // Check if menubar exists
+      if (this.mainWindowMenuBar === undefined) {
+        logger.debug('Menubar is already disabled');
+        return;
+      }
+
+      // Close menubar window and clean up
+      await this.close(WindowNames.menuBar);
+
+      // Clean up tray icon
+      if (this.mainWindowMenuBar.tray && !this.mainWindowMenuBar.tray.isDestroyed()) {
+        this.mainWindowMenuBar.tray.destroy();
+      }
+
+      this.mainWindowMenuBar = undefined;
+      logger.info('Menubar disabled successfully without restart');
+    } catch (error) {
+      logger.error('Failed to disable menubar', { error });
+      throw error;
+    }
+  }
+
+  public async updateWindowProperties(windowName: WindowNames, properties: { alwaysOnTop?: boolean }): Promise<void> {
+    try {
+      const window = this.get(windowName);
+      if (window === undefined) {
+        logger.warn(`Window ${windowName} not found for property update`);
+        return;
+      }
+
+      if (properties.alwaysOnTop !== undefined) {
+        window.setAlwaysOnTop(properties.alwaysOnTop);
+        logger.info(`Updated ${windowName} alwaysOnTop to ${properties.alwaysOnTop}`);
+      }
+
+      // Handle menubar specific properties
+      if (windowName === WindowNames.menuBar && this.mainWindowMenuBar?.window) {
+        if (properties.alwaysOnTop !== undefined) {
+          this.mainWindowMenuBar.window.setAlwaysOnTop(properties.alwaysOnTop);
+        }
+      }
+    } catch (error) {
+      logger.error(`Failed to update window properties for ${windowName}`, { error, properties });
+      throw error;
     }
   }
 }

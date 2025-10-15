@@ -122,11 +122,7 @@ const commonInit = async (): Promise<void> => {
   // handle workspace name + tiddler name in uri https://www.electronjs.org/docs/latest/tutorial/launch-app-from-url-in-another-app
   deepLinkService.initializeDeepLink('tidgi');
 
-  const attachToMenubar = await preferenceService.get('attachToMenubar');
-  await Promise.all([
-    windowService.open(WindowNames.main),
-    attachToMenubar ? windowService.open(WindowNames.menuBar) : Promise.resolve(),
-  ]);
+  await windowService.open(WindowNames.main);
 
   // Initialize services that depend on windows being created
   await Promise.all([
@@ -143,6 +139,10 @@ const commonInit = async (): Promise<void> => {
   await workspaceService.initializeDefaultPageWorkspaces();
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();
+  const attachToMenubar = await preferenceService.get('attachToMenubar');
+  if (attachToMenubar) {
+    await windowService.enableMenubarWindow();
+  }
 
   ipcMain.emit('request-update-pause-notifications-info');
   // Fix webview is not resized automatically

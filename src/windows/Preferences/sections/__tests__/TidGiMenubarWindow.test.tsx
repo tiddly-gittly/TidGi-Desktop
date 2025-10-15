@@ -160,7 +160,7 @@ describe('TidGiMenubarWindow Component', () => {
     it('should show loading state when preference is undefined', () => {
       // Create a fresh BehaviorSubject with undefined for this specific test
       const loadingPreferenceSubject = new BehaviorSubject<IPreferences | undefined>(undefined);
-      
+
       Object.defineProperty(window.observables.preference, 'preference$', {
         value: loadingPreferenceSubject.asObservable(),
         writable: true,
@@ -469,7 +469,7 @@ describe('TidGiMenubarWindow Component', () => {
       // Verify workspace selector is present with proper configuration
       const select = screen.getByRole('combobox');
       expect(select).toBeInTheDocument();
-      
+
       // Verify the selector displays the placeholder/empty state
       const container = select.closest('.MuiFormControl-root');
       expect(container).toBeInTheDocument();
@@ -488,7 +488,7 @@ describe('TidGiMenubarWindow Component', () => {
       // MUI Select stores value in a hidden input with name attribute or as data attribute
       const selectDiv = container.querySelector('.MuiSelect-select') as HTMLDivElement;
       expect(selectDiv).toBeTruthy();
-      
+
       // Check if the selected workspace name is displayed
       expect(selectDiv.textContent).toBe('Test Workspace 2');
     });
@@ -602,12 +602,12 @@ describe('TidGiMenubarWindow Component', () => {
   describe('Integration: Toggle sequence', () => {
     it('should show all settings when attachToMenubar is toggled on', async () => {
       const user = userEvent.setup();
-      
+
       // Create a fresh subject for this test to avoid interference
       const toggleTestSubject = new BehaviorSubject<IPreferences | undefined>(
         createMockPreference({ attachToMenubar: false }),
       );
-      
+
       Object.defineProperty(window.observables.preference, 'preference$', {
         value: toggleTestSubject.asObservable(),
         writable: true,
