@@ -92,9 +92,9 @@ export class Preference implements IPreferenceService {
     switch (key) {
       case 'attachToMenubar': {
         if (value) {
-          await windowService.enableMenubarWindow();
+          await windowService.openMenubarWindow();
         } else {
-          await windowService.disableMenubarWindow();
+          await windowService.closeMenubarWindow(true);
         }
         return;
       }

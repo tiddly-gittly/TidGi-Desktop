@@ -57,10 +57,10 @@ export interface IWindowService {
   stopFindInPage(close?: boolean, windowName?: WindowNames): Promise<void>;
   toggleMenubarWindow(): Promise<void>;
   updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;
-  /** Enable menubar without restart - hot reload */
-  enableMenubarWindow(): Promise<void>;
-  /** Disable menubar without restart - hot reload */
-  disableMenubarWindow(): Promise<void>;
+  /** Open menubar window without restart - hot reload. enableIt=true means fully enable and open. */
+  openMenubarWindow(enableIt?: boolean): Promise<void>;
+  /** Close menubar window. disableIt=true means fully disable and cleanup tray. */
+  closeMenubarWindow(disableIt?: boolean): Promise<void>;
   /** Update window properties without restart - hot reload */
   updateWindowProperties(windowName: WindowNames, properties: { alwaysOnTop?: boolean }): Promise<void>;
 }
@@ -87,8 +87,8 @@ export const WindowServiceIPCDescriptor = {
     stopFindInPage: ProxyPropertyType.Function,
     toggleMenubarWindow: ProxyPropertyType.Function,
     updateWindowMeta: ProxyPropertyType.Function,
-    enableMenubarWindow: ProxyPropertyType.Function,
-    disableMenubarWindow: ProxyPropertyType.Function,
+    openMenubarWindow: ProxyPropertyType.Function,
+    closeMenubarWindow: ProxyPropertyType.Function,
     updateWindowProperties: ProxyPropertyType.Function,
   },
 };

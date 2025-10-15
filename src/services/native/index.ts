@@ -65,15 +65,15 @@ export class NativeService implements INativeService {
     try {
       const key = `${String(serviceName)}.${String(methodName)}`;
       // Save to preferences
-      const preferenceService = container.get<IPreferenceService>('Preference');
+      const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
       const shortcuts = await this.getKeyboardShortcuts();
       shortcuts[key] = shortcut;
       await preferenceService.set('keyboardShortcuts', shortcuts);
       // Register the shortcut
       await registerShortcutByKey(key, shortcut);
-      logger.info('Successfully registered new keyboard shortcut', { key, shortcut });
+      logger.info('Successfully registered new keyboard shortcut', { key, shortcut, function: 'NativeService.registerKeyboardShortcut' });
     } catch (error) {
-      logger.error('Failed to register keyboard shortcut', { error, serviceIdentifier: serviceName, methodName, shortcut });
+      logger.error('Failed to register keyboard shortcut', { error, serviceIdentifier: serviceName, methodName, shortcut, function: 'NativeService.registerKeyboardShortcut' });
       throw error;
     }
   }
@@ -84,7 +84,7 @@ export class NativeService implements INativeService {
       const key = `${String(serviceName)}.${String(methodName)}`;
 
       // Remove from preferences
-      const preferenceService = container.get<IPreferenceService>('Preference');
+      const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
       const shortcuts = await this.getKeyboardShortcuts();
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete shortcuts[key];

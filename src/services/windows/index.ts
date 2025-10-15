@@ -344,11 +344,11 @@ export class Window implements IWindowService {
 
       const isOpen = await this.isMenubarOpen();
       if (isOpen) {
-        await this.disableMenubarWindow();
+        await this.closeMenubarWindow();
       } else {
         const attachToMenubar = await preferenceService.get('attachToMenubar');
         if (attachToMenubar) {
-          await this.enableMenubarWindow();
+          await this.openMenubarWindow();
         } else {
           logger.warn('Cannot open menubar window: attachToMenubar preference is disabled', { function: 'toggleMenubarWindow' });
         }
@@ -358,43 +358,57 @@ export class Window implements IWindowService {
     }
   }
 
-  public async enableMenubarWindow(): Promise<void> {
+  public async openMenubarWindow(enableIt = true): Promise<void> {
     try {
       // Check if menubar is already enabled
-      if (this.mainWindowMenuBar !== undefined) {
-        logger.debug('Menubar is already enabled');
+      if (this.mainWindowMenuBar?.window !== undefined) {
+        logger.debug('Menubar is already enabled, bring it to front', { function: 'openMenubarWindow' });
+        const existingWin = this.mainWindowMenuBar.window;
+        if (existingWin !== undefined) {
+          if (existingWin.isMinimized?.()) {
+            existingWin.restore();
+          }
+          existingWin.show();
+          existingWin.focus();
+        }
         return;
       }
 
-      // Create menubar window
+      // Create menubar window (create and open when enableIt is true)
       await this.open(WindowNames.menuBar);
-      logger.info('Menubar enabled', { function: 'enableMenubarWindow' });
+      if (enableIt) {
+        logger.debug('Menubar enabled', { function: 'openMenubarWindow' });
+      }
     } catch (error) {
-      logger.error('Failed to enable menubar', { error, function: 'enableMenubarWindow' });
+      logger.error('Failed to open menubar', { error, function: 'openMenubarWindow' });
       throw error;
     }
   }
 
-  public async disableMenubarWindow(): Promise<void> {
+  public async closeMenubarWindow(disableIt = false): Promise<void> {
     try {
       // Check if menubar exists
       if (this.mainWindowMenuBar === undefined) {
-        logger.debug('Menubar is already disabled');
+        logger.debug('Menubar is already disabled', { function: 'closeMenubarWindow' });
         return;
       }
 
       // Close menubar window and clean up
       await this.close(WindowNames.menuBar);
 
-      // Clean up tray icon
-      if (this.mainWindowMenuBar.tray && !this.mainWindowMenuBar.tray.isDestroyed()) {
-        this.mainWindowMenuBar.tray.destroy();
+      // Clean up tray icon if disableIt is true (meaning fully disable), otherwise keep it
+      if (disableIt) {
+        if (this.mainWindowMenuBar.tray && !this.mainWindowMenuBar.tray.isDestroyed()) {
+          this.mainWindowMenuBar.tray.destroy();
+        }
+        this.mainWindowMenuBar = undefined;
+        logger.debug('Menubar disabled successfully without restart', { function: 'closeMenubarWindow' });
+      } else {
+        // Keep mainWindowMenuBar reference for quicker re-open
+        logger.debug('Menubar closed (kept enabled)', { function: 'closeMenubarWindow' });
       }
-
-      this.mainWindowMenuBar = undefined;
-      logger.info('Menubar disabled successfully without restart');
     } catch (error) {
-      logger.error('Failed to disable menubar', { error });
+      logger.error('Failed to close menubar', { error });
       throw error;
     }
   }

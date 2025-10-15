@@ -25,9 +25,12 @@ export function getShortcutCallback(key: string): (() => void) | undefined {
     try {
       // Get the service instance from container lazily
       const service = container.get<Record<string, (...arguments_: unknown[]) => unknown>>(serviceSymbol);
+      logger.debug('Shortcut triggered', { key, service: serviceIdentifierName, method: methodName, function: 'getShortcutCallback' });
       if (service && typeof service[methodName] === 'function') {
         // Call the method with await if it's an async method
         await service[methodName]();
+      } else {
+        logger.warn('Shortcut target method not found', { key, service: serviceIdentifierName, method: methodName, function: 'getShortcutCallback' });
       }
     } catch (error) {
       logger.error(`Failed to execute shortcut callback for ${key}`, { error, function: 'getShortcutCallback' });
@@ -57,9 +60,9 @@ export async function registerShortcutByKey(key: string, shortcut: string): Prom
   const success = globalShortcut.register(shortcut, callback);
 
   if (success) {
-    logger.info('Successfully registered shortcut', { key, shortcut });
+    logger.info('Successfully registered shortcut', { key, shortcut, function: 'registerShortcutByKey' });
   } else {
-    logger.error('Failed to register shortcut', { key, shortcut });
+    logger.error('Failed to register shortcut', { key, shortcut, function: 'registerShortcutByKey' });
     throw new Error(`Failed to register shortcut: ${shortcut}`);
   }
 }

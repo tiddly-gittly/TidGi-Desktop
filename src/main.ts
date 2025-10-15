@@ -141,7 +141,7 @@ const commonInit = async (): Promise<void> => {
   await workspaceViewService.initializeAllWorkspaceView();
   const attachToMenubar = await preferenceService.get('attachToMenubar');
   if (attachToMenubar) {
-    await windowService.enableMenubarWindow();
+    await windowService.openMenubarWindow();
   }
 
   ipcMain.emit('request-update-pause-notifications-info');

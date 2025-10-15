@@ -129,12 +129,12 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
               <Box sx={{ p: 2 }}>
                 <KeyboardShortcutRegister
                   label={t('Preference.MenubarShortcutKey')}
-                  value={preference.keyboardShortcuts?.['NativeService.toggleMenubarWindow'] || ''}
+                  value={preference.keyboardShortcuts?.['Window.toggleMenubarWindow'] || ''}
                   onChange={async (value) => {
                     if (value && value.trim() !== '') {
-                      await window.service.native.registerKeyboardShortcut<IWindowService>('NativeService', 'toggleMenubarWindow', value);
+                      await window.service.native.registerKeyboardShortcut<IWindowService>('Window', 'toggleMenubarWindow', value);
                     } else {
-                      await window.service.native.unregisterKeyboardShortcut<IWindowService>('NativeService', 'toggleMenubarWindow');
+                      await window.service.native.unregisterKeyboardShortcut<IWindowService>('Window', 'toggleMenubarWindow');
                     }
                   }}
                 />
