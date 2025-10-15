@@ -148,7 +148,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
               previewCurrentStep: 'Error occurred',
               previewCurrentPlugin: null,
             });
-            reject(error instanceof Error ? error : new Error(String(error)));
+            reject(error as Error);
           },
           complete: () => {
             completed = true;

@@ -49,8 +49,7 @@ export class AgentBrowserService implements IAgentBrowserService {
       this.tabRepository = this.dataSource.getRepository(AgentBrowserTabEntity);
       logger.debug('Agent browser repository initialized');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to initialize agent browser service: ${errorMessage}`);
+      logger.error('Failed to initialize agent browser service', { error });
       throw error;
     }
   }
@@ -220,7 +219,7 @@ export class AgentBrowserService implements IAgentBrowserService {
     } catch (error) {
       logger.error('Failed to get tabs', {
         function: 'getAllTabs',
-        error: error instanceof Error ? error.message : String(error),
+        error,
       });
       throw error;
     }
@@ -242,7 +241,7 @@ export class AgentBrowserService implements IAgentBrowserService {
     } catch (error) {
       logger.error('Failed to get active tab', {
         function: 'getActiveTabId',
-        error: error instanceof Error ? error.message : String(error),
+        error,
       });
       throw error;
     }
@@ -277,7 +276,7 @@ export class AgentBrowserService implements IAgentBrowserService {
     } catch (error) {
       logger.error('Failed to set active tab', {
         function: 'setActiveTab',
-        error: error instanceof Error ? error.message : String(error),
+        error,
       });
       throw error;
     }
@@ -321,7 +320,7 @@ export class AgentBrowserService implements IAgentBrowserService {
 
       return savedTab;
     } catch (error) {
-      logger.error(`Failed to add tab: ${error as Error}`);
+      logger.error('Failed to add tab', { error });
       throw error;
     }
   }
@@ -392,7 +391,7 @@ export class AgentBrowserService implements IAgentBrowserService {
       await this.tabRepository!.save(existingTab);
       await this.updateTabsObservable();
     } catch (error) {
-      logger.error(`Failed to update tab: ${error as Error}`);
+      logger.error('Failed to update tab', { error });
       throw error;
     }
   }
@@ -458,7 +457,7 @@ export class AgentBrowserService implements IAgentBrowserService {
       await this.reindexTabPositions();
       await this.updateTabsObservable();
     } catch (error) {
-      logger.error(`Failed to close tab: ${error instanceof Error ? `${error.message} ${error.stack}` : String(error)}`);
+      logger.error('Failed to close tab', { error });
       throw error;
     }
   }
@@ -560,7 +559,7 @@ export class AgentBrowserService implements IAgentBrowserService {
     } catch (error) {
       logger.error('Failed to get closed tabs', {
         function: 'getClosedTabs',
-        error: error instanceof Error ? error.message : String(error),
+        error,
       });
       throw error;
     }
@@ -606,7 +605,7 @@ export class AgentBrowserService implements IAgentBrowserService {
     } catch (error) {
       logger.error('Failed to restore closed tab', {
         function: 'restoreClosedTab',
-        error: error instanceof Error ? error.message : String(error),
+        error,
       });
       throw error;
     }
@@ -648,7 +647,7 @@ export class AgentBrowserService implements IAgentBrowserService {
     } catch (error) {
       logger.error('Failed to reindex tab positions', {
         function: 'reindexTabPositions',
-        error: error instanceof Error ? error.message : String(error),
+        error,
       });
     }
   }

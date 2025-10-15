@@ -86,8 +86,7 @@ export class MenuService implements IMenuService {
       Menu.setApplicationMenu(menu);
     } catch (error) {
       logger.error('buildMenu failed', {
-        message: (error as Error).message,
-        stack: (error as Error).stack ?? '',
+        error,
         function: 'buildMenu',
       });
       try {

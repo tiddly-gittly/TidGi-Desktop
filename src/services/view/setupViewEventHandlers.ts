@@ -95,17 +95,17 @@ export default function setupViewEventHandlers(
     }
     // if is external website
     logger.debug('will-navigate openExternal', { newUrl, currentUrl, homeUrl, lastUrl });
-    await shell.openExternal(newUrl).catch((_error: unknown) => {
-      const error = _error instanceof Error ? _error : new Error(String(_error));
-      logger.error(`will-navigate openExternal error ${error.message}`, error);
+    await shell.openExternal(newUrl).catch((error_: unknown) => {
+      const error = error_ as Error;
+      logger.error(`will-navigate openExternal error ${error.message}`, { error });
     });
     // if is an external website
     event.preventDefault();
     try {
       // TODO: do this until https://github.com/electron/electron/issues/31783 fixed
       await view.webContents.loadURL(currentUrl);
-    } catch (_error: unknown) {
-      const error = _error instanceof Error ? _error : new Error(String(_error));
+    } catch (error_: unknown) {
+      const error = error_ as Error;
       logger.warn(new ViewLoadUrlError(lastUrl ?? '', `${error.message} ${error.stack ?? ''}`));
     }
     // event.stopPropagation();
@@ -299,8 +299,8 @@ export default function setupViewEventHandlers(
   view.webContents.on('update-target-url', (_event, url) => {
     try {
       view.webContents.send('update-target-url', url);
-    } catch (_error: unknown) {
-      const error = _error instanceof Error ? _error : new Error(String(_error));
+    } catch (error_: unknown) {
+      const error = error_ as Error;
       logger.warn(error);
     }
   });

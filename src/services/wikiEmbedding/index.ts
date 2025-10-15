@@ -233,8 +233,7 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
 
       return Array.isArray(countResult) && countResult.length > 0 ? Number(countResult[0]) : 0;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error('Failed to get total notes count', { function: 'getTotalNotesCount', error: errorMessage });
+      logger.error('Failed to get total notes count', { function: 'getTotalNotesCount', error });
       return 0;
     }
   }
@@ -714,7 +713,7 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
           await this.statusRepository!.save(entity);
         } catch (error) {
           // If saving fails, just return the default status
-          logger.debug('could not save default embedding status', { function: 'getEmbeddingStatus', error: error instanceof Error ? error.message : String(error) });
+          logger.debug('could not save default embedding status', { function: 'getEmbeddingStatus', error });
         }
 
         return defaultStatus;
@@ -759,7 +758,7 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
       }).catch((error: unknown) => {
         logger.error('Failed to initialize embedding status subscription', {
           function: 'subscribeToEmbeddingStatus',
-          error: String(error),
+          error: error as Error,
         });
       });
     }

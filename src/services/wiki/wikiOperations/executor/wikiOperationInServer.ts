@@ -40,8 +40,8 @@ export class WikiOperationsInWikiWorker {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call
           const result = new Function('$tw', script)(this.wikiInstance) as unknown;
           resolve(result);
-        } catch (_error: unknown) {
-          const error = _error instanceof Error ? _error : new Error(String(_error));
+        } catch (error_: unknown) {
+          const error = error_ as Error;
           reject(error);
         }
       }, 1);

@@ -24,7 +24,7 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
           'AIAgent: fetch agent database info failed',
           {
             function: 'AIAgent.fetchInfo',
-            error: String(error),
+            error,
           },
         );
       }
@@ -54,7 +54,7 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
                     'AIAgent: open database folder failed',
                     {
                       function: 'AIAgent.openDatabaseFolder',
-                      error: String(error),
+                      error,
                       path: agentInfo.path,
                     },
                   );
@@ -118,7 +118,7 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
                   'AIAgent: delete agent database failed',
                   {
                     function: 'AIAgent.handleDelete',
-                    error: String(error),
+                    error,
                   },
                 );
               }

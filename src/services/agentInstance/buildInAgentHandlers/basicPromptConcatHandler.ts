@@ -241,13 +241,13 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                   (tm).metadata = { ...(tm).metadata, isPersisted: true };
                 } catch (error1) {
                   logger.warn('Failed to persist pending tool result before error', {
-                    error: error1 instanceof Error ? error1.message : String(error1),
+                    error: error1,
                     messageId: tm.id,
                   });
                 }
               }
             } catch (error2) {
-              logger.warn('Failed to flush pending tool messages before persisting error', { error: error2 instanceof Error ? error2.message : String(error2) });
+              logger.warn('Failed to flush pending tool messages before persisting error', { error: error2 });
             }
 
             // Push an explicit error message into history for UI rendering
@@ -269,7 +269,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
               await agentInstanceService.saveUserMessage(errorMessageForHistory);
             } catch (persistError) {
               logger.warn('Failed to persist error message to database', {
-                error: persistError instanceof Error ? persistError.message : String(persistError),
+                error: persistError,
                 messageId: errorMessageForHistory.id,
                 agentId: context.agent.id,
               });
@@ -286,11 +286,8 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
         });
         currentRequestId = undefined;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('Unexpected error during AI generation', {
-          error: errorMessage,
-        });
-        yield completed(`Unexpected error: ${errorMessage}`, context);
+        logger.error('Unexpected error during AI generation', { error });
+        yield completed(`Unexpected error: ${(error as Error).message}`, context);
       } finally {
         if (context.isCancelled() && currentRequestId) {
           logger.debug('Cancelling AI request in finally block', {
@@ -304,12 +301,11 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
     // Start processing with the initial user message
     yield* processLLMCall();
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('Error processing prompt', {
       method: 'basicPromptConcatHandler',
       agentId: context.agent.id,
-      error: errorMessage,
+      error,
     });
-    yield completed(`Error processing prompt: ${errorMessage}`, context);
+    yield completed(`Error processing prompt: ${(error as Error).message}`, context);
   }
 }

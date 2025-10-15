@@ -160,7 +160,7 @@ export class Backend implements BackendModule {
         try {
           result = JSON.parse(payload.data ?? 'null');
         } catch (parseError) {
-          const parseError_ = parseError instanceof Error ? parseError : new Error(String(parseError));
+          const parseError_ = parseError as Error;
           parseError_.message = `Error parsing '${String(payload.filename)}'. Message: '${String(parseError)}'.`;
           const entry = this.readCallbacks[payload.key];
           const callback__ = entry?.callback;

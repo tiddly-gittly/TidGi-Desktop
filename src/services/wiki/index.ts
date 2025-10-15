@@ -77,10 +77,9 @@ export class Wiki implements IWikiService {
       });
     } catch (error) {
       logger.error('failed', {
-        error: (error as Error).message,
+        error,
         newFolderPath,
         folderName,
-        stack: (error as Error).stack,
         function: 'copyWikiTemplate',
       });
       throw new CopyWikiTemplateError(`${(error as Error).message}, (${newFolderPath}, ${folderName})`);
@@ -393,8 +392,7 @@ export class Wiki implements IWikiService {
       logger.debug(`terminateWorker for ${id}`);
       await terminateWorker(nativeWorker);
     } catch (error) {
-      const error_ = error instanceof Error ? error : new Error(String(error));
-      logger.error('wiki worker stop failed', { function: 'stopWiki', error: error_.message, errorObj: error_ });
+      logger.error('wiki worker stop failed', { function: 'stopWiki', error });
     }
 
     delete this.wikiWorkers[id];
@@ -709,10 +707,9 @@ export class Wiki implements IWikiService {
           function: 'startWiki',
         });
       } catch (error) {
-        const error_ = error instanceof Error ? error : new Error(String(error));
-        logger.warn('startWiki failed', { function: 'startWiki', error: error_.message });
+        logger.warn('startWiki failed', { function: 'startWiki', error });
         if (error instanceof WikiRuntimeError && error.retry) {
-          logger.warn('startWiki retry', { function: 'startWiki', error: error_.message });
+          logger.warn('startWiki retry', { function: 'startWiki', error });
           // don't want it to throw here again, so no await here.
 
           const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
@@ -720,7 +717,7 @@ export class Wiki implements IWikiService {
         } else if ((error as Error).message.includes('Did not receive an init message from worker after')) {
           // https://github.com/andywer/threads.js/issues/426
           // wait some time and restart the wiki will solve this
-          logger.warn('startWiki handle error, restarting', { function: 'startWiki', error: error_.message });
+          logger.warn('startWiki handle error, restarting', { function: 'startWiki', error });
           await this.restartWiki(workspace);
         } else {
           logger.warn('unexpected error, throw it', { function: 'startWiki' });

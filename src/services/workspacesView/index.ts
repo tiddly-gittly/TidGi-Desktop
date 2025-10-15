@@ -153,11 +153,9 @@ export class WorkspaceView implements IWorkspaceViewService {
           }
         }
       } catch (error) {
-        const error_ = error instanceof Error ? error : new Error(String(error));
         logger.error('wikiStartup sync failed', {
           function: 'initializeAllWorkspaceView',
-          error: error_.message,
-          stack: error_.stack ?? 'no stack',
+          error,
         });
       }
     };
@@ -355,11 +353,9 @@ export class WorkspaceView implements IWorkspaceViewService {
       await container.get<IViewService>(serviceIdentifier.View).setActiveViewForAllBrowserViews(nextWorkspaceID);
       await this.realignActiveWorkspace(nextWorkspaceID);
     } catch (error) {
-      const error_ = error instanceof Error ? error : new Error(String(error));
       logger.error('setActiveWorkspaceView error', {
         function: 'setActiveWorkspaceView',
-        error: error_.message,
-        errorObj: error_,
+        error,
       });
       throw error;
     }
@@ -388,11 +384,9 @@ export class WorkspaceView implements IWorkspaceViewService {
     try {
       await this.hideWorkspaceView(activeWorkspace.id);
     } catch (error) {
-      const error_ = error instanceof Error ? error : new Error(String(error));
       logger.error('setActiveWorkspaceView error', {
         function: 'clearActiveWorkspaceView',
-        error: error_.message,
-        errorObj: error_,
+        error,
       });
       throw error;
     }
@@ -529,11 +523,9 @@ export class WorkspaceView implements IWorkspaceViewService {
     try {
       await container.get<IMenuService>(serviceIdentifier.MenuService).buildMenu();
     } catch (error) {
-      const error_ = error instanceof Error ? error : new Error(String(error));
       logger.error('realignActiveWorkspace buildMenu error', {
         function: 'realignActiveWorkspace',
-        error: error_.message,
-        errorObj: error_,
+        error,
       });
       throw error;
     }

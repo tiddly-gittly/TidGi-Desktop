@@ -198,8 +198,7 @@ app.on('ready', async () => {
     }
     await updaterService.checkForUpdates();
   } catch (error) {
-    const error_ = error instanceof Error ? error : new Error(String(error));
-    logger.error('Error during app ready handler', { function: "app.on('ready')", error: error_.message, stack: error_.stack ?? '' });
+    logger.error('Error during app ready handler', { function: "app.on('ready')", error });
   }
 });
 app.on(MainChannel.windowAllClosed, async () => {
@@ -225,7 +224,7 @@ app.on(
 unhandled({
   showDialog: !isDevelopmentOrTest,
   logger: (error: Error) => {
-    logger.error(error.message + (error.stack ?? ''));
+    logger.error('unhandled', { error });
   },
   reportButton: (error) => {
     reportErrorToGithubWithTemplates(error);

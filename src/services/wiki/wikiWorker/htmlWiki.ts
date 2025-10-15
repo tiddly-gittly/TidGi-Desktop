@@ -19,17 +19,17 @@ export async function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: 
             resolve();
           },
         });
-      } catch (_error: unknown) {
-        const error = _error instanceof Error ? _error : new Error(String(_error));
-        reject(error);
-      }
+        } catch (error_: unknown) {
+          const error = error_ as Error;
+          reject(error);
+        }
     });
-  } catch (_error: unknown) {
-    // removes the folder function that failed to convert.
-    await remove(saveWikiFolderPath);
-    const error = _error instanceof Error ? _error : new Error(String(_error));
-    throw error;
-  }
+    } catch (error_: unknown) {
+      // removes the folder function that failed to convert.
+      await remove(saveWikiFolderPath);
+      const error = error_ as Error;
+      throw error;
+    }
 }
 
 export async function packetHTMLFromWikiFolder(folderWikiPath: string, pathOfNewHTML: string, constants: { TIDDLYWIKI_PACKAGE_FOLDER: string }): Promise<void> {
@@ -48,8 +48,8 @@ export async function packetHTMLFromWikiFolder(folderWikiPath: string, pathOfNew
           resolve();
         },
       });
-    } catch (_error: unknown) {
-      const error = _error instanceof Error ? _error : new Error(String(_error));
+    } catch (error_: unknown) {
+      const error = error_ as Error;
       reject(error);
     }
   });

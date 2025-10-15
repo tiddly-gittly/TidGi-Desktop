@@ -20,7 +20,7 @@ export function useLoadHelpPagesList(language = 'en-GB') {
               const data = await fetch(source).then(async response => await (response.json() as Promise<typeof helpPages.default>));
               return data.map(makeFallbackUrlsArray);
             } catch (error) {
-              await window.service.native.log('error', `Help page Failed to load online source: ${source} ${(error as Error).message}`);
+              await window.service.native.log('error', `Help page Failed to load online source: ${source}`, { error });
               return [];
             }
           }),
@@ -28,7 +28,7 @@ export function useLoadHelpPagesList(language = 'en-GB') {
         const newItems = responses.flat();
         setItems(currentItems => uniqBy([...currentItems, ...newItems], 'url'));
       } catch (error) {
-        void window.service.native.log('error', 'Failed to load online sources', { function: 'useLoadHelpPagesList.loadMoreItems', error: String(error) });
+        void window.service.native.log('error', 'Failed to load online sources', { function: 'useLoadHelpPagesList.loadMoreItems', error });
       }
     };
 

@@ -44,8 +44,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       await this.initializeDatabase();
       await this.initializeHandlers();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to initialize agent instance service: ${errorMessage}`);
+      logger.error('Failed to initialize agent instance service', { error });
       throw error;
     }
   }
@@ -58,8 +57,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       this.agentMessageRepository = this.dataSource.getRepository(AgentInstanceMessageEntity);
       logger.debug('AgentInstance repositories initialized');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to initialize agent instance database: ${errorMessage}`);
+      logger.error('Failed to initialize agent instance database', { error });
       throw error;
     }
   }
@@ -74,8 +72,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       this.registerBuiltinHandlers();
       logger.debug('AgentInstance handlers registered');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to initialize agent instance handlers: ${errorMessage}`);
+      logger.error('Failed to initialize agent instance handlers', { error });
       throw error;
     }
   }
@@ -163,8 +160,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         modified: now,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to create agent instance: ${errorMessage}`);
+      logger.error('Failed to create agent instance', { error });
       throw error;
     }
   }
@@ -195,8 +191,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         messages,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to get agent instance: ${errorMessage}`);
+      logger.error('Failed to get agent instance', { error });
       throw error;
     }
   }
@@ -271,8 +266,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       return updatedAgent;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to update agent instance: ${errorMessage}`);
+      logger.error('Failed to update agent instance', { error });
       throw error;
     }
   }
@@ -292,8 +286,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       logger.info(`Deleted agent instance: ${agentId}`);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to delete agent instance: ${errorMessage}`);
+      logger.error('Failed to delete agent instance', { error });
       throw error;
     }
   }
@@ -337,8 +330,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       return instances.map(entity => pick(entity, AGENT_INSTANCE_FIELDS));
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to get agent instances: ${errorMessage}`);
+      logger.error('Failed to get agent instances', { error });
       throw error;
     }
   }
@@ -540,7 +532,7 @@ export class AgentInstanceService implements IAgentInstanceService {
             }
           }
         } catch (error) {
-          logger.warn('Failed to propagate cancel status to message subscriptions', { function: 'cancelAgent', error: String(error) });
+          logger.warn('Failed to propagate cancel status to message subscriptions', { function: 'cancelAgent', error });
         }
 
         // Remove cancel token from map
@@ -634,7 +626,7 @@ export class AgentInstanceService implements IAgentInstanceService {
             }
           }
         }).catch((error: unknown) => {
-          logger.error('Failed to get initial status for message', { function: 'subscribeToAgentUpdates', error: String(error) });
+          logger.error('Failed to get initial status for message', { function: 'subscribeToAgentUpdates', error });
         });
       }
 
@@ -649,7 +641,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       this.getAgent(agentId).then(agent => {
         this.agentInstanceSubjects.get(agentId)?.next(agent);
       }).catch((error: unknown) => {
-        logger.error('Failed to get initial agent data', { function: 'subscribeToAgentUpdates', error: String(error) });
+        logger.error('Failed to get initial agent data', { function: 'subscribeToAgentUpdates', error });
       });
     }
 
@@ -700,8 +692,8 @@ export class AgentInstanceService implements IAgentInstanceService {
         source: 'saveUserMessage',
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to save user message: ${errorMessage}`, {
+      logger.error('Failed to save user message', {
+        error,
         messageId: userMessage.id,
         agentId: userMessage.agentId,
       });
@@ -840,8 +832,7 @@ export class AgentInstanceService implements IAgentInstanceService {
               }
             });
           } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            logger.error(`Failed to update/create message content: ${errorMessage}`);
+            logger.error('Failed to update/create message content', { error });
           }
         },
         debounceMs,
@@ -891,7 +882,7 @@ export class AgentInstanceService implements IAgentInstanceService {
           }
         } catch (error) {
           logger.error('Error in AgentInstanceService.concatPrompt', {
-            error: error instanceof Error ? error.message : String(error),
+            error,
             promptDescriptionId: (promptDescription as AgentPromptDescription).id,
             messagesCount: messages.length,
           });
@@ -915,7 +906,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       return { type: 'object', properties: {} };
     } catch (error) {
       logger.error('Error in AgentInstanceService.getHandlerConfigSchema', {
-        error: error instanceof Error ? error.message : String(error),
+        error,
         handlerId,
       });
       throw error;

@@ -57,11 +57,9 @@ export class Git implements IGitService {
       this.gitWorker = createWorkerProxy<GitWorker>(worker);
       logger.debug('gitWorker initialized successfully', { function: 'Git.initWorker' });
     } catch (error) {
-      const error_ = error instanceof Error ? error : new Error(String(error));
       logger.error('Failed to initialize gitWorker', {
         function: 'Git.initWorker',
-        error: error_.message,
-        errorObj: error_,
+        error,
       });
       throw error;
     }
@@ -178,8 +176,8 @@ export class Git implements IGitService {
             await this.nativeService.openInGitGuiApp(wikiFolderPath);
           }
         })
-        .catch((_error: unknown) => {
-          logger.error('createFailedDialog failed', _error instanceof Error ? _error : new Error(String(_error)));
+        .catch((error: unknown) => {
+          logger.error('createFailedDialog failed', { error });
         });
     }
   }
@@ -205,14 +203,14 @@ export class Git implements IGitService {
     try {
       try {
         await this.updateGitInfoTiddler(workspace, configs.remoteUrl, configs.userInfo?.branch);
-      } catch (_error: unknown) {
-        logger.error('updateGitInfoTiddler failed when commitAndSync', _error instanceof Error ? _error : new Error(String(_error)));
+      } catch (error: unknown) {
+        logger.error('updateGitInfoTiddler failed when commitAndSync', { error });
       }
       const observable = this.gitWorker?.commitAndSyncWiki(workspace, configs, getErrorMessageI18NDict());
       return await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
-    } catch (_error: unknown) {
-      const error = _error instanceof Error ? _error : new Error(String(_error));
-      this.createFailedNotification(error.message, workspaceIDToShowNotification);
+    } catch (error: unknown) {
+      const err = error as Error;
+      this.createFailedNotification(err.message, workspaceIDToShowNotification);
       return true;
     }
   }
