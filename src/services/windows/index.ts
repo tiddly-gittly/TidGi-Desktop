@@ -368,9 +368,9 @@ export class Window implements IWindowService {
 
       // Create menubar window
       await this.open(WindowNames.menuBar);
-      logger.info('Menubar enabled successfully without restart');
+      logger.info('Menubar enabled', { function: 'enableMenubarWindow' });
     } catch (error) {
-      logger.error('Failed to enable menubar', { error });
+      logger.error('Failed to enable menubar', { error, function: 'enableMenubarWindow' });
       throw error;
     }
   }
