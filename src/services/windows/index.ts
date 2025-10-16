@@ -392,19 +392,25 @@ export class Window implements IWindowService {
         logger.debug('Menubar is already disabled', { function: 'closeMenubarWindow' });
         return;
       }
-
-      // Close menubar window and clean up
-      await this.close(WindowNames.menuBar);
-
-      // Clean up tray icon if disableIt is true (meaning fully disable), otherwise keep it
+      const menuBar = this.mainWindowMenuBar;
       if (disableIt) {
-        if (this.mainWindowMenuBar.tray && !this.mainWindowMenuBar.tray.isDestroyed()) {
-          this.mainWindowMenuBar.tray.destroy();
+        // Fully destroy menubar: destroy window and tray, then clear reference
+        if (menuBar.window) {
+          // remove custom close listener so destroy will actually close
+          menuBar.window.removeAllListeners('close');
+          menuBar.window.destroy();
+        }
+        // hide app on mac if needed
+        menuBar.app?.hide?.();
+        if (menuBar.tray && !menuBar.tray.isDestroyed()) {
+          menuBar.tray.destroy();
         }
         this.mainWindowMenuBar = undefined;
         logger.debug('Menubar disabled successfully without restart', { function: 'closeMenubarWindow' });
       } else {
-        // Keep mainWindowMenuBar reference for quicker re-open
+        // Only hide the menubar window (keep tray and instance for re-open)
+        menuBar.hideWindow();
+        menuBar.window?.hide?.();
         logger.debug('Menubar closed (kept enabled)', { function: 'closeMenubarWindow' });
       }
     } catch (error) {

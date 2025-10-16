@@ -44,12 +44,12 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
   menuBar.on('after-create-window', () => {
     if (menuBar.window !== undefined) {
       menuBar.window.on('focus', async () => {
-        logger.debug('restore window position');
+        logger.debug('restore window position', { function: 'handleAttachToMenuBar' });
         if (windowWithBrowserViewState === undefined) {
-          logger.debug('windowWithBrowserViewState is undefined for menuBar');
+          logger.debug('windowWithBrowserViewState is undefined for menuBar', { function: 'handleAttachToMenuBar' });
         } else {
           if (menuBar.window === undefined) {
-            logger.debug('menuBar.window is undefined');
+            logger.debug('menuBar.window is undefined', { function: 'handleAttachToMenuBar' });
           } else {
             const haveXYValue = [windowWithBrowserViewState.x, windowWithBrowserViewState.y].every((value) => Number.isFinite(value));
             const haveWHValue = [windowWithBrowserViewState.width, windowWithBrowserViewState.height].every((value) => Number.isFinite(value));
