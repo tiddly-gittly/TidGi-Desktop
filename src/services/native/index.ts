@@ -83,15 +83,23 @@ export class NativeService implements INativeService {
     try {
       const key = `${String(serviceName)}.${String(methodName)}`;
 
+      // Get the current shortcut string before removing from preferences
+      const shortcuts = await this.getKeyboardShortcuts();
+      const shortcutString = shortcuts[key];
+
       // Remove from preferences
       const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-      const shortcuts = await this.getKeyboardShortcuts();
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete shortcuts[key];
       await preferenceService.set('keyboardShortcuts', shortcuts);
-      // Unregister the shortcut
-      globalShortcut.unregister(key);
-      logger.info('Successfully unregistered keyboard shortcut', { key });
+
+      // Unregister the shortcut using the actual shortcut string, not the key
+      if (shortcutString && globalShortcut.isRegistered(shortcutString)) {
+        globalShortcut.unregister(shortcutString);
+        logger.info('Successfully unregistered keyboard shortcut', { key, shortcutString });
+      } else {
+        logger.warn('Shortcut was not registered or shortcut string not found', { key, shortcutString });
+      }
     } catch (error) {
       logger.error('Failed to unregister keyboard shortcut', { error, serviceIdentifier: serviceName, methodName });
       throw error;

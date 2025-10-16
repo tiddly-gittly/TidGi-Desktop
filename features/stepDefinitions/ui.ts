@@ -258,3 +258,25 @@ When('I close {string} window', async function(this: ApplicationWorld, windowTyp
     throw new Error(`Could not find ${windowType} window to close`);
   }
 });
+
+When('I press the key combination {string}', async function(this: ApplicationWorld, keyCombo: string) {
+  const currentWindow = this.currentWindow || this.mainWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  // Convert CommandOrControl to platform-specific key
+  let platformKeyCombo = keyCombo;
+  if (keyCombo.includes('CommandOrControl')) {
+    // On Windows and Linux, use Control; on macOS, use Meta (Cmd)
+    const isWindows = process.platform === 'win32';
+    const isLinux = process.platform === 'linux';
+    if (isWindows || isLinux) {
+      platformKeyCombo = keyCombo.replace('CommandOrControl', 'Control');
+    } else {
+      platformKeyCombo = keyCombo.replace('CommandOrControl', 'Meta');
+    }
+  }
+
+  await currentWindow.keyboard.press(platformKeyCombo);
+});

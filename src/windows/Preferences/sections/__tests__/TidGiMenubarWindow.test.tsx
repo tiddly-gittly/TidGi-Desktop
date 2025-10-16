@@ -513,7 +513,7 @@ describe('TidGiMenubarWindow Component', () => {
         createMockPreference({
           attachToMenubar: true,
           keyboardShortcuts: {
-            'NativeService.toggleMenubarWindow': 'Ctrl+Shift+M',
+            'Window.toggleMenubarWindow': 'Ctrl+Shift+M',
           },
         }),
       );
@@ -536,9 +536,9 @@ describe('TidGiMenubarWindow Component', () => {
 
       const mockOnChange = vi.fn(async (value: string) => {
         if (value && value.trim() !== '') {
-          await window.service.native.registerKeyboardShortcut('NativeService', 'toggleMenubarWindow', value);
+          await window.service.native.registerKeyboardShortcut('Window', 'toggleMenubarWindow', value);
         } else {
-          await window.service.native.unregisterKeyboardShortcut('NativeService', 'toggleMenubarWindow');
+          await window.service.native.unregisterKeyboardShortcut('Window', 'toggleMenubarWindow');
         }
       });
 
@@ -549,7 +549,7 @@ describe('TidGiMenubarWindow Component', () => {
       await user.click(shortcutButton);
 
       await waitFor(() => {
-        expect(window.service.native.registerKeyboardShortcut).toHaveBeenCalledWith('NativeService', 'toggleMenubarWindow', 'Ctrl+Shift+T');
+        expect(window.service.native.registerKeyboardShortcut).toHaveBeenCalledWith('Window', 'toggleMenubarWindow', 'Ctrl+Shift+T');
       });
     });
 
@@ -559,7 +559,7 @@ describe('TidGiMenubarWindow Component', () => {
         createMockPreference({
           attachToMenubar: true,
           keyboardShortcuts: {
-            'NativeService.toggleMenubarWindow': 'Ctrl+Shift+M',
+            'Window.toggleMenubarWindow': 'Ctrl+Shift+M',
           },
         }),
       );
@@ -569,9 +569,9 @@ describe('TidGiMenubarWindow Component', () => {
 
       const mockOnChange = vi.fn(async (value: string) => {
         if (value && value.trim() !== '') {
-          await window.service.native.registerKeyboardShortcut('NativeService', 'toggleMenubarWindow', value);
+          await window.service.native.registerKeyboardShortcut('Window', 'toggleMenubarWindow', value);
         } else {
-          await window.service.native.unregisterKeyboardShortcut('NativeService', 'toggleMenubarWindow');
+          await window.service.native.unregisterKeyboardShortcut('Window', 'toggleMenubarWindow');
         }
       });
 
@@ -582,7 +582,7 @@ describe('TidGiMenubarWindow Component', () => {
       await user.click(shortcutButton);
 
       await waitFor(() => {
-        expect(window.service.native.unregisterKeyboardShortcut).toHaveBeenCalledWith('NativeService', 'toggleMenubarWindow');
+        expect(window.service.native.unregisterKeyboardShortcut).toHaveBeenCalledWith('Window', 'toggleMenubarWindow');
       });
     });
 

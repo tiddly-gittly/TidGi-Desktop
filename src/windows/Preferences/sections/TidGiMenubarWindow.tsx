@@ -34,6 +34,7 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
                 onChange={async (event) => {
                   await window.service.preference.set('attachToMenubar', event.target.checked);
                 }}
+                data-testid='attach-to-menubar-switch'
               />
             }
           >
@@ -56,6 +57,7 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
                     onChange={async (event) => {
                       await window.service.preference.set('sidebarOnMenubar', event.target.checked);
                     }}
+                    data-testid='sidebar-on-menubar-switch'
                   />
                 }
               >
@@ -75,6 +77,7 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
                     onChange={async (event) => {
                       await window.service.preference.set('menuBarAlwaysOnTop', event.target.checked);
                     }}
+                    data-testid='menubar-always-on-top-switch'
                   />
                 }
               >
@@ -93,6 +96,7 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
                     onChange={async (event) => {
                       await window.service.preference.set('menubarSyncWorkspaceWithMainWindow', event.target.checked);
                     }}
+                    data-testid='menubar-sync-workspace-switch'
                   />
                 }
               >
@@ -137,6 +141,7 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
                       await window.service.native.unregisterKeyboardShortcut<IWindowService>('Window', 'toggleMenubarWindow');
                     }
                   }}
+                  data-testid='menubar-shortcut-input'
                 />
                 <Box sx={{ mt: 1 }}>
                   <Typography variant='caption' color='textSecondary'>

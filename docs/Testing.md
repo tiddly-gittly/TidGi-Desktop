@@ -17,8 +17,8 @@ pnpm run test:prepare-e2e
 pnpm test:e2e
 # Or run a specific e2e test by using same `@xxx` as in the `.feature` file.
 pnpm test:e2e --tags="@smoke"
-# Or run a single e2e
-pnpm test:e2e --name "Wiki-search tool usage"
+# Or run a single e2e test by `--name`
+pnpm test:e2e --name "Wiki-search tool usage" # Not `-- --name` , and not `name`, is is just `--name`
 
 # Run with coverage
 pnpm test:unit -- --coverage
@@ -233,6 +233,7 @@ When('(Dont do this) I click on a specific button and wait for 2 seconds.', asyn
 ## Testing Library Best Practices
 
 **Important Testing Rules:**
+
 - **Do NOT simplify tests** - write comprehensive, professional unit tests
 - **Can add test-ids** when accessibility queries aren't practical  
 - **Do NOT be lazy** - fix ALL tests until `pnpm test:unit` passes completely
@@ -401,3 +402,7 @@ describe('Component', () => {
 See User profile section above, we need to set `NODE_ENV` as `test` to open with correct profile.
 
 This is done by using `EnvironmentPlugin` in [webpack.plugins.js](../webpack.plugins.js). Note that EsbuildPlugin's `define` doesn't work, it won't set env properly.
+
+### E2E test hang, and refused to exit until ctrl+C
+
+Check `features/stepDefinitions/application.ts` to see if `After` step includes all clean up steps, like closing all windows instances before closing the app, and stop all utility servers.

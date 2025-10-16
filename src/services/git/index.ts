@@ -209,8 +209,8 @@ export class Git implements IGitService {
       const observable = this.gitWorker?.commitAndSyncWiki(workspace, configs, getErrorMessageI18NDict());
       return await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
     } catch (error: unknown) {
-      const err = error as Error;
-      this.createFailedNotification(err.message, workspaceIDToShowNotification);
+      const error_ = error as Error;
+      this.createFailedNotification(error_.message, workspaceIDToShowNotification);
       return true;
     }
   }

@@ -79,6 +79,17 @@ Before(function(this: ApplicationWorld) {
 After(async function(this: ApplicationWorld) {
   if (this.app) {
     try {
+      // Close all windows including menubar window before closing the app, otherwise it might hang, and refused to exit until ctrl+C
+      const allWindows = this.app.windows();
+      for (const window of allWindows) {
+        try {
+          if (!window.isClosed()) {
+            await window.close();
+          }
+        } catch (error) {
+          console.error('Error closing window:', error);
+        }
+      }
       await this.app.close();
     } catch (error) {
       console.error('Error during cleanup:', error);
@@ -211,4 +222,113 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
       `Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package\` before running the tests to ensure the app is built, and build with binaries like "dugite" and "tiddlywiki", see scripts/afterPack.js for more details.`,
     );
   }
+});
+
+// Helper function to find window by type
+async function findWindowByType(app: ElectronApplication, windowType: string): Promise<Page | undefined> {
+  const pages = app.windows();
+
+  if (windowType.toLowerCase() === 'menubar') {
+    // Special handling for menubar window
+    const allWindows = pages.filter(page => !page.isClosed());
+    return allWindows.find(page => {
+      const url = page.url() || '';
+      return url.includes('#/menuBar');
+    });
+  } else {
+    // For regular windows (preferences, about, addWorkspace, etc.)
+    return pages.find(page => {
+      if (page.isClosed()) return false;
+      const url = page.url() || '';
+      // Match exact route paths: /#/windowType or ending with /windowType
+      return url.includes(`#/${windowType}`) || url.endsWith(`/${windowType}`);
+    });
+  }
+}
+
+// Helper function to check if window is visible
+async function isWindowVisible(app: ElectronApplication, page: Page): Promise<boolean> {
+  try {
+    const browserWindow = await app.browserWindow(page);
+    return await browserWindow.evaluate((win: Electron.BrowserWindow) => win.isVisible());
+  } catch {
+    return false;
+  }
+}
+
+// Helper function to wait for window with retry logic
+async function waitForWindowCondition(
+  app: ElectronApplication,
+  windowType: string,
+  condition: (window: Page | undefined, isVisible: boolean) => boolean,
+  maxAttempts: number = 3,
+  retryInterval: number = 250,
+): Promise<boolean> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const targetWindow = await findWindowByType(app, windowType);
+    const visible = targetWindow ? await isWindowVisible(app, targetWindow) : false;
+
+    if (condition(targetWindow, visible)) {
+      return true;
+    }
+
+    // Wait before retrying
+    await new Promise(resolve => setTimeout(resolve, retryInterval));
+  }
+  return false;
+}
+
+When('I confirm the {string} window exists and visible', async function(this: ApplicationWorld, windowType: string) {
+  if (!this.app) {
+    throw new Error('Application is not launched');
+  }
+
+  const success = await waitForWindowCondition(
+    this.app,
+    windowType,
+    (window, isVisible) => window !== undefined && !window.isClosed() && isVisible,
+    3,
+    100,
+  );
+
+  if (!success) {
+    throw new Error(`${windowType} window was not found or is not visible`);
+  }
+  console.log(`${windowType} window confirmed to exist and be visible`);
+});
+
+When('I confirm the {string} window exists but not visible', async function(this: ApplicationWorld, windowType: string) {
+  if (!this.app) {
+    throw new Error('Application is not launched');
+  }
+
+  const success = await waitForWindowCondition(
+    this.app,
+    windowType,
+    (window, isVisible) => window !== undefined && !window.isClosed() && !isVisible,
+  );
+
+  if (!success) {
+    throw new Error(`${windowType} window does not exist or is visible after 3 attempts`);
+  }
+  console.log(`${windowType} window confirmed to exist but not be visible`);
+});
+
+When('I confirm the {string} window does not exist', async function(this: ApplicationWorld, windowType: string) {
+  if (!this.app) {
+    throw new Error('Application is not launched');
+  }
+
+  const success = await waitForWindowCondition(
+    this.app,
+    windowType,
+    (window) => window === undefined,
+    3,
+    100,
+  );
+
+  if (!success) {
+    throw new Error(`${windowType} window still exists after 3 attempts`);
+  }
+  console.log(`${windowType} window confirmed to not exist`);
 });

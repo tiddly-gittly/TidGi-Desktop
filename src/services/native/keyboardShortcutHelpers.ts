@@ -9,28 +9,51 @@ import { globalShortcut } from 'electron';
  * @returns The callback function or undefined
  */
 export function getShortcutCallback(key: string): (() => void) | undefined {
+  logger.debug('Getting shortcut callback', { key, function: 'getShortcutCallback' });
+
   // Split the key into service and method parts
   const [serviceIdentifierName, methodName] = key.split('.');
+  logger.debug('Parsed key components', { serviceIdentifierName, methodName, function: 'getShortcutCallback' });
+
   // If we don't have any part, return
   if (!serviceIdentifierName || !methodName) {
+    logger.warn('Invalid key format', { key, serviceIdentifierName, methodName, function: 'getShortcutCallback' });
     return;
   }
+
   // Get the service identifier symbol
   const serviceSymbol = (serviceIdentifier as Record<string, symbol>)[serviceIdentifierName];
+  logger.debug('Service symbol lookup', { serviceIdentifierName, serviceSymbol: serviceSymbol?.toString(), function: 'getShortcutCallback' });
+
   if (serviceSymbol === undefined) {
+    logger.warn('Service identifier not found', { serviceIdentifierName, availableServices: Object.keys(serviceIdentifier), function: 'getShortcutCallback' });
     return;
   }
   // Return a callback that gets the service from container and calls the method
+  logger.debug('Creating callback function', { key, serviceIdentifierName, methodName, function: 'getShortcutCallback' });
+
   return async () => {
     try {
+      logger.info('Shortcut triggered - starting execution', { key, service: serviceIdentifierName, method: methodName, function: 'getShortcutCallback' });
+
       // Get the service instance from container lazily
       const service = container.get<Record<string, (...arguments_: unknown[]) => unknown>>(serviceSymbol);
       logger.debug('Shortcut triggered', { key, service: serviceIdentifierName, method: methodName, function: 'getShortcutCallback' });
       if (service && typeof service[methodName] === 'function') {
+        logger.info('Calling service method', { key, service: serviceIdentifierName, method: methodName, function: 'getShortcutCallback' });
         // Call the method with await if it's an async method
         await service[methodName]();
+        logger.info('Service method completed', { key, service: serviceIdentifierName, method: methodName, function: 'getShortcutCallback' });
       } else {
-        logger.warn('Shortcut target method not found', { key, service: serviceIdentifierName, method: methodName, function: 'getShortcutCallback' });
+        logger.warn('Shortcut target method not found', {
+          key,
+          service: serviceIdentifierName,
+          method: methodName,
+          serviceExists: !!service,
+          methodExists: service ? typeof service[methodName] : 'service is null',
+          availableMethods: service ? Object.keys(service).filter(k => typeof service[k] === 'function') : [],
+          function: 'getShortcutCallback',
+        });
       }
     } catch (error) {
       logger.error(`Failed to execute shortcut callback for ${key}`, { error, function: 'getShortcutCallback' });
