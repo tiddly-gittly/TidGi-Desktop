@@ -284,7 +284,7 @@ When('I press the key combination {string}', async function(this: ApplicationWor
     const parts = keyCombo.split('+');
     const mainKey = parts[parts.length - 1];
     const modifiers = parts.slice(0, -1);
-    
+
     const event = new KeyboardEvent('keydown', {
       key: mainKey,
       code: `Key${mainKey.toUpperCase()}`,
@@ -293,9 +293,9 @@ When('I press the key combination {string}', async function(this: ApplicationWor
       shiftKey: modifiers.includes('Shift'),
       altKey: modifiers.includes('Alt'),
       bubbles: true,
-      cancelable: true
+      cancelable: true,
     });
-    
+
     document.dispatchEvent(event);
   }, platformKeyCombo);
 });
