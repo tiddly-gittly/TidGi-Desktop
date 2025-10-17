@@ -23,7 +23,7 @@ import i18next from 'i18next';
 import { ZxNotInitializedError } from './error';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
 import type { INativeService, IPickDirectoryOptions } from './interface';
-import { registerShortcutByKey } from './keyboardShortcutHelpers';
+import { getShortcutCallback, registerShortcutByKey } from './keyboardShortcutHelpers';
 import { reportErrorToGithubWithTemplates } from './reportError';
 
 @injectable()
@@ -64,11 +64,17 @@ export class NativeService implements INativeService {
   public async registerKeyboardShortcut<T>(serviceName: keyof typeof serviceIdentifier, methodName: keyof T, shortcut: string): Promise<void> {
     try {
       const key = `${String(serviceName)}.${String(methodName)}`;
+      logger.info('Starting keyboard shortcut registration', { key, shortcut, serviceName, methodName, function: 'NativeService.registerKeyboardShortcut' });
+
       // Save to preferences
       const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
       const shortcuts = await this.getKeyboardShortcuts();
+      logger.debug('Current shortcuts before registration', { shortcuts, function: 'NativeService.registerKeyboardShortcut' });
+
       shortcuts[key] = shortcut;
       await preferenceService.set('keyboardShortcuts', shortcuts);
+      logger.info('Saved shortcut to preferences', { key, shortcut, function: 'NativeService.registerKeyboardShortcut' });
+
       // Register the shortcut
       await registerShortcutByKey(key, shortcut);
       logger.info('Successfully registered new keyboard shortcut', { key, shortcut, function: 'NativeService.registerKeyboardShortcut' });
@@ -109,6 +115,18 @@ export class NativeService implements INativeService {
   public async getKeyboardShortcuts(): Promise<Record<string, string>> {
     const preferences = this.preferenceService.getPreferences();
     return preferences.keyboardShortcuts || {};
+  }
+
+  public async executeShortcutCallback(key: string): Promise<void> {
+    logger.debug('Frontend requested shortcut execution', { key, function: 'NativeService.executeShortcutCallback' });
+
+    const callback = getShortcutCallback(key);
+    if (callback) {
+      await callback();
+      logger.info('Successfully executed shortcut callback from frontend', { key, function: 'NativeService.executeShortcutCallback' });
+    } else {
+      logger.warn('No callback found for shortcut key from frontend', { key, function: 'NativeService.executeShortcutCallback' });
+    }
   }
 
   public async openInEditor(filePath: string, editorName?: string): Promise<boolean> {

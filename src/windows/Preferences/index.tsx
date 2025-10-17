@@ -67,7 +67,7 @@ export default function Preferences(): React.JSX.Element {
       <Inner>
         <TiddlyWiki sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <General sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <TidGiMenubarWindow sections={sections} requestRestartCountDown={requestRestartCountDown} />
+        <TidGiMenubarWindow sections={sections} />
         <Sync sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <ExternalAPI sections={sections} />
         <AIAgent sections={sections} />

@@ -278,5 +278,24 @@ When('I press the key combination {string}', async function(this: ApplicationWor
     }
   }
 
-  await currentWindow.keyboard.press(platformKeyCombo);
+  // Use dispatchEvent to trigger document-level keydown events
+  // This ensures the event is properly captured by React components listening to document events
+  await currentWindow.evaluate((keyCombo) => {
+    const parts = keyCombo.split('+');
+    const mainKey = parts[parts.length - 1];
+    const modifiers = parts.slice(0, -1);
+    
+    const event = new KeyboardEvent('keydown', {
+      key: mainKey,
+      code: `Key${mainKey.toUpperCase()}`,
+      ctrlKey: modifiers.includes('Control'),
+      metaKey: modifiers.includes('Meta'),
+      shiftKey: modifiers.includes('Shift'),
+      altKey: modifiers.includes('Alt'),
+      bubbles: true,
+      cancelable: true
+    });
+    
+    document.dispatchEvent(event);
+  }, platformKeyCombo);
 });

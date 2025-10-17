@@ -19,6 +19,18 @@ describe('KeyboardShortcutRegister Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockOnChange = vi.fn();
+
+    // Mock window.service.context.get
+    Object.defineProperty(window.service.context, 'get', {
+      value: vi.fn().mockImplementation((key: string) => {
+        if (key === 'platform') {
+          // Return platform based on process.platform for testing
+          return Promise.resolve(process.platform === 'darwin' ? 'darwin' : 'win32');
+        }
+        return Promise.resolve('win32');
+      }),
+      writable: true,
+    });
   });
 
   const renderComponent = (overrides: {
@@ -177,9 +189,8 @@ describe('KeyboardShortcutRegister Component', () => {
         expect(screen.getByTestId('shortcut-dialog')).toBeInTheDocument();
       });
 
-      const dialogContent = screen.getByTestId('shortcut-dialog-content');
-
-      fireEvent.keyDown(dialogContent, {
+      // Simulate Cmd+K key press on document
+      fireEvent.keyDown(document, {
         key: 'K',
         metaKey: true,
         bubbles: true,
@@ -473,12 +484,16 @@ describe('KeyboardShortcutRegister Component', () => {
         expect(screen.getByTestId('shortcut-dialog')).toBeInTheDocument();
       });
 
-      const dialogContent = screen.getByTestId('shortcut-dialog-content');
-
-      fireEvent.keyDown(dialogContent, {
+      // Simulate Ctrl+X key press on document
+      fireEvent.keyDown(document, {
         key: 'X',
         ctrlKey: true,
         bubbles: true,
+      });
+
+      // Wait for the key combination to be processed
+      await waitFor(() => {
+        expect(screen.getByText('Ctrl+X')).toBeInTheDocument();
       });
 
       // Press Enter to confirm

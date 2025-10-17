@@ -294,7 +294,6 @@ When('I confirm the {string} window exists and visible', async function(this: Ap
   if (!success) {
     throw new Error(`${windowType} window was not found or is not visible`);
   }
-  console.log(`${windowType} window confirmed to exist and be visible`);
 });
 
 When('I confirm the {string} window exists but not visible', async function(this: ApplicationWorld, windowType: string) {
@@ -311,7 +310,58 @@ When('I confirm the {string} window exists but not visible', async function(this
   if (!success) {
     throw new Error(`${windowType} window does not exist or is visible after 3 attempts`);
   }
-  console.log(`${windowType} window confirmed to exist but not be visible`);
+});
+
+When('I confirm the {string} window exists', async function(this: ApplicationWorld, windowType: string) {
+  if (!this.app) {
+    throw new Error('Application is not launched');
+  }
+
+  const success = await waitForWindowCondition(
+    this.app,
+    windowType,
+    (window) => window !== undefined && !window.isClosed(),
+    3,
+    1000,
+  );
+
+  if (!success) {
+    throw new Error(`${windowType} window was not found or is closed`);
+  }
+});
+
+When('I confirm the {string} window visible', async function(this: ApplicationWorld, windowType: string) {
+  if (!this.app) {
+    throw new Error('Application is not launched');
+  }
+
+  const success = await waitForWindowCondition(
+    this.app,
+    windowType,
+    (window, isVisible) => window !== undefined && !window.isClosed() && isVisible,
+    3,
+    1000,
+  );
+
+  if (!success) {
+    throw new Error(`${windowType} window was not visible after 3 attempts`);
+  }
+});
+
+When('I confirm the {string} window not visible', async function(this: ApplicationWorld, windowType: string) {
+  if (!this.app) {
+    throw new Error('Application is not launched');
+  }
+
+  const success = await waitForWindowCondition(
+    this.app,
+    windowType,
+    (window, isVisible) => window !== undefined && !window.isClosed() && !isVisible,
+  );
+
+  if (!success) {
+    throw new Error(`${windowType} window was visible or not found after 3 attempts`);
+  }
 });
 
 When('I confirm the {string} window does not exist', async function(this: ApplicationWorld, windowType: string) {
@@ -324,11 +374,10 @@ When('I confirm the {string} window does not exist', async function(this: Applic
     windowType,
     (window) => window === undefined,
     3,
-    100,
+    1000,
   );
 
   if (!success) {
     throw new Error(`${windowType} window still exists after 3 attempts`);
   }
-  console.log(`${windowType} window confirmed to not exist`);
 });

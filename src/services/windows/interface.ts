@@ -58,7 +58,7 @@ export interface IWindowService {
   toggleMenubarWindow(): Promise<void>;
   updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;
   /** Open menubar window without restart - hot reload. enableIt=true means fully enable and open. */
-  openMenubarWindow(enableIt?: boolean): Promise<void>;
+  openMenubarWindow(enableIt?: boolean, showWindow?: boolean): Promise<void>;
   /** Close menubar window. disableIt=true means fully disable and cleanup tray. */
   closeMenubarWindow(disableIt?: boolean): Promise<void>;
   /** Update window properties without restart - hot reload */

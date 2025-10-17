@@ -89,12 +89,9 @@ const createMockPreference = (overrides: Partial<IPreferences> = {}): IPreferenc
 
 describe('TidGiMenubarWindow Component', () => {
   let preferenceSubject: BehaviorSubject<IPreferences | undefined>;
-  let mockRequestRestartCountDown: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mockRequestRestartCountDown = vi.fn();
 
     preferenceSubject = new BehaviorSubject<IPreferences | undefined>(
       createMockPreference({ attachToMenubar: false }),
@@ -136,10 +133,10 @@ describe('TidGiMenubarWindow Component', () => {
     });
   });
 
-  const renderComponent = async (props: { requestRestartCountDown?: () => void } = {}) => {
+  const renderComponent = async () => {
     const result = render(
       <TestWrapper>
-        <TidGiMenubarWindow requestRestartCountDown={props.requestRestartCountDown || mockRequestRestartCountDown} />
+        <TidGiMenubarWindow />
       </TestWrapper>,
     );
 
@@ -246,7 +243,7 @@ describe('TidGiMenubarWindow Component', () => {
       });
     });
 
-    it('should request restart countdown when attach to menubar is toggled', async () => {
+    it('should toggle attach to menubar setting', async () => {
       const user = userEvent.setup();
       preferenceSubject.next(createMockPreference({ attachToMenubar: false }));
       await renderComponent();
@@ -257,7 +254,7 @@ describe('TidGiMenubarWindow Component', () => {
       await user.click(attachSwitch);
 
       await waitFor(() => {
-        expect(mockRequestRestartCountDown).toHaveBeenCalled();
+        expect(window.service.preference.set).toHaveBeenCalledWith('attachToMenubar', true);
       });
     });
   });
@@ -349,7 +346,7 @@ describe('TidGiMenubarWindow Component', () => {
       expect(alwaysOnTopSwitch).not.toBeChecked();
     });
 
-    it('should call backend API and request restart when always on top is toggled', async () => {
+    it('should call backend API when always on top is toggled', async () => {
       const user = userEvent.setup();
       preferenceSubject.next(
         createMockPreference({
@@ -366,7 +363,6 @@ describe('TidGiMenubarWindow Component', () => {
 
       await waitFor(() => {
         expect(window.service.preference.set).toHaveBeenCalledWith('menuBarAlwaysOnTop', true);
-        expect(mockRequestRestartCountDown).toHaveBeenCalled();
       });
     });
   });
@@ -627,7 +623,7 @@ describe('TidGiMenubarWindow Component', () => {
 
       render(
         <TestWrapper>
-          <TidGiMenubarWindow requestRestartCountDown={mockRequestRestartCountDown} />
+          <TidGiMenubarWindow />
         </TestWrapper>,
       );
 

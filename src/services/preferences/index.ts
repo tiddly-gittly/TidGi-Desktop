@@ -92,7 +92,8 @@ export class Preference implements IPreferenceService {
     switch (key) {
       case 'attachToMenubar': {
         if (value) {
-          await windowService.openMenubarWindow();
+          // Enable menubar without showing the window; visibility controlled by toggle/shortcut
+          await windowService.openMenubarWindow(true, false);
         } else {
           await windowService.closeMenubarWindow(true);
         }

@@ -47,6 +47,12 @@ export interface INativeService {
    */
   getKeyboardShortcuts(): Promise<Record<string, string>>;
   /**
+   * Execute a keyboard shortcut callback by key
+   * This method wraps the backend getShortcutCallback logic for frontend use
+   * @param key The key in format "ServiceIdentifier.methodName"
+   */
+  executeShortcutCallback(key: string): Promise<void>;
+  /**
    * Copy a file or directory. The directory can have contents.
    * @param fromFilePath Note that if src is a directory it will copy everything inside of this directory, not the entire directory itself (see fs.extra issue #537).
    * @param toFilePath Note that if src is a file, dest cannot be a directory (see fs.extra issue #323). (but you can set `options.fileToDir` to true)
@@ -124,6 +130,7 @@ export const NativeServiceIPCDescriptor = {
     registerKeyboardShortcut: ProxyPropertyType.Function,
     unregisterKeyboardShortcut: ProxyPropertyType.Function,
     getKeyboardShortcuts: ProxyPropertyType.Function,
+    executeShortcutCallback: ProxyPropertyType.Function,
     copyPath: ProxyPropertyType.Function,
     executeZxScript$: ProxyPropertyType.Function$,
     formatFileUrlToAbsolutePath: ProxyPropertyType.Function,

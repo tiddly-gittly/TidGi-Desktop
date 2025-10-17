@@ -406,3 +406,7 @@ This is done by using `EnvironmentPlugin` in [webpack.plugins.js](../webpack.plu
 ### E2E test hang, and refused to exit until ctrl+C
 
 Check `features/stepDefinitions/application.ts` to see if `After` step includes all clean up steps, like closing all windows instances before closing the app, and stop all utility servers.
+
+### Global shortcut not working
+
+See `src/helpers/testKeyboardShortcuts.ts`

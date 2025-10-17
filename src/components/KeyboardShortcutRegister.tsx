@@ -44,7 +44,7 @@ export const KeyboardShortcutRegister: React.FC<KeyboardShortcutRegisterProps> =
   /**
    * Handle keyboard events to update current shortcut combination
    */
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+  const handleKeyDown = useCallback(async (event: KeyboardEvent) => {
     // Handle special keys for dialog control
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -73,23 +73,30 @@ export const KeyboardShortcutRegister: React.FC<KeyboardShortcutRegisterProps> =
     // Build the shortcut combination
     const combo: string[] = [];
 
-    if (event.ctrlKey || event.metaKey) {
-      combo.push(process.platform === 'darwin' ? 'Cmd' : 'Ctrl');
+    try {
+      if (event.ctrlKey || event.metaKey) {
+        const platform = await window.service.context.get('platform');
+        const modifier = platform === 'darwin' ? 'Cmd' : 'Ctrl';
+        combo.push(modifier);
+      }
+
+      if (event.altKey) {
+        combo.push('Alt');
+      }
+
+      if (event.shiftKey) {
+        combo.push('Shift');
+      }
+
+      // Add the main key
+      combo.push(key);
+
+      // Update current shortcut combination
+      const newCombo = combo.join('+');
+      setCurrentKeyCombo(newCombo);
+    } catch {
+      // Handle error silently
     }
-
-    if (event.altKey) {
-      combo.push('Alt');
-    }
-
-    if (event.shiftKey) {
-      combo.push('Shift');
-    }
-
-    // Add the main key
-    combo.push(key);
-
-    // Update current shortcut combination
-    setCurrentKeyCombo(combo.join('+'));
   }, [onChange, currentKeyCombo]);
 
   /**
@@ -126,14 +133,18 @@ export const KeyboardShortcutRegister: React.FC<KeyboardShortcutRegisterProps> =
    * Add or remove keyboard event listeners when dialog opens or closes
    */
   useEffect(() => {
+    const keyDownHandler = (event: KeyboardEvent) => {
+      void handleKeyDown(event);
+    };
+
     if (dialogOpen) {
-      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('keydown', keyDownHandler);
     } else {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', keyDownHandler);
     }
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', keyDownHandler);
     };
   }, [dialogOpen, handleKeyDown]);
 

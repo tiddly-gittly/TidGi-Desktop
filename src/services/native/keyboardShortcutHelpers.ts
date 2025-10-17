@@ -8,7 +8,7 @@ import { globalShortcut } from 'electron';
  * @param key The key in format "ServiceIdentifier.methodName"
  * @returns The callback function or undefined
  */
-export function getShortcutCallback(key: string): (() => void) | undefined {
+export function getShortcutCallback(key: string): (() => Promise<void>) | undefined {
   logger.debug('Getting shortcut callback', { key, function: 'getShortcutCallback' });
 
   // Split the key into service and method parts
@@ -23,7 +23,12 @@ export function getShortcutCallback(key: string): (() => void) | undefined {
 
   // Get the service identifier symbol
   const serviceSymbol = (serviceIdentifier as Record<string, symbol>)[serviceIdentifierName];
-  logger.debug('Service symbol lookup', { serviceIdentifierName, serviceSymbol: serviceSymbol?.toString(), function: 'getShortcutCallback' });
+  logger.debug('Service symbol lookup', {
+    serviceIdentifierName,
+    serviceSymbol: serviceSymbol?.toString(),
+    availableServices: Object.keys(serviceIdentifier),
+    function: 'getShortcutCallback',
+  });
 
   if (serviceSymbol === undefined) {
     logger.warn('Service identifier not found', { serviceIdentifierName, availableServices: Object.keys(serviceIdentifier), function: 'getShortcutCallback' });
@@ -34,11 +39,21 @@ export function getShortcutCallback(key: string): (() => void) | undefined {
 
   return async () => {
     try {
+      logger.info('🔥 SHORTCUT TRIGGERED! 🔥', { key, service: serviceIdentifierName, method: methodName, function: 'getShortcutCallback' });
       logger.info('Shortcut triggered - starting execution', { key, service: serviceIdentifierName, method: methodName, function: 'getShortcutCallback' });
 
       // Get the service instance from container lazily
       const service = container.get<Record<string, (...arguments_: unknown[]) => unknown>>(serviceSymbol);
-      logger.debug('Shortcut triggered', { key, service: serviceIdentifierName, method: methodName, function: 'getShortcutCallback' });
+      logger.debug('Service instance retrieved', {
+        key,
+        service: serviceIdentifierName,
+        method: methodName,
+        serviceExists: !!service,
+        serviceType: typeof service,
+        availableMethods: service ? Object.keys(service).filter(k => typeof service[k] === 'function') : [],
+        function: 'getShortcutCallback',
+      });
+
       if (service && typeof service[methodName] === 'function') {
         logger.info('Calling service method', { key, service: serviceIdentifierName, method: methodName, function: 'getShortcutCallback' });
         // Call the method with await if it's an async method

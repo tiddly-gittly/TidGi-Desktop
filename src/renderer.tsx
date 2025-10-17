@@ -1,6 +1,6 @@
 import { ThemeProvider } from '@mui/material/styles';
 import i18next from 'i18next';
-import React, { JSX, StrictMode, Suspense } from 'react';
+import React, { JSX, StrictMode, Suspense, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Router } from 'wouter';
@@ -24,10 +24,12 @@ import { initRendererI18N } from './services/libs/i18n/renderer';
 import 'electron-ipc-cat/fixContextIsolation';
 import { useHashLocation } from 'wouter/use-hash-location';
 import { RootStyle } from './components/RootStyle';
+import { initTestKeyboardShortcutFallback } from './helpers/testKeyboardShortcuts';
 import { Pages } from './windows';
 
 function App(): JSX.Element {
   const theme = useThemeObservable();
+  useEffect(() => initTestKeyboardShortcutFallback(), []);
 
   return (
     <StrictMode>

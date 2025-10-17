@@ -339,16 +339,21 @@ export class Window implements IWindowService {
   }
 
   public async toggleMenubarWindow(): Promise<void> {
+    logger.info('toggleMenubarWindow called', { function: 'toggleMenubarWindow' });
     try {
       const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 
       const isOpen = await this.isMenubarOpen();
+      logger.debug('Menubar open status checked', { function: 'toggleMenubarWindow', isOpen });
       if (isOpen) {
+        logger.info('Closing menubar window', { function: 'toggleMenubarWindow' });
         await this.closeMenubarWindow();
       } else {
         const attachToMenubar = await preferenceService.get('attachToMenubar');
+        logger.debug('attachToMenubar preference checked', { function: 'toggleMenubarWindow', attachToMenubar });
         if (attachToMenubar) {
-          await this.openMenubarWindow();
+          logger.info('Opening menubar window', { function: 'toggleMenubarWindow' });
+          await this.openMenubarWindow(true, true); // Explicitly show window when toggling
         } else {
           logger.warn('Cannot open menubar window: attachToMenubar preference is disabled', { function: 'toggleMenubarWindow' });
         }
@@ -358,18 +363,14 @@ export class Window implements IWindowService {
     }
   }
 
-  public async openMenubarWindow(enableIt = true): Promise<void> {
+  public async openMenubarWindow(enableIt = true, showWindow = true): Promise<void> {
     try {
       // Check if menubar is already enabled
       if (this.mainWindowMenuBar?.window !== undefined) {
         logger.debug('Menubar is already enabled, bring it to front', { function: 'openMenubarWindow' });
-        const existingWin = this.mainWindowMenuBar.window;
-        if (existingWin !== undefined) {
-          if (existingWin.isMinimized?.()) {
-            existingWin.restore();
-          }
-          existingWin.show();
-          existingWin.focus();
+        if (showWindow) {
+          // Use menuBar.showWindow() instead of direct window.show() for proper menubar behavior
+          void this.mainWindowMenuBar.showWindow();
         }
         return;
       }
@@ -378,6 +379,11 @@ export class Window implements IWindowService {
       await this.open(WindowNames.menuBar);
       if (enableIt) {
         logger.debug('Menubar enabled', { function: 'openMenubarWindow' });
+        // After creating the menubar, show it if requested
+        if (showWindow && this.mainWindowMenuBar) {
+          logger.debug('Showing newly created menubar window', { function: 'openMenubarWindow' });
+          void this.mainWindowMenuBar.showWindow();
+        }
       }
     } catch (error) {
       logger.error('Failed to open menubar', { error, function: 'openMenubarWindow' });
@@ -409,8 +415,8 @@ export class Window implements IWindowService {
         logger.debug('Menubar disabled successfully without restart', { function: 'closeMenubarWindow' });
       } else {
         // Only hide the menubar window (keep tray and instance for re-open)
+        // Use menuBar.hideWindow() for proper menubar behavior
         menuBar.hideWindow();
-        menuBar.window?.hide?.();
         logger.debug('Menubar closed (kept enabled)', { function: 'closeMenubarWindow' });
       }
     } catch (error) {
