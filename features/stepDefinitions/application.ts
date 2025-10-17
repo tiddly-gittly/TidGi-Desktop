@@ -219,7 +219,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
     this.currentWindow = this.mainWindow;
   } catch (error) {
     throw new Error(
-      `Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run package\` before running the tests to ensure the app is built, and build with binaries like "dugite" and "tiddlywiki", see scripts/afterPack.js for more details.`,
+      `Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run test:prepare-e2e\` before running the tests to ensure the app is built, and build with binaries like "dugite" and "tiddlywiki", see scripts/afterPack.js for more details.`,
     );
   }
 });
