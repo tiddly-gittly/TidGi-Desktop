@@ -424,7 +424,7 @@ export class View implements IViewService {
       // Default to sync (undefined or true), otherwise use fixed workspace ID (fallback to main if not set)
       const shouldSync = menubarSyncWorkspaceWithMainWindow === undefined || menubarSyncWorkspaceWithMainWindow;
       const menubarWorkspaceId = shouldSync ? workspaceID : (menubarFixedWorkspaceId || workspaceID);
-
+      
       // Check if the target workspace is a pageType workspace (which doesn't have a view)
       if (!shouldSync && menubarFixedWorkspaceId) {
         const fixedWorkspace = await this.workspaceService.get(menubarFixedWorkspaceId);

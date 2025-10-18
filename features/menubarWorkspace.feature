@@ -22,8 +22,6 @@ Feature: TidGi Menubar Window Workspace Switching
     And I confirm the "menubar" window browser view is not positioned within visible window bounds
     Then I switch to "menubar" window
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    # Clean up menubar settings to avoid affecting other tests
-    Then I clear test menubar settings
 
   Scenario: Menubar window with fixed agent workspace shows no view and fixed wiki workspace shows browser view
     # Configure fixed agent workspace through UI
@@ -55,5 +53,3 @@ Feature: TidGi Menubar Window Workspace Switching
     Then I switch to "menubar" window
     And the browser view should be loaded and visible
     And I should see "我的 TiddlyWiki" in the browser view content
-    # Clean up menubar settings to avoid affecting other tests
-    Then I clear test menubar settings

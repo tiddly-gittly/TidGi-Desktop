@@ -7,6 +7,7 @@ import { isMainWindowPage, PageType } from '../../src/constants/pageTypes';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { logsDirectory, makeSlugPath, screenshotsDirectory } from '../supports/paths';
 import { getPackedAppPath } from '../supports/paths';
+import { clearMenubarSettings } from './menuar';
 
 export class ApplicationWorld {
   app: ElectronApplication | undefined;
@@ -112,7 +113,7 @@ Before(function(this: ApplicationWorld) {
   }
 });
 
-After(async function(this: ApplicationWorld) {
+After(async function(this: ApplicationWorld, { pickle }) {
   if (this.app) {
     try {
       // Close all windows including menubar window before closing the app, otherwise it might hang, and refused to exit until ctrl+C
@@ -133,6 +134,11 @@ After(async function(this: ApplicationWorld) {
     this.app = undefined;
     this.mainWindow = undefined;
     this.currentWindow = undefined;
+  }
+  
+  // Clean up menubar settings after app closes (for @menubar tagged tests)
+  if (pickle.tags.some((tag) => tag.name === '@menubar')) {
+    clearMenubarSettings();
   }
 });
 

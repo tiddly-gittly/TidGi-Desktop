@@ -36,7 +36,8 @@ Given('I configure menubar with shortcut', async function() {
   await fs.writeJson(settingsPath, finalSettings, { spaces: 2 });
 });
 
-Given('I clear test menubar settings', function() {
+// Cleanup function to be called after menubar tests (after app closes)
+function clearMenubarSettings() {
   if (!fs.existsSync(settingsPath)) return;
   const parsed = fs.readJsonSync(settingsPath) as ISettingFile;
   // Remove menubar-related preferences to avoid affecting other tests
@@ -53,4 +54,6 @@ Given('I clear test menubar settings', function() {
   }
   const cleaned = { ...parsed, preferences: cleanedPreferences };
   fs.writeJsonSync(settingsPath, cleaned, { spaces: 2 });
-});
+}
+
+export { clearMenubarSettings };
