@@ -388,9 +388,22 @@ export class Window implements IWindowService {
             menubarFixedWorkspaceId,
           });
 
-          // Realign the workspace view for the target workspace
-          // This will handle both pageType workspaces (hiding views) and wiki workspaces (showing views)
+          // Ensure view exists for the target workspace before realigning
           if (targetWorkspaceId) {
+            const targetWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(targetWorkspaceId);
+            if (targetWorkspace && !targetWorkspace.pageType) {
+              // This is a wiki workspace - ensure it has a view for menubar window
+              const viewService = container.get<IViewService>(serviceIdentifier.View);
+              const existingView = viewService.getView(targetWorkspace.id, WindowNames.menuBar);
+              if (!existingView) {
+                logger.info('openMenubarWindow: creating missing menubar view', {
+                  function: 'openMenubarWindow',
+                  workspaceId: targetWorkspace.id,
+                });
+                await viewService.addView(targetWorkspace, WindowNames.menuBar);
+              }
+            }
+
             logger.info('openMenubarWindow: calling realignActiveWorkspace', {
               function: 'openMenubarWindow',
               targetWorkspaceId,

@@ -312,7 +312,11 @@ export class View implements IViewService {
     if (this.shouldMuteAudio !== undefined) {
       view.webContents.audioMuted = this.shouldMuteAudio;
     }
-    if (workspace.active || windowName === WindowNames.secondary) {
+    // Add view to window if:
+    // 1. workspace is active (main window)
+    // 2. windowName is secondary (always add)
+    // 3. windowName is menuBar (menubar can have fixed workspace independent of main window's active workspace)
+    if (workspace.active || windowName === WindowNames.secondary || windowName === WindowNames.menuBar) {
       browserWindow.contentView.addChildView(view);
       const contentSize = browserWindow.getContentSize();
       const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });

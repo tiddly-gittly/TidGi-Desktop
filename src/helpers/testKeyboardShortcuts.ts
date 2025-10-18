@@ -95,7 +95,7 @@ export function initTestKeyboardShortcutFallback(): () => void {
         break; // Only execute the first match
       }
     }
-
+    
     if (!matched) {
       void window.service.native.log('debug', 'Renderer(Test): No shortcut matched', {
         pressed,

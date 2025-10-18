@@ -6,6 +6,7 @@ import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { i18n } from '@services/libs/i18n';
 import { requestChangeLanguage } from '@services/libs/i18n/requestChangeLanguage';
+import { logger } from '@services/libs/log';
 import type { INotificationService } from '@services/notifications/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IViewService } from '@services/view/interface';
@@ -96,6 +97,19 @@ export class Preference implements IPreferenceService {
         if (value) {
           // Enable menubar without showing the window; visibility controlled by toggle/shortcut
           await windowService.openMenubarWindow(true, false);
+
+          // After enabling menubar, create view for the current active workspace (if it's a wiki workspace)
+          const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+          const viewService = container.get<IViewService>(serviceIdentifier.View);
+          const activeWorkspace = await workspaceService.getActiveWorkspace();
+
+          if (activeWorkspace && !activeWorkspace.pageType) {
+            // This is a wiki workspace - ensure it has a view for menubar window
+            const existingView = viewService.getView(activeWorkspace.id, WindowNames.menuBar);
+            if (!existingView) {
+              await viewService.addView(activeWorkspace, WindowNames.menuBar);
+            }
+          }
         } else {
           await windowService.closeMenubarWindow(true);
         }
@@ -103,12 +117,14 @@ export class Preference implements IPreferenceService {
       }
       case 'menubarSyncWorkspaceWithMainWindow':
       case 'menubarFixedWorkspaceId': {
+        logger.info('Preference changed', { function: 'onPreferenceChanged', key, value: JSON.stringify(value) });
         // When menubar workspace settings change, hide all views and let the next window show trigger realignment
         const menuBarWindow = windowService.get(WindowNames.menuBar);
         if (menuBarWindow) {
           const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
           const viewService = container.get<IViewService>(serviceIdentifier.View);
           const allWorkspaces = await workspaceService.getWorkspacesAsList();
+          logger.debug(`Hiding all menubar views (${allWorkspaces.length} workspaces)`, { function: 'onPreferenceChanged', key });
           // Hide all views - the correct view will be shown when window is next opened
           await Promise.all(
             allWorkspaces.map(async (workspace) => {
@@ -118,18 +134,9 @@ export class Preference implements IPreferenceService {
               }
             }),
           );
-
-          // If menubarFixedWorkspaceId changed, create view for the new workspace if it's a wiki workspace
-          if (key === 'menubarFixedWorkspaceId' && value) {
-            const targetWorkspace = await workspaceService.get(value as string);
-            if (targetWorkspace && !targetWorkspace.pageType) {
-              // This is a wiki workspace - ensure it has a view for menubar window
-              const existingView = viewService.getView(targetWorkspace.id, WindowNames.menuBar);
-              if (!existingView) {
-                await viewService.addView(targetWorkspace, WindowNames.menuBar);
-              }
-            }
-          }
+          // View creation is handled by openMenubarWindow when the window is shown
+        } else {
+          logger.warn('menuBarWindow not found, skipping view management', { function: 'onPreferenceChanged', key });
         }
         return;
       }
