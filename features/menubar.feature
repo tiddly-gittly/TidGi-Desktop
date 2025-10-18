@@ -1,3 +1,4 @@
+@menubar
 Feature: TidGi Menubar Window
   As a user
   I want to enable and use the TidGi menubar window
@@ -34,3 +35,5 @@ Feature: TidGi Menubar Window
     And I wait for 2 seconds
     And I confirm the "menubar" window exists
     And I confirm the "menubar" window not visible
+    # Clean up menubar settings to avoid affecting other tests
+    Then I clear test menubar settings

@@ -1,5 +1,6 @@
 import { Given } from '@cucumber/cucumber';
 import fs from 'fs-extra';
+import { omit } from 'lodash';
 import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
 import { settingsPath } from '../supports/paths';
@@ -33,4 +34,23 @@ Given('I configure menubar with shortcut', async function() {
   };
   const finalSettings = { ...existing, preferences: updatedPreferences } as ISettingFile;
   await fs.writeJson(settingsPath, finalSettings, { spaces: 2 });
+});
+
+Given('I clear test menubar settings', function() {
+  if (!fs.existsSync(settingsPath)) return;
+  const parsed = fs.readJsonSync(settingsPath) as ISettingFile;
+  // Remove menubar-related preferences to avoid affecting other tests
+  const cleanedPreferences = omit(parsed.preferences || {}, [
+    'attachToMenubar',
+    'menubarSyncWorkspaceWithMainWindow',
+    'menubarFixedWorkspaceId',
+    'menuBarAlwaysOnTop',
+    'sidebarOnMenubar',
+  ]);
+  // Also clean up the menubar shortcut from keyboardShortcuts
+  if (cleanedPreferences.keyboardShortcuts) {
+    cleanedPreferences.keyboardShortcuts = omit(cleanedPreferences.keyboardShortcuts, ['Window.toggleMenubarWindow']);
+  }
+  const cleaned = { ...parsed, preferences: cleanedPreferences };
+  fs.writeJsonSync(settingsPath, cleaned, { spaces: 2 });
 });
