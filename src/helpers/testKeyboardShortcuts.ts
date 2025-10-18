@@ -27,6 +27,10 @@
 
 export function initTestKeyboardShortcutFallback(): () => void {
   const isTestEnvironment = process.env.NODE_ENV === 'test';
+  void window.service.native.log('debug', 'Renderer(Test): initTestKeyboardShortcutFallback called', {
+    isTestEnvironment,
+    nodeEnv: process.env.NODE_ENV,
+  });
   if (!isTestEnvironment) return () => {};
 
   let allShortcuts: Record<string, string> = {};
@@ -35,9 +39,11 @@ export function initTestKeyboardShortcutFallback(): () => void {
   // Load platform and all current shortcut mappings
   void (async () => {
     platform = await window.service.context.get('platform').catch(() => platform);
+    void window.service.native.log('debug', 'Renderer(Test): Platform detected', { platform });
     allShortcuts = await window.service.native.getKeyboardShortcuts().catch(() => ({}));
     void window.service.native.log('debug', 'Renderer(Test): Loaded all keyboard shortcuts', {
       shortcuts: allShortcuts,
+      shortcutCount: Object.keys(allShortcuts).length,
     });
   })();
 
@@ -64,11 +70,22 @@ export function initTestKeyboardShortcutFallback(): () => void {
 
   const handleKeyDown = (event: KeyboardEvent): void => {
     const pressed = formatComboFromEvent(event);
+    void window.service.native.log('debug', 'Renderer(Test): Key pressed', {
+      pressed,
+      ctrlKey: event.ctrlKey,
+      metaKey: event.metaKey,
+      shiftKey: event.shiftKey,
+      altKey: event.altKey,
+      key: event.key,
+      availableShortcuts: Object.keys(allShortcuts).length,
+    });
 
     // Find matching shortcut key for the pressed combination
+    let matched = false;
     for (const [key, shortcut] of Object.entries(allShortcuts)) {
       if (shortcut && pressed === shortcut) {
         event.preventDefault();
+        matched = true;
         void window.service.native.log('debug', 'Renderer(Test): Shortcut matched', {
           pressed,
           key,
@@ -78,10 +95,19 @@ export function initTestKeyboardShortcutFallback(): () => void {
         break; // Only execute the first match
       }
     }
+
+    if (!matched) {
+      void window.service.native.log('debug', 'Renderer(Test): No shortcut matched', {
+        pressed,
+        allShortcuts,
+      });
+    }
   };
 
+  void window.service.native.log('debug', 'Renderer(Test): Adding keydown listener to document');
   document.addEventListener('keydown', handleKeyDown);
   return () => {
+    void window.service.native.log('debug', 'Renderer(Test): Cleanup - removing keydown listener');
     document.removeEventListener('keydown', handleKeyDown);
     subscription?.unsubscribe?.();
   };

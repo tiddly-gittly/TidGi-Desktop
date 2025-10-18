@@ -25,6 +25,12 @@ Feature: TidGi Menubar Window
     When I press the key combination "CommandOrControl+Shift+M"
     And I confirm the "menubar" window exists
     And I confirm the "menubar" window visible
+    And I confirm the "menubar" window browser view is positioned within visible window bounds
+    And I switch to "menubar" window
+    Then the browser view should be loaded and visible
+    And I should see "我的 TiddlyWiki" in the browser view content
+    Then I switch to "main" window
     When I press the key combination "CommandOrControl+Shift+M"
+    And I wait for 2 seconds
     And I confirm the "menubar" window exists
     And I confirm the "menubar" window not visible

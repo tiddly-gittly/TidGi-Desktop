@@ -37,6 +37,42 @@ export class ApplicationWorld {
         if (mainWindow) return mainWindow;
       } else if (windowType === 'current') {
         if (this.currentWindow) return this.currentWindow;
+      } else if (windowType.toLowerCase() === 'menubar') {
+        // Special handling for menubar window
+        // Menubar window is typically the smaller window (500x600)
+        // We identify it by getting all windows and finding the one with menubar URL
+
+        const menubarInfo = await this.app.evaluate(async ({ BrowserWindow }) => {
+          const allWindows = BrowserWindow.getAllWindows();
+          // Find the window with menubar dimensions (500x600)
+          const menubarWindow = allWindows.find(win => {
+            const bounds = win.getBounds();
+            return bounds.width === 500 && bounds.height === 600;
+          });
+
+          if (menubarWindow) {
+            return {
+              url: menubarWindow.webContents.getURL(),
+              id: menubarWindow.id,
+            };
+          }
+          return null;
+        });
+
+        if (menubarInfo) {
+          // Wait a bit for the window to be registered in Playwright
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const refreshedPages = this.app.windows();
+
+          // Find the page with matching URL (exact match)
+          const menubarPage = refreshedPages.find(page => {
+            return page.url() === menubarInfo.url;
+          });
+
+          if (menubarPage) {
+            return menubarPage;
+          }
+        }
       } else {
         // match windows more flexibly by checking the full URL and fragment for the windowType
         const specificWindow = pages.find(page => {

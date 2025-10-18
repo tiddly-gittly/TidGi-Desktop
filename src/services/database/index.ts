@@ -52,6 +52,9 @@ export class DatabaseService implements IDatabaseService {
     logger.info('loaded settings', {
       hasContent: !!this.settingFileContent,
       keys: this.settingFileContent ? Object.keys(this.settingFileContent).length : 0,
+      hasPreferences: !!this.settingFileContent?.preferences,
+      attachToMenubar: this.settingFileContent?.preferences?.attachToMenubar,
+      settingsFilePath: settings.file(),
       function: 'DatabaseService.initializeForApp',
     });
 

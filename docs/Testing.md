@@ -11,14 +11,14 @@ pnpm test
 # Run unit tests only
 pnpm test:unit
 
-# Run E2E tests (requires prepare packaged app, but only when you modify code in ./src)
+# Run E2E tests (requires prepare packaged app, but only when you modify code in ./src) Don't need to run this if you only modify .feature file or step definition ts files.
 pnpm run test:prepare-e2e
 # (When only modify tests in ./features folder, and you have packaged app before, only need to run this.)
 pnpm test:e2e
 # Or run a specific e2e test by using same `@xxx` as in the `.feature` file.
 pnpm test:e2e --tags="@smoke"
 # Or run a single e2e test by `--name`
-pnpm test:e2e --name "Wiki-search tool usage" # Not `-- --name` , and not `name`, is is just `--name` and have "" around the value
+pnpm test:e2e --name "Wiki-search tool usage" # Not `-- --name` , and not `name`, is is just `--name` and have "" around the value, not omitting `--name`
 
 # Run with coverage
 pnpm test:unit -- --coverage

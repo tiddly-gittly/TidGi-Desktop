@@ -12,6 +12,7 @@ When('I wait for the page to load completely', async function(this: ApplicationW
 
 Then('I should see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
   const currentWindow = this.currentWindow || this.mainWindow;
+
   try {
     await currentWindow?.waitForSelector(selector, { timeout: 10000 });
     const isVisible = await currentWindow?.isVisible(selector);
@@ -280,14 +281,21 @@ When('I press the key combination {string}', async function(this: ApplicationWor
 
   // Use dispatchEvent to trigger document-level keydown events
   // This ensures the event is properly captured by React components listening to document events
+  // The testKeyboardShortcutFallback in test environment expects key to match the format used in shortcuts
   await currentWindow.evaluate((keyCombo) => {
     const parts = keyCombo.split('+');
-    const mainKey = parts[parts.length - 1];
+    let mainKey = parts[parts.length - 1];
     const modifiers = parts.slice(0, -1);
+
+    // For single letter keys, match the case sensitivity used by the shortcut system
+    // Shift+Key -> uppercase, otherwise lowercase
+    if (mainKey.length === 1) {
+      mainKey = modifiers.includes('Shift') ? mainKey.toUpperCase() : mainKey.toLowerCase();
+    }
 
     const event = new KeyboardEvent('keydown', {
       key: mainKey,
-      code: `Key${mainKey.toUpperCase()}`,
+      code: mainKey.length === 1 ? `Key${mainKey.toUpperCase()}` : mainKey,
       ctrlKey: modifiers.includes('Control'),
       metaKey: modifiers.includes('Meta'),
       shiftKey: modifiers.includes('Shift'),
@@ -298,4 +306,96 @@ When('I press the key combination {string}', async function(this: ApplicationWor
 
     document.dispatchEvent(event);
   }, platformKeyCombo);
+});
+
+When('I select {string} from MUI Select with test id {string}', async function(this: ApplicationWorld, optionValue: string, testId: string) {
+  const currentWindow = this.currentWindow || this.mainWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  try {
+    // Find the hidden input element with the test-id
+    const inputSelector = `input[data-testid="${testId}"]`;
+    await currentWindow.waitForSelector(inputSelector, { timeout: 10000 });
+
+    // Try to click using Playwright's click on the div with role="combobox"
+    // According to your HTML structure, the combobox is a sibling of the input
+    const clicked = await currentWindow.evaluate((testId) => {
+      const input = document.querySelector(`input[data-testid="${testId}"]`);
+      if (!input) return { success: false, error: 'Input not found' };
+      const parent = input.parentElement;
+      if (!parent) return { success: false, error: 'Parent not found' };
+
+      // Find all elements in parent
+      const combobox = parent.querySelector('[role="combobox"]');
+      if (!combobox) {
+        return {
+          success: false,
+          error: 'Combobox not found',
+          parentHTML: parent.outerHTML.substring(0, 500),
+        };
+      }
+
+      // Trigger both mousedown and click events
+      combobox.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      combobox.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      (combobox as HTMLElement).click();
+
+      return { success: true };
+    }, testId);
+
+    if (!clicked.success) {
+      throw new Error(`Failed to click: ${JSON.stringify(clicked)}`);
+    }
+
+    // Wait a bit for the menu to appear
+    await currentWindow.waitForTimeout(500);
+
+    // Wait for the menu to appear
+    await currentWindow.waitForSelector('[role="listbox"]', { timeout: 5000 });
+
+    // Try to click on the option with the specified value (data-value attribute)
+    // If not found, try to find by text content
+    const optionClicked = await currentWindow.evaluate((optionValue) => {
+      // First try: Find by data-value attribute
+      const optionByValue = document.querySelector(`[role="option"][data-value="${optionValue}"]`);
+      if (optionByValue) {
+        (optionByValue as HTMLElement).click();
+        return { success: true, method: 'data-value' };
+      }
+
+      // Second try: Find by text content (case-insensitive)
+      const allOptions = Array.from(document.querySelectorAll('[role="option"]'));
+      const optionByText = allOptions.find(option => {
+        const text = option.textContent?.trim().toLowerCase();
+        return text === optionValue.toLowerCase();
+      });
+
+      if (optionByText) {
+        (optionByText as HTMLElement).click();
+        return { success: true, method: 'text-content' };
+      }
+
+      // Return available options for debugging
+      return {
+        success: false,
+        availableOptions: allOptions.map(opt => ({
+          text: opt.textContent?.trim(),
+          value: opt.getAttribute('data-value'),
+        })),
+      };
+    }, optionValue);
+
+    if (!optionClicked.success) {
+      throw new Error(
+        `Could not find option "${optionValue}". Available options: ${JSON.stringify(optionClicked.availableOptions)}`,
+      );
+    }
+
+    // Wait for the menu to close
+    await currentWindow.waitForSelector('[role="listbox"]', { state: 'hidden', timeout: 5000 });
+  } catch (error) {
+    throw new Error(`Failed to select option "${optionValue}" from MUI Select with test id "${testId}": ${String(error)}`);
+  }
 });

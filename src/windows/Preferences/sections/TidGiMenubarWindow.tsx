@@ -13,7 +13,7 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
   const { t } = useTranslation();
   const preference = usePreferenceObservable();
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
-  const workspaces = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList(), []);
+  const workspaces = usePromiseValue(async () => (await window.service.workspace.getWorkspacesAsList()), []);
 
   if (preference === undefined || platform === undefined) {
     return <ListItem>{t('Loading')}</ListItem>;
@@ -117,6 +117,7 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
                         await window.service.preference.set('menubarFixedWorkspaceId', event.target.value);
                       }}
                       label={t('Preference.MenubarFixedWorkspace')}
+                      inputProps={{ 'data-testid': 'menubar-fixed-workspace-select' }}
                     >
                       <MenuItem value=''>{t('Preference.SelectWorkspace')}</MenuItem>
                       {workspaces?.map((workspace) => (

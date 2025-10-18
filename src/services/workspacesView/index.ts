@@ -203,12 +203,41 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async addViewForAllBrowserViews(workspace: IWorkspace): Promise<void> {
-    await Promise.all([
-      container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.main),
-      this.preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
-        return await (attachToMenubar && container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.menuBar));
-      }),
-    ]);
+    const mainTask = container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.main);
+
+    // For menubar window, decide which workspace to show based on preferences
+    const menubarTask = (async () => {
+      const [attachToMenubar, menubarSyncWorkspaceWithMainWindow, menubarFixedWorkspaceId] = await Promise.all([
+        this.preferenceService.get('attachToMenubar'),
+        this.preferenceService.get('menubarSyncWorkspaceWithMainWindow'),
+        this.preferenceService.get('menubarFixedWorkspaceId'),
+      ]);
+
+      if (!attachToMenubar) {
+        return;
+      }
+
+      // If syncing with main window (undefined means default to true, or explicitly true), use the current workspace
+      const shouldSync = menubarSyncWorkspaceWithMainWindow === undefined || menubarSyncWorkspaceWithMainWindow;
+      if (shouldSync) {
+        // Don't add view for pageType workspaces (they don't have browser views)
+        if (!workspace.pageType) {
+          await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.menuBar);
+        }
+        return;
+      }
+
+      // If not syncing and a fixed workspace is set, only add view if this IS the fixed workspace
+      if (menubarFixedWorkspaceId && workspace.id === menubarFixedWorkspaceId) {
+        // Don't add view for pageType workspaces (they don't have browser views)
+        if (!workspace.pageType) {
+          await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.menuBar);
+        }
+      }
+      // If not syncing and no fixed workspace is set, don't add any view (user needs to select one)
+    })();
+
+    await Promise.all([mainTask, menubarTask]);
   }
 
   public async openWorkspaceWindowWithView(workspace: IWorkspace, configs?: { uri?: string }): Promise<void> {
@@ -571,8 +600,42 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (menuBarWindow === undefined) {
       logger.info(`realignActiveWorkspaceView: no menuBarBrowserViewWebContent, skip menu bar window for ${workspaceToRealign.id}.`);
     } else {
-      logger.debug(`realignActiveWorkspaceView: realign menu bar window for ${workspaceToRealign.id}.`);
-      tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(menuBarWindow, workspaceToRealign.id, WindowNames.menuBar));
+      // For menubar window, decide which workspace to show based on preferences
+      const [menubarSyncWorkspaceWithMainWindow, menubarFixedWorkspaceId] = await Promise.all([
+        this.preferenceService.get('menubarSyncWorkspaceWithMainWindow'),
+        this.preferenceService.get('menubarFixedWorkspaceId'),
+      ]);
+      // Default to sync (undefined or true), otherwise use fixed workspace ID (fallback to main if not set)
+      const shouldSync = menubarSyncWorkspaceWithMainWindow === undefined || menubarSyncWorkspaceWithMainWindow;
+      const menubarWorkspaceId = shouldSync ? workspaceToRealign.id : (menubarFixedWorkspaceId || workspaceToRealign.id);
+
+      // Check if the target workspace is a pageType workspace (which doesn't have a view)
+      let shouldShowMenubarView = true;
+      const menubarTargetWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(menubarWorkspaceId);
+
+      if (menubarTargetWorkspace?.pageType) {
+        logger.debug(
+          `realignActiveWorkspaceView: skip menu bar window because workspace ${menubarWorkspaceId} is a page type workspace. Hiding all views.`,
+        );
+        shouldShowMenubarView = false; // Don't show any view for pageType workspaces
+        // Hide all existing views in the menubar window
+        const allWorkspaces = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getWorkspacesAsList();
+        await Promise.all(
+          allWorkspaces.map(async (workspace) => {
+            const view = container.get<IViewService>(serviceIdentifier.View).getView(workspace.id, WindowNames.menuBar);
+            if (view) {
+              await container.get<IViewService>(serviceIdentifier.View).hideView(menuBarWindow, WindowNames.menuBar, workspace.id);
+            }
+          }),
+        );
+      }
+
+      if (shouldShowMenubarView) {
+        logger.debug(
+          `realignActiveWorkspaceView: realign menu bar window for ${menubarWorkspaceId} (main: ${workspaceToRealign.id}, sync: ${String(menubarSyncWorkspaceWithMainWindow)}).`,
+        );
+        tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(menuBarWindow, menubarWorkspaceId, WindowNames.menuBar));
+      }
     }
     await Promise.all(tasks);
   }
@@ -590,8 +653,24 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (menuBarWindow === undefined) {
       logger.debug(`hideWorkspaceView: no menuBarBrowserWindow, skip menu bar window browserView.`);
     } else {
-      logger.info(`hideWorkspaceView: hide menu bar window browserView.`);
-      tasks.push(container.get<IViewService>(serviceIdentifier.View).hideView(menuBarWindow, WindowNames.menuBar, idToDeactivate));
+      // For menubar window, only hide if syncing with main window OR if this is the fixed workspace being deactivated
+      const [menubarSyncWorkspaceWithMainWindow, menubarFixedWorkspaceId] = await Promise.all([
+        this.preferenceService.get('menubarSyncWorkspaceWithMainWindow'),
+        this.preferenceService.get('menubarFixedWorkspaceId'),
+      ]);
+
+      // Default to sync (undefined or true)
+      const shouldSync = menubarSyncWorkspaceWithMainWindow === undefined || menubarSyncWorkspaceWithMainWindow;
+
+      // Only hide menubar view if:
+      // 1. Syncing with main window (should hide when main window hides)
+      // 2. OR the workspace being hidden is the fixed workspace (rare case, but should be handled)
+      if (shouldSync || idToDeactivate === menubarFixedWorkspaceId) {
+        logger.info(`hideWorkspaceView: hide menu bar window browserView.`);
+        tasks.push(container.get<IViewService>(serviceIdentifier.View).hideView(menuBarWindow, WindowNames.menuBar, idToDeactivate));
+      } else {
+        logger.debug(`hideWorkspaceView: skip hiding menu bar window browserView (fixed workspace: ${menubarFixedWorkspaceId || 'none'}).`);
+      }
     }
     await Promise.all(tasks);
     logger.info(`hideWorkspaceView: done.`);

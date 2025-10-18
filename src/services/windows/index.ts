@@ -9,6 +9,7 @@ import { windowDimension, WindowMeta, WindowNames } from '@services/windows/Wind
 import { Channels, MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { isTest } from '@/constants/environment';
@@ -369,6 +370,38 @@ export class Window implements IWindowService {
       if (this.mainWindowMenuBar?.window !== undefined) {
         logger.debug('Menubar is already enabled, bring it to front', { function: 'openMenubarWindow' });
         if (showWindow) {
+          // Before showing, get the target workspace
+          const [menubarSyncWorkspaceWithMainWindow, menubarFixedWorkspaceId] = await Promise.all([
+            this.preferenceService.get('menubarSyncWorkspaceWithMainWindow'),
+            this.preferenceService.get('menubarFixedWorkspaceId'),
+          ]);
+          const shouldSync = menubarSyncWorkspaceWithMainWindow === undefined || menubarSyncWorkspaceWithMainWindow;
+          const targetWorkspaceId = shouldSync
+            ? (await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace())?.id
+            : menubarFixedWorkspaceId;
+
+          logger.info('openMenubarWindow: preparing to show window', {
+            function: 'openMenubarWindow',
+            shouldSync,
+            targetWorkspaceId,
+            menubarSyncWorkspaceWithMainWindow,
+            menubarFixedWorkspaceId,
+          });
+
+          // Realign the workspace view for the target workspace
+          // This will handle both pageType workspaces (hiding views) and wiki workspaces (showing views)
+          if (targetWorkspaceId) {
+            logger.info('openMenubarWindow: calling realignActiveWorkspace', {
+              function: 'openMenubarWindow',
+              targetWorkspaceId,
+            });
+            await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).realignActiveWorkspace(targetWorkspaceId);
+            logger.info('openMenubarWindow: realignActiveWorkspace completed', {
+              function: 'openMenubarWindow',
+              targetWorkspaceId,
+            });
+          }
+
           // Use menuBar.showWindow() instead of direct window.show() for proper menubar behavior
           void this.mainWindowMenuBar.showWindow();
         }

@@ -417,8 +417,24 @@ export class View implements IViewService {
     // For menubar window, decide which workspace to show based on preferences
     let menubarTask = Promise.resolve();
     if (attachToMenubar) {
-      const menubarWorkspaceId = menubarSyncWorkspaceWithMainWindow ? workspaceID : (menubarFixedWorkspaceId || workspaceID);
-      menubarTask = this.setActiveView(menubarWorkspaceId, WindowNames.menuBar);
+      // Default to sync (undefined or true), otherwise use fixed workspace ID (fallback to main if not set)
+      const shouldSync = menubarSyncWorkspaceWithMainWindow === undefined || menubarSyncWorkspaceWithMainWindow;
+      const menubarWorkspaceId = shouldSync ? workspaceID : (menubarFixedWorkspaceId || workspaceID);
+
+      // Check if the target workspace is a pageType workspace (which doesn't have a view)
+      if (!shouldSync && menubarFixedWorkspaceId) {
+        const fixedWorkspace = await this.workspaceService.get(menubarFixedWorkspaceId);
+        if (fixedWorkspace?.pageType) {
+          logger.debug(
+            `setActiveViewForAllBrowserViews: skip menu bar window because fixed workspace ${menubarFixedWorkspaceId} is a page type workspace.`,
+          );
+          // Don't set any view for pageType workspaces - menubar task remains as Promise.resolve()
+        } else {
+          menubarTask = this.setActiveView(menubarWorkspaceId, WindowNames.menuBar);
+        }
+      } else {
+        menubarTask = this.setActiveView(menubarWorkspaceId, WindowNames.menuBar);
+      }
     }
 
     await Promise.all([mainWindowTask, menubarTask]);

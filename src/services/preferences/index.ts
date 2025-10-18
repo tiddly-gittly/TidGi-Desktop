@@ -8,8 +8,10 @@ import { i18n } from '@services/libs/i18n';
 import { requestChangeLanguage } from '@services/libs/i18n/requestChangeLanguage';
 import type { INotificationService } from '@services/notifications/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import { defaultPreferences } from './defaultPreferences';
 import type { IPreferences, IPreferenceService } from './interface';
 
@@ -96,6 +98,38 @@ export class Preference implements IPreferenceService {
           await windowService.openMenubarWindow(true, false);
         } else {
           await windowService.closeMenubarWindow(true);
+        }
+        return;
+      }
+      case 'menubarSyncWorkspaceWithMainWindow':
+      case 'menubarFixedWorkspaceId': {
+        // When menubar workspace settings change, hide all views and let the next window show trigger realignment
+        const menuBarWindow = windowService.get(WindowNames.menuBar);
+        if (menuBarWindow) {
+          const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+          const viewService = container.get<IViewService>(serviceIdentifier.View);
+          const allWorkspaces = await workspaceService.getWorkspacesAsList();
+          // Hide all views - the correct view will be shown when window is next opened
+          await Promise.all(
+            allWorkspaces.map(async (workspace) => {
+              const view = viewService.getView(workspace.id, WindowNames.menuBar);
+              if (view) {
+                await viewService.hideView(menuBarWindow, WindowNames.menuBar, workspace.id);
+              }
+            }),
+          );
+
+          // If menubarFixedWorkspaceId changed, create view for the new workspace if it's a wiki workspace
+          if (key === 'menubarFixedWorkspaceId' && value) {
+            const targetWorkspace = await workspaceService.get(value as string);
+            if (targetWorkspace && !targetWorkspace.pageType) {
+              // This is a wiki workspace - ensure it has a view for menubar window
+              const existingView = viewService.getView(targetWorkspace.id, WindowNames.menuBar);
+              if (!existingView) {
+                await viewService.addView(targetWorkspace, WindowNames.menuBar);
+              }
+            }
+          }
         }
         return;
       }
