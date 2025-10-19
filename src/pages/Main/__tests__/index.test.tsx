@@ -14,7 +14,7 @@ import Main from '../index';
 // Mock window.observables to provide realistic API behavior
 const preferencesSubject = new BehaviorSubject({
   sidebar: true,
-  sidebarOnMenubar: true,
+  sidebarOnTidgiMiniWindow: true,
   showSideBarText: true,
   showSideBarIcon: true,
 });

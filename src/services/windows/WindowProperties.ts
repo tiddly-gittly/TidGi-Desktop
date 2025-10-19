@@ -15,7 +15,7 @@ export enum WindowNames {
    * We only have a single instance of main window, that is the app window.
    */
   main = 'main',
-  menuBar = 'menuBar',
+  tidgiMiniWindow = 'tidgiMiniWindow',
   notifications = 'notifications',
   preferences = 'preferences',
   /**
@@ -46,7 +46,7 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     width: 1200,
     height: 768,
   },
-  [WindowNames.menuBar]: {
+  [WindowNames.tidgiMiniWindow]: {
     width: 500,
     height: 600,
   },
@@ -100,7 +100,7 @@ export interface WindowMeta {
   [WindowNames.auth]: undefined;
   [WindowNames.editWorkspace]: { workspaceID?: string };
   [WindowNames.main]: { forceClose?: boolean };
-  [WindowNames.menuBar]: undefined;
+  [WindowNames.tidgiMiniWindow]: undefined;
   [WindowNames.notifications]: undefined;
   [WindowNames.preferences]: IPreferenceWindowMeta;
   [WindowNames.spellcheck]: undefined;

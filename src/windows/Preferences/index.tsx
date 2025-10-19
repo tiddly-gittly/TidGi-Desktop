@@ -23,7 +23,7 @@ import { Search } from './sections/Search';
 import { Sync } from './sections/Sync';
 import { System } from './sections/System';
 import { TiddlyWiki } from './sections/TiddlyWiki';
-import { TidGiMenubarWindow } from './sections/TidGiMenubarWindow';
+import { TidGiMiniWindow } from './sections/TidGiMiniWindow';
 import { Updates } from './sections/Updates';
 import { SectionSideBar } from './SectionsSideBar';
 import { usePreferenceSections } from './useSections';
@@ -67,7 +67,7 @@ export default function Preferences(): React.JSX.Element {
       <Inner>
         <TiddlyWiki sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <General sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <TidGiMenubarWindow sections={sections} />
+        <TidGiMiniWindow sections={sections} />
         <Sync sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <ExternalAPI sections={sections} />
         <AIAgent sections={sections} />

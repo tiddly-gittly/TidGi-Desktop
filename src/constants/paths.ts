@@ -28,11 +28,11 @@ export const sourcePath = isPackaged
 export const buildResourcePath = path.resolve(sourcePath, 'build-resources');
 export const developmentImageFolderPath = path.resolve(sourcePath, 'images');
 
-// Menubar icon
-const menuBarIconFileName = isMac ? 'menubarTemplate@2x.png' : 'menubar@2x.png';
-export const MENUBAR_ICON_PATH = isPackaged
-  ? path.resolve(process.resourcesPath, menuBarIconFileName) // Packaged: resources/<icon>
-  : path.resolve(buildResourcePath, menuBarIconFileName); // Dev/Unit test: <project-root>/build-resources/<icon>
+// TidGi Mini Window icon
+const tidgiMiniWindowIconFileName = isMac ? 'tidgiMiniWindowTemplate@2x.png' : 'tidgiMiniWindow@2x.png';
+export const TIDGI_MINI_WINDOW_ICON_PATH = isPackaged
+  ? path.resolve(process.resourcesPath, tidgiMiniWindowIconFileName) // Packaged: resources/<icon>
+  : path.resolve(buildResourcePath, tidgiMiniWindowIconFileName); // Dev/Unit test: <project-root>/build-resources/<icon>
 
 // System paths
 export const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';

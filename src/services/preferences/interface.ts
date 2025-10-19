@@ -8,7 +8,7 @@ export interface IPreferences {
   allowPrerelease: boolean;
   alwaysOnTop: boolean;
   askForDownloadPath: boolean;
-  attachToMenubar: boolean;
+  attachToTidgiMiniWindow: boolean;
   /**
    * 完全关闭反盗链
    */
@@ -26,7 +26,7 @@ export interface IPreferences {
   hideMenuBar: boolean;
   ignoreCertificateErrors: boolean;
   language: string;
-  menuBarAlwaysOnTop: boolean;
+  tidgiMiniWindowAlwaysOnTop: boolean;
   pauseNotifications: string | undefined;
   pauseNotificationsBySchedule: boolean;
   pauseNotificationsByScheduleFrom: string;
@@ -42,24 +42,24 @@ export interface IPreferences {
    */
   sidebar: boolean;
   /**
-   * Should show sidebar on menubar window?
+   * Should show sidebar on tidgi mini window?
    */
-  sidebarOnMenubar: boolean;
+  sidebarOnTidgiMiniWindow: boolean;
   spellcheck: boolean;
   spellcheckLanguages: HunspellLanguages[];
   swipeToNavigate: boolean;
   /**
    * Whether menubar window should show the same workspace as main window
    */
-  menubarSyncWorkspaceWithMainWindow: boolean;
+  tidgiMiniWindowSyncWorkspaceWithMainWindow: boolean;
   /**
-   * The workspace ID that menubar window should always show when menubarSyncWorkspaceWithMainWindow is false
+   * The workspace ID that tidgi mini window should always show when tidgiMiniWindowSyncWorkspaceWithMainWindow is false
    */
-  menubarFixedWorkspaceId: string | undefined;
+  tidgiMiniWindowFixedWorkspaceId: string | undefined;
   /**
-   * Whether to show title bar on menubar window (independent of main window's titleBar setting)
+   * Whether to show title bar on tidgi mini window (independent of main window's titleBar setting)
    */
-  showMenubarWindowTitleBar: boolean;
+  showTidgiMiniWindowTitleBar: boolean;
   /**
    * Keyboard shortcuts configuration stored as serviceIdentifier.methodName -> shortcut
    */
@@ -82,7 +82,7 @@ export enum PreferenceSections {
   friendLinks = 'friendLinks',
   general = 'general',
   languages = 'languages',
-  menubar = 'menubar',
+  tidgiMiniWindow = 'tidgiMiniWindow',
   misc = 'misc',
   network = 'network',
   notifications = 'notifications',

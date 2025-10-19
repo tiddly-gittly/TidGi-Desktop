@@ -123,9 +123,9 @@ export async function registerMenu(): Promise<void> {
         // if back is called in popup window
         // navigate in the popup window instead
         if (browserWindow !== undefined) {
-          // TODO: test if we really can get this isPopup value, and it works for help page popup and menubar window
+          // TODO: test if we really can get this isPopup value, and it works for help page popup and tidgi mini window
           // const { isPopup = false } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-          // const windowName = isPopup ? WindowNames.menuBar : WindowNames.main
+          // const windowName = isPopup ? WindowNames.tidgiMiniWindow : WindowNames.main
 
           await windowService.goForward();
         }

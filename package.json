@@ -18,7 +18,7 @@
     "test": "pnpm run test:unit && pnpm run test:prepare-e2e && pnpm run test:e2e",
     "test:unit": "cross-env ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest.mjs run",
     "test:unit:coverage": "pnpm run test:unit --coverage",
-    "test:prepare-e2e": "pnpm run clean && pnpm run build:plugin && cross-env NODE_ENV=test DEBUG=electron-forge:* electron-forge package",
+    "test:prepare-e2e": "cross-env READ_DOC_BEFORE_USING='docs/Testing.md' && pnpm run clean && pnpm run build:plugin && cross-env NODE_ENV=test DEBUG=electron-forge:* electron-forge package",
     "test:e2e": "rimraf -- ./userData-test ./wiki-test && cross-env NODE_ENV=test pnpm dlx tsx scripts/developmentMkdir.ts && cross-env NODE_ENV=test cucumber-js --config features/cucumber.config.js",
     "make": "pnpm run build:plugin && cross-env NODE_ENV=production electron-forge make",
     "make:analyze": "cross-env ANALYZE=true pnpm run make",

@@ -34,7 +34,7 @@ export const remoteMethods = {
    * @returns — the index of the clicked button. -1 means unknown or errored. 0 if canceled (this can be configured by `cancelId` in the options).
    */
   showElectronMessageBoxSync: (options: Electron.MessageBoxSyncOptions): number => {
-    // only main window can show message box, view window (browserView) can't. Currently didn't handle menubar window, hope it won't show message box...
+    // only main window can show message box, view window (browserView) can't. Currently didn't handle tidgi mini window, hope it won't show message box...
     const clickedButtonIndex = ipcRenderer.sendSync(NativeChannel.showElectronMessageBoxSync, options, WindowNames.main) as unknown;
     if (typeof clickedButtonIndex === 'number') {
       return clickedButtonIndex;

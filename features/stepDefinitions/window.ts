@@ -11,23 +11,23 @@ const DEFAULT_RETRY_INTERVAL_MS = 250;
 async function findWindowByType(app: ElectronApplication, windowType: string): Promise<Page | undefined> {
   const pages = app.windows();
 
-  if (windowType.toLowerCase() === 'menubar') {
-    // Special handling for menubar window
-    // Menubar window uses menubar library and may not have a standard route
+  if (windowType.toLowerCase() === 'tidgiminiwindow') {
+    // Special handling for tidgi mini window
+    // TidGi mini window may not have a standard route
     // Look for window by its title or other properties
     const allWindows = pages.filter(page => !page.isClosed());
     // Try to find by URL pattern first
-    let menubarWindow = allWindows.find(page => {
+    let tidgiMiniWindow = allWindows.find(page => {
       const url = page.url() || '';
-      return url.includes('#/menuBar') || url.includes('#/main');
+      return url.includes('#/tidgiMiniWindow') || url.includes('#/main');
     });
     // If not found by URL, try by window properties
-    if (!menubarWindow && allWindows.length > 1) {
-      // Menubar is typically a smaller window
+    if (!tidgiMiniWindow && allWindows.length > 1) {
+      // TidGi mini window is typically a smaller window
       // Get the second window (first is main)
-      menubarWindow = allWindows[1];
+      tidgiMiniWindow = allWindows[1];
     }
-    return menubarWindow;
+    return tidgiMiniWindow;
   } else {
     // For regular windows (preferences, about, addWorkspace, etc.)
     return pages.find(page => {
@@ -76,27 +76,27 @@ When('I confirm the {string} window exists', async function(this: ApplicationWor
     throw new Error('Application is not launched');
   }
 
-  if (windowType.toLowerCase() === 'menubar') {
-    // For menubar, check via Electron API since it's a special tray window
-    // Menubar is created by the menubar library and may take time to initialize
+  if (windowType.toLowerCase() === 'tidgiminiwindow') {
+    // For tidgi mini window, check via Electron API since it's a special tray window
+    // TidGi mini window may take time to initialize
     const maxWaitAttempts = 10; // Wait up to 10 seconds
     const waitInterval = 1000; // Check every second
 
     for (let attempt = 0; attempt < maxWaitAttempts; attempt++) {
       const windowInfo = await this.app.evaluate(async ({ BrowserWindow }) => {
         const allWindows = BrowserWindow.getAllWindows();
-        // Look for menubar window specifically by its dimensions (500x600)
-        const menubarWindow = allWindows.find(win => {
+        // Look for tidgi mini window specifically by its dimensions (500x600)
+        const tidgiMiniWindow = allWindows.find(win => {
           const bounds = win.getBounds();
           return bounds.width === 500 && bounds.height === 600;
         });
 
         return {
-          hasMenubar: menubarWindow !== undefined,
+          hasTidgiMiniWindow: tidgiMiniWindow !== undefined,
         };
       });
 
-      if (windowInfo.hasMenubar) {
+      if (windowInfo.hasTidgiMiniWindow) {
         return;
       }
 
@@ -123,27 +123,27 @@ When('I confirm the {string} window visible', async function(this: ApplicationWo
     throw new Error('Application is not launched');
   }
 
-  if (windowType.toLowerCase() === 'menubar') {
-    // Special handling for menubar window visibility
-    // Menubar window may take longer to show after shortcut key
-    const menubarMaxAttempts = 10; // Wait up to 10 seconds
-    const menubarWaitInterval = 1000; // Check every second
+  if (windowType.toLowerCase() === 'tidgiminiwindow') {
+    // Special handling for tidgi mini window visibility
+    // TidGi mini window may take longer to show after shortcut key
+    const tidgiMiniWindowMaxAttempts = 10; // Wait up to 10 seconds
+    const tidgiMiniWindowWaitInterval = 1000; // Check every second
 
-    for (let attempt = 0; attempt < menubarMaxAttempts; attempt++) {
+    for (let attempt = 0; attempt < tidgiMiniWindowMaxAttempts; attempt++) {
       const windowInfo = await this.app.evaluate(async ({ BrowserWindow }) => {
         const allWindows = BrowserWindow.getAllWindows();
-        const menubarWindow = allWindows.find(win => {
+        const tidgiMiniWindow = allWindows.find(win => {
           const bounds = win.getBounds();
           return bounds.width === 500 && bounds.height === 600;
         });
 
-        if (!menubarWindow) {
+        if (!tidgiMiniWindow) {
           return { found: false, visible: false };
         }
 
         return {
           found: true,
-          visible: menubarWindow.isVisible(),
+          visible: tidgiMiniWindow.isVisible(),
         };
       });
 
@@ -151,9 +151,9 @@ When('I confirm the {string} window visible', async function(this: ApplicationWo
         return;
       }
 
-      await new Promise(resolve => setTimeout(resolve, menubarWaitInterval));
+      await new Promise(resolve => setTimeout(resolve, tidgiMiniWindowWaitInterval));
     }
-    throw new Error(`${windowType} window was not visible after ${menubarMaxAttempts} attempts`);
+    throw new Error(`${windowType} window was not visible after ${tidgiMiniWindowMaxAttempts} attempts`);
   }
 
   const success = await waitForWindowCondition(
@@ -174,23 +174,23 @@ When('I confirm the {string} window not visible', async function(this: Applicati
     throw new Error('Application is not launched');
   }
 
-  if (windowType.toLowerCase() === 'menubar') {
-    // Special handling for menubar window visibility check
+  if (windowType.toLowerCase() === 'tidgiminiwindow') {
+    // Special handling for tidgi mini window visibility check
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       const windowInfo = await this.app.evaluate(async ({ BrowserWindow }) => {
         const allWindows = BrowserWindow.getAllWindows();
-        const menubarWindow = allWindows.find(win => {
+        const tidgiMiniWindow = allWindows.find(win => {
           const bounds = win.getBounds();
           return bounds.width === 500 && bounds.height === 600;
         });
 
-        if (!menubarWindow) {
+        if (!tidgiMiniWindow) {
           return { found: false, visible: false };
         }
 
         return {
           found: true,
-          visible: menubarWindow.isVisible(),
+          visible: tidgiMiniWindow.isVisible(),
         };
       });
 
@@ -219,23 +219,23 @@ When('I confirm the {string} window does not exist', async function(this: Applic
     throw new Error('Application is not launched');
   }
 
-  if (windowType.toLowerCase() === 'menubar') {
-    // Special handling for menubar window
+  if (windowType.toLowerCase() === 'tidgiminiwindow') {
+    // Special handling for tidgi mini window
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       const windowInfo = await this.app.evaluate(async ({ BrowserWindow }) => {
         const allWindows = BrowserWindow.getAllWindows();
-        // Look for menubar window specifically by its dimensions (500x600)
-        const menubarWindow = allWindows.find(win => {
+        // Look for tidgi mini window specifically by its dimensions (500x600)
+        const tidgiMiniWindow = allWindows.find(win => {
           const bounds = win.getBounds();
           return bounds.width === 500 && bounds.height === 600;
         });
 
         return {
-          hasMenubar: menubarWindow !== undefined,
+          hasTidgiMiniWindow: tidgiMiniWindow !== undefined,
         };
       });
 
-      if (!windowInfo.hasMenubar) {
+      if (!windowInfo.hasTidgiMiniWindow) {
         return;
       }
 
@@ -268,7 +268,7 @@ When('I confirm the {string} window browser view is positioned within visible wi
   }
 
   // Get the window dimensions to identify it
-  const windowDimensions = windowType.toLowerCase() === 'menubar'
+  const windowDimensions = windowType.toLowerCase() === 'tidgiminiwindow'
     ? { width: 500, height: 600 }
     : { width: 1178, height: 686 }; // main window default
 
@@ -349,7 +349,7 @@ When('I confirm the {string} window browser view is not positioned within visibl
   }
 
   // Get the window dimensions to identify it
-  const windowDimensions = windowType.toLowerCase() === 'menubar'
+  const windowDimensions = windowType.toLowerCase() === 'tidgiminiwindow'
     ? { width: 500, height: 600 }
     : { width: 1178, height: 686 }; // main window default
 

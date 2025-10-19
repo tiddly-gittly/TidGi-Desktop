@@ -51,8 +51,8 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
       Icon: GitHubIcon,
       ref: useRef<SectionTitleElement>(null),
     },
-    [PreferenceSections.menubar]: {
-      text: t('Menu.TidGiMenuBar'),
+    [PreferenceSections.tidgiMiniWindow]: {
+      text: t('Menu.TidGiMiniWindow'),
       Icon: PhonelinkIcon,
       ref: useRef<SectionTitleElement>(null),
     },

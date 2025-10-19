@@ -8,7 +8,7 @@ import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { logsDirectory, makeSlugPath, screenshotsDirectory } from '../supports/paths';
 import { getPackedAppPath } from '../supports/paths';
 import { clearAISettings } from './agent';
-import { clearMenubarSettings } from './menuar';
+import { clearTidgiMiniWindowSettings } from './tidgiMiniWindow';
 
 export class ApplicationWorld {
   app: ElectronApplication | undefined;
@@ -39,40 +39,40 @@ export class ApplicationWorld {
         if (mainWindow) return mainWindow;
       } else if (windowType === 'current') {
         if (this.currentWindow) return this.currentWindow;
-      } else if (windowType.toLowerCase() === 'menubar') {
-        // Special handling for menubar window
-        // Menubar window is typically the smaller window (500x600)
-        // We identify it by getting all windows and finding the one with menubar URL
+      } else if (windowType.toLowerCase() === 'tidgiminiwindow') {
+        // Special handling for tidgi mini window
+        // TidGi mini window is typically the smaller window (500x600)
+        // We identify it by getting all windows and finding the one with tidgi mini window URL
 
-        const menubarInfo = await this.app.evaluate(async ({ BrowserWindow }) => {
+        const tidgiMiniWindowInfo = await this.app.evaluate(async ({ BrowserWindow }) => {
           const allWindows = BrowserWindow.getAllWindows();
-          // Find the window with menubar dimensions (500x600)
-          const menubarWindow = allWindows.find(win => {
+          // Find the window with tidgi mini window dimensions (500x600)
+          const tidgiMiniWindow = allWindows.find(win => {
             const bounds = win.getBounds();
             return bounds.width === 500 && bounds.height === 600;
           });
 
-          if (menubarWindow) {
+          if (tidgiMiniWindow) {
             return {
-              url: menubarWindow.webContents.getURL(),
-              id: menubarWindow.id,
+              url: tidgiMiniWindow.webContents.getURL(),
+              id: tidgiMiniWindow.id,
             };
           }
           return null;
         });
 
-        if (menubarInfo) {
+        if (tidgiMiniWindowInfo) {
           // Wait a bit for the window to be registered in Playwright
           await new Promise(resolve => setTimeout(resolve, 500));
           const refreshedPages = this.app.windows();
 
           // Find the page with matching URL (exact match)
-          const menubarPage = refreshedPages.find(page => {
-            return page.url() === menubarInfo.url;
+          const tidgiMiniWindowPage = refreshedPages.find(page => {
+            return page.url() === tidgiMiniWindowInfo.url;
           });
 
-          if (menubarPage) {
-            return menubarPage;
+          if (tidgiMiniWindowPage) {
+            return tidgiMiniWindowPage;
           }
         }
       } else {
@@ -116,15 +116,15 @@ Before(function(this: ApplicationWorld, { pickle }) {
   if (pickle.tags.some((tag) => tag.name === '@setup')) {
     clearAISettings();
   }
-  if (pickle.tags.some((tag) => tag.name === '@menubar')) {
-    clearMenubarSettings();
+  if (pickle.tags.some((tag) => tag.name === '@tidgiminiwindow')) {
+    clearTidgiMiniWindowSettings();
   }
 });
 
 After(async function(this: ApplicationWorld, { pickle }) {
   if (this.app) {
     try {
-      // Close all windows including menubar window before closing the app, otherwise it might hang, and refused to exit until ctrl+C
+      // Close all windows including tidgi mini window before closing the app, otherwise it might hang, and refused to exit until ctrl+C
       const allWindows = this.app.windows();
       for (const window of allWindows) {
         try {
@@ -143,8 +143,8 @@ After(async function(this: ApplicationWorld, { pickle }) {
     this.mainWindow = undefined;
     this.currentWindow = undefined;
   }
-  if (pickle.tags.some((tag) => tag.name === '@menubar')) {
-    clearMenubarSettings();
+  if (pickle.tags.some((tag) => tag.name === '@tidgiminiwindow')) {
+    clearTidgiMiniWindowSettings();
   }
   if (pickle.tags.some((tag) => tag.name === '@setup')) {
     clearAISettings();

@@ -11,7 +11,7 @@ export interface IPaths {
   LOCALIZATION_FOLDER: string;
   LOG_FOLDER: string;
   MAIN_WINDOW_WEBPACK_ENTRY: string;
-  MENUBAR_ICON_PATH: string;
+  TIDGI_MINI_WINDOW_ICON_PATH: string;
   SETTINGS_FOLDER: string;
   TIDDLERS_PATH: string;
   TIDDLYWIKI_TEMPLATE_FOLDER_PATH: string;

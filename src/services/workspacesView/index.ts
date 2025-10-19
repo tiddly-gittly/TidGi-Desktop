@@ -171,7 +171,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         logger.debug('Skip because alreadyHaveView');
         return;
       }
-      // Create browserView, and if user want a menubar, we also create a new window for that
+      // Create browserView, and if user want a tidgi mini window, we also create a new window for that
       await this.addViewForAllBrowserViews(workspace);
       if (isNew && options.from === WikiCreationMethod.Create) {
         const view = container.get<IViewService>(serviceIdentifier.View).getView(workspace.id, WindowNames.main);
@@ -205,39 +205,39 @@ export class WorkspaceView implements IWorkspaceViewService {
   public async addViewForAllBrowserViews(workspace: IWorkspace): Promise<void> {
     const mainTask = container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.main);
 
-    // For menubar window, decide which workspace to show based on preferences
-    const menubarTask = (async () => {
-      const [attachToMenubar, menubarSyncWorkspaceWithMainWindow, menubarFixedWorkspaceId] = await Promise.all([
-        this.preferenceService.get('attachToMenubar'),
-        this.preferenceService.get('menubarSyncWorkspaceWithMainWindow'),
-        this.preferenceService.get('menubarFixedWorkspaceId'),
+    // For tidgi mini window, decide which workspace to show based on preferences
+    const tidgiMiniWindowTask = (async () => {
+      const [attachToTidgiMiniWindow, tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId] = await Promise.all([
+        this.preferenceService.get('attachToTidgiMiniWindow'),
+        this.preferenceService.get('tidgiMiniWindowSyncWorkspaceWithMainWindow'),
+        this.preferenceService.get('tidgiMiniWindowFixedWorkspaceId'),
       ]);
 
-      if (!attachToMenubar) {
+      if (!attachToTidgiMiniWindow) {
         return;
       }
 
       // If syncing with main window (undefined means default to true, or explicitly true), use the current workspace
-      const shouldSync = menubarSyncWorkspaceWithMainWindow === undefined || menubarSyncWorkspaceWithMainWindow;
+      const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
       if (shouldSync) {
         // Don't add view for pageType workspaces (they don't have browser views)
         if (!workspace.pageType) {
-          await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.menuBar);
+          await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.tidgiMiniWindow);
         }
         return;
       }
 
       // If not syncing and a fixed workspace is set, only add view if this IS the fixed workspace
-      if (menubarFixedWorkspaceId && workspace.id === menubarFixedWorkspaceId) {
+      if (tidgiMiniWindowFixedWorkspaceId && workspace.id === tidgiMiniWindowFixedWorkspaceId) {
         // Don't add view for pageType workspaces (they don't have browser views)
         if (!workspace.pageType) {
-          await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.menuBar);
+          await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.tidgiMiniWindow);
         }
       }
       // If not syncing and no fixed workspace is set, don't add any view (user needs to select one)
     })();
 
-    await Promise.all([mainTask, menubarTask]);
+    await Promise.all([mainTask, tidgiMiniWindowTask]);
   }
 
   public async openWorkspaceWindowWithView(workspace: IWorkspace, configs?: { uri?: string }): Promise<void> {
@@ -484,7 +484,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     await Promise.all(
       workspaces.map(async (workspace) => {
         await Promise.all(
-          [WindowNames.main, WindowNames.menuBar].map(async (windowName) => {
+          [WindowNames.main, WindowNames.tidgiMiniWindow].map(async (windowName) => {
             const view = container.get<IViewService>(serviceIdentifier.View).getView(workspace.id, windowName);
             if (view !== undefined) {
               await container.get<IViewService>(serviceIdentifier.View).loadUrlForView(workspace, view);
@@ -577,7 +577,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       return;
     }
     const mainWindow = container.get<IWindowService>(serviceIdentifier.Window).get(WindowNames.main);
-    const menuBarWindow = container.get<IWindowService>(serviceIdentifier.Window).get(WindowNames.menuBar);
+    const tidgiMiniWindow = container.get<IWindowService>(serviceIdentifier.Window).get(WindowNames.tidgiMiniWindow);
 
     logger.info(
       `realignActiveWorkspaceView: id ${workspaceToRealign?.id ?? 'undefined'}`,
@@ -586,7 +586,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.warn('realignActiveWorkspaceView: no active workspace');
       return;
     }
-    if (mainWindow === undefined && menuBarWindow === undefined) {
+    if (mainWindow === undefined && tidgiMiniWindow === undefined) {
       logger.warn('realignActiveWorkspaceView: no active window');
       return;
     }
@@ -597,44 +597,46 @@ export class WorkspaceView implements IWorkspaceViewService {
       tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(mainWindow, workspaceToRealign.id, WindowNames.main));
       logger.debug(`realignActiveWorkspaceView: realign main window for ${workspaceToRealign.id}.`);
     }
-    if (menuBarWindow === undefined) {
-      logger.info(`realignActiveWorkspaceView: no menuBarBrowserViewWebContent, skip menu bar window for ${workspaceToRealign.id}.`);
+    if (tidgiMiniWindow === undefined) {
+      logger.info(`realignActiveWorkspaceView: no tidgiMiniWindowBrowserViewWebContent, skip tidgi mini window for ${workspaceToRealign.id}.`);
     } else {
-      // For menubar window, decide which workspace to show based on preferences
-      const [menubarSyncWorkspaceWithMainWindow, menubarFixedWorkspaceId] = await Promise.all([
-        this.preferenceService.get('menubarSyncWorkspaceWithMainWindow'),
-        this.preferenceService.get('menubarFixedWorkspaceId'),
+      // For tidgi mini window, decide which workspace to show based on preferences
+      const [tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId] = await Promise.all([
+        this.preferenceService.get('tidgiMiniWindowSyncWorkspaceWithMainWindow'),
+        this.preferenceService.get('tidgiMiniWindowFixedWorkspaceId'),
       ]);
       // Default to sync (undefined or true), otherwise use fixed workspace ID (fallback to main if not set)
-      const shouldSync = menubarSyncWorkspaceWithMainWindow === undefined || menubarSyncWorkspaceWithMainWindow;
-      const menubarWorkspaceId = shouldSync ? workspaceToRealign.id : (menubarFixedWorkspaceId || workspaceToRealign.id);
+      const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
+      const tidgiMiniWindowWorkspaceId = shouldSync ? workspaceToRealign.id : (tidgiMiniWindowFixedWorkspaceId || workspaceToRealign.id);
 
       // Check if the target workspace is a pageType workspace (which doesn't have a view)
-      let shouldShowMenubarView = true;
-      const menubarTargetWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(menubarWorkspaceId);
+      let shouldShowTidgiMiniWindowView = true;
+      const tidgiMiniWindowTargetWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(tidgiMiniWindowWorkspaceId);
 
-      if (menubarTargetWorkspace?.pageType) {
+      if (tidgiMiniWindowTargetWorkspace?.pageType) {
         logger.debug(
-          `realignActiveWorkspaceView: skip menu bar window because workspace ${menubarWorkspaceId} is a page type workspace. Hiding all views.`,
+          `realignActiveWorkspaceView: skip tidgi mini window because workspace ${tidgiMiniWindowWorkspaceId} is a page type workspace. Hiding all views.`,
         );
-        shouldShowMenubarView = false; // Don't show any view for pageType workspaces
-        // Hide all existing views in the menubar window
+        shouldShowTidgiMiniWindowView = false; // Don't show any view for pageType workspaces
+        // Hide all existing views in the tidgi mini window
         const allWorkspaces = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getWorkspacesAsList();
         await Promise.all(
           allWorkspaces.map(async (workspace) => {
-            const view = container.get<IViewService>(serviceIdentifier.View).getView(workspace.id, WindowNames.menuBar);
-            if (view) {
-              await container.get<IViewService>(serviceIdentifier.View).hideView(menuBarWindow, WindowNames.menuBar, workspace.id);
+            const view = container.get<IViewService>(serviceIdentifier.View).getView(workspace.id, WindowNames.tidgiMiniWindow);
+            if (view !== undefined) {
+              await container.get<IViewService>(serviceIdentifier.View).hideView(tidgiMiniWindow, WindowNames.tidgiMiniWindow, workspace.id);
             }
           }),
         );
       }
 
-      if (shouldShowMenubarView) {
-        logger.debug(
-          `realignActiveWorkspaceView: realign menu bar window for ${menubarWorkspaceId} (main: ${workspaceToRealign.id}, sync: ${String(menubarSyncWorkspaceWithMainWindow)}).`,
+      if (shouldShowTidgiMiniWindowView) {
+        logger.info(
+          `realignActiveWorkspaceView: realign tidgi mini window for ${tidgiMiniWindowWorkspaceId} (main: ${workspaceToRealign.id}, sync: ${
+            String(tidgiMiniWindowSyncWorkspaceWithMainWindow)
+          }).`,
         );
-        tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(menuBarWindow, menubarWorkspaceId, WindowNames.menuBar));
+        tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(tidgiMiniWindow, tidgiMiniWindowWorkspaceId, WindowNames.tidgiMiniWindow));
       }
     }
     await Promise.all(tasks);
@@ -642,7 +644,7 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   private async hideWorkspaceView(idToDeactivate: string): Promise<void> {
     const mainWindow = container.get<IWindowService>(serviceIdentifier.Window).get(WindowNames.main);
-    const menuBarWindow = container.get<IWindowService>(serviceIdentifier.Window).get(WindowNames.menuBar);
+    const tidgiMiniWindow = container.get<IWindowService>(serviceIdentifier.Window).get(WindowNames.tidgiMiniWindow);
     const tasks = [];
     if (mainWindow === undefined) {
       logger.warn(`hideWorkspaceView: no mainBrowserWindow, skip main window browserView.`);
@@ -650,26 +652,26 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.info(`hideWorkspaceView: hide main window browserView.`);
       tasks.push(container.get<IViewService>(serviceIdentifier.View).hideView(mainWindow, WindowNames.main, idToDeactivate));
     }
-    if (menuBarWindow === undefined) {
-      logger.debug(`hideWorkspaceView: no menuBarBrowserWindow, skip menu bar window browserView.`);
+    if (tidgiMiniWindow === undefined) {
+      logger.debug(`hideWorkspaceView: no tidgiMiniWindowBrowserWindow, skip tidgi mini window browserView.`);
     } else {
-      // For menubar window, only hide if syncing with main window OR if this is the fixed workspace being deactivated
-      const [menubarSyncWorkspaceWithMainWindow, menubarFixedWorkspaceId] = await Promise.all([
-        this.preferenceService.get('menubarSyncWorkspaceWithMainWindow'),
-        this.preferenceService.get('menubarFixedWorkspaceId'),
+      // For tidgi mini window, only hide if syncing with main window OR if this is the fixed workspace being deactivated
+      const [tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId] = await Promise.all([
+        this.preferenceService.get('tidgiMiniWindowSyncWorkspaceWithMainWindow'),
+        this.preferenceService.get('tidgiMiniWindowFixedWorkspaceId'),
       ]);
 
       // Default to sync (undefined or true)
-      const shouldSync = menubarSyncWorkspaceWithMainWindow === undefined || menubarSyncWorkspaceWithMainWindow;
+      const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
 
-      // Only hide menubar view if:
+      // Only hide tidgi mini window view if:
       // 1. Syncing with main window (should hide when main window hides)
       // 2. OR the workspace being hidden is the fixed workspace (rare case, but should be handled)
-      if (shouldSync || idToDeactivate === menubarFixedWorkspaceId) {
-        logger.info(`hideWorkspaceView: hide menu bar window browserView.`);
-        tasks.push(container.get<IViewService>(serviceIdentifier.View).hideView(menuBarWindow, WindowNames.menuBar, idToDeactivate));
+      if (shouldSync || idToDeactivate === tidgiMiniWindowFixedWorkspaceId) {
+        logger.info(`hideWorkspaceView: hide tidgi mini window browserView.`);
+        tasks.push(container.get<IViewService>(serviceIdentifier.View).hideView(tidgiMiniWindow, WindowNames.tidgiMiniWindow, idToDeactivate));
       } else {
-        logger.debug(`hideWorkspaceView: skip hiding menu bar window browserView (fixed workspace: ${menubarFixedWorkspaceId || 'none'}).`);
+        logger.debug(`hideWorkspaceView: skip hiding tidgi mini window browserView (fixed workspace: ${tidgiMiniWindowFixedWorkspaceId || 'none'}).`);
       }
     }
     await Promise.all(tasks);

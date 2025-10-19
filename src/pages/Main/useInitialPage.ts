@@ -19,14 +19,14 @@ export function useInitialPage() {
 
       let targetWorkspace = workspacesList.find(workspace => workspace.active);
 
-      // For menubar window, determine which workspace to show based on preferences
-      if (windowName === WindowNames.menuBar && preferences) {
-        const { menubarSyncWorkspaceWithMainWindow, menubarFixedWorkspaceId } = preferences;
-        const shouldSync = menubarSyncWorkspaceWithMainWindow === undefined || menubarSyncWorkspaceWithMainWindow;
+      // For tidgi mini window, determine which workspace to show based on preferences
+      if (windowName === WindowNames.tidgiMiniWindow && preferences) {
+        const { tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId } = preferences;
+        const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
 
-        if (!shouldSync && menubarFixedWorkspaceId) {
-          // Use fixed workspace if not syncing
-          const fixedWorkspace = workspacesList.find(ws => ws.id === menubarFixedWorkspaceId);
+        if (!shouldSync && tidgiMiniWindowFixedWorkspaceId) {
+          // If not syncing with main window, use fixed workspace
+          const fixedWorkspace = workspacesList.find(ws => ws.id === tidgiMiniWindowFixedWorkspaceId);
           if (fixedWorkspace) {
             targetWorkspace = fixedWorkspace;
           }
@@ -51,19 +51,19 @@ export function useInitialPage() {
     }
   }, [location, workspacesList, preferences, windowName, setLocation]);
 
-  // For menubar window, also listen to active workspace changes
+  // For tidgi mini window, also listen to active workspace changes
   useEffect(() => {
-    if (windowName !== WindowNames.menuBar || !workspacesList || !preferences) {
+    if (windowName !== WindowNames.tidgiMiniWindow || !workspacesList || !preferences) {
       return;
     }
 
-    const { menubarSyncWorkspaceWithMainWindow, menubarFixedWorkspaceId } = preferences;
-    const shouldSync = menubarSyncWorkspaceWithMainWindow === undefined || menubarSyncWorkspaceWithMainWindow;
+    const { tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId } = preferences;
+    const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
 
     // Determine target workspace
     let targetWorkspace = workspacesList.find(workspace => workspace.active);
-    if (!shouldSync && menubarFixedWorkspaceId) {
-      const fixedWorkspace = workspacesList.find(ws => ws.id === menubarFixedWorkspaceId);
+    if (!shouldSync && tidgiMiniWindowFixedWorkspaceId) {
+      const fixedWorkspace = workspacesList.find(ws => ws.id === tidgiMiniWindowFixedWorkspaceId);
       if (fixedWorkspace) {
         targetWorkspace = fixedWorkspace;
       }

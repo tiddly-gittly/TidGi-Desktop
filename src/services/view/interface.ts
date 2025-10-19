@@ -30,11 +30,11 @@ export interface IViewService {
   createViewAddToWindow(workspace: IWorkspace, browserWindow: BrowserWindow, sharedWebPreferences: WebPreferences, windowName: WindowNames): Promise<WebContentsView>;
   forEachView: (functionToRun: (view: WebContentsView, workspaceID: string, windowName: WindowNames) => void) => void;
   /**
-   * If menubar is open, we get menubar browser view, else we get main window browser view
+   * If tidgi mini window is open, we get tidgi mini window browser view, else we get main window browser view
    */
   getActiveBrowserView: () => Promise<WebContentsView | undefined>;
   /**
-   * Get active workspace's main window and menubar browser view.
+   * Get active workspace's main window and tidgi mini window browser view.
    */
   getActiveBrowserViews: () => Promise<Array<WebContentsView | undefined>>;
   getLoadedViewEnsure(workspaceID: string, windowName: WindowNames): Promise<WebContentsView>;
@@ -74,7 +74,7 @@ export interface IViewService {
   /**
    * Bring an already created view to the front. If it happened to not created, will call `addView()` to create one.
    * @param workspaceID id, can only be main workspace id, because only main workspace will have view created.
-   * @param windowName you can control main window or menubar window to have this view.
+   * @param windowName you can control main window or tidgi mini window to have this view.
    * @returns
    */
   setActiveView: (workspaceID: string, windowName: WindowNames) => Promise<void>;

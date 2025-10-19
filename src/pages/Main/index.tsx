@@ -63,7 +63,7 @@ export default function Main(): React.JSX.Element {
   const { t } = useTranslation();
   useInitialPage();
   const preferences = usePreferenceObservable();
-  const showSidebar = (windowName === WindowNames.menuBar ? preferences?.sidebarOnMenubar : preferences?.sidebar) ?? true;
+  const showSidebar = (windowName === WindowNames.tidgiMiniWindow ? preferences?.sidebarOnTidgiMiniWindow : preferences?.sidebar) ?? true;
   return (
     <OuterRoot>
       <Helmet>

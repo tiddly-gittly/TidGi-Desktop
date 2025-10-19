@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
-export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Element {
+export function TidGiMiniWindow(props: Partial<ISectionProps>): React.JSX.Element {
   const { t } = useTranslation();
   const preference = usePreferenceObservable();
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
@@ -21,31 +21,31 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
 
   return (
     <>
-      <SectionTitle ref={props.sections?.menubar.ref}>{t('Menu.TidGiMenuBar')}</SectionTitle>
+      <SectionTitle ref={props.sections?.tidgiMiniWindow.ref}>{t('Menu.TidGiMiniWindow')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
-          {/* Attach to taskbar/menubar settings */}
+          {/* Attach to taskbar/system tray settings */}
           <ListItem
             secondaryAction={
               <Switch
                 edge='end'
                 color='primary'
-                checked={preference.attachToMenubar}
+                checked={preference.attachToTidgiMiniWindow}
                 onChange={async (event) => {
-                  await window.service.preference.set('attachToMenubar', event.target.checked);
+                  await window.service.preference.set('attachToTidgiMiniWindow', event.target.checked);
                 }}
-                data-testid='attach-to-menubar-switch'
+                data-testid='attach-to-tidgi-mini-window-switch'
               />
             }
           >
             <ListItemText
-              primary={platform === 'win32' ? t('Preference.AttachToTaskbar') : t('Preference.AttachToMenuBar')}
-              secondary={platform === 'linux' ? undefined : t('Preference.AttachToMenuBarTip')}
+              primary={platform === 'win32' ? t('Preference.AttachToTaskbar') : t('Preference.AttachToTidgiMiniWindow')}
+              secondary={platform === 'linux' ? undefined : t('Preference.AttachToTidgiMiniWindowTip')}
             />
           </ListItem>
 
-          {/* Other settings are only visible when attached to taskbar/menubar */}
-          {preference.attachToMenubar && (
+          {/* Other settings are only visible when attached to taskbar/system tray */}
+          {preference.attachToTidgiMiniWindow && (
             <>
               {/* Sidebar display settings */}
               <ListItem
@@ -53,57 +53,57 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
                   <Switch
                     edge='end'
                     color='primary'
-                    checked={preference.sidebarOnMenubar}
+                    checked={preference.sidebarOnTidgiMiniWindow}
                     onChange={async (event) => {
-                      await window.service.preference.set('sidebarOnMenubar', event.target.checked);
+                      await window.service.preference.set('sidebarOnTidgiMiniWindow', event.target.checked);
                     }}
-                    data-testid='sidebar-on-menubar-switch'
+                    data-testid='sidebar-on-tidgi-mini-window-switch'
                   />
                 }
               >
                 <ListItemText
-                  primary={platform === 'win32' ? t('Preference.AttachToTaskbarShowSidebar') : t('Preference.AttachToMenuBarShowSidebar')}
-                  secondary={platform === 'linux' ? undefined : t('Preference.AttachToMenuBarShowSidebarTip')}
+                  primary={platform === 'win32' ? t('Preference.AttachToTaskbarShowSidebar') : t('Preference.AttachToTidgiMiniWindowShowSidebar')}
+                  secondary={platform === 'linux' ? undefined : t('Preference.AttachToTidgiMiniWindowShowSidebarTip')}
                 />
               </ListItem>
 
               <Divider />
 
-              {/* Show title bar on menubar window */}
+              {/* Show title bar on tidgi mini window */}
               <ListItem
                 secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
-                    checked={preference.showMenubarWindowTitleBar}
+                    checked={preference.showTidgiMiniWindowTitleBar}
                     onChange={async (event) => {
-                      await window.service.preference.set('showMenubarWindowTitleBar', event.target.checked);
+                      await window.service.preference.set('showTidgiMiniWindowTitleBar', event.target.checked);
                     }}
-                    data-testid='menubar-titlebar-switch'
+                    data-testid='tidgi-mini-window-titlebar-switch'
                   />
                 }
               >
                 <ListItemText
-                  primary={t('Preference.ShowMenubarWindowTitleBar')}
-                  secondary={t('Preference.ShowMenubarWindowTitleBarDetail')}
+                  primary={t('Preference.ShowTidgiMiniWindowTitleBar')}
+                  secondary={t('Preference.ShowTidgiMiniWindowTitleBarDetail')}
                 />
               </ListItem>
 
-              {/* Keep menubar window on top of other windows */}
+              {/* Keep tidgi mini window on top of other windows */}
               <ListItem
                 secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
-                    checked={preference.menuBarAlwaysOnTop}
+                    checked={preference.tidgiMiniWindowAlwaysOnTop}
                     onChange={async (event) => {
-                      await window.service.preference.set('menuBarAlwaysOnTop', event.target.checked);
+                      await window.service.preference.set('tidgiMiniWindowAlwaysOnTop', event.target.checked);
                     }}
-                    data-testid='menubar-always-on-top-switch'
+                    data-testid='tidgi-mini-window-always-on-top-switch'
                   />
                 }
               >
-                <ListItemText primary={t('Preference.MenubarAlwaysOnTop')} secondary={t('Preference.MenubarAlwaysOnTopDetail')} />
+                <ListItemText primary={t('Preference.TidgiMiniWindowAlwaysOnTop')} secondary={t('Preference.TidgiMiniWindowAlwaysOnTopDetail')} />
               </ListItem>
 
               <Divider />
@@ -114,32 +114,32 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
                   <Switch
                     edge='end'
                     color='primary'
-                    checked={preference.menubarSyncWorkspaceWithMainWindow}
+                    checked={preference.tidgiMiniWindowSyncWorkspaceWithMainWindow}
                     onChange={async (event) => {
-                      await window.service.preference.set('menubarSyncWorkspaceWithMainWindow', event.target.checked);
+                      await window.service.preference.set('tidgiMiniWindowSyncWorkspaceWithMainWindow', event.target.checked);
                     }}
-                    data-testid='menubar-sync-workspace-switch'
+                    data-testid='tidgi-mini-window-sync-workspace-switch'
                   />
                 }
               >
                 <ListItemText
-                  primary={t('Preference.MenubarSyncWorkspaceWithMainWindow')}
-                  secondary={t('Preference.MenubarSyncWorkspaceWithMainWindowDetail')}
+                  primary={t('Preference.TidgiMiniWindowSyncWorkspaceWithMainWindow')}
+                  secondary={t('Preference.TidgiMiniWindowSyncWorkspaceWithMainWindowDetail')}
                 />
               </ListItem>
 
-              {/* Select fixed workspace for TidGi menubar window */}
-              {!preference.menubarSyncWorkspaceWithMainWindow && (
+              {/* Select fixed workspace for TidGi mini window */}
+              {!preference.tidgiMiniWindowSyncWorkspaceWithMainWindow && (
                 <Box sx={{ p: 2 }}>
                   <FormControl fullWidth variant='outlined' sx={{ mt: 1 }}>
-                    <InputLabel>{t('Preference.MenubarFixedWorkspace')}</InputLabel>
+                    <InputLabel>{t('Preference.TidgiMiniWindowFixedWorkspace')}</InputLabel>
                     <Select
-                      value={preference.menubarFixedWorkspaceId || ''}
+                      value={preference.tidgiMiniWindowFixedWorkspaceId || ''}
                       onChange={async (event) => {
-                        await window.service.preference.set('menubarFixedWorkspaceId', event.target.value);
+                        await window.service.preference.set('tidgiMiniWindowFixedWorkspaceId', event.target.value);
                       }}
-                      label={t('Preference.MenubarFixedWorkspace')}
-                      inputProps={{ 'data-testid': 'menubar-fixed-workspace-select' }}
+                      label={t('Preference.TidgiMiniWindowFixedWorkspace')}
+                      inputProps={{ 'data-testid': 'tidgi-mini-window-fixed-workspace-select' }}
                     >
                       <MenuItem value=''>{t('Preference.SelectWorkspace')}</MenuItem>
                       {workspaces?.map((workspace) => (
@@ -152,23 +152,23 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
                 </Box>
               )}
 
-              {/* Set shortcut key to toggle TidGi menubar window */}
+              {/* Set shortcut key to toggle TidGi mini window */}
               <Box sx={{ p: 2 }}>
                 <KeyboardShortcutRegister
-                  label={t('Preference.MenubarShortcutKey')}
-                  value={preference.keyboardShortcuts?.['Window.toggleMenubarWindow'] || ''}
+                  label={t('Preference.TidgiMiniWindowShortcutKey')}
+                  value={preference.keyboardShortcuts?.['Window.toggleTidgiMiniWindow'] || ''}
                   onChange={async (value) => {
                     if (value && value.trim() !== '') {
-                      await window.service.native.registerKeyboardShortcut<IWindowService>('Window', 'toggleMenubarWindow', value);
+                      await window.service.native.registerKeyboardShortcut<IWindowService>('Window', 'toggleTidgiMiniWindow', value);
                     } else {
-                      await window.service.native.unregisterKeyboardShortcut<IWindowService>('Window', 'toggleMenubarWindow');
+                      await window.service.native.unregisterKeyboardShortcut<IWindowService>('Window', 'toggleTidgiMiniWindow');
                     }
                   }}
-                  data-testid='menubar-shortcut-input'
+                  data-testid='tidgi-mini-window-shortcut-input'
                 />
                 <Box sx={{ mt: 1 }}>
                   <Typography variant='caption' color='textSecondary'>
-                    {t('Preference.MenubarShortcutKeyHelperText')}
+                    {t('Preference.TidgiMiniWindowShortcutKeyHelperText')}
                   </Typography>
                 </Box>
               </Box>

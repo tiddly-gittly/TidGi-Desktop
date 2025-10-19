@@ -37,7 +37,7 @@ export interface IWindowService {
    */
   hide(windowName: WindowNames): Promise<void>;
   isFullScreen(windowName?: WindowNames): Promise<boolean | undefined>;
-  isMenubarOpen(): Promise<boolean>;
+  isTidgiMiniWindowOpen(): Promise<boolean>;
   loadURL(windowName: WindowNames, newUrl?: string): Promise<void>;
   maximize(): Promise<void>;
   /**
@@ -55,15 +55,15 @@ export interface IWindowService {
   set(windowName: WindowNames, win: BrowserWindow | undefined): void;
   setWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;
   stopFindInPage(close?: boolean, windowName?: WindowNames): Promise<void>;
-  toggleMenubarWindow(): Promise<void>;
+  toggleTidgiMiniWindow(): Promise<void>;
   updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;
-  /** Open menubar window without restart - hot reload. enableIt=true means fully enable and open. */
-  openMenubarWindow(enableIt?: boolean, showWindow?: boolean): Promise<void>;
-  /** Close menubar window. disableIt=true means fully disable and cleanup tray. */
-  closeMenubarWindow(disableIt?: boolean): Promise<void>;
+  /** Open tidgi mini window without restart - hot reload. enableIt=true means fully enable and open. */
+  openTidgiMiniWindow(enableIt?: boolean, showWindow?: boolean): Promise<void>;
+  /** Close tidgi mini window. disableIt=true means fully disable and cleanup tray. */
+  closeTidgiMiniWindow(disableIt?: boolean): Promise<void>;
   /** Update window properties without restart - hot reload */
   updateWindowProperties(windowName: WindowNames, properties: { alwaysOnTop?: boolean }): Promise<void>;
-  /** React to preference changes related to windows (menubar etc.) */
+  /** React to preference changes related to windows (tidgi mini window etc.) */
   reactWhenPreferencesChanged(key: string, value: unknown): Promise<void>;
 }
 export const WindowServiceIPCDescriptor = {
@@ -78,7 +78,7 @@ export const WindowServiceIPCDescriptor = {
     goForward: ProxyPropertyType.Function,
     goHome: ProxyPropertyType.Function,
     isFullScreen: ProxyPropertyType.Function,
-    isMenubarOpen: ProxyPropertyType.Function,
+    isTidgiMiniWindowOpen: ProxyPropertyType.Function,
     loadURL: ProxyPropertyType.Function,
     maximize: ProxyPropertyType.Function,
     open: ProxyPropertyType.Function,
@@ -87,10 +87,10 @@ export const WindowServiceIPCDescriptor = {
     sendToAllWindows: ProxyPropertyType.Function,
     setWindowMeta: ProxyPropertyType.Function,
     stopFindInPage: ProxyPropertyType.Function,
-    toggleMenubarWindow: ProxyPropertyType.Function,
+    toggleTidgiMiniWindow: ProxyPropertyType.Function,
     updateWindowMeta: ProxyPropertyType.Function,
-    openMenubarWindow: ProxyPropertyType.Function,
-    closeMenubarWindow: ProxyPropertyType.Function,
+    openTidgiMiniWindow: ProxyPropertyType.Function,
+    closeTidgiMiniWindow: ProxyPropertyType.Function,
     updateWindowProperties: ProxyPropertyType.Function,
   },
 };

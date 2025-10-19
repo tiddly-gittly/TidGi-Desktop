@@ -118,7 +118,7 @@ const commonInit = async (): Promise<void> => {
     externalAPIService.initialize(),
   ]);
 
-  // if user want a menubar, we create a new window for that
+  // if user want a tidgi mini window, we create a new window for that
   // handle workspace name + tiddler name in uri https://www.electronjs.org/docs/latest/tutorial/launch-app-from-url-in-another-app
   deepLinkService.initializeDeepLink('tidgi');
 
@@ -139,9 +139,9 @@ const commonInit = async (): Promise<void> => {
   await workspaceService.initializeDefaultPageWorkspaces();
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();
-  const attachToMenubar = await preferenceService.get('attachToMenubar');
-  if (attachToMenubar) {
-    await windowService.openMenubarWindow(true, false);
+  const attachToTidgiMiniWindow = await preferenceService.get('attachToTidgiMiniWindow');
+  if (attachToTidgiMiniWindow) {
+    await windowService.openTidgiMiniWindow(true, false);
   }
 
   ipcMain.emit('request-update-pause-notifications-info');

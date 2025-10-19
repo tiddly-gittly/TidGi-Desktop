@@ -1,4 +1,4 @@
-import { MENUBAR_ICON_PATH } from '@/constants/paths';
+import { TIDGI_MINI_WINDOW_ICON_PATH } from '@/constants/paths';
 import { isMac } from '@/helpers/system';
 import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
@@ -15,14 +15,17 @@ import type { IWindowService } from './interface';
 import { getMainWindowEntry } from './viteEntry';
 import { WindowNames } from './WindowProperties';
 
-export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstructorOptions, windowWithBrowserViewState: windowStateKeeper.State | undefined): Promise<Menubar> {
+export async function handleAttachToTidgiMiniWindow(
+  windowConfig: BrowserWindowConstructorOptions,
+  windowWithBrowserViewState: windowStateKeeper.State | undefined,
+): Promise<Menubar> {
   const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const viewService = container.get<IViewService>(serviceIdentifier.View);
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 
-  // Get menubar-specific titleBar preference
-  const showMenubarWindowTitleBar = await preferenceService.get('showMenubarWindowTitleBar');
+  // Get tidgi mini window-specific titleBar preference
+  const showTidgiMiniWindowTitleBar = await preferenceService.get('showTidgiMiniWindowTitleBar');
 
   // setImage after Tray instance is created to avoid
   // "Segmentation fault (core dumped)" bug on Linux
@@ -30,71 +33,71 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
   // https://github.com/atomery/translatium/issues/164
   const tray = new Tray(nativeImage.createEmpty());
   // icon template is not supported on Windows & Linux
-  tray.setImage(MENUBAR_ICON_PATH);
+  tray.setImage(nativeImage.createFromPath(TIDGI_MINI_WINDOW_ICON_PATH));
 
-  // Create menubar-specific window configuration
-  // Override titleBar settings from windowConfig with menubar-specific preference
-  const menubarWindowConfig: BrowserWindowConstructorOptions = {
+  // Create tidgi mini window-specific window configuration
+  // Override titleBar settings from windowConfig with tidgi mini window-specific preference
+  const tidgiMiniWindowConfig: BrowserWindowConstructorOptions = {
     ...windowConfig,
     show: false,
     minHeight: 100,
     minWidth: 250,
-    // Use menubar-specific titleBar setting instead of inheriting from main window
-    titleBarStyle: showMenubarWindowTitleBar ? 'default' : 'hidden',
-    frame: showMenubarWindowTitleBar,
+    // Use tidgi mini window-specific titleBar setting instead of inheriting from main window
+    titleBarStyle: showTidgiMiniWindowTitleBar ? 'default' : 'hidden',
+    frame: showTidgiMiniWindowTitleBar,
     // Always hide the menu bar (File, Edit, View menu), even when showing title bar
     autoHideMenuBar: true,
   };
 
-  logger.info('Creating menubar with titleBar configuration', {
-    function: 'handleAttachToMenuBar',
-    showMenubarWindowTitleBar,
-    titleBarStyle: menubarWindowConfig.titleBarStyle,
-    frame: menubarWindowConfig.frame,
+  logger.info('Creating tidgi mini window with titleBar configuration', {
+    function: 'handleAttachToTidgiMiniWindow',
+    showTidgiMiniWindowTitleBar,
+    titleBarStyle: tidgiMiniWindowConfig.titleBarStyle,
+    frame: tidgiMiniWindowConfig.frame,
   });
 
-  const menuBar = menubar({
+  const tidgiMiniWindow = menubar({
     index: getMainWindowEntry(),
     tray,
     activateWithApp: false,
     showDockIcon: true,
     preloadWindow: true,
-    tooltip: i18n.t('Menu.TidGiMenuBar'),
-    browserWindow: menubarWindowConfig,
+    tooltip: i18n.t('Menu.TidGiMiniWindow'),
+    browserWindow: tidgiMiniWindowConfig,
   });
 
-  menuBar.on('after-create-window', () => {
-    if (menuBar.window !== undefined) {
-      menuBar.window.on('focus', async () => {
-        logger.debug('restore window position', { function: 'handleAttachToMenuBar' });
+  tidgiMiniWindow.on('after-create-window', () => {
+    if (tidgiMiniWindow.window !== undefined) {
+      tidgiMiniWindow.window.on('focus', async () => {
+        logger.debug('restore window position', { function: 'handleAttachToTidgiMiniWindow' });
         if (windowWithBrowserViewState === undefined) {
-          logger.debug('windowWithBrowserViewState is undefined for menuBar', { function: 'handleAttachToMenuBar' });
+          logger.debug('windowWithBrowserViewState is undefined for tidgiMiniWindow', { function: 'handleAttachToTidgiMiniWindow' });
         } else {
-          if (menuBar.window === undefined) {
-            logger.debug('menuBar.window is undefined', { function: 'handleAttachToMenuBar' });
+          if (tidgiMiniWindow.window === undefined) {
+            logger.debug('tidgiMiniWindow.window is undefined', { function: 'handleAttachToTidgiMiniWindow' });
           } else {
             const haveXYValue = [windowWithBrowserViewState.x, windowWithBrowserViewState.y].every((value) => Number.isFinite(value));
             const haveWHValue = [windowWithBrowserViewState.width, windowWithBrowserViewState.height].every((value) => Number.isFinite(value));
             if (haveXYValue) {
-              menuBar.window.setPosition(windowWithBrowserViewState.x, windowWithBrowserViewState.y, false);
+              tidgiMiniWindow.window.setPosition(windowWithBrowserViewState.x, windowWithBrowserViewState.y, false);
             }
             if (haveWHValue) {
-              menuBar.window.setSize(windowWithBrowserViewState.width, windowWithBrowserViewState.height, false);
+              tidgiMiniWindow.window.setSize(windowWithBrowserViewState.width, windowWithBrowserViewState.height, false);
             }
           }
         }
         const view = await viewService.getActiveBrowserView();
         view?.webContents.focus();
       });
-      menuBar.window.removeAllListeners('close');
-      menuBar.window.on('close', (event) => {
+      tidgiMiniWindow.window.removeAllListeners('close');
+      tidgiMiniWindow.window.on('close', (event) => {
         event.preventDefault();
-        menuBar.hideWindow();
+        tidgiMiniWindow.hideWindow();
       });
     }
   });
-  menuBar.on('hide', async () => {
-    // on mac, calling `menuBar.app.hide()` with main window open will bring background main window up, which we don't want. We want to bring previous other app up. So close main window first.
+  tidgiMiniWindow.on('hide', async () => {
+    // on mac, calling `tidgiMiniWindow.app.hide()` with main window open will bring background main window up, which we don't want. We want to bring previous other app up. So close main window first.
     if (isMac) {
       const mainWindow = windowService.get(WindowNames.main);
       if (mainWindow?.isVisible() === true) {
@@ -103,29 +106,29 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
     }
   });
   // https://github.com/maxogden/menubar/issues/120
-  menuBar.on('after-hide', () => {
+  tidgiMiniWindow.on('after-hide', () => {
     if (isMac) {
-      menuBar.app.hide();
+      tidgiMiniWindow.app.hide();
     }
   });
 
   // manually save window state https://github.com/mawie81/electron-window-state/issues/64
   const debouncedSaveWindowState = debounce(
     () => {
-      if (menuBar.window !== undefined) {
-        windowWithBrowserViewState?.saveState(menuBar.window);
+      if (tidgiMiniWindow.window !== undefined) {
+        windowWithBrowserViewState?.saveState(tidgiMiniWindow.window);
       }
     },
     500,
   );
-  // menubar is hide, not close, so not managed by windowStateKeeper, need to save manually
-  menuBar.window?.on('resize', debouncedSaveWindowState);
-  menuBar.window?.on('move', debouncedSaveWindowState);
+  // tidgi mini window is hide, not close, so not managed by windowStateKeeper, need to save manually
+  tidgiMiniWindow.window?.on('resize', debouncedSaveWindowState);
+  tidgiMiniWindow.window?.on('move', debouncedSaveWindowState);
 
   return await new Promise<Menubar>((resolve) => {
-    menuBar.on('ready', async () => {
+    tidgiMiniWindow.on('ready', async () => {
       // right on tray icon
-      menuBar.tray.on('right-click', () => {
+      tidgiMiniWindow.tray.on('right-click', () => {
         const contextMenu = Menu.buildFromTemplate([
           {
             label: i18n.t('ContextMenu.OpenTidGi'),
@@ -134,9 +137,9 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
             },
           },
           {
-            label: i18n.t('ContextMenu.OpenTidGiMenuBar'),
+            label: i18n.t('ContextMenu.OpenTidGiMiniWindow'),
             click: async () => {
-              await menuBar.showWindow();
+              await tidgiMiniWindow.showWindow();
             },
           },
           {
@@ -165,23 +168,23 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
           {
             label: i18n.t('ContextMenu.Quit'),
             click: () => {
-              menuBar.app.quit();
+              tidgiMiniWindow.app.quit();
             },
           },
         ]);
 
-        menuBar.tray.popUpContextMenu(contextMenu);
+        tidgiMiniWindow.tray.popUpContextMenu(contextMenu);
       });
 
       // right click on window content
-      if (menuBar.window?.webContents !== undefined) {
-        const unregisterContextMenu = await menuService.initContextMenuForWindowWebContents(menuBar.window.webContents);
-        menuBar.on('after-close', () => {
+      if (tidgiMiniWindow.window?.webContents !== undefined) {
+        const unregisterContextMenu = await menuService.initContextMenuForWindowWebContents(tidgiMiniWindow.window.webContents);
+        tidgiMiniWindow.on('after-close', () => {
           unregisterContextMenu();
         });
       }
 
-      resolve(menuBar);
+      resolve(tidgiMiniWindow);
     });
   });
 }

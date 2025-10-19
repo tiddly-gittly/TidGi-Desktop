@@ -53,7 +53,7 @@ export class DatabaseService implements IDatabaseService {
       hasContent: !!this.settingFileContent,
       keys: this.settingFileContent ? Object.keys(this.settingFileContent).length : 0,
       hasPreferences: !!this.settingFileContent?.preferences,
-      attachToMenubar: this.settingFileContent?.preferences?.attachToMenubar,
+      attachToTidgiMiniWindow: this.settingFileContent?.preferences?.attachToTidgiMiniWindow,
       settingsFilePath: settings.file(),
       function: 'DatabaseService.initializeForApp',
     });

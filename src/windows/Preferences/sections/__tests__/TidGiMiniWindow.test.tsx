@@ -10,7 +10,7 @@ import { defaultPreferences } from '@services/preferences/defaultPreferences';
 import type { IPreferences } from '@services/preferences/interface';
 import { SupportedStorageServices } from '@services/types';
 import type { IWorkspace } from '@services/workspaces/interface';
-import { TidGiMenubarWindow } from '../TidGiMenubarWindow';
+import { TidGiMiniWindow } from '../TidGiMiniWindow';
 
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ThemeProvider theme={lightTheme}>
@@ -87,14 +87,14 @@ const createMockPreference = (overrides: Partial<IPreferences> = {}): IPreferenc
   ...overrides,
 });
 
-describe('TidGiMenubarWindow Component', () => {
+describe('TidGiMiniWindow Component', () => {
   let preferenceSubject: BehaviorSubject<IPreferences | undefined>;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     preferenceSubject = new BehaviorSubject<IPreferences | undefined>(
-      createMockPreference({ attachToMenubar: false }),
+      createMockPreference({ attachToTidgiMiniWindow: false }),
     );
 
     Object.defineProperty(window.observables.preference, 'preference$', {
@@ -136,7 +136,7 @@ describe('TidGiMenubarWindow Component', () => {
   const renderComponent = async () => {
     const result = render(
       <TestWrapper>
-        <TidGiMenubarWindow />
+        <TidGiMiniWindow />
       </TestWrapper>,
     );
 
@@ -147,7 +147,7 @@ describe('TidGiMenubarWindow Component', () => {
 
     // Ensure component is fully rendered
     await waitFor(() => {
-      expect(screen.getByText('Menu.TidGiMenuBar')).toBeInTheDocument();
+      expect(screen.getByText('Menu.TidGiMiniWindow')).toBeInTheDocument();
     });
 
     return result;
@@ -166,7 +166,7 @@ describe('TidGiMenubarWindow Component', () => {
 
       const { unmount } = render(
         <TestWrapper>
-          <TidGiMenubarWindow />
+          <TidGiMiniWindow />
         </TestWrapper>,
       );
 
@@ -180,7 +180,7 @@ describe('TidGiMenubarWindow Component', () => {
     it('should render after loading with preferences', async () => {
       await renderComponent();
 
-      expect(screen.getByText('Menu.TidGiMenuBar')).toBeInTheDocument();
+      expect(screen.getByText('Menu.TidGiMiniWindow')).toBeInTheDocument();
     });
 
     it('should load platform information from backend on mount', async () => {
@@ -195,7 +195,7 @@ describe('TidGiMenubarWindow Component', () => {
       expect(window.service.workspace.getWorkspacesAsList).toHaveBeenCalled();
     });
 
-    it('should display correct attach to menubar text for Windows', async () => {
+    it('should display correct attach to tidgi mini window text for Windows', async () => {
       Object.defineProperty(window.service.context, 'get', {
         value: vi.fn().mockResolvedValue('win32'),
         writable: true,
@@ -206,7 +206,7 @@ describe('TidGiMenubarWindow Component', () => {
       expect(screen.getByText('Preference.AttachToTaskbar')).toBeInTheDocument();
     });
 
-    it('should display correct attach to menubar text for macOS', async () => {
+    it('should display correct attach to tidgi mini window text for macOS', async () => {
       Object.defineProperty(window.service.context, 'get', {
         value: vi.fn().mockResolvedValue('darwin'),
         writable: true,
@@ -214,13 +214,13 @@ describe('TidGiMenubarWindow Component', () => {
 
       await renderComponent();
 
-      expect(screen.getByText('Preference.AttachToMenuBar')).toBeInTheDocument();
+      expect(screen.getByText('Preference.AttachToTidgiMiniWindow')).toBeInTheDocument();
     });
   });
 
-  describe('Attach to menubar toggle', () => {
-    it('should display attach to menubar switch with correct initial state', async () => {
-      preferenceSubject.next(createMockPreference({ attachToMenubar: false }));
+  describe('Attach to tidgi mini window toggle', () => {
+    it('should display attach to tidgi mini window switch with correct initial state', async () => {
+      preferenceSubject.next(createMockPreference({ attachToTidgiMiniWindow: false }));
       await renderComponent();
 
       const switches = screen.getAllByRole('checkbox');
@@ -228,9 +228,9 @@ describe('TidGiMenubarWindow Component', () => {
       expect(attachSwitch).not.toBeChecked();
     });
 
-    it('should call backend API when attach to menubar is toggled', async () => {
+    it('should call backend API when attach to tidgi mini window is toggled', async () => {
       const user = userEvent.setup();
-      preferenceSubject.next(createMockPreference({ attachToMenubar: false }));
+      preferenceSubject.next(createMockPreference({ attachToTidgiMiniWindow: false }));
       await renderComponent();
 
       const switches = screen.getAllByRole('checkbox');
@@ -239,13 +239,13 @@ describe('TidGiMenubarWindow Component', () => {
       await user.click(attachSwitch);
 
       await waitFor(() => {
-        expect(window.service.preference.set).toHaveBeenCalledWith('attachToMenubar', true);
+        expect(window.service.preference.set).toHaveBeenCalledWith('attachToTidgiMiniWindow', true);
       });
     });
 
-    it('should toggle attach to menubar setting', async () => {
+    it('should toggle attach to tidgi mini window setting', async () => {
       const user = userEvent.setup();
-      preferenceSubject.next(createMockPreference({ attachToMenubar: false }));
+      preferenceSubject.next(createMockPreference({ attachToTidgiMiniWindow: false }));
       await renderComponent();
 
       const switches = screen.getAllByRole('checkbox');
@@ -254,45 +254,45 @@ describe('TidGiMenubarWindow Component', () => {
       await user.click(attachSwitch);
 
       await waitFor(() => {
-        expect(window.service.preference.set).toHaveBeenCalledWith('attachToMenubar', true);
+        expect(window.service.preference.set).toHaveBeenCalledWith('attachToTidgiMiniWindow', true);
       });
     });
   });
 
   describe('Conditional settings visibility', () => {
-    it('should hide additional settings when attachToMenubar is false', async () => {
-      preferenceSubject.next(createMockPreference({ attachToMenubar: false }));
+    it('should hide additional settings when attachToTidgiMiniWindow is false', async () => {
+      preferenceSubject.next(createMockPreference({ attachToTidgiMiniWindow: false }));
       await renderComponent();
 
       expect(screen.queryByText('Preference.AttachToTaskbarShowSidebar')).not.toBeInTheDocument();
-      expect(screen.queryByText('Preference.AttachToMenuBarShowSidebar')).not.toBeInTheDocument();
-      expect(screen.queryByText('Preference.MenubarAlwaysOnTop')).not.toBeInTheDocument();
-      expect(screen.queryByText('Preference.MenubarSyncWorkspaceWithMainWindow')).not.toBeInTheDocument();
+      expect(screen.queryByText('Preference.AttachToTidgiMiniWindowShowSidebar')).not.toBeInTheDocument();
+      expect(screen.queryByText('Preference.TidgiMiniWindowAlwaysOnTop')).not.toBeInTheDocument();
+      expect(screen.queryByText('Preference.TidgiMiniWindowSyncWorkspaceWithMainWindow')).not.toBeInTheDocument();
     });
 
-    it('should show additional settings when attachToMenubar is true', async () => {
+    it('should show additional settings when attachToTidgiMiniWindow is true', async () => {
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
-          sidebarOnMenubar: false,
-          menuBarAlwaysOnTop: false,
-          menubarSyncWorkspaceWithMainWindow: true,
+          attachToTidgiMiniWindow: true,
+          sidebarOnTidgiMiniWindow: false,
+          tidgiMiniWindowAlwaysOnTop: false,
+          tidgiMiniWindowSyncWorkspaceWithMainWindow: true,
         }),
       );
       await renderComponent();
 
       expect(screen.getByText('Preference.AttachToTaskbarShowSidebar')).toBeInTheDocument();
-      expect(screen.getByText('Preference.MenubarAlwaysOnTop')).toBeInTheDocument();
-      expect(screen.getByText('Preference.MenubarSyncWorkspaceWithMainWindow')).toBeInTheDocument();
+      expect(screen.getByText('Preference.TidgiMiniWindowAlwaysOnTop')).toBeInTheDocument();
+      expect(screen.getByText('Preference.TidgiMiniWindowSyncWorkspaceWithMainWindow')).toBeInTheDocument();
     });
   });
 
-  describe('Sidebar on menubar toggle', () => {
+  describe('Sidebar on tidgi mini window toggle', () => {
     it('should display sidebar toggle with correct initial state', async () => {
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
-          sidebarOnMenubar: false,
+          attachToTidgiMiniWindow: true,
+          sidebarOnTidgiMiniWindow: false,
         }),
       );
       await renderComponent();
@@ -310,8 +310,8 @@ describe('TidGiMenubarWindow Component', () => {
       const user = userEvent.setup();
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
-          sidebarOnMenubar: false,
+          attachToTidgiMiniWindow: true,
+          sidebarOnTidgiMiniWindow: false,
         }),
       );
       await renderComponent();
@@ -322,7 +322,7 @@ describe('TidGiMenubarWindow Component', () => {
       await user.click(sidebarSwitch);
 
       await waitFor(() => {
-        expect(window.service.preference.set).toHaveBeenCalledWith('sidebarOnMenubar', true);
+        expect(window.service.preference.set).toHaveBeenCalledWith('sidebarOnTidgiMiniWindow', true);
       });
     });
   });
@@ -331,8 +331,8 @@ describe('TidGiMenubarWindow Component', () => {
     it('should display always on top toggle with correct initial state', async () => {
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
-          menuBarAlwaysOnTop: false,
+          attachToTidgiMiniWindow: true,
+          tidgiMiniWindowAlwaysOnTop: false,
         }),
       );
       await renderComponent();
@@ -340,7 +340,7 @@ describe('TidGiMenubarWindow Component', () => {
       const switches = screen.getAllByRole('checkbox');
       const alwaysOnTopSwitch = switches.find((s) => {
         const label = s.closest('li')?.querySelector('.MuiListItemText-primary');
-        return label?.textContent === 'Preference.MenubarAlwaysOnTop';
+        return label?.textContent === 'Preference.TidgiMiniWindowAlwaysOnTop';
       });
 
       expect(alwaysOnTopSwitch).not.toBeChecked();
@@ -350,19 +350,19 @@ describe('TidGiMenubarWindow Component', () => {
       const user = userEvent.setup();
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
-          menuBarAlwaysOnTop: false,
+          attachToTidgiMiniWindow: true,
+          tidgiMiniWindowAlwaysOnTop: false,
         }),
       );
       await renderComponent();
 
       const switches = screen.getAllByRole('checkbox');
-      const alwaysOnTopSwitch = switches[2];
+      const alwaysOnTopSwitch = switches[3];
 
       await user.click(alwaysOnTopSwitch);
 
       await waitFor(() => {
-        expect(window.service.preference.set).toHaveBeenCalledWith('menuBarAlwaysOnTop', true);
+        expect(window.service.preference.set).toHaveBeenCalledWith('tidgiMiniWindowAlwaysOnTop', true);
       });
     });
   });
@@ -371,8 +371,8 @@ describe('TidGiMenubarWindow Component', () => {
     it('should display workspace sync toggle with correct initial state', async () => {
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
-          menubarSyncWorkspaceWithMainWindow: true,
+          attachToTidgiMiniWindow: true,
+          tidgiMiniWindowSyncWorkspaceWithMainWindow: true,
         }),
       );
       await renderComponent();
@@ -380,7 +380,7 @@ describe('TidGiMenubarWindow Component', () => {
       const switches = screen.getAllByRole('checkbox');
       const syncSwitch = switches.find((s) => {
         const label = s.closest('li')?.querySelector('.MuiListItemText-primary');
-        return label?.textContent === 'Preference.MenubarSyncWorkspaceWithMainWindow';
+        return label?.textContent === 'Preference.TidgiMiniWindowSyncWorkspaceWithMainWindow';
       });
 
       expect(syncSwitch).toBeChecked();
@@ -390,27 +390,27 @@ describe('TidGiMenubarWindow Component', () => {
       const user = userEvent.setup();
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
-          menubarSyncWorkspaceWithMainWindow: true,
+          attachToTidgiMiniWindow: true,
+          tidgiMiniWindowSyncWorkspaceWithMainWindow: true,
         }),
       );
       await renderComponent();
 
       const switches = screen.getAllByRole('checkbox');
-      const syncSwitch = switches[3];
+      const syncSwitch = switches[4];
 
       await user.click(syncSwitch);
 
       await waitFor(() => {
-        expect(window.service.preference.set).toHaveBeenCalledWith('menubarSyncWorkspaceWithMainWindow', false);
+        expect(window.service.preference.set).toHaveBeenCalledWith('tidgiMiniWindowSyncWorkspaceWithMainWindow', false);
       });
     });
 
     it('should hide fixed workspace selector when sync is enabled', async () => {
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
-          menubarSyncWorkspaceWithMainWindow: true,
+          attachToTidgiMiniWindow: true,
+          tidgiMiniWindowSyncWorkspaceWithMainWindow: true,
         }),
       );
       await renderComponent();
@@ -421,8 +421,8 @@ describe('TidGiMenubarWindow Component', () => {
     it('should show fixed workspace selector when sync is disabled', async () => {
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
-          menubarSyncWorkspaceWithMainWindow: false,
+          attachToTidgiMiniWindow: true,
+          tidgiMiniWindowSyncWorkspaceWithMainWindow: false,
         }),
       );
       await renderComponent();
@@ -437,8 +437,8 @@ describe('TidGiMenubarWindow Component', () => {
       const user = userEvent.setup();
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
-          menubarSyncWorkspaceWithMainWindow: false,
+          attachToTidgiMiniWindow: true,
+          tidgiMiniWindowSyncWorkspaceWithMainWindow: false,
         }),
       );
       await renderComponent();
@@ -455,9 +455,9 @@ describe('TidGiMenubarWindow Component', () => {
     it('should have workspace selector that can trigger API calls', async () => {
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
-          menubarSyncWorkspaceWithMainWindow: false,
-          menubarFixedWorkspaceId: '',
+          attachToTidgiMiniWindow: true,
+          tidgiMiniWindowSyncWorkspaceWithMainWindow: false,
+          tidgiMiniWindowFixedWorkspaceId: '',
         }),
       );
       await renderComponent();
@@ -474,9 +474,9 @@ describe('TidGiMenubarWindow Component', () => {
     it('should display currently selected workspace', async () => {
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
-          menubarSyncWorkspaceWithMainWindow: false,
-          menubarFixedWorkspaceId: 'workspace-2',
+          attachToTidgiMiniWindow: true,
+          tidgiMiniWindowSyncWorkspaceWithMainWindow: false,
+          tidgiMiniWindowFixedWorkspaceId: 'workspace-2',
         }),
       );
       const { container } = await renderComponent();
@@ -491,25 +491,25 @@ describe('TidGiMenubarWindow Component', () => {
   });
 
   describe('Keyboard shortcut registration', () => {
-    it('should display keyboard shortcut button when menubar is attached', async () => {
+    it('should display keyboard shortcut button when tidgi mini window is attached', async () => {
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
+          attachToTidgiMiniWindow: true,
           keyboardShortcuts: {},
         }),
       );
       await renderComponent();
 
-      const shortcutButton = screen.getByRole('button', { name: /Preference\.MenubarShortcutKey/ });
+      const shortcutButton = screen.getByRole('button', { name: /Preference\.TidgiMiniWindowShortcutKey/ });
       expect(shortcutButton).toBeInTheDocument();
     });
 
     it('should display current keyboard shortcut value', async () => {
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
+          attachToTidgiMiniWindow: true,
           keyboardShortcuts: {
-            'Window.toggleMenubarWindow': 'Ctrl+Shift+M',
+            'Window.toggleTidgiMiniWindow': 'Ctrl+Shift+M',
           },
         }),
       );
@@ -522,19 +522,19 @@ describe('TidGiMenubarWindow Component', () => {
       const user = userEvent.setup();
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
+          attachToTidgiMiniWindow: true,
           keyboardShortcuts: {},
         }),
       );
       await renderComponent();
 
-      const shortcutButton = screen.getByRole('button', { name: /Preference\.MenubarShortcutKey/ });
+      const shortcutButton = screen.getByRole('button', { name: /Preference\.TidgiMiniWindowShortcutKey/ });
 
       const mockOnChange = vi.fn(async (value: string) => {
         if (value && value.trim() !== '') {
-          await window.service.native.registerKeyboardShortcut('Window', 'toggleMenubarWindow', value);
+          await window.service.native.registerKeyboardShortcut('Window', 'toggleTidgiMiniWindow', value);
         } else {
-          await window.service.native.unregisterKeyboardShortcut('Window', 'toggleMenubarWindow');
+          await window.service.native.unregisterKeyboardShortcut('Window', 'toggleTidgiMiniWindow');
         }
       });
 
@@ -545,7 +545,7 @@ describe('TidGiMenubarWindow Component', () => {
       await user.click(shortcutButton);
 
       await waitFor(() => {
-        expect(window.service.native.registerKeyboardShortcut).toHaveBeenCalledWith('Window', 'toggleMenubarWindow', 'Ctrl+Shift+T');
+        expect(window.service.native.registerKeyboardShortcut).toHaveBeenCalledWith('Window', 'toggleTidgiMiniWindow', 'Ctrl+Shift+T');
       });
     });
 
@@ -553,21 +553,21 @@ describe('TidGiMenubarWindow Component', () => {
       const user = userEvent.setup();
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
+          attachToTidgiMiniWindow: true,
           keyboardShortcuts: {
-            'Window.toggleMenubarWindow': 'Ctrl+Shift+M',
+            'Window.toggleTidgiMiniWindow': 'Ctrl+Shift+M',
           },
         }),
       );
       await renderComponent();
 
-      const shortcutButton = screen.getByRole('button', { name: /Preference\.MenubarShortcutKey/ });
+      const shortcutButton = screen.getByRole('button', { name: /Preference\.TidgiMiniWindowShortcutKey/ });
 
       const mockOnChange = vi.fn(async (value: string) => {
         if (value && value.trim() !== '') {
-          await window.service.native.registerKeyboardShortcut('Window', 'toggleMenubarWindow', value);
+          await window.service.native.registerKeyboardShortcut('Window', 'toggleTidgiMiniWindow', value);
         } else {
-          await window.service.native.unregisterKeyboardShortcut('Window', 'toggleMenubarWindow');
+          await window.service.native.unregisterKeyboardShortcut('Window', 'toggleTidgiMiniWindow');
         }
       });
 
@@ -578,30 +578,30 @@ describe('TidGiMenubarWindow Component', () => {
       await user.click(shortcutButton);
 
       await waitFor(() => {
-        expect(window.service.native.unregisterKeyboardShortcut).toHaveBeenCalledWith('Window', 'toggleMenubarWindow');
+        expect(window.service.native.unregisterKeyboardShortcut).toHaveBeenCalledWith('Window', 'toggleTidgiMiniWindow');
       });
     });
 
     it('should display helper text for keyboard shortcut', async () => {
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
+          attachToTidgiMiniWindow: true,
           keyboardShortcuts: {},
         }),
       );
       await renderComponent();
 
-      expect(screen.getByText('Preference.MenubarShortcutKeyHelperText')).toBeInTheDocument();
+      expect(screen.getByText('Preference.TidgiMiniWindowShortcutKeyHelperText')).toBeInTheDocument();
     });
   });
 
   describe('Integration: Toggle sequence', () => {
-    it('should show all settings when attachToMenubar is toggled on', async () => {
+    it('should show all settings when attachToTidgiMiniWindow is toggled on', async () => {
       const user = userEvent.setup();
 
       // Create a fresh subject for this test to avoid interference
       const toggleTestSubject = new BehaviorSubject<IPreferences | undefined>(
-        createMockPreference({ attachToMenubar: false }),
+        createMockPreference({ attachToTidgiMiniWindow: false }),
       );
 
       Object.defineProperty(window.observables.preference, 'preference$', {
@@ -623,32 +623,32 @@ describe('TidGiMenubarWindow Component', () => {
 
       render(
         <TestWrapper>
-          <TidGiMenubarWindow />
+          <TidGiMiniWindow />
         </TestWrapper>,
       );
 
       // Wait for component to fully load
       await waitFor(() => {
-        expect(screen.getByText('Menu.TidGiMenuBar')).toBeInTheDocument();
+        expect(screen.getByText('Menu.TidGiMiniWindow')).toBeInTheDocument();
       });
 
       // Verify additional settings are hidden initially
-      expect(screen.queryByText('Preference.MenubarAlwaysOnTop')).not.toBeInTheDocument();
+      expect(screen.queryByText('Preference.TidgiMiniWindowAlwaysOnTop')).not.toBeInTheDocument();
 
-      // Click the attach to menubar toggle
+      // Click the attach to tidgi mini window toggle
       const switches = screen.getAllByRole('checkbox');
       const attachSwitch = switches[0];
       await user.click(attachSwitch);
 
       // Wait for API call
       await waitFor(() => {
-        expect(window.service.preference.set).toHaveBeenCalledWith('attachToMenubar', true);
+        expect(window.service.preference.set).toHaveBeenCalledWith('attachToTidgiMiniWindow', true);
       });
 
       // Now verify new elements appear (they should appear automatically after the state update)
       await waitFor(() => {
-        expect(screen.getByText('Preference.MenubarAlwaysOnTop')).toBeInTheDocument();
-        expect(screen.getByText('Preference.MenubarSyncWorkspaceWithMainWindow')).toBeInTheDocument();
+        expect(screen.getByText('Preference.TidgiMiniWindowAlwaysOnTop')).toBeInTheDocument();
+        expect(screen.getByText('Preference.TidgiMiniWindowSyncWorkspaceWithMainWindow')).toBeInTheDocument();
       });
     });
 
@@ -656,10 +656,10 @@ describe('TidGiMenubarWindow Component', () => {
       const user = userEvent.setup();
       preferenceSubject.next(
         createMockPreference({
-          attachToMenubar: true,
-          sidebarOnMenubar: false,
-          menuBarAlwaysOnTop: false,
-          menubarSyncWorkspaceWithMainWindow: true,
+          attachToTidgiMiniWindow: true,
+          sidebarOnTidgiMiniWindow: false,
+          tidgiMiniWindowAlwaysOnTop: false,
+          tidgiMiniWindowSyncWorkspaceWithMainWindow: true,
         }),
       );
       await renderComponent();
@@ -668,17 +668,17 @@ describe('TidGiMenubarWindow Component', () => {
 
       await user.click(switches[1]);
       await waitFor(() => {
-        expect(window.service.preference.set).toHaveBeenCalledWith('sidebarOnMenubar', true);
-      });
-
-      await user.click(switches[2]);
-      await waitFor(() => {
-        expect(window.service.preference.set).toHaveBeenCalledWith('menuBarAlwaysOnTop', true);
+        expect(window.service.preference.set).toHaveBeenCalledWith('sidebarOnTidgiMiniWindow', true);
       });
 
       await user.click(switches[3]);
       await waitFor(() => {
-        expect(window.service.preference.set).toHaveBeenCalledWith('menubarSyncWorkspaceWithMainWindow', false);
+        expect(window.service.preference.set).toHaveBeenCalledWith('tidgiMiniWindowAlwaysOnTop', true);
+      });
+
+      await user.click(switches[4]);
+      await waitFor(() => {
+        expect(window.service.preference.set).toHaveBeenCalledWith('tidgiMiniWindowSyncWorkspaceWithMainWindow', false);
       });
 
       expect(window.service.preference.set).toHaveBeenCalledTimes(3);
