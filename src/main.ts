@@ -139,8 +139,8 @@ const commonInit = async (): Promise<void> => {
   await workspaceService.initializeDefaultPageWorkspaces();
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();
-  const attachToTidgiMiniWindow = await preferenceService.get('attachToTidgiMiniWindow');
-  if (attachToTidgiMiniWindow) {
+  const tidgiMiniWindow = await preferenceService.get('tidgiMiniWindow');
+  if (tidgiMiniWindow) {
     await windowService.openTidgiMiniWindow(true, false);
   }
 

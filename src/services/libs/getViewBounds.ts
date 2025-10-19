@@ -11,8 +11,8 @@ export default async function getViewBounds(
 ): Promise<{ height: number; width: number; x: number; y: number }> {
   const { findInPage = false, windowName } = config;
   const preferencesService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-  const [sidebar, sidebarOnTidgiMiniWindow] = await Promise.all([preferencesService.get('sidebar'), preferencesService.get('sidebarOnTidgiMiniWindow')]);
-  const showSidebar = windowName === WindowNames.tidgiMiniWindow ? sidebarOnTidgiMiniWindow : sidebar;
+  const [sidebar, tidgiMiniWindowShowSidebar] = await Promise.all([preferencesService.get('sidebar'), preferencesService.get('tidgiMiniWindowShowSidebar')]);
+  const showSidebar = windowName === WindowNames.tidgiMiniWindow ? tidgiMiniWindowShowSidebar : sidebar;
   // Now showing sidebar on secondary window
   const secondary = windowName === WindowNames.secondary;
   const x = (showSidebar && !secondary) ? 68 : 0;

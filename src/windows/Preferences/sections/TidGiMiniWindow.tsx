@@ -30,22 +30,22 @@ export function TidGiMiniWindow(props: Partial<ISectionProps>): React.JSX.Elemen
               <Switch
                 edge='end'
                 color='primary'
-                checked={preference.attachToTidgiMiniWindow}
+                checked={preference.tidgiMiniWindow}
                 onChange={async (event) => {
-                  await window.service.preference.set('attachToTidgiMiniWindow', event.target.checked);
+                  await window.service.preference.set('tidgiMiniWindow', event.target.checked);
                 }}
                 data-testid='attach-to-tidgi-mini-window-switch'
               />
             }
           >
             <ListItemText
-              primary={platform === 'win32' ? t('Preference.AttachToTaskbar') : t('Preference.AttachToTidgiMiniWindow')}
-              secondary={platform === 'linux' ? undefined : t('Preference.AttachToTidgiMiniWindowTip')}
+              primary={platform === 'win32' ? t('Preference.AttachToTaskbar') : t('Preference.TidgiMiniWindow')}
+              secondary={platform === 'linux' ? undefined : t('Preference.TidgiMiniWindowTip')}
             />
           </ListItem>
 
           {/* Other settings are only visible when attached to taskbar/system tray */}
-          {preference.attachToTidgiMiniWindow && (
+          {preference.tidgiMiniWindow && (
             <>
               {/* Sidebar display settings */}
               <ListItem
@@ -53,17 +53,17 @@ export function TidGiMiniWindow(props: Partial<ISectionProps>): React.JSX.Elemen
                   <Switch
                     edge='end'
                     color='primary'
-                    checked={preference.sidebarOnTidgiMiniWindow}
+                    checked={preference.tidgiMiniWindowShowSidebar}
                     onChange={async (event) => {
-                      await window.service.preference.set('sidebarOnTidgiMiniWindow', event.target.checked);
+                      await window.service.preference.set('tidgiMiniWindowShowSidebar', event.target.checked);
                     }}
                     data-testid='sidebar-on-tidgi-mini-window-switch'
                   />
                 }
               >
                 <ListItemText
-                  primary={platform === 'win32' ? t('Preference.AttachToTaskbarShowSidebar') : t('Preference.AttachToTidgiMiniWindowShowSidebar')}
-                  secondary={platform === 'linux' ? undefined : t('Preference.AttachToTidgiMiniWindowShowSidebarTip')}
+                  primary={platform === 'win32' ? t('Preference.AttachToTaskbarShowSidebar') : t('Preference.TidgiMiniWindowShowSidebar')}
+                  secondary={platform === 'linux' ? undefined : t('Preference.TidgiMiniWindowShowSidebarTip')}
                 />
               </ListItem>
 
@@ -75,17 +75,17 @@ export function TidGiMiniWindow(props: Partial<ISectionProps>): React.JSX.Elemen
                   <Switch
                     edge='end'
                     color='primary'
-                    checked={preference.showTidgiMiniWindowTitleBar}
+                    checked={preference.tidgiMiniWindowShowTitleBar}
                     onChange={async (event) => {
-                      await window.service.preference.set('showTidgiMiniWindowTitleBar', event.target.checked);
+                      await window.service.preference.set('tidgiMiniWindowShowTitleBar', event.target.checked);
                     }}
                     data-testid='tidgi-mini-window-titlebar-switch'
                   />
                 }
               >
                 <ListItemText
-                  primary={t('Preference.ShowTidgiMiniWindowTitleBar')}
-                  secondary={t('Preference.ShowTidgiMiniWindowTitleBarDetail')}
+                  primary={t('Preference.TidgiMiniWindowShowTitleBar')}
+                  secondary={t('Preference.TidgiMiniWindowShowTitleBarDetail')}
                 />
               </ListItem>
 

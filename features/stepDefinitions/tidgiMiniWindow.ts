@@ -26,7 +26,7 @@ Given('I configure tidgi mini window with shortcut', async function() {
 
   const updatedPreferences = {
     ...existing.preferences,
-    attachToTidgiMiniWindow: true,
+    tidgiMiniWindow: true,
     keyboardShortcuts: {
       ...(existing.preferences?.keyboardShortcuts || {}),
       'Window.toggleTidgiMiniWindow': shortcut,
@@ -42,12 +42,12 @@ function clearTidgiMiniWindowSettings() {
   const parsed = fs.readJsonSync(settingsPath) as ISettingFile;
   // Remove tidgi mini window-related preferences to avoid affecting other tests
   const cleanedPreferences = omit(parsed.preferences || {}, [
-    'attachToTidgiMiniWindow',
+    'tidgiMiniWindow',
     'tidgiMiniWindowSyncWorkspaceWithMainWindow',
     'tidgiMiniWindowFixedWorkspaceId',
     'tidgiMiniWindowAlwaysOnTop',
-    'sidebarOnTidgiMiniWindow',
-    'showTidgiMiniWindowTitleBar',
+    'tidgiMiniWindowShowSidebar',
+    'tidgiMiniWindowShowTitleBar',
   ]);
   // Also clean up the tidgi mini window shortcut from keyboardShortcuts
   if (cleanedPreferences.keyboardShortcuts) {

@@ -247,7 +247,7 @@ export class View implements IViewService {
     };
     const checkNotExistResult = await Promise.all([
       checkNotExist(workspace, WindowNames.main),
-      this.preferenceService.get('attachToTidgiMiniWindow').then((attachToTidgiMiniWindow) => attachToTidgiMiniWindow && checkNotExist(workspace, WindowNames.tidgiMiniWindow)),
+      this.preferenceService.get('tidgiMiniWindow').then((tidgiMiniWindow) => tidgiMiniWindow && checkNotExist(workspace, WindowNames.tidgiMiniWindow)),
     ]);
     return checkNotExistResult.every((result) => !result);
   }
@@ -412,15 +412,15 @@ export class View implements IViewService {
   public async setActiveViewForAllBrowserViews(workspaceID: string): Promise<void> {
     // Set main window workspace
     const mainWindowTask = this.setActiveView(workspaceID, WindowNames.main);
-    const [attachToTidgiMiniWindow, tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId] = await Promise.all([
-      this.preferenceService.get('attachToTidgiMiniWindow'),
+    const [tidgiMiniWindow, tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId] = await Promise.all([
+      this.preferenceService.get('tidgiMiniWindow'),
       this.preferenceService.get('tidgiMiniWindowSyncWorkspaceWithMainWindow'),
       this.preferenceService.get('tidgiMiniWindowFixedWorkspaceId'),
     ]);
 
     // For tidgi mini window, decide which workspace to show based on preferences
     let tidgiMiniWindowTask = Promise.resolve();
-    if (attachToTidgiMiniWindow) {
+    if (tidgiMiniWindow) {
       // Default to sync (undefined or true), otherwise use fixed workspace ID (fallback to main if not set)
       const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
       const tidgiMiniWindowWorkspaceId = shouldSync ? workspaceID : (tidgiMiniWindowFixedWorkspaceId || workspaceID);

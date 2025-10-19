@@ -25,7 +25,7 @@ export async function handleAttachToTidgiMiniWindow(
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 
   // Get tidgi mini window-specific titleBar preference
-  const showTidgiMiniWindowTitleBar = await preferenceService.get('showTidgiMiniWindowTitleBar');
+  const tidgiMiniWindowShowTitleBar = await preferenceService.get('tidgiMiniWindowShowTitleBar');
 
   // setImage after Tray instance is created to avoid
   // "Segmentation fault (core dumped)" bug on Linux
@@ -43,15 +43,15 @@ export async function handleAttachToTidgiMiniWindow(
     minHeight: 100,
     minWidth: 250,
     // Use tidgi mini window-specific titleBar setting instead of inheriting from main window
-    titleBarStyle: showTidgiMiniWindowTitleBar ? 'default' : 'hidden',
-    frame: showTidgiMiniWindowTitleBar,
+    titleBarStyle: tidgiMiniWindowShowTitleBar ? 'default' : 'hidden',
+    frame: tidgiMiniWindowShowTitleBar,
     // Always hide the menu bar (File, Edit, View menu), even when showing title bar
     autoHideMenuBar: true,
   };
 
   logger.info('Creating tidgi mini window with titleBar configuration', {
     function: 'handleAttachToTidgiMiniWindow',
-    showTidgiMiniWindowTitleBar,
+    tidgiMiniWindowShowTitleBar,
     titleBarStyle: tidgiMiniWindowConfig.titleBarStyle,
     frame: tidgiMiniWindowConfig.frame,
   });

@@ -207,13 +207,13 @@ export class WorkspaceView implements IWorkspaceViewService {
 
     // For tidgi mini window, decide which workspace to show based on preferences
     const tidgiMiniWindowTask = (async () => {
-      const [attachToTidgiMiniWindow, tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId] = await Promise.all([
-        this.preferenceService.get('attachToTidgiMiniWindow'),
+      const [tidgiMiniWindow, tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId] = await Promise.all([
+        this.preferenceService.get('tidgiMiniWindow'),
         this.preferenceService.get('tidgiMiniWindowSyncWorkspaceWithMainWindow'),
         this.preferenceService.get('tidgiMiniWindowFixedWorkspaceId'),
       ]);
 
-      if (!attachToTidgiMiniWindow) {
+      if (!tidgiMiniWindow) {
         return;
       }
 

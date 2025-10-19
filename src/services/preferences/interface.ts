@@ -8,7 +8,7 @@ export interface IPreferences {
   allowPrerelease: boolean;
   alwaysOnTop: boolean;
   askForDownloadPath: boolean;
-  attachToTidgiMiniWindow: boolean;
+  tidgiMiniWindow: boolean;
   /**
    * 完全关闭反盗链
    */
@@ -44,7 +44,7 @@ export interface IPreferences {
   /**
    * Should show sidebar on tidgi mini window?
    */
-  sidebarOnTidgiMiniWindow: boolean;
+  tidgiMiniWindowShowSidebar: boolean;
   spellcheck: boolean;
   spellcheckLanguages: HunspellLanguages[];
   swipeToNavigate: boolean;
@@ -59,7 +59,7 @@ export interface IPreferences {
   /**
    * Whether to show title bar on tidgi mini window (independent of main window's titleBar setting)
    */
-  showTidgiMiniWindowTitleBar: boolean;
+  tidgiMiniWindowShowTitleBar: boolean;
   /**
    * Keyboard shortcuts configuration stored as serviceIdentifier.methodName -> shortcut
    */

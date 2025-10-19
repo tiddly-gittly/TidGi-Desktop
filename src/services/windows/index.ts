@@ -350,13 +350,13 @@ export class Window implements IWindowService {
         logger.info('Closing tidgi mini window', { function: 'toggleTidgiMiniWindow' });
         await this.closeTidgiMiniWindow();
       } else {
-        const attachToTidgiMiniWindow = await preferenceService.get('attachToTidgiMiniWindow');
-        logger.debug('attachToTidgiMiniWindow preference checked', { function: 'toggleTidgiMiniWindow', attachToTidgiMiniWindow });
-        if (attachToTidgiMiniWindow) {
+        const tidgiMiniWindow = await preferenceService.get('tidgiMiniWindow');
+        logger.debug('tidgiMiniWindow preference checked', { function: 'toggleTidgiMiniWindow', tidgiMiniWindow });
+        if (tidgiMiniWindow) {
           logger.info('Opening tidgi mini window', { function: 'toggleTidgiMiniWindow' });
           await this.openTidgiMiniWindow(true, true); // Explicitly show window when toggling
         } else {
-          logger.warn('Cannot open tidgi mini window: attachToTidgiMiniWindow preference is disabled', { function: 'toggleTidgiMiniWindow' });
+          logger.warn('Cannot open tidgi mini window: tidgiMiniWindow preference is disabled', { function: 'toggleTidgiMiniWindow' });
         }
       }
     } catch (error) {
@@ -498,7 +498,7 @@ export class Window implements IWindowService {
 
   public async reactWhenPreferencesChanged(key: string, value: unknown): Promise<void> {
     switch (key) {
-      case 'attachToTidgiMiniWindow': {
+      case 'tidgiMiniWindow': {
         if (value) {
           // Enable tidgi mini window without showing the window; visibility controlled by toggle/shortcut
           await this.openTidgiMiniWindow(true, false);
@@ -549,10 +549,10 @@ export class Window implements IWindowService {
         await this.updateWindowProperties(WindowNames.tidgiMiniWindow, { alwaysOnTop: value as boolean });
         return;
       }
-      case 'showTidgiMiniWindowTitleBar': {
+      case 'tidgiMiniWindowShowTitleBar': {
         // Title bar style requires recreating the window
         // We need to fully destroy and recreate the tidgi mini window with new titleBar settings
-        logger.info('showTidgiMiniWindowTitleBar changed, recreating tidgi mini window', {
+        logger.info('tidgiMiniWindowShowTitleBar changed, recreating tidgi mini window', {
           function: 'reactWhenPreferencesChanged',
           newValue: value,
         });
