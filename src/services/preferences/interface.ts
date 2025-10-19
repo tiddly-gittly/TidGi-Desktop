@@ -57,6 +57,10 @@ export interface IPreferences {
    */
   menubarFixedWorkspaceId: string | undefined;
   /**
+   * Whether to show title bar on menubar window (independent of main window's titleBar setting)
+   */
+  showMenubarWindowTitleBar: boolean;
+  /**
    * Keyboard shortcuts configuration stored as serviceIdentifier.methodName -> shortcut
    */
   keyboardShortcuts: Record<string, string>;

@@ -47,6 +47,7 @@ function clearMenubarSettings() {
     'menubarFixedWorkspaceId',
     'menuBarAlwaysOnTop',
     'sidebarOnMenubar',
+    'showMenubarWindowTitleBar',
   ]);
   // Also clean up the menubar shortcut from keyboardShortcuts
   if (cleanedPreferences.keyboardShortcuts) {

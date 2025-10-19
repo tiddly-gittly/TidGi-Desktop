@@ -8,6 +8,7 @@ import { windowDimension, WindowMeta, WindowNames } from '@services/windows/Wind
 
 import { Channels, MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import type { IPreferenceService } from '@services/preferences/interface';
+import type { IViewService } from '@services/view/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
@@ -20,7 +21,6 @@ import { container } from '@services/container';
 import getViewBounds from '@services/libs/getViewBounds';
 import { logger } from '@services/libs/log';
 import type { IThemeService } from '@services/theme/interface';
-import type { IViewService } from '@services/view/interface';
 import { handleAttachToMenuBar } from './handleAttachToMenuBar';
 import { handleCreateBasicWindow } from './handleCreateBasicWindow';
 import type { IWindowOpenConfig, IWindowService } from './interface';
@@ -493,6 +493,91 @@ export class Window implements IWindowService {
     } catch (error) {
       logger.error(`Failed to update window properties for ${windowName}`, { error, properties });
       throw error;
+    }
+  }
+
+  public async reactWhenPreferencesChanged(key: string, value: unknown): Promise<void> {
+    switch (key) {
+      case 'attachToMenubar': {
+        if (value) {
+          // Enable menubar without showing the window; visibility controlled by toggle/shortcut
+          await this.openMenubarWindow(true, false);
+
+          // After enabling menubar, create view for the current active workspace (if it's a wiki workspace)
+          const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+          const viewService = container.get<IViewService>(serviceIdentifier.View);
+          const activeWorkspace = await workspaceService.getActiveWorkspace();
+
+          if (activeWorkspace && !activeWorkspace.pageType) {
+            // This is a wiki workspace - ensure it has a view for menubar window
+            const existingView = viewService.getView(activeWorkspace.id, WindowNames.menuBar);
+            if (!existingView) {
+              await viewService.addView(activeWorkspace, WindowNames.menuBar);
+            }
+          }
+        } else {
+          await this.closeMenubarWindow(true);
+        }
+        return;
+      }
+      case 'menubarSyncWorkspaceWithMainWindow':
+      case 'menubarFixedWorkspaceId': {
+        logger.info('Preference changed', { function: 'reactWhenPreferencesChanged', key, value: JSON.stringify(value) });
+        // When menubar workspace settings change, hide all views and let the next window show trigger realignment
+        const menuBarWindow = this.get(WindowNames.menuBar);
+        if (menuBarWindow) {
+          const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+          const viewService = container.get<IViewService>(serviceIdentifier.View);
+          const allWorkspaces = await workspaceService.getWorkspacesAsList();
+          logger.debug(`Hiding all menubar views (${allWorkspaces.length} workspaces)`, { function: 'reactWhenPreferencesChanged', key });
+          // Hide all views - the correct view will be shown when window is next opened
+          await Promise.all(
+            allWorkspaces.map(async (workspace) => {
+              const view = viewService.getView(workspace.id, WindowNames.menuBar);
+              if (view) {
+                await viewService.hideView(menuBarWindow, WindowNames.menuBar, workspace.id);
+              }
+            }),
+          );
+          // View creation is handled by openMenubarWindow when the window is shown
+        } else {
+          logger.warn('menuBarWindow not found, skipping view management', { function: 'reactWhenPreferencesChanged', key });
+        }
+        return;
+      }
+      case 'menuBarAlwaysOnTop': {
+        await this.updateWindowProperties(WindowNames.menuBar, { alwaysOnTop: value as boolean });
+        return;
+      }
+      case 'showMenubarWindowTitleBar': {
+        // Title bar style requires recreating the window
+        // We need to fully destroy and recreate the menubar window with new titleBar settings
+        logger.info('showMenubarWindowTitleBar changed, recreating menubar window', {
+          function: 'reactWhenPreferencesChanged',
+          newValue: value,
+        });
+
+        const wasVisible = await this.isMenubarOpen();
+        logger.debug('Current menubar visibility', {
+          function: 'reactWhenPreferencesChanged',
+          wasVisible,
+        });
+
+        // Fully destroy current menubar window (disableIt = true)
+        await this.closeMenubarWindow(true);
+        logger.debug('Menubar window destroyed', { function: 'reactWhenPreferencesChanged' });
+
+        // Reopen menubar window with new titleBar setting from updated preferences
+        // enableIt = true to recreate, showWindow = wasVisible to restore visibility
+        await this.openMenubarWindow(true, wasVisible);
+        logger.info('Menubar window recreated with new titleBar setting', {
+          function: 'reactWhenPreferencesChanged',
+          showWindow: wasVisible,
+        });
+        return;
+      }
+      default:
+        break;
     }
   }
 }

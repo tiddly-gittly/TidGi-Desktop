@@ -6,13 +6,10 @@ import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { i18n } from '@services/libs/i18n';
 import { requestChangeLanguage } from '@services/libs/i18n/requestChangeLanguage';
-import { logger } from '@services/libs/log';
 import type { INotificationService } from '@services/notifications/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import type { IWorkspaceService } from '@services/workspaces/interface';
 import { defaultPreferences } from './defaultPreferences';
 import type { IPreferences, IPreferenceService } from './interface';
 
@@ -91,59 +88,11 @@ export class Preference implements IPreferenceService {
       await notificationService.updatePauseNotificationsInfo();
     }
 
+    // Delegate window-related preference changes to WindowService
     const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+    await windowService.reactWhenPreferencesChanged(key, value);
+
     switch (key) {
-      case 'attachToMenubar': {
-        if (value) {
-          // Enable menubar without showing the window; visibility controlled by toggle/shortcut
-          await windowService.openMenubarWindow(true, false);
-
-          // After enabling menubar, create view for the current active workspace (if it's a wiki workspace)
-          const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-          const viewService = container.get<IViewService>(serviceIdentifier.View);
-          const activeWorkspace = await workspaceService.getActiveWorkspace();
-
-          if (activeWorkspace && !activeWorkspace.pageType) {
-            // This is a wiki workspace - ensure it has a view for menubar window
-            const existingView = viewService.getView(activeWorkspace.id, WindowNames.menuBar);
-            if (!existingView) {
-              await viewService.addView(activeWorkspace, WindowNames.menuBar);
-            }
-          }
-        } else {
-          await windowService.closeMenubarWindow(true);
-        }
-        return;
-      }
-      case 'menubarSyncWorkspaceWithMainWindow':
-      case 'menubarFixedWorkspaceId': {
-        logger.info('Preference changed', { function: 'onPreferenceChanged', key, value: JSON.stringify(value) });
-        // When menubar workspace settings change, hide all views and let the next window show trigger realignment
-        const menuBarWindow = windowService.get(WindowNames.menuBar);
-        if (menuBarWindow) {
-          const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-          const viewService = container.get<IViewService>(serviceIdentifier.View);
-          const allWorkspaces = await workspaceService.getWorkspacesAsList();
-          logger.debug(`Hiding all menubar views (${allWorkspaces.length} workspaces)`, { function: 'onPreferenceChanged', key });
-          // Hide all views - the correct view will be shown when window is next opened
-          await Promise.all(
-            allWorkspaces.map(async (workspace) => {
-              const view = viewService.getView(workspace.id, WindowNames.menuBar);
-              if (view) {
-                await viewService.hideView(menuBarWindow, WindowNames.menuBar, workspace.id);
-              }
-            }),
-          );
-          // View creation is handled by openMenubarWindow when the window is shown
-        } else {
-          logger.warn('menuBarWindow not found, skipping view management', { function: 'onPreferenceChanged', key });
-        }
-        return;
-      }
-      case 'menuBarAlwaysOnTop': {
-        await windowService.updateWindowProperties(WindowNames.menuBar, { alwaysOnTop: value as IPreferences['menuBarAlwaysOnTop'] });
-        return;
-      }
       case 'themeSource': {
         nativeTheme.themeSource = value as IPreferences['themeSource'];
         return;

@@ -4,11 +4,12 @@ import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IViewService } from '@services/view/interface';
 import { BrowserWindowConstructorOptions, Menu, nativeImage, Tray } from 'electron';
 import windowStateKeeper from 'electron-window-state';
-import { debounce, merge as mergeDeep } from 'lodash';
+import { debounce } from 'lodash';
 import { Menubar, menubar } from 'menubar';
 import type { IWindowService } from './interface';
 import { getMainWindowEntry } from './viteEntry';
@@ -18,6 +19,10 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
   const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const viewService = container.get<IViewService>(serviceIdentifier.View);
+  const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+
+  // Get menubar-specific titleBar preference
+  const showMenubarWindowTitleBar = await preferenceService.get('showMenubarWindowTitleBar');
 
   // setImage after Tray instance is created to avoid
   // "Segmentation fault (core dumped)" bug on Linux
@@ -27,6 +32,27 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
   // icon template is not supported on Windows & Linux
   tray.setImage(MENUBAR_ICON_PATH);
 
+  // Create menubar-specific window configuration
+  // Override titleBar settings from windowConfig with menubar-specific preference
+  const menubarWindowConfig: BrowserWindowConstructorOptions = {
+    ...windowConfig,
+    show: false,
+    minHeight: 100,
+    minWidth: 250,
+    // Use menubar-specific titleBar setting instead of inheriting from main window
+    titleBarStyle: showMenubarWindowTitleBar ? 'default' : 'hidden',
+    frame: showMenubarWindowTitleBar,
+    // Always hide the menu bar (File, Edit, View menu), even when showing title bar
+    autoHideMenuBar: true,
+  };
+
+  logger.info('Creating menubar with titleBar configuration', {
+    function: 'handleAttachToMenuBar',
+    showMenubarWindowTitleBar,
+    titleBarStyle: menubarWindowConfig.titleBarStyle,
+    frame: menubarWindowConfig.frame,
+  });
+
   const menuBar = menubar({
     index: getMainWindowEntry(),
     tray,
@@ -34,11 +60,7 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
     showDockIcon: true,
     preloadWindow: true,
     tooltip: i18n.t('Menu.TidGiMenuBar'),
-    browserWindow: mergeDeep(windowConfig, {
-      show: false,
-      minHeight: 100,
-      minWidth: 250,
-    }),
+    browserWindow: menubarWindowConfig,
   });
 
   menuBar.on('after-create-window', () => {

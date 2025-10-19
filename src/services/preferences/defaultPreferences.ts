@@ -19,6 +19,7 @@ export const defaultPreferences: IPreferences = {
   menuBarAlwaysOnTop: false,
   menubarFixedWorkspaceId: '',
   menubarSyncWorkspaceWithMainWindow: true,
+  showMenubarWindowTitleBar: false,
   keyboardShortcuts: {},
   pauseNotifications: '',
   pauseNotificationsBySchedule: false,

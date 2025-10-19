@@ -67,6 +67,28 @@ export function TidGiMenubarWindow(props: Partial<ISectionProps>): React.JSX.Ele
                 />
               </ListItem>
 
+              <Divider />
+
+              {/* Show title bar on menubar window */}
+              <ListItem
+                secondaryAction={
+                  <Switch
+                    edge='end'
+                    color='primary'
+                    checked={preference.showMenubarWindowTitleBar}
+                    onChange={async (event) => {
+                      await window.service.preference.set('showMenubarWindowTitleBar', event.target.checked);
+                    }}
+                    data-testid='menubar-titlebar-switch'
+                  />
+                }
+              >
+                <ListItemText
+                  primary={t('Preference.ShowMenubarWindowTitleBar')}
+                  secondary={t('Preference.ShowMenubarWindowTitleBarDetail')}
+                />
+              </ListItem>
+
               {/* Keep menubar window on top of other windows */}
               <ListItem
                 secondaryAction={

@@ -63,6 +63,8 @@ export interface IWindowService {
   closeMenubarWindow(disableIt?: boolean): Promise<void>;
   /** Update window properties without restart - hot reload */
   updateWindowProperties(windowName: WindowNames, properties: { alwaysOnTop?: boolean }): Promise<void>;
+  /** React to preference changes related to windows (menubar etc.) */
+  reactWhenPreferencesChanged(key: string, value: unknown): Promise<void>;
 }
 export const WindowServiceIPCDescriptor = {
   channel: WindowChannel.name,

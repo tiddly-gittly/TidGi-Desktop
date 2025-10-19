@@ -379,6 +379,8 @@
     "MenubarShortcutKeyPlaceholder": "例如：Ctrl+Shift+D",
     "MenubarSyncWorkspaceWithMainWindow": "小窗和主窗口展示同样的工作区",
     "MenubarSyncWorkspaceWithMainWindowDetail": "勾选后，小窗将与主窗口同步显示相同的工作区内容",
+    "ShowMenubarWindowTitleBar": "小窗显示标题栏",
+    "ShowMenubarWindowTitleBarDetail": "在菜单栏小窗口上显示可拖动的标题栏",
     "Miscellaneous": "其他设置",
     "MoreWorkspaceSyncSettings": "更多工作区同步设置",
     "MoreWorkspaceSyncSettingsDescription": "请右键工作区图标，点右键菜单里的「编辑工作区」来打开工作区设置，在里面配各个工作区的同步设置。",
