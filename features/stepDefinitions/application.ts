@@ -187,7 +187,7 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
     /**
      * Typical steps like:
      * - I add test ai settings
-     * - I cleanup test wiki
+     * - I cleanup test wiki so it could create a new one on start
      * - I clear test ai settings
      */
     if (!pageToUse || pageToUse.isClosed()) {

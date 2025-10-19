@@ -5,7 +5,7 @@ Feature: TidGi Mini Window
   So that I can quickly access TidGi from the system tray
 
   Scenario: Enable tidgi mini window and test keyboard shortcut
-    Given I cleanup test wiki
+    Given I cleanup test wiki so it could create a new one on start
     And I launch the TidGi application
     And I wait for the page to load completely
     And I click on an "open preferences button" element with selector "#open-preferences-button"

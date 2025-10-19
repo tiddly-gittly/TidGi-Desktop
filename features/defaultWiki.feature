@@ -6,7 +6,7 @@ Feature: TidGi Default Wiki
   Background:
     # Note: tests expect the test wiki parent folder to exist. Run the preparation step before E2E:
     #   cross-env NODE_ENV=test pnpm dlx tsx scripts/developmentMkdir.ts
-    Given I cleanup test wiki
+    Given I cleanup test wiki so it could create a new one on start
     When I launch the TidGi application
     And I wait for the page to load completely
 

@@ -3,7 +3,7 @@ import fs from 'fs-extra';
 import type { IWorkspace } from '../../src/services/workspaces/interface';
 import { settingsPath, wikiTestWikiPath } from '../supports/paths';
 
-When('I cleanup test wiki', async function() {
+When('I cleanup test wiki so it could create a new one on start', async function() {
   if (fs.existsSync(wikiTestWikiPath)) fs.removeSync(wikiTestWikiPath);
 
   type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
