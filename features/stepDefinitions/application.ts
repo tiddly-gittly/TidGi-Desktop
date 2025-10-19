@@ -7,6 +7,7 @@ import { isMainWindowPage, PageType } from '../../src/constants/pageTypes';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { logsDirectory, makeSlugPath, screenshotsDirectory } from '../supports/paths';
 import { getPackedAppPath } from '../supports/paths';
+import { clearAISettings } from './agent';
 import { clearMenubarSettings } from './menuar';
 
 export class ApplicationWorld {
@@ -101,7 +102,7 @@ setWorldConstructor(ApplicationWorld);
 
 // setDefaultTimeout(50000);
 
-Before(function(this: ApplicationWorld) {
+Before(function(this: ApplicationWorld, { pickle }) {
   // Create necessary directories under userData-test/logs to match appPaths in dev/test
   if (!fs.existsSync(logsDirectory)) {
     fs.mkdirSync(logsDirectory, { recursive: true });
@@ -110,6 +111,13 @@ Before(function(this: ApplicationWorld) {
   // Create screenshots subdirectory in logs
   if (!fs.existsSync(screenshotsDirectory)) {
     fs.mkdirSync(screenshotsDirectory, { recursive: true });
+  }
+
+  if (pickle.tags.some((tag) => tag.name === '@setup')) {
+    clearAISettings();
+  }
+  if (pickle.tags.some((tag) => tag.name === '@menubar')) {
+    clearMenubarSettings();
   }
 });
 
@@ -135,10 +143,11 @@ After(async function(this: ApplicationWorld, { pickle }) {
     this.mainWindow = undefined;
     this.currentWindow = undefined;
   }
-  
-  // Clean up menubar settings after app closes (for @menubar tagged tests)
   if (pickle.tags.some((tag) => tag.name === '@menubar')) {
     clearMenubarSettings();
+  }
+  if (pickle.tags.some((tag) => tag.name === '@setup')) {
+    clearAISettings();
   }
 });
 
