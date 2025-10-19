@@ -15,12 +15,12 @@ Feature: TidGi Mini Window Workspace Switching
     When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
     # Verify tidgi mini window exists in background (created but not visible)
     And I wait for 0.2 seconds
-    Then I confirm the "tidgiminiwindow" window exists
-    And I confirm the "tidgiminiwindow" window not visible
+    Then I confirm the "tidgiMiniWindow" window exists
+    And I confirm the "tidgiMiniWindow" window not visible
     When I press the key combination "CommandOrControl+Shift+M"
-    And I confirm the "tidgiminiwindow" window visible
-    And I confirm the "tidgiminiwindow" window browser view is not positioned within visible window bounds
-    Then I switch to "tidgiminiwindow" window
+    And I confirm the "tidgiMiniWindow" window visible
+    And I confirm the "tidgiMiniWindow" window browser view is not positioned within visible window bounds
+    Then I switch to "tidgiMiniWindow" window
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
 
   Scenario: TidGi mini window with fixed agent workspace shows no view and fixed wiki workspace shows browser view
@@ -34,22 +34,22 @@ Feature: TidGi Mini Window Workspace Switching
     And I wait for 0.2 seconds
     # Open tidgi mini window - should show agent workspace and no browser view
     When I press the key combination "CommandOrControl+Shift+M"
-    And I confirm the "tidgiminiwindow" window visible
-    And I confirm the "tidgiminiwindow" window browser view is not positioned within visible window bounds
-    Then I switch to "tidgiminiwindow" window
+    And I confirm the "tidgiMiniWindow" window visible
+    And I confirm the "tidgiMiniWindow" window browser view is not positioned within visible window bounds
+    Then I switch to "tidgiMiniWindow" window
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Close tidgi mini window and switch to wiki workspace
     And I wait for 0.2 seconds
     Then I switch to "preferences" window
     When I press the key combination "CommandOrControl+Shift+M"
-    And I confirm the "tidgiminiwindow" window not visible
+    And I confirm the "tidgiMiniWindow" window not visible
     # Get the first wiki workspace ID and select it
     And I select "wiki" from MUI Select with test id "tidgi-mini-window-fixed-workspace-select"
     And I wait for 0.2 seconds
     # Open tidgi mini window again - should show wiki workspace with browser view
     When I press the key combination "CommandOrControl+Shift+M"
-    And I confirm the "tidgiminiwindow" window visible
-    And I confirm the "tidgiminiwindow" window browser view is positioned within visible window bounds
-    Then I switch to "tidgiminiwindow" window
+    And I confirm the "tidgiMiniWindow" window visible
+    And I confirm the "tidgiMiniWindow" window browser view is positioned within visible window bounds
+    Then I switch to "tidgiMiniWindow" window
     And the browser view should be loaded and visible
     And I should see "我的 TiddlyWiki" in the browser view content
