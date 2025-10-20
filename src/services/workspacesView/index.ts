@@ -212,27 +212,18 @@ export class WorkspaceView implements IWorkspaceViewService {
         this.preferenceService.get('tidgiMiniWindowSyncWorkspaceWithMainWindow'),
         this.preferenceService.get('tidgiMiniWindowFixedWorkspaceId'),
       ]);
-
       if (!tidgiMiniWindow) {
         return;
       }
-
       // If syncing with main window (undefined means default to true, or explicitly true), use the current workspace
       const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
       if (shouldSync) {
-        // Don't add view for pageType workspaces (they don't have browser views)
-        if (!workspace.pageType) {
-          await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.tidgiMiniWindow);
-        }
+        await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.tidgiMiniWindow);
         return;
       }
-
       // If not syncing and a fixed workspace is set, only add view if this IS the fixed workspace
       if (tidgiMiniWindowFixedWorkspaceId && workspace.id === tidgiMiniWindowFixedWorkspaceId) {
-        // Don't add view for pageType workspaces (they don't have browser views)
-        if (!workspace.pageType) {
-          await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.tidgiMiniWindow);
-        }
+        await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.tidgiMiniWindow);
       }
       // If not syncing and no fixed workspace is set, don't add any view (user needs to select one)
     })();
