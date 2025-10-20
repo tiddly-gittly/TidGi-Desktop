@@ -34,7 +34,9 @@ Then('I should see {string} in the browser view content', async function(this: A
   // Final attempt to get content for error message
   const finalContent = await getTextContent(this.app);
   throw new Error(
-    `Expected text "${expectedText}" not found in browser view content after ${MAX_ATTEMPTS} attempts. Actual content: ${finalContent ? finalContent.substring(0, 200) + '...' : 'null'}`,
+    `Expected text "${expectedText}" not found in browser view content after ${MAX_ATTEMPTS} attempts. Actual content: ${
+      finalContent ? finalContent.substring(0, 200) + '...' : 'null'
+    }`,
   );
 });
 
@@ -66,7 +68,9 @@ Then('I should see {string} in the browser view DOM', async function(this: Appli
   // Final attempt to get DOM content for error message
   const finalDomContent = await getDOMContent(this.app);
   throw new Error(
-    `Expected text "${expectedText}" not found in browser view DOM after ${MAX_ATTEMPTS} attempts. Actual DOM: ${finalDomContent ? finalDomContent.substring(0, 200) + '...' : 'null'}`,
+    `Expected text "${expectedText}" not found in browser view DOM after ${MAX_ATTEMPTS} attempts. Actual DOM: ${
+      finalDomContent ? finalDomContent.substring(0, 200) + '...' : 'null'
+    }`,
   );
 });
 

@@ -53,7 +53,7 @@ function clearTidgiMiniWindowSettings() {
   if (cleanedPreferences.keyboardShortcuts) {
     cleanedPreferences.keyboardShortcuts = omit(cleanedPreferences.keyboardShortcuts, ['Window.toggleTidgiMiniWindow']);
   }
-  
+
   // Reset active workspace to first wiki workspace to avoid agent workspace being active
   const workspaces = parsed.workspaces || {};
   const workspaceEntries = Object.entries(workspaces);
@@ -66,7 +66,7 @@ function clearTidgiMiniWindowSettings() {
   if (firstWikiWorkspace) {
     firstWikiWorkspace[1].active = true;
   }
-  
+
   const cleaned = { ...parsed, preferences: cleanedPreferences, workspaces };
   fs.writeJsonSync(settingsPath, cleaned, { spaces: 2 });
 }
