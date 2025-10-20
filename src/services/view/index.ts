@@ -425,20 +425,18 @@ export class View implements IViewService {
       const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
       const tidgiMiniWindowWorkspaceId = shouldSync ? workspaceID : (tidgiMiniWindowFixedWorkspaceId || workspaceID);
 
-      // Check if the target workspace is a pageType workspace (which doesn't have a view)
-      if (!shouldSync && tidgiMiniWindowFixedWorkspaceId) {
-        const fixedWorkspace = await this.workspaceService.get(tidgiMiniWindowFixedWorkspaceId);
-        if (fixedWorkspace?.pageType) {
-          logger.debug(
-            `setActiveViewForAllBrowserViews: skip tidgi mini window because fixed workspace ${tidgiMiniWindowFixedWorkspaceId} is a page type workspace.`,
-          );
-          // Don't set any view for pageType workspaces - tidgi mini window task remains as Promise.resolve()
-        } else {
-          tidgiMiniWindowTask = this.setActiveView(tidgiMiniWindowWorkspaceId, WindowNames.tidgiMiniWindow);
-        }
-      } else {
-        tidgiMiniWindowTask = this.setActiveView(tidgiMiniWindowWorkspaceId, WindowNames.tidgiMiniWindow);
-      }
+      logger.debug('setActiveViewForAllBrowserViews tidgi mini window decision', {
+        function: 'setActiveViewForAllBrowserViews',
+        shouldSync,
+        tidgiMiniWindowWorkspaceId,
+        willSetActiveView: true,
+      });
+
+      tidgiMiniWindowTask = this.setActiveView(tidgiMiniWindowWorkspaceId, WindowNames.tidgiMiniWindow);
+    } else {
+      logger.info('setActiveViewForAllBrowserViews tidgi mini window not enabled', {
+        function: 'setActiveViewForAllBrowserViews',
+      });
     }
 
     await Promise.all([mainWindowTask, tidgiMiniWindowTask]);
