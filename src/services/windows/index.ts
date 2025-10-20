@@ -21,6 +21,7 @@ import { container } from '@services/container';
 import getViewBounds from '@services/libs/getViewBounds';
 import { logger } from '@services/libs/log';
 import type { IThemeService } from '@services/theme/interface';
+import { getTidgiMiniWindowTargetWorkspace } from '@services/workspacesView/utilities';
 import { handleAttachToTidgiMiniWindow } from './handleAttachToTidgiMiniWindow';
 import { handleCreateBasicWindow } from './handleCreateBasicWindow';
 import type { IWindowOpenConfig, IWindowService } from './interface';
@@ -371,21 +372,12 @@ export class Window implements IWindowService {
         logger.debug('TidGi mini window is already enabled, bring it to front', { function: 'openTidgiMiniWindow' });
         if (showWindow) {
           // Before showing, get the target workspace
-          const [tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId] = await Promise.all([
-            this.preferenceService.get('tidgiMiniWindowSyncWorkspaceWithMainWindow'),
-            this.preferenceService.get('tidgiMiniWindowFixedWorkspaceId'),
-          ]);
-          const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
-          const targetWorkspaceId = shouldSync
-            ? (await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace())?.id
-            : tidgiMiniWindowFixedWorkspaceId;
+          const { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace();
 
           logger.info('openTidgiMiniWindow: preparing to show window', {
             function: 'openTidgiMiniWindow',
             shouldSync,
             targetWorkspaceId,
-            tidgiMiniWindowSyncWorkspaceWithMainWindow,
-            tidgiMiniWindowFixedWorkspaceId,
           });
 
           // Ensure view exists for the target workspace before realigning

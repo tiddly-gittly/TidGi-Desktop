@@ -24,6 +24,7 @@ import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import type { ISyncService } from '@services/sync/interface';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
 import { registerMenu } from './registerMenu';
+import { getTidgiMiniWindowTargetWorkspace } from './utilities';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
@@ -207,22 +208,18 @@ export class WorkspaceView implements IWorkspaceViewService {
 
     // For tidgi mini window, decide which workspace to show based on preferences
     const tidgiMiniWindowTask = (async () => {
-      const [tidgiMiniWindow, tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId] = await Promise.all([
-        this.preferenceService.get('tidgiMiniWindow'),
-        this.preferenceService.get('tidgiMiniWindowSyncWorkspaceWithMainWindow'),
-        this.preferenceService.get('tidgiMiniWindowFixedWorkspaceId'),
-      ]);
+      const tidgiMiniWindow = await this.preferenceService.get('tidgiMiniWindow');
       if (!tidgiMiniWindow) {
         return;
       }
-      // If syncing with main window (undefined means default to true, or explicitly true), use the current workspace
-      const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
+      const { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(workspace.id);
+      // If syncing with main window, use the current workspace
       if (shouldSync) {
         await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.tidgiMiniWindow);
         return;
       }
       // If not syncing and a fixed workspace is set, only add view if this IS the fixed workspace
-      if (tidgiMiniWindowFixedWorkspaceId && workspace.id === tidgiMiniWindowFixedWorkspaceId) {
+      if (targetWorkspaceId && workspace.id === targetWorkspaceId) {
         await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.tidgiMiniWindow);
       }
       // If not syncing and no fixed workspace is set, don't add any view (user needs to select one)
@@ -592,13 +589,8 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.info(`realignActiveWorkspaceView: no tidgiMiniWindowBrowserViewWebContent, skip tidgi mini window for ${workspaceToRealign.id}.`);
     } else {
       // For tidgi mini window, decide which workspace to show based on preferences
-      const [tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId] = await Promise.all([
-        this.preferenceService.get('tidgiMiniWindowSyncWorkspaceWithMainWindow'),
-        this.preferenceService.get('tidgiMiniWindowFixedWorkspaceId'),
-      ]);
-      // Default to sync (undefined or true), otherwise use fixed workspace ID (fallback to main if not set)
-      const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
-      const tidgiMiniWindowWorkspaceId = shouldSync ? workspaceToRealign.id : (tidgiMiniWindowFixedWorkspaceId || workspaceToRealign.id);
+      const { targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(workspaceToRealign.id);
+      const tidgiMiniWindowWorkspaceId = targetWorkspaceId || workspaceToRealign.id;
       tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(tidgiMiniWindow, tidgiMiniWindowWorkspaceId, WindowNames.tidgiMiniWindow));
     }
     await Promise.all(tasks);
@@ -618,20 +610,15 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.debug(`hideWorkspaceView: no tidgiMiniWindowBrowserWindow, skip tidgi mini window browserView.`);
     } else {
       // For tidgi mini window, only hide if syncing with main window OR if this is the fixed workspace being deactivated
-      const [tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId] = await Promise.all([
-        this.preferenceService.get('tidgiMiniWindowSyncWorkspaceWithMainWindow'),
-        this.preferenceService.get('tidgiMiniWindowFixedWorkspaceId'),
-      ]);
-      // Default to sync (undefined or true)
-      const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
+      const { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(idToDeactivate);
       // Only hide tidgi mini window view if:
       // 1. Syncing with main window (should hide when main window hides)
       // 2. OR the workspace being hidden is the fixed workspace (rare case, but should be handled)
-      if (shouldSync || idToDeactivate === tidgiMiniWindowFixedWorkspaceId) {
+      if (shouldSync || idToDeactivate === targetWorkspaceId) {
         logger.info(`hideWorkspaceView: hide tidgi mini window browserView.`);
         tasks.push(container.get<IViewService>(serviceIdentifier.View).hideView(tidgiMiniWindow, WindowNames.tidgiMiniWindow, idToDeactivate));
       } else {
-        logger.debug(`hideWorkspaceView: skip hiding tidgi mini window browserView (fixed workspace: ${tidgiMiniWindowFixedWorkspaceId || 'none'}).`);
+        logger.debug(`hideWorkspaceView: skip hiding tidgi mini window browserView (fixed workspace: ${targetWorkspaceId || 'none'}).`);
       }
     }
     await Promise.all(tasks);

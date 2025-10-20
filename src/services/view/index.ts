@@ -22,6 +22,7 @@ import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
 import { type IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
+import { getTidgiMiniWindowTargetWorkspace } from '@services/workspacesView/utilities';
 import debounce from 'lodash/debounce';
 import { setViewEventName } from './constants';
 import { ViewLoadUrlError } from './error';
@@ -412,22 +413,17 @@ export class View implements IViewService {
   public async setActiveViewForAllBrowserViews(workspaceID: string): Promise<void> {
     // Set main window workspace
     const mainWindowTask = this.setActiveView(workspaceID, WindowNames.main);
-    const [tidgiMiniWindow, tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId] = await Promise.all([
-      this.preferenceService.get('tidgiMiniWindow'),
-      this.preferenceService.get('tidgiMiniWindowSyncWorkspaceWithMainWindow'),
-      this.preferenceService.get('tidgiMiniWindowFixedWorkspaceId'),
-    ]);
+    const tidgiMiniWindow = await this.preferenceService.get('tidgiMiniWindow');
 
     // For tidgi mini window, decide which workspace to show based on preferences
     let tidgiMiniWindowTask = Promise.resolve();
     if (tidgiMiniWindow) {
       // Default to sync (undefined or true), otherwise use fixed workspace ID (fallback to main if not set)
-      const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
-      const tidgiMiniWindowWorkspaceId = shouldSync ? workspaceID : (tidgiMiniWindowFixedWorkspaceId || workspaceID);
+      const { targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(workspaceID);
+      const tidgiMiniWindowWorkspaceId = targetWorkspaceId || workspaceID;
 
       logger.debug('setActiveViewForAllBrowserViews tidgi mini window decision', {
         function: 'setActiveViewForAllBrowserViews',
-        shouldSync,
         tidgiMiniWindowWorkspaceId,
         willSetActiveView: true,
       });

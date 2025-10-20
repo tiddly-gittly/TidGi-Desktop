@@ -1,9 +1,33 @@
 import { PageType } from '@/constants/pageTypes';
 import { usePreferenceObservable } from '@services/preferences/hooks';
+import type { IPreferences } from '@services/preferences/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
+import type { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
+
+/**
+ * Helper function to determine the target workspace for tidgi mini window based on preferences
+ */
+function getTidgiMiniWindowTargetWorkspace(
+  workspacesList: IWorkspaceWithMetadata[],
+  preferences: IPreferences,
+): IWorkspaceWithMetadata | undefined {
+  const { tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId } = preferences;
+  // Default to sync (undefined means default to true, or explicitly true)
+  const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
+
+  if (shouldSync) {
+    // Sync with main window - use active workspace
+    return workspacesList.find(workspace => workspace.active);
+  } else if (tidgiMiniWindowFixedWorkspaceId) {
+    // Use fixed workspace
+    return workspacesList.find(ws => ws.id === tidgiMiniWindowFixedWorkspaceId);
+  }
+  // No fixed workspace set - return undefined
+  return undefined;
+}
 
 export function useInitialPage() {
   const [location, setLocation] = useLocation();
@@ -21,17 +45,7 @@ export function useInitialPage() {
 
       // For tidgi mini window, determine which workspace to show based on preferences
       if (windowName === WindowNames.tidgiMiniWindow && preferences) {
-        const { tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId } = preferences;
-        const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
-
-        if (!shouldSync && tidgiMiniWindowFixedWorkspaceId) {
-          // If not syncing with main window, use fixed workspace
-          const fixedWorkspace = workspacesList.find(ws => ws.id === tidgiMiniWindowFixedWorkspaceId);
-          if (fixedWorkspace) {
-            targetWorkspace = fixedWorkspace;
-          }
-        }
-        // Otherwise, use the active workspace (sync with main window)
+        targetWorkspace = getTidgiMiniWindowTargetWorkspace(workspacesList, preferences) || targetWorkspace;
       }
 
       if (!targetWorkspace) {
@@ -57,17 +71,8 @@ export function useInitialPage() {
       return;
     }
 
-    const { tidgiMiniWindowSyncWorkspaceWithMainWindow, tidgiMiniWindowFixedWorkspaceId } = preferences;
-    const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
-
-    // Determine target workspace
-    let targetWorkspace = workspacesList.find(workspace => workspace.active);
-    if (!shouldSync && tidgiMiniWindowFixedWorkspaceId) {
-      const fixedWorkspace = workspacesList.find(ws => ws.id === tidgiMiniWindowFixedWorkspaceId);
-      if (fixedWorkspace) {
-        targetWorkspace = fixedWorkspace;
-      }
-    }
+    // Determine target workspace using helper function
+    const targetWorkspace = getTidgiMiniWindowTargetWorkspace(workspacesList, preferences);
 
     if (!targetWorkspace) return;
 
