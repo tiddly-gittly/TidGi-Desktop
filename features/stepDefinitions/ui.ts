@@ -322,17 +322,17 @@ When('I press the key combination {string}', async function(this: ApplicationWor
   // Convert CommandOrControl to platform-specific key
   let platformKeyCombo = keyCombo;
   if (keyCombo.includes('CommandOrControl')) {
-    // On Windows and Linux, use Control; on macOS, use Meta (Cmd)
-    const isWindows = process.platform === 'win32';
-    const isLinux = process.platform === 'linux';
-    if (isWindows || isLinux) {
-      platformKeyCombo = keyCombo.replace('CommandOrControl', 'Control');
-    } else {
+    // Prefer explicit platform detection: use 'Meta' only on macOS (darwin),
+    // otherwise default to 'Control'. This avoids assuming non-Windows/Linux
+    // is always macOS.
+    if (process.platform === 'darwin') {
       platformKeyCombo = keyCombo.replace('CommandOrControl', 'Meta');
+    } else {
+      platformKeyCombo = keyCombo.replace('CommandOrControl', 'Control');
     }
   }
-
   // Use dispatchEvent to trigger document-level keydown events
+
   // This ensures the event is properly captured by React components listening to document events
   // The testKeyboardShortcutFallback in test environment expects key to match the format used in shortcuts
   await currentWindow.evaluate((keyCombo) => {
