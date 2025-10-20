@@ -3,12 +3,30 @@ import fs from 'fs-extra';
 import path from 'path';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
-import { isMainWindowPage, PageType } from '../../src/constants/pageTypes';
+import { windowDimension, WindowNames } from '../../src/services/windows/WindowProperties';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { logsDirectory, makeSlugPath, screenshotsDirectory } from '../supports/paths';
 import { getPackedAppPath } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { clearTidgiMiniWindowSettings } from './tidgiMiniWindow';
+
+// Helper function to check if window type is valid and return the corresponding WindowNames
+export function checkWindowName(windowType: string): WindowNames {
+  // Exact match - windowType must be a valid WindowNames enum key
+  if (windowType in WindowNames) {
+    return (WindowNames as Record<string, WindowNames>)[windowType];
+  }
+  throw new Error(`Window type "${windowType}" is not a valid WindowNames. Check the WindowNames enum in WindowProperties.ts. Available: ${Object.keys(WindowNames).join(', ')}`);
+}
+
+// Helper function to get window dimensions and ensure they are valid
+export function checkWindowDimension(windowName: WindowNames): { width: number; height: number } {
+  const targetDimensions = windowDimension[windowName];
+  if (!targetDimensions.width || !targetDimensions.height) {
+    throw new Error(`Window "${windowName}" does not have valid dimensions defined in windowDimension`);
+  }
+  return targetDimensions as { width: number; height: number };
+}
 
 export class ApplicationWorld {
   app: ElectronApplication | undefined;
@@ -16,79 +34,141 @@ export class ApplicationWorld {
   currentWindow: Page | undefined; // New state-managed current window
   mockOpenAIServer: MockOpenAIServer | undefined;
 
+  // Helper method to check if window is visible
+  async isWindowVisible(page: Page): Promise<boolean> {
+    if (!this.app) return false;
+    try {
+      const browserWindow = await this.app.browserWindow(page);
+      return await browserWindow.evaluate((win: Electron.BrowserWindow) => win.isVisible());
+    } catch {
+      return false;
+    }
+  }
+
+  // Helper method to wait for window with retry logic
+  async waitForWindowCondition(
+    windowType: string,
+    condition: (window: Page | undefined, isVisible: boolean) => boolean,
+    maxAttempts: number = 3,
+    retryInterval: number = 250,
+  ): Promise<boolean> {
+    if (!this.app) return false;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const targetWindow = await this.findWindowByType(windowType);
+      const visible = targetWindow ? await this.isWindowVisible(targetWindow) : false;
+
+      if (condition(targetWindow, visible)) {
+        return true;
+      }
+
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, retryInterval));
+    }
+    return false;
+  }
+
+  // Helper method to find window by type - strict WindowNames matching
+  async findWindowByType(windowType: string): Promise<Page | undefined> {
+    if (!this.app) return undefined;
+
+    // Validate window type first
+    const windowName = checkWindowName(windowType);
+
+    const pages = this.app.windows();
+
+    if (windowName === WindowNames.main) {
+      // Main window is the first/primary window, typically showing guide, agent, help, or wiki pages
+      // It's the window that opens on app launch
+      const allWindows = pages.filter(page => !page.isClosed());
+      if (allWindows.length > 0) {
+        // Return the first window (main window is always the first one created)
+        return allWindows[0];
+      }
+      return undefined;
+    } else if (windowName === WindowNames.tidgiMiniWindow) {
+      // Special handling for tidgi mini window
+      // First try to find by Electron window dimensions (more reliable than title)
+      const windowDimensions = checkWindowDimension(windowName);
+      try {
+        const electronWindowInfo = await this.app.evaluate(
+          async ({ BrowserWindow }, size: { width: number; height: number }) => {
+            const allWindows = BrowserWindow.getAllWindows();
+            const tidgiMiniWindow = allWindows.find(win => {
+              const bounds = win.getBounds();
+              return bounds.width === size.width && bounds.height === size.height;
+            });
+            return tidgiMiniWindow ? { id: tidgiMiniWindow.id } : null;
+          },
+          windowDimensions,
+        );
+
+        if (electronWindowInfo) {
+          // Found by dimensions, now match with Playwright page
+          const allWindows = pages.filter(page => !page.isClosed());
+          for (const page of allWindows) {
+            try {
+              // Try to match by checking if this page belongs to the found electron window
+              // For now, use title as fallback verification
+              const title = await page.title();
+              if (title.includes('太记小窗') || title.includes('TidGi Mini Window') || title.includes('TidGiMiniWindow')) {
+                return page;
+              }
+            } catch {
+              continue;
+            }
+          }
+        }
+      } catch {
+        // If Electron API fails, fallback to title matching
+      }
+
+      // Fallback: Match by window title
+      const allWindows = pages.filter(page => !page.isClosed());
+      for (const page of allWindows) {
+        try {
+          const title = await page.title();
+          if (title.includes('太记小窗') || title.includes('TidGi Mini Window') || title.includes('TidGiMiniWindow')) {
+            return page;
+          }
+        } catch {
+          // Page might be closed or not ready, continue to next
+          continue;
+        }
+      }
+      return undefined;
+    } else {
+      // For regular windows (preferences, about, addWorkspace, etc.)
+      return pages.find(page => {
+        if (page.isClosed()) return false;
+        const url = page.url() || '';
+        // Match exact route paths: /#/windowType or ending with /windowType
+        return url.includes(`#/${windowType}`) || url.endsWith(`/${windowType}`);
+      });
+    }
+  }
+
   async getWindow(windowType: string = 'main'): Promise<Page | undefined> {
     if (!this.app) return undefined;
 
+    // Special case for 'current' window
+    if (windowType === 'current') {
+      return this.currentWindow;
+    }
+
+    // Use the findWindowByType method with retry logic
     for (let attempt = 0; attempt < 3; attempt++) {
-      const pages = this.app.windows();
-
-      const extractFragment = (url: string) => {
-        if (!url) return '';
-        const afterHash = url.includes('#') ? url.split('#').slice(1).join('#') : '';
-        // remove leading slashes or colons like '/preferences' or ':Index'
-        return afterHash.replace(/^[:/]+/, '').split(/[/?#]/)[0] || '';
-      };
-
-      if (windowType === 'main') {
-        const mainWindow = pages.find(page => {
-          const pageType = extractFragment(page.url());
-          // file:///C:/Users/linonetwo/Documents/repo-c/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.webpack/renderer/main_window/index.html#/guide
-          // file:///...#/guide or tidgi://.../#:Index based on different workspace
-          return isMainWindowPage(pageType as PageType | undefined);
-        });
-        if (mainWindow) return mainWindow;
-      } else if (windowType === 'current') {
-        if (this.currentWindow) return this.currentWindow;
-      } else if (windowType.toLowerCase() === 'tidgiminiwindow') {
-        // Special handling for tidgi mini window
-        // TidGi mini window is typically the smaller window (500x600)
-        // We identify it by getting all windows and finding the one with tidgi mini window URL
-
-        const tidgiMiniWindowInfo = await this.app.evaluate(async ({ BrowserWindow }) => {
-          const allWindows = BrowserWindow.getAllWindows();
-          // Find the window with tidgi mini window dimensions (500x600)
-          const tidgiMiniWindow = allWindows.find(win => {
-            const bounds = win.getBounds();
-            return bounds.width === 500 && bounds.height === 600;
-          });
-
-          if (tidgiMiniWindow) {
-            return {
-              url: tidgiMiniWindow.webContents.getURL(),
-              id: tidgiMiniWindow.id,
-            };
-          }
-          return null;
-        });
-
-        if (tidgiMiniWindowInfo) {
-          // Wait a bit for the window to be registered in Playwright
-          await new Promise(resolve => setTimeout(resolve, 500));
-          const refreshedPages = this.app.windows();
-
-          // Find the page with matching URL (exact match)
-          const tidgiMiniWindowPage = refreshedPages.find(page => {
-            return page.url() === tidgiMiniWindowInfo.url;
-          });
-
-          if (tidgiMiniWindowPage) {
-            return tidgiMiniWindowPage;
-          }
+      try {
+        const window = await this.findWindowByType(windowType);
+        if (window) return window;
+      } catch (error) {
+        // If it's an invalid window type error, throw immediately
+        if (error instanceof Error && error.message.includes('is not a valid WindowNames')) {
+          throw error;
         }
-      } else {
-        // match windows more flexibly by checking the full URL and fragment for the windowType
-        const specificWindow = pages.find(page => {
-          const rawUrl = page.url() || '';
-          const frag = extractFragment(rawUrl);
-          // Case-insensitive full-url match first (handles variants like '#:Index' or custom schemes)
-          if (rawUrl.toLowerCase().includes(windowType.toLowerCase())) return true;
-          // Fallback to fragment inclusion
-          return frag.toLowerCase().includes(windowType.toLowerCase());
-        });
-        if (specificWindow) return specificWindow;
       }
 
-      // If window not found, wait 1 second and retry (except for the last attempt)
+      // If window not found, wait and retry (except for the last attempt)
       if (attempt < 2) {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }

@@ -53,7 +53,21 @@ function clearTidgiMiniWindowSettings() {
   if (cleanedPreferences.keyboardShortcuts) {
     cleanedPreferences.keyboardShortcuts = omit(cleanedPreferences.keyboardShortcuts, ['Window.toggleTidgiMiniWindow']);
   }
-  const cleaned = { ...parsed, preferences: cleanedPreferences };
+  
+  // Reset active workspace to first wiki workspace to avoid agent workspace being active
+  const workspaces = parsed.workspaces || {};
+  const workspaceEntries = Object.entries(workspaces);
+  // Set all workspaces to inactive first
+  for (const [, workspace] of workspaceEntries) {
+    workspace.active = false;
+  }
+  // Find first non-page-type workspace (wiki) and activate it
+  const firstWikiWorkspace = workspaceEntries.find(([, workspace]) => !workspace.pageType);
+  if (firstWikiWorkspace) {
+    firstWikiWorkspace[1].active = true;
+  }
+  
+  const cleaned = { ...parsed, preferences: cleanedPreferences, workspaces };
   fs.writeJsonSync(settingsPath, cleaned, { spaces: 2 });
 }
 

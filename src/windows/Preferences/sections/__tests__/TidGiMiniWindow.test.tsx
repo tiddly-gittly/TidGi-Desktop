@@ -276,7 +276,7 @@ describe('TidGiMiniWindow Component', () => {
           tidgiMiniWindow: true,
           tidgiMiniWindowShowSidebar: false,
           tidgiMiniWindowAlwaysOnTop: false,
-          tidgiMiniWindowSyncWorkspaceWithMainWindow: true,
+          tidgiMiniWindowSyncWorkspaceWithMainWindow: false, // Changed to false to show sidebar option
         }),
       );
       await renderComponent();
@@ -293,16 +293,13 @@ describe('TidGiMiniWindow Component', () => {
         createMockPreference({
           tidgiMiniWindow: true,
           tidgiMiniWindowShowSidebar: false,
+          tidgiMiniWindowSyncWorkspaceWithMainWindow: false, // Must be false to show sidebar option
         }),
       );
       await renderComponent();
 
-      const switches = screen.getAllByRole('checkbox');
-      const sidebarSwitch = switches.find((s) => {
-        const label = s.closest('li')?.querySelector('.MuiListItemText-primary');
-        return label?.textContent === 'Preference.AttachToTaskbarShowSidebar';
-      });
-
+      const sidebarSwitchContainer = screen.getByTestId('sidebar-on-tidgi-mini-window-switch');
+      const sidebarSwitch = sidebarSwitchContainer.querySelector('input[type="checkbox"]');
       expect(sidebarSwitch).not.toBeChecked();
     });
 
@@ -312,13 +309,15 @@ describe('TidGiMiniWindow Component', () => {
         createMockPreference({
           tidgiMiniWindow: true,
           tidgiMiniWindowShowSidebar: false,
+          tidgiMiniWindowSyncWorkspaceWithMainWindow: false, // Must be false to show sidebar option
         }),
       );
       await renderComponent();
 
-      const switches = screen.getAllByRole('checkbox');
-      const sidebarSwitch = switches[1];
+      const sidebarSwitchContainer = screen.getByTestId('sidebar-on-tidgi-mini-window-switch');
+      const sidebarSwitch = sidebarSwitchContainer.querySelector('input[type="checkbox"]');
 
+      if (!sidebarSwitch) throw new Error('Switch input not found');
       await user.click(sidebarSwitch);
 
       await waitFor(() => {
@@ -337,12 +336,8 @@ describe('TidGiMiniWindow Component', () => {
       );
       await renderComponent();
 
-      const switches = screen.getAllByRole('checkbox');
-      const alwaysOnTopSwitch = switches.find((s) => {
-        const label = s.closest('li')?.querySelector('.MuiListItemText-primary');
-        return label?.textContent === 'Preference.TidgiMiniWindowAlwaysOnTop';
-      });
-
+      const alwaysOnTopSwitchContainer = screen.getByTestId('tidgi-mini-window-always-on-top-switch');
+      const alwaysOnTopSwitch = alwaysOnTopSwitchContainer.querySelector('input[type="checkbox"]');
       expect(alwaysOnTopSwitch).not.toBeChecked();
     });
 
@@ -356,9 +351,10 @@ describe('TidGiMiniWindow Component', () => {
       );
       await renderComponent();
 
-      const switches = screen.getAllByRole('checkbox');
-      const alwaysOnTopSwitch = switches[3];
+      const alwaysOnTopSwitchContainer = screen.getByTestId('tidgi-mini-window-always-on-top-switch');
+      const alwaysOnTopSwitch = alwaysOnTopSwitchContainer.querySelector('input[type="checkbox"]');
 
+      if (!alwaysOnTopSwitch) throw new Error('Switch input not found');
       await user.click(alwaysOnTopSwitch);
 
       await waitFor(() => {
@@ -377,12 +373,8 @@ describe('TidGiMiniWindow Component', () => {
       );
       await renderComponent();
 
-      const switches = screen.getAllByRole('checkbox');
-      const syncSwitch = switches.find((s) => {
-        const label = s.closest('li')?.querySelector('.MuiListItemText-primary');
-        return label?.textContent === 'Preference.TidgiMiniWindowSyncWorkspaceWithMainWindow';
-      });
-
+      const syncSwitchContainer = screen.getByTestId('tidgi-mini-window-sync-workspace-switch');
+      const syncSwitch = syncSwitchContainer.querySelector('input[type="checkbox"]');
       expect(syncSwitch).toBeChecked();
     });
 
@@ -396,9 +388,10 @@ describe('TidGiMiniWindow Component', () => {
       );
       await renderComponent();
 
-      const switches = screen.getAllByRole('checkbox');
-      const syncSwitch = switches[4];
+      const syncSwitchContainer = screen.getByTestId('tidgi-mini-window-sync-workspace-switch');
+      const syncSwitch = syncSwitchContainer.querySelector('input[type="checkbox"]');
 
+      if (!syncSwitch) throw new Error('Switch input not found');
       await user.click(syncSwitch);
 
       await waitFor(() => {
@@ -409,7 +402,7 @@ describe('TidGiMiniWindow Component', () => {
     it('should hide fixed workspace selector when sync is enabled', async () => {
       preferenceSubject.next(
         createMockPreference({
-          attachToTidgiMiniWindow: true,
+          tidgiMiniWindow: true,
           tidgiMiniWindowSyncWorkspaceWithMainWindow: true,
         }),
       );
@@ -596,7 +589,7 @@ describe('TidGiMiniWindow Component', () => {
   });
 
   describe('Integration: Toggle sequence', () => {
-    it('should show all settings when attachToTidgiMiniWindow is toggled on', async () => {
+    it('should show all settings when tidgiMiniWindow is toggled on', async () => {
       const user = userEvent.setup();
 
       // Create a fresh subject for this test to avoid interference
@@ -658,27 +651,36 @@ describe('TidGiMiniWindow Component', () => {
         createMockPreference({
           tidgiMiniWindow: true,
           tidgiMiniWindowShowSidebar: false,
+          tidgiMiniWindowShowTitleBar: true,
           tidgiMiniWindowAlwaysOnTop: false,
-          tidgiMiniWindowSyncWorkspaceWithMainWindow: true,
+          tidgiMiniWindowSyncWorkspaceWithMainWindow: false, // Changed to false so sidebar option is visible
         }),
       );
       await renderComponent();
 
-      const switches = screen.getAllByRole('checkbox');
-
-      await user.click(switches[1]);
+      // Use test IDs and find actual input elements
+      const sidebarSwitchContainer = screen.getByTestId('sidebar-on-tidgi-mini-window-switch');
+      const sidebarSwitch = sidebarSwitchContainer.querySelector('input[type="checkbox"]');
+      if (!sidebarSwitch) throw new Error('Sidebar switch not found');
+      await user.click(sidebarSwitch);
       await waitFor(() => {
         expect(window.service.preference.set).toHaveBeenCalledWith('tidgiMiniWindowShowSidebar', true);
       });
 
-      await user.click(switches[3]);
+      const alwaysOnTopSwitchContainer = screen.getByTestId('tidgi-mini-window-always-on-top-switch');
+      const alwaysOnTopSwitch = alwaysOnTopSwitchContainer.querySelector('input[type="checkbox"]');
+      if (!alwaysOnTopSwitch) throw new Error('Always on top switch not found');
+      await user.click(alwaysOnTopSwitch);
       await waitFor(() => {
         expect(window.service.preference.set).toHaveBeenCalledWith('tidgiMiniWindowAlwaysOnTop', true);
       });
 
-      await user.click(switches[4]);
+      const syncSwitchContainer = screen.getByTestId('tidgi-mini-window-sync-workspace-switch');
+      const syncSwitch = syncSwitchContainer.querySelector('input[type="checkbox"]');
+      if (!syncSwitch) throw new Error('Sync switch not found');
+      await user.click(syncSwitch);
       await waitFor(() => {
-        expect(window.service.preference.set).toHaveBeenCalledWith('tidgiMiniWindowSyncWorkspaceWithMainWindow', false);
+        expect(window.service.preference.set).toHaveBeenCalledWith('tidgiMiniWindowSyncWorkspaceWithMainWindow', true);
       });
 
       expect(window.service.preference.set).toHaveBeenCalledTimes(3);

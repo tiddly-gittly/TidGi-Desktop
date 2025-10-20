@@ -1,6 +1,10 @@
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useMemo } from 'react';
+
+import { PageType } from '@/constants/pageTypes';
+import { WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { SortableWorkspaceSelectorButton } from './SortableWorkspaceSelectorButton';
 
@@ -19,7 +23,17 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     }),
   );
 
-  const workspaceIDs = workspacesList.map((workspace) => workspace.id);
+  const isMiniWindow = window.meta().windowName === WindowNames.tidgiMiniWindow;
+
+  // Filter out 'add' workspace in mini window
+  const filteredWorkspacesList = useMemo(() => {
+    if (isMiniWindow) {
+      return workspacesList.filter((workspace) => workspace.pageType !== PageType.add);
+    }
+    return workspacesList;
+  }, [isMiniWindow, workspacesList]);
+
+  const workspaceIDs = filteredWorkspacesList.map((workspace) => workspace.id);
 
   return (
     <DndContext
@@ -47,7 +61,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       }}
     >
       <SortableContext items={workspaceIDs} strategy={verticalListSortingStrategy}>
-        {workspacesList
+        {filteredWorkspacesList
           .sort((a, b) => a.order - b.order)
           .map((workspace, index) => (
             <SortableWorkspaceSelectorButton

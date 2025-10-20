@@ -57,19 +57,19 @@ const ContentRoot = styled('div')<{ $sidebar: boolean }>`
   height: 100%;
 `;
 
-const windowName = window.meta().windowName;
-
 export default function Main(): React.JSX.Element {
   const { t } = useTranslation();
   useInitialPage();
+  const windowName = window.meta().windowName;
   const preferences = usePreferenceObservable();
-  const showSidebar = (windowName === WindowNames.tidgiMiniWindow ? preferences?.tidgiMiniWindowShowSidebar : preferences?.sidebar) ?? true;
+  const isTidgiMiniWindow = windowName === WindowNames.tidgiMiniWindow;
+  const showSidebar = (isTidgiMiniWindow ? preferences?.tidgiMiniWindowShowSidebar : preferences?.sidebar) ?? true;
   return (
     <OuterRoot>
       <Helmet>
-        <title>{t('Menu.TidGi')}</title>
+        <title>{t('Menu.TidGi')}{isTidgiMiniWindow ? ` - ${t('Menu.TidGiMiniWindow')}` : ''}</title>
       </Helmet>
-      <Root>
+      <Root data-windowName={windowName} data-showSidebar={showSidebar}>
         {showSidebar && <SideBar />}
         <ContentRoot $sidebar={showSidebar}>
           <FindInPage />

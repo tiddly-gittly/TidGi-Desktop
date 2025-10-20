@@ -6,12 +6,12 @@ When('I wait for {float} seconds', async function(this: ApplicationWorld, second
 });
 
 When('I wait for the page to load completely', async function(this: ApplicationWorld) {
-  const currentWindow = this.currentWindow || this.mainWindow;
+  const currentWindow = this.currentWindow;
   await currentWindow?.waitForLoadState('networkidle', { timeout: 30000 });
 });
 
 Then('I should see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  const currentWindow = this.currentWindow || this.mainWindow;
+  const currentWindow = this.currentWindow;
 
   try {
     await currentWindow?.waitForSelector(selector, { timeout: 10000 });
@@ -25,7 +25,7 @@ Then('I should see a(n) {string} element with selector {string}', async function
 });
 
 Then('I should see {string} elements with selectors:', async function(this: ApplicationWorld, elementDescriptions: string, dataTable: DataTable) {
-  const currentWindow = this.currentWindow || this.mainWindow;
+  const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
   }
@@ -58,7 +58,7 @@ Then('I should see {string} elements with selectors:', async function(this: Appl
 });
 
 Then('I should not see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  const currentWindow = this.currentWindow || this.mainWindow;
+  const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
   }
@@ -68,7 +68,18 @@ Then('I should not see a(n) {string} element with selector {string}', async func
     if (count > 0) {
       const isVisible = await element.isVisible();
       if (isVisible) {
-        throw new Error(`Element "${elementComment}" with selector "${selector}" should not be visible but was found`);
+        // Get parent element HTML for debugging
+        let parentHtml = '';
+        try {
+          const parent = element.locator('xpath=..');
+          parentHtml = await parent.evaluate((node) => node.outerHTML);
+        } catch {
+          parentHtml = 'Failed to get parent HTML';
+        }
+        throw new Error(
+          `Element "${elementComment}" with selector "${selector}" should not be visible but was found\n` +
+            `Parent element HTML:\n${parentHtml}`,
+        );
       }
     }
     // Element not found or not visible - this is expected
@@ -78,6 +89,48 @@ Then('I should not see a(n) {string} element with selector {string}', async func
       throw error;
     }
     // Otherwise, element not found is expected - pass the test
+  }
+});
+
+Then('I should not see {string} elements with selectors:', async function(this: ApplicationWorld, elementDescriptions: string, dataTable: DataTable) {
+  const currentWindow = this.currentWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  const descriptions = elementDescriptions.split(' and ').map(d => d.trim());
+  const rows = dataTable.raw();
+  const errors: string[] = [];
+
+  if (descriptions.length !== rows.length) {
+    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${rows.length} selectors provided`);
+  }
+
+  // Check all elements
+  for (let index = 0; index < rows.length; index++) {
+    const [selector] = rows[index];
+    const elementComment = descriptions[index];
+    try {
+      const element = currentWindow.locator(selector).first();
+      const count = await element.count();
+      if (count > 0) {
+        const isVisible = await element.isVisible();
+        if (isVisible) {
+          errors.push(`Element "${elementComment}" with selector "${selector}" should not be visible but was found`);
+        }
+      }
+      // Element not found or not visible - this is expected
+    } catch (error) {
+      // If the error is our custom error, rethrow it
+      if (error instanceof Error && error.message.includes('should not be visible')) {
+        errors.push(error.message);
+      }
+      // Otherwise, element not found is expected - continue
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Failed to verify elements are not visible:\n${errors.join('\n')}`);
   }
 });
 
@@ -157,7 +210,7 @@ When('I right-click on a(n) {string} element with selector {string}', async func
 });
 
 When('I click all {string} elements matching selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  const win = this.currentWindow || this.mainWindow;
+  const win = this.currentWindow;
   if (!win) throw new Error('No active window available to click elements');
 
   const locator = win.locator(selector);
@@ -178,7 +231,7 @@ When('I click all {string} elements matching selector {string}', async function(
 });
 
 When('I type {string} in {string} element with selector {string}', async function(this: ApplicationWorld, text: string, elementComment: string, selector: string) {
-  const currentWindow = this.currentWindow || this.mainWindow;
+  const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
   }
@@ -193,7 +246,7 @@ When('I type {string} in {string} element with selector {string}', async functio
 });
 
 When('I clear text in {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  const currentWindow = this.currentWindow || this.mainWindow;
+  const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
   }
@@ -208,7 +261,7 @@ When('I clear text in {string} element with selector {string}', async function(t
 });
 
 When('the window title should contain {string}', async function(this: ApplicationWorld, expectedTitle: string) {
-  const currentWindow = this.currentWindow || this.mainWindow;
+  const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
   }
@@ -261,7 +314,7 @@ When('I close {string} window', async function(this: ApplicationWorld, windowTyp
 });
 
 When('I press the key combination {string}', async function(this: ApplicationWorld, keyCombo: string) {
-  const currentWindow = this.currentWindow || this.mainWindow;
+  const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
   }
@@ -309,7 +362,7 @@ When('I press the key combination {string}', async function(this: ApplicationWor
 });
 
 When('I select {string} from MUI Select with test id {string}', async function(this: ApplicationWorld, optionValue: string, testId: string) {
-  const currentWindow = this.currentWindow || this.mainWindow;
+  const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
   }

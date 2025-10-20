@@ -47,28 +47,26 @@ export function TidGiMiniWindow(props: Partial<ISectionProps>): React.JSX.Elemen
           {/* Other settings are only visible when attached to taskbar/system tray */}
           {preference.tidgiMiniWindow && (
             <>
-              {/* Sidebar display settings */}
-              <ListItem
-                secondaryAction={
-                  <Switch
-                    edge='end'
-                    color='primary'
-                    checked={preference.tidgiMiniWindowShowSidebar}
-                    onChange={async (event) => {
-                      await window.service.preference.set('tidgiMiniWindowShowSidebar', event.target.checked);
-                    }}
-                    data-testid='sidebar-on-tidgi-mini-window-switch'
-                  />
-                }
-              >
-                <ListItemText
-                  primary={platform === 'win32' ? t('Preference.AttachToTaskbarShowSidebar') : t('Preference.TidgiMiniWindowShowSidebar')}
-                  secondary={platform === 'linux' ? undefined : t('Preference.TidgiMiniWindowShowSidebarTip')}
+              {/* Set shortcut key to toggle TidGi mini window */}
+              <Box sx={{ p: 2 }}>
+                <KeyboardShortcutRegister
+                  label={t('Preference.TidgiMiniWindowShortcutKey')}
+                  value={preference.keyboardShortcuts?.['Window.toggleTidgiMiniWindow'] || ''}
+                  onChange={async (value) => {
+                    if (value && value.trim() !== '') {
+                      await window.service.native.registerKeyboardShortcut<IWindowService>('Window', 'toggleTidgiMiniWindow', value);
+                    } else {
+                      await window.service.native.unregisterKeyboardShortcut<IWindowService>('Window', 'toggleTidgiMiniWindow');
+                    }
+                  }}
+                  data-testid='tidgi-mini-window-shortcut-input'
                 />
-              </ListItem>
-
-              <Divider />
-
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant='caption' color='textSecondary'>
+                    {t('Preference.TidgiMiniWindowShortcutKeyHelperText')}
+                  </Typography>
+                </Box>
+              </Box>
               {/* Show title bar on tidgi mini window */}
               <ListItem
                 secondaryAction={
@@ -130,48 +128,49 @@ export function TidGiMiniWindow(props: Partial<ISectionProps>): React.JSX.Elemen
 
               {/* Select fixed workspace for TidGi mini window */}
               {!preference.tidgiMiniWindowSyncWorkspaceWithMainWindow && (
-                <Box sx={{ p: 2 }}>
-                  <FormControl fullWidth variant='outlined' sx={{ mt: 1 }}>
-                    <InputLabel>{t('Preference.TidgiMiniWindowFixedWorkspace')}</InputLabel>
-                    <Select
-                      value={preference.tidgiMiniWindowFixedWorkspaceId || ''}
-                      onChange={async (event) => {
-                        await window.service.preference.set('tidgiMiniWindowFixedWorkspaceId', event.target.value);
-                      }}
-                      label={t('Preference.TidgiMiniWindowFixedWorkspace')}
-                      inputProps={{ 'data-testid': 'tidgi-mini-window-fixed-workspace-select' }}
-                    >
-                      <MenuItem value=''>{t('Preference.SelectWorkspace')}</MenuItem>
-                      {workspaces?.map((workspace) => (
-                        <MenuItem key={workspace.id} value={workspace.id}>
-                          {workspace.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-              )}
-
-              {/* Set shortcut key to toggle TidGi mini window */}
-              <Box sx={{ p: 2 }}>
-                <KeyboardShortcutRegister
-                  label={t('Preference.TidgiMiniWindowShortcutKey')}
-                  value={preference.keyboardShortcuts?.['Window.toggleTidgiMiniWindow'] || ''}
-                  onChange={async (value) => {
-                    if (value && value.trim() !== '') {
-                      await window.service.native.registerKeyboardShortcut<IWindowService>('Window', 'toggleTidgiMiniWindow', value);
-                    } else {
-                      await window.service.native.unregisterKeyboardShortcut<IWindowService>('Window', 'toggleTidgiMiniWindow');
+                <>
+                  {/* Sidebar display settings */}
+                  <ListItem
+                    secondaryAction={
+                      <Switch
+                        edge='end'
+                        color='primary'
+                        checked={preference.tidgiMiniWindowShowSidebar}
+                        onChange={async (event) => {
+                          await window.service.preference.set('tidgiMiniWindowShowSidebar', event.target.checked);
+                        }}
+                        data-testid='sidebar-on-tidgi-mini-window-switch'
+                      />
                     }
-                  }}
-                  data-testid='tidgi-mini-window-shortcut-input'
-                />
-                <Box sx={{ mt: 1 }}>
-                  <Typography variant='caption' color='textSecondary'>
-                    {t('Preference.TidgiMiniWindowShortcutKeyHelperText')}
-                  </Typography>
-                </Box>
-              </Box>
+                  >
+                    <ListItemText
+                      primary={platform === 'win32' ? t('Preference.AttachToTaskbarShowSidebar') : t('Preference.TidgiMiniWindowShowSidebar')}
+                      secondary={platform === 'linux' ? undefined : t('Preference.TidgiMiniWindowShowSidebarTip')}
+                    />
+                  </ListItem>
+
+                  <Box sx={{ p: 2 }}>
+                    <FormControl fullWidth variant='outlined' sx={{ mt: 1 }}>
+                      <InputLabel>{t('Preference.TidgiMiniWindowFixedWorkspace')}</InputLabel>
+                      <Select
+                        value={preference.tidgiMiniWindowFixedWorkspaceId || ''}
+                        onChange={async (event) => {
+                          await window.service.preference.set('tidgiMiniWindowFixedWorkspaceId', event.target.value);
+                        }}
+                        label={t('Preference.TidgiMiniWindowFixedWorkspace')}
+                        inputProps={{ 'data-testid': 'tidgi-mini-window-fixed-workspace-select' }}
+                      >
+                        <MenuItem value=''>{t('Preference.SelectWorkspace')}</MenuItem>
+                        {workspaces?.map((workspace) => (
+                          <MenuItem key={workspace.id} value={workspace.id}>
+                            {workspace.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+                </>
+              )}
             </>
           )}
         </List>

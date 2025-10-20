@@ -1,16 +1,17 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
-import { isWikiWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { MouseEvent, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
+import { useLocation } from 'wouter';
 
 import { PageType } from '@/constants/pageTypes';
 import { getBuildInPageIcon } from '@/pages/Main/WorkspaceIconAndSelector/getBuildInPageIcon';
 import { getBuildInPageName } from '@/pages/Main/WorkspaceIconAndSelector/getBuildInPageName';
+import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { useLocation } from 'wouter';
+import { getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
+import { isWikiWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interface';
+import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
 
 export interface ISortableItemProps {
   index: number;
@@ -22,6 +23,7 @@ export interface ISortableItemProps {
 export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarTexts, showSideBarIcon }: ISortableItemProps): React.JSX.Element {
   const { t } = useTranslation();
   const { active, id, name, picturePath, pageType } = workspace;
+  const preference = usePreferenceObservable();
 
   const isWiki = isWikiWorkspace(workspace);
   const hibernated = isWiki ? workspace.hibernated : false;
@@ -49,20 +51,41 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     }
     return undefined;
   }, [pageType]);
+
+  const isMiniWindow = window.meta().windowName === WindowNames.tidgiMiniWindow;
+
+  // Determine active state based on window type
+  const isActive = useMemo(() => {
+    if (isMiniWindow) {
+      // In mini window, compare with tidgiMiniWindowFixedWorkspaceId
+      return preference?.tidgiMiniWindowFixedWorkspaceId === id;
+    }
+    // In main window, use workspace's active state
+    return active;
+  }, [isMiniWindow, preference?.tidgiMiniWindowFixedWorkspaceId, id, active]);
+
   const onWorkspaceClick = useCallback(async () => {
     workspaceClickedLoadingSetter(true);
     try {
+      // Special "add" workspace always opens add workspace window
+      if (workspace.pageType === PageType.add) {
+        await window.service.window.open(WindowNames.addWorkspace);
+        return;
+      }
+
+      // In mini window, only update the fixed workspace ID
+      if (isMiniWindow) {
+        await window.service.preference.set('tidgiMiniWindowFixedWorkspaceId', id);
+        return;
+      }
+
+      // In main window, handle different workspace types
       if (workspace.pageType) {
-        // Handle special "add" workspace
-        if (workspace.pageType === PageType.add) {
-          await window.service.window.open(WindowNames.addWorkspace);
-        } else {
-          // Handle other page workspaces - navigate to the page and set as active workspace
-          setLocation(`/${workspace.pageType}`);
-          await window.service.workspaceView.setActiveWorkspaceView(id);
-        }
+        // Page workspaces (dashboard, etc.)
+        setLocation(`/${workspace.pageType}`);
+        await window.service.workspaceView.setActiveWorkspaceView(id);
       } else {
-        // Handle regular wiki workspace
+        // Regular wiki workspace
         setLocation(`/${PageType.wiki}/${id}/`);
         await window.service.workspace.openWorkspaceTiddler(workspace);
       }
@@ -73,7 +96,7 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     } finally {
       workspaceClickedLoadingSetter(false);
     }
-  }, [id, setLocation, workspace]);
+  }, [id, setLocation, workspace, isMiniWindow]);
   const onWorkspaceContextMenu = useCallback(
     async (event: MouseEvent<HTMLDivElement>) => {
       event.preventDefault();
@@ -90,7 +113,7 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
         restarting={workspace.metadata.isRestarting}
         showSideBarIcon={showSideBarIcon}
         onClick={onWorkspaceClick}
-        active={active}
+        active={isActive}
         id={id}
         key={id}
         pageType={pageType || undefined}
