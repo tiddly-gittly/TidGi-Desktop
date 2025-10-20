@@ -61,7 +61,14 @@ export function initTestKeyboardShortcutFallback(): () => void {
   const formatComboFromEvent = (event: KeyboardEvent): string => {
     const combo: string[] = [];
     const isMac = platform === 'darwin';
-    if (event.ctrlKey || event.metaKey) combo.push(isMac ? 'Cmd' : 'Ctrl');
+    // On macOS, Cmd (metaKey) and Ctrl are distinct and both may be used.
+    // On other platforms, only Ctrl is used as the primary modifier here.
+    if (isMac) {
+      if (event.ctrlKey) combo.push('Ctrl');
+      if (event.metaKey) combo.push('Cmd');
+    } else {
+      if (event.ctrlKey) combo.push('Ctrl');
+    }
     if (event.altKey) combo.push('Alt');
     if (event.shiftKey) combo.push('Shift');
     combo.push(event.key);
