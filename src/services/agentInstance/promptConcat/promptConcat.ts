@@ -14,7 +14,7 @@
  */
 
 import { logger } from '@services/libs/log';
-import { CoreMessage } from 'ai';
+import { ModelMessage } from 'ai';
 import { cloneDeep } from 'lodash';
 import { AgentHandlerContext } from '../buildInAgentHandlers/type';
 import { AgentInstanceMessage } from '../interface';
@@ -89,8 +89,8 @@ export function findPromptById(
  * @param prompts Tree-structured prompt array
  * @returns Flattened array of prompts
  */
-export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
-  const result: CoreMessage[] = [];
+export function flattenPrompts(prompts: IPrompt[]): ModelMessage[] {
+  const result: ModelMessage[] = [];
 
   // Process prompt tree recursively - collect non-role children text
   function processPrompt(prompt: IPrompt): string {
@@ -140,7 +140,7 @@ export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
           {
             role: prompt.role || 'system' as const,
             content: content.trim() || '',
-          } as CoreMessage,
+          } as ModelMessage,
         );
       }
 
@@ -169,7 +169,7 @@ export function flattenPrompts(prompts: IPrompt[]): CoreMessage[] {
               // Support 'tool' role in child prompts
               role: child.role,
               content: childContent.trim() || '',
-            } as CoreMessage);
+            } as ModelMessage);
           }
         }
       }
@@ -187,7 +187,7 @@ export interface PromptConcatStreamState {
   /** Current processed prompts */
   processedPrompts: IPrompt[];
   /** Current flat prompts for LLM */
-  flatPrompts: CoreMessage[];
+  flatPrompts: ModelMessage[];
   /** Current processing step */
   step: 'plugin' | 'finalize' | 'flatten' | 'complete';
   /** Current plugin being processed (if step is 'plugin') */
@@ -345,7 +345,7 @@ export async function promptConcat(
   messages: AgentInstanceMessage[],
   handlerContext: AgentHandlerContext,
 ): Promise<{
-  flatPrompts: CoreMessage[];
+  flatPrompts: ModelMessage[];
   processedPrompts: IPrompt[];
 }> {
   // Use the streaming version and just return the final result

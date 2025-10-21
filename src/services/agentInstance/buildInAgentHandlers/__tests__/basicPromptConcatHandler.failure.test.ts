@@ -18,7 +18,7 @@ const mockErrorDetail = {
   name: 'AIProviderError',
   code: 'INVALID_PROMPT',
   provider: 'siliconflow',
-  message: 'Invalid prompt: message must be a CoreMessage or a UI message',
+  message: 'Invalid prompt: message must be a ModelMessage or a UI message',
 };
 
 function makeContext(agentId: string, agentDefId: string, messages: AgentInstanceMessage[]): AgentHandlerContext {

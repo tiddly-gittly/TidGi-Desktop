@@ -223,7 +223,10 @@ describe('TidGiMiniWindow Component', () => {
       preferenceSubject.next(createMockPreference({ tidgiMiniWindow: false }));
       await renderComponent();
 
-      const switches = screen.getAllByRole('checkbox');
+      await waitFor(() => {
+        expect(screen.getAllByRole('switch')).toHaveLength(1);
+      });
+      const switches = screen.getAllByRole('switch');
       const attachSwitch = switches[0];
       expect(attachSwitch).not.toBeChecked();
     });
@@ -233,7 +236,10 @@ describe('TidGiMiniWindow Component', () => {
       preferenceSubject.next(createMockPreference({ tidgiMiniWindow: false }));
       await renderComponent();
 
-      const switches = screen.getAllByRole('checkbox');
+      await waitFor(() => {
+        expect(screen.getAllByRole('switch')).toHaveLength(1);
+      });
+      const switches = screen.getAllByRole('switch');
       const attachSwitch = switches[0];
 
       await user.click(attachSwitch);
@@ -248,7 +254,10 @@ describe('TidGiMiniWindow Component', () => {
       preferenceSubject.next(createMockPreference({ tidgiMiniWindow: false }));
       await renderComponent();
 
-      const switches = screen.getAllByRole('checkbox');
+      await waitFor(() => {
+        expect(screen.getAllByRole('switch')).toHaveLength(1);
+      });
+      const switches = screen.getAllByRole('switch');
       const attachSwitch = switches[0];
 
       await user.click(attachSwitch);
@@ -628,8 +637,11 @@ describe('TidGiMiniWindow Component', () => {
       // Verify additional settings are hidden initially
       expect(screen.queryByText('Preference.TidgiMiniWindowAlwaysOnTop')).not.toBeInTheDocument();
 
-      // Click the attach to tidgi mini window toggle
-      const switches = screen.getAllByRole('checkbox');
+      // Wait for and click the attach to tidgi mini window toggle
+      await waitFor(() => {
+        expect(screen.getAllByRole('switch')).toHaveLength(1);
+      });
+      const switches = screen.getAllByRole('switch');
       const attachSwitch = switches[0];
       await user.click(attachSwitch);
 

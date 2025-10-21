@@ -3,10 +3,11 @@ import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { logger } from '@services/libs/log';
-import { CoreMessage, Message, streamText } from 'ai';
+import { ModelMessage, streamText } from 'ai';
 import { createOllama } from 'ollama-ai-provider';
 
 import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { getFormattedContent } from '@/pages/ChatTabContent/components/types';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError, parseProviderError } from './errors';
 import type { AIProviderConfig } from './interface';
 
@@ -46,7 +47,7 @@ export function createProviderClient(providerConfig: { provider: string; provide
 
 export function streamFromProvider(
   config: AiAPIConfig,
-  messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>,
+  messages: Array<ModelMessage>,
   signal: AbortSignal,
   providerConfig?: AIProviderConfig,
 ): AIStreamResult {
@@ -76,13 +77,13 @@ export function streamFromProvider(
 
     // Extract system message from messages if present, otherwise use fallback
     const systemMessage = messages.find(message => message.role === 'system');
-    const systemPrompt = (typeof systemMessage?.content === 'string' ? systemMessage.content : undefined) || fallbackSystemPrompt;
+    const systemPrompt = (systemMessage ? getFormattedContent(systemMessage.content) : undefined) || fallbackSystemPrompt;
 
     // Filter out system messages from the messages array since we're handling them separately
-    const nonSystemMessages = messages.filter(message => message.role !== 'system') as typeof messages;
+    const nonSystemMessages = messages.filter(message => message.role !== 'system');
 
     // Ensure we have at least one message to avoid AI library errors
-    const finalMessages = nonSystemMessages.length > 0 ? nonSystemMessages : [{ role: 'user' as const, content: 'Hi' }];
+    const finalMessages: Array<ModelMessage> = nonSystemMessages.length > 0 ? nonSystemMessages : [{ role: 'user' as const, content: 'Hi' }];
 
     return streamText({
       model: client(model),

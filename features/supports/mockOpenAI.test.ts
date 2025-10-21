@@ -1,4 +1,4 @@
-import type { CoreMessage } from 'ai';
+import type { ModelMessage } from 'ai';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { AiAPIConfig } from '../../src/services/agentInstance/promptConcat/promptConcatSchema';
 import { streamFromProvider } from '../../src/services/externalAPI/callProviderAPI';
@@ -265,7 +265,7 @@ describe('Mock OpenAI Server', () => {
       enabled: true,
     };
 
-    const messages: CoreMessage[] = [
+    const messages: ModelMessage[] = [
       { role: 'user', content: 'Start streaming' },
     ];
 

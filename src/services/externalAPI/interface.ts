@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { ExternalAPIChannel } from '@/constants/channels';
 import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import type { ExternalAPILogEntity } from '@services/database/schema/externalAPILog';
-import { CoreMessage, Message } from 'ai';
+import { ModelMessage } from 'ai';
 
 /**
  * AI streaming response status interface
@@ -210,7 +210,7 @@ export interface IExternalAPIService {
    * requestId will be automatically generated and returned in the AIStreamResponse
    */
   streamFromAI(
-    messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>,
+    messages: Array<ModelMessage>,
     config: AiAPIConfig,
     options?: { agentInstanceId?: string; awaitLogs?: boolean },
   ): Observable<AIStreamResponse>;
@@ -221,7 +221,7 @@ export interface IExternalAPIService {
    * requestId will be automatically generated and returned in the AIStreamResponse
    */
   generateFromAI(
-    messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>,
+    messages: Array<ModelMessage>,
     config: AiAPIConfig,
     options?: { agentInstanceId?: string; awaitLogs?: boolean },
   ): AsyncGenerator<AIStreamResponse, void, unknown>;

@@ -52,7 +52,7 @@ describe('AgentInstance failure path - external API logs on error', () => {
 
     // Mock provider stream to throw error (ai sdk failure)
     vi.spyOn(callProvider, 'streamFromProvider').mockImplementation((_cfg: AiAPIConfig) => {
-      throw new Error('Invalid prompt: message must be a CoreMessage or a UI message');
+      throw new Error('Invalid prompt: message must be a ModelMessage or a UI message');
     });
 
     // Initialize services

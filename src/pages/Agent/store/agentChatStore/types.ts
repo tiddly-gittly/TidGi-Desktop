@@ -1,7 +1,7 @@
 import { AgentDefinition } from '@services/agentDefinition/interface';
 import type { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
 import type { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { CoreMessage } from 'ai';
+import { ModelMessage } from 'ai';
 
 // Type for agent data without messages - exported for use in other components
 export interface AgentWithoutMessages extends Omit<AgentInstance, 'messages'> {
@@ -33,7 +33,7 @@ export interface PreviewDialogState {
   previewCurrentStep: string; // current processing step description
   previewCurrentPlugin: string | null; // current plugin being processed
   previewResult: {
-    flatPrompts: CoreMessage[];
+    flatPrompts: ModelMessage[];
     processedPrompts: IPrompt[];
   } | null;
   lastUpdated: Date | null;
@@ -196,7 +196,7 @@ export interface PreviewActions {
     handlerConfig: AgentPromptDescription['handlerConfig'],
   ) => Promise<
     {
-      flatPrompts: CoreMessage[];
+      flatPrompts: ModelMessage[];
       processedPrompts: IPrompt[];
     } | null
   >;

@@ -69,7 +69,7 @@ export default function Main(): React.JSX.Element {
       <Helmet>
         <title>{t('Menu.TidGi')}{isTidgiMiniWindow ? ` - ${t('Menu.TidGiMiniWindow')}` : ''}</title>
       </Helmet>
-      <Root data-windowName={windowName} data-showSidebar={showSidebar}>
+      <Root data-windowname={windowName} data-showsidebar={showSidebar}>
         {showSidebar && <SideBar />}
         <ContentRoot $sidebar={showSidebar}>
           <FindInPage />
