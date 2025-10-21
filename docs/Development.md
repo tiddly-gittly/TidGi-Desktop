@@ -164,10 +164,6 @@ Electron forge webpack don't support pure ESM yet
 - electron-unhandled
 - date-fns
 
-### Use electron forge's recommended version
-
-- @vercel/webpack-asset-relocator-loader
-
 ## Code Tour
 
 [FileProtocol](./features/FileProtocol.md)
