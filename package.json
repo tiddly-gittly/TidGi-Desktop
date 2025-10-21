@@ -161,7 +161,7 @@
     "chai": "5.1.2",
     "cross-env": "7.0.3",
     "dprint": "^0.50.0",
-    "electron": "36.4.0",
+    "electron": "36.8.1",
     "electron-chrome-web-store": "^0.12.0",
     "esbuild": "^0.25.2",
     "eslint-config-tidgi": "^2.2.0",
