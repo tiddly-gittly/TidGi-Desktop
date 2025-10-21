@@ -265,7 +265,7 @@ export const basicActionsMiddleware: StateCreator<
           activeTabId,
         });
       } catch (error) {
-        void window.service.native.log('error', 'Failed to add tab:', { error: String(error) });
+        void window.service.native.log('error', 'Failed to add tab:', { error });
         console.error('Failed to add tab:', error);
       }
 

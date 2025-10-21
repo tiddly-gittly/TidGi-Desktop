@@ -27,25 +27,25 @@ export function handleOpenFileExternalLink(nextUrl: string, newWindowContext: IN
     const fileStat = fs.statSync(absoluteFilePath);
     if (fileStat.isDirectory()) {
       logger.info(`Opening directory ${absoluteFilePath}`, { function: 'handleOpenFileExternalLink' });
-      void shell.openPath(absoluteFilePath).catch((_error: unknown) => {
-        const error = _error instanceof Error ? _error : new Error(String(_error));
+      void shell.openPath(absoluteFilePath).catch((error_: unknown) => {
+        const error = error_ as Error;
         const message = i18n.t('Log.FailedToOpenDirectory', { path: absoluteFilePath, message: error.message });
-        logger.warn(message, { function: 'handleOpenFileExternalLink' });
+        logger.warn(message, { function: 'handleOpenFileExternalLink', error });
         void wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, newWindowContext.workspace.id, [message]);
       });
     } else if (fileStat.isFile()) {
       logger.info(`Opening file ${absoluteFilePath}`, { function: 'handleOpenFileExternalLink' });
-      void shell.openPath(absoluteFilePath).catch((_error: unknown) => {
-        const error = _error instanceof Error ? _error : new Error(String(_error));
+      void shell.openPath(absoluteFilePath).catch((error_: unknown) => {
+        const error = error_ as Error;
         const message = i18n.t('Log.FailedToOpenFile', { path: absoluteFilePath, message: error.message });
-        logger.warn(message, { function: 'handleOpenFileExternalLink' });
+        logger.warn(message, { function: 'handleOpenFileExternalLink', error });
         void wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, newWindowContext.workspace.id, [message]);
       });
     }
-  } catch (_error: unknown) {
-    const error = _error instanceof Error ? _error : new Error(String(_error));
+  } catch (error_: unknown) {
+    const error = error_ as Error;
     const message = `${i18n.t('AddWorkspace.PathNotExist', { path: absoluteFilePath })} ${error.message}`;
-    logger.warn(message, { function: 'handleOpenFileExternalLink' });
+    logger.warn(message, { function: 'handleOpenFileExternalLink', error });
     void wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, newWindowContext.workspace.id, [message]);
   }
   return {

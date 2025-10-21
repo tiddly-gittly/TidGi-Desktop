@@ -12,7 +12,7 @@ export function TabStoreInitializer() {
   useEffect(() => {
     // Initialize the tab store when the component mounts
     initialize().catch((error: unknown) => {
-      void window.service.native.log('error', 'Failed to initialize tab store', { function: 'TabStoreInitializer.initialize', error: String(error) });
+      void window.service.native.log('error', 'Failed to initialize tab store', { function: 'TabStoreInitializer.initialize', error });
     });
   }, [initialize]);
 

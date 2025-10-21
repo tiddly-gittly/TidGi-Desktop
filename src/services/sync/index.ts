@@ -109,11 +109,8 @@ export class Sync implements ISyncService {
       }
       return true;
     } catch (error) {
-      logger.error(
-        `${(error as Error).message} when checking draft titles. ${
-          (error as Error).stack ?? ''
-        }\n This might because it just will throw error when on Windows and App is at background (WebContentsView will disappear and not accessible.)`,
-      );
+      const error_ = error as Error;
+      logger.error('Error when checking draft titles', { error: error_, function: 'checkCanSyncDueToNoDraft' });
       // when app is on background, might have no draft, because user won't edit it. So just return true
       return true;
     }

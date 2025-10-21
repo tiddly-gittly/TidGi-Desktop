@@ -33,7 +33,7 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
           'DeveloperTools: fetch externalApi database info failed',
           {
             function: 'DeveloperTools.fetchInfo',
-            error: String(error),
+            error,
           },
         );
       }
@@ -79,7 +79,7 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                         'DeveloperTools: open V8 cache folder failed',
                         {
                           function: 'DeveloperTools.openV8CacheFolder',
-                          error: String(error),
+                          error: error as Error,
                         },
                       );
                     }
@@ -133,7 +133,7 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                             'DeveloperTools: open externalApi database folder failed',
                             {
                               function: 'DeveloperTools.openExternalApiDatabaseFolder',
-                              error: String(error),
+                              error,
                               path: externalApiInfo.path,
                             },
                           );
@@ -202,7 +202,7 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                   'DeveloperTools: delete externalApi database failed',
                   {
                     function: 'DeveloperTools.handleDelete',
-                    error: String(error),
+                    error,
                   },
                 );
               }

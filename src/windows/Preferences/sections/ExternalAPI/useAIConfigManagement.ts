@@ -68,7 +68,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
 
         setLoading(false);
       } catch (error) {
-        void window.service.native.log('error', 'Failed to load AI configuration', { function: 'useAIConfigManagement.fetchConfig', error: String(error) });
+        void window.service.native.log('error', 'Failed to load AI configuration', { function: 'useAIConfigManagement.fetchConfig', error });
         setLoading(false);
       }
     };
@@ -107,7 +107,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
       setConfig(updatedConfig);
       await updateConfig(updatedConfig);
     } catch (error) {
-      void window.service.native.log('error', 'Failed to update model configuration', { function: 'useAIConfigManagement.handleModelChange', error: String(error) });
+      void window.service.native.log('error', 'Failed to update model configuration', { function: 'useAIConfigManagement.handleModelChange', error });
     }
   }, [config, updateConfig]);
 
@@ -127,7 +127,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     } catch (error) {
       void window.service.native.log('error', 'Failed to update embedding model configuration', {
         function: 'useAIConfigManagement.handleEmbeddingModelChange',
-        error: String(error),
+        error,
       });
     }
   }, [config, updateConfig]);
@@ -148,7 +148,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     } catch (error) {
       void window.service.native.log('error', 'Failed to update speech model configuration', {
         function: 'useAIConfigManagement.handleSpeechModelChange',
-        error: String(error),
+        error,
       });
     }
   }, [config, updateConfig]);
@@ -169,7 +169,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     } catch (error) {
       void window.service.native.log('error', 'Failed to update image generation model configuration', {
         function: 'useAIConfigManagement.handleImageGenerationModelChange',
-        error: String(error),
+        error,
       });
     }
   }, [config, updateConfig]);
@@ -190,7 +190,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     } catch (error) {
       void window.service.native.log('error', 'Failed to update transcriptions model configuration', {
         function: 'useAIConfigManagement.handleTranscriptionsModelChange',
-        error: String(error),
+        error,
       });
     }
   }, [config, updateConfig]);
@@ -200,7 +200,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
       setConfig(newConfig);
       await updateConfig(newConfig);
     } catch (error) {
-      void window.service.native.log('error', 'Failed to update configuration', { function: 'useAIConfigManagement.handleConfigChange', error: String(error) });
+      void window.service.native.log('error', 'Failed to update configuration', { function: 'useAIConfigManagement.handleConfigChange', error });
     }
   }, [updateConfig]);
 

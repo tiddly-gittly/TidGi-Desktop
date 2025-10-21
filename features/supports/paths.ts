@@ -40,7 +40,7 @@ export function getPackedAppPath(): string {
   }
 
   throw new Error(
-    `TidGi executable not found. Checked paths:\n${possiblePaths.join('\n')}\n\nYou should run \`pnpm run package:dev\` before running the tests to ensure the app is built.`,
+    `TidGi executable not found. Checked paths:\n${possiblePaths.join('\n')}\n\nYou should run \`pnpm run test:prepare-e2e\` before running the tests to ensure the app is built.`,
   );
 }
 

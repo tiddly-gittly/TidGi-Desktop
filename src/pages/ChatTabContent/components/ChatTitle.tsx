@@ -65,7 +65,7 @@ export const ChatTitle: React.FC<ChatTitleProps> = ({ title, agent, updateAgent 
         await updateAgent({ name: newTitle });
       }
     } catch (error) {
-      void window.service?.native?.log?.('error', 'Failed to save agent title', { function: 'ChatTitle.handleSaveEdit', error: String(error) });
+      void window.service?.native?.log?.('error', 'Failed to save agent title', { function: 'ChatTitle.handleSaveEdit', error });
     }
   };
 

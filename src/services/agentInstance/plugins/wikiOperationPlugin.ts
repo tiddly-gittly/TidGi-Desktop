@@ -168,7 +168,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
       callback();
     } catch (error) {
       logger.error('Error in wiki operation tool list injection', {
-        error: error instanceof Error ? error.message : String(error),
+        error,
         pluginId: pluginConfig.id,
       });
       callback();
@@ -340,7 +340,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
           toolResultMessage.metadata = { ...toolResultMessage.metadata, isPersisted: true };
         } catch (persistError) {
           logger.warn('Failed to persist tool result immediately in wikiOperationPlugin', {
-            error: persistError instanceof Error ? persistError.message : String(persistError),
+            error: persistError,
             messageId: toolResultMessage.id,
           });
         }
@@ -369,7 +369,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
         });
       } catch (error) {
         logger.error('Wiki operation tool execution failed', {
-          error: error instanceof Error ? error.message : String(error),
+          error,
           agentId: handlerContext.agent.id,
           toolParameters: toolMatch.parameters,
         });
@@ -425,9 +425,7 @@ Error: ${error instanceof Error ? error.message : String(error)}
 
       callback();
     } catch (error) {
-      logger.error('Error in wiki operation plugin response handler', {
-        error: error instanceof Error ? error.message : String(error),
-      });
+      logger.error('Error in wiki operation plugin response handler', { error });
       callback();
     }
   });

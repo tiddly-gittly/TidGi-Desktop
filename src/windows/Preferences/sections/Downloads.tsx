@@ -29,7 +29,7 @@ export function Downloads(props: Required<ISectionProps>): React.JSX.Element {
                       }
                     })
                     .catch((error: unknown) => {
-                      void window.service.native.log('error', 'Preferences: pickDirectory failed', { function: 'Downloads.pickDirectory', error: String(error) });
+                      void window.service.native.log('error', 'Preferences: pickDirectory failed', { function: 'Downloads.pickDirectory', error });
                     });
                 }}
               >

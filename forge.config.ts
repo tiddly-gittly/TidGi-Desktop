@@ -32,7 +32,7 @@ const config: ForgeConfig = {
       // Unpack worker files, native modules path, and ALL .node binaries (including better-sqlite3)
       unpack: '{**/.webpack/main/*.worker.*,**/.webpack/main/native_modules/path.txt,**/{.**,**}/**/*.node}',
     },
-    extraResource: ['localization', 'template/wiki', 'build-resources/menubar@2x.png', 'build-resources/menubarTemplate@2x.png'],
+    extraResource: ['localization', 'template/wiki', 'build-resources/tidgiMiniWindow@2x.png', 'build-resources/tidgiMiniWindowTemplate@2x.png'],
     // @ts-expect-error - mac config is valid
     mac: {
       category: 'productivity',

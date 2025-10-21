@@ -13,8 +13,7 @@ export async function updateGhConfig(wikiPath: string, options: IGhOptions): Pro
       const newContent = content.replace(/(branches:\n\s+- )(master)$/m, `$1${options.branch}`);
       await fs.writeFile(ghPagesConfigPath, newContent, 'utf8');
     } catch (error) {
-      const error_ = error instanceof Error ? error : new Error(String(error));
-      logger.error('updateGhConfig failed', { function: 'updateGhConfig', error: error_.message, errorObj: error_ });
+      logger.error('updateGhConfig failed', { function: 'updateGhConfig', error });
     }
   }
 }

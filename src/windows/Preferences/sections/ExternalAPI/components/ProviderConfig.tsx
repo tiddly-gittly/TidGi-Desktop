@@ -108,7 +108,7 @@ async function autoFillDefaultModels(
   } catch (error) {
     void window.service.native.log('error', 'Failed to auto-fill default models', {
       function: 'autoFillDefaultModels',
-      error: String(error),
+      error,
     });
   }
 }
@@ -208,7 +208,7 @@ export function ProviderConfig({
       await window.service.externalAPI.updateProvider(providerName, { [field]: value });
       showMessage(t('Preference.SettingsSaved'), 'success');
     } catch (error) {
-      void window.service.native.log('error', 'Failed to update provider', { function: 'ProviderConfig.handleFormChange', error: String(error) });
+      void window.service.native.log('error', 'Failed to update provider', { function: 'ProviderConfig.handleFormChange', error });
       showMessage(t('Preference.FailedToSaveSettings'), 'error');
     }
   };
@@ -222,7 +222,7 @@ export function ProviderConfig({
 
       showMessage(enabled ? t('Preference.ProviderEnabled') : t('Preference.ProviderDisabled'), 'success');
     } catch (error) {
-      void window.service.native.log('error', 'Failed to update provider status', { function: 'ProviderConfig.handleProviderEnabledChange', error: String(error) });
+      void window.service.native.log('error', 'Failed to update provider status', { function: 'ProviderConfig.handleProviderEnabledChange', error });
       showMessage(t('Preference.FailedToUpdateProviderStatus'), 'error');
     }
   };
@@ -429,10 +429,10 @@ export function ProviderConfig({
         showMessage(editingModelName ? t('Preference.ModelUpdatedSuccessfully') : t('Preference.ModelAddedSuccessfully'), 'success');
         closeModelDialog();
       }
-    } catch (error_) {
+    } catch (error) {
       void window.service.native.log('error', editingModelName ? 'Failed to update model' : 'Failed to add model', {
         function: 'ProviderConfig.handleAddModel',
-        error: String(error_),
+        error,
       });
       showMessage(editingModelName ? t('Preference.FailedToUpdateModel') : t('Preference.FailedToAddModel'), 'error');
     }
@@ -468,8 +468,8 @@ export function ProviderConfig({
       setProviders(previous => previous.map(p => p.provider === providerName ? { ...p, models: updatedModels } : p));
 
       showMessage(t('Preference.ModelRemovedSuccessfully'), 'success');
-    } catch (error_) {
-      void window.service.native.log('error', 'Failed to remove model', { function: 'ProviderConfig.removeModel', error: String(error_) });
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to remove model', { function: 'ProviderConfig.removeModel', error });
       showMessage(t('Preference.FailedToRemoveModel'), 'error');
     }
   };
@@ -623,8 +623,8 @@ export function ProviderConfig({
 
       setShowAddProviderForm(false);
       showMessage(t('Preference.ProviderAddedSuccessfully'), 'success');
-    } catch (error_) {
-      void window.service.native.log('error', 'Failed to add provider', { function: 'ProviderConfig.handleAddProvider', error: String(error_) });
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to add provider', { function: 'ProviderConfig.handleAddProvider', error });
       showMessage(t('Preference.FailedToAddProvider'), 'error');
     }
   };
@@ -655,10 +655,10 @@ export function ProviderConfig({
       }
 
       showMessage(t('Preference.ProviderDeleted', { providerName }), 'success');
-    } catch (error_) {
+    } catch (error) {
       void window.service.native.log('error', 'Failed to delete provider', {
         function: 'ProviderConfig.handleDeleteProvider',
-        error: String(error_),
+        error,
       });
       showMessage(t('Preference.FailedToDeleteProvider', { providerName }), 'error');
     }

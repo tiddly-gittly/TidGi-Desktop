@@ -262,7 +262,7 @@ async function executeWikiSearchTool(
             }
           } catch (error) {
             logger.warn(`Error retrieving full tiddler content for ${result.title}`, {
-              error: error instanceof Error ? error.message : String(error),
+              error,
             });
             fullContentResults.push(result);
           }
@@ -278,7 +278,7 @@ async function executeWikiSearchTool(
         };
       } catch (error) {
         logger.error('Vector search failed', {
-          error: error instanceof Error ? error.message : String(error),
+          error,
           workspaceID,
           query,
         });
@@ -327,7 +327,7 @@ async function executeWikiSearchTool(
           }
         } catch (error) {
           logger.warn(`Error retrieving tiddler content for ${title}`, {
-            error: error instanceof Error ? error.message : String(error),
+            error,
           });
           results.push({ title });
         }
@@ -377,7 +377,7 @@ async function executeWikiSearchTool(
     };
   } catch (error) {
     logger.error('Wiki search tool execution error', {
-      error: error instanceof Error ? error.message : String(error),
+      error,
       parameters,
     });
 
@@ -471,7 +471,7 @@ async function executeWikiUpdateEmbeddingsTool(
     };
   } catch (error) {
     logger.error('Wiki update embeddings tool execution error', {
-      error: error instanceof Error ? error.message : String(error),
+      error,
       parameters,
     });
 
@@ -551,7 +551,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
       callback();
     } catch (error) {
       logger.error('Error in wiki search tool list injection', {
-        error: error instanceof Error ? error.message : String(error),
+        error,
         pluginId: pluginConfig.id,
       });
       callback();
@@ -608,7 +608,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
             latestAiMessage.metadata = { ...latestAiMessage.metadata, isPersisted: true };
           } catch (error) {
             logger.warn('Failed to persist AI message containing tool call immediately', {
-              error: error instanceof Error ? error.message : String(error),
+              error,
               messageId: latestAiMessage.id,
             });
           }
@@ -745,7 +745,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         });
       } catch (error) {
         logger.error('Wiki search tool execution failed', {
-          error: error instanceof Error ? error.message : String(error),
+          error,
           toolCall: toolMatch,
         });
 
@@ -802,9 +802,7 @@ Error: ${error instanceof Error ? error.message : String(error)}
 
       callback();
     } catch (error) {
-      logger.error('Error in wiki search handler plugin', {
-        error: error instanceof Error ? error.message : String(error),
-      });
+      logger.error('Error in wiki search handler plugin', { error });
       callback();
     }
   });

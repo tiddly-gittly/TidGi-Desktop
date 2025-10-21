@@ -190,6 +190,7 @@ export function WorkspaceSelectorBase({
       $workspaceClickedLoading={workspaceClickedLoading}
       onClick={workspaceClickedLoading ? () => {} : onClick}
       data-testid={pageType ? `workspace-${pageType}` : `workspace-${id}`}
+      data-active={active ? 'true' : 'false'}
     >
       <Badge color='secondary' badgeContent={badgeCount} max={99}>
         {icon}

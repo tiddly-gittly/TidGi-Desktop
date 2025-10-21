@@ -13,7 +13,7 @@ Add your language, make it looks like:
   "ja": "日本語",
   "ru": "русский",
   "vi": "Tiếng Việt",
-  "zh-Hans": "汉字"
+  "zh-Hans": "汉语"
 }
 ```
 

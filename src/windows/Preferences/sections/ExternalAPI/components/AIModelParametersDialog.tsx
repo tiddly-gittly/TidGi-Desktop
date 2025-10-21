@@ -51,7 +51,7 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
       await onSave(newConfig);
       onClose();
     } catch (error) {
-      void window.service.native.log('error', 'Failed to save model parameters', { function: 'AIModelParametersDialog.handleSave', error: String(error) });
+      void window.service.native.log('error', 'Failed to save model parameters', { function: 'AIModelParametersDialog.handleSave', error });
     }
   };
 

@@ -27,8 +27,8 @@ export function getUrlWithCorrectProtocol(workspace: IWorkspace, originalUrl: st
     return parsedUrl.toString();
   } catch (error) {
     logger.error(
-      `Failed to getUrlWithCorrectProtocol for originalUrl ${originalUrl}, fallback to originalUrl. Error: ${(error as Error).message}`,
-      { isHttps },
+      'Failed to getUrlWithCorrectProtocol for originalUrl, fallback to originalUrl',
+      { isHttps, error },
     );
     return originalUrl;
   }
@@ -42,8 +42,10 @@ export function replaceUrlPortWithSettingPort(originalUrl: string, newPort: numb
     parsedUrl.port = String(newPort);
     return parsedUrl.toString();
   } catch (error) {
+    const error_ = error as Error;
     logger.error(
-      `Failed to replaceUrlPortWithSettingPort for originalUrl ${originalUrl} to newPort ${newPort} , fallback to originalUrl. Error: ${(error as Error).message}`,
+      'Failed to replaceUrlPortWithSettingPort for originalUrl, fallback to originalUrl',
+      { error: error_ },
     );
     return originalUrl;
   }

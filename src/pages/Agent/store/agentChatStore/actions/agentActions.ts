@@ -49,7 +49,7 @@ export const agentActions = (
           `Failed to fetch agent definition for ${agentWithoutMessages.agentDefId}`,
           {
             function: 'agentActions.processAgentData',
-            error: String(error),
+            error,
           },
         );
       }
@@ -88,9 +88,9 @@ export const agentActions = (
         error: null,
         loading: false,
       });
-    } catch (error_) {
-      set({ error: error_ instanceof Error ? error_ : new Error(String(error_)) });
-      void window.service.native.log('error', 'Failed to load agent', { function: 'agentActions.loadAgent', error: String(error_) });
+    } catch (error) {
+      set({ error: error as Error });
+      void window.service.native.log('error', 'Failed to load agent', { function: 'agentActions.loadAgent', error });
     } finally {
       set({ loading: false });
     }
@@ -114,9 +114,9 @@ export const agentActions = (
       });
 
       return processedData.agent;
-    } catch (error_) {
-      set({ error: error_ instanceof Error ? error_ : new Error(String(error_)) });
-      void window.service.native.log('error', 'Failed to create agent', { function: 'agentActions.createAgent', error: String(error_) });
+    } catch (error) {
+      set({ error: error as Error });
+      void window.service.native.log('error', 'Failed to create agent', { function: 'agentActions.createAgent', error });
       return null;
     } finally {
       set({ loading: false });
@@ -147,9 +147,9 @@ export const agentActions = (
       });
 
       return processedData.agent;
-    } catch (error_) {
-      set({ error: error_ instanceof Error ? error_ : new Error(String(error_)) });
-      void window.service.native.log('error', 'Failed to update agent', { function: 'agentActions.updateAgent', error: String(error_) });
+    } catch (error) {
+      set({ error: error as Error });
+      void window.service.native.log('error', 'Failed to update agent', { function: 'agentActions.updateAgent', error });
       return null;
     } finally {
       set({ loading: false });
@@ -179,7 +179,7 @@ export const agentActions = (
     } catch (error) {
       const isInitialCall = !get().agent;
       set({
-        error: error instanceof Error ? error : new Error(String(error)),
+        error: error as Error,
         ...(isInitialCall ? { loading: false } : {}),
       });
     }
@@ -246,7 +246,7 @@ export const agentActions = (
                         `Error in message subscription for ${message.id}`,
                         {
                           function: 'agentActions.subscribeToUpdates.messageSubscription',
-                          error: String(error_),
+                          error: error_,
                         },
                       );
                     },
@@ -281,10 +281,10 @@ export const agentActions = (
             'Error in agent subscription',
             {
               function: 'agentActions.subscribeToUpdates.agentSubscription',
-              error: String(error_),
+              error: error_,
             },
           );
-          set({ error: error_ instanceof Error ? error_ : new Error(String(error_)) });
+          set({ error: error_ as Error });
         },
       });
 
@@ -295,9 +295,9 @@ export const agentActions = (
           subscription.unsubscribe();
         });
       };
-    } catch (error_) {
-      void window.service.native.log('error', 'Failed to subscribe to agent updates', { function: 'agentActions.subscribeToUpdates', error: String(error_) });
-      set({ error: error_ instanceof Error ? error_ : new Error(String(error_)) });
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to subscribe to agent updates', { function: 'agentActions.subscribeToUpdates', error });
+      set({ error: error as Error });
       return undefined;
     }
   },
@@ -347,8 +347,8 @@ export const agentActions = (
 
     try {
       await window.service.agentInstance.cancelAgent(storeAgent.id);
-    } catch (error_) {
-      void window.service.native.log('error', 'Store: cancelAgent backend call failed', { function: 'agentActions.cancelAgent', agentId: storeAgent.id, error: String(error_) });
+    } catch (error) {
+      void window.service.native.log('error', 'Store: cancelAgent backend call failed', { function: 'agentActions.cancelAgent', agentId: storeAgent.id, error });
     }
   },
 });

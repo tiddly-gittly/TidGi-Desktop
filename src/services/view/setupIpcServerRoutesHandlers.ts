@@ -153,13 +153,11 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
         }
       }
     } catch (error) {
-      const error_ = error instanceof Error ? error : new Error(String(error));
       logger.error('setupIpcServerRoutesHandlers.handlerCallback error', {
         function: 'setupIpcServerRoutesHandlers.handlerCallback',
-        error: error_.message,
-        stack: error_.stack ?? '',
+        error,
       });
-      return new Response(undefined, { status: 500, statusText: `${error_.message} ${error_.stack ?? ''}` });
+      return new Response(undefined, { status: 500, statusText: `${(error as Error).message} ${(error as Error).stack ?? ''}` });
     }
     const statusText = `setupIpcServerRoutesHandlers.handlerCallback: tidgi protocol 404 ${request.url}`;
     logger.warn(statusText);
@@ -174,11 +172,9 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
         logger.warn('tidgi protocol is not handled', { function: 'setupIpcServerRoutesHandlers.handlerCallback' });
       }
     } catch (error) {
-      const error_ = error instanceof Error ? error : new Error(String(error));
       logger.error('setupIpcServerRoutesHandlers.handlerCallback error', {
         function: 'setupIpcServerRoutesHandlers.handlerCallback',
-        error: error_.message,
-        stack: error_.stack ?? '',
+        error,
       });
     }
   }

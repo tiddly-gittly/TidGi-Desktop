@@ -130,7 +130,7 @@ export const workspacesListPlugin: PromptConcatPlugin = (hooks) => {
       callback();
     } catch (error) {
       logger.error('Error in workspaces list injection', {
-        error: error instanceof Error ? error.message : String(error),
+        error,
         pluginId: pluginConfig.id,
       });
       callback();

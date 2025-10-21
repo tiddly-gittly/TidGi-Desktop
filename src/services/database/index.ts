@@ -52,6 +52,9 @@ export class DatabaseService implements IDatabaseService {
     logger.info('loaded settings', {
       hasContent: !!this.settingFileContent,
       keys: this.settingFileContent ? Object.keys(this.settingFileContent).length : 0,
+      hasPreferences: !!this.settingFileContent?.preferences,
+      tidgiMiniWindow: this.settingFileContent?.preferences?.tidgiMiniWindow,
+      settingsFilePath: settings.file(),
       function: 'DatabaseService.initializeForApp',
     });
 
@@ -64,8 +67,7 @@ export class DatabaseService implements IDatabaseService {
         path: settings.file().replace(/settings\.json$/, ''),
       });
     } catch (error) {
-      const error_ = error instanceof Error ? error : new Error(String(error));
-      logger.error('Error initializing setting backup file', { function: 'DatabaseService.initializeForApp', error: error_.message, stack: error_.stack ?? '' });
+      logger.error('Error initializing setting backup file', { function: 'DatabaseService.initializeForApp', error });
     }
 
     // Ensure database folder exists
@@ -171,7 +173,7 @@ export class DatabaseService implements IDatabaseService {
           await this.loadSqliteVecExtension(dataSource);
         } catch (error) {
           logger.warn(`sqlite-vec extension failed to load during initialization for key: ${key}, continuing without vector search functionality`, {
-            error: (error as Error).message,
+            error,
           });
           // Don't throw - allow the database to work without vector functionality
         }
@@ -184,7 +186,7 @@ export class DatabaseService implements IDatabaseService {
       await dataSource.destroy();
       logger.info(`Database initialized for key: ${key}`);
     } catch (error) {
-      logger.error(`Error initializing database for key: ${key}`, { error: (error as Error).message });
+      logger.error(`Error initializing database for key: ${key}`, { error });
       throw error;
     }
   }
@@ -216,7 +218,7 @@ export class DatabaseService implements IDatabaseService {
             await this.loadSqliteVecExtension(dataSource);
           } catch (error) {
             logger.warn(`sqlite-vec extension failed to load for key: ${key}, continuing without vector search functionality`, {
-              error: (error as Error).message,
+              error,
             });
           }
         }
@@ -226,7 +228,7 @@ export class DatabaseService implements IDatabaseService {
 
         return dataSource;
       } catch (error) {
-        logger.error(`Failed to get database for key: ${key}`, { error: (error as Error).message });
+        logger.error(`Failed to get database for key: ${key}`, { error });
 
         if (!isRetry) {
           try {
@@ -234,7 +236,7 @@ export class DatabaseService implements IDatabaseService {
             await this.fixDatabaseLock(key);
             return await this.getDatabase(key, {}, true);
           } catch (retryError) {
-            logger.error(`Failed to retry getting database for key: ${key}`, { error: (retryError as Error).message });
+            logger.error(`Failed to retry getting database for key: ${key}`, { error: retryError });
           }
         }
 
@@ -242,7 +244,7 @@ export class DatabaseService implements IDatabaseService {
           await this.dataSources.get(key)?.destroy();
           this.dataSources.delete(key);
         } catch (closeError) {
-          logger.error(`Failed to close database in error handler for key: ${key}`, { error: (closeError as Error).message });
+          logger.error(`Failed to close database in error handler for key: ${key}`, { error: closeError });
         }
 
         throw error;
@@ -267,7 +269,7 @@ export class DatabaseService implements IDatabaseService {
       const stat = await fs.stat(databasePath);
       return { exists: true, size: stat.size };
     } catch (error) {
-      logger.error(`getDatabaseInfo failed for key: ${key}`, { error: (error as Error).message });
+      logger.error(`getDatabaseInfo failed for key: ${key}`, { error });
       return { exists: false };
     }
   }
@@ -289,7 +291,7 @@ export class DatabaseService implements IDatabaseService {
         try {
           await this.dataSources.get(key)?.destroy();
         } catch (error) {
-          logger.warn(`Failed to destroy datasource for key: ${key} before deletion`, { error: (error as Error).message });
+          logger.warn(`Failed to destroy datasource for key: ${key} before deletion`, { error });
         }
         this.dataSources.delete(key);
       }
@@ -300,7 +302,7 @@ export class DatabaseService implements IDatabaseService {
         logger.info(`Database file deleted for key: ${key}`);
       }
     } catch (error) {
-      logger.error(`deleteDatabase failed for key: ${key}`, { error: (error as Error).message });
+      logger.error(`deleteDatabase failed for key: ${key}`, { error });
       throw error;
     }
   }
@@ -323,7 +325,7 @@ export class DatabaseService implements IDatabaseService {
           logger.info(`Database connection closed for key: ${key}`);
         }
       } catch (error) {
-        logger.error(`Failed to close database for key: ${key}`, { error: (error as Error).message });
+        logger.error(`Failed to close database for key: ${key}`, { error });
         throw error;
       }
     }
@@ -367,7 +369,7 @@ export class DatabaseService implements IDatabaseService {
       await fs.unlink(temporaryPath);
       logger.info(`Fixed database lock for key: ${key}`);
     } catch (error) {
-      logger.error(`Failed to fix database lock for key: ${key}`, { error: (error as Error).message });
+      logger.error(`Failed to fix database lock for key: ${key}`, { error });
       throw error;
     }
   }
@@ -413,8 +415,7 @@ export class DatabaseService implements IDatabaseService {
       // based on the dimensions needed
     } catch (error) {
       logger.error('Failed to load sqlite-vec extension:', {
-        error: (error as Error).message,
-        stack: (error as Error).stack,
+        error,
         sqliteVecAvailable: typeof sqliteVec !== 'undefined',
       });
       throw new Error(`sqlite-vec extension failed to load: ${(error as Error).message}`);

@@ -47,7 +47,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
       callback();
     } catch (error) {
       logger.error('Message management plugin error in userMessageReceived', {
-        error: error instanceof Error ? error.message : String(error),
+        error,
         messageId: context.messageId,
         agentId: context.handlerContext.agent.id,
       });
@@ -79,7 +79,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
       callback();
     } catch (error) {
       logger.error('Message management plugin error in agentStatusChanged', {
-        error: error instanceof Error ? error.message : String(error),
+        error,
         agentId: context.handlerContext.agent.id,
         status: context.status,
       });
@@ -119,7 +119,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
             aiMessage.metadata = { ...aiMessage.metadata, isPersisted: true };
           } catch (persistError) {
             logger.warn('Failed to persist initial streaming AI message', {
-              error: persistError instanceof Error ? persistError.message : String(persistError),
+              error: persistError,
               messageId: aiMessage.id,
             });
           }
@@ -135,14 +135,14 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
           agentInstanceService.debounceUpdateMessage(aiMessage, handlerContext.agent.id);
         } catch (serviceError) {
           logger.warn('Failed to update UI for streaming message', {
-            error: serviceError instanceof Error ? serviceError.message : String(serviceError),
+            error: serviceError,
             messageId: aiMessage.id,
           });
         }
       }
     } catch (error) {
       logger.error('Message management plugin error in responseUpdate', {
-        error: error instanceof Error ? error.message : String(error),
+        error,
       });
     } finally {
       callback();
@@ -194,7 +194,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
           agentInstanceService.debounceUpdateMessage(aiMessage, handlerContext.agent.id);
         } catch (serviceError) {
           logger.warn('Failed to update UI for completed message', {
-            error: serviceError instanceof Error ? serviceError.message : String(serviceError),
+            error: serviceError,
             messageId: aiMessage.id,
           });
         }
@@ -208,7 +208,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
       callback();
     } catch (error) {
       logger.error('Message management plugin error in responseComplete', {
-        error: error instanceof Error ? error.message : String(error),
+        error,
       });
       callback();
     }
@@ -245,7 +245,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
           });
         } catch (serviceError) {
           logger.error('Failed to persist tool result message', {
-            error: serviceError instanceof Error ? serviceError.message : String(serviceError),
+            error: serviceError,
             messageId: message.id,
           });
         }
@@ -261,7 +261,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
       callback();
     } catch (error) {
       logger.error('Message management plugin error in toolExecuted', {
-        error: error instanceof Error ? error.message : String(error),
+        error,
       });
       callback();
     }

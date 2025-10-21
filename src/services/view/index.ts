@@ -22,6 +22,7 @@ import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
 import { type IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
+import { getTidgiMiniWindowTargetWorkspace } from '@services/workspacesView/utilities';
 import debounce from 'lodash/debounce';
 import { setViewEventName } from './constants';
 import { ViewLoadUrlError } from './error';
@@ -247,7 +248,7 @@ export class View implements IViewService {
     };
     const checkNotExistResult = await Promise.all([
       checkNotExist(workspace, WindowNames.main),
-      this.preferenceService.get('attachToMenubar').then((attachToMenubar) => attachToMenubar && checkNotExist(workspace, WindowNames.menuBar)),
+      this.preferenceService.get('tidgiMiniWindow').then((tidgiMiniWindow) => tidgiMiniWindow && checkNotExist(workspace, WindowNames.tidgiMiniWindow)),
     ]);
     return checkNotExistResult.every((result) => !result);
   }
@@ -312,7 +313,11 @@ export class View implements IViewService {
     if (this.shouldMuteAudio !== undefined) {
       view.webContents.audioMuted = this.shouldMuteAudio;
     }
-    if (workspace.active || windowName === WindowNames.secondary) {
+    // Add view to window if:
+    // 1. workspace is active (main window)
+    // 2. windowName is secondary (always add)
+    // 3. windowName is tidgiMiniWindow (tidgi mini window can have fixed workspace independent of main window's active workspace)
+    if (workspace.active || windowName === WindowNames.secondary || windowName === WindowNames.tidgiMiniWindow) {
       browserWindow.contentView.addChildView(view);
       const contentSize = browserWindow.getContentSize();
       const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
@@ -326,7 +331,7 @@ export class View implements IViewService {
       if (updatedWorkspace === undefined) return;
       // Prevent update non-active (hiding) wiki workspace, so it won't pop up to cover other active agent workspace
       if (windowName === WindowNames.main && !updatedWorkspace.active) return;
-      if ([WindowNames.secondary, WindowNames.main, WindowNames.menuBar].includes(windowName)) {
+      if ([WindowNames.secondary, WindowNames.main, WindowNames.tidgiMiniWindow].includes(windowName)) {
         const contentSize = browserWindow.getContentSize();
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
         view.setBounds(newViewBounds);
@@ -406,12 +411,31 @@ export class View implements IViewService {
   }
 
   public async setActiveViewForAllBrowserViews(workspaceID: string): Promise<void> {
-    await Promise.all([
-      this.setActiveView(workspaceID, WindowNames.main),
-      this.preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
-        return await (attachToMenubar && this.setActiveView(workspaceID, WindowNames.menuBar));
-      }),
-    ]);
+    // Set main window workspace
+    const mainWindowTask = this.setActiveView(workspaceID, WindowNames.main);
+    const tidgiMiniWindow = await this.preferenceService.get('tidgiMiniWindow');
+
+    // For tidgi mini window, decide which workspace to show based on preferences
+    let tidgiMiniWindowTask = Promise.resolve();
+    if (tidgiMiniWindow) {
+      // Default to sync (undefined or true), otherwise use fixed workspace ID (fallback to main if not set)
+      const { targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(workspaceID);
+      const tidgiMiniWindowWorkspaceId = targetWorkspaceId || workspaceID;
+
+      logger.debug('setActiveViewForAllBrowserViews tidgi mini window decision', {
+        function: 'setActiveViewForAllBrowserViews',
+        tidgiMiniWindowWorkspaceId,
+        willSetActiveView: true,
+      });
+
+      tidgiMiniWindowTask = this.setActiveView(tidgiMiniWindowWorkspaceId, WindowNames.tidgiMiniWindow);
+    } else {
+      logger.info('setActiveViewForAllBrowserViews tidgi mini window not enabled', {
+        function: 'setActiveViewForAllBrowserViews',
+      });
+    }
+
+    await Promise.all([mainWindowTask, tidgiMiniWindowTask]);
   }
 
   public async setActiveView(workspaceID: string, windowName: WindowNames): Promise<void> {
@@ -581,9 +605,9 @@ export class View implements IViewService {
     const workspace = await workspaceService.getActiveWorkspace();
     if (workspace !== undefined) {
       const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-      const isMenubarOpen = await windowService.isMenubarOpen();
-      if (isMenubarOpen) {
-        return this.getView(workspace.id, WindowNames.menuBar);
+      const isTidgiMiniWindowOpen = await windowService.isTidgiMiniWindowOpen();
+      if (isTidgiMiniWindowOpen) {
+        return this.getView(workspace.id, WindowNames.tidgiMiniWindow);
       } else {
         return this.getView(workspace.id, WindowNames.main);
       }
@@ -594,7 +618,7 @@ export class View implements IViewService {
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspace = await workspaceService.getActiveWorkspace();
     if (workspace !== undefined) {
-      return [this.getView(workspace.id, WindowNames.main), this.getView(workspace.id, WindowNames.menuBar)];
+      return [this.getView(workspace.id, WindowNames.main), this.getView(workspace.id, WindowNames.tidgiMiniWindow)];
     }
     logger.error(`getActiveBrowserViews workspace !== undefined`, { stack: new Error('stack').stack?.replace('Error:', '') });
     return [];

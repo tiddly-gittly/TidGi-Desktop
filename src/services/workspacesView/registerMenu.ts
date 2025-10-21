@@ -65,8 +65,7 @@ export async function registerMenu(): Promise<void> {
           if (error instanceof DownloadCancelError) {
             logger.debug('cancelled', { function: 'registerMenu.printPage' });
           } else {
-            const error_ = error instanceof Error ? error : new Error(String(error));
-            logger.error('print page error', { function: 'registerMenu.printPage', error: error_.message, errorObj: error_ });
+            logger.error('print page error', { function: 'registerMenu.printPage', error });
           }
         }
       },

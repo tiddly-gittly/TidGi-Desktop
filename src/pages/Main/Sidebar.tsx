@@ -71,13 +71,13 @@ const IconButton = styled(IconButtonRaw)`
   color: ${({ theme }) => theme.palette.action.active};
 `;
 
-const SidebarContainer = ({ children }: { children: React.ReactNode }): React.JSX.Element => {
+const SidebarContainer = ({ children, ...props }: { children: React.ReactNode } & React.HTMLAttributes<HTMLDivElement>): React.JSX.Element => {
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
   // use native scroll bar on macOS
   if (platform === 'darwin') {
-    return <SidebarRoot>{children}</SidebarRoot>;
+    return <SidebarRoot {...props}>{children}</SidebarRoot>;
   }
-  return <SidebarWithStyle>{children}</SidebarWithStyle>;
+  return <SidebarWithStyle {...props}>{children}</SidebarWithStyle>;
 };
 
 export function SideBar(): React.JSX.Element {
@@ -92,7 +92,7 @@ export function SideBar(): React.JSX.Element {
   const { showSideBarText, showSideBarIcon } = preferences;
 
   return (
-    <SidebarContainer>
+    <SidebarContainer data-testid='main-sidebar'>
       <SidebarTop $titleBar={titleBar}>
         {workspacesList === undefined
           ? <div>{t('Loading')}</div>

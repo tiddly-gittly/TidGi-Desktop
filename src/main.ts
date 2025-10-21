@@ -24,6 +24,7 @@ import type { IDeepLinkService } from '@services/deepLink/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
+import type { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IThemeService } from '@services/theme/interface';
 import type { IUpdaterService } from '@services/updater/interface';
@@ -77,6 +78,7 @@ const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.
 const gitService = container.get<IGitService>(serviceIdentifier.Git);
 const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
 const viewService = container.get<IViewService>(serviceIdentifier.View);
+const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 
 app.on('second-instance', async () => {
   // see also src/helpers/singleInstance.ts
@@ -116,21 +118,18 @@ const commonInit = async (): Promise<void> => {
     externalAPIService.initialize(),
   ]);
 
-  // if user want a menubar, we create a new window for that
+  // if user want a tidgi mini window, we create a new window for that
   // handle workspace name + tiddler name in uri https://www.electronjs.org/docs/latest/tutorial/launch-app-from-url-in-another-app
   deepLinkService.initializeDeepLink('tidgi');
 
-  const attachToMenubar = await preferenceService.get('attachToMenubar');
-  await Promise.all([
-    windowService.open(WindowNames.main),
-    attachToMenubar ? windowService.open(WindowNames.menuBar) : Promise.resolve(),
-  ]);
+  await windowService.open(WindowNames.main);
 
   // Initialize services that depend on windows being created
   await Promise.all([
     gitService.initialize(),
     themeService.initialize(),
     viewService.initialize(),
+    nativeService.initialize(),
   ]);
 
   initializeObservables();
@@ -140,6 +139,10 @@ const commonInit = async (): Promise<void> => {
   await workspaceService.initializeDefaultPageWorkspaces();
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();
+  const tidgiMiniWindow = await preferenceService.get('tidgiMiniWindow');
+  if (tidgiMiniWindow) {
+    await windowService.openTidgiMiniWindow(true, false);
+  }
 
   ipcMain.emit('request-update-pause-notifications-info');
   // Fix webview is not resized automatically
@@ -195,8 +198,7 @@ app.on('ready', async () => {
     }
     await updaterService.checkForUpdates();
   } catch (error) {
-    const error_ = error instanceof Error ? error : new Error(String(error));
-    logger.error('Error during app ready handler', { function: "app.on('ready')", error: error_.message, stack: error_.stack ?? '' });
+    logger.error('Error during app ready handler', { function: "app.on('ready')", error });
   }
 });
 app.on(MainChannel.windowAllClosed, async () => {
@@ -222,7 +224,7 @@ app.on(
 unhandled({
   showDialog: !isDevelopmentOrTest,
   logger: (error: Error) => {
-    logger.error(error.message + (error.stack ?? ''));
+    logger.error('unhandled', { error });
   },
   reportButton: (error) => {
     reportErrorToGithubWithTemplates(error);

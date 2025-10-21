@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain, MessageBoxOptions, shell } from 'electron';
+import { app, dialog, globalShortcut, ipcMain, MessageBoxOptions, shell } from 'electron';
 import fs from 'fs-extra';
 import { inject, injectable } from 'inversify';
 import path from 'path';
@@ -10,6 +10,7 @@ import { githubDesktopUrl } from '@/constants/urls';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { ZxWorkerControlActions } from '@services/wiki/interface';
@@ -22,18 +23,110 @@ import i18next from 'i18next';
 import { ZxNotInitializedError } from './error';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
 import type { INativeService, IPickDirectoryOptions } from './interface';
+import { getShortcutCallback, registerShortcutByKey } from './keyboardShortcutHelpers';
 import { reportErrorToGithubWithTemplates } from './reportError';
 
 @injectable()
 export class NativeService implements INativeService {
-  constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {
+  constructor(
+    @inject(serviceIdentifier.Window) private readonly windowService: IWindowService,
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+  ) {
     this.setupIpcHandlers();
   }
 
-  setupIpcHandlers(): void {
+  public setupIpcHandlers(): void {
     ipcMain.on(NativeChannel.showElectronMessageBoxSync, (event, options: MessageBoxOptions, windowName: WindowNames = WindowNames.main) => {
       event.returnValue = this.showElectronMessageBoxSync(options, windowName);
     });
+  }
+
+  public async initialize(): Promise<void> {
+    await this.initializeKeyboardShortcuts();
+  }
+
+  private async initializeKeyboardShortcuts(): Promise<void> {
+    const shortcuts = await this.getKeyboardShortcuts();
+    logger.debug('shortcuts from preferences', { shortcuts, function: 'initializeKeyboardShortcuts' });
+    // Register all saved shortcuts
+    for (const [key, shortcut] of Object.entries(shortcuts)) {
+      if (shortcut && shortcut.trim() !== '') {
+        try {
+          await registerShortcutByKey(key, shortcut);
+        } catch (error) {
+          logger.error(`Failed to register shortcut ${key}: ${shortcut}`, { error });
+        }
+      }
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public async registerKeyboardShortcut<T>(serviceName: keyof typeof serviceIdentifier, methodName: keyof T, shortcut: string): Promise<void> {
+    try {
+      const key = `${String(serviceName)}.${String(methodName)}`;
+      logger.info('Starting keyboard shortcut registration', { key, shortcut, serviceName, methodName, function: 'NativeService.registerKeyboardShortcut' });
+
+      // Save to preferences
+      const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+      const shortcuts = await this.getKeyboardShortcuts();
+      logger.debug('Current shortcuts before registration', { shortcuts, function: 'NativeService.registerKeyboardShortcut' });
+
+      shortcuts[key] = shortcut;
+      await preferenceService.set('keyboardShortcuts', shortcuts);
+      logger.info('Saved shortcut to preferences', { key, shortcut, function: 'NativeService.registerKeyboardShortcut' });
+
+      // Register the shortcut
+      await registerShortcutByKey(key, shortcut);
+      logger.info('Successfully registered new keyboard shortcut', { key, shortcut, function: 'NativeService.registerKeyboardShortcut' });
+    } catch (error) {
+      logger.error('Failed to register keyboard shortcut', { error, serviceIdentifier: serviceName, methodName, shortcut, function: 'NativeService.registerKeyboardShortcut' });
+      throw error;
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public async unregisterKeyboardShortcut<T>(serviceName: keyof typeof serviceIdentifier, methodName: keyof T): Promise<void> {
+    try {
+      const key = `${String(serviceName)}.${String(methodName)}`;
+
+      // Get the current shortcut string before removing from preferences
+      const shortcuts = await this.getKeyboardShortcuts();
+      const shortcutString = shortcuts[key];
+
+      // Remove from preferences
+      const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete shortcuts[key];
+      await preferenceService.set('keyboardShortcuts', shortcuts);
+
+      // Unregister the shortcut using the actual shortcut string, not the key
+      if (shortcutString && globalShortcut.isRegistered(shortcutString)) {
+        globalShortcut.unregister(shortcutString);
+        logger.info('Successfully unregistered keyboard shortcut', { key, shortcutString });
+      } else {
+        logger.warn('Shortcut was not registered or shortcut string not found', { key, shortcutString });
+      }
+    } catch (error) {
+      logger.error('Failed to unregister keyboard shortcut', { error, serviceIdentifier: serviceName, methodName });
+      throw error;
+    }
+  }
+
+  public async getKeyboardShortcuts(): Promise<Record<string, string>> {
+    const preferences = this.preferenceService.getPreferences();
+    return preferences.keyboardShortcuts || {};
+  }
+
+  public async executeShortcutCallback(key: string): Promise<void> {
+    logger.debug('Frontend requested shortcut execution', { key, function: 'NativeService.executeShortcutCallback' });
+
+    const callback = getShortcutCallback(key);
+    if (callback) {
+      await callback();
+      logger.info('Successfully executed shortcut callback from frontend', { key, function: 'NativeService.executeShortcutCallback' });
+    } else {
+      logger.warn('No callback found for shortcut key from frontend', { key, function: 'NativeService.executeShortcutCallback' });
+    }
   }
 
   public async openInEditor(filePath: string, editorName?: string): Promise<boolean> {

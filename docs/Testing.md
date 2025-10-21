@@ -11,14 +11,14 @@ pnpm test
 # Run unit tests only
 pnpm test:unit
 
-# Run E2E tests (requires prepare packaged app, but only when you modify code in ./src)
+# Run E2E tests (requires prepare packaged app, but only when you modify code in ./src) Don't need to run this if you only modify .feature file or step definition ts files.
 pnpm run test:prepare-e2e
 # (When only modify tests in ./features folder, and you have packaged app before, only need to run this.)
 pnpm test:e2e
 # Or run a specific e2e test by using same `@xxx` as in the `.feature` file.
 pnpm test:e2e --tags="@smoke"
-# Or run a single e2e
-pnpm test:e2e --name "Wiki-search tool usage"
+# Or run a single e2e test by `--name`
+pnpm test:e2e --name "Wiki-search tool usage" # Not `-- --name` , and not `name`, is is just `--name` and have "" around the value, not omitting `--name`
 
 # Run with coverage
 pnpm test:unit -- --coverage
@@ -232,6 +232,14 @@ When('(Dont do this) I click on a specific button and wait for 2 seconds.', asyn
 
 ## Testing Library Best Practices
 
+**Important Testing Rules:**
+
+- **Do NOT simplify tests** - write comprehensive, professional unit tests
+- **Can add test-ids** when accessibility queries aren't practical  
+- **Do NOT be lazy** - fix ALL tests until `pnpm test:unit` passes completely
+- **Do NOT summarize** until ALL unit tests pass
+- **Focus on professional, fix all seemly complex unit tests** before moving to E2E
+
 ### Query Priority (use in this order)
 
 1. Accessible queries - `getByRole`, `getByLabelText`, `getByPlaceholderText`
@@ -323,6 +331,7 @@ This warning occurs when React components perform asynchronous state updates dur
 - Components with `useEffect` that fetch data on mount
 - Async API calls that update component state
 - Timers or intervals that trigger state changes
+- **RxJS Observable subscriptions** that trigger state updates
 
 **Solution**: Wait for async operations to complete using helper functions:
 
@@ -342,12 +351,62 @@ it('should test feature', async () => {
   await renderAsyncComponent();
   // Now safe to interact without warnings
 });
+
+// For tests that trigger state updates, wait for UI to stabilize
+it('should update when data changes', async () => {
+  render(<Component />);
+  
+  // Trigger update
+  someObservable.next(newData);
+  
+  // Wait for UI to reflect the change
+  await waitFor(() => {
+    expect(screen.getByText('Updated Content')).toBeInTheDocument();
+  });
+});
 ```
 
 Avoid explicitly using `act()` - React Testing Library handles most cases automatically when using proper async patterns.
+
+**Critical**: To avoid act warnings with RxJS Observables:
+
+1. **Never call `.next()` on BehaviorSubject during test execution** - Set all data before rendering
+2. **Don't trigger Observable updates via mocked APIs** - Test the component's configuration, not the full update cycle
+3. **For loading state tests** - Unmount immediately after assertion to prevent subsequent updates
+4. **Follow the Main component test pattern** - Create Observables at file scope, never update them in tests
+
+**Example of correct Observable testing:**
+
+```typescript
+// ❌ Wrong: Updating Observable during test
+it('should update when data changes', async () => {
+  render(<Component />);
+  preferencesSubject.next({ setting: false }); // This causes act warnings!
+  await waitFor(...);
+});
+
+// ✅ Correct: Observable created at file scope, never updated
+const preferencesSubject = new BehaviorSubject({ setting: true });
+
+describe('Component', () => {
+  it('should render correctly', async () => {
+    const { unmount } = render(<Component />);
+    expect(screen.getByText('Content')).toBeInTheDocument();
+    // Optional: unmount() if testing transient state
+  });
+});
+```
 
 ### E2E test open production app
 
 See User profile section above, we need to set `NODE_ENV` as `test` to open with correct profile.
 
 This is done by using `EnvironmentPlugin` in [webpack.plugins.js](../webpack.plugins.js). Note that EsbuildPlugin's `define` doesn't work, it won't set env properly.
+
+### E2E test hang, and refused to exit until ctrl+C
+
+Check `features/stepDefinitions/application.ts` to see if `After` step includes all clean up steps, like closing all windows instances before closing the app, and stop all utility servers.
+
+### Global shortcut not working
+
+See `src/helpers/testKeyboardShortcuts.ts`

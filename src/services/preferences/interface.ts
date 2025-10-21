@@ -8,7 +8,7 @@ export interface IPreferences {
   allowPrerelease: boolean;
   alwaysOnTop: boolean;
   askForDownloadPath: boolean;
-  attachToMenubar: boolean;
+  tidgiMiniWindow: boolean;
   /**
    * 完全关闭反盗链
    */
@@ -26,7 +26,7 @@ export interface IPreferences {
   hideMenuBar: boolean;
   ignoreCertificateErrors: boolean;
   language: string;
-  menuBarAlwaysOnTop: boolean;
+  tidgiMiniWindowAlwaysOnTop: boolean;
   pauseNotifications: string | undefined;
   pauseNotificationsBySchedule: boolean;
   pauseNotificationsByScheduleFrom: string;
@@ -42,12 +42,28 @@ export interface IPreferences {
    */
   sidebar: boolean;
   /**
-   * Should show sidebar on menubar window?
+   * Should show sidebar on tidgi mini window?
    */
-  sidebarOnMenubar: boolean;
+  tidgiMiniWindowShowSidebar: boolean;
   spellcheck: boolean;
   spellcheckLanguages: HunspellLanguages[];
   swipeToNavigate: boolean;
+  /**
+   * Whether menubar window should show the same workspace as main window
+   */
+  tidgiMiniWindowSyncWorkspaceWithMainWindow: boolean;
+  /**
+   * The workspace ID that tidgi mini window should always show when tidgiMiniWindowSyncWorkspaceWithMainWindow is false
+   */
+  tidgiMiniWindowFixedWorkspaceId: string | undefined;
+  /**
+   * Whether to show title bar on tidgi mini window (independent of main window's titleBar setting)
+   */
+  tidgiMiniWindowShowTitleBar: boolean;
+  /**
+   * Keyboard shortcuts configuration stored as serviceIdentifier.methodName -> shortcut
+   */
+  keyboardShortcuts: Record<string, string>;
   syncBeforeShutdown: boolean;
   syncDebounceInterval: number;
   /**
@@ -66,6 +82,7 @@ export enum PreferenceSections {
   friendLinks = 'friendLinks',
   general = 'general',
   languages = 'languages',
+  tidgiMiniWindow = 'tidgiMiniWindow',
   misc = 'misc',
   network = 'network',
   notifications = 'notifications',

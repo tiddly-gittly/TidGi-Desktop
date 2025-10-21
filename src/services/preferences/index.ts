@@ -87,15 +87,22 @@ export class Preference implements IPreferenceService {
       const notificationService = container.get<INotificationService>(serviceIdentifier.NotificationService);
       await notificationService.updatePauseNotificationsInfo();
     }
+
+    // Delegate window-related preference changes to WindowService
+    const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+    await windowService.reactWhenPreferencesChanged(key, value);
+
     switch (key) {
       case 'themeSource': {
         nativeTheme.themeSource = value as IPreferences['themeSource'];
-        break;
+        return;
       }
       case 'language': {
         await requestChangeLanguage(value as string);
-        break;
+        return;
       }
+      default:
+        break;
     }
   }
 

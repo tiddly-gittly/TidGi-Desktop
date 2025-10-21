@@ -1,9 +1,30 @@
 import { LOG_FOLDER } from '@/constants/appPaths';
 import winston, { format } from 'winston';
 import 'winston-daily-rotate-file';
+import type { TransformableInfo } from 'logform';
+import { serializeError } from 'serialize-error';
 import RendererTransport from './rendererTransport';
 
 export * from './wikiOutput';
+/**
+ * Custom formatter to serialize Error objects using serialize-error package.
+ * Falls back to template string if serialization fails.
+ */
+const errorSerializer = format((info: TransformableInfo) => {
+  const infoRecord = info as Record<string, unknown>;
+
+  // Serialize error objects
+  if (infoRecord.error instanceof Error) {
+    try {
+      infoRecord.error = serializeError(infoRecord.error);
+    } catch {
+      // Fallback to template string with optional chaining
+      const error = infoRecord.error as Error;
+      infoRecord.error = `${error?.message ?? ''} stack: ${error?.stack ?? ''}`;
+    }
+  }
+  return info;
+});
 
 const logger = winston.createLogger({
   transports: [
@@ -19,7 +40,7 @@ const logger = winston.createLogger({
     }),
     new RendererTransport(),
   ],
-  format: format.combine(format.timestamp(), format.json()),
+  format: format.combine(errorSerializer(), format.timestamp(), format.json()),
 });
 export { logger };
 

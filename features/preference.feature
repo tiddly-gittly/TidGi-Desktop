@@ -4,7 +4,6 @@ Feature: TidGi Preference
   So that I can customize its behavior and improve my experience
 
   Background:
-    Given I clear test ai settings
     Given I launch the TidGi application
     And I wait for the page to load completely
     And I should see a "page body" element with selector "body"
