@@ -170,7 +170,7 @@
     "memory-fs": "^0.5.0",
     "node-loader": "2.1.0",
     "path-browserify": "^1.0.1",
-    "playwright": "^1.53.0",
+    "playwright": "^1.55.1",
     "rimraf": "^6.0.1",
     "ts-node": "10.9.2",
     "tw5-typed": "^0.6.3",
