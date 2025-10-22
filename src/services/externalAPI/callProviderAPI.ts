@@ -4,10 +4,10 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { logger } from '@services/libs/log';
 import { ModelMessage, streamText } from 'ai';
-import { createOllama } from 'ollama-ai-provider';
+import { createOllama } from 'ollama-ai-provider-v2';
 
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { getFormattedContent } from '@/pages/ChatTabContent/components/types';
+import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError, parseProviderError } from './errors';
 import type { AIProviderConfig } from './interface';
 
@@ -85,8 +85,9 @@ export function streamFromProvider(
     // Ensure we have at least one message to avoid AI library errors
     const finalMessages: Array<ModelMessage> = nonSystemMessages.length > 0 ? nonSystemMessages : [{ role: 'user' as const, content: 'Hi' }];
 
+    const providerModel = client(model);
     return streamText({
-      model: client(model),
+      model: providerModel,
       system: systemPrompt,
       messages: finalMessages,
       temperature,
