@@ -313,6 +313,18 @@
       "TopP": "Top P 採樣參數",
       "TopPTitle": "Top P"
     },
+    "Plugin": {
+      "Caption": "",
+      "CaptionTitle": "",
+      "Content": "",
+      "ContentTitle": "",
+      "ForbidOverrides": "",
+      "ForbidOverridesTitle": "",
+      "Id": "",
+      "IdTitle": "",
+      "PluginId": "",
+      "PluginIdTitle": ""
+    },
     "Position": {
       "Bottom": "自底部偏移幾條消息",
       "BottomTitle": "底部偏移",
@@ -442,6 +454,7 @@
       "SourceTypeTitle": "源類型",
       "Title": "Wiki 搜索",
       "Tool": {
+        "Description": "",
         "Parameters": {
           "filter": {
             "Description": "TiddlyWiki 篩選器表達式",
@@ -469,11 +482,24 @@
           }
         },
         "UpdateEmbeddings": {
+          "Description": "",
           "Parameters": {
             "forceUpdate": {
+              "Description": "",
+              "Title": ""
             },
             "workspaceName": {
+              "Description": "",
+              "Title": ""
             }
+          },
+          "forceUpdate": {
+            "Description": "",
+            "Title": ""
+          },
+          "workspaceName": {
+            "Description": "",
+            "Title": ""
           }
         }
       },
@@ -511,6 +537,18 @@
     }
   },
   "Tool": {
+    "Plugin": {
+      "Caption": "",
+      "CaptionTitle": "",
+      "Content": "",
+      "ContentTitle": "",
+      "ForbidOverrides": "",
+      "ForbidOverridesTitle": "",
+      "Id": "",
+      "IdTitle": "",
+      "PluginId": "",
+      "PluginIdTitle": ""
+    },
     "Schema": {
       "Description": "描述",
       "Examples": "使用範例",
@@ -532,6 +570,10 @@
     "WikiSearch": {
       "Error": {
         "ExecutionFailed": "工具執行失敗：{{error}}",
+        "FilterSearchRequiresFilter": "",
+        "VectorSearchFailed": "",
+        "VectorSearchRequiresConfig": "",
+        "VectorSearchRequiresQuery": "",
         "WorkspaceNotExist": "工作區{{workspaceID}}不存在",
         "WorkspaceNotFound": "工作區名稱或ID\"{{workspaceName}}\"不存在。可用工作區：{{availableWorkspaces}}"
       },

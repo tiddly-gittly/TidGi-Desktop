@@ -326,6 +326,18 @@
       "TopP": "Параметр выборки Top P",
       "TopPTitle": "Топ P"
     },
+    "Plugin": {
+      "Caption": "",
+      "CaptionTitle": "",
+      "Content": "",
+      "ContentTitle": "",
+      "ForbidOverrides": "",
+      "ForbidOverridesTitle": "",
+      "Id": "",
+      "IdTitle": "",
+      "PluginId": "",
+      "PluginIdTitle": ""
+    },
     "Position": {
       "Bottom": "смещение нескольких сообщений снизу",
       "BottomTitle": "смещение дна",
@@ -455,6 +467,7 @@
       "SourceTypeTitle": "тип источника",
       "Title": "Поиск в Вики",
       "Tool": {
+        "Description": "",
         "Parameters": {
           "filter": {
             "Description": "TiddlyWiki выражения фильтров",
@@ -479,6 +492,27 @@
           "workspaceName": {
             "Description": "Имя или идентификатор рабочей области для поиска",
             "Title": "название рабочего пространства"
+          }
+        },
+        "UpdateEmbeddings": {
+          "Description": "",
+          "Parameters": {
+            "forceUpdate": {
+              "Description": "",
+              "Title": ""
+            },
+            "workspaceName": {
+              "Description": "",
+              "Title": ""
+            }
+          },
+          "forceUpdate": {
+            "Description": "",
+            "Title": ""
+          },
+          "workspaceName": {
+            "Description": "",
+            "Title": ""
           }
         }
       },
@@ -516,6 +550,18 @@
     }
   },
   "Tool": {
+    "Plugin": {
+      "Caption": "",
+      "CaptionTitle": "",
+      "Content": "",
+      "ContentTitle": "",
+      "ForbidOverrides": "",
+      "ForbidOverridesTitle": "",
+      "Id": "",
+      "IdTitle": "",
+      "PluginId": "",
+      "PluginIdTitle": ""
+    },
     "Schema": {
       "Description": "описание",
       "Examples": "пример использования",
@@ -537,6 +583,10 @@
     "WikiSearch": {
       "Error": {
         "ExecutionFailed": "Выполнение инструмента завершилось неудачей: {{error}}",
+        "FilterSearchRequiresFilter": "",
+        "VectorSearchFailed": "",
+        "VectorSearchRequiresConfig": "",
+        "VectorSearchRequiresQuery": "",
         "WorkspaceNotExist": "Рабочее пространство {{workspaceID}} не существует",
         "WorkspaceNotFound": "Название или идентификатор рабочего пространства \"{{workspaceName}}\" не существует. Доступные рабочие пространства: {{availableWorkspaces}}"
       },

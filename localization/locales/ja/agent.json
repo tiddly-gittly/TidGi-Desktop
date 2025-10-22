@@ -326,6 +326,18 @@
       "TopP": "Top P サンプリングパラメータ",
       "TopPTitle": "トップP"
     },
+    "Plugin": {
+      "Caption": "",
+      "CaptionTitle": "",
+      "Content": "",
+      "ContentTitle": "",
+      "ForbidOverrides": "",
+      "ForbidOverridesTitle": "",
+      "Id": "",
+      "IdTitle": "",
+      "PluginId": "",
+      "PluginIdTitle": ""
+    },
     "Position": {
       "Bottom": "下部から数件のメッセージをオフセット",
       "BottomTitle": "底部オフセット",
@@ -455,6 +467,7 @@
       "SourceTypeTitle": "ソースタイプ",
       "Title": "Wiki 検索",
       "Tool": {
+        "Description": "",
         "Parameters": {
           "filter": {
             "Description": "TiddlyWiki フィルター式",
@@ -479,6 +492,27 @@
           "workspaceName": {
             "Description": "検索するワークスペース名またはID",
             "Title": "ワークスペース名"
+          }
+        },
+        "UpdateEmbeddings": {
+          "Description": "",
+          "Parameters": {
+            "forceUpdate": {
+              "Description": "",
+              "Title": ""
+            },
+            "workspaceName": {
+              "Description": "",
+              "Title": ""
+            }
+          },
+          "forceUpdate": {
+            "Description": "",
+            "Title": ""
+          },
+          "workspaceName": {
+            "Description": "",
+            "Title": ""
           }
         }
       },
@@ -516,6 +550,18 @@
     }
   },
   "Tool": {
+    "Plugin": {
+      "Caption": "",
+      "CaptionTitle": "",
+      "Content": "",
+      "ContentTitle": "",
+      "ForbidOverrides": "",
+      "ForbidOverridesTitle": "",
+      "Id": "",
+      "IdTitle": "",
+      "PluginId": "",
+      "PluginIdTitle": ""
+    },
     "Schema": {
       "Description": "説明",
       "Examples": "使用例",
@@ -537,6 +583,10 @@
     "WikiSearch": {
       "Error": {
         "ExecutionFailed": "ツールの実行に失敗しました：{{error}}",
+        "FilterSearchRequiresFilter": "",
+        "VectorSearchFailed": "",
+        "VectorSearchRequiresConfig": "",
+        "VectorSearchRequiresQuery": "",
         "WorkspaceNotExist": "ワークスペース{{workspaceID}}は存在しません",
         "WorkspaceNotFound": "ワークスペース名またはID「{{workspaceName}}」は存在しません。利用可能なワークスペース：{{availableWorkspaces}}"
       },

@@ -325,6 +325,18 @@
       "TopP": "Paramètre d'échantillonnage Top P",
       "TopPTitle": "Top P"
     },
+    "Plugin": {
+      "Caption": "",
+      "CaptionTitle": "",
+      "Content": "",
+      "ContentTitle": "",
+      "ForbidOverrides": "",
+      "ForbidOverridesTitle": "",
+      "Id": "",
+      "IdTitle": "",
+      "PluginId": "",
+      "PluginIdTitle": ""
+    },
     "Position": {
       "Bottom": "Décaler quelques messages depuis le bas",
       "BottomTitle": "décalage du bas",
@@ -454,6 +466,7 @@
       "SourceTypeTitle": "type source",
       "Title": "Recherche Wiki",
       "Tool": {
+        "Description": "",
         "Parameters": {
           "filter": {
             "Description": "Expression de filtre TiddlyWiki",
@@ -478,6 +491,27 @@
           "workspaceName": {
             "Description": "Nom ou ID de l'espace de travail à rechercher",
             "Title": "Nom de l'espace de travail"
+          }
+        },
+        "UpdateEmbeddings": {
+          "Description": "",
+          "Parameters": {
+            "forceUpdate": {
+              "Description": "",
+              "Title": ""
+            },
+            "workspaceName": {
+              "Description": "",
+              "Title": ""
+            }
+          },
+          "forceUpdate": {
+            "Description": "",
+            "Title": ""
+          },
+          "workspaceName": {
+            "Description": "",
+            "Title": ""
           }
         }
       },
@@ -515,6 +549,18 @@
     }
   },
   "Tool": {
+    "Plugin": {
+      "Caption": "",
+      "CaptionTitle": "",
+      "Content": "",
+      "ContentTitle": "",
+      "ForbidOverrides": "",
+      "ForbidOverridesTitle": "",
+      "Id": "",
+      "IdTitle": "",
+      "PluginId": "",
+      "PluginIdTitle": ""
+    },
     "Schema": {
       "Description": "décrire",
       "Examples": "Exemple d'utilisation",
@@ -536,6 +582,10 @@
     "WikiSearch": {
       "Error": {
         "ExecutionFailed": "Exécution de l'outil échouée : {{error}}",
+        "FilterSearchRequiresFilter": "",
+        "VectorSearchFailed": "",
+        "VectorSearchRequiresConfig": "",
+        "VectorSearchRequiresQuery": "",
         "WorkspaceNotExist": "L'espace de travail {{workspaceID}} n'existe pas",
         "WorkspaceNotFound": "Le nom ou l'ID de l'espace de travail \"{{workspaceName}}\" n'existe pas. Espaces de travail disponibles : {{availableWorkspaces}}"
       },
