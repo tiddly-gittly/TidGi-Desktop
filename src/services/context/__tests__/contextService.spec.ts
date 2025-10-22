@@ -1,10 +1,9 @@
 import * as appPaths from '@/constants/appPaths';
-import * as auth from '@/constants/auth';
 import * as paths from '@/constants/paths';
 import { ContextService } from '@services/context';
 import { describe, expect, it } from 'vitest';
 
-describe('ContextService exposes constants from paths/appPaths/auth', () => {
+describe('ContextService exposes constants from paths/appPaths', () => {
   const svc = new ContextService();
 
   it('should expose all keys exported from src/constants/paths.ts', async () => {
@@ -19,15 +18,6 @@ describe('ContextService exposes constants from paths/appPaths/auth', () => {
 
   it('should expose all keys exported from src/constants/appPaths.ts', async () => {
     const keys = Object.keys(appPaths) as Array<keyof typeof appPaths>;
-    for (const k of keys) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const value = await svc.get(k as any);
-      expect(value).toBeDefined();
-    }
-  });
-
-  it('should expose all keys exported from src/constants/auth.ts', async () => {
-    const keys = Object.keys(auth) as Array<keyof typeof auth>;
     for (const k of keys) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const value = await svc.get(k as any);

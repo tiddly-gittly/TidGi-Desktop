@@ -39,6 +39,10 @@ export type IUserInfos =
  * Handle login to Github GitLab Coding.net
  */
 export interface IAuthenticationService {
+  /**
+   * Clear cookies for a specific OAuth domain
+   */
+  clearCookiesForDomain(domain: string): Promise<void>;
   generateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): Promise<string>;
   /**
    * This is for internal use
@@ -62,6 +66,15 @@ export interface IAuthenticationService {
    */
   setUserInfos(newUserInfos: IUserInfos): void;
   /**
+   * Setup OAuth redirect handler for a BrowserWindow
+   * This intercepts OAuth callbacks and exchanges authorization codes for tokens
+   */
+  setupOAuthRedirectHandler(window: unknown, getMainWindowEntry: () => string, preferencesPath: string): void;
+  /**
+   * Store PKCE code_verifier in memory for OAuth flow
+   */
+  storeOAuthVerifier(service: SupportedStorageServices, verifier: string): void;
+  /**
    * Manually refresh the observable's content, that will be received by react component.
    */
   updateUserInfoSubject(): void;
@@ -70,6 +83,7 @@ export interface IAuthenticationService {
 export const AuthenticationServiceIPCDescriptor = {
   channel: AuthenticationChannel.name,
   properties: {
+    clearCookiesForDomain: ProxyPropertyType.Function,
     generateOneTimeAdminAuthTokenForWorkspace: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,
     getRandomStorageServiceUserInfo: ProxyPropertyType.Function,
@@ -79,6 +93,7 @@ export const AuthenticationServiceIPCDescriptor = {
     reset: ProxyPropertyType.Function,
     set: ProxyPropertyType.Function,
     setUserInfos: ProxyPropertyType.Function,
+    storeOAuthVerifier: ProxyPropertyType.Function,
     updateUserInfoSubject: ProxyPropertyType.Value$,
     userInfo$: ProxyPropertyType.Value$,
   },

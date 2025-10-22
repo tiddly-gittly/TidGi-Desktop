@@ -18,12 +18,6 @@ export interface IPaths {
   V8_CACHE_FOLDER: string;
 }
 
-export interface IAuthConstants {
-  GITHUB_LOGIN_REDIRECT_PATH: string;
-  GITHUB_OAUTH_APP_CLIENT_ID: string;
-  GITHUB_OAUTH_APP_CLIENT_SECRET: string;
-  GITHUB_OAUTH_PATH: string;
-}
 /**
  * Available values about running environment
  */
@@ -38,7 +32,7 @@ export interface IConstants {
   tiddlywikiLanguagesMap: Record<string, string | undefined>;
 }
 
-export interface IContext extends IPaths, IConstants, IAuthConstants {}
+export interface IContext extends IPaths, IConstants {}
 
 /**
  * Manage constant value like `isDevelopment` and many else, so you can know about about running environment in main and renderer process easily.
