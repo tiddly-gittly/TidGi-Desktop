@@ -39,7 +39,7 @@ export class ContextService implements IContextService {
       return this.context[key];
     }
 
-    throw new Error(`${key as string} not existed in ContextService`);
+    throw new Error(`${key} not existed in ContextService`);
   }
 
   public async isOnline(): Promise<boolean> {

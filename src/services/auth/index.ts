@@ -206,11 +206,6 @@ export class Authentication implements IAuthenticationService {
       // Add context menu (right-click menu with DevTools) for debugging
       const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
       const unregisterContextMenu = await menuService.initContextMenuForWindowWebContents(oauthWindow.webContents);
-      
-      // Clean up context menu when window is closed
-      oauthWindow.on('closed', () => {
-        unregisterContextMenu();
-      });
 
       // Setup OAuth redirect handler for this window
       this.setupOAuthRedirectHandler(
@@ -220,8 +215,9 @@ export class Authentication implements IAuthenticationService {
         false, // Don't navigate after auth - just close the window
       );
 
-      // Clean up if window is closed manually
+      // Clean up when window is closed
       oauthWindow.on('closed', () => {
+        unregisterContextMenu();
         logger.info('OAuth window closed', { function: 'openOAuthWindow' });
       });
 
