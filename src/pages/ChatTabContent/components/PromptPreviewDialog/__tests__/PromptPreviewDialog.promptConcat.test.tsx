@@ -11,7 +11,7 @@ import { lightTheme } from '@services/theme/defaultTheme';
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
 import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
 import { IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { CoreMessage } from 'ai';
+import { ModelMessage } from 'ai';
 import { PromptPreviewDialog } from '../index';
 
 // Mock handler config management hook
@@ -109,7 +109,7 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
   });
 
   // Type guard for preview result shape
-  const isPreviewResult = (v: unknown): v is { flatPrompts: CoreMessage[]; processedPrompts: IPrompt[] } => {
+  const isPreviewResult = (v: unknown): v is { flatPrompts: ModelMessage[]; processedPrompts: IPrompt[] } => {
     if (!v || typeof v !== 'object') return false;
     return Object.prototype.hasOwnProperty.call(v, 'flatPrompts') && Object.prototype.hasOwnProperty.call(v, 'processedPrompts');
   };
@@ -125,7 +125,7 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     const observable = window.observables.agentInstance.concatPrompt({ handlerConfig } as never, messages);
 
     const results: unknown[] = [];
-    let finalResult: { flatPrompts: CoreMessage[]; processedPrompts: IPrompt[] } | undefined;
+    let finalResult: { flatPrompts: ModelMessage[]; processedPrompts: IPrompt[] } | undefined;
     await new Promise<void>((resolve) => {
       observable.subscribe({
         next: (state) => {

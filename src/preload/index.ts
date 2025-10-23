@@ -12,7 +12,6 @@ import { ViewChannel } from '@/constants/channels';
 import type { IPossibleWindowMeta } from '@services/windows/WindowProperties';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData } from './common/browserViewMetaData';
-import './common/authRedirect';
 import './view';
 import { syncTidgiStateWhenWikiLoads } from './appState';
 import { fixAlertConfirm } from './fixer/fixAlertConfirm';

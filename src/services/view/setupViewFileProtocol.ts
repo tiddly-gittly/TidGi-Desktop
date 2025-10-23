@@ -82,7 +82,7 @@ function handleFileLink(details: Electron.OnBeforeRequestListenerDetails, callba
   ) {
     logger.debug('open file protocol', {
       function: 'handleFileLink',
-      absolutePath: String(absolutePath),
+      absolutePath: absolutePath ?? '',
     });
     callback({
       cancel: false,
@@ -90,7 +90,7 @@ function handleFileLink(details: Electron.OnBeforeRequestListenerDetails, callba
   } else {
     logger.info('redirecting file protocol', {
       function: 'handleFileLink',
-      absolutePath: String(absolutePath),
+      absolutePath: absolutePath ?? '',
     });
     callback({
       cancel: false,

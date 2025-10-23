@@ -352,8 +352,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
 
       // Process notes using async iterator to avoid memory pressure
       for await (const note of this.getWikiNotesIterator(workspaceId)) {
-        const noteTitle = String(note.title || '');
-        const noteContent = String(note.text || '');
+        const noteTitle = typeof note.title === 'string' ? note.title : (note.title ? JSON.stringify(note.title) : '');
+        const noteContent = typeof note.text === 'string' ? note.text : (note.text ? JSON.stringify(note.text) : '');
         // const modifiedTime = String(note.modified || '');
 
         // Re-ensure repositories before each note processing

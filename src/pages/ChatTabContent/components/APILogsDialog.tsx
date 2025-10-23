@@ -115,6 +115,16 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
     }
   };
 
+  const hasResponseContent = (rc: unknown): boolean => {
+    if (rc == null) return false;
+    if (typeof rc === 'string') return rc.length > 0;
+    try {
+      return JSON.stringify(rc).length > 0;
+    } catch {
+      return true;
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -225,7 +235,7 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
                           {t('APILogs.ResponseContent')}
                         </Typography>
                         <LogContent>
-                          {log.responseContent && String(log.responseContent).length > 0
+                          {hasResponseContent(log.responseContent)
                             ? log.responseContent
                             : t('APILogs.NoResponse')}
                         </LogContent>

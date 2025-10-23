@@ -6,7 +6,7 @@ import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import type { AIGlobalSettings, AIStreamResponse } from '@services/externalAPI/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { CoreMessage } from 'ai';
+import { ModelMessage } from 'ai';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('ExternalAPIService logging', () => {
@@ -52,7 +52,7 @@ describe('ExternalAPIService logging', () => {
     // Mock getSetting to return our test AI settings
     vi.spyOn(db, 'getSetting').mockImplementation((k: string) => (k === 'aiSettings' ? aiSettings : undefined));
 
-    const messages: CoreMessage[] = [{ role: 'user', content: 'hi' }];
+    const messages: ModelMessage[] = [{ role: 'user', content: 'hi' }];
     const config = await externalAPI.getAIConfig();
 
     const events: AIStreamResponse[] = [];
@@ -85,7 +85,7 @@ describe('ExternalAPIService logging', () => {
     // Mock getSetting to return our test AI settings
     vi.spyOn(db, 'getSetting').mockImplementation((k: string) => (k === 'aiSettings' ? aiSettings : undefined));
 
-    const messages: CoreMessage[] = [{ role: 'user', content: 'hi' }];
+    const messages: ModelMessage[] = [{ role: 'user', content: 'hi' }];
     const config = await svc.getAIConfig();
 
     const events: AIStreamResponse[] = [];

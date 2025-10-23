@@ -1,19 +1,19 @@
-import { CoreMessage } from 'ai';
+import { ModelMessage } from 'ai';
 
 export interface PreviewMessage {
   role: string;
   content: string;
 }
 
-export interface CoreMessageContent {
+export interface ModelMessageContent {
   text?: string;
   content?: string;
 }
 
 /**
- * Convert CoreMessage content to string safely
+ * Convert ModelMessage content to string safely
  */
-export function getFormattedContent(content: CoreMessage['content']): string {
+export function getFormattedContent(content: ModelMessage['content']): string {
   if (typeof content === 'string') {
     return content;
   }
@@ -21,7 +21,7 @@ export function getFormattedContent(content: CoreMessage['content']): string {
     return content
       .map(part => {
         if (typeof part === 'string') return part;
-        const typedPart = part as CoreMessageContent;
+        const typedPart = part as ModelMessageContent;
         if (typedPart.text) return typedPart.text;
         if (typedPart.content) return typedPart.content;
         return '';

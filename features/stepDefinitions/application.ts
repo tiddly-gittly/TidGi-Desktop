@@ -4,6 +4,7 @@ import path from 'path';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
 import { windowDimension, WindowNames } from '../../src/services/windows/WindowProperties';
+import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { logsDirectory, makeSlugPath, screenshotsDirectory } from '../supports/paths';
 import { getPackedAppPath } from '../supports/paths';
@@ -33,6 +34,7 @@ export class ApplicationWorld {
   mainWindow: Page | undefined; // Keep for compatibility during transition
   currentWindow: Page | undefined; // New state-managed current window
   mockOpenAIServer: MockOpenAIServer | undefined;
+  mockOAuthServer: MockOAuthServer | undefined;
 
   // Helper method to check if window is visible
   async isWindowVisible(page: Page): Promise<boolean> {

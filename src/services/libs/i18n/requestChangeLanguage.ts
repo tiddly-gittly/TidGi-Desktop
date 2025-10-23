@@ -40,6 +40,7 @@ export async function requestChangeLanguage(newLanguage: string): Promise<void> 
         reject(new Error(errorMessage));
       } else {
         if (viewCount === 0) {
+          resolve(null);
           return;
         }
         const tasks: Array<Promise<void>> = [];
@@ -50,7 +51,6 @@ export async function requestChangeLanguage(newLanguage: string): Promise<void> 
       }
     }),
     // update menu
-    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-    await menuService.buildMenu(),
+    menuService.buildMenu(),
   ]);
 }

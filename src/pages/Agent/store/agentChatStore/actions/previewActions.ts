@@ -1,5 +1,5 @@
 import type { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import type { CoreMessage } from 'ai';
+import type { ModelMessage } from 'ai';
 import { StateCreator } from 'zustand';
 import { AgentChatStoreType, PreviewActions } from '../types';
 
@@ -102,7 +102,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
         previewCurrentPlugin: null,
       });
 
-      type PreviewResult = { flatPrompts: CoreMessage[]; processedPrompts: IPrompt[] } | null;
+      type PreviewResult = { flatPrompts: ModelMessage[]; processedPrompts: IPrompt[] } | null;
       let finalResult: PreviewResult = null;
       let completed = false;
 

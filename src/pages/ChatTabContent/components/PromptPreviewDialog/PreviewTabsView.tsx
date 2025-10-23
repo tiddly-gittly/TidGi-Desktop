@@ -1,7 +1,7 @@
 import { Box, styled } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
-import { CoreMessage } from 'ai';
+import { ModelMessage } from 'ai';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
@@ -67,8 +67,8 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = ({
   const formattedPreview = useMemo(() => {
     return previewResult
       ? {
-        flatPrompts: previewResult.flatPrompts.map((message: CoreMessage) => ({
-          role: String(message.role),
+        flatPrompts: previewResult.flatPrompts.map((message: ModelMessage) => ({
+          role: message.role as string,
           content: getFormattedContent(message.content),
         })),
         processedPrompts: previewResult.processedPrompts,

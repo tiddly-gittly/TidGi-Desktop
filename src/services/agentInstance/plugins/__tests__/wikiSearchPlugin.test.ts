@@ -537,7 +537,10 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         searchSimilar: vi.fn(),
       };
       // Replace the service in container
-      container.rebind(serviceIdentifier.WikiEmbedding).toConstantValue(mockWikiEmbeddingService);
+      if (container.isBound(serviceIdentifier.WikiEmbedding)) {
+        await container.unbind(serviceIdentifier.WikiEmbedding);
+      }
+      container.bind(serviceIdentifier.WikiEmbedding).toConstantValue(mockWikiEmbeddingService);
     });
 
     it('should execute vector search when searchType=vector', async () => {

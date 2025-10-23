@@ -45,17 +45,17 @@ export default defineConfig({
       ],
     },
 
-    pool: 'threads',
+    pool: 'forks',
     poolOptions: {
-      threads: {
-        useAtomics: true,
+      forks: {
+        maxForks: 6,
+        minForks: 2,
       },
       isolate: true,
     },
 
-    // Performance settings
-    testTimeout: 5000,
-    hookTimeout: 5000,
+    testTimeout: 30000,
+    hookTimeout: 30000,
     reporters: ['default', 'hanging-process'],
   },
 

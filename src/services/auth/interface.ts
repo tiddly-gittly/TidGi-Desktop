@@ -25,6 +25,12 @@ export const getServiceBranchTypes = (serviceType: SupportedStorageServices): Se
 /** Git push: Git commit message branch, you may use different branch for different storage service */
 type BranchRecord = Record<ServiceBranchTypes, string>;
 
+/** Custom OAuth server configuration types */
+export type ServiceServerUrlTypes = `${SupportedStorageServices}-serverUrl`;
+export type ServiceClientIdTypes = `${SupportedStorageServices}-clientId`;
+type ServerUrlRecord = Partial<Record<ServiceServerUrlTypes, string>>;
+type ClientIdRecord = Partial<Record<ServiceClientIdTypes, string>>;
+
 export type IUserInfos =
   & {
     /** Default UserName in TiddlyWiki, each wiki can have different username, but fallback to this if not specific on */
@@ -33,12 +39,18 @@ export type IUserInfos =
   & Partial<TokenRecord>
   & Partial<UserNameRecord>
   & Partial<EmailRecord>
-  & Partial<BranchRecord>;
+  & Partial<BranchRecord>
+  & ServerUrlRecord
+  & ClientIdRecord;
 
 /**
  * Handle login to Github GitLab Coding.net
  */
 export interface IAuthenticationService {
+  /**
+   * Clear cookies for a specific OAuth domain
+   */
+  clearCookiesForDomain(domain: string): Promise<void>;
   generateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): Promise<string>;
   /**
    * This is for internal use
@@ -62,6 +74,20 @@ export interface IAuthenticationService {
    */
   setUserInfos(newUserInfos: IUserInfos): void;
   /**
+   * Setup OAuth redirect handler for a BrowserWindow
+   * This intercepts OAuth callbacks and exchanges authorization codes for tokens
+   */
+  setupOAuthRedirectHandler(window: unknown, getMainWindowEntry: () => string, preferencesPath: string): void;
+  /**
+   * Generate OAuth authorization URL using oidc-client-ts
+   */
+  generateOAuthUrl(service: SupportedStorageServices): Promise<string | undefined>;
+  /**
+   * Open OAuth login in a new popup window
+   * @param service - The OAuth service (e.g., 'github')
+   */
+  openOAuthWindow(service: SupportedStorageServices): Promise<void>;
+  /**
    * Manually refresh the observable's content, that will be received by react component.
    */
   updateUserInfoSubject(): void;
@@ -70,6 +96,8 @@ export interface IAuthenticationService {
 export const AuthenticationServiceIPCDescriptor = {
   channel: AuthenticationChannel.name,
   properties: {
+    clearCookiesForDomain: ProxyPropertyType.Function,
+    generateOAuthUrl: ProxyPropertyType.Function,
     generateOneTimeAdminAuthTokenForWorkspace: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,
     getRandomStorageServiceUserInfo: ProxyPropertyType.Function,
@@ -79,6 +107,7 @@ export const AuthenticationServiceIPCDescriptor = {
     reset: ProxyPropertyType.Function,
     set: ProxyPropertyType.Function,
     setUserInfos: ProxyPropertyType.Function,
+    openOAuthWindow: ProxyPropertyType.Function,
     updateUserInfoSubject: ProxyPropertyType.Value$,
     userInfo$: ProxyPropertyType.Value$,
   },

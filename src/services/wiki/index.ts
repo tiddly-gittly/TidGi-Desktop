@@ -131,14 +131,14 @@ export class Wiki implements IWikiService {
     await workspaceService.updateMetaData(workspaceID, { isLoading: true });
     if (tokenAuth && authToken) {
       logger.debug('getOneTimeAdminAuthTokenForWorkspaceSync', {
-        tokenAuth: String(tokenAuth),
+        tokenAuth,
         authToken,
         function: 'startWiki',
       });
     }
     const workerData: IStartNodeJSWikiConfigs = {
       authToken,
-      constants: { TIDDLYWIKI_PACKAGE_FOLDER: String(TIDDLYWIKI_PACKAGE_FOLDER) },
+      constants: { TIDDLYWIKI_PACKAGE_FOLDER },
       enableHTTPAPI,
       excludedPlugins,
       homePath: wikiFolderLocation,

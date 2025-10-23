@@ -41,11 +41,15 @@ export function startNodeJSWiki({
     void isDev;
     observer.next({ type: 'control', actions: WikiControlActions.start, argv: fullBootArgv });
     intercept(
-      (newStdOut: string) => {
-        observer.next({ type: 'stdout', message: newStdOut });
+      (newStdOut: string | Uint8Array) => {
+        const message = typeof newStdOut === 'string' ? newStdOut : new TextDecoder().decode(newStdOut);
+        observer.next({ type: 'stdout', message });
+        return message;
       },
-      (newStdError: string) => {
-        observer.next({ type: 'control', source: 'intercept', actions: WikiControlActions.error, message: newStdError, argv: fullBootArgv });
+      (newStdError: string | Uint8Array) => {
+        const message = typeof newStdError === 'string' ? newStdError : new TextDecoder().decode(newStdError);
+        observer.next({ type: 'control', source: 'intercept', actions: WikiControlActions.error, message, argv: fullBootArgv });
+        return message;
       },
     );
 

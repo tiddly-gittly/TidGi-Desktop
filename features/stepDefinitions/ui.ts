@@ -300,6 +300,20 @@ When('I switch to {string} window', async function(this: ApplicationWorld, windo
   }
 });
 
+// Switch to the newest/latest window (useful for OAuth popups)
+When('I switch to the newest window', async function(this: ApplicationWorld) {
+  if (!this.app) {
+    throw new Error('Application is not available');
+  }
+  const allWindows = this.app.windows().filter(p => !p.isClosed());
+  if (allWindows.length === 0) {
+    throw new Error('No windows available');
+  }
+  // The newest window is the last one in the array
+  const newestWindow = allWindows[allWindows.length - 1];
+  this.currentWindow = newestWindow;
+});
+
 // Generic window closing
 When('I close {string} window', async function(this: ApplicationWorld, windowType: string) {
   if (!this.app) {

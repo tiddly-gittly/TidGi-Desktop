@@ -22,7 +22,15 @@ export default async function appPath(appName: string): Promise<string | null> {
       isDevelopmentOrTest ? path.join(repoFolder, 'node_modules', 'app-path', 'main') : path.join(process.resourcesPath, 'node_modules', 'app-path', 'main'),
       [appName],
     );
-    return stdout.toString().replace('\n', '');
+    let outText: string;
+    if (Buffer.isBuffer(stdout)) {
+      outText = stdout.toString('utf8');
+    } else if (typeof stdout === 'string') {
+      outText = stdout;
+    } else {
+      outText = String(stdout);
+    }
+    return outText.replace('\n', '');
   } catch (error) {
     throw improveError(error as Error);
   }

@@ -10,7 +10,7 @@ import { ExternalAPICallType, ExternalAPILogEntity, RequestMetadata, ResponseMet
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { CoreMessage, Message } from 'ai';
+import { ModelMessage } from 'ai';
 import { DataSource, Repository } from 'typeorm';
 import { generateEmbeddingsFromProvider } from './callEmbeddingAPI';
 import { generateImageFromProvider } from './callImageGenerationAPI';
@@ -269,7 +269,7 @@ export class ExternalAPIService implements IExternalAPIService {
     this.activeRequests.delete(requestId);
   }
 
-  streamFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AiAPIConfig, options?: { agentInstanceId?: string }): Observable<AIStreamResponse> {
+  streamFromAI(messages: Array<ModelMessage>, config: AiAPIConfig, options?: { agentInstanceId?: string }): Observable<AIStreamResponse> {
     // Use defer to create a new observable stream for each subscription
     return defer(() => {
       // Prepare request context
@@ -295,7 +295,7 @@ export class ExternalAPIService implements IExternalAPIService {
   }
 
   async *generateFromAI(
-    messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>,
+    messages: Array<ModelMessage>,
     config: AiAPIConfig,
     options?: { agentInstanceId?: string; awaitLogs?: boolean },
   ): AsyncGenerator<AIStreamResponse, void, unknown> {

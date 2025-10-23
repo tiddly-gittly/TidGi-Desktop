@@ -10,7 +10,13 @@ export enum SupportedStorageServices {
   github = 'github',
   /** Open source git service */
   gitlab = 'gitlab',
+  /** Self-hosted Git service, lightweight fork of Gogs */
+  gitea = 'gitea',
+  /** Self-hosted Git service, hard fork of Gitea, focused on federation */
+  codeberg = 'codeberg',
   local = 'local',
   /** SocialLinkedData, a privacy first DApp platform leading by Tim Berners-Lee, you can run a server by you own  */
   solid = 'solid',
+  /** Local test OAuth server (for E2E testing only) */
+  testOAuth = 'testOAuth',
 }

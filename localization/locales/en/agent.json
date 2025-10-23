@@ -166,6 +166,7 @@
     "FailedToSaveSettings": "Failed to save settings",
     "FailedToUpdateModel": "Failed to update model",
     "FailedToUpdateProviderStatus": "Failed to update provider status",
+    "Logout": "Logout",
     "MaxTokens": "Maximum generation length",
     "MaxTokensDescription": "The maximum number of characters (measured in tokens) that the model can generate in a single request.",
     "ModelAddedSuccessfully": "Model added successfully",
@@ -313,6 +314,18 @@
       "TopP": "Top P sampling parameter",
       "TopPTitle": "Top P"
     },
+    "Plugin": {
+      "Caption": "",
+      "CaptionTitle": "",
+      "Content": "",
+      "ContentTitle": "",
+      "ForbidOverrides": "",
+      "ForbidOverridesTitle": "",
+      "Id": "",
+      "IdTitle": "",
+      "PluginId": "",
+      "PluginIdTitle": ""
+    },
     "Position": {
       "Bottom": "Offset a few messages from the bottom",
       "BottomTitle": "bottom offset",
@@ -442,6 +455,7 @@
       "SourceTypeTitle": "source type",
       "Title": "Wiki Search",
       "Tool": {
+        "Description": "",
         "Parameters": {
           "filter": {
             "Description": "TiddlyWiki Filter Expressions",
@@ -466,6 +480,27 @@
           "workspaceName": {
             "Description": "Workspace name or ID to search for",
             "Title": "Workspace Name"
+          }
+        },
+        "UpdateEmbeddings": {
+          "Description": "",
+          "Parameters": {
+            "forceUpdate": {
+              "Description": "",
+              "Title": ""
+            },
+            "workspaceName": {
+              "Description": "",
+              "Title": ""
+            }
+          },
+          "forceUpdate": {
+            "Description": "",
+            "Title": ""
+          },
+          "workspaceName": {
+            "Description": "",
+            "Title": ""
           }
         }
       },
@@ -503,6 +538,18 @@
     }
   },
   "Tool": {
+    "Plugin": {
+      "Caption": "",
+      "CaptionTitle": "",
+      "Content": "",
+      "ContentTitle": "",
+      "ForbidOverrides": "",
+      "ForbidOverridesTitle": "",
+      "Id": "",
+      "IdTitle": "",
+      "PluginId": "",
+      "PluginIdTitle": ""
+    },
     "Schema": {
       "Description": "Description",
       "Examples": "Usage Examples",
@@ -524,6 +571,10 @@
     "WikiSearch": {
       "Error": {
         "ExecutionFailed": "Tool execution failed: {{error}}",
+        "FilterSearchRequiresFilter": "",
+        "VectorSearchFailed": "",
+        "VectorSearchRequiresConfig": "",
+        "VectorSearchRequiresQuery": "",
         "WorkspaceNotExist": "Workspace {{workspaceID}} does not exist",
         "WorkspaceNotFound": "Workspace with name or ID \"{{workspaceName}}\" does not exist. Available workspaces: {{availableWorkspaces}}"
       },

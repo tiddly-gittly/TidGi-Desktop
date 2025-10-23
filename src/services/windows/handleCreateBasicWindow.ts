@@ -1,4 +1,5 @@
 import { isTest } from '@/constants/environment';
+import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -28,6 +29,13 @@ export async function handleCreateBasicWindow<N extends WindowNames>(
     windowService.set(windowName, undefined);
     unregisterContextMenu();
   });
+
+  // Handle OAuth redirect for preferences/addWorkspace windows
+  if (windowName === WindowNames.preferences || windowName === WindowNames.addWorkspace) {
+    const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
+    authService.setupOAuthRedirectHandler(newWindow, getMainWindowEntry, WindowNames.preferences);
+  }
+
   let webContentLoadingPromise: Promise<void> | undefined;
   if (windowName === WindowNames.main) {
     // handle window show and Webview/browserView show

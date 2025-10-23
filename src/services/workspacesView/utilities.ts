@@ -17,10 +17,10 @@ export async function getTidgiMiniWindowTargetWorkspace(fallbackWorkspaceId?: st
     preferenceService.get('tidgiMiniWindowSyncWorkspaceWithMainWindow'),
     preferenceService.get('tidgiMiniWindowFixedWorkspaceId'),
   ]);
-  
+
   // Default to sync (undefined means default to true, or explicitly true)
   const shouldSync = tidgiMiniWindowSyncWorkspaceWithMainWindow === undefined || tidgiMiniWindowSyncWorkspaceWithMainWindow;
-  
+
   let targetWorkspaceId: string | undefined;
   if (shouldSync) {
     // Sync with main window - use fallback or active workspace
@@ -29,6 +29,6 @@ export async function getTidgiMiniWindowTargetWorkspace(fallbackWorkspaceId?: st
     // Use fixed workspace
     targetWorkspaceId = tidgiMiniWindowFixedWorkspaceId;
   }
-  
+
   return { shouldSync, targetWorkspaceId };
 }

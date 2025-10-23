@@ -459,7 +459,6 @@ export class DatabaseService implements IDatabaseService {
       return;
     }
     try {
-      logger.debug('Saving settings to file start', { function: 'immediatelyStoreSettingsToFile', storeSettingsToFileLock: this.storeSettingsToFileLock });
       if (this.storeSettingsToFileLock) return;
       this.storeSettingsToFileLock = true;
       await settings.set(this.settingFileContent as any);
@@ -470,7 +469,6 @@ export class DatabaseService implements IDatabaseService {
       fs.writeJSONSync(settings.file(), this.settingFileContent);
     } finally {
       this.storeSettingsToFileLock = false;
-      logger.debug('Saving settings to file done', { function: 'immediatelyStoreSettingsToFile' });
     }
   }
 }

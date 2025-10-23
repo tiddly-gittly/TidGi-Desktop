@@ -66,7 +66,7 @@ export function useScrollHandling() {
    * Check if initial scroll has been done for a given agent
    */
   const hasInitialScrollBeenDone = (agentId: string): boolean => {
-    return !!initialScrollDoneReference.current[agentId];
+    return initialScrollDoneReference.current[agentId] ?? false;
   };
 
   /**

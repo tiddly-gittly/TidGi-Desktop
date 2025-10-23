@@ -61,7 +61,11 @@ export const serviceInstances: {
     wikiOperationInServer: vi.fn().mockResolvedValue([]) as IWikiService['wikiOperationInServer'],
   },
   auth: {
+    get: vi.fn().mockResolvedValue(undefined),
+    set: vi.fn().mockResolvedValue(undefined),
     getStorageServiceUserInfo: vi.fn().mockResolvedValue(undefined),
+    getUserInfos: vi.fn().mockResolvedValue({ userName: '' }),
+    setUserInfos: vi.fn(),
   },
   context: {
     get: vi.fn().mockResolvedValue(undefined),

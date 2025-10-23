@@ -2,7 +2,7 @@ import ip from 'ipaddr.js';
 import { networkInterfaces, platform, type } from 'os';
 
 /**
- * Copy from https://github.com/sindresorhus/internal-ip, to fi xsilverwind/default-gateway 's bug
+ * Copy from https://github.com/sindresorhus/internal-ip, to fix silverwind/default-gateway 's bug
  * @returns
  */
 function findIp(gateway: string): string | undefined {

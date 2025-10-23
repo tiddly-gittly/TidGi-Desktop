@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItemText } from '../ListItem';
+import { CustomServerTokenForm } from './CustomServerTokenForm';
 import { GitTokenForm } from './GitTokenForm';
 
 const Container = styled('div')`
@@ -83,23 +84,29 @@ export function TokenForm({ storageProvider, storageProviderSetter }: Props): Re
             value={currentTab}
             aria-label='Vertical tabs example'
           >
-            <Tab label='GitHub' value={SupportedStorageServices.github} />
-            <Tab label='GitLab' value={SupportedStorageServices.gitlab} />
-            <Tab label='Gitee' value={SupportedStorageServices.gitee} />
+            <Tab label='GitHub' value={SupportedStorageServices.github} data-testid='github-tab' />
+            <Tab label='Codeberg' value={SupportedStorageServices.codeberg} data-testid='codeberg-tab' />
+            <Tab label='Gitea.com' value={SupportedStorageServices.gitea} data-testid='gitea-tab' />
+            <Tab label='Custom Server' value={SupportedStorageServices.testOAuth} data-testid='custom-server-tab' />
           </Tabs>
           {currentTab === SupportedStorageServices.github && (
             <TabPanel>
               <GitTokenForm storageService={SupportedStorageServices.github} />
             </TabPanel>
           )}
-          {currentTab === SupportedStorageServices.gitlab && (
+          {currentTab === SupportedStorageServices.codeberg && (
             <TabPanel>
-              <GitTokenForm storageService={SupportedStorageServices.gitlab} />
+              <GitTokenForm storageService={SupportedStorageServices.codeberg} />
             </TabPanel>
           )}
-          {currentTab === SupportedStorageServices.gitee && (
+          {currentTab === SupportedStorageServices.gitea && (
             <TabPanel>
-              Gitee（码云）一直不愿意支持 OAuth2 ，所以我们没法适配它的登录系统，如果你认识相关开发人员，请催促他们尽快支持，与国际接轨。
+              <GitTokenForm storageService={SupportedStorageServices.gitea} />
+            </TabPanel>
+          )}
+          {currentTab === SupportedStorageServices.testOAuth && (
+            <TabPanel>
+              <CustomServerTokenForm />
             </TabPanel>
           )}
         </TabsContainer>
