@@ -1,3 +1,6 @@
+/**
+ * @docs docs/features/OAuthFlow.md
+ */
 import { SupportedStorageServices } from '@services/types';
 
 export interface IOAuthConfig {
@@ -22,51 +25,45 @@ export interface IOAuthConfig {
 const BASE_REDIRECT_PATH = 'http://127.0.0.1:3012/tidgi-auth';
 
 export const OAUTH_CONFIGS: Partial<Record<SupportedStorageServices, IOAuthConfig>> = {
-  // Local test OAuth server (for development/testing)
-  [SupportedStorageServices.local]: {
-    authorizePath: 'http://127.0.0.1:8888/oauth/authorize',
-    tokenPath: 'http://127.0.0.1:8888/oauth/access_token',
-    userInfoPath: 'http://127.0.0.1:8888/api/user',
-    clientId: 'test-client-id',
-    usePKCE: true,
-    redirectPath: `${BASE_REDIRECT_PATH}/local`,
-    scopes: 'user:email,read:user,repo',
-  },
   [SupportedStorageServices.github]: {
     authorizePath: 'https://github.com/login/oauth/authorize',
     tokenPath: 'https://github.com/login/oauth/access_token',
     userInfoPath: 'https://api.github.com/user',
-    clientId: 'Ov23liyy2nhg5fwxC2Xn',
-    // clientSecret not needed - using PKCE for security
+    clientId: '7b6e0fc33f4afd71a4bb',
+    clientSecret: 'e356c4499e1e38548a44da5301ef42c11ec14173',
     usePKCE: true,
     redirectPath: `${BASE_REDIRECT_PATH}/github`,
     scopes: 'user:email,read:user,repo,workflow',
   },
   [SupportedStorageServices.codeberg]: {
+    // https://codeberg.org/user/settings/applications
     authorizePath: 'https://codeberg.org/login/oauth/authorize',
     tokenPath: 'https://codeberg.org/login/oauth/access_token',
     userInfoPath: 'https://codeberg.org/api/v1/user',
     clientId: '0b008a26-9681-4139-9bf2-579df7c6d9cd',
-    // clientSecret not needed - using PKCE for security
+    clientSecret: 'gto_ykvx4f2gmoknjxtd62ssenjvl5ss4ufcu6sjjnq6kkujbis4hiva',
     usePKCE: true,
     redirectPath: `${BASE_REDIRECT_PATH}/codeberg`,
     scopes: 'read:user,write:repository',
   },
   // Gitea.com - official Gitea instance
   [SupportedStorageServices.gitea]: {
+    // https://gitea.com/user/settings/applications
     authorizePath: 'https://gitea.com/login/oauth/authorize',
     tokenPath: 'https://gitea.com/login/oauth/access_token',
     userInfoPath: 'https://gitea.com/api/v1/user',
     clientId: '2e29bcd7-650b-4c4d-8482-26b44a0107cb',
-    usePKCE: true, // PKCE is supported by Gitea
+    clientSecret: 'gto_loqgvzvj3cnno27kllt2povrz6jaa7svyus7p7z6pptsciffmbaq',
+    usePKCE: true,
     redirectPath: `${BASE_REDIRECT_PATH}/gitea`,
     scopes: 'read:user,write:repository',
   },
   // Local Test OAuth Server (for testing only)
+  // Uses standard OAuth 2 endpoints compatible with oauth2-mock-server
   [SupportedStorageServices.testOAuth]: {
-    authorizePath: 'http://127.0.0.1:8888/oauth/authorize',
-    tokenPath: 'http://127.0.0.1:8888/oauth/access_token',
-    userInfoPath: 'http://127.0.0.1:8888/api/user',
+    authorizePath: 'http://127.0.0.1:8888/authorize', // Standard OAuth 2 endpoint
+    tokenPath: 'http://127.0.0.1:8888/token', // Standard OAuth 2 endpoint
+    userInfoPath: 'http://127.0.0.1:8888/userinfo', // Standard OAuth 2 endpoint
     clientId: 'test-client-id',
     usePKCE: true,
     redirectPath: `${BASE_REDIRECT_PATH}/testOAuth`,

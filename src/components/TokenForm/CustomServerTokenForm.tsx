@@ -30,9 +30,18 @@ export function CustomServerTokenForm(): React.JSX.Element {
 
   const { token, userName, email, branch, isLoggedIn, isReady, tokenSetter, userNameSetter, emailSetter, branchSetter } = useTokenForm(storageService);
 
-  // Custom server configuration (only for display, not yet functional)
+  // Custom server configuration
   const [serverUrl, serverUrlSetter] = useState<string>('http://127.0.0.1:8888');
   const [clientId, clientIdSetter] = useState<string>('test-client-id');
+
+  // Store custom server config before OAuth login
+  const handleLogin = async () => {
+    // Save custom server configuration
+    await window.service.auth.set('testOAuth-serverUrl', serverUrl);
+    await window.service.auth.set('testOAuth-clientId', clientId);
+    // Then trigger OAuth login
+    await onClickLogin();
+  };
 
   if (!isReady) {
     return <div>{t('Loading')}</div>;
@@ -61,7 +70,7 @@ export function CustomServerTokenForm(): React.JSX.Element {
         data-testid='custom-client-id-input'
       />
       {!isLoggedIn && (
-        <AuthingLoginButton onClick={onClickLogin} data-testid='custom-oauth-login-button'>
+        <AuthingLoginButton onClick={handleLogin} data-testid='custom-oauth-login-button'>
           {t('AddWorkspace.LogoutToGetStorageServiceToken')}
         </AuthingLoginButton>
       )}

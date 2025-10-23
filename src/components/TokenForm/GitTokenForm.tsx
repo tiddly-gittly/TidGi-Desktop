@@ -37,14 +37,17 @@ export function GitTokenForm(props: {
   }
   return (
     <>
-      {!isLoggedIn && <AuthingLoginButton onClick={onClickLogin}>{t('AddWorkspace.LogoutToGetStorageServiceToken')}</AuthingLoginButton>}
-      {isLoggedIn && <AuthingLoginButton onClick={onClickLogout} color='secondary'>{t('Preference.Logout')}</AuthingLoginButton>}
+      {!isLoggedIn && (
+        <AuthingLoginButton onClick={onClickLogin} data-testid={`${storageService}-login-button`}>{t('AddWorkspace.LogoutToGetStorageServiceToken')}</AuthingLoginButton>
+      )}
+      {isLoggedIn && <AuthingLoginButton onClick={onClickLogout} color='secondary' data-testid={`${storageService}-logout-button`}>{t('Preference.Logout')}</AuthingLoginButton>}
       <GitTokenInput
         helperText={t('AddWorkspace.GitTokenDescription')}
         onChange={(event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
           tokenSetter(event.target.value);
         }}
         value={token}
+        data-testid={`${storageService}-token-input`}
       />
       <GitTokenInput
         helperText={t('AddWorkspace.GitUserNameDescription')}
@@ -52,6 +55,7 @@ export function GitTokenForm(props: {
           userNameSetter(event.target.value);
         }}
         value={userName}
+        data-testid={`${storageService}-userName-input`}
       />
       <GitTokenInput
         helperText={t('AddWorkspace.GitEmailDescription')}
@@ -59,6 +63,7 @@ export function GitTokenForm(props: {
           emailSetter(event.target.value);
         }}
         value={email}
+        data-testid={`${storageService}-email-input`}
       />
       <GitTokenInput
         helperText={t('AddWorkspace.GitDefaultBranchDescription')}
@@ -66,6 +71,7 @@ export function GitTokenForm(props: {
           branchSetter(event.target.value);
         }}
         value={branch}
+        data-testid={`${storageService}-branch-input`}
       />
       {children}
     </>

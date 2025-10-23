@@ -1,4 +1,4 @@
-import { isOAuthRedirect } from '@/constants/oauthConfig';
+import { getOAuthConfig } from '@/constants/oauthConfig';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IGitUserInfos } from '@services/git/interface';
@@ -12,6 +12,7 @@ import { injectable } from 'inversify';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject } from 'rxjs';
 import type { IAuthenticationService, IUserInfos, ServiceBranchTypes, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
+import { setupOAuthRedirectHandler as setupOAuthHandler } from './oauthRedirectHandler';
 
 const defaultUserInfos = {
   userName: '',
@@ -21,17 +22,6 @@ const defaultUserInfos = {
 export class Authentication implements IAuthenticationService {
   private cachedUserInfo: IUserInfos | undefined;
   public userInfo$ = new BehaviorSubject<IUserInfos | undefined>(undefined);
-
-  // Store PKCE code_verifier in memory (per service)
-  private pkceVerifierStore = new Map<SupportedStorageServices, string>();
-
-  public storeOAuthVerifier(service: SupportedStorageServices, verifier: string): void {
-    if (verifier) {
-      this.pkceVerifierStore.set(service, verifier);
-    } else {
-      this.pkceVerifierStore.delete(service);
-    }
-  }
 
   public updateUserInfoSubject(): void {
     this.userInfo$.next(this.getUserInfos());
@@ -149,196 +139,189 @@ export class Authentication implements IAuthenticationService {
   }
 
   /**
-   * Setup OAuth redirect handler for a BrowserWindow
-   * This intercepts OAuth callbacks and exchanges authorization codes for tokens
+   * Generate OAuth authorization URL using oidc-client-ts
+   * This ensures PKCE state is properly managed
+   */
+  public async generateOAuthUrl(service: SupportedStorageServices): Promise<string | undefined> {
+    try {
+      const { createOAuthClientManager } = await import('./oauthClient');
+      const client = createOAuthClientManager(service);
+
+      if (!client) {
+        logger.error('Failed to create OAuth client', { service, function: 'generateOAuthUrl' });
+        return undefined;
+      }
+
+      const result = await client.createAuthorizationUrl();
+      if (!result) {
+        logger.error('Failed to generate OAuth URL', { service, function: 'generateOAuthUrl' });
+        return undefined;
+      }
+
+      logger.info('OAuth URL generated', { service, function: 'generateOAuthUrl' });
+      return result.url;
+    } catch (error) {
+      logger.error('Error generating OAuth URL', { service, error, function: 'generateOAuthUrl' });
+      return undefined;
+    }
+  }
+
+  /**
+   * Open OAuth login in a new popup window
+   * The window will be automatically closed after OAuth completes
+   * @param service - The OAuth service to authenticate with (e.g., 'github')
+   */
+  public async openOAuthWindow(service: SupportedStorageServices): Promise<void> {
+    try {
+      // Generate OAuth URL using oidc-client-ts (ensures proper state management)
+      const url = await this.generateOAuthUrl(service);
+      if (!url) {
+        throw new Error(`Failed to generate OAuth URL for ${service}`);
+      }
+
+      logger.info('Opening OAuth window', { function: 'openOAuthWindow', service, url: url.substring(0, 100) });
+
+      // Create a new popup window for OAuth
+      const oauthWindow = new BrowserWindow({
+        width: 600,
+        height: 800,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+        },
+        title: 'OAuth Login',
+        resizable: true,
+        minimizable: false,
+        fullscreenable: false,
+        show: false, // Don't show until ready
+      });
+
+      // Show window when ready
+      oauthWindow.once('ready-to-show', () => {
+        oauthWindow.show();
+        logger.debug('OAuth window shown', { function: 'openOAuthWindow' });
+      });
+
+      // Setup OAuth redirect handler for this window
+      this.setupOAuthRedirectHandler(
+        oauthWindow,
+        () => '', // Not needed for popup window
+        '', // Not needed for popup window
+        false, // Don't navigate after auth - just close the window
+      );
+
+      // Clean up if window is closed manually
+      oauthWindow.on('closed', () => {
+        logger.info('OAuth window closed', { function: 'openOAuthWindow' });
+      });
+
+      // Load OAuth URL
+      await oauthWindow.loadURL(url);
+      logger.debug('OAuth URL loaded in popup window', { function: 'openOAuthWindow' });
+    } catch (error) {
+      logger.error('Failed to open OAuth window', { error, function: 'openOAuthWindow' });
+      throw error;
+    }
+  }
+
+  /**
+   * Setup OAuth redirect handler for a BrowserWindow (simplified version using oidc-client-ts)
    * @param window The BrowserWindow to setup OAuth handling for
    * @param getMainWindowEntry Function to get the main window entry URL
    * @param preferencesPath The path to navigate to after OAuth completes
+   * @param shouldNavigateAfterAuth Whether to navigate after authentication (false for popup windows)
    */
   public setupOAuthRedirectHandler(
     window: BrowserWindow,
     getMainWindowEntry: () => string,
     preferencesPath: string,
+    shouldNavigateAfterAuth = true,
   ): void {
-    // Handle the actual redirect (before navigation happens)
-    window.webContents.on('will-redirect', async (event, url) => {
-      const oauthMatch = isOAuthRedirect(url);
+    const handleSuccess = async (service: SupportedStorageServices, accessToken: string) => {
+      logger.info('OAuth authentication successful', {
+        service,
+        tokenLength: accessToken.length,
+        function: 'setupOAuthRedirectHandler.handleSuccess',
+      });
 
-      if (oauthMatch) {
-        event.preventDefault(); // Prevent navigation to non-existent localhost:3012
+      try {
+        // Store access token
+        await this.set(`${service}-token`, accessToken);
+        logger.debug('Access token stored', { service, function: 'setupOAuthRedirectHandler.handleSuccess' });
 
-        // Extract code from URL
-        const urlObject = new URL(url);
-        const code = urlObject.searchParams.get('code');
-
-        if (code) {
+        // Fetch and store user info
+        const config = getOAuthConfig(service);
+        if (config?.userInfoPath) {
           try {
-            const requestBody: Record<string, string> = {
-              client_id: oauthMatch.config.clientId,
-              code,
-            };
-
-            // Use PKCE if enabled
-            if (oauthMatch.config.usePKCE) {
-              // Retrieve code_verifier from memory
-              const codeVerifier = this.pkceVerifierStore.get(oauthMatch.service);
-
-              if (codeVerifier) {
-                requestBody.code_verifier = codeVerifier;
-              }
-            } else {
-              // Use client_secret for legacy OAuth
-              if (oauthMatch.config.clientSecret) {
-                requestBody.client_secret = oauthMatch.config.clientSecret;
-              }
-            }
-
-            // GitHub requires application/x-www-form-urlencoded for token exchange
-            const formBody = new URLSearchParams(requestBody).toString();
-
-            const response = await fetch(oauthMatch.config.tokenPath, {
-              method: 'POST',
+            const response = await fetch(config.userInfoPath, {
               headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                Authorization: `Bearer ${accessToken}`,
                 Accept: 'application/json',
               },
-              body: formBody,
             });
 
-            const responseData = await response.json() as { access_token?: string; error?: string; error_description?: string };
-            const { access_token: token } = responseData;
+            const userInfo = await response.json() as { email?: string; login?: string; name?: string };
 
-            // Store token
-            await this.set(`${oauthMatch.service}-token`, token);
-
-            // Fetch user info if available
-            if (token && oauthMatch.config.userInfoPath) {
-              try {
-                const userInfoResponse = await fetch(oauthMatch.config.userInfoPath, {
-                  method: 'GET',
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    Accept: 'application/json',
-                  },
-                });
-                const userInfo = await userInfoResponse.json() as { email?: string; login?: string; name?: string };
-
-                if (userInfo.login) {
-                  await this.set(`${oauthMatch.service}-userName`, userInfo.login);
-                }
-                if (userInfo.email) {
-                  await this.set(`${oauthMatch.service}-email`, userInfo.email);
-                }
-              } catch {
-                // Silently fail on user info fetch
-              }
+            if (userInfo.login) {
+              await this.set(`${service}-userName`, userInfo.login);
+              logger.debug('User name stored', { service, userName: userInfo.login });
             }
-
-            // Force immediate save to disk (bypass debounce)
-            const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-            await databaseService.immediatelyStoreSettingsToFile();
-
-            // Wait a bit to ensure file system has synced
-            await new Promise(resolve => setTimeout(resolve, 100));
-
-            // Clear code_verifier from memory
-            this.pkceVerifierStore.delete(oauthMatch.service);
-
-            // Load preferences page directly
-            await window.webContents.loadURL(`${getMainWindowEntry()}#/${preferencesPath}`);
-          } catch {
-            await window.webContents.loadURL(`${getMainWindowEntry()}#/${preferencesPath}`);
+            if (userInfo.email) {
+              await this.set(`${service}-email`, userInfo.email);
+              logger.debug('User email stored', { service, email: userInfo.email });
+            }
+          } catch (error) {
+            logger.warn('Failed to fetch user info', { service, error });
           }
         }
-      }
-    });
 
-    // Also handle will-navigate as a fallback (in case will-redirect doesn't fire)
-    window.webContents.on('will-navigate', async (event, url) => {
-      const oauthMatch = isOAuthRedirect(url);
+        // Force immediate save to disk
+        const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+        await databaseService.immediatelyStoreSettingsToFile();
+        logger.debug('Settings saved to disk', { service });
 
-      if (oauthMatch) {
-        event.preventDefault();
+        // Update observable
+        this.updateUserInfoSubject();
+        logger.debug('UserInfo observable updated', { service });
 
-        // Extract code and process (same as will-redirect)
-        const urlObject = new URL(url);
-        const code = urlObject.searchParams.get('code');
-
-        if (code) {
-          try {
-            const requestBody: Record<string, string> = {
-              client_id: oauthMatch.config.clientId,
-              code,
-            };
-
-            if (oauthMatch.config.usePKCE) {
-              // Retrieve code_verifier from memory
-              const codeVerifier = this.pkceVerifierStore.get(oauthMatch.service);
-
-              if (codeVerifier) {
-                requestBody.code_verifier = codeVerifier;
-              }
-            } else if (oauthMatch.config.clientSecret) {
-              requestBody.client_secret = oauthMatch.config.clientSecret;
-            }
-
-            // GitHub requires application/x-www-form-urlencoded for token exchange
-            const formBody = new URLSearchParams(requestBody).toString();
-
-            const response = await fetch(oauthMatch.config.tokenPath, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                Accept: 'application/json',
-              },
-              body: formBody,
-            });
-
-            const responseData = await response.json() as { access_token?: string; error?: string; error_description?: string };
-            const { access_token: token } = responseData;
-
-            await this.set(`${oauthMatch.service}-token`, token);
-
-            // Fetch user info if available
-            if (token && oauthMatch.config.userInfoPath) {
-              try {
-                const userInfoResponse = await fetch(oauthMatch.config.userInfoPath, {
-                  method: 'GET',
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    Accept: 'application/json',
-                  },
-                });
-                const userInfo = await userInfoResponse.json() as { email?: string; login?: string; name?: string };
-
-                if (userInfo.login) {
-                  await this.set(`${oauthMatch.service}-userName`, userInfo.login);
-                }
-                if (userInfo.email) {
-                  await this.set(`${oauthMatch.service}-email`, userInfo.email);
-                }
-              } catch {
-                // Silently fail on user info fetch
-              }
-            }
-
-            // Force immediate save to disk (bypass debounce)
-            const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-            await databaseService.immediatelyStoreSettingsToFile();
-
-            // Wait a bit to ensure file system has synced
-            await new Promise(resolve => setTimeout(resolve, 100));
-
-            // Clear code_verifier from memory
-            this.pkceVerifierStore.delete(oauthMatch.service);
-
-            // Navigate back to preferences
-            await window.webContents.loadURL(`${getMainWindowEntry()}#/${preferencesPath}`);
-          } catch {
-            await window.webContents.loadURL(`${getMainWindowEntry()}#/${preferencesPath}`);
+        // Navigate or close window
+        if (shouldNavigateAfterAuth) {
+          const targetUrl = `${getMainWindowEntry()}#/${preferencesPath}`;
+          await window.webContents.loadURL(targetUrl);
+          logger.info('Navigated to preferences', { service, targetUrl });
+        } else {
+          if (!window.isDestroyed()) {
+            window.close();
           }
+          logger.info('OAuth popup window closed', { service });
         }
+      } catch (error) {
+        logger.error('Error handling OAuth success', { service, error });
+        throw error;
       }
-    });
+    };
+
+    const handleError = async (service: SupportedStorageServices, error: string) => {
+      logger.error('OAuth authentication failed', {
+        service,
+        error,
+        function: 'setupOAuthRedirectHandler.handleError',
+      });
+
+      // Navigate back to preferences on error (if not a popup)
+      if (shouldNavigateAfterAuth) {
+        const targetUrl = `${getMainWindowEntry()}#/${preferencesPath}`;
+        await window.webContents.loadURL(targetUrl);
+        logger.debug('Navigated to preferences after error', { service });
+      } else {
+        if (!window.isDestroyed()) {
+          window.close();
+        }
+        logger.debug('OAuth popup window closed after error', { service });
+      }
+    };
+
+    // Use the simplified redirect handler from oauthRedirectHandler.ts
+    setupOAuthHandler(window, handleSuccess, handleError);
   }
 }

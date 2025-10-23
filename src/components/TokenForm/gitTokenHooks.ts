@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 /* eslint-disable @typescript-eslint/await-thenable */
 
-import { buildOAuthUrl, getOAuthConfig } from '@/constants/oauthConfig';
+import { getOAuthConfig } from '@/constants/oauthConfig';
 import { SupportedStorageServices } from '@services/types';
 import { useCallback, useEffect } from 'react';
 
@@ -12,9 +12,6 @@ export function useAuth(storageService: SupportedStorageServices): [() => Promis
       await window.service.auth.set(`${storageService}-token`, '');
       await window.service.auth.set(`${storageService}-userName`, '');
       await window.service.auth.set(`${storageService}-email`, '');
-
-      // Clear PKCE code_verifier from main process memory
-      await window.service.auth.storeOAuthVerifier(storageService, '');
 
       // Clear browser cookies for specific OAuth provider domain
       // This clears the "remember me" state for only this service
@@ -40,18 +37,17 @@ export function useAuth(storageService: SupportedStorageServices): [() => Promis
   const onClickLogin = useCallback(async () => {
     await onClickLogout();
     try {
-      const oauthResult = await buildOAuthUrl(storageService);
-      if (oauthResult) {
-        // Store code_verifier in main process for PKCE flow
-        if (oauthResult.codeVerifier) {
-          await window.service.auth.storeOAuthVerifier(storageService, oauthResult.codeVerifier);
-        }
-        location.href = oauthResult.url;
-      } else {
-        void window.service.native.log('error', 'OAuth not configured for this service', { function: 'useAuth', storageService });
-      }
+      void window.service.native.log('info', 'Initiating OAuth login', {
+        function: 'useAuth',
+        storageService,
+      });
+
+      // Let main process handle everything (OAuth URL generation, PKCE, state management)
+      // using oidc-client-ts internally
+      await window.service.auth.openOAuthWindow(storageService);
     } catch (error) {
       console.error(error);
+      void window.service.native.log('error', 'Failed to open OAuth login window', { function: 'useAuth', error });
     }
   }, [onClickLogout, storageService]);
 

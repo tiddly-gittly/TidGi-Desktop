@@ -22,11 +22,7 @@ Then('I should find log entries containing', async function(this: ApplicationWor
 // OAuth Server Steps
 When('I start Mock OAuth Server on port {int}', async function(this: ApplicationWorld, port: number) {
   this.mockOAuthServer = new MockOAuthServer(
-    {
-      clientId: 'test-client-id',
-      supportPKCE: true,
-      allowAnyRedirectUri: true,
-    },
+    { clientId: 'test-client-id' },
     port,
   );
   await this.mockOAuthServer.start();

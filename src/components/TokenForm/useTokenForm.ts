@@ -74,12 +74,28 @@ export function useTokenForm(storageService: SupportedStorageServices): UseToken
 
   // Sync userInfo changes to local state (only when userInfo changes from backend)
   useEffect(() => {
-    if (!userInfo) return;
+    if (!userInfo) {
+      void window.service.native.log('debug', 'useTokenForm: userInfo is undefined', {
+        function: 'useTokenForm.useEffect',
+        storageService,
+      });
+      return;
+    }
 
     const newToken = userInfo[`${storageService}-token`] ?? '';
     const newUserName = userInfo[`${storageService}-userName`] ?? '';
     const newEmail = userInfo[`${storageService}-email`] ?? '';
     const newBranch = userInfo[`${storageService}-branch`] ?? '';
+
+    void window.service.native.log('debug', 'useTokenForm: userInfo changed', {
+      function: 'useTokenForm.useEffect',
+      storageService,
+      hasToken: !!newToken,
+      tokenLength: newToken.length,
+      hasUserName: !!newUserName,
+      hasEmail: !!newEmail,
+      hasBranch: !!newBranch,
+    });
 
     // Only update if values actually changed
     setState((currentState) => {
@@ -89,6 +105,12 @@ export function useTokenForm(storageService: SupportedStorageServices): UseToken
       if (currentState.token !== newToken) {
         updates.token = newToken;
         hasChanges = true;
+        void window.service.native.log('debug', 'useTokenForm: token changed', {
+          function: 'useTokenForm.useEffect',
+          storageService,
+          oldLength: currentState.token.length,
+          newLength: newToken.length,
+        });
       }
       if (currentState.userName !== newUserName) {
         updates.userName = newUserName;
@@ -101,6 +123,14 @@ export function useTokenForm(storageService: SupportedStorageServices): UseToken
       if (currentState.branch !== newBranch) {
         updates.branch = newBranch;
         hasChanges = true;
+      }
+
+      if (hasChanges) {
+        void window.service.native.log('info', 'useTokenForm: state updated with new values', {
+          function: 'useTokenForm.useEffect',
+          storageService,
+          updates: Object.keys(updates),
+        });
       }
 
       return hasChanges ? { ...currentState, ...updates } : currentState;

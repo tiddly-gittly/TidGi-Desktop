@@ -1,20 +1,6 @@
 # Git Service OAuth Flow
 
-## Security: PKCE Implementation
-
-All OAuth flows use **PKCE (Proof Key for Code Exchange)** instead of `client_secret`:
-
-- ✅ **No secrets in client code** - safer for desktop apps
-- ✅ **Prevents authorization code interception attacks**
-- ✅ **Recommended by OAuth 2.0 RFC for public clients**
-
-### How PKCE works
-
-1. Generate random `code_verifier` (stored in sessionStorage)
-2. Compute `code_challenge = SHA256(code_verifier)`
-3. Send `code_challenge` to OAuth server
-4. OAuth server returns `code`
-5. Exchange `code` + `code_verifier` for token (no `client_secret` needed)
+We use [`oidc-client-ts`](https://authts.github.io/oidc-client-ts/) which automatically handles PKCE generation, state management, and token exchange.
 
 ## Codeberg Setup
 
@@ -25,14 +11,14 @@ To enable one-click login to Codeberg:
    - **Application Name**: TidGi Desktop
    - **Redirect URI**: `http://127.0.0.1:3012/tidgi-auth/codeberg`
    - **⚠️ Do NOT check "Confidential client"** (this allows PKCE)
-3. Copy only the `Client ID`
+3. Copy the `Client ID` and `Client Secret`
 4. Update `src/constants/oauthConfig.ts`:
 
-**Note**: You don't need the `Client Secret` - PKCE is used instead for security.
+Note: `Client Secret` is still necessary even PKCE is used. Otherwise we will get error. Use description to inform user only trust TidGi login oauth app when inside TidGi app's window.
 
 ## Configuration
 
-`src/constants/oauthConfig.ts`
+src/constants/oauthConfig.ts
 
 ```typescript
 export const OAUTH_CONFIGS: Record<Service, IOAuthConfig> = {
