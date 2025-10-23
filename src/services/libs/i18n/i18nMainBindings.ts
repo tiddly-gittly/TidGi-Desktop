@@ -18,10 +18,11 @@ export function mainBindings(): void {
     const localeFilePath = path.join(LOCALIZATION_FOLDER, readFileArguments.filename);
     const windowService = container.get<IWindowService>(serviceIdentifier.Window);
     fs.readFile(localeFilePath, 'utf8', (error, data) => {
+      const text = typeof data === 'string' ? data : (data ? String(data) : '');
       void windowService.sendToAllWindows(I18NChannels.readFileResponse, {
         key: readFileArguments.key,
         error,
-        data: data !== undefined && data !== null ? data.toString() : '',
+        data: text,
       });
     });
   });

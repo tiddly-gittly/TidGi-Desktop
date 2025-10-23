@@ -538,7 +538,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       };
       // Replace the service in container
       if (container.isBound(serviceIdentifier.WikiEmbedding)) {
-        container.unbind(serviceIdentifier.WikiEmbedding);
+        await container.unbind(serviceIdentifier.WikiEmbedding);
       }
       container.bind(serviceIdentifier.WikiEmbedding).toConstantValue(mockWikiEmbeddingService);
     });

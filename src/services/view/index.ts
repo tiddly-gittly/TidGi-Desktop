@@ -247,8 +247,8 @@ export class View implements IViewService {
       return existedView === undefined;
     };
     const checkNotExistResult = await Promise.all([
-      checkNotExist(workspace, WindowNames.main),
-      this.preferenceService.get('tidgiMiniWindow').then((tidgiMiniWindow) => tidgiMiniWindow && checkNotExist(workspace, WindowNames.tidgiMiniWindow)),
+      Promise.resolve(checkNotExist(workspace, WindowNames.main)),
+      this.preferenceService.get('tidgiMiniWindow').then((tidgiMiniWindow) => (tidgiMiniWindow && checkNotExist(workspace, WindowNames.tidgiMiniWindow)) ? true : false),
     ]);
     return checkNotExistResult.every((result) => !result);
   }

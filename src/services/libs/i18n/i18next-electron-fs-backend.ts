@@ -34,7 +34,7 @@ function safeInterpolate(interpolator: unknown, template: string, variables: { [
   // naive replacement for common tokens
   const lngToken = typeof variables.lng === 'string' ? variables.lng : '';
   const nsToken = typeof variables.ns === 'string' ? variables.ns : '';
-  return String(template ?? '').replace('{{lng}}', lngToken).replace('{{ns}}', nsToken);
+  return (template ?? '').replace('{{lng}}', lngToken).replace('{{ns}}', nsToken);
 }
 // https://stackoverflow.com/a/34890276/1837080
 const groupByArray = function<T extends Record<string, unknown>>(xs: T[], key: string) {
@@ -279,7 +279,7 @@ export class Backend implements BackendModule {
 
   // Reads a given translation file
   read(language: string, namespace: string, callback: ReadCallback) {
-    const loadPathString = String(this.backendOptions.loadPath ?? defaultOptions.loadPath);
+    const loadPathString = this.backendOptions.loadPath ?? defaultOptions.loadPath;
     const filename = safeInterpolate(this.services.interpolator, loadPathString, { lng: language, ns: namespace });
     this.requestFileRead(filename, (error?: unknown, data?: unknown) => {
       type ReadCallbackParameters = Parameters<ReadCallback>;
@@ -304,7 +304,7 @@ export class Backend implements BackendModule {
     const languageList = Array.isArray(languages) ? languages : [languages];
     // Create the missing translation for all languages
     for (const language of languageList) {
-      const addPathString = String(addPath ?? defaultOptions.addPath);
+      const addPathString = addPath ?? defaultOptions.addPath;
       filename = safeInterpolate(this.services.interpolator, addPathString, { lng: language, ns: namespace });
       // If we are currently writing missing translations from writeQueue,
       // temporarily store the requests in writeQueueOverflow until we are

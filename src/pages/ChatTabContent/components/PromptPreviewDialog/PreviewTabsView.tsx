@@ -68,7 +68,7 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = ({
     return previewResult
       ? {
         flatPrompts: previewResult.flatPrompts.map((message: ModelMessage) => ({
-          role: String(message.role),
+          role: message.role as string,
           content: getFormattedContent(message.content),
         })),
         processedPrompts: previewResult.processedPrompts,

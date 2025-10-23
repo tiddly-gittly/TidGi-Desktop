@@ -169,8 +169,8 @@ class TidGiIPCSyncAdaptor {
       this.recipe = status.space.recipe;
       // Check if we're logged in
       this.isLoggedIn = status.username !== 'GUEST';
-      this.isReadOnly = !!status.read_only;
-      this.isAnonymous = !!status.anonymous;
+      this.isReadOnly = status.read_only ?? false;
+      this.isAnonymous = status.anonymous ?? false;
       // this.logoutIsAvailable = 'logout_is_available' in status ? !!status.logout_is_available : true;
 
       callback?.(null, this.isLoggedIn, status.username, this.isReadOnly, this.isAnonymous);

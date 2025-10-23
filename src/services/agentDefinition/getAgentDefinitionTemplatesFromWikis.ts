@@ -69,23 +69,6 @@ export function validateAndConvertWikiTiddlerToAgentTemplate(
       return null;
     }
 
-    // Try to parse the tiddler text as JSON for agent configuration
-    let handlerConfig: Record<string, unknown>;
-    try {
-      const textContent = typeof tiddler.text === 'string' ? tiddler.text : String(tiddler.text || '{}');
-      const parsed = JSON.parse(textContent) as unknown;
-
-      // Ensure handlerConfig is a valid object
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        logger.warn('Invalid handlerConfig in tiddler', { function: 'validateAndConvertWikiTiddlerToAgentTemplate', title: String(tiddler.title), reason: 'not an object' });
-        return null;
-      }
-      handlerConfig = parsed as Record<string, unknown>;
-    } catch (parseError) {
-      logger.warn('Failed to parse agent template from tiddler', { function: 'validateAndConvertWikiTiddlerToAgentTemplate', title: String(tiddler.title), error: parseError });
-      return null;
-    }
-
     // Helper function to safely get string value from tiddler field
     const getStringField = (field: unknown, fallback = ''): string => {
       if (typeof field === 'string') return field;
@@ -131,6 +114,31 @@ export function validateAndConvertWikiTiddlerToAgentTemplate(
       }
       return undefined;
     };
+
+    // Try to parse the tiddler text as JSON for agent configuration
+    let handlerConfig: Record<string, unknown>;
+    try {
+      const textContent = typeof tiddler.text === 'string' ? tiddler.text : JSON.stringify(tiddler.text || '{}');
+      const parsed = JSON.parse(textContent) as unknown;
+
+      // Ensure handlerConfig is a valid object
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        logger.warn('Invalid handlerConfig in tiddler', {
+          function: 'validateAndConvertWikiTiddlerToAgentTemplate',
+          title: getStringField(tiddler.title),
+          reason: 'not an object',
+        });
+        return null;
+      }
+      handlerConfig = parsed as Record<string, unknown>;
+    } catch (parseError) {
+      logger.warn('Failed to parse agent template from tiddler', {
+        function: 'validateAndConvertWikiTiddlerToAgentTemplate',
+        title: getStringField(tiddler.title),
+        error: parseError,
+      });
+      return null;
+    }
 
     // Create AgentDefinition from tiddler
     const agentTemplate: AgentDefinition = {

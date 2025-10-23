@@ -80,10 +80,10 @@ export const TagsWidget: React.FC<WidgetProps> = ({
       renderInput={(parameters) => (
         <TextField
           {...parameters}
-          placeholder={placeholder || String(t('PromptConfig.Tags.Placeholder'))}
+          placeholder={placeholder || t('PromptConfig.Tags.Placeholder')}
           required={required}
           size='small'
-          helperText={String(t('PromptConfig.Tags.HelperText'))}
+          helperText={t('PromptConfig.Tags.HelperText')}
         />
       )}
       sx={{
@@ -91,9 +91,9 @@ export const TagsWidget: React.FC<WidgetProps> = ({
           margin: '2px',
         },
       }}
-      getOptionLabel={(option) => String(option)}
-      isOptionEqualToValue={(option, valueItem) => String(option) === String(valueItem)}
-      noOptionsText={String(t('PromptConfig.Tags.NoOptions'))}
+      getOptionLabel={(option) => `${option}`}
+      isOptionEqualToValue={(option, valueItem) => `${option}` === `${valueItem}`}
+      noOptionsText={t('PromptConfig.Tags.NoOptions')}
       clearOnBlur
       selectOnFocus
       handleHomeEndKeys
