@@ -33,7 +33,7 @@ export function setupOAuthRedirectHandler(
       return; // Not an OAuth redirect, ignore
     }
 
-    logger.info('OAuth redirect detected', {
+    logger.debug('OAuth redirect detected', {
       service: oauthMatch.service,
       url: url.substring(0, 100), // Log first 100 chars
       function: 'setupOAuthRedirectHandler.will-redirect',
@@ -87,6 +87,12 @@ export function setupOAuthRedirectHandler(
    * Handle did-fail-load (connection to localhost:3012 fails as expected)
    */
   window.webContents.on('did-fail-load', async (_, errorCode, __, validatedURL) => {
+    logger.debug('did-fail-load event', {
+      errorCode,
+      url: validatedURL,
+      function: 'setupOAuthRedirectHandler.did-fail-load',
+    });
+
     // Only handle -102 (ERR_CONNECTION_REFUSED) for localhost redirects
     if (errorCode !== -102) {
       return;
@@ -97,7 +103,7 @@ export function setupOAuthRedirectHandler(
       return;
     }
 
-    logger.info('OAuth redirect detected via did-fail-load', {
+    logger.debug('OAuth redirect detected via did-fail-load', {
       service: oauthMatch.service,
       errorCode,
       function: 'setupOAuthRedirectHandler.did-fail-load',
@@ -121,7 +127,7 @@ export function setupOAuthRedirectHandler(
         return;
       }
 
-      logger.info('Token exchange successful (did-fail-load)', {
+      logger.debug('Token exchange successful (did-fail-load)', {
         service: oauthMatch.service,
         tokenLength: result.accessToken?.length || 0,
         function: 'setupOAuthRedirectHandler.did-fail-load',

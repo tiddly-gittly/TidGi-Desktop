@@ -3,6 +3,7 @@ import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IGitUserInfos } from '@services/git/interface';
 import { logger } from '@services/libs/log';
+import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IWorkspace } from '@services/workspaces/interface';
@@ -200,6 +201,15 @@ export class Authentication implements IAuthenticationService {
       oauthWindow.once('ready-to-show', () => {
         oauthWindow.show();
         logger.debug('OAuth window shown', { function: 'openOAuthWindow' });
+      });
+
+      // Add context menu (right-click menu with DevTools) for debugging
+      const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+      const unregisterContextMenu = await menuService.initContextMenuForWindowWebContents(oauthWindow.webContents);
+      
+      // Clean up context menu when window is closed
+      oauthWindow.on('closed', () => {
+        unregisterContextMenu();
       });
 
       // Setup OAuth redirect handler for this window

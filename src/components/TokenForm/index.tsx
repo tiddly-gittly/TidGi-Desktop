@@ -84,9 +84,9 @@ export function TokenForm({ storageProvider, storageProviderSetter }: Props): Re
             value={currentTab}
             aria-label='Vertical tabs example'
           >
-            <Tab label='GitHub' value={SupportedStorageServices.github} />
-            <Tab label='Codeberg' value={SupportedStorageServices.codeberg} />
-            <Tab label='Gitea.com' value={SupportedStorageServices.gitea} />
+            <Tab label='GitHub' value={SupportedStorageServices.github} data-testid='github-tab' />
+            <Tab label='Codeberg' value={SupportedStorageServices.codeberg} data-testid='codeberg-tab' />
+            <Tab label='Gitea.com' value={SupportedStorageServices.gitea} data-testid='gitea-tab' />
             <Tab label='Custom Server' value={SupportedStorageServices.testOAuth} data-testid='custom-server-tab' />
           </Tabs>
           {currentTab === SupportedStorageServices.github && (
