@@ -87,9 +87,10 @@ jobs:
         env:
           npm_config_arch: ${{ matrix.platform == 'win' && 'ia32' || 'arm64' }}
 
-      # Build step using direct electron-forge commands
       - name: Build plugins
         run: pnpm run build:plugin
+      - name: Rebuild native modules for Electron
+        run: pnpm exec electron-rebuild -f -w better-sqlite3
 
       - name: Make ${{ matrix.platform }} (${{ matrix.arch }})
         run: |
