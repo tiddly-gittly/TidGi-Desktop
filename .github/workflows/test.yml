@@ -77,6 +77,8 @@ jobs:
           languages: javascript-typescript
           # Use custom CodeQL configuration with Electron-specific queries
           config-file: ./.github/codeql/codeql-config.yml
+          # Add custom queries directory
+          queries: ./.github/codeql
           
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
