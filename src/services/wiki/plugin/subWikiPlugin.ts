@@ -93,21 +93,80 @@ export function updateSubWikiPluginContent(
     }
   }
   
-  // Re-read and merge changes to minimize race condition impact
-  // This is a best-effort approach; for critical data, consider using file locks
-  try {
-    const currentContent = readFileContent();
-    // If file hasn't changed since we read it, write directly
-    if (currentContent === FileSystemPathsFile) {
-      fs.writeFileSync(FileSystemPathsTiddlerPath, newFileSystemPathsFile);
+  // Helper function to recalculate file content from fresh data
+  const recalculateContent = (freshFileContent: string): string => {
+    const lines = freshFileContent.split('\n');
+    const freshHeader = lines.filter((line) => line.startsWith('\\'));
+    const freshFileSystemPaths = lines.filter((line) => !line.startsWith('\\') && line.length > 0);
+    
+    if (newConfig === undefined) {
+      // Delete operation
+      if (oldConfig === undefined || typeof oldConfig.tagName !== 'string' || typeof oldConfig.subWikiFolderName !== 'string') {
+        throw new Error('Invalid oldConfig in delete operation');
+      }
+      const { tagName: oldTagName, subWikiFolderName: oldSubWikiFolderName } = oldConfig;
+      const newPaths = freshFileSystemPaths.filter((line) =>
+        !(line.includes(getMatchPart(oldTagName)) && line.includes(getPathPart(oldSubWikiFolderName, subWikiPathDirectoryName)))
+      );
+      return `${freshHeader.join('\n')}\n\n${newPaths.join('\n')}`;
     } else {
-      // File was modified, log warning but proceed (TiddlyWiki handles conflicts internally)
-      console.warn('[subWikiPlugin] File was modified during update, proceeding with write');
-      fs.writeFileSync(FileSystemPathsTiddlerPath, newFileSystemPathsFile);
+      // Add or update operation
+      const { tagName: newTagName, subWikiFolderName: newSubWikiFolderName } = newConfig;
+      if (typeof newTagName !== 'string' || typeof newSubWikiFolderName !== 'string') {
+        throw new Error('Invalid newConfig in add/update operation');
+      }
+      
+      const newConfigLine = '[' + getMatchPart(newTagName) + andPart + getPathPart(newSubWikiFolderName, subWikiPathDirectoryName);
+      
+      if (oldConfig !== undefined && typeof oldConfig.tagName === 'string' && typeof oldConfig.subWikiFolderName === 'string') {
+        // Update: replace old line with new line
+        const { tagName: oldTagName, subWikiFolderName: oldSubWikiFolderName } = oldConfig;
+        const newPaths = freshFileSystemPaths.map((line) => {
+          if (line.includes(oldTagName) && line.includes(oldSubWikiFolderName)) {
+            return newConfigLine;
+          }
+          return line;
+        });
+        return `${freshHeader.join('\n')}\n\n${newPaths.join('\n')}`;
+      } else {
+        // Add: append new line
+        return `${freshFileContent}\n${newConfigLine}`;
+      }
     }
-  } catch (error) {
-    console.error('[subWikiPlugin] Error writing file:', error);
-    throw error;
+  };
+
+  // Retry mechanism to handle race conditions
+  const MAX_RETRIES = 3;
+  let retryCount = 0;
+  let success = false;
+
+  while (retryCount < MAX_RETRIES && !success) {
+    try {
+      const currentContent = readFileContent();
+      
+      // If file hasn't changed since initial read, write our calculated content
+      if (currentContent === FileSystemPathsFile) {
+        fs.writeFileSync(FileSystemPathsTiddlerPath, newFileSystemPathsFile);
+        success = true;
+      } else if (retryCount < MAX_RETRIES - 1) {
+        // File was modified by another process, retry with fresh data to avoid data loss
+        console.warn(`[subWikiPlugin] File was modified during update, retrying with fresh data (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+        
+        // Recalculate content based on fresh file data
+        newFileSystemPathsFile = recalculateContent(currentContent);
+        
+        retryCount++;
+      } else {
+        // Final attempt: recalculate one last time and write
+        console.error('[subWikiPlugin] Max retries reached, forcing write with latest data. Concurrent modifications may be lost.');
+        newFileSystemPathsFile = recalculateContent(currentContent);
+        fs.writeFileSync(FileSystemPathsTiddlerPath, newFileSystemPathsFile);
+        success = true;
+      }
+    } catch (error) {
+      console.error('[subWikiPlugin] Error writing file:', error);
+      throw error;
+    }
   }
 }
 
