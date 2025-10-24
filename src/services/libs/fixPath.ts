@@ -2,7 +2,7 @@
  * This fixes https://github.com/google/zx/issues/230
  */
 import { isWin } from '@/helpers/system';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { userInfo } from 'os';
 import process from 'process';
 import stripAnsi from 'strip-ansi';
@@ -77,8 +77,9 @@ export function shellEnvironmentSync(shell?: string): NodeJS.ProcessEnv {
   }
 
   try {
-    // Execute with validated shell path - shell path is validated above to prevent injection
-    const stdout = execSync(`${shellToUse} ${arguments_.join(' ')}`, {
+    // Use execFileSync to prevent argument injection - arguments are passed as array, not shell-interpolated string
+    // This prevents shell metacharacters in arguments from being interpreted
+    const stdout = execFileSync(shellToUse, arguments_, {
       env: environment,
     });
     return parseEnvironment(String(stdout));
