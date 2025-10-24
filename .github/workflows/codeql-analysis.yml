@@ -2,12 +2,19 @@ name: "CodeQL Security Analysis"
 
 on:
   push:
-    branches: [ "master", "try/codeql" ]
+    tags:
+      - "v*.*.*"
+    paths-ignore:
+      - "README.md"
+      - "docs/**"
+      - ".vscode"
   pull_request:
-    branches: [ "master" ]
-  schedule:
-    # 每周一凌晨 2 点运行（可选）
-    - cron: '0 2 * * 1'
+    branches:
+      - master
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
+      - ".vscode"
 
 jobs:
   analyze:
@@ -35,4 +42,3 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:javascript-typescript"
-          # 结果会自动上传到 Security > Code scanning alerts
