@@ -1,0 +1,98 @@
+title: $:/plugins/linonetwo/watch-filesystem-adaptor/changelog
+type: text/vnd.tiddlywiki
+
+!! Changelog
+
+!!! Based On
+
+Official TiddlyWiki filesystem adaptor:
+https://github.com/TiddlyWiki/TiddlyWiki5/blob/master/plugins/tiddlywiki/filesystem/filesystemadaptor.js
+
+Version: TiddlyWiki v5.3.x (as of 2025-10-24)
+
+!!! Key Modifications
+
+!!!! 1. Dynamic Workspace Information via IPC
+
+* ''Original'': Uses static `$:/config/FileSystemPaths` tiddler for routing
+* ''Modified'': Queries workspace information from main process via worker threads IPC
+* ''Reason'': Eliminates need for complex string manipulation of `FileSystemPaths` configuration
+
+```typescript
+// Added: Worker service caller integration
+import { callMainProcessService } from '@services/wiki/wikiWorker/workerServiceCaller';
+import type { IWorkspace } from '@services/workspaces/interface';
+
+// Added: Methods to query workspace dynamically
+private async getCurrentWorkspace(): Promise<IWorkspace | undefined>
+private async getSubWikis(currentWorkspace: IWorkspace): Promise<IWorkspace[]>
+```
+
+!!!! 2. Tag-Based Sub-Wiki Routing
+
+* ''Original'': Routes based on filter expressions in `FileSystemPaths`
+* ''Modified'': Automatically routes tiddlers to sub-wikis based on tag matching
+* ''Modified'': Made `getTiddlerFileInfo`, `saveTiddler`, and `deleteTiddler` async for cleaner code
+* ''Modified'': Caches sub-wikis list to avoid repeated IPC calls on every save operation
+* ''Implementation'':
+** Checks tiddler tags against sub-workspace `tagName` fields
+** Routes matching tiddlers to sub-wiki's `tiddlers` folder
+** Falls back to default `FileSystemPaths` logic for non-matching tiddlers
+** Loads sub-wikis cache on initialization
+** Currently loads sub-wikis once, future enhancements can watch for workspace changes
+
+```typescript
+// Modified: getTiddlerFileInfo is now async (safe since callers only use callback)
+async getTiddlerFileInfo(tiddler: Tiddler, callback: IFileSystemAdaptorCallback): Promise<void> {
+  // Direct async/await instead of nested void IIFE
+  const currentWorkspace = await this.getCurrentWorkspace();
+  const subWikis = this.getSubWikis();  // Uses cache instead of IPC
+  const matchingSubWiki = subWikis.find(...);
+  
+  if (matchingSubWiki) {
+    this.routeToSubWorkspace(...);
+  } else {
+    this.useDefaultFileSystemLogic(...);
+  }
+}
+
+// Added: Caching mechanism
+private subWikis: IWorkspace[] = [];
+
+private async initializeSubWikisCache(): Promise<void> {
+  await this.updateSubWikisCache();
+}
+
+private async updateSubWikisCache(): Promise<void> {
+  // Load sub-wikis once and cache them
+  const allWorkspaces = await callMainProcessService(...);
+  this.subWikis = allWorkspaces.filter(...);
+}
+```
+
+!!!! 3. Separated Routing Logic
+
+* ''Added'': `routeToSubWorkspace()` method for sub-wiki routing
+* ''Added'': `useDefaultFileSystemLogic()` method for standard routing
+* ''Reason'': Better code organization and maintainability
+
+!!! Future Compatibility Notes
+
+When updating from upstream TiddlyWiki filesystem adaptor:
+
+# Review changes to core methods: `saveTiddler`, `deleteTiddler`, `getTiddlerInfo`
+# Preserve our IPC-based workspace querying logic
+# Preserve tag-based routing in `getTiddlerFileInfo`
+# Update type definitions if TiddlyWiki's FileInfo interface changes
+# Test sub-wiki routing functionality after merge
+
+!!! Testing Checklist
+
+When validating this adaptor:
+
+* [ ] Tiddlers with matching tags route to correct sub-wiki
+* [ ] Tiddlers without matching tags use default FileSystemPaths
+* [ ] IPC communication works correctly in worker thread
+* [ ] Error handling falls back gracefully
+* [ ] File operations (save/delete) work in both main and sub-wikis
+* [ ] Workspace ID caching reduces IPC overhead

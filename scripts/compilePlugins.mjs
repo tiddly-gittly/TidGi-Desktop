@@ -49,3 +49,16 @@ const tidgiIpcSyncadaptorUIOutDir = path.join(__dirname, '../node_modules/tiddly
 await rimraf(tidgiIpcSyncadaptorUIOutDir);
 await fs.mkdirp(tidgiIpcSyncadaptorUIOutDir);
 await fs.copy(path.join(__dirname, tidgiIpcSyncadaptorUISourceFolder), tidgiIpcSyncadaptorUIOutDir, { filter: filterFunc });
+
+// Compile watch-filesystem-adaptor plugin
+const watchFileSystemAdaptorSourceFolder = '../src/services/wiki/plugin/watchFileSystemAdaptor';
+const watchFileSystemAdaptorOutDir = path.join(__dirname, '../node_modules/tiddlywiki/plugins/linonetwo/watch-filesystem-adaptor');
+// delete if exist
+await rimraf(watchFileSystemAdaptorOutDir);
+await fs.mkdirp(watchFileSystemAdaptorOutDir);
+await esbuild.build({
+  ...sharedConfig,
+  entryPoints: [path.join(__dirname, watchFileSystemAdaptorSourceFolder, 'watch-filesystem-adaptor.ts')],
+  outdir: watchFileSystemAdaptorOutDir,
+});
+await fs.copy(path.join(__dirname, watchFileSystemAdaptorSourceFolder), watchFileSystemAdaptorOutDir, { filter: filterFunc });

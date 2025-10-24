@@ -1,0 +1,24 @@
+title: $:/plugins/linonetwo/watch-filesystem-adaptor/readme
+type: text/vnd.tiddlywiki
+
+!! Watch Filesystem Adaptor
+
+This plugin provides an enhanced filesystem adaptor that automatically routes tiddlers to sub-wikis based on their tags.
+
+!!! How It Works
+
+# Queries workspace information from TidGi's main process via IPC
+# Checks each tiddler's tags against sub-workspace `tagName` fields
+# Routes tiddlers with matching tags to the corresponding sub-wiki's tiddlers folder
+# Falls back to standard `$:/config/FileSystemPaths` logic for non-matching tiddlers
+
+!!! Advantages
+
+* No need to manually edit `$:/config/FileSystemPaths` 
+* Automatically stays in sync with workspace configuration
+* More robust than string manipulation
+* Works seamlessly with TidGi's workspace management
+
+!!! Technical Details
+
+This adaptor runs in the wiki worker (Node.js) and communicates with TidGi's main process using worker threads IPC to access workspace service methods. It dynamically resolves the current workspace and its sub-wikis, then routes tiddlers based on their tags.

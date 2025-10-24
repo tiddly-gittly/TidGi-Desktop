@@ -1,0 +1,13 @@
+{
+  "title": "$:/plugins/linonetwo/watch-filesystem-adaptor",
+  "name": "Watch Filesystem Adaptor",
+  "description": "Enhanced filesystem adaptor that routes tiddlers to sub-wikis based on tags",
+  "author": "LinOnetwo",
+  "core-version": ">=5.1.22",
+  "plugin-type": "plugin",
+  "stability": "STABILITY_2_STABLE",
+  "version": "1.0.0",
+  "dependents": [],
+  "list": "readme",
+  "plugin-priority": 5
+}

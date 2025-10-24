@@ -28,6 +28,7 @@ export function startNodeJSWiki({
   tiddlyWikiPort = 5112,
   tokenAuth,
   userName,
+  workspaceID,
 }: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
   if (openDebugger === true) {
     inspector.open();
@@ -63,6 +64,12 @@ export function startNodeJSWiki({
         // add tiddly filesystem back if is not readonly https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416
         readOnlyMode === true ? undefined : 'plugins/tiddlywiki/filesystem',
         /**
+         * Enhanced filesystem adaptor that routes tiddlers to sub-wikis based on tags.
+         * Replaces the complex string manipulation of $:/config/FileSystemPaths with direct IPC calls to workspace service.
+         * Only enabled in non-readonly mode since it handles filesystem operations.
+         */
+        readOnlyMode === true ? undefined : 'plugins/linonetwo/watch-filesystem-adaptor',
+        /**
          * Install $:/plugins/linonetwo/tidgi instead of +plugins/tiddlywiki/tiddlyweb to speedup (without JSON.parse) and fix http errors when network change.
          * See scripts/compilePlugins.mjs for how it is built.
          */
@@ -83,6 +90,8 @@ export function startNodeJSWiki({
       if (readOnlyMode === true) {
         wikiInstance.preloadTiddler({ title: '$:/info/tidgi/readOnlyMode', text: 'yes' });
       }
+      // Preload workspace ID for filesystem adaptor
+      wikiInstance.preloadTiddler({ title: '$:/info/tidgi/workspaceID', text: workspaceID });
       /**
        * Use authenticated-user-header to provide `TIDGI_AUTH_TOKEN_HEADER` as header key to receive a value as username (we use it as token).
        *
