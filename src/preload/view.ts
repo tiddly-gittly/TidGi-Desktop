@@ -26,29 +26,38 @@ async function executeJavaScriptInBrowserView(): Promise<void> {
     // Customize Notification behavior
     // https://stackoverflow.com/questions/53390156/how-to-override-javascript-web-api-notification-object
     const oldNotification = window.Notification;
+    
+    // Cache pause status and keep it in sync with preferences observable
+    let pauseNotifications = false;
+    window.observables?.preference?.preference$?.subscribe?.((preferences) => {
+      pauseNotifications = preferences?.pauseNotifications || false;
+    });
 
-    window.Notification = function() {
-      const args = arguments;
+    // Use modern rest parameters instead of arguments for better performance and clarity
+    window.Notification = function(...args) {
+      // Check cached value first to avoid notification flash
+      if (pauseNotifications) {
+        // Return a dummy notification object that does nothing but maintains API compatibility
+        const dummyNotification = new oldNotification('', { silent: true, tag: 'paused' });
+        dummyNotification.close(); // Close immediately
+        return dummyNotification;
+      }
+      
+      // Create and show notification
       const notification = new oldNotification(...args);
       
-      // Dynamically check pause status and decide whether to show notification
-      window.service.preference.get('pauseNotifications').then((shouldPauseNotifications) => {
-        if (shouldPauseNotifications) {
-          // Close the notification immediately if notifications are paused
-          notification.close();
-        } else {
-          // Add click handler to focus workspace
-          notification.addEventListener('click', async () => {
-            const workspaceID = ${JSON.stringify(workspaceID ?? '-')};
-            const targetWorkspace = await window.service.workspace.get(workspaceID);
-            if (targetWorkspace !== undefined) {
-              await window.service.workspaceView.setActiveWorkspaceView(workspaceID);
-              await window.service.menu.buildMenu();
-            }
-          });
+      // Add click handler to focus workspace
+      notification.addEventListener('click', async () => {
+        const workspaceID = ${JSON.stringify(workspaceID ?? '-')};
+        try {
+          const targetWorkspace = await window.service.workspace.get(workspaceID);
+          if (targetWorkspace !== undefined) {
+            await window.service.workspaceView.setActiveWorkspaceView(workspaceID);
+            await window.service.menu.buildMenu();
+          }
+        } catch (error) {
+          console.error('Failed to handle notification click:', error);
         }
-      }).catch((error) => {
-        console.error('Failed to get pauseNotifications preference:', error);
       });
       
       return notification;
