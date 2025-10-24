@@ -1,3 +1,6 @@
+/**
+ * This fixes https://github.com/google/zx/issues/230
+ */
 import { isWin } from '@/helpers/system';
 import { execSync } from 'child_process';
 import { userInfo } from 'os';
@@ -43,13 +46,41 @@ const parseEnvironment = (environment_: string): Record<string, string> => {
   return returnValue;
 };
 
+/**
+ * Validates that a shell path is safe to execute
+ * Only allows absolute paths without shell metacharacters
+ */
+function validateShellPath(shellPath: string): boolean {
+  // Must be an absolute path
+  if (!shellPath.startsWith('/')) {
+    return false;
+  }
+  // Must not contain shell metacharacters that could enable injection
+  const dangerousChars = /[;&|`$(){}[\]<>'"\\]/;
+  if (dangerousChars.test(shellPath)) {
+    return false;
+  }
+  return true;
+}
+
 export function shellEnvironmentSync(shell?: string): NodeJS.ProcessEnv {
   if (isWin) {
     return process.env;
   }
 
+  const shellToUse = shell ?? defaultShell;
+
+  // Validate shell path to prevent command injection
+  if (!validateShellPath(shellToUse)) {
+    console.warn(`[fixPath] Invalid shell path rejected: ${shellToUse}`);
+    return process.env;
+  }
+
   try {
-    const stdout = execSync(`${shell ?? defaultShell} ${arguments_.join(' ')}`, { env: environment });
+    // Execute with validated shell path - shell path is validated above to prevent injection
+    const stdout = execSync(`${shellToUse} ${arguments_.join(' ')}`, {
+      env: environment,
+    });
     return parseEnvironment(String(stdout));
   } catch (error) {
     if (shell === undefined) {
