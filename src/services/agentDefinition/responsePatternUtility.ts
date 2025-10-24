@@ -10,6 +10,7 @@ interface ToolPattern {
   extractOriginalText: (match: RegExpExecArray) => string;
 }
 
+const MAX_FALLBACK_INPUT_LENGTH = 1000;
 /**
  * Parse tool parameters from text content
  * Supports JSON and JSON5 (relaxed JSON) formats
@@ -60,7 +61,7 @@ function parseToolParameters(parametersText: string): Record<string, unknown> {
   logger.debug('All parsing methods failed, returning as raw input', {
     original: trimmedText.substring(0, 100),
   });
-  return { input: trimmedText.substring(0, 1000) };
+  return { input: trimmedText.substring(0, MAX_FALLBACK_INPUT_LENGTH) };
 }
 
 /**
