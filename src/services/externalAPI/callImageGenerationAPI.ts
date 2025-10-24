@@ -177,6 +177,8 @@ async function generateImageFromComfyUI(
   }
 
   // Read the workflow JSON file
+  // Note: This is user-provided configuration data (not sensitive system files)
+  // The workflow file contains ComfyUI node configurations and is meant to be sent to the API
   let workflow: Record<string, unknown>;
   try {
     const workflowContent = await fs.readFile(workflowPath, 'utf-8');

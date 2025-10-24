@@ -39,17 +39,17 @@ async function generateHTML(title: string, tiddlerDiv: HTMLElement): Promise<str
 export const wikiOperationScripts = {
   ...common,
   [WikiChannel.syncProgress]: (message: string) => `
-    $tw.wiki.addTiddler({ title: '$:/state/notification/${WikiChannel.syncProgress}', text: \`${message}\` });
+    $tw.wiki.addTiddler({ title: '$:/state/notification/${WikiChannel.syncProgress}', text: ${JSON.stringify(message)} });
     return $tw.notifier.display('$:/state/notification/${WikiChannel.syncProgress}');
   `,
 
   [WikiChannel.generalNotification]: (message: string) => `
-    $tw.wiki.addTiddler({ title: \`$:/state/notification/${WikiChannel.generalNotification}\`, text: \`${message}\` });
+    $tw.wiki.addTiddler({ title: \`$:/state/notification/${WikiChannel.generalNotification}\`, text: ${JSON.stringify(message)} });
     return $tw.notifier.display(\`$:/state/notification/${WikiChannel.generalNotification}\`);
   `,
 
   [WikiChannel.openTiddler]: (tiddlerName: string) => `
-    let trimmedTiddlerName = \`${tiddlerName.replaceAll('\n', '')}\`;
+    let trimmedTiddlerName = ${JSON.stringify(tiddlerName)};
     let currentHandlerWidget = $tw.rootWidget;
     let handled = false;
     while (currentHandlerWidget && !handled) {
@@ -60,9 +60,9 @@ export const wikiOperationScripts = {
     return handled;
   `,
   [WikiChannel.renderTiddlerOuterHTML]: (title: string) => `
-    const tiddlerDiv = document.querySelector('div[data-tiddler-title="${title}"]');
+    const tiddlerDiv = document.querySelector('div[data-tiddler-title=' + ${JSON.stringify(title)} + ']');
     if (tiddlerDiv) {
-      return await (${generateHTML.toString()})('${title}', tiddlerDiv);
+      return await (${generateHTML.toString()})(${JSON.stringify(title)}, tiddlerDiv);
     }
     return '';
   `,
