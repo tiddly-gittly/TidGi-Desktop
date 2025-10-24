@@ -32,13 +32,8 @@ export class DeepLinkService implements IDeepLinkService {
     // Remove HTML tags to prevent XSS
     sanitized = sanitized.replace(/<\/?[^>]+(>|$)/g, '');
 
-    // Replace TiddlyWiki special characters that could cause parsing issues
-    // | [ ] { } are used in TiddlyWiki filter syntax and transclusion
-    sanitized = sanitized.replace(/\|/g, '⎮'); // Replace with Unicode similar character
-    sanitized = sanitized.replace(/\[/g, '［'); // Fullwidth left square bracket
-    sanitized = sanitized.replace(/\]/g, '］'); // Fullwidth right square bracket
-    sanitized = sanitized.replace(/\{/g, '｛'); // Fullwidth left curly bracket
-    sanitized = sanitized.replace(/\}/g, '｝'); // Fullwidth right curly bracket
+    // Remove TiddlyWiki special characters that could cause parsing issues
+    sanitized = sanitized.replace(/[|[\]{}]/g, '');
 
     // Trim whitespace
     sanitized = sanitized.trim();
