@@ -6,7 +6,7 @@ interface IAddTiddlerOptionOptions {
 
 export const wikiOperationScripts = {
   [WikiChannel.setState]: (stateKey: string, content: string) => `
-    return $tw.wiki.addTiddler({ title: '$:/state/${stateKey}', text: \`${content}\` });
+    return $tw.wiki.addTiddler({ title: '$:/state/${stateKey}', text: ${JSON.stringify(content)} });
     `,
   /**
    * add tiddler
@@ -27,7 +27,7 @@ export const wikiOperationScripts = {
       ${
       options.withDate === true
         ? `
-      const existedTiddler = $tw.wiki.getTiddler(\`${title}\`);
+      const existedTiddler = $tw.wiki.getTiddler(${JSON.stringify(title)});
       let created = existedTiddler?.fields?.created;
       const modified = $tw.utils.stringifyDate(new Date());
       if (!existedTiddler) {
@@ -38,42 +38,42 @@ export const wikiOperationScripts = {
       `
         : ''
     }
-      return $tw.wiki.addTiddler({ title: \`${title}\`, text: \`${text}\`, ...${extraMeta}, ...dateObject });
+      return $tw.wiki.addTiddler({ title: ${JSON.stringify(title)}, text: ${JSON.stringify(text)}, ...${extraMeta}, ...dateObject });
     `;
   },
   [WikiChannel.getTiddlerText]: (title: string) => `
-    return $tw.wiki.getTiddlerText(\`${title}\`);
+    return $tw.wiki.getTiddlerText(${JSON.stringify(title)});
   `,
   [WikiChannel.runFilter]: (filter: string) => `
-    return $tw.wiki.compileFilter(\`${filter}\`)()
+    return $tw.wiki.compileFilter(${JSON.stringify(filter)})()
   `,
   /**
    * Modified from `$tw.wiki.getTiddlersAsJson` (it will turn tags into string, so we are not using it.)
    * This modified version will return Object
    */
   [WikiChannel.getTiddlersAsJson]: (filter: string) => `
-    return $tw.wiki.filterTiddlers(\`${filter}\`).map(title => {
+    return $tw.wiki.filterTiddlers(${JSON.stringify(filter)}).map(title => {
       const tiddler = $tw.wiki.getTiddler(title);
       return tiddler?.fields;
     }).filter(item => item !== undefined)
   `,
   [WikiChannel.setTiddlerText]: (title: string, value: string) => `
-    return $tw.wiki.setText(\`${title}\`, 'text', undefined, \`${value}\`);
+    return $tw.wiki.setText(${JSON.stringify(title)}, 'text', undefined, ${JSON.stringify(value)});
   `,
   [WikiChannel.renderWikiText]: (content: string) => `
-    return $tw.wiki.renderText("text/html", "text/vnd.tiddlywiki", \`${content.replaceAll('`', '\\`')}\`);
+    return $tw.wiki.renderText("text/html", "text/vnd.tiddlywiki", ${JSON.stringify(content)});
   `,
   [WikiChannel.dispatchEvent]: (actionMessage: string) => `
-    return $tw.rootWidget.dispatchEvent({ type: \`${actionMessage}\` });
+    return $tw.rootWidget.dispatchEvent({ type: ${JSON.stringify(actionMessage)} });
   `,
   [WikiChannel.deleteTiddler]: (title: string) => `
-    return $tw.wiki.deleteTiddler(\`${title}\`);
+    return $tw.wiki.deleteTiddler(${JSON.stringify(title)});
   `,
   [WikiChannel.getTiddler]: (title: string) => `
-    return $tw.wiki.getTiddler(\`${title}\`);
+    return $tw.wiki.getTiddler(${JSON.stringify(title)});
   `,
   [WikiChannel.invokeActionsByTag]: (tag: string, stringifiedData: string) => `
     const event = new Event('TidGi-invokeActionByTag');
-    return $tw.rootWidget.invokeActionsByTag("${tag}",event,${stringifiedData});
+    return $tw.rootWidget.invokeActionsByTag(${JSON.stringify(tag)},event,${stringifiedData});
   `,
 } as const;

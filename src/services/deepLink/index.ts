@@ -12,6 +12,47 @@ export class DeepLinkService implements IDeepLinkService {
     @inject(serviceIdentifier.Workspace) private readonly workspaceService: IWorkspaceService,
   ) {}
   /**
+   * Sanitize tiddler name to prevent injection attacks.
+   * This escapes potentially dangerous characters while preserving the original content.
+   * TiddlyWiki recommends avoiding: | [ ] { } in tiddler titles
+   *
+   * And in the place that use this (wikiOperations/executor/scripts/*.ts), we also use JSON.stringify to exclude "`".
+   * @param tiddlerName The tiddler name to sanitize
+   * @returns Sanitized tiddler name
+   */
+  private sanitizeTiddlerName(tiddlerName: string): string {
+    let sanitized = tiddlerName;
+
+    // Remove null bytes (these should never appear in valid text)
+    sanitized = sanitized.replace(/\0/g, '');
+
+    // Replace newlines and tabs with spaces to prevent breaking out of string context
+    sanitized = sanitized.replace(/[\r\n\t]/g, ' ');
+
+    // Remove HTML tags to prevent XSS
+    sanitized = sanitized.replace(/<\/?[^>]+(>|$)/g, '');
+
+    // Replace TiddlyWiki special characters that could cause parsing issues
+    // | [ ] { } are used in TiddlyWiki filter syntax and transclusion
+    sanitized = sanitized.replace(/\|/g, '⎮'); // Replace with Unicode similar character
+    sanitized = sanitized.replace(/\[/g, '［'); // Fullwidth left square bracket
+    sanitized = sanitized.replace(/\]/g, '］'); // Fullwidth right square bracket
+    sanitized = sanitized.replace(/\{/g, '｛'); // Fullwidth left curly bracket
+    sanitized = sanitized.replace(/\}/g, '｝'); // Fullwidth right curly bracket
+
+    // Trim whitespace
+    sanitized = sanitized.trim();
+
+    // Limit length to prevent DoS
+    if (sanitized.length > 1000) {
+      sanitized = sanitized.substring(0, 1000);
+      logger.warn(`Tiddler name truncated to 1000 characters for security`, { original: tiddlerName.substring(0, 50), function: 'sanitizeTiddlerName' });
+    }
+
+    return sanitized;
+  }
+
+  /**
    * Handle link and open the workspace.
    * @param requestUrl like `tidgi://lxqsftvfppu_z4zbaadc0/#:Index` or `tidgi://lxqsftvfppu_z4zbaadc0/#%E6%96%B0%E6%9D%A1%E7%9B%AE`
    */
@@ -40,6 +81,16 @@ export class DeepLinkService implements IDeepLinkService {
       }
       // Support CJK
       tiddlerName = decodeURIComponent(tiddlerName);
+
+      // Sanitize tiddler name to prevent injection attacks
+      tiddlerName = this.sanitizeTiddlerName(tiddlerName);
+
+      // Validate that tiddler name is not empty after sanitization
+      if (!tiddlerName || tiddlerName.length === 0) {
+        logger.warn(`Invalid or empty tiddler name after sanitization`, { original: hash, function: 'deepLinkHandler' });
+        return;
+      }
+
       logger.info(`Open deep link`, { workspaceId: workspace.id, tiddlerName, function: 'deepLinkHandler' });
       await this.workspaceService.openWorkspaceTiddler(workspace, tiddlerName);
     } catch (error) {
