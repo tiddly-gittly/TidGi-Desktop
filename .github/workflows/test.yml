@@ -59,28 +59,3 @@ jobs:
             userData-test/settings/
           retention-days: 7
         continue-on-error: true
-
-  codeql:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript
-          # Use custom CodeQL configuration with Electron-specific queries
-          config-file: ./.github/codeql/codeql-config.yml
-          # Add custom queries directory
-          queries: ./.github/codeql
-          
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:javascript-typescript"

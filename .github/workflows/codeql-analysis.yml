@@ -1,0 +1,38 @@
+name: "CodeQL Security Analysis"
+
+on:
+  push:
+    branches: [ "master", "try/codeql" ]
+  pull_request:
+    branches: [ "master" ]
+  schedule:
+    # 每周一凌晨 2 点运行（可选）
+    - cron: '0 2 * * 1'
+
+jobs:
+  analyze:
+    name: Analyze JavaScript/TypeScript
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          # Use custom CodeQL configuration with Electron-specific queries
+          config-file: ./.github/codeql/codeql-config.yml
+          # Add custom queries directory
+          queries: ./.github/codeql
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
+          # 结果会自动上传到 Security > Code scanning alerts
