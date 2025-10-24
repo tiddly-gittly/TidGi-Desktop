@@ -1,0 +1,18 @@
+name: "TidGi CodeQL Security Analysis"
+
+queries:
+  - uses: security-extended
+
+# Paths to analyze (only source code)
+paths:
+  - src
+  - scripts
+
+# Paths to ignore within the analyzed paths
+# (Excludes test files and mock data from security analysis)
+paths-ignore:
+  - '**/__tests__/**'
+  - '**/__mocks__/**'
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.spec.ts'
