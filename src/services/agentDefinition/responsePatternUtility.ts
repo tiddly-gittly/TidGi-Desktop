@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-implied-eval */
 import { logger } from '@services/libs/log';
+import JSON5 from 'json5';
 import { ToolCallingMatch } from './interface';
 
 interface ToolPattern {
@@ -12,7 +12,14 @@ interface ToolPattern {
 
 /**
  * Parse tool parameters from text content
- * Supports JSON, YAML-like, and key-value formats
+ * Supports JSON and JSON5 (relaxed JSON) formats
+ *
+ * This function does NOT execute any code - it only parses data formats.
+ * The use of JSON5 allows parsing of common AI mistakes like:
+ * - Trailing commas: { "key": "value", }
+ * - Single quotes: { 'key': 'value' }
+ * - Unquoted keys: { key: "value" }
+ * - Comments in JSON
  */
 function parseToolParameters(parametersText: string): Record<string, unknown> {
   if (!parametersText || !parametersText.trim()) {
@@ -21,92 +28,39 @@ function parseToolParameters(parametersText: string): Record<string, unknown> {
 
   const trimmedText = parametersText.trim();
 
-  // Try JSON parsing first
+  // Try standard JSON parsing first (fastest and most secure)
   try {
     return JSON.parse(trimmedText) as Record<string, unknown>;
   } catch {
-    // JSON parsing failed, try other formats
+    // JSON parsing failed, try JSON5
   }
 
-  // Try parsing as JavaScript object literal using new Function
+  // Try JSON5 parsing (handles relaxed JSON syntax)
+  // JSON5 is a superset of JSON that supports:
+  // - Single quotes, unquoted keys, trailing commas, comments, etc.
+  // - Pure data parsing, NO code execution
   try {
-    // Wrap the object in a return statement to make it a valid function body
-    const functionBody = `return (${trimmedText});`;
-    // Using the Function constructor here is intentional: we need to parse
-    // JavaScript-like object literals that may not be valid JSON. The use of
-    // Function is restricted and the input is user-provided; we guard and
-    // catch errors below.
-    const parseFunction = new Function(functionBody) as unknown as () => Record<string, unknown>;
-    const parsed = parseFunction();
-
-    logger.debug('Successfully parsed JavaScript object using new Function', {
-      original: trimmedText,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const parsed = JSON5.parse(trimmedText);
+    logger.debug('Successfully parsed parameters using JSON5', {
+      original: trimmedText.substring(0, 100),
       parsed: typeof parsed,
     });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return parsed;
-  } catch (functionError) {
-    logger.debug('Failed to parse using new Function', {
-      original: trimmedText,
-      error: functionError instanceof Error ? functionError.message : String(functionError),
+  } catch (json5Error) {
+    logger.debug('Failed to parse parameters as JSON/JSON5', {
+      original: trimmedText.substring(0, 100),
+      error: json5Error instanceof Error ? json5Error.message : String(json5Error),
     });
-  }
-
-  // Try parsing as JavaScript object literal (with regex conversion to JSON)
-  try {
-    // Convert JavaScript object syntax to JSON
-    let jsonText = trimmedText;
-
-    // Replace unquoted keys with quoted keys
-    // This regex matches object property names that aren't already quoted
-    jsonText = jsonText.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
-
-    // Handle edge case where the object starts with an unquoted key
-    jsonText = jsonText.replace(/^(\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/, '$1"$2":');
-
-    const parsed = JSON.parse(jsonText) as Record<string, unknown>;
-    logger.debug('Successfully parsed JavaScript object literal as JSON', {
-      original: trimmedText,
-      converted: jsonText,
-    });
-    return parsed;
-  } catch (jsonError) {
-    logger.debug('Failed to parse as JavaScript object literal', {
-      original: trimmedText,
-      error: jsonError instanceof Error ? jsonError.message : String(jsonError),
-    });
-  }
-
-  // Check which format is most likely being used
-  const lines = trimmedText.split('\n').map(line => line.trim()).filter(Boolean);
-  const hasEqualSigns = lines.some(line => line.includes('='));
-
-  // If we have equal signs, prefer key=value parsing
-  if (hasEqualSigns) {
-    const kvResult: Record<string, unknown> = {};
-    let hasValidKvPairs = false;
-
-    for (const line of lines) {
-      const equalIndex = line.indexOf('=');
-      if (equalIndex > 0) {
-        const key = line.slice(0, equalIndex).trim();
-        const value = line.slice(equalIndex + 1).trim();
-        // Try to parse as JSON value, fallback to string
-        try {
-          kvResult[key] = JSON.parse(value);
-        } catch {
-          kvResult[key] = value;
-        }
-        hasValidKvPairs = true;
-      }
-    }
-
-    if (hasValidKvPairs) {
-      return kvResult;
-    }
   }
 
   // Return as single parameter if all parsing failed
-  return { input: trimmedText };
+  // Limit length to prevent potential issues
+  logger.debug('All parsing methods failed, returning as raw input', {
+    original: trimmedText.substring(0, 100),
+  });
+  return { input: trimmedText.substring(0, 1000) };
 }
 
 /**
