@@ -2,6 +2,8 @@ name: "CodeQL Security Analysis"
 
 on:
   push:
+    branches:
+      - master
     tags:
       - "v*.*.*"
     paths-ignore:
