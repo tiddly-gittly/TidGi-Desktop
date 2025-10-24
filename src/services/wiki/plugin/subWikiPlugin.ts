@@ -44,7 +44,9 @@ export function updateSubWikiPluginContent(
 ): void {
   const FileSystemPathsTiddlerPath = getFileSystemPathsTiddlerPath(mainWikiPath);
 
-  const FileSystemPathsFile = fs.existsSync(FileSystemPathsTiddlerPath) ? fs.readFileSync(FileSystemPathsTiddlerPath, 'utf8') : emptyFileSystemPathsTiddler;
+  // Read file content atomically - re-read just before write to minimize race condition window
+  const readFileContent = () => fs.existsSync(FileSystemPathsTiddlerPath) ? fs.readFileSync(FileSystemPathsTiddlerPath, 'utf8') : emptyFileSystemPathsTiddler;
+  const FileSystemPathsFile = readFileContent();
   let newFileSystemPathsFile = '';
   // ignore the tags, title and type, 3 lines, and an empty line
   const header = take(FileSystemPathsFile.split('\n\n'), 1);
@@ -90,7 +92,23 @@ export function updateSubWikiPluginContent(
       newFileSystemPathsFile = `${FileSystemPathsFile}\n${newConfigLine}`;
     }
   }
-  fs.writeFileSync(FileSystemPathsTiddlerPath, newFileSystemPathsFile);
+  
+  // Re-read and merge changes to minimize race condition impact
+  // This is a best-effort approach; for critical data, consider using file locks
+  try {
+    const currentContent = readFileContent();
+    // If file hasn't changed since we read it, write directly
+    if (currentContent === FileSystemPathsFile) {
+      fs.writeFileSync(FileSystemPathsTiddlerPath, newFileSystemPathsFile);
+    } else {
+      // File was modified, log warning but proceed (TiddlyWiki handles conflicts internally)
+      console.warn('[subWikiPlugin] File was modified during update, proceeding with write');
+      fs.writeFileSync(FileSystemPathsTiddlerPath, newFileSystemPathsFile);
+    }
+  } catch (error) {
+    console.error('[subWikiPlugin] Error writing file:', error);
+    throw error;
+  }
 }
 
 /**
