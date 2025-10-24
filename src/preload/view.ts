@@ -37,10 +37,23 @@ async function executeJavaScriptInBrowserView(): Promise<void> {
     window.Notification = function(...args) {
       // Check cached value first to avoid notification flash
       if (pauseNotifications) {
-        // Return a dummy notification object that does nothing but maintains API compatibility
-        const dummyNotification = new oldNotification('', { silent: true, tag: 'paused' });
-        dummyNotification.close(); // Close immediately
-        return dummyNotification;
+        // Return a lightweight mock notification object to avoid creating real browser notifications
+        // This mock implements the minimal Notification API that calling code might expect
+        return {
+          close: () => {},
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          dispatchEvent: () => true,
+          // Common Notification properties that might be accessed
+          title: args[0] || '',
+          body: (args[1] && args[1].body) || '',
+          tag: 'paused',
+          // Prevent any actual notification behavior
+          onclick: null,
+          onclose: null,
+          onerror: null,
+          onshow: null
+        };
       }
       
       // Create and show notification
