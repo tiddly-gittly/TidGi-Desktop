@@ -1,10 +1,8 @@
-import { Channels, WorkspaceChannel } from '@/constants/channels';
 import { webFrame } from 'electron';
 import '../services/wiki/wikiOperations/executor/wikiOperationInBrowser';
 import type { IPossibleWindowMeta, WindowMeta } from '@services/windows/WindowProperties';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData, windowName } from './common/browserViewMetaData';
-import { menu, preference, workspace, workspaceView } from './common/services';
 
 let handled = false;
 const handleLoaded = (event: string): void => {
@@ -20,11 +18,6 @@ const handleLoaded = (event: string): void => {
 };
 
 async function executeJavaScriptInBrowserView(): Promise<void> {
-  // Fix Can't show file list of Google Drive
-  // https://github.com/electron/electron/issues/16587
-  // Fix chrome.runtime.sendMessage is undefined for FastMail
-  // https://github.com/atomery/singlebox/issues/21
-  const initialShouldPauseNotifications = await preference.get('pauseNotifications');
   const { workspaceID } = browserViewMetaData as IPossibleWindowMeta<WindowMeta[WindowNames.view]>;
 
   try {
@@ -32,22 +25,33 @@ async function executeJavaScriptInBrowserView(): Promise<void> {
   (function() {
     // Customize Notification behavior
     // https://stackoverflow.com/questions/53390156/how-to-override-javascript-web-api-notification-object
-    // TODO: fix logic here, get latest pauseNotifications from preference, and focusWorkspace
     const oldNotification = window.Notification;
 
-    let shouldPauseNotifications = ${
-      typeof initialShouldPauseNotifications === 'string' && initialShouldPauseNotifications.length > 0 ? `"${initialShouldPauseNotifications}"` : 'undefined'
-    };
-
     window.Notification = function() {
-      if (!shouldPauseNotifications) {
-        const notification = new oldNotification(...arguments);
-        notification.addEventListener('click', () => {
-          window.postMessage({ type: '${WorkspaceChannel.focusWorkspace}', workspaceID: "${workspaceID ?? '-'}" });
-        });
-        return notification;
-      }
-      return null;
+      const args = arguments;
+      const notification = new oldNotification(...args);
+      
+      // Dynamically check pause status and decide whether to show notification
+      window.service.preference.get('pauseNotifications').then((shouldPauseNotifications) => {
+        if (shouldPauseNotifications) {
+          // Close the notification immediately if notifications are paused
+          notification.close();
+        } else {
+          // Add click handler to focus workspace
+          notification.addEventListener('click', async () => {
+            const workspaceID = ${JSON.stringify(workspaceID ?? '-')};
+            const targetWorkspace = await window.service.workspace.get(workspaceID);
+            if (targetWorkspace !== undefined) {
+              await window.service.workspaceView.setActiveWorkspaceView(workspaceID);
+              await window.service.menu.buildMenu();
+            }
+          });
+        }
+      }).catch((error) => {
+        console.error('Failed to get pauseNotifications preference:', error);
+      });
+      
+      return notification;
     }
     window.Notification.requestPermission = oldNotification.requestPermission;
     Object.defineProperty(Notification, 'permission', {
@@ -72,15 +76,5 @@ if (windowName === WindowNames.view) {
   // https://github.com/atomery/webcatalog/issues/797
   window.addEventListener('load', () => {
     handleLoaded('window.on("onload")');
-  });
-  window.addEventListener('message', async (event?: MessageEvent<{ type?: Channels; workspaceID?: string } | undefined>) => {
-    // set workspace to active when its notification is clicked
-    if (event?.data?.type === WorkspaceChannel.focusWorkspace) {
-      const id = event.data.workspaceID;
-      if (id !== undefined && (await workspace.get(id)) !== undefined) {
-        await workspaceView.setActiveWorkspaceView(id);
-        await menu.buildMenu();
-      }
-    }
   });
 }
