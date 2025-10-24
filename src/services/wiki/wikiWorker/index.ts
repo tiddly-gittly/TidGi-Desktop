@@ -39,6 +39,7 @@ export interface IStartNodeJSWikiConfigs {
   tiddlyWikiPort: number;
   tokenAuth?: boolean;
   userName: string;
+  workspaceID: string;
 }
 
 export type IZxFileInput = { fileContent: string; fileName: string } | { filePath: string };

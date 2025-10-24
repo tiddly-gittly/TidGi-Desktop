@@ -4,6 +4,7 @@
 import { registerProxy } from 'electron-ipc-cat/server';
 
 import { container } from '@services/container';
+import { registerServiceForWorker } from '@services/libs/workerAdapter';
 import serviceIdentifier from '@services/serviceIdentifier';
 
 import { AgentBrowserService } from '@services/agentBrowser';
@@ -151,4 +152,23 @@ export function bindServiceAndProxy(): void {
   registerProxy(windowService, WindowServiceIPCDescriptor);
   registerProxy(workspaceService, WorkspaceServiceIPCDescriptor);
   registerProxy(workspaceViewService, WorkspaceViewServiceIPCDescriptor);
+
+  // Register services for worker threads (e.g., wiki worker)
+  // These services can be called from Node.js worker threads via IPC
+  registerServicesForWorkers(workspaceService);
+}
+
+/**
+ * Register services that can be called from worker threads.
+ * This allows TiddlyWiki plugins running in wiki workers to access TidGi services.
+ *
+ * @see src/services/wiki/wikiWorker/workerServiceCaller.ts for worker-side implementation
+ * @see src/services/libs/workerAdapter.ts for the IPC mechanism
+ */
+function registerServicesForWorkers(workspaceService: IWorkspaceService): void {
+  // Register workspace service methods that workers need
+  registerServiceForWorker('workspace', {
+    get: workspaceService.get.bind(workspaceService) as (...arguments_: unknown[]) => unknown,
+    getWorkspacesAsList: workspaceService.getWorkspacesAsList.bind(workspaceService) as (...arguments_: unknown[]) => unknown,
+  });
 }

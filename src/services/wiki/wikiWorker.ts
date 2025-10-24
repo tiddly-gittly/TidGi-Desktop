@@ -19,6 +19,7 @@ import { getWikiInstance } from './wikiWorker/globals';
 import { extractWikiHTML, packetHTMLFromWikiFolder } from './wikiWorker/htmlWiki';
 import { ipcServerRoutesMethods } from './wikiWorker/ipcServerRoutes';
 import { startNodeJSWiki } from './wikiWorker/startNodeJSWiki';
+import { initializeWorkerServiceCaller } from './wikiWorker/workerServiceCaller';
 
 export interface IStartNodeJSWikiConfigs {
   authToken?: string;
@@ -39,6 +40,7 @@ export interface IStartNodeJSWikiConfigs {
   tiddlyWikiPort: number;
   tokenAuth?: boolean;
   userName: string;
+  workspaceID: string;
 }
 
 export type IZxFileInput = { fileContent: string; fileName: string } | { filePath: string };
@@ -105,6 +107,9 @@ const wikiWorker = {
   ...ipcServerRoutesMethods,
 };
 export type WikiWorker = typeof wikiWorker;
+
+// Initialize service caller for worker to call main process services
+initializeWorkerServiceCaller();
 
 // Initialize worker message handling
 handleWorkerMessages(wikiWorker);
