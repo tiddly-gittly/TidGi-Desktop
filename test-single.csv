@@ -1,9 +1,0 @@
-"Template string injection in code execution","Detects user input flowing into template strings that are passed to code execution functions","error","Potential code injection: user input [[""here""|""relative:///src/preload/fixer/fixAlertConfirm.ts:4:10:4:20""]] flows into template string passed to executeJavaScript
-Potential code injection: user input [[""here""|""relative:///src/preload/fixer/fixAlertConfirm.ts:11:90:11:105""]] flows into template string passed to executeJavaScript","/src/preload/fixer/fixAlertConfirm.ts","8","9","19","2"
-"Template string injection in code execution","Detects user input flowing into template strings that are passed to code execution functions","error","Potential code injection: user input [[""here""|""relative:///src/preload/common/browserViewMetaData.ts:8:9:8:12""]] flows into template string passed to executeJavaScript
-Potential code injection: user input [[""here""|""relative:///src/preload/common/browserViewMetaData.ts:10:48:10:67""]] flows into template string passed to executeJavaScript
-Potential code injection: user input [[""here""|""relative:///src/preload/common/browserViewMetaData.ts:28:59:28:65""]] flows into template string passed to executeJavaScript
-Potential code injection: user input [[""here""|""relative:///src/preload/view.ts:1:20:1:35""]] flows into template string passed to executeJavaScript
-Potential code injection: user input [[""here""|""relative:///src/preload/view.ts:6:10:6:28""]] flows into template string passed to executeJavaScript
-Potential code injection: user input [[""here""|""relative:///src/preload/view.ts:46:41:46:71""]] flows into template string passed to executeJavaScript
-Potential code injection: user input [[""here""|""relative:///src/preload/view.ts:28:11:28:21""]] flows into template string passed to executeJavaScript","/src/preload/view.ts","31","11","59","2"
