@@ -1,5 +1,8 @@
 name: "TidGi CodeQL Security Analysis"
 
+queries:
+  - uses: security-extended
+
 # Paths to analyze (only source code)
 paths:
   - src
