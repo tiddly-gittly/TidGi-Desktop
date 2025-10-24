@@ -1,0 +1,27 @@
+name: "TidGi CodeQL Security Analysis"
+
+queries:
+  # Include default security queries
+  - uses: security-extended
+  # Include custom queries for Electron-specific vulnerabilities
+  - uses: ./.github/codeql/template-string-injection.ql
+  - uses: ./.github/codeql/electron-executejavascript.ql
+  - uses: ./.github/codeql/new-function-injection.ql
+
+# Paths to analyze
+paths:
+  - src
+  - scripts
+  - features
+
+# Paths to ignore
+paths-ignore:
+  - node_modules
+  - out
+  - dist
+  - coverage
+  - '**/__tests__/**'
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - 'userData-test'
+  - 'userData-dev'

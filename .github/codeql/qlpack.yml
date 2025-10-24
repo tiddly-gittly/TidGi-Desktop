@@ -1,0 +1,4 @@
+name: tidgi/security-queries
+version: 1.0.0
+libraryPathDependencies:
+  - codeql/javascript-all
