@@ -12,6 +12,7 @@ import { tmpdir } from 'os';
 import path from 'path';
 import { Observable } from 'rxjs';
 
+import type { IWikiWorkspace } from '@services/workspaces/interface';
 import { IZxWorkerMessage, ZxWorkerControlActions } from './interface';
 import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts, type IVariableContextList } from './plugin/zxPlugin';
 import { wikiOperationsInWikiWorker } from './wikiOperations/executor/wikiOperationInServer';
@@ -40,7 +41,7 @@ export interface IStartNodeJSWikiConfigs {
   tiddlyWikiPort: number;
   tokenAuth?: boolean;
   userName: string;
-  workspaceID: string;
+  workspace: IWikiWorkspace;
 }
 
 export type IZxFileInput = { fileContent: string; fileName: string } | { filePath: string };

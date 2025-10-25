@@ -8,7 +8,8 @@ import { Observable } from 'rxjs';
 import { TiddlyWiki } from 'tiddlywiki';
 import { IWikiMessage, WikiControlActions } from '../interface';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
-import { IStartNodeJSWikiConfigs } from '.';
+import type { IStartNodeJSWikiConfigs } from '../wikiWorker';
+import { hijackConsoleForWiki } from './consoleHijack';
 import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
 import { authTokenIsProvided } from './wikiWorkerUtilities';
@@ -28,8 +29,11 @@ export function startNodeJSWiki({
   tiddlyWikiPort = 5112,
   tokenAuth,
   userName,
-  workspaceID,
+  workspace,
 }: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
+  // Hijack console to redirect logs to wiki-specific log file using workspace name
+  hijackConsoleForWiki(workspace.name);
+
   if (openDebugger === true) {
     inspector.open();
     inspector.waitForDebugger();
@@ -91,7 +95,7 @@ export function startNodeJSWiki({
         wikiInstance.preloadTiddler({ title: '$:/info/tidgi/readOnlyMode', text: 'yes' });
       }
       // Preload workspace ID for filesystem adaptor
-      wikiInstance.preloadTiddler({ title: '$:/info/tidgi/workspaceID', text: workspaceID });
+      wikiInstance.preloadTiddler({ title: '$:/info/tidgi/workspaceID', text: workspace.id });
       /**
        * Use authenticated-user-header to provide `TIDGI_AUTH_TOKEN_HEADER` as header key to receive a value as username (we use it as token).
        *

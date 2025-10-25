@@ -8,7 +8,7 @@ import { NativeChannel } from '@/constants/channels';
 import { ZX_FOLDER } from '@/constants/paths';
 import { githubDesktopUrl } from '@/constants/urls';
 import { container } from '@services/container';
-import { logger } from '@services/libs/log';
+import { getLoggerForLabel, logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -479,5 +479,18 @@ ${message.message}
     }
     logger.warn(`This url can't be loaded in-wiki. Try loading url as-is.`, { url: urlWithFileProtocol, function: 'formatFileUrlToAbsolutePath' });
     return urlWithFileProtocol;
+  }
+
+  /**
+   * Log a message for a specific label (e.g., wiki name)
+   * Each label gets its own log file in the wikis subdirectory
+   * @param label The label for the log (e.g., wiki workspace name)
+   * @param level Log level (error, warn, info, debug)
+   * @param message Log message
+   * @param meta Optional metadata
+   */
+  public async logFor(label: string, level: string, message: string, meta?: Record<string, unknown>): Promise<void> {
+    const labeledLogger = getLoggerForLabel(label);
+    labeledLogger.log(level, message, meta);
   }
 }
