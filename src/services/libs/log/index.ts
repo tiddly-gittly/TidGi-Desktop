@@ -5,8 +5,6 @@ import 'winston-daily-rotate-file';
 import type { TransformableInfo } from 'logform';
 import RendererTransport from './rendererTransport';
 
-export * from './wikiOutput';
-
 /**
  * Custom formatter to serialize Error objects using serialize-error package.
  * Falls back to template string if serialization fails.

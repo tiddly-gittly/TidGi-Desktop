@@ -1,6 +1,6 @@
-// Auto-attach services to global.service - MUST import before consoleHijack
+// Auto-attach services to global.service - MUST import before using services
 import './services';
-import { hijackConsoleForWiki } from './consoleHijack';
+import { native } from './services';
 import { onWorkerServicesReady } from './servicesReady';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
@@ -35,9 +35,28 @@ export function startNodeJSWiki({
   userName,
   workspace,
 }: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
+  // Wait for services to be ready before using intercept with logFor
   onWorkerServicesReady(() => {
-    hijackConsoleForWiki(workspace.name);
+    intercept(
+      (newStdOut: string | Uint8Array) => {
+        const message = typeof newStdOut === 'string' ? newStdOut : new TextDecoder().decode(newStdOut);
+        // Send to main process logger if services are ready
+        void native.logFor(workspace.name, 'info', message).catch((error: unknown) => {
+          console.error('[intercept] Failed to send stdout to main process:', error);
+        });
+        return message;
+      },
+      (newStdError: string | Uint8Array) => {
+        const message = typeof newStdError === 'string' ? newStdError : new TextDecoder().decode(newStdError);
+        // Send to main process logger if services are ready
+        void native.logFor(workspace.name, 'error', message).catch((error: unknown) => {
+          console.error('[intercept] Failed to send stderr to main process:', error);
+        });
+        return message;
+      },
+    );
   });
+
   if (openDebugger === true) {
     inspector.open();
     inspector.waitForDebugger();
@@ -49,18 +68,6 @@ export function startNodeJSWiki({
     // mark isDev as used to satisfy lint when not needed directly
     void isDev;
     observer.next({ type: 'control', actions: WikiControlActions.start, argv: fullBootArgv });
-    intercept(
-      (newStdOut: string | Uint8Array) => {
-        const message = typeof newStdOut === 'string' ? newStdOut : new TextDecoder().decode(newStdOut);
-        observer.next({ type: 'stdout', message });
-        return message;
-      },
-      (newStdError: string | Uint8Array) => {
-        const message = typeof newStdError === 'string' ? newStdError : new TextDecoder().decode(newStdError);
-        observer.next({ type: 'control', source: 'intercept', actions: WikiControlActions.error, message, argv: fullBootArgv });
-        return message;
-      },
-    );
 
     try {
       const wikiInstance = TiddlyWiki();

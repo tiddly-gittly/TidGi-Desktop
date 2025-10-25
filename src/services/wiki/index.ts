@@ -17,7 +17,7 @@ import { TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PA
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
-import { getWikiErrorLogFileName, logger, startWikiLogger } from '@services/libs/log';
+import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
@@ -174,13 +174,12 @@ export class Wiki implements IWikiService {
     // Notify worker that services are ready to use
     worker.notifyServicesReady();
 
-    const wikiLogger = startWikiLogger(workspaceID, name);
-    const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation };
+    const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation, workspaceID };
 
     await new Promise<void>((resolve, reject) => {
       // Handle worker errors
       wikiWorker.on('error', (error: Error) => {
-        wikiLogger.error(error.message, { function: 'Worker.error' });
+        logger.error(error.message, { function: 'Worker.error', ...loggerMeta });
         reject(new WikiRuntimeError(error, name, false));
       });
 
@@ -199,7 +198,7 @@ export class Wiki implements IWikiService {
       // Handle worker messages (for logging)
       wikiWorker.on('message', (message: unknown) => {
         if (message && typeof message === 'object' && 'log' in message) {
-          wikiLogger.info('Worker message', { data: message });
+          logger.info('Worker message', { data: message, ...loggerMeta });
         }
       });
 
@@ -260,8 +259,6 @@ export class Wiki implements IWikiService {
               reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, false, { ...workspace }));
             }
           }
-        } else if (message.type === 'stderr' || message.type === 'stdout') {
-          wikiLogger.info(message.message, { function: 'startNodeJSWiki' });
         }
       });
     });
@@ -833,12 +830,24 @@ export class Wiki implements IWikiService {
     }
   }
 
-  public async getWikiErrorLogs(workspaceID: string, wikiName: string): Promise<{ content: string; filePath: string }> {
-    const filePath = path.join(LOG_FOLDER, getWikiErrorLogFileName(workspaceID, wikiName));
-    const content = await readFile(filePath, 'utf8');
-    return {
-      content,
-      filePath,
-    };
+  public async getWikiErrorLogs(_workspaceID: string, wikiName: string): Promise<{ content: string; filePath: string }> {
+    // All logs (including errors) are now in the labeled logger file
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const logFileName = `${wikiName}-${today}.log`;
+    const filePath = path.join(LOG_FOLDER, logFileName);
+
+    try {
+      const content = await readFile(filePath, 'utf8');
+      return {
+        content,
+        filePath,
+      };
+    } catch (_error) {
+      // Log file doesn't exist yet or can't be read
+      return {
+        content: '',
+        filePath,
+      };
+    }
   }
 }

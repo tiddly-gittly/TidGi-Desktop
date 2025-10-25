@@ -133,11 +133,7 @@ export const WikiServiceIPCDescriptor = {
 
 // Workers
 
-export type IWikiMessage = IWikiLogMessage | IWikiControlMessage;
-export interface IWikiLogMessage {
-  message: string;
-  type: 'stdout' | 'stderr';
-}
+export type IWikiMessage = IWikiControlMessage;
 export enum WikiControlActions {
   /** wiki is booted */
   booted = 'tw-booted',
