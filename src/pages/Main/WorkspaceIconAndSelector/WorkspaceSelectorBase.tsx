@@ -161,7 +161,7 @@ export function WorkspaceSelectorBase({
       $transparent={transparentBackground}
       $addAvatar={id === 'add'}
       $highlightAdd={index === 0}
-      id={id === 'add' || id === 'guide' ? 'add-workspace-button' : `workspace-avatar-${id}`}
+      id={id === 'add' ? 'add-workspace-button' : id === 'guide' ? 'guide-workspace-button' : `workspace-avatar-${id}`}
     >
       {id === 'add'
         ? (

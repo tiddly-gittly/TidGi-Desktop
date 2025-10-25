@@ -58,6 +58,8 @@ features/                # E2E tests
 out/                    # `test:prepare-e2e` Bundled production app to test
 userData-test/           # User setting folder created during `test:e2e`
 userData-dev/           # User setting folder created during `start:dev`
+wiki-test/           # containing wiki folders created during `test:e2e`
+wiki-dev/           # containing wiki folders created during `start:dev`
 ```
 
 ## Writing Unit Tests

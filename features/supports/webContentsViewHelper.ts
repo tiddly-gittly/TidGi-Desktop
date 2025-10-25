@@ -149,3 +149,116 @@ export async function getContentSummary(
     ? content.substring(0, maxLength) + '...'
     : content;
 }
+
+/**
+ * Click element in browser view
+ * @param app Electron application instance
+ * @param selector CSS selector for the element
+ */
+export async function clickElement(app: ElectronApplication, selector: string): Promise<void> {
+  await app.evaluate(async ({ BrowserWindow }, selectorParameter: string) => {
+    const windows = BrowserWindow.getAllWindows();
+    for (const window of windows) {
+      if (window.contentView && 'children' in window.contentView) {
+        const views = window.contentView.children || [];
+        for (const view of views) {
+          if (view && view.constructor.name === 'WebContentsView') {
+            const webContentsView = view as unknown as { webContents: { executeJavaScript: (script: string) => Promise<unknown> } };
+            const script = `
+              (function() {
+                const elem = document.querySelector(${JSON.stringify(selectorParameter)});
+                if (!elem) throw new Error("Element not found: " + ${JSON.stringify(selectorParameter)});
+                elem.click();
+              })();
+            `;
+            await webContentsView.webContents.executeJavaScript(script);
+            return;
+          }
+        }
+      }
+    }
+    throw new Error('No browser view found');
+  }, selector);
+}
+
+/**
+ * Type text in element in browser view
+ * @param app Electron application instance
+ * @param selector CSS selector for the element
+ * @param text Text to type
+ */
+export async function typeText(app: ElectronApplication, selector: string, text: string): Promise<void> {
+  await app.evaluate(async ({ BrowserWindow }, parameters: { selector: string; text: string }) => {
+    const windows = BrowserWindow.getAllWindows();
+    for (const window of windows) {
+      if (window.contentView && 'children' in window.contentView) {
+        const views = window.contentView.children || [];
+        for (const view of views) {
+          if (view && view.constructor.name === 'WebContentsView') {
+            const webContentsView = view as unknown as { webContents: { executeJavaScript: (script: string) => Promise<unknown> } };
+            const script = `
+              (function() {
+                const elem = document.querySelector(${JSON.stringify(parameters.selector)});
+                if (!elem) throw new Error("Element not found: " + ${JSON.stringify(parameters.selector)});
+                elem.focus();
+                if (elem.tagName === 'TEXTAREA' || elem.tagName === 'INPUT') {
+                  elem.value = ${JSON.stringify(parameters.text)};
+                } else {
+                  elem.textContent = ${JSON.stringify(parameters.text)};
+                }
+                elem.dispatchEvent(new Event('input', { bubbles: true }));
+                elem.dispatchEvent(new Event('change', { bubbles: true }));
+              })();
+            `;
+            await webContentsView.webContents.executeJavaScript(script);
+            return;
+          }
+        }
+      }
+    }
+    throw new Error('No browser view found');
+  }, { selector, text });
+}
+
+/**
+ * Press key in browser view
+ * @param app Electron application instance
+ * @param key Key to press
+ */
+export async function pressKey(app: ElectronApplication, key: string): Promise<void> {
+  await app.evaluate(async ({ BrowserWindow }, keyParameter: string) => {
+    const windows = BrowserWindow.getAllWindows();
+    for (const window of windows) {
+      if (window.contentView && 'children' in window.contentView) {
+        const views = window.contentView.children || [];
+        for (const view of views) {
+          if (view && view.constructor.name === 'WebContentsView') {
+            const webContentsView = view as unknown as { webContents: { executeJavaScript: (script: string) => Promise<unknown> } };
+            const script = `
+              (function() {
+                const event = new KeyboardEvent('keydown', {
+                  key: ${JSON.stringify(keyParameter)},
+                  code: ${JSON.stringify(keyParameter)},
+                  bubbles: true,
+                  cancelable: true
+                });
+                document.activeElement?.dispatchEvent(event);
+                
+                const keyupEvent = new KeyboardEvent('keyup', {
+                  key: ${JSON.stringify(keyParameter)},
+                  code: ${JSON.stringify(keyParameter)},
+                  bubbles: true,
+                  cancelable: true
+                });
+                document.activeElement?.dispatchEvent(keyupEvent);
+              })();
+            `;
+            await webContentsView.webContents.executeJavaScript(script);
+            return;
+          }
+        }
+      }
+    }
+    throw new Error('No browser view found');
+  }, key);
+}

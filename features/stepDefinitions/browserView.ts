@@ -1,5 +1,5 @@
-import { Then } from '@cucumber/cucumber';
-import { getDOMContent, getTextContent, isLoaded } from '../supports/webContentsViewHelper';
+import { Then, When } from '@cucumber/cucumber';
+import { clickElement, getDOMContent, getTextContent, isLoaded, pressKey, typeText } from '../supports/webContentsViewHelper';
 import type { ApplicationWorld } from './application';
 
 // Constants for retry logic
@@ -100,4 +100,40 @@ Then('the browser view should be loaded and visible', async function(this: Appli
   }
 
   throw new Error(`Browser view is not loaded or visible after ${MAX_ATTEMPTS} attempts`);
+});
+
+When('I click on element with selector {string} in browser view', async function(this: ApplicationWorld, selector: string) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+  
+  try {
+    await clickElement(this.app, selector);
+  } catch (error) {
+    throw new Error(`Failed to click element "${selector}" in browser view: ${error as Error}`);
+  }
+});
+
+When('I type {string} in element with selector {string} in browser view', async function(this: ApplicationWorld, text: string, selector: string) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+  
+  try {
+    await typeText(this.app, selector, text);
+  } catch (error) {
+    throw new Error(`Failed to type in element "${selector}" in browser view: ${error as Error}`);
+  }
+});
+
+When('I press {string} in browser view', async function(this: ApplicationWorld, key: string) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+  
+  try {
+    await pressKey(this.app, key);
+  } catch (error) {
+    throw new Error(`Failed to press key "${key}" in browser view: ${error as Error}`);
+  }
 });

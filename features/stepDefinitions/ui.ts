@@ -466,3 +466,42 @@ When('I select {string} from MUI Select with test id {string}', async function(t
     throw new Error(`Failed to select option "${optionValue}" from MUI Select with test id "${testId}": ${String(error)}`);
   }
 });
+
+// Debug step to print current DOM structure
+When('I print current DOM structure', async function(this: ApplicationWorld) {
+  const currentWindow = this.currentWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  const html = await currentWindow.evaluate(() => {
+    return document.body.innerHTML;
+  });
+
+  console.log('=== Current DOM Structure ===');
+  console.log(html.substring(0, 5000)); // Print first 5000 characters
+  console.log('=== End DOM Structure ===');
+});
+
+// Debug step to print all window URLs
+When('I print all window URLs', async function(this: ApplicationWorld) {
+  if (!this.app) {
+    throw new Error('Application is not available');
+  }
+
+  const allWindows = this.app.windows();
+  console.log(`=== Total windows: ${allWindows.length} ===`);
+  
+  for (let i = 0; i < allWindows.length; i++) {
+    const win = allWindows[i];
+    try {
+      const url = win.url();
+      const title = await win.title();
+      const isClosed = win.isClosed();
+      console.log(`Window ${i}: URL=${url}, Title=${title}, Closed=${isClosed}`);
+    } catch (error) {
+      console.log(`Window ${i}: Error getting info - ${String(error)}`);
+    }
+  }
+  console.log('=== End Window List ===');
+});

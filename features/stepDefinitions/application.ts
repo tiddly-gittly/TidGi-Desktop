@@ -10,6 +10,7 @@ import { logsDirectory, makeSlugPath, screenshotsDirectory } from '../supports/p
 import { getPackedAppPath } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { clearTidgiMiniWindowSettings } from './tidgiMiniWindow';
+import { clearSubWikiRoutingTestData } from './wiki';
 
 // Helper function to check if window type is valid and return the corresponding WindowNames
 export function checkWindowName(windowType: string): WindowNames {
@@ -230,6 +231,9 @@ After(async function(this: ApplicationWorld, { pickle }) {
   }
   if (pickle.tags.some((tag) => tag.name === '@setup')) {
     clearAISettings();
+  }
+  if (pickle.tags.some((tag) => tag.name === '@subwiki-routing')) {
+    clearSubWikiRoutingTestData();
   }
 });
 
