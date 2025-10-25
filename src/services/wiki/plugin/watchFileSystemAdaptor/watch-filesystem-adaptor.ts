@@ -3,7 +3,6 @@ import type { Logger } from '$:/core/modules/utils/logger.js';
 import type { FileInfo } from '$:/core/modules/utils/utils.js';
 import { workspace } from '@services/wiki/wikiWorker/services';
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
-import path from 'path';
 import type { Tiddler, Wiki } from 'tiddlywiki';
 
 type IFileSystemAdaptorCallback = (error: Error | null | string, fileInfo?: FileInfo | null) => void;
@@ -42,6 +41,8 @@ class WatchFileSystemAdaptor {
 
     if (this.boot.wikiTiddlersPath) {
       $tw.utils.createDirectory(this.boot.wikiTiddlersPath);
+    } else {
+      this.logger.alert('watch-filesystem: wikiTiddlersPath is not set!');
     }
 
     // Initialize extension filters cache (cached for performance, requires restart to reflect changes)
@@ -102,7 +103,7 @@ class WatchFileSystemAdaptor {
         this.tagNameToSubWiki.set(subWiki.tagName!, subWiki);
       }
     } catch (error) {
-      this.logger.alert('Failed to update sub-wikis cache:', error);
+      this.logger.alert('watch-filesystem: Failed to update sub-wikis cache:', error);
     }
   }
 
@@ -141,14 +142,13 @@ class WatchFileSystemAdaptor {
 
       if (matchingSubWiki) {
         // Route to sub-wiki
-        this.logger.log(`Routing tiddler "${title}" to sub-wiki: ${matchingSubWiki.name}`);
         return this.generateSubWikiFileInfo(tiddler, matchingSubWiki, fileInfo);
       } else {
         // Use default FileSystemPaths logic
         return this.generateDefaultFileInfo(tiddler, fileInfo);
       }
     } catch (error) {
-      this.logger.alert(`Error in getTiddlerFileInfo for "${title}":`, error);
+      this.logger.alert(`watch-filesystem: Error in getTiddlerFileInfo for "${title}":`, error);
       // Fall back to default logic on error
       return this.generateDefaultFileInfo(tiddler, fileInfo);
     }
@@ -158,7 +158,8 @@ class WatchFileSystemAdaptor {
    * Generate file info for sub-wiki directory
    */
   private generateSubWikiFileInfo(tiddler: Tiddler, subWiki: IWikiWorkspace, fileInfo: FileInfo | undefined): FileInfo {
-    const targetDirectory = path.join(subWiki.wikiFolderLocation, 'tiddlers');
+    // Save directly to sub-wiki folder, not to tiddlers subfolder
+    const targetDirectory = subWiki.wikiFolderLocation;
 
     // Ensure target directory exists
     $tw.utils.createDirectory(targetDirectory);
@@ -196,6 +197,8 @@ class WatchFileSystemAdaptor {
    * Save a tiddler to the filesystem
    */
   async saveTiddler(tiddler: Tiddler, callback: IFileSystemAdaptorCallback, options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
+    const title = tiddler.fields.title;
+    
     try {
       // Get file info directly
       const fileInfo = await this.getTiddlerFileInfo(tiddler);
@@ -205,43 +208,54 @@ class WatchFileSystemAdaptor {
         return;
       }
 
-      // Save tiddler to file
-      $tw.utils.saveTiddlerToFile(tiddler, fileInfo, (saveError: Error | null, savedFileInfo?: FileInfo) => {
-        if (saveError) {
-          const errorCode = (saveError as NodeJS.ErrnoException).code;
-          if (errorCode === 'EPERM' || errorCode === 'EACCES') {
-            this.logger.alert('Error saving file, will be retried with encoded filepath', savedFileInfo ? encodeURIComponent(savedFileInfo.filepath) : 'unknown');
-          }
-          callback(saveError);
-          return;
-        }
-
-        if (!savedFileInfo) {
-          callback(new Error('No fileInfo returned from saveTiddlerToFile'));
-          return;
-        }
-
-        // Store new boot info only after successful writes
-        // Ensure isEditableFile is set (required by IBootFilesIndexItem)
-        this.boot.files[tiddler.fields.title] = {
-          ...savedFileInfo,
-          isEditableFile: savedFileInfo.isEditableFile ?? true,
-        };
-
-        // Cleanup duplicates if the file moved or changed extensions
-        const cleanupOptions = {
-          adaptorInfo: options?.tiddlerInfo as FileInfo | undefined,
-          bootInfo: savedFileInfo,
-          title: tiddler.fields.title,
-        };
-        $tw.utils.cleanupTiddlerFiles(cleanupOptions, (cleanupError: Error | null, cleanedFileInfo?: FileInfo) => {
-          if (cleanupError) {
-            callback(cleanupError);
+      // Save tiddler to file - wrap callback in Promise to ensure we wait
+      await new Promise<FileInfo>((resolve, reject) => {
+        $tw.utils.saveTiddlerToFile(tiddler, fileInfo, (saveError: Error | null, savedFileInfo?: FileInfo) => {
+          if (saveError) {
+            const errorCode = (saveError as NodeJS.ErrnoException).code;
+            this.logger.alert(`watch-filesystem: Error saving "${title}":`, saveError);
+            if (errorCode === 'EPERM' || errorCode === 'EACCES') {
+              this.logger.alert('Error saving file, will be retried with encoded filepath', savedFileInfo ? encodeURIComponent(savedFileInfo.filepath) : 'unknown');
+            }
+            reject(saveError);
             return;
           }
-          callback(null, cleanedFileInfo);
+
+          if (!savedFileInfo) {
+            reject(new Error('No fileInfo returned from saveTiddlerToFile'));
+            return;
+          }
+
+          // Store new boot info only after successful writes
+          // Ensure isEditableFile is set (required by IBootFilesIndexItem)
+          this.boot.files[tiddler.fields.title] = {
+            ...savedFileInfo,
+            isEditableFile: savedFileInfo.isEditableFile ?? true,
+          };
+
+          resolve(savedFileInfo);
         });
       });
+
+      // Now do cleanup after file is written
+      await new Promise<void>((resolve, reject) => {
+        const cleanupOptions = {
+          adaptorInfo: options?.tiddlerInfo as FileInfo | undefined,
+          bootInfo: this.boot.files[tiddler.fields.title],
+          title: tiddler.fields.title,
+        };
+        $tw.utils.cleanupTiddlerFiles(cleanupOptions, (cleanupError: Error | null, _cleanedFileInfo?: FileInfo) => {
+          if (cleanupError) {
+            reject(cleanupError);
+            return;
+          }
+
+          resolve();
+        });
+      });
+
+      // Call the original callback with success
+      callback(null, this.boot.files[tiddler.fields.title]);
     } catch (error) {
       callback(error as Error);
     }

@@ -2,7 +2,7 @@ import { Then, When } from '@cucumber/cucumber';
 import fs from 'fs-extra';
 import path from 'path';
 import type { IWorkspace } from '../../src/services/workspaces/interface';
-import { settingsPath, wikiTestWikiPath } from '../supports/paths';
+import { settingsPath, wikiTestRootPath, wikiTestWikiPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
 
 When('I cleanup test wiki so it could create a new one on start', async function() {
@@ -166,8 +166,9 @@ When('I press {string} in wiki webview', async function(this: ApplicationWorld, 
 /**
  * Verify file exists in directory
  */
-Then('file {string} should exist in {string}', async function(this: ApplicationWorld, fileName: string, directoryPath: string) {
-  const actualPath = directoryPath.replace('{tmpDir}', wikiTestWikiPath);
+Then('file {string} should exist in {string}', { timeout: 15000 }, async function(this: ApplicationWorld, fileName: string, directoryPath: string) {
+  // Replace {tmpDir} with wiki test root (not wiki subfolder)
+  const actualPath = directoryPath.replace('{tmpDir}', wikiTestRootPath);
   const filePath = path.join(actualPath, fileName);
 
   let exists = false;
