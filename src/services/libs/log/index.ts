@@ -1,5 +1,4 @@
 import { LOG_FOLDER } from '@/constants/appPaths';
-import path from 'path';
 import { serializeError } from 'serialize-error';
 import winston, { format } from 'winston';
 import 'winston-daily-rotate-file';
@@ -73,7 +72,7 @@ export function getLoggerForLabel(label: string): winston.Logger {
         zippedArchive: false,
         maxSize: '20mb',
         maxFiles: '14d',
-        dirname: path.join(LOG_FOLDER, 'wikis'),
+        dirname: LOG_FOLDER,
         level: 'debug',
       }),
     ],
