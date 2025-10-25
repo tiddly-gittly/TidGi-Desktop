@@ -77,6 +77,15 @@ export interface INativeService {
    */
   getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
+  /**
+   * Log a message for a specific label (e.g., wiki name)
+   * Each label gets its own log file in the wikis subdirectory
+   * @param label The label for the log (e.g., wiki workspace name)
+   * @param level Log level (error, warn, info, debug)
+   * @param message Log message
+   * @param meta Optional metadata
+   */
+  logFor(label: string, level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   mkdir(absoulutePath: string): Promise<void>;
   /**
    * Move a file or directory. The directory can have contents.
@@ -136,6 +145,7 @@ export const NativeServiceIPCDescriptor = {
     formatFileUrlToAbsolutePath: ProxyPropertyType.Function,
     getLocalHostUrlWithActualInfo: ProxyPropertyType.Function,
     log: ProxyPropertyType.Function,
+    logFor: ProxyPropertyType.Function,
     mkdir: ProxyPropertyType.Function,
     movePath: ProxyPropertyType.Function,
     moveToTrash: ProxyPropertyType.Function,

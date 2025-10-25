@@ -151,7 +151,7 @@ export class Wiki implements IWikiService {
       tiddlyWikiPort: port,
       tokenAuth,
       userName,
-      workspaceID,
+      workspace,
     };
     logger.debug('initializing wikiWorker for workspace', {
       workspaceID,
