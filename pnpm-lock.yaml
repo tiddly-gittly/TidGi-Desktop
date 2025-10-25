@@ -113,8 +113,8 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0
       electron-ipc-cat:
-        specifier: 2.2.0
-        version: 2.2.0(electron@38.3.0)(rxjs@7.8.2)
+        specifier: 2.2.1
+        version: 2.2.1(electron@38.3.0)(rxjs@7.8.2)
       electron-settings:
         specifier: 5.0.0
         version: 5.0.0(electron@38.3.0)
@@ -3621,8 +3621,8 @@ packages:
     engines: {node: '>= 10.0'}
     hasBin: true
 
-  electron-ipc-cat@2.2.0:
-    resolution: {integrity: sha512-zvygSxOoepoUs+w77bn/nvYUhhWLeQtL9yHJJzYzgKfNvvIQewHl/vHJe6eTUDJacxTYO7srZqRobPR5rC8UQQ==}
+  electron-ipc-cat@2.2.1:
+    resolution: {integrity: sha512-ybHpgKP42VPwAMsOmmwNc1umT1kzAn2VJcP+XC8awY5N8K0DXnidndLe1gwgXfkouHLbRxzybwCA5vYoSfrHvw==}
     peerDependencies:
       electron: '>= 13.0.0'
       rxjs: '>= 7.5.0'
@@ -11282,7 +11282,7 @@ snapshots:
       - supports-color
     optional: true
 
-  electron-ipc-cat@2.2.0(electron@38.3.0)(rxjs@7.8.2):
+  electron-ipc-cat@2.2.1(electron@38.3.0)(rxjs@7.8.2):
     dependencies:
       electron: 38.3.0
       memize: 2.1.1

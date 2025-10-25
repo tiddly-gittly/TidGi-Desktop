@@ -42,7 +42,7 @@ export function startNodeJSWiki({
         const message = typeof newStdOut === 'string' ? newStdOut : new TextDecoder().decode(newStdOut);
         // Send to main process logger if services are ready
         void native.logFor(workspace.name, 'info', message).catch((error: unknown) => {
-          console.error('[intercept] Failed to send stdout to main process:', error);
+          console.error('[intercept] Failed to send stdout to main process:', error, message);
         });
         return message;
       },
@@ -50,7 +50,7 @@ export function startNodeJSWiki({
         const message = typeof newStdError === 'string' ? newStdError : new TextDecoder().decode(newStdError);
         // Send to main process logger if services are ready
         void native.logFor(workspace.name, 'error', message).catch((error: unknown) => {
-          console.error('[intercept] Failed to send stderr to main process:', error);
+          console.error('[intercept] Failed to send stderr to main process:', error, message);
         });
         return message;
       },
