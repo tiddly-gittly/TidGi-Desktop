@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import type { Logger } from '$:/core/modules/utils/logger.js';
 import type { FileInfo } from '$:/core/modules/utils/utils.js';
-import { callMainProcessService } from '@services/wiki/wikiWorker/workerServiceCaller';
+import { workspace } from '@services/wiki/wikiWorker/services';
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 import path from 'path';
 import type { Tiddler, Wiki } from 'tiddlywiki';
@@ -74,24 +74,24 @@ class WatchFileSystemAdaptor {
         return;
       }
 
-      const currentWorkspace = await callMainProcessService<IWorkspace>('workspace', 'get', [this.workspaceID]);
+      const currentWorkspace = await workspace.get(this.workspaceID);
       if (!currentWorkspace) {
         this.subWikisWithTag = [];
         this.tagNameToSubWiki.clear();
         return;
       }
 
-      const allWorkspaces = await callMainProcessService<IWorkspace[]>('workspace', 'getWorkspacesAsList', []);
+      const allWorkspaces = await workspace.getWorkspacesAsList();
 
       // Filter to only include sub-wikis that have both tagName and wikiFolderLocation for tag-based routing
-      const subWikisWithTag = allWorkspaces.filter((workspace) =>
-        'isSubWiki' in workspace &&
-        workspace.isSubWiki &&
-        workspace.mainWikiID === currentWorkspace.id &&
-        'tagName' in workspace &&
-        workspace.tagName &&
-        'wikiFolderLocation' in workspace &&
-        workspace.wikiFolderLocation
+      const subWikisWithTag = allWorkspaces.filter((workspaceItem: IWorkspace) =>
+        'isSubWiki' in workspaceItem &&
+        workspaceItem.isSubWiki &&
+        workspaceItem.mainWikiID === currentWorkspace.id &&
+        'tagName' in workspaceItem &&
+        workspaceItem.tagName &&
+        'wikiFolderLocation' in workspaceItem &&
+        workspaceItem.wikiFolderLocation
       ) as IWikiWorkspace[];
 
       this.subWikisWithTag = subWikisWithTag;

@@ -3,7 +3,7 @@
  * This ensures worker logs are written to wiki-specific log files.
  */
 
-import { callMainProcessService } from './workerServiceCaller';
+import { native } from './services';
 
 /** Store original console methods */
 const originalConsole = {
@@ -21,26 +21,26 @@ const originalConsole = {
 export function hijackConsoleForWiki(wikiName: string): void {
   console.log = (...arguments_: unknown[]) => {
     const message = arguments_.map((argument) => String(argument)).join(' ');
-    void callMainProcessService('native', 'logFor', [wikiName, 'debug', message]);
+    void native.logFor(wikiName, 'debug', message);
     // Also output to original console for debugging
     originalConsole.log(...arguments_);
   };
 
   console.debug = (...arguments_: unknown[]) => {
     const message = arguments_.map((argument) => String(argument)).join(' ');
-    void callMainProcessService('native', 'logFor', [wikiName, 'debug', message]);
+    void native.logFor(wikiName, 'debug', message);
     originalConsole.debug(...arguments_);
   };
 
   console.info = (...arguments_: unknown[]) => {
     const message = arguments_.map((argument) => String(argument)).join(' ');
-    void callMainProcessService('native', 'logFor', [wikiName, 'info', message]);
+    void native.logFor(wikiName, 'info', message);
     originalConsole.info(...arguments_);
   };
 
   console.warn = (...arguments_: unknown[]) => {
     const message = arguments_.map((argument) => String(argument)).join(' ');
-    void callMainProcessService('native', 'logFor', [wikiName, 'warn', message]);
+    void native.logFor(wikiName, 'warn', message);
     originalConsole.warn(...arguments_);
   };
 
@@ -51,7 +51,7 @@ export function hijackConsoleForWiki(wikiName: string): void {
     if (arguments_[0] instanceof Error) {
       meta.stack = arguments_[0].stack;
     }
-    void callMainProcessService('native', 'logFor', [wikiName, 'error', message, meta]);
+    void native.logFor(wikiName, 'error', message, meta);
     originalConsole.error(...arguments_);
   };
 }

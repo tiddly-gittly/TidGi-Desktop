@@ -1,6 +1,9 @@
 /**
  * Utility functions for Native Node.js Worker Threads communication
  * Replaces threads.js with native worker_threads API
+ * 
+ * Note: Service registration for workers will be handled by electron-ipc-cat/worker in the future
+ * This file contains TidGi-specific worker proxy functionality (e.g., git worker)
  */
 
 import { cloneDeep } from 'lodash';
@@ -8,10 +11,9 @@ import { Observable, Subject } from 'rxjs';
 import { Worker } from 'worker_threads';
 
 export interface WorkerMessage<T = unknown> {
-  type: 'call' | 'response' | 'error' | 'stream' | 'complete' | 'service-call' | 'service-response';
+  type: 'call' | 'response' | 'error' | 'stream' | 'complete';
   id?: string;
   method?: string;
-  service?: string;
   args?: unknown[];
   result?: T;
   error?: {
@@ -21,84 +23,8 @@ export interface WorkerMessage<T = unknown> {
   };
 }
 
-/**
- * Service registry for worker to call main process services
- */
-const serviceRegistry = new Map<string, Record<string, (...arguments_: unknown[]) => unknown>>();
-
-/**
- * Register a service that workers can call
- * @param name Service name (e.g., 'workspace', 'wiki')
- * @param service Service instance with methods
- */
-export function registerServiceForWorker(name: string, service: Record<string, (...arguments_: unknown[]) => unknown>): void {
-  serviceRegistry.set(name, service);
-}
-
-/**
- * Handle service call request from worker
- */
-async function handleServiceCallFromWorker(worker: Worker, message: WorkerMessage): Promise<void> {
-  const { id, service: serviceName, method, args: methodArguments = [] } = message;
-
-  if (!serviceName || !method || !id) {
-    worker.postMessage({
-      type: 'service-response',
-      id: id ?? 'unknown',
-      error: {
-        message: 'Invalid service call: missing service, method, or id',
-        name: 'InvalidServiceCall',
-      },
-    } as WorkerMessage);
-    return;
-  }
-
-  const service = serviceRegistry.get(serviceName);
-  if (!service) {
-    worker.postMessage({
-      type: 'service-response',
-      id,
-      error: {
-        message: `Service '${serviceName}' not registered`,
-        name: 'ServiceNotFound',
-      },
-    } as WorkerMessage);
-    return;
-  }
-
-  const methodImplementation = service[method];
-  if (!methodImplementation || typeof methodImplementation !== 'function') {
-    worker.postMessage({
-      type: 'service-response',
-      id,
-      error: {
-        message: `Method '${method}' not found in service '${serviceName}'`,
-        name: 'MethodNotFound',
-      },
-    } as WorkerMessage);
-    return;
-  }
-
-  try {
-    const result = await methodImplementation(...methodArguments);
-    worker.postMessage({
-      type: 'service-response',
-      id,
-      result,
-    } as WorkerMessage);
-  } catch (error) {
-    const error_ = error as Error;
-    worker.postMessage({
-      type: 'service-response',
-      id,
-      error: {
-        message: error_.message,
-        name: error_.name,
-        stack: error_.stack,
-      },
-    } as WorkerMessage);
-  }
-}
+// TODO: Replace with electron-ipc-cat/worker's registerWorkerService once available
+// export { registerWorkerService as registerServiceForWorker } from 'electron-ipc-cat/worker';
 
 /**
  * Create a worker proxy that mimics threads.js API
@@ -116,12 +42,6 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
 
   // Listen to worker messages
   worker.on('message', (message: WorkerMessage) => {
-    // Handle service calls from worker
-    if (message.type === 'service-call') {
-      void handleServiceCallFromWorker(worker, message);
-      return;
-    }
-
     const pending = pendingCalls.get(message.id!);
     if (!pending) return;
 

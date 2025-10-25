@@ -1,3 +1,7 @@
+// Auto-attach services to global.service - MUST import before consoleHijack
+import './services';
+import { hijackConsoleForWiki } from './consoleHijack';
+
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
 import intercept from 'intercept-stdout';
@@ -9,7 +13,6 @@ import { TiddlyWiki } from 'tiddlywiki';
 import { IWikiMessage, WikiControlActions } from '../interface';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import type { IStartNodeJSWikiConfigs } from '../wikiWorker';
-import { hijackConsoleForWiki } from './consoleHijack';
 import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
 import { authTokenIsProvided } from './wikiWorkerUtilities';

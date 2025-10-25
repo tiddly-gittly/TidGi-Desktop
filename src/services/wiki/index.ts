@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
 import { createWorkerProxy, terminateWorker } from '@services/libs/workerAdapter';
 import { dialog, shell } from 'electron';
+import { attachWorker } from 'electron-ipc-cat/server';
 import { backOff } from 'exponential-backoff';
 import { copy, createSymlink, exists, mkdir, mkdirp, mkdirs, pathExists, readdir, readFile, remove } from 'fs-extra';
 import { inject, injectable } from 'inversify';
@@ -88,7 +89,6 @@ export class Wiki implements IWikiService {
 
   // key is same to workspace id, so we can get this worker by workspace id
   private wikiWorkers: Partial<Record<string, { proxy: WikiWorker; nativeWorker: Worker }>> = {};
-  private nativeWorkers: Partial<Record<string, Worker>> = {};
 
   public getWorker(id: string): WikiWorker | undefined {
     return this.wikiWorkers[id]?.proxy;
@@ -158,26 +158,30 @@ export class Wiki implements IWikiService {
       function: 'Wiki.startWiki',
     });
 
-    // Create native worker using Vite's ?nodeWorker import
+    // Create native nodejs worker using Vite's ?nodeWorker import
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    const nativeWorker = WikiWorkerFactory() as Worker;
-    const worker = createWorkerProxy<WikiWorker>(nativeWorker);
+    const wikiWorker = WikiWorkerFactory() as Worker;
+
+    // Attach worker to all registered services (from bindServiceAndProxy)
+    attachWorker(wikiWorker);
+
+    const worker = createWorkerProxy<WikiWorker>(wikiWorker);
 
     logger.debug(`wikiWorker initialized`, { function: 'Wiki.startWiki' });
-    this.wikiWorkers[workspaceID] = { proxy: worker, nativeWorker };
+    this.wikiWorkers[workspaceID] = { proxy: worker, nativeWorker: wikiWorker };
     this.wikiWorkerStartedEventTarget.dispatchEvent(new Event(wikiWorkerStartedEventName(workspaceID)));
     const wikiLogger = startWikiLogger(workspaceID, name);
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation };
 
     await new Promise<void>((resolve, reject) => {
       // Handle worker errors
-      nativeWorker.on('error', (error: Error) => {
+      wikiWorker.on('error', (error: Error) => {
         wikiLogger.error(error.message, { function: 'Worker.error' });
         reject(new WikiRuntimeError(error, name, false));
       });
 
       // Handle worker exit
-      nativeWorker.on('exit', (code) => {
+      wikiWorker.on('exit', (code) => {
         delete this.wikiWorkers[workspaceID];
         const warningMessage = `NodeJSWiki ${workspaceID} Worker stopped with code ${code}`;
         logger.info(warningMessage, loggerMeta);
@@ -189,7 +193,7 @@ export class Wiki implements IWikiService {
       });
 
       // Handle worker messages (for logging)
-      nativeWorker.on('message', (message: unknown) => {
+      wikiWorker.on('message', (message: unknown) => {
         if (message && typeof message === 'object' && 'log' in message) {
           wikiLogger.info('Worker message', { data: message });
         }
