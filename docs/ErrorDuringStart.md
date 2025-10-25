@@ -184,17 +184,6 @@ If you don't want to include a polyfill, you can use an empty module like this:
 
 Usually because you import the server-side `logger` in renderer process code. You have to use `console` or add new transport in [rendererTransport.ts](src/services/libs/log/rendererTransport.ts).
 
-## Startup stalled at `Launching dev servers for renderer process code`
-
-Hangs here doesn't mean it stop working, just wait around 2 mins. Webpack dev server is quite slow, but will finally finished.
-
-If you are not sure, try `pnpm run start:dev:debug-webpack`, which will also enables `WebpackBar` plugin.
-
-### Why not using Vite?
-
-1. Wait for <https://github.com/vitejs/vite/pull/3932> to replace `ThreadsPlugin`
-2. Need to replace `inversify-inject-decorators` and `typeorm` that uses decorator first
-
 ## Error: ENOTDIR, not a directory at createError or supportedLanguages.json: ENOENT
 
 May be `src/constants/paths.ts` have wrong value of `__dirname` or `process.resourcesPath` after package, like being `C:\Users\linonetwo\Documents\repo-c\TidGi-Desktop\out\TidGi-win32-x64\resources\app.asar\xxx`
@@ -204,3 +193,9 @@ Check `src/constants/appPaths.ts` and `src/constants/paths.ts`
 ## error: Your local changes to the following files would be overwritten by checkout
 
 Clean up the local `template/wiki` folder. You can simply "Discard change" of that path, using github desktop.
+
+## Any error that persist and is from old version of package in node_modules
+
+Like you use `pnpm link`, you update the package on another side, but this side is not changed.
+
+Try clean the cache by `pnpm run clean:cache`.
