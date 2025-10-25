@@ -3,21 +3,24 @@
  *
  * Don't use i18n and logger in worker thread. For example, 12b93020, will throw error "Electron failed to install correctly, please delete node_modules/electron and try installing again ...worker.js..."
  */
-import { uninstall } from '@/helpers/installV8Cache';
 import './preload';
 import 'source-map-support/register';
+import { uninstall } from '@/helpers/installV8Cache';
+
 import { handleWorkerMessages } from '@services/libs/workerAdapter';
 import { mkdtemp } from 'fs-extra';
 import { tmpdir } from 'os';
 import path from 'path';
 import { Observable } from 'rxjs';
 
+import type { IWikiWorkspace } from '@services/workspaces/interface';
 import { IZxWorkerMessage, ZxWorkerControlActions } from '../interface';
 import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts, type IVariableContextList } from '../plugin/zxPlugin';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import { getWikiInstance } from './globals';
 import { extractWikiHTML, packetHTMLFromWikiFolder } from './htmlWiki';
 import { ipcServerRoutesMethods } from './ipcServerRoutes';
+import { notifyServicesReady } from './servicesReady';
 import { startNodeJSWiki } from './startNodeJSWiki';
 
 export interface IStartNodeJSWikiConfigs {
@@ -39,7 +42,7 @@ export interface IStartNodeJSWikiConfigs {
   tiddlyWikiPort: number;
   tokenAuth?: boolean;
   userName: string;
-  workspaceID: string;
+  workspace: IWikiWorkspace;
 }
 
 export type IZxFileInput = { fileContent: string; fileName: string } | { filePath: string };
@@ -102,6 +105,7 @@ const wikiWorker = {
   extractWikiHTML,
   packetHTMLFromWikiFolder,
   beforeExit,
+  notifyServicesReady,
   wikiOperation: wikiOperationsInWikiWorker.wikiOperation.bind(wikiOperationsInWikiWorker),
   ...ipcServerRoutesMethods,
 };

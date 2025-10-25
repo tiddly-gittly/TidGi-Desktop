@@ -1,6 +1,7 @@
 // Auto-attach services to global.service - MUST import before consoleHijack
 import './services';
 import { hijackConsoleForWiki } from './consoleHijack';
+import { onWorkerServicesReady } from './servicesReady';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
@@ -34,9 +35,9 @@ export function startNodeJSWiki({
   userName,
   workspace,
 }: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
-  // Hijack console to redirect logs to wiki-specific log file using workspace name
-  hijackConsoleForWiki(workspace.name);
-
+  onWorkerServicesReady(() => {
+    hijackConsoleForWiki(workspace.name);
+  });
   if (openDebugger === true) {
     inspector.open();
     inspector.waitForDebugger();

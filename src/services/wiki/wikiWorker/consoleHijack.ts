@@ -21,26 +21,35 @@ const originalConsole = {
 export function hijackConsoleForWiki(wikiName: string): void {
   console.log = (...arguments_: unknown[]) => {
     const message = arguments_.map((argument) => String(argument)).join(' ');
-    void native.logFor(wikiName, 'debug', message);
+    // Use void to ignore promise rejection - log to original console if fails
+    void native.logFor(wikiName, 'debug', message).catch((error: unknown) => {
+      originalConsole.error('[consoleHijack] Failed to send log to main process:', error);
+    });
     // Also output to original console for debugging
     originalConsole.log(...arguments_);
   };
 
   console.debug = (...arguments_: unknown[]) => {
     const message = arguments_.map((argument) => String(argument)).join(' ');
-    void native.logFor(wikiName, 'debug', message);
+    void native.logFor(wikiName, 'debug', message).catch((error: unknown) => {
+      originalConsole.error('[consoleHijack] Failed to send log to main process:', error);
+    });
     originalConsole.debug(...arguments_);
   };
 
   console.info = (...arguments_: unknown[]) => {
     const message = arguments_.map((argument) => String(argument)).join(' ');
-    void native.logFor(wikiName, 'info', message);
+    void native.logFor(wikiName, 'info', message).catch((error: unknown) => {
+      originalConsole.error('[consoleHijack] Failed to send log to main process:', error);
+    });
     originalConsole.info(...arguments_);
   };
 
   console.warn = (...arguments_: unknown[]) => {
     const message = arguments_.map((argument) => String(argument)).join(' ');
-    void native.logFor(wikiName, 'warn', message);
+    void native.logFor(wikiName, 'warn', message).catch((error: unknown) => {
+      originalConsole.error('[consoleHijack] Failed to send log to main process:', error);
+    });
     originalConsole.warn(...arguments_);
   };
 
@@ -51,7 +60,9 @@ export function hijackConsoleForWiki(wikiName: string): void {
     if (arguments_[0] instanceof Error) {
       meta.stack = arguments_[0].stack;
     }
-    void native.logFor(wikiName, 'error', message, meta);
+    void native.logFor(wikiName, 'error', message, meta).catch((error: unknown) => {
+      originalConsole.error('[consoleHijack] Failed to send log to main process:', error);
+    });
     originalConsole.error(...arguments_);
   };
 }

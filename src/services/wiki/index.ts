@@ -8,7 +8,7 @@ import { inject, injectable } from 'inversify';
 import path from 'path';
 import { Worker } from 'worker_threads';
 // @ts-expect-error - Vite worker import with ?nodeWorker query
-import WikiWorkerFactory from './wikiWorker?nodeWorker';
+import WikiWorkerFactory from './wikiWorker/index?nodeWorker';
 
 import { container } from '@services/container';
 
@@ -88,7 +88,7 @@ export class Wiki implements IWikiService {
   }
 
   // key is same to workspace id, so we can get this worker by workspace id
-  private wikiWorkers: Partial<Record<string, { proxy: WikiWorker; nativeWorker: Worker }>> = {};
+  private wikiWorkers: Partial<Record<string, { detachWorker: () => void; nativeWorker: Worker; proxy: WikiWorker }>> = {};
 
   public getWorker(id: string): WikiWorker | undefined {
     return this.wikiWorkers[id]?.proxy;
@@ -163,13 +163,17 @@ export class Wiki implements IWikiService {
     const wikiWorker = WikiWorkerFactory() as Worker;
 
     // Attach worker to all registered services (from bindServiceAndProxy)
-    attachWorker(wikiWorker);
+    const detachWorker = attachWorker(wikiWorker);
 
     const worker = createWorkerProxy<WikiWorker>(wikiWorker);
 
     logger.debug(`wikiWorker initialized`, { function: 'Wiki.startWiki' });
-    this.wikiWorkers[workspaceID] = { proxy: worker, nativeWorker: wikiWorker };
+    this.wikiWorkers[workspaceID] = { proxy: worker, nativeWorker: wikiWorker, detachWorker };
     this.wikiWorkerStartedEventTarget.dispatchEvent(new Event(wikiWorkerStartedEventName(workspaceID)));
+
+    // Notify worker that services are ready to use
+    worker.notifyServicesReady();
+
     const wikiLogger = startWikiLogger(workspaceID, name);
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation };
 
@@ -377,8 +381,10 @@ export class Wiki implements IWikiService {
   }
 
   public async stopWiki(id: string): Promise<void> {
-    const worker = this.getWorker(id);
-    const nativeWorker = this.getNativeWorker(id);
+    const workerData = this.wikiWorkers[id];
+    const worker = workerData?.proxy;
+    const nativeWorker = workerData?.nativeWorker;
+    const detachWorker = workerData?.detachWorker;
 
     if (worker === undefined || nativeWorker === undefined) {
       logger.warn(`No wiki for ${id}. No running worker, means maybe tiddlywiki server in this workspace failed to start`, {
@@ -396,6 +402,11 @@ export class Wiki implements IWikiService {
       worker.beforeExit();
       logger.debug(`terminateWorker for ${id}`);
       await terminateWorker(nativeWorker);
+      // Detach worker from service message handlers
+      if (detachWorker !== undefined) {
+        logger.debug(`detachWorker for ${id}`);
+        detachWorker();
+      }
     } catch (error) {
       logger.error('wiki worker stop failed', { function: 'stopWiki', error });
     }
