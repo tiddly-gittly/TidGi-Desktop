@@ -11,3 +11,9 @@ Feature: Renderer logging to backend (UI-driven)
     When I click on a "sync section" element with selector "[data-testid='preference-section-sync']"
     Then I should find log entries containing
       | Preferences section clicked |
+
+  @logging @wiki-worker-logging
+  Scenario: Wiki worker logs appear in same log directory
+    When I wait for 2 seconds
+    Then I should find log entries containing
+      | syncer-server-watch-filesystem |
