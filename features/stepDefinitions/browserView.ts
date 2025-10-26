@@ -1,10 +1,15 @@
 import { Then, When } from '@cucumber/cucumber';
-import { clickElement, clickElementWithText, getDOMContent, getTextContent, isLoaded, pressKey, typeText } from '../supports/webContentsViewHelper';
+import { backOff } from 'exponential-backoff';
+import { clickElement, clickElementWithText, elementExists, getDOMContent, getTextContent, isLoaded, pressKey, typeText } from '../supports/webContentsViewHelper';
 import type { ApplicationWorld } from './application';
 
-// Constants for retry logic
-const MAX_ATTEMPTS = 3;
-const RETRY_INTERVAL_MS = 500;
+// Backoff configuration for retries
+const BACKOFF_OPTIONS = {
+  numOfAttempts: 5,
+  startingDelay: 100,
+  timeMultiple: 2,
+  maxDelay: 2000,
+};
 
 Then('I should see {string} in the browser view content', async function(this: ApplicationWorld, expectedText: string) {
   if (!this.app) {
@@ -15,29 +20,23 @@ Then('I should see {string} in the browser view content', async function(this: A
     throw new Error('No current window available');
   }
 
-  // Retry logic to check for expected text in content
-  const maxAttempts = MAX_ATTEMPTS;
-  const retryInterval = RETRY_INTERVAL_MS;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const content = await getTextContent(this.app);
-    if (content && content.includes(expectedText)) {
-      return; // Success, exit early
-    }
-
-    // Wait before retrying (except for the last attempt)
-    if (attempt < maxAttempts - 1) {
-      await new Promise(resolve => setTimeout(resolve, retryInterval));
-    }
-  }
-
-  // Final attempt to get content for error message
-  const finalContent = await getTextContent(this.app);
-  throw new Error(
-    `Expected text "${expectedText}" not found in browser view content after ${MAX_ATTEMPTS} attempts. Actual content: ${
-      finalContent ? finalContent.substring(0, 200) + '...' : 'null'
-    }`,
-  );
+  await backOff(
+    async () => {
+      const content = await getTextContent(this.app!);
+      if (!content || !content.includes(expectedText)) {
+        throw new Error(`Expected text "${expectedText}" not found`);
+      }
+    },
+    {
+      ...BACKOFF_OPTIONS,
+      retry: () => true,
+    },
+  ).catch(async () => {
+    const finalContent = await getTextContent(this.app!);
+    throw new Error(
+      `Expected text "${expectedText}" not found in browser view content. Actual content: ${finalContent ? finalContent.substring(0, 200) + '...' : 'null'}`,
+    );
+  });
 });
 
 Then('I should see {string} in the browser view DOM', async function(this: ApplicationWorld, expectedText: string) {
@@ -49,29 +48,23 @@ Then('I should see {string} in the browser view DOM', async function(this: Appli
     throw new Error('No current window available');
   }
 
-  // Retry logic to check for expected text in DOM
-  const maxAttempts = MAX_ATTEMPTS;
-  const retryInterval = RETRY_INTERVAL_MS;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const domContent = await getDOMContent(this.app);
-    if (domContent && domContent.includes(expectedText)) {
-      return; // Success, exit early
-    }
-
-    // Wait before retrying (except for the last attempt)
-    if (attempt < maxAttempts - 1) {
-      await new Promise(resolve => setTimeout(resolve, retryInterval));
-    }
-  }
-
-  // Final attempt to get DOM content for error message
-  const finalDomContent = await getDOMContent(this.app);
-  throw new Error(
-    `Expected text "${expectedText}" not found in browser view DOM after ${MAX_ATTEMPTS} attempts. Actual DOM: ${
-      finalDomContent ? finalDomContent.substring(0, 200) + '...' : 'null'
-    }`,
-  );
+  await backOff(
+    async () => {
+      const domContent = await getDOMContent(this.app!);
+      if (!domContent || !domContent.includes(expectedText)) {
+        throw new Error(`Expected text "${expectedText}" not found in DOM`);
+      }
+    },
+    {
+      ...BACKOFF_OPTIONS,
+      retry: () => true,
+    },
+  ).catch(async () => {
+    const finalDomContent = await getDOMContent(this.app!);
+    throw new Error(
+      `Expected text "${expectedText}" not found in browser view DOM. Actual DOM: ${finalDomContent ? finalDomContent.substring(0, 200) + '...' : 'null'}`,
+    );
+  });
 });
 
 Then('the browser view should be loaded and visible', async function(this: ApplicationWorld) {
@@ -83,23 +76,20 @@ Then('the browser view should be loaded and visible', async function(this: Appli
     throw new Error('No current window available');
   }
 
-  // Retry logic to check if browser view is loaded
-  const maxAttempts = MAX_ATTEMPTS;
-  const retryInterval = RETRY_INTERVAL_MS;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const isLoadedResult = await isLoaded(this.app);
-    if (isLoadedResult) {
-      return; // Success, exit early
-    }
-
-    // Wait before retrying (except for the last attempt)
-    if (attempt < maxAttempts - 1) {
-      await new Promise(resolve => setTimeout(resolve, retryInterval));
-    }
-  }
-
-  throw new Error(`Browser view is not loaded or visible after ${MAX_ATTEMPTS} attempts`);
+  await backOff(
+    async () => {
+      const isLoadedResult = await isLoaded(this.app!);
+      if (!isLoadedResult) {
+        throw new Error('Browser view not loaded');
+      }
+    },
+    {
+      ...BACKOFF_OPTIONS,
+      retry: () => true,
+    },
+  ).catch(() => {
+    throw new Error('Browser view is not loaded or visible after multiple attempts');
+  });
 });
 
 When('I click on {string} element in browser view with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
@@ -166,4 +156,29 @@ Then('I should not see {string} in the browser view content', async function(thi
   if (content && content.includes(unexpectedText)) {
     throw new Error(`Unexpected text "${unexpectedText}" found in browser view content`);
   }
+});
+
+Then('I should not see a(n) {string} element in browser view with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+
+  if (!this.currentWindow) {
+    throw new Error('No current window available');
+  }
+
+  await backOff(
+    async () => {
+      const exists: boolean = await elementExists(this.app!, selector);
+      if (exists) {
+        throw new Error('Element still exists');
+      }
+    },
+    {
+      ...BACKOFF_OPTIONS,
+      retry: () => true,
+    },
+  ).catch(() => {
+    throw new Error(`Element "${elementComment}" with selector "${selector}" was found in browser view after multiple attempts, but should not be visible`);
+  });
 });

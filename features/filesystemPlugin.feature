@@ -87,5 +87,5 @@ Feature: Filesystem Plugin
     # Re-open timeline to see updated list
     And I click on "sidebar tab" element in browser view with selector "div.tc-tab-buttons.tc-sidebar-tabs-main > button:has-text('最近')"
     # The timeline should not have a clickable link to TestTiddler anymore
-    # Note: The tiddler title may still appear as "missing tiddler" text, but not as a link in the timeline
+    Then I should not see a "TestTiddler timeline link" element in browser view with selector "div.tc-timeline a.tc-tiddlylink:has-text('TestTiddler')"
 
