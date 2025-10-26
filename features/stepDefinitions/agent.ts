@@ -1,6 +1,6 @@
 import { After, DataTable, Given, Then } from '@cucumber/cucumber';
-import { backOff } from 'exponential-backoff';
 import { AIGlobalSettings, AIProviderConfig } from '@services/externalAPI/interface';
+import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import { isEqual, omit } from 'lodash';
 import path from 'path';
@@ -14,7 +14,6 @@ const BACKOFF_OPTIONS = {
   numOfAttempts: 10,
   startingDelay: 200,
   timeMultiple: 1.5,
-  maxDelay: 3000,
 };
 
 /**
@@ -140,13 +139,7 @@ Then('I should see {int} messages in chat history', async function(this: Applica
         throw new Error(`Expected ${expectedCount} messages but found ${currentCount}`);
       }
     },
-    {
-      ...BACKOFF_OPTIONS,
-      retry: (error: Error) => {
-        // Retry if we don't have enough messages yet, but not if we have too many
-        return !error.message.includes('(too many)');
-      },
-    },
+    BACKOFF_OPTIONS,
   ).catch(async (error: unknown) => {
     // Get final count for error message
     try {

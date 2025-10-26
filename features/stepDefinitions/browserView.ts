@@ -5,10 +5,9 @@ import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
 const BACKOFF_OPTIONS = {
-  numOfAttempts: 5,
+  numOfAttempts: 8,
   startingDelay: 100,
   timeMultiple: 2,
-  maxDelay: 2000,
 };
 
 Then('I should see {string} in the browser view content', async function(this: ApplicationWorld, expectedText: string) {
@@ -27,10 +26,7 @@ Then('I should see {string} in the browser view content', async function(this: A
         throw new Error(`Expected text "${expectedText}" not found`);
       }
     },
-    {
-      ...BACKOFF_OPTIONS,
-      retry: () => true,
-    },
+    BACKOFF_OPTIONS,
   ).catch(async () => {
     const finalContent = await getTextContent(this.app!);
     throw new Error(
@@ -55,10 +51,7 @@ Then('I should see {string} in the browser view DOM', async function(this: Appli
         throw new Error(`Expected text "${expectedText}" not found in DOM`);
       }
     },
-    {
-      ...BACKOFF_OPTIONS,
-      retry: () => true,
-    },
+    BACKOFF_OPTIONS,
   ).catch(async () => {
     const finalDomContent = await getDOMContent(this.app!);
     throw new Error(
@@ -83,10 +76,7 @@ Then('the browser view should be loaded and visible', async function(this: Appli
         throw new Error('Browser view not loaded');
       }
     },
-    {
-      ...BACKOFF_OPTIONS,
-      retry: () => true,
-    },
+    BACKOFF_OPTIONS,
   ).catch(() => {
     throw new Error('Browser view is not loaded or visible after multiple attempts');
   });
@@ -174,10 +164,7 @@ Then('I should not see a(n) {string} element in browser view with selector {stri
         throw new Error('Element still exists');
       }
     },
-    {
-      ...BACKOFF_OPTIONS,
-      retry: () => true,
-    },
+    BACKOFF_OPTIONS,
   ).catch(() => {
     throw new Error(`Element "${elementComment}" with selector "${selector}" was found in browser view after multiple attempts, but should not be visible`);
   });

@@ -1,4 +1,4 @@
-@tidgiminiwindow
+@tidgi-mini-window
 Feature: TidGi Mini Window
   As a user
   I want to enable and use the TidGi mini window

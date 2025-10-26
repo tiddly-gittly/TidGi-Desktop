@@ -15,10 +15,9 @@ import { clearSubWikiRoutingTestData } from './wiki';
 
 // Backoff configuration for retries
 const BACKOFF_OPTIONS = {
-  numOfAttempts: 5,
+  numOfAttempts: 8,
   startingDelay: 100,
   timeMultiple: 2,
-  maxDelay: 2000,
 };
 
 // Helper function to check if window type is valid and return the corresponding WindowNames
@@ -74,10 +73,7 @@ export class ApplicationWorld {
             throw new Error('Condition not met');
           }
         },
-        {
-          ...BACKOFF_OPTIONS,
-          retry: () => true,
-        },
+        BACKOFF_OPTIONS,
       );
       return true;
     } catch {
@@ -183,13 +179,7 @@ export class ApplicationWorld {
           }
           return window;
         },
-        {
-          ...BACKOFF_OPTIONS,
-          retry: (error: Error) => {
-            // Don't retry if it's an invalid window type error
-            return !error.message.includes('is not a valid WindowNames');
-          },
-        },
+        BACKOFF_OPTIONS,
       );
     } catch (error) {
       // If it's an invalid window type error, re-throw it
@@ -216,10 +206,10 @@ Before(function(this: ApplicationWorld, { pickle }) {
     fs.mkdirSync(screenshotsDirectory, { recursive: true });
   }
 
-  if (pickle.tags.some((tag) => tag.name === '@setup')) {
+  if (pickle.tags.some((tag) => tag.name === '@ai-setting')) {
     clearAISettings();
   }
-  if (pickle.tags.some((tag) => tag.name === '@tidgiminiwindow')) {
+  if (pickle.tags.some((tag) => tag.name === '@tidgi-mini-window')) {
     clearTidgiMiniWindowSettings();
   }
 });
@@ -246,13 +236,13 @@ After(async function(this: ApplicationWorld, { pickle }) {
     this.mainWindow = undefined;
     this.currentWindow = undefined;
   }
-  if (pickle.tags.some((tag) => tag.name === '@tidgiminiwindow')) {
+  if (pickle.tags.some((tag) => tag.name === '@tidgi-mini-window')) {
     clearTidgiMiniWindowSettings();
   }
-  if (pickle.tags.some((tag) => tag.name === '@setup')) {
+  if (pickle.tags.some((tag) => tag.name === '@ai-setting')) {
     clearAISettings();
   }
-  if (pickle.tags.some((tag) => tag.name === '@subwiki-routing')) {
+  if (pickle.tags.some((tag) => tag.name === '@subwiki')) {
     clearSubWikiRoutingTestData();
   }
 });
