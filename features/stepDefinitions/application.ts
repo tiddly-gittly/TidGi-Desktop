@@ -1,4 +1,5 @@
 import { After, AfterStep, Before, setWorldConstructor, When } from '@cucumber/cucumber';
+import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
 import { _electron as electron } from 'playwright';
@@ -11,6 +12,14 @@ import { getPackedAppPath } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { clearTidgiMiniWindowSettings } from './tidgiMiniWindow';
 import { clearSubWikiRoutingTestData } from './wiki';
+
+// Backoff configuration for retries
+const BACKOFF_OPTIONS = {
+  numOfAttempts: 5,
+  startingDelay: 100,
+  timeMultiple: 2,
+  maxDelay: 2000,
+};
 
 // Helper function to check if window type is valid and return the corresponding WindowNames
 export function checkWindowName(windowType: string): WindowNames {
@@ -52,23 +61,28 @@ export class ApplicationWorld {
   async waitForWindowCondition(
     windowType: string,
     condition: (window: Page | undefined, isVisible: boolean) => boolean,
-    maxAttempts: number = 3,
-    retryInterval: number = 250,
   ): Promise<boolean> {
     if (!this.app) return false;
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const targetWindow = await this.findWindowByType(windowType);
-      const visible = targetWindow ? await this.isWindowVisible(targetWindow) : false;
+    try {
+      await backOff(
+        async () => {
+          const targetWindow = await this.findWindowByType(windowType);
+          const visible = targetWindow ? await this.isWindowVisible(targetWindow) : false;
 
-      if (condition(targetWindow, visible)) {
-        return true;
-      }
-
-      // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, retryInterval));
+          if (!condition(targetWindow, visible)) {
+            throw new Error('Condition not met');
+          }
+        },
+        {
+          ...BACKOFF_OPTIONS,
+          retry: () => true,
+        },
+      );
+      return true;
+    } catch {
+      return false;
     }
-    return false;
   }
 
   // Helper method to find window by type - strict WindowNames matching
@@ -159,25 +173,31 @@ export class ApplicationWorld {
       return this.currentWindow;
     }
 
-    // Use the findWindowByType method with retry logic
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const window = await this.findWindowByType(windowType);
-        if (window) return window;
-      } catch (error) {
-        // If it's an invalid window type error, throw immediately
-        if (error instanceof Error && error.message.includes('is not a valid WindowNames')) {
-          throw error;
-        }
+    // Use the findWindowByType method with retry logic using backoff
+    try {
+      return await backOff(
+        async () => {
+          const window = await this.findWindowByType(windowType);
+          if (!window) {
+            throw new Error(`Window ${windowType} not found`);
+          }
+          return window;
+        },
+        {
+          ...BACKOFF_OPTIONS,
+          retry: (error: Error) => {
+            // Don't retry if it's an invalid window type error
+            return !error.message.includes('is not a valid WindowNames');
+          },
+        },
+      );
+    } catch (error) {
+      // If it's an invalid window type error, re-throw it
+      if (error instanceof Error && error.message.includes('is not a valid WindowNames')) {
+        throw error;
       }
-
-      // If window not found, wait and retry (except for the last attempt)
-      if (attempt < 2) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
+      return undefined;
     }
-
-    return undefined;
   }
 }
 

@@ -1,36 +1,24 @@
 import type { ElectronApplication } from 'playwright';
 
 /**
- * Get the first WebContentsView from any window
- * Prioritizes main window, but will check all windows if needed
+ * Get the first WebContentsView from current window
+ * Since we only have one WebContentsView per window in main window, we don't need to loop through all windows
  */
 async function getFirstWebContentsView(app: ElectronApplication) {
   return await app.evaluate(async ({ BrowserWindow }) => {
     const allWindows = BrowserWindow.getAllWindows();
-
-    // First try to find main window
     const mainWindow = allWindows.find(w => !w.isDestroyed() && w.webContents?.getType() === 'window');
 
-    if (mainWindow?.contentView && 'children' in mainWindow.contentView) {
-      const children = (mainWindow.contentView as unknown as { children: Array<{ webContents?: { id?: number } }> }).children;
-      if (Array.isArray(children) && children.length > 0) {
-        const webContentsId = children[0]?.webContents?.id;
-        if (webContentsId) return webContentsId;
-      }
+    if (!mainWindow?.contentView || !('children' in mainWindow.contentView)) {
+      return null;
     }
 
-    // If main window doesn't have a WebContentsView, check all windows
-    for (const window of allWindows) {
-      if (!window.isDestroyed() && window.contentView && 'children' in window.contentView) {
-        const children = (window.contentView as unknown as { children: Array<{ webContents?: { id?: number } }> }).children;
-        if (Array.isArray(children) && children.length > 0) {
-          const webContentsId = children[0]?.webContents?.id;
-          if (webContentsId) return webContentsId;
-        }
-      }
+    const children = (mainWindow.contentView as unknown as { children: Array<{ webContents?: { id?: number } }> }).children;
+    if (!Array.isArray(children) || children.length === 0) {
+      return null;
     }
 
-    return null;
+    return children[0]?.webContents?.id ?? null;
   });
 }
 
@@ -44,7 +32,7 @@ async function executeInBrowserView<T>(
   const webContentsId = await getFirstWebContentsView(app);
 
   if (!webContentsId) {
-    throw new Error('No WebContentsView found in main window');
+    throw new Error('No browser view found');
   }
 
   return await app.evaluate(

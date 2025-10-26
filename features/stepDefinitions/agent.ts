@@ -1,4 +1,5 @@
 import { After, DataTable, Given, Then } from '@cucumber/cucumber';
+import { backOff } from 'exponential-backoff';
 import { AIGlobalSettings, AIProviderConfig } from '@services/externalAPI/interface';
 import fs from 'fs-extra';
 import { isEqual, omit } from 'lodash';
@@ -7,6 +8,14 @@ import type { ISettingFile } from '../../src/services/database/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { settingsPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
+
+// Backoff configuration for retries
+const BACKOFF_OPTIONS = {
+  numOfAttempts: 10,
+  startingDelay: 200,
+  timeMultiple: 1.5,
+  maxDelay: 3000,
+};
 
 /**
  * Generate deterministic embedding vector based on a semantic tag
@@ -111,43 +120,42 @@ Then('I should see {int} messages in chat history', async function(this: Applica
     throw new Error('No current window is available');
   }
 
-  // Use precise selector based on the provided HTML structure
   const messageSelector = '[data-testid="message-bubble"]';
 
-  try {
-    // Wait for messages to reach expected count, checking periodically for streaming
-    for (let attempt = 1; attempt <= expectedCount * 3; attempt++) {
-      try {
-        // Wait for at least one message to exist
-        await currentWindow.waitForSelector(messageSelector, { timeout: 5000 });
+  await backOff(
+    async () => {
+      // Wait for at least one message to exist
+      await currentWindow.waitForSelector(messageSelector, { timeout: 5000 });
 
-        // Count current messages
-        const messages = currentWindow.locator(messageSelector);
-        const currentCount = await messages.count();
+      // Count current messages
+      const messages = currentWindow.locator(messageSelector);
+      const currentCount = await messages.count();
 
-        if (currentCount === expectedCount) {
-          return;
-        } else if (currentCount > expectedCount) {
-          throw new Error(`Expected ${expectedCount} messages but found ${currentCount} (too many)`);
-        }
-
-        // If not enough messages yet, wait a bit more for streaming
-        if (attempt < expectedCount * 3) {
-          await currentWindow.waitForTimeout(2000);
-        }
-      } catch (timeoutError) {
-        if (attempt === expectedCount * 3) {
-          throw timeoutError;
-        }
+      if (currentCount === expectedCount) {
+        return; // Success
+      } else if (currentCount > expectedCount) {
+        throw new Error(`Expected ${expectedCount} messages but found ${currentCount} (too many)`);
+      } else {
+        // Not enough messages yet, throw to trigger retry
+        throw new Error(`Expected ${expectedCount} messages but found ${currentCount}`);
       }
+    },
+    {
+      ...BACKOFF_OPTIONS,
+      retry: (error: Error) => {
+        // Retry if we don't have enough messages yet, but not if we have too many
+        return !error.message.includes('(too many)');
+      },
+    },
+  ).catch(async (error: unknown) => {
+    // Get final count for error message
+    try {
+      const finalCount = await currentWindow.locator(messageSelector).count();
+      throw new Error(`Could not find expected ${expectedCount} messages. Found ${finalCount}. Error: ${(error as Error).message}`);
+    } catch {
+      throw new Error(`Could not find expected ${expectedCount} messages. Error: ${(error as Error).message}`);
     }
-
-    // Final attempt to get the count
-    const finalCount = await currentWindow.locator(messageSelector).count();
-    throw new Error(`Expected ${expectedCount} messages but found ${finalCount} after waiting for streaming to complete`);
-  } catch (error) {
-    throw new Error(`Could not find expected ${expectedCount} messages. Error: ${(error as Error).message}`);
-  }
+  });
 });
 
 Then('the last AI request should contain system prompt {string}', async function(this: ApplicationWorld, expectedPrompt: string) {
