@@ -19,6 +19,7 @@ pnpm test:e2e
 pnpm test:e2e --tags="@smoke"
 # Or run a single e2e test by `--name`
 pnpm test:e2e --name "Wiki-search tool usage" # Not `-- --name` , and not `name`, is is just `--name` and have "" around the value, not omitting `--name`
+# Don't directly concat filename after pnpm test:e2e, only unit test can do that, e2e test can't.
 
 # Run with coverage
 pnpm test:unit -- --coverage
