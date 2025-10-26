@@ -147,6 +147,8 @@
     "DisableAudioTitle": "Disable audio",
     "DisableNotification": "Prevent workspace from sending notifications.",
     "DisableNotificationTitle": "Disable notifications",
+    "EnableFileSystemWatchTitle": "Enable File System Watch (Experimental)",
+    "EnableFileSystemWatchDescription": "Automatically watch for external file changes and sync to the wiki. This is an experimental feature and may have bugs. You can disable it if you encounter issues. Requires workspace restart to take effect.",
     "EnableHTTPAPI": "Enable HTTP APIs",
     "EnableHTTPAPIDescription": "Allow third-party programs such as TidGi-Mobile, Tiddlywiki-Collector webclipper, etc. to read and modify your notes through the HTTP network interface.",
     "EnableHTTPS": "Enable HTTPS",

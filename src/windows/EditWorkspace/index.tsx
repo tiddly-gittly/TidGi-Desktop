@@ -158,6 +158,7 @@ export default function EditWorkspace(): React.JSX.Element {
   const backupOnInterval = isWiki ? workspace.backupOnInterval : false;
   const disableAudio = isWiki ? workspace.disableAudio : false;
   const disableNotifications = isWiki ? workspace.disableNotifications : false;
+  const enableFileSystemWatch = isWiki ? workspace.enableFileSystemWatch : false;
   const gitUrl = isWiki ? workspace.gitUrl : null;
   const hibernateWhenUnused = isWiki ? workspace.hibernateWhenUnused : false;
   const homeUrl = isWiki ? workspace.homeUrl : '';
@@ -449,6 +450,25 @@ export default function EditWorkspace(): React.JSX.Element {
                   }
                 >
                   <ListItemText primary={t('EditWorkspace.DisableAudioTitle')} secondary={t('EditWorkspace.DisableAudio')} />
+                </ListItem>
+                <Divider />
+                <ListItem
+                  disableGutters
+                  secondaryAction={
+                    <Switch
+                      edge='end'
+                      color='primary'
+                      checked={enableFileSystemWatch}
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                        workspaceSetter({ ...workspace, enableFileSystemWatch: event.target.checked }, true);
+                      }}
+                    />
+                  }
+                >
+                  <ListItemText
+                    primary={t('EditWorkspace.EnableFileSystemWatchTitle')}
+                    secondary={t('EditWorkspace.EnableFileSystemWatchDescription')}
+                  />
                 </ListItem>
               </List>
             )}

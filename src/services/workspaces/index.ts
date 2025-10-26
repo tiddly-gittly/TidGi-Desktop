@@ -447,6 +447,7 @@ export class Workspace implements IWorkspaceService {
       transparentBackground: false,
       enableHTTPAPI: false,
       excludedPlugins: [],
+      enableFileSystemWatch: false,
     };
 
     await this.set(newID, newWorkspace);

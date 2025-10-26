@@ -149,6 +149,12 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
    * folder path for this wiki workspace
    */
   wikiFolderLocation: string;
+  /**
+   * Enable file system watching (experimental feature using chokidar)
+   * When enabled, external file changes will be synced to the wiki automatically
+   * This is an experimental feature and may have bugs
+   */
+  enableFileSystemWatch: boolean;
 }
 export type IWorkspace = IWikiWorkspace | IDedicatedWorkspace;
 

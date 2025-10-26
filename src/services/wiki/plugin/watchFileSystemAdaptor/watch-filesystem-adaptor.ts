@@ -74,7 +74,7 @@ class WatchFileSystemAdaptor {
     void this.updateSubWikisCache();
 
     // Initialize file watching
-    this.initializeFileWatching();
+    void this.initializeFileWatching();
   }
 
   /**
@@ -345,9 +345,23 @@ class WatchFileSystemAdaptor {
   /**
    * Initialize file system watching
    */
-  private initializeFileWatching(): void {
+  private async initializeFileWatching(): Promise<void> {
     if (!this.watchPathBase) {
       return;
+    }
+
+    // Check if file system watch is enabled for this workspace
+    if (this.workspaceID) {
+      try {
+        const currentWorkspace = await workspace.get(this.workspaceID);
+        if (currentWorkspace && 'enableFileSystemWatch' in currentWorkspace && !currentWorkspace.enableFileSystemWatch) {
+          this.logger.log('[WATCH_FS_DISABLED] File system watching is disabled for this workspace');
+          return;
+        }
+      } catch (error) {
+        this.logger.alert('[WATCH_FS_ERROR] Failed to check enableFileSystemWatch setting:', error);
+        return;
+      }
     }
 
     // Reset stabilization flag for new watcher instance
