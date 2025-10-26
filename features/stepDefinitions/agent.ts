@@ -69,9 +69,9 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
       // Skip header row
       for (let index = 1; index < rows.length; index++) {
         const row = rows[index];
-        const response = String(row[0] ?? '').trim();
-        const stream = String(row[1] ?? '').trim().toLowerCase() === 'true';
-        const embeddingTag = String(row[2] ?? '').trim();
+        const response = (row[0] ?? '').trim();
+        const stream = (row[1] ?? '').trim().toLowerCase() === 'true';
+        const embeddingTag = (row[2] ?? '').trim();
 
         // Generate embedding from semantic tag if provided
         let embedding: number[] | undefined;
