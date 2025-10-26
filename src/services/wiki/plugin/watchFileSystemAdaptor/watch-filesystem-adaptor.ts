@@ -3,9 +3,16 @@ import type { Logger } from '$:/core/modules/utils/logger.js';
 import type { FileInfo } from '$:/core/modules/utils/utils.js';
 import { workspace } from '@services/wiki/wikiWorker/services';
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
+import chokidar from 'chokidar';
+import fs from 'fs';
+import path from 'path';
 import type { Tiddler, Wiki } from 'tiddlywiki';
+import { deepEqual } from './deep-equal';
+import { getTwCustomMimeType, toTWUTCString } from './utils';
 
 type IFileSystemAdaptorCallback = (error: Error | null | string, fileInfo?: FileInfo | null) => void;
+
+type IBootFilesIndexItemWithTitle = FileInfo & { tiddlerTitle: string };
 
 /**
  * Enhanced filesystem adaptor that routes tiddlers to sub-wikis based on tags.
@@ -13,6 +20,8 @@ type IFileSystemAdaptorCallback = (error: Error | null | string, fileInfo?: File
  *
  * Unlike the original approach that modifies $:/config/FileSystemPaths with complex string manipulation,
  * this adaptor directly checks tiddler tags against workspace tagName and routes to appropriate directories.
+ *
+ * Also watches filesystem for external changes and syncs them back to wiki.
  */
 class WatchFileSystemAdaptor {
   name = 'watch-filesystem';
@@ -26,6 +35,17 @@ class WatchFileSystemAdaptor {
   private tagNameToSubWiki: Map<string, IWikiWorkspace> = new Map();
   /** Cached extension filters from $:/config/FileSystemExtensions. Requires restart to reflect changes. */
   private extensionFilters: string[] | undefined;
+
+  // File watching properties
+  private watchPathBase!: string;
+  /** Inverse index: filepath -> tiddler info for fast lookup */
+  private inverseFilesIndex: Record<string, IBootFilesIndexItemWithTitle> = {};
+  /** Mutex to ignore temporary file created or deleted by this plugin */
+  private lockedFiles: Set<string> = new Set<string>();
+  /** Chokidar watcher instance */
+  private watcher: ReturnType<typeof chokidar.watch> | undefined;
+  /** Track if watcher has stabilized by capturing first real file event */
+  private watcherStabilized: boolean = false;
 
   constructor(options: { boot?: typeof $tw.boot; wiki: Wiki }) {
     this.wiki = options.wiki;
@@ -41,8 +61,10 @@ class WatchFileSystemAdaptor {
 
     if (this.boot.wikiTiddlersPath) {
       $tw.utils.createDirectory(this.boot.wikiTiddlersPath);
+      this.watchPathBase = path.resolve(this.boot.wikiTiddlersPath);
     } else {
       this.logger.alert('watch-filesystem: wikiTiddlersPath is not set!');
+      this.watchPathBase = '';
     }
 
     // Initialize extension filters cache (cached for performance, requires restart to reflect changes)
@@ -50,6 +72,9 @@ class WatchFileSystemAdaptor {
 
     // Initialize sub-wikis cache
     void this.updateSubWikisCache();
+
+    // Initialize file watching
+    this.initializeFileWatching();
   }
 
   /**
@@ -198,7 +223,7 @@ class WatchFileSystemAdaptor {
    */
   async saveTiddler(tiddler: Tiddler, callback: IFileSystemAdaptorCallback, options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
     const title = tiddler.fields.title;
-    
+
     try {
       // Get file info directly
       const fileInfo = await this.getTiddlerFileInfo(tiddler);
@@ -314,6 +339,305 @@ class WatchFileSystemAdaptor {
     if (this.boot.files[title]) {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete this.boot.files[title];
+    }
+  }
+
+  /**
+   * Initialize file system watching
+   */
+  private initializeFileWatching(): void {
+    if (!this.watchPathBase) {
+      return;
+    }
+
+    // Reset stabilization flag for new watcher instance
+    this.watcherStabilized = false;
+
+    // Initialize inverse index from boot.files
+    this.initializeInverseFilesIndex();
+
+    // Setup chokidar watcher
+    this.watcher = chokidar.watch(this.watchPathBase, {
+      ignoreInitial: true,
+      ignored: [
+        '**/*.meta', // TODO: deal with field change in meta file
+        '**/$__StoryList*',
+        '**/*_1.*', // sometimes sync logic bug will resulted in file ends with _1
+        '**/subwiki/**',
+        '**/.DS_Store',
+        '**/.git',
+      ],
+      atomic: true,
+    });
+
+    // Listen for ready event
+    this.watcher.on('ready', () => {
+      console.log('[WATCH_FS_READY] Filesystem watcher is ready');
+      console.log('[WATCH_FS_READY] Watching path:', this.watchPathBase);
+      if (this.watcher) {
+        console.log('[WATCH_FS_READY] Watcher getWatched:', Object.keys(this.watcher.getWatched()).length, 'directories');
+      }
+    });
+
+    // Setup file change listener
+    this.setupListeners();
+  }
+
+  /**
+   * Initialize the inverse files index from boot.files
+   */
+  private initializeInverseFilesIndex(): void {
+    const initialLoadedFiles = this.boot.files;
+    // Initialize the inverse index
+    for (const tiddlerTitle in initialLoadedFiles) {
+      if (Object.hasOwn(initialLoadedFiles, tiddlerTitle)) {
+        const fileDescriptor = initialLoadedFiles[tiddlerTitle];
+        const fileRelativePath = path.relative(this.watchPathBase, fileDescriptor.filepath);
+        this.inverseFilesIndex[fileRelativePath] = { ...fileDescriptor, filepath: fileRelativePath, tiddlerTitle };
+      }
+    }
+  }
+
+  /**
+   * Update inverse index
+   */
+  private updateInverseIndex(filePath: string, fileDescriptor: IBootFilesIndexItemWithTitle | undefined): void {
+    if (fileDescriptor) {
+      this.inverseFilesIndex[filePath] = fileDescriptor;
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete this.inverseFilesIndex[filePath];
+    }
+  }
+
+  /**
+   * Check if file path exists in index
+   */
+  private filePathExistsInIndex(filePath: string): boolean {
+    return Boolean(this.inverseFilesIndex[filePath]);
+  }
+
+  /**
+   * Get tiddler title by file path
+   */
+  private getTitleByPath(filePath: string): string {
+    try {
+      return this.inverseFilesIndex[filePath].tiddlerTitle;
+    } catch {
+      // fatal error, shutting down.
+      if (this.watcher) {
+        void this.watcher.close();
+      }
+      throw new Error(`${filePath}\n↑ not existed in watch-fs plugin's FileSystemMonitor's this.inverseFilesIndex`);
+    }
+  }
+
+  /**
+   * Setup file system change listeners
+   */
+  private setupListeners(): void {
+    if (!this.watcher) {
+      return;
+    }
+
+    console.log('[WATCH_FS_SETUP] Setting up file system listeners');
+
+    const listener = (changeType: string, filePath: string, _stats?: fs.Stats): void => {
+      const fileName = path.basename(filePath);
+      console.log('[WATCH_FS_EVENT]', changeType, fileName);
+      
+      // Only handle specific change types
+      if (!['add', 'addDir', 'change', 'unlink', 'unlinkDir'].includes(changeType)) {
+        return;
+      }
+
+      const fileRelativePath = path.relative(this.watchPathBase, filePath);
+      const fileAbsolutePath = path.join(this.watchPathBase, fileRelativePath);
+      const metaFileAbsolutePath = `${fileAbsolutePath}.meta`;
+      const fileNameBase = path.parse(fileAbsolutePath).name;
+      const fileExtension = path.extname(fileRelativePath);
+      const fileMimeType = getTwCustomMimeType(fileExtension);
+
+      // Don't handle metadata file change
+      if (fileExtension === '.meta') return;
+
+      // Mark watcher as stabilized after first real file event
+      if (!this.watcherStabilized) {
+        this.watcherStabilized = true;
+        console.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized after capturing first file event');
+      }
+
+      // Check mutex lock
+      if (this.lockedFiles.has(fileRelativePath)) {
+        this.lockedFiles.delete(fileRelativePath);
+        return;
+      }
+
+      // Handle add or change
+      if (changeType === 'add' || changeType === 'change') {
+        this.handleFileAddOrChange(
+          fileAbsolutePath,
+          fileRelativePath,
+          metaFileAbsolutePath,
+          fileName,
+          fileNameBase,
+          fileExtension,
+          fileMimeType,
+          changeType,
+        );
+      }
+
+      // Handle delete
+      if (changeType === 'unlink') {
+        this.handleFileDelete(fileAbsolutePath, fileRelativePath, fileExtension);
+      }
+    };
+
+    this.watcher.on('all', listener);
+    console.log('[WATCH_FS_SETUP] File system listeners registered');
+  }
+
+  /**
+   * Handle file add or change events
+   */
+  private handleFileAddOrChange(
+    fileAbsolutePath: string,
+    fileRelativePath: string,
+    metaFileAbsolutePath: string,
+    fileName: string,
+    fileNameBase: string,
+    fileExtension: string,
+    fileMimeType: string,
+    changeType: 'add' | 'change',
+  ): void {
+    // Get tiddler from disk
+    let tiddlersDescriptor: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tiddlers: any[];
+      [key: string]: unknown;
+    };
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      tiddlersDescriptor = $tw.loadTiddlersFromFile(fileAbsolutePath);
+    } catch (_error) {
+      return;
+    }
+
+    // Create .meta file for non-tiddler files
+    const ignoredExtension = ['tid', 'json', 'meta'];
+    const isCreatingNewNonTiddlerFile = changeType === 'add' && !fs.existsSync(metaFileAbsolutePath) && !ignoredExtension.includes(fileExtension.slice(1));
+    if (isCreatingNewNonTiddlerFile) {
+      const createdTime = toTWUTCString(new Date());
+      fs.writeFileSync(
+        metaFileAbsolutePath,
+        `caption: ${fileNameBase}\ncreated: ${createdTime}\nmodified: ${createdTime}\ntitle: ${fileName}\ntype: ${fileMimeType}\n`,
+      );
+      // need to delete original created file, because tiddlywiki will try to recreate a _1 file
+      fs.unlinkSync(fileAbsolutePath);
+      fs.unlinkSync(metaFileAbsolutePath);
+    }
+
+    const { tiddlers, ...fileDescriptor } = tiddlersDescriptor;
+
+    // If file is new to index
+    if (!this.filePathExistsInIndex(fileRelativePath)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tiddlers.forEach((tiddler: any) => {
+
+        const existedWikiRecord = $tw.wiki.getTiddler(tiddler.title as string);
+        if (existedWikiRecord && deepEqual(tiddler, existedWikiRecord.fields)) {
+          // File creation triggered by wiki
+
+          this.updateInverseIndex(fileRelativePath, { ...fileDescriptor, tiddlerTitle: tiddler.title as string } as IBootFilesIndexItemWithTitle);
+        } else {
+          // New tiddler from external source
+
+          this.updateInverseIndex(fileRelativePath, { ...fileDescriptor, tiddlerTitle: tiddler.title as string } as IBootFilesIndexItemWithTitle);
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          $tw.syncadaptor!.wiki.addTiddler(tiddler);
+          console.log(`[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddler.title as string}`);
+        }
+      });
+    } else {
+      // File already exists in index - check if change is from external source
+      tiddlers
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .filter((tiddler: any) => {
+
+          const tiddlerInWiki = $tw.wiki.getTiddler(tiddler.title as string)?.fields;
+          if (tiddlerInWiki === undefined) {
+            return true;
+          }
+          if (deepEqual(tiddler, tiddlerInWiki)) {
+            return false;
+          }
+          // Check timestamp to avoid updating with stale data
+
+          if (tiddler.modified && tiddlerInWiki.modified && tiddlerInWiki.modified > tiddler.modified) {
+            return false;
+          }
+
+          return true;
+        })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .forEach((tiddler: any) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          $tw.syncadaptor!.wiki.addTiddler(tiddler);
+          console.log(`[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddler.title as string}`);
+        });
+    }
+  }
+
+  /**
+   * Handle file delete events
+   */
+  private handleFileDelete(fileAbsolutePath: string, fileRelativePath: string, _fileExtension: string): void {
+    const tiddlerTitle = this.getTitleByPath(fileRelativePath);
+
+    // Check if tiddler still exists in wiki
+    const existedTiddlerResult = $tw.wiki.getTiddler(tiddlerTitle);
+
+    if (!existedTiddlerResult) {
+      // Already deleted by wiki
+      this.updateInverseIndex(fileRelativePath, undefined);
+    } else {
+      // Delete triggered by external source
+      this.lockedFiles.add(fileRelativePath);
+
+      // Remove tiddler from wiki (this won't try to delete file again)
+      this.removeTiddlerFileInfo(tiddlerTitle);
+      
+      // Actually delete the tiddler from wiki to trigger change event
+      $tw.syncadaptor!.wiki.deleteTiddler(tiddlerTitle);
+      console.log(`[test-id-WATCH_FS_TIDDLER_DELETED] ${tiddlerTitle}`);
+
+      // Delete system tiddler empty file if exists
+      try {
+        if (
+          fileAbsolutePath.startsWith('$') &&
+          fs.existsSync(fileAbsolutePath) &&
+          fs.readFileSync(fileAbsolutePath, 'utf-8').length === 0
+        ) {
+          fs.unlinkSync(fileAbsolutePath);
+        }
+      } catch (error) {
+        this.logger.alert('Error cleaning up empty file:', error);
+      }
+
+      this.updateInverseIndex(fileRelativePath, undefined);
+    }
+  }
+
+  /**
+   * Cleanup method to properly close watcher when wiki is shutting down
+   */
+  public async cleanup(): Promise<void> {
+    if (this.watcher) {
+      console.log('[WATCH_FS_CLEANUP] Closing filesystem watcher');
+      await this.watcher.close();
+      this.watcher = undefined;
+      this.watcherStabilized = false;
+      console.log('[WATCH_FS_CLEANUP] Filesystem watcher closed');
     }
   }
 }

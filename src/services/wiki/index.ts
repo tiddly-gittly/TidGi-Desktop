@@ -42,6 +42,7 @@ import { defaultServerIP } from '@/constants/urls';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { ISyncService } from '@services/sync/interface';
+import { serializeError } from 'serialize-error';
 import { wikiWorkerStartedEventName } from './constants';
 import type { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
 import { getSendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
@@ -395,13 +396,13 @@ export class Wiki implements IWikiService {
     syncService.stopIntervalSync(id);
 
     try {
-      logger.debug(`worker.beforeExit for ${id}`);
-      worker.beforeExit();
-      logger.debug(`terminateWorker for ${id}`);
+      logger.info(`worker.beforeExit for ${id}`);
+      await worker.beforeExit();
+      logger.info(`terminateWorker for ${id}`);
       await terminateWorker(nativeWorker);
       // Detach worker from service message handlers
       if (detachWorker !== undefined) {
-        logger.debug(`detachWorker for ${id}`);
+        logger.info(`detachWorker for ${id}`);
         detachWorker();
       }
     } catch (error) {
@@ -842,10 +843,10 @@ export class Wiki implements IWikiService {
         content,
         filePath,
       };
-    } catch (_error) {
+    } catch (error) {
       // Log file doesn't exist yet or can't be read
       return {
-        content: '',
+        content: 'Unexpected error:' + JSON.stringify(serializeError(error)),
         filePath,
       };
     }

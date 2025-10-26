@@ -483,6 +483,58 @@ When('I print current DOM structure', async function(this: ApplicationWorld) {
   console.log('=== End DOM Structure ===');
 });
 
+// Debug step to print DOM structure of a specific element
+When('I print DOM structure of element with selector {string}', async function(this: ApplicationWorld, selector: string) {
+  const currentWindow = this.currentWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  try {
+    await currentWindow.waitForSelector(selector, { timeout: 5000 });
+
+    const elementInfo = await currentWindow.evaluate((sel) => {
+      const element = document.querySelector(sel);
+      if (!element) {
+        return { found: false };
+      }
+
+      return {
+        found: true,
+        outerHTML: element.outerHTML,
+        innerHTML: element.innerHTML,
+        attributes: Array.from(element.attributes).map(attribute => ({
+          name: attribute.name,
+          value: attribute.value,
+        })),
+        children: Array.from(element.children).map(child => ({
+          tagName: child.tagName,
+          className: child.className,
+          id: child.id,
+          attributes: Array.from(child.attributes).map(attribute => ({
+            name: attribute.name,
+            value: attribute.value,
+          })),
+        })),
+      };
+    }, selector);
+
+    if (!elementInfo.found) {
+      console.log(`=== Element "${selector}" not found ===`);
+      return;
+    }
+
+    console.log(`=== DOM Structure of "${selector}" ===`);
+    console.log('Attributes:', JSON.stringify(elementInfo.attributes, null, 2));
+    console.log('\nChildren:', JSON.stringify(elementInfo.children, null, 2));
+    console.log('\nOuter HTML (first 2000 chars):');
+    console.log((elementInfo.outerHTML ?? '').substring(0, 2000));
+    console.log('=== End DOM Structure ===');
+  } catch (error) {
+    console.log(`Error inspecting element "${selector}": ${String(error)}`);
+  }
+});
+
 // Debug step to print all window URLs
 When('I print all window URLs', async function(this: ApplicationWorld) {
   if (!this.app) {
@@ -491,16 +543,16 @@ When('I print all window URLs', async function(this: ApplicationWorld) {
 
   const allWindows = this.app.windows();
   console.log(`=== Total windows: ${allWindows.length} ===`);
-  
-  for (let i = 0; i < allWindows.length; i++) {
-    const win = allWindows[i];
+
+  for (let index = 0; index < allWindows.length; index++) {
+    const win = allWindows[index];
     try {
       const url = win.url();
       const title = await win.title();
       const isClosed = win.isClosed();
-      console.log(`Window ${i}: URL=${url}, Title=${title}, Closed=${isClosed}`);
+      console.log(`Window ${index}: URL=${url}, Title=${title}, Closed=${isClosed}`);
     } catch (error) {
-      console.log(`Window ${i}: Error getting info - ${String(error)}`);
+      console.log(`Window ${index}: Error getting info - ${String(error)}`);
     }
   }
   console.log('=== End Window List ===');

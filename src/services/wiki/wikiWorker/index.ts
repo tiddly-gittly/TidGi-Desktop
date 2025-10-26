@@ -94,8 +94,13 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
   });
 }
 
-function beforeExit(): void {
+async function beforeExit(): Promise<void> {
   uninstall?.uninstall();
+  // Cleanup watch-filesystem adaptor
+  const syncAdaptor = ($tw as unknown as { syncadaptor?: { cleanup?: () => Promise<void> } }).syncadaptor;
+  if (syncAdaptor?.cleanup) {
+    await syncAdaptor.cleanup();
+  }
 }
 
 const wikiWorker = {
