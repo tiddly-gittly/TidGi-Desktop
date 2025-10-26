@@ -169,3 +169,25 @@ Then('I should not see a(n) {string} element in browser view with selector {stri
     throw new Error(`Element "${elementComment}" with selector "${selector}" was found in browser view after multiple attempts, but should not be visible`);
   });
 });
+
+Then('I should see a(n) {string} element in browser view with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+
+  if (!this.currentWindow) {
+    throw new Error('No current window available');
+  }
+
+  await backOff(
+    async () => {
+      const exists: boolean = await elementExists(this.app!, selector);
+      if (!exists) {
+        throw new Error('Element does not exist yet');
+      }
+    },
+    BACKOFF_OPTIONS,
+  ).catch(() => {
+    throw new Error(`Element "${elementComment}" with selector "${selector}" not found in browser view after multiple attempts`);
+  });
+});

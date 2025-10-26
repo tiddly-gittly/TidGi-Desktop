@@ -287,12 +287,57 @@ When('I modify file {string} to contain {string}', async function(this: Applicat
   await fs.writeFile(actualPath, fileContent, 'utf-8');
 });
 
+When('I modify file {string} to contain:', async function(this: ApplicationWorld, filePath: string, content: string) {
+  // Replace {tmpDir} placeholder with actual temp directory
+  const actualPath = filePath.replace('{tmpDir}', wikiTestRootPath);
+
+  // For multi-line content with headers, just write the content directly
+  // (assumes the content includes all headers and structure)
+  await fs.writeFile(actualPath, content, 'utf-8');
+});
+
 When('I delete file {string}', async function(this: ApplicationWorld, filePath: string) {
   // Replace {tmpDir} placeholder with actual temp directory
   const actualPath = filePath.replace('{tmpDir}', wikiTestRootPath);
 
   // Delete the file
   await fs.remove(actualPath);
+});
+
+When('I rename file {string} to {string}', async function(this: ApplicationWorld, oldPath: string, newPath: string) {
+  // Replace {tmpDir} placeholder with actual temp directory
+  const actualOldPath = oldPath.replace('{tmpDir}', wikiTestRootPath);
+  const actualNewPath = newPath.replace('{tmpDir}', wikiTestRootPath);
+
+  // Ensure the target directory exists
+  await fs.ensureDir(path.dirname(actualNewPath));
+
+  // Rename/move the file
+  await fs.rename(actualOldPath, actualNewPath);
+});
+
+When('I modify file {string} to add field {string}', async function(this: ApplicationWorld, filePath: string, fieldLine: string) {
+  // Replace {tmpDir} placeholder with actual temp directory
+  const actualPath = filePath.replace('{tmpDir}', wikiTestRootPath);
+
+  // Read the existing file
+  const fileContent = await fs.readFile(actualPath, 'utf-8');
+
+  // TiddlyWiki .tid files have headers followed by a blank line and text
+  // We need to add the field to the headers section
+  const lines = fileContent.split('\n');
+  const blankLineIndex = lines.findIndex(line => line.trim() === '');
+
+  if (blankLineIndex >= 0) {
+    // Insert the new field before the blank line
+    lines.splice(blankLineIndex, 0, fieldLine);
+  } else {
+    // No blank line found, add to the beginning
+    lines.unshift(fieldLine);
+  }
+
+  // Write the modified content back
+  await fs.writeFile(actualPath, lines.join('\n'), 'utf-8');
 });
 
 export { clearSubWikiRoutingTestData };
