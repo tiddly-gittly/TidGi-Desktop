@@ -1,5 +1,5 @@
 @subwiki-routing
-Feature: Sub-Wiki Tag-Based Routing
+Feature: Filesystem Plugin
   As a user
   I want tiddlers with specific tags to be saved to sub-wikis automatically
   So that I can organize content across wikis
