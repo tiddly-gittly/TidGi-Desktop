@@ -21,17 +21,17 @@ jobs:
         with:
           node-version: lts/*
       
-      - name: Install dependencies
-        run: pnpm install
 
       # Install C++ build tools for native modules (nsfw, better-sqlite3)
       - name: Install build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Rebuild native modules for Electron
-        run: pnpm exec electron-rebuild -f -w better-sqlite3
+        run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
 
       - name: Run linting
         run: pnpm run lint

@@ -64,8 +64,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: lts/*
-      - name: Install dependencies
-        run: pnpm install
 
       # Windows specific: Set up CV dependency for pngquant-bin
       # Also sets up MSVC (Microsoft Visual C++) compiler for native modules (nsfw, better-sqlite3)
@@ -100,8 +98,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential
 
+      - name: Install dependencies
+        run: pnpm install
       - name: Rebuild native modules for Electron
-        run: pnpm exec electron-rebuild -f -w better-sqlite3
+        run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
 
       - name: Make ${{ matrix.platform }} (${{ matrix.arch }})
         run: |
