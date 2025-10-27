@@ -27,8 +27,8 @@ export interface WorkerMessage<T = unknown> {
  * Create a worker proxy that mimics threads.js API
  * Usage: const proxy = createWorkerProxy<WorkerType>(worker);
  */
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- T is needed to provide type safety for the returned proxy object, any is needed to support various worker method signatures
-export function createWorkerProxy<T extends Record<string, (...arguments_: unknown[]) => unknown>>(
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters, @typescript-eslint/no-explicit-any -- T is needed to provide type safety for the returned proxy object, any is needed to support various worker method signatures
+export function createWorkerProxy<T extends Record<string, (...arguments_: any[]) => any>>(
   worker: Worker,
 ): T {
   const pendingCalls = new Map<string, {
@@ -171,7 +171,8 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: unkno
  * Worker-side message handler
  * Usage in worker: handleWorkerMessages({ methodName: implementation });
  */
-export function handleWorkerMessages(methods: Record<string, (...arguments_: unknown[]) => unknown>): void {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function handleWorkerMessages(methods: Record<string, (...arguments_: any[]) => any>): void {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { parentPort } = require('worker_threads') as typeof import('worker_threads');
 
