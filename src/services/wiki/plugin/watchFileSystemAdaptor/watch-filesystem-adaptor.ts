@@ -3,12 +3,20 @@ import { workspace } from '@services/wiki/wikiWorker/services';
 import fs from 'fs';
 import nsfw from 'nsfw';
 import path from 'path';
-import type { FileInfo } from 'tiddlywiki';
 import type { Tiddler, Wiki } from 'tiddlywiki';
 import { FileSystemAdaptor, type IFileSystemAdaptorCallback } from './FileSystemAdaptor';
+import { type IBootFilesIndexItemWithTitle, InverseFilesIndex } from './InverseFilesIndex';
 import { getActionName } from './utilities';
 
-type IBootFilesIndexItemWithTitle = FileInfo & { tiddlerTitle: string };
+/**
+ * Delay in milliseconds before re-including a file in the watcher after save/delete operations.
+ * This prevents race conditions where the watcher might detect our own file changes:
+ * - File write operations may not be atomic and can trigger partial write events
+ * - Some filesystems buffer writes and flush asynchronously
+ * - The watcher needs time to process the excludeFile() call before the actual file operation completes
+ * 200ms provides a safe margin for most filesystems while keeping UI responsiveness.
+ */
+const FILE_EXCLUSION_CLEANUP_DELAY_MS = 200;
 
 /**
  * Enhanced filesystem adaptor that extends FileSystemAdaptor with file watching capabilities.
@@ -35,7 +43,7 @@ type IBootFilesIndexItemWithTitle = FileInfo & { tiddlerTitle: string };
 class WatchFileSystemAdaptor extends FileSystemAdaptor {
   name = 'watch-filesystem';
   /** Inverse index: filepath -> tiddler info for fast lookup */
-  private inverseFilesIndex: Record<string, IBootFilesIndexItemWithTitle> = {};
+  private inverseFilesIndex: InverseFilesIndex = new InverseFilesIndex();
   /** NSFW watcher instance */
   private watcher: nsfw.NSFW | undefined;
   /** Base excluded paths (permanent) */
@@ -53,16 +61,18 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
   /**
    * Save a tiddler to the filesystem (with file watching support)
+   * Can be used with callback (legacy) or as async/await
    */
-  override async saveTiddler(tiddler: Tiddler, callback: IFileSystemAdaptorCallback, options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
+  override async saveTiddler(tiddler: Tiddler, callback?: IFileSystemAdaptorCallback, options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
     let fileRelativePath: string | null = null;
 
     try {
       // Get file info to calculate relative path for watching
       const fileInfo = await this.getTiddlerFileInfo(tiddler);
       if (!fileInfo) {
-        callback(new Error('No fileInfo returned from getTiddlerFileInfo'));
-        return;
+        const error = new Error('No fileInfo returned from getTiddlerFileInfo');
+        callback?.(error);
+        throw error;
       }
 
       fileRelativePath = path.relative(this.watchPathBase, fileInfo.filepath);
@@ -71,50 +81,48 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
       await this.excludeFile(fileRelativePath);
 
       // Call parent's saveTiddler to handle the actual save
-      await new Promise<void>((resolve, reject) => {
-        void super.saveTiddler(tiddler, (error, result) => {
-          if (error) {
-            reject(error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error'));
-          } else {
-            // Update inverse index after successful save
-            const finalFileInfo = this.boot.files[tiddler.fields.title];
-            this.updateInverseIndex(fileRelativePath!, {
-              ...finalFileInfo,
-              filepath: fileRelativePath!,
-              tiddlerTitle: tiddler.fields.title,
-            });
-            callback(null, result);
-            resolve();
-          }
-        }, options);
+      await super.saveTiddler(tiddler, undefined, options);
+
+      // Update inverse index after successful save
+      const finalFileInfo = this.boot.files[tiddler.fields.title];
+      this.inverseFilesIndex.set(fileRelativePath, {
+        ...finalFileInfo,
+        filepath: fileRelativePath,
+        tiddlerTitle: tiddler.fields.title,
       });
+
+      // Notify callback if provided
+      callback?.(null, finalFileInfo);
 
       // Re-include the file after a short delay
       setTimeout(() => {
         if (fileRelativePath) {
           void this.includeFile(fileRelativePath);
         }
-      }, 200);
+      }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
     } catch (error) {
       // Re-include the file on error
       if (fileRelativePath) {
         const pathToInclude = fileRelativePath;
         setTimeout(() => {
           void this.includeFile(pathToInclude);
-        }, 200);
+        }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
       }
-      callback(error as Error);
+      const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
+      callback?.(errorObject);
+      throw errorObject;
     }
   }
 
   /**
    * Delete a tiddler from the filesystem (with file watching support)
+   * Can be used with callback (legacy) or as async/await
    */
-  override async deleteTiddler(title: string, callback: IFileSystemAdaptorCallback, _options?: unknown): Promise<void> {
+  override async deleteTiddler(title: string, callback?: IFileSystemAdaptorCallback, _options?: unknown): Promise<void> {
     const fileInfo = this.boot.files[title];
 
     if (!fileInfo) {
-      callback(null, null);
+      callback?.(null, null);
       return;
     }
 
@@ -126,30 +134,26 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
       await this.excludeFile(fileRelativePath);
 
       // Call parent's deleteTiddler to handle the actual deletion
-      await new Promise<void>((resolve, reject) => {
-        void super.deleteTiddler(title, (error, result) => {
-          if (error) {
-            const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
-            reject(errorObject);
-          } else {
-            // Update inverse index after successful deletion
-            this.updateInverseIndex(fileRelativePath, undefined);
-            callback(null, result);
-            resolve();
-          }
-        }, _options);
-      });
+      await super.deleteTiddler(title, undefined, _options);
+
+      // Update inverse index after successful deletion
+      this.inverseFilesIndex.delete(fileRelativePath);
+
+      // Notify callback if provided
+      callback?.(null, null);
 
       // Re-include the file after a delay (cleanup the exclusion list)
       setTimeout(() => {
         void this.includeFile(fileRelativePath);
-      }, 200);
-    } catch {
+      }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
+    } catch (error) {
       // Re-include the file on error
       setTimeout(() => {
         void this.includeFile(fileRelativePath);
-      }, 200);
-      // Error already passed to callback in parent's deleteTiddler
+      }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
+      const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
+      callback?.(errorObject);
+      throw errorObject;
     }
   }
 
@@ -227,7 +231,7 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
       if (Object.hasOwn(initialLoadedFiles, tiddlerTitle)) {
         const fileDescriptor = initialLoadedFiles[tiddlerTitle];
         const fileRelativePath = path.relative(this.watchPathBase, fileDescriptor.filepath);
-        this.inverseFilesIndex[fileRelativePath] = { ...fileDescriptor, filepath: fileRelativePath, tiddlerTitle };
+        this.inverseFilesIndex.set(fileRelativePath, { ...fileDescriptor, filepath: fileRelativePath, tiddlerTitle });
       }
     }
   }
@@ -264,40 +268,6 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
   private async includeFile(fileRelativePath: string): Promise<void> {
     this.temporarilyExcludedFiles.delete(fileRelativePath);
     await this.updateWatcherExcludedPaths();
-  }
-
-  /**
-   * Update inverse index
-   */
-  private updateInverseIndex(filePath: string, fileDescriptor: IBootFilesIndexItemWithTitle | undefined): void {
-    if (fileDescriptor) {
-      this.inverseFilesIndex[filePath] = fileDescriptor;
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete this.inverseFilesIndex[filePath];
-    }
-  }
-
-  /**
-   * Check if file path exists in index
-   */
-  private filePathExistsInIndex(filePath: string): boolean {
-    return Boolean(this.inverseFilesIndex[filePath]);
-  }
-
-  /**
-   * Get tiddler title by file path
-   */
-  private getTitleByPath(filePath: string): string {
-    try {
-      return this.inverseFilesIndex[filePath].tiddlerTitle;
-    } catch {
-      // fatal error, shutting down.
-      if (this.watcher) {
-        void this.watcher.stop();
-      }
-      throw new Error(`${filePath}\n↑ not existed in watch-fs plugin's FileSystemMonitor's this.inverseFilesIndex`);
-    }
   }
 
   /**
@@ -430,10 +400,10 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
         return;
       }
 
-      const isNewFile = !this.filePathExistsInIndex(actualFileRelativePath);
+      const isNewFile = !this.inverseFilesIndex.has(actualFileRelativePath);
 
       // Update inverse index first
-      this.updateInverseIndex(actualFileRelativePath, {
+      this.inverseFilesIndex.set(actualFileRelativePath, {
         ...fileDescriptor,
         filepath: actualFileRelativePath,
         tiddlerTitle,
@@ -460,9 +430,17 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
     // If file is not in index, try to extract title from filename
     let tiddlerTitle: string;
 
-    if (this.filePathExistsInIndex(fileRelativePath)) {
+    if (this.inverseFilesIndex.has(fileRelativePath)) {
       // File is in our inverse index
-      tiddlerTitle = this.getTitleByPath(fileRelativePath);
+      try {
+        tiddlerTitle = this.inverseFilesIndex.getTitleByPath(fileRelativePath);
+      } catch {
+        // fatal error, shutting down.
+        if (this.watcher) {
+          void this.watcher.stop();
+        }
+        throw new Error(`${fileRelativePath}\n↑ not existed in watch-fs plugin's FileSystemMonitor's inverseFilesIndex`);
+      }
     } else {
       // File not in index - try to extract title from filename
       // This handles edge cases like manually deleted files or index inconsistencies
@@ -497,7 +475,7 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
     }
 
     // Update inverse index
-    this.updateInverseIndex(fileRelativePath, undefined);
+    this.inverseFilesIndex.delete(fileRelativePath);
   }
 
   /**

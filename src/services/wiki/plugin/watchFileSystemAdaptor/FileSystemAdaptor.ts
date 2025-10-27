@@ -184,14 +184,16 @@ export class FileSystemAdaptor {
 
   /**
    * Save a tiddler to the filesystem
+   * Can be used with callback (legacy) or as async/await
    */
-  async saveTiddler(tiddler: Tiddler, callback: IFileSystemAdaptorCallback, options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
+  async saveTiddler(tiddler: Tiddler, callback?: IFileSystemAdaptorCallback, options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
     try {
       const fileInfo = await this.getTiddlerFileInfo(tiddler);
 
       if (!fileInfo) {
-        callback(new Error('No fileInfo returned from getTiddlerFileInfo'));
-        return;
+        const error = new Error('No fileInfo returned from getTiddlerFileInfo');
+        callback?.(error);
+        throw error;
       }
 
       const savedFileInfo = await this.saveTiddlerWithRetry(tiddler, fileInfo);
@@ -216,9 +218,11 @@ export class FileSystemAdaptor {
         });
       });
 
-      callback(null, this.boot.files[tiddler.fields.title]);
+      callback?.(null, this.boot.files[tiddler.fields.title]);
     } catch (error) {
-      callback(error as Error);
+      const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
+      callback?.(errorObject);
+      throw errorObject;
     }
   }
 
@@ -231,12 +235,13 @@ export class FileSystemAdaptor {
 
   /**
    * Delete a tiddler from the filesystem
+   * Can be used with callback (legacy) or as async/await
    */
-  async deleteTiddler(title: string, callback: IFileSystemAdaptorCallback, _options?: unknown): Promise<void> {
+  async deleteTiddler(title: string, callback?: IFileSystemAdaptorCallback, _options?: unknown): Promise<void> {
     const fileInfo = this.boot.files[title];
 
     if (!fileInfo) {
-      callback(null, null);
+      callback?.(null, null);
       return;
     }
 
@@ -248,7 +253,7 @@ export class FileSystemAdaptor {
             const errorSyscall = (error as NodeJS.ErrnoException).syscall;
             if ((errorCode === 'EPERM' || errorCode === 'EACCES') && errorSyscall === 'unlink') {
               this.logger.alert(`Server desynchronized. Error deleting file for deleted tiddler "${title}"`);
-              callback(null, deletedFileInfo);
+              callback?.(null, deletedFileInfo);
               resolve();
             } else {
               reject(error);
@@ -257,12 +262,14 @@ export class FileSystemAdaptor {
           }
 
           this.removeTiddlerFileInfo(title);
-          callback(null, null);
+          callback?.(null, null);
           resolve();
         });
       });
     } catch (error) {
-      callback(error as Error);
+      const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
+      callback?.(errorObject);
+      throw errorObject;
     }
   }
 

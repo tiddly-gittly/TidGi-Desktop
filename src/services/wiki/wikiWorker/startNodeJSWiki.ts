@@ -37,9 +37,11 @@ export function startNodeJSWiki({
 }: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
   // Wait for services to be ready before using intercept with logFor
   onWorkerServicesReady(() => {
+    void native.logFor(workspace.name, 'info', 'test-id-WorkerServicesReady');
+    const textDecoder = new TextDecoder();
     intercept(
       (newStdOut: string | Uint8Array) => {
-        const message = typeof newStdOut === 'string' ? newStdOut : new TextDecoder().decode(newStdOut);
+        const message = typeof newStdOut === 'string' ? newStdOut : textDecoder.decode(newStdOut);
         // Send to main process logger if services are ready
         void native.logFor(workspace.name, 'info', message).catch((error: unknown) => {
           console.error('[intercept] Failed to send stdout to main process:', error, message, JSON.stringify(workspace));
@@ -47,7 +49,7 @@ export function startNodeJSWiki({
         return message;
       },
       (newStdError: string | Uint8Array) => {
-        const message = typeof newStdError === 'string' ? newStdError : new TextDecoder().decode(newStdError);
+        const message = typeof newStdError === 'string' ? newStdError : textDecoder.decode(newStdError);
         // Send to main process logger if services are ready
         void native.logFor(workspace.name, 'error', message).catch((error: unknown) => {
           console.error('[intercept] Failed to send stderr to main process:', error, message);

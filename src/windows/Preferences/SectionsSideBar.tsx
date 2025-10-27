@@ -52,7 +52,7 @@ export function SectionSideBar(props: ISectionProps): React.JSX.Element {
                 onClick={() => {
                   ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   // Log for E2E test
-                  void window.service.native.log('debug', 'Preferences section clicked', { section: sectionKey });
+                  void window.service.native.log('debug', 'test-id-Preferences section clicked', { section: sectionKey });
                 }}
                 data-testid={`preference-section-${sectionKey}`}
               >
