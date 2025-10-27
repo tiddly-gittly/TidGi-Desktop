@@ -44,10 +44,10 @@ describe('FileSystemAdaptor - Save Operations', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // @ts-expect-error - TiddlyWiki global
     global.$tw.boot.files = {};
-    
+
     mockWiki = {
       getTiddlerText: vi.fn(() => ''),
       tiddlerExists: vi.fn(() => false),
@@ -95,9 +95,12 @@ describe('FileSystemAdaptor - Save Operations', () => {
 
       await adaptor.saveTiddler(tiddler, callback);
 
-      expect(callback).toHaveBeenCalledWith(null, expect.objectContaining({
-        filepath: '/test/wiki/tiddlers/test.tid',
-      }));
+      expect(callback).toHaveBeenCalledWith(
+        null,
+        expect.objectContaining({
+          filepath: '/test/wiki/tiddlers/test.tid',
+        }),
+      );
       // @ts-expect-error - TiddlyWiki global
       expect(global.$tw.boot.files['TestTiddler']).toBeDefined();
       // @ts-expect-error - TiddlyWiki global

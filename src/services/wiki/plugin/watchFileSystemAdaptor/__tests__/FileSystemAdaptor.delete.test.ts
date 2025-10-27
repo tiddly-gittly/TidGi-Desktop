@@ -44,10 +44,10 @@ describe('FileSystemAdaptor - Delete Operations', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // @ts-expect-error - TiddlyWiki global
     global.$tw.boot.files = {};
-    
+
     mockWiki = {
       getTiddlerText: vi.fn(() => ''),
       tiddlerExists: vi.fn(() => false),

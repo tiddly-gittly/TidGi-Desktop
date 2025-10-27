@@ -1,4 +1,5 @@
 import { workspace } from '@services/wiki/wikiWorker/services';
+import type { IWikiWorkspace } from '@services/workspaces/interface';
 import type { FileInfo, Tiddler, Wiki } from 'tiddlywiki';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemAdaptor } from '../FileSystemAdaptor';
@@ -44,10 +45,10 @@ describe('FileSystemAdaptor - Routing Logic', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // @ts-expect-error - TiddlyWiki global
     global.$tw.boot.files = {};
-    
+
     mockWiki = {
       getTiddlerText: vi.fn(() => ''),
       tiddlerExists: vi.fn(() => false),
@@ -83,7 +84,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
     it('should generate file info for tiddler without tags', async () => {
       const tiddler: Tiddler = {
         fields: { title: 'TestTiddler', tags: [] },
-      } as Tiddler;
+      } as unknown as Tiddler;
 
       const result = await adaptor.getTiddlerFileInfo(tiddler);
 
@@ -104,7 +105,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
 
       const tiddler: Tiddler = {
         fields: { title: 'TestTiddler', tags: [] },
-      } as Tiddler;
+      } as unknown as Tiddler;
 
       await adaptor.getTiddlerFileInfo(tiddler);
 
@@ -122,7 +123,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
 
       const tiddler: Tiddler = {
         fields: { title: 'TestTiddler', tags: [] },
-      } as Tiddler;
+      } as unknown as Tiddler;
 
       await adaptor.getTiddlerFileInfo(tiddler);
 
@@ -152,7 +153,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
 
       const tiddler: Tiddler = {
         fields: { title: 'TestTiddler', tags: [] },
-      } as Tiddler;
+      } as unknown as Tiddler;
 
       await adaptor.getTiddlerFileInfo(tiddler);
 
@@ -176,7 +177,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
 
       const tiddler: Tiddler = {
         fields: { title: 'TestTiddler', tags: [] },
-      } as Tiddler;
+      } as unknown as Tiddler;
 
       await adaptor.getTiddlerFileInfo(tiddler);
 
@@ -202,7 +203,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
 
       const tiddler: Tiddler = {
         fields: { title: 'TestTiddler' },
-      } as Tiddler;
+      } as unknown as Tiddler;
 
       await expect(adaptor.getTiddlerFileInfo(tiddler)).rejects.toThrow(
         'filesystem adaptor requires a valid wiki folder',
@@ -245,7 +246,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         wikiFolderLocation: '/test/wiki/subwiki/sub1',
       };
 
-      vi.mocked(workspace.getWorkspacesAsList).mockResolvedValue([subWiki] as any);
+      vi.mocked(workspace.getWorkspacesAsList).mockResolvedValue([subWiki] as IWikiWorkspace[]);
 
       adaptor = new FileSystemAdaptor({
         wiki: mockWiki,
@@ -289,7 +290,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         wikiFolderLocation: '/test/wiki/sub2',
       };
 
-      vi.mocked(workspace.getWorkspacesAsList).mockResolvedValue([subWiki1, subWiki2] as any);
+      vi.mocked(workspace.getWorkspacesAsList).mockResolvedValue([subWiki1, subWiki2] as IWikiWorkspace[]);
 
       adaptor = new FileSystemAdaptor({
         wiki: mockWiki,
@@ -346,7 +347,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         subWikiWithDifferentTag,
         subWikiWithoutTag,
         otherMainWikiSubWiki,
-      ] as any);
+      ] as IWikiWorkspace[]);
 
       adaptor = new FileSystemAdaptor({
         wiki: mockWiki,
@@ -406,7 +407,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
 
       const tiddler: Tiddler = {
         fields: { title: 'TestTiddler', tags: [] },
-      } as Tiddler;
+      } as unknown as Tiddler;
 
       const result = await adaptor.getTiddlerFileInfo(tiddler);
 
@@ -442,7 +443,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
     });
 
     it('should clear cache when currentWorkspace is not found', async () => {
-      vi.mocked(workspace.get).mockResolvedValue(undefined as any);
+      vi.mocked(workspace.get).mockResolvedValue(undefined);
 
       adaptor = new FileSystemAdaptor({
         wiki: mockWiki,
