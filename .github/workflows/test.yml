@@ -20,7 +20,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: lts/*
-      
 
       # Install C++ build tools for native modules (nsfw, better-sqlite3)
       - name: Install build dependencies

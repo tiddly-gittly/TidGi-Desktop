@@ -11,8 +11,8 @@ paths:
 # Paths to ignore within the analyzed paths
 # (Excludes test files and mock data from security analysis)
 paths-ignore:
-  - '**/__tests__/**'
-  - '**/__mocks__/**'
-  - '**/*.test.ts'
-  - '**/*.test.tsx'
-  - '**/*.spec.ts'
+  - "**/__tests__/**"
+  - "**/__mocks__/**"
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"

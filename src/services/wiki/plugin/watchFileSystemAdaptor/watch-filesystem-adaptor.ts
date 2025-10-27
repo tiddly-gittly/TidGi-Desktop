@@ -398,7 +398,6 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
     // Get tiddler from disk
     let tiddlersDescriptor: ReturnType<typeof $tw.loadTiddlersFromFile>;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tiddlersDescriptor = $tw.loadTiddlersFromFile(actualFileToLoad);
     } catch (error) {
       this.logger.alert('[WATCH_FS_LOAD_ERROR] Failed to load file:', actualFileToLoad, error);
@@ -430,7 +429,7 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
         this.logger.alert(`[WATCH_FS_ERROR] Tiddler has no title`);
         return;
       }
-      
+
       const isNewFile = !this.filePathExistsInIndex(actualFileRelativePath);
 
       // Update inverse index first
