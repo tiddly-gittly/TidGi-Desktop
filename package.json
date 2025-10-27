@@ -188,7 +188,8 @@
   },
   "pnpm": {
     "overrides": {
-      "prebuild-install": "latest"
+      "prebuild-install": "latest",
+      "node-addon-api": "^7.1.1"
     },
     "onlyBuiltDependencies": [
       "@swc/core",

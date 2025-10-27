@@ -68,6 +68,7 @@ jobs:
         run: pnpm install
 
       # Windows specific: Set up CV dependency for pngquant-bin
+      # Also sets up MSVC (Microsoft Visual C++) compiler for native modules (nsfw, better-sqlite3)
       - name: Set up CV dependency for pngquant-bin
         if: matrix.platform == 'win'
         uses: ilammy/msvc-dev-cmd@v1
@@ -89,8 +90,18 @@ jobs:
 
       - name: Build plugins
         run: pnpm run build:plugin
+
+      # Install C++ build tools for native modules (Linux only)
+      # macOS: GitHub Actions runners come with Xcode Command Line Tools pre-installed
+      # Windows: MSVC is set up by msvc-dev-cmd action above
+      - name: Install build dependencies (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
       - name: Rebuild native modules for Electron
-        run: pnpm exec electron-rebuild -f -w better-sqlite3
+        run: pnpm exec electron-rebuild -f -w better-sqlite3 -w nsfw
 
       - name: Make ${{ matrix.platform }} (${{ matrix.arch }})
         run: |
