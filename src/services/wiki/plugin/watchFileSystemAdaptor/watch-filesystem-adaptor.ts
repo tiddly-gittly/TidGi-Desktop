@@ -8,7 +8,6 @@ import fs from 'fs';
 import path from 'path';
 import type { Tiddler, Wiki } from 'tiddlywiki';
 import { deepEqual } from './deep-equal';
-import { getTwCustomMimeType, toTWUTCString } from './utils';
 
 type IFileSystemAdaptorCallback = (error: Error | null | string, fileInfo?: FileInfo | null) => void;
 
@@ -469,7 +468,7 @@ class WatchFileSystemAdaptor {
       const metaFileAbsolutePath = `${fileAbsolutePath}.meta`;
       const fileNameBase = path.parse(fileAbsolutePath).name;
       const fileExtension = path.extname(fileRelativePath);
-      const fileMimeType = getTwCustomMimeType(fileExtension);
+      const fileMimeType = $tw.utils.getFileExtensionInfo(fileExtension)?.type ?? 'text/vnd.tiddlywiki';
 
       // Mark watcher as stabilized after first real file event
       if (!this.watcherStabilized) {
@@ -546,7 +545,7 @@ class WatchFileSystemAdaptor {
     const ignoredExtension = ['tid', 'json', 'meta'];
     const isCreatingNewNonTiddlerFile = changeType === 'add' && !fs.existsSync(metaFileAbsolutePath) && !ignoredExtension.includes(fileExtension.slice(1));
     if (isCreatingNewNonTiddlerFile) {
-      const createdTime = toTWUTCString(new Date());
+      const createdTime = $tw.utils.formatDateString(new Date(), '[UTC]YYYY0MM0DD0hh0mm0ss0XXX');
       fs.writeFileSync(
         metaFileAbsolutePath,
         `caption: ${fileNameBase}\ncreated: ${createdTime}\nmodified: ${createdTime}\ntitle: ${fileName}\ntype: ${fileMimeType}\n`,
