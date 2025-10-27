@@ -182,6 +182,7 @@ export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreate
     userName: undefined,
     excludedPlugins: [],
     enableHTTPAPI: false,
+    enableFileSystemWatch: true,
     lastNodeJSArgv: [],
   };
 }
