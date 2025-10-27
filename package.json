@@ -199,6 +199,7 @@
       "electron",
       "electron-winstaller",
       "esbuild",
+      "nsfw",
       "registry-js",
       "unrs-resolver"
     ],
