@@ -199,8 +199,10 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const result = implementation(...(args || []));
       // Check if result is Observable
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (result && typeof result === 'object' && 'subscribe' in result && typeof result.subscribe === 'function') {
         (result as Observable<unknown>).subscribe({
           next: (value: unknown) => {
@@ -228,6 +230,7 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
             } as WorkerMessage);
           },
         });
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       } else if (result && typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
         // Handle Promise
         const resolvedValue = await (result as Promise<unknown>);

@@ -56,7 +56,6 @@ export const serviceInstances: {
     pickDirectory: vi.fn().mockResolvedValue(['/test/selected/path']),
   },
   wiki: {
-    getSubWikiPluginContent: vi.fn().mockResolvedValue([]),
     // generic wikiOperationInServer mock: keep simple, allow test-specific overrides
     wikiOperationInServer: vi.fn().mockResolvedValue([]) as IWikiService['wikiOperationInServer'],
   },

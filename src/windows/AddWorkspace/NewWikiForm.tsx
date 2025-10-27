@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput, SoftLinkToMainWikiSelect, SubWikiTagAutoComplete } from './FormComponents';
 
+import { useAvailableTags } from './useAvailableTags';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateNewWiki } from './useNewWiki';
 
@@ -17,6 +18,10 @@ export function NewWikiForm({
 }: IWikiWorkspaceFormProps & { isCreateSyncedWorkspace: boolean }): React.JSX.Element {
   const { t } = useTranslation();
   useValidateNewWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, errorInWhichComponentSetter);
+
+  // Fetch all tags from main wiki for autocomplete suggestions
+  const availableTags = useAvailableTags(form.mainWikiToLink.id, !isCreateMainWorkspace);
+
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
@@ -86,7 +91,7 @@ export function NewWikiForm({
           </SoftLinkToMainWikiSelect>
           <SubWikiTagAutoComplete
             freeSolo
-            options={form.fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
+            options={availableTags}
             value={form.tagName}
             onInputChange={(_event: React.SyntheticEvent, value: string) => {
               form.tagNameSetter(value);

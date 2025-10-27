@@ -6,12 +6,17 @@ import { useTranslation } from 'react-i18next';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput, SoftLinkToMainWikiSelect, SubWikiTagAutoComplete } from './FormComponents';
 
+import { useAvailableTags } from './useAvailableTags';
 import { useValidateCloneWiki } from './useCloneWiki';
 import type { IWikiWorkspaceFormProps } from './useForm';
 
 export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichComponent, errorInWhichComponentSetter }: IWikiWorkspaceFormProps): React.JSX.Element {
   const { t } = useTranslation();
   useValidateCloneWiki(isCreateMainWorkspace, form, errorInWhichComponentSetter);
+
+  // Fetch all tags from main wiki for autocomplete suggestions
+  const availableTags = useAvailableTags(form.mainWikiToLink.id, !isCreateMainWorkspace);
+
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
@@ -80,7 +85,7 @@ export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichCompone
           </SoftLinkToMainWikiSelect>
           <SubWikiTagAutoComplete
             freeSolo
-            options={form.fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
+            options={availableTags}
             value={form.tagName}
             onInputChange={(_event: React.SyntheticEvent, value: string) => {
               form.tagNameSetter(value);

@@ -5,7 +5,6 @@ import '@testing-library/jest-dom/vitest';
 
 import { IGitUserInfos } from '@services/git/interface';
 import { SupportedStorageServices } from '@services/types';
-import { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
 import { IWorkspace } from '@services/workspaces/interface';
 import { NewWikiForm } from '../NewWikiForm';
 import { IErrorInWhichComponent, IWikiWorkspaceForm } from '../useForm';
@@ -48,11 +47,6 @@ const createMockForm = (overrides: Partial<IWikiWorkspaceForm> = {}): IWikiWorks
       metadata: {},
     } as unknown as IWorkspace,
   ],
-  fileSystemPaths: [
-    { tagName: 'TagA', folderName: 'FolderA' } as ISubWikiPluginContent,
-    { tagName: 'TagB', folderName: 'FolderB' } as ISubWikiPluginContent,
-  ],
-  fileSystemPathsSetter: vi.fn(),
   tagName: '',
   tagNameSetter: vi.fn(),
   gitRepoUrl: '',

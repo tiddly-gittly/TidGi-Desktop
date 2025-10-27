@@ -231,8 +231,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
             throw new Error(`workspace.mainWikiToLink is null in WikiGitWorkspace.removeWorkspace ${JSON.stringify(workspace)}`);
           }
           await wikiService.removeWiki(wikiFolderLocation, mainWikiToLink, onlyRemoveWorkspace);
-          // remove folderName from fileSystemPaths
-          await wikiService.updateSubWikiPluginContent(mainWikiToLink, wikiFolderLocation, undefined, workspace);
+          // Sub-wiki configuration is now handled by FileSystemAdaptor in watch-filesystem plugin
         } else {
           // is main wiki, also delete all sub wikis
           const subWikis = workspaceService.getSubWorkspacesAsListSync(id);

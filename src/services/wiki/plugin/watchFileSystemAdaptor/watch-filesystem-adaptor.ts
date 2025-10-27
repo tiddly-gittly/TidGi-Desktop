@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import type { FileInfo } from '$:/core/modules/utils/utils.js';
 import { workspace } from '@services/wiki/wikiWorker/services';
 import fs from 'fs';
 import nsfw from 'nsfw';
 import path from 'path';
+import type { FileInfo } from 'tiddlywiki';
 import type { Tiddler, Wiki } from 'tiddlywiki';
 import { FileSystemAdaptor, type IFileSystemAdaptorCallback } from './FileSystemAdaptor';
 import { getActionName } from './utilities';

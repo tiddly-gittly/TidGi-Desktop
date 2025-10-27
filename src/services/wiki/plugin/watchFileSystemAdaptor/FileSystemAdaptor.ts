@@ -1,9 +1,9 @@
 import type { Logger } from '$:/core/modules/utils/logger.js';
-import type { FileInfo } from '$:/core/modules/utils/utils.js';
 import { workspace } from '@services/wiki/wikiWorker/services';
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 import { backOff } from 'exponential-backoff';
 import path from 'path';
+import type { FileInfo } from 'tiddlywiki';
 import type { Tiddler, Wiki } from 'tiddlywiki';
 import { isFileLockError } from './utilities';
 

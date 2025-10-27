@@ -30,8 +30,6 @@ import type { IChangedTiddlers } from 'tiddlywiki';
 import { AlreadyExistError, CopyWikiTemplateError, DoubleWikiInstanceError, HTMLCanNotLoadError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
 import type { IWikiService } from './interface';
 import { WikiControlActions } from './interface';
-import { getSubWikiPluginContent, updateSubWikiPluginContent } from './plugin/subWikiPlugin';
-import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
 import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
 import type { IpcServerRouteMethods, IpcServerRouteNames } from './wikiWorker/ipcServerRoutes';
 
@@ -55,10 +53,6 @@ export class Wiki implements IWikiService {
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.Database) private readonly databaseService: IDatabaseService,
   ) {
-  }
-
-  public async getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]> {
-    return await getSubWikiPluginContent(mainWikiPath);
   }
 
   // handlers
@@ -493,7 +487,7 @@ export class Wiki implements IWikiService {
     this.logProgress(i18n.t('AddWorkspace.WikiTemplateCopyCompleted') + newWikiPath);
   }
 
-  public async createSubWiki(parentFolderLocation: string, folderName: string, subWikiFolderName: string, mainWikiPath: string, tagName = '', onlyLink = false): Promise<void> {
+  public async createSubWiki(parentFolderLocation: string, folderName: string, _subWikiFolderName: string, mainWikiPath: string, _tagName = '', onlyLink = false): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCreatingSubWiki'));
     const newWikiPath = path.join(parentFolderLocation, folderName);
     if (!(await pathExists(parentFolderLocation))) {
@@ -511,10 +505,8 @@ export class Wiki implements IWikiService {
     }
     this.logProgress(i18n.t('AddWorkspace.StartLinkingSubWikiToMainWiki'));
     await this.linkWiki(mainWikiPath, folderName, newWikiPath);
-    if (typeof tagName === 'string' && tagName.length > 0) {
-      this.logProgress(i18n.t('AddWorkspace.AddFileSystemPath'));
-      updateSubWikiPluginContent(mainWikiPath, newWikiPath, { tagName, subWikiFolderName });
-    }
+    // Sub-wiki configuration is now handled by FileSystemAdaptor in watch-filesystem plugin
+    // No need to update $:/config/FileSystemPaths manually
 
     this.logProgress(i18n.t('AddWorkspace.SubWikiCreationCompleted'));
   }
@@ -651,7 +643,7 @@ export class Wiki implements IWikiService {
     mainWikiPath: string,
     gitRepoUrl: string,
     gitUserInfo: IGitUserInfos,
-    tagName = '',
+    _tagName = '',
   ): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCloningSubWiki'));
     const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
@@ -670,10 +662,8 @@ export class Wiki implements IWikiService {
     await gitService.clone(gitRepoUrl, path.join(parentFolderLocation, wikiFolderName), gitUserInfo);
     this.logProgress(i18n.t('AddWorkspace.StartLinkingSubWikiToMainWiki'));
     await this.linkWiki(mainWikiPath, wikiFolderName, path.join(parentFolderLocation, wikiFolderName));
-    if (typeof tagName === 'string' && tagName.length > 0) {
-      this.logProgress(i18n.t('AddWorkspace.AddFileSystemPath'));
-      updateSubWikiPluginContent(mainWikiPath, newWikiPath, { tagName, subWikiFolderName: wikiFolderName });
-    }
+    // Sub-wiki configuration is now handled by FileSystemAdaptor in watch-filesystem plugin
+    // No need to update $:/config/FileSystemPaths manually
   }
 
   // wiki-startup.ts
@@ -759,12 +749,6 @@ export class Wiki implements IWikiService {
       await this.startWiki(id, userName);
     }
     await syncService.startIntervalSyncIfNeeded(workspace);
-  }
-
-  public async updateSubWikiPluginContent(mainWikiPath: string, subWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void> {
-    const newConfigTyped = newConfig && isWikiWorkspace(newConfig) ? newConfig : undefined;
-    const oldConfigTyped = oldConfig && isWikiWorkspace(oldConfig) ? oldConfig : undefined;
-    updateSubWikiPluginContent(mainWikiPath, subWikiPath, newConfigTyped, oldConfigTyped);
   }
 
   public async wikiOperationInBrowser<OP extends keyof ISendWikiOperationsToBrowser>(

@@ -20,7 +20,6 @@ import { useTranslation } from 'react-i18next';
 import defaultIcon from '../../images/default-icon.png';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import type { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
 import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
 import { useForm } from './useForm';
@@ -34,6 +33,7 @@ import { isWikiWorkspace, nonConfigFields } from '@services/workspaces/interface
 import { isEqual, omit } from 'lodash';
 import { SyncedWikiDescription } from '../AddWorkspace/Description';
 import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
+import { useAvailableTags } from '../AddWorkspace/useAvailableTags';
 import { ServerOptions } from './server';
 
 const OptionsAccordion = styled((props: React.ComponentProps<typeof Accordion>) => <Accordion {...props} />)`
@@ -172,12 +172,10 @@ export default function EditWorkspace(): React.JSX.Element {
   const userName = isWiki ? workspace.userName : '';
   const lastUrl = isWiki ? workspace.lastUrl : null;
   const wikiFolderLocation = isWiki ? workspace.wikiFolderLocation : '';
-  const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
-    async () => (mainWikiToLink ? await window.service.wiki.getSubWikiPluginContent(mainWikiToLink) : []),
-    [],
-    [mainWikiToLink],
-  )!;
   const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName'))!, '');
+
+  // Fetch all tags from main wiki for autocomplete suggestions
+  const availableTags = useAvailableTags(mainWikiToLink ?? undefined, isSubWiki);
 
   const rememberLastPageVisited = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
   if (workspaceID === undefined) {
@@ -300,7 +298,7 @@ export default function EditWorkspace(): React.JSX.Element {
             {isSubWiki && (
               <Autocomplete
                 freeSolo
-                options={fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
+                options={availableTags}
                 value={tagName}
                 onInputChange={(_event: React.SyntheticEvent, value: string) => {
                   void _event;
