@@ -537,7 +537,7 @@ class WatchFileSystemAdaptor {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tiddlersDescriptor = $tw.loadTiddlersFromFile(actualFileToLoad);
-    } catch (_error) {
+    } catch {
       return;
     }
 
