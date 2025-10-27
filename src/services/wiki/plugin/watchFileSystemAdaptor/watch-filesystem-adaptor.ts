@@ -3,15 +3,45 @@ import type { Logger } from '$:/core/modules/utils/logger.js';
 import type { FileInfo } from '$:/core/modules/utils/utils.js';
 import { workspace } from '@services/wiki/wikiWorker/services';
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
-import chokidar from 'chokidar';
+import { backOff } from 'exponential-backoff';
 import fs from 'fs';
+import nsfw from 'nsfw';
 import path from 'path';
 import type { Tiddler, Wiki } from 'tiddlywiki';
-import { deepEqual } from './deep-equal';
 
 type IFileSystemAdaptorCallback = (error: Error | null | string, fileInfo?: FileInfo | null) => void;
 
 type IBootFilesIndexItemWithTitle = FileInfo & { tiddlerTitle: string };
+
+/**
+ * Get human-readable action name from nsfw action code
+ */
+function getActionName(action: number): string {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+  if (action === nsfw.actions.CREATED) {
+    return 'add';
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+  if (action === nsfw.actions.DELETED) {
+    return 'unlink';
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+  if (action === nsfw.actions.MODIFIED) {
+    return 'change';
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+  if (action === nsfw.actions.RENAMED) {
+    return 'rename';
+  }
+  return 'unknown';
+}
+
+/**
+ * Check if error is a file lock error that should be retried
+ */
+function isFileLockError(errorCode: string | undefined): boolean {
+  return errorCode === 'EBUSY' || errorCode === 'EPERM' || errorCode === 'EACCES' || errorCode === 'EAGAIN';
+}
 
 /**
  * Enhanced filesystem adaptor that routes tiddlers to sub-wikis based on tags.
@@ -21,6 +51,25 @@ type IBootFilesIndexItemWithTitle = FileInfo & { tiddlerTitle: string };
  * this adaptor directly checks tiddler tags against workspace tagName and routes to appropriate directories.
  *
  * Also watches filesystem for external changes and syncs them back to wiki.
+ *
+ * Architecture:
+ * 1. When wiki saves/deletes tiddlers:
+ *    - saveTiddler/deleteTiddler calls excludeFile() to add file to watcher's excludedPaths
+ *    - watcher.updateExcludedPaths() is called to dynamically exclude the file from watching
+ *    - Perform file write/delete operation (file changes are not detected by nsfw)
+ *    - Update inverseFilesIndex immediately after successful operation
+ *    - Call includeFile() after a short delay to remove file from excludedPaths
+ *    - File is re-included in watching, ready to detect external changes
+ *
+ * 2. When external changes occur:
+ *    - nsfw detects file changes (only for non-excluded files)
+ *    - Load file and sync to wiki via addTiddler/deleteTiddler
+ *    - Update inverseFilesIndex to track the change
+ *
+ * This approach uses nsfw's native updateExcludedPaths() API for precise, per-file exclusion.
+ * Unlike pause/resume (which blocks all events) or mutex locks (which require checking every event),
+ * this method dynamically adjusts the watcher's exclusion list to prevent events at the source.
+ * This ensures user's concurrent external file modifications are still detected while our own operations are ignored.
  */
 class WatchFileSystemAdaptor {
   name = 'watch-filesystem';
@@ -39,12 +88,12 @@ class WatchFileSystemAdaptor {
   private watchPathBase!: string;
   /** Inverse index: filepath -> tiddler info for fast lookup */
   private inverseFilesIndex: Record<string, IBootFilesIndexItemWithTitle> = {};
-  /** Mutex to ignore temporary file created or deleted by this plugin */
-  private lockedFiles: Set<string> = new Set<string>();
-  /** Chokidar watcher instance */
-  private watcher: ReturnType<typeof chokidar.watch> | undefined;
-  /** Track if watcher has stabilized by capturing first real file event */
-  private watcherStabilized: boolean = false;
+  /** NSFW watcher instance */
+  private watcher: nsfw.NSFW | undefined;
+  /** Base excluded paths (permanent) */
+  private baseExcludedPaths: string[] = [];
+  /** Temporarily excluded files being modified by wiki */
+  private temporarilyExcludedFiles: Set<string> = new Set();
 
   constructor(options: { boot?: typeof $tw.boot; wiki: Wiki }) {
     this.wiki = options.wiki;
@@ -193,7 +242,7 @@ class WatchFileSystemAdaptor {
       pathFilters: undefined, // Don't use pathFilters for sub-wiki routing
       extFilters: this.extensionFilters,
       wiki: this.wiki,
-      fileInfo,
+      fileInfo: fileInfo ? { ...fileInfo, overwrite: true } : { overwrite: true } as FileInfo,
     });
   }
 
@@ -213,7 +262,7 @@ class WatchFileSystemAdaptor {
       pathFilters,
       extFilters: this.extensionFilters,
       wiki: this.wiki,
-      fileInfo,
+      fileInfo: fileInfo ? { ...fileInfo, overwrite: true } : { overwrite: true } as FileInfo,
     });
   }
 
@@ -222,44 +271,33 @@ class WatchFileSystemAdaptor {
    */
   async saveTiddler(tiddler: Tiddler, callback: IFileSystemAdaptorCallback, options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
     const title = tiddler.fields.title;
+    let fileInfo: FileInfo | null = null;
+    let fileRelativePath: string | null = null;
 
     try {
       // Get file info directly
-      const fileInfo = await this.getTiddlerFileInfo(tiddler);
+      fileInfo = await this.getTiddlerFileInfo(tiddler);
 
       if (!fileInfo) {
         callback(new Error('No fileInfo returned from getTiddlerFileInfo'));
         return;
       }
 
-      // Save tiddler to file - wrap callback in Promise to ensure we wait
-      await new Promise<FileInfo>((resolve, reject) => {
-        $tw.utils.saveTiddlerToFile(tiddler, fileInfo, (saveError: Error | null, savedFileInfo?: FileInfo) => {
-          if (saveError) {
-            const errorCode = (saveError as NodeJS.ErrnoException).code;
-            this.logger.alert(`watch-filesystem: Error saving "${title}":`, saveError);
-            if (errorCode === 'EPERM' || errorCode === 'EACCES') {
-              this.logger.alert('Error saving file, will be retried with encoded filepath', savedFileInfo ? encodeURIComponent(savedFileInfo.filepath) : 'unknown');
-            }
-            reject(saveError);
-            return;
-          }
+      // Calculate relative path for logging
+      fileRelativePath = path.relative(this.watchPathBase, fileInfo.filepath);
 
-          if (!savedFileInfo) {
-            reject(new Error('No fileInfo returned from saveTiddlerToFile'));
-            return;
-          }
+      // Exclude this file from watching during save
+      await this.excludeFile(fileRelativePath);
 
-          // Store new boot info only after successful writes
-          // Ensure isEditableFile is set (required by IBootFilesIndexItem)
-          this.boot.files[tiddler.fields.title] = {
-            ...savedFileInfo,
-            isEditableFile: savedFileInfo.isEditableFile ?? true,
-          };
+      // Save tiddler to file with retry logic for file lock errors
+      const savedFileInfo = await this.saveTiddlerWithRetry(tiddler, fileInfo);
 
-          resolve(savedFileInfo);
-        });
-      });
+      // Store new boot info only after successful writes
+      // Ensure isEditableFile is set (required by IBootFilesIndexItem)
+      this.boot.files[tiddler.fields.title] = {
+        ...savedFileInfo,
+        isEditableFile: savedFileInfo.isEditableFile ?? true,
+      };
 
       // Now do cleanup after file is written
       await new Promise<void>((resolve, reject) => {
@@ -278,9 +316,31 @@ class WatchFileSystemAdaptor {
         });
       });
 
+      // Update inverse index after successful save
+      const finalFileInfo = this.boot.files[tiddler.fields.title];
+      this.updateInverseIndex(fileRelativePath, {
+        ...finalFileInfo,
+        filepath: fileRelativePath,
+        tiddlerTitle: title,
+      });
+
+      // Re-include the file after a short delay to allow filesystem to settle
+      setTimeout(() => {
+        if (fileRelativePath) {
+          void this.includeFile(fileRelativePath);
+        }
+      }, 200);
+
       // Call the original callback with success
       callback(null, this.boot.files[tiddler.fields.title]);
     } catch (error) {
+      // Re-include the file on error
+      if (fileRelativePath) {
+        const pathToInclude = fileRelativePath;
+        setTimeout(() => {
+          void this.includeFile(pathToInclude);
+        }, 200);
+      }
       callback(error as Error);
     }
   }
@@ -303,7 +363,13 @@ class WatchFileSystemAdaptor {
       return;
     }
 
+    // Calculate relative path
+    const fileRelativePath = path.relative(this.watchPathBase, fileInfo.filepath);
+
     try {
+      // Exclude file before deletion
+      await this.excludeFile(fileRelativePath);
+
       await new Promise<void>((resolve, reject) => {
         $tw.utils.deleteTiddlerFile(fileInfo, (error: Error | null, deletedFileInfo?: FileInfo) => {
           if (error) {
@@ -322,15 +388,27 @@ class WatchFileSystemAdaptor {
 
           // Remove the tiddler from boot.files
           this.removeTiddlerFileInfo(title);
+          
+          // Update inverse index after successful deletion
+          this.updateInverseIndex(fileRelativePath, undefined);
+          
           callback(null, null);
           resolve();
         });
       });
+
+      // Re-include the file after a delay (though it's deleted, cleanup the exclusion list)
+      setTimeout(() => {
+        void this.includeFile(fileRelativePath);
+      }, 200);
     } catch (error) {
+      // Re-include the file on error
+      setTimeout(() => {
+        void this.includeFile(fileRelativePath);
+      }, 200);
       callback(error as Error);
     }
   }
-
   /**
    * Remove tiddler info from cache
    */
@@ -338,6 +416,89 @@ class WatchFileSystemAdaptor {
     if (this.boot.files[title]) {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete this.boot.files[title];
+    }
+  }
+
+  /**
+   * Create an info tiddler to notify user about file save errors
+   */
+  private createErrorNotification(title: string, error: Error, retryCount: number): void {
+    const errorInfoTitle = `$:/temp/watch-fs/error/${title}`;
+    const errorTiddler = {
+      title: errorInfoTitle,
+      text:
+        `Failed to save tiddler "${title}" after ${retryCount} retries.\n\nError: ${error.message}\n\nThe file might be locked by another process. Please close any applications using this file and try again.`,
+      tags: ['$:/tags/Alert'],
+      type: 'text/vnd.tiddlywiki',
+      'error-type': 'file-save-error',
+      'original-title': title,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.wiki.addTiddler(errorTiddler);
+    this.logger.alert(`watch-filesystem: Created error notification for "${title}"`);
+  }
+
+  /**
+   * Save tiddler with exponential backoff retry for file lock errors
+   */
+  private async saveTiddlerWithRetry(
+    tiddler: Tiddler,
+    fileInfo: FileInfo,
+    options: { maxRetries?: number; initialDelay?: number; maxDelay?: number } = {},
+  ): Promise<FileInfo> {
+    const maxRetries = options.maxRetries ?? 10;
+    const initialDelay = options.initialDelay ?? 50;
+    const maxDelay = options.maxDelay ?? 2000;
+
+    try {
+      return await backOff(
+        async () => {
+          return await new Promise<FileInfo>((resolve, reject) => {
+            $tw.utils.saveTiddlerToFile(tiddler, fileInfo, (saveError: Error | null, savedFileInfo?: FileInfo) => {
+              if (saveError) {
+                reject(saveError);
+                return;
+              }
+              if (!savedFileInfo) {
+                reject(new Error('No fileInfo returned from saveTiddlerToFile'));
+                return;
+              }
+              resolve(savedFileInfo);
+            });
+          });
+        },
+        {
+          numOfAttempts: maxRetries,
+          startingDelay: initialDelay,
+          timeMultiple: 2,
+          maxDelay,
+          delayFirstAttempt: false,
+          jitter: 'none',
+          retry: (error: Error, attemptNumber: number) => {
+            const errorCode = (error as NodeJS.ErrnoException).code;
+
+            // Only retry on file lock errors
+            if (isFileLockError(errorCode)) {
+              this.logger.log(
+                `watch-filesystem: File "${fileInfo.filepath}" is locked (${errorCode}), retrying (attempt ${attemptNumber}/${maxRetries})`,
+              );
+              return true;
+            }
+
+            // For other errors, don't retry
+            this.logger.alert(`watch-filesystem: Error saving "${tiddler.fields.title}":`, error);
+            this.createErrorNotification(tiddler.fields.title, error, attemptNumber);
+            return false;
+          },
+        },
+      );
+    } catch (error) {
+      // After all retries failed or non-retryable error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const finalError = new Error(`Failed to save "${tiddler.fields.title}": ${errorMessage}`);
+      this.createErrorNotification(tiddler.fields.title, finalError, maxRetries);
+      throw finalError;
     }
   }
 
@@ -363,36 +524,58 @@ class WatchFileSystemAdaptor {
       }
     }
 
-    // Reset stabilization flag for new watcher instance
-    this.watcherStabilized = false;
-
     // Initialize inverse index from boot.files
     this.initializeInverseFilesIndex();
 
-    // Setup chokidar watcher
-    this.watcher = chokidar.watch(this.watchPathBase, {
-      ignoreInitial: true,
-      ignored: [
-        '**/$__StoryList*',
-        '**/*_1.*', // sometimes sync logic bug will resulted in file ends with _1
-        '**/subwiki/**',
-        '**/.DS_Store',
-        '**/.git',
-      ],
-      atomic: true,
-    });
-
-    // Listen for ready event
-    this.watcher.on('ready', () => {
-      this.logger.log('[WATCH_FS_READY] Filesystem watcher is ready');
-      this.logger.log('[WATCH_FS_READY] Watching path:', this.watchPathBase);
-      if (this.watcher) {
-        this.logger.log('[WATCH_FS_READY] Watcher getWatched:', Object.keys(this.watcher.getWatched()).length, 'directories');
+    // Setup base excluded paths (permanent exclusions)
+    this.baseExcludedPaths = [
+      path.join(this.watchPathBase, 'subwiki'),
+      path.join(this.watchPathBase, '.git'),
+      path.join(this.watchPathBase, '$__StoryList'),
+      path.join(this.watchPathBase, '.DS_Store'),
+    ].filter((excludePath) => {
+      // Only include paths that exist or are always excluded
+      // Some paths like .DS_Store might not exist yet but should always be excluded
+      const isSystemFile = excludePath.endsWith('.DS_Store') || excludePath.endsWith('$__StoryList');
+      if (isSystemFile) {
+        return true;
+      }
+      try {
+        return fs.existsSync(excludePath);
+      } catch {
+        return false;
       }
     });
 
-    // Setup file change listener
-    this.setupListeners();
+    // Setup nsfw watcher
+    try {
+      this.watcher = await nsfw(
+        this.watchPathBase,
+        (events) => {
+          this.handleNsfwEvents(events);
+        },
+        {
+          debounceMS: 100,
+          errorCallback: (error) => {
+            this.logger.alert('[WATCH_FS_ERROR] NSFW error:', error);
+          },
+          // Start with base excluded paths
+          // @ts-expect-error - nsfw types are incorrect, it accepts string[] not just [string]
+          excludedPaths: [...this.baseExcludedPaths],
+        },
+      );
+
+      // Start watching
+      await this.watcher.start();
+
+      this.logger.log('[WATCH_FS_READY] Filesystem watcher is ready');
+      this.logger.log('[WATCH_FS_READY] Watching path:', this.watchPathBase);
+
+      // Log stabilization marker for tests
+      this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized');
+    } catch (error) {
+      this.logger.alert('[WATCH_FS_ERROR] Failed to initialize file watching:', error);
+    }
   }
 
   /**
@@ -408,6 +591,40 @@ class WatchFileSystemAdaptor {
         this.inverseFilesIndex[fileRelativePath] = { ...fileDescriptor, filepath: fileRelativePath, tiddlerTitle };
       }
     }
+  }
+
+  /**
+   * Update watcher's excluded paths with current temporary exclusions
+   */
+  private async updateWatcherExcludedPaths(): Promise<void> {
+    if (!this.watcher) {
+      return;
+    }
+
+    // Combine base excluded paths with temporarily excluded files
+    const allExcludedPaths = [
+      ...this.baseExcludedPaths,
+      ...Array.from(this.temporarilyExcludedFiles).map(relativePath => path.join(this.watchPathBase, relativePath)),
+    ];
+
+    // @ts-expect-error - nsfw types are incorrect, it accepts string[] not just [string]
+    await this.watcher.updateExcludedPaths(allExcludedPaths);
+  }
+
+  /**
+   * Temporarily exclude a file from watching (e.g., during save/delete)
+   */
+  private async excludeFile(fileRelativePath: string): Promise<void> {
+    this.temporarilyExcludedFiles.add(fileRelativePath);
+    await this.updateWatcherExcludedPaths();
+  }
+
+  /**
+   * Remove a file from temporary exclusions
+   */
+  private async includeFile(fileRelativePath: string): Promise<void> {
+    this.temporarilyExcludedFiles.delete(fileRelativePath);
+    await this.updateWatcherExcludedPaths();
   }
 
   /**
@@ -438,52 +655,40 @@ class WatchFileSystemAdaptor {
     } catch {
       // fatal error, shutting down.
       if (this.watcher) {
-        void this.watcher.close();
+        void this.watcher.stop();
       }
       throw new Error(`${filePath}\n↑ not existed in watch-fs plugin's FileSystemMonitor's this.inverseFilesIndex`);
     }
   }
 
   /**
-   * Setup file system change listeners
+   * Handle NSFW file system change events
    */
-  private setupListeners(): void {
-    if (!this.watcher) {
-      return;
-    }
+  private handleNsfwEvents(events: nsfw.FileChangeEvent[]): void {
+    for (const event of events) {
+      const { action, directory } = event;
 
-    this.logger.log('[WATCH_FS_SETUP] Setting up file system listeners');
-
-    const listener = (changeType: string, filePath: string, _stats?: fs.Stats): void => {
-      const fileName = path.basename(filePath);
-      this.logger.log('[WATCH_FS_EVENT]', changeType, fileName);
-
-      // Only handle specific change types
-      if (!['add', 'addDir', 'change', 'unlink', 'unlinkDir'].includes(changeType)) {
-        return;
+      // Get file name from event
+      let fileName = '';
+      if ('file' in event) {
+        fileName = event.file;
+      } else if ('newFile' in event) {
+        fileName = event.newFile;
       }
 
-      const fileRelativePath = path.relative(this.watchPathBase, filePath);
-      const fileAbsolutePath = path.join(this.watchPathBase, fileRelativePath);
-      const metaFileAbsolutePath = `${fileAbsolutePath}.meta`;
+      // Compute relative and absolute paths
+      const fileAbsolutePath = path.join(directory, fileName);
+      const fileRelativePath = path.relative(this.watchPathBase, fileAbsolutePath);
+
       const fileNameBase = path.parse(fileAbsolutePath).name;
       const fileExtension = path.extname(fileRelativePath);
       const fileMimeType = $tw.utils.getFileExtensionInfo(fileExtension)?.type ?? 'text/vnd.tiddlywiki';
+      const metaFileAbsolutePath = `${fileAbsolutePath}.meta`;
 
-      // Mark watcher as stabilized after first real file event
-      if (!this.watcherStabilized) {
-        this.watcherStabilized = true;
-        this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized after capturing first file event');
-      }
+      this.logger.log('[WATCH_FS_EVENT]', getActionName(action), fileName);
 
-      // Check mutex lock
-      if (this.lockedFiles.has(fileRelativePath)) {
-        this.lockedFiles.delete(fileRelativePath);
-        return;
-      }
-
-      // Handle add or change
-      if (changeType === 'add' || changeType === 'change') {
+      // Handle different event types
+      if (action === nsfw.actions.CREATED || action === nsfw.actions.MODIFIED) {
         this.handleFileAddOrChange(
           fileAbsolutePath,
           fileRelativePath,
@@ -492,18 +697,41 @@ class WatchFileSystemAdaptor {
           fileNameBase,
           fileExtension,
           fileMimeType,
-          changeType,
+          action === nsfw.actions.CREATED ? 'add' : 'change',
         );
-      }
-
-      // Handle delete
-      if (changeType === 'unlink') {
+      } else if (action === nsfw.actions.DELETED) {
         this.handleFileDelete(fileAbsolutePath, fileRelativePath, fileExtension);
-      }
-    };
+      } else if (action === nsfw.actions.RENAMED) {
+        // NSFW provides rename events with oldFile/newFile
+        // Handle as delete old + create new
+        if ('oldFile' in event && 'newFile' in event) {
+          const oldFileAbsPath = path.join(directory, event.oldFile);
+          const oldFileRelativePath = path.relative(this.watchPathBase, oldFileAbsPath);
+          const oldFileExtension = path.extname(oldFileRelativePath);
+          this.handleFileDelete(oldFileAbsPath, oldFileRelativePath, oldFileExtension);
 
-    this.watcher.on('all', listener);
-    this.logger.log('[WATCH_FS_SETUP] File system listeners registered');
+          const newDirectory = 'newDirectory' in event ? event.newDirectory : directory;
+          const newFileAbsPath = path.join(newDirectory, event.newFile);
+          const newFileRelativePath = path.relative(this.watchPathBase, newFileAbsPath);
+          const newFileName = event.newFile;
+          const newFileNameBase = path.parse(newFileAbsPath).name;
+          const newFileExtension = path.extname(newFileRelativePath);
+          const newFileMimeType = $tw.utils.getFileExtensionInfo(newFileExtension)?.type ?? 'text/vnd.tiddlywiki';
+          const newMetaFileAbsPath = `${newFileAbsPath}.meta`;
+
+          this.handleFileAddOrChange(
+            newFileAbsPath,
+            newFileRelativePath,
+            newMetaFileAbsPath,
+            newFileName,
+            newFileNameBase,
+            newFileExtension,
+            newFileMimeType,
+            'add',
+          );
+        }
+      }
+    }
   }
 
   /**
@@ -537,11 +765,13 @@ class WatchFileSystemAdaptor {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tiddlersDescriptor = $tw.loadTiddlersFromFile(actualFileToLoad);
-    } catch {
+    } catch (error) {
+      this.logger.alert('[WATCH_FS_LOAD_ERROR] Failed to load file:', actualFileToLoad, error);
       return;
     }
 
-    // Create .meta file for non-tiddler files
+    // Create .meta file for non-tiddler files (images, videos, etc.)
+    // For files without .meta, TiddlyWiki needs metadata to properly index them
     const ignoredExtension = ['tid', 'json', 'meta'];
     const isCreatingNewNonTiddlerFile = changeType === 'add' && !fs.existsSync(metaFileAbsolutePath) && !ignoredExtension.includes(fileExtension.slice(1));
     if (isCreatingNewNonTiddlerFile) {
@@ -550,98 +780,84 @@ class WatchFileSystemAdaptor {
         metaFileAbsolutePath,
         `caption: ${fileNameBase}\ncreated: ${createdTime}\nmodified: ${createdTime}\ntitle: ${fileName}\ntype: ${fileMimeType}\n`,
       );
-      // need to delete original created file, because tiddlywiki will try to recreate a _1 file
-      fs.unlinkSync(fileAbsolutePath);
-      fs.unlinkSync(metaFileAbsolutePath);
+      // After creating .meta, continue to process the file normally
+      // TiddlyWiki will detect the .meta file on next event
     }
 
     const { tiddlers, ...fileDescriptor } = tiddlersDescriptor;
 
-    // If file is new to index (use actualFileRelativePath for .meta files)
-    if (!this.filePathExistsInIndex(actualFileRelativePath)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      tiddlers.forEach((tiddler: any) => {
-        const existedWikiRecord = $tw.wiki.getTiddler(tiddler.title as string);
-        if (existedWikiRecord && deepEqual(tiddler, existedWikiRecord.fields)) {
-          // File creation triggered by wiki
+    // Process each tiddler from the file
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tiddlers.forEach((tiddler: any) => {
+      const tiddlerTitle = tiddler.title as string;
+      const isNewFile = !this.filePathExistsInIndex(actualFileRelativePath);
 
-          this.updateInverseIndex(actualFileRelativePath, { ...fileDescriptor, tiddlerTitle: tiddler.title as string } as IBootFilesIndexItemWithTitle);
-        } else {
-          // New tiddler from external source
+      // Update inverse index first
+      this.updateInverseIndex(actualFileRelativePath, {
+        ...fileDescriptor,
+        filepath: actualFileRelativePath,
+        tiddlerTitle,
+      } as IBootFilesIndexItemWithTitle);
 
-          this.updateInverseIndex(actualFileRelativePath, { ...fileDescriptor, tiddlerTitle: tiddler.title as string } as IBootFilesIndexItemWithTitle);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          $tw.syncadaptor!.wiki.addTiddler(tiddler);
-          this.logger.log(`[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddler.title as string}`);
-        }
-      });
-    } else {
-      // File already exists in index - check if change is from external source
-      tiddlers
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .filter((tiddler: any) => {
-          const tiddlerInWiki = $tw.wiki.getTiddler(tiddler.title as string)?.fields;
-          if (tiddlerInWiki === undefined) {
-            return true;
-          }
-          if (deepEqual(tiddler, tiddlerInWiki)) {
-            return false;
-          }
-          // Check timestamp to avoid updating with stale data
+      // Add tiddler to wiki (this will update if it exists or add if new)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      $tw.syncadaptor!.wiki.addTiddler(tiddler);
 
-          if (tiddler.modified && tiddlerInWiki.modified && tiddlerInWiki.modified > tiddler.modified) {
-            return false;
-          }
-
-          return true;
-        })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .forEach((tiddler: any) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          $tw.syncadaptor!.wiki.addTiddler(tiddler);
-          this.logger.log(`[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddler.title as string}`);
-        });
-    }
+      // Log appropriate event
+      if (isNewFile) {
+        this.logger.log(`[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`);
+      } else {
+        this.logger.log(`[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`);
+      }
+    });
   }
 
   /**
    * Handle file delete events
    */
   private handleFileDelete(fileAbsolutePath: string, fileRelativePath: string, _fileExtension: string): void {
-    const tiddlerTitle = this.getTitleByPath(fileRelativePath);
+    // Try to get tiddler title from filepath
+    // If file is not in index, try to extract title from filename
+    let tiddlerTitle: string;
 
-    // Check if tiddler still exists in wiki
-    const existedTiddlerResult = $tw.wiki.getTiddler(tiddlerTitle);
-
-    if (!existedTiddlerResult) {
-      // Already deleted by wiki
-      this.updateInverseIndex(fileRelativePath, undefined);
+    if (this.filePathExistsInIndex(fileRelativePath)) {
+      // File is in our inverse index
+      tiddlerTitle = this.getTitleByPath(fileRelativePath);
     } else {
-      // Delete triggered by external source
-      this.lockedFiles.add(fileRelativePath);
-
-      // Remove tiddler from wiki (this won't try to delete file again)
-      this.removeTiddlerFileInfo(tiddlerTitle);
-
-      // Actually delete the tiddler from wiki to trigger change event
-      $tw.syncadaptor!.wiki.deleteTiddler(tiddlerTitle);
-      this.logger.log(`[test-id-WATCH_FS_TIDDLER_DELETED] ${tiddlerTitle}`);
-
-      // Delete system tiddler empty file if exists
-      try {
-        if (
-          fileAbsolutePath.startsWith('$') &&
-          fs.existsSync(fileAbsolutePath) &&
-          fs.readFileSync(fileAbsolutePath, 'utf-8').length === 0
-        ) {
-          fs.unlinkSync(fileAbsolutePath);
-        }
-      } catch (error) {
-        this.logger.alert('Error cleaning up empty file:', error);
-      }
-
-      this.updateInverseIndex(fileRelativePath, undefined);
+      // File not in index - try to extract title from filename
+      // This handles edge cases like manually deleted files or index inconsistencies
+      const fileNameWithoutExtension = path.basename(fileRelativePath, path.extname(fileRelativePath));
+      tiddlerTitle = fileNameWithoutExtension;
     }
+
+    // Check if tiddler exists in wiki before trying to delete
+    if (!$tw.syncadaptor!.wiki.tiddlerExists(tiddlerTitle)) {
+      // Tiddler doesn't exist in wiki, nothing to delete
+      return;
+    }
+
+    // Remove tiddler from wiki
+    this.removeTiddlerFileInfo(tiddlerTitle);
+
+    // Delete the tiddler from wiki to trigger change event
+    $tw.syncadaptor!.wiki.deleteTiddler(tiddlerTitle);
+    this.logger.log(`[test-id-WATCH_FS_TIDDLER_DELETED] ${tiddlerTitle}`);
+
+    // Delete system tiddler empty file if exists
+    try {
+      if (
+        fileAbsolutePath.startsWith('$') &&
+        fs.existsSync(fileAbsolutePath) &&
+        fs.readFileSync(fileAbsolutePath, 'utf-8').length === 0
+      ) {
+        fs.unlinkSync(fileAbsolutePath);
+      }
+    } catch (error) {
+      this.logger.alert('Error cleaning up empty file:', error);
+    }
+
+    // Update inverse index
+    this.updateInverseIndex(fileRelativePath, undefined);
   }
 
   /**
@@ -650,9 +866,8 @@ class WatchFileSystemAdaptor {
   public async cleanup(): Promise<void> {
     if (this.watcher) {
       this.logger.log('[WATCH_FS_CLEANUP] Closing filesystem watcher');
-      await this.watcher.close();
+      await this.watcher.stop();
       this.watcher = undefined;
-      this.watcherStabilized = false;
       this.logger.log('[WATCH_FS_CLEANUP] Filesystem watcher closed');
     }
   }

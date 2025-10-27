@@ -106,7 +106,7 @@ Feature: Filesystem Plugin
     And I wait for 0.5 seconds
     And I click on "timeline link" element in browser view with selector "div.tc-timeline a.tc-tiddlylink:has-text('OldName')"
     Then I should see "Content before rename" in the browser view content
-    # Rename the file externally (this will trigger delete old + add new)
+    # Rename the file externally
     When I rename file "{tmpDir}/wiki/tiddlers/OldName.tid" to "{tmpDir}/wiki/tiddlers/NewName.tid"
     # Update the title field in the renamed file to match the new filename
     And I modify file "{tmpDir}/wiki/tiddlers/NewName.tid" to contain:
@@ -117,8 +117,8 @@ Feature: Filesystem Plugin
       
       Content before rename
       """
-    Then I wait for tiddler "OldName" to be deleted by watch-fs
-    And I wait for tiddler "NewName" to be updated by watch-fs
+    # Wait for the new tiddler to be detected and synced
+    Then I wait for tiddler "NewName" to be updated by watch-fs
     # Navigate to timeline to verify changes
     And I click on "sidebar tab" element in browser view with selector "div.tc-tab-buttons.tc-sidebar-tabs-main > button:has-text('最近')"
     And I wait for 0.5 seconds

@@ -92,6 +92,7 @@
     "nanoid": "^5.1.6",
     "new-github-issue-url": "^1.1.0",
     "node-fetch": "3.3.2",
+    "nsfw": "^2.2.5",
     "oidc-client-ts": "^3.3.0",
     "ollama-ai-provider-v2": "^1.5.1",
     "react": "19.2.0",

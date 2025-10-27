@@ -193,6 +193,9 @@ importers:
       node-fetch:
         specifier: 3.3.2
         version: 3.3.2
+      nsfw:
+        specifier: ^2.2.5
+        version: 2.2.5
       oidc-client-ts:
         specifier: ^3.3.0
         version: 3.3.0
@@ -5515,6 +5518,10 @@ packages:
   npm-run-path@4.0.1:
     resolution: {integrity: sha512-S48WzZW777zhNIrn7gxOlISNAqi9ZC/uQFnRdbeIHhZhCA6UqpkOT8T1G7BvfdgP4Er8gF4sUbaS0i7QvIfCWw==}
     engines: {node: '>=8'}
+
+  nsfw@2.2.5:
+    resolution: {integrity: sha512-KcZpiMzCfCpEYA2S45pPT9x80HlYf/DyyigrFBpeFYj9O/rBi0hSn4AnRnZ77ppjSmwTzu7wZjNfKIzdTz/PSw==}
+    engines: {node: '>=10.16.0'}
 
   oauth2-mock-server@8.1.0:
     resolution: {integrity: sha512-Zi0VMDVCsavanLfW9X82uoniPS1kFGkOKFKKQF0NdrEwG4Uap/ylhYtRGPujZUJ0CmG3h73TsF/sefpCLTaKsQ==}
@@ -13522,6 +13529,10 @@ snapshots:
   npm-run-path@4.0.1:
     dependencies:
       path-key: 3.1.1
+
+  nsfw@2.2.5:
+    dependencies:
+      node-addon-api: 3.2.1
 
   oauth2-mock-server@8.1.0:
     dependencies:
