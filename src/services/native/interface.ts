@@ -85,7 +85,7 @@ export interface INativeService {
    * @param message Log message
    * @param meta Optional metadata
    */
-  logFor(label: string, level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
+  logFor(label: string, level: 'error' | 'warn' | 'info' | 'debug', message: string, meta?: Record<string, unknown>): Promise<void>;
   mkdir(absoulutePath: string): Promise<void>;
   /**
    * Move a file or directory. The directory can have contents.
