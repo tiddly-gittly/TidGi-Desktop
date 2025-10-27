@@ -397,8 +397,7 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
     // Get tiddler from disk
     let tiddlersDescriptor: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      tiddlers: any[];
+      tiddlers: Tiddler[];
       [key: string]: unknown;
     };
     try {
@@ -426,9 +425,8 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
     const { tiddlers, ...fileDescriptor } = tiddlersDescriptor;
 
     // Process each tiddler from the file
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tiddlers.forEach((tiddler: any) => {
-      const tiddlerTitle = tiddler.title as string;
+    tiddlers.forEach((tiddler) => {
+      const tiddlerTitle = tiddler.fields.title;
       const isNewFile = !this.filePathExistsInIndex(actualFileRelativePath);
 
       // Update inverse index first
@@ -439,7 +437,7 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
       } as IBootFilesIndexItemWithTitle);
 
       // Add tiddler to wiki (this will update if it exists or add if new)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+
       $tw.syncadaptor!.wiki.addTiddler(tiddler);
 
       // Log appropriate event

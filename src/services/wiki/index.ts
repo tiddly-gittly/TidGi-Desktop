@@ -781,9 +781,7 @@ export class Wiki implements IWikiService {
       throw new TypeError(`${operationType} gets no useful handler`);
     }
     if (!Array.isArray(arguments_)) {
-      // TODO: better type handling here
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      throw new TypeError(`${(arguments_ as any) ?? ''} (${typeof arguments_}) is not a good argument array for ${operationType}`);
+      throw new TypeError(`${JSON.stringify((arguments_ as unknown) ?? '')} (${typeof arguments_}) is not a good argument array for ${operationType}`);
     }
     // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556) this maybe a bug of ts... try remove this comment after upgrade ts. And the result become void is weird too.
 

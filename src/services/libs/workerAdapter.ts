@@ -23,15 +23,12 @@ export interface WorkerMessage<T = unknown> {
   };
 }
 
-// TODO: Replace with electron-ipc-cat/worker's registerWorkerService once available
-// export { registerWorkerService as registerServiceForWorker } from 'electron-ipc-cat/worker';
-
 /**
  * Create a worker proxy that mimics threads.js API
  * Usage: const proxy = createWorkerProxy<WorkerType>(worker);
  */
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters, @typescript-eslint/no-explicit-any -- T is needed to provide type safety for the returned proxy object, any is needed to support various worker method signatures
-export function createWorkerProxy<T extends Record<string, (...arguments_: any[]) => any>>(
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- T is needed to provide type safety for the returned proxy object, any is needed to support various worker method signatures
+export function createWorkerProxy<T extends Record<string, (...arguments_: unknown[]) => unknown>>(
   worker: Worker,
 ): T {
   const pendingCalls = new Map<string, {
@@ -174,8 +171,7 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
  * Worker-side message handler
  * Usage in worker: handleWorkerMessages({ methodName: implementation });
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- any is needed to support various worker method signatures
-export function handleWorkerMessages(methods: Record<string, (...arguments_: any[]) => any>): void {
+export function handleWorkerMessages(methods: Record<string, (...arguments_: unknown[]) => unknown>): void {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { parentPort } = require('worker_threads') as typeof import('worker_threads');
 
@@ -202,11 +198,8 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- result type is determined by worker method implementation
       const result = implementation(...(args || []));
-
       // Check if result is Observable
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- checking for Observable interface
       if (result && typeof result === 'object' && 'subscribe' in result && typeof result.subscribe === 'function') {
         (result as Observable<unknown>).subscribe({
           next: (value: unknown) => {
@@ -234,7 +227,6 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
             } as WorkerMessage);
           },
         });
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- checking for Promise interface
       } else if (result && typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
         // Handle Promise
         const resolvedValue = await (result as Promise<unknown>);
