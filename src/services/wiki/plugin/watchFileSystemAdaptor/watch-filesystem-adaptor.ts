@@ -396,10 +396,7 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
     }
 
     // Get tiddler from disk
-    let tiddlersDescriptor: {
-      tiddlers: Tiddler[];
-      [key: string]: unknown;
-    };
+    let tiddlersDescriptor: ReturnType<typeof $tw.loadTiddlersFromFile>;
     try {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tiddlersDescriptor = $tw.loadTiddlersFromFile(actualFileToLoad);
@@ -426,7 +423,14 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
     // Process each tiddler from the file
     tiddlers.forEach((tiddler) => {
-      const tiddlerTitle = tiddler.fields.title;
+      // Note: $tw.loadTiddlersFromFile returns tiddlers as plain objects with fields at top level,
+      // not wrapped in a .fields property
+      const tiddlerTitle = tiddler?.title;
+      if (!tiddlerTitle) {
+        this.logger.alert(`[WATCH_FS_ERROR] Tiddler has no title`);
+        return;
+      }
+      
       const isNewFile = !this.filePathExistsInIndex(actualFileRelativePath);
 
       // Update inverse index first
