@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
@@ -79,14 +79,22 @@ describe('NewWikiForm Component', () => {
   });
 
   // Helper function to render component with default props
-  const renderNewWikiForm = (overrides = {}) => {
+  // This async version waits for useAvailableTags hook to complete its async operations
+  const renderNewWikiForm = async (overrides = {}) => {
     const props = createMockProps(overrides);
-    return render(<NewWikiForm {...props} />);
+    const result = render(<NewWikiForm {...props} />);
+    // Wait for any async state updates to complete
+    await waitFor(() => {
+      // The component is considered stable when it's fully rendered
+      // We don't need to wait for any specific element, just let React settle
+      // This empty waitFor will ensure all effects are processed, to remove `act(...)` warnings
+    });
+    return result;
   };
 
   describe('Basic Rendering Tests', () => {
-    it('should render main workspace form with basic fields', () => {
-      renderNewWikiForm({
+    it('should render main workspace form with basic fields', async () => {
+      await renderNewWikiForm({
         isCreateMainWorkspace: true,
       });
       // Should render parent folder input
@@ -100,8 +108,8 @@ describe('NewWikiForm Component', () => {
       expect(screen.queryAllByRole('combobox', { name: 'AddWorkspace.TagName' }).length).toBe(0);
     });
 
-    it('should render sub workspace form with all fields', () => {
-      renderNewWikiForm({
+    it('should render sub workspace form with all fields', async () => {
+      await renderNewWikiForm({
         isCreateMainWorkspace: false,
       });
       // Should render basic fields
@@ -112,13 +120,13 @@ describe('NewWikiForm Component', () => {
       expect(screen.getAllByRole('combobox', { name: 'AddWorkspace.TagName' })[0]).toBeInTheDocument();
     });
 
-    it('should display correct initial values', () => {
+    it('should display correct initial values', async () => {
       const form = createMockForm({
         parentFolderLocation: '/custom/path',
         wikiFolderName: 'my-wiki',
       });
 
-      renderNewWikiForm({
+      await renderNewWikiForm({
         form,
         isCreateMainWorkspace: false,
       });
@@ -136,7 +144,7 @@ describe('NewWikiForm Component', () => {
         parentFolderLocationSetter: mockSetter,
       });
 
-      renderNewWikiForm({ form });
+      await renderNewWikiForm({ form });
 
       const input = screen.getAllByRole('textbox', { name: 'AddWorkspace.WorkspaceParentFolder' })[0];
       await user.clear(input);
@@ -154,7 +162,7 @@ describe('NewWikiForm Component', () => {
         wikiFolderNameSetter: mockSetter,
       });
 
-      renderNewWikiForm({ form });
+      await renderNewWikiForm({ form });
 
       const input = screen.getAllByRole('textbox', { name: 'AddWorkspace.WorkspaceFolderNameToCreate' })[0];
       await user.clear(input);
@@ -172,7 +180,7 @@ describe('NewWikiForm Component', () => {
         parentFolderLocationSetter: mockSetter,
       });
 
-      renderNewWikiForm({ form });
+      await renderNewWikiForm({ form });
 
       const button = screen.getAllByRole('button', { name: 'AddWorkspace.Choose' })[0];
       await user.click(button);
@@ -189,7 +197,7 @@ describe('NewWikiForm Component', () => {
         tagNameSetter: mockSetter,
       });
 
-      renderNewWikiForm({
+      await renderNewWikiForm({
         form,
         isCreateMainWorkspace: false,
       });
@@ -203,8 +211,8 @@ describe('NewWikiForm Component', () => {
   });
 
   describe('Error State Tests', () => {
-    it('should display errors on form fields when provided', () => {
-      renderNewWikiForm({
+    it('should display errors on form fields when provided', async () => {
+      await renderNewWikiForm({
         errorInWhichComponent: {
           parentFolderLocation: true,
           wikiFolderName: true,
@@ -218,8 +226,8 @@ describe('NewWikiForm Component', () => {
       expect(wikiNameInputs.some(input => input.getAttribute('aria-invalid') === 'true')).toBe(true);
     });
 
-    it('should display errors on sub workspace fields when provided', () => {
-      renderNewWikiForm({
+    it('should display errors on sub workspace fields when provided', async () => {
+      await renderNewWikiForm({
         isCreateMainWorkspace: false,
         errorInWhichComponent: {
           mainWikiToLink: true,
@@ -236,23 +244,24 @@ describe('NewWikiForm Component', () => {
   });
 
   describe('Props and State Tests', () => {
-    it('should render without errors when required props are provided', () => {
-      expect(() => {
-        renderNewWikiForm();
-      }).not.toThrow();
+    it('should render without errors when required props are provided', async () => {
+      // Just render successfully without throwing
+      await renderNewWikiForm();
+      // If we got here without errors, the test passes
+      expect(screen.getAllByRole('textbox').length).toBeGreaterThan(0);
     });
 
-    it('should show helper text for wiki folder location', () => {
+    it('should show helper text for wiki folder location', async () => {
       const form = createMockForm({
         wikiFolderLocation: '/test/parent/my-wiki',
       });
 
-      renderNewWikiForm({ form });
+      await renderNewWikiForm({ form });
 
       expect(screen.getByText('AddWorkspace.CreateWiki/test/parent/my-wiki')).toBeInTheDocument();
     });
 
-    it('should show helper text for sub workspace linking', () => {
+    it('should show helper text for sub workspace linking', async () => {
       const form = createMockForm({
         wikiFolderName: 'sub-wiki',
         mainWikiToLink: {
@@ -262,7 +271,7 @@ describe('NewWikiForm Component', () => {
         },
       });
 
-      renderNewWikiForm({
+      await renderNewWikiForm({
         form,
         isCreateMainWorkspace: false,
       });
