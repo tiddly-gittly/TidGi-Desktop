@@ -42,7 +42,7 @@ export function startNodeJSWiki({
         const message = typeof newStdOut === 'string' ? newStdOut : new TextDecoder().decode(newStdOut);
         // Send to main process logger if services are ready
         void native.logFor(workspace.name, 'info', message).catch((error: unknown) => {
-          console.error('[intercept] Failed to send stdout to main process:', error, message);
+          console.error('[intercept] Failed to send stdout to main process:', error, message, JSON.stringify(workspace));
         });
         return message;
       },
