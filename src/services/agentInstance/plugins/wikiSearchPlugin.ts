@@ -19,7 +19,7 @@ import { findPromptById } from '../promptConcat/promptConcat';
 import type { AiAPIConfig } from '../promptConcat/promptConcatSchema';
 import type { IPrompt } from '../promptConcat/promptConcatSchema';
 import { schemaToToolContent } from '../utilities/schemaToToolContent';
-import type { AIResponseContext, PromptConcatPlugin } from './types';
+import type { PromptConcatPlugin } from './types';
 
 /**
  * Wiki Search Parameter Schema
