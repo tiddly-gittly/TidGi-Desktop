@@ -1,4 +1,4 @@
-import { AfterStep, setWorldConstructor, When } from '@cucumber/cucumber';
+import { AfterStep, setDefaultTimeout, setWorldConstructor, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
@@ -190,7 +190,9 @@ export class ApplicationWorld {
 
 setWorldConstructor(ApplicationWorld);
 
-// setDefaultTimeout(50000);
+if (process.env.CI) {
+  setDefaultTimeout(30000);
+}
 
 AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result }) {
   // Only take screenshots in CI environment
