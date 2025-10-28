@@ -107,30 +107,37 @@ export async function clickElementWithText(
 ): Promise<void> {
   const script = `
     (function() {
-      const selector = ${JSON.stringify(selector)};
-      const text = ${JSON.stringify(text)};
-      const elements = document.querySelectorAll(selector);
-      let found = null;
-      
-      for (let i = 0; i < elements.length; i++) {
-        const elem = elements[i];
-        const elemText = elem.textContent || elem.innerText || '';
-        if (elemText.trim() === text.trim() || elemText.includes(text)) {
-          found = elem;
-          break;
+      try {
+        const selector = ${JSON.stringify(selector)};
+        const text = ${JSON.stringify(text)};
+        const elements = document.querySelectorAll(selector);
+        let found = null;
+        
+        for (let i = 0; i < elements.length; i++) {
+          const elem = elements[i];
+          const elemText = elem.textContent || elem.innerText || '';
+          if (elemText.trim() === text.trim() || elemText.includes(text)) {
+            found = elem;
+            break;
+          }
         }
+        
+        if (!found) {
+          return { error: 'Element with text "' + text + '" not found in selector: ' + selector };
+        }
+        
+        found.click();
+        return { success: true };
+      } catch (error) {
+        return { error: error.message || String(error) };
       }
-      
-      if (!found) {
-        throw new Error('Element with text "' + text + '" not found in selector: ' + selector);
-      }
-      
-      found.click();
-      return true;
     })()
   `;
 
-  await executeInBrowserView(app, script);
+  const result = await executeInBrowserView(app, script);
+  if (result && typeof result === 'object' && 'error' in result) {
+    throw new Error(String(result.error));
+  }
 }
 
 /**
@@ -139,19 +146,26 @@ export async function clickElementWithText(
 export async function clickElement(app: ElectronApplication, selector: string): Promise<void> {
   const script = `
     (function() {
-      const selector = ${JSON.stringify(selector)};
-      const elem = document.querySelector(selector);
-      
-      if (!elem) {
-        throw new Error('Element not found: ' + selector);
+      try {
+        const selector = ${JSON.stringify(selector)};
+        const elem = document.querySelector(selector);
+        
+        if (!elem) {
+          return { error: 'Element not found: ' + selector };
+        }
+        
+        elem.click();
+        return { success: true };
+      } catch (error) {
+        return { error: error.message || String(error) };
       }
-      
-      elem.click();
-      return true;
     })()
   `;
 
-  await executeInBrowserView(app, script);
+  const result = await executeInBrowserView(app, script);
+  if (result && typeof result === 'object' && 'error' in result) {
+    throw new Error(String(result.error));
+  }
 }
 
 /**
@@ -163,28 +177,35 @@ export async function typeText(app: ElectronApplication, selector: string, text:
 
   const script = `
     (function() {
-      const selector = '${escapedSelector}';
-      const text = '${escapedText}';
-      const elem = document.querySelector(selector);
-      
-      if (!elem) {
-        throw new Error('Element not found: ' + selector);
+      try {
+        const selector = '${escapedSelector}';
+        const text = '${escapedText}';
+        const elem = document.querySelector(selector);
+        
+        if (!elem) {
+          return { error: 'Element not found: ' + selector };
+        }
+        
+        elem.focus();
+        if (elem.tagName === 'TEXTAREA' || elem.tagName === 'INPUT') {
+          elem.value = text;
+        } else {
+          elem.textContent = text;
+        }
+        
+        elem.dispatchEvent(new Event('input', { bubbles: true }));
+        elem.dispatchEvent(new Event('change', { bubbles: true }));
+        return { success: true };
+      } catch (error) {
+        return { error: error.message || String(error) };
       }
-      
-      elem.focus();
-      if (elem.tagName === 'TEXTAREA' || elem.tagName === 'INPUT') {
-        elem.value = text;
-      } else {
-        elem.textContent = text;
-      }
-      
-      elem.dispatchEvent(new Event('input', { bubbles: true }));
-      elem.dispatchEvent(new Event('change', { bubbles: true }));
-      return true;
     })()
   `;
 
-  await executeInBrowserView(app, script);
+  const result = await executeInBrowserView(app, script);
+  if (result && typeof result === 'object' && 'error' in result) {
+    throw new Error(String(result.error));
+  }
 }
 
 /**

@@ -279,8 +279,8 @@ When('I modify file {string} to contain {string}', async function(this: Applicat
     const headers = lines.slice(0, blankLineIndex + 1);
     fileContent = [...headers, content].join('\n');
   } else {
-    // No headers found, just use content
-    fileContent = content;
+    // No headers found or file only have headers, append content
+    fileContent = `${fileContent}\n\n${content}`;
   }
 
   // Write the modified content back
