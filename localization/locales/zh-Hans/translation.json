@@ -224,7 +224,7 @@
     "SubWikiSMainWikiNotExistError": "子知识库所附着的主知识库不存在",
     "SubWikiSMainWikiNotExistErrorDescription": "子知识库在创建时必须选择一个附着到的主知识库，但是现在这个子知识库所应该附着的主知识库找不到了，无法附着。",
     "ViewLoadUrlError": "E-9 网页加载失败错误",
-    "ViewLoadUrlErrorDescription": "E-9 工作区对应的知识库網页加载失败了，但即将重试",
+    "ViewLoadUrlErrorDescription": "E-9 工作区对应的知识库网页加载失败了，但即将重试",
     "WikiRuntimeError": "E-13 知识库运行时有错误",
     "WikiRuntimeErrorDescription": "E-13 知识库运行时有错误，原因请查看 log 文件，并上传提交 issue 以便修复。",
     "WorkspaceFailedToLoadError": "E-8 工作区加载失败错误",
