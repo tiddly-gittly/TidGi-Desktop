@@ -51,6 +51,7 @@ class TidGiIPCSyncAdaptor {
    * This should be called after install-electron-ipc-cat, so this is called in `$:/plugins/linonetwo/tidgi-ipc-syncadaptor/Startup/install-electron-ipc-cat.js`
    */
   setupSSE() {
+    console.log('setupSSE called in TidGiIPCSyncAdaptor');
     if (window.observables?.wiki?.getWikiChangeObserver$ === undefined) {
       console.error("getWikiChangeObserver$ is undefined in window.observables.wiki, can't subscribe to server changes.");
       return;
@@ -74,9 +75,12 @@ class TidGiIPCSyncAdaptor {
         if (!change[title]) {
           return;
         }
-        if (change[title].deleted && !this.recentUpdatedTiddlersFromClient.deletions.includes(title)) {
+
+        if (change[title].deleted) {
+          // For deletions, we don't need to check modified time
           this.updatedTiddlers.deletions.push(title);
-        } else if (change[title].modified && !this.recentUpdatedTiddlersFromClient.modifications.includes(title)) {
+        } else if (change[title].modified) {
+          // Add to modifications - watch-fs already filtered out echoes via file exclusion
           this.updatedTiddlers.modifications.push(title);
         }
       });
@@ -89,28 +93,6 @@ class TidGiIPCSyncAdaptor {
     modifications: [],
     deletions: [],
   };
-
-  /**
-   * We will get echo from the server, for these tiddler changes caused by the client, we remove them from the `updatedTiddlers` so that the client won't get them again from server, which will usually get outdated tiddler (lack 1 or 2 words that user just typed).
-   */
-  recentUpdatedTiddlersFromClient: { deletions: string[]; modifications: string[] } = {
-    modifications: [],
-    deletions: [],
-  };
-
-  /**
-   * Add a title as lock to prevent sse echo back. This will auto clear the lock after 2s (this number still needs testing).
-   * And it only clear one title after 2s, so if you add the same title rapidly, it will prevent sse echo after 2s of last operation, which can prevent last echo, which is what we want.
-   */
-  addRecentUpdatedTiddlersFromClient(type: 'modifications' | 'deletions', title: string) {
-    this.recentUpdatedTiddlersFromClient[type].push(title);
-    setTimeout(() => {
-      const index = this.recentUpdatedTiddlersFromClient[type].indexOf(title);
-      if (index !== -1) {
-        this.recentUpdatedTiddlersFromClient[type].splice(index, 1);
-      }
-    }, 2000);
-  }
 
   clearUpdatedTiddlers() {
     this.updatedTiddlers = {
@@ -226,7 +208,6 @@ class TidGiIPCSyncAdaptor {
         return;
       }
       this.logger.log(`saveTiddler ${title}`);
-      this.addRecentUpdatedTiddlersFromClient('modifications', title);
       const putTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
         this.workspaceID,
         'putTiddler',
@@ -286,7 +267,7 @@ class TidGiIPCSyncAdaptor {
       return;
     }
     this.logger.log('deleteTiddler');
-    this.addRecentUpdatedTiddlersFromClient('deletions', title);
+    // For deletions, we don't track modified time since the tiddler is being removed
     const getTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
       this.workspaceID,
       'deleteTiddler',

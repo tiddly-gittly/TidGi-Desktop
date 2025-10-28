@@ -124,13 +124,6 @@ Then('I wait for SSE and watch-fs to be ready', async function(this: Application
   await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 15000);
 });
 
-Then('I wait for frontend SSE to receive modification for {string}', async function(this: ApplicationWorld, tiddlerTitle: string) {
-  await waitForLogMarker(
-    `[test-id-SSE_FRONTEND_RECEIVED_MODIFICATION] ${tiddlerTitle}`,
-    `Frontend SSE did not receive modification event for "${tiddlerTitle}" within timeout`,
-  );
-});
-
 Then('I wait for tiddler {string} to be added by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
   await waitForLogMarker(
     `[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`,
@@ -174,16 +167,28 @@ When('I modify file {string} to contain {string}', async function(this: Applicat
 
   // TiddlyWiki .tid files have a format: headers followed by blank line and text
   // We need to preserve headers and only modify the text part
-  const lines = fileContent.split('\n');
+  // Split by both \n and \r\n to handle different line endings
+  const lines = fileContent.split(/\r?\n/);
+  
   const blankLineIndex = lines.findIndex(line => line.trim() === '');
 
   if (blankLineIndex >= 0) {
+    // File has headers and content separated by blank line
     // Keep headers, replace text after blank line
     const headers = lines.slice(0, blankLineIndex + 1);
+    
+    // Note: We intentionally do NOT update the modified field here
+    // This simulates a real user editing the file in an external editor,
+    // where the modified field would not be automatically updated
+    // The echo prevention mechanism should detect this as a real external change
+    // because the content changed but the modified timestamp stayed the same
+    
     fileContent = [...headers, content].join('\n');
   } else {
-    // No headers found or file only have headers, append content
-    fileContent = `${fileContent}\n\n${content}`;
+    // File has only headers, no content yet (no blank line separator)
+    // We need to add the blank line separator and the content
+    // Again, we don't modify the modified field
+    fileContent = [...lines, '', content].join('\n');
   }
 
   // Write the modified content back

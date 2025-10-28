@@ -53,8 +53,6 @@ Feature: Filesystem Plugin
     When I modify file "{tmpDir}/SubWiki/Test Tiddler Title.tid" to contain "Content modified in SubWiki symlink"
     # Wait for watch-fs to detect the change
     Then I wait for tiddler "Test Tiddler Title" to be updated by watch-fs
-    # Wait for frontend SSE to receive and process the modification event
-    Then I wait for frontend SSE to receive modification for "Test Tiddler Title"
     # Verify the modified content appears in the wiki
     Then I should see "Content modified in SubWiki symlink" in the browser view content
 

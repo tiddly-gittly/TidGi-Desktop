@@ -5,13 +5,13 @@ export async function consoleLogToLogFile(workspaceName = 'error-no-workspace-na
     (function() {
       const workspaceName = ${JSON.stringify(workspaceName)};
       
-      // Save original console methods
+      // Save original console methods - need to bind them to console object
       const originalConsole = {
-        log: console.log,
-        warn: console.warn,
-        error: console.error,
-        info: console.info,
-        debug: console.debug
+        log: console.log.bind(console),
+        warn: console.warn.bind(console),
+        error: console.error.bind(console),
+        info: console.info.bind(console),
+        debug: console.debug.bind(console)
       };
       
       // Helper to send logs to backend using logFor
@@ -34,31 +34,31 @@ export async function consoleLogToLogFile(workspaceName = 'error-no-workspace-na
         }
       };
       
-      // Override console methods
-      console.log = function(...args) {
-        originalConsole.log.apply(console, args);
-        sendToBackend('info', args);
+      // Create wrapper functions that will be called even with Function.apply.call
+      const createWrapper = (level, originalFn) => {
+        return function(...args) {
+          // Call original function
+          originalFn(...args);
+          // Send to backend
+          sendToBackend(level, args);
+        };
       };
       
-      console.warn = function(...args) {
-        originalConsole.warn.apply(console, args);
-        sendToBackend('warn', args);
-      };
+      // Override console methods with wrappers
+      console.log = createWrapper('info', originalConsole.log);
+      console.warn = createWrapper('warn', originalConsole.warn);
+      console.error = createWrapper('error', originalConsole.error);
+      console.info = createWrapper('info', originalConsole.info);
+      console.debug = createWrapper('debug', originalConsole.debug);
       
-      console.error = function(...args) {
-        originalConsole.error.apply(console, args);
-        sendToBackend('error', args);
-      };
-      
-      console.info = function(...args) {
-        originalConsole.info.apply(console, args);
-        sendToBackend('info', args);
-      };
-      
-      console.debug = function(...args) {
-        originalConsole.debug.apply(console, args);
-        sendToBackend('debug', args);
-      };
+      // Important: Preserve the Function.apply.call behavior that TiddlyWiki uses
+      // This ensures our wrapper is called even when using Function.apply.call(console.log, ...)
+      ['log', 'warn', 'error', 'info', 'debug'].forEach(method => {
+        const wrapper = console[method];
+        // Make sure the wrapper has the same properties as native console methods
+        Object.defineProperty(wrapper, 'name', { value: method, configurable: true });
+        Object.defineProperty(wrapper, 'length', { value: 0, configurable: true });
+      });
       
       originalConsole.log('[CONSOLE_HOOK] Console logging to backend file enabled for workspace:', workspaceName);
     })();
