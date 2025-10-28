@@ -153,7 +153,7 @@ export class FileSystemAdaptor {
    */
   protected generateSubWikiFileInfo(tiddler: Tiddler, subWiki: IWikiWorkspace, fileInfo: FileInfo | undefined): FileInfo {
     let targetDirectory = subWiki.wikiFolderLocation;
-    
+
     // Resolve symlinks to ensure consistent path handling across platforms
     // On Windows, this resolves junctions; on Linux, this resolves symbolic links
     // This prevents path inconsistencies when the same symlinked directory is referenced differently
@@ -164,7 +164,7 @@ export class FileSystemAdaptor {
       // If realpath fails, use the original path
       // This can happen if the directory doesn't exist yet
     }
-    
+
     $tw.utils.createDirectory(targetDirectory);
 
     return $tw.utils.generateTiddlerFileInfo(tiddler, {
