@@ -20,7 +20,7 @@ import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWCont
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import { getWikiInstance } from './globals';
 import { extractWikiHTML, packetHTMLFromWikiFolder } from './htmlWiki';
-import { ipcServerRoutes, ipcServerRoutesMethods } from './ipcServerRoutes';
+import { ipcServerRoutesMethods } from './ipcServerRoutes';
 import { notifyServicesReady } from './servicesReady';
 import { startNodeJSWiki } from './startNodeJSWiki';
 
@@ -115,7 +115,6 @@ const wikiWorker = {
   beforeExit,
   notifyServicesReady,
   wikiOperation: wikiOperationsInWikiWorker.wikiOperation.bind(wikiOperationsInWikiWorker),
-  waitForSSEReady: () => ipcServerRoutes.waitForSSEReady(),
   ...ipcServerRoutesMethods,
 };
 export type WikiWorker = typeof wikiWorker;

@@ -2,7 +2,6 @@ import type { Logger } from '$:/core/modules/utils/logger.js';
 import type { IWikiServerStatusObject } from '@services/wiki/wikiWorker/ipcServerRoutes';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import debounce from 'lodash/debounce';
-import type { Subscription } from 'rxjs';
 import type { IChangedTiddlers, ITiddlerFields, Syncer, Tiddler, Wiki } from 'tiddlywiki';
 
 type ISyncAdaptorGetStatusCallback = (error: Error | null, isLoggedIn?: boolean, username?: string, isReadOnly?: boolean, isAnonymous?: boolean) => void;
@@ -28,7 +27,6 @@ class TidGiIPCSyncAdaptor {
   authService: typeof window.service.auth;
   workspaceID: string;
   recipe?: string;
-  sseSubscription?: Subscription;
 
   constructor(options: { wiki: Wiki }) {
     this.wiki = options.wiki;
@@ -41,21 +39,9 @@ class TidGiIPCSyncAdaptor {
     this.isLoggedIn = false;
     this.isReadOnly = false;
     this.logoutIsAvailable = true;
-    const meta = window.meta() as WindowMeta[WindowNames.view];
-    this.workspaceID = meta.workspace?.id ?? '';
+    this.workspaceID = (window.meta() as WindowMeta[WindowNames.view]).workspaceID!;
     if (window.observables?.wiki?.getWikiChangeObserver$ !== undefined) {
       // if install-electron-ipc-cat is faster than us, just subscribe to the observable. Otherwise we normally will wait for it to call us here.
-      this.setupSSE();
-    }
-  }
-
-  /**
-   * Check if SSE subscription is active, if not, try to re-establish it.
-   * This is called after successful IPC operations to handle wiki restart scenarios.
-   */
-  private ensureSSEActive() {
-    // If subscription doesn't exist or is closed, try to re-establish
-    if (!this.sseSubscription || this.sseSubscription.closed) {
       this.setupSSE();
     }
   }
@@ -68,13 +54,6 @@ class TidGiIPCSyncAdaptor {
       console.error("getWikiChangeObserver$ is undefined in window.observables.wiki, can't subscribe to server changes.");
       return;
     }
-
-    // Unsubscribe existing SSE subscription if any (happens on wiki restart)
-    if (this.sseSubscription !== undefined && !this.sseSubscription.closed) {
-      this.sseSubscription.unsubscribe();
-      this.sseSubscription = undefined;
-    }
-
     const debouncedSync = debounce(() => {
       if ($tw.syncer === undefined) {
         console.error('Syncer is undefined in TidGiIPCSyncAdaptor. Abort the `syncFromServer` in `setupSSE debouncedSync`.');
@@ -88,7 +67,7 @@ class TidGiIPCSyncAdaptor {
     // After SSE is enabled, we can disable polling and else things that related to syncer. (build up complexer behavior with syncer.)
     this.configSyncer();
 
-    this.sseSubscription = window.observables.wiki.getWikiChangeObserver$(this.workspaceID).subscribe((change: IChangedTiddlers) => {
+    window.observables.wiki.getWikiChangeObserver$(this.workspaceID).subscribe((change: IChangedTiddlers) => {
       // `$tw.syncer.syncFromServer` calling `this.getUpdatedTiddlers`, so we need to update `this.updatedTiddlers` before it do so. See `core/modules/syncer.js` in the core
       Object.keys(change).forEach(title => {
         if (!change[title]) {
@@ -96,15 +75,8 @@ class TidGiIPCSyncAdaptor {
         }
         if (change[title].deleted && !this.recentUpdatedTiddlersFromClient.deletions.includes(title)) {
           this.updatedTiddlers.deletions.push(title);
-          this.logger.log('[SSE] Received deletion:', title);
-          console.log('[test-id-SSE_FRONTEND_RECEIVED_DELETION]', title);
         } else if (change[title].modified && !this.recentUpdatedTiddlersFromClient.modifications.includes(title)) {
           this.updatedTiddlers.modifications.push(title);
-          this.logger.log('[SSE] Received modification:', title);
-          console.log('[test-id-SSE_FRONTEND_RECEIVED_MODIFICATION]', title);
-        } else {
-          // Event was filtered by recentUpdatedTiddlersFromClient echo protection
-          console.log('[test-id-SSE_FRONTEND_FILTERED_ECHO]', title, 'deleted:', change[title].deleted, 'modified:', change[title].modified);
         }
       });
       debouncedSync();
@@ -126,9 +98,8 @@ class TidGiIPCSyncAdaptor {
   };
 
   /**
-   * Add a title as lock to prevent sse echo back. This will auto clear the lock after 500ms.
-   * This timeout is short enough to not interfere with external file modifications while still preventing immediate echoes.
-   * And it only clear one title after timeout, so if you add the same title rapidly, it will prevent sse echo after timeout of last operation, which can prevent last echo, which is what we want.
+   * Add a title as lock to prevent sse echo back. This will auto clear the lock after 2s (this number still needs testing).
+   * And it only clear one title after 2s, so if you add the same title rapidly, it will prevent sse echo after 2s of last operation, which can prevent last echo, which is what we want.
    */
   addRecentUpdatedTiddlersFromClient(type: 'modifications' | 'deletions', title: string) {
     this.recentUpdatedTiddlersFromClient[type].push(title);
@@ -137,7 +108,7 @@ class TidGiIPCSyncAdaptor {
       if (index !== -1) {
         this.recentUpdatedTiddlersFromClient[type].splice(index, 1);
       }
-    }, 500);
+    }, 2000);
   }
 
   clearUpdatedTiddlers() {
@@ -156,7 +127,7 @@ class TidGiIPCSyncAdaptor {
   }
 
   getUpdatedTiddlers(_syncer: Syncer, callback: (error: Error | null | undefined, changes: { deletions: string[]; modifications: string[] }) => void): void {
-    this.logger.log('getUpdatedTiddlers, modifications:', this.updatedTiddlers.modifications, 'deletions:', this.updatedTiddlers.deletions);
+    this.logger.log('getUpdatedTiddlers');
     callback(null, this.updatedTiddlers);
   }
 
@@ -297,14 +268,7 @@ class TidGiIPCSyncAdaptor {
       if (getTiddlerResponse?.data === undefined) {
         throw new Error('getTiddler returned undefined from callWikiIpcServerRoute getTiddler in loadTiddler');
       }
-      const tiddlerFields = getTiddlerResponse.data as ITiddlerFields;
-      const textPreview = (tiddlerFields.text ?? '').substring(0, 50);
-      this.logger.log(`loadTiddler ${title} completed, text:`, textPreview);
-
-      // After successful IPC call, ensure SSE is active (handles wiki restart scenario)
-      this.ensureSSEActive();
-
-      callback?.(null, tiddlerFields);
+      callback?.(null, getTiddlerResponse.data as ITiddlerFields);
     } catch (error) {
       callback?.(error as Error);
     }
@@ -370,8 +334,7 @@ class TidGiIPCSyncAdaptor {
 if ($tw.browser && typeof window !== 'undefined') {
   const isInTidGi = typeof document !== 'undefined' && document.location.protocol.startsWith('tidgi');
   const servicesExposed = Boolean(window.service.wiki);
-  const meta = window.meta() as WindowMeta[WindowNames.view] | undefined;
-  const hasWorkspaceIDinMeta = Boolean(meta?.workspace?.id);
+  const hasWorkspaceIDinMeta = Boolean((window.meta() as WindowMeta[WindowNames.view] | undefined)?.workspaceID);
   if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     exports.adaptorClass = TidGiIPCSyncAdaptor;

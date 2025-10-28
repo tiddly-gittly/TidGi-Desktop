@@ -27,37 +27,16 @@ export class IpcServerRoutes {
   private wikiInstance!: ITiddlyWiki;
   private readonly pendingIpcServerRoutesRequests: Array<(value: void | PromiseLike<void>) => void> = [];
   #readonlyMode = false;
-  /** Store all active SSE change listeners so we can re-register them when wiki restarts */
-  private wikiChangeListeners: Array<(changes: IChangedTiddlers) => void> = [];
-  /** Promises waiting for SSE to be ready (at least one observer subscribed) */
-  private readonly pendingSSEReadyRequests: Array<(value: void | PromiseLike<void>) => void> = [];
-  /** Track if SSE has been initialized for current wiki instance */
-  private sseReady = false;
-  /** Cache change events that occur before SSE is ready */
-  private readonly cachedChangeEvents: IChangedTiddlers[] = [];
 
   setConfig({ readOnlyMode }: { readOnlyMode?: boolean }) {
     this.#readonlyMode = Boolean(readOnlyMode);
   }
 
   setWikiInstance(wikiInstance: ITiddlyWiki) {
-    const hadPreviousInstance = this.wikiInstance !== undefined;
     this.wikiInstance = wikiInstance;
-    // Reset SSE ready state when wiki instance changes
-    this.sseReady = false;
-    // Clear cached events from previous wiki instance
-    this.cachedChangeEvents.length = 0;
     this.pendingIpcServerRoutesRequests.forEach((resolve) => {
       resolve();
     });
-
-    // If this is a wiki restart (not first initialization), re-register all SSE listeners
-    if (hadPreviousInstance && this.wikiChangeListeners.length > 0) {
-      for (const changeListener of this.wikiChangeListeners) {
-        this.wikiInstance.wiki.addEventListener('change', changeListener);
-      }
-      console.log('[test-id-SSE_READY] Wiki change observer re-registered after restart');
-    }
   }
 
   private async waitForIpcServerRoutesAvailable() {
@@ -66,19 +45,6 @@ export class IpcServerRoutes {
     }
     await new Promise<void>((resolve) => {
       this.pendingIpcServerRoutesRequests.push(resolve);
-    });
-  }
-
-  /**
-   * Wait for SSE to be ready (at least one frontend observer has subscribed).
-   * This ensures change events won't be lost during wiki initialization.
-   */
-  async waitForSSEReady(): Promise<void> {
-    if (this.sseReady) {
-      return;
-    }
-    await new Promise<void>((resolve) => {
-      this.pendingSSEReadyRequests.push(resolve);
     });
   }
 
@@ -253,60 +219,17 @@ export class IpcServerRoutes {
   //    ██     ███ ███        ███████ ███████ ███████
   getWikiChangeObserver() {
     return new Observable<IChangedTiddlers>((observer) => {
-      const changeListener = (changes: IChangedTiddlers) => {
-        // If SSE is not ready yet, cache the event
-        if (!this.sseReady) {
-          this.cachedChangeEvents.push(changes);
-          return;
-        }
-
-        observer.next(changes);
-      };
-
-      const setupListener = async () => {
+      const getWikiChangeObserverInWorkerIIFE = async () => {
         await this.waitForIpcServerRoutesAvailable();
         if (this.wikiInstance === undefined) {
           observer.error(new Error(`this.wikiInstance is undefined, maybe something went wrong between waitForIpcServerRoutesAvailable and return new Observable.`));
-          return;
         }
-
-        this.wikiInstance.wiki.addEventListener('change', changeListener);
-        // Store the listener so it can be re-registered on wiki restart
-        this.wikiChangeListeners.push(changeListener);
+        this.wikiInstance.wiki.addEventListener('change', (changes) => {
+          observer.next(changes);
+        });
         console.log('[test-id-SSE_READY] Wiki change observer registered and ready');
-
-        // Mark SSE as ready and notify any waiting processes
-        if (!this.sseReady) {
-          this.sseReady = true;
-          this.pendingSSEReadyRequests.forEach((resolve) => {
-            resolve();
-          });
-          this.pendingSSEReadyRequests.length = 0;
-
-          // Send all cached events to the observer
-          if (this.cachedChangeEvents.length > 0) {
-            for (const cachedEvent of this.cachedChangeEvents) {
-              observer.next(cachedEvent);
-            }
-            this.cachedChangeEvents.length = 0;
-          }
-        }
       };
-
-      void setupListener();
-
-      // Cleanup on unsubscribe
-      return () => {
-        // Remove listener from wiki if it exists
-        if (this.wikiInstance?.wiki) {
-          this.wikiInstance.wiki.removeEventListener('change', changeListener);
-        }
-        // Remove from stored listeners
-        const index = this.wikiChangeListeners.indexOf(changeListener);
-        if (index > -1) {
-          this.wikiChangeListeners.splice(index, 1);
-        }
-      };
+      void getWikiChangeObserverInWorkerIIFE();
     });
   }
 }

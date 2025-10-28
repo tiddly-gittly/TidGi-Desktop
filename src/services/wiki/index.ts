@@ -746,14 +746,7 @@ export class Wiki implements IWikiService {
     syncService.stopIntervalSync(id);
     if (!isSubWiki) {
       await this.stopWiki(id);
-      // Reload view BEFORE starting wiki to ensure frontend is ready when wiki starts
-      // This is essential for features that depend on wiki lifecycle (e.g., SSE subscription)
-      await container.get<IViewService>(serviceIdentifier.View).reloadViewsWebContents(id);
       await this.startWiki(id, userName);
-      // Wait for frontend SSE to be ready before proceeding
-      // This ensures change events won't be lost during initial file loading
-      const worker = await this.getWorkerEnsure(id);
-      await worker.waitForSSEReady();
     }
     await syncService.startIntervalSyncIfNeeded(workspace);
   }
