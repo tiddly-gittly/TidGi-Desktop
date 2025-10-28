@@ -203,13 +203,8 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Start watching
       await this.watcher.start();
-
-      this.logger.log('[WATCH_FS_READY] Filesystem watcher is ready');
-      this.logger.log('[WATCH_FS_READY] Watching path:', this.watchPathBase);
-
       // Initialize sub-wiki watchers
       await this.initializeSubWikiWatchers();
-
       // Log stabilization marker for tests
       this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized');
     } catch (error) {

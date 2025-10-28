@@ -67,7 +67,7 @@ const PLUGINS = [
     name: 'watch-filesystem-adaptor',
     sourceFolder: '../src/services/wiki/plugin/watchFileSystemAdaptor',
     entryPoints: [
-      'watch-filesystem-adaptor.ts',
+      'loader.ts',
     ],
   },
 ];

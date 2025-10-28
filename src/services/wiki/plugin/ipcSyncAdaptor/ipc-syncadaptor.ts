@@ -39,7 +39,8 @@ class TidGiIPCSyncAdaptor {
     this.isLoggedIn = false;
     this.isReadOnly = false;
     this.logoutIsAvailable = true;
-    this.workspaceID = (window.meta() as WindowMeta[WindowNames.view]).workspaceID!;
+    const workspaceID = (window.meta() as WindowMeta[WindowNames.view]).workspace?.id;
+    this.workspaceID = workspaceID!;
     if (window.observables?.wiki?.getWikiChangeObserver$ !== undefined) {
       // if install-electron-ipc-cat is faster than us, just subscribe to the observable. Otherwise we normally will wait for it to call us here.
       this.setupSSE();
@@ -334,7 +335,7 @@ class TidGiIPCSyncAdaptor {
 if ($tw.browser && typeof window !== 'undefined') {
   const isInTidGi = typeof document !== 'undefined' && document.location.protocol.startsWith('tidgi');
   const servicesExposed = Boolean(window.service.wiki);
-  const hasWorkspaceIDinMeta = Boolean((window.meta() as WindowMeta[WindowNames.view] | undefined)?.workspaceID);
+  const hasWorkspaceIDinMeta = Boolean((window.meta() as WindowMeta[WindowNames.view] | undefined)?.workspace?.id);
   if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     exports.adaptorClass = TidGiIPCSyncAdaptor;
