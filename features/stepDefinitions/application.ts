@@ -191,7 +191,7 @@ export class ApplicationWorld {
 setWorldConstructor(ApplicationWorld);
 
 if (process.env.CI) {
-  setDefaultTimeout(30000);
+  setDefaultTimeout(50000);
 }
 
 AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result }) {
