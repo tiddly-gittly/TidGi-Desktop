@@ -3,6 +3,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 // Only export in Node.js environment
 if ($tw.node) {
-  const WatchFileSystemAdaptor = require('./watch-filesystem-adaptor').WatchFileSystemAdaptor;
+  const WatchFileSystemAdaptor = require('./WatchFileSystemAdaptor').WatchFileSystemAdaptor;
   exports.adaptorClass = WatchFileSystemAdaptor;
 }
