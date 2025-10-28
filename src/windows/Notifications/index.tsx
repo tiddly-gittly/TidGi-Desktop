@@ -15,14 +15,14 @@ import PopupState, { bindMenu, bindTrigger } from 'material-ui-popup-state';
 
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { WindowNames } from '@services/windows/WindowProperties';
-
 import { ListItemButton } from '@mui/material';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+
 import { formatDate } from '@services/libs/formatDate';
 import { useNotificationInfoObservable } from '@services/notifications/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { PreferenceSections } from '@services/preferences/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
 import nightBackgroundPng from '../../images/night-background.png';
 import { quickShortcuts } from './quickShortcuts';
 
@@ -38,7 +38,6 @@ const List = styled((props: React.ComponentProps<typeof ListRaw>) => <ListRaw de
   width: 100%;
 `;
 
-// TODO: handle classes={{ root: classes.pausingHeader }}
 const PausingHeader = styled((props: React.ComponentProps<typeof ListItem>) => <ListItem {...props} />)`
   background: url(${nightBackgroundPng});
   height: 210px;
@@ -46,16 +45,15 @@ const PausingHeader = styled((props: React.ComponentProps<typeof ListItem>) => <
   align-items: flex-end;
 `;
 
-// TODO: handle classes={{ primary: classes.pausingHeaderText }}
 const PausingHeaderText = styled((props: React.ComponentProps<typeof ListItemText>) => <ListItemText {...props} />)`
   color: white;
 `;
 
-const pauseNotification = (tilDate: Date): void => {
+const pauseNotification = (tilDate: Date, t: ReturnType<typeof useTranslation>['t']): void => {
   void window.service.preference.set('pauseNotifications', `pause:${tilDate.toString()}`);
   void window.service.notification.show({
-    title: 'Notifications paused',
-    body: `Notifications paused until ${formatDate(tilDate)}.`,
+    title: t('Notification.Paused'),
+    body: t('Notification.PausedUntil', { date: formatDate(tilDate) }),
   });
   void window.remote.closeCurrentWindow();
 };
@@ -74,11 +72,11 @@ export default function Notifications(): React.JSX.Element {
       return (
         <List>
           <PausingHeader>
-            <PausingHeaderText primary={`Notifications paused until ${formatDate(new Date(pauseNotificationsInfo.tilDate))}.`} />
+            <PausingHeaderText primary={t('Notification.PausedUntil', { date: formatDate(new Date(pauseNotificationsInfo.tilDate)) })} />
           </PausingHeader>
           <ListItemButton>
             <ListItemText
-              primary='Resume notifications'
+              primary={t('Notification.Resume')}
               onClick={async () => {
                 if (pauseNotificationsInfo === undefined) {
                   return;
@@ -91,8 +89,8 @@ export default function Notifications(): React.JSX.Element {
                   await window.service.preference.set('pauseNotifications', undefined);
                 }
                 await window.service.notification.show({
-                  title: 'Notifications resumed',
-                  body: 'Notifications are now resumed.',
+                  title: t('Notification.Resumed'),
+                  body: t('Notification.NotificationsNowResumed'),
                 });
                 void window.remote.closeCurrentWindow();
               }}
@@ -105,20 +103,20 @@ export default function Notifications(): React.JSX.Element {
                 {(popupState) => (
                   <>
                     <ListItemButton {...bindTrigger(popupState)}>
-                      <ListItemText primary='Adjust time' />
+                      <ListItemText primary={t('Notification.AdjustTime')} />
                       <ChevronRightIcon color='action' />
                     </ListItemButton>
                     <Menu {...bindMenu(popupState)}>
                       {quickShortcuts.map((shortcut) => (
                         <MenuItem
                           dense
-                          key={shortcut.name}
+                          key={shortcut.key}
                           onClick={() => {
-                            pauseNotification(shortcut.calcDate());
+                            pauseNotification(shortcut.calcDate(), t);
                             popupState.close();
                           }}
                         >
-                          {shortcut.name}
+                          {t(shortcut.key, { defaultValue: shortcut.name })}
                         </MenuItem>
                       ))}
                       <MenuItem
@@ -128,7 +126,7 @@ export default function Notifications(): React.JSX.Element {
                           popupState.close();
                         }}
                       >
-                        Custom...
+                        {t('Notification.Custom', { defaultValue: 'Custom...' })}
                       </MenuItem>
                     </Menu>
                   </>
@@ -139,7 +137,11 @@ export default function Notifications(): React.JSX.Element {
           <Divider />
           <ListItemButton>
             <ListItemText
-              primary={pauseNotificationsInfo.reason === 'scheduled' ? 'Adjust schedule...' : 'Pause notifications by schedule...'}
+              primary={
+                pauseNotificationsInfo.reason === 'scheduled'
+                  ? t('Notification.AdjustSchedule', { defaultValue: 'Adjust schedule...' })
+                  : t('Notification.PauseBySchedule', { defaultValue: 'Pause notifications by schedule...' })
+              }
               onClick={async () => {
                 await window.service.window.open(WindowNames.preferences, { preferenceGotoTab: PreferenceSections.notifications });
                 void window.remote.closeCurrentWindow();
@@ -151,15 +153,15 @@ export default function Notifications(): React.JSX.Element {
     }
 
     return (
-      <List subheader={<ListSubheader component='div'>Pause notifications</ListSubheader>}>
+      <List subheader={<ListSubheader component='div'>{t('Notification.PauseNotifications', { defaultValue: 'Pause notifications' })}</ListSubheader>}>
         {quickShortcuts.map((shortcut) => (
           <ListItemButton
-            key={shortcut.name}
+            key={shortcut.key}
             onClick={() => {
-              pauseNotification(shortcut.calcDate());
+              pauseNotification(shortcut.calcDate(), t);
             }}
           >
-            <ListItemText primary={shortcut.name} />
+            <ListItemText primary={t(shortcut.key, { defaultValue: shortcut.name })} />
           </ListItemButton>
         ))}
         <ListItemButton
@@ -167,12 +169,12 @@ export default function Notifications(): React.JSX.Element {
             showDateTimePickerSetter(true);
           }}
         >
-          <ListItemText primary='Custom...' />
+          <ListItemText primary={t('Notification.Custom', { defaultValue: 'Custom...' })} />
         </ListItemButton>
         <Divider />
         <ListItemButton>
           <ListItemText
-            primary='Pause notifications by schedule...'
+            primary={t('Notification.PauseBySchedule', { defaultValue: 'Pause notifications by schedule...' })}
             onClick={async () => {
               await window.service.window.open(WindowNames.preferences, { preferenceGotoTab: PreferenceSections.notifications });
               void window.remote.closeCurrentWindow();
@@ -193,9 +195,9 @@ export default function Notifications(): React.JSX.Element {
         value={new Date()}
         onChange={(tilDate) => {
           if (tilDate === null) return;
-          pauseNotification(tilDate);
+          pauseNotification(tilDate, t);
         }}
-        label='Custom'
+        label={t('Notification.Custom', { defaultValue: 'Custom' })}
         open={showDateTimePicker}
         onOpen={() => {
           showDateTimePickerSetter(true);

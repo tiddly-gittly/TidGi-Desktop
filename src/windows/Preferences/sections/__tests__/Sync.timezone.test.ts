@@ -1,4 +1,4 @@
-import { fromUnixTime, setDate, setMonth, setYear } from 'date-fns';
+import { setDate, setMonth, setYear } from 'date-fns';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -27,9 +27,9 @@ describe('Sync interval timezone handling', () => {
   /**
    * OLD BUGGY VERSION - Helper to simulate the old display value calculation
    */
-  function calculateDisplayValueOld(syncDebounceInterval: number, timezoneOffset: number): Date {
-    return fromUnixTime(syncDebounceInterval / 1000 + timezoneOffset * 60);
-  }
+  // function calculateDisplayValueOld(syncDebounceInterval: number, timezoneOffset: number): Date {
+  //   return fromUnixTime(syncDebounceInterval / 1000 + timezoneOffset * 60);
+  // }
 
   /**
    * OLD BUGGY VERSION - Helper to simulate the old save value calculation
@@ -63,7 +63,7 @@ describe('Sync interval timezone handling', () => {
         // Simulate setting 5 minutes in the UI
         // User sees 00:05:00 in the TimePicker
         const userSelectedDate = new Date(1970, 0, 1, 0, 5, 0, 0);
-        
+
         // Mock the timezone offset
         const originalGetTimezoneOffset = Date.prototype.getTimezoneOffset;
         Date.prototype.getTimezoneOffset = () => offset;
@@ -96,7 +96,7 @@ describe('Sync interval timezone handling', () => {
     timezones.forEach(({ name, offset }) => {
       it(`should correctly handle 30 minute interval in ${name}`, () => {
         const userSelectedDate = new Date(1970, 0, 1, 0, 30, 0, 0);
-        
+
         const originalGetTimezoneOffset = Date.prototype.getTimezoneOffset;
         Date.prototype.getTimezoneOffset = () => offset;
 
@@ -128,17 +128,17 @@ describe('Sync interval timezone handling', () => {
       // Let's reverse-engineer what date would produce this value in the old buggy code
       // If we assume UTC+8 offset (-480 minutes)
       const offset = -480;
-      
+
       // Working backwards with old code: if saved value is 2105000
       // utcTime = (timeWithoutDate.getTime() / 1000 - offset * 60) * 1000
       // 2105000 = (timeWithoutDate.getTime() / 1000 - (-480) * 60) * 1000
       // 2105 = timeWithoutDate.getTime() / 1000 + 28800
       // timeWithoutDate.getTime() / 1000 = 2105 - 28800 = -26695
       // timeWithoutDate.getTime() = -26695000
-      
+
       const calculatedTimestamp = -26695000;
       console.log(`Calculated timestamp that would produce this: ${calculatedTimestamp} ms`);
-      
+
       // This is a negative timestamp, which suggests the date was before 1970-01-01 00:00:00 UTC
       // In local time (UTC+8), this would be around 1969-12-31 16:00:00
       const date = new Date(calculatedTimestamp);
@@ -148,7 +148,7 @@ describe('Sync interval timezone handling', () => {
           Math.floor((calculatedTimestamp / 1000 / 60) % 60)
         }`,
       );
-      
+
       // Let's see what happens if there's a double timezone adjustment bug
       // If the code accidentally applies timezone offset twice...
       const doubleOffsetValue = (5 * 60 * 1000) + (offset * 60 * 1000);
@@ -160,22 +160,22 @@ describe('Sync interval timezone handling', () => {
     it('should handle Date object from TimePicker correctly', () => {
       // When user selects 00:05:00 in TimePicker, what Date object is created?
       // The TimePicker component creates a Date with local time 00:05:00
-      
+
       const localDate = new Date(1970, 0, 1, 0, 5, 0, 0);
-      
+
       console.log(`User selects 00:05:00 in TimePicker`);
       console.log(`Date object created: ${localDate.toISOString()}`);
       console.log(`getTime(): ${localDate.getTime()} ms`);
-      
+
       // Apply the NEW save logic (timezone-independent)
       const hours = localDate.getHours();
       const minutes = localDate.getMinutes();
       const seconds = localDate.getSeconds();
       const intervalMs = (hours * 60 * 60 + minutes * 60 + seconds) * 1000;
-      
+
       console.log(`Extracted: ${hours}h ${minutes}m ${seconds}s`);
       console.log(`Calculated interval: ${intervalMs} ms = ${intervalMs / 1000 / 60} minutes`);
-      
+
       // This should equal 5 minutes regardless of timezone
       expect(intervalMs).toBe(5 * 60 * 1000);
     });
@@ -185,13 +185,13 @@ describe('Sync interval timezone handling', () => {
     it('shows how old code fails in non-UTC+8 timezones', () => {
       const offset = 0; // UTC+0 (London)
       const userSelectedDate = new Date(1970, 0, 1, 0, 5, 0, 0);
-      
+
       const savedValueOld = calculateSaveValueOld(userSelectedDate, offset);
       console.log(`Old buggy code in UTC+0: ${savedValueOld} ms = ${savedValueOld / 1000 / 60} minutes`);
-      
+
       // This will be wrong (negative value)
       expect(savedValueOld).toBe(-28500000); // Bug confirmed!
-      
+
       // New code should work correctly
       const savedValueNew = calculateSaveValue(userSelectedDate);
       console.log(`New fixed code in UTC+0: ${savedValueNew} ms = ${savedValueNew / 1000 / 60} minutes`);
