@@ -33,91 +33,6 @@ async function waitForLogMarker(searchString: string, errorMessage: string, maxW
   throw new Error(errorMessage);
 }
 
-/**
- * Wait for both SSE and watch-fs to be ready and stabilized.
- * This combines the checks for test-id-SSE_READY and test-id-WATCH_FS_STABILIZED markers.
- */
-async function waitForSSEAndWatchFsReady(maxWaitMs = 15000): Promise<void> {
-  const logPath = path.join(process.cwd(), 'userData-test', 'logs');
-  const startTime = Date.now();
-  let sseReady = false;
-  let watchFsStabilized = false;
-
-  while (Date.now() - startTime < maxWaitMs) {
-    try {
-      const files = await fs.readdir(logPath);
-      const wikiLogFiles = files.filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
-
-      for (const file of wikiLogFiles) {
-        const content = await fs.readFile(path.join(logPath, file), 'utf-8');
-        if (content.includes('[test-id-SSE_READY]')) {
-          sseReady = true;
-        }
-        if (content.includes('[test-id-WATCH_FS_STABILIZED]')) {
-          watchFsStabilized = true;
-        }
-      }
-
-      if (sseReady && watchFsStabilized) {
-        return;
-      }
-    } catch {
-      // Log directory might not exist yet, continue waiting
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  const missingServices = [];
-  if (!sseReady) missingServices.push('SSE');
-  if (!watchFsStabilized) missingServices.push('watch-fs');
-  throw new Error(`${missingServices.join(' and ')} did not become ready within timeout`);
-}
-
-/**
- * Wait for a tiddler to be added by watch-fs.
- */
-async function waitForTiddlerAdded(tiddlerTitle: string, maxWaitMs = 10000): Promise<void> {
-  await waitForLogMarker(
-    `[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`,
-    `Tiddler "${tiddlerTitle}" was not added within timeout`,
-    maxWaitMs,
-  );
-}
-
-/**
- * Wait for a tiddler to be updated by watch-fs.
- */
-async function waitForTiddlerUpdated(tiddlerTitle: string, maxWaitMs = 10000): Promise<void> {
-  await waitForLogMarker(
-    `[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`,
-    `Tiddler "${tiddlerTitle}" was not updated within timeout`,
-    maxWaitMs,
-  );
-}
-
-/**
- * Wait for frontend SSE to receive modification event for a tiddler.
- */
-async function waitForSSEFrontendReceivedModification(tiddlerTitle: string, maxWaitMs = 10000): Promise<void> {
-  await waitForLogMarker(
-    `[test-id-SSE_FRONTEND_RECEIVED_MODIFICATION] ${tiddlerTitle}`,
-    `Frontend SSE did not receive modification event for "${tiddlerTitle}" within timeout`,
-    maxWaitMs,
-  );
-}
-
-/**
- * Wait for a tiddler to be deleted by watch-fs.
- */
-async function waitForTiddlerDeleted(tiddlerTitle: string, maxWaitMs = 10000): Promise<void> {
-  await waitForLogMarker(
-    `[test-id-WATCH_FS_TIDDLER_DELETED] ${tiddlerTitle}`,
-    `Tiddler "${tiddlerTitle}" was not deleted within timeout`,
-    maxWaitMs,
-  );
-}
-
 When('I cleanup test wiki so it could create a new one on start', async function() {
   if (fs.existsSync(wikiTestWikiPath)) fs.removeSync(wikiTestWikiPath);
 
@@ -204,44 +119,37 @@ function clearSubWikiRoutingTestData() {
   }
 }
 
-Then('I wait for SSE and watch-fs to be ready', { timeout: 20000 }, async function(this: ApplicationWorld) {
-  try {
-    await waitForSSEAndWatchFsReady();
-  } catch (error) {
-    throw new Error(`Failed to wait for SSE and watch-fs: ${(error as Error).message}`);
-  }
-});
-
-Then('I wait for tiddler {string} to be added by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
-  try {
-    await waitForTiddlerAdded(tiddlerTitle);
-  } catch (error) {
-    throw new Error(`Failed to wait for tiddler "${tiddlerTitle}" to be added: ${(error as Error).message}`);
-  }
-});
-
-Then('I wait for tiddler {string} to be updated by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
-  try {
-    await waitForTiddlerUpdated(tiddlerTitle);
-  } catch (error) {
-    throw new Error(`Failed to wait for tiddler "${tiddlerTitle}" to be updated: ${(error as Error).message}`);
-  }
-});
-
-Then('I wait for tiddler {string} to be deleted by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
-  try {
-    await waitForTiddlerDeleted(tiddlerTitle);
-  } catch (error) {
-    throw new Error(`Failed to wait for tiddler "${tiddlerTitle}" to be deleted: ${(error as Error).message}`);
-  }
+Then('I wait for SSE and watch-fs to be ready', async function(this: ApplicationWorld) {
+  await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', 15000);
+  await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 15000);
 });
 
 Then('I wait for frontend SSE to receive modification for {string}', async function(this: ApplicationWorld, tiddlerTitle: string) {
-  try {
-    await waitForSSEFrontendReceivedModification(tiddlerTitle);
-  } catch (error) {
-    throw new Error(`Failed to wait for frontend SSE to receive modification for "${tiddlerTitle}": ${(error as Error).message}`);
-  }
+  await waitForLogMarker(
+    `[test-id-SSE_FRONTEND_RECEIVED_MODIFICATION] ${tiddlerTitle}`,
+    `Frontend SSE did not receive modification event for "${tiddlerTitle}" within timeout`,
+  );
+});
+
+Then('I wait for tiddler {string} to be added by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
+  await waitForLogMarker(
+    `[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`,
+    `Tiddler "${tiddlerTitle}" was not added within timeout`,
+  );
+});
+
+Then('I wait for tiddler {string} to be updated by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
+  await waitForLogMarker(
+    `[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`,
+    `Tiddler "${tiddlerTitle}" was not updated within timeout`,
+  );
+});
+
+Then('I wait for tiddler {string} to be deleted by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
+  await waitForLogMarker(
+    `[test-id-WATCH_FS_TIDDLER_DELETED] ${tiddlerTitle}`,
+    `Tiddler "${tiddlerTitle}" was not deleted within timeout`,
+  );
 });
 
 // File manipulation step definitions
