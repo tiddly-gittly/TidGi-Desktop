@@ -2,6 +2,7 @@ import { When } from '@cucumber/cucumber';
 import type { ElectronApplication } from 'playwright';
 import type { ApplicationWorld } from './application';
 import { checkWindowDimension, checkWindowName } from './application';
+import { WebContentsView } from 'electron';
 
 // Helper function to get browser view info from Electron window
 async function getBrowserViewInfo(
@@ -28,7 +29,7 @@ async function getBrowserViewInfo(
       for (const view of views) {
         // Type guard to check if view is a WebContentsView
         if (view && view.constructor.name === 'WebContentsView') {
-          const webContentsView = view as unknown as { getBounds: () => { x: number; y: number; width: number; height: number } };
+          const webContentsView = view as WebContentsView;
           const viewBounds = webContentsView.getBounds();
           const windowContentBounds = targetWindow.getContentBounds();
 

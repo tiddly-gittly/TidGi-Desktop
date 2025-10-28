@@ -1,3 +1,4 @@
+import { WebContentsView } from 'electron';
 import type { ElectronApplication } from 'playwright';
 
 /**
@@ -13,7 +14,7 @@ async function getFirstWebContentsView(app: ElectronApplication) {
       return null;
     }
 
-    const children = (mainWindow.contentView as unknown as { children: Array<{ webContents?: { id?: number } }> }).children;
+    const children = (mainWindow.contentView as WebContentsView).children as WebContentsView[];
     if (!Array.isArray(children) || children.length === 0) {
       return null;
     }

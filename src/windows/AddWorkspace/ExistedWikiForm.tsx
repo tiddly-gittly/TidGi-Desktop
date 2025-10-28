@@ -86,7 +86,7 @@ export function ExistedWikiForm({
                     ${mainWikiToLink.wikiFolderLocation}/tiddlers/${wikiFolderName}`}
             value={mainWikiToLinkIndex}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-              const index = event.target.value as unknown as number;
+              const index = Number(event.target.value);
               const selectedWorkspace = mainWorkspaceList[index];
               if (selectedWorkspace && isWikiWorkspace(selectedWorkspace)) {
                 mainWikiToLinkSetter({

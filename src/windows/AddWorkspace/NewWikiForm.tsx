@@ -72,7 +72,7 @@ export function NewWikiForm({
             value={form.mainWikiToLinkIndex}
             slotProps={{ htmlInput: { 'data-testid': 'main-wiki-select' } }}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-              const index = event.target.value as unknown as number;
+              const index = Number(event.target.value);
               const selectedWorkspace = form.mainWorkspaceList[index];
               if (selectedWorkspace && isWikiWorkspace(selectedWorkspace)) {
                 form.mainWikiToLinkSetter({

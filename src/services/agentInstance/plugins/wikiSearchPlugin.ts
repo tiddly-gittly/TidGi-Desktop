@@ -684,7 +684,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         }
 
         // Set up actions to continue the conversation with tool results
-        const responseContext = context as unknown as AIResponseContext;
+        const responseContext = context;
         if (!responseContext.actions) {
           responseContext.actions = {};
         }
@@ -750,7 +750,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         });
 
         // Set up error response for next round
-        const responseContext = context as unknown as AIResponseContext;
+        const responseContext = context;
         if (!responseContext.actions) {
           responseContext.actions = {};
         }

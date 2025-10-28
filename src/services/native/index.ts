@@ -63,7 +63,7 @@ export class NativeService implements INativeService {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   public async registerKeyboardShortcut<T>(serviceName: keyof typeof serviceIdentifier, methodName: keyof T, shortcut: string): Promise<void> {
     try {
-      const key = `${serviceName as unknown as string}.${methodName as unknown as string}`;
+      const key = `${serviceName}.${String(methodName)}`;
       logger.info('Starting keyboard shortcut registration', { key, shortcut, serviceName, methodName, function: 'NativeService.registerKeyboardShortcut' });
 
       // Save to preferences
@@ -87,7 +87,7 @@ export class NativeService implements INativeService {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   public async unregisterKeyboardShortcut<T>(serviceName: keyof typeof serviceIdentifier, methodName: keyof T): Promise<void> {
     try {
-      const key = `${serviceName as unknown as string}.${methodName as unknown as string}`;
+      const key = `${serviceName}.${String(methodName)}`;
 
       // Get the current shortcut string before removing from preferences
       const shortcuts = await this.getKeyboardShortcuts();

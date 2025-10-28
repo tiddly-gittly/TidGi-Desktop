@@ -66,7 +66,7 @@ export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichCompone
                     ${form.mainWikiToLink.wikiFolderLocation}/tiddlers/${form.wikiFolderName}`}
             value={form.mainWikiToLinkIndex}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-              const index = event.target.value as unknown as number;
+              const index = Number(event.target.value);
               const selectedWorkspace = form.mainWorkspaceList[index];
               if (selectedWorkspace && isWikiWorkspace(selectedWorkspace)) {
                 form.mainWikiToLinkSetter({

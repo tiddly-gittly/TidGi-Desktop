@@ -1,3 +1,4 @@
+import { WebContentsView } from 'electron';
 import type { ElectronApplication } from 'playwright';
 
 /**
@@ -12,7 +13,7 @@ async function getFirstWebContentsView(app: ElectronApplication) {
     const mainWindow = allWindows.find(w => !w.isDestroyed() && w.webContents?.getType() === 'window');
 
     if (mainWindow?.contentView && 'children' in mainWindow.contentView) {
-      const children = (mainWindow.contentView as unknown as { children: Array<{ webContents?: { id?: number } }> }).children;
+      const children = (mainWindow.contentView as WebContentsView).children as WebContentsView[];
       if (Array.isArray(children) && children.length > 0) {
         const webContentsId = children[0]?.webContents?.id;
         if (webContentsId) return webContentsId;
@@ -22,7 +23,7 @@ async function getFirstWebContentsView(app: ElectronApplication) {
     // If main window doesn't have a WebContentsView, check all windows
     for (const window of allWindows) {
       if (!window.isDestroyed() && window.contentView && 'children' in window.contentView) {
-        const children = (window.contentView as unknown as { children: Array<{ webContents?: { id?: number } }> }).children;
+        const children = (window.contentView as WebContentsView).children as WebContentsView[];
         if (Array.isArray(children) && children.length > 0) {
           const webContentsId = children[0]?.webContents?.id;
           if (webContentsId) return webContentsId;
