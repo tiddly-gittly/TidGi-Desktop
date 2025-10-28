@@ -48,6 +48,13 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
   private watcher: nsfw.NSFW | undefined;
   /** Base excluded paths (permanent) */
   private baseExcludedPaths: string[] = [];
+  /**
+   * Track timers for file inclusion to prevent race conditions.
+   * When saving the same file multiple times rapidly, we need to ensure
+   * only the last save's timer runs. This Map tracks one timer per file path.
+   * The timer is managed by scheduleFileInclusion() method.
+   */
+  private inclusionTimers: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(options: { boot?: typeof $tw.boot; wiki: Wiki }) {
     super(options);
@@ -96,10 +103,8 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // Notify callback if provided
       callback?.(null, finalFileInfo);
 
-      // Re-include the file after a short delay
-      setTimeout(() => {
-        void this.includeFile(fileInfo.filepath);
-      }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
+      // Schedule file re-inclusion after save completes
+      this.scheduleFileInclusion(fileInfo.filepath);
     } catch (error) {
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
       callback?.(errorObject);
@@ -135,15 +140,11 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // Notify callback if provided
       callback?.(null, null);
 
-      // Re-include the file after a delay (cleanup the exclusion list)
-      setTimeout(() => {
-        void this.includeFile(fileRelativePath);
-      }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
+      // Schedule file re-inclusion after deletion completes
+      this.scheduleFileInclusion(fileRelativePath);
     } catch (error) {
-      // Re-include the file on error
-      setTimeout(() => {
-        void this.includeFile(fileRelativePath);
-      }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
+      // Schedule file re-inclusion on error to clean up exclusion list
+      this.scheduleFileInclusion(fileRelativePath);
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
       callback?.(errorObject);
       throw errorObject;
@@ -321,6 +322,27 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     this.logger.log(`[WATCH_FS_INCLUDE] Including file: ${absoluteFilePath}`);
     this.inverseFilesIndex.includeFile(absoluteFilePath);
     await this.updateWatcherExcludedPaths();
+  }
+
+  /**
+   * Schedule file inclusion after a delay, clearing any existing timer for the same file.
+   * This prevents race conditions when saving the same file multiple times rapidly.
+   * @param filepath File path to schedule for inclusion
+   */
+  private scheduleFileInclusion(filepath: string): void {
+    // Clear any existing timer for this file to prevent premature inclusion
+    const existingTimer = this.inclusionTimers.get(filepath);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+
+    // Schedule new timer
+    const timer = setTimeout(() => {
+      void this.includeFile(filepath);
+      this.inclusionTimers.delete(filepath);
+    }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
+
+    this.inclusionTimers.set(filepath, timer);
   }
 
   /**

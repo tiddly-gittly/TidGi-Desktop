@@ -39,10 +39,10 @@ Frontend (Browser)          Backend (Node.js Worker)
 - This prevents the save operation from triggering a change event (echo)
 - No timestamp-based equality check or echo detection needed - simpler and more reliable
 
-### 3. SSE for Change Notification
+### 3. SSE-like Change Notification (IPC Observable)
 
-- Backend sends Server-Sent Events (SSE) to frontend when files change
-- Frontend subscribes to `getWikiChangeObserver$` observable
+- Backend sends change events to frontend via IPC (not real SSE, but Observable pattern via `ipc-cat`)
+- Frontend subscribes to `getWikiChangeObserver$` observable from `window.observables.wiki`
 - Change events trigger tw's `syncFromServer()` to pull updates from backend, it will in return call our `getUpdatedTiddlers`
 
 ## Plugin Responsibilities
@@ -56,7 +56,7 @@ Key Functions:
 - `saveTiddler()`: Send tiddler to backend via IPC → backend saves to file
 - `loadTiddler()`: Request tiddler from backend via IPC
 - `deleteTiddler()`: Request deletion via IPC
-- `setupSSE()`: Subscribe to file change events from backend
+- `setupSSE()`: Subscribe to file change events from backend (via IPC Observable, not real SSE)
 - `getUpdatedTiddlers()`: Provide list of changed tiddlers to syncer
 
 No Echo Detection:
@@ -153,9 +153,9 @@ handleNsfwEvents(events) {
    ├─► wiki.addTiddler(tiddler)
    │
 4. Wiki fires 'change' event
-   ├─► SSE sends event to frontend
+   ├─► IPC Observable sends event to frontend (via ipc-cat)
    │
-5. Frontend receives SSE event
+5. Frontend receives change event
    ├─► Adds to updatedTiddlers.modifications
    ├─► Triggers syncFromServer()
    │
@@ -184,7 +184,7 @@ handleNsfwEvents(events) {
 5. External edit in SubWiki/Tiddler.tid
    ├─► Sub-wiki watcher detects change
    ├─► Updates main wiki's in-memory store
-   ├─► SSE notifies frontend
+   ├─► IPC Observable notifies frontend
    ├─► Frontend syncs and displays update
 ```
 
@@ -195,7 +195,7 @@ handleNsfwEvents(events) {
 - `FILE_EXCLUSION_CLEANUP_DELAY_MS = 200`: Time to keep file excluded after save
 - Prevents echo while allowing quick re-detection of external changes
 
-### SSE Debouncing
+### SSE-like Debouncing (IPC Observable)
 
 - `debounce(syncFromServer, 500)`: Batch multiple file changes
 - Reduces unnecessary sync operations
@@ -203,7 +203,7 @@ handleNsfwEvents(events) {
 ### Syncer Polling
 
 - `pollTimerInterval = 2_147_483_647`: Effectively disable polling
-- All updates come via SSE (event-driven, not polling)
+- All updates come via IPC Observable (event-driven, not polling)
 
 ## Why This Design Works
 
@@ -236,7 +236,7 @@ handleNsfwEvents(events) {
 
 ### Changes Not Appearing in Frontend
 
-1. Check SSE connection: Look for `[test-id-SSE_READY]` in logs
+1. Check IPC Observable connection: Look for `[test-id-SSE_READY]` in logs
 2. Verify watch-fs is running: Look for `[test-id-WATCH_FS_STABILIZED]`
 3. Check file exclusion: Should see `[WATCH_FS_EXCLUDE]` and `[WATCH_FS_INCLUDE]`
 
