@@ -12,7 +12,7 @@ Feature: Filesystem Plugin
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
 
-  @subwiki
+  @file-watching @subwiki
   Scenario: Tiddler with tag saves to sub-wiki folder
     # Create sub-workspace linked to the default wiki
     When I click on an "add workspace button" element with selector "#add-workspace-button"
@@ -106,6 +106,15 @@ Feature: Filesystem Plugin
     And I click on "sidebar tab" element in browser view with selector "div.tc-tab-buttons.tc-sidebar-tabs-main > button:has-text('最近')"
     # The timeline should not have a clickable link to TestTiddler anymore
     Then I should not see a "TestTiddler timeline link" element in browser view with selector "div.tc-timeline a.tc-tiddlylink:has-text('TestTiddler')"
+
+  @file-watching
+  Scenario: Deleting open tiddler file shows missing tiddler message
+    # Delete the Index.tid file while Index tiddler is open (it's open by default)
+    When I delete file "{tmpDir}/wiki/tiddlers/Index.tid"
+    Then I wait for tiddler "Index" to be deleted by watch-fs
+    And I wait for 0.5 seconds
+    # Verify the missing tiddler message appears in the tiddler frame
+    Then I should see "佚失条目 \"Index\"" in the browser view DOM
 
   @file-watching
   Scenario: External file rename syncs to wiki
