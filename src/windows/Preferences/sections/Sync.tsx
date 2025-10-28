@@ -1,6 +1,5 @@
 import { Divider, List, Switch } from '@mui/material';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { fromUnixTime, setDate, setMonth, setYear } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 
 import { TokenForm } from '../../../components/TokenForm';
@@ -65,12 +64,16 @@ export function Sync(props: Required<ISectionProps>): React.JSX.Element {
                     openTo='hours'
                     views={['hours', 'minutes', 'seconds']}
                     format='HH:mm:ss'
-                    value={fromUnixTime(preference.syncDebounceInterval / 1000 + new Date().getTimezoneOffset() * 60)}
+                    value={new Date(Date.UTC(1970, 0, 1, 0, 0, 0, preference.syncDebounceInterval))}
                     onChange={async (date) => {
                       if (date === null) throw new Error(`date is null`);
-                      const timeWithoutDate = setDate(setMonth(setYear(date, 1970), 0), 1);
-                      const utcTime = (timeWithoutDate.getTime() / 1000 - new Date().getTimezoneOffset() * 60) * 1000;
-                      await window.service.preference.set('syncDebounceInterval', utcTime);
+                      // Extract hours, minutes, seconds from the date and convert to milliseconds
+                      // This is timezone-independent because we're just extracting time components
+                      const hours = date.getHours();
+                      const minutes = date.getMinutes();
+                      const seconds = date.getSeconds();
+                      const intervalMs = (hours * 60 * 60 + minutes * 60 + seconds) * 1000;
+                      await window.service.preference.set('syncDebounceInterval', intervalMs);
                       props.requestRestartCountDown();
                     }}
                     onClose={async () => {
