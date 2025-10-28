@@ -40,7 +40,7 @@ const FILE_EXCLUSION_CLEANUP_DELAY_MS = 200;
  * this method dynamically adjusts the watcher's exclusion list to prevent events at the source.
  * This ensures user's concurrent external file modifications are still detected while our own operations are ignored.
  */
-class WatchFileSystemAdaptor extends FileSystemAdaptor {
+export class WatchFileSystemAdaptor extends FileSystemAdaptor {
   name = 'watch-filesystem';
   /** Inverse index: filepath -> tiddler info for fast lookup, also manages sub-wiki info */
   private inverseFilesIndex: InverseFilesIndex = new InverseFilesIndex();
@@ -561,9 +561,4 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
       this.inverseFilesIndex.unregisterSubWiki(subWiki.id);
     }
   }
-}
-
-// Only export in Node.js environment
-if ($tw.node) {
-  exports.adaptorClass = WatchFileSystemAdaptor;
 }
