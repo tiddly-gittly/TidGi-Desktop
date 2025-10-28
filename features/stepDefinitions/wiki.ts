@@ -1,9 +1,17 @@
 import { Then, When } from '@cucumber/cucumber';
+import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
 import type { IWorkspace } from '../../src/services/workspaces/interface';
 import { settingsPath, wikiTestRootPath, wikiTestWikiPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
+
+// Backoff configuration for retries
+const BACKOFF_OPTIONS = {
+  numOfAttempts: 10,
+  startingDelay: 200,
+  timeMultiple: 1.5,
+};
 
 /**
  * Generic function to wait for a log marker to appear in wiki log files.
@@ -64,6 +72,42 @@ When('I cleanup test wiki so it could create a new one on start', async function
 });
 
 /**
+ * Helper function to get directory tree structure
+ */
+async function getDirectoryTree(dir: string, prefix = '', maxDepth = 3, currentDepth = 0): Promise<string> {
+  if (currentDepth >= maxDepth || !(await fs.pathExists(dir))) {
+    return '';
+  }
+
+  let tree = '';
+  try {
+    const items = await fs.readdir(dir);
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const isLast = i === items.length - 1;
+      const itemPath = path.join(dir, item);
+      const connector = isLast ? '└── ' : '├── ';
+      
+      try {
+        const stat = await fs.stat(itemPath);
+        tree += `${prefix}${connector}${item}${stat.isDirectory() ? '/' : ''}\n`;
+        
+        if (stat.isDirectory()) {
+          const newPrefix = prefix + (isLast ? '    ' : '│   ');
+          tree += await getDirectoryTree(itemPath, newPrefix, maxDepth, currentDepth + 1);
+        }
+      } catch {
+        tree += `${prefix}${connector}${item} [error reading]\n`;
+      }
+    }
+  } catch {
+    // Directory not readable
+  }
+  
+  return tree;
+}
+
+/**
  * Verify file exists in directory
  */
 Then('file {string} should exist in {string}', { timeout: 15000 }, async function(this: ApplicationWorld, fileName: string, directoryPath: string) {
@@ -82,17 +126,25 @@ Then('file {string} should exist in {string}', { timeout: 15000 }, async functio
 
   const filePath = path.join(actualPath, fileName);
 
-  let exists = false;
-  for (let index = 0; index < 20; index++) {
-    if (await fs.pathExists(filePath)) {
-      exists = true;
-      break;
-    }
-    await new Promise(resolve => setTimeout(resolve, 500));
-  }
-
-  if (!exists) {
-    throw new Error(`File "${fileName}" not found in directory: ${actualPath}`);
+  try {
+    await backOff(
+      async () => {
+        if (await fs.pathExists(filePath)) {
+          return;
+        }
+        throw new Error('File not found yet');
+      },
+      BACKOFF_OPTIONS
+    );
+  } catch {
+    // Get two levels up from actualPath
+    const twoLevelsUp = path.resolve(actualPath, '..', '..');
+    const tree = await getDirectoryTree(twoLevelsUp);
+    
+    throw new Error(
+      `File "${fileName}" not found in directory: ${actualPath}\n\n` +
+      `Directory tree (2 levels up from ${twoLevelsUp}):\n${tree}`
+    );
   }
 });
 
