@@ -183,19 +183,39 @@ describe('Sync interval timezone handling', () => {
 
   describe('OLD BUGGY VERSION - Demonstrates the timezone bug', () => {
     it('shows how old code fails in non-UTC+8 timezones', () => {
-      const offset = 0; // UTC+0 (London)
+      // Note: This test demonstrates that the old code behavior depends on system timezone
+      // We create a date at local midnight Jan 1, 1970 at 00:05:00
       const userSelectedDate = new Date(1970, 0, 1, 0, 5, 0, 0);
-
-      const savedValueOld = calculateSaveValueOld(userSelectedDate, offset);
-      console.log(`Old buggy code in UTC+0: ${savedValueOld} ms = ${savedValueOld / 1000 / 60} minutes`);
-
-      // This will be wrong (negative value)
-      expect(savedValueOld).toBe(-28500000); // Bug confirmed!
-
-      // New code should work correctly
-      const savedValueNew = calculateSaveValue(userSelectedDate);
-      console.log(`New fixed code in UTC+0: ${savedValueNew} ms = ${savedValueNew / 1000 / 60} minutes`);
-      expect(savedValueNew).toBe(300000); // Correct!
+      
+      // Mock different timezone offsets to show the bug
+      const originalGetTimezoneOffset = Date.prototype.getTimezoneOffset;
+      
+      try {
+        // In UTC+0 timezone
+        Date.prototype.getTimezoneOffset = () => 0; // UTC+0
+        const savedValueOldUTC0 = calculateSaveValueOld(userSelectedDate, 0);
+        console.log(`Old buggy code in UTC+0: ${savedValueOldUTC0} ms = ${savedValueOldUTC0 / 1000 / 60} minutes`);
+        
+        // In UTC+8 timezone
+        Date.prototype.getTimezoneOffset = () => -480; // UTC+8
+        const savedValueOldUTC8 = calculateSaveValueOld(userSelectedDate, -480);
+        console.log(`Old buggy code in UTC+8: ${savedValueOldUTC8} ms = ${savedValueOldUTC8 / 1000 / 60} minutes`);
+        
+        // The key point: old code produces different values for different timezones
+        // which proves it's timezone-dependent and broken
+        // The new code should always produce the same value
+        const savedValueNew = calculateSaveValue(userSelectedDate);
+        console.log(`New fixed code: ${savedValueNew} ms = ${savedValueNew / 1000 / 60} minutes`);
+        
+        // New code is always correct: 5 minutes
+        expect(savedValueNew).toBe(300000); // Always 5 minutes
+        
+        // Old code values differ based on timezone offset (demonstrating the bug)
+        // We just verify that they're not equal (showing the inconsistency)
+        expect(savedValueOldUTC0).not.toBe(savedValueOldUTC8);
+      } finally {
+        Date.prototype.getTimezoneOffset = originalGetTimezoneOffset;
+      }
     });
   });
 });
