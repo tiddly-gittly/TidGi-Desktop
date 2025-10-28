@@ -137,11 +137,9 @@ export default function Notifications(): React.JSX.Element {
           <Divider />
           <ListItemButton>
             <ListItemText
-              primary={
-                pauseNotificationsInfo.reason === 'scheduled'
-                  ? t('Notification.AdjustSchedule', { defaultValue: 'Adjust schedule...' })
-                  : t('Notification.PauseBySchedule', { defaultValue: 'Pause notifications by schedule...' })
-              }
+              primary={pauseNotificationsInfo.reason === 'scheduled'
+                ? t('Notification.AdjustSchedule', { defaultValue: 'Adjust schedule...' })
+                : t('Notification.PauseBySchedule', { defaultValue: 'Pause notifications by schedule...' })}
               onClick={async () => {
                 await window.service.window.open(WindowNames.preferences, { preferenceGotoTab: PreferenceSections.notifications });
                 void window.remote.closeCurrentWindow();
