@@ -2,6 +2,7 @@ import type { Logger } from '$:/core/modules/utils/logger.js';
 import { workspace } from '@services/wiki/wikiWorker/services';
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 import { backOff } from 'exponential-backoff';
+import fs from 'fs';
 import path from 'path';
 import type { FileInfo } from 'tiddlywiki';
 import type { Tiddler, Wiki } from 'tiddlywiki';
@@ -148,9 +149,22 @@ export class FileSystemAdaptor {
 
   /**
    * Generate file info for sub-wiki directory
+   * Handles symlinks correctly across platforms (Windows junctions and Linux symlinks)
    */
   protected generateSubWikiFileInfo(tiddler: Tiddler, subWiki: IWikiWorkspace, fileInfo: FileInfo | undefined): FileInfo {
-    const targetDirectory = subWiki.wikiFolderLocation;
+    let targetDirectory = subWiki.wikiFolderLocation;
+    
+    // Resolve symlinks to ensure consistent path handling across platforms
+    // On Windows, this resolves junctions; on Linux, this resolves symbolic links
+    // This prevents path inconsistencies when the same symlinked directory is referenced differently
+    // (e.g., via the symlink path vs the real path)
+    try {
+      targetDirectory = fs.realpathSync(targetDirectory);
+    } catch {
+      // If realpath fails, use the original path
+      // This can happen if the directory doesn't exist yet
+    }
+    
     $tw.utils.createDirectory(targetDirectory);
 
     return $tw.utils.generateTiddlerFileInfo(tiddler, {

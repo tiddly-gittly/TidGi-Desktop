@@ -68,7 +68,18 @@ When('I cleanup test wiki so it could create a new one on start', async function
  */
 Then('file {string} should exist in {string}', { timeout: 15000 }, async function(this: ApplicationWorld, fileName: string, directoryPath: string) {
   // Replace {tmpDir} with wiki test root (not wiki subfolder)
-  const actualPath = directoryPath.replace('{tmpDir}', wikiTestRootPath);
+  let actualPath = directoryPath.replace('{tmpDir}', wikiTestRootPath);
+
+  // Resolve symlinks on all platforms to handle sub-wikis correctly
+  // On Linux, symlinks might point to the real path, so we need to follow them
+  if (await fs.pathExists(actualPath)) {
+    try {
+      actualPath = fs.realpathSync(actualPath);
+    } catch {
+      // If realpathSync fails, continue with the original path
+    }
+  }
+
   const filePath = path.join(actualPath, fileName);
 
   let exists = false;
@@ -169,20 +180,20 @@ When('I modify file {string} to contain {string}', async function(this: Applicat
   // We need to preserve headers and only modify the text part
   // Split by both \n and \r\n to handle different line endings
   const lines = fileContent.split(/\r?\n/);
-  
+
   const blankLineIndex = lines.findIndex(line => line.trim() === '');
 
   if (blankLineIndex >= 0) {
     // File has headers and content separated by blank line
     // Keep headers, replace text after blank line
     const headers = lines.slice(0, blankLineIndex + 1);
-    
+
     // Note: We intentionally do NOT update the modified field here
     // This simulates a real user editing the file in an external editor,
     // where the modified field would not be automatically updated
     // The echo prevention mechanism should detect this as a real external change
     // because the content changed but the modified timestamp stayed the same
-    
+
     fileContent = [...headers, content].join('\n');
   } else {
     // File has only headers, no content yet (no blank line separator)
