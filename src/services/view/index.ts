@@ -257,7 +257,9 @@ export class View implements IViewService {
     const { spellcheck } = preferences;
 
     const sessionOfView = setupViewSession(workspace, preferences, () => this.preferenceService.getPreferences());
-    const browserViewMetaData: IBrowserViewMetaData = { workspaceID: workspace.id };
+    const browserViewMetaData: IBrowserViewMetaData = {
+      workspace,
+    };
     return {
       devTools: true,
       spellcheck,

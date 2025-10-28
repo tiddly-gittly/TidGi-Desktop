@@ -318,8 +318,9 @@ export default function EditWorkspace(): React.JSX.Element {
             {isCreateSyncedWorkspace && (
               <TokenForm
                 storageProvider={storageService}
-                storageProviderSetter={(nextStorageService: SupportedStorageServices) => {
-                  workspaceSetter({ ...workspace, storageService: nextStorageService });
+                storageProviderSetter={(nextStorageService) => {
+                  const actualStorageService = typeof nextStorageService === 'function' ? nextStorageService(storageService) : nextStorageService;
+                  workspaceSetter({ ...workspace, storageService: actualStorageService });
                   // requestRestartCountDown();
                 }}
               />

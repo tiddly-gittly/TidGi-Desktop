@@ -302,7 +302,7 @@ When AI is fixing issues, you can let it add more logs for troubleshooting, and 
 If you want to send frontend log to the log file, you can't directly use `import { logger } from '@services/libs/log';` you need to use `void window.service.native.log('error', 'Renderer: xxx', { ...additionalMetadata });`.
 Otherwise you will get [Can't resolve 'os' error](./ErrorDuringStart.md)
 
-Only use VSCode tool to read file. Don't ever use shell command to read file.
+Only use VSCode tool to read file. Don't ever use shell command to read file. Use shell command to read file may be immediately refused by user, because he don't want to manually approve shell commands.
 
 ## User profile
 

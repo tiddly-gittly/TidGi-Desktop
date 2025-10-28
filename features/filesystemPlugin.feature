@@ -27,8 +27,12 @@ Feature: Filesystem Plugin
     And I click on a "create sub workspace button" element with selector "button.MuiButton-colorSecondary"
     And I switch to "main" window
     Then I should see a "SubWiki workspace" element with selector "div[data-testid^='workspace-']:has-text('SubWiki')"
-    # Switch to default wiki and create tiddler with tag
-    When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    # After create subwiki, webview will auto refresh here, wait for wiki to restart
+    And I wait for SSE and watch-fs to be ready
+    And I wait for 0.5 seconds
+    # Subwiki tiddler will auto open.
+    And I should see "TestTag" in the browser view content
+    # create tiddler with tag
     And I click on "add tiddler button" element in browser view with selector "button[aria-label='添加条目']"
     And I wait for 0.2 seconds
     And I type "Test Tiddler Title" in "title input" element in browser view with selector "input.tc-titlebar.tc-edit-texteditor"
@@ -37,6 +41,20 @@ Feature: Filesystem Plugin
     And I click on "confirm button" element in browser view with selector "button[aria-label='确定对此条目的更改']"
     # Verify the tiddler file exists in sub-wiki folder (not in tiddlers subfolder)
     Then file "Test Tiddler Title.tid" should exist in "{tmpDir}/SubWiki"
+    # Test SSE is still working after SubWiki creation - modify a main wiki tiddler
+    When I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Main wiki content modified after SubWiki creation"
+    Then I wait for tiddler "Index" to be updated by watch-fs
+    # Verify main wiki modification appears (Index is always open by default, no need to click)
+    Then I should see "Main wiki content modified after SubWiki creation" in the browser view content
+    # Test modification in sub-workspace via symlink
+    # Modify the tiddler file externally - need to preserve .tid format with metadata
+    When I modify file "{tmpDir}/SubWiki/Test Tiddler Title.tid" to contain "Content modified in SubWiki symlink"
+    # Wait for watch-fs to detect the change
+    Then I wait for tiddler "Test Tiddler Title" to be updated by watch-fs
+    # Wait for frontend SSE to receive and process the modification event
+    Then I wait for frontend SSE to receive modification for "Test Tiddler Title"
+    # Verify the modified content appears in the wiki
+    Then I should see "Content modified in SubWiki symlink" in the browser view content
 
   @file-watching
   Scenario: External file creation syncs to wiki

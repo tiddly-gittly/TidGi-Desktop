@@ -291,6 +291,7 @@ export const WorkspaceServiceIPCDescriptor = {
     getMetaData: ProxyPropertyType.Function,
     getNextWorkspace: ProxyPropertyType.Function,
     getPreviousWorkspace: ProxyPropertyType.Function,
+    getSubWorkspacesAsList: ProxyPropertyType.Function,
     getWorkspaces: ProxyPropertyType.Function,
     getWorkspacesAsList: ProxyPropertyType.Function,
     getWorkspacesWithMetadata: ProxyPropertyType.Function,

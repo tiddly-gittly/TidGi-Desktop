@@ -6,6 +6,34 @@ import { settingsPath, wikiTestRootPath, wikiTestWikiPath } from '../supports/pa
 import type { ApplicationWorld } from './application';
 
 /**
+ * Generic function to wait for a log marker to appear in wiki log files.
+ */
+async function waitForLogMarker(searchString: string, errorMessage: string, maxWaitMs = 10000): Promise<void> {
+  const logPath = path.join(process.cwd(), 'userData-test', 'logs');
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < maxWaitMs) {
+    try {
+      const files = await fs.readdir(logPath);
+      const wikiLogFiles = files.filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
+
+      for (const file of wikiLogFiles) {
+        const content = await fs.readFile(path.join(logPath, file), 'utf-8');
+        if (content.includes(searchString)) {
+          return;
+        }
+      }
+    } catch {
+      // Log directory might not exist yet, continue waiting
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  throw new Error(errorMessage);
+}
+
+/**
  * Wait for both SSE and watch-fs to be ready and stabilized.
  * This combines the checks for test-id-SSE_READY and test-id-WATCH_FS_STABILIZED markers.
  */
@@ -50,85 +78,44 @@ async function waitForSSEAndWatchFsReady(maxWaitMs = 15000): Promise<void> {
  * Wait for a tiddler to be added by watch-fs.
  */
 async function waitForTiddlerAdded(tiddlerTitle: string, maxWaitMs = 10000): Promise<void> {
-  const logPath = path.join(process.cwd(), 'userData-test', 'logs');
-  const startTime = Date.now();
-  const searchString = `[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`;
-  const files = await fs.readdir(logPath);
-  const wikiLogFiles = files.filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
-
-  while (Date.now() - startTime < maxWaitMs) {
-    try {
-      for (const file of wikiLogFiles) {
-        const content = await fs.readFile(path.join(logPath, file), 'utf-8');
-        if (content.includes(searchString)) {
-          return;
-        }
-      }
-    } catch {
-      // Log directory might not exist yet, continue waiting
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  throw new Error(`Tiddler "${tiddlerTitle}" was not added within timeout`);
+  await waitForLogMarker(
+    `[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`,
+    `Tiddler "${tiddlerTitle}" was not added within timeout`,
+    maxWaitMs,
+  );
 }
 
 /**
  * Wait for a tiddler to be updated by watch-fs.
  */
 async function waitForTiddlerUpdated(tiddlerTitle: string, maxWaitMs = 10000): Promise<void> {
-  const logPath = path.join(process.cwd(), 'userData-test', 'logs');
-  const startTime = Date.now();
-  const searchString = `[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`;
-  const files = await fs.readdir(logPath);
-  const wikiLogFiles = files.filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
+  await waitForLogMarker(
+    `[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`,
+    `Tiddler "${tiddlerTitle}" was not updated within timeout`,
+    maxWaitMs,
+  );
+}
 
-  while (Date.now() - startTime < maxWaitMs) {
-    try {
-      for (const file of wikiLogFiles) {
-        const content = await fs.readFile(path.join(logPath, file), 'utf-8');
-        if (content.includes(searchString)) {
-          return;
-        }
-      }
-    } catch {
-      // Log directory might not exist yet, continue waiting
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  throw new Error(`Tiddler "${tiddlerTitle}" was not updated within timeout`);
+/**
+ * Wait for frontend SSE to receive modification event for a tiddler.
+ */
+async function waitForSSEFrontendReceivedModification(tiddlerTitle: string, maxWaitMs = 10000): Promise<void> {
+  await waitForLogMarker(
+    `[test-id-SSE_FRONTEND_RECEIVED_MODIFICATION] ${tiddlerTitle}`,
+    `Frontend SSE did not receive modification event for "${tiddlerTitle}" within timeout`,
+    maxWaitMs,
+  );
 }
 
 /**
  * Wait for a tiddler to be deleted by watch-fs.
  */
 async function waitForTiddlerDeleted(tiddlerTitle: string, maxWaitMs = 10000): Promise<void> {
-  const logPath = path.join(process.cwd(), 'userData-test', 'logs');
-  const startTime = Date.now();
-  const searchString = `[test-id-WATCH_FS_TIDDLER_DELETED] ${tiddlerTitle}`;
-
-  while (Date.now() - startTime < maxWaitMs) {
-    try {
-      const files = await fs.readdir(logPath);
-      const wikiLogFiles = files.filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
-
-      for (const file of wikiLogFiles) {
-        const content = await fs.readFile(path.join(logPath, file), 'utf-8');
-        if (content.includes(searchString)) {
-          return;
-        }
-      }
-    } catch {
-      // Log directory might not exist yet, continue waiting
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  throw new Error(`Tiddler "${tiddlerTitle}" was not deleted within timeout`);
+  await waitForLogMarker(
+    `[test-id-WATCH_FS_TIDDLER_DELETED] ${tiddlerTitle}`,
+    `Tiddler "${tiddlerTitle}" was not deleted within timeout`,
+    maxWaitMs,
+  );
 }
 
 When('I cleanup test wiki so it could create a new one on start', async function() {
@@ -246,6 +233,14 @@ Then('I wait for tiddler {string} to be deleted by watch-fs', async function(thi
     await waitForTiddlerDeleted(tiddlerTitle);
   } catch (error) {
     throw new Error(`Failed to wait for tiddler "${tiddlerTitle}" to be deleted: ${(error as Error).message}`);
+  }
+});
+
+Then('I wait for frontend SSE to receive modification for {string}', async function(this: ApplicationWorld, tiddlerTitle: string) {
+  try {
+    await waitForSSEFrontendReceivedModification(tiddlerTitle);
+  } catch (error) {
+    throw new Error(`Failed to wait for frontend SSE to receive modification for "${tiddlerTitle}": ${(error as Error).message}`);
   }
 });
 

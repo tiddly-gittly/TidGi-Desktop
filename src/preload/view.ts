@@ -3,6 +3,7 @@ import '../services/wiki/wikiOperations/executor/wikiOperationInBrowser';
 import type { IPossibleWindowMeta, WindowMeta } from '@services/windows/WindowProperties';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData, windowName } from './common/browserViewMetaData';
+import { consoleLogToLogFile } from './fixer/consoleLogToLogFile';
 
 let handled = false;
 const handleLoaded = (event: string): void => {
@@ -18,7 +19,9 @@ const handleLoaded = (event: string): void => {
 };
 
 async function executeJavaScriptInBrowserView(): Promise<void> {
-  const { workspaceID } = browserViewMetaData as IPossibleWindowMeta<WindowMeta[WindowNames.view]>;
+  const viewMetaData = browserViewMetaData as IPossibleWindowMeta<WindowMeta[WindowNames.view]>;
+  await consoleLogToLogFile(viewMetaData.workspace?.name);
+  const workspaceID = viewMetaData.workspace?.id;
 
   try {
     await webFrame.executeJavaScript(`

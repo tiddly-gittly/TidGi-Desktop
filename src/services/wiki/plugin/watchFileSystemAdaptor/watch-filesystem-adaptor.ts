@@ -42,18 +42,19 @@ const FILE_EXCLUSION_CLEANUP_DELAY_MS = 200;
  */
 class WatchFileSystemAdaptor extends FileSystemAdaptor {
   name = 'watch-filesystem';
-  /** Inverse index: filepath -> tiddler info for fast lookup */
+  /** Inverse index: filepath -> tiddler info for fast lookup, also manages sub-wiki info */
   private inverseFilesIndex: InverseFilesIndex = new InverseFilesIndex();
-  /** NSFW watcher instance */
+  /** NSFW watcher instance for main wiki */
   private watcher: nsfw.NSFW | undefined;
   /** Base excluded paths (permanent) */
   private baseExcludedPaths: string[] = [];
-  /** Temporarily excluded files being modified by wiki */
-  private temporarilyExcludedFiles: Set<string> = new Set();
 
   constructor(options: { boot?: typeof $tw.boot; wiki: Wiki }) {
     super(options);
     this.logger = new $tw.utils.Logger('watch-filesystem', { colour: 'purple' });
+
+    // Initialize main wiki path in index
+    this.inverseFilesIndex.setMainWikiPath(this.watchPathBase);
 
     // Initialize file watching
     void this.initializeFileWatching();
@@ -64,10 +65,8 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * Can be used with callback (legacy) or as async/await
    */
   override async saveTiddler(tiddler: Tiddler, callback?: IFileSystemAdaptorCallback, options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
-    let fileRelativePath: string | null = null;
-
     try {
-      // Get file info to calculate relative path for watching
+      // Get file info to calculate path for watching
       const fileInfo = await this.getTiddlerFileInfo(tiddler);
       if (!fileInfo) {
         const error = new Error('No fileInfo returned from getTiddlerFileInfo');
@@ -75,16 +74,19 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
         throw error;
       }
 
-      fileRelativePath = path.relative(this.watchPathBase, fileInfo.filepath);
+      // Log tiddler text for debugging
+      const textPreview = (tiddler.fields.text ?? '').substring(0, 50);
+      this.logger.log(`[WATCH_FS_SAVE] Saving "${tiddler.fields.title}", text: ${textPreview}`);
 
       // Exclude file from watching during save
-      await this.excludeFile(fileRelativePath);
+      await this.excludeFile(fileInfo.filepath);
 
       // Call parent's saveTiddler to handle the actual save
       await super.saveTiddler(tiddler, undefined, options);
 
       // Update inverse index after successful save
       const finalFileInfo = this.boot.files[tiddler.fields.title];
+      const fileRelativePath = path.relative(this.watchPathBase, finalFileInfo.filepath);
       this.inverseFilesIndex.set(fileRelativePath, {
         ...finalFileInfo,
         filepath: fileRelativePath,
@@ -96,18 +98,9 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Re-include the file after a short delay
       setTimeout(() => {
-        if (fileRelativePath) {
-          void this.includeFile(fileRelativePath);
-        }
+        void this.includeFile(fileInfo.filepath);
       }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
     } catch (error) {
-      // Re-include the file on error
-      if (fileRelativePath) {
-        const pathToInclude = fileRelativePath;
-        setTimeout(() => {
-          void this.includeFile(pathToInclude);
-        }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
-      }
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
       callback?.(errorObject);
       throw errorObject;
@@ -214,10 +207,70 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
       this.logger.log('[WATCH_FS_READY] Filesystem watcher is ready');
       this.logger.log('[WATCH_FS_READY] Watching path:', this.watchPathBase);
 
+      // Initialize sub-wiki watchers
+      await this.initializeSubWikiWatchers();
+
       // Log stabilization marker for tests
       this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized');
     } catch (error) {
       this.logger.alert('[WATCH_FS_ERROR] Failed to initialize file watching:', error);
+    }
+  }
+
+  /**
+   * Initialize watchers for sub-wikis
+   */
+  private async initializeSubWikiWatchers(): Promise<void> {
+    if (!this.workspaceID) {
+      return;
+    }
+
+    try {
+      // Get sub-wikis for this main wiki
+      const subWikis = await workspace.getSubWorkspacesAsList(this.workspaceID);
+
+      this.logger.log(`[WATCH_FS_SUBWIKI] Found ${subWikis.length} sub-wikis to watch`);
+
+      // Create watcher for each sub-wiki
+      for (const subWiki of subWikis) {
+        // Only watch wiki workspaces
+        if (!('wikiFolderLocation' in subWiki) || !subWiki.wikiFolderLocation) {
+          continue;
+        }
+
+        // Sub-wikis are folders directly, not wiki/tiddlers structure
+        const subWikiPath = subWiki.wikiFolderLocation;
+
+        // Check if the path exists before trying to watch
+        if (!fs.existsSync(subWikiPath)) {
+          this.logger.log(`[WATCH_FS_SUBWIKI] Path does not exist for sub-wiki ${subWiki.name}: ${subWikiPath}`);
+          continue;
+        }
+
+        try {
+          const subWikiWatcher = await nsfw(
+            subWikiPath,
+            (events) => {
+              this.handleNsfwEvents(events);
+            },
+            {
+              debounceMS: 100,
+              errorCallback: (error) => {
+                this.logger.alert(`[WATCH_FS_ERROR] NSFW error for sub-wiki ${subWiki.name}:`, error);
+              },
+            },
+          );
+
+          await subWikiWatcher.start();
+          this.inverseFilesIndex.registerSubWiki(subWiki.id, subWikiPath, subWikiWatcher);
+
+          this.logger.log(`[WATCH_FS_SUBWIKI] Watching sub-wiki: ${subWiki.name} at ${subWikiPath}`);
+        } catch (error) {
+          this.logger.alert(`[WATCH_FS_ERROR] Failed to watch sub-wiki ${subWiki.name}:`, error);
+        }
+      }
+    } catch (error) {
+      this.logger.alert('[WATCH_FS_ERROR] Failed to initialize sub-wiki watchers:', error);
     }
   }
 
@@ -240,33 +293,38 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * Update watcher's excluded paths with current temporary exclusions
    */
   private async updateWatcherExcludedPaths(): Promise<void> {
-    if (!this.watcher) {
-      return;
+    // Update main watcher
+    if (this.watcher) {
+      const allExcludedPaths = this.inverseFilesIndex.getMainWatcherExcludedPaths(this.baseExcludedPaths);
+      // @ts-expect-error - nsfw types are incorrect, it accepts string[] not just [string]
+      await this.watcher.updateExcludedPaths(allExcludedPaths);
     }
 
-    // Combine base excluded paths with temporarily excluded files
-    const allExcludedPaths = [
-      ...this.baseExcludedPaths,
-      ...Array.from(this.temporarilyExcludedFiles).map(relativePath => path.join(this.watchPathBase, relativePath)),
-    ];
-
-    // @ts-expect-error - nsfw types are incorrect, it accepts string[] not just [string]
-    await this.watcher.updateExcludedPaths(allExcludedPaths);
+    // Update each sub-wiki watcher
+    for (const subWiki of this.inverseFilesIndex.getSubWikis()) {
+      const excludedPaths = this.inverseFilesIndex.getSubWikiExcludedPaths(subWiki.id);
+      // @ts-expect-error - nsfw types are incorrect, it accepts string[] not just [string]
+      await subWiki.watcher.updateExcludedPaths(excludedPaths);
+    }
   }
 
   /**
    * Temporarily exclude a file from watching (e.g., during save/delete)
+   * @param absoluteFilePath Absolute file path
    */
-  private async excludeFile(fileRelativePath: string): Promise<void> {
-    this.temporarilyExcludedFiles.add(fileRelativePath);
+  private async excludeFile(absoluteFilePath: string): Promise<void> {
+    this.logger.log(`[WATCH_FS_EXCLUDE] Excluding file: ${absoluteFilePath}`);
+    this.inverseFilesIndex.excludeFile(absoluteFilePath);
     await this.updateWatcherExcludedPaths();
   }
 
   /**
    * Remove a file from temporary exclusions
+   * @param absoluteFilePath Absolute file path
    */
-  private async includeFile(fileRelativePath: string): Promise<void> {
-    this.temporarilyExcludedFiles.delete(fileRelativePath);
+  private async includeFile(absoluteFilePath: string): Promise<void> {
+    this.logger.log(`[WATCH_FS_INCLUDE] Including file: ${absoluteFilePath}`);
+    this.inverseFilesIndex.includeFile(absoluteFilePath);
     await this.updateWatcherExcludedPaths();
   }
 
@@ -285,20 +343,24 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
         fileName = event.newFile;
       }
 
-      // Compute relative and absolute paths
+      // Compute absolute path
       const fileAbsolutePath = path.join(directory, fileName);
-      const fileRelativePath = path.relative(this.watchPathBase, fileAbsolutePath);
+
+      // Determine which wiki this file belongs to and compute relative path accordingly
+      const subWikiInfo = this.inverseFilesIndex.getSubWikiForFile(fileAbsolutePath);
+      const basePath = subWikiInfo ? subWikiInfo.path : this.watchPathBase;
+      const fileRelativePath = path.relative(basePath, fileAbsolutePath);
 
       const fileNameBase = path.parse(fileAbsolutePath).name;
       const fileExtension = path.extname(fileRelativePath);
       const fileMimeType = $tw.utils.getFileExtensionInfo(fileExtension)?.type ?? 'text/vnd.tiddlywiki';
       const metaFileAbsolutePath = `${fileAbsolutePath}.meta`;
 
-      this.logger.log('[WATCH_FS_EVENT]', getActionName(action), fileName);
+      this.logger.log('[WATCH_FS_EVENT]', getActionName(action), fileName, `(directory: ${directory})`);
 
       // Handle different event types
       if (action === nsfw.actions.CREATED || action === nsfw.actions.MODIFIED) {
-        this.handleFileAddOrChange(
+        void this.handleFileAddOrChange(
           fileAbsolutePath,
           fileRelativePath,
           metaFileAbsolutePath,
@@ -315,20 +377,24 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
         // Handle as delete old + create new
         if ('oldFile' in event && 'newFile' in event) {
           const oldFileAbsPath = path.join(directory, event.oldFile);
-          const oldFileRelativePath = path.relative(this.watchPathBase, oldFileAbsPath);
+          const oldSubWikiInfo = this.inverseFilesIndex.getSubWikiForFile(oldFileAbsPath);
+          const oldBasePath = oldSubWikiInfo ? oldSubWikiInfo.path : this.watchPathBase;
+          const oldFileRelativePath = path.relative(oldBasePath, oldFileAbsPath);
           const oldFileExtension = path.extname(oldFileRelativePath);
           this.handleFileDelete(oldFileAbsPath, oldFileRelativePath, oldFileExtension);
 
           const newDirectory = 'newDirectory' in event ? event.newDirectory : directory;
           const newFileAbsPath = path.join(newDirectory, event.newFile);
-          const newFileRelativePath = path.relative(this.watchPathBase, newFileAbsPath);
+          const newSubWikiInfo = this.inverseFilesIndex.getSubWikiForFile(newFileAbsPath);
+          const newBasePath = newSubWikiInfo ? newSubWikiInfo.path : this.watchPathBase;
+          const newFileRelativePath = path.relative(newBasePath, newFileAbsPath);
           const newFileName = event.newFile;
           const newFileNameBase = path.parse(newFileAbsPath).name;
           const newFileExtension = path.extname(newFileRelativePath);
           const newFileMimeType = $tw.utils.getFileExtensionInfo(newFileExtension)?.type ?? 'text/vnd.tiddlywiki';
           const newMetaFileAbsPath = `${newFileAbsPath}.meta`;
 
-          this.handleFileAddOrChange(
+          void this.handleFileAddOrChange(
             newFileAbsPath,
             newFileRelativePath,
             newMetaFileAbsPath,
@@ -346,7 +412,7 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
   /**
    * Handle file add or change events
    */
-  private handleFileAddOrChange(
+  private async handleFileAddOrChange(
     fileAbsolutePath: string,
     fileRelativePath: string,
     metaFileAbsolutePath: string,
@@ -355,7 +421,7 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
     fileExtension: string,
     fileMimeType: string,
     changeType: 'add' | 'change',
-  ): void {
+  ): Promise<void> {
     // For .meta files, we need to load the corresponding base file
     let actualFileToLoad = fileAbsolutePath;
     let actualFileRelativePath = fileRelativePath;
@@ -391,13 +457,13 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
     const { tiddlers, ...fileDescriptor } = tiddlersDescriptor;
 
     // Process each tiddler from the file
-    tiddlers.forEach((tiddler) => {
+    for (const tiddler of tiddlers) {
       // Note: $tw.loadTiddlersFromFile returns tiddlers as plain objects with fields at top level,
       // not wrapped in a .fields property
       const tiddlerTitle = tiddler?.title;
       if (!tiddlerTitle) {
         this.logger.alert(`[WATCH_FS_ERROR] Tiddler has no title`);
-        return;
+        continue;
       }
 
       const isNewFile = !this.inverseFilesIndex.has(actualFileRelativePath);
@@ -410,7 +476,6 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
       } as IBootFilesIndexItemWithTitle);
 
       // Add tiddler to wiki (this will update if it exists or add if new)
-
       $tw.syncadaptor!.wiki.addTiddler(tiddler);
 
       // Log appropriate event
@@ -419,7 +484,7 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
       } else {
         this.logger.log(`[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`);
       }
-    });
+    }
   }
 
   /**
@@ -487,6 +552,13 @@ class WatchFileSystemAdaptor extends FileSystemAdaptor {
       await this.watcher.stop();
       this.watcher = undefined;
       this.logger.log('[WATCH_FS_CLEANUP] Filesystem watcher closed');
+    }
+
+    // Close all sub-wiki watchers
+    for (const subWiki of this.inverseFilesIndex.getSubWikis()) {
+      this.logger.log(`[WATCH_FS_CLEANUP] Closing sub-wiki watcher: ${subWiki.id}`);
+      await subWiki.watcher.stop();
+      this.inverseFilesIndex.unregisterSubWiki(subWiki.id);
     }
   }
 }
