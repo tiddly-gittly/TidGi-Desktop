@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { workspace } from '@services/wiki/wikiWorker/services';
 import fs from 'fs';
 import nsfw from 'nsfw';
