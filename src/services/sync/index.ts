@@ -65,7 +65,8 @@ export class Sync implements ISyncService {
       const hasChanges = await gitService.syncOrForcePull(workspace, syncOrForcePullConfigs);
       if (isSubWiki) {
         // after sync this sub wiki, reload its main workspace
-        if (hasChanges) {
+        // Skip restart if file system watch is enabled - the watcher will handle file changes automatically
+        if (hasChanges && !workspace.enableFileSystemWatch) {
           await workspaceViewService.restartWorkspaceViewService(idToUse);
           await viewService.reloadViewsWebContents(idToUse);
         }
@@ -88,7 +89,8 @@ export class Sync implements ISyncService {
         });
         const subHasChange = (await Promise.all(subHasChangesPromise)).some(Boolean);
         // any of main or sub has changes, reload main workspace
-        if (hasChanges || subHasChange) {
+        // Skip restart if file system watch is enabled - the watcher will handle file changes automatically
+        if ((hasChanges || subHasChange) && !workspace.enableFileSystemWatch) {
           await workspaceViewService.restartWorkspaceViewService(id);
           await viewService.reloadViewsWebContents(id);
         }
