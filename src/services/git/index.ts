@@ -131,12 +131,15 @@ export class Git implements IGitService {
   private readonly getWorkerMessageObserver = (wikiFolderPath: string, resolve: () => void, reject: (error: Error) => void, workspaceID?: string): Observer<IGitLogMessage> => ({
     next: (messageObject) => {
       if (messageObject.level === 'error') {
+        const errorMessage = (messageObject.error).message;
         // if workspace exists, show notification in workspace, else use dialog instead
         if (workspaceID === undefined) {
-          this.createFailedDialog((messageObject.error).message, wikiFolderPath);
+          this.createFailedDialog(errorMessage, wikiFolderPath);
         } else {
-          this.createFailedNotification((messageObject.error).message, workspaceID);
+          this.createFailedNotification(errorMessage, workspaceID);
         }
+        // Reject the promise on error to prevent service restart
+        reject(messageObject.error);
         return;
       }
       const { message, meta, level } = messageObject;
@@ -211,7 +214,8 @@ export class Git implements IGitService {
     } catch (error: unknown) {
       const error_ = error as Error;
       this.createFailedNotification(error_.message, workspaceIDToShowNotification);
-      return true;
+      // Return false on sync failure - no successful changes were made
+      return false;
     }
   }
 
