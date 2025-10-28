@@ -1,6 +1,9 @@
 /**
  * Utility functions for Native Node.js Worker Threads communication
  * Replaces threads.js with native worker_threads API
+ *
+ * Note: Service registration for workers will be handled by electron-ipc-cat/worker in the future
+ * This file contains TidGi-specific worker proxy functionality (e.g., git worker)
  */
 
 import { cloneDeep } from 'lodash';
@@ -168,7 +171,7 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
  * Worker-side message handler
  * Usage in worker: handleWorkerMessages({ methodName: implementation });
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- any is needed to support various worker method signatures
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function handleWorkerMessages(methods: Record<string, (...arguments_: any[]) => any>): void {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { parentPort } = require('worker_threads') as typeof import('worker_threads');
@@ -196,11 +199,10 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- result type is determined by worker method implementation
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const result = implementation(...(args || []));
-
       // Check if result is Observable
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- checking for Observable interface
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (result && typeof result === 'object' && 'subscribe' in result && typeof result.subscribe === 'function') {
         (result as Observable<unknown>).subscribe({
           next: (value: unknown) => {
@@ -228,7 +230,7 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
             } as WorkerMessage);
           },
         });
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- checking for Promise interface
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       } else if (result && typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
         // Handle Promise
         const resolvedValue = await (result as Promise<unknown>);

@@ -4,15 +4,8 @@ import { useTranslation } from 'react-i18next';
 
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Paper from '@mui/material/Paper';
-import SwitchRaw from '@mui/material/Switch';
+import Switch from '@mui/material/Switch';
 import Typography from '@mui/material/Typography';
-
-const Switch = styled(SwitchRaw)`
-  & span.MuiSwitch-track,
-  & > span:not(.Mui-checked) span.MuiSwitch-thumb {
-    background-color: #1976d2;
-  }
-`;
 
 const Container = styled(Paper)`
   background-color: ${({ theme }) => theme.palette.background.paper};
@@ -42,6 +35,7 @@ export function MainSubWikiDescription({
             onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
               isCreateMainWorkspaceSetter(event.target.checked);
             }}
+            data-testid='main-sub-workspace-switch'
           />
         }
         label={label}
@@ -76,6 +70,7 @@ export function SyncedWikiDescription({
             onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
               isCreateSyncedWorkspaceSetter(event.target.checked);
             }}
+            data-testid='synced-local-workspace-switch'
           />
         }
         label={label}

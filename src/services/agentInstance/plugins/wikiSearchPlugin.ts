@@ -19,7 +19,7 @@ import { findPromptById } from '../promptConcat/promptConcat';
 import type { AiAPIConfig } from '../promptConcat/promptConcatSchema';
 import type { IPrompt } from '../promptConcat/promptConcatSchema';
 import { schemaToToolContent } from '../utilities/schemaToToolContent';
-import type { AIResponseContext, PromptConcatPlugin } from './types';
+import type { PromptConcatPlugin } from './types';
 
 /**
  * Wiki Search Parameter Schema
@@ -684,7 +684,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         }
 
         // Set up actions to continue the conversation with tool results
-        const responseContext = context as unknown as AIResponseContext;
+        const responseContext = context;
         if (!responseContext.actions) {
           responseContext.actions = {};
         }
@@ -750,7 +750,7 @@ export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
         });
 
         // Set up error response for next round
-        const responseContext = context as unknown as AIResponseContext;
+        const responseContext = context;
         if (!responseContext.actions) {
           responseContext.actions = {};
         }

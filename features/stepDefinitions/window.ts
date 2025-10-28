@@ -2,10 +2,7 @@ import { When } from '@cucumber/cucumber';
 import type { ElectronApplication } from 'playwright';
 import type { ApplicationWorld } from './application';
 import { checkWindowDimension, checkWindowName } from './application';
-
-// Constants for retry logic
-const MAX_ATTEMPTS = 10;
-const RETRY_INTERVAL_MS = 1000;
+import { WebContentsView } from 'electron';
 
 // Helper function to get browser view info from Electron window
 async function getBrowserViewInfo(
@@ -32,7 +29,7 @@ async function getBrowserViewInfo(
       for (const view of views) {
         // Type guard to check if view is a WebContentsView
         if (view && view.constructor.name === 'WebContentsView') {
-          const webContentsView = view as unknown as { getBounds: () => { x: number; y: number; width: number; height: number } };
+          const webContentsView = view as WebContentsView;
           const viewBounds = webContentsView.getBounds();
           const windowContentBounds = targetWindow.getContentBounds();
 
@@ -57,8 +54,6 @@ When('I confirm the {string} window exists', async function(this: ApplicationWor
   const success = await this.waitForWindowCondition(
     windowType,
     (window) => window !== undefined && !window.isClosed(),
-    MAX_ATTEMPTS,
-    RETRY_INTERVAL_MS,
   );
 
   if (!success) {
@@ -74,12 +69,10 @@ When('I confirm the {string} window visible', async function(this: ApplicationWo
   const success = await this.waitForWindowCondition(
     windowType,
     (window, isVisible) => window !== undefined && !window.isClosed() && isVisible,
-    MAX_ATTEMPTS,
-    RETRY_INTERVAL_MS,
   );
 
   if (!success) {
-    throw new Error(`${windowType} window was not visible after ${MAX_ATTEMPTS} attempts`);
+    throw new Error(`${windowType} window was not visible after multiple attempts`);
   }
 });
 
@@ -91,12 +84,10 @@ When('I confirm the {string} window not visible', async function(this: Applicati
   const success = await this.waitForWindowCondition(
     windowType,
     (window, isVisible) => window !== undefined && !window.isClosed() && !isVisible,
-    MAX_ATTEMPTS,
-    RETRY_INTERVAL_MS,
   );
 
   if (!success) {
-    throw new Error(`${windowType} window was visible or not found after ${MAX_ATTEMPTS} attempts`);
+    throw new Error(`${windowType} window was visible or not found after multiple attempts`);
   }
 });
 
@@ -108,12 +99,10 @@ When('I confirm the {string} window does not exist', async function(this: Applic
   const success = await this.waitForWindowCondition(
     windowType,
     (window) => window === undefined,
-    MAX_ATTEMPTS,
-    RETRY_INTERVAL_MS,
   );
 
   if (!success) {
-    throw new Error(`${windowType} window still exists after ${MAX_ATTEMPTS} attempts`);
+    throw new Error(`${windowType} window still exists after multiple attempts`);
   }
 });
 

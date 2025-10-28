@@ -267,7 +267,7 @@ export class Workspace implements IWorkspaceService {
       existedWorkspace !== undefined && isWikiWorkspace(existedWorkspace) && existedWorkspace.isSubWiki && typeof tagName === 'string' && tagName.length > 0 &&
       existedWorkspace.tagName !== tagName
     ) {
-      const { mainWikiToLink, wikiFolderLocation } = existedWorkspace;
+      const { mainWikiToLink } = existedWorkspace;
       if (typeof mainWikiToLink !== 'string') {
         throw new TypeError(
           `mainWikiToLink is null in reactBeforeWorkspaceChanged when try to updateSubWikiPluginContent, workspacesID: ${id}\n${
@@ -278,10 +278,7 @@ export class Workspace implements IWorkspaceService {
         );
       }
       const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-      await wikiService.updateSubWikiPluginContent(mainWikiToLink, wikiFolderLocation, newWorkspaceConfig, {
-        ...newWorkspaceConfig,
-        tagName: existedWorkspace.tagName,
-      });
+      // Sub-wiki configuration is now handled by FileSystemAdaptor in watch-filesystem plugin
       await wikiService.wikiStartup(newWorkspaceConfig);
     }
   }
@@ -447,6 +444,7 @@ export class Workspace implements IWorkspaceService {
       transparentBackground: false,
       enableHTTPAPI: false,
       excludedPlugins: [],
+      enableFileSystemWatch: true,
     };
 
     await this.set(newID, newWorkspace);

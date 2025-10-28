@@ -1,3 +1,8 @@
+// Auto-attach services to global.service - MUST import before using services
+import './services';
+import { native } from './services';
+import { onWorkerServicesReady } from './servicesReady';
+
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
 import intercept from 'intercept-stdout';
@@ -8,7 +13,7 @@ import { Observable } from 'rxjs';
 import { TiddlyWiki } from 'tiddlywiki';
 import { IWikiMessage, WikiControlActions } from '../interface';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
-import { IStartNodeJSWikiConfigs } from '.';
+import type { IStartNodeJSWikiConfigs } from '../wikiWorker';
 import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
 import { authTokenIsProvided } from './wikiWorkerUtilities';
@@ -28,7 +33,32 @@ export function startNodeJSWiki({
   tiddlyWikiPort = 5112,
   tokenAuth,
   userName,
+  workspace,
 }: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
+  // Wait for services to be ready before using intercept with logFor
+  onWorkerServicesReady(() => {
+    void native.logFor(workspace.name, 'info', 'test-id-WorkerServicesReady');
+    const textDecoder = new TextDecoder();
+    intercept(
+      (newStdOut: string | Uint8Array) => {
+        const message = typeof newStdOut === 'string' ? newStdOut : textDecoder.decode(newStdOut);
+        // Send to main process logger if services are ready
+        void native.logFor(workspace.name, 'info', message).catch((error: unknown) => {
+          console.error('[intercept] Failed to send stdout to main process:', error, message, JSON.stringify(workspace));
+        });
+        return message;
+      },
+      (newStdError: string | Uint8Array) => {
+        const message = typeof newStdError === 'string' ? newStdError : textDecoder.decode(newStdError);
+        // Send to main process logger if services are ready
+        void native.logFor(workspace.name, 'error', message).catch((error: unknown) => {
+          console.error('[intercept] Failed to send stderr to main process:', error, message);
+        });
+        return message;
+      },
+    );
+  });
+
   if (openDebugger === true) {
     inspector.open();
     inspector.waitForDebugger();
@@ -40,18 +70,6 @@ export function startNodeJSWiki({
     // mark isDev as used to satisfy lint when not needed directly
     void isDev;
     observer.next({ type: 'control', actions: WikiControlActions.start, argv: fullBootArgv });
-    intercept(
-      (newStdOut: string | Uint8Array) => {
-        const message = typeof newStdOut === 'string' ? newStdOut : new TextDecoder().decode(newStdOut);
-        observer.next({ type: 'stdout', message });
-        return message;
-      },
-      (newStdError: string | Uint8Array) => {
-        const message = typeof newStdError === 'string' ? newStdError : new TextDecoder().decode(newStdError);
-        observer.next({ type: 'control', source: 'intercept', actions: WikiControlActions.error, message, argv: fullBootArgv });
-        return message;
-      },
-    );
 
     try {
       const wikiInstance = TiddlyWiki();
@@ -62,6 +80,12 @@ export function startNodeJSWiki({
       wikiInstance.boot.extraPlugins = [
         // add tiddly filesystem back if is not readonly https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416
         readOnlyMode === true ? undefined : 'plugins/tiddlywiki/filesystem',
+        /**
+         * Enhanced filesystem adaptor that routes tiddlers to sub-wikis based on tags.
+         * Replaces the complex string manipulation of $:/config/FileSystemPaths with direct IPC calls to workspace service.
+         * Only enabled in non-readonly mode since it handles filesystem operations.
+         */
+        readOnlyMode === true ? undefined : 'plugins/linonetwo/watch-filesystem-adaptor',
         /**
          * Install $:/plugins/linonetwo/tidgi instead of +plugins/tiddlywiki/tiddlyweb to speedup (without JSON.parse) and fix http errors when network change.
          * See scripts/compilePlugins.mjs for how it is built.
@@ -83,6 +107,8 @@ export function startNodeJSWiki({
       if (readOnlyMode === true) {
         wikiInstance.preloadTiddler({ title: '$:/info/tidgi/readOnlyMode', text: 'yes' });
       }
+      // Preload workspace ID for filesystem adaptor
+      wikiInstance.preloadTiddler({ title: '$:/info/tidgi/workspaceID', text: workspace.id });
       /**
        * Use authenticated-user-header to provide `TIDGI_AUTH_TOKEN_HEADER` as header key to receive a value as username (we use it as token).
        *

@@ -8,7 +8,7 @@ Feature: TidGi Preference
     And I wait for the page to load completely
     And I should see a "page body" element with selector "body"
 
-  @setup
+  @ai-setting
   Scenario: Configure AI provider and default model
     # Step 1: Configure AI settings first - Open preferences window, wait a second so its URL settle down.
     When I click on a "settings button" element with selector "#open-preferences-button"

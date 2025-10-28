@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useStorageServiceUserInfoObservable } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
-import type { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
 import type { INewWikiWorkspaceConfig, IWikiWorkspace } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { INewWikiRequiredFormData } from './useNewWiki';
@@ -62,13 +61,6 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
       mainWikiToLinkSetter({ wikiFolderLocation: selectedWorkspace.wikiFolderLocation, port: selectedWorkspace.port, id: selectedWorkspace.id });
     }
   }, [mainWorkspaceList, mainWikiToLinkIndex]);
-  /**
-   * For sub-wiki, we need `fileSystemPaths` which is a TiddlyWiki concept that tells wiki where to put sub-wiki files.
-   */
-  const [fileSystemPaths, fileSystemPathsSetter] = useState<ISubWikiPluginContent[]>([]);
-  useEffect(() => {
-    void window.service.wiki.getSubWikiPluginContent(mainWikiToLink.wikiFolderLocation).then(fileSystemPathsSetter);
-  }, [mainWikiToLink]);
   /**
    * For creating new wiki, we use parentFolderLocation to determine in which folder we create the new wiki folder.
    * New folder will basically be created in `${parentFolderLocation}/${wikiFolderName}`
@@ -133,8 +125,6 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
     mainWikiToLinkSetter,
     tagName,
     tagNameSetter,
-    fileSystemPaths,
-    fileSystemPathsSetter,
     gitRepoUrl,
     gitRepoUrlSetter,
     parentFolderLocation,
@@ -182,6 +172,7 @@ export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreate
     userName: undefined,
     excludedPlugins: [],
     enableHTTPAPI: false,
+    enableFileSystemWatch: true,
     lastNodeJSArgv: [],
   };
 }

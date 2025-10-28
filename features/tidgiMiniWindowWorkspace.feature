@@ -1,4 +1,4 @@
-@tidgiminiwindow
+@tidgi-mini-window
 Feature: TidGi Mini Window Workspace Switching
   As a user with tidgi mini window already enabled
   I want to test tidgi mini window behavior with different workspace configurations

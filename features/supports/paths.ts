@@ -53,7 +53,8 @@ export const settingsPath = path.resolve(settingsDirectory, 'settings.json');
 
 // Repo root and test wiki paths
 export const repoRoot = path.resolve(process.cwd());
-export const wikiTestWikiPath = path.resolve(repoRoot, 'wiki-test', 'wiki');
+export const wikiTestRootPath = path.resolve(repoRoot, 'wiki-test'); // Root of all test wikis
+export const wikiTestWikiPath = path.resolve(wikiTestRootPath, 'wiki'); // Main test wiki
 
 // Archive-safe sanitization: generate a slug that is safe for zipping/unzipping across platforms.
 // Rules:

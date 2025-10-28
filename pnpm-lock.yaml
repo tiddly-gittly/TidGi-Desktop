@@ -6,6 +6,7 @@ settings:
 
 overrides:
   prebuild-install: latest
+  node-addon-api: ^7.1.1
 
 pnpmfileChecksum: sha256-lIFkUl44z62LBhI/qC/00DMf5xie4YLU9ldCFAHgCsA=
 
@@ -113,8 +114,8 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0
       electron-ipc-cat:
-        specifier: 2.1.1
-        version: 2.1.1(electron@38.3.0)(rxjs@7.8.2)
+        specifier: 2.2.1
+        version: 2.2.1(electron@38.3.0)(rxjs@7.8.2)
       electron-settings:
         specifier: 5.0.0
         version: 5.0.0(electron@38.3.0)
@@ -190,6 +191,9 @@ importers:
       node-fetch:
         specifier: 3.3.2
         version: 3.3.2
+      nsfw:
+        specifier: ^2.2.5
+        version: 2.2.5
       oidc-client-ts:
         specifier: ^3.3.0
         version: 3.3.0
@@ -411,8 +415,8 @@ importers:
         specifier: ^4.20.6
         version: 4.20.6
       tw5-typed:
-        specifier: ^0.6.3
-        version: 0.6.3
+        specifier: ^0.6.7
+        version: 0.6.7
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -3621,8 +3625,8 @@ packages:
     engines: {node: '>= 10.0'}
     hasBin: true
 
-  electron-ipc-cat@2.1.1:
-    resolution: {integrity: sha512-1cDTPZbPBDUKlpE0w+W5nhIqpTvy2qXu3QB8i5ohVLG5cptD2NQ9wCLE1uIrWxdpT01/TQ4fdCfK/RqGQw9AGQ==}
+  electron-ipc-cat@2.2.1:
+    resolution: {integrity: sha512-ybHpgKP42VPwAMsOmmwNc1umT1kzAn2VJcP+XC8awY5N8K0DXnidndLe1gwgXfkouHLbRxzybwCA5vYoSfrHvw==}
     peerDependencies:
       electron: '>= 13.0.0'
       rxjs: '>= 7.5.0'
@@ -5427,8 +5431,8 @@ packages:
     resolution: {integrity: sha512-E4n91K4Nk1Rch2KzD+edU2bfZTP4W42GypAUDXU4vu1A+4u9PvUNDkGI0dXbsy8ZeF3WGj0SD/uHxnXD/sW+3w==}
     engines: {node: '>=22.12.0'}
 
-  node-addon-api@3.2.1:
-    resolution: {integrity: sha512-mmcei9JghVNDYydghQmeDX8KoAm0FAiYyIcUt/N4nhyAipB17pllZQDOJD2fotxABnt4Mdz+dKTO7eftLg4d0A==}
+  node-addon-api@7.1.1:
+    resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
 
   node-api-version@0.2.1:
     resolution: {integrity: sha512-2xP/IGGMmmSQpI1+O/k72jF/ykvZ89JeuKX3TLJAYPDVLUalrshrLHkeVcCCZqG/eEa635cr8IBYzgnDvM2O8Q==}
@@ -5501,6 +5505,10 @@ packages:
   npm-run-path@4.0.1:
     resolution: {integrity: sha512-S48WzZW777zhNIrn7gxOlISNAqi9ZC/uQFnRdbeIHhZhCA6UqpkOT8T1G7BvfdgP4Er8gF4sUbaS0i7QvIfCWw==}
     engines: {node: '>=8'}
+
+  nsfw@2.2.5:
+    resolution: {integrity: sha512-KcZpiMzCfCpEYA2S45pPT9x80HlYf/DyyigrFBpeFYj9O/rBi0hSn4AnRnZ77ppjSmwTzu7wZjNfKIzdTz/PSw==}
+    engines: {node: '>=10.16.0'}
 
   oauth2-mock-server@8.1.0:
     resolution: {integrity: sha512-Zi0VMDVCsavanLfW9X82uoniPS1kFGkOKFKKQF0NdrEwG4Uap/ylhYtRGPujZUJ0CmG3h73TsF/sefpCLTaKsQ==}
@@ -6863,8 +6871,8 @@ packages:
   tunnel-agent@0.6.0:
     resolution: {integrity: sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w==}
 
-  tw5-typed@0.6.3:
-    resolution: {integrity: sha512-wee4weepSkhF5b2QAwxhz0Q2TREb7i/2sdhd8fOJk7uy/CO4Ku3gNshCEd2zDunHdpbfgsvOSNMgs8dkugD+uA==}
+  tw5-typed@0.6.7:
+    resolution: {integrity: sha512-xUs+WVkfepxLJZ12RRt56vyBwXX2eh+eVM0k2mjalL2LJ6qHKpyG8lPsa0FyC7soDyMJHig+ahqOjyUQlRLPcw==}
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -11282,7 +11290,7 @@ snapshots:
       - supports-color
     optional: true
 
-  electron-ipc-cat@2.1.1(electron@38.3.0)(rxjs@7.8.2):
+  electron-ipc-cat@2.2.1(electron@38.3.0)(rxjs@7.8.2):
     dependencies:
       electron: 38.3.0
       memize: 2.1.1
@@ -13404,7 +13412,7 @@ snapshots:
     dependencies:
       semver: 7.7.3
 
-  node-addon-api@3.2.1: {}
+  node-addon-api@7.1.1: {}
 
   node-api-version@0.2.1:
     dependencies:
@@ -13496,6 +13504,10 @@ snapshots:
   npm-run-path@4.0.1:
     dependencies:
       path-key: 3.1.1
+
+  nsfw@2.2.5:
+    dependencies:
+      node-addon-api: 7.1.1
 
   oauth2-mock-server@8.1.0:
     dependencies:
@@ -14069,7 +14081,7 @@ snapshots:
 
   registry-js@1.16.1:
     dependencies:
-      node-addon-api: 3.2.1
+      node-addon-api: 7.1.1
       prebuild-install: 7.1.3
 
   regjsparser@0.12.0:
@@ -14912,7 +14924,7 @@ snapshots:
     dependencies:
       safe-buffer: 5.2.1
 
-  tw5-typed@0.6.3:
+  tw5-typed@0.6.7:
     dependencies:
       '@types/codemirror': 5.60.16
       '@types/echarts': 4.9.22

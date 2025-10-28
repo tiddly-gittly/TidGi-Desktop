@@ -1,151 +1,254 @@
+import { WebContentsView } from 'electron';
 import type { ElectronApplication } from 'playwright';
 
 /**
- * Get text content from WebContentsView
- * @param app Electron application instance
- * @returns Promise<string | null> Returns text content or null
+ * Get the first WebContentsView from any window
+ * Prioritizes main window, but will check all windows if needed
  */
-export async function getTextContent(app: ElectronApplication): Promise<string | null> {
+async function getFirstWebContentsView(app: ElectronApplication) {
   return await app.evaluate(async ({ BrowserWindow }) => {
-    // Get all browser windows
-    const windows = BrowserWindow.getAllWindows();
+    const allWindows = BrowserWindow.getAllWindows();
 
-    for (const window of windows) {
-      // Get all child views (WebContentsView instances) attached to this window
-      if (window.contentView && 'children' in window.contentView) {
-        const views = window.contentView.children || [];
+    // First try to find main window
+    const mainWindow = allWindows.find(w => !w.isDestroyed() && w.webContents?.getType() === 'window');
 
-        for (const view of views) {
-          // Type guard to check if view is a WebContentsView
-          if (view && view.constructor.name === 'WebContentsView') {
-            try {
-              // Cast to WebContentsView type and execute JavaScript
-              const webContentsView = view as unknown as { webContents: { executeJavaScript: (script: string) => Promise<string> } };
-              const content = await webContentsView.webContents.executeJavaScript(`
-                  document.body.textContent || document.body.innerText || ''
-                `);
-              if (content && content.trim()) {
-                return content;
-              }
-            } catch {
-              // Continue to next view if this one fails
-              continue;
-            }
-          }
+    if (mainWindow?.contentView && 'children' in mainWindow.contentView) {
+      const children = (mainWindow.contentView as WebContentsView).children as WebContentsView[];
+      if (Array.isArray(children) && children.length > 0) {
+        const webContentsId = children[0]?.webContents?.id;
+        if (webContentsId) return webContentsId;
+      }
+    }
+
+    // If main window doesn't have a WebContentsView, check all windows
+    for (const window of allWindows) {
+      if (!window.isDestroyed() && window.contentView && 'children' in window.contentView) {
+        const children = (window.contentView as WebContentsView).children as WebContentsView[];
+        if (Array.isArray(children) && children.length > 0) {
+          const webContentsId = children[0]?.webContents?.id;
+          if (webContentsId) return webContentsId;
         }
       }
     }
+
     return null;
   });
+}
+
+/**
+ * Execute JavaScript in the browser view
+ */
+async function executeInBrowserView<T>(
+  app: ElectronApplication,
+  script: string,
+): Promise<T> {
+  const webContentsId = await getFirstWebContentsView(app);
+
+  if (!webContentsId) {
+    throw new Error('No WebContentsView found in main window');
+  }
+
+  return await app.evaluate(
+    async ({ webContents }, [id, scriptContent]) => {
+      const targetWebContents = webContents.fromId(id as number);
+      if (!targetWebContents) {
+        throw new Error('WebContents not found');
+      }
+      const result: T = await targetWebContents.executeJavaScript(scriptContent as string, true) as T;
+      return result;
+    },
+    [webContentsId, script],
+  );
+}
+
+/**
+ * Get text content from WebContentsView
+ */
+export async function getTextContent(app: ElectronApplication): Promise<string | null> {
+  try {
+    return await executeInBrowserView<string>(
+      app,
+      'document.body.textContent || document.body.innerText || ""',
+    );
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Get DOM content from WebContentsView
- * @param app Electron application instance
- * @returns Promise<string | null> Returns DOM content or null
  */
 export async function getDOMContent(app: ElectronApplication): Promise<string | null> {
-  return await app.evaluate(async ({ BrowserWindow }) => {
-    // Get all browser windows
-    const windows = BrowserWindow.getAllWindows();
-
-    for (const window of windows) {
-      // Get all child views (WebContentsView instances) attached to this window
-      if (window.contentView && 'children' in window.contentView) {
-        const views = window.contentView.children || [];
-
-        for (const view of views) {
-          // Type guard to check if view is a WebContentsView
-          if (view && view.constructor.name === 'WebContentsView') {
-            try {
-              // Cast to WebContentsView type and execute JavaScript
-              const webContentsView = view as unknown as { webContents: { executeJavaScript: (script: string) => Promise<string> } };
-              const content = await webContentsView.webContents.executeJavaScript(`
-                  document.documentElement.outerHTML || ''
-                `);
-              if (content && content.trim()) {
-                return content;
-              }
-            } catch {
-              // Continue to next view if this one fails
-              continue;
-            }
-          }
-        }
-      }
-    }
+  try {
+    return await executeInBrowserView<string>(
+      app,
+      'document.documentElement.outerHTML || ""',
+    );
+  } catch {
     return null;
-  });
+  }
 }
 
 /**
  * Check if WebContentsView exists and is loaded
- * @param app Electron application instance
- * @returns Promise<boolean> Returns whether it exists and is loaded
  */
 export async function isLoaded(app: ElectronApplication): Promise<boolean> {
-  return await app.evaluate(async ({ BrowserWindow }) => {
-    // Get all browser windows
-    const windows = BrowserWindow.getAllWindows();
+  const webContentsId = await getFirstWebContentsView(app);
+  return webContentsId !== null;
+}
 
-    for (const window of windows) {
-      // Get all child views (WebContentsView instances) attached to this window
-      if (window.contentView && 'children' in window.contentView) {
-        const views = window.contentView.children || [];
-
-        for (const view of views) {
-          // Type guard to check if view is a WebContentsView
-          if (view && view.constructor.name === 'WebContentsView') {
-            // If we found a WebContentsView, consider it loaded
-            return true;
-          }
+/**
+ * Click element containing specific text in browser view
+ */
+export async function clickElementWithText(
+  app: ElectronApplication,
+  selector: string,
+  text: string,
+): Promise<void> {
+  const script = `
+    (function() {
+      const selector = ${JSON.stringify(selector)};
+      const text = ${JSON.stringify(text)};
+      const elements = document.querySelectorAll(selector);
+      let found = null;
+      
+      for (let i = 0; i < elements.length; i++) {
+        const elem = elements[i];
+        const elemText = elem.textContent || elem.innerText || '';
+        if (elemText.trim() === text.trim() || elemText.includes(text)) {
+          found = elem;
+          break;
         }
       }
+      
+      if (!found) {
+        throw new Error('Element with text "' + text + '" not found in selector: ' + selector);
+      }
+      
+      found.click();
+      return true;
+    })()
+  `;
+
+  await executeInBrowserView(app, script);
+}
+
+/**
+ * Click element in browser view
+ */
+export async function clickElement(app: ElectronApplication, selector: string): Promise<void> {
+  const script = `
+    (function() {
+      const selector = ${JSON.stringify(selector)};
+      const elem = document.querySelector(selector);
+      
+      if (!elem) {
+        throw new Error('Element not found: ' + selector);
+      }
+      
+      elem.click();
+      return true;
+    })()
+  `;
+
+  await executeInBrowserView(app, script);
+}
+
+/**
+ * Type text in element in browser view
+ */
+export async function typeText(app: ElectronApplication, selector: string, text: string): Promise<void> {
+  const escapedSelector = selector.replace(/'/g, "\\'");
+  const escapedText = text.replace(/'/g, "\\'").replace(/\n/g, '\\n');
+
+  const script = `
+    (function() {
+      const selector = '${escapedSelector}';
+      const text = '${escapedText}';
+      const elem = document.querySelector(selector);
+      
+      if (!elem) {
+        throw new Error('Element not found: ' + selector);
+      }
+      
+      elem.focus();
+      if (elem.tagName === 'TEXTAREA' || elem.tagName === 'INPUT') {
+        elem.value = text;
+      } else {
+        elem.textContent = text;
+      }
+      
+      elem.dispatchEvent(new Event('input', { bubbles: true }));
+      elem.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    })()
+  `;
+
+  await executeInBrowserView(app, script);
+}
+
+/**
+ * Press key in browser view
+ */
+export async function pressKey(app: ElectronApplication, key: string): Promise<void> {
+  const escapedKey = key.replace(/'/g, "\\'");
+
+  const script = `
+    (function() {
+      const key = '${escapedKey}';
+      
+      const keydownEvent = new KeyboardEvent('keydown', {
+        key: key,
+        code: key,
+        bubbles: true,
+        cancelable: true
+      });
+      document.activeElement?.dispatchEvent(keydownEvent);
+      
+      const keyupEvent = new KeyboardEvent('keyup', {
+        key: key,
+        code: key,
+        bubbles: true,
+        cancelable: true
+      });
+      document.activeElement?.dispatchEvent(keyupEvent);
+      return true;
+    })()
+  `;
+
+  await executeInBrowserView(app, script);
+}
+
+/**
+ * Check if element exists in browser view
+ */
+export async function elementExists(app: ElectronApplication, selector: string): Promise<boolean> {
+  try {
+    // Check if selector contains :has-text() pseudo-selector
+    const hasTextMatch = selector.match(/^(.+):has-text\(['"](.+)['"]\)$/);
+
+    if (hasTextMatch) {
+      const baseSelector = hasTextMatch[1];
+      const textContent = hasTextMatch[2];
+
+      const script = `
+        (function() {
+          const elements = document.querySelectorAll('${baseSelector.replace(/'/g, "\\'")}');
+          for (const el of elements) {
+            if (el.textContent && el.textContent.includes('${textContent.replace(/'/g, "\\'")}')) {
+              return true;
+            }
+          }
+          return false;
+        })()
+      `;
+
+      return await executeInBrowserView<boolean>(app, script);
+    } else {
+      const script = `document.querySelector('${selector.replace(/'/g, "\\'")}') !== null`;
+      return await executeInBrowserView<boolean>(app, script);
     }
+  } catch {
     return false;
-  });
-}
-
-/**
- * Find specified text in WebContentsView
- * @param app Electron application instance
- * @param expectedText Text to search for
- * @param contentType Content type: 'text' or 'dom'
- * @returns Promise<boolean> Returns whether text was found
- */
-export async function containsText(
-  app: ElectronApplication,
-  expectedText: string,
-  contentType: 'text' | 'dom' = 'text',
-): Promise<boolean> {
-  const content = contentType === 'text'
-    ? await getTextContent(app)
-    : await getDOMContent(app);
-
-  return content !== null && content.includes(expectedText);
-}
-
-/**
- * Get WebContentsView content summary (for error messages)
- * @param app Electron application instance
- * @param contentType Content type: 'text' or 'dom'
- * @param maxLength Maximum length, default 200
- * @returns Promise<string> Returns content summary
- */
-export async function getContentSummary(
-  app: ElectronApplication,
-  contentType: 'text' | 'dom' = 'text',
-  maxLength: number = 200,
-): Promise<string> {
-  const content = contentType === 'text'
-    ? await getTextContent(app)
-    : await getDOMContent(app);
-
-  if (!content) {
-    return 'null';
   }
-
-  return content.length > maxLength
-    ? content.substring(0, maxLength) + '...'
-    : content;
 }

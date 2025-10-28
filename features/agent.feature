@@ -43,7 +43,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   Scenario: Wiki operation
     Given I have started the mock OpenAI server
       | response                                                                                                                                                                                | stream |
-      | 先测试失败情况<tool_use name="wiki-operation">{"workspaceName":"default","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>                                    | false  |
+      | 先测试失败情况<tool_use name="wiki-operation">{"workspaceName":"test-expected-to-fail","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>                                    | false  |
       | 然后测试成功情况<tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"}</tool_use>使用启动时自动创建的 wiki 工作区 | false  |
       | 已成功在工作区 wiki 中创建条目 "test"。                                                                                                                                                 | false  |
     # Step 1: Start a fresh tab and run the two-round wiki operation flow
@@ -55,13 +55,13 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     # Step 3: Select agent from autocomplete (not new tab)
     When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
-    # First round: try create note using default workspace (expected to fail)
+    # First round: try create note using test-expected-to-fail workspace (expected to fail)
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 里创建一个新笔记，内容为 test" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 6 messages in chat history
     # Verify there's an error message about workspace not found (in one of the middle messages)
-    And I should see a "workspace not exist error" element with selector "[data-testid='message-bubble']:has-text('default'):has-text('不存在')"
+    And I should see a "workspace not exist error" element with selector "[data-testid='message-bubble']:has-text('test-expected-to-fail'):has-text('不存在')"
     # Verify the last message contains success confirmation
     And I should see "success in last message and wiki workspace in last message" elements with selectors:
       | [data-testid='message-bubble']:last-child:has-text('已成功') |

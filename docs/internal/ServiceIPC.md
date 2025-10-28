@@ -8,6 +8,32 @@ See [this 6aedff4b commit](https://github.com/tiddly-gittly/TidGi-Desktop/commit
 - [src/services/serviceIdentifier.ts](../../src/services/serviceIdentifier.ts) for IoC id
 - [src/services/libs/bindServiceAndProxy.ts](../../src/services/libs/bindServiceAndProxy.ts) for dependency injection in inversifyjs
 
+## Register service for worker threads
+
+If you need to expose a service to worker threads (e.g., for TiddlyWiki plugins running in wiki worker), register it in the `registerServicesForWorkers()` function in [src/services/libs/bindServiceAndProxy.ts](../../src/services/libs/bindServiceAndProxy.ts).
+
+Example:
+
+```typescript
+function registerServicesForWorkers(workspaceService: IWorkspaceService): void {
+  registerServiceForWorker('workspace', {
+    get: workspaceService.get.bind(workspaceService) as (...arguments_: unknown[]) => unknown,
+    getWorkspacesAsList: workspaceService.getWorkspacesAsList.bind(workspaceService) as (...arguments_: unknown[]) => unknown,
+  });
+}
+```
+
+Worker threads can then call these services using:
+
+```typescript
+import { callMainProcessService } from '@services/wiki/wikiWorker/workerServiceCaller';
+
+const workspace = await callMainProcessService<IWorkspace>('workspace', 'get', [workspaceId]);
+const allWorkspaces = await callMainProcessService<IWorkspace[]>('workspace', 'getWorkspacesAsList', []);
+```
+
+See [src/services/wiki/wikiWorker/workerServiceCaller.ts](../../src/services/wiki/wikiWorker/workerServiceCaller.ts) for the worker-side implementation.
+
 ## Sync service
 
 Some services are sync, like `getSubWorkspacesAsListSync` `getActiveWorkspaceSync` from `src/services/workspaces/index.ts`, they can't be called from renderer, only can be used in the main process.
@@ -40,3 +66,30 @@ useObservable(workspace$, workspaceSetter);
 ```
 
 or in store use rxjs like `window.observables.workspace.get$(id).observe()`.
+
+## IPC Communication Architecture
+
+TidGi uses multiple IPC mechanisms for different scenarios:
+
+### 1. Main Process ↔ Renderer Process (electron-ipc-cat)
+
+Used for UI-related service calls (e.g., preferences, workspaces, windows).
+
+- **Registration**: `src/services/libs/bindServiceAndProxy.ts` - `registerProxy()`
+- **Renderer access**: `window.service.*` or `window.observables.*`
+- **Implementation**: electron-ipc-cat library
+
+### 2. Main Process ↔ Worker Threads (worker_threads)
+
+Used for TiddlyWiki plugins running in wiki workers to access TidGi services.
+
+- **Registration**: `src/services/libs/bindServiceAndProxy.ts` - `registerServicesForWorkers()`
+- **Worker access**: `callMainProcessService(serviceName, methodName, args)`
+- **Implementation**: Custom worker_threads IPC in `src/services/libs/workerAdapter.ts`
+- **Use case**: Watch Filesystem Adaptor plugin querying workspace information
+
+Key differences:
+
+- Worker IPC is **method-based** (not proxy-based)
+- Worker IPC is **async only** (no observables)
+- Worker IPC requires **explicit registration** of each method

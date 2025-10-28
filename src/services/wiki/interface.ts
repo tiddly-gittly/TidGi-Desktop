@@ -4,7 +4,6 @@ import type { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { Observable } from 'rxjs';
 import type { IChangedTiddlers } from 'tiddlywiki';
-import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
 import type { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
 import type { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 import type { WikiWorker } from './wikiWorker';
@@ -47,7 +46,6 @@ export interface IWikiService {
   createSubWiki(parentFolderLocation: string, folderName: string, subWikiFolderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
   extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined>;
-  getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
   /**
    * Get tiddler's absolute path. So you can open image or PDF in OS native viewer or some else usage like this, using `window?.service?.native?.openPath?.(filePath)`
    * @returns absolute path like `'/Users/linonetwo/Desktop/repo/TiddlyGit-Desktop/wiki-dev/wiki/tiddlers/Index.tid'`
@@ -76,7 +74,6 @@ export interface IWikiService {
   startWiki(workspaceID: string, userName: string): Promise<void>;
   stopAllWiki(): Promise<void>;
   stopWiki(workspaceID: string): Promise<void>;
-  updateSubWikiPluginContent(mainWikiPath: string, subWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void>;
   /**
    * Runs wiki related JS script in wiki page to control the wiki.
    *
@@ -112,7 +109,6 @@ export const WikiServiceIPCDescriptor = {
     createSubWiki: ProxyPropertyType.Function,
     ensureWikiExist: ProxyPropertyType.Function,
     extractWikiHTML: ProxyPropertyType.Function,
-    getSubWikiPluginContent: ProxyPropertyType.Function,
     getWikiErrorLogs: ProxyPropertyType.Function,
     linkWiki: ProxyPropertyType.Function,
     getTiddlerFilePath: ProxyPropertyType.Function,
@@ -123,7 +119,6 @@ export const WikiServiceIPCDescriptor = {
     startWiki: ProxyPropertyType.Function,
     stopAllWiki: ProxyPropertyType.Function,
     stopWiki: ProxyPropertyType.Function,
-    updateSubWikiPluginContent: ProxyPropertyType.Function,
     wikiOperationInBrowser: ProxyPropertyType.Function,
     wikiOperationInServer: ProxyPropertyType.Function,
     wikiStartup: ProxyPropertyType.Function,
@@ -133,11 +128,7 @@ export const WikiServiceIPCDescriptor = {
 
 // Workers
 
-export type IWikiMessage = IWikiLogMessage | IWikiControlMessage;
-export interface IWikiLogMessage {
-  message: string;
-  type: 'stdout' | 'stderr';
-}
+export type IWikiMessage = IWikiControlMessage;
 export enum WikiControlActions {
   /** wiki is booted */
   booted = 'tw-booted',

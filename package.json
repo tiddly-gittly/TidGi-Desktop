@@ -8,7 +8,8 @@
   "scripts": {
     "start:init": "pnpm run clean && pnpm run init:git-submodule && pnpm run build:plugin && cross-env NODE_ENV=development tsx scripts/developmentMkdir.ts && pnpm run start:dev",
     "start:dev": "cross-env NODE_ENV=development electron-forge start",
-    "clean": "rimraf -- ./out ./logs ./userData-dev ./userData-test ./wiki-dev ./wiki-test ./node_modules/tiddlywiki/plugins/linonetwo",
+    "clean": "pnpm run clean:cache && rimraf -- ./out ./logs ./userData-dev ./userData-test ./wiki-dev ./wiki-test ./node_modules/tiddlywiki/plugins/linonetwo",
+    "clean:cache": "rimraf -- ./node_modules/.vite .vite",
     "start:dev:debug-worker": "cross-env NODE_ENV=development DEBUG_WORKER=true electron-forge start",
     "start:dev:debug-main": "cross-env NODE_ENV=development DEBUG_MAIN=true electron-forge start",
     "start:dev:debug-vite": "cross-env NODE_ENV=development DEBUG=electron-forge:* electron-forge start",
@@ -64,7 +65,7 @@
     "default-gateway": "6.0.3",
     "dugite": "2.7.1",
     "electron-dl": "^4.0.0",
-    "electron-ipc-cat": "2.1.1",
+    "electron-ipc-cat": "2.2.1",
     "electron-settings": "5.0.0",
     "electron-unhandled": "4.0.1",
     "electron-window-state": "5.0.3",
@@ -90,6 +91,7 @@
     "nanoid": "^5.1.6",
     "new-github-issue-url": "^1.1.0",
     "node-fetch": "3.3.2",
+    "nsfw": "^2.2.5",
     "oidc-client-ts": "^3.3.0",
     "ollama-ai-provider-v2": "^1.5.1",
     "react": "19.2.0",
@@ -174,7 +176,7 @@
     "rimraf": "^6.0.1",
     "ts-node": "10.9.2",
     "tsx": "^4.20.6",
-    "tw5-typed": "^0.6.3",
+    "tw5-typed": "^0.6.7",
     "typescript": "5.9.3",
     "typesync": "0.14.3",
     "unplugin-swc": "^1.5.8",
@@ -184,7 +186,8 @@
   },
   "pnpm": {
     "overrides": {
-      "prebuild-install": "latest"
+      "prebuild-install": "latest",
+      "node-addon-api": "^7.1.1"
     },
     "onlyBuiltDependencies": [
       "@swc/core",
@@ -194,6 +197,7 @@
       "electron",
       "electron-winstaller",
       "esbuild",
+      "nsfw",
       "registry-js",
       "unrs-resolver"
     ],

@@ -19,6 +19,7 @@ pnpm test:e2e
 pnpm test:e2e --tags="@smoke"
 # Or run a single e2e test by `--name`
 pnpm test:e2e --name "Wiki-search tool usage" # Not `-- --name` , and not `name`, is is just `--name` and have "" around the value, not omitting `--name`
+# Don't directly concat filename after pnpm test:e2e, only unit test can do that, e2e test can't.
 
 # Run with coverage
 pnpm test:unit -- --coverage
@@ -31,6 +32,10 @@ cross-env NODE_ENV=test pnpm dlx tsx ./scripts/start-e2e-app.ts
 ```
 
 Except for above parameters, AI agent can't use other parameters, otherwise complex shell command usage or parameters will require human approval and may not passed.
+
+### Long running script
+
+`prepare` and `test` may run for a long time. Don't execute any shell command like `echo "waiting"` or `Start-Sleep -Seconds 5;`, they are useless, and only will they interrupt the command. You need to check active terminal output in a loop until you see it is truly done.
 
 ## Project Setup
 
@@ -58,6 +63,8 @@ features/                # E2E tests
 out/                    # `test:prepare-e2e` Bundled production app to test
 userData-test/           # User setting folder created during `test:e2e`
 userData-dev/           # User setting folder created during `start:dev`
+wiki-test/           # containing wiki folders created during `test:e2e`
+wiki-dev/           # containing wiki folders created during `start:dev`
 ```
 
 ## Writing Unit Tests
@@ -294,6 +301,8 @@ When AI is fixing issues, you can let it add more logs for troubleshooting, and 
 
 If you want to send frontend log to the log file, you can't directly use `import { logger } from '@services/libs/log';` you need to use `void window.service.native.log('error', 'Renderer: xxx', { ...additionalMetadata });`.
 Otherwise you will get [Can't resolve 'os' error](./ErrorDuringStart.md)
+
+Only use VSCode tool to read file. Don't ever use shell command to read file.
 
 ## User profile
 

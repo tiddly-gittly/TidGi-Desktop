@@ -4,6 +4,6 @@ import type { ITheme } from './interface';
 
 export function useThemeObservable(): ITheme | undefined {
   const [theme, themeSetter] = useState<ITheme | undefined>();
-  useObservable(window.observables.theme.theme$, themeSetter as unknown as (value: ITheme | undefined) => void);
+  useObservable(window.observables.theme.theme$, themeSetter);
   return theme;
 }

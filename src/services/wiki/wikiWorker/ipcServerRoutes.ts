@@ -227,6 +227,7 @@ export class IpcServerRoutes {
         this.wikiInstance.wiki.addEventListener('change', (changes) => {
           observer.next(changes);
         });
+        console.log('[test-id-SSE_READY] Wiki change observer registered and ready');
       };
       void getWikiChangeObserverInWorkerIIFE();
     });

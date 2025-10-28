@@ -64,6 +64,7 @@ describe('WikiEmbeddingService Integration Tests', () => {
       disableAudio: false,
       enableHTTPAPI: false,
       excludedPlugins: [],
+      enableFileSystemWatch: true,
       gitUrl: null,
       hibernateWhenUnused: false,
       readOnlyMode: false,

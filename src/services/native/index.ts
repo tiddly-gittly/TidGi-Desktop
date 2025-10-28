@@ -8,7 +8,7 @@ import { NativeChannel } from '@/constants/channels';
 import { ZX_FOLDER } from '@/constants/paths';
 import { githubDesktopUrl } from '@/constants/urls';
 import { container } from '@services/container';
-import { logger } from '@services/libs/log';
+import { getLoggerForLabel, logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -63,7 +63,7 @@ export class NativeService implements INativeService {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   public async registerKeyboardShortcut<T>(serviceName: keyof typeof serviceIdentifier, methodName: keyof T, shortcut: string): Promise<void> {
     try {
-      const key = `${serviceName as unknown as string}.${methodName as unknown as string}`;
+      const key = `${serviceName}.${String(methodName)}`;
       logger.info('Starting keyboard shortcut registration', { key, shortcut, serviceName, methodName, function: 'NativeService.registerKeyboardShortcut' });
 
       // Save to preferences
@@ -87,7 +87,7 @@ export class NativeService implements INativeService {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   public async unregisterKeyboardShortcut<T>(serviceName: keyof typeof serviceIdentifier, methodName: keyof T): Promise<void> {
     try {
-      const key = `${serviceName as unknown as string}.${methodName as unknown as string}`;
+      const key = `${serviceName}.${String(methodName)}`;
 
       // Get the current shortcut string before removing from preferences
       const shortcuts = await this.getKeyboardShortcuts();
@@ -479,5 +479,10 @@ ${message.message}
     }
     logger.warn(`This url can't be loaded in-wiki. Try loading url as-is.`, { url: urlWithFileProtocol, function: 'formatFileUrlToAbsolutePath' });
     return urlWithFileProtocol;
+  }
+
+  public async logFor(label: string, level: 'error' | 'warn' | 'info' | 'debug', message: string, meta?: Record<string, unknown>): Promise<void> {
+    const labeledLogger = getLoggerForLabel(label);
+    labeledLogger.log(level, message, meta);
   }
 }

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput, SoftLinkToMainWikiSelect, SubWikiTagAutoComplete } from './FormComponents';
 
+import { useAvailableTags } from './useAvailableTags';
 import { useValidateExistedWiki } from './useExistedWiki';
 import type { IWikiWorkspaceFormProps } from './useForm';
 
@@ -17,6 +18,10 @@ export function ExistedWikiForm({
   errorInWhichComponentSetter,
 }: IWikiWorkspaceFormProps & { isCreateSyncedWorkspace: boolean }): React.JSX.Element {
   const { t } = useTranslation();
+
+  // Fetch all tags from main wiki for autocomplete suggestions
+  const availableTags = useAvailableTags(form.mainWikiToLink.id, !isCreateMainWorkspace);
+
   const {
     wikiFolderLocation,
     wikiFolderNameSetter,
@@ -27,7 +32,6 @@ export function ExistedWikiForm({
     mainWikiToLinkIndex,
     mainWikiToLinkSetter,
     mainWorkspaceList,
-    fileSystemPaths,
     tagName,
     tagNameSetter,
   } = form;
@@ -82,7 +86,7 @@ export function ExistedWikiForm({
                     ${mainWikiToLink.wikiFolderLocation}/tiddlers/${wikiFolderName}`}
             value={mainWikiToLinkIndex}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-              const index = event.target.value as unknown as number;
+              const index = Number(event.target.value);
               const selectedWorkspace = mainWorkspaceList[index];
               if (selectedWorkspace && isWikiWorkspace(selectedWorkspace)) {
                 mainWikiToLinkSetter({
@@ -101,7 +105,7 @@ export function ExistedWikiForm({
           </SoftLinkToMainWikiSelect>
           <SubWikiTagAutoComplete
             freeSolo
-            options={fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
+            options={availableTags}
             value={tagName}
             onInputChange={(_event: React.SyntheticEvent, value: string) => {
               tagNameSetter(value);

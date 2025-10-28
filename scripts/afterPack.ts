@@ -50,6 +50,8 @@ export default (
       ['app-path', 'main'],
       // node binary
       ['better-sqlite3', 'build', 'Release', 'better_sqlite3.node'],
+      // nsfw native module
+      ['nsfw', 'build', 'Release', 'nsfw.node'],
       // Refer to `node_modules\sqlite-vec\index.cjs` for latest file names
       // sqlite-vec: copy main entry files and platform-specific binary
       ['sqlite-vec', 'package.json'],
