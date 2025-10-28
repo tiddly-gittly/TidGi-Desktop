@@ -699,7 +699,9 @@ export class Wiki implements IWikiService {
         if (mainWorkspace === undefined) {
           throw new SubWikiSMainWikiNotExistError(name ?? id, mainWikiID);
         }
-        await this.restartWiki(mainWorkspace);
+        // Use restartWorkspaceViewService to restart wiki worker and reload frontend view
+        const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+        await workspaceViewService.restartWorkspaceViewService(mainWikiID);
       }
     } else {
       try {

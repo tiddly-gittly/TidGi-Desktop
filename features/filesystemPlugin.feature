@@ -29,8 +29,10 @@ Feature: Filesystem Plugin
     Then I should see a "SubWiki workspace" element with selector "div[data-testid^='workspace-']:has-text('SubWiki')"
     # After create subwiki, webview will auto refresh here, wait for wiki to restart
     And I wait for SSE and watch-fs to be ready
+    # Click on SubWiki workspace icon to open the TestTag tiddler
+    When I click on a "SubWiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('SubWiki')"
     And I wait for 0.5 seconds
-    # Subwiki tiddler will auto open.
+    # Subwiki tiddler should now be visible
     And I should see "TestTag" in the browser view content
     # create tiddler with tag
     And I click on "add tiddler button" element in browser view with selector "button[aria-label='添加条目']"
