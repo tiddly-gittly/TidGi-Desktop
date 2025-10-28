@@ -1,6 +1,6 @@
 import { container } from '@services/container';
 import { getPreloadPath } from '@services/windows/viteEntry';
-import { BrowserWindow, ipcMain, WebContentsView, WebPreferences } from 'electron';
+import { BrowserWindow, WebContentsView, WebPreferences } from 'electron';
 import { inject, injectable } from 'inversify';
 
 import type { IMenuService } from '@services/menu/interface';
@@ -10,7 +10,7 @@ import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
-import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
+import { MetaDataChannel, WindowChannel } from '@/constants/channels';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { isMac, isWin } from '@/helpers/system';
 import type { IAuthenticationService } from '@services/auth/interface';
@@ -39,7 +39,6 @@ export class View implements IViewService {
     @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
     @inject(serviceIdentifier.MenuService) private readonly menuService: IMenuService,
   ) {
-    this.initIPCHandlers();
   }
 
   // Circular dependency services - use container.get() when needed
@@ -51,26 +50,8 @@ export class View implements IViewService {
     return container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   }
 
-  private get workspaceViewService(): IWorkspaceViewService {
-    return container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-  }
-
   public async initialize(): Promise<void> {
     await this.registerMenu();
-  }
-
-  private initIPCHandlers(): void {
-    ipcMain.handle(ViewChannel.onlineStatusChanged, async (_event, _online: boolean) => {
-      // try to fix when wifi status changed when wiki startup, causing wiki not loaded properly.
-      // if (online) {
-      //   await this.reloadViewsWebContentsIfDidFailLoad();
-      // }
-      // /**
-      //  * fixLocalIpNotAccessible. try to fix when network changed cause old local ip not accessible, need to generate a new ip and reload the view
-      //  * Do this for all workspace and all views...
-      //  */
-      // await this.workspaceViewService.restartAllWorkspaceView();
-    });
   }
 
   private async registerMenu(): Promise<void> {
