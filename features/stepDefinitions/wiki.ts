@@ -134,7 +134,11 @@ Then('file {string} should exist in {string}', { timeout: 15000 }, async functio
         }
         throw new Error('File not found yet');
       },
-      BACKOFF_OPTIONS
+      {
+        numOfAttempts: 3,
+        startingDelay: 200,
+        timeMultiple: 1.5,
+      }
     );
   } catch {
     // Get two levels up from actualPath
