@@ -131,6 +131,9 @@ export class Sync implements ISyncService {
       return;
     }
     const { syncOnInterval, backupOnInterval, id } = workspace;
+    // Clear existing interval first to avoid duplicates when settings are updated
+    this.stopIntervalSync(id);
+
     if (syncOnInterval || backupOnInterval) {
       const syncDebounceInterval = await this.preferenceService.get('syncDebounceInterval');
       this.wikiSyncIntervals[id] = setInterval(async () => {
