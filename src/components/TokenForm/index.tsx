@@ -1,7 +1,7 @@
 import { Box, Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
 import { keyframes, styled, Theme } from '@mui/material/styles';
 import { SupportedStorageServices } from '@services/types';
-import { useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItemText } from '../ListItem';

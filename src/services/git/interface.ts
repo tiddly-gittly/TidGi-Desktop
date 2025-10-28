@@ -34,6 +34,29 @@ export interface IForcePullConfigs {
   userInfo?: IGitUserInfos;
 }
 
+export interface IGitLogOptions {
+  page?: number;
+  pageSize?: number;
+  searchQuery?: string;
+}
+
+export interface IGitLogResult {
+  entries: Array<{
+    hash: string;
+    parents: string[];
+    branch: string;
+    message: string;
+    committerDate: string;
+    author?: {
+      name: string;
+      email?: string;
+    };
+    authorDate?: string;
+  }>;
+  currentBranch: string;
+  totalCount: number;
+}
+
 /**
  * System Preferences are not stored in storage but stored in macOS Preferences.
  * It can be retrieved and changed using Electron APIs
@@ -63,16 +86,41 @@ export interface IGitService {
    * This does not handle `commitOnly` option, if it is not readonly. You need to use `commitAndSync` directly.
    */
   syncOrForcePull(workspace: IWorkspace, configs: IForcePullConfigs & ICommitAndSyncConfigs): Promise<boolean>;
+  /**
+   * Get git log entries with pagination support
+   */
+  getGitLog(wikiFolderPath: string, options?: IGitLogOptions): Promise<IGitLogResult>;
+  /**
+   * Get files changed in a specific commit
+   */
+  getCommitFiles(wikiFolderPath: string, commitHash: string): Promise<string[]>;
+  /**
+   * Get the diff for a specific file in a commit
+   */
+  getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string): Promise<string>;
+  /**
+   * Checkout a specific commit
+   */
+  checkoutCommit(wikiFolderPath: string, commitHash: string): Promise<void>;
+  /**
+   * Revert a specific commit
+   */
+  revertCommit(wikiFolderPath: string, commitHash: string): Promise<void>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,
   properties: {
+    checkoutCommit: ProxyPropertyType.Function,
     clone: ProxyPropertyType.Function,
     commitAndSync: ProxyPropertyType.Function,
     forcePull: ProxyPropertyType.Function,
+    getCommitFiles: ProxyPropertyType.Function,
+    getFileDiff: ProxyPropertyType.Function,
+    getGitLog: ProxyPropertyType.Function,
     getModifiedFileList: ProxyPropertyType.Function,
     getWorkspacesRemote: ProxyPropertyType.Function,
     initWikiGit: ProxyPropertyType.Function,
+    revertCommit: ProxyPropertyType.Function,
     syncOrForcePull: ProxyPropertyType.Function,
   },
 };

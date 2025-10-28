@@ -21,8 +21,9 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
+import * as gitOperations from './gitOperations';
 import type { GitWorker } from './gitWorker';
-import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
+import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitLogOptions, IGitLogResult, IGitService, IGitUserInfos } from './interface';
 import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 
 @injectable()
@@ -286,5 +287,25 @@ export class Git implements IGitService {
     } else {
       return await this.commitAndSync(workspace, configs);
     }
+  }
+
+  public async getGitLog(wikiFolderPath: string, options?: IGitLogOptions): Promise<IGitLogResult> {
+    return await gitOperations.getGitLog(wikiFolderPath, options);
+  }
+
+  public async getCommitFiles(wikiFolderPath: string, commitHash: string): Promise<string[]> {
+    return await gitOperations.getCommitFiles(wikiFolderPath, commitHash);
+  }
+
+  public async getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string): Promise<string> {
+    return await gitOperations.getFileDiff(wikiFolderPath, commitHash, filePath);
+  }
+
+  public async checkoutCommit(wikiFolderPath: string, commitHash: string): Promise<void> {
+    await gitOperations.checkoutCommit(wikiFolderPath, commitHash);
+  }
+
+  public async revertCommit(wikiFolderPath: string, commitHash: string): Promise<void> {
+    await gitOperations.revertCommit(wikiFolderPath, commitHash);
   }
 }

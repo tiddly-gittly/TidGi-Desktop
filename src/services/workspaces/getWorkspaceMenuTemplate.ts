@@ -99,6 +99,12 @@ export async function getWorkspaceMenuTemplate(
       click: async () => await service.native.openInGitGuiApp(wikiFolderLocation),
     },
     {
+      label: t('WorkspaceSelector.ViewGitHistory'),
+      click: async () => {
+        await service.window.open(WindowNames.gitHistory, { workspaceID: id });
+      },
+    },
+    {
       label: `${t('WorkspaceSelector.OpenInBrowser')}${enableHTTPAPI ? '' : t('WorkspaceSelector.OpenInBrowserDisabledHint')}`,
       enabled: enableHTTPAPI,
       click: async () => {

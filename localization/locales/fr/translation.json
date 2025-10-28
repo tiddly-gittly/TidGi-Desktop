@@ -509,7 +509,7 @@
     "OpenInBrowserDisabledHint": "(Configurer→ActiverHTTPAPI pour activer)",
     "OpenWorkspaceFolder": "Ouvrir le dossier",
     "OpenWorkspaceFolderInEditor": "Ouvrir le dossier dans un éditeur externe",
-    "OpenWorkspaceFolderInGitGUI": "Ouvrir dans Git GUI",
+    "OpenWorkspaceFolderInGitGUI": "Ouvrir ",
     "OpenWorkspaceMenuName": "Ouvrir l'espace de travail",
     "OpenWorkspaceTagTiddler": "Ouvrir {{tagName}}",
     "ReloadCurrentWorkspace": "Recharger l'espace de travail actuel",
