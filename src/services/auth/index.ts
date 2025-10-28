@@ -8,7 +8,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, session } from 'electron';
 import { injectable } from 'inversify';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject } from 'rxjs';
@@ -123,7 +123,6 @@ export class Authentication implements IAuthenticationService {
    * Used during logout to clear "remember me" state
    */
   public async clearCookiesForDomain(domain: string): Promise<void> {
-    const { session } = await import('electron');
     try {
       const cookies = await session.defaultSession.cookies.get({ domain });
 

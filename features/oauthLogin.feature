@@ -8,7 +8,7 @@ Feature: OAuth Login Flow
     And I wait for the page to load completely
     And I should see a "page body" element with selector "body"
 
-  @oauth @pkce
+  @oauth
   Scenario: Login with Custom OAuth Server using PKCE
     # Step 1: Start Mock OAuth Server
     When I start Mock OAuth Server on port 8888
