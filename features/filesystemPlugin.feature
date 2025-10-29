@@ -38,14 +38,19 @@ Feature: Filesystem Plugin
     And I click on "add tiddler button" element in browser view with selector "button[aria-label='添加条目']"
     # Focus on title input, clear it, and type new title in the draft tiddler
     And I click on "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
+    And I wait for 0.1 seconds
     And I press "Control+a" in browser view
     And I press "Delete" in browser view
-    And I type "TestTiddlerTitle" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    # Input tag by typing in the tag input field
-    And I click on "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-edit-texteditor.tc-popup-handle"
     And I wait for 0.1 seconds
-    And I type "TestTag" in "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-edit-texteditor.tc-popup-handle"
+    And I type "TestTiddlerTitle" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
+    # Input tag by typing in the tag input field - use precise selector to target the tag input specifically
+    And I click on "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
+    And I press "Control+a" in browser view
+    And I press "Delete" in browser view
+    And I wait for 0.2 seconds
+    And I type "TestTag" in "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
     # Click the add tag button to confirm the tag (not just typing)
+    And I wait for 0.2 seconds
     And I click on "add tag button" element in browser view with selector "div[data-tiddler-title^='Draft of'] span.tc-add-tag-button button"
     # Wait more time for ipc and filesystem to process
     And I wait for 3 seconds
@@ -61,9 +66,8 @@ Feature: Filesystem Plugin
     # Test SSE is still working after SubWiki creation - modify a main wiki tiddler
     When I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Main wiki content modified after SubWiki creation"
     Then I wait for tiddler "Index" to be updated by watch-fs
-    # Verify main wiki modification appears (Index is not in the timeline, to open it, click the wiki workspace icon)
-    When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
-    And I wait for 2 seconds
+    # Confirm Index always open
+    Then I should see a "Index tiddler" element in browser view with selector "div[data-tiddler-title='Index']"
     Then I should see "Main wiki content modified after SubWiki creation" in the browser view content
     # Test modification in sub-workspace via symlink
     # Modify the tiddler file externally - need to preserve .tid format with metadata
