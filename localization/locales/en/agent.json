@@ -315,16 +315,16 @@
       "TopPTitle": "Top P"
     },
     "Plugin": {
-      "Caption": "",
-      "CaptionTitle": "",
-      "Content": "",
-      "ContentTitle": "",
-      "ForbidOverrides": "",
-      "ForbidOverridesTitle": "",
-      "Id": "",
-      "IdTitle": "",
-      "PluginId": "",
-      "PluginIdTitle": ""
+      "Caption": "brief description",
+      "CaptionTitle": "Title",
+      "Content": "Plugin content or description",
+      "ContentTitle": "content",
+      "ForbidOverrides": "Is it prohibited to override this plugin's parameters at runtime?",
+      "ForbidOverridesTitle": "Do not overwrite",
+      "Id": "Plugin ID",
+      "IdTitle": "ID",
+      "PluginId": "Identifier for selecting specific plugins",
+      "PluginIdTitle": "Plugin identifier"
     },
     "Position": {
       "Bottom": "Offset a few messages from the bottom",
@@ -455,7 +455,7 @@
       "SourceTypeTitle": "source type",
       "Title": "Wiki Search",
       "Tool": {
-        "Description": "",
+        "Description": "Search Tiddler content in Wiki workspace (supports traditional filter search and vector semantic search)",
         "Parameters": {
           "filter": {
             "Description": "TiddlyWiki Filter Expressions",
@@ -483,24 +483,20 @@
           }
         },
         "UpdateEmbeddings": {
-          "Description": "",
+          "Description": "Generate or update vector embedding indexes for Wiki workspaces to enable semantic search.",
           "Parameters": {
             "forceUpdate": {
-              "Description": "",
-              "Title": ""
             },
             "workspaceName": {
-              "Description": "",
-              "Title": ""
             }
           },
           "forceUpdate": {
-            "Description": "",
-            "Title": ""
+            "Description": "Whether to forcibly regenerate the embedding index, overwriting existing embedded data (if set to true, incremental updates will be ignored).",
+            "Title": "Forced Update"
           },
           "workspaceName": {
-            "Description": "",
-            "Title": ""
+            "Description": "The name or ID of the workspace for which to generate or update vector embedding indexes.",
+            "Title": "Workspace Name"
           }
         }
       },
@@ -539,16 +535,6 @@
   },
   "Tool": {
     "Plugin": {
-      "Caption": "",
-      "CaptionTitle": "",
-      "Content": "",
-      "ContentTitle": "",
-      "ForbidOverrides": "",
-      "ForbidOverridesTitle": "",
-      "Id": "",
-      "IdTitle": "",
-      "PluginId": "",
-      "PluginIdTitle": ""
     },
     "Schema": {
       "Description": "Description",
@@ -571,10 +557,10 @@
     "WikiSearch": {
       "Error": {
         "ExecutionFailed": "Tool execution failed: {{error}}",
-        "FilterSearchRequiresFilter": "",
-        "VectorSearchFailed": "",
-        "VectorSearchRequiresConfig": "",
-        "VectorSearchRequiresQuery": "",
+        "FilterSearchRequiresFilter": "Filter parameters (filter) must be provided for search filtering.",
+        "VectorSearchFailed": "Vector search failed: {{error}}",
+        "VectorSearchRequiresConfig": "Vector search requires AI configuration (please configure the provider and embedding model in settings).",
+        "VectorSearchRequiresQuery": "Vector search requires providing query parameters (query).",
         "WorkspaceNotExist": "Workspace {{workspaceID}} does not exist",
         "WorkspaceNotFound": "Workspace with name or ID \"{{workspaceName}}\" does not exist. Available workspaces: {{availableWorkspaces}}"
       },

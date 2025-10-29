@@ -313,6 +313,18 @@
       "TopP": "Top P 采样参数",
       "TopPTitle": "Top P"
     },
+    "Plugin": {
+      "Caption": "简短描述",
+      "CaptionTitle": "标题",
+      "Content": "插件内容或说明",
+      "ContentTitle": "内容",
+      "ForbidOverrides": "是否禁止在运行时覆盖此插件的参数",
+      "ForbidOverridesTitle": "禁止覆盖",
+      "Id": "插件 ID",
+      "IdTitle": "ID",
+      "PluginId": "用于选择具体插件的标识符",
+      "PluginIdTitle": "插件标识"
+    },
     "Position": {
       "Bottom": "自底部偏移几条消息",
       "BottomTitle": "底部偏移",
@@ -442,6 +454,7 @@
       "SourceTypeTitle": "源类型",
       "Title": "Wiki 搜索",
       "Tool": {
+        "Description": "在Wiki工作空间中搜索Tiddler内容（支持传统filter搜索和向量语义搜索）",
         "Parameters": {
           "filter": {
             "Description": "TiddlyWiki 筛选器表达式",
@@ -468,26 +481,21 @@
             "Title": "工作区名称"
           }
         },
-        "Description": "在Wiki工作空间中搜索Tiddler内容（支持传统filter搜索和向量语义搜索）",
         "UpdateEmbeddings": {
+          "Description": "为Wiki工作区生成或更新向量嵌入索引，用于语义搜索",
           "Parameters": {
             "forceUpdate": {
-              "Title": "强制更新",
-              "Description": "是否强制重新生成嵌入索引，覆盖已有的嵌入数据（如果为 true 则忽略增量更新）。"
             },
             "workspaceName": {
-              "Title": "工作区名称",
-              "Description": "要为其生成或更新向量嵌入索引的工作区名称或 ID。"
             }
           },
-          "Description": "为Wiki工作区生成或更新向量嵌入索引，用于语义搜索",
-          "workspaceName": {
-            "Title": "工作区名称",
-            "Description": "要为其生成或更新向量嵌入索引的工作区名称或 ID。"
-          },
           "forceUpdate": {
-            "Title": "强制更新",
-            "Description": "是否强制重新生成嵌入索引，覆盖已有的嵌入数据（如果设置为 true 则忽略增量更新）。"
+            "Description": "是否强制重新生成嵌入索引，覆盖已有的嵌入数据（如果设置为 true 则忽略增量更新）。",
+            "Title": "强制更新"
+          },
+          "workspaceName": {
+            "Description": "要为其生成或更新向量嵌入索引的工作区名称或 ID。",
+            "Title": "工作区名称"
           }
         }
       },
@@ -500,18 +508,6 @@
       "ToolListPositionTitle": "工具列表位置",
       "ToolResultDuration": "工具执行结果在对话中保持可见的轮数，超过此轮数后结果将变灰显示",
       "ToolResultDurationTitle": "工具结果持续轮数"
-    },
-    "Plugin": {
-      "IdTitle": "ID",
-      "Id": "插件 ID",
-      "CaptionTitle": "标题",
-      "Caption": "简短描述",
-      "ContentTitle": "内容",
-      "Content": "插件内容或说明",
-      "ForbidOverridesTitle": "禁止覆盖",
-      "ForbidOverrides": "是否禁止在运行时覆盖此插件的参数",
-      "PluginIdTitle": "插件标识",
-      "PluginId": "用于选择具体插件的标识符"
     }
   },
   "Search": {
@@ -537,24 +533,14 @@
     }
   },
   "Tool": {
+    "Plugin": {
+    },
     "Schema": {
       "Description": "描述",
       "Examples": "使用示例",
       "Optional": "可选",
       "Parameters": "参数",
       "Required": "必需"
-    },
-    "Plugin": {
-      "IdTitle": "ID",
-      "Id": "插件 ID",
-      "CaptionTitle": "标题",
-      "Caption": "简短描述",
-      "ContentTitle": "内容",
-      "Content": "插件内容或说明",
-      "ForbidOverridesTitle": "禁止覆盖",
-      "ForbidOverrides": "是否禁止在运行时覆盖此插件的参数",
-      "PluginIdTitle": "插件标识",
-      "PluginId": "用于选择具体插件的标识符"
     },
     "WikiOperation": {
       "Error": {
@@ -570,12 +556,12 @@
     "WikiSearch": {
       "Error": {
         "ExecutionFailed": "工具执行失败：{{error}}",
-        "WorkspaceNotExist": "工作区{{workspaceID}}不存在",
-        "WorkspaceNotFound": "工作区名称或ID\"{{workspaceName}}\"不存在。可用工作区：{{availableWorkspaces}}",
-        "VectorSearchRequiresQuery": "向量搜索需要提供查询参数（query）",
-        "VectorSearchRequiresConfig": "向量搜索需要 AI 配置（请在设置中配置提供商和嵌入模型）",
+        "FilterSearchRequiresFilter": "筛选搜索需要提供过滤器参数（filter）",
         "VectorSearchFailed": "向量搜索失败：{{error}}",
-        "FilterSearchRequiresFilter": "筛选搜索需要提供过滤器参数（filter）"
+        "VectorSearchRequiresConfig": "向量搜索需要 AI 配置（请在设置中配置提供商和嵌入模型）",
+        "VectorSearchRequiresQuery": "向量搜索需要提供查询参数（query）",
+        "WorkspaceNotExist": "工作区{{workspaceID}}不存在",
+        "WorkspaceNotFound": "工作区名称或ID\"{{workspaceName}}\"不存在。可用工作区：{{availableWorkspaces}}"
       },
       "Success": {
         "Completed": "Wiki搜索完成。找到{{totalResults}}个总结果，显示{{shownResults}}个：\n\n",

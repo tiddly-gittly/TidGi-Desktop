@@ -314,16 +314,16 @@
       "TopPTitle": "Top P"
     },
     "Plugin": {
-      "Caption": "",
-      "CaptionTitle": "",
-      "Content": "",
-      "ContentTitle": "",
-      "ForbidOverrides": "",
-      "ForbidOverridesTitle": "",
-      "Id": "",
-      "IdTitle": "",
-      "PluginId": "",
-      "PluginIdTitle": ""
+      "Caption": "簡短描述",
+      "CaptionTitle": "標題",
+      "Content": "外掛內容或說明",
+      "ContentTitle": "內容",
+      "ForbidOverrides": "是否禁止在執行時覆蓋此插件的參數",
+      "ForbidOverridesTitle": "禁止覆蓋",
+      "Id": "外掛 ID",
+      "IdTitle": "ID",
+      "PluginId": "用於選擇具體插件的識別符",
+      "PluginIdTitle": "插件標識"
     },
     "Position": {
       "Bottom": "自底部偏移幾條消息",
@@ -454,7 +454,7 @@
       "SourceTypeTitle": "源類型",
       "Title": "Wiki 搜索",
       "Tool": {
-        "Description": "",
+        "Description": "在Wiki工作空間中搜尋Tiddler內容（支援傳統filter搜尋和向量語義搜尋）",
         "Parameters": {
           "filter": {
             "Description": "TiddlyWiki 篩選器表達式",
@@ -482,24 +482,20 @@
           }
         },
         "UpdateEmbeddings": {
-          "Description": "",
+          "Description": "為Wiki工作區生成或更新向量嵌入索引，用於語義搜尋",
           "Parameters": {
             "forceUpdate": {
-              "Description": "",
-              "Title": ""
             },
             "workspaceName": {
-              "Description": "",
-              "Title": ""
             }
           },
           "forceUpdate": {
-            "Description": "",
-            "Title": ""
+            "Description": "是否強制重新生成嵌入索引，覆蓋已有的嵌入數據（如果設置為 true 則忽略增量更新）。",
+            "Title": "強制更新"
           },
           "workspaceName": {
-            "Description": "",
-            "Title": ""
+            "Description": "要為其生成或更新向量嵌入索引的工作區名稱或 ID。",
+            "Title": "工作區名稱"
           }
         }
       },
@@ -538,16 +534,6 @@
   },
   "Tool": {
     "Plugin": {
-      "Caption": "",
-      "CaptionTitle": "",
-      "Content": "",
-      "ContentTitle": "",
-      "ForbidOverrides": "",
-      "ForbidOverridesTitle": "",
-      "Id": "",
-      "IdTitle": "",
-      "PluginId": "",
-      "PluginIdTitle": ""
     },
     "Schema": {
       "Description": "描述",
@@ -570,10 +556,10 @@
     "WikiSearch": {
       "Error": {
         "ExecutionFailed": "工具執行失敗：{{error}}",
-        "FilterSearchRequiresFilter": "",
-        "VectorSearchFailed": "",
-        "VectorSearchRequiresConfig": "",
-        "VectorSearchRequiresQuery": "",
+        "FilterSearchRequiresFilter": "篩選搜尋需要提供過濾器參數（filter）",
+        "VectorSearchFailed": "向量搜尋失敗：{{error}}",
+        "VectorSearchRequiresConfig": "向量搜索需要 AI 配置（請在設定中配置提供商和嵌入模型）",
+        "VectorSearchRequiresQuery": "向量搜索需要提供查詢參數（query）",
         "WorkspaceNotExist": "工作區{{workspaceID}}不存在",
         "WorkspaceNotFound": "工作區名稱或ID\"{{workspaceName}}\"不存在。可用工作區：{{availableWorkspaces}}"
       },

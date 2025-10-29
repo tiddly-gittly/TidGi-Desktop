@@ -327,16 +327,16 @@
       "TopPTitle": "Топ P"
     },
     "Plugin": {
-      "Caption": "",
-      "CaptionTitle": "",
-      "Content": "",
-      "ContentTitle": "",
-      "ForbidOverrides": "",
-      "ForbidOverridesTitle": "",
-      "Id": "",
-      "IdTitle": "",
-      "PluginId": "",
-      "PluginIdTitle": ""
+      "Caption": "краткое описание",
+      "CaptionTitle": "заголовок",
+      "Content": "содержание или описание плагина",
+      "ContentTitle": "содержание",
+      "ForbidOverrides": "Запрещено ли переопределять параметры этого плагина во время выполнения?",
+      "ForbidOverridesTitle": "запрещено перекрывать",
+      "Id": "ID плагина",
+      "IdTitle": "ID",
+      "PluginId": "идентификатор для выбора конкретного плагина",
+      "PluginIdTitle": "идентификатор плагина"
     },
     "Position": {
       "Bottom": "смещение нескольких сообщений снизу",
@@ -467,7 +467,7 @@
       "SourceTypeTitle": "тип источника",
       "Title": "Поиск в Вики",
       "Tool": {
-        "Description": "",
+        "Description": "Поиск содержимого Tiddler в рабочей области Wiki (поддерживает традиционный фильтрованный поиск и векторный семантический поиск)",
         "Parameters": {
           "filter": {
             "Description": "TiddlyWiki выражения фильтров",
@@ -495,24 +495,20 @@
           }
         },
         "UpdateEmbeddings": {
-          "Description": "",
+          "Description": "Сгенерировать или обновить векторный индекс вложений для рабочей области Wiki, предназначенный для семантического поиска.",
           "Parameters": {
             "forceUpdate": {
-              "Description": "",
-              "Title": ""
             },
             "workspaceName": {
-              "Description": "",
-              "Title": ""
             }
           },
           "forceUpdate": {
-            "Description": "",
-            "Title": ""
+            "Description": "Принудительно ли пересоздавать индекс вложений, перезаписывая существующие данные (если установлено значение true, инкрементные обновления игнорируются).",
+            "Title": "принудительное обновление"
           },
           "workspaceName": {
-            "Description": "",
-            "Title": ""
+            "Description": "Имя или идентификатор рабочей области, для которой необходимо сгенерировать или обновить индекс векторных вложений.",
+            "Title": "Название рабочей области"
           }
         }
       },
@@ -551,16 +547,6 @@
   },
   "Tool": {
     "Plugin": {
-      "Caption": "",
-      "CaptionTitle": "",
-      "Content": "",
-      "ContentTitle": "",
-      "ForbidOverrides": "",
-      "ForbidOverridesTitle": "",
-      "Id": "",
-      "IdTitle": "",
-      "PluginId": "",
-      "PluginIdTitle": ""
     },
     "Schema": {
       "Description": "описание",
@@ -583,10 +569,10 @@
     "WikiSearch": {
       "Error": {
         "ExecutionFailed": "Выполнение инструмента завершилось неудачей: {{error}}",
-        "FilterSearchRequiresFilter": "",
-        "VectorSearchFailed": "",
-        "VectorSearchRequiresConfig": "",
-        "VectorSearchRequiresQuery": "",
+        "FilterSearchRequiresFilter": "Для фильтрации поиска необходимо предоставить параметры фильтра (filter).",
+        "VectorSearchFailed": "Векторный поиск не удался: {{error}}",
+        "VectorSearchRequiresConfig": "Для векторного поиска требуется настройка ИИ (настройте провайдера и модель внедрения в настройках).",
+        "VectorSearchRequiresQuery": "Для векторного поиска необходимо предоставить параметры запроса (query).",
         "WorkspaceNotExist": "Рабочее пространство {{workspaceID}} не существует",
         "WorkspaceNotFound": "Название или идентификатор рабочего пространства \"{{workspaceName}}\" не существует. Доступные рабочие пространства: {{availableWorkspaces}}"
       },
