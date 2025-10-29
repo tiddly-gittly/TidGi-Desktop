@@ -3,8 +3,8 @@ import '../services/wiki/wikiOperations/executor/wikiOperationInBrowser';
 import type { IPossibleWindowMeta, WindowMeta } from '@services/windows/WindowProperties';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData, windowName } from './common/browserViewMetaData';
-import { consoleLogToLogFile } from './fixer/consoleLogToLogFile';
 import { native } from './common/services';
+import { consoleLogToLogFile } from './fixer/consoleLogToLogFile';
 
 let handled = false;
 const handleLoaded = (event: string): void => {
