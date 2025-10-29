@@ -702,6 +702,8 @@ export class Wiki implements IWikiService {
         // Use restartWorkspaceViewService to restart wiki worker and reload frontend view
         const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
         await workspaceViewService.restartWorkspaceViewService(mainWikiID);
+        // Log that main wiki restart is complete after creating sub-wiki
+        logger.info('[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI] Main wiki restarted after sub-wiki creation', { mainWikiID, subWikiID: id });
       }
     } else {
       try {

@@ -227,7 +227,10 @@ export class IpcServerRoutes {
         this.wikiInstance.wiki.addEventListener('change', (changes) => {
           observer.next(changes);
         });
-        console.log('[test-id-SSE_READY] Wiki change observer registered and ready');
+        // Log SSE ready every time a new observer subscribes (including after worker restart)
+        // Include timestamp to make each log entry unique for test detection
+        const timestamp = new Date().toISOString();
+        console.log(`[test-id-SSE_READY] Wiki change observer registered and ready at ${timestamp}`);
       };
       void getWikiChangeObserverInWorkerIIFE();
     });

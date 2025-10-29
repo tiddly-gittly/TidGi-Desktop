@@ -27,22 +27,27 @@ Feature: Filesystem Plugin
     And I click on a "create sub workspace button" element with selector "button.MuiButton-colorSecondary"
     And I switch to "main" window
     Then I should see a "SubWiki workspace" element with selector "div[data-testid^='workspace-']:has-text('SubWiki')"
-    # After create subwiki, webview will auto refresh here, wait for wiki to restart
-    And I wait for SSE and watch-fs to be ready
-    # Click on SubWiki workspace icon to open the TestTag tiddler
+    # Wait for main wiki to restart after sub-wiki creation
+    Then I wait for main wiki to restart after sub-wiki creation
+    Then I wait for view to finish loading
+    # Click SubWiki workspace again to ensure TestTag tiddler is displayed
+    And I wait for 1 seconds
     When I click on a "SubWiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('SubWiki')"
-    And I wait for 0.2 seconds
-    # Subwiki tiddler should now be visible
+    And I wait for 1 seconds
+    # Verify TestTag tiddler is visible
     And I should see "TestTag" in the browser view content
-        # create tiddler with tag
+    # Create tiddler with tag to test file system plugin
     And I click on "add tiddler button" element in browser view with selector "button[aria-label='添加条目']"
     # Focus on title input, clear it, and type new title in the draft tiddler
     And I click on "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
+    # Wait for tiddler state to settle, otherwise 
     And I wait for 0.1 seconds
     And I press "Control+a" in browser view
+    And I wait for 0.1 seconds
     And I press "Delete" in browser view
     And I wait for 0.1 seconds
     And I type "TestTiddlerTitle" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
+    And I wait for 0.1 seconds
     # Input tag by typing in the tag input field - use precise selector to target the tag input specifically
     And I click on "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
     And I press "Control+a" in browser view
@@ -52,10 +57,9 @@ Feature: Filesystem Plugin
     # Click the add tag button to confirm the tag (not just typing)
     And I wait for 0.2 seconds
     And I click on "add tag button" element in browser view with selector "div[data-tiddler-title^='Draft of'] span.tc-add-tag-button button"
-    # Wait more time for ipc and filesystem to process
+    # Wait for file system plugin to save the draft tiddler to SubWiki folder
     And I wait for 3 seconds
     # Verify the DRAFT tiddler has been routed to sub-wiki immediately after adding the tag
-    # The draft file should now be in SubWiki folder with the tag applied
     Then file "Draft of '新条目'.tid" should exist in "{tmpDir}/SubWiki"
     # Click confirm button to save the tiddler
     And I click on "confirm button" element in browser view with selector "div[data-tiddler-title^='Draft of'] button[aria-label='确定对此条目的更改']"

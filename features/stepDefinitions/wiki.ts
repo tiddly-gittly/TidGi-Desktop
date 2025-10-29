@@ -16,16 +16,16 @@ const BACKOFF_OPTIONS = {
 /**
  * Generic function to wait for a log marker to appear in wiki log files.
  */
-async function waitForLogMarker(searchString: string, errorMessage: string, maxWaitMs = 10000): Promise<void> {
+async function waitForLogMarker(searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = 'wiki-'): Promise<void> {
   const logPath = path.join(process.cwd(), 'userData-test', 'logs');
 
   await backOff(
     async () => {
       try {
         const files = await fs.readdir(logPath);
-        const wikiLogFiles = files.filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
+        const logFiles = files.filter(f => f.startsWith(logFilePattern) && f.endsWith('.log'));
 
-        for (const file of wikiLogFiles) {
+        for (const file of logFiles) {
           const content = await fs.readFile(path.join(logPath, file), 'utf-8');
           if (content.includes(searchString)) {
             return;
@@ -214,6 +214,17 @@ function clearSubWikiRoutingTestData() {
 Then('I wait for SSE and watch-fs to be ready', async function(this: ApplicationWorld) {
   await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', 15000);
   await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 15000);
+});
+
+Then('I wait for main wiki to restart after sub-wiki creation', async function(this: ApplicationWorld) {
+  await waitForLogMarker('[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI]', 'Main wiki did not restart after sub-wiki creation within timeout', 20000, 'TidGi-');
+  // Also wait for SSE and watch-fs to be ready after restart
+  await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready after restart within timeout', 15000);
+  await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready after restart within timeout', 15000);
+});
+
+Then('I wait for view to finish loading', async function(this: ApplicationWorld) {
+  await waitForLogMarker('[test-id-VIEW_LOADED]', 'Browser view did not finish loading within timeout', 10000, 'wiki-');
 });
 
 Then('I wait for tiddler {string} to be added by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
