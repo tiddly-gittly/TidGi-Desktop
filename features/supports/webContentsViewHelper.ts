@@ -94,7 +94,22 @@ export async function getDOMContent(app: ElectronApplication): Promise<string | 
  */
 export async function isLoaded(app: ElectronApplication): Promise<boolean> {
   const webContentsId = await getFirstWebContentsView(app);
-  return webContentsId !== null;
+  if (webContentsId === null) {
+    return false;
+  }
+
+  // Check if the WebContents is actually loaded
+  return await app.evaluate(
+    async ({ webContents }, id: number) => {
+      const targetWebContents = webContents.fromId(id);
+      if (!targetWebContents) {
+        return false;
+      }
+      // Check if the page has finished loading
+      return !targetWebContents.isLoading() && targetWebContents.getURL() !== '' && targetWebContents.getURL() !== 'about:blank';
+    },
+    webContentsId,
+  );
 }
 
 /**
