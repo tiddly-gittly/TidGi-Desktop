@@ -61,7 +61,8 @@ Feature: Filesystem Plugin
     # Test SSE is still working after SubWiki creation - modify a main wiki tiddler
     When I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Main wiki content modified after SubWiki creation"
     Then I wait for tiddler "Index" to be updated by watch-fs
-    # Verify main wiki modification appears (Index is always open by default, no need to click)
+    # Verify main wiki modification appears (Index is not in the timeline, to open it, click the wiki workspace icon)
+    When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     And I wait for 2 seconds
     Then I should see "Main wiki content modified after SubWiki creation" in the browser view content
     # Test modification in sub-workspace via symlink
