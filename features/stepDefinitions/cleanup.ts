@@ -29,18 +29,18 @@ After(async function(this: ApplicationWorld, { pickle }) {
   if (this.app) {
     try {
       // Close all windows including tidgi mini window before closing the app, otherwise it might hang, and refused to exit until ctrl+C
-      // const allWindows = this.app.windows();
-      // await Promise.all(
-      //   allWindows.map(async (window) => {
-      //     try {
-      //       if (!window.isClosed()) {
-      //         await window.close();
-      //       }
-      //     } catch (error) {
-      //       console.error('Error closing window:', error);
-      //     }
-      //   }),
-      // );
+      const allWindows = this.app.windows();
+      await Promise.all(
+        allWindows.map(async (window) => {
+          try {
+            if (!window.isClosed()) {
+              await window.close();
+            }
+          } catch (error) {
+            console.error('Error closing window:', error);
+          }
+        }),
+      );
       await this.app.close();
     } catch (error) {
       console.error('Error during cleanup:', error);
