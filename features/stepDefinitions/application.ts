@@ -199,6 +199,13 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
   // if (!process.env.CI) return;
 
   try {
+    const stepText = pickleStep.text;
+    
+    // Skip screenshots for wait steps to avoid too many screenshots
+    if (stepText.match(/^I wait for \d+(\.\d+)? seconds?$/i)) {
+      return;
+    }
+
     // Prefer an existing currentWindow if it's still open
     let pageToUse: Page | undefined;
 
@@ -211,14 +218,12 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
       const openPages = this.app.windows().filter(p => !p.isClosed());
       if (openPages.length > 0) {
         pageToUse = openPages[0];
-        this.currentWindow = pageToUse;
       }
     }
 
     const scenarioName = pickle.name;
     const cleanScenarioName = makeSlugPath(scenarioName);
 
-    const stepText = pickleStep.text;
     const cleanStepText = makeSlugPath(stepText, 120);
     const stepStatus = result && typeof result.status === 'string' ? result.status : 'unknown-status';
 
