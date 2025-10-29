@@ -27,6 +27,8 @@ export class InverseFilesIndex {
   private mainExcludedFiles: Set<string> = new Set();
   /** Temporarily excluded files for each sub-wiki watcher (by absolute path) */
   private subWikiExcludedFiles: Map<string, Set<string>> = new Map();
+  /** Temporarily excluded tiddler titles during save/delete operations */
+  private excludedTiddlerTitles: Set<string> = new Set();
 
   /**
    * Set the main wiki path
@@ -226,5 +228,49 @@ export class InverseFilesIndex {
   getSubWikiExcludedPaths(subWikiId: string): string[] {
     const excluded = this.subWikiExcludedFiles.get(subWikiId);
     return excluded ? Array.from(excluded) : [];
+  }
+
+  /**
+   * Add a tiddler title to the exclusion list
+   * @param title Tiddler title to exclude
+   */
+  excludeTiddlerTitle(title: string): void {
+    this.excludedTiddlerTitles.add(title);
+  }
+
+  /**
+   * Remove a tiddler title from the exclusion list
+   * @param title Tiddler title to include
+   */
+  includeTiddlerTitle(title: string): void {
+    this.excludedTiddlerTitles.delete(title);
+  }
+
+  /**
+   * Check if a tiddler title is currently excluded
+   * @param title Tiddler title
+   * @returns True if title is excluded
+   */
+  isTiddlerTitleExcluded(title: string): boolean;
+  /**
+   * Filter out excluded tiddlers from a changes object
+   * @param changes Changed tiddlers object
+   * @returns Filtered changes with excluded tiddlers removed
+   */
+  isTiddlerTitleExcluded(changes: Record<string, unknown>): Record<string, unknown>;
+  isTiddlerTitleExcluded(input: string | Record<string, unknown>): boolean | Record<string, unknown> {
+    // Single title check
+    if (typeof input === 'string') {
+      return this.excludedTiddlerTitles.has(input);
+    }
+
+    // Filter changes object
+    const filteredChanges: Record<string, unknown> = {};
+    for (const title in input) {
+      if (input[title] && !this.excludedTiddlerTitles.has(title)) {
+        filteredChanges[title] = input[title];
+      }
+    }
+    return filteredChanges;
   }
 }
