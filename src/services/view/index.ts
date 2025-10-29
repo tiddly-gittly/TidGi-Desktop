@@ -12,7 +12,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { MetaDataChannel, WindowChannel } from '@/constants/channels';
 import { getDefaultTidGiUrl } from '@/constants/urls';
-import { isMac, isWin } from '@/helpers/system';
+import { isMac } from '@/helpers/system';
 import type { IAuthenticationService } from '@services/auth/interface';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import getViewBounds from '@services/libs/getViewBounds';
@@ -62,6 +62,8 @@ export class View implements IViewService {
     const hasWorkspaces = async () => (await workspaceService.countWorkspaces()) > 0;
     const sidebar = await preferenceService.get('sidebar');
     const titleBar = await preferenceService.get('titleBar');
+    const keyboardShortcuts = await preferenceService.get('keyboardShortcuts');
+    const tidgiMiniWindowShortcut = keyboardShortcuts?.['Window.toggleTidgiMiniWindow'] || '';
     // electron type forget that click can be async function
 
     await menuService.insertMenu('View', [
@@ -89,27 +91,12 @@ export class View implements IViewService {
           void workspaceViewService.realignActiveWorkspace();
         },
       },
-      // same behavior as BrowserWindow with autoHideMenuBar: true
-      // but with addition to readjust WebContentsView so it won't cover the menu bar
       {
-        label: () => i18n.t('Preference.ToggleMenuBar'),
-        visible: false,
-        accelerator: 'Alt+M',
-        enabled: isWin,
-        click: async (_menuItem, browserWindow) => {
-          // if back is called in popup window
-          // open menu bar in the popup window instead
-          if (!isBrowserWindow(browserWindow)) return;
-          const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-          if (isPopup === true) {
-            browserWindow.setMenuBarVisibility(!browserWindow.isMenuBarVisible());
-            return;
-          }
+        label: () => i18n.t('Preference.TidgiMiniWindowShortcutKey'),
+        accelerator: tidgiMiniWindowShortcut,
+        click: async () => {
           const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-          const mainWindow = windowService.get(WindowNames.main);
-          mainWindow?.setMenuBarVisibility(!mainWindow.isMenuBarVisible());
-          void workspaceViewService.realignActiveWorkspace();
+          await windowService.toggleTidgiMiniWindow();
         },
       },
       { type: 'separator' },
