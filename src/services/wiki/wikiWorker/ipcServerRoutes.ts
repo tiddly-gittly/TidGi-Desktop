@@ -27,6 +27,8 @@ export class IpcServerRoutes {
   private wikiInstance!: ITiddlyWiki;
   private readonly pendingIpcServerRoutesRequests: Array<(value: void | PromiseLike<void>) => void> = [];
   #readonlyMode = false;
+  /** Track tiddlers that were just saved via IPC to prevent echo */
+  private readonly recentlySavedTiddlers = new Set<string>();
 
   setConfig({ readOnlyMode }: { readOnlyMode?: boolean }) {
     this.#readonlyMode = Boolean(readOnlyMode);
@@ -183,7 +185,16 @@ export class IpcServerRoutes {
       }
     }
     tiddlerFieldsToPut.title = title;
+    
+    // Mark this tiddler as recently saved to prevent echo
+    this.recentlySavedTiddlers.add(title);
+    
     this.wikiInstance.wiki.addTiddler(new this.wikiInstance.Tiddler(tiddlerFieldsToPut));
+    
+    // Note: The change event is triggered synchronously by addTiddler
+    // The event handler in getWikiChangeObserver$ will check recentlySavedTiddlers
+    // and remove the mark after filtering
+    
     const changeCount = this.wikiInstance.wiki.getChangeCount(title).toString();
     return { statusCode: 204, headers: { 'Content-Type': 'text/plain', Etag: `"default/${encodeURIComponent(title)}/${changeCount}:"` }, data: 'OK' };
   }
@@ -225,7 +236,24 @@ export class IpcServerRoutes {
           observer.error(new Error(`this.wikiInstance is undefined, maybe something went wrong between waitForIpcServerRoutesAvailable and return new Observable.`));
         }
         this.wikiInstance.wiki.addEventListener('change', (changes) => {
-          observer.next(changes);
+          // Filter out tiddlers that were just saved via IPC to prevent echo
+          const filteredChanges: IChangedTiddlers = {};
+          let hasChanges = false;
+          
+          for (const title in changes) {
+            if (this.recentlySavedTiddlers.has(title)) {
+              // This change was caused by our own putTiddler, skip it to prevent echo
+              this.recentlySavedTiddlers.delete(title);
+              continue;
+            }
+            filteredChanges[title] = changes[title];
+            hasChanges = true;
+          }
+          
+          // Only notify if there are actual changes after filtering
+          if (hasChanges) {
+            observer.next(filteredChanges);
+          }
         });
         // Log SSE ready every time a new observer subscribes (including after worker restart)
         // Include timestamp to make each log entry unique for test detection
