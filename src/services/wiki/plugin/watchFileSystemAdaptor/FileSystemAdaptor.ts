@@ -117,6 +117,7 @@ export class FileSystemAdaptor {
 
   /**
    * Main routing logic: determine where a tiddler should be saved based on its tags.
+   * For draft tiddlers, check the original tiddler's tags.
    */
   async getTiddlerFileInfo(tiddler: Tiddler): Promise<FileInfo | null> {
     if (!this.boot.wikiTiddlersPath) {
@@ -124,10 +125,23 @@ export class FileSystemAdaptor {
     }
 
     const title = tiddler.fields.title;
-    const tags = tiddler.fields.tags ?? [];
+    let tags = tiddler.fields.tags ?? [];
     const fileInfo = this.boot.files[title];
 
     try {
+      // For draft tiddlers (draft.of field), also check the original tiddler's tags
+      // This ensures drafts are saved to the same sub-wiki as their target tiddler
+      const draftOf = tiddler.fields['draft.of'];
+      if (draftOf && typeof draftOf === 'string' && $tw.wiki) {
+        // Get the original tiddler from the wiki
+        const originalTiddler = $tw.wiki.getTiddler(draftOf);
+        if (originalTiddler) {
+          const originalTags = originalTiddler.fields.tags ?? [];
+          // Merge tags from the original tiddler with the draft's tags
+          tags = [...new Set([...tags, ...originalTags])];
+        }
+      }
+
       let matchingSubWiki: IWikiWorkspace | undefined;
       for (const tag of tags) {
         matchingSubWiki = this.tagNameToSubWiki.get(tag);

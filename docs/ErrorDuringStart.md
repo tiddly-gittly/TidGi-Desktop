@@ -93,6 +93,25 @@ Solution:
 node_modules/.bin/electron-rebuild -f -w better-sqlite3
 ```
 
+## Error: The module '/Users/linonetwo/Desktop/repo/TidGi-Desktop/node_modules/opencv4nodejs-prebuilt/build/Release/opencv4nodejs.node'
+
+```log
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 127. This version of Node.js requires
+NODE_MODULE_VERSION 135. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+```
+
+(The number above is smaller)
+
+Don't use `npm rebuild` or `npm install`, it doesn't works, it will still build for nodejs. We need to build with electron:
+
+```sh
+./node_modules/.bin/electron-rebuild
+```
+
+See <https://github.com/justadudewhohacks/opencv4nodejs/issues/401#issuecomment-463434713> if you still have problem rebuild opencv for @nut-tree/nut-js
+
 ## During test, The module 'node_modules\better-sqlite3\build\Release\better_sqlite3.node' was compiled against a different Node.js version using
 
 ```log
@@ -112,25 +131,6 @@ cross-env ELECTRON_RUN_AS_NODE=true ./node_modules/.bin/electron ./node_modules/
 ### 测试运行有中文乱码 `鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆[4/4]鈳?`
 
 救急可以用 `chcp 65001 && pnpm run test:unit`，如果有空重启电脑，则在时区设置里找到「系统区域设置」里勾选「Unicode Beta版」，重启即可。
-
-## Error: The module '/Users/linonetwo/Desktop/repo/TidGi-Desktop/node_modules/opencv4nodejs-prebuilt/build/Release/opencv4nodejs.node'
-
-```log
-was compiled against a different Node.js version using
-NODE_MODULE_VERSION 127. This version of Node.js requires
-NODE_MODULE_VERSION 135. Please try re-compiling or re-installing
-the module (for instance, using `npm rebuild` or `npm install`).
-```
-
-(The number above is smaller)
-
-Don't use `npm rebuild` or `npm install`, it doesn't works, it will still build for nodejs. We need to build with electron:
-
-```sh
-./node_modules/.bin/electron-rebuild
-```
-
-See <https://github.com/justadudewhohacks/opencv4nodejs/issues/401#issuecomment-463434713> if you still have problem rebuild opencv for @nut-tree/nut-js
 
 ## Command failed with exit code 1
 

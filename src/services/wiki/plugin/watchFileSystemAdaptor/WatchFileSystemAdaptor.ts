@@ -478,7 +478,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // not wrapped in a .fields property
       const tiddlerTitle = tiddler?.title;
       if (!tiddlerTitle) {
-        this.logger.alert(`[WATCH_FS_ERROR] Tiddler has no title`);
+        this.logger.alert(`[WATCH_FS_ERROR] Tiddler has no title. Tiddler object: ${JSON.stringify(tiddler)}`);
         continue;
       }
 

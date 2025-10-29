@@ -31,28 +31,45 @@ Feature: Filesystem Plugin
     And I wait for SSE and watch-fs to be ready
     # Click on SubWiki workspace icon to open the TestTag tiddler
     When I click on a "SubWiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('SubWiki')"
-    And I wait for 0.5 seconds
+    And I wait for 0.2 seconds
     # Subwiki tiddler should now be visible
     And I should see "TestTag" in the browser view content
-    # create tiddler with tag
+        # create tiddler with tag
     And I click on "add tiddler button" element in browser view with selector "button[aria-label='添加条目']"
-    And I wait for 0.2 seconds
-    And I type "Test Tiddler Title" in "title input" element in browser view with selector "input.tc-titlebar.tc-edit-texteditor"
-    And I type "TestTag" in "tag input" element in browser view with selector "input.tc-edit-texteditor.tc-popup-handle"
-    And I press "Enter" in browser view
-    And I click on "confirm button" element in browser view with selector "button[aria-label='确定对此条目的更改']"
-    # Verify the tiddler file exists in sub-wiki folder (not in tiddlers subfolder)
-    Then file "Test Tiddler Title.tid" should exist in "{tmpDir}/SubWiki"
+    # Focus on title input, clear it, and type new title in the draft tiddler
+    And I click on "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
+    And I press "Control+a" in browser view
+    And I press "Delete" in browser view
+    And I type "TestTiddlerTitle" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
+    # Input tag by typing in the tag input field
+    And I click on "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-edit-texteditor.tc-popup-handle"
+    And I wait for 0.1 seconds
+    And I type "TestTag" in "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-edit-texteditor.tc-popup-handle"
+    # Click the add tag button to confirm the tag (not just typing)
+    And I click on "add tag button" element in browser view with selector "div[data-tiddler-title^='Draft of'] span.tc-add-tag-button button"
+    # Wait more time for ipc and filesystem to process
+    And I wait for 3 seconds
+    # Verify the DRAFT tiddler has been routed to sub-wiki immediately after adding the tag
+    # The draft file should now be in SubWiki folder with the tag applied
+    Then file "Draft of '新条目'.tid" should exist in "{tmpDir}/SubWiki"
+    # Click confirm button to save the tiddler
+    And I click on "confirm button" element in browser view with selector "div[data-tiddler-title^='Draft of'] button[aria-label='确定对此条目的更改']"
+    And I wait for 1 seconds
+    # Verify the final tiddler file exists in sub-wiki folder after save
+    # After confirming the draft, it should be saved as TestTiddlerTitle.tid in SubWiki
+    Then file "TestTiddlerTitle.tid" should exist in "{tmpDir}/SubWiki"
     # Test SSE is still working after SubWiki creation - modify a main wiki tiddler
     When I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Main wiki content modified after SubWiki creation"
     Then I wait for tiddler "Index" to be updated by watch-fs
     # Verify main wiki modification appears (Index is always open by default, no need to click)
+    And I wait for 2 seconds
     Then I should see "Main wiki content modified after SubWiki creation" in the browser view content
     # Test modification in sub-workspace via symlink
     # Modify the tiddler file externally - need to preserve .tid format with metadata
-    When I modify file "{tmpDir}/SubWiki/Test Tiddler Title.tid" to contain "Content modified in SubWiki symlink"
+    When I modify file "{tmpDir}/SubWiki/TestTiddlerTitle.tid" to contain "Content modified in SubWiki symlink"
     # Wait for watch-fs to detect the change
-    Then I wait for tiddler "Test Tiddler Title" to be updated by watch-fs
+    Then I wait for tiddler "TestTiddlerTitle" to be updated by watch-fs
+    And I wait for 2 seconds
     # Verify the modified content appears in the wiki
     Then I should see "Content modified in SubWiki symlink" in the browser view content
 
@@ -93,6 +110,7 @@ Feature: Filesystem Plugin
     And I click on "sidebar tab" element in browser view with selector "div.tc-tab-buttons.tc-sidebar-tabs-main > button:has-text('最近')"
     And I wait for 0.5 seconds
     And I click on "timeline link" element in browser view with selector "div.tc-timeline a.tc-tiddlylink:has-text('TestTiddler')"
+    And I wait for 0.5 seconds
     Then I should see "Original content" in the browser view content
     # Modify the file externally
     When I modify file "{tmpDir}/wiki/tiddlers/TestTiddler.tid" to contain "Modified content from external editor"
@@ -148,7 +166,7 @@ Feature: Filesystem Plugin
     Then I wait for tiddler "NewName" to be updated by watch-fs
     # Navigate to timeline to verify changes
     And I click on "sidebar tab" element in browser view with selector "div.tc-tab-buttons.tc-sidebar-tabs-main > button:has-text('最近')"
-    And I wait for 0.5 seconds
+    And I wait for 1 seconds
     # Verify new name appears
     And I click on "timeline link" element in browser view with selector "div.tc-timeline a.tc-tiddlylink:has-text('NewName')"
     Then I should see "Content before rename" in the browser view content
