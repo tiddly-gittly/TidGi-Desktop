@@ -71,10 +71,6 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * Can be used with callback (legacy) or as async/await
    */
   override async saveTiddler(tiddler: Tiddler, callback?: IFileSystemAdaptorCallback, options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
-    const title = tiddler.fields.title;
-    // Exclude title to prevent Wiki change events from being sent to frontend
-    this.inverseFilesIndex.excludeTiddlerTitle(title);
-    
     try {
       // Get file info to calculate path for watching
       const fileInfo = await this.getTiddlerFileInfo(tiddler);
@@ -108,14 +104,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Schedule file re-inclusion after save completes
       this.scheduleFileInclusion(fileInfo.filepath);
-      
-      // Remove title from exclusion after delay
-      setTimeout(() => {
-        this.inverseFilesIndex.includeTiddlerTitle(title);
-      }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
     } catch (error) {
-      // Clean up title exclusion on error
-      this.inverseFilesIndex.includeTiddlerTitle(title);
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
       callback?.(errorObject);
       throw errorObject;
@@ -127,13 +116,9 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * Can be used with callback (legacy) or as async/await
    */
   override async deleteTiddler(title: string, callback?: IFileSystemAdaptorCallback, _options?: unknown): Promise<void> {
-    // Exclude title to prevent Wiki change events from being sent to frontend
-    this.inverseFilesIndex.excludeTiddlerTitle(title);
-    
     const fileInfo = this.boot.files[title];
 
     if (!fileInfo) {
-      this.inverseFilesIndex.includeTiddlerTitle(title);
       callback?.(null, null);
       return;
     }
@@ -156,14 +141,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Schedule file re-inclusion after deletion completes
       this.scheduleFileInclusion(fileRelativePath);
-      
-      // Remove title from exclusion after delay
-      setTimeout(() => {
-        this.inverseFilesIndex.includeTiddlerTitle(title);
-      }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
     } catch (error) {
-      // Clean up title exclusion on error
-      this.inverseFilesIndex.includeTiddlerTitle(title);
       // Schedule file re-inclusion on error to clean up exclusion list
       this.scheduleFileInclusion(fileRelativePath);
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');

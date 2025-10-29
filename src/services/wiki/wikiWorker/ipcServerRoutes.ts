@@ -225,31 +225,7 @@ export class IpcServerRoutes {
           observer.error(new Error(`this.wikiInstance is undefined, maybe something went wrong between waitForIpcServerRoutesAvailable and return new Observable.`));
         }
         this.wikiInstance.wiki.addEventListener('change', (changes) => {
-          // Filter out changes for tiddlers that are currently being saved/deleted
-          // This prevents echo: backend saves file → change event → frontend syncs → loads old file
-          const syncAdaptor = this.wikiInstance.syncadaptor as {
-            inverseFilesIndex?: {
-              isTiddlerTitleExcluded: ((title: string) => boolean) & ((changes: IChangedTiddlers) => IChangedTiddlers);
-            };
-          } | undefined;
-
-          let filteredChanges: IChangedTiddlers = changes;
-          
-          // Try to filter out excluded tiddlers if the method exists
-          if (syncAdaptor?.inverseFilesIndex?.isTiddlerTitleExcluded) {
-            try {
-              filteredChanges = syncAdaptor.inverseFilesIndex.isTiddlerTitleExcluded(changes);
-            } catch (error) {
-              // If filtering fails, send all changes
-              console.error('Failed to filter excluded tiddlers:', error);
-              filteredChanges = changes;
-            }
-          }
-
-          // Send changes if there are any
-          if (filteredChanges && Object.keys(filteredChanges).length > 0) {
-            observer.next(filteredChanges);
-          }
+          observer.next(changes);
         });
         // Log SSE ready every time a new observer subscribes (including after worker restart)
         // Include timestamp to make each log entry unique for test detection
