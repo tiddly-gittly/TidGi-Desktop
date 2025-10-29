@@ -214,7 +214,7 @@ export class FileSystemAdaptor {
    * Save a tiddler to the filesystem
    * Can be used with callback (legacy) or as async/await
    */
-  async saveTiddler(tiddler: Tiddler, callback?: IFileSystemAdaptorCallback, options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
+  async saveTiddler(tiddler: Tiddler, callback?: IFileSystemAdaptorCallback, _options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
     try {
       const fileInfo = await this.getTiddlerFileInfo(tiddler);
 
@@ -226,6 +226,9 @@ export class FileSystemAdaptor {
 
       const savedFileInfo = await this.saveTiddlerWithRetry(tiddler, fileInfo);
 
+      // Save old file info before updating, for cleanup to detect file path changes
+      const oldFileInfo = this.boot.files[tiddler.fields.title];
+
       this.boot.files[tiddler.fields.title] = {
         ...savedFileInfo,
         isEditableFile: savedFileInfo.isEditableFile ?? true,
@@ -233,8 +236,8 @@ export class FileSystemAdaptor {
 
       await new Promise<void>((resolve, reject) => {
         const cleanupOptions = {
-          adaptorInfo: options?.tiddlerInfo as FileInfo | undefined,
-          bootInfo: this.boot.files[tiddler.fields.title],
+          adaptorInfo: oldFileInfo, // Old file info to be deleted
+          bootInfo: savedFileInfo, // New file info to be kept
           title: tiddler.fields.title,
         };
         $tw.utils.cleanupTiddlerFiles(cleanupOptions, (cleanupError: Error | null, _cleanedFileInfo?: FileInfo) => {

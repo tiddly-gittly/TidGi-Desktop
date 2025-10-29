@@ -80,14 +80,23 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
         throw error;
       }
 
+      // Get old file info before save (in case file path changes)
+      const oldFileInfo = this.boot.files[tiddler.fields.title];
+
       // Log tiddler text for debugging
       const textPreview = (tiddler.fields.text ?? '').substring(0, 50);
       this.logger.log(`[WATCH_FS_SAVE] Saving "${tiddler.fields.title}", text: ${textPreview}`);
 
-      // Exclude file from watching during save
+      // Exclude new file from watching during save
       await this.excludeFile(fileInfo.filepath);
 
-      // Call parent's saveTiddler to handle the actual save
+      // If file path is changing (e.g., moving to sub-wiki), also exclude the old file
+      if (oldFileInfo && oldFileInfo.filepath !== fileInfo.filepath) {
+        this.logger.log(`[WATCH_FS_MOVE] File path changing from ${oldFileInfo.filepath} to ${fileInfo.filepath}`);
+        await this.excludeFile(oldFileInfo.filepath);
+      }
+
+      // Call parent's saveTiddler to handle the actual save (including cleanup of old files)
       await super.saveTiddler(tiddler, undefined, options);
 
       // Update inverse index after successful save
@@ -102,8 +111,15 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // Notify callback if provided
       callback?.(null, finalFileInfo);
 
-      // Schedule file re-inclusion after save completes
-      this.scheduleFileInclusion(fileInfo.filepath);
+      // Schedule file re-inclusion after save AND cleanup complete
+      // This ensures we don't detect our own file operations
+      this.scheduleFileInclusion(finalFileInfo.filepath);
+
+      // If old file path was different and we excluded it, schedule its re-inclusion
+      // The old file should be deleted by now via cleanupTiddlerFiles
+      if (oldFileInfo && oldFileInfo.filepath !== finalFileInfo.filepath) {
+        this.scheduleFileInclusion(oldFileInfo.filepath);
+      }
     } catch (error) {
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
       callback?.(errorObject);
