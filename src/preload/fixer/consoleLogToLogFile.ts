@@ -60,6 +60,37 @@ export async function consoleLogToLogFile(workspaceName = 'error-no-workspace-na
         Object.defineProperty(wrapper, 'length', { value: 0, configurable: true });
       });
       
+      // Ensure TiddlyWiki Logger uses our hooked console methods
+      // TiddlyWiki uses Function.apply.call(console.log, console, logMessage)
+      // Our console hook should already capture these calls, no need to duplicate logging
+      const ensureTiddlyWikiLoggerUsesHookedConsole = () => {
+        if (typeof $tw !== 'undefined' && $tw.utils && $tw.utils.Logger) {
+          // Verify that Logger will use our hooked console by checking if console.log is our wrapper
+          const isHooked = console.log.toString().includes('sendToBackend') || console.log.name !== 'log';
+          if (isHooked) {
+            originalConsole.log('[CONSOLE_HOOK] TiddlyWiki Logger will use hooked console methods');
+          } else {
+            originalConsole.warn('[CONSOLE_HOOK] Warning: console.log might not be properly hooked for TiddlyWiki');
+          }
+        }
+      };
+      
+      // Try to verify immediately if $tw is available
+      ensureTiddlyWikiLoggerUsesHookedConsole();
+      
+      // Also watch for $tw to become available
+      if (typeof $tw === 'undefined') {
+        const checkInterval = setInterval(() => {
+          if (typeof $tw !== 'undefined' && $tw.utils && $tw.utils.Logger) {
+            ensureTiddlyWikiLoggerUsesHookedConsole();
+            clearInterval(checkInterval);
+          }
+        }, 100);
+        
+        // Stop checking after 10 seconds
+        setTimeout(() => clearInterval(checkInterval), 10000);
+      }
+      
       originalConsole.log('[CONSOLE_HOOK] Console logging to backend file enabled for workspace:', workspaceName);
     })();
   `);

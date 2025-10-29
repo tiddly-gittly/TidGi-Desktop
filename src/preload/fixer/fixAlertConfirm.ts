@@ -16,5 +16,18 @@ export async function fixAlertConfirm(): Promise<void> {
       // native window.confirm returns boolean
       return Boolean(window.remote.showElectronMessageBoxSync({ message, type: 'question', buttons: [$tw.language.getString('No'), $tw.language.getString('Yes')], defaultId: 1 }));
     };
+    
+    // Hook TiddlyWiki Logger.prototype.alert to capture alert calls as well
+    if (typeof $tw !== 'undefined' && $tw.utils && $tw.utils.Logger) {
+      const OriginalLogger = $tw.utils.Logger;
+      const originalAlertMethod = OriginalLogger.prototype.alert;
+      
+      OriginalLogger.prototype.alert = function(...args) {
+        const result = originalAlertMethod.apply(this, args);
+        // Log alert calls to console so they get captured by console hook
+        console.warn('[TiddlyWiki Alert]', ...args);
+        return result;
+      };
+    }
 `);
 }
