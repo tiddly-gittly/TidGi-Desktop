@@ -119,21 +119,21 @@ async function getDirectoryTree(directory: string, prefix = '', maxDepth = 3, cu
 /**
  * Verify file exists in directory
  */
-Then('file {string} should exist in {string}', { timeout: 15000 }, async function(this: ApplicationWorld, fileName: string, directoryPath: string) {
+Then('file {string} should exist in {string}', { timeout: 15000 }, async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
   // Replace {tmpDir} with wiki test root (not wiki subfolder)
-  let actualPath = directoryPath.replace('{tmpDir}', wikiTestRootPath);
+  let directoryPath = simpleDirectoryPath.replace('{tmpDir}', wikiTestRootPath);
 
   // Resolve symlinks on all platforms to handle sub-wikis correctly
   // On Linux, symlinks might point to the real path, so we need to follow them
-  if (await fs.pathExists(actualPath)) {
+  if (await fs.pathExists(directoryPath)) {
     try {
-      actualPath = fs.realpathSync(actualPath);
+      directoryPath = fs.realpathSync(directoryPath);
     } catch {
       // If realpathSync fails, continue with the original path
     }
   }
 
-  const filePath = path.join(actualPath, fileName);
+  const filePath = path.join(directoryPath, fileName);
 
   try {
     await backOff(
@@ -146,21 +146,21 @@ Then('file {string} should exist in {string}', { timeout: 15000 }, async functio
       BACKOFF_OPTIONS,
     );
   } catch {
-    // Get two levels up from actualPath
-    const twoLevelsUp = path.resolve(actualPath, '..', '..');
-    const tree = await getDirectoryTree(twoLevelsUp);
+    // Get 1 levels up from actualPath
+    const oneLevelsUp = path.resolve(directoryPath, '..');
+    const tree = await getDirectoryTree(oneLevelsUp);
 
     // Also read all .tid files in the actualPath directory
     let tidFilesContent = '';
     try {
-      if (await fs.pathExists(actualPath)) {
-        const files = await fs.readdir(actualPath);
+      if (await fs.pathExists(directoryPath)) {
+        const files = await fs.readdir(directoryPath);
         const tidFiles = files.filter(f => f.endsWith('.tid'));
 
         if (tidFiles.length > 0) {
           tidFilesContent = '\n\n.tid files in directory:\n';
           for (const tidFile of tidFiles) {
-            const tidPath = path.join(actualPath, tidFile);
+            const tidPath = path.join(directoryPath, tidFile);
             const content = await fs.readFile(tidPath, 'utf-8');
             tidFilesContent += `\n=== ${tidFile} ===\n${content}\n`;
           }
@@ -171,8 +171,8 @@ Then('file {string} should exist in {string}', { timeout: 15000 }, async functio
     }
 
     throw new Error(
-      `File "${fileName}" not found in directory: ${actualPath}\n\n` +
-        `Directory tree (2 levels up from ${twoLevelsUp}):\n${tree}${tidFilesContent}`,
+      `File "${fileName}" not found in directory: ${directoryPath}\n\n` +
+        `Directory tree (1 levels up from ${oneLevelsUp}):\n${tree}${tidFilesContent}`,
     );
   }
 });
