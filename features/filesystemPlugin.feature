@@ -59,6 +59,8 @@ Feature: Filesystem Plugin
     And I wait for 3 seconds
     # Verify the DRAFT tiddler has been routed to sub-wiki immediately after adding the tag
     Then file "Draft of '新条目'.tid" should exist in "{tmpDir}/SubWiki"
+    # Verify the draft file is NOT in main wiki tiddlers folder (it should have been moved to SubWiki)
+    Then file "Draft of '新条目'.tid" should not exist in "{tmpDir}/wiki/tiddlers"
     # Click confirm button to save the tiddler
     And I click on "confirm button" element in browser view with selector "div[data-tiddler-title^='Draft of'] button[aria-label='确定对此条目的更改']"
     And I wait for 1 seconds

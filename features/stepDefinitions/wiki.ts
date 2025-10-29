@@ -177,6 +177,38 @@ Then('file {string} should exist in {string}', { timeout: 15000 }, async functio
   }
 });
 
+Then('file {string} should not exist in {string}', { timeout: 15000 }, async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
+  // Replace {tmpDir} with wiki test root (not wiki subfolder)
+  let directoryPath = simpleDirectoryPath.replace('{tmpDir}', wikiTestRootPath);
+
+  // Resolve symlinks on all platforms to handle sub-wikis correctly
+  if (await fs.pathExists(directoryPath)) {
+    try {
+      directoryPath = fs.realpathSync(directoryPath);
+    } catch {
+      // If realpathSync fails, continue with the original path
+    }
+  }
+
+  const filePath = path.join(directoryPath, fileName);
+
+  try {
+    await backOff(
+      async () => {
+        if (!(await fs.pathExists(filePath))) {
+          return;
+        }
+        throw new Error('File still exists');
+      },
+      BACKOFF_OPTIONS,
+    );
+  } catch {
+    throw new Error(
+      `File "${fileName}" should not exist but was found in directory: ${directoryPath}`,
+    );
+  }
+});
+
 /**
  * Cleanup function for sub-wiki routing test
  * Removes test workspaces created during the test
