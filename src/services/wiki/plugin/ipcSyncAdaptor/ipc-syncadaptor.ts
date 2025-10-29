@@ -40,7 +40,10 @@ class TidGiIPCSyncAdaptor {
     this.isReadOnly = false;
     this.logoutIsAvailable = true;
     const workspaceID = (window.meta() as WindowMeta[WindowNames.view]).workspace?.id;
-    this.workspaceID = workspaceID!;
+    if (workspaceID === undefined) {
+      throw new Error('TidGiIPCSyncAdaptor: workspaceID is undefined. Cannot initialize sync adaptor without a valid workspace ID.');
+    }
+    this.workspaceID = workspaceID;
     if (window.observables?.wiki?.getWikiChangeObserver$ !== undefined) {
       // if install-electron-ipc-cat is faster than us, just subscribe to the observable. Otherwise we normally will wait for it to call us here.
       this.setupSSE();

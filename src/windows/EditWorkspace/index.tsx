@@ -319,9 +319,7 @@ export default function EditWorkspace(): React.JSX.Element {
               <TokenForm
                 storageProvider={storageService}
                 storageProviderSetter={(nextStorageService) => {
-                  const actualStorageService = typeof nextStorageService === 'function' ? nextStorageService(storageService) : nextStorageService;
-                  workspaceSetter({ ...workspace, storageService: actualStorageService });
-                  // requestRestartCountDown();
+                  workspaceSetter({ ...workspace, storageService: nextStorageService });
                 }}
               />
             )}

@@ -146,7 +146,7 @@ Then('file {string} should exist in {string}', { timeout: 15000 }, async functio
       BACKOFF_OPTIONS,
     );
   } catch {
-    // Get 1 levels up from actualPath
+    // Get 1 level up from actualPath
     const oneLevelsUp = path.resolve(directoryPath, '..');
     const tree = await getDirectoryTree(oneLevelsUp);
 
@@ -172,7 +172,7 @@ Then('file {string} should exist in {string}', { timeout: 15000 }, async functio
 
     throw new Error(
       `File "${fileName}" not found in directory: ${directoryPath}\n\n` +
-        `Directory tree (1 levels up from ${oneLevelsUp}):\n${tree}${tidFilesContent}`,
+        `Directory tree (1 level up from ${oneLevelsUp}):\n${tree}${tidFilesContent}`,
     );
   }
 });
