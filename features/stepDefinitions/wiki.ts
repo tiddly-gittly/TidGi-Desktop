@@ -213,11 +213,11 @@ Then('file {string} should not exist in {string}', { timeout: 15000 }, async fun
  * Cleanup function for sub-wiki routing test
  * Removes test workspaces created during the test
  */
-function clearSubWikiRoutingTestData() {
-  if (!fs.existsSync(settingsPath)) return;
+async function clearSubWikiRoutingTestData() {
+  if (!(await fs.pathExists(settingsPath))) return;
 
   type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
-  const settings = fs.readJsonSync(settingsPath) as SettingsFile;
+  const settings = await fs.readJson(settingsPath) as SettingsFile;
   const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
   const filtered: Record<string, IWorkspace> = {};
 
@@ -231,14 +231,14 @@ function clearSubWikiRoutingTestData() {
     }
   }
 
-  fs.writeJsonSync(settingsPath, { ...settings, workspaces: filtered }, { spaces: 2 });
+  await fs.writeJson(settingsPath, { ...settings, workspaces: filtered }, { spaces: 2 });
 
   // Remove test wiki folders from filesystem
   const testFolders = ['SubWiki'];
   for (const folder of testFolders) {
     const wikiPath = path.join(wikiTestWikiPath, folder);
-    if (fs.existsSync(wikiPath)) {
-      fs.removeSync(wikiPath);
+    if (await fs.pathExists(wikiPath)) {
+      await fs.remove(wikiPath);
     }
   }
 }

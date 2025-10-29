@@ -37,9 +37,9 @@ Given('I configure tidgi mini window with shortcut', async function() {
 });
 
 // Cleanup function to be called after tidgi mini window tests (after app closes)
-function clearTidgiMiniWindowSettings() {
-  if (!fs.existsSync(settingsPath)) return;
-  const parsed = fs.readJsonSync(settingsPath) as ISettingFile;
+async function clearTidgiMiniWindowSettings() {
+  if (!(await fs.pathExists(settingsPath))) return;
+  const parsed = await fs.readJson(settingsPath) as ISettingFile;
   // Remove tidgi mini window-related preferences to avoid affecting other tests
   const cleanedPreferences = omit(parsed.preferences || {}, [
     'tidgiMiniWindow',
@@ -68,7 +68,7 @@ function clearTidgiMiniWindowSettings() {
   }
 
   const cleaned = { ...parsed, preferences: cleanedPreferences, workspaces };
-  fs.writeJsonSync(settingsPath, cleaned, { spaces: 2 });
+  await fs.writeJson(settingsPath, cleaned, { spaces: 2 });
 }
 
 export { clearTidgiMiniWindowSettings };

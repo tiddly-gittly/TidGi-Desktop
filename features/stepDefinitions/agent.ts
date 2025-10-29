@@ -292,11 +292,11 @@ Given('I add test ai settings', function() {
   fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi } as ISettingFile, { spaces: 2 });
 });
 
-function clearAISettings() {
-  if (!fs.existsSync(settingsPath)) return;
-  const parsed = fs.readJsonSync(settingsPath) as ISettingFile;
+async function clearAISettings() {
+  if (!(await fs.pathExists(settingsPath))) return;
+  const parsed = await fs.readJson(settingsPath) as ISettingFile;
   const cleaned = omit(parsed, ['aiSettings']);
-  fs.writeJsonSync(settingsPath, cleaned, { spaces: 2 });
+  await fs.writeJson(settingsPath, cleaned, { spaces: 2 });
 }
 
 export { clearAISettings };
