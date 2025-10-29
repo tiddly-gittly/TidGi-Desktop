@@ -8,7 +8,7 @@ import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
 const BACKOFF_OPTIONS = {
-  numOfAttempts: 10,
+  numOfAttempts: 3,
   startingDelay: 200,
   timeMultiple: 1.5,
 };
@@ -18,27 +18,36 @@ const BACKOFF_OPTIONS = {
  */
 async function waitForLogMarker(searchString: string, errorMessage: string, maxWaitMs = 10000): Promise<void> {
   const logPath = path.join(process.cwd(), 'userData-test', 'logs');
-  const startTime = Date.now();
 
-  while (Date.now() - startTime < maxWaitMs) {
-    try {
-      const files = await fs.readdir(logPath);
-      const wikiLogFiles = files.filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
+  await backOff(
+    async () => {
+      try {
+        const files = await fs.readdir(logPath);
+        const wikiLogFiles = files.filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
 
-      for (const file of wikiLogFiles) {
-        const content = await fs.readFile(path.join(logPath, file), 'utf-8');
-        if (content.includes(searchString)) {
-          return;
+        for (const file of wikiLogFiles) {
+          const content = await fs.readFile(path.join(logPath, file), 'utf-8');
+          if (content.includes(searchString)) {
+            return;
+          }
         }
+      } catch {
+        // Log directory might not exist yet, continue retrying
       }
-    } catch {
-      // Log directory might not exist yet, continue waiting
-    }
 
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  throw new Error(errorMessage);
+      throw new Error('Log marker not found yet');
+    },
+    {
+      numOfAttempts: Math.ceil(maxWaitMs / 100),
+      startingDelay: 100,
+      timeMultiple: 1,
+      maxDelay: 100,
+      delayFirstAttempt: false,
+      jitter: 'none',
+    },
+  ).catch(() => {
+    throw new Error(errorMessage);
+  });
 }
 
 When('I cleanup test wiki so it could create a new one on start', async function() {
@@ -74,24 +83,24 @@ When('I cleanup test wiki so it could create a new one on start', async function
 /**
  * Helper function to get directory tree structure
  */
-async function getDirectoryTree(dir: string, prefix = '', maxDepth = 3, currentDepth = 0): Promise<string> {
-  if (currentDepth >= maxDepth || !(await fs.pathExists(dir))) {
+async function getDirectoryTree(directory: string, prefix = '', maxDepth = 3, currentDepth = 0): Promise<string> {
+  if (currentDepth >= maxDepth || !(await fs.pathExists(directory))) {
     return '';
   }
 
   let tree = '';
   try {
-    const items = await fs.readdir(dir);
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const isLast = i === items.length - 1;
-      const itemPath = path.join(dir, item);
+    const items = await fs.readdir(directory);
+    for (let index = 0; index < items.length; index++) {
+      const item = items[index];
+      const isLast = index === items.length - 1;
+      const itemPath = path.join(directory, item);
       const connector = isLast ? '└── ' : '├── ';
-      
+
       try {
         const stat = await fs.stat(itemPath);
         tree += `${prefix}${connector}${item}${stat.isDirectory() ? '/' : ''}\n`;
-        
+
         if (stat.isDirectory()) {
           const newPrefix = prefix + (isLast ? '    ' : '│   ');
           tree += await getDirectoryTree(itemPath, newPrefix, maxDepth, currentDepth + 1);
@@ -103,7 +112,7 @@ async function getDirectoryTree(dir: string, prefix = '', maxDepth = 3, currentD
   } catch {
     // Directory not readable
   }
-  
+
   return tree;
 }
 
@@ -134,20 +143,36 @@ Then('file {string} should exist in {string}', { timeout: 15000 }, async functio
         }
         throw new Error('File not found yet');
       },
-      {
-        numOfAttempts: 3,
-        startingDelay: 200,
-        timeMultiple: 1.5,
-      }
+      BACKOFF_OPTIONS,
     );
   } catch {
     // Get two levels up from actualPath
     const twoLevelsUp = path.resolve(actualPath, '..', '..');
     const tree = await getDirectoryTree(twoLevelsUp);
-    
+
+    // Also read all .tid files in the actualPath directory
+    let tidFilesContent = '';
+    try {
+      if (await fs.pathExists(actualPath)) {
+        const files = await fs.readdir(actualPath);
+        const tidFiles = files.filter(f => f.endsWith('.tid'));
+
+        if (tidFiles.length > 0) {
+          tidFilesContent = '\n\n.tid files in directory:\n';
+          for (const tidFile of tidFiles) {
+            const tidPath = path.join(actualPath, tidFile);
+            const content = await fs.readFile(tidPath, 'utf-8');
+            tidFilesContent += `\n=== ${tidFile} ===\n${content}\n`;
+          }
+        }
+      }
+    } catch (readError) {
+      tidFilesContent = `\n\nError reading .tid files: ${String(readError)}`;
+    }
+
     throw new Error(
       `File "${fileName}" not found in directory: ${actualPath}\n\n` +
-      `Directory tree (2 levels up from ${twoLevelsUp}):\n${tree}`
+        `Directory tree (2 levels up from ${twoLevelsUp}):\n${tree}${tidFilesContent}`,
     );
   }
 });
