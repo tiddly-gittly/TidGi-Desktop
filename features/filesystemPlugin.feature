@@ -59,8 +59,8 @@ Feature: Filesystem Plugin
     # Click the add tag button to confirm the tag (not just typing)
     And I wait for 0.2 seconds
     And I click on "add tag button" element in browser view with selector "div[data-tiddler-title^='Draft of'] span.tc-add-tag-button button"
-    # Wait for file system plugin to save the draft tiddler to SubWiki folder
-    And I wait for 3 seconds
+    # Wait for file system plugin to save the draft tiddler to SubWiki folder, Even 3 second will randomly failed in next step.
+    And I wait for 4.5 seconds
     # Verify the DRAFT tiddler has been routed to sub-wiki immediately after adding the tag
     Then file "Draft of '新条目'.tid" should exist in "{tmpDir}/SubWiki"
     # Verify the draft file is NOT in main wiki tiddlers folder (it should have been moved to SubWiki)
