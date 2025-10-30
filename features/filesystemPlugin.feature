@@ -37,7 +37,7 @@ Feature: Filesystem Plugin
     # Verify TestTag tiddler is visible
     And I should see "TestTag" in the browser view content
     # Create tiddler with tag to test file system plugin
-    And I click on "add tiddler button" element in browser view with selector "button[aria-label='添加条目']"
+    And I click on "add tiddler button" element in browser view with selector "button:has(.tc-image-new-button)"
     # Focus on title input, clear it, and type new title in the draft tiddler
     And I click on "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
     And I wait for 0.2 seconds
@@ -66,7 +66,7 @@ Feature: Filesystem Plugin
     # Verify the draft file is NOT in main wiki tiddlers folder (it should have been moved to SubWiki)
     Then file "Draft of '新条目'.tid" should not exist in "{tmpDir}/wiki/tiddlers"
     # Click confirm button to save the tiddler
-    And I click on "confirm button" element in browser view with selector "div[data-tiddler-title^='Draft of'] button[aria-label='确定对此条目的更改']"
+    And I click on "confirm button" element in browser view with selector "button:has(.tc-image-done-button)"
     And I wait for 1 seconds
     # Verify the final tiddler file exists in sub-wiki folder after save
     # After confirming the draft, it should be saved as TestTiddlerTitle.tid in SubWiki
