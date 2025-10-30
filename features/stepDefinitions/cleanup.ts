@@ -58,4 +58,26 @@ After(async function(this: ApplicationWorld, { pickle }) {
   if (pickle.tags.some((tag) => tag.name === '@subwiki')) {
     await clearSubWikiRoutingTestData();
   }
+
+  // Separate logs by test scenario for easier debugging
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const wikiLogFile = `${logsDirectory}/wiki-${today}.log`;
+    const tidgiLogFile = `${logsDirectory}/TidGi-${today}.log`;
+
+    // Create a sanitized scenario name for the log files
+    const scenarioName = pickle.name.replace(/[^a-z0-9]/gi, '_').substring(0, 50);
+
+    if (await fs.pathExists(wikiLogFile)) {
+      const targetWikiLog = `${logsDirectory}/${scenarioName}_wiki.log`;
+      await fs.move(wikiLogFile, targetWikiLog, { overwrite: true });
+    }
+
+    if (await fs.pathExists(tidgiLogFile)) {
+      const targetTidgiLog = `${logsDirectory}/${scenarioName}_TidGi.log`;
+      await fs.move(tidgiLogFile, targetTidgiLog, { overwrite: true });
+    }
+  } catch (error) {
+    console.error('Error moving log files:', error);
+  }
 });
