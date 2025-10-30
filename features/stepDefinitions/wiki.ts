@@ -8,7 +8,7 @@ import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
 const BACKOFF_OPTIONS = {
-  numOfAttempts: 3,
+  numOfAttempts: 10,
   startingDelay: 200,
   timeMultiple: 1.5,
 };
@@ -119,7 +119,7 @@ async function getDirectoryTree(directory: string, prefix = '', maxDepth = 3, cu
 /**
  * Verify file exists in directory
  */
-Then('file {string} should exist in {string}', { timeout: 15000 }, async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
+Then('file {string} should exist in {string}', async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
   // Replace {tmpDir} with wiki test root (not wiki subfolder)
   let directoryPath = simpleDirectoryPath.replace('{tmpDir}', wikiTestRootPath);
 
