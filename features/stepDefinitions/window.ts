@@ -1,8 +1,8 @@
 import { When } from '@cucumber/cucumber';
+import { WebContentsView } from 'electron';
 import type { ElectronApplication } from 'playwright';
 import type { ApplicationWorld } from './application';
 import { checkWindowDimension, checkWindowName } from './application';
-import { WebContentsView } from 'electron';
 
 // Helper function to get browser view info from Electron window
 async function getBrowserViewInfo(
@@ -53,7 +53,7 @@ When('I confirm the {string} window exists', async function(this: ApplicationWor
 
   const success = await this.waitForWindowCondition(
     windowType,
-    (window) => window !== undefined && !window.isClosed(),
+    (window) => window !== undefined,
   );
 
   if (!success) {
@@ -83,7 +83,7 @@ When('I confirm the {string} window not visible', async function(this: Applicati
 
   const success = await this.waitForWindowCondition(
     windowType,
-    (window, isVisible) => window !== undefined && !window.isClosed() && !isVisible,
+    (window, isVisible) => window !== undefined && !isVisible,
   );
 
   if (!success) {

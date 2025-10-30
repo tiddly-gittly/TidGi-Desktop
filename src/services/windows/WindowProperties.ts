@@ -1,5 +1,6 @@
 import type { CreateWorkspaceTabs } from '@/windows/AddWorkspace/constants';
 import type { PreferenceSections } from '@services/preferences/interface';
+import { IWorkspace } from '@services/workspaces/interface';
 
 export enum WindowNames {
   about = 'about',
@@ -105,7 +106,7 @@ export interface WindowMeta {
   [WindowNames.preferences]: IPreferenceWindowMeta;
   [WindowNames.spellcheck]: undefined;
   [WindowNames.secondary]: undefined;
-  [WindowNames.view]: { workspaceID?: string };
+  [WindowNames.view]: IBrowserViewMetaData;
 }
 export type IPossibleWindowMeta<M extends WindowMeta[WindowNames] = WindowMeta[WindowNames.main]> = {
   windowName: WindowNames;
@@ -116,5 +117,5 @@ export type IPossibleWindowMeta<M extends WindowMeta[WindowNames] = WindowMeta[W
  */
 export interface IBrowserViewMetaData {
   isPopup?: boolean;
-  workspaceID?: string;
+  workspace?: IWorkspace;
 }

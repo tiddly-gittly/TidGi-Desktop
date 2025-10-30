@@ -3,6 +3,8 @@ import '../services/wiki/wikiOperations/executor/wikiOperationInBrowser';
 import type { IPossibleWindowMeta, WindowMeta } from '@services/windows/WindowProperties';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData, windowName } from './common/browserViewMetaData';
+import { native } from './common/services';
+import { consoleLogToLogFile } from './fixer/consoleLogToLogFile';
 
 let handled = false;
 const handleLoaded = (event: string): void => {
@@ -18,7 +20,13 @@ const handleLoaded = (event: string): void => {
 };
 
 async function executeJavaScriptInBrowserView(): Promise<void> {
-  const { workspaceID } = browserViewMetaData as IPossibleWindowMeta<WindowMeta[WindowNames.view]>;
+  const viewMetaData = browserViewMetaData as IPossibleWindowMeta<WindowMeta[WindowNames.view]>;
+  const workspaceName = viewMetaData.workspace?.name ?? 'unknown';
+  await consoleLogToLogFile(workspaceName);
+  const workspaceID = viewMetaData.workspace?.id;
+
+  // Log when view is fully loaded for E2E tests
+  void native.logFor(workspaceName, 'info', `[test-id-VIEW_LOADED] Browser view preload script executed and ready for workspace: ${workspaceName}`);
 
   try {
     await webFrame.executeJavaScript(`

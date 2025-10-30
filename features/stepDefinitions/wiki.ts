@@ -1,134 +1,53 @@
 import { Then, When } from '@cucumber/cucumber';
+import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
 import type { IWorkspace } from '../../src/services/workspaces/interface';
 import { settingsPath, wikiTestRootPath, wikiTestWikiPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
 
-/**
- * Wait for both SSE and watch-fs to be ready and stabilized.
- * This combines the checks for test-id-SSE_READY and test-id-WATCH_FS_STABILIZED markers.
- */
-async function waitForSSEAndWatchFsReady(maxWaitMs = 15000): Promise<void> {
-  const logPath = path.join(process.cwd(), 'userData-test', 'logs');
-  const startTime = Date.now();
-  let sseReady = false;
-  let watchFsStabilized = false;
-
-  while (Date.now() - startTime < maxWaitMs) {
-    try {
-      const files = await fs.readdir(logPath);
-      const wikiLogFiles = files.filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
-
-      for (const file of wikiLogFiles) {
-        const content = await fs.readFile(path.join(logPath, file), 'utf-8');
-        if (content.includes('[test-id-SSE_READY]')) {
-          sseReady = true;
-        }
-        if (content.includes('[test-id-WATCH_FS_STABILIZED]')) {
-          watchFsStabilized = true;
-        }
-      }
-
-      if (sseReady && watchFsStabilized) {
-        return;
-      }
-    } catch {
-      // Log directory might not exist yet, continue waiting
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  const missingServices = [];
-  if (!sseReady) missingServices.push('SSE');
-  if (!watchFsStabilized) missingServices.push('watch-fs');
-  throw new Error(`${missingServices.join(' and ')} did not become ready within timeout`);
-}
+// Backoff configuration for retries
+const BACKOFF_OPTIONS = {
+  numOfAttempts: 10,
+  startingDelay: 200,
+  timeMultiple: 1.5,
+};
 
 /**
- * Wait for a tiddler to be added by watch-fs.
+ * Generic function to wait for a log marker to appear in wiki log files.
  */
-async function waitForTiddlerAdded(tiddlerTitle: string, maxWaitMs = 10000): Promise<void> {
+async function waitForLogMarker(searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = 'wiki-'): Promise<void> {
   const logPath = path.join(process.cwd(), 'userData-test', 'logs');
-  const startTime = Date.now();
-  const searchString = `[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`;
-  const files = await fs.readdir(logPath);
-  const wikiLogFiles = files.filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
 
-  while (Date.now() - startTime < maxWaitMs) {
-    try {
-      for (const file of wikiLogFiles) {
-        const content = await fs.readFile(path.join(logPath, file), 'utf-8');
-        if (content.includes(searchString)) {
-          return;
+  await backOff(
+    async () => {
+      try {
+        const files = await fs.readdir(logPath);
+        const logFiles = files.filter(f => f.startsWith(logFilePattern) && f.endsWith('.log'));
+
+        for (const file of logFiles) {
+          const content = await fs.readFile(path.join(logPath, file), 'utf-8');
+          if (content.includes(searchString)) {
+            return;
+          }
         }
+      } catch {
+        // Log directory might not exist yet, continue retrying
       }
-    } catch {
-      // Log directory might not exist yet, continue waiting
-    }
 
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  throw new Error(`Tiddler "${tiddlerTitle}" was not added within timeout`);
-}
-
-/**
- * Wait for a tiddler to be updated by watch-fs.
- */
-async function waitForTiddlerUpdated(tiddlerTitle: string, maxWaitMs = 10000): Promise<void> {
-  const logPath = path.join(process.cwd(), 'userData-test', 'logs');
-  const startTime = Date.now();
-  const searchString = `[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`;
-  const files = await fs.readdir(logPath);
-  const wikiLogFiles = files.filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
-
-  while (Date.now() - startTime < maxWaitMs) {
-    try {
-      for (const file of wikiLogFiles) {
-        const content = await fs.readFile(path.join(logPath, file), 'utf-8');
-        if (content.includes(searchString)) {
-          return;
-        }
-      }
-    } catch {
-      // Log directory might not exist yet, continue waiting
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  throw new Error(`Tiddler "${tiddlerTitle}" was not updated within timeout`);
-}
-
-/**
- * Wait for a tiddler to be deleted by watch-fs.
- */
-async function waitForTiddlerDeleted(tiddlerTitle: string, maxWaitMs = 10000): Promise<void> {
-  const logPath = path.join(process.cwd(), 'userData-test', 'logs');
-  const startTime = Date.now();
-  const searchString = `[test-id-WATCH_FS_TIDDLER_DELETED] ${tiddlerTitle}`;
-
-  while (Date.now() - startTime < maxWaitMs) {
-    try {
-      const files = await fs.readdir(logPath);
-      const wikiLogFiles = files.filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
-
-      for (const file of wikiLogFiles) {
-        const content = await fs.readFile(path.join(logPath, file), 'utf-8');
-        if (content.includes(searchString)) {
-          return;
-        }
-      }
-    } catch {
-      // Log directory might not exist yet, continue waiting
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  throw new Error(`Tiddler "${tiddlerTitle}" was not deleted within timeout`);
+      throw new Error('Log marker not found yet');
+    },
+    {
+      numOfAttempts: Math.ceil(maxWaitMs / 100),
+      startingDelay: 100,
+      timeMultiple: 1,
+      maxDelay: 100,
+      delayFirstAttempt: false,
+      jitter: 'none',
+    },
+  ).catch(() => {
+    throw new Error(errorMessage);
+  });
 }
 
 When('I cleanup test wiki so it could create a new one on start', async function() {
@@ -162,24 +81,131 @@ When('I cleanup test wiki so it could create a new one on start', async function
 });
 
 /**
- * Verify file exists in directory
+ * Helper function to get directory tree structure
  */
-Then('file {string} should exist in {string}', { timeout: 15000 }, async function(this: ApplicationWorld, fileName: string, directoryPath: string) {
-  // Replace {tmpDir} with wiki test root (not wiki subfolder)
-  const actualPath = directoryPath.replace('{tmpDir}', wikiTestRootPath);
-  const filePath = path.join(actualPath, fileName);
-
-  let exists = false;
-  for (let index = 0; index < 20; index++) {
-    if (await fs.pathExists(filePath)) {
-      exists = true;
-      break;
-    }
-    await new Promise(resolve => setTimeout(resolve, 500));
+async function getDirectoryTree(directory: string, prefix = '', maxDepth = 3, currentDepth = 0): Promise<string> {
+  if (currentDepth >= maxDepth || !(await fs.pathExists(directory))) {
+    return '';
   }
 
-  if (!exists) {
-    throw new Error(`File "${fileName}" not found in directory: ${actualPath}`);
+  let tree = '';
+  try {
+    const items = await fs.readdir(directory);
+    for (let index = 0; index < items.length; index++) {
+      const item = items[index];
+      const isLast = index === items.length - 1;
+      const itemPath = path.join(directory, item);
+      const connector = isLast ? '└── ' : '├── ';
+
+      try {
+        const stat = await fs.stat(itemPath);
+        tree += `${prefix}${connector}${item}${stat.isDirectory() ? '/' : ''}\n`;
+
+        if (stat.isDirectory()) {
+          const newPrefix = prefix + (isLast ? '    ' : '│   ');
+          tree += await getDirectoryTree(itemPath, newPrefix, maxDepth, currentDepth + 1);
+        }
+      } catch {
+        tree += `${prefix}${connector}${item} [error reading]\n`;
+      }
+    }
+  } catch {
+    // Directory not readable
+  }
+
+  return tree;
+}
+
+/**
+ * Verify file exists in directory
+ */
+Then('file {string} should exist in {string}', async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
+  // Replace {tmpDir} with wiki test root (not wiki subfolder)
+  let directoryPath = simpleDirectoryPath.replace('{tmpDir}', wikiTestRootPath);
+
+  // Resolve symlinks on all platforms to handle sub-wikis correctly
+  // On Linux, symlinks might point to the real path, so we need to follow them
+  if (await fs.pathExists(directoryPath)) {
+    try {
+      directoryPath = fs.realpathSync(directoryPath);
+    } catch {
+      // If realpathSync fails, continue with the original path
+    }
+  }
+
+  const filePath = path.join(directoryPath, fileName);
+
+  try {
+    await backOff(
+      async () => {
+        if (await fs.pathExists(filePath)) {
+          return;
+        }
+        throw new Error('File not found yet');
+      },
+      BACKOFF_OPTIONS,
+    );
+  } catch {
+    // Get 1 level up from actualPath
+    const oneLevelsUp = path.resolve(directoryPath, '..');
+    const tree = await getDirectoryTree(oneLevelsUp);
+
+    // Also read all .tid files in the actualPath directory
+    let tidFilesContent = '';
+    try {
+      if (await fs.pathExists(directoryPath)) {
+        const files = await fs.readdir(directoryPath);
+        const tidFiles = files.filter(f => f.endsWith('.tid'));
+
+        if (tidFiles.length > 0) {
+          tidFilesContent = '\n\n.tid files in directory:\n';
+          for (const tidFile of tidFiles) {
+            const tidPath = path.join(directoryPath, tidFile);
+            const content = await fs.readFile(tidPath, 'utf-8');
+            tidFilesContent += `\n=== ${tidFile} ===\n${content}\n`;
+          }
+        }
+      }
+    } catch (readError) {
+      tidFilesContent = `\n\nError reading .tid files: ${String(readError)}`;
+    }
+
+    throw new Error(
+      `File "${fileName}" not found in directory: ${directoryPath}\n\n` +
+        `Directory tree (1 level up from ${oneLevelsUp}):\n${tree}${tidFilesContent}`,
+    );
+  }
+});
+
+Then('file {string} should not exist in {string}', { timeout: 15000 }, async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
+  // Replace {tmpDir} with wiki test root (not wiki subfolder)
+  let directoryPath = simpleDirectoryPath.replace('{tmpDir}', wikiTestRootPath);
+
+  // Resolve symlinks on all platforms to handle sub-wikis correctly
+  if (await fs.pathExists(directoryPath)) {
+    try {
+      directoryPath = fs.realpathSync(directoryPath);
+    } catch {
+      // If realpathSync fails, continue with the original path
+    }
+  }
+
+  const filePath = path.join(directoryPath, fileName);
+
+  try {
+    await backOff(
+      async () => {
+        if (!(await fs.pathExists(filePath))) {
+          return;
+        }
+        throw new Error('File still exists');
+      },
+      BACKOFF_OPTIONS,
+    );
+  } catch {
+    throw new Error(
+      `File "${fileName}" should not exist but was found in directory: ${directoryPath}`,
+    );
   }
 });
 
@@ -187,11 +213,11 @@ Then('file {string} should exist in {string}', { timeout: 15000 }, async functio
  * Cleanup function for sub-wiki routing test
  * Removes test workspaces created during the test
  */
-function clearSubWikiRoutingTestData() {
-  if (!fs.existsSync(settingsPath)) return;
+async function clearSubWikiRoutingTestData() {
+  if (!(await fs.pathExists(settingsPath))) return;
 
   type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
-  const settings = fs.readJsonSync(settingsPath) as SettingsFile;
+  const settings = await fs.readJson(settingsPath) as SettingsFile;
   const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
   const filtered: Record<string, IWorkspace> = {};
 
@@ -205,48 +231,53 @@ function clearSubWikiRoutingTestData() {
     }
   }
 
-  fs.writeJsonSync(settingsPath, { ...settings, workspaces: filtered }, { spaces: 2 });
+  await fs.writeJson(settingsPath, { ...settings, workspaces: filtered }, { spaces: 2 });
 
   // Remove test wiki folders from filesystem
   const testFolders = ['SubWiki'];
   for (const folder of testFolders) {
     const wikiPath = path.join(wikiTestWikiPath, folder);
-    if (fs.existsSync(wikiPath)) {
-      fs.removeSync(wikiPath);
+    if (await fs.pathExists(wikiPath)) {
+      await fs.remove(wikiPath);
     }
   }
 }
 
-Then('I wait for SSE and watch-fs to be ready', { timeout: 20000 }, async function(this: ApplicationWorld) {
-  try {
-    await waitForSSEAndWatchFsReady();
-  } catch (error) {
-    throw new Error(`Failed to wait for SSE and watch-fs: ${(error as Error).message}`);
-  }
+Then('I wait for SSE and watch-fs to be ready', async function(this: ApplicationWorld) {
+  await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', 15000);
+  await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 15000);
+});
+
+Then('I wait for main wiki to restart after sub-wiki creation', async function(this: ApplicationWorld) {
+  await waitForLogMarker('[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI]', 'Main wiki did not restart after sub-wiki creation within timeout', 20000, 'TidGi-');
+  // Also wait for SSE and watch-fs to be ready after restart
+  await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready after restart within timeout', 15000);
+  await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready after restart within timeout', 15000);
+});
+
+Then('I wait for view to finish loading', async function(this: ApplicationWorld) {
+  await waitForLogMarker('[test-id-VIEW_LOADED]', 'Browser view did not finish loading within timeout', 10000, 'wiki-');
 });
 
 Then('I wait for tiddler {string} to be added by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
-  try {
-    await waitForTiddlerAdded(tiddlerTitle);
-  } catch (error) {
-    throw new Error(`Failed to wait for tiddler "${tiddlerTitle}" to be added: ${(error as Error).message}`);
-  }
+  await waitForLogMarker(
+    `[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`,
+    `Tiddler "${tiddlerTitle}" was not added within timeout`,
+  );
 });
 
 Then('I wait for tiddler {string} to be updated by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
-  try {
-    await waitForTiddlerUpdated(tiddlerTitle);
-  } catch (error) {
-    throw new Error(`Failed to wait for tiddler "${tiddlerTitle}" to be updated: ${(error as Error).message}`);
-  }
+  await waitForLogMarker(
+    `[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`,
+    `Tiddler "${tiddlerTitle}" was not updated within timeout`,
+  );
 });
 
 Then('I wait for tiddler {string} to be deleted by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
-  try {
-    await waitForTiddlerDeleted(tiddlerTitle);
-  } catch (error) {
-    throw new Error(`Failed to wait for tiddler "${tiddlerTitle}" to be deleted: ${(error as Error).message}`);
-  }
+  await waitForLogMarker(
+    `[test-id-WATCH_FS_TIDDLER_DELETED] ${tiddlerTitle}`,
+    `Tiddler "${tiddlerTitle}" was not deleted within timeout`,
+  );
 });
 
 // File manipulation step definitions
@@ -271,16 +302,28 @@ When('I modify file {string} to contain {string}', async function(this: Applicat
 
   // TiddlyWiki .tid files have a format: headers followed by blank line and text
   // We need to preserve headers and only modify the text part
-  const lines = fileContent.split('\n');
+  // Split by both \n and \r\n to handle different line endings
+  const lines = fileContent.split(/\r?\n/);
+
   const blankLineIndex = lines.findIndex(line => line.trim() === '');
 
   if (blankLineIndex >= 0) {
+    // File has headers and content separated by blank line
     // Keep headers, replace text after blank line
     const headers = lines.slice(0, blankLineIndex + 1);
+
+    // Note: We intentionally do NOT update the modified field here
+    // This simulates a real user editing the file in an external editor,
+    // where the modified field would not be automatically updated
+    // The echo prevention mechanism should detect this as a real external change
+    // because the content changed but the modified timestamp stayed the same
+
     fileContent = [...headers, content].join('\n');
   } else {
-    // No headers found, just use content
-    fileContent = content;
+    // File has only headers, no content yet (no blank line separator)
+    // We need to add the blank line separator and the content
+    // Again, we don't modify the modified field
+    fileContent = [...lines, '', content].join('\n');
   }
 
   // Write the modified content back

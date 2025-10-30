@@ -70,25 +70,6 @@ jobs:
       - name: Set up CV dependency for pngquant-bin
         if: matrix.platform == 'win'
         uses: ilammy/msvc-dev-cmd@v1
-
-      # Install dependencies for x64 architectures
-      - name: Install dependencies (x64)
-        if: matrix.arch == 'x64'
-        run: |
-          ${{ matrix.platform == 'linux' && 'pnpm install && pnpm remove registry-js' || 'pnpm install' }}
-        env:
-          npm_config_arch: x64
-
-      # Install dependencies for arm64 architectures
-      - name: Install dependencies (arm64)
-        if: matrix.arch == 'arm64'
-        run: pnpm install dugite --force
-        env:
-          npm_config_arch: ${{ matrix.platform == 'win' && 'ia32' || 'arm64' }}
-
-      - name: Build plugins
-        run: pnpm run build:plugin
-
       # Install C++ build tools for native modules (Linux only)
       # macOS: GitHub Actions runners come with Xcode Command Line Tools pre-installed
       # Windows: MSVC is set up by msvc-dev-cmd action above
@@ -102,7 +83,12 @@ jobs:
         run: pnpm install
       - name: Rebuild native modules for Electron
         run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
+      - name: Remove windows only deps
+        if: matrix.platform != 'win'
+        run: pnpm remove registry-js
 
+      - name: Build plugins
+        run: pnpm run build:plugin
       - name: Make ${{ matrix.platform }} (${{ matrix.arch }})
         run: |
           pnpm exec electron-forge make --platform=${{ matrix.platform == 'mac' && 'darwin' || matrix.platform == 'win' && 'win32' || 'linux' }} --arch=${{ matrix.arch }}

@@ -1,4 +1,5 @@
 import { WebContentsView } from 'electron';
+import fs from 'fs-extra';
 import type { ElectronApplication } from 'playwright';
 
 /**
@@ -94,7 +95,22 @@ export async function getDOMContent(app: ElectronApplication): Promise<string | 
  */
 export async function isLoaded(app: ElectronApplication): Promise<boolean> {
   const webContentsId = await getFirstWebContentsView(app);
-  return webContentsId !== null;
+  if (webContentsId === null) {
+    return false;
+  }
+
+  // Check if the WebContents is actually loaded
+  return await app.evaluate(
+    async ({ webContents }, id: number) => {
+      const targetWebContents = webContents.fromId(id);
+      if (!targetWebContents) {
+        return false;
+      }
+      // Check if the page has finished loading
+      return !targetWebContents.isLoading() && targetWebContents.getURL() !== '' && targetWebContents.getURL() !== 'about:blank';
+    },
+    webContentsId,
+  );
 }
 
 /**
@@ -107,30 +123,37 @@ export async function clickElementWithText(
 ): Promise<void> {
   const script = `
     (function() {
-      const selector = ${JSON.stringify(selector)};
-      const text = ${JSON.stringify(text)};
-      const elements = document.querySelectorAll(selector);
-      let found = null;
-      
-      for (let i = 0; i < elements.length; i++) {
-        const elem = elements[i];
-        const elemText = elem.textContent || elem.innerText || '';
-        if (elemText.trim() === text.trim() || elemText.includes(text)) {
-          found = elem;
-          break;
+      try {
+        const selector = ${JSON.stringify(selector)};
+        const text = ${JSON.stringify(text)};
+        const elements = document.querySelectorAll(selector);
+        let found = null;
+        
+        for (let i = 0; i < elements.length; i++) {
+          const elem = elements[i];
+          const elemText = elem.textContent || elem.innerText || '';
+          if (elemText.trim() === text.trim() || elemText.includes(text)) {
+            found = elem;
+            break;
+          }
         }
+        
+        if (!found) {
+          return { error: 'Element with text "' + text + '" not found in selector: ' + selector };
+        }
+        
+        found.click();
+        return { success: true };
+      } catch (error) {
+        return { error: error.message || String(error) };
       }
-      
-      if (!found) {
-        throw new Error('Element with text "' + text + '" not found in selector: ' + selector);
-      }
-      
-      found.click();
-      return true;
     })()
   `;
 
-  await executeInBrowserView(app, script);
+  const result = await executeInBrowserView(app, script);
+  if (result && typeof result === 'object' && 'error' in result) {
+    throw new Error(String(result.error));
+  }
 }
 
 /**
@@ -139,19 +162,26 @@ export async function clickElementWithText(
 export async function clickElement(app: ElectronApplication, selector: string): Promise<void> {
   const script = `
     (function() {
-      const selector = ${JSON.stringify(selector)};
-      const elem = document.querySelector(selector);
-      
-      if (!elem) {
-        throw new Error('Element not found: ' + selector);
+      try {
+        const selector = ${JSON.stringify(selector)};
+        const elem = document.querySelector(selector);
+        
+        if (!elem) {
+          return { error: 'Element not found: ' + selector };
+        }
+        
+        elem.click();
+        return { success: true };
+      } catch (error) {
+        return { error: error.message || String(error) };
       }
-      
-      elem.click();
-      return true;
     })()
   `;
 
-  await executeInBrowserView(app, script);
+  const result = await executeInBrowserView(app, script);
+  if (result && typeof result === 'object' && 'error' in result) {
+    throw new Error(String(result.error));
+  }
 }
 
 /**
@@ -163,28 +193,35 @@ export async function typeText(app: ElectronApplication, selector: string, text:
 
   const script = `
     (function() {
-      const selector = '${escapedSelector}';
-      const text = '${escapedText}';
-      const elem = document.querySelector(selector);
-      
-      if (!elem) {
-        throw new Error('Element not found: ' + selector);
+      try {
+        const selector = '${escapedSelector}';
+        const text = '${escapedText}';
+        const elem = document.querySelector(selector);
+        
+        if (!elem) {
+          return { error: 'Element not found: ' + selector };
+        }
+        
+        elem.focus();
+        if (elem.tagName === 'TEXTAREA' || elem.tagName === 'INPUT') {
+          elem.value = text;
+        } else {
+          elem.textContent = text;
+        }
+        
+        elem.dispatchEvent(new Event('input', { bubbles: true }));
+        elem.dispatchEvent(new Event('change', { bubbles: true }));
+        return { success: true };
+      } catch (error) {
+        return { error: error.message || String(error) };
       }
-      
-      elem.focus();
-      if (elem.tagName === 'TEXTAREA' || elem.tagName === 'INPUT') {
-        elem.value = text;
-      } else {
-        elem.textContent = text;
-      }
-      
-      elem.dispatchEvent(new Event('input', { bubbles: true }));
-      elem.dispatchEvent(new Event('change', { bubbles: true }));
-      return true;
     })()
   `;
 
-  await executeInBrowserView(app, script);
+  const result = await executeInBrowserView(app, script);
+  if (result && typeof result === 'object' && 'error' in result) {
+    throw new Error(String(result.error));
+  }
 }
 
 /**
@@ -248,6 +285,63 @@ export async function elementExists(app: ElectronApplication, selector: string):
       const script = `document.querySelector('${selector.replace(/'/g, "\\'")}') !== null`;
       return await executeInBrowserView<boolean>(app, script);
     }
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Capture screenshot of WebContentsView with timeout
+ * Returns true if screenshot capture started successfully, false if failed or timeout
+ * File writing continues asynchronously in background if capture succeeds
+ */
+export async function captureScreenshot(app: ElectronApplication, screenshotPath: string): Promise<boolean> {
+  try {
+    // Add timeout to prevent screenshot from blocking test execution
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => {
+        resolve(null);
+      }, 500);
+    });
+
+    const capturePromise = (async () => {
+      const webContentsId = await getFirstWebContentsView(app);
+      if (!webContentsId) {
+        return null;
+      }
+
+      const pngBufferData = await app.evaluate(
+        async ({ webContents }, id: number) => {
+          const targetWebContents = webContents.fromId(id);
+          if (!targetWebContents || targetWebContents.isDestroyed()) {
+            return null;
+          }
+
+          try {
+            const image = await targetWebContents.capturePage();
+            const pngBuffer = image.toPNG();
+            return Array.from(pngBuffer);
+          } catch {
+            return null;
+          }
+        },
+        webContentsId,
+      );
+
+      return pngBufferData;
+    })();
+
+    const result = await Promise.race([capturePromise, timeoutPromise]);
+
+    // If we got the screenshot data, write it to file asynchronously (fire and forget)
+    if (result && Array.isArray(result)) {
+      fs.writeFile(screenshotPath, Buffer.from(result)).catch(() => {
+        // Silently ignore write errors
+      });
+      return true;
+    }
+
+    return false;
   } catch {
     return false;
   }

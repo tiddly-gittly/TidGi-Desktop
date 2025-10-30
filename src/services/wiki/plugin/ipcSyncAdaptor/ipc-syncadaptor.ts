@@ -39,7 +39,11 @@ class TidGiIPCSyncAdaptor {
     this.isLoggedIn = false;
     this.isReadOnly = false;
     this.logoutIsAvailable = true;
-    this.workspaceID = (window.meta() as WindowMeta[WindowNames.view]).workspaceID!;
+    const workspaceID = (window.meta() as WindowMeta[WindowNames.view]).workspace?.id;
+    if (workspaceID === undefined) {
+      throw new Error('TidGiIPCSyncAdaptor: workspaceID is undefined. Cannot initialize sync adaptor without a valid workspace ID.');
+    }
+    this.workspaceID = workspaceID;
     if (window.observables?.wiki?.getWikiChangeObserver$ !== undefined) {
       // if install-electron-ipc-cat is faster than us, just subscribe to the observable. Otherwise we normally will wait for it to call us here.
       this.setupSSE();
@@ -50,6 +54,7 @@ class TidGiIPCSyncAdaptor {
    * This should be called after install-electron-ipc-cat, so this is called in `$:/plugins/linonetwo/tidgi-ipc-syncadaptor/Startup/install-electron-ipc-cat.js`
    */
   setupSSE() {
+    console.log('setupSSE called in TidGiIPCSyncAdaptor');
     if (window.observables?.wiki?.getWikiChangeObserver$ === undefined) {
       console.error("getWikiChangeObserver$ is undefined in window.observables.wiki, can't subscribe to server changes.");
       return;
@@ -73,9 +78,12 @@ class TidGiIPCSyncAdaptor {
         if (!change[title]) {
           return;
         }
-        if (change[title].deleted && !this.recentUpdatedTiddlersFromClient.deletions.includes(title)) {
+
+        if (change[title].deleted) {
+          // For deletions, we don't need to check modified time
           this.updatedTiddlers.deletions.push(title);
-        } else if (change[title].modified && !this.recentUpdatedTiddlersFromClient.modifications.includes(title)) {
+        } else if (change[title].modified) {
+          // Add to modifications - watch-fs already filtered out echoes via file exclusion
           this.updatedTiddlers.modifications.push(title);
         }
       });
@@ -88,28 +96,6 @@ class TidGiIPCSyncAdaptor {
     modifications: [],
     deletions: [],
   };
-
-  /**
-   * We will get echo from the server, for these tiddler changes caused by the client, we remove them from the `updatedTiddlers` so that the client won't get them again from server, which will usually get outdated tiddler (lack 1 or 2 words that user just typed).
-   */
-  recentUpdatedTiddlersFromClient: { deletions: string[]; modifications: string[] } = {
-    modifications: [],
-    deletions: [],
-  };
-
-  /**
-   * Add a title as lock to prevent sse echo back. This will auto clear the lock after 2s (this number still needs testing).
-   * And it only clear one title after 2s, so if you add the same title rapidly, it will prevent sse echo after 2s of last operation, which can prevent last echo, which is what we want.
-   */
-  addRecentUpdatedTiddlersFromClient(type: 'modifications' | 'deletions', title: string) {
-    this.recentUpdatedTiddlersFromClient[type].push(title);
-    setTimeout(() => {
-      const index = this.recentUpdatedTiddlersFromClient[type].indexOf(title);
-      if (index !== -1) {
-        this.recentUpdatedTiddlersFromClient[type].splice(index, 1);
-      }
-    }, 2000);
-  }
 
   clearUpdatedTiddlers() {
     this.updatedTiddlers = {
@@ -225,7 +211,6 @@ class TidGiIPCSyncAdaptor {
         return;
       }
       this.logger.log(`saveTiddler ${title}`);
-      this.addRecentUpdatedTiddlersFromClient('modifications', title);
       const putTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
         this.workspaceID,
         'putTiddler',
@@ -285,7 +270,7 @@ class TidGiIPCSyncAdaptor {
       return;
     }
     this.logger.log('deleteTiddler');
-    this.addRecentUpdatedTiddlersFromClient('deletions', title);
+    // For deletions, we don't track modified time since the tiddler is being removed
     const getTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
       this.workspaceID,
       'deleteTiddler',
@@ -334,7 +319,7 @@ class TidGiIPCSyncAdaptor {
 if ($tw.browser && typeof window !== 'undefined') {
   const isInTidGi = typeof document !== 'undefined' && document.location.protocol.startsWith('tidgi');
   const servicesExposed = Boolean(window.service.wiki);
-  const hasWorkspaceIDinMeta = Boolean((window.meta() as WindowMeta[WindowNames.view] | undefined)?.workspaceID);
+  const hasWorkspaceIDinMeta = Boolean((window.meta() as WindowMeta[WindowNames.view] | undefined)?.workspace?.id);
   if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     exports.adaptorClass = TidGiIPCSyncAdaptor;

@@ -22,7 +22,7 @@ export default [
     },
   },
   {
-    files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx', "*.env.d.ts"],
     rules: {
       '@typescript-eslint/unbound-method': 'off',
       'unicorn/prevent-abbreviations': 'off',

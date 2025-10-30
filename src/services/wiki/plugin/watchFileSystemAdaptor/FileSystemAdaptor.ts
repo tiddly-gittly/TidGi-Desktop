@@ -2,6 +2,7 @@ import type { Logger } from '$:/core/modules/utils/logger.js';
 import { workspace } from '@services/wiki/wikiWorker/services';
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 import { backOff } from 'exponential-backoff';
+import fs from 'fs';
 import path from 'path';
 import type { FileInfo } from 'tiddlywiki';
 import type { Tiddler, Wiki } from 'tiddlywiki';
@@ -116,6 +117,7 @@ export class FileSystemAdaptor {
 
   /**
    * Main routing logic: determine where a tiddler should be saved based on its tags.
+   * For draft tiddlers, check the original tiddler's tags.
    */
   async getTiddlerFileInfo(tiddler: Tiddler): Promise<FileInfo | null> {
     if (!this.boot.wikiTiddlersPath) {
@@ -123,10 +125,23 @@ export class FileSystemAdaptor {
     }
 
     const title = tiddler.fields.title;
-    const tags = tiddler.fields.tags ?? [];
+    let tags = tiddler.fields.tags ?? [];
     const fileInfo = this.boot.files[title];
 
     try {
+      // For draft tiddlers (draft.of field), also check the original tiddler's tags
+      // This ensures drafts are saved to the same sub-wiki as their target tiddler
+      const draftOf = tiddler.fields['draft.of'];
+      if (draftOf && typeof draftOf === 'string' && $tw.wiki) {
+        // Get the original tiddler from the wiki
+        const originalTiddler = $tw.wiki.getTiddler(draftOf);
+        if (originalTiddler) {
+          const originalTags = originalTiddler.fields.tags ?? [];
+          // Merge tags from the original tiddler with the draft's tags
+          tags = [...new Set([...tags, ...originalTags])];
+        }
+      }
+
       let matchingSubWiki: IWikiWorkspace | undefined;
       for (const tag of tags) {
         matchingSubWiki = this.tagNameToSubWiki.get(tag);
@@ -148,9 +163,22 @@ export class FileSystemAdaptor {
 
   /**
    * Generate file info for sub-wiki directory
+   * Handles symlinks correctly across platforms (Windows junctions and Linux symlinks)
    */
   protected generateSubWikiFileInfo(tiddler: Tiddler, subWiki: IWikiWorkspace, fileInfo: FileInfo | undefined): FileInfo {
-    const targetDirectory = subWiki.wikiFolderLocation;
+    let targetDirectory = subWiki.wikiFolderLocation;
+
+    // Resolve symlinks to ensure consistent path handling across platforms
+    // On Windows, this resolves junctions; on Linux, this resolves symbolic links
+    // This prevents path inconsistencies when the same symlinked directory is referenced differently
+    // (e.g., via the symlink path vs the real path)
+    try {
+      targetDirectory = fs.realpathSync(targetDirectory);
+    } catch {
+      // If realpath fails, use the original path
+      // This can happen if the directory doesn't exist yet
+    }
+
     $tw.utils.createDirectory(targetDirectory);
 
     return $tw.utils.generateTiddlerFileInfo(tiddler, {
@@ -186,7 +214,7 @@ export class FileSystemAdaptor {
    * Save a tiddler to the filesystem
    * Can be used with callback (legacy) or as async/await
    */
-  async saveTiddler(tiddler: Tiddler, callback?: IFileSystemAdaptorCallback, options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
+  async saveTiddler(tiddler: Tiddler, callback?: IFileSystemAdaptorCallback, _options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
     try {
       const fileInfo = await this.getTiddlerFileInfo(tiddler);
 
@@ -198,6 +226,9 @@ export class FileSystemAdaptor {
 
       const savedFileInfo = await this.saveTiddlerWithRetry(tiddler, fileInfo);
 
+      // Save old file info before updating, for cleanup to detect file path changes
+      const oldFileInfo = this.boot.files[tiddler.fields.title];
+
       this.boot.files[tiddler.fields.title] = {
         ...savedFileInfo,
         isEditableFile: savedFileInfo.isEditableFile ?? true,
@@ -205,8 +236,8 @@ export class FileSystemAdaptor {
 
       await new Promise<void>((resolve, reject) => {
         const cleanupOptions = {
-          adaptorInfo: options?.tiddlerInfo as FileInfo | undefined,
-          bootInfo: this.boot.files[tiddler.fields.title],
+          adaptorInfo: oldFileInfo, // Old file info to be deleted
+          bootInfo: savedFileInfo, // New file info to be kept
           title: tiddler.fields.title,
         };
         $tw.utils.cleanupTiddlerFiles(cleanupOptions, (cleanupError: Error | null, _cleanedFileInfo?: FileInfo) => {

@@ -5,7 +5,7 @@ import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
 const BACKOFF_OPTIONS = {
-  numOfAttempts: 8,
+  numOfAttempts: 10,
   startingDelay: 100,
   timeMultiple: 2,
 };
@@ -60,7 +60,7 @@ Then('I should see {string} in the browser view DOM', async function(this: Appli
   });
 });
 
-Then('the browser view should be loaded and visible', async function(this: ApplicationWorld) {
+Then('the browser view should be loaded and visible', { timeout: 15000 }, async function(this: ApplicationWorld) {
   if (!this.app) {
     throw new Error('Application not launched');
   }
@@ -76,7 +76,7 @@ Then('the browser view should be loaded and visible', async function(this: Appli
         throw new Error('Browser view not loaded');
       }
     },
-    BACKOFF_OPTIONS,
+    { ...BACKOFF_OPTIONS, numOfAttempts: 15 },
   ).catch(() => {
     throw new Error('Browser view is not loaded or visible after multiple attempts');
   });

@@ -60,7 +60,6 @@ export interface IWikiService {
    * @param workspaceID You can get this from active workspace
    */
   getWorker(workspaceID: string): WikiWorker | undefined;
-  linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
   packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   restartWiki(workspace: IWorkspace): Promise<void>;
@@ -78,7 +77,7 @@ export interface IWikiService {
    * Runs wiki related JS script in wiki page to control the wiki.
    *
    * Some data may not be available in browser, for example, getTiddlerText will return `null` for the first time, and trigger lazy loading, and return text on second call. In such case, you may want to use `wikiOperationInServer` instead.
-   * @example `await window.service.wiki.wikiOperationInBrowser('wiki-get-tiddler-text', window.meta().workspaceID, ['TiddlyWikiIconBlack.png'])`
+   * @example `await window.service.wiki.wikiOperationInBrowser('wiki-get-tiddler-text', window.meta().workspace.id, ['TiddlyWikiIconBlack.png'])`
    */
   wikiOperationInBrowser<OP extends keyof ISendWikiOperationsToBrowser>(
     operationType: OP,
@@ -110,7 +109,6 @@ export const WikiServiceIPCDescriptor = {
     ensureWikiExist: ProxyPropertyType.Function,
     extractWikiHTML: ProxyPropertyType.Function,
     getWikiErrorLogs: ProxyPropertyType.Function,
-    linkWiki: ProxyPropertyType.Function,
     getTiddlerFilePath: ProxyPropertyType.Function,
     packetHTMLFromWikiFolder: ProxyPropertyType.Function,
     removeWiki: ProxyPropertyType.Function,
