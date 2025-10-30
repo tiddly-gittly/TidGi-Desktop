@@ -1,4 +1,5 @@
 import { WebContentsView } from 'electron';
+import fs from 'fs-extra';
 import type { ElectronApplication } from 'playwright';
 
 /**
@@ -285,6 +286,49 @@ export async function elementExists(app: ElectronApplication, selector: string):
       return await executeInBrowserView<boolean>(app, script);
     }
   } catch {
+    return false;
+  }
+}
+
+/**
+ * Capture screenshot of WebContentsView
+ * Returns true if screenshot was taken successfully, false if WebContentsView not found
+ */
+export async function captureScreenshot(app: ElectronApplication, screenshotPath: string): Promise<boolean> {
+  try {
+    const webContentsId = await getFirstWebContentsView(app);
+
+    if (!webContentsId) {
+      return false;
+    }
+
+    const pngBufferData = await app.evaluate(
+      async ({ webContents }, id: number) => {
+        const targetWebContents = webContents.fromId(id);
+        if (!targetWebContents) {
+          return null;
+        }
+
+        try {
+          const image = await targetWebContents.capturePage();
+          const pngBuffer = image.toPNG();
+          return Array.from(pngBuffer);
+        } catch (error) {
+          console.error('Failed to capture screenshot:', error);
+          return null;
+        }
+      },
+      webContentsId,
+    );
+
+    if (!pngBufferData) {
+      return false;
+    }
+
+    await fs.writeFile(screenshotPath, Buffer.from(pngBufferData));
+    return true;
+  } catch (error) {
+    console.error('Error capturing screenshot:', error);
     return false;
   }
 }

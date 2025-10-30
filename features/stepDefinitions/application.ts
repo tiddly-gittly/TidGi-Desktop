@@ -9,6 +9,7 @@ import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { makeSlugPath, screenshotsDirectory } from '../supports/paths';
 import { getPackedAppPath } from '../supports/paths';
+import { captureScreenshot } from '../supports/webContentsViewHelper';
 
 // Backoff configuration for retries
 const BACKOFF_OPTIONS = {
@@ -200,7 +201,7 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
 
   try {
     const stepText = pickleStep.text;
-    
+
     // Skip screenshots for wait steps to avoid too many screenshots
     if (stepText.match(/^I wait for \d+(\.\d+)? seconds?$/i)) {
       return;
@@ -244,10 +245,17 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const screenshotPath = path.resolve(featureDirectory, `${timestamp}-${cleanStepText}-${stepStatus}.jpg`);
+    
+    // Try to capture both WebContentsView and Page screenshots
+    let webViewCaptured = false;
+    if (this.app) {
+      const webViewScreenshotPath = path.resolve(featureDirectory, `${timestamp}-${cleanStepText}-${stepStatus}-webview.png`);
+      webViewCaptured = await captureScreenshot(this.app, webViewScreenshotPath);
+    }
 
-    // Use conservative screenshot options for CI
-    await pageToUse.screenshot({ path: screenshotPath, fullPage: true, type: 'jpeg', quality: 10 });
+    // Always capture page screenshot (UI chrome/window)
+    const pageScreenshotPath = path.resolve(featureDirectory, `${timestamp}-${cleanStepText}-${stepStatus}${webViewCaptured ? '-page' : ''}.png`);
+    await pageToUse.screenshot({ path: pageScreenshotPath, fullPage: true, type: 'png' });
   } catch (screenshotError) {
     console.warn('Failed to take screenshot:', screenshotError);
   }

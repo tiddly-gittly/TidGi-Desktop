@@ -185,16 +185,16 @@ export class IpcServerRoutes {
       }
     }
     tiddlerFieldsToPut.title = title;
-    
+
     // Mark this tiddler as recently saved to prevent echo
     this.recentlySavedTiddlers.add(title);
-    
+
     this.wikiInstance.wiki.addTiddler(new this.wikiInstance.Tiddler(tiddlerFieldsToPut));
-    
+
     // Note: The change event is triggered synchronously by addTiddler
     // The event handler in getWikiChangeObserver$ will check recentlySavedTiddlers
     // and remove the mark after filtering
-    
+
     const changeCount = this.wikiInstance.wiki.getChangeCount(title).toString();
     return { statusCode: 204, headers: { 'Content-Type': 'text/plain', Etag: `"default/${encodeURIComponent(title)}/${changeCount}:"` }, data: 'OK' };
   }
@@ -239,7 +239,7 @@ export class IpcServerRoutes {
           // Filter out tiddlers that were just saved via IPC to prevent echo
           const filteredChanges: IChangedTiddlers = {};
           let hasChanges = false;
-          
+
           for (const title in changes) {
             if (this.recentlySavedTiddlers.has(title)) {
               // This change was caused by our own putTiddler, skip it to prevent echo
@@ -249,7 +249,7 @@ export class IpcServerRoutes {
             filteredChanges[title] = changes[title];
             hasChanges = true;
           }
-          
+
           // Only notify if there are actual changes after filtering
           if (hasChanges) {
             observer.next(filteredChanges);
