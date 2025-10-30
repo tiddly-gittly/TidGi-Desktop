@@ -46,7 +46,7 @@ Feature: Filesystem Plugin
     And I press "Delete" in browser view
     And I type "TestTiddlerTitle" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
     # Wait for tiddler state to settle, otherwise it still shows 3 chars (新条目) for a while
-    And I wait for 0.5 seconds
+    And I wait for 2 seconds
     Then I should see "16 chars" in the browser view content
     # Input tag by typing in the tag input field - use precise selector to target the tag input specifically
     And I click on "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
