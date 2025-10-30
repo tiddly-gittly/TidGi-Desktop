@@ -3,7 +3,7 @@ import { createWorkerProxy, terminateWorker } from '@services/libs/workerAdapter
 import { dialog, shell } from 'electron';
 import { attachWorker } from 'electron-ipc-cat/server';
 import { backOff } from 'exponential-backoff';
-import { copy, createSymlink, exists, mkdir, mkdirp, mkdirs, pathExists, readdir, readFile, remove } from 'fs-extra';
+import { copy, exists, mkdir, mkdirs, pathExists, readdir, readFile } from 'fs-extra';
 import { inject, injectable } from 'inversify';
 import path from 'path';
 import { Worker } from 'worker_threads';
@@ -430,31 +430,6 @@ export class Wiki implements IWikiService {
     logger.info(message, { handler: WikiChannel.createProgress });
   };
 
-  private readonly folderToContainSymlinks = 'subwiki';
-  /**
-   * Link a sub wiki to a main wiki, this will create a shortcut folder from main wiki to sub wiki, so when saving files to that shortcut folder, you will actually save file to the sub wiki
-   * We place symbol-link (short-cuts) in the tiddlers/subwiki/ folder, and ignore this folder in the .gitignore, so this symlink won't be commit to the git, as it contains computer specific path.
-   * @param {string} mainWikiPath folderPath of a wiki as link's destination
-   * @param {string} folderName sub-wiki's folder name
-   * @param {string} newWikiPath sub-wiki's folder path
-   */
-  public async linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void> {
-    const mainWikiTiddlersFolderSubWikisPath = path.join(mainWikiPath, TIDDLERS_PATH, this.folderToContainSymlinks);
-    const subwikiSymlinkPath = path.join(mainWikiTiddlersFolderSubWikisPath, folderName);
-    try {
-      try {
-        await remove(subwikiSymlinkPath);
-      } catch (_error: unknown) {
-        void _error;
-      }
-      await mkdirp(mainWikiTiddlersFolderSubWikisPath);
-      await createSymlink(subWikiPath, subwikiSymlinkPath, 'junction');
-      this.logProgress(i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiSucceed'));
-    } catch (error: unknown) {
-      throw new Error(i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiFailed', { subWikiPath, mainWikiTiddlersFolderPath: subwikiSymlinkPath, error }));
-    }
-  }
-
   private async createWiki(newFolderPath: string, folderName: string): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartUsingTemplateToCreateWiki'));
     const newWikiPath = path.join(newFolderPath, folderName);
@@ -487,7 +462,7 @@ export class Wiki implements IWikiService {
     this.logProgress(i18n.t('AddWorkspace.WikiTemplateCopyCompleted') + newWikiPath);
   }
 
-  public async createSubWiki(parentFolderLocation: string, folderName: string, _subWikiFolderName: string, mainWikiPath: string, _tagName = '', onlyLink = false): Promise<void> {
+  public async createSubWiki(parentFolderLocation: string, folderName: string, _subWikiFolderName: string, _mainWikiPath: string, _tagName = '', onlyLink = false): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCreatingSubWiki'));
     const newWikiPath = path.join(parentFolderLocation, folderName);
     if (!(await pathExists(parentFolderLocation))) {
@@ -503,22 +478,15 @@ export class Wiki implements IWikiService {
         throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
       }
     }
-    this.logProgress(i18n.t('AddWorkspace.StartLinkingSubWikiToMainWiki'));
-    await this.linkWiki(mainWikiPath, folderName, newWikiPath);
     // Sub-wiki configuration is now handled by FileSystemAdaptor in watch-filesystem plugin
-    // No need to update $:/config/FileSystemPaths manually
-
+    // No need to update $:/config/FileSystemPaths manually or create symlinks
     this.logProgress(i18n.t('AddWorkspace.SubWikiCreationCompleted'));
   }
 
-  public async removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink = false): Promise<void> {
-    if (mainWikiToUnLink !== undefined) {
-      const subWikiName = path.basename(wikiPath);
-      await shell.trashItem(path.join(mainWikiToUnLink, TIDDLERS_PATH, this.folderToContainSymlinks, subWikiName));
-    }
-    if (!onlyRemoveLink) {
-      await shell.trashItem(wikiPath);
-    }
+  public async removeWiki(wikiPath: string, _mainWikiToUnLink?: string, _onlyRemoveLink = false): Promise<void> {
+    // Sub-wiki configuration is now handled by FileSystemAdaptor - no symlinks to manage
+    // Just remove the wiki folder itself
+    await shell.trashItem(wikiPath);
   }
 
   public async ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void> {
@@ -640,7 +608,7 @@ export class Wiki implements IWikiService {
   public async cloneSubWiki(
     parentFolderLocation: string,
     wikiFolderName: string,
-    mainWikiPath: string,
+    _mainWikiPath: string,
     gitRepoUrl: string,
     gitUserInfo: IGitUserInfos,
     _tagName = '',
@@ -660,10 +628,8 @@ export class Wiki implements IWikiService {
     }
     const gitService = container.get<IGitService>(serviceIdentifier.Git);
     await gitService.clone(gitRepoUrl, path.join(parentFolderLocation, wikiFolderName), gitUserInfo);
-    this.logProgress(i18n.t('AddWorkspace.StartLinkingSubWikiToMainWiki'));
-    await this.linkWiki(mainWikiPath, wikiFolderName, path.join(parentFolderLocation, wikiFolderName));
     // Sub-wiki configuration is now handled by FileSystemAdaptor in watch-filesystem plugin
-    // No need to update $:/config/FileSystemPaths manually
+    // No need to update $:/config/FileSystemPaths manually or create symlinks
   }
 
   // wiki-startup.ts

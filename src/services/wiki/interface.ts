@@ -60,7 +60,6 @@ export interface IWikiService {
    * @param workspaceID You can get this from active workspace
    */
   getWorker(workspaceID: string): WikiWorker | undefined;
-  linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
   packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   restartWiki(workspace: IWorkspace): Promise<void>;
@@ -110,7 +109,6 @@ export const WikiServiceIPCDescriptor = {
     ensureWikiExist: ProxyPropertyType.Function,
     extractWikiHTML: ProxyPropertyType.Function,
     getWikiErrorLogs: ProxyPropertyType.Function,
-    linkWiki: ProxyPropertyType.Function,
     getTiddlerFilePath: ProxyPropertyType.Function,
     packetHTMLFromWikiFolder: ProxyPropertyType.Function,
     removeWiki: ProxyPropertyType.Function,
