@@ -32,12 +32,19 @@ Frontend (Browser)          Backend (Node.js Worker)
 - All file changes (external edits, saves from frontend) flow through file system
 - Backend wiki state reflects file system state
 
-### 2. Echo Prevention via File Exclusion
+### 2. Two-Layer Echo Prevention
 
-- When saving a tiddler, watch-fs temporarily excludes the file from monitoring
-- Exclusion lasts for `FILE_EXCLUSION_CLEANUP_DELAY_MS` (200ms)
-- This prevents the save operation from triggering a change event (echo)
-- No timestamp-based equality check or echo detection needed - simpler and more reliable
+**IPC Layer (First Defense)**:
+
+- `ipcServerRoutes.ts` tracks recently saved tiddlers in `recentlySavedTiddlers` Set
+- When `wiki.addTiddler()` triggers change event, filter out tiddlers in the Set
+- Prevents frontend from receiving its own save operations as change notifications
+
+**Watch-FS Layer (Second Defense)**:
+
+- When saving, watch-fs temporarily excludes file from monitoring for 200ms
+- Prevents watcher from detecting the file write operation
+- Combined with IPC filtering, ensures no echo even for rapid successive saves
 
 ### 3. SSE-like Change Notification (IPC Observable)
 
@@ -51,18 +58,29 @@ Frontend (Browser)          Backend (Node.js Worker)
 
 Purpose: Bridge between frontend TiddlyWiki and backend file system
 
+IPC Communication Flow:
+
+- Frontend plugin calls `window.service.wiki` methods (provided by preload script)
+- Preload script uses `setupIpcServerRoutesHandlers.ts` (runs in view context) to set up IPC protocol handlers
+- These handlers forward requests to `ipcServerRoutes.ts` in wiki worker via IPC
+- Uses `tidgi://` custom protocol for RESTful-like API
+
 Key Functions:
 
-- `saveTiddler()`: Send tiddler to backend via IPC → backend saves to file
-- `loadTiddler()`: Request tiddler from backend via IPC
-- `deleteTiddler()`: Request deletion via IPC
+- `saveTiddler()`: Send tiddler to backend via IPC → `putTiddler` in `ipcServerRoutes.ts`
+- `loadTiddler()`: Request tiddler from backend via IPC → `getTiddler` in `ipcServerRoutes.ts`
+- `deleteTiddler()`: Request deletion via IPC → `deleteTiddler` in `ipcServerRoutes.ts`
 - `setupSSE()`: Subscribe to file change events from backend (via IPC Observable, not real SSE)
 - `getUpdatedTiddlers()`: Provide list of changed tiddlers to syncer
 
-No Echo Detection:
+Echo Prevention Strategy:
+
+Frontend plugin does NOT implement echo detection because:
 
 1. Cannot distinguish between "save to fs and watch fs echo back" and "external user text edit with unchanged 'modified' timestamp metadata"
-2. Watch-fs exclusion mechanism already prevents echoes at the source
+2. Echo prevention is handled by backend at two levels:
+   - **IPC level**: `ipcServerRoutes.ts` filters out change events from IPC saves using `recentlySavedTiddlers` Set
+   - **Watch-FS level**: `watch-filesystem-adaptor` temporarily excludes files during save operations
 
 ### Backend: `watch-filesystem-adaptor`
 
@@ -76,7 +94,38 @@ Key Functions:
 - `handleFileAddOrChange()`: Load changed files into wiki
 - `handleFileDelete()`: Remove deleted tiddlers from wiki
 
-Echo Prevention Flow:
+Two-Layer Echo Prevention:
+
+#### Layer 1: IPC Level (in ipcServerRoutes.ts)
+
+```typescript
+async putTiddler(title, fields) {
+  // Mark as recently saved to prevent echo
+  this.recentlySavedTiddlers.add(title);
+  
+  // This triggers 'change' event synchronously
+  this.wikiInstance.wiki.addTiddler(new Tiddler(fields));
+  
+  // Change event handler filters it out and removes the mark
+}
+
+// Change event handler
+wiki.addEventListener('change', (changes) => {
+  const filteredChanges = {};
+  for (const title in changes) {
+    if (this.recentlySavedTiddlers.has(title)) {
+      // Filter out echo from IPC save
+      this.recentlySavedTiddlers.delete(title);
+      continue;
+    }
+    filteredChanges[title] = changes[title];
+  }
+  // Only send filtered changes to frontend
+  observer.next(filteredChanges);
+});
+```
+
+#### Layer 2: Watch-FS Level (in WatchFileSystemAdaptor.ts)
 
 ```typescript
 async saveTiddler(tiddler) {
@@ -85,13 +134,12 @@ async saveTiddler(tiddler) {
   // 1. Exclude file BEFORE saving
   await this.excludeFile(filepath);
   
-  // 2. Save to file system
+  // 2. Save to file system (calls parent saveTiddler)
   await super.saveTiddler(tiddler);
   
   // 3. Re-include after delay
-  setTimeout(() => {
-    this.includeFile(filepath);
-  }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
+  this.scheduleFileInclusion(filepath);
+  // After 200ms: includeFile(filepath) removes exclusion
 }
 ```
 
@@ -118,30 +166,39 @@ handleNsfwEvents(events) {
 
 ### Example 1: User Edits in Frontend
 
-```
+```text
 1. User clicks save in browser
    ├─► Frontend: saveTiddler() called
    │
 2. IPC call to backend
    ├─► Backend: receives putTiddler request
    │
-3. Backend: excludeFile(filepath)
+3. Backend IPC layer: Mark tiddler in recentlySavedTiddlers
+   ├─► ipcServerRoutes.ts adds title to Set
+   │
+4. Backend: wiki.addTiddler(tiddler)
+   ├─► Triggers 'change' event
+   ├─► Event handler checks recentlySavedTiddlers
+   ├─► Filters out this change (IPC echo prevention)
+   ├─► Removes title from recentlySavedTiddlers
+   │
+5. Backend Watch-FS layer: excludeFile(filepath)
    ├─► File added to excludedFiles set
    │
-4. Backend: write to file system
+6. Backend: write to file system
    ├─► File content updated on disk
    │
-5. nsfw detects file change
+7. nsfw detects file change
    ├─► But file is in excludedFiles
-   ├─► Change event ignored (no echo)
+   ├─► Change event ignored (Watch-FS echo prevention)
    │
-6. After 200ms delay
+8. After 200ms delay
    ├─► includeFile(filepath) removes exclusion
 ```
 
 ### Example 2: External Editor Modifies File
 
-```
+```text
 1. User edits file in VSCode/Vim
    ├─► File content changes on disk
    │
@@ -153,6 +210,9 @@ handleNsfwEvents(events) {
    ├─► wiki.addTiddler(tiddler)
    │
 4. Wiki fires 'change' event
+   ├─► ipcServerRoutes.ts checks recentlySavedTiddlers
+   ├─► Title NOT in Set (external edit, not IPC save)
+   ├─► Change passes through filter
    ├─► IPC Observable sends event to frontend (via ipc-cat)
    │
 5. Frontend receives change event
@@ -167,7 +227,7 @@ handleNsfwEvents(events) {
 
 ### Example 3: Sub-Wiki Synchronization
 
-```
+```text
 1. Main wiki has sub-wiki folder linked by tag
    ├─► watch-fs detects sub-wiki in tiddlywiki.info
    │
@@ -205,33 +265,6 @@ handleNsfwEvents(events) {
 - `pollTimerInterval = 2_147_483_647`: Effectively disable polling
 - All updates come via IPC Observable (event-driven, not polling)
 
-## Why This Design Works
-
-### 1. No Timestamp Ambiguity
-
-- Don't try to compare `modified` fields
-- File exclusion is binary: excluded or not
-- No edge cases with timestamp formatting or timezone issues
-
-### 2. Centralized Control
-
-- Backend (watch-fs) controls both file I/O and change detection
-- Can accurately exclude files it's currently saving
-- Frontend just consumes change events
-
-### 3. Simple Frontend
-
-- No complex echo detection logic
-- Trust that backend only sends real external changes
-- Focus on UI and user interactions
-
-### 4. Reliable for All Scenarios
-
-- External editor changes: detected and synced
-- Frontend saves: excluded from change detection
-- Sub-wiki changes: same mechanism applies
-- Multiple rapid changes: debounced and batched
-
 ## Troubleshooting
 
 ### Changes Not Appearing in Frontend
@@ -251,15 +284,6 @@ handleNsfwEvents(events) {
 1. Check sub-wiki detection: Look for `[WATCH_FS_SUBWIKI]` logs
 2. Verify tiddlywiki.info has correct configuration
 3. Check workspace `subWikiFolders` setting
-
-## Future Improvements
-
-### Potential Enhancements
-
-1. Content-based change detection: Compare file content hash instead of just exclusion timing
-2. Bidirectional conflict resolution: Handle simultaneous frontend/external edits
-3. Batch file operations: Group multiple tiddler saves into single file write
-4. Delta synchronization: Send only changed fields instead of full tiddler
 
 ### Not Recommended
 
