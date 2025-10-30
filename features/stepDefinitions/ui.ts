@@ -333,6 +333,10 @@ When('I press the key combination {string}', async function(this: ApplicationWor
     throw new Error('No current window is available');
   }
 
+  // Ensure window has focus and is ready
+  await currentWindow.bringToFront();
+  await currentWindow.waitForTimeout(100);
+
   // Convert CommandOrControl to platform-specific key
   let platformKeyCombo = keyCombo;
   if (keyCombo.includes('CommandOrControl')) {
