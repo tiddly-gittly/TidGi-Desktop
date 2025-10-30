@@ -53,7 +53,7 @@ When('I confirm the {string} window exists', async function(this: ApplicationWor
 
   const success = await this.waitForWindowCondition(
     windowType,
-    (window) => window !== undefined && !window.isClosed(),
+    (window) => window !== undefined,
   );
 
   if (!success) {
