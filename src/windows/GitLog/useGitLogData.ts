@@ -1,6 +1,7 @@
 import type { IWorkspace } from '@services/workspaces/interface';
-import type { GitLogEntry } from '@tomplum/react-git-log';
 import { useEffect, useState } from 'react';
+
+import type { GitLogEntry } from './types';
 
 export interface IGitLogData {
   entries: GitLogEntry[];

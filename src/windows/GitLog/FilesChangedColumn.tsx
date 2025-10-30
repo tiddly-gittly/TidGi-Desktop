@@ -9,14 +9,14 @@ import { useTranslation } from 'react-i18next';
 const RowWrapper = styled(Box)<{ $backgroundColour?: string; $selected?: boolean }>`
   display: flex;
   align-items: center;
-  padding: 8px 12px;
-  min-height: 40px;
+  padding: 8px;
+  height: 40px;
   background-color: ${({ $backgroundColour, $selected, theme }) => {
   if ($selected) return theme.palette.action.selected;
   return $backgroundColour || 'transparent';
 }};
   border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
-  gap: 12px;
+  gap: 8px;
   cursor: pointer;
   transition: background-color 0.2s;
 
@@ -28,18 +28,17 @@ const RowWrapper = styled(Box)<{ $backgroundColour?: string; $selected?: boolean
 const MessageWrapper = styled(Box)`
   flex: 1;
   min-width: 0;
+  overflow: hidden;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
 `;
 
 const FilesWrapper = styled(Box)`
   display: flex;
   gap: 4px;
-  flex-wrap: wrap;
   align-items: center;
-  max-width: 400px;
-  min-width: 200px;
+  flex-shrink: 0;
+  overflow: hidden;
 `;
 
 const FileChip = styled(Box)`
@@ -107,7 +106,6 @@ export function FilesChangedColumn({ commit, backgroundColour, onClick, selected
       <MessageWrapper>
         <Typography
           variant='body2'
-          fontWeight={500}
           sx={{
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -116,11 +114,6 @@ export function FilesChangedColumn({ commit, backgroundColour, onClick, selected
         >
           {commit.message}
         </Typography>
-        {commit.author && (
-          <Typography variant='caption' color='text.secondary'>
-            {commit.author.name}
-          </Typography>
-        )}
       </MessageWrapper>
 
       <FilesWrapper>

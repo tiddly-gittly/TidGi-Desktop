@@ -1,13 +1,14 @@
-import type { Commit } from '@tomplum/react-git-log';
 import { useState } from 'react';
 
+import type { GitLogEntry } from './types';
+
 export interface ICommitDetails {
-  selectedCommit: Commit | undefined;
-  setSelectedCommit: (commit: Commit | undefined) => void;
+  selectedCommit: GitLogEntry | undefined;
+  setSelectedCommit: (commit: GitLogEntry | undefined) => void;
 }
 
 export function useCommitDetails(): ICommitDetails {
-  const [selectedCommit, setSelectedCommit] = useState<Commit | undefined>(undefined);
+  const [selectedCommit, setSelectedCommit] = useState<GitLogEntry | undefined>(undefined);
 
   return {
     selectedCommit,

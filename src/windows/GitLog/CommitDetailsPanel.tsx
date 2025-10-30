@@ -1,28 +1,42 @@
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import { styled } from '@mui/material/styles';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
-import type { Commit } from '@tomplum/react-git-log';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { GitLogEntry } from './types';
+
 const Panel = styled(Box)`
-  padding: 16px;
   height: 100%;
-  overflow: auto;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+`;
+
+const TabsWrapper = styled(Box)`
+  border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
+  padding: 0 16px;
+`;
+
+const TabContent = styled(Box)`
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
 `;
 
 const EmptyState = styled(Box)`
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  height: 100%;
   color: ${({ theme }) => theme.palette.text.secondary};
 `;
 
@@ -32,16 +46,22 @@ const FileListWrapper = styled(Box)`
   min-height: 0;
 `;
 
+const ActionsWrapper = styled(Box)`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
 interface ICommitDetailsPanelProps {
-  commit: Commit | undefined;
-  onContextMenu: (commit: Commit, event: React.MouseEvent) => void;
+  commit: GitLogEntry | undefined;
   onFileSelect: (file: string | null) => void;
   selectedFile: string | null;
 }
 
-export function CommitDetailsPanel({ commit, onContextMenu, onFileSelect, selectedFile }: ICommitDetailsPanelProps): React.JSX.Element {
+export function CommitDetailsPanel({ commit, onFileSelect, selectedFile }: ICommitDetailsPanelProps): React.JSX.Element {
   const { t } = useTranslation();
   const [fileChanges, setFileChanges] = useState<string[]>([]);
+  const [currentTab, setCurrentTab] = useState<'details' | 'actions'>('details');
 
   useEffect(() => {
     if (!commit) {
@@ -70,6 +90,76 @@ export function CommitDetailsPanel({ commit, onContextMenu, onFileSelect, select
     void loadFileChanges();
   }, [commit]);
 
+  const handleCheckout = async () => {
+    if (!commit) return;
+    try {
+      const meta = window.meta();
+      const workspaceID = (meta as { workspaceID?: string }).workspaceID;
+
+      if (!workspaceID) return;
+
+      const workspace = await window.service.workspace.get(workspaceID);
+      if (!workspace || !('wikiFolderLocation' in workspace)) return;
+
+      await window.service.git.checkoutCommit(workspace.wikiFolderLocation, commit.hash);
+      alert(t('GitLog.CheckoutSuccess'));
+    } catch (error) {
+      console.error('Failed to checkout commit:', error);
+      alert(t('GitLog.CheckoutFailed'));
+    }
+  };
+
+  const handleRevert = async () => {
+    if (!commit) return;
+    try {
+      const meta = window.meta();
+      const workspaceID = (meta as { workspaceID?: string }).workspaceID;
+
+      if (!workspaceID) return;
+
+      const workspace = await window.service.workspace.get(workspaceID);
+      if (!workspace || !('wikiFolderLocation' in workspace)) return;
+
+      await window.service.git.revertCommit(workspace.wikiFolderLocation, commit.hash);
+      alert(t('GitLog.RevertSuccess'));
+    } catch (error) {
+      console.error('Failed to revert commit:', error);
+      alert(t('GitLog.RevertFailed'));
+    }
+  };
+
+  const handleCopyHash = () => {
+    if (!commit) return;
+    navigator.clipboard.writeText(commit.hash).then(() => {
+      alert(t('GitLog.HashCopied'));
+    }).catch((error: unknown) => {
+      console.error('Failed to copy hash:', error);
+    });
+  };
+
+  const handleOpenInGitHub = async () => {
+    if (!commit) return;
+    try {
+      const meta = window.meta();
+      const workspaceID = (meta as { workspaceID?: string }).workspaceID;
+
+      if (!workspaceID) return;
+
+      const workspace = await window.service.workspace.get(workspaceID);
+      if (!workspace || !('wikiFolderLocation' in workspace) || !('gitUrl' in workspace)) return;
+
+      if (workspace.gitUrl) {
+        const githubUrl = workspace.gitUrl
+          .replace(/\.git$/, '')
+          .replace(/^git@github\.com:/, 'https://github.com/');
+        const commitUrl = `${githubUrl}/commit/${commit.hash}`;
+        window.open(commitUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Failed to open in GitHub:', error);
+    }
+  };
+
   if (!commit) {
     return (
       <Panel>
@@ -80,16 +170,8 @@ export function CommitDetailsPanel({ commit, onContextMenu, onFileSelect, select
     );
   }
 
-  return (
-    <Panel
-      onContextMenu={(event) => {
-        onContextMenu(commit, event);
-      }}
-    >
-      <Typography variant='h6' gutterBottom>
-        {t('GitLog.CommitDetails')}
-      </Typography>
-
+  const renderDetailsTab = () => (
+    <TabContent>
       <Box mb={1}>
         <Typography variant='caption' color='textSecondary'>
           {t('GitLog.Hash')}
@@ -189,6 +271,52 @@ export function CommitDetailsPanel({ commit, onContextMenu, onFileSelect, select
             {t('GitLog.NoFilesChanged')}
           </Typography>
         )}
+    </TabContent>
+  );
+
+  const renderActionsTab = () => (
+    <TabContent>
+      <ActionsWrapper>
+        <Button variant='contained' color='primary' onClick={handleCheckout} fullWidth>
+          {t('GitLog.CheckoutCommit')}
+        </Button>
+
+        <Button variant='contained' color='warning' onClick={handleRevert} fullWidth>
+          {t('GitLog.RevertCommit')}
+        </Button>
+
+        <Button variant='outlined' onClick={handleCopyHash} fullWidth>
+          {t('GitLog.CopyHash')}
+        </Button>
+
+        <Button variant='outlined' onClick={handleOpenInGitHub} fullWidth>
+          {t('GitLog.OpenInGitHub')}
+        </Button>
+
+        <Divider sx={{ my: 1 }} />
+
+        <Typography variant='caption' color='textSecondary'>
+          {t('GitLog.WarningMessage')}
+        </Typography>
+      </ActionsWrapper>
+    </TabContent>
+  );
+
+  return (
+    <Panel>
+      <TabsWrapper>
+        <Tabs
+          value={currentTab}
+          onChange={(_event: React.SyntheticEvent, newValue: 'details' | 'actions') => {
+            setCurrentTab(newValue);
+          }}
+        >
+          <Tab label={t('GitLog.Details')} value='details' />
+          <Tab label={t('GitLog.Actions')} value='actions' />
+        </Tabs>
+      </TabsWrapper>
+
+      {currentTab === 'details' ? renderDetailsTab() : renderActionsTab()}
     </Panel>
   );
 }
