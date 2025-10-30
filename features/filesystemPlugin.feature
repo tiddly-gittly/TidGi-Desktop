@@ -129,7 +129,8 @@ Feature: Filesystem Plugin
     # Modify the file externally
     When I modify file "{tmpDir}/wiki/tiddlers/TestTiddler.tid" to contain "Modified content from external editor"
     Then I wait for tiddler "TestTiddler" to be updated by watch-fs
-    # Verify the wiki shows updated content (should auto-refresh)
+    # Verify the wiki shows updated content (should auto-refresh), need to wait for IPC, it is slow on CI and will randomly failed
+    And I wait for 2 seconds
     Then I should see "Modified content from external editor" in the browser view content
     # Now delete the file externally
     When I delete file "{tmpDir}/wiki/tiddlers/TestTiddler.tid"
