@@ -43,9 +43,9 @@ Feature: Filesystem Plugin
     And I press "Control+a" in browser view
     And I press "Delete" in browser view
     And I type "TestTiddlerTitle" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    Then I should see "16 chars" in the browser view content
     # Wait for tiddler state to settle, otherwise it still shows 3 chars (新条目) for a while
     And I wait for 0.5 seconds
+    Then I should see "16 chars" in the browser view content
     # Input tag by typing in the tag input field - use precise selector to target the tag input specifically
     And I click on "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
     And I press "Control+a" in browser view
@@ -97,7 +97,8 @@ Feature: Filesystem Plugin
     Then I wait for tiddler "WatchTestTiddler" to be added by watch-fs
     # Open sidebar "最近" tab to see the timeline
     And I click on "sidebar tab" element in browser view with selector "div.tc-tab-buttons.tc-sidebar-tabs-main > button:has-text('最近')"
-    And I wait for 0.5 seconds
+    # wait for tw animation, sidebar need time to show
+    And I wait for 1 seconds
     # Click on the tiddler link in timeline to open it
     And I click on "timeline link" element in browser view with selector "div.tc-timeline a.tc-tiddlylink:has-text('WatchTestTiddler')"
     # Verify the tiddler content is displayed
