@@ -291,44 +291,58 @@ export async function elementExists(app: ElectronApplication, selector: string):
 }
 
 /**
- * Capture screenshot of WebContentsView
- * Returns true if screenshot was taken successfully, false if WebContentsView not found
+ * Capture screenshot of WebContentsView with timeout
+ * Returns true if screenshot capture started successfully, false if failed or timeout
+ * File writing continues asynchronously in background if capture succeeds
  */
 export async function captureScreenshot(app: ElectronApplication, screenshotPath: string): Promise<boolean> {
   try {
-    const webContentsId = await getFirstWebContentsView(app);
+    // Add timeout to prevent screenshot from blocking test execution
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => {
+        resolve(null);
+      }, 500);
+    });
 
-    if (!webContentsId) {
-      return false;
+    const capturePromise = (async () => {
+      const webContentsId = await getFirstWebContentsView(app);
+      if (!webContentsId) {
+        return null;
+      }
+
+      const pngBufferData = await app.evaluate(
+        async ({ webContents }, id: number) => {
+          const targetWebContents = webContents.fromId(id);
+          if (!targetWebContents || targetWebContents.isDestroyed()) {
+            return null;
+          }
+
+          try {
+            const image = await targetWebContents.capturePage();
+            const pngBuffer = image.toPNG();
+            return Array.from(pngBuffer);
+          } catch {
+            return null;
+          }
+        },
+        webContentsId,
+      );
+
+      return pngBufferData;
+    })();
+
+    const result = await Promise.race([capturePromise, timeoutPromise]);
+
+    // If we got the screenshot data, write it to file asynchronously (fire and forget)
+    if (result && Array.isArray(result)) {
+      fs.writeFile(screenshotPath, Buffer.from(result)).catch(() => {
+        // Silently ignore write errors
+      });
+      return true;
     }
 
-    const pngBufferData = await app.evaluate(
-      async ({ webContents }, id: number) => {
-        const targetWebContents = webContents.fromId(id);
-        if (!targetWebContents) {
-          return null;
-        }
-
-        try {
-          const image = await targetWebContents.capturePage();
-          const pngBuffer = image.toPNG();
-          return Array.from(pngBuffer);
-        } catch (error) {
-          console.error('Failed to capture screenshot:', error);
-          return null;
-        }
-      },
-      webContentsId,
-    );
-
-    if (!pngBufferData) {
-      return false;
-    }
-
-    await fs.writeFile(screenshotPath, Buffer.from(pngBufferData));
-    return true;
-  } catch (error) {
-    console.error('Error capturing screenshot:', error);
+    return false;
+  } catch {
     return false;
   }
 }
