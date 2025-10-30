@@ -222,12 +222,12 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
       }
     }
 
-  const scenarioName = pickle.name;
-  // Limit scenario slug to avoid extremely long directory names
-  const cleanScenarioName = makeSlugPath(scenarioName, 60);
+    const scenarioName = pickle.name;
+    // Limit scenario slug to avoid extremely long directory names
+    const cleanScenarioName = makeSlugPath(scenarioName, 60);
 
-  // Limit step text slug to avoid excessively long filenames which can trigger ENAMETOOLONG
-  const cleanStepText = makeSlugPath(stepText, 80);
+    // Limit step text slug to avoid excessively long filenames which can trigger ENAMETOOLONG
+    const cleanStepText = makeSlugPath(stepText, 80);
     const stepStatus = result && typeof result.status === 'string' ? result.status : 'unknown-status';
 
     const featureDirectory = path.resolve(screenshotsDirectory, cleanScenarioName);
@@ -247,7 +247,7 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    
+
     // Try to capture both WebContentsView and Page screenshots
     let webViewCaptured = false;
     if (this.app) {

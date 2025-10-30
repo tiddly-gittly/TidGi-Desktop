@@ -24,8 +24,8 @@
     "make": "pnpm run build:plugin && cross-env NODE_ENV=production electron-forge make",
     "make:analyze": "cross-env ANALYZE=true pnpm run make",
     "init:git-submodule": "git submodule update --init --recursive && git submodule update --remote",
-    "lint": "eslint ./src --ext js,ts,tsx,json",
-    "lint:fix": "eslint ./src --ext ts,tsx --fix",
+    "lint": "eslint ./src ./features ./scripts ./localization ./*.ts --ext js,ts,tsx,json",
+    "lint:fix": "eslint ./src ./features ./scripts ./localization ./*.ts --ext ts,tsx,json --fix",
     "check": "tsc --noEmit --skipLibCheck",
     "installType": "typesync"
   },

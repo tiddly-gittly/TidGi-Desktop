@@ -1,14 +1,16 @@
+/* eslint-disable @typescript-eslint/use-unknown-in-catch-callback-variable */
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable no-undef */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable unicorn/prevent-abbreviations */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import esbuild from 'esbuild';
 import fs from 'fs-extra';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { rimraf } from 'rimraf';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,15 +25,15 @@ const nativeNodeModulesPlugin = {
     // Rewrite nsfw's require() to use node_modules path
     build.onLoad({ filter: /nsfw[/\\]js[/\\]src[/\\]index\.js$/ }, async (args) => {
       let contents = await fs.readFile(args.path, 'utf8');
-      
+
       // Replace relative path with require from node_modules
       // Original: require('../../build/Release/nsfw.node')
       // New: require('nsfw/build/Release/nsfw.node')
       contents = contents.replace(
         /require\(['"]\.\.\/\.\.\/build\/Release\/nsfw\.node['"]\)/g,
-        "require('nsfw/build/Release/nsfw.node')"
+        "require('nsfw/build/Release/nsfw.node')",
       );
-      
+
       return {
         contents,
         loader: 'js',
@@ -110,7 +112,7 @@ function getPluginOutputDirs(pluginName) {
         const resourcesPath = path.join(outDir, dirent.name, 'resources/node_modules/tiddlywiki/plugins/linonetwo', pluginName);
         return resourcesPath;
       });
-    
+
     // Only add directories that exist (have been created by afterPack)
     packDirs.forEach(dir => {
       const parentDir = path.dirname(dir);
@@ -142,7 +144,7 @@ async function buildEntryPoints(plugin, outDirs) {
   }
 
   const sourcePath = path.join(__dirname, plugin.sourceFolder);
-  
+
   await Promise.all(
     outDirs.flatMap(outDir =>
       plugin.entryPoints.map(entryPoint =>
@@ -152,7 +154,7 @@ async function buildEntryPoints(plugin, outDirs) {
           outdir: outDir,
         })
       )
-    )
+    ),
   );
 }
 
@@ -161,7 +163,7 @@ async function buildEntryPoints(plugin, outDirs) {
  */
 async function copyNonTsFiles(plugin, outDirs) {
   const sourcePath = path.join(__dirname, plugin.sourceFolder);
-  
+
   await Promise.all(outDirs.map(async (outDir) => {
     await fs.copy(sourcePath, outDir, { filter: filterNonTsFiles });
     console.log(`✓ Copied ${plugin.name} to: ${outDir}`);
@@ -173,19 +175,19 @@ async function copyNonTsFiles(plugin, outDirs) {
  */
 async function buildPlugin(plugin) {
   console.log(`\nBuilding plugin: ${plugin.name}`);
-  
+
   const outDirs = getPluginOutputDirs(plugin.name);
   console.log(`  Output directories: ${outDirs.length}`);
-  
+
   // Prepare output directories
   await prepareOutputDirs(outDirs);
-  
+
   // Build TypeScript entry points
   await buildEntryPoints(plugin, outDirs);
-  
+
   // Copy non-TypeScript files
   await copyNonTsFiles(plugin, outDirs);
-  
+
   console.log(`✓ Completed ${plugin.name}`);
 }
 
@@ -194,11 +196,11 @@ async function buildPlugin(plugin) {
  */
 async function main() {
   console.log('Starting plugin compilation...\n');
-  
+
   for (const plugin of PLUGINS) {
     await buildPlugin(plugin);
   }
-  
+
   console.log('\n✓ All plugins compiled successfully!');
 }
 

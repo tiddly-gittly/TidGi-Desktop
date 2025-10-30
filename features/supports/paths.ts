@@ -66,7 +66,7 @@ const unsafeChars = /[^\p{L}\p{N}\s\-_()]/gu;
 const collapseDashes = /-+/g;
 const collapseSpaces = /\s+/g;
 export const makeSlugPath = (input: string | undefined, maxLength = 120) => {
-  let s = String(input || 'unknown').normalize('NFKC');
+  let s = (input || 'unknown').normalize('NFKC');
   // remove dots explicitly
   s = s.replace(/\./g, '');
   // replace unsafe characters with dashes

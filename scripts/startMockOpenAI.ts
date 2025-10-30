@@ -43,8 +43,10 @@ async function main() {
     });
 
     // 防止进程退出 - 使用 setInterval 而不是空的 Promise
-    const keepAlive = setInterval(() => {
+    // 注意在 e2e 的 CleanUp 里关闭服务器
+    setInterval(() => {
       // 每10秒输出一次状态，确认服务器还在运行
+      console.log('Mock OpenAI 服务器仍在运行...');
     }, 10000);
   } catch (error) {
     console.error('❌ 启动服务器失败:', error);

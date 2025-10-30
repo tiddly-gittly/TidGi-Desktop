@@ -1,6 +1,6 @@
 {
   "exclude": ["template/**/*.js", "features/cucumber.config.js", "**/__mocks__/**/*.js"],
-  "include": ["src", "features", "test", "./*.*.ts", "./*.*.js", "forge.config.ts"],
+  "include": ["src", "features", "test", "scripts", "./*.*.ts", "./*.*.js", "forge.config.ts"],
   "ts-node": {
     "files": true,
     "compilerOptions": {
