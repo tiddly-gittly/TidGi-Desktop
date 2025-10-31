@@ -207,24 +207,22 @@ export class InverseFilesIndex {
   }
 
   /**
-   * Get excluded paths for the main watcher (relative to main wiki path)
-   * @param baseExcludedPaths Permanent excluded paths
-   * @returns Array of paths to exclude
+   * Check if a file is temporarily excluded from the main watcher
+   * @param absoluteFilePath Absolute file path to check
+   * @returns True if the file is excluded
    */
-  getMainWatcherExcludedPaths(baseExcludedPaths: string[]): string[] {
-    return [
-      ...baseExcludedPaths,
-      ...Array.from(this.mainExcludedFiles),
-    ];
+  isMainFileExcluded(absoluteFilePath: string): boolean {
+    return this.mainExcludedFiles.has(absoluteFilePath);
   }
 
   /**
-   * Get excluded paths for a sub-wiki watcher (absolute paths)
+   * Check if a file is temporarily excluded from a sub-wiki watcher
    * @param subWikiId Sub-wiki ID
-   * @returns Array of absolute paths to exclude
+   * @param absoluteFilePath Absolute file path to check
+   * @returns True if the file is excluded
    */
-  getSubWikiExcludedPaths(subWikiId: string): string[] {
+  isSubWikiFileExcluded(subWikiId: string, absoluteFilePath: string): boolean {
     const excluded = this.subWikiExcludedFiles.get(subWikiId);
-    return excluded ? Array.from(excluded) : [];
+    return excluded ? excluded.has(absoluteFilePath) : false;
   }
 }

@@ -42,8 +42,9 @@ Frontend (Browser)          Backend (Node.js Worker)
 
 **Watch-FS Layer (Second Defense)**:
 
-- When saving, watch-fs temporarily excludes file from monitoring for 200ms
+- When saving/deleting, watch-fs temporarily excludes file from monitoring via custom exclusion list
 - Prevents watcher from detecting the file write operation
+- Re-includes file immediately after operation completes (no delay)
 - Combined with IPC filtering, ensures no echo even for rapid successive saves
 
 ### 3. SSE-like Change Notification (IPC Observable)
@@ -127,40 +128,63 @@ wiki.addEventListener('change', (changes) => {
 
 #### Layer 2: Watch-FS Level (in WatchFileSystemAdaptor.ts)
 
+Watch-FS uses a custom exclusion list to prevent detecting its own file operations, and delays DELETE events to handle git operations gracefully.
+
+**Save/Delete Flow:**
+
 ```typescript
 async saveTiddler(tiddler) {
   const filepath = await this.getTiddlerFileInfo(tiddler);
   
-  // 1. Exclude file BEFORE saving
+  // 1. Exclude file BEFORE saving (added to custom exclusion list)
   await this.excludeFile(filepath);
   
   // 2. Save to file system (calls parent saveTiddler)
   await super.saveTiddler(tiddler);
   
-  // 3. Re-include after delay
-  this.scheduleFileInclusion(filepath);
-  // After 200ms: includeFile(filepath) removes exclusion
+  // 3. Re-include IMMEDIATELY after save completes
+  await this.includeFile(filepath);
+  // File is now ready to detect external changes
 }
 ```
 
-File Change Flow:
+**Event Processing with DELETE Delay:**
 
 ```typescript
 handleNsfwEvents(events) {
   events.forEach(event => {
     const filepath = path.join(event.directory, event.file);
     
-    // Skip if file is excluded (being saved)
-    if (this.excludedFiles.has(filepath)) return;
+    // Check custom exclusion list at handler level
+    if (this.inverseFilesIndex.isFileExcluded(filepath)) {
+      // Skip if file is excluded (being saved/deleted by us)
+      return;
+    }
     
-    // Load changed file into wiki
-    const tiddler = $tw.loadTiddlersFromFile(filepath);
-    $tw.syncadaptor.wiki.addTiddler(tiddler);
-    
-    // Wiki change event fires → SSE sends to frontend
+    if (event.action === 'DELETED') {
+      // Delay deletion by 100ms to handle git revert/checkout
+      // Git operations delete then recreate files quickly
+      this.scheduleDeletion(filepath, 100);
+    } else if (event.action === 'CREATED' || event.action === 'MODIFIED') {
+      // Cancel any pending deletion for this file
+      this.cancelPendingDeletion(filepath);
+      
+      // Load changed file into wiki
+      const tiddler = $tw.loadTiddlersFromFile(filepath);
+      $tw.syncadaptor.wiki.addTiddler(tiddler);
+    }
   });
 }
 ```
+
+**Git Operation Handling:**
+
+When `git revert` or `git checkout` executes, files are deleted then recreated:
+
+1. DELETE event → Scheduled for processing after 100ms delay
+2. CREATE event (file recreated) → Cancels pending deletion
+3. Result: Treated as file modification, not deletion + creation
+4. Prevents tiddlers from showing as "missing" (佚失) during git operations
 
 ## Data Flow Examples
 
@@ -183,17 +207,18 @@ handleNsfwEvents(events) {
    ├─► Removes title from recentlySavedTiddlers
    │
 5. Backend Watch-FS layer: excludeFile(filepath)
-   ├─► File added to excludedFiles set
+   ├─► File added to custom exclusion list
    │
 6. Backend: write to file system
    ├─► File content updated on disk
    │
 7. nsfw detects file change
-   ├─► But file is in excludedFiles
-   ├─► Change event ignored (Watch-FS echo prevention)
+   ├─► handleNsfwEvents checks custom exclusion list
+   ├─► File is excluded, change event ignored (Watch-FS echo prevention)
    │
-8. After 200ms delay
-   ├─► includeFile(filepath) removes exclusion
+8. Immediately after save completes
+   ├─► includeFile(filepath) removes from exclusion list
+   ├─► File ready to detect external changes
 ```
 
 ### Example 2: External Editor Modifies File
@@ -250,10 +275,12 @@ handleNsfwEvents(events) {
 
 ## Key Configuration
 
-### File Exclusion
+### File Exclusion and Event Handling
 
-- `FILE_EXCLUSION_CLEANUP_DELAY_MS = 200`: Time to keep file excluded after save
-- Prevents echo while allowing quick re-detection of external changes
+- Custom exclusion list checked at event handler level (not using nsfw's native excludedPaths API)
+- Files are re-included immediately after save/delete operations complete
+- `FILE_DELETION_DELAY_MS = 100`: Delay before processing DELETE events to handle git revert/checkout
+- Prevents echo while allowing immediate re-detection of external changes
 
 ### SSE-like Debouncing (IPC Observable)
 
@@ -275,8 +302,8 @@ handleNsfwEvents(events) {
 
 ### Echo/Duplicate Updates
 
-1. Verify exclusion timing: 200ms should be sufficient
-2. Check for multiple watchers on same path
+1. Check exclusion list: Files should be excluded during save/delete operations
+2. Verify no multiple watchers on same path
 3. Ensure frontend isn't doing its own timestamp-based filtering
 
 ### Sub-Wiki Not Syncing

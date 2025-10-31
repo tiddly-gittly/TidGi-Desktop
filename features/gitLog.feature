@@ -66,7 +66,9 @@ Feature: Git Log Window
     # Click the commit now button
     When I click on a "commit now button" element with selector "button[data-testid='commit-now-button']"
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
-    # Wait for observable to trigger refresh and for the system to stabilize
+    # Wait for observable to trigger refresh - git log window needs to reload commit list after commit
+    And I wait for 1 seconds for "git log UI to receive update notification"
+    # Wait for the system to stabilize and UI to re-render with new commit
     And I wait for 3 seconds for "observable to refresh and system to stabilize"
     # After commit, verify we can see the new commit with Index.tid in the file list
     And I should see a "commit with Index.tid" element with selector "tr:has-text('Index.tid')"
@@ -78,10 +80,15 @@ Feature: Git Log Window
     Then I should see a "revert button" element with selector "button:has-text('回退此提交'), button:has-text('Revert')"
     # Click revert button
     When I click on a "revert button" element with selector "button:has-text('回退此提交'), button:has-text('Revert')"
+    # Wait for git revert operation to complete - git operations can be slow on CI and may take longer than usual when system is under load
+    # The git revert process involves file system operations that may be queued by the OS
+    And I wait for 3 seconds for "git revert to execute"
     Then I wait for "git revert completed" log marker "[test-id-git-revert-complete]"
     # Switch back to main window to verify the revert
     When I switch to "main" window
-    And I wait for 2 seconds
+    # Wait for file system events to stabilize after git revert - the delete-then-recreate events need time to propagate through nsfw watcher
+    # The watch-fs plugin uses a 100ms delay to handle git operations that delete-then-recreate files
+    And I wait for 2 seconds for "file system events to stabilize after git revert"
     # The modified content should be reverted, and make sure file won't be deleted
     Then I should not see a "missing tiddler indicator" element in browser view with selector "[data-tiddler-title='Index']:has-text('佚失')"
     Then I should not see a "modified content in Index tiddler" element in browser view with selector "[data-tiddler-title='Index']:has-text('Modified Index content')"

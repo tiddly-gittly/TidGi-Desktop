@@ -8,36 +8,37 @@ import { type IBootFilesIndexItemWithTitle, InverseFilesIndex } from './InverseF
 import { getActionName } from './utilities';
 
 /**
- * Delay in milliseconds before re-including a file in the watcher after save/delete operations.
- * This prevents race conditions where the watcher might detect our own file changes:
- * - File write operations may not be atomic and can trigger partial write events
- * - Some filesystems buffer writes and flush asynchronously
- * - The watcher needs time to process the excludeFile() call before the actual file operation completes
- * 200ms provides a safe margin for most filesystems while keeping UI responsiveness.
+ * Delay before actually processing file deletion.
+ * This handles git operations that delete-then-recreate files (e.g., revert, checkout).
+ * If a file is recreated within this window, we treat it as modification instead of delete+create.
  */
-const FILE_EXCLUSION_CLEANUP_DELAY_MS = 200;
+const FILE_DELETION_DELAY_MS = 100;
 
 /**
  * Enhanced filesystem adaptor that extends FileSystemAdaptor with file watching capabilities.
  *
  * Architecture:
  * 1. When wiki saves/deletes tiddlers:
- *    - saveTiddler/deleteTiddler calls excludeFile() to add file to watcher's excludedPaths
- *    - watcher.updateExcludedPaths() is called to dynamically exclude the file from watching
- *    - Perform file write/delete operation (file changes are not detected by nsfw)
+ *    - saveTiddler/deleteTiddler calls excludeFile() to add file to internal exclusion list
+ *    - Perform file write/delete operation
+ *    - nsfw detects file changes but handleNsfwEvents filters out excluded files
  *    - Update inverseFilesIndex immediately after successful operation
- *    - Call includeFile() after a short delay to remove file from excludedPaths
+ *    - Call includeFile() immediately to remove file from exclusion list (no delay)
  *    - File is re-included in watching, ready to detect external changes
  *
  * 2. When external changes occur:
- *    - nsfw detects file changes (only for non-excluded files)
+ *    - nsfw detects file changes
+ *    - handleNsfwEvents checks if file is excluded; if not, process the event
+ *    - For DELETE events: delay processing to handle git revert/checkout scenarios
+ *    - If file is recreated within delay window (e.g., git revert), cancel deletion
  *    - Load file and sync to wiki via addTiddler/deleteTiddler
  *    - Update inverseFilesIndex to track the change
  *
- * This approach uses nsfw's native updateExcludedPaths() API for precise, per-file exclusion.
- * Unlike pause/resume (which blocks all events) or mutex locks (which require checking every event),
- * this method dynamically adjusts the watcher's exclusion list to prevent events at the source.
- * This ensures user's concurrent external file modifications are still detected while our own operations are ignored.
+ * This approach uses our own exclusion list instead of nsfw's updateExcludedPaths() API.
+ * This allows us to:
+ * - Filter events at the handler level with more control
+ * - Delay DELETE events to handle git operations that delete-then-recreate files
+ * - Remove exclusions immediately after our own operations complete (no delay needed)
  */
 export class WatchFileSystemAdaptor extends FileSystemAdaptor {
   name = 'watch-filesystem';
@@ -48,12 +49,12 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
   /** Base excluded paths (permanent) */
   private baseExcludedPaths: string[] = [];
   /**
-   * Track timers for file inclusion to prevent race conditions.
-   * When saving the same file multiple times rapidly, we need to ensure
-   * only the last save's timer runs. This Map tracks one timer per file path.
-   * The timer is managed by scheduleFileInclusion() method.
+   * Track pending file deletions to handle git revert/checkout scenarios.
+   * Maps absolute file path to deletion timer.
+   * When a file is deleted then quickly recreated (e.g., git revert),
+   * we cancel the deletion and treat the recreation as a modification.
    */
-  private inclusionTimers: Map<string, NodeJS.Timeout> = new Map();
+  private pendingDeletions: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(options: { boot?: typeof $tw.boot; wiki: Wiki }) {
     super(options);
@@ -72,28 +73,16 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    */
   override async saveTiddler(tiddler: Tiddler, callback?: IFileSystemAdaptorCallback, options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
     try {
-      // Get file info to calculate path for watching
-      const fileInfo = await this.getTiddlerFileInfo(tiddler);
-      if (!fileInfo) {
-        const error = new Error('No fileInfo returned from getTiddlerFileInfo');
-        callback?.(error);
-        throw error;
-      }
-
-      // Get old file info before save (in case file path changes)
+      // Get existing file info (if tiddler already exists on disk)
       const oldFileInfo = this.boot.files[tiddler.fields.title];
 
-      // Log tiddler text for debugging
-      const textPreview = (tiddler.fields.text ?? '').substring(0, 50);
-      this.logger.log(`[WATCH_FS_SAVE] Saving "${tiddler.fields.title}", text: ${textPreview}`);
-
-      // Exclude new file from watching during save
-      await this.excludeFile(fileInfo.filepath);
-
-      // If file path is changing (e.g., moving to sub-wiki), also exclude the old file
-      if (oldFileInfo && oldFileInfo.filepath !== fileInfo.filepath) {
-        this.logger.log(`[WATCH_FS_MOVE] File path changing from ${oldFileInfo.filepath} to ${fileInfo.filepath}`);
-        await this.excludeFile(oldFileInfo.filepath);
+      // Exclude old file path before save (if it exists)
+      if (oldFileInfo) {
+        this.excludeFile(oldFileInfo.filepath);
+        this.logger.log(`[WATCH_FS_SAVE] Excluded existing file: ${oldFileInfo.filepath}`);
+      } else {
+        // For new tiddlers, we can't pre-exclude them since we don't know the path yet
+        this.logger.log(`[WATCH_FS_NEW_TIDDLER] Saving new tiddler: ${tiddler.fields.title}`);
       }
 
       // Call parent's saveTiddler to handle the actual save (including cleanup of old files)
@@ -111,14 +100,13 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // Notify callback if provided
       callback?.(null, finalFileInfo);
 
-      // Schedule file re-inclusion after save AND cleanup complete
-      // This ensures we don't detect our own file operations
-      this.scheduleFileInclusion(finalFileInfo.filepath);
+      // Immediately re-include files after save completes (no delay needed)
+      this.includeFile(finalFileInfo.filepath);
 
-      // If old file path was different and we excluded it, schedule its re-inclusion
+      // If old file path was different and we excluded it, re-include it
       // The old file should be deleted by now via cleanupTiddlerFiles
       if (oldFileInfo && oldFileInfo.filepath !== finalFileInfo.filepath) {
-        this.scheduleFileInclusion(oldFileInfo.filepath);
+        this.includeFile(oldFileInfo.filepath);
       }
     } catch (error) {
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
@@ -144,7 +132,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
     try {
       // Exclude file before deletion
-      await this.excludeFile(fileRelativePath);
+      this.excludeFile(fileInfo.filepath);
 
       // Call parent's deleteTiddler to handle the actual deletion
       await super.deleteTiddler(title, undefined, _options);
@@ -155,11 +143,11 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // Notify callback if provided
       callback?.(null, null);
 
-      // Schedule file re-inclusion after deletion completes
-      this.scheduleFileInclusion(fileRelativePath);
+      // Immediately re-include file after deletion completes (no delay needed)
+      this.includeFile(fileInfo.filepath);
     } catch (error) {
-      // Schedule file re-inclusion on error to clean up exclusion list
-      this.scheduleFileInclusion(fileRelativePath);
+      // Re-include file on error to clean up exclusion list
+      this.includeFile(fileInfo.filepath);
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
       callback?.(errorObject);
       throw errorObject;
@@ -301,63 +289,56 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
   }
 
   /**
-   * Update watcher's excluded paths with current temporary exclusions
-   */
-  private async updateWatcherExcludedPaths(): Promise<void> {
-    // Update main watcher
-    if (this.watcher) {
-      const allExcludedPaths = this.inverseFilesIndex.getMainWatcherExcludedPaths(this.baseExcludedPaths);
-      // @ts-expect-error - nsfw types are incorrect, it accepts string[] not just [string]
-      await this.watcher.updateExcludedPaths(allExcludedPaths);
-    }
-
-    // Update each sub-wiki watcher
-    for (const subWiki of this.inverseFilesIndex.getSubWikis()) {
-      const excludedPaths = this.inverseFilesIndex.getSubWikiExcludedPaths(subWiki.id);
-      // @ts-expect-error - nsfw types are incorrect, it accepts string[] not just [string]
-      await subWiki.watcher.updateExcludedPaths(excludedPaths);
-    }
-  }
-
-  /**
    * Temporarily exclude a file from watching (e.g., during save/delete)
+   * We maintain our own exclusion list and filter events in handleNsfwEvents.
    * @param absoluteFilePath Absolute file path
    */
-  private async excludeFile(absoluteFilePath: string): Promise<void> {
+  private excludeFile(absoluteFilePath: string): void {
     this.logger.log(`[WATCH_FS_EXCLUDE] Excluding file: ${absoluteFilePath}`);
     this.inverseFilesIndex.excludeFile(absoluteFilePath);
-    await this.updateWatcherExcludedPaths();
   }
 
   /**
    * Remove a file from temporary exclusions
    * @param absoluteFilePath Absolute file path
    */
-  private async includeFile(absoluteFilePath: string): Promise<void> {
+  private includeFile(absoluteFilePath: string): void {
     this.logger.log(`[WATCH_FS_INCLUDE] Including file: ${absoluteFilePath}`);
     this.inverseFilesIndex.includeFile(absoluteFilePath);
-    await this.updateWatcherExcludedPaths();
   }
 
   /**
-   * Schedule file inclusion after a delay, clearing any existing timer for the same file.
-   * This prevents race conditions when saving the same file multiple times rapidly.
-   * @param filepath File path to schedule for inclusion
+   * Cancel a pending deletion for a file (e.g., when file is recreated after deletion)
+   * @param fileAbsolutePath Absolute file path
    */
-  private scheduleFileInclusion(filepath: string): void {
-    // Clear any existing timer for this file to prevent premature inclusion
-    const existingTimer = this.inclusionTimers.get(filepath);
+  private cancelPendingDeletion(fileAbsolutePath: string): void {
+    const existingTimer = this.pendingDeletions.get(fileAbsolutePath);
     if (existingTimer) {
       clearTimeout(existingTimer);
+      this.pendingDeletions.delete(fileAbsolutePath);
+      this.logger.log(`[WATCH_FS_CANCEL_DELETE] Cancelled pending deletion for: ${fileAbsolutePath}`);
     }
+  }
 
-    // Schedule new timer
+  /**
+   * Schedule a file deletion with delay to handle git revert/checkout scenarios.
+   * If the file is recreated within the delay window, the deletion is cancelled.
+   * @param fileAbsolutePath Absolute file path
+   * @param fileRelativePath Relative file path
+   * @param fileExtension File extension
+   */
+  private scheduleDeletion(fileAbsolutePath: string, fileRelativePath: string, fileExtension: string): void {
+    // Clear any existing deletion timer for this file
+    this.cancelPendingDeletion(fileAbsolutePath);
+
+    // Schedule the deletion
     const timer = setTimeout(() => {
-      void this.includeFile(filepath);
-      this.inclusionTimers.delete(filepath);
-    }, FILE_EXCLUSION_CLEANUP_DELAY_MS);
+      this.handleFileDelete(fileAbsolutePath, fileRelativePath, fileExtension);
+      this.pendingDeletions.delete(fileAbsolutePath);
+    }, FILE_DELETION_DELAY_MS);
 
-    this.inclusionTimers.set(filepath, timer);
+    this.pendingDeletions.set(fileAbsolutePath, timer);
+    this.logger.log(`[WATCH_FS_SCHEDULE_DELETE] Scheduled deletion for: ${fileAbsolutePath}`);
   }
 
   /**
@@ -378,6 +359,17 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // Compute absolute path
       const fileAbsolutePath = path.join(directory, fileName);
 
+      // Check if this file is in our exclusion list - if so, skip processing
+      const subWikiForExclusion = this.inverseFilesIndex.getSubWikiForFile(fileAbsolutePath);
+      const isExcluded = subWikiForExclusion
+        ? this.inverseFilesIndex.isSubWikiFileExcluded(subWikiForExclusion.id, fileAbsolutePath)
+        : this.inverseFilesIndex.isMainFileExcluded(fileAbsolutePath);
+
+      if (isExcluded) {
+        this.logger.log(`[WATCH_FS_SKIP_EXCLUDED] Skipping excluded file: ${fileAbsolutePath}`);
+        continue;
+      }
+
       // Determine which wiki this file belongs to and compute relative path accordingly
       const subWikiInfo = this.inverseFilesIndex.getSubWikiForFile(fileAbsolutePath);
       const basePath = subWikiInfo ? subWikiInfo.path : this.watchPathBase;
@@ -392,6 +384,9 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Handle different event types
       if (action === nsfw.actions.CREATED || action === nsfw.actions.MODIFIED) {
+        // Cancel any pending deletion for this file (e.g., git revert scenario)
+        this.cancelPendingDeletion(fileAbsolutePath);
+
         void this.handleFileAddOrChange(
           fileAbsolutePath,
           fileRelativePath,
@@ -403,7 +398,8 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
           action === nsfw.actions.CREATED ? 'add' : 'change',
         );
       } else if (action === nsfw.actions.DELETED) {
-        this.handleFileDelete(fileAbsolutePath, fileRelativePath, fileExtension);
+        // Delay deletion to handle git revert/checkout scenarios
+        this.scheduleDeletion(fileAbsolutePath, fileRelativePath, fileExtension);
       } else if (action === nsfw.actions.RENAMED) {
         // NSFW provides rename events with oldFile/newFile
         // Handle as delete old + create new
@@ -413,6 +409,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
           const oldBasePath = oldSubWikiInfo ? oldSubWikiInfo.path : this.watchPathBase;
           const oldFileRelativePath = path.relative(oldBasePath, oldFileAbsPath);
           const oldFileExtension = path.extname(oldFileRelativePath);
+          // For rename, we can delete immediately since we know it's a rename operation
           this.handleFileDelete(oldFileAbsPath, oldFileRelativePath, oldFileExtension);
 
           const newDirectory = 'newDirectory' in event ? event.newDirectory : directory;
@@ -579,6 +576,12 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * Cleanup method to properly close watcher when wiki is shutting down
    */
   public async cleanup(): Promise<void> {
+    // Clear all pending deletion timers
+    for (const timer of this.pendingDeletions.values()) {
+      clearTimeout(timer);
+    }
+    this.pendingDeletions.clear();
+
     if (this.watcher) {
       this.logger.log('[WATCH_FS_CLEANUP] Closing filesystem watcher');
       await this.watcher.stop();
