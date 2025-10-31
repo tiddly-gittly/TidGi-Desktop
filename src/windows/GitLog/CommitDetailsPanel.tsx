@@ -102,10 +102,9 @@ export function CommitDetailsPanel({ commit, onFileSelect, selectedFile }: IComm
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
       await window.service.git.checkoutCommit(workspace.wikiFolderLocation, commit.hash);
-      alert(t('GitLog.CheckoutSuccess'));
+      console.log('Checkout success');
     } catch (error) {
       console.error('Failed to checkout commit:', error);
-      alert(t('GitLog.CheckoutFailed'));
     }
   };
 
@@ -121,10 +120,9 @@ export function CommitDetailsPanel({ commit, onFileSelect, selectedFile }: IComm
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
       await window.service.git.revertCommit(workspace.wikiFolderLocation, commit.hash);
-      alert(t('GitLog.RevertSuccess'));
+      console.log('Revert success');
     } catch (error) {
       console.error('Failed to revert commit:', error);
-      alert(t('GitLog.RevertFailed'));
     }
   };
 
@@ -143,19 +141,17 @@ export function CommitDetailsPanel({ commit, onFileSelect, selectedFile }: IComm
         commitOnly: true,
         commitMessage: 'Manual backup from Git Log',
       });
-      alert(t('GitLog.CommitSuccess'));
-      // Reload the page to show the new commit
-      window.location.reload();
+      console.log('Commit success');
+      // Data will be refreshed by the subscription in useGitLogData
     } catch (error) {
       console.error('Failed to commit:', error);
-      alert(t('GitLog.CommitFailed'));
     }
   };
 
   const handleCopyHash = () => {
     if (!commit) return;
     navigator.clipboard.writeText(commit.hash).then(() => {
-      alert(t('GitLog.HashCopied'));
+      console.log('Hash copied');
     }).catch((error: unknown) => {
       console.error('Failed to copy hash:', error);
     });

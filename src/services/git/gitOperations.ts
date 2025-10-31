@@ -12,6 +12,10 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
   const { page = 0, pageSize = 100, searchQuery } = options;
   const skip = page * pageSize;
 
+  // Check for uncommitted changes
+  const statusResult = await GitProcess.exec(['status', '--porcelain'], repoPath);
+  const hasUncommittedChanges = statusResult.stdout.trim().length > 0;
+
   // Build git log command arguments
   const logArguments = [
     'log',
@@ -74,17 +78,54 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
       };
     });
 
+  // Add uncommitted changes as first entry if any
+  if (hasUncommittedChanges && page === 0) {
+    const now = new Date().toISOString();
+    entries.unshift({
+      hash: '',
+      parents: [],
+      branch: currentBranch,
+      message: '未提交的更改 / Uncommitted Changes',
+      committerDate: now,
+      author: {
+        name: 'Local',
+        email: undefined,
+      },
+      authorDate: now,
+    });
+  }
+
   return {
     entries,
     currentBranch,
-    totalCount,
+    totalCount: totalCount + (hasUncommittedChanges ? 1 : 0),
   };
 }
 
 /**
  * Get files changed in a specific commit
+ * If commitHash is empty, returns uncommitted changes
  */
 export async function getCommitFiles(repoPath: string, commitHash: string): Promise<string[]> {
+  // Handle uncommitted changes
+  if (!commitHash || commitHash === '') {
+    const result = await GitProcess.exec(['status', '--porcelain'], repoPath);
+
+    if (result.exitCode !== 0) {
+      throw new Error(`Failed to get uncommitted files: ${result.stderr}`);
+    }
+
+    return result.stdout
+      .trim()
+      .split('\n')
+      .filter((line: string) => line.length > 0)
+      .map((line: string) => {
+        // Parse git status format: "XY filename"
+        // XY is two-letter status code, filename starts at position 3
+        return line.substring(3).trim();
+      });
+  }
+
   const result = await GitProcess.exec(
     ['diff-tree', '--no-commit-id', '--name-only', '-r', commitHash],
     repoPath,

@@ -16,38 +16,40 @@ const BACKOFF_OPTIONS = {
 /**
  * Generic function to wait for a log marker to appear in wiki log files.
  */
-async function waitForLogMarker(searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = 'wiki-'): Promise<void> {
+export async function waitForLogMarker(searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = 'wiki-'): Promise<void> {
   const logPath = path.join(process.cwd(), 'userData-test', 'logs');
 
-  await backOff(
-    async () => {
-      try {
-        const files = await fs.readdir(logPath);
-        const logFiles = files.filter(f => f.startsWith(logFilePattern) && f.endsWith('.log'));
+  try {
+    await backOff(
+      async () => {
+        try {
+          const files = await fs.readdir(logPath);
+          const logFiles = files.filter(f => f.startsWith(logFilePattern) && f.endsWith('.log'));
 
-        for (const file of logFiles) {
-          const content = await fs.readFile(path.join(logPath, file), 'utf-8');
-          if (content.includes(searchString)) {
-            return;
+          for (const file of logFiles) {
+            const content = await fs.readFile(path.join(logPath, file), 'utf-8');
+            if (content.includes(searchString)) {
+              return;
+            }
           }
+        } catch {
+          // Log directory might not exist yet, continue retrying
         }
-      } catch {
-        // Log directory might not exist yet, continue retrying
-      }
 
-      throw new Error('Log marker not found yet');
-    },
-    {
-      numOfAttempts: Math.ceil(maxWaitMs / 100),
-      startingDelay: 100,
-      timeMultiple: 1,
-      maxDelay: 100,
-      delayFirstAttempt: false,
-      jitter: 'none',
-    },
-  ).catch(() => {
+        throw new Error('Log marker not found yet');
+      },
+      {
+        numOfAttempts: Math.ceil(maxWaitMs / 100),
+        startingDelay: 100,
+        timeMultiple: 1,
+        maxDelay: 100,
+        delayFirstAttempt: false,
+      },
+    );
+  } catch {
+    // If backOff fails, throw the user-friendly error message
     throw new Error(errorMessage);
-  });
+  }
 }
 
 When('I cleanup test wiki so it could create a new one on start', async function() {

@@ -2,7 +2,7 @@ import { createWorkerProxy } from '@services/libs/workerAdapter';
 import { dialog, net } from 'electron';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
-import { Observer } from 'rxjs';
+import { BehaviorSubject, Observer } from 'rxjs';
 import { Worker } from 'worker_threads';
 // @ts-expect-error - Vite worker import with ?nodeWorker query
 import GitWorkerFactory from './gitWorker?nodeWorker';
@@ -23,7 +23,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
 import * as gitOperations from './gitOperations';
 import type { GitWorker } from './gitWorker';
-import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitLogOptions, IGitLogResult, IGitService, IGitUserInfos } from './interface';
+import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitLogOptions, IGitLogResult, IGitService, IGitStateChange, IGitUserInfos } from './interface';
 import { registerMenu } from './registerMenu';
 import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 
@@ -31,6 +31,7 @@ import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 export class Git implements IGitService {
   private gitWorker?: GitWorker;
   private nativeWorker?: Worker;
+  public gitStateChange$ = new BehaviorSubject<IGitStateChange | undefined>(undefined);
 
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
@@ -39,6 +40,14 @@ export class Git implements IGitService {
   ) {
     // Register menu items after i18n is ready
     void registerMenu();
+  }
+
+  private notifyGitStateChange(wikiFolderLocation: string, type: IGitStateChange['type']): void {
+    this.gitStateChange$.next({
+      timestamp: Date.now(),
+      wikiFolderLocation,
+      type,
+    });
   }
 
   public async initialize(): Promise<void> {
@@ -214,7 +223,13 @@ export class Git implements IGitService {
         logger.error('updateGitInfoTiddler failed when commitAndSync', { error });
       }
       const observable = this.gitWorker?.commitAndSyncWiki(workspace, configs, getErrorMessageI18NDict());
-      return await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
+      const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
+      // Notify git state change
+      const changeType = configs.commitOnly ? 'commit' : 'sync';
+      this.notifyGitStateChange(workspace.wikiFolderLocation, changeType);
+      // Log for e2e test detection
+      logger.info(`[test-id-git-${changeType}-complete]`, { wikiFolderLocation: workspace.wikiFolderLocation });
+      return hasChanges;
     } catch (error: unknown) {
       const error_ = error as Error;
       this.createFailedNotification(error_.message, workspaceIDToShowNotification);
@@ -232,7 +247,10 @@ export class Git implements IGitService {
     }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     const observable = this.gitWorker?.forcePullWiki(workspace, configs, getErrorMessageI18NDict());
-    return await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
+    const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
+    // Notify git state change
+    this.notifyGitStateChange(workspace.wikiFolderLocation, 'pull');
+    return hasChanges;
   }
 
   /**
@@ -306,9 +324,17 @@ export class Git implements IGitService {
 
   public async checkoutCommit(wikiFolderPath: string, commitHash: string): Promise<void> {
     await gitOperations.checkoutCommit(wikiFolderPath, commitHash);
+    // Notify git state change
+    this.notifyGitStateChange(wikiFolderPath, 'checkout');
+    // Log for e2e test detection
+    logger.info(`[test-id-git-checkout-complete]`, { wikiFolderPath, commitHash });
   }
 
   public async revertCommit(wikiFolderPath: string, commitHash: string): Promise<void> {
     await gitOperations.revertCommit(wikiFolderPath, commitHash);
+    // Notify git state change
+    this.notifyGitStateChange(wikiFolderPath, 'revert');
+    // Log for e2e test detection
+    logger.info(`[test-id-git-revert-complete]`, { wikiFolderPath, commitHash });
   }
 }

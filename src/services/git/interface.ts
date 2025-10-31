@@ -2,6 +2,7 @@ import { GitChannel } from '@/constants/channels';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { ICommitAndSyncOptions, ModifiedFileList } from 'git-sync-js';
+import type { BehaviorSubject } from 'rxjs';
 
 export interface IGitUserInfos extends IGitUserInfosWithoutToken {
   /** Github Login: token */
@@ -58,10 +59,26 @@ export interface IGitLogResult {
 }
 
 /**
+ * Git state change event
+ */
+export interface IGitStateChange {
+  /** Timestamp of the change */
+  timestamp: number;
+  /** The workspace folder that changed */
+  wikiFolderLocation: string;
+  /** Type of change */
+  type: 'commit' | 'sync' | 'pull' | 'checkout' | 'revert';
+}
+
+/**
  * System Preferences are not stored in storage but stored in macOS Preferences.
  * It can be retrieved and changed using Electron APIs
  */
 export interface IGitService {
+  /**
+   * Observable that emits when git state changes (commit, sync, etc.)
+   */
+  gitStateChange$: BehaviorSubject<IGitStateChange | undefined>;
   initialize(): Promise<void>;
   clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void>;
   /**
@@ -119,6 +136,7 @@ export const GitServiceIPCDescriptor = {
     getGitLog: ProxyPropertyType.Function,
     getModifiedFileList: ProxyPropertyType.Function,
     getWorkspacesRemote: ProxyPropertyType.Function,
+    gitStateChange$: ProxyPropertyType.Value$,
     initWikiGit: ProxyPropertyType.Function,
     revertCommit: ProxyPropertyType.Function,
     syncOrForcePull: ProxyPropertyType.Function,
