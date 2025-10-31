@@ -24,6 +24,7 @@ import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface
 import * as gitOperations from './gitOperations';
 import type { GitWorker } from './gitWorker';
 import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitLogOptions, IGitLogResult, IGitService, IGitUserInfos } from './interface';
+import { registerMenu } from './registerMenu';
 import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 
 @injectable()
@@ -36,6 +37,8 @@ export class Git implements IGitService {
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
   ) {
+    // Register menu items after i18n is ready
+    void registerMenu();
   }
 
   public async initialize(): Promise<void> {

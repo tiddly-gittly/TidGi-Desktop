@@ -128,6 +128,30 @@ export function CommitDetailsPanel({ commit, onFileSelect, selectedFile }: IComm
     }
   };
 
+  const handleCommitNow = async () => {
+    try {
+      const meta = window.meta();
+      const workspaceID = (meta as { workspaceID?: string }).workspaceID;
+
+      if (!workspaceID) return;
+
+      const workspace = await window.service.workspace.get(workspaceID);
+      if (!workspace || !('wikiFolderLocation' in workspace)) return;
+
+      await window.service.git.commitAndSync(workspace, {
+        dir: workspace.wikiFolderLocation,
+        commitOnly: true,
+        commitMessage: 'Manual backup from Git Log',
+      });
+      alert(t('GitLog.CommitSuccess'));
+      // Reload the page to show the new commit
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to commit:', error);
+      alert(t('GitLog.CommitFailed'));
+    }
+  };
+
   const handleCopyHash = () => {
     if (!commit) return;
     navigator.clipboard.writeText(commit.hash).then(() => {
@@ -274,33 +298,53 @@ export function CommitDetailsPanel({ commit, onFileSelect, selectedFile }: IComm
     </TabContent>
   );
 
-  const renderActionsTab = () => (
-    <TabContent>
-      <ActionsWrapper>
-        <Button variant='contained' color='primary' onClick={handleCheckout} fullWidth>
-          {t('GitLog.CheckoutCommit')}
-        </Button>
+  const renderActionsTab = () => {
+    // Check if this is an uncommitted state (hash would be empty or special)
+    const isUncommitted = !commit || commit.hash === '' || commit.message.includes('未提交') || commit.message.includes('Uncommitted');
 
-        <Button variant='contained' color='warning' onClick={handleRevert} fullWidth>
-          {t('GitLog.RevertCommit')}
-        </Button>
+    return (
+      <TabContent>
+        <ActionsWrapper>
+          {isUncommitted && (
+            <>
+              <Button
+                variant='contained'
+                color='success'
+                onClick={handleCommitNow}
+                fullWidth
+                data-testid='commit-now-button'
+              >
+                {t('GitLog.CommitNow')}
+              </Button>
+              <Divider sx={{ my: 1 }} />
+            </>
+          )}
 
-        <Button variant='outlined' onClick={handleCopyHash} fullWidth>
-          {t('GitLog.CopyHash')}
-        </Button>
+          <Button variant='contained' color='primary' onClick={handleCheckout} fullWidth disabled={isUncommitted}>
+            {t('GitLog.CheckoutCommit')}
+          </Button>
 
-        <Button variant='outlined' onClick={handleOpenInGitHub} fullWidth>
-          {t('GitLog.OpenInGitHub')}
-        </Button>
+          <Button variant='contained' color='warning' onClick={handleRevert} fullWidth disabled={isUncommitted}>
+            {t('GitLog.RevertCommit')}
+          </Button>
 
-        <Divider sx={{ my: 1 }} />
+          <Button variant='outlined' onClick={handleCopyHash} fullWidth disabled={isUncommitted}>
+            {t('GitLog.CopyHash')}
+          </Button>
 
-        <Typography variant='caption' color='textSecondary'>
-          {t('GitLog.WarningMessage')}
-        </Typography>
-      </ActionsWrapper>
-    </TabContent>
-  );
+          <Button variant='outlined' onClick={handleOpenInGitHub} fullWidth disabled={isUncommitted}>
+            {t('GitLog.OpenInGitHub')}
+          </Button>
+
+          <Divider sx={{ my: 1 }} />
+
+          <Typography variant='caption' color='textSecondary'>
+            {t('GitLog.WarningMessage')}
+          </Typography>
+        </ActionsWrapper>
+      </TabContent>
+    );
+  };
 
   return (
     <Panel>
