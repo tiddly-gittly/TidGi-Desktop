@@ -330,8 +330,8 @@ export class Git implements IGitService {
     logger.info(`[test-id-git-checkout-complete]`, { wikiFolderPath, commitHash });
   }
 
-  public async revertCommit(wikiFolderPath: string, commitHash: string): Promise<void> {
-    await gitOperations.revertCommit(wikiFolderPath, commitHash);
+  public async revertCommit(wikiFolderPath: string, commitHash: string, commitMessage?: string): Promise<void> {
+    await gitOperations.revertCommit(wikiFolderPath, commitHash, commitMessage);
     // Notify git state change
     this.notifyGitStateChange(wikiFolderPath, 'revert');
     // Log for e2e test detection

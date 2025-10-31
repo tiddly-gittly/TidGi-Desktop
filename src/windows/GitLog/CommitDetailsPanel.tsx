@@ -119,8 +119,10 @@ export function CommitDetailsPanel({ commit, onFileSelect, selectedFile }: IComm
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
-      await window.service.git.revertCommit(workspace.wikiFolderLocation, commit.hash);
+      // Pass the commit message to revertCommit for better revert message
+      await window.service.git.revertCommit(workspace.wikiFolderLocation, commit.hash, commit.message);
       console.log('Revert success');
+      // Data will be refreshed by the subscription in useGitLogData
     } catch (error) {
       console.error('Failed to revert commit:', error);
     }
@@ -139,7 +141,7 @@ export function CommitDetailsPanel({ commit, onFileSelect, selectedFile }: IComm
       await window.service.git.commitAndSync(workspace, {
         dir: workspace.wikiFolderLocation,
         commitOnly: true,
-        commitMessage: 'Manual backup from Git Log',
+        commitMessage: t('ContextMenu.ManualBackup'),
       });
       console.log('Commit success');
       // Data will be refreshed by the subscription in useGitLogData

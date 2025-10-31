@@ -120,9 +120,10 @@ export interface IGitService {
    */
   checkoutCommit(wikiFolderPath: string, commitHash: string): Promise<void>;
   /**
-   * Revert a specific commit
+   * Revert a specific commit (using git revert)
+   * @param commitMessage - Optional original commit message to include in revert message
    */
-  revertCommit(wikiFolderPath: string, commitHash: string): Promise<void>;
+  revertCommit(wikiFolderPath: string, commitHash: string, commitMessage?: string): Promise<void>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,

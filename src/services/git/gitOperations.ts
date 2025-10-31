@@ -2,6 +2,7 @@
  * Git operations using dugite
  * This module provides git log, checkout, revert functionality
  */
+import { i18n } from '@services/libs/i18n';
 import { GitProcess } from 'dugite';
 import type { IGitLogOptions, IGitLogResult } from './interface';
 
@@ -85,7 +86,7 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
       hash: '',
       parents: [],
       branch: currentBranch,
-      message: '未提交的更改 / Uncommitted Changes',
+      message: i18n.t('ContextMenu.UncommittedChanges'),
       committerDate: now,
       author: {
         name: 'Local',
@@ -180,17 +181,23 @@ export async function checkoutCommit(repoPath: string, commitHash: string): Prom
 
 /**
  * Revert a specific commit
+ * @param commitMessage - The original commit message to include in the revert message
  */
-export async function revertCommit(repoPath: string, commitHash: string): Promise<void> {
+export async function revertCommit(repoPath: string, commitHash: string, commitMessage?: string): Promise<void> {
   const result = await GitProcess.exec(['revert', '--no-commit', commitHash], repoPath);
 
   if (result.exitCode !== 0) {
     throw new Error(`Failed to revert commit: ${result.stderr}`);
   }
 
+  // Create revert commit message with the original commit message
+  const revertMessage = commitMessage
+    ? i18n.t('ContextMenu.RevertCommit', { message: commitMessage })
+    : `Revert commit ${commitHash}`;
+
   // Commit the revert
   const commitResult = await GitProcess.exec(
-    ['commit', '-m', `Revert commit ${commitHash}`],
+    ['commit', '-m', revertMessage],
     repoPath,
   );
 

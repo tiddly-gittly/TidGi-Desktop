@@ -28,8 +28,10 @@ Feature: Filesystem Plugin
     And I switch to "main" window
     Then I should see a "SubWiki workspace" element with selector "div[data-testid^='workspace-']:has-text('SubWiki')"
     # Wait for main wiki to restart after sub-wiki creation
-    Then I wait for main wiki to restart after sub-wiki creation
-    Then I wait for view to finish loading
+    Then I wait for "main wiki restarted after sub-wiki creation" log marker "[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI]"
+    And I wait for "watch-fs stabilized after restart" log marker "[test-id-WATCH_FS_STABILIZED]"
+    And I wait for "SSE ready after restart" log marker "[test-id-SSE_READY]"
+    Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
     # Click SubWiki workspace again to ensure TestTag tiddler is displayed
     And I wait for 1 seconds
     When I click on a "SubWiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('SubWiki')"

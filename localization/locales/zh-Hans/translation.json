@@ -82,8 +82,11 @@
   "ContextMenu": {
     "About": "关于",
     "AddToDictionary": "添加到字典",
-    "Back": "向后←",
+    "Back": "后退←",
     "BackupNow": "立即本地Git备份",
+    "ManualBackup": "手动备份",
+    "RevertCommit": "回退提交：{{message}}",
+    "UncommittedChanges": "未提交的更改",
     "Copy": "复制",
     "CopyEmailAddress": "复制电子邮件地址",
     "CopyImage": "复制图片",

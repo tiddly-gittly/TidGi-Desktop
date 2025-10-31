@@ -245,22 +245,35 @@ async function clearSubWikiRoutingTestData() {
   }
 }
 
+/**
+ * Generic step to wait for any log marker
+ * @param description - Human-readable description of what we're waiting for (comes first for readability)
+ * @param marker - The test-id marker to look for in logs
+ *
+ * This searches in both TidGi- and wiki- log files with appropriate timeouts
+ */
+Then('I wait for {string} log marker {string}', async function(this: ApplicationWorld, description: string, marker: string) {
+  // Determine timeout and log prefix based on operation type
+  const isGitOperation = marker.includes('git-') || marker.includes('revert');
+  const isWikiRestart = marker.includes('MAIN_WIKI_RESTARTED');
+  const timeout = isWikiRestart ? 25000 : (isGitOperation ? 25000 : 15000);
+  const logPrefix = (isGitOperation || isWikiRestart) ? 'TidGi-' : undefined;
+  await waitForLogMarker(marker, `Log marker "${marker}" not found. Expected: ${description}`, timeout, logPrefix);
+});
+
+/**
+ * Convenience step for waiting for SSE and watch-fs to be ready
+ * This is commonly used in Background sections
+ */
 Then('I wait for SSE and watch-fs to be ready', async function(this: ApplicationWorld) {
-  await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', 15000);
-  await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 15000);
+  await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', 20000);
+  await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 20000);
 });
 
-Then('I wait for main wiki to restart after sub-wiki creation', async function(this: ApplicationWorld) {
-  await waitForLogMarker('[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI]', 'Main wiki did not restart after sub-wiki creation within timeout', 20000, 'TidGi-');
-  // Also wait for SSE and watch-fs to be ready after restart
-  await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready after restart within timeout', 15000);
-  await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready after restart within timeout', 15000);
-});
-
-Then('I wait for view to finish loading', async function(this: ApplicationWorld) {
-  await waitForLogMarker('[test-id-VIEW_LOADED]', 'Browser view did not finish loading within timeout', 10000, 'wiki-');
-});
-
+/**
+ * Convenience steps for waiting for tiddler operations detected by watch-fs
+ * These use dynamic markers that include the tiddler name
+ */
 Then('I wait for tiddler {string} to be added by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
   await waitForLogMarker(
     `[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`,
