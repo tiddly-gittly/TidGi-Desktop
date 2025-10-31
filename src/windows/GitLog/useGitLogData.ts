@@ -89,8 +89,11 @@ export function useGitLogData(): IGitLogData {
           { page: 0, pageSize: 100 },
         );
 
-        setEntries(result.entries);
-        setCurrentBranch(result.currentBranch);
+        // Use requestAnimationFrame to batch the state updates and reduce flicker
+        requestAnimationFrame(() => {
+          setEntries(result.entries);
+          setCurrentBranch(result.currentBranch);
+        });
       } catch (error_) {
         const error = error_ as Error;
         console.error('Failed to load git log:', error);

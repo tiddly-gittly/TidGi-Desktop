@@ -230,6 +230,36 @@ export default function GitHistory(): React.JSX.Element {
   const { selectedCommit, setSelectedCommit } = useCommitDetails();
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'current' | 'all'>('current');
+  const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
+
+  // Auto-select first commit after successful manual commit
+  useEffect(() => {
+    if (shouldSelectFirst && entries.length > 0) {
+      // Find the first non-uncommitted commit
+      const firstCommit = entries.find((entry) => entry.hash !== '');
+      if (firstCommit) {
+        setSelectedCommit(firstCommit);
+        setShouldSelectFirst(false);
+      }
+    }
+  }, [shouldSelectFirst, entries, setSelectedCommit]);
+
+  // Maintain selection across refreshes by hash
+  useEffect(() => {
+    if (selectedCommit && entries.length > 0) {
+      // Try to find the same commit in the new entries
+      const stillExists = entries.find((entry) => entry.hash === selectedCommit.hash);
+      if (stillExists) {
+        // Update to the new entry object to get fresh data
+        setSelectedCommit(stillExists);
+      }
+    }
+  }, [entries, selectedCommit, setSelectedCommit]);
+
+  const handleCommitSuccess = () => {
+    // Trigger selection of first commit after data refreshes
+    setShouldSelectFirst(true);
+  };
 
   if (loading) {
     return (
@@ -351,9 +381,12 @@ export default function GitHistory(): React.JSX.Element {
         <DetailsWrapper>
           <DetailsPanelWrapper>
             <CommitDetailsPanel
-              commit={selectedCommit}
+              commit={selectedCommit ?? null}
               onFileSelect={setSelectedFile}
               selectedFile={selectedFile}
+              onCommitSuccess={handleCommitSuccess}
+              onRevertSuccess={handleCommitSuccess}
+              isLatestCommit={selectedCommit?.hash === entries.find(entry => entry.hash !== '')?.hash}
             />
           </DetailsPanelWrapper>
         </DetailsWrapper>

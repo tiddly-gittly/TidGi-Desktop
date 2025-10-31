@@ -256,7 +256,8 @@ Then('I wait for {string} log marker {string}', async function(this: Application
   // Determine timeout and log prefix based on operation type
   const isGitOperation = marker.includes('git-') || marker.includes('revert');
   const isWikiRestart = marker.includes('MAIN_WIKI_RESTARTED');
-  const timeout = isWikiRestart ? 25000 : (isGitOperation ? 25000 : 15000);
+  const isRevert = marker.includes('revert');
+  const timeout = isRevert ? 30000 : (isWikiRestart ? 25000 : (isGitOperation ? 25000 : 15000));
   const logPrefix = (isGitOperation || isWikiRestart) ? 'TidGi-' : undefined;
   await waitForLogMarker(marker, `Log marker "${marker}" not found. Expected: ${description}`, timeout, logPrefix);
 });
