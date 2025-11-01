@@ -178,7 +178,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
     ? {
       api: {
         provider: config.api.provider,
-        model: config.api.freeModel || config.api.model,
+        model: config.api.freeModel || '', // Use freeModel value for display
         freeModel: config.api.freeModel,
       },
       modelParameters: config.modelParameters,
@@ -335,6 +335,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
                 changeDefaultSpeechModel={handleSpeechModelChange}
                 changeDefaultImageGenerationModel={handleImageGenerationModelChange}
                 changeDefaultTranscriptionsModel={handleTranscriptionsModelChange}
+                changeDefaultFreeModel={handleFreeModelChange}
                 setProviders={setProviders}
               />
             </>

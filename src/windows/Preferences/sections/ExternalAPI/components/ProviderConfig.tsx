@@ -21,6 +21,7 @@ interface ProviderConfigProps {
   changeDefaultSpeechModel?: (provider: string, model: string) => Promise<void>;
   changeDefaultImageGenerationModel?: (provider: string, model: string) => Promise<void>;
   changeDefaultTranscriptionsModel?: (provider: string, model: string) => Promise<void>;
+  changeDefaultFreeModel?: (provider: string, model: string) => Promise<void>;
 }
 
 // Add provider button styling
@@ -55,6 +56,7 @@ async function autoFillDefaultModels(
     changeDefaultSpeechModel?: (provider: string, model: string) => Promise<void>;
     changeDefaultImageGenerationModel?: (provider: string, model: string) => Promise<void>;
     changeDefaultTranscriptionsModel?: (provider: string, model: string) => Promise<void>;
+    changeDefaultFreeModel?: (provider: string, model: string) => Promise<void>;
     isFirstModel?: boolean;
   },
 ) {
@@ -105,6 +107,15 @@ async function autoFillDefaultModels(
     ) {
       await options.changeDefaultTranscriptionsModel(providerName, model.name);
     }
+
+    // Auto-fill default free model if empty and this model supports free feature
+    if (
+      model.features?.includes('free') &&
+      !defaultConfig.api.freeModel &&
+      options.changeDefaultFreeModel
+    ) {
+      await options.changeDefaultFreeModel(providerName, model.name);
+    }
   } catch (error) {
     void window.service.native.log('error', 'Failed to auto-fill default models', {
       function: 'autoFillDefaultModels',
@@ -121,6 +132,7 @@ export function ProviderConfig({
   changeDefaultSpeechModel,
   changeDefaultImageGenerationModel,
   changeDefaultTranscriptionsModel,
+  changeDefaultFreeModel,
 }: ProviderConfigProps) {
   const { t } = useTranslation('agent');
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
@@ -422,6 +434,7 @@ export function ProviderConfig({
             changeDefaultSpeechModel,
             changeDefaultImageGenerationModel,
             changeDefaultTranscriptionsModel,
+            changeDefaultFreeModel,
             isFirstModel: provider.models.length === 0,
           });
         }
@@ -617,6 +630,7 @@ export function ProviderConfig({
           changeDefaultSpeechModel,
           changeDefaultImageGenerationModel,
           changeDefaultTranscriptionsModel,
+          changeDefaultFreeModel,
           isFirstModel: true,
         });
       }
