@@ -13,9 +13,8 @@ import Tabs from '@mui/material/Tabs';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { GitLog as ReactGitLog } from '@tomplum/react-git-log';
-import type { Dayjs } from 'dayjs';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
+import { formatDistanceToNow } from 'date-fns';
+import { enUS, zhCN } from 'date-fns/locale';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -24,8 +23,6 @@ import { FileDiffPanel } from './FileDiffPanel';
 import type { GitLogEntry } from './types';
 import { useCommitDetails } from './useCommitDetails';
 import { useGitLogData } from './useGitLogData';
-
-dayjs.extend(relativeTime);
 
 const Root = styled((properties: React.ComponentProps<typeof Container>) => <Container {...properties} />)`
   width: 100%;
@@ -126,13 +123,13 @@ const FileChip = styled(Box)`
 
 interface ICommitTableRowProps {
   commit: GitLogEntry;
-  commitDate: Dayjs;
+  commitDate: Date;
   onSelect: () => void;
   selected: boolean;
 }
 
 function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTableRowProps): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [files, setFiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -214,9 +211,9 @@ function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTable
         </Box>
       </TableCell>
       <TableCell>
-        <Tooltip title={commitDate.format('YYYY-MM-DD HH:mm:ss')}>
+        <Tooltip title={commitDate.toLocaleString()}>
           <Typography variant='body2' color='text.secondary' sx={{ cursor: 'default' }}>
-            {commitDate.fromNow()}
+            {formatDistanceToNow(commitDate, { addSuffix: true, locale: i18n.language.startsWith('zh') ? zhCN : enUS })}
           </Typography>
         </Tooltip>
       </TableCell>
@@ -324,7 +321,7 @@ export default function GitHistory(): React.JSX.Element {
                         </TableHead>
                         <TableBody>
                           {entries.map((entry) => {
-                            const commitDate = dayjs(entry.committerDate);
+                            const commitDate = new Date(entry.committerDate);
                             const isSelected = selectedCommit?.hash === entry.hash;
 
                             return (

@@ -265,18 +265,19 @@ Given('I ensure test ai settings exists', function() {
   }
 });
 
-Given('I add test ai settings', function() {
+// Version without datatable for simple cases
+Given('I add test ai settings', async function(this: ApplicationWorld) {
   let existing = {} as ISettingFile;
   if (fs.existsSync(settingsPath)) {
     existing = fs.readJsonSync(settingsPath) as ISettingFile;
   } else {
-    // ensure settings directory exists so writeJsonSync won't fail
     fs.ensureDirSync(path.dirname(settingsPath));
   }
   const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
   const embeddingModelName = modelsArray[1]?.name;
   const speechModelName = modelsArray[2]?.name;
+
   const newAi: AIGlobalSettings = {
     providers: [providerConfig],
     defaultConfig: {
@@ -289,7 +290,72 @@ Given('I add test ai settings', function() {
       modelParameters: desiredModelParameters,
     },
   };
-  fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi } as ISettingFile, { spaces: 2 });
+
+  const newPreferences = existing.preferences || {};
+
+  fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi, preferences: newPreferences } as ISettingFile, { spaces: 2 });
+});
+
+// Version with datatable for advanced configuration
+Given('I add test ai settings:', async function(this: ApplicationWorld, dataTable: DataTable) {
+  let existing = {} as ISettingFile;
+  if (fs.existsSync(settingsPath)) {
+    existing = fs.readJsonSync(settingsPath) as ISettingFile;
+  } else {
+    fs.ensureDirSync(path.dirname(settingsPath));
+  }
+  const modelsArray = providerConfig.models;
+  const modelName = modelsArray[0]?.name;
+  const embeddingModelName = modelsArray[1]?.name;
+  const speechModelName = modelsArray[2]?.name;
+
+  // Parse options from data table
+  let summaryModel: string | undefined;
+  let aiGenerateBackupTitle: boolean | undefined;
+  let aiGenerateBackupTitleTimeout: number | undefined;
+
+  if (dataTable && typeof dataTable.raw === 'function') {
+    const rows = dataTable.raw();
+    // Process all rows as key-value pairs (no header row)
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
+      const key = (row[0] ?? '').trim();
+      const value = (row[1] ?? '').trim();
+
+      if (key === 'summaryModel') {
+        // If value is 'true', enable summaryModel using the same model as main model
+        if (value === 'true') {
+          summaryModel = modelName;
+        }
+      } else if (key === 'aiGenerateBackupTitle') {
+        aiGenerateBackupTitle = value === 'true';
+      } else if (key === 'aiGenerateBackupTitleTimeout') {
+        aiGenerateBackupTitleTimeout = Number.parseInt(value, 10);
+      }
+    }
+  }
+
+  const newAi: AIGlobalSettings = {
+    providers: [providerConfig],
+    defaultConfig: {
+      api: {
+        provider: providerConfig.provider,
+        model: modelName,
+        embeddingModel: embeddingModelName,
+        speechModel: speechModelName,
+        ...(summaryModel ? { summaryModel } : {}),
+      },
+      modelParameters: desiredModelParameters,
+    },
+  };
+
+  const newPreferences = {
+    ...(existing.preferences || {}),
+    ...(aiGenerateBackupTitle !== undefined ? { aiGenerateBackupTitle } : {}),
+    ...(aiGenerateBackupTitleTimeout !== undefined ? { aiGenerateBackupTitleTimeout } : {}),
+  };
+
+  fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi, preferences: newPreferences } as ISettingFile, { spaces: 2 });
 });
 
 async function clearAISettings() {

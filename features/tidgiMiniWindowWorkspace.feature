@@ -6,6 +6,7 @@ Feature: TidGi Mini Window Workspace Switching
 
   Background:
     Given I configure tidgi mini window with shortcut
+    Given I cleanup test wiki so it could create a new one on start
     Then I launch the TidGi application
     And I wait for the page to load completely
     Then I switch to "main" window

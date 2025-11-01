@@ -144,8 +144,16 @@ export async function getCommitFiles(repoPath: string, commitHash: string): Prom
 
 /**
  * Get diff for a specific file in a commit
+ * @param maxLines - Maximum number of lines to return (default: 500)
+ * @param maxChars - Maximum number of characters to return (default: 10000)
  */
-export async function getFileDiff(repoPath: string, commitHash: string, filePath: string): Promise<string> {
+export async function getFileDiff(
+  repoPath: string,
+  commitHash: string,
+  filePath: string,
+  maxLines = 500,
+  maxChars = 10000,
+): Promise<string> {
   const result = await GitProcess.exec(
     ['show', `${commitHash}:${filePath}`],
     repoPath,
@@ -162,10 +170,38 @@ export async function getFileDiff(repoPath: string, commitHash: string, filePath
       throw new Error(`Failed to get file diff: ${diffResult.stderr}`);
     }
 
-    return diffResult.stdout;
+    return truncateDiff(diffResult.stdout, maxLines, maxChars);
   }
 
-  return result.stdout;
+  return truncateDiff(result.stdout, maxLines, maxChars);
+}
+
+/**
+ * Truncate diff output if it exceeds the limits
+ */
+function truncateDiff(diff: string, maxLines: number, maxChars: number): string {
+  let truncated = diff;
+  let wasTruncated = false;
+
+  // Check character limit first
+  if (truncated.length > maxChars) {
+    truncated = truncated.slice(0, maxChars);
+    wasTruncated = true;
+  }
+
+  // Check line limit
+  const lines = truncated.split('\n');
+  if (lines.length > maxLines) {
+    truncated = lines.slice(0, maxLines).join('\n');
+    wasTruncated = true;
+  }
+
+  // Add truncation notice if needed
+  if (wasTruncated) {
+    truncated += '\n\n[......]';
+  }
+
+  return truncated;
 }
 
 /**
@@ -203,5 +239,16 @@ export async function revertCommit(repoPath: string, commitHash: string, commitM
 
   if (commitResult.exitCode !== 0) {
     throw new Error(`Failed to commit revert: ${commitResult.stderr}`);
+  }
+}
+
+/**
+ * Amend the last commit with a new message
+ */
+export async function amendCommitMessage(repoPath: string, newMessage: string): Promise<void> {
+  const result = await GitProcess.exec(['commit', '--amend', '-m', newMessage], repoPath);
+
+  if (result.exitCode !== 0) {
+    throw new Error(`Failed to amend commit message: ${result.stderr}`);
   }
 }

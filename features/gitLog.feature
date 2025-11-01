@@ -25,21 +25,24 @@ Feature: Git Log Window
       This is a test tiddler for git log feature.
       """
     Then I wait for tiddler "GitLogTestTiddler" to be added by watch-fs
-    # Use menu to commit the file
+    # Use menu to commit the file - this will use default message (no AI configured)
     When I click menu "知识库 > 立即备份"
     # wait for git operation to complete
-    And I wait for 1 seconds for "git commit to complete"
+    Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
     # Open Git Log through menu
     When I click menu "知识库 > 查看历史备份"
     And I switch to "gitHistory" window
     And I wait for the page to load completely
+    # Wait for git log to load the commits
+    And I wait for 2 seconds for "git log to load commits"
     # Verify the git log window shows commits
     Then I should see a "git log table" element with selector "table"
-    # Verify we can see our committed file in a row
-    Then I should see a "commit row with GitLogTestTiddler" element with selector "tr:has-text('GitLogTestTiddler')"
-    # Click on the commit row to view details
+    # Verify we can see the commit with default message "使用太记桌面版备份"
+    Then I should see a "commit with default message" element with selector "div.MuiBox-root:has-text('使用太记桌面版备份')"
+    # Click on the commit row to view details - use tr selector like in the second test
     When I click on a "commit row with GitLogTestTiddler" element with selector "tr:has-text('GitLogTestTiddler')"
-    # Verify the file appears in the details panel
+    And I wait for 0.5 seconds for "commit details panel to load"
+    # Verify the full filename appears in the details panel
     Then I should see a "GitLogTestTiddler.tid file in details" element with selector "li:has-text('GitLogTestTiddler.tid')"
 
   @git
@@ -67,8 +70,6 @@ Feature: Git Log Window
     When I click on a "commit now button" element with selector "button[data-testid='commit-now-button']"
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
     # Wait for observable to trigger refresh - git log window needs to reload commit list after commit
-    And I wait for 1 seconds for "git log UI to receive update notification"
-    # Wait for the system to stabilize and UI to re-render with new commit
     And I wait for 3 seconds for "observable to refresh and system to stabilize"
     # After commit, verify we can see the new commit with Index.tid in the file list
     And I should see a "commit with Index.tid" element with selector "tr:has-text('Index.tid')"
@@ -82,7 +83,7 @@ Feature: Git Log Window
     When I click on a "revert button" element with selector "button:has-text('回退此提交'), button:has-text('Revert')"
     # Wait for git revert operation to complete - git operations can be slow on CI and may take longer than usual when system is under load
     # The git revert process involves file system operations that may be queued by the OS
-    And I wait for 3 seconds for "git revert to execute"
+    And I wait for 5 seconds for "git revert to execute"
     Then I wait for "git revert completed" log marker "[test-id-git-revert-complete]"
     # Switch back to main window to verify the revert
     When I switch to "main" window

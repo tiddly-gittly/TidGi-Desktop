@@ -29,6 +29,10 @@ export const ProviderModelSchema = z.object({
     title: t('Schema.ProviderModel.TranscriptionsModelTitle'),
     description: t('Schema.ProviderModel.TranscriptionsModel'),
   }),
+  summaryModel: z.string().optional().meta({
+    title: t('Schema.ProviderModel.SummaryModelTitle'),
+    description: t('Schema.ProviderModel.SummaryModel'),
+  }),
 })
   .catchall(z.unknown())
   .meta({

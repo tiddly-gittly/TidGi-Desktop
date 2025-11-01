@@ -72,16 +72,18 @@ export async function getWorkspaceMenuTemplate(
         await service.workspaceView.openWorkspaceWindowWithView(workspace, { uri: lastUrl ?? homeUrl });
       },
     },
+    { type: 'separator' },
     {
       label: t('WorkspaceSelector.EditWorkspace'),
       click: async () => {
         await service.window.open(WindowNames.editWorkspace, { workspaceID: id });
       },
     },
+    { type: 'separator' },
     {
-      label: t('WorkspaceSelector.RemoveWorkspace'),
+      label: t('WorkspaceSelector.ViewGitHistory'),
       click: async () => {
-        await service.wikiGitWorkspace.removeWorkspace(id);
+        await service.window.open(WindowNames.gitHistory, { workspaceID: id });
       },
     },
     {
@@ -98,12 +100,7 @@ export async function getWorkspaceMenuTemplate(
       label: t('WorkspaceSelector.OpenWorkspaceFolderInGitGUI'),
       click: async () => await service.native.openInGitGuiApp(wikiFolderLocation),
     },
-    {
-      label: t('WorkspaceSelector.ViewGitHistory'),
-      click: async () => {
-        await service.window.open(WindowNames.gitHistory, { workspaceID: id });
-      },
-    },
+
     {
       label: `${t('WorkspaceSelector.OpenInBrowser')}${enableHTTPAPI ? '' : t('WorkspaceSelector.OpenInBrowserDisabledHint')}`,
       enabled: enableHTTPAPI,
@@ -112,6 +109,14 @@ export async function getWorkspaceMenuTemplate(
         await service.native.openURI(actualIP);
       },
     },
+    { type: 'separator' },
+    {
+      label: t('WorkspaceSelector.RemoveWorkspace'),
+      click: async () => {
+        await service.wikiGitWorkspace.removeWorkspace(id);
+      },
+    },
+    { type: 'separator' },
   ];
 
   if (gitUrl !== null && gitUrl.length > 0 && storageService !== SupportedStorageServices.local) {

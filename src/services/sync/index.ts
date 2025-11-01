@@ -40,7 +40,6 @@ export class Sync implements ISyncService {
     const { gitUrl, storageService, id, isSubWiki, wikiFolderLocation } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
     const defaultCommitMessage = i18n.t('LOG.CommitMessage');
-    const defaultCommitBackupMessage = i18n.t('LOG.CommitBackupMessage');
     const syncOnlyWhenNoDraft = await this.preferenceService.get('syncOnlyWhenNoDraft');
     const mainWorkspace = isSubWiki ? workspaceService.getMainWorkspace(workspace) : undefined;
     if (isSubWiki && mainWorkspace === undefined) {
@@ -55,7 +54,7 @@ export class Sync implements ISyncService {
     }
     if (storageService === SupportedStorageServices.local) {
       // for local workspace, commitOnly, no sync and no force pull.
-      await gitService.commitAndSync(workspace, { dir: wikiFolderLocation, commitMessage: defaultCommitBackupMessage });
+      await gitService.commitAndSync(workspace, { dir: wikiFolderLocation, commitOnly: true });
     } else if (
       typeof gitUrl === 'string' &&
       userInfo !== undefined

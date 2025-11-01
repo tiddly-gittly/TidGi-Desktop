@@ -13,7 +13,7 @@ export async function registerMenu(): Promise<void> {
   const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-  const gitService = container.get<IGitService>(serviceIdentifier.Git);
+  // Don't get gitService here to avoid infinite loop - get it in click handlers instead
 
   // Add to Wiki menu - basic items
   await menuService.insertMenu('Wiki', [
@@ -34,6 +34,8 @@ export async function registerMenu(): Promise<void> {
       click: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
+          // Get gitService here to avoid circular dependency during construction
+          const gitService = container.get<IGitService>(serviceIdentifier.Git);
           await gitService.commitAndSync(activeWorkspace, {
             dir: activeWorkspace.wikiFolderLocation,
             commitOnly: true,
@@ -47,6 +49,8 @@ export async function registerMenu(): Promise<void> {
       click: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace) && activeWorkspace.gitUrl) {
+          // Get gitService here to avoid circular dependency during construction
+          const gitService = container.get<IGitService>(serviceIdentifier.Git);
           await gitService.commitAndSync(activeWorkspace, {
             dir: activeWorkspace.wikiFolderLocation,
             commitOnly: false,
@@ -64,7 +68,7 @@ async function updateWorkspaceGitMenuItems(): Promise<void> {
   const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-  const gitService = container.get<IGitService>(serviceIdentifier.Git);
+  // Don't get gitService here to avoid infinite loop - get it in click handlers instead
 
   const workspaces = await workspaceService.getWorkspacesAsList();
   const wikiWorkspaces = workspaces.filter(isWikiWorkspace);
@@ -82,6 +86,8 @@ async function updateWorkspaceGitMenuItems(): Promise<void> {
         {
           label: () => i18n.t('ContextMenu.CommitNow'),
           click: async () => {
+            // Get gitService here to avoid circular dependency during construction
+            const gitService = container.get<IGitService>(serviceIdentifier.Git);
             await gitService.commitAndSync(workspace, {
               dir: workspace.wikiFolderLocation,
               commitOnly: true,
@@ -92,6 +98,8 @@ async function updateWorkspaceGitMenuItems(): Promise<void> {
           label: () => i18n.t('ContextMenu.SyncNow'),
           visible: !!workspace.gitUrl,
           click: async () => {
+            // Get gitService here to avoid circular dependency during construction
+            const gitService = container.get<IGitService>(serviceIdentifier.Git);
             await gitService.commitAndSync(workspace, {
               dir: workspace.wikiFolderLocation,
               commitOnly: false,

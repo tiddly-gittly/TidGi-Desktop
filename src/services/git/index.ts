@@ -38,7 +38,7 @@ export class Git implements IGitService {
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
   ) {
-    // Register menu items after i18n is ready
+    // Register menu items - now safe because registerMenu doesn't get gitService during registration
     void registerMenu();
   }
 
@@ -208,8 +208,10 @@ export class Git implements IGitService {
   }
 
   public async commitAndSync(workspace: IWorkspace, configs: ICommitAndSyncConfigs): Promise<boolean> {
-    if (!net.isOnline()) {
-      // If not online, will not have any change
+    // For commit-only operations (local workspace), we don't need network
+    // Only check network for sync operations
+    if (!configs.commitOnly && !net.isOnline()) {
+      // If not online and trying to sync, will not have any change
       return false;
     }
     if (!isWikiWorkspace(workspace)) {
@@ -222,8 +224,28 @@ export class Git implements IGitService {
       } catch (error: unknown) {
         logger.error('updateGitInfoTiddler failed when commitAndSync', { error });
       }
-      const observable = this.gitWorker?.commitAndSyncWiki(workspace, configs, getErrorMessageI18NDict());
+
+      // Generate AI commit message if not provided and settings allow
+      let finalConfigs = configs;
+      if (!configs.commitMessage) {
+        logger.info('No commit message provided, attempting to generate AI commit message');
+        const { generateAICommitMessage } = await import('./aiCommitMessage');
+        const aiCommitMessage = await generateAICommitMessage(workspace.wikiFolderLocation);
+        if (aiCommitMessage) {
+          finalConfigs = { ...configs, commitMessage: aiCommitMessage };
+          logger.info('Using AI-generated commit message', { commitMessage: aiCommitMessage });
+        } else {
+          // If AI generation fails or times out, use default message
+          logger.info('AI commit message generation returned undefined, using default message');
+          finalConfigs = { ...configs, commitMessage: i18n.t('LOG.CommitBackupMessage') };
+        }
+      } else {
+        logger.info('Commit message already provided, skipping AI generation', { commitMessage: configs.commitMessage });
+      }
+
+      const observable = this.gitWorker?.commitAndSyncWiki(workspace, finalConfigs, getErrorMessageI18NDict());
       const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
+
       // Notify git state change
       const changeType = configs.commitOnly ? 'commit' : 'sync';
       this.notifyGitStateChange(workspace.wikiFolderLocation, changeType);

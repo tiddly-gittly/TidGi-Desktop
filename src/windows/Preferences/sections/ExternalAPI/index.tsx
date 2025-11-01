@@ -25,6 +25,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
     handleSpeechModelChange,
     handleImageGenerationModelChange,
     handleTranscriptionsModelChange,
+    handleSummaryModelChange,
     handleConfigChange,
   } = useAIConfigManagement();
   const [parametersDialogOpen, setParametersDialogOpen] = useState(false);
@@ -172,6 +173,31 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
     }
     : null;
 
+  // Create summary config from current AI config
+  const summaryConfig = config
+    ? {
+      api: {
+        provider: config.api.provider,
+        model: config.api.summaryModel || config.api.model,
+        summaryModel: config.api.summaryModel,
+      },
+      modelParameters: config.modelParameters,
+    }
+    : null;
+
+  const handleSummaryModelClear = async () => {
+    if (!config) return;
+
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.summaryModel');
+
+    const { summaryModel: _, ...apiWithoutSummaryModel } = config.api;
+    const updatedConfig = {
+      ...config,
+      api: apiWithoutSummaryModel,
+    };
+    await handleConfigChange(updatedConfig);
+  };
+
   return (
     <>
       <SectionTitle ref={props.sections?.externalAPI.ref}>{t('Preference.ExternalAPI')}</SectionTitle>
@@ -263,6 +289,23 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
                       )}
                       onChange={handleTranscriptionsModelChange}
                       onClear={handleTranscriptionsModelClear}
+                    />
+                  </ListItemVertical>
+
+                  <ListItemVertical>
+                    <ListItemText
+                      primary={t('Preference.DefaultSummaryModelSelection')}
+                      secondary={t('Preference.DefaultSummaryModelSelectionDescription')}
+                    />
+                    <ModelSelector
+                      selectedConfig={summaryConfig}
+                      modelOptions={providers.flatMap(provider =>
+                        provider.models
+                          .filter(model => Array.isArray(model.features) && model.features.includes('language'))
+                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
+                      )}
+                      onChange={handleSummaryModelChange}
+                      onClear={handleSummaryModelClear}
                     />
                   </ListItemVertical>
 

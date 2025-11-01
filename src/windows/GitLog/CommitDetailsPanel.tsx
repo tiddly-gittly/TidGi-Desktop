@@ -141,7 +141,6 @@ export function CommitDetailsPanel(
       await window.service.git.commitAndSync(workspace, {
         dir: workspace.wikiFolderLocation,
         commitOnly: true,
-        commitMessage: t('ContextMenu.ManualBackup'),
       });
       console.log('Commit success');
       // Notify parent to select the new commit
