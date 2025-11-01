@@ -17,14 +17,14 @@ export async function registerMenu(): Promise<void> {
 
   const aiGenerateBackupTitleEnabled = await gitService.isAIGenerateBackupTitleEnabled();
 
-  // Build commit menu item
+  // Build commit menu item (local backup)
   const commitMenuItem: DeferredMenuItemConstructorOptions = aiGenerateBackupTitleEnabled
     ? {
-      label: () => i18n.t('WorkspaceSelector.CommitNow'),
-      id: 'commit-now',
+      label: () => i18n.t('ContextMenu.BackupNow'),
+      id: 'backup-now',
       submenu: [
         {
-          label: () => i18n.t('WorkspaceSelector.CommitNowQuick'),
+          label: () => i18n.t('ContextMenu.BackupNow'),
           click: async () => {
             const activeWorkspace = await workspaceService.getActiveWorkspace();
             if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
@@ -38,7 +38,7 @@ export async function registerMenu(): Promise<void> {
           },
         },
         {
-          label: () => i18n.t('WorkspaceSelector.CommitNowWithAI'),
+          label: () => i18n.t('ContextMenu.BackupNow') + i18n.t('ContextMenu.WithAI'),
           click: async () => {
             const activeWorkspace = await workspaceService.getActiveWorkspace();
             if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
@@ -54,8 +54,8 @@ export async function registerMenu(): Promise<void> {
       ],
     }
     : {
-      label: () => i18n.t('WorkspaceSelector.CommitNow'),
-      id: 'commit-now',
+      label: () => i18n.t('ContextMenu.BackupNow'),
+      id: 'backup-now',
       click: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
@@ -68,14 +68,14 @@ export async function registerMenu(): Promise<void> {
       },
     };
 
-  // Build sync menu item
+  // Build sync menu item (cloud sync)
   const syncMenuItem: DeferredMenuItemConstructorOptions = aiGenerateBackupTitleEnabled
     ? {
-      label: () => i18n.t('WorkspaceSelector.SyncNow'),
+      label: () => i18n.t('ContextMenu.SyncNow'),
       id: 'sync-now',
       submenu: [
         {
-          label: () => i18n.t('WorkspaceSelector.SyncNowQuick'),
+          label: () => i18n.t('ContextMenu.SyncNow'),
           click: async () => {
             const activeWorkspace = await workspaceService.getActiveWorkspace();
             if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace) && activeWorkspace.gitUrl) {
@@ -89,7 +89,7 @@ export async function registerMenu(): Promise<void> {
           },
         },
         {
-          label: () => i18n.t('WorkspaceSelector.SyncNowWithAI'),
+          label: () => i18n.t('ContextMenu.SyncNow') + i18n.t('ContextMenu.WithAI'),
           click: async () => {
             const activeWorkspace = await workspaceService.getActiveWorkspace();
             if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace) && activeWorkspace.gitUrl) {
@@ -105,7 +105,7 @@ export async function registerMenu(): Promise<void> {
       ],
     }
     : {
-      label: () => i18n.t('WorkspaceSelector.SyncNow'),
+      label: () => i18n.t('ContextMenu.SyncNow'),
       id: 'sync-now',
       click: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
@@ -120,21 +120,27 @@ export async function registerMenu(): Promise<void> {
     };
 
   // Add to Wiki menu - basic items
-  await menuService.insertMenu('Wiki', [
-    { type: 'separator' },
-    {
-      label: () => i18n.t('WorkspaceSelector.ViewGitHistory'),
-      id: 'git-history',
-      click: async () => {
-        const activeWorkspace = await workspaceService.getActiveWorkspace();
-        if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
-          await windowService.open(WindowNames.gitHistory, { workspaceID: activeWorkspace.id });
-        }
+  await menuService.insertMenu(
+    'Wiki',
+    [
+      { type: 'separator' },
+      {
+        label: () => i18n.t('WorkspaceSelector.ViewGitHistory'),
+        id: 'git-history',
+        click: async () => {
+          const activeWorkspace = await workspaceService.getActiveWorkspace();
+          if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
+            await windowService.open(WindowNames.gitHistory, { workspaceID: activeWorkspace.id });
+          }
+        },
       },
-    },
-    commitMenuItem,
-    syncMenuItem,
-  ]);
+      commitMenuItem,
+      syncMenuItem,
+    ],
+    undefined,
+    undefined,
+    'registerGitMenu',
+  );
 
   // Update workspace-specific submenu
   await updateWorkspaceGitMenuItems();
@@ -151,13 +157,13 @@ async function updateWorkspaceGitMenuItems(): Promise<void> {
   const wikiWorkspaces = workspaces.filter(isWikiWorkspace);
 
   const workspaceMenuItems: DeferredMenuItemConstructorOptions[] = wikiWorkspaces.map((workspace): DeferredMenuItemConstructorOptions => {
-    // Build commit menu item for this workspace
-    const workspaceCommitMenuItem: DeferredMenuItemConstructorOptions = aiGenerateBackupTitleEnabled
+    // Build backup menu item for this workspace
+    const workspaceBackupMenuItem: DeferredMenuItemConstructorOptions = aiGenerateBackupTitleEnabled
       ? {
-        label: () => i18n.t('ContextMenu.CommitNow'),
+        label: () => i18n.t('ContextMenu.BackupNow'),
         submenu: [
           {
-            label: () => i18n.t('WorkspaceSelector.CommitNowQuick'),
+            label: () => i18n.t('ContextMenu.BackupNow'),
             click: async () => {
               const gitService = container.get<IGitService>(serviceIdentifier.Git);
               await gitService.commitAndSync(workspace, {
@@ -168,7 +174,7 @@ async function updateWorkspaceGitMenuItems(): Promise<void> {
             },
           },
           {
-            label: () => i18n.t('WorkspaceSelector.CommitNowWithAI'),
+            label: () => i18n.t('ContextMenu.BackupNow') + i18n.t('ContextMenu.WithAI'),
             click: async () => {
               const gitService = container.get<IGitService>(serviceIdentifier.Git);
               await gitService.commitAndSync(workspace, {
@@ -181,7 +187,7 @@ async function updateWorkspaceGitMenuItems(): Promise<void> {
         ],
       }
       : {
-        label: () => i18n.t('ContextMenu.CommitNow'),
+        label: () => i18n.t('ContextMenu.BackupNow'),
         click: async () => {
           const gitService = container.get<IGitService>(serviceIdentifier.Git);
           await gitService.commitAndSync(workspace, {
@@ -198,7 +204,7 @@ async function updateWorkspaceGitMenuItems(): Promise<void> {
         visible: !!workspace.gitUrl,
         submenu: [
           {
-            label: () => i18n.t('WorkspaceSelector.SyncNowQuick'),
+            label: () => i18n.t('ContextMenu.SyncNow'),
             click: async () => {
               const gitService = container.get<IGitService>(serviceIdentifier.Git);
               await gitService.commitAndSync(workspace, {
@@ -209,7 +215,7 @@ async function updateWorkspaceGitMenuItems(): Promise<void> {
             },
           },
           {
-            label: () => i18n.t('WorkspaceSelector.SyncNowWithAI'),
+            label: () => i18n.t('ContextMenu.SyncNow') + i18n.t('ContextMenu.WithAI'),
             click: async () => {
               const gitService = container.get<IGitService>(serviceIdentifier.Git);
               await gitService.commitAndSync(workspace, {
@@ -242,7 +248,7 @@ async function updateWorkspaceGitMenuItems(): Promise<void> {
             await windowService.open(WindowNames.gitHistory, { workspaceID: workspace.id });
           },
         },
-        workspaceCommitMenuItem,
+        workspaceBackupMenuItem,
         workspaceSyncMenuItem,
       ],
     } satisfies DeferredMenuItemConstructorOptions;

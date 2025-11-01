@@ -113,7 +113,8 @@
     "SearchWithGoogle": "Search With Google",
     "SyncNow": "Sync To Cloud",
     "TidGiSupport": "TidGi Support",
-    "TidGiWebsite": "TidGi Website"
+    "TidGiWebsite": "TidGi Website",
+    "WithAI": " (AI Naming)"
   },
   "Notification": {
     "AdjustSchedule": "Adjust schedule...",
@@ -269,7 +270,6 @@
     "CommitDetails": "Submission Details",
     "CommitFailed": "Commit failed",
     "Committing": "Committing...",
-    "CommitNow": "Commit Now",
     "CommitSuccess": "Commit successful",
     "Details": "Details",
     "Reverting": "Reverting...",
