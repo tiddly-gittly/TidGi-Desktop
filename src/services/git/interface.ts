@@ -147,5 +147,6 @@ export const GitServiceIPCDescriptor = {
     initWikiGit: ProxyPropertyType.Function,
     revertCommit: ProxyPropertyType.Function,
     syncOrForcePull: ProxyPropertyType.Function,
+    isAIGenerateBackupTitleEnabled: ProxyPropertyType.Function,
   },
 };

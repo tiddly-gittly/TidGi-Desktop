@@ -38,10 +38,7 @@ export class Git implements IGitService {
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
-  ) {
-    // Register menu items - now safe because registerMenu doesn't get gitService during registration
-    void registerMenu();
-  }
+  ) {}
 
   private notifyGitStateChange(wikiFolderLocation: string, type: IGitStateChange['type']): void {
     this.gitStateChange$.next({
@@ -53,6 +50,8 @@ export class Git implements IGitService {
 
   public async initialize(): Promise<void> {
     await this.initWorker();
+    // Register menu items after initialization
+    void registerMenu();
   }
 
   private async initWorker(): Promise<void> {
