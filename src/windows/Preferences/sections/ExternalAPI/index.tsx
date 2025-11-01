@@ -25,7 +25,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
     handleSpeechModelChange,
     handleImageGenerationModelChange,
     handleTranscriptionsModelChange,
-    handleSummaryModelChange,
+    handleFreeModelChange,
     handleConfigChange,
   } = useAIConfigManagement();
   const [parametersDialogOpen, setParametersDialogOpen] = useState(false);
@@ -173,27 +173,27 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
     }
     : null;
 
-  // Create summary config from current AI config
-  const summaryConfig = config
+  // Create free model config from current AI config
+  const freeModelConfig = config
     ? {
       api: {
         provider: config.api.provider,
-        model: config.api.summaryModel || config.api.model,
-        summaryModel: config.api.summaryModel,
+        model: config.api.freeModel || config.api.model,
+        freeModel: config.api.freeModel,
       },
       modelParameters: config.modelParameters,
     }
     : null;
 
-  const handleSummaryModelClear = async () => {
+  const handleFreeModelClear = async () => {
     if (!config) return;
 
-    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.summaryModel');
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.freeModel');
 
-    const { summaryModel: _, ...apiWithoutSummaryModel } = config.api;
+    const { freeModel: _, ...apiWithoutFreeModel } = config.api;
     const updatedConfig = {
       ...config,
-      api: apiWithoutSummaryModel,
+      api: apiWithoutFreeModel,
     };
     await handleConfigChange(updatedConfig);
   };
@@ -294,18 +294,18 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
 
                   <ListItemVertical>
                     <ListItemText
-                      primary={t('Preference.DefaultSummaryModelSelection')}
-                      secondary={t('Preference.DefaultSummaryModelSelectionDescription')}
+                      primary={t('Preference.DefaultFreeModelSelection')}
+                      secondary={t('Preference.DefaultFreeModelSelectionDescription')}
                     />
                     <ModelSelector
-                      selectedConfig={summaryConfig}
+                      selectedConfig={freeModelConfig}
                       modelOptions={providers.flatMap(provider =>
                         provider.models
-                          .filter(model => Array.isArray(model.features) && model.features.includes('language'))
+                          .filter(model => Array.isArray(model.features) && model.features.includes('free'))
                           .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
                       )}
-                      onChange={handleSummaryModelChange}
-                      onClear={handleSummaryModelClear}
+                      onChange={handleFreeModelChange}
+                      onClear={handleFreeModelClear}
                     />
                   </ListItemVertical>
 

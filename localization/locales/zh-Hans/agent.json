@@ -109,6 +109,15 @@
     "Title": "编辑智能体定义"
   },
   "ModelFeature": {
+    "Embedding": "嵌入",
+    "Free": "免费",
+    "ImageGeneration": "图像生成",
+    "Language": "语言",
+    "Reasoning": "推理",
+    "Speech": "语音合成",
+    "ToolCalling": "工具调用",
+    "Transcriptions": "语音识别",
+    "Vision": "视觉"
   },
   "ModelSelector": {
     "Model": "模型",
@@ -152,8 +161,8 @@
     "DefaultSpeechModelSelectionDescription": "选择用于文字转语音操作的默认语音生成模型",
     "DefaultTranscriptionsModelSelection": "默认语音识别模型选择",
     "DefaultTranscriptionsModelSelectionDescription": "选择用于语音转文字操作的默认语音识别模型",
-    "DefaultSummaryModelSelection": "默认轻量语言模型选择",
-    "DefaultSummaryModelSelectionDescription": "生成总结标题、生成备份标题时使用的轻量级或免费小模型",
+    "DefaultFreeModelSelection": "默认免费模型选择",
+    "DefaultFreeModelSelectionDescription": "生成总结标题、生成备份标题时使用的免费小模型",
     "DeleteAgentDatabase": "删除人工智能对话数据库",
     "DeleteProvider": "删除提供商",
     "DisabledProviderInfo": "此提供商已禁用，其模型不会在模型选择列表中显示",
@@ -383,8 +392,8 @@
       "Title": "提供商模型",
       "TranscriptionsModel": "用于语音转文字操作的语音识别模型名称",
       "TranscriptionsModelTitle": "语音识别模型",
-      "SummaryModel": "用于生成总结标题、生成备份标题时使用的轻量级或免费小模型",
-      "SummaryModelTitle": "轻量总结模型"
+      "FreeModel": "用于生成总结标题、生成备份标题时使用的免费小模型",
+      "FreeModelTitle": "免费模型"
     },
     "RAG": {
       "Removal": {

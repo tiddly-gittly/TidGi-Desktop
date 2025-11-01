@@ -153,7 +153,7 @@ export type AIProvider = string;
 /**
  * Model feature types
  */
-export type ModelFeature = 'language' | 'imageGeneration' | 'toolCalling' | 'reasoning' | 'vision' | 'embedding' | 'speech' | 'transcriptions';
+export type ModelFeature = 'language' | 'imageGeneration' | 'toolCalling' | 'reasoning' | 'vision' | 'embedding' | 'speech' | 'transcriptions' | 'free';
 
 /**
  * Extended model information

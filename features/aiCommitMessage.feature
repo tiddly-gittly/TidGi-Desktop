@@ -6,7 +6,7 @@ Feature: AI-Generated Git Commit Messages
   Background:
     Given I cleanup test wiki so it could create a new one on start
     Given I add test ai settings:
-      | summaryModel          | true |
+      | freeModel             | true |
       | aiGenerateBackupTitle | true |
     And I launch the TidGi application
     And I wait for the page to load completely

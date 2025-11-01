@@ -1,8 +1,10 @@
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IContextService } from '@services/context/interface';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import type { ISyncService } from '@services/sync/interface';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
@@ -20,8 +22,10 @@ import { isWikiWorkspace } from './interface';
 interface IWorkspaceMenuRequiredServices {
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
   context: Pick<IContextService, 'isOnline'>;
-  git: Pick<IGitService, 'commitAndSync'>;
+  externalAPI: Pick<IExternalAPIService, 'getAIConfig'>;
+  git: Pick<IGitService, 'commitAndSync' | 'isAIGenerateBackupTitleEnabled'>;
   native: Pick<INativeService, 'log' | 'openURI' | 'openPath' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualInfo'>;
+  preference: Pick<IPreferenceService, 'getPreferences'>;
   sync: Pick<ISyncService, 'syncWikiIfNeeded'>;
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
   wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer'>;
@@ -119,26 +123,98 @@ export async function getWorkspaceMenuTemplate(
     { type: 'separator' },
   ];
 
+  // Check if AI-generated backup title is enabled
+  const aiGenerateBackupTitleEnabled = await service.git.isAIGenerateBackupTitleEnabled();
+
   if (gitUrl !== null && gitUrl.length > 0 && storageService !== SupportedStorageServices.local) {
     const userInfo = await service.auth.getStorageServiceUserInfo(storageService);
     if (userInfo !== undefined) {
       const isOnline = await service.context.isOnline();
+
+      if (aiGenerateBackupTitleEnabled) {
+        // Show submenu with AI and quick sync options
+        template.push({
+          label: t('ContextMenu.SyncNow') + (isOnline ? '' : `(${t('ContextMenu.NoNetworkConnection')})`),
+          enabled: isOnline,
+          submenu: [
+            {
+              label: t('WorkspaceSelector.SyncNowQuick'),
+              click: async () => {
+                await service.git.commitAndSync(workspace, {
+                  dir: wikiFolderLocation,
+                  commitOnly: false,
+                  commitMessage: t('LOG.CommitBackupMessage'),
+                });
+              },
+            },
+            {
+              label: t('WorkspaceSelector.SyncNowWithAI'),
+              click: async () => {
+                await service.git.commitAndSync(workspace, {
+                  dir: wikiFolderLocation,
+                  commitOnly: false,
+                  // Don't provide commitMessage to trigger AI generation
+                });
+              },
+            },
+          ],
+        });
+      } else {
+        // Show single sync option
+        template.push({
+          label: t('ContextMenu.SyncNow') + (isOnline ? '' : `(${t('ContextMenu.NoNetworkConnection')})`),
+          enabled: isOnline,
+          click: async () => {
+            await service.git.commitAndSync(workspace, {
+              dir: wikiFolderLocation,
+              commitOnly: false,
+            });
+          },
+        });
+      }
+    }
+  }
+
+  if (storageService === SupportedStorageServices.local) {
+    if (aiGenerateBackupTitleEnabled) {
+      // Show submenu with AI and quick backup options
       template.push({
-        label: t('ContextMenu.SyncNow') + (isOnline ? '' : `(${t('ContextMenu.NoNetworkConnection')})`),
-        enabled: isOnline,
+        label: t('ContextMenu.BackupNow'),
+        submenu: [
+          {
+            label: t('WorkspaceSelector.CommitNowQuick'),
+            click: async () => {
+              await service.git.commitAndSync(workspace, {
+                dir: wikiFolderLocation,
+                commitOnly: true,
+                commitMessage: t('LOG.CommitBackupMessage'),
+              });
+            },
+          },
+          {
+            label: t('WorkspaceSelector.CommitNowWithAI'),
+            click: async () => {
+              await service.git.commitAndSync(workspace, {
+                dir: wikiFolderLocation,
+                commitOnly: true,
+                // Don't provide commitMessage to trigger AI generation
+              });
+            },
+          },
+        ],
+      });
+    } else {
+      // Show single backup option
+      template.push({
+        label: t('ContextMenu.BackupNow'),
         click: async () => {
-          await service.sync.syncWikiIfNeeded(workspace);
+          await service.git.commitAndSync(workspace, {
+            dir: wikiFolderLocation,
+            commitOnly: true,
+          });
         },
       });
     }
-  }
-  if (storageService === SupportedStorageServices.local) {
-    template.push({
-      label: t('ContextMenu.BackupNow'),
-      click: async () => {
-        await service.sync.syncWikiIfNeeded(workspace);
-      },
-    });
   }
 
   if (!isSubWiki) {

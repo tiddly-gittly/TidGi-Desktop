@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import { styled } from '@mui/material/styles';
 import Tab from '@mui/material/Tab';
@@ -124,12 +125,40 @@ export function FileDiffPanel({ commitHash, filePath }: IFileDiffPanelProps): Re
   const [isImage, setIsImage] = useState(false);
   const [currentTab, setCurrentTab] = useState<'diff' | 'content'>('diff');
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [isTruncated, setIsTruncated] = useState(false);
+  const [isLoadingFull, setIsLoadingFull] = useState(false);
+
+  const loadFullDiff = async () => {
+    if (!filePath || !commitHash) return;
+
+    setIsLoadingFull(true);
+    try {
+      const meta = window.meta();
+      const workspaceID = (meta as { workspaceID?: string }).workspaceID;
+
+      if (!workspaceID) return;
+
+      const workspace = await window.service.workspace.get(workspaceID);
+      if (!workspace || !('wikiFolderLocation' in workspace)) return;
+
+      // Load full diff without limits (pass very large values)
+      const fileDiff = await window.service.git.getFileDiff(workspace.wikiFolderLocation, commitHash, filePath, 50000, 1000000);
+      setDiff(fileDiff);
+      setFileContent(fileDiff);
+      setIsTruncated(false);
+    } catch (error) {
+      console.error('Failed to load full diff:', error);
+    } finally {
+      setIsLoadingFull(false);
+    }
+  };
 
   useEffect(() => {
     if (!filePath || !commitHash) {
       setDiff('');
       setFileContent('');
       setImageUrl('');
+      setIsTruncated(false);
       return;
     }
 
@@ -157,6 +186,7 @@ export function FileDiffPanel({ commitHash, filePath }: IFileDiffPanelProps): Re
           // Get the diff for this file
           const fileDiff = await window.service.git.getFileDiff(workspace.wikiFolderLocation, commitHash, filePath);
           setDiff(fileDiff);
+          setIsTruncated(fileDiff.includes('[......]'));
 
           // Also get the file content (show command output)
           setFileContent(fileDiff);
@@ -266,14 +296,42 @@ export function FileDiffPanel({ commitHash, filePath }: IFileDiffPanelProps): Re
       <ContentWrapper>
         {currentTab === 'diff'
           ? (
-            <DiffContainer>
-              {renderDiffContent()}
-            </DiffContainer>
+            <>
+              {isTruncated && (
+                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
+                  <Button
+                    variant='outlined'
+                    size='small'
+                    onClick={() => void loadFullDiff()}
+                    disabled={isLoadingFull}
+                  >
+                    {isLoadingFull ? t('GitLog.LoadingFull') : t('GitLog.ShowFull')}
+                  </Button>
+                </Box>
+              )}
+              <DiffContainer>
+                {renderDiffContent()}
+              </DiffContainer>
+            </>
           )
           : (
-            <FileContentContainer>
-              {fileContent}
-            </FileContentContainer>
+            <>
+              {isTruncated && (
+                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
+                  <Button
+                    variant='outlined'
+                    size='small'
+                    onClick={() => void loadFullDiff()}
+                    disabled={isLoadingFull}
+                  >
+                    {isLoadingFull ? t('GitLog.LoadingFull') : t('GitLog.ShowFull')}
+                  </Button>
+                </Box>
+              )}
+              <FileContentContainer>
+                {fileContent}
+              </FileContentContainer>
+            </>
           )}
       </ContentWrapper>
     </Panel>

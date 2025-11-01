@@ -2,6 +2,7 @@ import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
@@ -33,6 +34,7 @@ export class MenuService implements IMenuService {
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.Context) private readonly contextService: IContextService,
+    @inject(serviceIdentifier.ExternalAPI) private readonly externalAPIService: IExternalAPIService,
     @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
   ) {
@@ -282,8 +284,10 @@ export class MenuService implements IMenuService {
     const services = {
       auth: authService,
       context: contextService,
+      externalAPI: this.externalAPIService,
       git: gitService,
       native: nativeService,
+      preference: this.preferenceService,
       view: viewService,
       wiki: wikiService,
       wikiGitWorkspace: wikiGitWorkspaceService,

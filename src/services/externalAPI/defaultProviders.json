@@ -38,7 +38,7 @@
         {
           "name": "Qwen/Qwen2.5-7B-Instruct",
           "caption": "通义千问 2.5 7B",
-          "features": ["language", "reasoning"]
+          "features": ["language", "reasoning", "free"]
         },
         {
           "name": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
@@ -199,6 +199,11 @@
       "value": "transcriptions",
       "label": "Transcriptions",
       "i18nKey": "ModelFeature.Transcriptions"
+    },
+    {
+      "value": "free",
+      "label": "Free",
+      "i18nKey": "ModelFeature.Free"
     }
   ]
 }

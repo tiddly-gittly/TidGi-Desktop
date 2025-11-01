@@ -76,7 +76,7 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     height: 600,
   },
   [WindowNames.gitHistory]: {
-    width: 1200,
+    width: 1600,
     height: 800,
   },
   [WindowNames.preferences]: {

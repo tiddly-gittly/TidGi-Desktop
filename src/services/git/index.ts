@@ -11,6 +11,7 @@ import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
 import { container } from '@services/container';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
@@ -340,8 +341,8 @@ export class Git implements IGitService {
     return await gitOperations.getCommitFiles(wikiFolderPath, commitHash);
   }
 
-  public async getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string): Promise<string> {
-    return await gitOperations.getFileDiff(wikiFolderPath, commitHash, filePath);
+  public async getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<string> {
+    return await gitOperations.getFileDiff(wikiFolderPath, commitHash, filePath, maxLines, maxChars);
   }
 
   public async checkoutCommit(wikiFolderPath: string, commitHash: string): Promise<void> {
@@ -358,5 +359,21 @@ export class Git implements IGitService {
     this.notifyGitStateChange(wikiFolderPath, 'revert');
     // Log for e2e test detection
     logger.info(`[test-id-git-revert-complete]`, { wikiFolderPath, commitHash });
+  }
+
+  public async isAIGenerateBackupTitleEnabled(): Promise<boolean> {
+    try {
+      const preferences = this.preferenceService.getPreferences();
+      if (!preferences.aiGenerateBackupTitle) {
+        return false;
+      }
+
+      const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+      const aiConfig = await externalAPIService.getAIConfig();
+
+      return !!(aiConfig?.api?.freeModel && aiConfig?.api?.provider);
+    } catch {
+      return false;
+    }
   }
 }

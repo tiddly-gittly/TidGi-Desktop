@@ -113,8 +113,10 @@ export interface IGitService {
   getCommitFiles(wikiFolderPath: string, commitHash: string): Promise<string[]>;
   /**
    * Get the diff for a specific file in a commit
+   * @param maxLines - Maximum number of lines to return (default: 500)
+   * @param maxChars - Maximum number of characters to return (default: 10000)
    */
-  getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string): Promise<string>;
+  getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<string>;
   /**
    * Checkout a specific commit
    */
@@ -124,6 +126,10 @@ export interface IGitService {
    * @param commitMessage - Optional original commit message to include in revert message
    */
   revertCommit(wikiFolderPath: string, commitHash: string, commitMessage?: string): Promise<void>;
+  /**
+   * Check if AI-generated backup title feature is enabled and configured
+   */
+  isAIGenerateBackupTitleEnabled(): Promise<boolean>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,

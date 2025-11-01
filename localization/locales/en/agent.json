@@ -109,6 +109,15 @@
     "Title": "Edit Agent"
   },
   "ModelFeature": {
+    "Embedding": "Embedding",
+    "Free": "Free",
+    "ImageGeneration": "Image Generation",
+    "Language": "Language",
+    "Reasoning": "Reasoning",
+    "Speech": "Speech",
+    "ToolCalling": "Tool Calling",
+    "Transcriptions": "Transcriptions",
+    "Vision": "Vision"
   },
   "ModelSelector": {
     "Model": "model",
@@ -152,8 +161,8 @@
     "DefaultSpeechModelSelectionDescription": "Choose the default speech generation model to use for text-to-speech operations",
     "DefaultTranscriptionsModelSelection": "Default Transcriptions Model Selection",
     "DefaultTranscriptionsModelSelectionDescription": "Choose the default transcriptions model to use for speech-to-text operations",
-    "DefaultSummaryModelSelection": "Default Lightweight Language Model Selection",
-    "DefaultSummaryModelSelectionDescription": "Lightweight or free small model for generating summary titles and backup titles",
+    "DefaultFreeModelSelection": "Default Free Model Selection",
+    "DefaultFreeModelSelectionDescription": "Free small model for generating summary titles and backup titles",
     "DeleteAgentDatabase": "Delete AI Conversation Database",
     "DeleteProvider": "Delete provider",
     "DisabledProviderInfo": "This provider is disabled, and its models will not appear in the model selection list",
@@ -384,8 +393,8 @@
       "Title": "Provider and Model",
       "TranscriptionsModel": "Transcriptions model name for speech-to-text operations",
       "TranscriptionsModelTitle": "Transcriptions Model",
-      "SummaryModel": "Lightweight or free small model for generating summary titles and backup titles",
-      "SummaryModelTitle": "Summary Model"
+      "FreeModel": "Free small model for generating summary titles and backup titles",
+      "FreeModelTitle": "Free Model"
     },
     "RAG": {
       "Removal": {

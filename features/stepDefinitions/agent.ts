@@ -310,7 +310,7 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
   const speechModelName = modelsArray[2]?.name;
 
   // Parse options from data table
-  let summaryModel: string | undefined;
+  let freeModel: string | undefined;
   let aiGenerateBackupTitle: boolean | undefined;
   let aiGenerateBackupTitleTimeout: number | undefined;
 
@@ -322,10 +322,10 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
       const key = (row[0] ?? '').trim();
       const value = (row[1] ?? '').trim();
 
-      if (key === 'summaryModel') {
-        // If value is 'true', enable summaryModel using the same model as main model
+      if (key === 'freeModel') {
+        // If value is 'true', enable freeModel using the same model as main model
         if (value === 'true') {
-          summaryModel = modelName;
+          freeModel = modelName;
         }
       } else if (key === 'aiGenerateBackupTitle') {
         aiGenerateBackupTitle = value === 'true';
@@ -343,7 +343,7 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
         model: modelName,
         embeddingModel: embeddingModelName,
         speechModel: speechModelName,
-        ...(summaryModel ? { summaryModel } : {}),
+        ...(freeModel ? { freeModel } : {}),
       },
       modelParameters: desiredModelParameters,
     },
