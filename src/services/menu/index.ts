@@ -1,3 +1,4 @@
+import { getWorkspaceIdFromUrl } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
@@ -14,7 +15,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
+import { getSimplifiedWorkspaceMenuTemplate, getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
@@ -132,7 +133,41 @@ export class MenuService implements IMenuService {
   /** Register `on('context-menu', openContextMenuForWindow)` for a window, return an unregister function */
   public async initContextMenuForWindowWebContents(webContents: WebContents): Promise<() => void> {
     const openContextMenuForWindow = async (_event: Electron.Event, parameters: ContextMenuParams): Promise<void> => {
-      await this.buildContextMenuAndPopup([], parameters, webContents);
+      const template: MenuItemConstructorOptions[] = [];
+
+      // Try to get workspace ID from URL
+      const url = webContents.getURL();
+      const workspaceId = getWorkspaceIdFromUrl(url);
+
+      if (workspaceId) {
+        const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+        const workspace = await workspaceService.get(workspaceId);
+
+        // Add workspace-specific menu items if workspace exists and is a wiki
+        if (workspace !== undefined && isWikiWorkspace(workspace)) {
+          const services = {
+            auth: container.get<IAuthenticationService>(serviceIdentifier.Authentication),
+            context: container.get<IContextService>(serviceIdentifier.Context),
+            externalAPI: this.externalAPIService,
+            git: container.get<IGitService>(serviceIdentifier.Git),
+            native: container.get<INativeService>(serviceIdentifier.NativeService),
+            preference: this.preferenceService,
+            sync: container.get<ISyncService>(serviceIdentifier.Sync),
+            view: container.get<IViewService>(serviceIdentifier.View),
+            wiki: container.get<IWikiService>(serviceIdentifier.Wiki),
+            wikiGitWorkspace: container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace),
+            window: container.get<IWindowService>(serviceIdentifier.Window),
+            workspace: workspaceService,
+            workspaceView: container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView),
+          };
+
+          // Get simplified menu items (includes command palette, simplified actions, and "Current Workspace")
+          const simplifiedMenuItems = await getSimplifiedWorkspaceMenuTemplate(workspace, i18n.t.bind(i18n), services);
+          template.push(...simplifiedMenuItems);
+        }
+      }
+
+      await this.buildContextMenuAndPopup(template, parameters, webContents);
     };
     webContents.on('context-menu', openContextMenuForWindow);
 

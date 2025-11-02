@@ -1,3 +1,4 @@
+import { WikiChannel } from '@/constants/channels';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IContextService } from '@services/context/interface';
@@ -46,8 +47,8 @@ interface IWorkspaceMenuRequiredServices {
 }
 
 /**
- * Get simplified workspace menu template (for top-level context menu when sidebar is closed)
- * Only includes frequently used items
+ * Get simplified workspace menu template (for top-level context menu)
+ * Includes frequently used items, command palette, and "Current Workspace" submenu
  */
 export async function getSimplifiedWorkspaceMenuTemplate(
   workspace: IWorkspace,
@@ -60,6 +61,14 @@ export async function getSimplifiedWorkspaceMenuTemplate(
 
   const { id, storageService, isSubWiki } = workspace;
   const template: MenuItemConstructorOptions[] = [];
+
+  // Add command palette first
+  template.push({
+    label: t('ContextMenu.OpenCommandPalette'),
+    click: async () => {
+      await service.wiki.wikiOperationInBrowser(WikiChannel.dispatchEvent, id, ['open-command-palette']);
+    },
+  });
 
   // Edit workspace
   template.push({
@@ -103,6 +112,16 @@ export async function getSimplifiedWorkspaceMenuTemplate(
         },
       },
     );
+  }
+
+  // Add "Current Workspace" submenu with full menu
+  const fullMenuTemplate = await getWorkspaceMenuTemplate(workspace, t, service);
+  if (fullMenuTemplate.length > 0) {
+    template.push({ type: 'separator' });
+    template.push({
+      label: t('Menu.CurrentWorkspace'),
+      submenu: fullMenuTemplate,
+    });
   }
 
   return template;
