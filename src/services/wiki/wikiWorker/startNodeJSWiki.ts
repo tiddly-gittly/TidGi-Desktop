@@ -104,11 +104,18 @@ export function startNodeJSWiki({
        */
 
       const readonlyArguments = readOnlyMode === true ? ['gzip=yes', 'readers=(anon)', `writers=${userName || nanoid()}`, `username=${userName}`, `password=${nanoid()}`] : [];
-      if (readOnlyMode === true) {
-        wikiInstance.preloadTiddler({ title: '$:/info/tidgi/readOnlyMode', text: 'yes' });
-      }
-      // Preload workspace ID for filesystem adaptor
-      wikiInstance.preloadTiddler({ title: '$:/info/tidgi/workspaceID', text: workspace.id });
+
+      const infoTiddlerText = `exports.getInfoTiddlerFields = () => [
+        {title: "$:/info/tidgi/readOnlyMode", text: "${readOnlyMode === true ? 'yes' : 'no'}"},
+        // Preload workspace ID for filesystem adaptor
+        {title: "$:/info/tidgi/workspaceID", text: ${JSON.stringify(workspace.id)}},
+      ]`;
+      wikiInstance.preloadTiddler({
+        title: '$:/core/modules/info/tidgi-server.js',
+        text: infoTiddlerText,
+        type: 'application/javascript',
+        'module-type': 'info',
+      });
       /**
        * Use authenticated-user-header to provide `TIDGI_AUTH_TOKEN_HEADER` as header key to receive a value as username (we use it as token).
        *
