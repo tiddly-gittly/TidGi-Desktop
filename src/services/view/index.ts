@@ -6,6 +6,7 @@ import { inject, injectable } from 'inversify';
 import type { IMenuService } from '@services/menu/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { IThemeService } from '@services/theme/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
@@ -278,6 +279,9 @@ export class View implements IViewService {
     // always use #FFF as default page background
     // https://github.com/atomery/webcatalog/issues/723
     // https://github.com/electron/electron/issues/16212
+    const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
+    const shouldUseDarkColors = await themeService.shouldUseDarkColors();
+    view.setBackgroundColor(shouldUseDarkColors ? '#212121' : '#ffffff');
 
     // Handle audio & notification preferences
     if (this.shouldMuteAudio !== undefined) {

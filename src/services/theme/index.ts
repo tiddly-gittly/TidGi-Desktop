@@ -6,10 +6,11 @@ import { WikiChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/interface';
 import debounce from 'lodash/debounce';
-import type { ITheme, IThemeService, IThemeSource } from './interface';
+import { DARK_LIGHT_CHANGE_ACTIONS_TAG, type ITheme, type IThemeService, type IThemeSource } from './interface';
 
 @injectable()
 export class ThemeService implements IThemeService {
@@ -54,19 +55,32 @@ export class ThemeService implements IThemeService {
 
   /**
    * Fix browserView on background not updating theme issue #592
+   * Also update browser view background color when theme changes
    */
   private async updateActiveWikiTheme(): Promise<void> {
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
     const workspaces = await workspaceService.getWorkspacesAsList();
+    const shouldUseDarkColors = this.shouldUseDarkColorsSync();
+    const backgroundColor = shouldUseDarkColors ? '#212121' : '#ffffff';
+
     await Promise.all(
       workspaces.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.hibernated).map(async (workspace) => {
+        // Update wiki theme via TiddlyWiki actions
         await wikiService.wikiOperationInBrowser(WikiChannel.invokeActionsByTag, workspace.id, [
-          '$:/tags/DarkLightChangeActions',
+          DARK_LIGHT_CHANGE_ACTIONS_TAG,
           {
-            'dark-mode': this.shouldUseDarkColorsSync() ? 'yes' : 'no',
+            'dark-mode': shouldUseDarkColors ? 'yes' : 'no',
           },
         ]);
+
+        // Update browser view background color
+        const viewService = container.get<IViewService>(serviceIdentifier.View);
+        viewService.forEachView((view, workspaceID) => {
+          if (workspaceID === workspace.id) {
+            view.setBackgroundColor(backgroundColor);
+          }
+        });
       }),
     );
   }

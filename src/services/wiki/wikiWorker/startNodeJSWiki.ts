@@ -5,12 +5,13 @@ import { onWorkerServicesReady } from './servicesReady';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
+import { DARK_LIGHT_CHANGE_ACTIONS_TAG } from '@services/theme/interface';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
 import inspector from 'node:inspector';
 import path from 'path';
 import { Observable } from 'rxjs';
-import { TiddlyWiki } from 'tiddlywiki';
+import { IWidgetEvent, TiddlyWiki } from 'tiddlywiki';
 import { IWikiMessage, WikiControlActions } from '../interface';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import type { IStartNodeJSWikiConfigs } from '../wikiWorker';
@@ -29,6 +30,7 @@ export function startNodeJSWiki({
   openDebugger,
   readOnlyMode,
   rootTiddler = '$:/core/save/all',
+  shouldUseDarkColors,
   tiddlyWikiHost = defaultServerIP,
   tiddlyWikiPort = 5112,
   tokenAuth,
@@ -173,6 +175,11 @@ export function startNodeJSWiki({
       wikiInstance.hooks.addHook('th-server-command-post-start', function(_listenCommand, server) {
         server.on('error', function(error: Error) {
           observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message, argv: fullBootArgv });
+        });
+        // Similar to how updateActiveWikiTheme calls WikiChannel.invokeActionsByTag
+        // TODO: now working, can't change theme to dark on start.
+        wikiInstance.rootWidget.invokeActionsByTag(DARK_LIGHT_CHANGE_ACTIONS_TAG, new Event('TidGi-invokeActionByTag') as unknown as IWidgetEvent, {
+          'dark-mode': shouldUseDarkColors ? 'yes' : 'no',
         });
         server.on('listening', function() {
           observer.next({

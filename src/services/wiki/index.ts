@@ -40,6 +40,7 @@ import { defaultServerIP } from '@/constants/urls';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { ISyncService } from '@services/sync/interface';
+import type { IThemeService } from '@services/theme/interface';
 import { serializeError } from 'serialize-error';
 import { wikiWorkerStartedEventName } from './constants';
 import type { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
@@ -52,6 +53,7 @@ export class Wiki implements IWikiService {
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.Database) private readonly databaseService: IDatabaseService,
+    @inject(serviceIdentifier.ThemeService) private readonly themeService: IThemeService,
   ) {
   }
 
@@ -131,6 +133,7 @@ export class Wiki implements IWikiService {
         function: 'startWiki',
       });
     }
+    const shouldUseDarkColors = await this.themeService.shouldUseDarkColors();
     const workerData: IStartNodeJSWikiConfigs = {
       authToken,
       constants: { TIDDLYWIKI_PACKAGE_FOLDER },
@@ -142,6 +145,7 @@ export class Wiki implements IWikiService {
       openDebugger: process.env.DEBUG_WORKER === 'true',
       readOnlyMode,
       rootTiddler,
+      shouldUseDarkColors,
       tiddlyWikiHost: defaultServerIP,
       tiddlyWikiPort: port,
       tokenAuth,

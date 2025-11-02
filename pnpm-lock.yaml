@@ -418,8 +418,8 @@ importers:
         specifier: ^4.20.6
         version: 4.20.6
       tw5-typed:
-        specifier: ^0.6.7
-        version: 0.6.7
+        specifier: ^0.6.8
+        version: 0.6.8
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -6902,8 +6902,8 @@ packages:
   tunnel-agent@0.6.0:
     resolution: {integrity: sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w==}
 
-  tw5-typed@0.6.7:
-    resolution: {integrity: sha512-xUs+WVkfepxLJZ12RRt56vyBwXX2eh+eVM0k2mjalL2LJ6qHKpyG8lPsa0FyC7soDyMJHig+ahqOjyUQlRLPcw==}
+  tw5-typed@0.6.8:
+    resolution: {integrity: sha512-8KNeUeHQWhcS50KVsxMkHy3UgBvIW25nNK8vHErt3HNcjfHxxP5otj6KLuRGyzJdyaHAdWwgvq94fc+ZCu0sFQ==}
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -14978,7 +14978,7 @@ snapshots:
     dependencies:
       safe-buffer: 5.2.1
 
-  tw5-typed@0.6.7:
+  tw5-typed@0.6.8:
     dependencies:
       '@types/codemirror': 5.60.16
       '@types/echarts': 4.9.22

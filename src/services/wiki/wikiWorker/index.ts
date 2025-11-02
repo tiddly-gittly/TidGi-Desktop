@@ -39,6 +39,7 @@ export interface IStartNodeJSWikiConfigs {
   openDebugger?: boolean;
   readOnlyMode?: boolean;
   rootTiddler?: string;
+  shouldUseDarkColors: boolean;
   tiddlyWikiHost: string;
   tiddlyWikiPort: number;
   tokenAuth?: boolean;
