@@ -44,4 +44,8 @@ export interface GitLogEntry {
    * An array of parent commit hashes.
    */
   parents: string[];
+  /**
+   * Array of file paths changed in this commit.
+   */
+  files?: string[];
 }

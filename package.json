@@ -55,7 +55,7 @@
     "@rjsf/mui": "6.0.0-beta.10",
     "@rjsf/utils": "6.0.0-beta.10",
     "@rjsf/validator-ajv8": "6.0.0-beta.8",
-    "@tomplum/react-git-log": "^3.4.2",
+    "@tomplum/react-git-log": "^3.5.0",
     "ai": "^5.0.76",
     "ansi-to-html": "^0.7.2",
     "app-path": "^4.0.0",

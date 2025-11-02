@@ -89,9 +89,30 @@ export function useGitLogData(): IGitLogData {
           { page: 0, pageSize: 100 },
         );
 
+        // Load files for each commit
+        const entriesWithFiles = await Promise.all(
+          result.entries.map(async (entry) => {
+            // Skip uncommitted changes (hash is empty)
+            if (!entry.hash) {
+              return { ...entry, files: [] };
+            }
+
+            try {
+              const files = await window.service.git.getCommitFiles(
+                workspaceInfo.wikiFolderLocation,
+                entry.hash,
+              );
+              return { ...entry, files };
+            } catch (error) {
+              console.error(`Failed to load files for commit ${entry.hash}:`, error);
+              return { ...entry, files: [] };
+            }
+          }),
+        );
+
         // Use requestAnimationFrame to batch the state updates and reduce flicker
         requestAnimationFrame(() => {
-          setEntries(result.entries);
+          setEntries(entriesWithFiles);
           setCurrentBranch(result.currentBranch);
         });
       } catch (error_) {

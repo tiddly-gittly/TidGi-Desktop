@@ -19,6 +19,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { CommitDetailsPanel } from './CommitDetailsPanel';
+import { CustomGitTooltip } from './CustomGitTooltip';
 import { FileDiffPanel } from './FileDiffPanel';
 import type { GitLogEntry } from './types';
 import { useCommitDetails } from './useCommitDetails';
@@ -229,6 +230,12 @@ export default function GitHistory(): React.JSX.Element {
   const [viewMode, setViewMode] = useState<'current' | 'all'>('current');
   const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
 
+  // Create a tooltip wrapper that passes the translation function
+  // The props coming from react-git-log don't include 't', so we add it
+  const renderTooltip = (props: Omit<Parameters<typeof CustomGitTooltip>[0], 't'>) => {
+    return CustomGitTooltip({ ...props, t });
+  };
+
   // Auto-select first commit after successful manual commit
   useEffect(() => {
     if (shouldSelectFirst && entries.length > 0) {
@@ -362,7 +369,11 @@ export default function GitHistory(): React.JSX.Element {
                         enableSelectedCommitStyling
                       >
                         <ReactGitLog.Tags />
-                        <ReactGitLog.GraphHTMLGrid nodeTheme='default' />
+                        <ReactGitLog.GraphHTMLGrid
+                          nodeTheme='default'
+                          showCommitNodeTooltips
+                          tooltip={renderTooltip}
+                        />
                         <ReactGitLog.Table timestampFormat='YYYY-MM-DD HH:mm:ss' />
                       </ReactGitLog>
                     )
