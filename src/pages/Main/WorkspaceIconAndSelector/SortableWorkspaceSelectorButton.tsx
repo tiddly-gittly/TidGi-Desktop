@@ -1,15 +1,17 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { MenuItemConstructorOptions } from 'electron';
 import { MouseEvent, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 
+import { WikiChannel } from '@/constants/channels';
 import { PageType } from '@/constants/pageTypes';
 import { getBuildInPageIcon } from '@/pages/Main/WorkspaceIconAndSelector/getBuildInPageIcon';
 import { getBuildInPageName } from '@/pages/Main/WorkspaceIconAndSelector/getBuildInPageName';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
+import { getSimplifiedWorkspaceMenuTemplate, getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
 import { isWikiWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
 
@@ -101,10 +103,43 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     async (event: MouseEvent<HTMLDivElement>) => {
       event.preventDefault();
       event.stopPropagation();
-      const workspaceContextMenuTemplate = await getWorkspaceMenuTemplate(workspace, t, window.service);
-      void window.remote.buildContextMenuAndPopup(workspaceContextMenuTemplate, { x: event.clientX, y: event.clientY, editFlags: { canCopy: false } });
+      // Build workspace context menu template - provide all workspace-specific content here
+      const workspaceContextMenuTemplate: MenuItemConstructorOptions[] = [];
+
+      // Add command palette first (before other items)
+      if (isWiki) {
+        workspaceContextMenuTemplate.push({
+          label: t('ContextMenu.OpenCommandPalette'),
+          click: async () => {
+            await window.service.wiki.wikiOperationInBrowser(WikiChannel.dispatchEvent, workspace.id, ['open-command-palette']);
+          },
+        });
+      }
+
+      // Add simplified menu items
+      const simplifiedMenuItems = await getSimplifiedWorkspaceMenuTemplate(workspace, t, window.service);
+      workspaceContextMenuTemplate.push(...simplifiedMenuItems);
+
+      // Add "Current Workspace" submenu with full menu (only for wiki workspaces)
+      if (isWiki) {
+        const fullMenuTemplate = await getWorkspaceMenuTemplate(workspace, t, window.service);
+        if (fullMenuTemplate.length > 0) {
+          // Add separator before "Current Workspace"
+          workspaceContextMenuTemplate.push({ type: 'separator' });
+          // Add "Current Workspace" submenu
+          workspaceContextMenuTemplate.push({
+            label: t('Menu.CurrentWorkspace'),
+            submenu: fullMenuTemplate,
+          });
+        }
+      }
+      void window.remote.buildContextMenuAndPopup(workspaceContextMenuTemplate, {
+        x: event.clientX,
+        y: event.clientY,
+        editFlags: { canCopy: false },
+      });
     },
-    [t, workspace],
+    [t, workspace, isWiki],
   );
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} onContextMenu={onWorkspaceContextMenu}>

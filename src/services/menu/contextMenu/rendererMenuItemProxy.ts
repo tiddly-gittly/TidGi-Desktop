@@ -3,7 +3,10 @@ import { ipcRenderer, IpcRendererEvent, MenuItemConstructorOptions, WebContents 
 
 export interface IpcSafeMenuItem {
   click: string;
+  enabled?: boolean;
   label?: string;
+  submenu?: IpcSafeMenuItem[];
+  type?: 'normal' | 'separator' | 'submenu' | 'checkbox' | 'radio' | 'header' | 'palette';
 }
 
 /**
@@ -21,8 +24,21 @@ export function rendererMenuItemProxy(menus: MenuItemConstructorOptions[]): [Ipc
       delete ipcCallbackIdMap[id];
     });
   };
-  const newMenus: IpcSafeMenuItem[] = [];
-  for (const menuItem of menus) {
+
+  const processMenuItem = (menuItem: MenuItemConstructorOptions): IpcSafeMenuItem => {
+    const safeItem: IpcSafeMenuItem = {
+      click: '',
+      label: menuItem.label,
+      type: menuItem.type,
+      enabled: menuItem.enabled,
+    };
+
+    // Handle submenu recursively
+    if (Array.isArray(menuItem.submenu)) {
+      safeItem.submenu = menuItem.submenu.map(processMenuItem);
+    }
+
+    // Handle click callback
     if (menuItem.click !== undefined) {
       const id = String(Math.random());
       // store callback into map, and use id instead. And we ipc.on that id.
@@ -33,12 +49,13 @@ export function rendererMenuItemProxy(menus: MenuItemConstructorOptions[]): [Ipc
       };
       ipcCallbackIdMap[id] = ipcCallback;
       ipcRenderer.on(id, ipcCallback);
-      newMenus.push({
-        ...menuItem,
-        click: id,
-      });
+      safeItem.click = id;
     }
-  }
+
+    return safeItem;
+  };
+
+  const newMenus: IpcSafeMenuItem[] = menus.map(processMenuItem);
   return [newMenus, unregister];
 }
 
@@ -46,13 +63,27 @@ export function rendererMenuItemProxy(menus: MenuItemConstructorOptions[]): [Ipc
  * Reconstruct the object with callback on the main process, the callback is just IPCMain.invoke(uuid
  */
 export function mainMenuItemProxy(menus: IpcSafeMenuItem[], webContents: WebContents): MenuItemConstructorOptions[] {
-  const newMenus: MenuItemConstructorOptions[] = [];
-  for (const menu of menus) {
-    const clickIpcCallback = (): void => {
-      webContents.send(menu.click);
+  const processMenuItem = (menu: IpcSafeMenuItem): MenuItemConstructorOptions => {
+    const menuItem: MenuItemConstructorOptions = {
+      label: menu.label,
+      type: menu.type,
+      enabled: menu.enabled,
     };
-    newMenus.push({ ...menu, click: clickIpcCallback });
-  }
 
-  return newMenus;
+    // Handle submenu recursively
+    if (Array.isArray(menu.submenu)) {
+      menuItem.submenu = menu.submenu.map(processMenuItem);
+    }
+
+    // Handle click callback (only if click ID is not empty)
+    if (menu.click && menu.click.length > 0) {
+      menuItem.click = (): void => {
+        webContents.send(menu.click);
+      };
+    }
+
+    return menuItem;
+  };
+
+  return menus.map(processMenuItem);
 }
