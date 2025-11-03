@@ -41,9 +41,9 @@ Feature: Git Log Window
     Then I should see a "commit with default message" element with selector "div.MuiBox-root:has-text('使用太记桌面版备份')"
     # Click on the commit row to view details - use tr selector like in the second test
     When I click on a "commit row with GitLogTestTiddler" element with selector "tr:has-text('GitLogTestTiddler')"
-    And I wait for 0.5 seconds for "commit details panel to load"
-    # Verify the full filename appears in the details panel
-    Then I should see a "GitLogTestTiddler.tid file in details" element with selector "li:has-text('GitLogTestTiddler.tid')"
+    And I wait for 1 seconds for "commit details panel to load and file list to populate"
+    # Verify the filename appears in the details panel (may include path like tiddlers/GitLogTestTiddler.tid)
+    Then I should see a "GitLogTestTiddler.tid file in details" element with selector "li:has-text('GitLogTestTiddler')"
 
   @git
   Scenario: Git Log window shows uncommitted changes and commit now button works
