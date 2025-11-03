@@ -129,7 +129,7 @@ export function useGitLogData(): IGitLogData {
     };
 
     void loadGitLog();
-  }, [workspaceInfo, refreshTrigger, entries.length]);
+  }, [workspaceInfo, refreshTrigger]);
 
   return { entries, loading, error, currentBranch, workspaceInfo };
 }

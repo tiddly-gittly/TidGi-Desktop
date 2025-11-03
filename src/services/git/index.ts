@@ -340,8 +340,20 @@ export class Git implements IGitService {
     return await gitOperations.getCommitFiles(wikiFolderPath, commitHash);
   }
 
-  public async getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<string> {
+  public async getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<import('./interface').IFileDiffResult> {
     return await gitOperations.getFileDiff(wikiFolderPath, commitHash, filePath, maxLines, maxChars);
+  }
+
+  public async getFileContent(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<import('./interface').IFileDiffResult> {
+    return await gitOperations.getFileContent(wikiFolderPath, commitHash, filePath, maxLines, maxChars);
+  }
+
+  public async getFileBinaryContent(wikiFolderPath: string, commitHash: string, filePath: string): Promise<string> {
+    return await gitOperations.getFileBinaryContent(wikiFolderPath, commitHash, filePath);
+  }
+
+  public async getImageComparison(wikiFolderPath: string, commitHash: string, filePath: string): Promise<{ previous: string | null; current: string | null }> {
+    return await gitOperations.getImageComparison(wikiFolderPath, commitHash, filePath);
   }
 
   public async checkoutCommit(wikiFolderPath: string, commitHash: string): Promise<void> {
@@ -353,11 +365,26 @@ export class Git implements IGitService {
   }
 
   public async revertCommit(wikiFolderPath: string, commitHash: string, commitMessage?: string): Promise<void> {
-    await gitOperations.revertCommit(wikiFolderPath, commitHash, commitMessage);
+    try {
+      await gitOperations.revertCommit(wikiFolderPath, commitHash, commitMessage);
+      // Notify git state change
+      this.notifyGitStateChange(wikiFolderPath, 'revert');
+      // Log for e2e test detection
+      logger.info(`[test-id-git-revert-complete]`, { wikiFolderPath, commitHash });
+    } catch (error) {
+      logger.error('revertCommit failed', { error, wikiFolderPath, commitHash, commitMessage });
+      throw error;
+    }
+  }
+
+  public async discardFileChanges(wikiFolderPath: string, filePath: string): Promise<void> {
+    await gitOperations.discardFileChanges(wikiFolderPath, filePath);
     // Notify git state change
-    this.notifyGitStateChange(wikiFolderPath, 'revert');
-    // Log for e2e test detection
-    logger.info(`[test-id-git-revert-complete]`, { wikiFolderPath, commitHash });
+    this.notifyGitStateChange(wikiFolderPath, 'discard');
+  }
+
+  public async addToGitignore(wikiFolderPath: string, pattern: string): Promise<void> {
+    await gitOperations.addToGitignore(wikiFolderPath, pattern);
   }
 
   public async isAIGenerateBackupTitleEnabled(): Promise<boolean> {

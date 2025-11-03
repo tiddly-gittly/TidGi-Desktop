@@ -385,7 +385,7 @@ export default function GitHistory(): React.JSX.Element {
                 </>
               )}
           </TabContent>
-        </GitLogWrapper>{' '}
+        </GitLogWrapper>
         <DetailsWrapper>
           <DetailsPanelWrapper>
             <CommitDetailsPanel

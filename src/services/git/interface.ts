@@ -58,6 +58,13 @@ export interface IGitLogResult {
   totalCount: number;
 }
 
+export interface IFileDiffResult {
+  /** The diff content */
+  content: string;
+  /** Whether the diff was truncated due to size limits */
+  isTruncated: boolean;
+}
+
 /**
  * Git state change event
  */
@@ -67,7 +74,7 @@ export interface IGitStateChange {
   /** The workspace folder that changed */
   wikiFolderLocation: string;
   /** Type of change */
-  type: 'commit' | 'sync' | 'pull' | 'checkout' | 'revert';
+  type: 'commit' | 'sync' | 'pull' | 'checkout' | 'revert' | 'discard';
 }
 
 /**
@@ -116,7 +123,21 @@ export interface IGitService {
    * @param maxLines - Maximum number of lines to return (default: 500)
    * @param maxChars - Maximum number of characters to return (default: 10000)
    */
-  getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<string>;
+  getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<IFileDiffResult>;
+  /**
+   * Get the content of a specific file at a commit
+   * @param maxLines - Maximum number of lines to return (default: 500)
+   * @param maxChars - Maximum number of characters to return (default: 10000)
+   */
+  getFileContent(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<IFileDiffResult>;
+  /**
+   * Get binary file content (e.g., images) from a commit as base64 data URL
+   */
+  getFileBinaryContent(wikiFolderPath: string, commitHash: string, filePath: string): Promise<string>;
+  /**
+   * Get image comparison data (previous and current versions) for a file
+   */
+  getImageComparison(wikiFolderPath: string, commitHash: string, filePath: string): Promise<{ previous: string | null; current: string | null }>;
   /**
    * Checkout a specific commit
    */
@@ -127,6 +148,14 @@ export interface IGitService {
    */
   revertCommit(wikiFolderPath: string, commitHash: string, commitMessage?: string): Promise<void>;
   /**
+   * Discard changes for a specific file (restore from HEAD)
+   */
+  discardFileChanges(wikiFolderPath: string, filePath: string): Promise<void>;
+  /**
+   * Add a file pattern to .gitignore
+   */
+  addToGitignore(wikiFolderPath: string, pattern: string): Promise<void>;
+  /**
    * Check if AI-generated backup title feature is enabled and configured
    */
   isAIGenerateBackupTitleEnabled(): Promise<boolean>;
@@ -134,13 +163,18 @@ export interface IGitService {
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,
   properties: {
+    addToGitignore: ProxyPropertyType.Function,
     checkoutCommit: ProxyPropertyType.Function,
     clone: ProxyPropertyType.Function,
     commitAndSync: ProxyPropertyType.Function,
+    discardFileChanges: ProxyPropertyType.Function,
     forcePull: ProxyPropertyType.Function,
     getCommitFiles: ProxyPropertyType.Function,
+    getFileBinaryContent: ProxyPropertyType.Function,
+    getFileContent: ProxyPropertyType.Function,
     getFileDiff: ProxyPropertyType.Function,
     getGitLog: ProxyPropertyType.Function,
+    getImageComparison: ProxyPropertyType.Function,
     getModifiedFileList: ProxyPropertyType.Function,
     getWorkspacesRemote: ProxyPropertyType.Function,
     gitStateChange$: ProxyPropertyType.Value$,

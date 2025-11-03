@@ -256,7 +256,7 @@ export function CommitDetailsPanel(
       <Divider sx={{ my: 1 }} />
 
       <Typography variant='subtitle2' gutterBottom>
-        {t('GitLog.FilesChanged')} ({fileChanges.length})
+        {t('GitLog.FilesChanged', { count: fileChanges.length })}
       </Typography>
 
       {fileChanges.length > 0

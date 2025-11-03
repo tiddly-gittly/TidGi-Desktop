@@ -60,25 +60,45 @@ const FileContentContainer = styled(Box)`
 
 const DiffLine = styled('div')<{ $type: 'added' | 'removed' | 'context' | 'header' }>`
   ${({ $type, theme }) => {
+  const isDark = theme.palette.mode === 'dark';
   switch ($type) {
     case 'added':
-      return `
+      return isDark
+        ? `
           background-color: rgba(46, 160, 67, 0.2);
           color: #7ee787;
           border-left: 3px solid #3fb950;
+        `
+        : `
+          background-color: rgba(46, 160, 67, 0.15);
+          color: #116329;
+          border-left: 3px solid #2da44e;
         `;
     case 'removed':
-      return `
+      return isDark
+        ? `
           background-color: rgba(248, 81, 73, 0.2);
           color: #ffa198;
           border-left: 3px solid #f85149;
+        `
+        : `
+          background-color: rgba(248, 81, 73, 0.15);
+          color: #82071e;
+          border-left: 3px solid #cf222e;
         `;
     case 'header':
-      return `
+      return isDark
+        ? `
           background-color: rgba(56, 139, 253, 0.15);
           color: #79c0ff;
           font-weight: 600;
           border-left: 3px solid #388bfd;
+        `
+        : `
+          background-color: rgba(56, 139, 253, 0.15);
+          color: #0969da;
+          font-weight: 600;
+          border-left: 3px solid #0969da;
         `;
     default:
       return `
@@ -123,15 +143,136 @@ export function FileDiffPanel({ commitHash, filePath }: IFileDiffPanelProps): Re
   const [fileContent, setFileContent] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [isImage, setIsImage] = useState(false);
-  const [currentTab, setCurrentTab] = useState<'diff' | 'content'>('diff');
-  const [imageUrl, setImageUrl] = useState<string>('');
-  const [isTruncated, setIsTruncated] = useState(false);
-  const [isLoadingFull, setIsLoadingFull] = useState(false);
+  const [currentTab, setCurrentTab] = useState<'diff' | 'content' | 'actions'>('diff');
+  const [imageDataUrl, setImageDataUrl] = useState<string>('');
+  const [previousImageDataUrl, setPreviousImageDataUrl] = useState<string>('');
+  const [imageError, setImageError] = useState<string>('');
+  const [isDiffTruncated, setIsDiffTruncated] = useState(false);
+  const [isContentTruncated, setIsContentTruncated] = useState(false);
+  const [isLoadingFullDiff, setIsLoadingFullDiff] = useState(false);
+  const [isLoadingFullContent, setIsLoadingFullContent] = useState(false);
+
+  const getWorkspace = async () => {
+    const meta = window.meta();
+    const workspaceID = (meta as { workspaceID?: string }).workspaceID;
+    if (!workspaceID) return null;
+    const workspace = await window.service.workspace.get(workspaceID);
+    if (!workspace || !('wikiFolderLocation' in workspace)) return null;
+    return workspace;
+  };
 
   const loadFullDiff = async () => {
     if (!filePath || !commitHash) return;
 
-    setIsLoadingFull(true);
+    setIsLoadingFullDiff(true);
+    try {
+      const workspace = await getWorkspace();
+      if (!workspace) return;
+
+      // Load full diff without limits (pass very large values)
+      const fileDiffResult = await window.service.git.getFileDiff(workspace.wikiFolderLocation, commitHash, filePath, 50000, 1000000);
+      setDiff(fileDiffResult.content);
+      setIsDiffTruncated(fileDiffResult.isTruncated);
+    } catch (error) {
+      console.error('Failed to load full diff:', error);
+    } finally {
+      setIsLoadingFullDiff(false);
+    }
+  };
+
+  const canDiscardChanges = !commitHash;
+  const extensionMatch = filePath ? filePath.match(/\.([^.\\/]+)$/) : null;
+  const fileExtension = extensionMatch?.[1] ?? null;
+
+  const handleDiscardChanges = async () => {
+    if (!filePath || !canDiscardChanges) return;
+    const workspace = await getWorkspace();
+    if (!workspace) return;
+
+    try {
+      await window.service.git.discardFileChanges(workspace.wikiFolderLocation, filePath);
+      // TODO: Show success message and refresh file list
+    } catch (error) {
+      console.error('Failed to discard changes:', error);
+      // TODO: Show error message
+    }
+  };
+
+  const handleIgnoreFile = async () => {
+    if (!filePath) return;
+    const workspace = await getWorkspace();
+    if (!workspace) return;
+
+    try {
+      await window.service.git.addToGitignore(workspace.wikiFolderLocation, filePath);
+      // TODO: Show success message
+    } catch (error) {
+      console.error('Failed to add to .gitignore:', error);
+      // TODO: Show error message
+    }
+  };
+
+  const handleIgnoreExtension = async () => {
+    if (!filePath || !fileExtension) return;
+    const workspace = await getWorkspace();
+    if (!workspace) return;
+
+    try {
+      await window.service.git.addToGitignore(workspace.wikiFolderLocation, `*.${fileExtension}`);
+      // TODO: Show success message
+    } catch (error) {
+      console.error('Failed to add extension to .gitignore:', error);
+      // TODO: Show error message
+    }
+  };
+
+  const handleCopyPath = async () => {
+    if (!filePath) return;
+    const workspace = await getWorkspace();
+    if (!workspace) return;
+
+    const fullPath = `${workspace.wikiFolderLocation}/${filePath}`;
+    await navigator.clipboard.writeText(fullPath);
+    // TODO: Show success message
+  };
+
+  const handleCopyRelativePath = async () => {
+    if (!filePath) return;
+    await navigator.clipboard.writeText(filePath);
+    // TODO: Show success message
+  };
+
+  const handleShowInExplorer = async () => {
+    if (!filePath) return;
+    const workspace = await getWorkspace();
+    if (!workspace) return;
+
+    const fullPath = `${workspace.wikiFolderLocation}/${filePath}`;
+    await window.service.native.openPath(fullPath, true);
+  };
+
+  const handleOpenInEditor = async () => {
+    if (!filePath) return;
+    const workspace = await getWorkspace();
+    if (!workspace) return;
+
+    const fullPath = `${workspace.wikiFolderLocation}/${filePath}`;
+    await window.service.native.openInEditor(fullPath);
+  };
+
+  const handleOpenWithDefault = async () => {
+    if (!filePath) return;
+    const workspace = await getWorkspace();
+    if (!workspace) return;
+
+    const fullPath = `${workspace.wikiFolderLocation}/${filePath}`;
+    await window.service.native.openPath(fullPath, false);
+  };
+
+  const loadFullContent = async () => {
+    if (!filePath || !commitHash) return;
+
+    setIsLoadingFullContent(true);
     try {
       const meta = window.meta();
       const workspaceID = (meta as { workspaceID?: string }).workspaceID;
@@ -141,55 +282,73 @@ export function FileDiffPanel({ commitHash, filePath }: IFileDiffPanelProps): Re
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
-      // Load full diff without limits (pass very large values)
-      const fileDiff = await window.service.git.getFileDiff(workspace.wikiFolderLocation, commitHash, filePath, 50000, 1000000);
-      setDiff(fileDiff);
-      setFileContent(fileDiff);
-      setIsTruncated(false);
+      // Load full content without limits (pass very large values)
+      const fileContentResult = await window.service.git.getFileContent(workspace.wikiFolderLocation, commitHash, filePath, 50000, 1000000);
+      setFileContent(fileContentResult.content);
+      setIsContentTruncated(fileContentResult.isTruncated);
     } catch (error) {
-      console.error('Failed to load full diff:', error);
+      console.error('Failed to load full content:', error);
     } finally {
-      setIsLoadingFull(false);
+      setIsLoadingFullContent(false);
     }
   };
 
   useEffect(() => {
-    if (!filePath || !commitHash) {
+    // Note: commitHash can be empty string for uncommitted changes, which is valid
+    if (!filePath || commitHash === null || commitHash === undefined) {
       setDiff('');
       setFileContent('');
-      setImageUrl('');
-      setIsTruncated(false);
+      setImageDataUrl('');
+      setPreviousImageDataUrl('');
+      setImageError('');
+      setIsDiffTruncated(false);
+      setIsContentTruncated(false);
       return;
     }
 
     const loadFileData = async () => {
       setLoading(true);
       try {
-        const meta = window.meta();
-        const workspaceID = (meta as { workspaceID?: string }).workspaceID;
+        const workspace = await getWorkspace();
+        if (!workspace) return;
 
-        if (!workspaceID) return;
+        // Check if file is an image or binary file
+        const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico'];
+        const isImageExtension = imageExtensions.some((extension) => filePath.toLowerCase().endsWith(extension));
 
-        const workspace = await window.service.workspace.get(workspaceID);
-        if (!workspace || !('wikiFolderLocation' in workspace)) return;
+        // First, try to get the diff to check if it's a binary file
+        const fileDiffResult = await window.service.git.getFileDiff(workspace.wikiFolderLocation, commitHash, filePath);
+        const isBinaryFile = fileDiffResult.content.includes('Binary files') || fileDiffResult.content.includes('differ');
 
-        // Check if file is an image
-        const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp'];
-        const fileIsImage = imageExtensions.some((extension) => filePath.toLowerCase().endsWith(extension));
-        setIsImage(fileIsImage);
-
-        if (fileIsImage) {
-          // For images, create a file:// URL to display the image
-          const fullPath = `${workspace.wikiFolderLocation}/${filePath}`;
-          setImageUrl(`file://${fullPath}`);
+        // Handle binary files
+        if (isBinaryFile) {
+          if (isImageExtension) {
+            // Display image comparison for image files
+            setIsImage(true);
+            setImageError('');
+            try {
+              const imageComparison = await window.service.git.getImageComparison(workspace.wikiFolderLocation, commitHash, filePath);
+              setImageDataUrl(imageComparison.current || '');
+              setPreviousImageDataUrl(imageComparison.previous || '');
+            } catch (error) {
+              console.error('Failed to load image:', error);
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              setImageError(errorMessage);
+            }
+          } else {
+            // Display binary file message for non-image binary files
+            setIsImage(false);
+            setDiff(t('GitLog.BinaryFileCannotDisplay'));
+            setFileContent('');
+          }
         } else {
-          // Get the diff for this file
-          const fileDiff = await window.service.git.getFileDiff(workspace.wikiFolderLocation, commitHash, filePath);
-          setDiff(fileDiff);
-          setIsTruncated(fileDiff.includes('[......]'));
-
-          // Also get the file content (show command output)
-          setFileContent(fileDiff);
+          // For text files, get both diff and content
+          setIsImage(false);
+          const fileContentResult = await window.service.git.getFileContent(workspace.wikiFolderLocation, commitHash, filePath);
+          setDiff(fileDiffResult.content);
+          setFileContent(fileContentResult.content);
+          setIsDiffTruncated(fileDiffResult.isTruncated);
+          setIsContentTruncated(fileContentResult.isTruncated);
         }
       } catch (error) {
         console.error('Failed to load file data:', error);
@@ -223,30 +382,170 @@ export function FileDiffPanel({ commitHash, filePath }: IFileDiffPanelProps): Re
     );
   }
 
+  // Render action buttons panel
+  const renderActionsPanel = () => (
+    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+      {canDiscardChanges && (
+        <Button variant='outlined' color='warning' onClick={handleDiscardChanges} fullWidth>
+          {t('GitLog.DiscardChanges')}
+        </Button>
+      )}
+      <Button variant='outlined' onClick={handleIgnoreFile} fullWidth>
+        {t('GitLog.IgnoreFile')}
+      </Button>
+      {fileExtension && (
+        <Button variant='outlined' onClick={handleIgnoreExtension} fullWidth>
+          {t('GitLog.IgnoreExtension', { ext: fileExtension })}
+        </Button>
+      )}
+      <Button variant='outlined' onClick={handleCopyPath} fullWidth>
+        {t('GitLog.CopyFilePath')}
+      </Button>
+      <Button variant='outlined' onClick={handleCopyRelativePath} fullWidth>
+        {t('GitLog.CopyRelativeFilePath')}
+      </Button>
+      <Button variant='outlined' onClick={handleShowInExplorer} fullWidth>
+        {t('GitLog.ShowInExplorer')}
+      </Button>
+      <Button variant='outlined' onClick={handleOpenInEditor} fullWidth>
+        {t('GitLog.OpenInExternalEditor')}
+      </Button>
+      <Button variant='outlined' onClick={handleOpenWithDefault} fullWidth>
+        {t('GitLog.OpenWithDefaultProgram')}
+      </Button>
+    </Box>
+  );
+
+  const renderTextPanelContent = () => {
+    if (currentTab === 'actions') {
+      return renderActionsPanel();
+    }
+
+    if (currentTab === 'diff') {
+      return (
+        <>
+          {isDiffTruncated && (
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
+              <Button
+                variant='outlined'
+                size='small'
+                onClick={() => void loadFullDiff()}
+                disabled={isLoadingFullDiff}
+              >
+                {isLoadingFullDiff ? t('GitLog.LoadingFull') : t('GitLog.ShowFull')}
+              </Button>
+            </Box>
+          )}
+          <DiffContainer>
+            {renderDiffContent()}
+          </DiffContainer>
+        </>
+      );
+    }
+
+    return (
+      <>
+        {isContentTruncated && (
+          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
+            <Button
+              variant='outlined'
+              size='small'
+              onClick={() => void loadFullContent()}
+              disabled={isLoadingFullContent}
+            >
+              {isLoadingFullContent ? t('GitLog.LoadingFull') : t('GitLog.ShowFull')}
+            </Button>
+          </Box>
+        )}
+        <FileContentContainer>
+          {fileContent}
+        </FileContentContainer>
+      </>
+    );
+  };
+
   if (isImage) {
     return (
       <Panel>
         <TabsWrapper>
-          <Typography variant='h6' sx={{ py: 2 }}>
+          <Typography variant='h6' sx={{ pt: 2, pb: 1 }}>
             {filePath}
           </Typography>
+          <Tabs
+            value={currentTab}
+            onChange={(_event, newValue: 'diff' | 'content' | 'actions') => {
+              setCurrentTab(newValue);
+            }}
+          >
+            <Tab label={t('GitLog.DiffView')} value='diff' />
+            <Tab label={t('GitLog.ContentView')} value='content' />
+            <Tab label={t('GitLog.Actions')} value='actions' />
+          </Tabs>
         </TabsWrapper>
         <ContentWrapper>
-          <ImageComparisonWrapper>
+          {currentTab === 'diff' && (
+            <ImageComparisonWrapper>
+              {/* Show previous image if available */}
+              {previousImageDataUrl && (
+                <ImageBox>
+                  <Typography variant='subtitle2'>{t('GitLog.PreviousVersion')}</Typography>
+                  <ImagePreview
+                    src={previousImageDataUrl}
+                    alt={`${filePath} (previous)`}
+                    onError={() => {
+                      setPreviousImageDataUrl('');
+                    }}
+                  />
+                </ImageBox>
+              )}
+              {/* Show current image */}
+              <ImageBox>
+                <Typography variant='subtitle2'>
+                  {previousImageDataUrl ? t('GitLog.CurrentVersion') : t('GitLog.ImageInCommit')}
+                </Typography>
+                {imageDataUrl
+                  ? (
+                    <ImagePreview
+                      src={imageDataUrl}
+                      alt={filePath}
+                      onError={() => {
+                        setImageDataUrl('');
+                        setImageError('Failed to render image');
+                      }}
+                    />
+                  )
+                  : imageError
+                  ? (
+                    <Box>
+                      <Typography variant='body2' color='error' sx={{ mb: 1 }}>
+                        {t('GitLog.ImageNotAvailable')}
+                      </Typography>
+                      <Typography variant='caption' color='textSecondary' sx={{ fontFamily: 'monospace' }}>
+                        {imageError}
+                      </Typography>
+                    </Box>
+                  )
+                  : (
+                    <Typography variant='body2' color='textSecondary'>
+                      {previousImageDataUrl ? t('GitLog.NewImage') : t('GitLog.ImageNotAvailable')}
+                    </Typography>
+                  )}
+              </ImageBox>
+            </ImageComparisonWrapper>
+          )}
+          {currentTab === 'content' && imageDataUrl && (
             <ImageBox>
-              <Typography variant='subtitle2'>{t('GitLog.CurrentVersion')}</Typography>
               <ImagePreview
-                src={imageUrl}
+                src={imageDataUrl}
                 alt={filePath}
                 onError={() => {
-                  setImageUrl('');
+                  setImageDataUrl('');
+                  setImageError('Failed to render image');
                 }}
               />
             </ImageBox>
-            <Typography variant='body2' color='textSecondary'>
-              {t('GitLog.ImageDiffNote')}
-            </Typography>
-          </ImageComparisonWrapper>
+          )}
+          {currentTab === 'actions' && renderActionsPanel()}
         </ContentWrapper>
       </Panel>
     );
@@ -284,56 +583,17 @@ export function FileDiffPanel({ commitHash, filePath }: IFileDiffPanelProps): Re
         </Typography>
         <Tabs
           value={currentTab}
-          onChange={(_event, newValue: 'diff' | 'content') => {
+          onChange={(_event, newValue: 'diff' | 'content' | 'actions') => {
             setCurrentTab(newValue);
           }}
         >
           <Tab label={t('GitLog.DiffView')} value='diff' />
           <Tab label={t('GitLog.ContentView')} value='content' />
+          <Tab label={t('GitLog.Actions')} value='actions' />
         </Tabs>
       </TabsWrapper>
 
-      <ContentWrapper>
-        {currentTab === 'diff'
-          ? (
-            <>
-              {isTruncated && (
-                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
-                  <Button
-                    variant='outlined'
-                    size='small'
-                    onClick={() => void loadFullDiff()}
-                    disabled={isLoadingFull}
-                  >
-                    {isLoadingFull ? t('GitLog.LoadingFull') : t('GitLog.ShowFull')}
-                  </Button>
-                </Box>
-              )}
-              <DiffContainer>
-                {renderDiffContent()}
-              </DiffContainer>
-            </>
-          )
-          : (
-            <>
-              {isTruncated && (
-                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
-                  <Button
-                    variant='outlined'
-                    size='small'
-                    onClick={() => void loadFullDiff()}
-                    disabled={isLoadingFull}
-                  >
-                    {isLoadingFull ? t('GitLog.LoadingFull') : t('GitLog.ShowFull')}
-                  </Button>
-                </Box>
-              )}
-              <FileContentContainer>
-                {fileContent}
-              </FileContentContainer>
-            </>
-          )}
-      </ContentWrapper>
+      <ContentWrapper>{renderTextPanelContent()}</ContentWrapper>
     </Panel>
   );
 }
