@@ -4,7 +4,7 @@ import { waitForAIStreamResult } from '@services/externalAPI/waitForAIStreamResu
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { GitProcess } from 'dugite';
+import { exec as gitExec } from 'dugite';
 
 /**
  * Filter out large plugin file diffs to avoid sending huge JSON to AI
@@ -62,7 +62,7 @@ export async function generateAICommitMessage(wikiFolderPath: string): Promise<s
 
     // Get git diff for all changes (both staged and unstaged)
     // Use HEAD as the comparison point to include all uncommitted changes
-    const diffResult = await GitProcess.exec(['diff', 'HEAD'], wikiFolderPath);
+    const diffResult = await gitExec(['diff', 'HEAD'], wikiFolderPath);
 
     if (diffResult.exitCode !== 0 || !diffResult.stdout || diffResult.stdout.trim().length === 0) {
       logger.info('No changes found, skipping AI commit message generation');
