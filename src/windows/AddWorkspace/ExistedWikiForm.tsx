@@ -1,6 +1,6 @@
 import FolderIcon from '@mui/icons-material/Folder';
 import { AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isWikiWorkspace } from '@services/workspaces/interface';
@@ -35,7 +35,18 @@ export function ExistedWikiForm({
     tagName,
     tagNameSetter,
   } = form;
+  
+  // Use local state for input to prevent cursor jumping
+  // Only sync with derived wikiFolderLocation when it changes externally (e.g., from picker button)
+  const [localInputValue, setLocalInputValue] = useState(wikiFolderLocation ?? '');
+  
+  // Sync local value when wikiFolderLocation changes externally
+  useEffect(() => {
+    setLocalInputValue(wikiFolderLocation ?? '');
+  }, [wikiFolderLocation]);
+  
   useValidateExistedWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, errorInWhichComponentSetter);
+  
   const onLocationChange = useCallback(
     async (newLocation: string) => {
       const folderName = await window.service.native.path('basename', newLocation);
@@ -52,12 +63,30 @@ export function ExistedWikiForm({
       <LocationPickerContainer>
         <LocationPickerInput
           error={errorInWhichComponent.wikiFolderLocation}
-          onChange={async (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-            await onLocationChange(event.target.value);
+          onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            // Update local state immediately to prevent cursor jumping
+            const newValue = event.target.value;
+            setLocalInputValue(newValue);
+            
+            // Parse and update form state synchronously
+            const lastSlashIndex = Math.max(newValue.lastIndexOf('/'), newValue.lastIndexOf('\\'));
+            if (lastSlashIndex > 0) {
+              const folder = newValue.slice(lastSlashIndex + 1);
+              const parent = newValue.slice(0, lastSlashIndex);
+              wikiFolderNameSetter(folder);
+              parentFolderLocationSetter(parent);
+            } else {
+              wikiFolderNameSetter(newValue);
+              parentFolderLocationSetter('');
+            }
+          }}
+          onBlur={(event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            // On blur, use proper async path parsing to normalize the format
+            void onLocationChange(event.target.value);
           }}
           label={t('AddWorkspace.WorkspaceFolder')}
           helperText={`${t('AddWorkspace.ImportWiki')}${wikiFolderLocation ?? ''}`}
-          value={wikiFolderLocation}
+          value={localInputValue}
         />
         <LocationPickerButton
           onClick={async () => {
