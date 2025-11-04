@@ -26,7 +26,7 @@ Feature: Git Log Window
       """
     Then I wait for tiddler "GitLogTestTiddler" to be added by watch-fs
     # Use menu to commit the file - this will use default message (no AI configured)
-    When I click menu "知识库 > 立即备份"
+    When I click menu "知识库 > 立即本地Git备份"
     # wait for git operation to complete
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
     # Open Git Log through menu

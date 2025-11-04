@@ -9,10 +9,11 @@ import type { IpcSafeMenuItem } from './contextMenu/rendererMenuItemProxy';
  * MenuItemConstructorOptions that allows properties like "label", "enabled", "submenu" to be () => xxx
  * So these value can be determined at every build time (menu will be rebuilt every time the preferences change)
  */
-export interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstructorOptions, 'label' | 'enabled' | 'checked' | 'submenu'> {
+export interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstructorOptions, 'label' | 'enabled' | 'checked' | 'visible' | 'submenu'> {
   checked?: (() => boolean) | (() => Promise<boolean>) | boolean;
   enabled?: (() => boolean) | (() => Promise<boolean>) | boolean;
   label?: (() => string) | string;
+  visible?: (() => boolean) | (() => Promise<boolean>) | boolean;
   submenu?: Array<MenuItemConstructorOptions | DeferredMenuItemConstructorOptions>;
 }
 

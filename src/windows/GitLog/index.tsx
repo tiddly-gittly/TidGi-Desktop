@@ -224,7 +224,7 @@ function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTable
 
 export default function GitHistory(): React.JSX.Element {
   const { t } = useTranslation();
-  const { entries, loading, error, workspaceInfo, currentBranch } = useGitLogData();
+  const { entries, loading, error, workspaceInfo, currentBranch, lastChangeType } = useGitLogData();
   const { selectedCommit, setSelectedCommit } = useCommitDetails();
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'current' | 'all'>('current');
@@ -247,6 +247,17 @@ export default function GitHistory(): React.JSX.Element {
       }
     }
   }, [shouldSelectFirst, entries, setSelectedCommit]);
+
+  // Auto-select first commit when a new commit is detected
+  useEffect(() => {
+    if (lastChangeType === 'commit' && entries.length > 0) {
+      // Find the first non-uncommitted commit (the newly created commit)
+      const firstCommit = entries.find((entry) => entry.hash !== '');
+      if (firstCommit) {
+        setSelectedCommit(firstCommit);
+      }
+    }
+  }, [lastChangeType, entries, setSelectedCommit]);
 
   // Maintain selection across refreshes by hash
   useEffect(() => {

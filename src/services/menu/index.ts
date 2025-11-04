@@ -125,6 +125,7 @@ export class MenuService implements IMenuService {
           label: typeof item.label === 'function' ? item.label() ?? undefined : item.label,
           checked: typeof item.checked === 'function' ? await item.checked() : item.checked,
           enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
+          visible: typeof item.visible === 'function' ? await item.visible() : item.visible,
           submenu: Array.isArray(item.submenu) ? await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)) : item.submenu,
         })),
     );

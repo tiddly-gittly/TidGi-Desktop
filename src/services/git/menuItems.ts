@@ -4,6 +4,8 @@
  */
 import type { IGitService } from '@services/git/interface';
 import { DeferredMenuItemConstructorOptions } from '@services/menu/interface';
+import { IWindowService } from '@services/windows/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { TFunction } from 'i18next';
@@ -19,6 +21,7 @@ import type { TFunction } from 'i18next';
 export function createBackupMenuItems(
   workspace: IWorkspace,
   t: TFunction,
+  windowService: Pick<IWindowService, 'open'>,
   gitService: Pick<IGitService, 'commitAndSync'>,
   aiEnabled: boolean,
 ): DeferredMenuItemConstructorOptions[];
@@ -35,6 +38,7 @@ export function createBackupMenuItems(
 export function createBackupMenuItems(
   workspace: IWorkspace,
   t: TFunction,
+  windowService: Pick<IWindowService, 'open'>,
   gitService: Pick<IGitService, 'commitAndSync'>,
   aiEnabled: boolean,
   useDeferred: false,
@@ -43,6 +47,7 @@ export function createBackupMenuItems(
 export function createBackupMenuItems(
   workspace: IWorkspace,
   t: TFunction,
+  windowService: Pick<IWindowService, 'open'>,
   gitService: Pick<IGitService, 'commitAndSync'>,
   aiEnabled: boolean,
   _useDeferred: boolean = true,
@@ -55,6 +60,13 @@ export function createBackupMenuItems(
 
   if (aiEnabled) {
     return [
+      {
+        label: t('WorkspaceSelector.ViewGitHistory'),
+        click: async () => {
+          await windowService.open(WindowNames.gitHistory, { workspaceID: workspace.id });
+        },
+      },
+      { type: 'separator' },
       {
         label: t('ContextMenu.BackupNow'),
         click: async () => {
@@ -79,6 +91,14 @@ export function createBackupMenuItems(
   }
 
   return [
+    {
+      label: t('WorkspaceSelector.ViewGitHistory'),
+      click: async () => {
+        await windowService.open(WindowNames.gitHistory, { workspaceID: workspace.id });
+      },
+    },
+    { type: 'separator' },
+
     {
       label: t('ContextMenu.BackupNow'),
       click: async () => {

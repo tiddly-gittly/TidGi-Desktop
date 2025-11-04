@@ -1,6 +1,5 @@
 import { container } from '@services/container';
 import type { IGitService } from '@services/git/interface';
-import { createBackupMenuItems, createSyncMenuItems } from '@services/git/menuItems';
 import { i18n } from '@services/libs/i18n';
 import type { IMenuService } from '@services/menu/interface';
 import { DeferredMenuItemConstructorOptions } from '@services/menu/interface';
@@ -16,23 +15,52 @@ export async function registerMenu(): Promise<void> {
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const gitService = container.get<IGitService>(serviceIdentifier.Git);
 
+  // Build commit and sync menu items with dynamic enabled/click that checks activeWorkspace at runtime
+  const commitMenuItems: DeferredMenuItemConstructorOptions[] = [
+    {
+      label: () => i18n.t('ContextMenu.BackupNow'),
+      id: 'backup-now',
+      enabled: async () => {
+        const activeWorkspace = await workspaceService.getActiveWorkspace();
+        return activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace);
+      },
+      click: async () => {
+        const activeWorkspace = await workspaceService.getActiveWorkspace();
+        if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
+          await gitService.commitAndSync(activeWorkspace, {
+            dir: activeWorkspace.wikiFolderLocation,
+            commitOnly: true,
+            commitMessage: i18n.t('LOG.CommitBackupMessage'),
+          });
+        }
+      },
+    },
+  ];
+
+  // Add AI backup item if enabled
   const aiGenerateBackupTitleEnabled = await gitService.isAIGenerateBackupTitleEnabled();
-  const activeWorkspace = await workspaceService.getActiveWorkspace();
+  if (aiGenerateBackupTitleEnabled) {
+    commitMenuItems.push({
+      label: () => i18n.t('ContextMenu.BackupNow') + i18n.t('ContextMenu.WithAI'),
+      id: 'backup-now-ai',
+      enabled: async () => {
+        const activeWorkspace = await workspaceService.getActiveWorkspace();
+        return activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace);
+      },
+      click: async () => {
+        const activeWorkspace = await workspaceService.getActiveWorkspace();
+        if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
+          await gitService.commitAndSync(activeWorkspace, {
+            dir: activeWorkspace.wikiFolderLocation,
+            commitOnly: true,
+            // Don't provide commitMessage to trigger AI generation
+          });
+        }
+      },
+    });
+  }
 
-  // Build commit and sync menu items using utility functions
-  const commitMenuItems: DeferredMenuItemConstructorOptions[] = activeWorkspace
-    ? createBackupMenuItems(activeWorkspace, i18n.t.bind(i18n), gitService, aiGenerateBackupTitleEnabled).map((item, index) => ({
-      ...item,
-      id: index === 0 ? 'backup-now' : 'backup-now-ai',
-    }))
-    : [];
-
-  const syncMenuItems: DeferredMenuItemConstructorOptions[] = activeWorkspace
-    ? createSyncMenuItems(activeWorkspace, i18n.t.bind(i18n), gitService, aiGenerateBackupTitleEnabled).map((item, index) => ({
-      ...item,
-      id: index === 0 ? 'sync-now' : 'sync-now-ai',
-    }))
-    : [];
+  const syncMenuItems: DeferredMenuItemConstructorOptions[] = [];
 
   // Add to Wiki menu - basic items
   await menuService.insertMenu(
