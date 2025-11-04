@@ -1,6 +1,6 @@
 import FolderIcon from '@mui/icons-material/Folder';
 import { AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isWikiWorkspace } from '@services/workspaces/interface';
@@ -36,14 +36,14 @@ export function ExistedWikiForm({
     tagNameSetter,
   } = form;
 
-  // Use local state for input to prevent cursor jumping
-  // Only sync with derived wikiFolderLocation when it changes externally (e.g., from picker button)
-  const [localInputValue, setLocalInputValue] = useState(wikiFolderLocation ?? '');
-
-  // Sync local value when wikiFolderLocation changes externally
-  useEffect(() => {
-    setLocalInputValue(wikiFolderLocation ?? '');
-  }, [wikiFolderLocation]);
+  // Local state for the full path input - like NewWikiForm's direct state binding
+  // Initialize from form values
+  const [fullPath, setFullPath] = useState(() => {
+    if (parentFolderLocation && wikiFolderName) {
+      return `${parentFolderLocation}${parentFolderLocation.endsWith('/') || parentFolderLocation.endsWith('\\') ? '' : '/'}${wikiFolderName}`;
+    }
+    return '';
+  });
 
   useValidateExistedWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, errorInWhichComponentSetter);
 
@@ -54,6 +54,8 @@ export function ExistedWikiForm({
       if (folderName !== undefined && directoryName !== undefined) {
         wikiFolderNameSetter(folderName);
         parentFolderLocationSetter(directoryName);
+        // Update local state
+        setFullPath(newLocation);
       }
     },
     [wikiFolderNameSetter, parentFolderLocationSetter],
@@ -64,11 +66,11 @@ export function ExistedWikiForm({
         <LocationPickerInput
           error={errorInWhichComponent.wikiFolderLocation}
           onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-            // Update local state immediately to prevent cursor jumping
+            // Exactly like NewWikiForm: update local state immediately
             const newValue = event.target.value;
-            setLocalInputValue(newValue);
-
-            // Parse and update form state synchronously
+            setFullPath(newValue);
+            
+            // Also update base states for validation
             const lastSlashIndex = Math.max(newValue.lastIndexOf('/'), newValue.lastIndexOf('\\'));
             if (lastSlashIndex > 0) {
               const folder = newValue.slice(lastSlashIndex + 1);
@@ -80,13 +82,9 @@ export function ExistedWikiForm({
               parentFolderLocationSetter('');
             }
           }}
-          onBlur={(event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-            // On blur, use proper async path parsing to normalize the format
-            void onLocationChange(event.target.value);
-          }}
           label={t('AddWorkspace.WorkspaceFolder')}
           helperText={`${t('AddWorkspace.ImportWiki')}${wikiFolderLocation ?? ''}`}
-          value={localInputValue}
+          value={fullPath}
         />
         <LocationPickerButton
           onClick={async () => {
