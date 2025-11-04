@@ -81,7 +81,7 @@ export function useGitLogData(): IGitLogData {
     const loadGitLog = async () => {
       // Capture initial load state once at the beginning
       const isInitialLoad = entries.length === 0;
-      
+
       try {
         // Only show loading on initial load
         if (isInitialLoad) {

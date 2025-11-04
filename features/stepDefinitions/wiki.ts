@@ -70,10 +70,10 @@ When('I cleanup test wiki so it could create a new one on start', async function
 
   type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
   if (!fs.existsSync(settingsPath)) return;
-  
+
   // Retry logic with exponential backoff for reading settings.json - it might be temporarily locked or corrupted
   let settings: SettingsFile;
-  
+
   try {
     settings = await backOff(
       async () => {
@@ -86,12 +86,12 @@ When('I cleanup test wiki so it could create a new one on start', async function
         maxDelay: 500,
         retry: (error: Error, attemptNumber: number) => {
           console.warn(`Attempt ${attemptNumber}/3 failed to read settings.json:`, error);
-          
+
           // If file is corrupted, don't retry - handle it in catch block
           if (error instanceof SyntaxError || error.message.includes('Unexpected end of JSON input')) {
             return false;
           }
-          
+
           return true;
         },
       },
@@ -101,7 +101,7 @@ When('I cleanup test wiki so it could create a new one on start', async function
     console.warn('Settings file is corrupted or failed to read after retries, recreating with empty workspaces');
     settings = { workspaces: {} };
   }
-  
+
   const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
   const filtered: Record<string, IWorkspace> = {};
   for (const id of Object.keys(workspaces)) {
@@ -110,7 +110,7 @@ When('I cleanup test wiki so it could create a new one on start', async function
     if (name === 'wiki' || id === 'wiki') continue;
     filtered[id] = ws;
   }
-  
+
   // Write with exponential backoff retry logic to handle file locks
   try {
     await backOff(

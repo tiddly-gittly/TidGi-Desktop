@@ -69,7 +69,7 @@ export function CommitDetailsPanel(
   const [currentTab, setCurrentTab] = useState<'details' | 'actions'>('details');
   const [isReverting, setIsReverting] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
-  
+
   // Use files from commit entry (already loaded in useGitLogData)
   const fileChanges = commit?.files ?? [];
 

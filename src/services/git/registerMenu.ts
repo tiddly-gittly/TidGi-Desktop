@@ -15,11 +15,17 @@ export async function registerMenu(): Promise<void> {
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const gitService = container.get<IGitService>(serviceIdentifier.Git);
 
+  const hasActiveWikiWorkspace = async (): Promise<boolean> => {
+    const activeWorkspace = await workspaceService.getActiveWorkspace();
+    return activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace);
+  };
+
   // Build commit and sync menu items with dynamic enabled/click that checks activeWorkspace at runtime
   const commitMenuItems: DeferredMenuItemConstructorOptions[] = [
     {
       label: () => i18n.t('ContextMenu.BackupNow'),
       id: 'backup-now',
+      visible: hasActiveWikiWorkspace,
       enabled: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         return activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace);
@@ -43,6 +49,7 @@ export async function registerMenu(): Promise<void> {
     commitMenuItems.push({
       label: () => i18n.t('ContextMenu.BackupNow') + i18n.t('ContextMenu.WithAI'),
       id: 'backup-now-ai',
+      visible: hasActiveWikiWorkspace,
       enabled: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         return activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace);
@@ -62,14 +69,15 @@ export async function registerMenu(): Promise<void> {
 
   const syncMenuItems: DeferredMenuItemConstructorOptions[] = [];
 
-  // Add to Wiki menu - basic items
+  // Add to Wiki menu - basic items (each item checks for active wiki workspace)
   await menuService.insertMenu(
     'Wiki',
     [
-      { type: 'separator' },
+      { type: 'separator', visible: hasActiveWikiWorkspace },
       {
         label: () => i18n.t('WorkspaceSelector.ViewGitHistory'),
         id: 'git-history',
+        visible: hasActiveWikiWorkspace,
         click: async () => {
           const activeWorkspace = await workspaceService.getActiveWorkspace();
           if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {

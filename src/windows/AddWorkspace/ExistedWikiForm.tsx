@@ -35,18 +35,18 @@ export function ExistedWikiForm({
     tagName,
     tagNameSetter,
   } = form;
-  
+
   // Use local state for input to prevent cursor jumping
   // Only sync with derived wikiFolderLocation when it changes externally (e.g., from picker button)
   const [localInputValue, setLocalInputValue] = useState(wikiFolderLocation ?? '');
-  
+
   // Sync local value when wikiFolderLocation changes externally
   useEffect(() => {
     setLocalInputValue(wikiFolderLocation ?? '');
   }, [wikiFolderLocation]);
-  
+
   useValidateExistedWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, errorInWhichComponentSetter);
-  
+
   const onLocationChange = useCallback(
     async (newLocation: string) => {
       const folderName = await window.service.native.path('basename', newLocation);
@@ -67,7 +67,7 @@ export function ExistedWikiForm({
             // Update local state immediately to prevent cursor jumping
             const newValue = event.target.value;
             setLocalInputValue(newValue);
-            
+
             // Parse and update form state synchronously
             const lastSlashIndex = Math.max(newValue.lastIndexOf('/'), newValue.lastIndexOf('\\'));
             if (lastSlashIndex > 0) {

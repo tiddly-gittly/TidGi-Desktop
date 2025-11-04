@@ -131,7 +131,7 @@ interface ICommitTableRowProps {
 
 function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTableRowProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
-  
+
   // Use files from commit entry (already loaded in useGitLogData)
   const files = commit.files ?? [];
   const displayFiles = files.slice(0, 3);

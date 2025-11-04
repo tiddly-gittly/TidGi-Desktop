@@ -83,6 +83,7 @@ export function loadDefaultMenuTemplate(): DeferredMenuItemConstructorOptions[] 
     },
     {
       label: () => i18n.t('Menu.Wiki'),
+      id: 'Wiki',
       submenu: [],
       visible: async () => {
         const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
