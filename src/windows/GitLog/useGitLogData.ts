@@ -11,6 +11,7 @@ export interface IGitLogData {
   error: string | null;
   currentBranch: string | null;
   workspaceInfo: IWorkspace | null;
+  lastChangeType: string | null;
 }
 
 export function useGitLogData(): IGitLogData {
@@ -20,6 +21,7 @@ export function useGitLogData(): IGitLogData {
   const [currentBranch, setCurrentBranch] = useState<string | null>(null);
   const [workspaceInfo, setWorkspaceInfo] = useState<IWorkspace | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [lastChangeType, setLastChangeType] = useState<string | null>(null);
 
   // Get workspace info once
   useEffect(() => {
@@ -65,7 +67,9 @@ export function useGitLogData(): IGitLogData {
     [workspaceInfo],
   );
 
-  useObservable(gitStateChange$, () => {
+  useObservable(gitStateChange$, (change) => {
+    // Store the type of change so we can auto-select first commit after a manual commit
+    setLastChangeType(change?.type ?? null);
     // Trigger refresh when git state changes
     setRefreshTrigger((previous) => previous + 1);
   });
@@ -75,9 +79,11 @@ export function useGitLogData(): IGitLogData {
     if (!workspaceInfo || !('wikiFolderLocation' in workspaceInfo)) return;
 
     const loadGitLog = async () => {
+      // Capture initial load state once at the beginning
+      const isInitialLoad = entries.length === 0;
+      
       try {
         // Only show loading on initial load
-        const isInitialLoad = entries.length === 0;
         if (isInitialLoad) {
           setLoading(true);
         }
@@ -120,8 +126,7 @@ export function useGitLogData(): IGitLogData {
         console.error('Failed to load git log:', error);
         setError(error.message);
       } finally {
-        // Only clear loading on initial load
-        const isInitialLoad = entries.length === 0;
+        // Only clear loading on initial load (use the captured flag)
         if (isInitialLoad) {
           setLoading(false);
         }
@@ -131,5 +136,5 @@ export function useGitLogData(): IGitLogData {
     void loadGitLog();
   }, [workspaceInfo, refreshTrigger]);
 
-  return { entries, loading, error, currentBranch, workspaceInfo };
+  return { entries, loading, error, currentBranch, workspaceInfo, lastChangeType };
 }
