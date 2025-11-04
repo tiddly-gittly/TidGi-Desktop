@@ -107,9 +107,9 @@ export function startNodeJSWiki({
 
       const readonlyArguments = readOnlyMode === true ? ['gzip=yes', 'readers=(anon)', `writers=${userName || nanoid()}`, `username=${userName}`, `password=${nanoid()}`] : [];
 
+      // Preload workspace ID for filesystem adaptor
       const infoTiddlerText = `exports.getInfoTiddlerFields = () => [
         {title: "$:/info/tidgi/readOnlyMode", text: "${readOnlyMode === true ? 'yes' : 'no'}"},
-        // Preload workspace ID for filesystem adaptor
         {title: "$:/info/tidgi/workspaceID", text: ${JSON.stringify(workspace.id)}},
       ]`;
       wikiInstance.preloadTiddler({

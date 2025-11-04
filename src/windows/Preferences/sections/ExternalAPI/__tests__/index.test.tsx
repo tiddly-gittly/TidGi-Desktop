@@ -135,7 +135,7 @@ describe('ExternalAPI Component', () => {
 
     // Should have five autocomplete inputs for models (language, embedding, speech, image generation, transcriptions)
     const inputs = screen.getAllByRole('combobox');
-    expect(inputs).toHaveLength(5);
+    expect(inputs).toHaveLength(6);
   });
 
   it('should call delete API when default model is cleared and no embedding model exists', async () => {

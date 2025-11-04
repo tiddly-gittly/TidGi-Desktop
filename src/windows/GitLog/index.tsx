@@ -230,12 +230,13 @@ export default function GitHistory(): React.JSX.Element {
     if (selectedCommit && entries.length > 0) {
       // Try to find the same commit in the new entries
       const stillExists = entries.find((entry) => entry.hash === selectedCommit.hash);
-      if (stillExists) {
+      // Only update if data actually changed (compare by serialization)
+      if (stillExists && JSON.stringify(stillExists) !== JSON.stringify(selectedCommit)) {
         // Update to the new entry object to get fresh data
         setSelectedCommit(stillExists);
       }
     }
-  }, [entries, selectedCommit, setSelectedCommit]);
+  }, [entries, selectedCommit]);
 
   const handleCommitSuccess = () => {
     // Trigger selection of first commit after data refreshes

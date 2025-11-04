@@ -66,18 +66,20 @@ export function ExistedWikiForm({
         <LocationPickerInput
           error={errorInWhichComponent.wikiFolderLocation}
           onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-            // Exactly like NewWikiForm: update local state immediately
+            // Update local state immediately for responsive UI
             const newValue = event.target.value;
             setFullPath(newValue);
             
-            // Also update base states for validation
+            // Parse path into parent and folder for validation
             const lastSlashIndex = Math.max(newValue.lastIndexOf('/'), newValue.lastIndexOf('\\'));
-            if (lastSlashIndex > 0) {
+            if (lastSlashIndex >= 0) {
               const folder = newValue.slice(lastSlashIndex + 1);
-              const parent = newValue.slice(0, lastSlashIndex);
+              // Handle root paths: "/" or "C:\"
+              const parent = lastSlashIndex === 0 ? '/' : newValue.slice(0, lastSlashIndex);
               wikiFolderNameSetter(folder);
               parentFolderLocationSetter(parent);
             } else {
+              // No slash found - treat as relative path or bare folder name
               wikiFolderNameSetter(newValue);
               parentFolderLocationSetter('');
             }
