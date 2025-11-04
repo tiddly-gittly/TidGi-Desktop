@@ -64,6 +64,12 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * we cancel the deletion and treat the recreation as a modification.
    */
   private pendingDeletions: Map<string, NodeJS.Timeout> = new Map();
+  /**
+   * Track pending file inclusions to prevent memory leaks.
+   * Maps absolute file path to inclusion timer.
+   * Cleared during cleanup to prevent orphaned timeouts.
+   */
+  private pendingInclusions: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(options: { boot?: typeof $tw.boot; wiki: Wiki }) {
     super(options);
@@ -313,10 +319,19 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * @param absoluteFilePath Absolute file path
    */
   private scheduleFileInclusion(absoluteFilePath: string): void {
-    setTimeout(() => {
+    // Clear any existing inclusion timer for this file
+    const existingTimer = this.pendingInclusions.get(absoluteFilePath);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+
+    const timer = setTimeout(() => {
       this.logger.log(`[WATCH_FS_INCLUDE] Including file: ${absoluteFilePath}`);
       this.inverseFilesIndex.includeFile(absoluteFilePath);
+      this.pendingInclusions.delete(absoluteFilePath);
     }, FILE_INCLUSION_DELAY_MS);
+
+    this.pendingInclusions.set(absoluteFilePath, timer);
   }
 
   /**
@@ -593,6 +608,12 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       clearTimeout(timer);
     }
     this.pendingDeletions.clear();
+
+    // Clear all pending inclusion timers
+    for (const timer of this.pendingInclusions.values()) {
+      clearTimeout(timer);
+    }
+    this.pendingInclusions.clear();
 
     if (this.watcher) {
       this.logger.log('[WATCH_FS_CLEANUP] Closing filesystem watcher');
