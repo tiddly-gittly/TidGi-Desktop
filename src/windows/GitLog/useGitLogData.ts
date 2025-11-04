@@ -98,19 +98,15 @@ export function useGitLogData(): IGitLogData {
         // Load files for each commit
         const entriesWithFiles = await Promise.all(
           result.entries.map(async (entry) => {
-            // Skip uncommitted changes (hash is empty)
-            if (!entry.hash) {
-              return { ...entry, files: [] };
-            }
-
             try {
+              // getCommitFiles handles both committed (with hash) and uncommitted (empty hash) changes
               const files = await window.service.git.getCommitFiles(
                 workspaceInfo.wikiFolderLocation,
                 entry.hash,
               );
               return { ...entry, files };
             } catch (error) {
-              console.error(`Failed to load files for commit ${entry.hash}:`, error);
+              console.error(`Failed to load files for commit ${entry.hash || 'uncommitted'}:`, error);
               return { ...entry, files: [] };
             }
           }),
