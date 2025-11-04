@@ -10,7 +10,7 @@ import { styled } from '@mui/material/styles';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { GitLogEntry } from './types';
@@ -69,34 +69,9 @@ export function CommitDetailsPanel(
   const [currentTab, setCurrentTab] = useState<'details' | 'actions'>('details');
   const [isReverting, setIsReverting] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
-  const [fileChanges, setFileChanges] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!commit) {
-      setFileChanges([]);
-      return;
-    }
-
-    const loadFileChanges = async () => {
-      try {
-        const meta = window.meta();
-        const workspaceID = (meta as { workspaceID?: string }).workspaceID;
-
-        if (!workspaceID) return;
-
-        const workspace = await window.service.workspace.get(workspaceID);
-        if (!workspace || !('wikiFolderLocation' in workspace)) return;
-
-        const files = await window.service.git.getCommitFiles(workspace.wikiFolderLocation, commit.hash);
-        setFileChanges(files);
-      } catch (error) {
-        console.error('Failed to load commit files:', error);
-        setFileChanges([]);
-      }
-    };
-
-    void loadFileChanges();
-  }, [commit]);
+  
+  // Use files from commit entry (already loaded in useGitLogData)
+  const fileChanges = commit?.files ?? [];
 
   const handleRevert = async () => {
     if (!commit || isReverting) return;

@@ -131,33 +131,9 @@ interface ICommitTableRowProps {
 
 function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTableRowProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
-  const [files, setFiles] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadFiles = async () => {
-      try {
-        const meta = window.meta();
-        const workspaceID = (meta as { workspaceID?: string }).workspaceID;
-
-        if (!workspaceID) return;
-
-        const workspace = await window.service.workspace.get(workspaceID);
-        if (!workspace || !('wikiFolderLocation' in workspace)) return;
-
-        const changedFiles = await window.service.git.getCommitFiles(workspace.wikiFolderLocation, commit.hash);
-        setFiles(changedFiles);
-      } catch (error) {
-        console.error('Failed to load commit files:', error);
-        setFiles([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void loadFiles();
-  }, [commit.hash]);
-
+  
+  // Use files from commit entry (already loaded in useGitLogData)
+  const files = commit.files ?? [];
   const displayFiles = files.slice(0, 3);
   const hasMore = files.length > 3;
 
@@ -181,34 +157,24 @@ function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTable
       </TableCell>
       <TableCell>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-          {loading
-            ? (
-              <Typography variant='caption' color='text.secondary'>
-                ...
-              </Typography>
-            )
-            : (
-              <>
-                {displayFiles.map((file, index) => {
-                  const fileName = file.split('/').pop() || file;
-                  return (
-                    <Tooltip key={index} title={file} placement='top'>
-                      <FileChip>{fileName}</FileChip>
-                    </Tooltip>
-                  );
-                })}
-                {hasMore && (
-                  <Typography variant='caption' color='text.secondary' sx={{ alignSelf: 'center', ml: 0.5 }}>
-                    +{files.length - 3}
-                  </Typography>
-                )}
-                {files.length === 0 && (
-                  <Typography variant='caption' color='text.secondary'>
-                    {t('GitLog.NoFilesChanged')}
-                  </Typography>
-                )}
-              </>
-            )}
+          {displayFiles.map((file, index) => {
+            const fileName = file.split('/').pop() || file;
+            return (
+              <Tooltip key={index} title={file} placement='top'>
+                <FileChip>{fileName}</FileChip>
+              </Tooltip>
+            );
+          })}
+          {hasMore && (
+            <Typography variant='caption' color='text.secondary' sx={{ alignSelf: 'center', ml: 0.5 }}>
+              +{files.length - 3}
+            </Typography>
+          )}
+          {files.length === 0 && (
+            <Typography variant='caption' color='text.secondary'>
+              {t('GitLog.NoFilesChanged')}
+            </Typography>
+          )}
         </Box>
       </TableCell>
       <TableCell>
