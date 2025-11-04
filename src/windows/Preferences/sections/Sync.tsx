@@ -112,6 +112,13 @@ export function Sync(props: Required<ISectionProps>): React.JSX.Element {
                         await window.service.preference.set('aiGenerateBackupTitleTimeout', seconds * 1000);
                       }
                     }}
+                    onBlur={async (event) => {
+                      const seconds = Number.parseInt(event.target.value, 10);
+                      // Reset to current preference value if invalid
+                      if (Number.isNaN(seconds) || seconds <= 0 || seconds > 60) {
+                        event.target.value = String(preference.aiGenerateBackupTitleTimeout / 1000);
+                      }
+                    }}
                     slotProps={{
                       htmlInput: {
                         min: 1,
