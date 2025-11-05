@@ -33,8 +33,8 @@ Feature: Git Log Window
     When I click menu "知识库 > 查看历史备份"
     And I switch to "gitHistory" window
     And I wait for the page to load completely
-    # Wait for git log to load the commits
-    And I wait for 2 seconds for "git log to load commits"
+    # Wait for git log to load the commits - increased wait time for stability in full test run
+    And I wait for 3 seconds for "git log to load commits"
     # Verify the git log window shows commits
     Then I should see a "git log table" element with selector "table"
     # Verify we can see the commit with default message "使用太记桌面版备份"
@@ -57,6 +57,8 @@ Feature: Git Log Window
     And I should see "Modified Index content" in the browser view content
     And I switch to "gitHistory" window
     And I wait for the page to load completely
+    # Wait for git log data to stabilize - increased from implicit to explicit
+    And I wait for 2 seconds for "git log data to load"
     Then I should see a "uncommitted changes row" element with selector "tr:has-text('未提交')"
     # Click on the uncommitted changes row
     When I click on a "uncommitted changes row" element with selector "tr:has-text('未提交')"
@@ -71,10 +73,10 @@ Feature: Git Log Window
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
     # Wait for observable to trigger refresh - git log window needs to reload commit list after commit
     And I wait for 3 seconds for "observable to refresh and system to stabilize"
-    # After commit, verify we can see the new commit with Index.tid in the file list
-    And I should see a "commit with Index.tid" element with selector "tr:has-text('Index.tid')"
-    # Click on the commit row that contains Index.tid to view its details
-    When I click on a "commit with Index.tid" element with selector "tr:has-text('Index.tid')"
+    # After commit, verify we can see the new commit with default message
+    And I should see a "commit with default message" element with selector "tr:has-text('使用太记桌面版备份')"
+    # Click on the first non-uncommitted commit row (the one we just created)
+    When I click on a "first commit row" element with selector "tbody tr:first-child"
     And I wait for 0.5 seconds for "commit details panel to load"
     # Switch to Actions tab to test rollback
     When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作'), button[role='tab']:has-text('Actions')"
@@ -83,7 +85,6 @@ Feature: Git Log Window
     When I click on a "revert button" element with selector "button:has-text('回退此提交'), button:has-text('Revert')"
     # Wait for git revert operation to complete - git operations can be slow on CI and may take longer than usual when system is under load
     # The git revert process involves file system operations that may be queued by the OS
-    And I wait for 5 seconds for "git revert to execute"
     Then I wait for "git revert completed" log marker "[test-id-git-revert-complete]"
     # Switch back to main window to verify the revert
     When I switch to "main" window

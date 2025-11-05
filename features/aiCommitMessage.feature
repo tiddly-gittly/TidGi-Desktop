@@ -44,6 +44,7 @@ Feature: AI-Generated Git Commit Messages
     # Wait for observable to trigger refresh and system to stabilize
     And I wait for 3 seconds for "observable to refresh and system to stabilize"
     # After commit, verify we can see the new commit with AI-generated message and file list
+    # The commit message appears in a table row, and the file is shown with aria-label
     Then I should see "commit with AI message and Index.tid file" elements with selectors:
-      | p.MuiTypography-body2:has-text('更新 Index 条目') |
-      | div.MuiBox-root:has-text('Index.tid')             |
+      | tr:has-text('更新 Index 条目')                    |
+      | div.MuiBox-root[aria-label*='Index.tid']          |

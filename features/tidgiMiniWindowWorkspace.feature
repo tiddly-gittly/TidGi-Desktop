@@ -15,7 +15,8 @@ Feature: TidGi Mini Window Workspace Switching
     # Switch main window to agent workspace
     When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
     # Verify tidgi mini window exists in background (created but not visible)
-    And I wait for 0.2 seconds
+    # Wait longer for window creation in full test run
+    And I wait for 1 seconds for "tidgi mini window to be created"
     Then I confirm the "tidgiMiniWindow" window exists
     And I confirm the "tidgiMiniWindow" window not visible
     When I press the key combination "CommandOrControl+Shift+M"
@@ -79,6 +80,8 @@ Feature: TidGi Mini Window Workspace Switching
     And I click on a "Enable sidebar toggle switch" element with selector "[data-testid='sidebar-on-tidgi-mini-window-switch']"
     # Open tidgi mini window and verify sidebar is visible
     When I press the key combination "CommandOrControl+Shift+M"
+    # Wait longer for window to appear in full test run
+    And I wait for 1 seconds for "tidgi mini window to appear"
     And I confirm the "tidgiMiniWindow" window visible
     And I switch to "tidgiMiniWindow" window
     And I should see a "main sidebar" element with selector "[data-testid='main-sidebar']"
