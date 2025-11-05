@@ -138,8 +138,8 @@ importers:
         specifier: 11.3.2
         version: 11.3.2
       git-sync-js:
-        specifier: ^2.1.0
-        version: 2.1.0
+        specifier: ^2.1.1
+        version: 2.1.1
       graphql-hooks:
         specifier: 8.2.0
         version: 8.2.0(react@19.2.0)
@@ -4398,8 +4398,8 @@ packages:
   gifwrap@0.10.1:
     resolution: {integrity: sha512-2760b1vpJHNmLzZ/ubTtNnEx5WApN/PYWJvXvgS+tL1egTTthayFYIQQNi136FLEDcN/IyEY2EcGpIITD6eYUw==}
 
-  git-sync-js@2.1.0:
-    resolution: {integrity: sha512-aX3N3rvGrgqzeSod8EOeWi6sfBIaA9SqoaqAV0o/4XzUKMGz9SAwqY929tM8iIY1dxv5XCGmlbMzB+MMS2i67g==}
+  git-sync-js@2.1.1:
+    resolution: {integrity: sha512-TpmFIiLtMUZvUyzxuJm0+Qurei5//86VeIHyOaL6ut6SnXD+xF3+4px4IZUB1uRu88Lj5jRMhaB3cAerE2sDFg==}
 
   github-from-package@0.0.0:
     resolution: {integrity: sha512-SyHy3T1v2NUXn29OsWdxmK6RwHD+vkj3v8en8AOBZ1wBQ/hCAQ5bAQTD02kW4W9tUp/3Qh6J8r9EvntiyCmOOw==}
@@ -12380,7 +12380,7 @@ snapshots:
       image-q: 4.0.0
       omggif: 1.0.10
 
-  git-sync-js@2.1.0:
+  git-sync-js@2.1.1:
     dependencies:
       dugite: 3.0.0-rc12
       fs-extra: 11.3.2
