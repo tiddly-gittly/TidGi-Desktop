@@ -116,6 +116,11 @@ export function useGitLogData(): IGitLogData {
         requestAnimationFrame(() => {
           setEntries(entriesWithFiles);
           setCurrentBranch(result.currentBranch);
+          // Log for E2E test timing - indicates UI has been updated with new commits
+          void window.service.native.log('info', '[test-id-git-log-refreshed]', {
+            commitCount: entriesWithFiles.length,
+            wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+          });
         });
       } catch (error_) {
         const error = error_ as Error;

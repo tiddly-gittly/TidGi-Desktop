@@ -4,7 +4,7 @@ import { logsDirectory, screenshotsDirectory } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { ApplicationWorld } from './application';
 import { clearTidgiMiniWindowSettings } from './tidgiMiniWindow';
-import { clearSubWikiRoutingTestData } from './wiki';
+import { clearGitTestData, clearSubWikiRoutingTestData } from './wiki';
 
 Before(async function(this: ApplicationWorld, { pickle }) {
   // Create necessary directories under userData-test/logs to match appPaths in dev/test
@@ -62,20 +62,10 @@ After(async function(this: ApplicationWorld, { pickle }) {
   if (pickle.tags.some((tag) => tag.name === '@subwiki')) {
     await clearSubWikiRoutingTestData();
   }
-  // Clean up git state after git tests to prevent state pollution
-  // Git tests create commits that can affect subsequent tests
-  // MUST happen AFTER app.close() to release file locks
+  // Clean up git test data to prevent state pollution between git tests
+  // Removes entire wiki folder - it will be recreated on next test start
   if (pickle.tags.some((tag) => tag.name === '@git')) {
-    const { default: path } = await import('node:path');
-    const wikiTestWikiPath = path.join(process.cwd(), 'wiki-test', 'wiki');
-    if (await fs.pathExists(wikiTestWikiPath)) {
-      try {
-        await fs.remove(wikiTestWikiPath);
-      } catch (error) {
-        console.warn('Failed to remove wiki folder in git cleanup:', error);
-        // Don't fail the test if cleanup fails
-      }
-    }
+    await clearGitTestData();
   }
 
   // Separate logs by test scenario for easier debugging

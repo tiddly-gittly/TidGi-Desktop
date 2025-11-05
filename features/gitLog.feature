@@ -33,8 +33,8 @@ Feature: Git Log Window
     When I click menu "知识库 > 查看历史备份"
     And I switch to "gitHistory" window
     And I wait for the page to load completely
-    # Wait for git log to load the commits - increased wait time for stability in full test run
-    And I wait for 3 seconds for "git log to load commits"
+    # Wait for git log to query history and render UI
+    Then I wait for "git log UI refreshed" log marker "[test-id-git-log-refreshed]"
     # Verify the git log window shows commits
     Then I should see a "git log table" element with selector "table"
     # Verify commit with default message - message is in p.MuiTypography-body2
@@ -71,12 +71,12 @@ Feature: Git Log Window
     # Click the commit now button
     When I click on a "commit now button" element with selector "button[data-testid='commit-now-button']"
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
-    # Wait for observable to trigger UI refresh and git log to reload
-    And I wait for 3 seconds for "git log observable to trigger and UI to refresh"
+    # Wait for git log UI to refresh - observable triggers reload and state update
+    Then I wait for "git log UI refreshed" log marker "[test-id-git-log-refreshed]"
     # After commit, verify the new commit with default message in p tag
     And I should see a "commit with default message" element with selector "p.MuiTypography-body2:has-text('使用太记桌面版备份')"
-    # Click on the first non-uncommitted commit row (the one we just created)
-    When I click on a "first commit row" element with selector "tbody tr:first-child"
+    # Click on the commit row we just created (contains the commit message)
+    When I click on a "committed row" element with selector "tr:has-text('使用太记桌面版备份')"
     And I wait for 1 seconds for "commit details panel to load and git lock to release"
     # Switch to Actions tab to test rollback
     When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作'), button[role='tab']:has-text('Actions')"

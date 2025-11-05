@@ -297,6 +297,21 @@ async function clearSubWikiRoutingTestData() {
 }
 
 /**
+ * Clear git test data to prevent state pollution between git tests
+ * Removes the entire wiki folder - it will be recreated on next test start
+ */
+async function clearGitTestData() {
+  const wikiPath = path.join(wikiTestWikiPath, 'wiki');
+  if (!(await fs.pathExists(wikiPath))) return;
+
+  try {
+    await fs.remove(wikiPath);
+  } catch (error) {
+    console.warn('Failed to remove wiki folder in git cleanup:', error);
+  }
+}
+
+/**
  * Generic step to wait for any log marker
  * @param description - Human-readable description of what we're waiting for (comes first for readability)
  * @param marker - The test-id marker to look for in logs
@@ -450,4 +465,4 @@ When('I modify file {string} to add field {string}', async function(this: Applic
   await fs.writeFile(actualPath, lines.join('\n'), 'utf-8');
 });
 
-export { clearSubWikiRoutingTestData };
+export { clearGitTestData, clearSubWikiRoutingTestData };

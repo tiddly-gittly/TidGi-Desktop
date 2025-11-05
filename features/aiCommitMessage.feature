@@ -41,8 +41,8 @@ Feature: AI-Generated Git Commit Messages
     # Click the commit now button - this will trigger AI generation
     When I click on a "commit now button" element with selector "button[data-testid='commit-now-button']"
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
-    # Wait for observable to trigger UI refresh and git log to reload
-    And I wait for 3 seconds for "git log observable to trigger and UI to refresh"
+    # Wait for git log UI to refresh - observable triggers reload and state update
+    Then I wait for "git log UI refreshed" log marker "[test-id-git-log-refreshed]"
     # After commit, verify AI-generated message and file in git log table
     # Message is in p.MuiTypography-body2, file div has aria-label
     Then I should see "commit with AI message and Index.tid file" elements with selectors:
