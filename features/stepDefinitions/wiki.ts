@@ -56,13 +56,14 @@ When('I cleanup test wiki so it could create a new one on start', async function
   if (fs.existsSync(wikiTestWikiPath)) fs.removeSync(wikiTestWikiPath);
 
   /**
-   * Clean up wiki log files to prevent reading stale logs from previous scenarios.
-   * This is critical for tests that wait for log markers like [test-id-WATCH_FS_STABILIZED],
+   * Clean up log files to prevent reading stale logs from previous scenarios.
+   * This is critical for tests that wait for log markers like [test-id-WATCH_FS_STABILIZED] or [test-id-git-commit-complete],
    * as Node.js file system caching can cause tests to read old log content.
+   * Must clean both wiki- and TidGi- log files for git-related tests.
    */
   const logDirectory = path.join(process.cwd(), 'userData-test', 'logs');
   if (fs.existsSync(logDirectory)) {
-    const logFiles = fs.readdirSync(logDirectory).filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
+    const logFiles = fs.readdirSync(logDirectory).filter(f => (f.startsWith('wiki-') || f.startsWith('TidGi-')) && f.endsWith('.log'));
     for (const logFile of logFiles) {
       fs.removeSync(path.join(logDirectory, logFile));
     }
