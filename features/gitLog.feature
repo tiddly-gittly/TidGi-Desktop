@@ -37,9 +37,9 @@ Feature: Git Log Window
     And I wait for 3 seconds for "git log to load commits"
     # Verify the git log window shows commits
     Then I should see a "git log table" element with selector "table"
-    # Verify we can see the commit with default message "使用太记桌面版备份"
-    Then I should see a "commit with default message" element with selector "div.MuiBox-root:has-text('使用太记桌面版备份')"
-    # Click on the commit row to view details - use tr selector like in the second test
+    # Verify commit with default message - message is in p.MuiTypography-body2
+    Then I should see a "commit with default message" element with selector "p.MuiTypography-body2:has-text('使用太记桌面版备份')"
+    # Click on the commit row containing GitLogTestTiddler file
     When I click on a "commit row with GitLogTestTiddler" element with selector "tr:has-text('GitLogTestTiddler')"
     And I wait for 1 seconds for "commit details panel to load and file list to populate"
     # Verify the filename appears in the details panel (may include path like tiddlers/GitLogTestTiddler.tid)
@@ -71,13 +71,13 @@ Feature: Git Log Window
     # Click the commit now button
     When I click on a "commit now button" element with selector "button[data-testid='commit-now-button']"
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
-    # Wait for observable to trigger refresh - git log window needs to reload commit list after commit
-    And I wait for 3 seconds for "observable to refresh and system to stabilize"
-    # After commit, verify we can see the new commit with default message
-    And I should see a "commit with default message" element with selector "tr:has-text('使用太记桌面版备份')"
+    # Wait for observable to trigger UI refresh and git log to reload
+    And I wait for 3 seconds for "git log observable to trigger and UI to refresh"
+    # After commit, verify the new commit with default message in p tag
+    And I should see a "commit with default message" element with selector "p.MuiTypography-body2:has-text('使用太记桌面版备份')"
     # Click on the first non-uncommitted commit row (the one we just created)
     When I click on a "first commit row" element with selector "tbody tr:first-child"
-    And I wait for 0.5 seconds for "commit details panel to load"
+    And I wait for 1 seconds for "commit details panel to load and git lock to release"
     # Switch to Actions tab to test rollback
     When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作'), button[role='tab']:has-text('Actions')"
     Then I should see a "revert button" element with selector "button:has-text('回退此提交'), button:has-text('Revert')"

@@ -26,6 +26,8 @@ Before(async function(this: ApplicationWorld, { pickle }) {
 });
 
 After(async function(this: ApplicationWorld, { pickle }) {
+  // IMPORTANT: Close app FIRST before cleaning up files
+  // This releases file locks so wiki folders can be deleted
   if (this.app) {
     try {
       // Close all windows including tidgi mini window before closing the app, otherwise it might hang, and refused to exit until ctrl+C
@@ -49,6 +51,8 @@ After(async function(this: ApplicationWorld, { pickle }) {
     this.mainWindow = undefined;
     this.currentWindow = undefined;
   }
+
+  // Clean up settings and test data AFTER app is closed
   if (pickle.tags.some((tag) => tag.name === '@tidgi-mini-window')) {
     await clearTidgiMiniWindowSettings();
   }
@@ -57,6 +61,21 @@ After(async function(this: ApplicationWorld, { pickle }) {
   }
   if (pickle.tags.some((tag) => tag.name === '@subwiki')) {
     await clearSubWikiRoutingTestData();
+  }
+  // Clean up git state after git tests to prevent state pollution
+  // Git tests create commits that can affect subsequent tests
+  // MUST happen AFTER app.close() to release file locks
+  if (pickle.tags.some((tag) => tag.name === '@git')) {
+    const { default: path } = await import('node:path');
+    const wikiTestWikiPath = path.join(process.cwd(), 'wiki-test', 'wiki');
+    if (await fs.pathExists(wikiTestWikiPath)) {
+      try {
+        await fs.remove(wikiTestWikiPath);
+      } catch (error) {
+        console.warn('Failed to remove wiki folder in git cleanup:', error);
+        // Don't fail the test if cleanup fails
+      }
+    }
   }
 
   // Separate logs by test scenario for easier debugging

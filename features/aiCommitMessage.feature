@@ -41,10 +41,10 @@ Feature: AI-Generated Git Commit Messages
     # Click the commit now button - this will trigger AI generation
     When I click on a "commit now button" element with selector "button[data-testid='commit-now-button']"
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
-    # Wait for observable to trigger refresh and system to stabilize
-    And I wait for 3 seconds for "observable to refresh and system to stabilize"
-    # After commit, verify we can see the new commit with AI-generated message and file list
-    # The commit message appears in a table row, and the file is shown with aria-label
+    # Wait for observable to trigger UI refresh and git log to reload
+    And I wait for 3 seconds for "git log observable to trigger and UI to refresh"
+    # After commit, verify AI-generated message and file in git log table
+    # Message is in p.MuiTypography-body2, file div has aria-label
     Then I should see "commit with AI message and Index.tid file" elements with selectors:
-      | tr:has-text('更新 Index 条目')                    |
-      | div.MuiBox-root[aria-label*='Index.tid']          |
+      | p.MuiTypography-body2:has-text('更新 Index 条目') |
+      | div.MuiBox-root[aria-label*='Index.tid']         |
