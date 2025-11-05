@@ -303,7 +303,6 @@
     "SelectCommit": "选择一个提交来查看详情",
     "SelectFileToViewDiff": "选择一个文件以查看差异",
     "Title": "Git 历史记录",
-    "ViewGitHistory": "查看历史备份（Git）",
     "WarningMessage": "注意：签出和回退操作会修改工作区文件，请谨慎操作。",
     "PreviousVersion": "修改前版本",
     "NewImage": "新图片（本次提交添加）",

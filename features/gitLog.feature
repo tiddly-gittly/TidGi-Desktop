@@ -11,6 +11,7 @@ Feature: Git Log Window
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
+    And I wait for "git initialization" log marker "[test-id-git-init-complete]"
 
   @git
   Scenario: View git commit in Git Log window
@@ -71,16 +72,13 @@ Feature: Git Log Window
     # Click the commit now button
     When I click on a "commit now button" element with selector "button[data-testid='commit-now-button']"
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
-    # Wait for git log UI to refresh - observable triggers reload and state update
-    Then I wait for "git log UI refreshed" log marker "[test-id-git-log-refreshed]"
+    # Wait for git log data to be updated and rendered to DOM
+    Then I wait for "git log data rendered to DOM" log marker "[test-id-git-log-data-rendered]"
     # After commit, verify the new commit with default message in p tag
     And I should see a "commit with default message" element with selector "p.MuiTypography-body2:has-text('使用太记桌面版备份')"
-    # Click on the commit row we just created (contains the commit message)
-    When I click on a "committed row" element with selector "tr:has-text('使用太记桌面版备份')"
+    # Don't need to Click on the commit row we just created (contains the commit message) Because we should automatically select it
     And I wait for 1 seconds for "commit details panel to load and git lock to release"
-    # Switch to Actions tab to test rollback
-    When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作'), button[role='tab']:has-text('Actions')"
-    Then I should see a "revert button" element with selector "button:has-text('回退此提交'), button:has-text('Revert')"
+    # Don't need to Switch to Actions tab to test rollback, because we are already on Actions tab
     # Click revert button
     When I click on a "revert button" element with selector "button:has-text('回退此提交'), button:has-text('Revert')"
     # Wait for git revert operation to complete - git operations can be slow on CI and may take longer than usual when system is under load

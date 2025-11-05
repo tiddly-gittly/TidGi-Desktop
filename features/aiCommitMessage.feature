@@ -14,6 +14,7 @@ Feature: AI-Generated Git Commit Messages
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
+    And I wait for "git initialization" log marker "[test-id-git-init-complete]"
 
   @git @mockOpenAI
   Scenario: AI generates commit message based on file changes
@@ -41,8 +42,8 @@ Feature: AI-Generated Git Commit Messages
     # Click the commit now button - this will trigger AI generation
     When I click on a "commit now button" element with selector "button[data-testid='commit-now-button']"
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
-    # Wait for git log UI to refresh - observable triggers reload and state update
-    Then I wait for "git log UI refreshed" log marker "[test-id-git-log-refreshed]"
+    # Wait for git log data to be updated and rendered to DOM
+    Then I wait for "git log data rendered to DOM" log marker "[test-id-git-log-data-rendered]"
     # After commit, verify AI-generated message and file in git log table
     # Message is in p.MuiTypography-body2, file div has aria-label
     Then I should see "commit with AI message and Index.tid file" elements with selectors:

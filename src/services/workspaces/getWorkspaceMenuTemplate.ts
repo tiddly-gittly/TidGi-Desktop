@@ -78,14 +78,6 @@ export async function getSimplifiedWorkspaceMenuTemplate(
     },
   });
 
-  // View git history
-  template.push({
-    label: t('WorkspaceSelector.ViewGitHistory'),
-    click: async () => {
-      await service.window.open(WindowNames.gitHistory, { workspaceID: id });
-    },
-  });
-
   // Check if AI-generated backup title is enabled
   const aiGenerateBackupTitleEnabled = await service.git.isAIGenerateBackupTitleEnabled();
 

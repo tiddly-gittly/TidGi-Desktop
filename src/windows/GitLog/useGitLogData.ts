@@ -137,5 +137,18 @@ export function useGitLogData(): IGitLogData {
     void loadGitLog();
   }, [workspaceInfo, refreshTrigger]);
 
+  // Log when entries are updated and rendered to DOM
+  useEffect(() => {
+    if (entries.length > 0 && workspaceInfo && 'wikiFolderLocation' in workspaceInfo) {
+      // Use setTimeout to ensure DOM has been updated after state changes
+      setTimeout(() => {
+        void window.service.native.log('info', '[test-id-git-log-data-rendered]', {
+          commitCount: entries.length,
+          wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+        });
+      }, 100);
+    }
+  }, [entries, workspaceInfo]);
+
   return { entries, loading, error, currentBranch, workspaceInfo, lastChangeType };
 }

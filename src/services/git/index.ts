@@ -205,6 +205,8 @@ export class Git implements IGitService {
         ?.initWikiGit(wikiFolderPath, getErrorMessageI18NDict(), syncImmediately && net.isOnline(), remoteUrl, userInfo)
         .subscribe(this.getWorkerMessageObserver(wikiFolderPath, resolve, reject));
     });
+    // Log for e2e test detection - indicates initial git setup and commits are complete
+    logger.info(`[test-id-git-init-complete]`, { wikiFolderPath });
   }
 
   public async commitAndSync(workspace: IWorkspace, configs: ICommitAndSyncConfigs): Promise<boolean> {
