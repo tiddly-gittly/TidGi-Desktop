@@ -29,8 +29,8 @@ Feature: Create New Agent Workflow
       | [data-testid='agent-name-input-field'] |
     # Step 3: Select template to advance to step 2
     When I click on a "search input" element with selector ".aa-Input"
-    And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    When I click on a "agent suggestion" element with selector '[data-autocomplete-source-id="templateAgentsSource"] .aa-ItemWrapper'
+    # Immediately click on the first agent template item (don't wait or panel will close)
+    When I click on a "template agent item suggestion" element with selector '.aa-Item[role="option"]'
     # Fill in agent name while still in step 1
     When I clear text in "agent name input" element with selector "[data-testid='agent-name-input-field']"
     When I type "我的代码助手" in "agent name input" element with selector "[data-testid='agent-name-input-field']"
