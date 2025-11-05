@@ -29,8 +29,9 @@ Feature: Create New Agent Workflow
       | [data-testid='agent-name-input-field'] |
     # Step 3: Select template to advance to step 2
     When I click on a "search input" element with selector ".aa-Input"
-    # Immediately click on the first agent template item (don't wait or panel will close)
-    When I click on a "template agent item suggestion" element with selector '.aa-Item[role="option"]'
+    # Immediately click on the Example Agent template (don't wait or panel will close)
+    # Using description text to select specific agent, more precise than just name
+    When I click on a "Example Agent template" element with selector '.aa-Item[role="option"]:has-text("Example agent with prompt processing")'
     # Fill in agent name while still in step 1
     When I clear text in "agent name input" element with selector "[data-testid='agent-name-input-field']"
     When I type "我的代码助手" in "agent name input" element with selector "[data-testid='agent-name-input-field']"
