@@ -6,7 +6,22 @@ import { i18n } from '@services/libs/i18n';
 import { exec as gitExec } from 'dugite';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { defaultGitInfo } from './defaultGitInfo';
 import type { IGitLogOptions, IGitLogResult } from './interface';
+
+/**
+ * Helper to create git environment variables for commit operations
+ * This ensures commits work in environments without git config (like CI)
+ */
+function getGitCommitEnvironment(username: string = defaultGitInfo.gitUserName, email: string = defaultGitInfo.email) {
+  return {
+    ...process.env,
+    GIT_AUTHOR_NAME: username,
+    GIT_AUTHOR_EMAIL: email,
+    GIT_COMMITTER_NAME: username,
+    GIT_COMMITTER_EMAIL: email,
+  };
+}
 
 /**
  * Get git log with pagination
@@ -454,10 +469,13 @@ export async function revertCommit(repoPath: string, commitHash: string, commitM
     ? i18n.t('ContextMenu.RevertCommit', { message: commitMessage })
     : `Revert commit ${commitHash}`;
 
-  // Commit the revert
+  // Commit the revert with author/committer identity
   const commitResult = await gitExec(
     ['commit', '-m', revertMessage],
     repoPath,
+    {
+      env: getGitCommitEnvironment(),
+    },
   );
 
   if (commitResult.exitCode !== 0) {
@@ -509,7 +527,13 @@ export async function addToGitignore(repoPath: string, pattern: string): Promise
  * Amend the last commit with a new message
  */
 export async function amendCommitMessage(repoPath: string, newMessage: string): Promise<void> {
-  const result = await gitExec(['commit', '--amend', '-m', newMessage], repoPath);
+  const result = await gitExec(
+    ['commit', '--amend', '-m', newMessage],
+    repoPath,
+    {
+      env: getGitCommitEnvironment(),
+    },
+  );
 
   if (result.exitCode !== 0) {
     throw new Error(`Failed to amend commit message: ${result.stderr}`);
