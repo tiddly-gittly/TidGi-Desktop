@@ -4,6 +4,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IUpdaterService } from '@services/updater/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import { shell } from 'electron';
 import { DeferredMenuItemConstructorOptions } from './interface';
 
@@ -83,6 +85,12 @@ export function loadDefaultMenuTemplate(): DeferredMenuItemConstructorOptions[] 
       label: () => i18n.t('Menu.Wiki'),
       id: 'Wiki',
       submenu: [],
+      visible: async () => {
+        const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+        const activeWorkspace = await workspaceService.getActiveWorkspace();
+        // Only show Wiki menu when there's an active wiki workspace
+        return activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace);
+      },
     },
     {
       label: () => i18n.t('Menu.Window'),

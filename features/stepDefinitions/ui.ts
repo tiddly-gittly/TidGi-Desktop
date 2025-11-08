@@ -1,7 +1,15 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
 import type { ApplicationWorld } from './application';
 
-When('I wait for {float} seconds', async function(this: ApplicationWorld, seconds: number) {
+When('I wait for {float} seconds', async function(seconds: number) {
+  await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+});
+
+/**
+ * Wait with a reason for documentation and debugging
+ * The reason parameter is used in the Gherkin feature file for documentation purposes
+ */
+When('I wait for {float} seconds for {string}', async function(seconds: number, _reason: string) {
   await new Promise(resolve => setTimeout(resolve, seconds * 1000));
 });
 

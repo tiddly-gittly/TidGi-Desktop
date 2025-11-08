@@ -9,7 +9,7 @@ import { getBuildInPageIcon } from '@/pages/Main/WorkspaceIconAndSelector/getBui
 import { getBuildInPageName } from '@/pages/Main/WorkspaceIconAndSelector/getBuildInPageName';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
+import { getSimplifiedWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
 import { isWikiWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
 
@@ -101,8 +101,13 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     async (event: MouseEvent<HTMLDivElement>) => {
       event.preventDefault();
       event.stopPropagation();
-      const workspaceContextMenuTemplate = await getWorkspaceMenuTemplate(workspace, t, window.service);
-      void window.remote.buildContextMenuAndPopup(workspaceContextMenuTemplate, { x: event.clientX, y: event.clientY, editFlags: { canCopy: false } });
+      // Build workspace context menu template - simplified menu now includes everything
+      const workspaceContextMenuTemplate = await getSimplifiedWorkspaceMenuTemplate(workspace, t, window.service);
+      void window.remote.buildContextMenuAndPopup(workspaceContextMenuTemplate, {
+        x: event.clientX,
+        y: event.clientY,
+        editFlags: { canCopy: false },
+      });
     },
     [t, workspace],
   );

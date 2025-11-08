@@ -2,6 +2,12 @@ import { ThemeChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { BehaviorSubject } from 'rxjs';
 
+/**
+ * TiddlyWiki tag for dark/light mode change actions
+ * Tiddlers with this tag will be invoked when theme changes
+ */
+export const DARK_LIGHT_CHANGE_ACTIONS_TAG = '$:/tags/DarkLightChangeActions';
+
 export interface ITheme {
   shouldUseDarkColors: boolean;
 }

@@ -12,6 +12,10 @@ export enum WindowNames {
   auth = 'auth',
   editWorkspace = 'editWorkspace',
   /**
+   * Git history viewer window
+   */
+  gitHistory = 'gitHistory',
+  /**
    * Window with workspace list and new wiki button on left side bar
    * We only have a single instance of main window, that is the app window.
    */
@@ -71,6 +75,10 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     width: 420,
     height: 600,
   },
+  [WindowNames.gitHistory]: {
+    width: 1600,
+    height: 800,
+  },
   [WindowNames.preferences]: {
     width: 840,
     height: 700,
@@ -100,6 +108,7 @@ export interface WindowMeta {
   [WindowNames.any]: { uri?: string };
   [WindowNames.auth]: undefined;
   [WindowNames.editWorkspace]: { workspaceID?: string };
+  [WindowNames.gitHistory]: { workspaceID?: string };
   [WindowNames.main]: { forceClose?: boolean };
   [WindowNames.tidgiMiniWindow]: undefined;
   [WindowNames.notifications]: undefined;

@@ -33,6 +33,8 @@ export const defaultPreferences: IPreferences = {
   syncBeforeShutdown: false,
   syncDebounceInterval: 1000 * 60 * 30,
   syncOnlyWhenNoDraft: true,
+  aiGenerateBackupTitle: true,
+  aiGenerateBackupTitleTimeout: 1500,
   themeSource: 'system' as 'system' | 'light' | 'dark',
   tidgiMiniWindow: false,
   tidgiMiniWindowAlwaysOnTop: false,

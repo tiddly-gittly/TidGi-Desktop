@@ -5,12 +5,13 @@ import { onWorkerServicesReady } from './servicesReady';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
+import { DARK_LIGHT_CHANGE_ACTIONS_TAG } from '@services/theme/interface';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
 import inspector from 'node:inspector';
 import path from 'path';
 import { Observable } from 'rxjs';
-import { TiddlyWiki } from 'tiddlywiki';
+import { IWidgetEvent, TiddlyWiki } from 'tiddlywiki';
 import { IWikiMessage, WikiControlActions } from '../interface';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import type { IStartNodeJSWikiConfigs } from '../wikiWorker';
@@ -29,6 +30,7 @@ export function startNodeJSWiki({
   openDebugger,
   readOnlyMode,
   rootTiddler = '$:/core/save/all',
+  shouldUseDarkColors,
   tiddlyWikiHost = defaultServerIP,
   tiddlyWikiPort = 5112,
   tokenAuth,
@@ -104,11 +106,18 @@ export function startNodeJSWiki({
        */
 
       const readonlyArguments = readOnlyMode === true ? ['gzip=yes', 'readers=(anon)', `writers=${userName || nanoid()}`, `username=${userName}`, `password=${nanoid()}`] : [];
-      if (readOnlyMode === true) {
-        wikiInstance.preloadTiddler({ title: '$:/info/tidgi/readOnlyMode', text: 'yes' });
-      }
+
       // Preload workspace ID for filesystem adaptor
-      wikiInstance.preloadTiddler({ title: '$:/info/tidgi/workspaceID', text: workspace.id });
+      const infoTiddlerText = `exports.getInfoTiddlerFields = () => [
+        {title: "$:/info/tidgi/readOnlyMode", text: "${readOnlyMode === true ? 'yes' : 'no'}"},
+        {title: "$:/info/tidgi/workspaceID", text: ${JSON.stringify(workspace.id)}},
+      ]`;
+      wikiInstance.preloadTiddler({
+        title: '$:/core/modules/info/tidgi-server.js',
+        text: infoTiddlerText,
+        type: 'application/javascript',
+        'module-type': 'info',
+      });
       /**
        * Use authenticated-user-header to provide `TIDGI_AUTH_TOKEN_HEADER` as header key to receive a value as username (we use it as token).
        *
@@ -166,6 +175,11 @@ export function startNodeJSWiki({
       wikiInstance.hooks.addHook('th-server-command-post-start', function(_listenCommand, server) {
         server.on('error', function(error: Error) {
           observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message, argv: fullBootArgv });
+        });
+        // Similar to how updateActiveWikiTheme calls WikiChannel.invokeActionsByTag
+        // TODO: now working, can't change theme to dark on start.
+        wikiInstance.rootWidget.invokeActionsByTag(DARK_LIGHT_CHANGE_ACTIONS_TAG, new Event('TidGi-invokeActionByTag') as unknown as IWidgetEvent, {
+          'dark-mode': shouldUseDarkColors ? 'yes' : 'no',
         });
         server.on('listening', function() {
           observer.next({

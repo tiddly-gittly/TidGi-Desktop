@@ -18,6 +18,7 @@ interface UseAIConfigManagementResult {
   handleSpeechModelChange: (provider: string, model: string) => Promise<void>;
   handleImageGenerationModelChange: (provider: string, model: string) => Promise<void>;
   handleTranscriptionsModelChange: (provider: string, model: string) => Promise<void>;
+  handleFreeModelChange: (provider: string, model: string) => Promise<void>;
   handleConfigChange: (newConfig: AiAPIConfig) => Promise<void>;
 }
 
@@ -195,6 +196,27 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     }
   }, [config, updateConfig]);
 
+  const handleFreeModelChange = useCallback(async (provider: string, model: string) => {
+    if (!config) return;
+
+    try {
+      const updatedConfig = cloneDeep(config);
+      if (typeof updatedConfig.api === 'undefined') {
+        updatedConfig.api = { provider, model, freeModel: model };
+      } else {
+        updatedConfig.api.freeModel = model;
+      }
+
+      setConfig(updatedConfig);
+      await updateConfig(updatedConfig);
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to update free model configuration', {
+        function: 'useAIConfigManagement.handleFreeModelChange',
+        error,
+      });
+    }
+  }, [config, updateConfig]);
+
   const handleConfigChange = useCallback(async (newConfig: AiAPIConfig) => {
     try {
       setConfig(newConfig);
@@ -214,6 +236,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     handleSpeechModelChange,
     handleImageGenerationModelChange,
     handleTranscriptionsModelChange,
+    handleFreeModelChange,
     handleConfigChange,
   };
 };

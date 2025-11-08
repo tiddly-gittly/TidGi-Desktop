@@ -203,7 +203,7 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
     const stepText = pickleStep.text;
 
     // Skip screenshots for wait steps to avoid too many screenshots
-    if (stepText.match(/^I wait for \d+(\.\d+)? seconds?$/i)) {
+    if (stepText.match(/^I wait for/i)) {
       return;
     }
 

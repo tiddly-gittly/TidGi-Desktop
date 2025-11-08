@@ -30,6 +30,10 @@ export async function registerMenu(): Promise<void> {
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 
   const hasActiveWorkspaces = async (): Promise<boolean> => (await workspaceService.getActiveWorkspace()) !== undefined;
+  const hasActiveWikiWorkspace = async (): Promise<boolean> => {
+    const activeWorkspace = await workspaceService.getActiveWorkspace();
+    return activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace);
+  };
 
   await menuService.insertMenu('Workspaces', [
     {
@@ -39,9 +43,12 @@ export async function registerMenu(): Promise<void> {
       enabled: hasActiveWorkspaces,
     },
   ]);
+
+  // Insert Wiki menu items (each item checks for active wiki workspace)
   await menuService.insertMenu('Wiki', [
     {
       label: () => i18n.t('Menu.PrintPage'),
+      visible: hasActiveWikiWorkspace,
       click: async () => {
         try {
           const browserView = await viewService.getActiveBrowserView();
@@ -74,6 +81,7 @@ export async function registerMenu(): Promise<void> {
     {
       label: () => i18n.t('Menu.ExportActiveTiddler'),
       accelerator: 'CmdOrCtrl+Alt+Shift+P',
+      visible: hasActiveWikiWorkspace,
       click: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         if (activeWorkspace === undefined) {
@@ -112,6 +120,7 @@ export async function registerMenu(): Promise<void> {
     },
     {
       label: () => i18n.t('Menu.ExportWholeWikiHTML'),
+      visible: hasActiveWikiWorkspace,
       click: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         if (activeWorkspace === undefined) {
@@ -135,10 +144,11 @@ export async function registerMenu(): Promise<void> {
       },
       enabled: hasActiveWorkspaces,
     },
-    { type: 'separator' },
+    { type: 'separator', visible: hasActiveWikiWorkspace },
     {
       label: () => i18n.t('ContextMenu.CopyLink'),
       accelerator: 'CmdOrCtrl+L',
+      visible: hasActiveWikiWorkspace,
       click: async (_menuItem, browserWindow) => {
         // if back is called in popup window
         // copy the popup window URL instead

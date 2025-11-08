@@ -1,8 +1,12 @@
+import { WikiChannel } from '@/constants/channels';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IContextService } from '@services/context/interface';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
+import { createBackupMenuItems, createSyncMenuItems } from '@services/git/menuItems';
 import type { INativeService } from '@services/native/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import type { ISyncService } from '@services/sync/interface';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
@@ -20,8 +24,10 @@ import { isWikiWorkspace } from './interface';
 interface IWorkspaceMenuRequiredServices {
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
   context: Pick<IContextService, 'isOnline'>;
-  git: Pick<IGitService, 'commitAndSync'>;
+  externalAPI: Pick<IExternalAPIService, 'getAIConfig'>;
+  git: Pick<IGitService, 'commitAndSync' | 'isAIGenerateBackupTitleEnabled'>;
   native: Pick<INativeService, 'log' | 'openURI' | 'openPath' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualInfo'>;
+  preference: Pick<IPreferenceService, 'getPreferences'>;
   sync: Pick<ISyncService, 'syncWikiIfNeeded'>;
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
   wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer'>;
@@ -40,6 +46,82 @@ interface IWorkspaceMenuRequiredServices {
   >;
 }
 
+/**
+ * Get simplified workspace menu template (for top-level context menu)
+ * Includes frequently used items, command palette, and "Current Workspace" submenu
+ */
+export async function getSimplifiedWorkspaceMenuTemplate(
+  workspace: IWorkspace,
+  t: TFunction<[_DefaultNamespace, ...Array<Exclude<FlatNamespace, _DefaultNamespace>>]>,
+  service: IWorkspaceMenuRequiredServices,
+): Promise<MenuItemConstructorOptions[]> {
+  if (!isWikiWorkspace(workspace)) {
+    return [];
+  }
+
+  const { id, storageService, isSubWiki } = workspace;
+  const template: MenuItemConstructorOptions[] = [];
+
+  // Add command palette first
+  template.push({
+    label: t('ContextMenu.OpenCommandPalette'),
+    click: async () => {
+      await service.wiki.wikiOperationInBrowser(WikiChannel.dispatchEvent, id, ['open-command-palette']);
+    },
+  });
+
+  // Edit workspace
+  template.push({
+    label: t('WorkspaceSelector.EditWorkspace'),
+    click: async () => {
+      await service.window.open(WindowNames.editWorkspace, { workspaceID: id });
+    },
+  });
+
+  // Check if AI-generated backup title is enabled
+  const aiGenerateBackupTitleEnabled = await service.git.isAIGenerateBackupTitleEnabled();
+
+  // Backup/Sync options (based on storage service)
+  if (storageService === SupportedStorageServices.local) {
+    const backupItems = createBackupMenuItems(workspace, t, service.window, service.git, aiGenerateBackupTitleEnabled, false);
+    template.push(...backupItems);
+  }
+
+  // Restart and Reload (only for non-sub wikis)
+  if (!isSubWiki) {
+    template.push(
+      {
+        label: t('ContextMenu.RestartService'),
+        click: async () => {
+          await service.workspaceView.restartWorkspaceViewService(id);
+          await service.workspaceView.realignActiveWorkspace(id);
+        },
+      },
+      {
+        label: t('ContextMenu.Reload'),
+        click: async () => {
+          await service.view.reloadViewsWebContents(id);
+        },
+      },
+    );
+  }
+
+  // Add "Current Workspace" submenu with full menu
+  const fullMenuTemplate = await getWorkspaceMenuTemplate(workspace, t, service);
+  if (fullMenuTemplate.length > 0) {
+    template.push({ type: 'separator' });
+    template.push({
+      label: t('Menu.CurrentWorkspace'),
+      submenu: fullMenuTemplate,
+    });
+  }
+
+  return template;
+}
+
+/**
+ * Get full workspace menu template (for "Current Workspace" submenu)
+ */
 export async function getWorkspaceMenuTemplate(
   workspace: IWorkspace,
   t: TFunction<[_DefaultNamespace, ...Array<Exclude<FlatNamespace, _DefaultNamespace>>]>,
@@ -72,16 +154,18 @@ export async function getWorkspaceMenuTemplate(
         await service.workspaceView.openWorkspaceWindowWithView(workspace, { uri: lastUrl ?? homeUrl });
       },
     },
+    { type: 'separator' },
     {
       label: t('WorkspaceSelector.EditWorkspace'),
       click: async () => {
         await service.window.open(WindowNames.editWorkspace, { workspaceID: id });
       },
     },
+    { type: 'separator' },
     {
-      label: t('WorkspaceSelector.RemoveWorkspace'),
+      label: t('WorkspaceSelector.ViewGitHistory'),
       click: async () => {
-        await service.wikiGitWorkspace.removeWorkspace(id);
+        await service.window.open(WindowNames.gitHistory, { workspaceID: id });
       },
     },
     {
@@ -98,6 +182,7 @@ export async function getWorkspaceMenuTemplate(
       label: t('WorkspaceSelector.OpenWorkspaceFolderInGitGUI'),
       click: async () => await service.native.openInGitGuiApp(wikiFolderLocation),
     },
+
     {
       label: `${t('WorkspaceSelector.OpenInBrowser')}${enableHTTPAPI ? '' : t('WorkspaceSelector.OpenInBrowserDisabledHint')}`,
       enabled: enableHTTPAPI,
@@ -106,28 +191,32 @@ export async function getWorkspaceMenuTemplate(
         await service.native.openURI(actualIP);
       },
     },
+    { type: 'separator' },
+    {
+      label: t('WorkspaceSelector.RemoveWorkspace'),
+      click: async () => {
+        await service.wikiGitWorkspace.removeWorkspace(id);
+      },
+    },
+    { type: 'separator' },
   ];
+
+  // Check if AI-generated backup title is enabled
+  const aiGenerateBackupTitleEnabled = await service.git.isAIGenerateBackupTitleEnabled();
 
   if (gitUrl !== null && gitUrl.length > 0 && storageService !== SupportedStorageServices.local) {
     const userInfo = await service.auth.getStorageServiceUserInfo(storageService);
     if (userInfo !== undefined) {
       const isOnline = await service.context.isOnline();
-      template.push({
-        label: t('ContextMenu.SyncNow') + (isOnline ? '' : `(${t('ContextMenu.NoNetworkConnection')})`),
-        enabled: isOnline,
-        click: async () => {
-          await service.sync.syncWikiIfNeeded(workspace);
-        },
-      });
+
+      const syncItems = createSyncMenuItems(workspace, t, service.git, aiGenerateBackupTitleEnabled, isOnline, false);
+      template.push(...syncItems);
     }
   }
+
   if (storageService === SupportedStorageServices.local) {
-    template.push({
-      label: t('ContextMenu.BackupNow'),
-      click: async () => {
-        await service.sync.syncWikiIfNeeded(workspace);
-      },
-    });
+    const backupItems = createBackupMenuItems(workspace, t, service.window, service.git, aiGenerateBackupTitleEnabled, false);
+    template.push(...backupItems);
   }
 
   if (!isSubWiki) {

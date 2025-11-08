@@ -1,4 +1,4 @@
-import { Divider, List, Switch } from '@mui/material';
+import { Divider, List, Switch, TextField } from '@mui/material';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { useTranslation } from 'react-i18next';
 
@@ -85,6 +85,54 @@ export function Sync(props: Required<ISectionProps>): React.JSX.Element {
                   />
                 </TimePickerContainer>
               </ListItem>
+              <Divider />
+              <ListItem
+                secondaryAction={
+                  <Switch
+                    edge='end'
+                    color='primary'
+                    checked={preference.aiGenerateBackupTitle}
+                    onChange={async (event) => {
+                      await window.service.preference.set('aiGenerateBackupTitle', event.target.checked);
+                    }}
+                  />
+                }
+              >
+                <ListItemText primary={t('Preference.AIGenerateBackupTitle')} secondary={t('Preference.AIGenerateBackupTitleDescription')} />
+              </ListItem>
+              {preference.aiGenerateBackupTitle && (
+                <ListItem>
+                  <ListItemText primary={t('Preference.AIGenerateBackupTitleTimeout')} secondary={t('Preference.AIGenerateBackupTitleTimeoutDescription')} />
+                  <TextField
+                    type='number'
+                    value={preference.aiGenerateBackupTitleTimeout / 1000}
+                    onChange={async (event) => {
+                      const seconds = Number.parseInt(event.target.value, 10);
+                      if (!Number.isNaN(seconds) && seconds > 0 && seconds <= 60) {
+                        await window.service.preference.set('aiGenerateBackupTitleTimeout', seconds * 1000);
+                      }
+                    }}
+                    onBlur={async (event) => {
+                      const seconds = Number.parseInt(event.target.value, 10);
+                      // Reset to current preference value if invalid
+                      if (Number.isNaN(seconds) || seconds <= 0 || seconds > 60) {
+                        event.target.value = String(preference.aiGenerateBackupTitleTimeout / 1000);
+                      }
+                    }}
+                    slotProps={{
+                      htmlInput: {
+                        min: 1,
+                        max: 60,
+                        step: 1,
+                      },
+                    }}
+                    sx={{ width: 100 }}
+                    size='small'
+                    label={t('Preference.Seconds')}
+                  />
+                </ListItem>
+              )}
+              <Divider />
               <ListItem>
                 <ListItemText
                   primary={`${t('Preference.MoreWorkspaceSyncSettings')} (Mac/Linux)`}

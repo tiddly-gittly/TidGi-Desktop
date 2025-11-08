@@ -326,16 +326,16 @@
       "TopPTitle": "Top P"
     },
     "Plugin": {
-      "Caption": "",
-      "CaptionTitle": "",
-      "Content": "",
-      "ContentTitle": "",
-      "ForbidOverrides": "",
-      "ForbidOverridesTitle": "",
-      "Id": "",
-      "IdTitle": "",
-      "PluginId": "",
-      "PluginIdTitle": ""
+      "Caption": "brève description",
+      "CaptionTitle": "titre",
+      "Content": "Contenu ou description du plugin",
+      "ContentTitle": "contenu",
+      "ForbidOverrides": "Est-il interdit de remplacer les paramètres de ce plugin pendant l'exécution ?",
+      "ForbidOverridesTitle": "Interdiction de couvrir",
+      "Id": "ID du plugin",
+      "IdTitle": "ID",
+      "PluginId": "Identifiant utilisé pour sélectionner un plugin spécifique",
+      "PluginIdTitle": "identifiant du plugin"
     },
     "Position": {
       "Bottom": "Décaler quelques messages depuis le bas",
@@ -466,7 +466,7 @@
       "SourceTypeTitle": "type source",
       "Title": "Recherche Wiki",
       "Tool": {
-        "Description": "",
+        "Description": "Rechercher le contenu des Tiddlers dans l'espace de travail Wiki (prend en charge la recherche par filtre traditionnelle et la recherche sémantique vectorielle)",
         "Parameters": {
           "filter": {
             "Description": "Expression de filtre TiddlyWiki",
@@ -494,24 +494,20 @@
           }
         },
         "UpdateEmbeddings": {
-          "Description": "",
+          "Description": "Générer ou mettre à jour l'index d'embedding vectoriel pour l'espace de travail Wiki, destiné à la recherche sémantique.",
           "Parameters": {
             "forceUpdate": {
-              "Description": "",
-              "Title": ""
             },
             "workspaceName": {
-              "Description": "",
-              "Title": ""
             }
           },
           "forceUpdate": {
-            "Description": "",
-            "Title": ""
+            "Description": "Forcer la régénération de l'index d'incorporation, écrasant les données incorporées existantes (si défini sur true, ignore les mises à jour incrémentielles).",
+            "Title": "mise à jour forcée"
           },
           "workspaceName": {
-            "Description": "",
-            "Title": ""
+            "Description": "Le nom ou l'ID de l'espace de travail pour lequel générer ou mettre à jour l'index d'incorporation vectorielle.",
+            "Title": "Nom de l'espace de travail"
           }
         }
       },
@@ -550,16 +546,6 @@
   },
   "Tool": {
     "Plugin": {
-      "Caption": "",
-      "CaptionTitle": "",
-      "Content": "",
-      "ContentTitle": "",
-      "ForbidOverrides": "",
-      "ForbidOverridesTitle": "",
-      "Id": "",
-      "IdTitle": "",
-      "PluginId": "",
-      "PluginIdTitle": ""
     },
     "Schema": {
       "Description": "décrire",
@@ -582,10 +568,10 @@
     "WikiSearch": {
       "Error": {
         "ExecutionFailed": "Exécution de l'outil échouée : {{error}}",
-        "FilterSearchRequiresFilter": "",
-        "VectorSearchFailed": "",
-        "VectorSearchRequiresConfig": "",
-        "VectorSearchRequiresQuery": "",
+        "FilterSearchRequiresFilter": "Pour effectuer une recherche filtrée, il est nécessaire de fournir un paramètre de filtre (filter).",
+        "VectorSearchFailed": "Recherche vectorielle échouée : {{error}}",
+        "VectorSearchRequiresConfig": "La recherche vectorielle nécessite une configuration IA (veuillez configurer le fournisseur et le modèle d'incorporation dans les paramètres).",
+        "VectorSearchRequiresQuery": "La recherche vectorielle nécessite de fournir un paramètre de requête (query).",
         "WorkspaceNotExist": "L'espace de travail {{workspaceID}} n'existe pas",
         "WorkspaceNotFound": "Le nom ou l'ID de l'espace de travail \"{{workspaceName}}\" n'existe pas. Espaces de travail disponibles : {{availableWorkspaces}}"
       },

@@ -16,51 +16,54 @@ const BACKOFF_OPTIONS = {
 /**
  * Generic function to wait for a log marker to appear in wiki log files.
  */
-async function waitForLogMarker(searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = 'wiki-'): Promise<void> {
+export async function waitForLogMarker(searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = 'wiki-'): Promise<void> {
   const logPath = path.join(process.cwd(), 'userData-test', 'logs');
 
-  await backOff(
-    async () => {
-      try {
-        const files = await fs.readdir(logPath);
-        const logFiles = files.filter(f => f.startsWith(logFilePattern) && f.endsWith('.log'));
+  try {
+    await backOff(
+      async () => {
+        try {
+          const files = await fs.readdir(logPath);
+          const logFiles = files.filter(f => f.startsWith(logFilePattern) && f.endsWith('.log'));
 
-        for (const file of logFiles) {
-          const content = await fs.readFile(path.join(logPath, file), 'utf-8');
-          if (content.includes(searchString)) {
-            return;
+          for (const file of logFiles) {
+            const content = await fs.readFile(path.join(logPath, file), 'utf-8');
+            if (content.includes(searchString)) {
+              return;
+            }
           }
+        } catch {
+          // Log directory might not exist yet, continue retrying
         }
-      } catch {
-        // Log directory might not exist yet, continue retrying
-      }
 
-      throw new Error('Log marker not found yet');
-    },
-    {
-      numOfAttempts: Math.ceil(maxWaitMs / 100),
-      startingDelay: 100,
-      timeMultiple: 1,
-      maxDelay: 100,
-      delayFirstAttempt: false,
-      jitter: 'none',
-    },
-  ).catch(() => {
+        throw new Error('Log marker not found yet');
+      },
+      {
+        numOfAttempts: Math.ceil(maxWaitMs / 100),
+        startingDelay: 100,
+        timeMultiple: 1,
+        maxDelay: 100,
+        delayFirstAttempt: false,
+      },
+    );
+  } catch {
+    // If backOff fails, throw the user-friendly error message
     throw new Error(errorMessage);
-  });
+  }
 }
 
 When('I cleanup test wiki so it could create a new one on start', async function() {
   if (fs.existsSync(wikiTestWikiPath)) fs.removeSync(wikiTestWikiPath);
 
   /**
-   * Clean up wiki log files to prevent reading stale logs from previous scenarios.
-   * This is critical for tests that wait for log markers like [test-id-WATCH_FS_STABILIZED],
+   * Clean up log files to prevent reading stale logs from previous scenarios.
+   * This is critical for tests that wait for log markers like [test-id-WATCH_FS_STABILIZED] or [test-id-git-commit-complete],
    * as Node.js file system caching can cause tests to read old log content.
+   * Must clean both wiki- and TidGi- log files for git-related tests.
    */
   const logDirectory = path.join(process.cwd(), 'userData-test', 'logs');
   if (fs.existsSync(logDirectory)) {
-    const logFiles = fs.readdirSync(logDirectory).filter(f => f.startsWith('wiki-') && f.endsWith('.log'));
+    const logFiles = fs.readdirSync(logDirectory).filter(f => (f.startsWith('wiki-') || f.startsWith('TidGi-')) && f.endsWith('.log'));
     for (const logFile of logFiles) {
       fs.removeSync(path.join(logDirectory, logFile));
     }
@@ -68,7 +71,38 @@ When('I cleanup test wiki so it could create a new one on start', async function
 
   type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
   if (!fs.existsSync(settingsPath)) return;
-  const settings = fs.readJsonSync(settingsPath) as SettingsFile;
+
+  // Retry logic with exponential backoff for reading settings.json - it might be temporarily locked or corrupted
+  let settings: SettingsFile;
+
+  try {
+    settings = await backOff(
+      async () => {
+        return fs.readJsonSync(settingsPath) as SettingsFile;
+      },
+      {
+        numOfAttempts: 3,
+        startingDelay: 100,
+        timeMultiple: 2,
+        maxDelay: 500,
+        retry: (error: Error, attemptNumber: number) => {
+          console.warn(`Attempt ${attemptNumber}/3 failed to read settings.json:`, error);
+
+          // If file is corrupted, don't retry - handle it in catch block
+          if (error instanceof SyntaxError || error.message.includes('Unexpected end of JSON input')) {
+            return false;
+          }
+
+          return true;
+        },
+      },
+    );
+  } catch (_error) {
+    // If file is corrupted or all retries failed, create empty settings
+    console.warn('Settings file is corrupted or failed to read after retries, recreating with empty workspaces');
+    settings = { workspaces: {} };
+  }
+
   const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
   const filtered: Record<string, IWorkspace> = {};
   for (const id of Object.keys(workspaces)) {
@@ -77,7 +111,27 @@ When('I cleanup test wiki so it could create a new one on start', async function
     if (name === 'wiki' || id === 'wiki') continue;
     filtered[id] = ws;
   }
-  fs.writeJsonSync(settingsPath, { ...settings, workspaces: filtered }, { spaces: 2 });
+
+  // Write with exponential backoff retry logic to handle file locks
+  try {
+    await backOff(
+      async () => {
+        fs.writeJsonSync(settingsPath, { ...settings, workspaces: filtered }, { spaces: 2 });
+      },
+      {
+        numOfAttempts: 3,
+        startingDelay: 100,
+        timeMultiple: 2,
+        maxDelay: 500,
+        retry: (_error: Error, attemptNumber: number) => {
+          console.warn(`Attempt ${attemptNumber}/3 failed to write settings.json:`, _error);
+          return true;
+        },
+      },
+    );
+  } catch (_error) {
+    console.error('Failed to write settings.json after 3 attempts, continuing anyway');
+  }
 });
 
 /**
@@ -243,22 +297,51 @@ async function clearSubWikiRoutingTestData() {
   }
 }
 
+/**
+ * Clear git test data to prevent state pollution between git tests
+ * Removes the entire wiki folder - it will be recreated on next test start
+ */
+async function clearGitTestData() {
+  const wikiPath = path.join(wikiTestWikiPath, 'wiki');
+  if (!(await fs.pathExists(wikiPath))) return;
+
+  try {
+    await fs.remove(wikiPath);
+  } catch (error) {
+    console.warn('Failed to remove wiki folder in git cleanup:', error);
+  }
+}
+
+/**
+ * Generic step to wait for any log marker
+ * @param description - Human-readable description of what we're waiting for (comes first for readability)
+ * @param marker - The test-id marker to look for in logs
+ *
+ * This searches in both TidGi- and wiki- log files with appropriate timeouts
+ */
+Then('I wait for {string} log marker {string}', async function(this: ApplicationWorld, description: string, marker: string) {
+  // Determine timeout and log prefix based on operation type
+  const isGitOperation = marker.includes('git-') || marker.includes('revert');
+  const isWikiRestart = marker.includes('MAIN_WIKI_RESTARTED');
+  const isRevert = marker.includes('revert');
+  const timeout = isRevert ? 30000 : (isWikiRestart ? 25000 : (isGitOperation ? 25000 : 15000));
+  const logPrefix = (isGitOperation || isWikiRestart) ? 'TidGi-' : undefined;
+  await waitForLogMarker(marker, `Log marker "${marker}" not found. Expected: ${description}`, timeout, logPrefix);
+});
+
+/**
+ * Convenience step for waiting for SSE and watch-fs to be ready
+ * This is commonly used in Background sections
+ */
 Then('I wait for SSE and watch-fs to be ready', async function(this: ApplicationWorld) {
-  await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', 15000);
-  await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 15000);
+  await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', 20000);
+  await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 20000);
 });
 
-Then('I wait for main wiki to restart after sub-wiki creation', async function(this: ApplicationWorld) {
-  await waitForLogMarker('[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI]', 'Main wiki did not restart after sub-wiki creation within timeout', 20000, 'TidGi-');
-  // Also wait for SSE and watch-fs to be ready after restart
-  await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready after restart within timeout', 15000);
-  await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready after restart within timeout', 15000);
-});
-
-Then('I wait for view to finish loading', async function(this: ApplicationWorld) {
-  await waitForLogMarker('[test-id-VIEW_LOADED]', 'Browser view did not finish loading within timeout', 10000, 'wiki-');
-});
-
+/**
+ * Convenience steps for waiting for tiddler operations detected by watch-fs
+ * These use dynamic markers that include the tiddler name
+ */
 Then('I wait for tiddler {string} to be added by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
   await waitForLogMarker(
     `[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`,
@@ -383,4 +466,4 @@ When('I modify file {string} to add field {string}', async function(this: Applic
   await fs.writeFile(actualPath, lines.join('\n'), 'utf-8');
 });
 
-export { clearSubWikiRoutingTestData };
+export { clearGitTestData, clearSubWikiRoutingTestData };

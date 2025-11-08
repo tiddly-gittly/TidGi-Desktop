@@ -1,6 +1,6 @@
 import FolderIcon from '@mui/icons-material/Folder';
 import { AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isWikiWorkspace } from '@services/workspaces/interface';
@@ -35,7 +35,18 @@ export function ExistedWikiForm({
     tagName,
     tagNameSetter,
   } = form;
+
+  // Local state for the full path input - like NewWikiForm's direct state binding
+  // Initialize from form values
+  const [fullPath, setFullPath] = useState(() => {
+    if (parentFolderLocation && wikiFolderName) {
+      return `${parentFolderLocation}${parentFolderLocation.endsWith('/') || parentFolderLocation.endsWith('\\') ? '' : '/'}${wikiFolderName}`;
+    }
+    return '';
+  });
+
   useValidateExistedWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, errorInWhichComponentSetter);
+
   const onLocationChange = useCallback(
     async (newLocation: string) => {
       const folderName = await window.service.native.path('basename', newLocation);
@@ -43,6 +54,8 @@ export function ExistedWikiForm({
       if (folderName !== undefined && directoryName !== undefined) {
         wikiFolderNameSetter(folderName);
         parentFolderLocationSetter(directoryName);
+        // Update local state
+        setFullPath(newLocation);
       }
     },
     [wikiFolderNameSetter, parentFolderLocationSetter],
@@ -52,12 +65,28 @@ export function ExistedWikiForm({
       <LocationPickerContainer>
         <LocationPickerInput
           error={errorInWhichComponent.wikiFolderLocation}
-          onChange={async (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-            await onLocationChange(event.target.value);
+          onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            // Update local state immediately for responsive UI
+            const newValue = event.target.value;
+            setFullPath(newValue);
+            
+            // Parse path into parent and folder for validation
+            const lastSlashIndex = Math.max(newValue.lastIndexOf('/'), newValue.lastIndexOf('\\'));
+            if (lastSlashIndex >= 0) {
+              const folder = newValue.slice(lastSlashIndex + 1);
+              // Handle root paths: "/" or "C:\"
+              const parent = lastSlashIndex === 0 ? '/' : newValue.slice(0, lastSlashIndex);
+              wikiFolderNameSetter(folder);
+              parentFolderLocationSetter(parent);
+            } else {
+              // No slash found - treat as relative path or bare folder name
+              wikiFolderNameSetter(newValue);
+              parentFolderLocationSetter('');
+            }
           }}
           label={t('AddWorkspace.WorkspaceFolder')}
           helperText={`${t('AddWorkspace.ImportWiki')}${wikiFolderLocation ?? ''}`}
-          value={wikiFolderLocation}
+          value={fullPath}
         />
         <LocationPickerButton
           onClick={async () => {

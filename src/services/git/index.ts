@@ -2,7 +2,7 @@ import { createWorkerProxy } from '@services/libs/workerAdapter';
 import { dialog, net } from 'electron';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
-import { Observer } from 'rxjs';
+import { BehaviorSubject, Observer } from 'rxjs';
 import { Worker } from 'worker_threads';
 // @ts-expect-error - Vite worker import with ?nodeWorker query
 import GitWorkerFactory from './gitWorker?nodeWorker';
@@ -11,6 +11,7 @@ import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
 import { container } from '@services/container';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
@@ -21,24 +22,36 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
+import * as gitOperations from './gitOperations';
 import type { GitWorker } from './gitWorker';
-import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
+import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitLogOptions, IGitLogResult, IGitService, IGitStateChange, IGitUserInfos } from './interface';
+import { registerMenu } from './registerMenu';
 import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 
 @injectable()
 export class Git implements IGitService {
   private gitWorker?: GitWorker;
   private nativeWorker?: Worker;
+  public gitStateChange$ = new BehaviorSubject<IGitStateChange | undefined>(undefined);
 
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
-  ) {
+  ) {}
+
+  private notifyGitStateChange(wikiFolderLocation: string, type: IGitStateChange['type']): void {
+    this.gitStateChange$.next({
+      timestamp: Date.now(),
+      wikiFolderLocation,
+      type,
+    });
   }
 
   public async initialize(): Promise<void> {
     await this.initWorker();
+    // Register menu items after initialization
+    void registerMenu();
   }
 
   private async initWorker(): Promise<void> {
@@ -192,11 +205,15 @@ export class Git implements IGitService {
         ?.initWikiGit(wikiFolderPath, getErrorMessageI18NDict(), syncImmediately && net.isOnline(), remoteUrl, userInfo)
         .subscribe(this.getWorkerMessageObserver(wikiFolderPath, resolve, reject));
     });
+    // Log for e2e test detection - indicates initial git setup and commits are complete
+    logger.info(`[test-id-git-init-complete]`, { wikiFolderPath });
   }
 
   public async commitAndSync(workspace: IWorkspace, configs: ICommitAndSyncConfigs): Promise<boolean> {
-    if (!net.isOnline()) {
-      // If not online, will not have any change
+    // For commit-only operations (local workspace), we don't need network
+    // Only check network for sync operations
+    if (!configs.commitOnly && !net.isOnline()) {
+      // If not online and trying to sync, will not have any change
       return false;
     }
     if (!isWikiWorkspace(workspace)) {
@@ -209,8 +226,34 @@ export class Git implements IGitService {
       } catch (error: unknown) {
         logger.error('updateGitInfoTiddler failed when commitAndSync', { error });
       }
-      const observable = this.gitWorker?.commitAndSyncWiki(workspace, configs, getErrorMessageI18NDict());
-      return await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
+
+      // Generate AI commit message if not provided and settings allow
+      let finalConfigs = configs;
+      if (!configs.commitMessage) {
+        logger.info('No commit message provided, attempting to generate AI commit message');
+        const { generateAICommitMessage } = await import('./aiCommitMessage');
+        const aiCommitMessage = await generateAICommitMessage(workspace.wikiFolderLocation);
+        if (aiCommitMessage) {
+          finalConfigs = { ...configs, commitMessage: aiCommitMessage };
+          logger.info('Using AI-generated commit message', { commitMessage: aiCommitMessage });
+        } else {
+          // If AI generation fails or times out, use default message
+          logger.info('AI commit message generation returned undefined, using default message');
+          finalConfigs = { ...configs, commitMessage: i18n.t('LOG.CommitBackupMessage') };
+        }
+      } else {
+        logger.info('Commit message already provided, skipping AI generation', { commitMessage: configs.commitMessage });
+      }
+
+      const observable = this.gitWorker?.commitAndSyncWiki(workspace, finalConfigs, getErrorMessageI18NDict());
+      const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
+
+      // Notify git state change
+      const changeType = configs.commitOnly ? 'commit' : 'sync';
+      this.notifyGitStateChange(workspace.wikiFolderLocation, changeType);
+      // Log for e2e test detection
+      logger.info(`[test-id-git-${changeType}-complete]`, { wikiFolderLocation: workspace.wikiFolderLocation });
+      return hasChanges;
     } catch (error: unknown) {
       const error_ = error as Error;
       this.createFailedNotification(error_.message, workspaceIDToShowNotification);
@@ -228,7 +271,10 @@ export class Git implements IGitService {
     }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     const observable = this.gitWorker?.forcePullWiki(workspace, configs, getErrorMessageI18NDict());
-    return await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
+    const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
+    // Notify git state change
+    this.notifyGitStateChange(workspace.wikiFolderLocation, 'pull');
+    return hasChanges;
   }
 
   /**
@@ -285,6 +331,77 @@ export class Git implements IGitService {
       return await this.forcePull(workspace, configs);
     } else {
       return await this.commitAndSync(workspace, configs);
+    }
+  }
+
+  public async getGitLog(wikiFolderPath: string, options?: IGitLogOptions): Promise<IGitLogResult> {
+    return await gitOperations.getGitLog(wikiFolderPath, options);
+  }
+
+  public async getCommitFiles(wikiFolderPath: string, commitHash: string): Promise<string[]> {
+    return await gitOperations.getCommitFiles(wikiFolderPath, commitHash);
+  }
+
+  public async getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<import('./interface').IFileDiffResult> {
+    return await gitOperations.getFileDiff(wikiFolderPath, commitHash, filePath, maxLines, maxChars);
+  }
+
+  public async getFileContent(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<import('./interface').IFileDiffResult> {
+    return await gitOperations.getFileContent(wikiFolderPath, commitHash, filePath, maxLines, maxChars);
+  }
+
+  public async getFileBinaryContent(wikiFolderPath: string, commitHash: string, filePath: string): Promise<string> {
+    return await gitOperations.getFileBinaryContent(wikiFolderPath, commitHash, filePath);
+  }
+
+  public async getImageComparison(wikiFolderPath: string, commitHash: string, filePath: string): Promise<{ previous: string | null; current: string | null }> {
+    return await gitOperations.getImageComparison(wikiFolderPath, commitHash, filePath);
+  }
+
+  public async checkoutCommit(wikiFolderPath: string, commitHash: string): Promise<void> {
+    await gitOperations.checkoutCommit(wikiFolderPath, commitHash);
+    // Notify git state change
+    this.notifyGitStateChange(wikiFolderPath, 'checkout');
+    // Log for e2e test detection
+    logger.info(`[test-id-git-checkout-complete]`, { wikiFolderPath, commitHash });
+  }
+
+  public async revertCommit(wikiFolderPath: string, commitHash: string, commitMessage?: string): Promise<void> {
+    try {
+      await gitOperations.revertCommit(wikiFolderPath, commitHash, commitMessage);
+      // Notify git state change
+      this.notifyGitStateChange(wikiFolderPath, 'revert');
+      // Log for e2e test detection
+      logger.info(`[test-id-git-revert-complete]`, { wikiFolderPath, commitHash });
+    } catch (error) {
+      logger.error('revertCommit failed', { error, wikiFolderPath, commitHash, commitMessage });
+      throw error;
+    }
+  }
+
+  public async discardFileChanges(wikiFolderPath: string, filePath: string): Promise<void> {
+    await gitOperations.discardFileChanges(wikiFolderPath, filePath);
+    // Notify git state change
+    this.notifyGitStateChange(wikiFolderPath, 'discard');
+  }
+
+  public async addToGitignore(wikiFolderPath: string, pattern: string): Promise<void> {
+    await gitOperations.addToGitignore(wikiFolderPath, pattern);
+  }
+
+  public async isAIGenerateBackupTitleEnabled(): Promise<boolean> {
+    try {
+      const preferences = this.preferenceService.getPreferences();
+      if (!preferences.aiGenerateBackupTitle) {
+        return false;
+      }
+
+      const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+      const aiConfig = await externalAPIService.getAIConfig();
+
+      return !!(aiConfig?.api?.freeModel && aiConfig?.api?.provider);
+    } catch {
+      return false;
     }
   }
 }

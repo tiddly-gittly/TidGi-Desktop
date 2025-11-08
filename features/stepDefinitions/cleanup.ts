@@ -4,7 +4,7 @@ import { logsDirectory, screenshotsDirectory } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { ApplicationWorld } from './application';
 import { clearTidgiMiniWindowSettings } from './tidgiMiniWindow';
-import { clearSubWikiRoutingTestData } from './wiki';
+import { clearGitTestData, clearSubWikiRoutingTestData } from './wiki';
 
 Before(async function(this: ApplicationWorld, { pickle }) {
   // Create necessary directories under userData-test/logs to match appPaths in dev/test
@@ -26,6 +26,8 @@ Before(async function(this: ApplicationWorld, { pickle }) {
 });
 
 After(async function(this: ApplicationWorld, { pickle }) {
+  // IMPORTANT: Close app FIRST before cleaning up files
+  // This releases file locks so wiki folders can be deleted
   if (this.app) {
     try {
       // Close all windows including tidgi mini window before closing the app, otherwise it might hang, and refused to exit until ctrl+C
@@ -49,6 +51,8 @@ After(async function(this: ApplicationWorld, { pickle }) {
     this.mainWindow = undefined;
     this.currentWindow = undefined;
   }
+
+  // Clean up settings and test data AFTER app is closed
   if (pickle.tags.some((tag) => tag.name === '@tidgi-mini-window')) {
     await clearTidgiMiniWindowSettings();
   }
@@ -57,6 +61,11 @@ After(async function(this: ApplicationWorld, { pickle }) {
   }
   if (pickle.tags.some((tag) => tag.name === '@subwiki')) {
     await clearSubWikiRoutingTestData();
+  }
+  // Clean up git test data to prevent state pollution between git tests
+  // Removes entire wiki folder - it will be recreated on next test start
+  if (pickle.tags.some((tag) => tag.name === '@git')) {
+    await clearGitTestData();
   }
 
   // Separate logs by test scenario for easier debugging

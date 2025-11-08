@@ -327,16 +327,16 @@
       "TopPTitle": "トップP"
     },
     "Plugin": {
-      "Caption": "",
-      "CaptionTitle": "",
-      "Content": "",
-      "ContentTitle": "",
-      "ForbidOverrides": "",
-      "ForbidOverridesTitle": "",
-      "Id": "",
-      "IdTitle": "",
-      "PluginId": "",
-      "PluginIdTitle": ""
+      "Caption": "簡単な説明",
+      "CaptionTitle": "タイトル",
+      "Content": "プラグインの内容または説明",
+      "ContentTitle": "内容",
+      "ForbidOverrides": "このプラグインのパラメータを実行時に上書きすることを禁止しますか？",
+      "ForbidOverridesTitle": "上書き禁止",
+      "Id": "プラグインID",
+      "IdTitle": "ID",
+      "PluginId": "特定のプラグインを選択するための識別子",
+      "PluginIdTitle": "プラグイン識別子"
     },
     "Position": {
       "Bottom": "下部から数件のメッセージをオフセット",
@@ -467,7 +467,7 @@
       "SourceTypeTitle": "ソースタイプ",
       "Title": "Wiki 検索",
       "Tool": {
-        "Description": "",
+        "Description": "WikiワークスペースでTiddlerの内容を検索（従来のフィルター検索とベクトル意味検索に対応）",
         "Parameters": {
           "filter": {
             "Description": "TiddlyWiki フィルター式",
@@ -495,24 +495,20 @@
           }
         },
         "UpdateEmbeddings": {
-          "Description": "",
+          "Description": "Wikiワークスペースのベクトル埋め込みインデックスを生成または更新し、セマンティック検索に使用します",
           "Parameters": {
             "forceUpdate": {
-              "Description": "",
-              "Title": ""
             },
             "workspaceName": {
-              "Description": "",
-              "Title": ""
             }
           },
           "forceUpdate": {
-            "Description": "",
-            "Title": ""
+            "Description": "強制的に埋め込みインデックスを再生成し、既存の埋め込みデータを上書きするかどうか（trueに設定すると増分更新が無視されます）。",
+            "Title": "強制更新"
           },
           "workspaceName": {
-            "Description": "",
-            "Title": ""
+            "Description": "ベクトル埋め込みインデックスを生成または更新するワークスペースの名前またはID。",
+            "Title": "ワークスペース名"
           }
         }
       },
@@ -551,16 +547,6 @@
   },
   "Tool": {
     "Plugin": {
-      "Caption": "",
-      "CaptionTitle": "",
-      "Content": "",
-      "ContentTitle": "",
-      "ForbidOverrides": "",
-      "ForbidOverridesTitle": "",
-      "Id": "",
-      "IdTitle": "",
-      "PluginId": "",
-      "PluginIdTitle": ""
     },
     "Schema": {
       "Description": "説明",
@@ -583,10 +569,10 @@
     "WikiSearch": {
       "Error": {
         "ExecutionFailed": "ツールの実行に失敗しました：{{error}}",
-        "FilterSearchRequiresFilter": "",
-        "VectorSearchFailed": "",
-        "VectorSearchRequiresConfig": "",
-        "VectorSearchRequiresQuery": "",
+        "FilterSearchRequiresFilter": "検索を絞り込むにはフィルターパラメータ（filter）を提供する必要があります",
+        "VectorSearchFailed": "ベクトル検索が失敗しました：{{error}}",
+        "VectorSearchRequiresConfig": "ベクトル検索にはAIの設定が必要です（設定でプロバイダーと埋め込みモデルを構成してください）。",
+        "VectorSearchRequiresQuery": "ベクトル検索にはクエリパラメータ（query）を提供する必要があります。",
         "WorkspaceNotExist": "ワークスペース{{workspaceID}}は存在しません",
         "WorkspaceNotFound": "ワークスペース名またはID「{{workspaceName}}」は存在しません。利用可能なワークスペース：{{availableWorkspaces}}"
       },

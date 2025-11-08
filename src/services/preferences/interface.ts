@@ -70,6 +70,14 @@ export interface IPreferences {
    * Only start a sync when there are no draft (prevent your blog has a draft tiddler)
    */
   syncOnlyWhenNoDraft: boolean;
+  /**
+   * Whether to use AI to generate backup/commit titles
+   */
+  aiGenerateBackupTitle: boolean;
+  /**
+   * Timeout for AI-generated backup title in milliseconds
+   */
+  aiGenerateBackupTitleTimeout: number;
   themeSource: 'system' | 'light' | 'dark';
   titleBar: boolean;
   unreadCountBadge: boolean;

@@ -25,6 +25,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
     handleSpeechModelChange,
     handleImageGenerationModelChange,
     handleTranscriptionsModelChange,
+    handleFreeModelChange,
     handleConfigChange,
   } = useAIConfigManagement();
   const [parametersDialogOpen, setParametersDialogOpen] = useState(false);
@@ -172,6 +173,31 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
     }
     : null;
 
+  // Create free model config from current AI config
+  const freeModelConfig = config
+    ? {
+      api: {
+        provider: config.api.provider,
+        model: config.api.freeModel || '', // Use freeModel value for display
+        freeModel: config.api.freeModel,
+      },
+      modelParameters: config.modelParameters,
+    }
+    : null;
+
+  const handleFreeModelClear = async () => {
+    if (!config) return;
+
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.freeModel');
+
+    const { freeModel: _, ...apiWithoutFreeModel } = config.api;
+    const updatedConfig = {
+      ...config,
+      api: apiWithoutFreeModel,
+    };
+    await handleConfigChange(updatedConfig);
+  };
+
   return (
     <>
       <SectionTitle ref={props.sections?.externalAPI.ref}>{t('Preference.ExternalAPI')}</SectionTitle>
@@ -268,6 +294,23 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
 
                   <ListItemVertical>
                     <ListItemText
+                      primary={t('Preference.DefaultFreeModelSelection')}
+                      secondary={t('Preference.DefaultFreeModelSelectionDescription')}
+                    />
+                    <ModelSelector
+                      selectedConfig={freeModelConfig}
+                      modelOptions={providers.flatMap(provider =>
+                        provider.models
+                          .filter(model => Array.isArray(model.features) && model.features.includes('free'))
+                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
+                      )}
+                      onChange={handleFreeModelChange}
+                      onClear={handleFreeModelClear}
+                    />
+                  </ListItemVertical>
+
+                  <ListItemVertical>
+                    <ListItemText
                       primary={t('Preference.ModelParameters', { ns: 'agent' })}
                       secondary={t('Preference.ModelParametersDescription', { ns: 'agent' })}
                     />
@@ -292,6 +335,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
                 changeDefaultSpeechModel={handleSpeechModelChange}
                 changeDefaultImageGenerationModel={handleImageGenerationModelChange}
                 changeDefaultTranscriptionsModel={handleTranscriptionsModelChange}
+                changeDefaultFreeModel={handleFreeModelChange}
                 setProviders={setProviders}
               />
             </>
