@@ -395,7 +395,7 @@ export default function EditWorkspace(): React.JSX.Element {
         </OptionsAccordion>
         <OptionsAccordion>
           <Tooltip title={t('EditWorkspace.ClickToExpand')}>
-            <OptionsAccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <OptionsAccordionSummary expandIcon={<ExpandMoreIcon />} data-testid='preference-section-miscOptions'>
               {t('EditWorkspace.MiscOptions')}
             </OptionsAccordionSummary>
           </Tooltip>
@@ -410,6 +410,7 @@ export default function EditWorkspace(): React.JSX.Element {
                       edge='end'
                       color='primary'
                       checked={hibernateWhenUnused}
+                      data-testid='hibernate-when-unused-switch'
                       onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                         workspaceSetter({ ...workspace, hibernateWhenUnused: event.target.checked });
                       }}
@@ -489,7 +490,7 @@ export default function EditWorkspace(): React.JSX.Element {
       </FlexGrow>
       {!isEqual(omit(workspace, nonConfigFields), omit(originalWorkspace, nonConfigFields)) && (
         <SaveCancelButtonsContainer>
-          <Button color='primary' variant='contained' disableElevation onClick={onSave}>
+          <Button color='primary' variant='contained' disableElevation onClick={onSave} data-testid='edit-workspace-save-button'>
             {t('EditWorkspace.Save')}
           </Button>
           <Button variant='contained' disableElevation onClick={() => void window.remote.closeCurrentWindow()}>

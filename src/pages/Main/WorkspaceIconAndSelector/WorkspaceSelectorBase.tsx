@@ -191,6 +191,7 @@ export function WorkspaceSelectorBase({
       onClick={workspaceClickedLoading ? () => {} : onClick}
       data-testid={pageType ? `workspace-${pageType}` : `workspace-${id}`}
       data-active={active ? 'true' : 'false'}
+      data-hibernated={hibernated ? 'true' : 'false'}
     >
       <Badge color='secondary' badgeContent={badgeCount} max={99}>
         {icon}
