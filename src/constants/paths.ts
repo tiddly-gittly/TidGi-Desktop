@@ -1,3 +1,4 @@
+import { existsSync } from 'fs';
 import os from 'os';
 import path from 'path';
 import { isMac } from '../helpers/system';
@@ -47,6 +48,26 @@ export const PACKAGE_PATH_BASE = isPackaged
 export const ZX_FOLDER = path.resolve(PACKAGE_PATH_BASE, 'zx', 'build', 'cli.js');
 export const TIDDLYWIKI_PACKAGE_FOLDER = path.resolve(PACKAGE_PATH_BASE, 'tiddlywiki', 'boot');
 export const SQLITE_BINARY_PATH = path.resolve(PACKAGE_PATH_BASE, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
+
+/**
+ * Check if a wiki folder has its own TiddlyWiki installation and return the appropriate boot path.
+ * Prefers wiki-folder-local installation over the built-in version to support custom TW versions.
+ *
+ * @param wikiFolderLocation - The path to the wiki folder
+ * @returns The path to TiddlyWiki boot folder (local if exists, otherwise built-in)
+ */
+export function getTiddlyWikiBootPath(wikiFolderLocation: string): string {
+  const localTiddlyWikiBootPath = path.resolve(wikiFolderLocation, 'node_modules', 'tiddlywiki', 'boot');
+  try {
+    // Check if local TiddlyWiki exists synchronously since this is a critical path
+    if (existsSync(localTiddlyWikiBootPath)) {
+      return localTiddlyWikiBootPath;
+    }
+  } catch {
+    // Fall through to use built-in version if check fails
+  }
+  return TIDDLYWIKI_PACKAGE_FOLDER;
+}
 
 // Localization folder
 export const LOCALIZATION_FOLDER = isPackaged

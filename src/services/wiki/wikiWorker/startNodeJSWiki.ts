@@ -74,6 +74,14 @@ export function startNodeJSWiki({
     observer.next({ type: 'control', actions: WikiControlActions.start, argv: fullBootArgv });
 
     try {
+      // Log which TiddlyWiki version is being used (local vs built-in)
+      const isUsingLocalTiddlyWiki = TIDDLYWIKI_PACKAGE_FOLDER.includes(path.join(homePath, 'node_modules'));
+      void native.logFor(
+        workspace.name,
+        'info',
+        `Starting TiddlyWiki from ${isUsingLocalTiddlyWiki ? 'wiki-local installation' : 'built-in installation'}: ${TIDDLYWIKI_PACKAGE_FOLDER}`,
+      );
+
       const wikiInstance = TiddlyWiki();
       setWikiInstance(wikiInstance);
       process.env.TIDDLYWIKI_PLUGIN_PATH = path.resolve(homePath, 'plugins');

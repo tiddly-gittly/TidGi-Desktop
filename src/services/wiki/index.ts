@@ -13,7 +13,7 @@ import WikiWorkerFactory from './wikiWorker/index?nodeWorker';
 import { container } from '@services/container';
 
 import { WikiChannel } from '@/constants/channels';
-import { TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
+import { getTiddlyWikiBootPath, TIDDLERS_PATH, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
@@ -136,7 +136,7 @@ export class Wiki implements IWikiService {
     const shouldUseDarkColors = await this.themeService.shouldUseDarkColors();
     const workerData: IStartNodeJSWikiConfigs = {
       authToken,
-      constants: { TIDDLYWIKI_PACKAGE_FOLDER },
+      constants: { TIDDLYWIKI_PACKAGE_FOLDER: getTiddlyWikiBootPath(wikiFolderLocation) },
       enableHTTPAPI,
       excludedPlugins,
       homePath: wikiFolderLocation,
@@ -352,7 +352,7 @@ export class Wiki implements IWikiService {
       if (await exists(saveWikiFolderPath)) {
         throw new AlreadyExistError(saveWikiFolderPath);
       }
-      await worker.extractWikiHTML(htmlWikiPath, saveWikiFolderPath, { TIDDLYWIKI_PACKAGE_FOLDER });
+      await worker.extractWikiHTML(htmlWikiPath, saveWikiFolderPath, { TIDDLYWIKI_PACKAGE_FOLDER: getTiddlyWikiBootPath(saveWikiFolderPath) });
     } catch (error) {
       const result = `${(error as Error).name} ${(error as Error).message}`;
       logger.error(result, { worker: 'NodeJSWiki', method: 'extractWikiHTML', htmlWikiPath, saveWikiFolderPath });
@@ -369,7 +369,7 @@ export class Wiki implements IWikiService {
     const worker = createWorkerProxy<WikiWorker>(nativeWorker);
 
     try {
-      await worker.packetHTMLFromWikiFolder(wikiFolderLocation, pathOfNewHTML, { TIDDLYWIKI_PACKAGE_FOLDER });
+      await worker.packetHTMLFromWikiFolder(wikiFolderLocation, pathOfNewHTML, { TIDDLYWIKI_PACKAGE_FOLDER: getTiddlyWikiBootPath(wikiFolderLocation) });
     } finally {
       // this worker is only for one time use. we will spawn a new one for starting wiki later.
       await terminateWorker(nativeWorker);
