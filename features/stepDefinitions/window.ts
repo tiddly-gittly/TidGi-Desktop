@@ -4,25 +4,6 @@ import type { ElectronApplication } from 'playwright';
 import type { ApplicationWorld } from './application';
 import { checkWindowDimension, checkWindowName } from './application';
 
-// Helper function to open edit workspace window by calling the service
-export async function openEditWorkspaceWindow(app: ElectronApplication, workspaceId: string): Promise<void> {
-  await app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
-    const windows = BrowserWindow.getAllWindows();
-    const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
-
-    if (!mainWindow) {
-      throw new Error('Main window not found');
-    }
-
-    // Call the window service to open edit workspace window
-    await mainWindow.webContents.executeJavaScript(`
-      (async () => {
-        await window.service.window.open('editWorkspace', { workspaceID: '${workspaceId}' });
-      })();
-    `);
-  }, workspaceId);
-}
-
 // Helper function to get browser view info from Electron window
 async function getBrowserViewInfo(
   app: ElectronApplication,

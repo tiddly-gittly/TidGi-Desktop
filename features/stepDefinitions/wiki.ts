@@ -498,9 +498,10 @@ When('I open edit workspace window for workspace with name {string}', async func
     }
 
     // Call the window service to open edit workspace window
+    // Safely pass workspaceId using JSON serialization to avoid string interpolation vulnerability
     await mainWindow.webContents.executeJavaScript(`
       (async () => {
-        await window.service.window.open('editWorkspace', { workspaceID: '${workspaceId}' });
+        await window.service.window.open('editWorkspace', { workspaceID: ${JSON.stringify(workspaceId)} });
       })();
     `);
   }, targetWorkspaceId);
@@ -557,11 +558,12 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
     }
 
     // Call workspace service to create new workspace
+    // Safely pass parameters using JSON serialization to avoid string interpolation vulnerability
     await mainWindow.webContents.executeJavaScript(`
       (async () => {
         await window.service.workspace.create({
-          name: '${wikiName}',
-          wikiFolderLocation: '${wikiFullPath.replace(/\\/g, '\\\\')}',
+          name: ${JSON.stringify(wikiName)},
+          wikiFolderLocation: ${JSON.stringify(wikiFullPath)},
           isSubWiki: false,
           storageService: 'local',
         });
@@ -607,7 +609,6 @@ async function clearHibernationTestData() {
           // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
           delete settings.workspaces[wiki2WorkspaceId];
           await fs.writeJson(settingsPath, settings, { spaces: 2 });
-          console.log(`Removed wiki2 workspace config: ${wiki2WorkspaceId}`);
         }
       }
     } catch (error) {
