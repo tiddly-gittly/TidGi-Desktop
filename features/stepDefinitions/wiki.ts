@@ -563,6 +563,7 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
           name: '${wikiName}',
           wikiFolderLocation: '${wikiFullPath.replace(/\\/g, '\\\\')}',
           isSubWiki: false,
+          storageService: 'local',
         });
       })();
     `);

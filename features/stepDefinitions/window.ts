@@ -9,7 +9,7 @@ export async function openEditWorkspaceWindow(app: ElectronApplication, workspac
   await app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
     const windows = BrowserWindow.getAllWindows();
     const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
-    
+
     if (!mainWindow) {
       throw new Error('Main window not found');
     }

@@ -294,13 +294,16 @@ export class WorkspaceView implements IWorkspaceViewService {
   public async wakeUpWorkspaceView(workspaceID: string): Promise<void> {
     const workspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(workspaceID);
     if (workspace !== undefined) {
+      // First, update workspace state and start wiki server
       await Promise.all([
         container.get<IWorkspaceService>(serviceIdentifier.Workspace).update(workspaceID, {
           hibernated: false,
         }),
         this.authService.getUserName(workspace).then(userName => container.get<IWikiService>(serviceIdentifier.Wiki).startWiki(workspaceID, userName)),
-        this.addViewForAllBrowserViews(workspace),
       ]);
+
+      // Then add view after wiki server is ready and workspace is marked as not hibernated
+      await this.addViewForAllBrowserViews(workspace);
     }
   }
 
@@ -366,6 +369,17 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (isWikiWorkspace(newWorkspace) && newWorkspace.hibernated) {
       await this.wakeUpWorkspaceView(nextWorkspaceID);
     }
+
+    // fix #556 and #593: Ensure wiki worker is started before setting active view. When switching to a wiki workspace that doesn't have a view yet, the view service will create one and immediately try to loadURL. If the wiki worker hasn't started, loadURL will hang forever waiting for the IPC server that never comes online. This must happen before `setActiveViewForAllBrowserViews` to ensure the worker is ready when view is created.
+    if (isWikiWorkspace(newWorkspace) && !newWorkspace.hibernated) {
+      const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+      const worker = wikiService.getWorker(nextWorkspaceID);
+      if (worker === undefined) {
+        const userName = await this.authService.getUserName(newWorkspace);
+        await wikiService.startWiki(nextWorkspaceID, userName);
+      }
+    }
+
     try {
       await container.get<IViewService>(serviceIdentifier.View).setActiveViewForAllBrowserViews(nextWorkspaceID);
       await this.realignActiveWorkspace(nextWorkspaceID);
@@ -377,6 +391,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       throw error;
     }
     // if we are switching to a new workspace, we hide and/or hibernate old view, and activate new view
+    // This must happen after view setup succeeds to avoid issues with workspace that hasn't started yet
     if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID) {
       await this.hideWorkspaceView(oldActiveWorkspace.id);
       if (isWikiWorkspace(oldActiveWorkspace) && oldActiveWorkspace.hibernateWhenUnused) {
