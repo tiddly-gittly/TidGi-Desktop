@@ -69,7 +69,7 @@ export function ExistedWikiForm({
             // Update local state immediately for responsive UI
             const newValue = event.target.value;
             setFullPath(newValue);
-            
+
             // Parse path into parent and folder for validation
             const lastSlashIndex = Math.max(newValue.lastIndexOf('/'), newValue.lastIndexOf('\\'));
             if (lastSlashIndex >= 0) {

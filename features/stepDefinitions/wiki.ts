@@ -466,4 +466,155 @@ When('I modify file {string} to add field {string}', async function(this: Applic
   await fs.writeFile(actualPath, lines.join('\n'), 'utf-8');
 });
 
-export { clearGitTestData, clearSubWikiRoutingTestData };
+When('I open edit workspace window for workspace with name {string}', async function(this: ApplicationWorld, workspaceName: string) {
+  if (!this.app) {
+    throw new Error('Application is not available');
+  }
+
+  // Read settings file to get workspace info
+  const settings = await fs.readJson(settingsPath) as { workspaces?: Record<string, IWorkspace> };
+  const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
+
+  // Find workspace by name
+  let targetWorkspaceId: string | undefined;
+  for (const [id, workspace] of Object.entries(workspaces)) {
+    if (!workspace.pageType && workspace.name === workspaceName) {
+      targetWorkspaceId = id;
+      break;
+    }
+  }
+
+  if (!targetWorkspaceId) {
+    throw new Error(`No workspace found with name: ${workspaceName}`);
+  }
+
+  // Call window service through main window's webContents to open edit workspace window
+  await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
+    const windows = BrowserWindow.getAllWindows();
+    const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+
+    if (!mainWindow) {
+      throw new Error('Main window not found');
+    }
+
+    // Call the window service to open edit workspace window
+    // Safely pass workspaceId using JSON serialization to avoid string interpolation vulnerability
+    await mainWindow.webContents.executeJavaScript(`
+      (async () => {
+        await window.service.window.open('editWorkspace', { workspaceID: ${JSON.stringify(workspaceId)} });
+      })();
+    `);
+  }, targetWorkspaceId);
+
+  // Wait for the edit workspace window to appear
+  const success = await this.waitForWindowCondition(
+    'editWorkspace',
+    (window) => window !== undefined && !window.isClosed(),
+  );
+
+  if (!success) {
+    throw new Error('Edit workspace window did not appear after opening');
+  }
+});
+
+When('I create a new wiki workspace with name {string}', async function(this: ApplicationWorld, workspaceName: string) {
+  if (!this.app) {
+    throw new Error('Application is not available');
+  }
+
+  // Construct the full wiki path
+  const wikiPath = path.join(wikiTestRootPath, workspaceName);
+
+  // Create the wiki folder using the template
+  const templatePath = path.join(process.cwd(), 'template', 'wiki');
+  await fs.copy(templatePath, wikiPath);
+
+  // Remove the copied .git directory from the template to start fresh
+  const gitPath = path.join(wikiPath, '.git');
+  await fs.remove(gitPath).catch(() => {
+    // Ignore if .git doesn't exist
+  });
+
+  // Initialize fresh git repository for the new wiki
+  const { execSync } = await import('child_process');
+  try {
+    execSync('git init', { cwd: wikiPath });
+    execSync('git config user.email "test@tidgi.test"', { cwd: wikiPath });
+    execSync('git config user.name "TidGi Test"', { cwd: wikiPath });
+    execSync('git add .', { cwd: wikiPath });
+    execSync('git commit -m "Initial commit"', { cwd: wikiPath });
+  } catch (error) {
+    // Git initialization is not critical for the test, continue anyway
+    console.log('Git initialization skipped:', (error as Error).message);
+  }
+
+  // Now create workspace configuration
+  await this.app.evaluate(async ({ BrowserWindow }, { wikiName, wikiFullPath }: { wikiName: string; wikiFullPath: string }) => {
+    const windows = BrowserWindow.getAllWindows();
+    const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+
+    if (!mainWindow) {
+      throw new Error('Main window not found');
+    }
+
+    // Call workspace service to create new workspace
+    // Safely pass parameters using JSON serialization to avoid string interpolation vulnerability
+    await mainWindow.webContents.executeJavaScript(`
+      (async () => {
+        await window.service.workspace.create({
+          name: ${JSON.stringify(wikiName)},
+          wikiFolderLocation: ${JSON.stringify(wikiFullPath)},
+          isSubWiki: false,
+          storageService: 'local',
+        });
+      })();
+    `);
+  }, { wikiName: workspaceName, wikiFullPath: wikiPath });
+
+  // Wait for workspace to appear in UI
+  await this.app.evaluate(async () => {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  });
+});
+
+/**
+ * Clean up hibernation test data - remove wiki2 folder and its workspace config
+ */
+async function clearHibernationTestData() {
+  const wiki2Path = path.join(wikiTestRootPath, 'wiki2');
+
+  // Remove wiki2 folder
+  if (await fs.pathExists(wiki2Path)) {
+    try {
+      await fs.remove(wiki2Path);
+    } catch (error) {
+      console.warn('Failed to remove wiki2 folder in hibernation cleanup:', error);
+    }
+  }
+
+  // Remove wiki2 workspace config from settings.json
+  const settingsPath = path.join(process.cwd(), 'userData-test', 'settings', 'settings.json');
+  if (await fs.pathExists(settingsPath)) {
+    try {
+      type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
+      const settings = await fs.readJson(settingsPath) as SettingsFile;
+      if (settings.workspaces) {
+        // Find and remove wiki2 workspace by folder location
+        const wiki2WorkspaceId = Object.keys(settings.workspaces).find(id => {
+          const workspace = settings.workspaces?.[id];
+          return workspace && 'wikiFolderLocation' in workspace && workspace.wikiFolderLocation === wiki2Path;
+        });
+
+        if (wiki2WorkspaceId && settings.workspaces) {
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+          delete settings.workspaces[wiki2WorkspaceId];
+          await fs.writeJson(settingsPath, settings, { spaces: 2 });
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to remove wiki2 workspace config in hibernation cleanup:', error);
+    }
+  }
+}
+
+export { clearGitTestData, clearHibernationTestData, clearSubWikiRoutingTestData };

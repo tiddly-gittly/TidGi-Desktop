@@ -4,7 +4,7 @@ import { logsDirectory, screenshotsDirectory } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { ApplicationWorld } from './application';
 import { clearTidgiMiniWindowSettings } from './tidgiMiniWindow';
-import { clearGitTestData, clearSubWikiRoutingTestData } from './wiki';
+import { clearGitTestData, clearHibernationTestData, clearSubWikiRoutingTestData } from './wiki';
 
 Before(async function(this: ApplicationWorld, { pickle }) {
   // Create necessary directories under userData-test/logs to match appPaths in dev/test
@@ -66,6 +66,10 @@ After(async function(this: ApplicationWorld, { pickle }) {
   // Removes entire wiki folder - it will be recreated on next test start
   if (pickle.tags.some((tag) => tag.name === '@git')) {
     await clearGitTestData();
+  }
+  // Clean up hibernation test data - remove wiki2 folder created during tests
+  if (pickle.tags.some((tag) => tag.name === '@hibernation')) {
+    await clearHibernationTestData();
   }
 
   // Separate logs by test scenario for easier debugging
