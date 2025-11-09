@@ -97,9 +97,9 @@ When('I cleanup test wiki so it could create a new one on start', async function
         },
       },
     );
-  } catch (_error) {
+  } catch (error) {
     // If file is corrupted or all retries failed, create empty settings
-    console.warn('Settings file is corrupted or failed to read after retries, recreating with empty workspaces');
+    console.warn('Settings file is corrupted or failed to read after retries, recreating with empty workspaces', error);
     settings = { workspaces: {} };
   }
 
@@ -129,8 +129,8 @@ When('I cleanup test wiki so it could create a new one on start', async function
         },
       },
     );
-  } catch (_error) {
-    console.error('Failed to write settings.json after 3 attempts, continuing anyway');
+  } catch (error) {
+    console.error('Failed to write settings.json after 3 attempts, continuing anyway', error);
   }
 });
 
