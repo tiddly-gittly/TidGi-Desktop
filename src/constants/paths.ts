@@ -15,6 +15,11 @@ import { developmentWikiFolderName, localizationFolderName, testWikiFolderName }
  *
  * Key challenge: In unit tests, Electron sets process.resourcesPath to its internal directory,
  * which is wrong. We detect this by checking if the path contains 'electron'.
+ *
+ * WARNING: process.resourcesPath changes during app initialization!
+ * When starting via protocol (tidgi://), this path may not be correct initially.
+ * Always access language maps via ContextService after app initialization.
+ * See issue #625 for details.
  */
 
 // Detect if we're in packaged app (not dev, not unit tests with electron's internal path)

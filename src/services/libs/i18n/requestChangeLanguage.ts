@@ -1,6 +1,6 @@
 import { I18NChannels } from '@/constants/channels';
-import { supportedLanguagesMap, tiddlywikiLanguagesMap } from '@/constants/languages';
 import { container } from '@services/container';
+import type { IContextService } from '@services/context/interface';
 import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IViewService } from '@services/view/interface';
@@ -10,11 +10,16 @@ import { logger } from '../log';
 import { i18n } from '.';
 
 export async function requestChangeLanguage(newLanguage: string): Promise<void> {
+  const contextService = container.get<IContextService>(serviceIdentifier.Context);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const viewService = container.get<IViewService>(serviceIdentifier.View);
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
   const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
   const viewCount = await viewService.getViewCount();
+
+  // Get language maps from context service
+  const supportedLanguagesMap = await contextService.get('supportedLanguagesMap');
+  const tiddlywikiLanguagesMap = await contextService.get('tiddlywikiLanguagesMap');
 
   await i18n.changeLanguage(newLanguage);
   viewService.forEachView((_view) => {

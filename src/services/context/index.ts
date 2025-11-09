@@ -1,11 +1,13 @@
 import { isElectronDevelopment } from '@/constants/isElectronDevelopment';
+import { LOCALIZATION_FOLDER } from '@/constants/paths';
 import { app, net } from 'electron';
+import fs from 'fs-extra';
 import { injectable } from 'inversify';
 import os from 'os';
+import path from 'path';
 import process from 'process';
 
 import * as appPaths from '@/constants/appPaths';
-import { supportedLanguagesMap, tiddlywikiLanguagesMap } from '@/constants/languages';
 import * as paths from '@/constants/paths';
 import { getMainWindowEntry } from '@services/windows/viteEntry';
 import type { IConstants, IContext, IContextService, IPaths } from './interface';
@@ -21,17 +23,47 @@ export class ContextService implements IContextService {
     appName: app.name,
     oSVersion: os.release(),
     environmentVersions: process.versions,
-    tiddlywikiLanguagesMap,
-    supportedLanguagesMap,
   };
 
   private readonly context: IContext;
+  private initialized = false;
+
   constructor() {
     this.pathConstants.MAIN_WINDOW_WEBPACK_ENTRY = getMainWindowEntry();
     this.context = {
       ...this.pathConstants,
       ...this.constants,
+      supportedLanguagesMap: {},
+      tiddlywikiLanguagesMap: {},
     };
+  }
+
+  /**
+   * Initialize language maps after app is ready
+   * Must be called before any code tries to access language maps
+   * This ensures LOCALIZATION_FOLDER path is correct (process.resourcesPath is stable)
+   */
+  public async initialize(): Promise<void> {
+    if (this.initialized) {
+      return;
+    }
+
+    try {
+      const supportedLanguagesPath = path.join(LOCALIZATION_FOLDER, 'supportedLanguages.json');
+      const tiddlywikiLanguagesPath = path.join(LOCALIZATION_FOLDER, 'tiddlywikiLanguages.json');
+
+      const [supportedLanguagesMap, tiddlywikiLanguagesMap] = await Promise.all([
+        fs.readJson(supportedLanguagesPath) as Promise<Record<string, string>>,
+        fs.readJson(tiddlywikiLanguagesPath) as Promise<Record<string, string | undefined>>,
+      ]);
+      this.context.supportedLanguagesMap = supportedLanguagesMap ?? {};
+      this.context.tiddlywikiLanguagesMap = tiddlywikiLanguagesMap ?? {};
+
+      this.initialized = true;
+    } catch (error) {
+      console.error('Failed to load language maps:', error);
+      // Keep empty objects as fallback
+    }
   }
 
   public async get<K extends keyof IContext>(key: K): Promise<IContext[K]> {
