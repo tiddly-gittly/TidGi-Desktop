@@ -13,6 +13,7 @@ import { SupportedStorageServices } from '@services/types';
 import type { IWikiService } from '@services/wiki/interface';
 import { WikiEmbeddingService } from '@services/wikiEmbedding';
 import type { IWindowService } from '@services/windows/interface';
+import type { IWorkspaceGroupService } from '@services/workspaceGroup/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { Observable } from 'rxjs';
@@ -26,6 +27,7 @@ vi.mock('@services/libs/bindServiceAndProxy', () => ({
 
 export const serviceInstances: {
   workspace: Partial<IWorkspaceService>;
+  workspaceGroup: Partial<IWorkspaceGroupService>;
   workspaceView: Partial<IWorkspaceViewService>;
   window: Partial<IWindowService>;
   native: Partial<INativeService>;
@@ -43,6 +45,18 @@ export const serviceInstances: {
     exists: vi.fn(async (_id: string) => true),
     get: vi.fn(async (id: string) => defaultWorkspaces.find(w => w.id === id) || defaultWorkspaces[0]),
     // agent-instance functionality is provided under `agentInstance` key
+  },
+  workspaceGroup: {
+    getAllAsList: vi.fn().mockResolvedValue([]),
+    getAll: vi.fn().mockResolvedValue({}),
+    get: vi.fn().mockResolvedValue(undefined),
+    getGroupByWorkspaceId: vi.fn().mockResolvedValue(undefined),
+    create: vi.fn().mockResolvedValue({ id: 'test-group', name: 'Test Group', workspaceIds: [], order: 0, collapsed: false }),
+    update: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn().mockResolvedValue(undefined),
+    addWorkspaceToGroup: vi.fn().mockResolvedValue(undefined),
+    removeWorkspaceFromGroup: vi.fn().mockResolvedValue(undefined),
+    toggleCollapse: vi.fn().mockResolvedValue(undefined),
   },
   workspaceView: {
     // provide a properly-typed implementation wrapped by vi.fn
@@ -117,6 +131,7 @@ export const serviceInstances: {
 // Bind the shared mocks into container so real services resolved from container.get()
 // will receive these mocks during tests.
 container.bind(serviceIdentifier.Workspace).toConstantValue(serviceInstances.workspace);
+container.bind(serviceIdentifier.WorkspaceGroup).toConstantValue(serviceInstances.workspaceGroup);
 container.bind(serviceIdentifier.WorkspaceView).toConstantValue(serviceInstances.workspaceView);
 container.bind(serviceIdentifier.Window).toConstantValue(serviceInstances.window);
 container.bind(serviceIdentifier.NativeService).toConstantValue(serviceInstances.native);

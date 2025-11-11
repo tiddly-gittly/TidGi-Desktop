@@ -22,5 +22,6 @@ export default {
   WikiGitWorkspace: Symbol.for('WikiGitWorkspace'),
   Window: Symbol.for('Window'),
   Workspace: Symbol.for('Workspace'),
+  WorkspaceGroup: Symbol.for('WorkspaceGroup'),
   WorkspaceView: Symbol.for('WorkspaceView'),
 };

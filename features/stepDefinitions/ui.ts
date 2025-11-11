@@ -565,3 +565,77 @@ When('I print all window URLs', async function(this: ApplicationWorld) {
   }
   console.log('=== End Window List ===');
 });
+
+// Drag and drop operation
+When('I drag {string} element with selector {string} to {string} element with selector {string}', async function(
+  this: ApplicationWorld,
+  sourceComment: string,
+  sourceSelector: string,
+  targetComment: string,
+  targetSelector: string,
+) {
+  const currentWindow = this.currentWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  try {
+    await currentWindow.waitForSelector(sourceSelector, { timeout: 10000 });
+    await currentWindow.waitForSelector(targetSelector, { timeout: 10000 });
+
+    const source = currentWindow.locator(sourceSelector);
+    const target = currentWindow.locator(targetSelector);
+
+    await source.dragTo(target);
+  } catch (error) {
+    throw new Error(`Failed to drag ${sourceComment} to ${targetComment}: ${error as Error}`);
+  }
+});
+
+// Double-click operation
+When('I double-click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
+  const currentWindow = this.currentWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  try {
+    await currentWindow.waitForSelector(selector, { timeout: 10000 });
+    const isVisible = await currentWindow.isVisible(selector);
+    if (!isVisible) {
+      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
+    }
+    await currentWindow.dblclick(selector);
+  } catch (error) {
+    throw new Error(`Failed to double-click ${elementComment} with selector "${selector}": ${error as Error}`);
+  }
+});
+
+// Check element attribute
+Then('the {string} element with selector {string} should not have attribute {string} with value {string}', async function(
+  this: ApplicationWorld,
+  elementComment: string,
+  selector: string,
+  attributeName: string,
+  expectedValue: string,
+) {
+  const currentWindow = this.currentWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  try {
+    await currentWindow.waitForSelector(selector, { timeout: 10000 });
+    const element = currentWindow.locator(selector);
+    const attributeValue = await element.getAttribute(attributeName);
+
+    if (attributeValue === expectedValue) {
+      throw new Error(`Element "${elementComment}" has attribute "${attributeName}" with value "${expectedValue}" but should not`);
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('should not')) {
+      throw error;
+    }
+    // Attribute not found or different value is OK
+  }
+});

@@ -14,6 +14,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
+import type { IWorkspaceGroupService } from '@services/workspaceGroup/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { MenuItemConstructorOptions } from 'electron';
 import type { FlatNamespace, TFunction } from 'i18next';
@@ -34,6 +35,7 @@ interface IWorkspaceMenuRequiredServices {
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open'>;
   workspace: Pick<IWorkspaceService, 'getActiveWorkspace' | 'getSubWorkspacesAsList' | 'openWorkspaceTiddler'>;
+  workspaceGroup: Pick<IWorkspaceGroupService, 'getAllAsList' | 'addWorkspaceToGroup' | 'create' | 'getGroupByWorkspaceId'>;
   workspaceView: Pick<
     IWorkspaceViewService,
     | 'wakeUpWorkspaceView'
@@ -76,6 +78,35 @@ export async function getSimplifiedWorkspaceMenuTemplate(
     click: async () => {
       await service.window.open(WindowNames.editWorkspace, { workspaceID: id });
     },
+  });
+
+  // Add "Move to Group" submenu
+  const groups = await service.workspaceGroup.getAllAsList();
+  const currentGroup = await service.workspaceGroup.getGroupByWorkspaceId(id);
+
+  const moveToGroupSubmenu: MenuItemConstructorOptions[] = groups
+    .filter((group) => group.id !== currentGroup?.id)
+    .map((group) => ({
+      label: group.name,
+      click: async () => {
+        await service.workspaceGroup.addWorkspaceToGroup(group.id, id);
+      },
+    }));
+
+  // Add "New Group" option
+  moveToGroupSubmenu.push({
+    type: 'separator',
+  });
+  moveToGroupSubmenu.push({
+    label: t('WorkspaceGroup.NewGroup'),
+    click: async () => {
+      await service.workspaceGroup.create(t('WorkspaceGroup.NewGroup'), [id]);
+    },
+  });
+
+  template.push({
+    label: t('WorkspaceGroup.MoveToGroup'),
+    submenu: moveToGroupSubmenu,
   });
 
   // Check if AI-generated backup title is enabled

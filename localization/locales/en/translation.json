@@ -568,6 +568,12 @@
     "UpdateAvailable": "Update Available!",
     "UpdateNotAvailable": "You have latest version"
   },
+  "WorkspaceGroup": {
+    "DisbandGroup": "Disband Group",
+    "MoveToGroup": "Move to Group",
+    "NewGroup": "New Group",
+    "Rename": "Rename"
+  },
   "WorkspaceSelector": {
     "Add": "Add",
     "Agent": "agent",

@@ -94,6 +94,9 @@ export enum WorkspaceChannel {
   focusWorkspace = 'focus-workspace',
   name = 'WorkspaceChannel',
 }
+export enum WorkspaceGroupChannel {
+  name = 'WorkspaceGroupChannel',
+}
 export enum WorkspaceViewChannel {
   name = 'WorkspaceViewChannel',
 }
@@ -166,6 +169,7 @@ export type Channels =
   | WikiChannel
   | WikiGitWorkspaceChannel
   | WorkspaceChannel
+  | WorkspaceGroupChannel
   | WorkspaceViewChannel
   | DatabaseChannel
   | PreferenceChannel

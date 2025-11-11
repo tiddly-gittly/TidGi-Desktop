@@ -574,6 +574,12 @@
     "UpdateAvailable": "有新版本可用！",
     "UpdateNotAvailable": "目前已是最新版"
   },
+  "WorkspaceGroup": {
+    "DisbandGroup": "解散分组",
+    "MoveToGroup": "移动到分组",
+    "NewGroup": "新分组",
+    "Rename": "重命名"
+  },
   "WorkspaceSelector": {
     "Add": "添加",
     "Agent": "智能体",

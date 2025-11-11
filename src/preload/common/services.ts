@@ -28,6 +28,7 @@ import { type IWikiService, WikiServiceIPCDescriptor } from '@services/wiki/inte
 import { type IWikiEmbeddingService, WikiEmbeddingServiceIPCDescriptor } from '@services/wikiEmbedding/interface';
 import { type IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
 import { type IWindowService, WindowServiceIPCDescriptor } from '@services/windows/interface';
+import { type IWorkspaceGroupService, WorkspaceGroupServiceIPCDescriptor } from '@services/workspaceGroup/interface';
 import { type IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import { type IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
@@ -54,6 +55,7 @@ export const wikiEmbedding = createProxy<IWikiEmbeddingService>(WikiEmbeddingSer
 export const wikiGitWorkspace = createProxy<IWikiGitWorkspaceService>(WikiGitWorkspaceServiceIPCDescriptor);
 export const window = createProxy<IWindowService>(WindowServiceIPCDescriptor);
 export const workspace = createProxy<AsyncifyProxy<IWorkspaceService>>(WorkspaceServiceIPCDescriptor);
+export const workspaceGroup = createProxy<AsyncifyProxy<IWorkspaceGroupService>>(WorkspaceGroupServiceIPCDescriptor);
 export const workspaceView = createProxy<IWorkspaceViewService>(WorkspaceViewServiceIPCDescriptor);
 
 export const descriptors = {
@@ -78,6 +80,7 @@ export const descriptors = {
   wikiGitWorkspace: WikiGitWorkspaceServiceIPCDescriptor,
   window: WindowServiceIPCDescriptor,
   workspace: WorkspaceServiceIPCDescriptor,
+  workspaceGroup: WorkspaceGroupServiceIPCDescriptor,
   workspaceView: WorkspaceViewServiceIPCDescriptor,
   externalAPI: ExternalAPIServiceIPCDescriptor,
   database: DatabaseServiceIPCDescriptor,

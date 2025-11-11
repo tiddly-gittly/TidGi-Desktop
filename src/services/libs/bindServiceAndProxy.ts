@@ -27,6 +27,7 @@ import { Wiki } from '@services/wiki';
 import { WikiEmbeddingService } from '@services/wikiEmbedding';
 import { WikiGitWorkspace } from '@services/wikiGitWorkspace';
 import { Window } from '@services/windows';
+import { WorkspaceGroupService } from '@services/workspaceGroup';
 import { Workspace } from '@services/workspaces';
 import { WorkspaceView } from '@services/workspacesView';
 
@@ -69,6 +70,8 @@ import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interf
 import { WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowServiceIPCDescriptor } from '@services/windows/interface';
+import type { IWorkspaceGroupService } from '@services/workspaceGroup/interface';
+import { WorkspaceGroupServiceIPCDescriptor } from '@services/workspaceGroup/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
@@ -100,6 +103,7 @@ export function bindServiceAndProxy(): void {
   container.bind<IWikiService>(serviceIdentifier.Wiki).to(Wiki).inSingletonScope();
   container.bind<IWindowService>(serviceIdentifier.Window).to(Window).inSingletonScope();
   container.bind<IWorkspaceService>(serviceIdentifier.Workspace).to(Workspace).inSingletonScope();
+  container.bind<IWorkspaceGroupService>(serviceIdentifier.WorkspaceGroup).to(WorkspaceGroupService).inSingletonScope();
   container.bind<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).to(WorkspaceView).inSingletonScope();
 
   const agentBrowserService = container.get<IAgentBrowserService>(serviceIdentifier.AgentBrowser);
@@ -125,6 +129,7 @@ export function bindServiceAndProxy(): void {
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+  const workspaceGroupService = container.get<IWorkspaceGroupService>(serviceIdentifier.WorkspaceGroup);
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 
   registerProxy(agentBrowserService, AgentBrowserServiceIPCDescriptor);
@@ -150,5 +155,6 @@ export function bindServiceAndProxy(): void {
   registerProxy(wikiService, WikiServiceIPCDescriptor);
   registerProxy(windowService, WindowServiceIPCDescriptor);
   registerProxy(workspaceService, WorkspaceServiceIPCDescriptor);
+  registerProxy(workspaceGroupService, WorkspaceGroupServiceIPCDescriptor);
   registerProxy(workspaceViewService, WorkspaceViewServiceIPCDescriptor);
 }
