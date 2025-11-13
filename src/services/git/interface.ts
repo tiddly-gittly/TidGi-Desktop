@@ -159,6 +159,23 @@ export interface IGitService {
    * Check if AI-generated backup title feature is enabled and configured
    */
   isAIGenerateBackupTitleEnabled(): Promise<boolean>;
+  /**
+   * Get deleted tiddler titles from git history since a specific date
+   * This looks for deleted .tid and .meta files and extracts their title field
+   * @param wikiFolderPath - Path to the wiki folder
+   * @param sinceDate - Date to check for deletions after this time
+   * @returns Array of deleted tiddler titles
+   */
+  getDeletedTiddlersSinceDate(wikiFolderPath: string, sinceDate: Date): Promise<string[]>;
+  /**
+   * Get tiddler content at a specific point in time from git history
+   * This is used for 3-way merge to get the base version
+   * @param wikiFolderPath - Path to the wiki folder
+   * @param tiddlerTitle - Title of the tiddler
+   * @param beforeDate - Get the version that existed before this date
+   * @returns Tiddler fields including text, or null if not found
+   */
+  getTiddlerAtTime(wikiFolderPath: string, tiddlerTitle: string, beforeDate: Date): Promise<{ fields: Record<string, unknown>; text: string } | null>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,
@@ -170,12 +187,14 @@ export const GitServiceIPCDescriptor = {
     discardFileChanges: ProxyPropertyType.Function,
     forcePull: ProxyPropertyType.Function,
     getCommitFiles: ProxyPropertyType.Function,
+    getDeletedTiddlersSinceDate: ProxyPropertyType.Function,
     getFileBinaryContent: ProxyPropertyType.Function,
     getFileContent: ProxyPropertyType.Function,
     getFileDiff: ProxyPropertyType.Function,
     getGitLog: ProxyPropertyType.Function,
     getImageComparison: ProxyPropertyType.Function,
     getModifiedFileList: ProxyPropertyType.Function,
+    getTiddlerAtTime: ProxyPropertyType.Function,
     getWorkspacesRemote: ProxyPropertyType.Function,
     gitStateChange$: ProxyPropertyType.Value$,
     initWikiGit: ProxyPropertyType.Function,

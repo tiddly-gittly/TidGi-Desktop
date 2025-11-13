@@ -404,4 +404,12 @@ export class Git implements IGitService {
       return false;
     }
   }
+
+  public async getDeletedTiddlersSinceDate(wikiFolderPath: string, sinceDate: Date): Promise<string[]> {
+    return await gitOperations.getDeletedTiddlersSinceDate(wikiFolderPath, sinceDate);
+  }
+
+  public async getTiddlerAtTime(wikiFolderPath: string, tiddlerTitle: string, beforeDate: Date): Promise<{ fields: Record<string, unknown>; text: string } | null> {
+    return await gitOperations.getTiddlerAtTime(wikiFolderPath, tiddlerTitle, beforeDate);
+  }
 }

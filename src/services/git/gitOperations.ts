@@ -539,3 +539,221 @@ export async function amendCommitMessage(repoPath: string, newMessage: string): 
     throw new Error(`Failed to amend commit message: ${result.stderr}`);
   }
 }
+
+/**
+ * Get deleted tiddler titles from git history since a specific date
+ * This looks for deleted .tid and .meta files and extracts their title field
+ * @param repoPath - Path to the git repository
+ * @param sinceDate - Date to check for deletions after this time
+ * @returns Array of deleted tiddler titles
+ */
+export async function getDeletedTiddlersSinceDate(repoPath: string, sinceDate: Date): Promise<string[]> {
+  try {
+    // Format date for git log (ISO format)
+    const sinceISOString = sinceDate.toISOString();
+
+    // Get list of deleted files since sinceDate
+    // Using git log with --diff-filter=D to show only deletions
+    const logResult = await gitExec(
+      ['log', `--since=${sinceISOString}`, '--diff-filter=D', '--name-only', '--pretty=format:'],
+      repoPath,
+    );
+
+    if (logResult.exitCode !== 0) {
+      throw new Error(`Failed to get deleted files: ${logResult.stderr}`);
+    }
+
+    const deletedFiles = logResult.stdout
+      .trim()
+      .split('\n')
+      .filter((line: string) => line.length > 0)
+      .filter((file: string) => file.endsWith('.tid') || file.endsWith('.meta'));
+
+    if (deletedFiles.length === 0) {
+      return [];
+    }
+
+    // For each deleted file, get its content from git history to extract the title
+    // Parallelize git operations for efficiency (avoid serial git exec calls)
+    const deletedTitlePromises = deletedFiles.map(async (file) => {
+      try {
+        // Get the last commit that had this file (before deletion)
+        const revListResult = await gitExec(
+          ['rev-list', '-n', '1', 'HEAD', '--', file],
+          repoPath,
+        );
+
+        if (revListResult.exitCode !== 0 || !revListResult.stdout.trim()) {
+          return null;
+        }
+
+        const lastCommitHash = revListResult.stdout.trim();
+
+        // Get the file content from that commit
+        const showResult = await gitExec(
+          ['show', `${lastCommitHash}:${file}`],
+          repoPath,
+        );
+
+        if (showResult.exitCode !== 0) {
+          return null;
+        }
+
+        return extractTitleFromTiddlerContent(showResult.stdout);
+      } catch (error) {
+        console.error(`Error processing deleted file ${file}:`, error);
+        return null;
+      }
+    });
+
+    const deletedTitles = await Promise.all(deletedTitlePromises);
+
+    // Remove nulls and duplicates
+    return [...new Set(deletedTitles.filter((title): title is string => title !== null))];
+  } catch (error) {
+    console.error('Error getting deleted tiddlers:', error);
+    return [];
+  }
+}
+
+/**
+ * Get tiddler content at a specific point in time from git history
+ * This is used for 3-way merge to get the base version
+ * @param repoPath - Path to the git repository
+ * @param tiddlerTitle - Title of the tiddler
+ * @param beforeDate - Get the version that existed before this date
+ * @returns Tiddler fields including text, or null if not found
+ */
+export async function getTiddlerAtTime(
+  repoPath: string,
+  tiddlerTitle: string,
+  beforeDate: Date,
+): Promise<{ fields: Record<string, unknown>; text: string } | null> {
+  try {
+    // Find commits that modified any file before the specified date
+    const beforeISOString = beforeDate.toISOString();
+    
+    // First, find all .tid and .meta files that might contain this tiddler
+    // We need to search for files because the title might not match the filename
+    const logResult = await gitExec(
+      ['log', `--before=${beforeISOString}`, '--name-only', '--pretty=format:%H', '--', '*.tid', '*.meta'],
+      repoPath,
+    );
+
+    if (logResult.exitCode !== 0) {
+      return null;
+    }
+
+    const lines = logResult.stdout.trim().split('\n');
+    
+    // Parse output: commit hash followed by file names
+    let currentCommit: string | null = null;
+    const filesToCheck: Array<{ commit: string; file: string }> = [];
+    
+    for (const line of lines) {
+      if (line.length === 40 && /^[0-9a-f]+$/.test(line)) {
+        // This is a commit hash
+        currentCommit = line;
+      } else if (line.trim().length > 0 && currentCommit) {
+        // This is a file name
+        const file = line.trim();
+        if (file.endsWith('.tid') || file.endsWith('.meta')) {
+          filesToCheck.push({ commit: currentCommit, file });
+        }
+      }
+    }
+
+    // Check each file to find the one with matching title
+    // Use Promise.all to check files in parallel instead of sequentially
+    const searchPromises = filesToCheck.map(async ({ commit, file }) => {
+      try {
+        const showResult = await gitExec(
+          ['show', `${commit}:${file}`],
+          repoPath,
+        );
+
+        if (showResult.exitCode === 0) {
+          const content = showResult.stdout;
+          const parsedTiddler = parseTiddlerContent(content);
+
+          if (parsedTiddler.fields.title === tiddlerTitle) {
+            return parsedTiddler; // Match found
+          }
+        }
+      } catch {
+        // Continue checking other files
+      }
+      return null; // No match in this file
+    });
+
+    // Return the first match found, or null if none match
+    const results = await Promise.all(searchPromises);
+    return results.find((result): result is { fields: Record<string, unknown>; text: string } => result !== null) ?? null;
+  } catch (error) {
+    console.error('Error getting tiddler at time:', error);
+    return null;
+  }
+}
+
+/**
+ * Parse tiddler content (tid or meta file) into fields and text
+ */
+function parseTiddlerContent(content: string): { fields: Record<string, unknown>; text: string } {
+  const lines = content.split('\n');
+  const fields: Record<string, unknown> = {};
+  let textStartIndex = 0;
+  
+  // Parse headers
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    
+    // Empty line marks end of headers
+    if (line.trim() === '') {
+      textStartIndex = index + 1;
+      break;
+    }
+    
+    // Parse field: value format
+    const colonIndex = line.indexOf(':');
+    if (colonIndex > 0) {
+      const fieldName = line.slice(0, colonIndex).trim();
+      const fieldValue = line.slice(colonIndex + 1).trim();
+      fields[fieldName] = fieldValue;
+    }
+  }
+  
+  // Get text content (everything after the empty line)
+  const text = lines.slice(textStartIndex).join('\n');
+  
+  return { fields, text };
+}
+
+/**
+ * Extract title field from tiddler content (tid or meta file)
+ * Tiddler files have format:
+ * ```
+ * title: My Tiddler Title
+ * tags: [[Tag1]] [[Tag2]]
+ * ...
+ *
+ * Tiddler text content...
+ * ```
+ */
+function extractTitleFromTiddlerContent(content: string): string | null {
+  const lines = content.split('\n');
+
+  for (const line of lines) {
+    // Look for "title:" field (case-insensitive)
+    const titleMatch = line.match(/^title:\s*(.+)$/i);
+    if (titleMatch) {
+      return titleMatch[1].trim();
+    }
+
+    // Stop at empty line (end of headers)
+    if (line.trim() === '') {
+      break;
+    }
+  }
+
+  return null;
+}
