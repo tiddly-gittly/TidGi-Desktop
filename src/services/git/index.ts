@@ -230,19 +230,19 @@ export class Git implements IGitService {
       // Generate AI commit message if not provided and settings allow
       let finalConfigs = configs;
       if (!configs.commitMessage) {
-        logger.info('No commit message provided, attempting to generate AI commit message');
+        logger.debug('No commit message provided, attempting to generate AI commit message');
         const { generateAICommitMessage } = await import('./aiCommitMessage');
         const aiCommitMessage = await generateAICommitMessage(workspace.wikiFolderLocation);
         if (aiCommitMessage) {
           finalConfigs = { ...configs, commitMessage: aiCommitMessage };
-          logger.info('Using AI-generated commit message', { commitMessage: aiCommitMessage });
+          logger.debug('Using AI-generated commit message', { commitMessage: aiCommitMessage });
         } else {
           // If AI generation fails or times out, use default message
-          logger.info('AI commit message generation returned undefined, using default message');
+          logger.debug('AI commit message generation returned undefined, using default message');
           finalConfigs = { ...configs, commitMessage: i18n.t('LOG.CommitBackupMessage') };
         }
       } else {
-        logger.info('Commit message already provided, skipping AI generation', { commitMessage: configs.commitMessage });
+        logger.debug('Commit message already provided, skipping AI generation', { commitMessage: configs.commitMessage });
       }
 
       const observable = this.gitWorker?.commitAndSyncWiki(workspace, finalConfigs, getErrorMessageI18NDict());
