@@ -145,7 +145,7 @@
     "FocusedTiddlerNotFoundTitleDetail": "CPL にて FocusedTiddler プラグインをインストールすることができます。",
     "Later": "後で",
     "MadeWithLove": "<0>❤</0><1>で作られました</1>",
-    "NeedCorrectTiddlywikiFolderPath": "正しいパスを入力する必要があります。このパスはTiddlyWikiで認識できません。",
+    "NeedCorrectTiddlywikiFolderPath": "正しいパスを入力する必要があります。このパスはTiddlyWikiで認識できません。 名前：{{name}} 、パス：{{wikiFolderLocation}}",
     "PathPassInCantUse": "入力されたパスは使用できません",
     "RemoveWorkspace": "ワークスペースを削除",
     "ReportBug": "バグを報告",

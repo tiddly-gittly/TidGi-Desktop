@@ -544,11 +544,11 @@ export class Wiki implements IWikiService {
     if (!isWikiWorkspace(workspace)) {
       return true; // dedicated workspaces always "exist"
     }
-    const { wikiFolderLocation, id: workspaceID } = workspace;
+    const { wikiFolderLocation, id: workspaceID, name } = workspace;
     const { shouldBeMainWiki, showDialog } = options;
     try {
       if (typeof wikiFolderLocation !== 'string' || wikiFolderLocation.length === 0 || !path.isAbsolute(wikiFolderLocation)) {
-        const errorMessage = i18n.t('Dialog.NeedCorrectTiddlywikiFolderPath') + wikiFolderLocation;
+        const errorMessage = i18n.t('Dialog.NeedCorrectTiddlywikiFolderPath', { name, wikiFolderLocation });
         logger.error(errorMessage);
         const windowService = container.get<IWindowService>(serviceIdentifier.Window);
         const mainWindow = windowService.get(WindowNames.main);

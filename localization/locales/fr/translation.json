@@ -145,7 +145,7 @@
     "FocusedTiddlerNotFoundTitleDetail": "Vous pouvez installer le plugin FocusedTiddler sur CPL.",
     "Later": "Plus tard",
     "MadeWithLove": "<0>Fait avec </0><1>❤</1><2> par </2>",
-    "NeedCorrectTiddlywikiFolderPath": "Le chemin correct doit être passé, et ce chemin ne peut pas être reconnu par TiddlyWiki.",
+    "NeedCorrectTiddlywikiFolderPath": "Le chemin correct doit être passé, et ce chemin ne peut pas être reconnu par TiddlyWiki. Nom : {{name}} , Chemin : {{wikiFolderLocation}}",
     "PathPassInCantUse": "Le chemin passé ne peut pas être utilisé",
     "RemoveWorkspace": "Supprimer l'espace de travail",
     "ReportBug": "Signaler un bug",

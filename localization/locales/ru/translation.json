@@ -145,7 +145,7 @@
     "FocusedTiddlerNotFoundTitleDetail": "Вы можете установить плагин FocusedTiddler в CPL.",
     "Later": "Позже",
     "MadeWithLove": "<0>Есть</0><1> ❤ </1><2>разработчики:</2>",
-    "NeedCorrectTiddlywikiFolderPath": "Необходимо передать правильный путь, но этот путь не распознается TiddlyWiki.",
+    "NeedCorrectTiddlywikiFolderPath": "Необходимо передать правильный путь, но этот путь не распознается TiddlyWiki. Имя: {{name}} , Путь: {{wikiFolderLocation}}",
     "PathPassInCantUse": "Входящий путь недоступен.",
     "RemoveWorkspace": "Удалить рабочую область",
     "ReportBug": "Сообщить об ошибке",

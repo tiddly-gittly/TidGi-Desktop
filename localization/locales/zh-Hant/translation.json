@@ -145,7 +145,7 @@
     "FocusedTiddlerNotFoundTitleDetail": "可以到 CPL 安裝 FocusedTiddler 插件",
     "Later": "稍後",
     "MadeWithLove": "<0>有</0><1> ❤ </1><2>的開發者：</2>",
-    "NeedCorrectTiddlywikiFolderPath": "需要傳入正確的路徑，而此路徑無法被太微識別。",
+    "NeedCorrectTiddlywikiFolderPath": "需要傳入正確的路徑，而此路徑無法被太微識別。工作區名稱：{{name}} ，路徑：{{wikiFolderLocation}}",
     "PathPassInCantUse": "傳入的路徑無法使用",
     "RemoveWorkspace": "移除工作區",
     "ReportBug": "報告錯誤",

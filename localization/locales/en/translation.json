@@ -148,7 +148,7 @@
     "FocusedTiddlerNotFoundTitleDetail": "You can install the FocusedTiddler plugin in CPL.",
     "Later": "Later",
     "MadeWithLove": "<0>Made with </0><1>❤</1><2> by </2>",
-    "NeedCorrectTiddlywikiFolderPath": "The correct path needs to be passed in, and this path cannot be recognized by TiddlyWiki.",
+    "NeedCorrectTiddlywikiFolderPath": "The correct path needs to be passed in, and this path cannot be recognized by TiddlyWiki. Name: {{name}} , Path: {{wikiFolderLocation}}",
     "PathPassInCantUse": "The path passed in cannot be used",
     "RemoveWorkspace": "Remove workspace",
     "ReportBug": "Report Bug",
