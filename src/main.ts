@@ -99,10 +99,10 @@ const commonInit = async (): Promise<void> => {
 
   // Initialize context service - loads language maps after app is ready. This ensures LOCALIZATION_FOLDER path is correct (process.resourcesPath is stable)
   await contextService.initialize();
-  // Initialize i18n early so error messages can be translated
-  await initRendererI18NHandler();
   // Initialize database - all other services depend on it
   await databaseService.initializeForApp();
+  // Initialize i18n early so error messages can be translated
+  await initRendererI18NHandler();
 
   // Apply preferences that need to be set early
   const useHardwareAcceleration = await preferenceService.get('useHardwareAcceleration');

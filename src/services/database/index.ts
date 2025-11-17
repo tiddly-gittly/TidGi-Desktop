@@ -43,21 +43,12 @@ export class DatabaseService implements IDatabaseService {
   private storeSettingsToFileLock = false;
 
   async initializeForApp(): Promise<void> {
-    logger.info('starting', {
+    logger.debug('starting', {
       function: 'DatabaseService.initializeForApp',
     });
     // Initialize settings folder and load settings
     ensureSettingFolderExist();
     this.settingFileContent = settings.getSync() as unknown as ISettingFile;
-    logger.info('loaded settings', {
-      hasContent: !!this.settingFileContent,
-      keys: this.settingFileContent ? Object.keys(this.settingFileContent).length : 0,
-      hasPreferences: !!this.settingFileContent?.preferences,
-      tidgiMiniWindow: this.settingFileContent?.preferences?.tidgiMiniWindow,
-      settingsFilePath: settings.file(),
-      function: 'DatabaseService.initializeForApp',
-    });
-
     // Initialize settings backup stream
     try {
       this.settingBackupStream = rotateFs.createStream(`settings.json.bak`, {
@@ -72,7 +63,6 @@ export class DatabaseService implements IDatabaseService {
 
     // Ensure database folder exists
     await fs.ensureDir(CACHE_DATABASE_FOLDER);
-
     // Register default app database schema
     this.registerSchema('app', {
       entities: [], // Put app-level entities here
@@ -80,22 +70,16 @@ export class DatabaseService implements IDatabaseService {
       synchronize: false,
       migrationsRun: true,
     });
-
-    // Register wiki database schema example
     this.registerSchema('wiki', {
       entities: [WikiTiddler], // Wiki related entities
       synchronize: true,
       migrationsRun: false,
     });
-
-    // Register wiki-embedding database schema
     this.registerSchema('wikiEmbedding', {
       entities: [WikiEmbeddingEntity, WikiEmbeddingStatusEntity],
       synchronize: true,
       migrationsRun: false,
     });
-
-    // Register agent database schema
     this.registerSchema('agent', {
       entities: [
         AgentDefinitionEntity,
@@ -106,8 +90,6 @@ export class DatabaseService implements IDatabaseService {
       synchronize: true,
       migrationsRun: false,
     });
-
-    // Register external API log database schema
     this.registerSchema('externalApi', {
       entities: [ExternalAPILogEntity],
       synchronize: true,
