@@ -169,9 +169,7 @@ export class Wiki implements IWikiService {
     logger.debug(`wikiWorker initialized`, { function: 'Wiki.startWiki' });
     this.wikiWorkers[workspaceID] = { proxy: worker, nativeWorker: wikiWorker, detachWorker };
     this.wikiWorkerStartedEventTarget.dispatchEvent(new Event(wikiWorkerStartedEventName(workspaceID)));
-
-    // Notify worker that services are ready to use
-    worker.notifyServicesReady();
+    void worker.notifyServicesReady();
 
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation, workspaceID };
 
@@ -777,10 +775,9 @@ export class Wiki implements IWikiService {
 
   public async getTiddlerFilePath(title: string, workspaceID?: string): Promise<string | undefined> {
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const activeWorkspace = await workspaceService.getActiveWorkspace();
-    const wikiWorker = this.getWorker(workspaceID ?? activeWorkspace?.id ?? '');
+    const wikiWorker = this.getWorker(workspaceID ?? (await workspaceService.getActiveWorkspace())?.id ?? '');
     if (wikiWorker !== undefined) {
-      const tiddlerFileMetadata = wikiWorker.getTiddlerFileMetadata(title);
+      const tiddlerFileMetadata = await wikiWorker.getTiddlerFileMetadata(title);
       if (tiddlerFileMetadata?.filepath !== undefined) {
         return tiddlerFileMetadata.filepath;
       }
