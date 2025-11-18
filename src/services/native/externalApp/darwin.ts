@@ -127,6 +127,18 @@ const gitGUIApp: IDarwinExternalEditor[] = [
     name: 'GitHub Desktop',
     bundleIdentifiers: ['com.github.GitHubClient'],
   },
+  {
+    name: 'GitKraken',
+    bundleIdentifiers: ['com.axosoft.gitkraken'],
+  },
+  {
+    name: 'SourceTree',
+    bundleIdentifiers: ['com.torusknot.SourceTreeNotMAS'],
+  },
+  {
+    name: 'Tower',
+    bundleIdentifiers: ['com.fournova.Tower2', 'com.fournova.Tower3'],
+  },
 ];
 
 async function findApplication(editor: IDarwinExternalEditor): Promise<string | null> {

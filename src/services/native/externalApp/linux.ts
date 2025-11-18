@@ -65,6 +65,14 @@ const gitGUIApp: ILinuxExternalEditor[] = [
     name: 'GitHub Desktop',
     paths: ['/snap/bin/desktop', '/usr/bin/desktop'],
   },
+  {
+    name: 'GitKraken',
+    paths: ['/usr/bin/gitkraken', '/snap/bin/gitkraken'],
+  },
+  {
+    name: 'GitAhead',
+    paths: ['/usr/bin/gitahead'],
+  },
 ];
 
 async function getAvailablePath(paths: string[]): Promise<string | null> {
