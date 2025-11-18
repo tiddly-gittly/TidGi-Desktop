@@ -11,7 +11,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
   // Basics
   if (!$tw.browser || typeof window === 'undefined') return infoTiddlerFields;
   const isInTidGi = typeof document !== 'undefined' && document.location.protocol.startsWith('tidgi');
-  const workspace = (window.meta() as WindowMeta[WindowNames.view] | undefined)?.workspace;
+  const workspace = (typeof window.meta === 'function' ? window.meta() as WindowMeta[WindowNames.view] : undefined)?.workspace;
   const workspaceID = workspace?.id;
   infoTiddlerFields.push({ title: '$:/info/tidgi', text: mapBoolean(isInTidGi) });
   if (isInTidGi && workspaceID) {
