@@ -381,6 +381,11 @@ export default function GitHistory(): React.JSX.Element {
           <FileDiffPanel
             commitHash={selectedCommit?.hash || ''}
             filePath={selectedFile}
+            onDiscardSuccess={() => {
+              setSelectedFile(null);
+              // Trigger git log refresh after discard
+              setShouldSelectFirst(true);
+            }}
           />
         </DiffPanelWrapper>
       </ContentWrapper>

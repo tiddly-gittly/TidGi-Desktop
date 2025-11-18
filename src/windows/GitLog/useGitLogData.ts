@@ -1,6 +1,6 @@
 import type { IWorkspace } from '@services/workspaces/interface';
 import useObservable from 'beautiful-react-hooks/useObservable';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { filter } from 'rxjs/operators';
 
 import type { GitLogEntry } from './types';
@@ -22,6 +22,8 @@ export function useGitLogData(): IGitLogData {
   const [workspaceInfo, setWorkspaceInfo] = useState<IWorkspace | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [lastChangeType, setLastChangeType] = useState<string | null>(null);
+  const lastLoggedEntriesCount = useRef<number>(0);
+  const lastRefreshTime = useRef<number>(0);
 
   // Get workspace info once
   useEffect(() => {
@@ -68,10 +70,19 @@ export function useGitLogData(): IGitLogData {
   );
 
   useObservable(gitStateChange$, (change) => {
-    // Store the type of change so we can auto-select first commit after a manual commit
-    setLastChangeType(change?.type ?? null);
-    // Trigger refresh when git state changes
-    setRefreshTrigger((previous) => previous + 1);
+    // Debounce git state changes to prevent excessive refreshes
+    // Git operations (like discard) may trigger multiple file system events
+    const now = Date.now();
+    const timeSinceLastRefresh = now - lastRefreshTime.current;
+    
+    // Allow immediate refresh if enough time has passed (300ms)
+    if (timeSinceLastRefresh >= 300) {
+      lastRefreshTime.current = now;
+      // Store the type of change so we can auto-select first commit after a manual commit
+      setLastChangeType(change?.type ?? null);
+      // Trigger refresh when git state changes
+      setRefreshTrigger((previous) => previous + 1);
+    }
   });
 
   // Load git log data
@@ -116,11 +127,12 @@ export function useGitLogData(): IGitLogData {
         requestAnimationFrame(() => {
           setEntries(entriesWithFiles);
           setCurrentBranch(result.currentBranch);
-          // Log for E2E test timing - indicates UI has been updated with new commits
-          void window.service.native.log('info', '[test-id-git-log-refreshed]', {
-            commitCount: entriesWithFiles.length,
-            wikiFolderLocation: workspaceInfo.wikiFolderLocation,
-          });
+        });
+        
+        // Log for E2E test timing - only log once per load, not in requestAnimationFrame
+        void window.service.native.log('info', '[test-id-git-log-refreshed]', {
+          commitCount: entriesWithFiles.length,
+          wikiFolderLocation: workspaceInfo.wikiFolderLocation,
         });
       } catch (error_) {
         const error = error_ as Error;
@@ -140,13 +152,17 @@ export function useGitLogData(): IGitLogData {
   // Log when entries are updated and rendered to DOM
   useEffect(() => {
     if (entries.length > 0 && workspaceInfo && 'wikiFolderLocation' in workspaceInfo) {
-      // Use setTimeout to ensure DOM has been updated after state changes
-      setTimeout(() => {
-        void window.service.native.log('info', '[test-id-git-log-data-rendered]', {
-          commitCount: entries.length,
-          wikiFolderLocation: workspaceInfo.wikiFolderLocation,
-        });
-      }, 100);
+      // Only log if the entries count actually changed (to avoid logging on every re-render)
+      if (lastLoggedEntriesCount.current !== entries.length) {
+        lastLoggedEntriesCount.current = entries.length;
+        // Use setTimeout to ensure DOM has been updated after state changes
+        setTimeout(() => {
+          void window.service.native.log('info', '[test-id-git-log-data-rendered]', {
+            commitCount: entries.length,
+            wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+          });
+        }, 100);
+      }
     }
   }, [entries, workspaceInfo]);
 

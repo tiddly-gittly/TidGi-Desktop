@@ -135,9 +135,10 @@ const ImagePreview = styled('img')`
 interface IFileDiffPanelProps {
   commitHash: string;
   filePath: string | null;
+  onDiscardSuccess?: () => void;
 }
 
-export function FileDiffPanel({ commitHash, filePath }: IFileDiffPanelProps): React.JSX.Element {
+export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess }: IFileDiffPanelProps): React.JSX.Element {
   const { t } = useTranslation();
   const [diff, setDiff] = useState<string>('');
   const [fileContent, setFileContent] = useState<string>('');
@@ -191,7 +192,8 @@ export function FileDiffPanel({ commitHash, filePath }: IFileDiffPanelProps): Re
 
     try {
       await window.service.git.discardFileChanges(workspace.wikiFolderLocation, filePath);
-      // TODO: Show success message and refresh file list
+      // Clear selection and trigger refresh
+      onDiscardSuccess?.();
     } catch (error) {
       console.error('Failed to discard changes:', error);
       // TODO: Show error message
