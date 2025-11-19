@@ -74,7 +74,7 @@ export interface IGitStateChange {
   /** The workspace folder that changed */
   wikiFolderLocation: string;
   /** Type of change */
-  type: 'commit' | 'sync' | 'pull' | 'checkout' | 'revert' | 'discard';
+  type: 'commit' | 'sync' | 'pull' | 'checkout' | 'revert' | 'discard' | 'file-change';
 }
 
 /**
@@ -176,6 +176,14 @@ export interface IGitService {
    * @returns Tiddler fields including text, or null if not found
    */
   getTiddlerAtTime(wikiFolderPath: string, tiddlerTitle: string, beforeDate: Date): Promise<{ fields: Record<string, unknown>; text: string } | null>;
+  /**
+   * Notify that file system changes have been detected
+   * This is called by watch-fs plugin to trigger git log refresh
+   * @param wikiFolderLocation - The workspace folder where files changed
+   * @param options - Notification options
+   * @param options.onlyWhenGitLogOpened - Only notify if git log window is open (default: true)
+   */
+  notifyFileChange(wikiFolderLocation: string, options?: { onlyWhenGitLogOpened?: boolean }): void;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,
@@ -198,6 +206,7 @@ export const GitServiceIPCDescriptor = {
     getWorkspacesRemote: ProxyPropertyType.Function,
     gitStateChange$: ProxyPropertyType.Value$,
     initWikiGit: ProxyPropertyType.Function,
+    notifyFileChange: ProxyPropertyType.Function,
     revertCommit: ProxyPropertyType.Function,
     syncOrForcePull: ProxyPropertyType.Function,
     isAIGenerateBackupTitleEnabled: ProxyPropertyType.Function,

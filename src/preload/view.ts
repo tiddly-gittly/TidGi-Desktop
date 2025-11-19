@@ -26,7 +26,7 @@ async function executeJavaScriptInBrowserView(): Promise<void> {
   const workspaceID = viewMetaData.workspace?.id;
 
   // Log when view is fully loaded for E2E tests
-  void native.logFor(workspaceName, 'info', `[test-id-VIEW_LOADED] Browser view preload script executed and ready for workspace: ${workspaceName}`);
+  void native.logFor(workspaceName, 'debug', `[test-id-VIEW_LOADED] Browser view preload script executed and ready for workspace: ${workspaceName}`);
 
   try {
     await webFrame.executeJavaScript(`

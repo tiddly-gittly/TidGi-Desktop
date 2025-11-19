@@ -138,22 +138,29 @@ Feature: Git Log Window
 
   @git
   Scenario: Git Log window auto-refreshes when files change (only when window is open)
-    # First, close any existing git log window
-    When I switch to "main" window
-    # Modify Index.tid when git log window is CLOSED
-    And I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Modified when window closed"
-    Then I wait for tiddler "Index" to be updated by watch-fs
-    And I wait for 2 seconds for "potential git notification to be skipped"
-    # Now open Git Log window
+    # Open Git Log window FIRST
     When I click menu "知识库 > 查看历史备份"
     And I wait for 1 seconds for "git log window to open"
     And I switch to "gitHistory" window
     And I wait for the page to load completely
-    # Wait for git log to load initial data
-    And I wait for 2 seconds for "git log initial data to load"
-    # Should see uncommitted changes from the modification
+    # Should see initial commits
+    Then I should see a "commit history table" element with selector "table"
+    # Now modify a file WHILE window is open - this should trigger auto-refresh
+    When I switch to "main" window
+    And I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Modified with window open"
+    Then I wait for tiddler "Index" to be updated by watch-fs
+    # Wait for git log to auto-refresh after detecting file changes
+    And I wait for "git log auto-refreshed after file change" log marker "[test-id-git-log-refreshed]"
+    # Switch back to git log window
+    When I switch to "gitHistory" window
+    # Should see uncommitted changes row appear or update
     Then I should see a "uncommitted changes row" element with selector "tr:has-text('未提交')"
-    # Now modify another file when git log window is OPEN
+    # Click on uncommitted changes to verify the modified file is there
+    When I click on a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    And I wait for 1 seconds for "file list to load"
+    # Should see Index.tid in the uncommitted list
+    Then I should see a "Index.tid in uncommitted list" element with selector "li:has-text('Index.tid')"
+    # Now create a NEW file while window is still open
     When I switch to "main" window
     And I create file "{tmpDir}/wiki/tiddlers/AutoRefreshTest.tid" with content:
       """
@@ -165,17 +172,15 @@ Feature: Git Log Window
       This file is created to test auto-refresh when git log window is open.
       """
     Then I wait for tiddler "AutoRefreshTest" to be added by watch-fs
-    # Give git time to detect the new file
-    And I wait for 2 seconds for "git to detect new file"
+    # Wait for git log to auto-refresh after detecting new file
+    And I wait for "git log auto-refreshed after new file" log marker "[test-id-git-log-refreshed]"
     # Switch back to git log window
     When I switch to "gitHistory" window
-    # Wait for auto-refresh to be triggered (500ms debounce + 300ms git refresh debounce + some processing time)
-    And I wait for 2 seconds for "git log to auto-refresh after file change"
-    # The uncommitted changes row should still be visible and should include the new file
+    # The uncommitted changes row should still be visible
     Then I should see a "uncommitted changes row" element with selector "tr:has-text('未提交')"
-    # Click on uncommitted changes to verify both files are there
+    # Click on uncommitted changes again to see both files
     When I click on a "uncommitted changes row" element with selector "tr:has-text('未提交')"
-    And I wait for 1 seconds for "file list to load"
+    And I wait for 1 seconds for "file list to reload"
     # Both Index.tid and AutoRefreshTest.tid should be in the uncommitted list
     Then I should see a "Index.tid in uncommitted list" element with selector "li:has-text('Index.tid')"
     And I should see a "AutoRefreshTest.tid in uncommitted list" element with selector "li:has-text('AutoRefreshTest.tid')"

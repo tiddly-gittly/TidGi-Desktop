@@ -38,6 +38,7 @@ export class Git implements IGitService {
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
+    @inject(serviceIdentifier.Window) private readonly windowService: IWindowService,
   ) {}
 
   private notifyGitStateChange(wikiFolderLocation: string, type: IGitStateChange['type']): void {
@@ -46,6 +47,26 @@ export class Git implements IGitService {
       wikiFolderLocation,
       type,
     });
+  }
+
+  /**
+   * Public method to notify file system changes
+   * Called by watch-fs plugin when files are modified
+   */
+  public notifyFileChange(wikiFolderLocation: string, options?: { onlyWhenGitLogOpened?: boolean }): void {
+    const { onlyWhenGitLogOpened = true } = options ?? {};
+
+    // If we should only notify when git log is open, check if the window exists
+    if (onlyWhenGitLogOpened) {
+      const gitLogWindow = this.windowService.get(WindowNames.gitHistory);
+
+      // If no git log window is open, skip notification
+      if (!gitLogWindow) {
+        return;
+      }
+    }
+
+    this.notifyGitStateChange(wikiFolderLocation, 'file-change');
   }
 
   public async initialize(): Promise<void> {
@@ -206,7 +227,7 @@ export class Git implements IGitService {
         .subscribe(this.getWorkerMessageObserver(wikiFolderPath, resolve, reject));
     });
     // Log for e2e test detection - indicates initial git setup and commits are complete
-    logger.info(`[test-id-git-init-complete]`, { wikiFolderPath });
+    logger.debug(`[test-id-git-init-complete]`, { wikiFolderPath });
   }
 
   public async commitAndSync(workspace: IWorkspace, configs: ICommitAndSyncConfigs): Promise<boolean> {
@@ -252,7 +273,7 @@ export class Git implements IGitService {
       const changeType = configs.commitOnly ? 'commit' : 'sync';
       this.notifyGitStateChange(workspace.wikiFolderLocation, changeType);
       // Log for e2e test detection
-      logger.info(`[test-id-git-${changeType}-complete]`, { wikiFolderLocation: workspace.wikiFolderLocation });
+      logger.debug(`[test-id-git-${changeType}-complete]`, { wikiFolderLocation: workspace.wikiFolderLocation });
       return hasChanges;
     } catch (error: unknown) {
       const error_ = error as Error;
@@ -363,7 +384,7 @@ export class Git implements IGitService {
     // Notify git state change
     this.notifyGitStateChange(wikiFolderPath, 'checkout');
     // Log for e2e test detection
-    logger.info(`[test-id-git-checkout-complete]`, { wikiFolderPath, commitHash });
+    logger.debug(`[test-id-git-checkout-complete]`, { wikiFolderPath, commitHash });
   }
 
   public async revertCommit(wikiFolderPath: string, commitHash: string, commitMessage?: string): Promise<void> {
@@ -372,7 +393,7 @@ export class Git implements IGitService {
       // Notify git state change
       this.notifyGitStateChange(wikiFolderPath, 'revert');
       // Log for e2e test detection
-      logger.info(`[test-id-git-revert-complete]`, { wikiFolderPath, commitHash });
+      logger.debug(`[test-id-git-revert-complete]`, { wikiFolderPath, commitHash });
     } catch (error) {
       logger.error('revertCommit failed', { error, wikiFolderPath, commitHash, commitMessage });
       throw error;

@@ -24,6 +24,7 @@ export function useGitLogData(): IGitLogData {
   const [lastChangeType, setLastChangeType] = useState<string | null>(null);
   const lastLoggedEntriesCount = useRef<number>(0);
   const lastRefreshTime = useRef<number>(0);
+  const lastChangeTimestamp = useRef<number>(0);
 
   // Get workspace info once
   useEffect(() => {
@@ -75,9 +76,20 @@ export function useGitLogData(): IGitLogData {
     const now = Date.now();
     const timeSinceLastRefresh = now - lastRefreshTime.current;
     
-    // Allow immediate refresh if enough time has passed (300ms)
-    if (timeSinceLastRefresh >= 300) {
+    // Check if this is the same change event (within 100ms window)
+    // This prevents duplicate events from triggering multiple refreshes
+    if (change?.timestamp === lastChangeTimestamp.current) {
+      return;
+    }
+    
+    // For file-change events, use longer debounce (1000ms) to avoid watch-fs storm
+    // For other git operations (commit, discard, etc), use shorter debounce (300ms)
+    const debounceTime = change?.type === 'file-change' ? 1000 : 300;
+    
+    // Allow refresh if enough time has passed since last refresh
+    if (timeSinceLastRefresh >= debounceTime) {
       lastRefreshTime.current = now;
+      lastChangeTimestamp.current = change?.timestamp ?? 0;
       // Store the type of change so we can auto-select first commit after a manual commit
       setLastChangeType(change?.type ?? null);
       // Trigger refresh when git state changes
@@ -130,7 +142,7 @@ export function useGitLogData(): IGitLogData {
         });
         
         // Log for E2E test timing - only log once per load, not in requestAnimationFrame
-        void window.service.native.log('info', '[test-id-git-log-refreshed]', {
+        void window.service.native.log('debug', '[test-id-git-log-refreshed]', {
           commitCount: entriesWithFiles.length,
           wikiFolderLocation: workspaceInfo.wikiFolderLocation,
         });
@@ -156,8 +168,8 @@ export function useGitLogData(): IGitLogData {
       if (lastLoggedEntriesCount.current !== entries.length) {
         lastLoggedEntriesCount.current = entries.length;
         // Use setTimeout to ensure DOM has been updated after state changes
-        setTimeout(() => {
-          void window.service.native.log('info', '[test-id-git-log-data-rendered]', {
+          setTimeout(() => {
+          void window.service.native.log('debug', '[test-id-git-log-data-rendered]', {
             commitCount: entries.length,
             wikiFolderLocation: workspaceInfo.wikiFolderLocation,
           });
