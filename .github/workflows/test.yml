@@ -33,7 +33,7 @@ jobs:
         run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
 
       - name: Run linting
-        run: pnpm run lint -- --max-warnings 0
+        run: pnpm run lint --max-warnings 0
 
       # Install minimal Linux dependencies for Electron GUI testing https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci
       - name: Install Linux GUI dependencies
