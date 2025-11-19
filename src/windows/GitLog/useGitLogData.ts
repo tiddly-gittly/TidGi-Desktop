@@ -75,17 +75,17 @@ export function useGitLogData(): IGitLogData {
     // Git operations (like discard) may trigger multiple file system events
     const now = Date.now();
     const timeSinceLastRefresh = now - lastRefreshTime.current;
-    
+
     // Check if this is the same change event (within 100ms window)
     // This prevents duplicate events from triggering multiple refreshes
     if (change?.timestamp === lastChangeTimestamp.current) {
       return;
     }
-    
+
     // For file-change events, use longer debounce (1000ms) to avoid watch-fs storm
     // For other git operations (commit, discard, etc), use shorter debounce (300ms)
     const debounceTime = change?.type === 'file-change' ? 1000 : 300;
-    
+
     // Allow refresh if enough time has passed since last refresh
     if (timeSinceLastRefresh >= debounceTime) {
       lastRefreshTime.current = now;
@@ -140,7 +140,7 @@ export function useGitLogData(): IGitLogData {
           setEntries(entriesWithFiles);
           setCurrentBranch(result.currentBranch);
         });
-        
+
         // Log for E2E test timing - only log once per load, not in requestAnimationFrame
         void window.service.native.log('debug', '[test-id-git-log-refreshed]', {
           commitCount: entriesWithFiles.length,
@@ -168,7 +168,7 @@ export function useGitLogData(): IGitLogData {
       if (lastLoggedEntriesCount.current !== entries.length) {
         lastLoggedEntriesCount.current = entries.length;
         // Use setTimeout to ensure DOM has been updated after state changes
-          setTimeout(() => {
+        setTimeout(() => {
           void window.service.native.log('debug', '[test-id-git-log-data-rendered]', {
             commitCount: entries.length,
             wikiFolderLocation: workspaceInfo.wikiFolderLocation,

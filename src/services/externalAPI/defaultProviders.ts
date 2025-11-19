@@ -1,4 +1,4 @@
-import { t } from "@services/libs/i18n/placeholder";
+import { t } from '@services/libs/i18n/placeholder';
 
 export default {
   providers: [

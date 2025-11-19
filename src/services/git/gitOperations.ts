@@ -632,7 +632,7 @@ export async function getTiddlerAtTime(
   try {
     // Find commits that modified any file before the specified date
     const beforeISOString = beforeDate.toISOString();
-    
+
     // First, find all .tid and .meta files that might contain this tiddler
     // We need to search for files because the title might not match the filename
     const logResult = await gitExec(
@@ -645,11 +645,11 @@ export async function getTiddlerAtTime(
     }
 
     const lines = logResult.stdout.trim().split('\n');
-    
+
     // Parse output: commit hash followed by file names
     let currentCommit: string | null = null;
     const filesToCheck: Array<{ commit: string; file: string }> = [];
-    
+
     for (const line of lines) {
       if (line.length === 40 && /^[0-9a-f]+$/.test(line)) {
         // This is a commit hash
@@ -702,17 +702,17 @@ function parseTiddlerContent(content: string): { fields: Record<string, unknown>
   const lines = content.split('\n');
   const fields: Record<string, unknown> = {};
   let textStartIndex = 0;
-  
+
   // Parse headers
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
-    
+
     // Empty line marks end of headers
     if (line.trim() === '') {
       textStartIndex = index + 1;
       break;
     }
-    
+
     // Parse field: value format
     const colonIndex = line.indexOf(':');
     if (colonIndex > 0) {
@@ -721,10 +721,10 @@ function parseTiddlerContent(content: string): { fields: Record<string, unknown>
       fields[fieldName] = fieldValue;
     }
   }
-  
+
   // Get text content (everything after the empty line)
   const text = lines.slice(textStartIndex).join('\n');
-  
+
   return { fields, text };
 }
 
