@@ -155,14 +155,14 @@
     "DefaultAIModelSelectionDescription": "Choose the default AI provider and model to use when not specifically set",
     "DefaultEmbeddingModelSelection": "Default Embedding Model Selection",
     "DefaultEmbeddingModelSelectionDescription": "Choose the default embedding model to use for semantic search and vector operations",
+    "DefaultFreeModelSelection": "Default Free Model Selection",
+    "DefaultFreeModelSelectionDescription": "Free small model for generating summary titles and backup titles",
     "DefaultImageGenerationModelSelection": "Default Image Generation Model Selection",
     "DefaultImageGenerationModelSelectionDescription": "Choose the default image generation model to use for creating images from text",
     "DefaultSpeechModelSelection": "Default Speech Generation Model Selection",
     "DefaultSpeechModelSelectionDescription": "Choose the default speech generation model to use for text-to-speech operations",
     "DefaultTranscriptionsModelSelection": "Default Transcriptions Model Selection",
     "DefaultTranscriptionsModelSelectionDescription": "Choose the default transcriptions model to use for speech-to-text operations",
-    "DefaultFreeModelSelection": "Default Free Model Selection",
-    "DefaultFreeModelSelectionDescription": "Free small model for generating summary titles and backup titles",
     "DeleteAgentDatabase": "Delete AI Conversation Database",
     "DeleteProvider": "Delete provider",
     "DisabledProviderInfo": "This provider is disabled, and its models will not appear in the model selection list",
@@ -382,6 +382,8 @@
       "Description": "Provider and Model Configuration",
       "EmbeddingModel": "Embedding model name for semantic search and vector operations",
       "EmbeddingModelTitle": "Embedding Model",
+      "FreeModel": "Free small model for generating summary titles and backup titles",
+      "FreeModelTitle": "Free Model",
       "ImageGenerationModel": "Image generation model name for creating images from text",
       "ImageGenerationModelTitle": "Image Generation Model",
       "Model": "AI model name",
@@ -392,9 +394,7 @@
       "SpeechModelTitle": "Speech Model",
       "Title": "Provider and Model",
       "TranscriptionsModel": "Transcriptions model name for speech-to-text operations",
-      "TranscriptionsModelTitle": "Transcriptions Model",
-      "FreeModel": "Free small model for generating summary titles and backup titles",
-      "FreeModelTitle": "Free Model"
+      "TranscriptionsModelTitle": "Transcriptions Model"
     },
     "RAG": {
       "Removal": {
