@@ -135,3 +135,47 @@ Feature: Git Log Window
     And I wait for 2 seconds for "file system events to stabilize after git discard"
     # The modified content should be discarded
     Then I should not see a "modified content in Index tiddler" element in browser view with selector "[data-tiddler-title='Index']:has-text('Discard test content')"
+
+  @git
+  Scenario: Git Log window auto-refreshes when files change (only when window is open)
+    # First, close any existing git log window
+    When I switch to "main" window
+    # Modify Index.tid when git log window is CLOSED
+    And I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Modified when window closed"
+    Then I wait for tiddler "Index" to be updated by watch-fs
+    And I wait for 2 seconds for "potential git notification to be skipped"
+    # Now open Git Log window
+    When I click menu "知识库 > 查看历史备份"
+    And I wait for 1 seconds for "git log window to open"
+    And I switch to "gitHistory" window
+    And I wait for the page to load completely
+    # Wait for git log to load initial data
+    And I wait for 2 seconds for "git log initial data to load"
+    # Should see uncommitted changes from the modification
+    Then I should see a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    # Now modify another file when git log window is OPEN
+    When I switch to "main" window
+    And I create file "{tmpDir}/wiki/tiddlers/AutoRefreshTest.tid" with content:
+      """
+      created: 20250227070000000
+      modified: 20250227070000000
+      title: AutoRefreshTest
+      tags: TestTag
+      
+      This file is created to test auto-refresh when git log window is open.
+      """
+    Then I wait for tiddler "AutoRefreshTest" to be added by watch-fs
+    # Give git time to detect the new file
+    And I wait for 2 seconds for "git to detect new file"
+    # Switch back to git log window
+    When I switch to "gitHistory" window
+    # Wait for auto-refresh to be triggered (500ms debounce + 300ms git refresh debounce + some processing time)
+    And I wait for 2 seconds for "git log to auto-refresh after file change"
+    # The uncommitted changes row should still be visible and should include the new file
+    Then I should see a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    # Click on uncommitted changes to verify both files are there
+    When I click on a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    And I wait for 1 seconds for "file list to load"
+    # Both Index.tid and AutoRefreshTest.tid should be in the uncommitted list
+    Then I should see a "Index.tid in uncommitted list" element with selector "li:has-text('Index.tid')"
+    And I should see a "AutoRefreshTest.tid in uncommitted list" element with selector "li:has-text('AutoRefreshTest.tid')"
