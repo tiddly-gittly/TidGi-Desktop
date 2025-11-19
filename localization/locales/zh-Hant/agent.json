@@ -20,6 +20,7 @@
     "InvalidTabType": "無效的標籤頁類型。需要聊天標籤頁。",
     "LoadingChat": "正在載入對話...",
     "StartConversation": "開始對話",
+    "ThinkingProcess": "思考中",
     "Untitled": "未命名"
   },
   "Browser": {
@@ -44,6 +45,7 @@
     }
   },
   "Common": {
+    "None": "未選擇"
   },
   "ContextMenu": {
     "AddToCurrentSplitView": "添加到當前分屏",
@@ -109,6 +111,15 @@
     "Title": "編輯智慧體定義"
   },
   "ModelFeature": {
+    "Embedding": "嵌入",
+    "Free": "免費",
+    "ImageGeneration": "圖像生成",
+    "Language": "語言",
+    "Reasoning": "推理",
+    "Speech": "語音合成",
+    "ToolCalling": "工具調用",
+    "Transcriptions": "語音辨識",
+    "Vision": "視覺"
   },
   "ModelSelector": {
     "Model": "模型",
@@ -141,6 +152,7 @@
     "ConfigureModelParameters": "配置參數",
     "ConfigureProvider": "配置 {{provider}}",
     "ConfirmDeleteAgentDatabase": "確定要刪除包含所有智慧體對話記錄的資料庫嗎？此操作無法撤銷。",
+    "ConfirmDeleteProvider": "確認刪除提供商",
     "CustomProvider": "自訂提供方",
     "DefaultAIModelSelection": "默認人工智慧模型選擇",
     "DefaultAIModelSelectionDescription": "選擇在未具體設置時預設使用人工智慧提供商和模型",
@@ -529,7 +541,7 @@
       "EditAgentDefinition": "編輯智慧體",
       "NewTab": "新建標籤頁",
       "NewWeb": "新建網頁",
-      "SplitView": ""
+      "SplitView": "分屏展示"
     }
   },
   "Tool": {

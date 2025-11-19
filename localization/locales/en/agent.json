@@ -20,6 +20,7 @@
     "InvalidTabType": "Invalid tab type. A chat tab is required.",
     "LoadingChat": "Loading conversation...",
     "StartConversation": "Start a conversation",
+    "ThinkingProcess": "thinking",
     "Untitled": "Untitled"
   },
   "Browser": {
@@ -44,6 +45,7 @@
     }
   },
   "Common": {
+    "None": "Not selected"
   },
   "ContextMenu": {
     "AddToCurrentSplitView": "Add to current split view",
@@ -150,6 +152,7 @@
     "ConfigureModelParameters": "configuration parameters",
     "ConfigureProvider": "Configure {{provider}}",
     "ConfirmDeleteAgentDatabase": "Are you sure you want to delete the database containing all AI conversation records? This action cannot be undone.",
+    "ConfirmDeleteProvider": "Confirm deletion of provider",
     "CustomProvider": "Custom Provider",
     "DefaultAIModelSelection": "Default AI Model Selection",
     "DefaultAIModelSelectionDescription": "Choose the default AI provider and model to use when not specifically set",
@@ -543,7 +546,7 @@
       "EditAgentDefinition": "Edit Agent",
       "NewTab": "New Tab",
       "NewWeb": "Create a new webpage",
-      "SplitView": ""
+      "SplitView": "Split view"
     }
   },
   "Tool": {

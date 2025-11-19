@@ -76,7 +76,7 @@
   },
   "Cancel": "Cancel",
   "ClickForDetails": "Click For Details",
-  "Confirm": "",
+  "Confirm": "confirm",
   "ContextMenu": {
     "About": "About",
     "AddToDictionary": "Add To Dictionary",
@@ -278,7 +278,7 @@
     "ShowInExplorer": "Show in Explorer",
     "Title": "Git history",
     "UnknownDate": "Unknown date",
-    "WarningMessage": ""
+    "WarningMessage": "Note: Checkout and rollback operations will modify workspace files; proceed with caution."
   },
   "Help": {
     "Alternatives": "Alternatives",

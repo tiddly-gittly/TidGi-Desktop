@@ -20,6 +20,7 @@
     "InvalidTabType": "Неверный тип вкладки. Требуется вкладка чата.",
     "LoadingChat": "Загрузка диалога...",
     "StartConversation": "начать диалог",
+    "ThinkingProcess": "Размышляю",
     "Untitled": "без названия"
   },
   "Browser": {
@@ -44,6 +45,7 @@
     }
   },
   "Common": {
+    "None": "не выбрано"
   },
   "ContextMenu": {
     "AddToCurrentSplitView": "добавить к текущему разделенному экрану",
@@ -105,6 +107,15 @@
     "Title": "редактировать определение интеллектуального агента"
   },
   "ModelFeature": {
+    "Embedding": "встраивание",
+    "Free": "бесплатно",
+    "ImageGeneration": "генерация изображений",
+    "Language": "язык",
+    "Reasoning": "умозаключение",
+    "Speech": "синтез речи",
+    "ToolCalling": "вызов инструмента",
+    "Transcriptions": "распознавание речи",
+    "Vision": "визуальный"
   },
   "ModelSelector": {
     "Model": "модель",
@@ -139,6 +150,7 @@
     "ConfirmDelete": "Подтвердить удаление",
     "ConfirmDeleteAgentDatabase": "Вы уверены, что хотите удалить базу данных со всеми записями диалогов ИИ? Это действие нельзя отменить.",
     "ConfirmDeleteExternalApiDatabase": "Вы уверены, что хотите удалить базу данных, содержащую отладочную информацию внешнего API? Это действие нельзя отменить.",
+    "ConfirmDeleteProvider": "Подтвердите удаление поставщика",
     "CustomProvider": "Пользовательский поставщик",
     "DefaultAIModelSelection": "Выбор AI модели по умолчанию",
     "DefaultAIModelSelectionDescription": "Выберите поставщика AI и модель, которые будут использоваться по умолчанию",
@@ -542,7 +554,7 @@
       "EditAgentDefinition": "Редакторский интеллектуальный агент",
       "NewTab": "Новая вкладка",
       "NewWeb": "создать новую веб-страницу",
-      "SplitView": ""
+      "SplitView": "разделенный экран"
     }
   },
   "Tool": {

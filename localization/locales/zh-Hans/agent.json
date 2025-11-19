@@ -20,6 +20,7 @@
     "InvalidTabType": "无效的标签页类型。需要聊天标签页。",
     "LoadingChat": "正在加载对话...",
     "StartConversation": "开始对话",
+    "ThinkingProcess": "思考中",
     "Untitled": "未命名"
   },
   "Browser": {
@@ -44,6 +45,7 @@
     }
   },
   "Common": {
+    "None": "未选择"
   },
   "ContextMenu": {
     "AddToCurrentSplitView": "添加到当前分屏",
@@ -150,6 +152,7 @@
     "ConfigureModelParameters": "配置参数",
     "ConfigureProvider": "配置 {{provider}}",
     "ConfirmDeleteAgentDatabase": "确定要删除包含所有智能体对话记录的数据库吗？此操作无法撤销。",
+    "ConfirmDeleteProvider": "确认删除提供商",
     "CustomProvider": "自定义提供方",
     "DefaultAIModelSelection": "默认人工智能模型选择",
     "DefaultAIModelSelectionDescription": "选择在未具体设置时默认使用人工智能提供商和模型",
@@ -542,7 +545,7 @@
       "EditAgentDefinition": "编辑智能体",
       "NewTab": "新建标签页",
       "NewWeb": "新建网页",
-      "SplitView": ""
+      "SplitView": "分屏展示"
     }
   },
   "Tool": {

@@ -255,7 +255,7 @@
     "FailedToLoadDiff": "加载差异失败",
     "Files": "文件",
     "FilesChanged": "变更了 {{count}} 个文件",
-    "FilesChanged_other": "",
+    "FilesChanged_other": "{{count}} 个文件有改动",
     "Hash": "哈希值",
     "IgnoreExtension": "忽略所有 .{{ext}} 文件",
     "IgnoreFile": "忽略文件（添加到 .gitignore）",
