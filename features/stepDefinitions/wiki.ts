@@ -625,13 +625,13 @@ export { clearGitTestData, clearHibernationTestData, clearSubWikiRoutingTestData
  */
 async function clearTestIdLogs() {
   const logPath = path.join(process.cwd(), 'userData-test', 'logs');
-  
+
   if (!await fs.pathExists(logPath)) {
     return;
   }
 
   const logFiles = await fs.readdir(logPath);
-  
+
   for (const file of logFiles) {
     if (file.endsWith('.log')) {
       const filePath = path.join(logPath, file);
