@@ -53,6 +53,8 @@ Feature: TidGi Default Wiki
     And I wait for 2 seconds for "IPC to sync"
     And I should see "Content after moving workspace" in the browser view content
     # Move it back to original location for cleanup
+    # Clear test-id markers to ensure we're waiting for fresh logs from second restart
+    When I clear test-id markers from logs
     And I switch to "editWorkspace" window
     When I prepare to select directory in dialog "wiki-test"
     And I click on a "move workspace button" element with selector "button:has-text('移动工作区')"
@@ -65,8 +67,9 @@ Feature: TidGi Default Wiki
     Then file "wiki/tiddlywiki.info" should exist in "wiki-test"
     # Switch to main window and wait for view to be ready
     Then I switch to "main" window
+    And I wait for 2 seconds for "view to be ready after move back"
     # Verify the wiki still works after moving back
     When I modify file "wiki-test/wiki/tiddlers/Index.tid" to contain "Content after moving back"
     Then I wait for tiddler "Index" to be updated by watch-fs
-    And I wait for 4.5 seconds for "IPC to sync after second restart"
+    And I wait for 3 seconds for "IPC to sync after second restart"
     And I should see "Content after moving back" in the browser view content

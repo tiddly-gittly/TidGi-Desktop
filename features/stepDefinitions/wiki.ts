@@ -618,4 +618,36 @@ async function clearHibernationTestData() {
   }
 }
 
-export { clearGitTestData, clearHibernationTestData, clearSubWikiRoutingTestData };
+export { clearGitTestData, clearHibernationTestData, clearSubWikiRoutingTestData, clearTestIdLogs };
+
+/**
+ * Clear all test-id markers from log files to ensure fresh logs for next test phase
+ */
+async function clearTestIdLogs() {
+  const logPath = path.join(process.cwd(), 'userData-test', 'logs');
+  
+  if (!await fs.pathExists(logPath)) {
+    return;
+  }
+
+  const logFiles = await fs.readdir(logPath);
+  
+  for (const file of logFiles) {
+    if (file.endsWith('.log')) {
+      const filePath = path.join(logPath, file);
+      try {
+        const content = await fs.readFile(filePath, 'utf-8');
+        // Remove all lines containing [test-id-
+        const lines = content.split('\n');
+        const filteredLines = lines.filter(line => !line.includes('[test-id-'));
+        await fs.writeFile(filePath, filteredLines.join('\n'), 'utf-8');
+      } catch (error) {
+        console.warn(`Failed to clear test-id markers from ${file}:`, error);
+      }
+    }
+  }
+}
+
+When('I clear test-id markers from logs', async function(this: ApplicationWorld) {
+  await clearTestIdLogs();
+});
