@@ -1,5 +1,7 @@
 import { app, dialog, powerMonitor } from 'electron';
+import { copy, pathExists, remove } from 'fs-extra';
 import { inject, injectable } from 'inversify';
+import path from 'path';
 
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
@@ -253,6 +255,61 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         const error = error_ as Error;
         logger.error(error.message, { error });
       }
+    }
+  }
+
+  public async moveWorkspaceLocation(workspaceID: string, newParentLocation: string): Promise<void> {
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspace = await workspaceService.get(workspaceID);
+    if (workspace === undefined) {
+      throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
+    }
+    if (!isWikiWorkspace(workspace)) {
+      throw new Error('moveWorkspaceLocation can only be called with wiki workspaces');
+    }
+
+    const { wikiFolderLocation, name } = workspace;
+    const wikiFolderName = path.basename(wikiFolderLocation);
+    const newWikiFolderLocation = path.join(newParentLocation, wikiFolderName);
+
+    if (!(await pathExists(wikiFolderLocation))) {
+      throw new Error(`Source wiki folder does not exist: ${wikiFolderLocation}`);
+    }
+    if (await pathExists(newWikiFolderLocation)) {
+      throw new Error(`Target location already exists: ${newWikiFolderLocation}`);
+    }
+
+    try {
+      logger.info(`Moving workspace ${name} from ${wikiFolderLocation} to ${newWikiFolderLocation}`);
+
+      const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+      await wikiService.stopWiki(workspaceID).catch((error_: unknown) => {
+        const error = error_ as Error;
+        logger.error(`Failed to stop wiki before move: ${error.message}`, { error });
+      });
+
+      await copy(wikiFolderLocation, newWikiFolderLocation, {
+        overwrite: false,
+        errorOnExist: true,
+      });
+
+      await workspaceService.update(workspaceID, {
+        wikiFolderLocation: newWikiFolderLocation,
+      });
+
+      await remove(wikiFolderLocation);
+
+      logger.info(`Successfully moved workspace to ${newWikiFolderLocation} [test-id-WORKSPACE_MOVED:${newWikiFolderLocation}]`);
+
+      // Restart the workspace view to load from new location
+      const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+      await workspaceViewService.restartWorkspaceViewService(workspaceID);
+
+      logger.info(`Workspace view restarted after move [test-id-WORKSPACE_RESTARTED_AFTER_MOVE:${workspaceID}]`);
+    } catch (error_: unknown) {
+      const error = error_ as Error;
+      logger.error(`Failed to move workspace: ${error.message}`, { error });
+      throw error;
     }
   }
 }

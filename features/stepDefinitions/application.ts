@@ -332,3 +332,20 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
     );
   }
 });
+
+When('I prepare to select directory in dialog {string}', async function(this: ApplicationWorld, directoryName: string) {
+  if (!this.app) {
+    throw new Error('Application is not launched');
+  }
+  const targetPath = path.resolve(process.cwd(), directoryName);
+  // Setup dialog handler to intercept showOpenDialog calls in main process
+  await this.app.evaluate(({ dialog }, targetDirectory: string) => {
+    // Override showOpenDialog to return the test directory
+    dialog.showOpenDialog = async () => {
+      return {
+        canceled: false,
+        filePaths: [targetDirectory],
+      };
+    };
+  }, targetPath);
+});

@@ -1,5 +1,6 @@
 import { After, Before } from '@cucumber/cucumber';
 import fs from 'fs-extra';
+import path from 'path';
 import { logsDirectory, screenshotsDirectory } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { ApplicationWorld } from './application';
@@ -70,6 +71,13 @@ After(async function(this: ApplicationWorld, { pickle }) {
   // Clean up hibernation test data - remove wiki2 folder created during tests
   if (pickle.tags.some((tag) => tag.name === '@hibernation')) {
     await clearHibernationTestData();
+  }
+  // Clean up move workspace test data - remove wiki-test-moved folder
+  if (pickle.tags.some((tag) => tag.name === '@move-workspace')) {
+    const wikiTestMovedPath = path.resolve(process.cwd(), 'wiki-test-moved');
+    if (await fs.pathExists(wikiTestMovedPath)) {
+      await fs.remove(wikiTestMovedPath);
+    }
   }
 
   // Separate logs by test scenario for easier debugging

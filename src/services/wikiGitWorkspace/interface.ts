@@ -18,11 +18,18 @@ export interface IWikiGitWorkspaceService {
    * Automatically initialize a default wiki workspace if none exists.
    */
   initialize(): Promise<void>;
+  /**
+   * Move workspace to a new location. Will stop wiki worker before moving to prevent file lock issues.
+   * @param workspaceID The workspace to move
+   * @param newLocation The new parent folder path where the wiki folder will be moved
+   */
+  moveWorkspaceLocation: (workspaceID: string, newLocation: string) => Promise<void>;
 }
 export const WikiGitWorkspaceServiceIPCDescriptor = {
   channel: WikiGitWorkspaceChannel.name,
   properties: {
     initWikiGitTransaction: ProxyPropertyType.Function,
     removeWorkspace: ProxyPropertyType.Function,
+    moveWorkspaceLocation: ProxyPropertyType.Function,
   },
 };
