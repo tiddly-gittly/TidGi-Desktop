@@ -219,7 +219,6 @@ export class Window implements IWindowService {
           '--unsafely-disable-devtools-self-xss-warnings',
         ],
       },
-      parent: isWindowWithBrowserView ? undefined : this.get(WindowNames.main),
     };
     let newWindow: BrowserWindow;
     if (windowName === WindowNames.tidgiMiniWindow) {
