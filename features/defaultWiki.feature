@@ -42,12 +42,15 @@ Feature: TidGi Default Wiki
     Then file "wiki/tiddlywiki.info" should exist in "wiki-test-moved"
     # Switch back to main window to interact with wiki
     Then I switch to "main" window
+    # Wait a bit to ensure view is fully ready to receive updates
+    And I wait for 1 seconds for "view to be ready"
+    # Verify Index tiddler is displayed (confirms view is loaded)
+    Then I should see a "Index tiddler" element in browser view with selector "div[data-tiddler-title='Index']"
     # Verify the wiki is working by modifying a file in the new location
     When I modify file "wiki-test-moved/wiki/tiddlers/Index.tid" to contain "Content after moving workspace"
     Then I wait for tiddler "Index" to be updated by watch-fs
-    # Confirm Index tiddler is still displayed
-    Then I should see a "Index tiddler" element in browser view with selector "div[data-tiddler-title='Index']"
-    And I wait for 2 seconds for "it could be stable"
+    # wait for IPC to sync to frontend
+    And I wait for 2 seconds for "IPC to sync"
     And I should see "Content after moving workspace" in the browser view content
     # Move it back to original location for cleanup
     And I switch to "editWorkspace" window
@@ -60,8 +63,10 @@ Feature: TidGi Default Wiki
     And I wait for "SSE ready after restart back" log marker "[test-id-SSE_READY]"
     Then I wait for "view loaded after restart back" log marker "[test-id-VIEW_LOADED]"
     Then file "wiki/tiddlywiki.info" should exist in "wiki-test"
+    # Switch to main window and wait for view to be ready
+    Then I switch to "main" window
     # Verify the wiki still works after moving back
     When I modify file "wiki-test/wiki/tiddlers/Index.tid" to contain "Content after moving back"
     Then I wait for tiddler "Index" to be updated by watch-fs
-    And I wait for 2 seconds for "it could be stable"
+    And I wait for 4.5 seconds for "IPC to sync after second restart"
     And I should see "Content after moving back" in the browser view content
