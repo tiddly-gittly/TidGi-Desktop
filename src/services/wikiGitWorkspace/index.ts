@@ -297,15 +297,14 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         wikiFolderLocation: newWikiFolderLocation,
       });
 
-      await remove(wikiFolderLocation);
-
       logger.info(`Successfully moved workspace to ${newWikiFolderLocation} [test-id-WORKSPACE_MOVED:${newWikiFolderLocation}]`);
-
       // Restart the workspace view to load from new location
       const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
       await workspaceViewService.restartWorkspaceViewService(workspaceID);
 
-      logger.info(`Workspace view restarted after move [test-id-WORKSPACE_RESTARTED_AFTER_MOVE:${workspaceID}]`);
+      logger.debug(`Workspace view restarted after move [test-id-WORKSPACE_RESTARTED_AFTER_MOVE:${workspaceID}]`);
+      // Only delete old folder after successful restart to avoid inconsistent state
+      await remove(wikiFolderLocation);
     } catch (error_: unknown) {
       const error = error_ as Error;
       logger.error(`Failed to move workspace: ${error.message}`, { error });

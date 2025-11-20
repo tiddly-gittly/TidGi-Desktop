@@ -338,10 +338,14 @@ When('I prepare to select directory in dialog {string}', async function(this: Ap
     throw new Error('Application is not launched');
   }
   const targetPath = path.resolve(process.cwd(), directoryName);
-  // Setup dialog handler to intercept showOpenDialog calls in main process
+  // Setup one-time dialog handler that restores after use
   await this.app.evaluate(({ dialog }, targetDirectory: string) => {
-    // Override showOpenDialog to return the test directory
+    // Save original function with proper binding
+    const originalShowOpenDialog = dialog.showOpenDialog.bind(dialog);
+    // Override with one-time mock
     dialog.showOpenDialog = async () => {
+      // Restore original immediately after first call
+      dialog.showOpenDialog = originalShowOpenDialog;
       return {
         canceled: false,
         filePaths: [targetDirectory],

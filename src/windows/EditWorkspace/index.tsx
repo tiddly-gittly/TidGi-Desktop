@@ -285,7 +285,13 @@ export default function EditWorkspace(): React.JSX.Element {
                     try {
                       await window.service.wikiGitWorkspace.moveWorkspaceLocation(workspaceID, newLocation);
                     } catch (error) {
-                      console.error('Failed to move workspace:', error);
+                      const errorMessage = (error as Error).message;
+                      void window.service.native.log('error', `Failed to move workspace: ${errorMessage}`, { error, workspaceID, newLocation });
+                      // Show error notification
+                      void window.service.notification.show({
+                        title: t('EditWorkspace.MoveWorkspaceFailed'),
+                        body: t('EditWorkspace.MoveWorkspaceFailedMessage', { name: workspaceName, error: errorMessage }),
+                      });
                     }
                   }
                 }}
