@@ -67,7 +67,7 @@
     "default-gateway": "6.0.3",
     "dugite": "3.0.0-rc12",
     "electron-dl": "^4.0.0",
-    "electron-ipc-cat": "2.2.1",
+    "electron-ipc-cat": "2.2.3",
     "electron-settings": "5.0.0",
     "electron-unhandled": "4.0.1",
     "electron-window-state": "5.0.3",
@@ -138,6 +138,7 @@
   "devDependencies": {
     "@cucumber/cucumber": "^12.2.0",
     "@electron-forge/cli": "7.10.2",
+    "@electron-forge/maker-msix": "^7.10.2",
     "@electron-forge/plugin-auto-unpack-natives": "7.10.2",
     "@electron-forge/plugin-vite": "7.10.2",
     "@electron/rebuild": "^4.0.1",

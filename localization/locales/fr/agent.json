@@ -20,6 +20,7 @@
     "InvalidTabType": "Type d'onglet non valide. Un onglet de chat est requis.",
     "LoadingChat": "Chargement de la conversation en cours...",
     "StartConversation": "commencer la conversation",
+    "ThinkingProcess": "Réfléchir",
     "Untitled": "Sans titre"
   },
   "Browser": {
@@ -44,6 +45,7 @@
     }
   },
   "Common": {
+    "None": "non sélectionné"
   },
   "ContextMenu": {
     "AddToCurrentSplitView": "ajouter à la division d'écran actuelle",
@@ -105,6 +107,15 @@
     "Title": "Définition de l'agent éditeur"
   },
   "ModelFeature": {
+    "Embedding": "intégration",
+    "Free": "gratuit",
+    "ImageGeneration": "génération d'images",
+    "Language": "langue",
+    "Reasoning": "raisonnement",
+    "Speech": "synthèse vocale",
+    "ToolCalling": "appel d'outil",
+    "Transcriptions": "reconnaissance vocale",
+    "Vision": "visuel"
   },
   "ModelSelector": {
     "Model": "modèle",
@@ -138,6 +149,7 @@
     "ConfigureProvider": "Configurer {{provider}}",
     "ConfirmDelete": "Confirmer la suppression",
     "ConfirmDeleteAgentDatabase": "Êtes-vous sûr de vouloir supprimer la base de données contenant tous les historiques de conversation avec l'IA ? Cette action est irréversible.",
+    "ConfirmDeleteProvider": "Confirmer la suppression du fournisseur",
     "CustomProvider": "Fournisseur personnalisé",
     "DefaultAIModelSelection": "Sélection par défaut du modèle AI",
     "DefaultAIModelSelectionDescription": "Choisissez le fournisseur AI et le modèle par défaut à utiliser lorsqu'aucun n'est spécifiquement défini",
@@ -541,7 +553,7 @@
       "EditAgentDefinition": "Agent éditorial intelligent",
       "NewTab": "Nouvel onglet",
       "NewWeb": "nouvelle page web",
-      "SplitView": ""
+      "SplitView": "Affichage divisé"
     }
   },
   "Tool": {

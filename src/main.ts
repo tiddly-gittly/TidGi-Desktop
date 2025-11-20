@@ -9,6 +9,7 @@ import inspector from 'node:inspector';
 
 import { MainChannel } from '@/constants/channels';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
+import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import { container } from '@services/container';
 import { initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
@@ -19,6 +20,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IContextService } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IDeepLinkService } from '@services/deepLink/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
@@ -52,10 +54,11 @@ if (process.env.DEBUG_MAIN === 'true') {
 EventEmitter.defaultMaxListeners = 150;
 app.commandLine.appendSwitch('--disable-web-security');
 app.commandLine.appendSwitch('--unsafely-disable-devtools-self-xss-warnings');
+// Use different protocol scheme for test mode to avoid conflicts
 protocol.registerSchemesAsPrivileged([
   { scheme: 'http', privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'https', privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
-  { scheme: 'tidgi', privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
+  { scheme: TIDGI_PROTOCOL_SCHEME, privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'open', privileges: { bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'file', privileges: { bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'mailto', privileges: { standard: true } },
@@ -63,6 +66,7 @@ protocol.registerSchemesAsPrivileged([
 bindServiceAndProxy();
 
 // Get services - DO NOT use them until commonInit() is called
+const contextService = container.get<IContextService>(serviceIdentifier.Context);
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater);
@@ -93,9 +97,10 @@ const commonInit = async (): Promise<void> => {
   await app.whenReady();
   await initDevelopmentExtension();
 
-  // Initialize database FIRST - all other services depend on it
+  // Initialize context service - loads language maps after app is ready. This ensures LOCALIZATION_FOLDER path is correct (process.resourcesPath is stable)
+  await contextService.initialize();
+  // Initialize database - all other services depend on it
   await databaseService.initializeForApp();
-
   // Initialize i18n early so error messages can be translated
   await initRendererI18NHandler();
 
@@ -120,7 +125,8 @@ const commonInit = async (): Promise<void> => {
 
   // if user want a tidgi mini window, we create a new window for that
   // handle workspace name + tiddler name in uri https://www.electronjs.org/docs/latest/tutorial/launch-app-from-url-in-another-app
-  deepLinkService.initializeDeepLink('tidgi');
+  // Use different protocol for test mode to avoid conflicts with production
+  deepLinkService.initializeDeepLink(TIDGI_PROTOCOL_SCHEME);
 
   await windowService.open(WindowNames.main);
 
@@ -139,6 +145,10 @@ const commonInit = async (): Promise<void> => {
   await workspaceService.initializeDefaultPageWorkspaces();
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();
+
+  // Process any pending deep link after workspaces are initialized
+  await deepLinkService.processPendingDeepLink();
+
   const tidgiMiniWindow = await preferenceService.get('tidgiMiniWindow');
   if (tidgiMiniWindow) {
     await windowService.openTidgiMiniWindow(true, false);
@@ -192,7 +202,7 @@ app.on('ready', async () => {
   await commonInit();
   try {
     // buildLanguageMenu needs menuService which is initialized in commonInit
-    buildLanguageMenu();
+    await buildLanguageMenu();
     if (await preferenceService.get('syncBeforeShutdown')) {
       wikiGitWorkspaceService.registerSyncBeforeShutdown();
     }

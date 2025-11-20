@@ -107,9 +107,10 @@ async function beforeExit(): Promise<void> {
   }
 }
 
+// All exposed methods should be async.
 const wikiWorker = {
   startNodeJSWiki,
-  getTiddlerFileMetadata: (tiddlerTitle: string) => getWikiInstance()?.boot.files[tiddlerTitle],
+  getTiddlerFileMetadata: async (tiddlerTitle: string) => getWikiInstance()?.boot.files[tiddlerTitle],
   executeZxScript,
   extractWikiHTML,
   packetHTMLFromWikiFolder,

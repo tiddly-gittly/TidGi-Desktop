@@ -20,6 +20,7 @@
     "InvalidTabType": "无效的标签页类型。需要聊天标签页。",
     "LoadingChat": "正在加载对话...",
     "StartConversation": "开始对话",
+    "ThinkingProcess": "思考中",
     "Untitled": "未命名"
   },
   "Browser": {
@@ -44,6 +45,7 @@
     }
   },
   "Common": {
+    "None": "未选择"
   },
   "ContextMenu": {
     "AddToCurrentSplitView": "添加到当前分屏",
@@ -150,19 +152,20 @@
     "ConfigureModelParameters": "配置参数",
     "ConfigureProvider": "配置 {{provider}}",
     "ConfirmDeleteAgentDatabase": "确定要删除包含所有智能体对话记录的数据库吗？此操作无法撤销。",
+    "ConfirmDeleteProvider": "确认删除提供商",
     "CustomProvider": "自定义提供方",
     "DefaultAIModelSelection": "默认人工智能模型选择",
     "DefaultAIModelSelectionDescription": "选择在未具体设置时默认使用人工智能提供商和模型",
     "DefaultEmbeddingModelSelection": "默认嵌入模型选择",
     "DefaultEmbeddingModelSelectionDescription": "选择用于语义搜索和向量操作的默认嵌入模型",
+    "DefaultFreeModelSelection": "默认免费模型选择",
+    "DefaultFreeModelSelectionDescription": "生成总结标题、生成备份标题时使用的免费小模型",
     "DefaultImageGenerationModelSelection": "默认图像生成模型选择",
     "DefaultImageGenerationModelSelectionDescription": "选择用于文字生成图像操作的默认图像生成模型",
     "DefaultSpeechModelSelection": "默认语音生成模型选择",
     "DefaultSpeechModelSelectionDescription": "选择用于文字转语音操作的默认语音生成模型",
     "DefaultTranscriptionsModelSelection": "默认语音识别模型选择",
     "DefaultTranscriptionsModelSelectionDescription": "选择用于语音转文字操作的默认语音识别模型",
-    "DefaultFreeModelSelection": "默认免费模型选择",
-    "DefaultFreeModelSelectionDescription": "生成总结标题、生成备份标题时使用的免费小模型",
     "DeleteAgentDatabase": "删除人工智能对话数据库",
     "DeleteProvider": "删除提供商",
     "DisabledProviderInfo": "此提供商已禁用，其模型不会在模型选择列表中显示",
@@ -381,6 +384,8 @@
       "Description": "提供商和模型配置",
       "EmbeddingModel": "用于语义搜索和向量操作的嵌入模型名称",
       "EmbeddingModelTitle": "嵌入模型",
+      "FreeModel": "用于生成总结标题、生成备份标题时使用的免费小模型",
+      "FreeModelTitle": "免费模型",
       "ImageGenerationModel": "用于文字生成图像操作的图像生成模型名称",
       "ImageGenerationModelTitle": "图像生成模型",
       "Model": "AI 模型名称",
@@ -391,9 +396,7 @@
       "SpeechModelTitle": "语音模型",
       "Title": "提供商模型",
       "TranscriptionsModel": "用于语音转文字操作的语音识别模型名称",
-      "TranscriptionsModelTitle": "语音识别模型",
-      "FreeModel": "用于生成总结标题、生成备份标题时使用的免费小模型",
-      "FreeModelTitle": "免费模型"
+      "TranscriptionsModelTitle": "语音识别模型"
     },
     "RAG": {
       "Removal": {
@@ -542,7 +545,7 @@
       "EditAgentDefinition": "编辑智能体",
       "NewTab": "新建标签页",
       "NewWeb": "新建网页",
-      "SplitView": ""
+      "SplitView": "分屏展示"
     }
   },
   "Tool": {

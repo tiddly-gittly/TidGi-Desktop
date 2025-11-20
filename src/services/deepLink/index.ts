@@ -1,3 +1,4 @@
+import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
@@ -8,6 +9,8 @@ import type { IDeepLinkService } from './interface';
 
 @injectable()
 export class DeepLinkService implements IDeepLinkService {
+  private pendingDeepLink: string | undefined;
+
   constructor(
     @inject(serviceIdentifier.Workspace) private readonly workspaceService: IWorkspaceService,
   ) {}
@@ -67,6 +70,9 @@ export class DeepLinkService implements IDeepLinkService {
         }
         workspace = await this.workspaceService.getByWikiName(workspaceName);
         if (workspace === undefined) {
+          // Workspace doesn't exist yet, save for later processing
+          logger.info(`Workspace not found, saving deep link for later`, { requestUrl, function: 'deepLinkHandler' });
+          this.pendingDeepLink = requestUrl;
           return;
         }
       }
@@ -92,6 +98,18 @@ export class DeepLinkService implements IDeepLinkService {
       logger.error(`Invalid URL`, { requestUrl, error, function: 'deepLinkHandler' });
     }
   };
+
+  /**
+   * Process any pending deep link after workspaces are initialized
+   */
+  public async processPendingDeepLink(): Promise<void> {
+    if (this.pendingDeepLink) {
+      const url = this.pendingDeepLink;
+      this.pendingDeepLink = undefined;
+      logger.info(`Processing pending deep link`, { url, function: 'processPendingDeepLink' });
+      await this.deepLinkHandler(url);
+    }
+  }
 
   public initializeDeepLink(protocol: string) {
     if (process.defaultApp) {
@@ -120,12 +138,31 @@ export class DeepLinkService implements IDeepLinkService {
     const gotTheLock = app.requestSingleInstanceLock();
 
     if (gotTheLock) {
+      // Handle second instance (when app is already running)
       app.on('second-instance', (_event, commandLine) => {
         const url = commandLine.pop();
         if (url !== undefined && url !== '') {
           void this.deepLinkHandler(url);
         }
       });
+
+      // Handle first instance startup with URL parameter
+      // On Windows/Linux, protocol URLs are passed as command line arguments
+      if (process.argv.length >= 2) {
+        // Find the protocol URL in command line arguments
+        const protocolUrl = process.argv.find(argument => argument.startsWith(`${TIDGI_PROTOCOL_SCHEME}://`));
+        if (protocolUrl) {
+          logger.info(`Processing initial deep link from command line`, { protocolUrl, function: 'setupWindowsLinuxHandler' });
+          // Process after app is ready
+          if (app.isReady()) {
+            void this.deepLinkHandler(protocolUrl);
+          } else {
+            app.once('ready', () => {
+              void this.deepLinkHandler(protocolUrl);
+            });
+          }
+        }
+      }
     } else {
       app.quit();
     }

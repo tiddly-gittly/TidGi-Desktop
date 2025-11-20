@@ -1,4 +1,4 @@
-import { workspace } from '@services/wiki/wikiWorker/services';
+import { git, workspace } from '@services/wiki/wikiWorker/services';
 import fs from 'fs';
 import nsfw from 'nsfw';
 import path from 'path';
@@ -22,6 +22,14 @@ const FILE_DELETION_DELAY_MS = 100;
  * we re-include too early -> events fire -> processed as external changes.
  */
 const FILE_INCLUSION_DELAY_MS = 150;
+
+/**
+ * Delay before notifying git service about file changes.
+ * This prevents excessive git status checks when multiple files change rapidly.
+ * The delay aggregates multiple file changes into a single notification.
+ * Increased to 1000ms to prevent refresh storms during git operations like discard.
+ */
+const GIT_NOTIFICATION_DELAY_MS = 1000;
 
 /**
  * Enhanced filesystem adaptor that extends FileSystemAdaptor with file watching capabilities.
@@ -70,6 +78,11 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * Cleared during cleanup to prevent orphaned timeouts.
    */
   private pendingInclusions: Map<string, NodeJS.Timeout> = new Map();
+  /**
+   * Timer for debouncing git notifications.
+   * Aggregates multiple file changes into a single git status check.
+   */
+  private gitNotificationTimer: NodeJS.Timeout | undefined;
 
   constructor(options: { boot?: typeof $tw.boot; wiki: Wiki }) {
     super(options);
@@ -225,7 +238,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // Initialize sub-wiki watchers
       await this.initializeSubWikiWatchers();
       // Log stabilization marker for tests
-      this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized');
+      this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized', { level: 'debug' });
     } catch (error) {
       this.logger.alert('[WATCH_FS_ERROR] Failed to initialize file watching:', error);
     }
@@ -329,6 +342,9 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       this.logger.log(`[WATCH_FS_INCLUDE] Including file: ${absoluteFilePath}`);
       this.inverseFilesIndex.includeFile(absoluteFilePath);
       this.pendingInclusions.delete(absoluteFilePath);
+      // Notify git service when file is included after being saved
+      // This ensures that frontend-initiated changes also trigger git log refresh
+      this.scheduleGitNotification();
     }, FILE_INCLUSION_DELAY_MS);
 
     this.pendingInclusions.set(absoluteFilePath, timer);
@@ -372,6 +388,8 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * Handle NSFW file system change events
    */
   private handleNsfwEvents(events: nsfw.FileChangeEvent[]): void {
+    let hasFileChanges = false;
+
     for (const event of events) {
       const { action, directory } = event;
 
@@ -396,6 +414,9 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
         this.logger.log(`[WATCH_FS_SKIP_EXCLUDED] Skipping excluded file: ${fileAbsolutePath}`);
         continue;
       }
+
+      // Mark that we have file changes to notify git
+      hasFileChanges = true;
 
       // Determine which wiki this file belongs to and compute relative path accordingly
       const subWikiInfo = this.inverseFilesIndex.getSubWikiForFile(fileAbsolutePath);
@@ -463,6 +484,40 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
         }
       }
     }
+
+    // Notify git service about file changes with debounce
+    if (hasFileChanges) {
+      this.scheduleGitNotification();
+    }
+  }
+
+  /**
+   * Schedule a debounced notification to git service about file changes.
+   * Multiple file changes are aggregated into a single notification.
+   */
+  private scheduleGitNotification(): void {
+    // Clear existing timer
+    if (this.gitNotificationTimer) {
+      clearTimeout(this.gitNotificationTimer);
+    }
+
+    // Schedule new notification
+    this.gitNotificationTimer = setTimeout(() => {
+      // Notify git service about file changes
+      // Pass the wiki folder (parent of tiddlers folder) as wikiFolderLocation
+      // watchPathBase is wiki/tiddlers, but wikiFolderLocation should be wiki
+      const wikiFolderLocation = path.dirname(this.watchPathBase);
+      try {
+        (git.notifyFileChange as ((path: string, options?: { onlyWhenGitLogOpened?: boolean }) => void))(
+          wikiFolderLocation,
+          { onlyWhenGitLogOpened: true },
+        );
+        this.logger.log(`[WATCH_FS_GIT_NOTIFY] Notified git service about file changes in ${wikiFolderLocation}`);
+      } catch (error) {
+        this.logger.alert('[WATCH_FS_GIT_NOTIFY_ERROR] Failed to notify git service:', error);
+      }
+      this.gitNotificationTimer = undefined;
+    }, GIT_NOTIFICATION_DELAY_MS);
   }
 
   /**
@@ -536,9 +591,9 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Log appropriate event
       if (isNewFile) {
-        this.logger.log(`[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`);
+        this.logger.log(`[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`, { level: 'debug' });
       } else {
-        this.logger.log(`[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`);
+        this.logger.log(`[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`, { level: 'debug' });
       }
     }
   }
@@ -580,7 +635,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
     // Delete the tiddler from wiki to trigger change event
     $tw.syncadaptor!.wiki.deleteTiddler(tiddlerTitle);
-    this.logger.log(`[test-id-WATCH_FS_TIDDLER_DELETED] ${tiddlerTitle}`);
+    this.logger.log(`[test-id-WATCH_FS_TIDDLER_DELETED] ${tiddlerTitle}`, { level: 'debug' });
 
     // Delete system tiddler empty file if exists
     try {
@@ -603,6 +658,12 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * Cleanup method to properly close watcher when wiki is shutting down
    */
   public async cleanup(): Promise<void> {
+    // Clear git notification timer
+    if (this.gitNotificationTimer) {
+      clearTimeout(this.gitNotificationTimer);
+      this.gitNotificationTimer = undefined;
+    }
+
     // Clear all pending deletion timers
     for (const timer of this.pendingDeletions.values()) {
       clearTimeout(timer);

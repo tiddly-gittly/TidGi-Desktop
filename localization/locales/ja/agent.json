@@ -20,6 +20,7 @@
     "InvalidTabType": "無効なタブタイプです。チャットタブが必要です。",
     "LoadingChat": "会話を読み込んでいます...",
     "StartConversation": "会話を開始する",
+    "ThinkingProcess": "考え中",
     "Untitled": "無題"
   },
   "Browser": {
@@ -44,6 +45,7 @@
     }
   },
   "Common": {
+    "None": "選択されていません"
   },
   "ContextMenu": {
     "AddToCurrentSplitView": "現在の分割画面に追加",
@@ -105,6 +107,15 @@
     "Title": "編集エージェントの定義"
   },
   "ModelFeature": {
+    "Embedding": "埋め込み",
+    "Free": "無料",
+    "ImageGeneration": "画像生成",
+    "Language": "言語",
+    "Reasoning": "推理",
+    "Speech": "音声合成",
+    "ToolCalling": "ツール呼び出し",
+    "Transcriptions": "音声認識",
+    "Vision": "視覚"
   },
   "ModelSelector": {
     "Model": "モデル",
@@ -139,6 +150,7 @@
     "ConfirmDelete": "削除を確認",
     "ConfirmDeleteAgentDatabase": "すべてのAI対話記録を含むデータベースを削除してもよろしいですか？この操作は取り消せません。",
     "ConfirmDeleteExternalApiDatabase": "外部APIデバッグ情報を含むデータベースを削除してもよろしいですか？この操作は取り消せません。",
+    "ConfirmDeleteProvider": "プロバイダーを削除してよろしいですか",
     "CustomProvider": "カスタムプロバイダ",
     "DefaultAIModelSelection": "デフォルトのAIモデル選択",
     "DefaultAIModelSelectionDescription": "特に設定されていない場合に使用するデフォルトのAIプロバイダーとモデルを選択してください",
@@ -542,7 +554,7 @@
       "EditAgentDefinition": "編集エージェント",
       "NewTab": "新しいタブ",
       "NewWeb": "新しいウェブページを作成",
-      "SplitView": ""
+      "SplitView": "分割画面表示"
     }
   },
   "Tool": {

@@ -169,9 +169,7 @@ export class Wiki implements IWikiService {
     logger.debug(`wikiWorker initialized`, { function: 'Wiki.startWiki' });
     this.wikiWorkers[workspaceID] = { proxy: worker, nativeWorker: wikiWorker, detachWorker };
     this.wikiWorkerStartedEventTarget.dispatchEvent(new Event(wikiWorkerStartedEventName(workspaceID)));
-
-    // Notify worker that services are ready to use
-    worker.notifyServicesReady();
+    void worker.notifyServicesReady();
 
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation, workspaceID };
 
@@ -546,11 +544,11 @@ export class Wiki implements IWikiService {
     if (!isWikiWorkspace(workspace)) {
       return true; // dedicated workspaces always "exist"
     }
-    const { wikiFolderLocation, id: workspaceID } = workspace;
+    const { wikiFolderLocation, id: workspaceID, name } = workspace;
     const { shouldBeMainWiki, showDialog } = options;
     try {
       if (typeof wikiFolderLocation !== 'string' || wikiFolderLocation.length === 0 || !path.isAbsolute(wikiFolderLocation)) {
-        const errorMessage = i18n.t('Dialog.NeedCorrectTiddlywikiFolderPath') + wikiFolderLocation;
+        const errorMessage = i18n.t('Dialog.NeedCorrectTiddlywikiFolderPath', { name, wikiFolderLocation });
         logger.error(errorMessage);
         const windowService = container.get<IWindowService>(serviceIdentifier.Window);
         const mainWindow = windowService.get(WindowNames.main);
@@ -673,7 +671,7 @@ export class Wiki implements IWikiService {
         const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
         await workspaceViewService.restartWorkspaceViewService(mainWikiID);
         // Log that main wiki restart is complete after creating sub-wiki
-        logger.info('[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI] Main wiki restarted after sub-wiki creation', { mainWikiID, subWikiID: id });
+        logger.debug('[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI] Main wiki restarted after sub-wiki creation', { mainWikiID, subWikiID: id });
       }
     } else {
       try {
@@ -777,10 +775,9 @@ export class Wiki implements IWikiService {
 
   public async getTiddlerFilePath(title: string, workspaceID?: string): Promise<string | undefined> {
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const activeWorkspace = await workspaceService.getActiveWorkspace();
-    const wikiWorker = this.getWorker(workspaceID ?? activeWorkspace?.id ?? '');
+    const wikiWorker = this.getWorker(workspaceID ?? (await workspaceService.getActiveWorkspace())?.id ?? '');
     if (wikiWorker !== undefined) {
-      const tiddlerFileMetadata = wikiWorker.getTiddlerFileMetadata(title);
+      const tiddlerFileMetadata = await wikiWorker.getTiddlerFileMetadata(title);
       if (tiddlerFileMetadata?.filepath !== undefined) {
         return tiddlerFileMetadata.filepath;
       }

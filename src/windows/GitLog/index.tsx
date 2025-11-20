@@ -226,8 +226,9 @@ export default function GitHistory(): React.JSX.Element {
   }, [lastChangeType, entries, setSelectedCommit]);
 
   // Maintain selection across refreshes by hash
+  // Skip if we should select first (manual commit) or if a commit just happened (auto-selection in progress)
   useEffect(() => {
-    if (selectedCommit && entries.length > 0) {
+    if (selectedCommit && entries.length > 0 && !shouldSelectFirst && lastChangeType !== 'commit') {
       // Try to find the same commit in the new entries
       const stillExists = entries.find((entry) => entry.hash === selectedCommit.hash);
       // Only update if data actually changed (compare by serialization)
@@ -236,7 +237,7 @@ export default function GitHistory(): React.JSX.Element {
         setSelectedCommit(stillExists);
       }
     }
-  }, [entries, selectedCommit]);
+  }, [entries, selectedCommit, shouldSelectFirst, lastChangeType]);
 
   const handleCommitSuccess = () => {
     // Trigger selection of first commit after data refreshes
@@ -381,6 +382,11 @@ export default function GitHistory(): React.JSX.Element {
           <FileDiffPanel
             commitHash={selectedCommit?.hash || ''}
             filePath={selectedFile}
+            onDiscardSuccess={() => {
+              setSelectedFile(null);
+              // Trigger git log refresh after discard
+              setShouldSelectFirst(true);
+            }}
           />
         </DiffPanelWrapper>
       </ContentWrapper>

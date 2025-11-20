@@ -293,7 +293,7 @@ export function CommitDetailsPanel(
                 data-testid='commit-now-button'
                 startIcon={isCommitting ? <CircularProgress size={16} color='inherit' /> : undefined}
               >
-                {isCommitting ? t('GitLog.Committing') : t('GitLog.CommitNow')}
+                {isCommitting ? t('GitLog.Committing') : t('ContextMenu.BackupNow')}
               </Button>
               <Divider sx={{ my: 1 }} />
             </>

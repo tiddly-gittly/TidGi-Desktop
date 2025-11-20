@@ -157,6 +157,12 @@ export class Window implements IWindowService {
           // Don't bring up window when running e2e test, otherwise it will annoy the developer who is doing other things.
           existedWindow.show();
         }
+        // Realign workspace view when reopening window to ensure browser view is properly positioned
+        // This fixes issue #626: white screen after hiding and reopening window
+        const WindowWithBrowserView = [WindowNames.main, WindowNames.tidgiMiniWindow];
+        if (WindowWithBrowserView.includes(windowName)) {
+          await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).realignActiveWorkspace();
+        }
         if (returnWindow === true) {
           return existedWindow;
         }

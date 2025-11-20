@@ -58,6 +58,17 @@ const config: ForgeConfig = {
       },
     },
     {
+      name: '@electron-forge/maker-msix',
+      platforms: ['win32'],
+      config: {
+        packageAssets: 'build-resources/icon.ico',
+        sign: false,
+        manifestVariables: {
+          publisher: 'CN=TiddlyWiki Community',
+        },
+      },
+    },
+    {
       name: '@electron-forge/maker-zip',
       platforms: ['darwin'],
       config: {},

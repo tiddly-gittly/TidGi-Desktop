@@ -330,6 +330,27 @@ const gitGUIApp: WindowsExternalEditor[] = [
     displayNamePrefix: 'GitHub',
     publisher: 'GitHub, Inc.',
   },
+  {
+    name: 'GitKraken',
+    registryKeys: [CurrentUserUninstallKey('gitkraken'), LocalMachineUninstallKey('gitkraken')],
+    executableShimPaths: [['gitkraken.exe']],
+    displayNamePrefix: 'GitKraken',
+    publisher: 'Axosoft, LLC',
+  },
+  {
+    name: 'SourceTree',
+    registryKeys: [CurrentUserUninstallKey('SourceTree'), LocalMachineUninstallKey('SourceTree')],
+    executableShimPaths: [['SourceTree.exe']],
+    displayNamePrefix: 'SourceTree',
+    publisher: 'Atlassian',
+  },
+  {
+    name: 'TortoiseGit',
+    registryKeys: [LocalMachineUninstallKey('TortoiseGit'), Wow64LocalMachineUninstallKey('TortoiseGit')],
+    executableShimPaths: [['bin', 'TortoiseGitProc.exe']],
+    displayNamePrefix: 'TortoiseGit',
+    publisher: 'TortoiseGit',
+  },
 ];
 
 function getKeyOrEmpty(keys: readonly RegistryValue[], key: string): string {

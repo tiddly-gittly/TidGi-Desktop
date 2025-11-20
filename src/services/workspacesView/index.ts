@@ -3,10 +3,10 @@ import { app, dialog, session } from 'electron';
 import { inject, injectable } from 'inversify';
 
 import { WikiChannel } from '@/constants/channels';
-import { tiddlywikiLanguagesMap } from '@/constants/languages';
 import { WikiCreationMethod } from '@/constants/wikiCreation';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
+import type { IContextService } from '@services/context/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
@@ -179,6 +179,8 @@ export class WorkspaceView implements IWorkspaceViewService {
         if (view !== undefined) {
           // if is newly created wiki, we set the language as user preference
           const currentLanguage = await this.preferenceService.get('language');
+          const contextService = container.get<IContextService>(serviceIdentifier.Context);
+          const tiddlywikiLanguagesMap = await contextService.get('tiddlywikiLanguagesMap');
           const tiddlywikiLanguageName = tiddlywikiLanguagesMap[currentLanguage];
           if (tiddlywikiLanguageName === undefined) {
             const errorMessage = `When creating new wiki, and switch to language "${currentLanguage}", there is no corresponding tiddlywiki language registered`;

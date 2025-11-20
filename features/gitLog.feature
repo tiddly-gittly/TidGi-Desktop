@@ -92,3 +92,95 @@ Feature: Git Log Window
     # The modified content should be reverted, and make sure file won't be deleted
     Then I should not see a "missing tiddler indicator" element in browser view with selector "[data-tiddler-title='Index']:has-text('佚失')"
     Then I should not see a "modified content in Index tiddler" element in browser view with selector "[data-tiddler-title='Index']:has-text('Modified Index content')"
+
+  @git
+  Scenario: Discard uncommitted changes for a single file
+    # Modify the existing Index.tid file to create uncommitted changes
+    And I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Discard test content - should be reverted!"
+    Then I wait for tiddler "Index" to be updated by watch-fs
+    And I wait for 1 seconds for "git to detect file changes"
+    # Open Git Log window
+    When I click menu "知识库 > 查看历史备份"
+    And I wait for 1 seconds for "git log window to open"
+    And I should see "Discard test content" in the browser view content
+    And I switch to "gitHistory" window
+    And I wait for the page to load completely
+    # Wait for git log data to load
+    And I wait for 2 seconds for "git log data to load"
+    Then I should see a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    # Click on the uncommitted changes row
+    When I click on a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    And I wait for 0.5 seconds for "file list to populate"
+    # Verify we can see the modified Index.tid file
+    Then I should see a "Index.tid file in uncommitted list" element with selector "li:has-text('Index.tid')"
+    # Click on the Index.tid file to select it
+    When I click on a "Index.tid file in list" element with selector "li:has-text('Index.tid')"
+    And I wait for 1 seconds for "file diff to load in right panel"
+    # Verify the file diff panel has loaded by checking for the file name header
+    Then I should see a "file name header in diff panel" element with selector "h6:has-text('Index.tid')"
+    # Click the Actions tab in the file diff panel (the one that has the file name above it)
+    # We need to find the Actions tab that is a sibling of the h6 containing "Index.tid"
+    When I click on a "actions tab in file diff panel" element with selector "h6:has-text('Index.tid') ~ div button[role='tab']:has-text('操作'), h6:has-text('Index.tid') ~ div button[role='tab']:has-text('Actions')"
+    And I wait for 1 seconds for "actions tab content to render"
+    # Verify the discard changes button exists (only shows for uncommitted changes)
+    Then I should see a "discard changes button" element with selector "button:has-text('放弃修改'), button:has-text('Discard changes')"
+    When I click on a "discard changes button" element with selector "button:has-text('放弃修改'), button:has-text('Discard changes')"
+    # Wait for git discard operation to complete
+    And I wait for 2 seconds for "git discard to complete and UI to refresh"
+    # Verify the file is no longer in the uncommitted list (should go back to showing no selection)
+    Then I should not see a "Index.tid file still selected" element with selector "li:has-text('Index.tid')[class*='selected']"
+    # Switch back to main window to verify the discard
+    When I switch to "main" window
+    # Wait for file system events to stabilize after git discard
+    And I wait for 2 seconds for "file system events to stabilize after git discard"
+    # The modified content should be discarded
+    Then I should not see a "modified content in Index tiddler" element in browser view with selector "[data-tiddler-title='Index']:has-text('Discard test content')"
+
+  @git
+  Scenario: Git Log window auto-refreshes when files change (only when window is open)
+    # Open Git Log window FIRST
+    When I click menu "知识库 > 查看历史备份"
+    And I wait for 1 seconds for "git log window to open"
+    And I switch to "gitHistory" window
+    And I wait for the page to load completely
+    # Should see initial commits
+    Then I should see a "commit history table" element with selector "table"
+    # Now modify a file WHILE window is open - this should trigger auto-refresh
+    When I switch to "main" window
+    And I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Modified with window open"
+    Then I wait for tiddler "Index" to be updated by watch-fs
+    # Wait for git log to auto-refresh after detecting file changes
+    And I wait for "git log auto-refreshed after file change" log marker "[test-id-git-log-refreshed]"
+    # Switch back to git log window
+    When I switch to "gitHistory" window
+    # Should see uncommitted changes row appear or update
+    Then I should see a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    # Click on uncommitted changes to verify the modified file is there
+    When I click on a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    And I wait for 1 seconds for "file list to load"
+    # Should see Index.tid in the uncommitted list
+    Then I should see a "Index.tid in uncommitted list" element with selector "li:has-text('Index.tid')"
+    # Now create a NEW file while window is still open
+    When I switch to "main" window
+    And I create file "{tmpDir}/wiki/tiddlers/AutoRefreshTest.tid" with content:
+      """
+      created: 20250227070000000
+      modified: 20250227070000000
+      title: AutoRefreshTest
+      tags: TestTag
+      
+      This file is created to test auto-refresh when git log window is open.
+      """
+    Then I wait for tiddler "AutoRefreshTest" to be added by watch-fs
+    # Wait for git log to auto-refresh after detecting new file
+    And I wait for "git log auto-refreshed after new file" log marker "[test-id-git-log-refreshed]"
+    # Switch back to git log window
+    When I switch to "gitHistory" window
+    # The uncommitted changes row should still be visible
+    Then I should see a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    # Click on uncommitted changes again to see both files
+    When I click on a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    And I wait for 1 seconds for "file list to reload"
+    # Both Index.tid and AutoRefreshTest.tid should be in the uncommitted list
+    Then I should see a "Index.tid in uncommitted list" element with selector "li:has-text('Index.tid')"
+    And I should see a "AutoRefreshTest.tid in uncommitted list" element with selector "li:has-text('AutoRefreshTest.tid')"

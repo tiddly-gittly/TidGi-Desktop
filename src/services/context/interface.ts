@@ -28,23 +28,30 @@ export interface IConstants {
   isDevelopment: boolean;
   oSVersion: string;
   platform: string;
+}
+
+export interface IContext extends IPaths, IConstants {
   supportedLanguagesMap: Record<string, string>;
   tiddlywikiLanguagesMap: Record<string, string | undefined>;
 }
-
-export interface IContext extends IPaths, IConstants {}
 
 /**
  * Manage constant value like `isDevelopment` and many else, so you can know about about running environment in main and renderer process easily.
  */
 export interface IContextService {
   get<K extends keyof IContext>(key: K): Promise<IContext[K]>;
+  /**
+   * Initialize language maps after app is ready.
+   * Must be called early in app initialization before any code tries to access language maps.
+   */
+  initialize(): Promise<void>;
   isOnline(): Promise<boolean>;
 }
 export const ContextServiceIPCDescriptor = {
   channel: ContextChannel.name,
   properties: {
     get: ProxyPropertyType.Function,
+    initialize: ProxyPropertyType.Function,
     isOnline: ProxyPropertyType.Function,
   },
 };

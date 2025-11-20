@@ -39,7 +39,7 @@ class TidGiIPCSyncAdaptor {
     this.isLoggedIn = false;
     this.isReadOnly = false;
     this.logoutIsAvailable = true;
-    const workspaceID = (window.meta() as WindowMeta[WindowNames.view]).workspace?.id;
+    const workspaceID = (typeof window.meta === 'function' ? window.meta() as WindowMeta[WindowNames.view] : undefined)?.workspace?.id;
     if (workspaceID === undefined) {
       throw new Error('TidGiIPCSyncAdaptor: workspaceID is undefined. Cannot initialize sync adaptor without a valid workspace ID.');
     }
@@ -319,7 +319,7 @@ class TidGiIPCSyncAdaptor {
 if ($tw.browser && typeof window !== 'undefined') {
   const isInTidGi = typeof document !== 'undefined' && document.location.protocol.startsWith('tidgi');
   const servicesExposed = Boolean(window.service.wiki);
-  const hasWorkspaceIDinMeta = Boolean((window.meta() as WindowMeta[WindowNames.view] | undefined)?.workspace?.id);
+  const hasWorkspaceIDinMeta = Boolean((typeof window.meta === 'function' ? window.meta() as WindowMeta[WindowNames.view] : undefined)?.workspace?.id);
   if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     exports.adaptorClass = TidGiIPCSyncAdaptor;
