@@ -168,7 +168,6 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
     if (tab.currentStep !== undefined) {
       setCurrentStep(tab.currentStep);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
   // Cleanup when component unmounts or tab closes

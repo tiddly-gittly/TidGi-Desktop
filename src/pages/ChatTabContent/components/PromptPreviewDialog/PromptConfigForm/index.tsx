@@ -75,7 +75,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
 
     return {
       ArrayFieldTemplate,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
       ArrayFieldItemTemplate,
       FieldTemplate,
       ObjectFieldTemplate: rootObjectFieldTemplate,

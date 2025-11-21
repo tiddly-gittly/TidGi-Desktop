@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Box, Typography } from '@mui/material';
 import { ArrayFieldTemplateProps } from '@rjsf/utils';
 import React from 'react';

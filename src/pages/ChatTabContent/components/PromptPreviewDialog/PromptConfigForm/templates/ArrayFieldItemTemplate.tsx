@@ -104,4 +104,3 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
     </ArrayItemProvider>
   );
 }
-
