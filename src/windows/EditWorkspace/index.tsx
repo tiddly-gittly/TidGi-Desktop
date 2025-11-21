@@ -290,7 +290,7 @@ export default function EditWorkspace(): React.JSX.Element {
                       // Show error notification
                       void window.service.notification.show({
                         title: t('EditWorkspace.MoveWorkspaceFailed'),
-                        body: t('EditWorkspace.MoveWorkspaceFailedMessage', { name: workspaceName, error: errorMessage }),
+                        body: t('EditWorkspace.MoveWorkspaceFailedMessage', { name: workspace.name, error: errorMessage }),
                       });
                     }
                   }
