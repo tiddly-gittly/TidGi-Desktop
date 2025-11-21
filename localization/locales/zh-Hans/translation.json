@@ -171,6 +171,10 @@
     "LastVisitState": "上次访问的页面",
     "MainWorkspacePath": "主工作区路径",
     "MiscOptions": "杂项设置",
+    "MoveWorkspace": "移动工作区...",
+    "MoveWorkspaceFailed": "移动工作区失败",
+    "MoveWorkspaceFailedMessage": "移动工作区失败",
+    "MoveWorkspaceTooltip": "将工作区文件夹移动到新位置。移动前会自动停止知识库以避免文件锁定问题。",
     "Name": "工作区名",
     "NameDescription": "工作区的名字，将显示在侧边栏上，可以与工作区Git仓库的实际文件夹名不同",
     "NoRevert": "注意！这个操作无法撤销！",
@@ -553,7 +557,7 @@
     "UpdateAvailable": "有新版本！"
   },
   "Unknown": "未知",
-  "Update": "",
+  "Update": "更新",
   "Updater": {
     "CheckUpdate": "检查更新",
     "CheckingFailed": "检查更新失败（网络错误）",

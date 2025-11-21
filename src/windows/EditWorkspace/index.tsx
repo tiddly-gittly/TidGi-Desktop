@@ -257,7 +257,7 @@ export default function EditWorkspace(): React.JSX.Element {
         </OptionsAccordion>
         <OptionsAccordion>
           <Tooltip title={t('EditWorkspace.ClickToExpand')}>
-            <OptionsAccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <OptionsAccordionSummary expandIcon={<ExpandMoreIcon />} data-testid='preference-section-saveAndSyncOptions'>
               {t('EditWorkspace.SaveAndSyncOptions')}
             </OptionsAccordionSummary>
           </Tooltip>
@@ -274,6 +274,31 @@ export default function EditWorkspace(): React.JSX.Element {
                 workspaceSetter({ ...workspace, wikiFolderLocation: event.target.value });
               }}
             />
+            <Tooltip title={t('EditWorkspace.MoveWorkspaceTooltip') ?? ''} placement='top'>
+              <PictureButton
+                variant='outlined'
+                size='small'
+                onClick={async () => {
+                  const directories = await window.service.native.pickDirectory();
+                  if (directories.length > 0) {
+                    const newLocation = directories[0];
+                    try {
+                      await window.service.wikiGitWorkspace.moveWorkspaceLocation(workspaceID, newLocation);
+                    } catch (error) {
+                      const errorMessage = (error as Error).message;
+                      void window.service.native.log('error', `Failed to move workspace: ${errorMessage}`, { error, workspaceID, newLocation });
+                      // Show error notification
+                      void window.service.notification.show({
+                        title: t('EditWorkspace.MoveWorkspaceFailed'),
+                        body: t('EditWorkspace.MoveWorkspaceFailedMessage', { name: workspaceName, error: errorMessage }),
+                      });
+                    }
+                  }
+                }}
+              >
+                {t('EditWorkspace.MoveWorkspace')}
+              </PictureButton>
+            </Tooltip>
             {isSubWiki && mainWikiToLink && (
               <TextField
                 fullWidth
