@@ -10,6 +10,8 @@ export const RootObjectFieldTemplate: React.FC<ObjectFieldTemplateProps> = (prop
   const [activeTab, setActiveTab] = useState(0);
   const { t } = useTranslation('agent');
 
+  console.log('RootObjectFieldTemplate rendered, properties count:', properties.length, 'properties:', properties.map(p => p.name));
+
   const { formFieldsToScrollTo } = useAgentChatStore(
     useShallow((state) => ({
       formFieldsToScrollTo: state.formFieldsToScrollTo,

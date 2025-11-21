@@ -1,40 +1,20 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Box, Typography } from '@mui/material';
 import { ArrayFieldTemplateProps } from '@rjsf/utils';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrayAddButton, ArrayContainer, ArrayHeader, ArrayItemCount, EmptyState, HelpTooltip, SortableArrayItem, StyledFieldLabel } from '../components';
+import { ArrayAddButton, ArrayContainer, ArrayHeader, ArrayItemCount, EmptyState, HelpTooltip, StyledFieldLabel } from '../components';
 
 /**
- * Enhanced Array Field Template with drag-and-drop functionality
+ * Enhanced Array Field Template
+ * In RJSF 6.x, items are pre-rendered ReactElements, so we just display them
+ * The drag-and-drop and collapse logic is handled in ArrayFieldItemTemplate
  */
 export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => {
-  const { items, onAddClick, canAdd, title, schema, formData } = props;
+  const { items, onAddClick, canAdd, title, schema } = props;
   const { t } = useTranslation('agent');
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    }),
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const activeIndex = items.findIndex((item) => item.key === active.id);
-    const overIndex = items.findIndex((item) => item.key === over.id);
-    if (activeIndex !== overIndex && activeIndex !== -1 && overIndex !== -1) {
-      const activeItem = items[activeIndex];
-      activeItem.buttonsProps.onReorderClick(activeIndex, overIndex)();
-    }
-  };
-
   const description = schema.description;
-  const itemIds = items.map((item) => item.key);
-  const isItemsCollapsible = true;
 
   return (
     <ArrayContainer>
@@ -64,26 +44,9 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
           </EmptyState>
         )
         : (
-          <DndContext
-            sensors={sensors}
-            modifiers={[restrictToVerticalAxis]}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-              {items.map((item, index) => {
-                const itemData = Array.isArray(formData) ? formData[index] : undefined;
-                return (
-                  <SortableArrayItem
-                    key={item.key}
-                    item={item}
-                    index={index}
-                    isCollapsible={isItemsCollapsible}
-                    itemData={itemData}
-                  />
-                );
-              })}
-            </SortableContext>
-          </DndContext>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {items}
+          </Box>
         )}
 
       {canAdd && (

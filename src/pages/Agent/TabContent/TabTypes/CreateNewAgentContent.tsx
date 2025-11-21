@@ -162,10 +162,14 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
     }
   }, [temporaryAgentDefinition, saveToBackendDebounced]);
 
-  // Update current step when tab changes
+  // Only initialize from tab on mount, don't sync back
+  // The component is the source of truth for currentStep during its lifecycle
   useEffect(() => {
-    setCurrentStep(tab.currentStep ?? 0);
-  }, [tab.currentStep]);
+    if (tab.currentStep !== undefined) {
+      setCurrentStep(tab.currentStep);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Cleanup when component unmounts or tab closes
   useEffect(() => {
@@ -359,32 +363,32 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
       case 'editPrompt':
         return (
           <StepContainer>
-            <Typography variant='h6' gutterBottom>
+            <Typography variant='h6' gutterBottom data-testid='edit-prompt-title'>
               {t('CreateAgent.EditPrompt')}
             </Typography>
             <Typography variant='body2' color='text.secondary' gutterBottom>
               {t('CreateAgent.EditPromptDescription')}
             </Typography>
 
-            {temporaryAgentDefinition
+            {temporaryAgentDefinition && promptSchema
               ? (
                 <Box sx={{ mt: 2, height: 400, overflow: 'auto' }}>
                   <PromptConfigForm
-                    schema={promptSchema || undefined}
-                    formData={temporaryAgentDefinition.handlerConfig as HandlerConfig}
+                    schema={promptSchema}
+                    formData={(temporaryAgentDefinition.handlerConfig || {}) as HandlerConfig}
                     onChange={(updatedConfig) => {
                       void handleAgentDefinitionChange({
                         ...temporaryAgentDefinition,
                         handlerConfig: updatedConfig as Record<string, unknown>,
                       });
                     }}
-                    loading={!promptSchema}
+                    loading={false}
                   />
                 </Box>
               )
               : (
                 <Typography variant='body2' color='text.secondary'>
-                  {t('CreateAgent.NoTemplateSelected')}
+                  {t('CreateAgent.LoadingSchema')}
                 </Typography>
               )}
           </StepContainer>

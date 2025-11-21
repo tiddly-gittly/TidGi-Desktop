@@ -37,8 +37,8 @@ Feature: Create New Agent Workflow
     When I type "我的代码助手" in "agent name input" element with selector "[data-testid='agent-name-input-field']"
     # Advance to step 2 (Edit Prompt)
     When I click on a "next button" element with selector "[data-testid='next-button']"
-    # Step 4: Verify second step content (Edit Prompt)
-    And I should see a "edit prompt title" element with selector "*:has-text('编辑提示词')"
+    # Step 4: Verify second step content (Edit Prompt) - using text selector as a diagnostic
+    And I should see a "edit prompt title" element with selector "h6:has-text('编辑提示词')"
     # Step 4.1: Wait for PromptConfigForm to load
     # Verify the PromptConfigForm is present with our new test id
     And I should see a "prompt config form" element with selector "[data-testid='prompt-config-form']"
@@ -51,9 +51,9 @@ Feature: Create New Agent Workflow
       | [data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon'] |
       | [data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])                                                                                              |
     When I clear text in "system prompt text field" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
+    And I wait for 0.1 seconds for "clear to complete and DOM to stabilize"
     When I type "你是一个专业的代码助手，请用中文回答编程问题。" in "system prompt text field" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
-    # Wait for form content save to backend
-    And I wait for 0.2 seconds
+    And I wait for 0.2 seconds for "form content save to backend"
     # Step 5: Advance to step 3 (Immediate Use)
     When I click on a "next button" element with selector "[data-testid='next-button']"
     # Step 6: Verify third step content (Immediate Use with chat interface)
