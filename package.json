@@ -179,7 +179,7 @@
     "rimraf": "^6.1.2",
     "ts-node": "10.9.2",
     "tsx": "^4.20.6",
-    "tw5-typed": "^1.0.2",
+    "tw5-typed": "^1.0.5",
     "typescript": "5.9.3",
     "typesync": "0.14.3",
     "unplugin-swc": "^1.5.8",
