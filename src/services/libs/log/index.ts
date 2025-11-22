@@ -55,6 +55,12 @@ const labeledLoggers = new Map<string, winston.Logger>();
  * @returns A winston logger instance for the specified label
  */
 export function getLoggerForLabel(label: string): winston.Logger {
+  // Special case: if label is 'TidGi', return the main logger to avoid file write conflicts
+  // This allows main window console logs to merge into the same TidGi-*.log file
+  if (label === 'TidGi') {
+    return logger;
+  }
+
   const existingLogger = labeledLoggers.get(label);
   if (existingLogger) {
     return existingLogger;

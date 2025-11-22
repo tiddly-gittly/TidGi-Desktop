@@ -23,6 +23,7 @@ import { useThemeObservable } from '@services/theme/hooks';
 import { initRendererI18N } from './services/libs/i18n/renderer';
 import 'electron-ipc-cat/fixContextIsolation';
 import { useHashLocation } from 'wouter/use-hash-location';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { RootStyle } from './components/RootStyle';
 import { initTestKeyboardShortcutFallback } from './helpers/testKeyboardShortcuts';
 import { Pages } from './windows';
@@ -33,22 +34,24 @@ function App(): JSX.Element {
 
   return (
     <StrictMode>
-      <ThemeProvider theme={theme?.shouldUseDarkColors === true ? darkTheme : lightTheme}>
-        <StyledEngineProvider injectFirst>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <CssBaseline />
-            <Suspense fallback={<div />}>
-              <I18nextProvider i18n={i18next}>
-                <RootStyle>
-                  <Router hook={useHashLocation}>
-                    <Pages />
-                  </Router>
-                </RootStyle>
-              </I18nextProvider>
-            </Suspense>
-          </LocalizationProvider>
-        </StyledEngineProvider>
-      </ThemeProvider>
+      <ErrorBoundary>
+        <ThemeProvider theme={theme?.shouldUseDarkColors === true ? darkTheme : lightTheme}>
+          <StyledEngineProvider injectFirst>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <CssBaseline />
+              <Suspense fallback={<div />}>
+                <I18nextProvider i18n={i18next}>
+                  <RootStyle>
+                    <Router hook={useHashLocation}>
+                      <Pages />
+                    </Router>
+                  </RootStyle>
+                </I18nextProvider>
+              </Suspense>
+            </LocalizationProvider>
+          </StyledEngineProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
     </StrictMode>
   );
 }
