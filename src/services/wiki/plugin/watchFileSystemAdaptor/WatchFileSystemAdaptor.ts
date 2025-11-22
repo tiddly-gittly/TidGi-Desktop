@@ -104,13 +104,25 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // Get existing file info (if tiddler already exists on disk)
       const oldFileInfo = this.boot.files[tiddler.fields.title];
 
+      // For new tiddlers, pre-calculate the file path and exclude it to prevent echo
+      // This prevents the watch-fs from processing its own save operations, especially large tiddler like drag & drop plugin json tiddler, which may taker longer than expected FILE_INCLUSION_DELAY_MS time to write to disk
+      let excludedNewFilePath: string | undefined;
+      if (!oldFileInfo) {
+        try {
+          const newFileInfo = await this.getTiddlerFileInfo(tiddler);
+          if (newFileInfo?.filepath) {
+            this.excludeFile(newFileInfo.filepath);
+            excludedNewFilePath = newFileInfo.filepath;
+          }
+        } catch (error) {
+          this.logger.alert(`[WATCH_FS_ERROR] Failed to pre-calculate file path for new tiddler: ${tiddler.fields.title}`, error);
+        }
+      }
+
       // Exclude old file path before save (if it exists)
       if (oldFileInfo) {
         this.excludeFile(oldFileInfo.filepath);
         this.logger.log(`[WATCH_FS_SAVE] Excluded existing file: ${oldFileInfo.filepath}`);
-      } else {
-        // For new tiddlers, we can't pre-exclude them since we don't know the path yet
-        this.logger.log(`[WATCH_FS_NEW_TIDDLER] Saving new tiddler: ${tiddler.fields.title}`);
       }
 
       // Call parent's saveTiddler to handle the actual save (including cleanup of old files)
@@ -130,6 +142,11 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Schedule re-inclusion after delay to avoid echo
       this.scheduleFileInclusion(finalFileInfo.filepath);
+
+      // For edge case, rarely if we wrongly pre-excluded a new file path and it's different from the final path that tw decided to use, re-include it to revoke the influence
+      if (excludedNewFilePath && excludedNewFilePath !== finalFileInfo.filepath) {
+        this.scheduleFileInclusion(excludedNewFilePath);
+      }
 
       // If old file path was different and we excluded it, re-include it
       // The old file should be deleted by now via cleanupTiddlerFiles
