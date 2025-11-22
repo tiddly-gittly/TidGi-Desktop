@@ -1,6 +1,6 @@
-import { FieldProps } from '@rjsf/utils';
+import type { FieldProps } from '@rjsf/utils';
 import React, { useMemo } from 'react';
-import { ConditionalFieldConfig, ExtendedFormContext } from '../index';
+import type { ConditionalFieldConfig, ExtendedFormContext } from '../index';
 
 /**
  * ConditionalField wraps any field and conditionally shows/hides it based on sibling field values.
@@ -12,7 +12,7 @@ import { ConditionalFieldConfig, ExtendedFormContext } from '../index';
  * 4. Uses useMemo to prevent unnecessary recalculations
  */
 export const ConditionalField: React.FC<FieldProps> = (props) => {
-  const { uiSchema, registry, idSchema } = props;
+  const { uiSchema, registry, fieldPathId } = props;
 
   const condition = uiSchema?.['ui:condition'] as ConditionalFieldConfig | undefined;
 
@@ -28,8 +28,10 @@ export const ConditionalField: React.FC<FieldProps> = (props) => {
     if (!rootFormData) return true;
 
     // Parse the field's path to find its parent object where sibling fields are located
-    const fieldPath = idSchema.$id.replace(/^root_/, '');
-    const pathParts = fieldPath.split('_');
+    // In RJSF 6.x, fieldPathId.$id is a string that contains the path
+    const fieldPathValue = fieldPathId?.$id ?? '';
+    const fieldPath = (typeof fieldPathValue === 'string' ? fieldPathValue : '').replace(/^root_/, '');
+    const pathParts = fieldPath.split('_').filter(Boolean);
     pathParts.pop(); // Remove current field name to get parent path
 
     // Navigate to parent object in the form data tree
@@ -58,7 +60,7 @@ export const ConditionalField: React.FC<FieldProps> = (props) => {
 
     // Apply inverse logic if specified
     return hideWhen ? !conditionMet : conditionMet;
-  }, [condition, registry.formContext, idSchema.$id]);
+  }, [condition, registry.formContext, fieldPathId?.$id]);
 
   // Hidden fields return nothing
   if (!shouldShow) {
