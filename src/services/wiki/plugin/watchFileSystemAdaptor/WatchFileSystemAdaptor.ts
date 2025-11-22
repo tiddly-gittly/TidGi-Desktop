@@ -5,7 +5,6 @@ import path from 'path';
 import type { Tiddler, Wiki } from 'tiddlywiki';
 import { FileSystemAdaptor, type IFileSystemAdaptorCallback } from './FileSystemAdaptor';
 import { type IBootFilesIndexItemWithTitle, InverseFilesIndex } from './InverseFilesIndex';
-import { getActionName } from './utilities';
 
 /**
  * Delay before actually processing file deletion.
@@ -119,7 +118,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
             excludedNewFilePath = newFileInfo.filepath;
           }
         } catch (error) {
-          this.logger.alert(`[WATCH_FS_ERROR] Failed to pre-calculate file path for new tiddler: ${tiddler.fields.title}`, error);
+          this.logger.alert(`WatchFileSystemAdaptor Failed to pre-calculate file path for new tiddler: ${tiddler.fields.title}`, error);
         }
       }
 
@@ -129,7 +128,6 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
         // Also exclude the .meta file if it exists
         const metaFilePath = `${oldFileInfo.filepath}.meta`;
         this.excludeFile(metaFilePath);
-        this.logger.log(`[WATCH_FS_SAVE] Excluded existing file: ${oldFileInfo.filepath}`);
       }
 
       // Call parent's saveTiddler to handle the actual save (including cleanup of old files)
@@ -223,11 +221,11 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       try {
         const currentWorkspace = await workspace.get(this.workspaceID);
         if (currentWorkspace && 'enableFileSystemWatch' in currentWorkspace && !currentWorkspace.enableFileSystemWatch) {
-          this.logger.log('[WATCH_FS_DISABLED] File system watching is disabled for this workspace');
+          this.logger.log('WatchFileSystemAdaptor File system watching is disabled for this workspace');
           return;
         }
       } catch (error) {
-        this.logger.alert('[WATCH_FS_ERROR] Failed to check enableFileSystemWatch setting:', error);
+        this.logger.alert('WatchFileSystemAdaptor Failed to check enableFileSystemWatch setting:', error);
         return;
       }
     }
@@ -253,7 +251,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
         {
           debounceMS: 100,
           errorCallback: (error) => {
-            this.logger.alert('[WATCH_FS_ERROR] NSFW error:', error);
+            this.logger.alert('WatchFileSystemAdaptor NSFW error:', error);
           },
           // Start with base excluded paths
           // @ts-expect-error - nsfw types are incorrect, it accepts string[] not just [string]
@@ -268,7 +266,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // Log stabilization marker for tests
       this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized', { level: 'debug' });
     } catch (error) {
-      this.logger.alert('[WATCH_FS_ERROR] Failed to initialize file watching:', error);
+      this.logger.alert('WatchFileSystemAdaptor Failed to initialize file watching:', error);
     }
   }
 
@@ -284,7 +282,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // Get sub-wikis for this main wiki
       const subWikis = await workspace.getSubWorkspacesAsList(this.workspaceID);
 
-      this.logger.log(`[WATCH_FS_SUBWIKI] Found ${subWikis.length} sub-wikis to watch`);
+      this.logger.log(`WatchFileSystemAdaptor Found ${subWikis.length} sub-wikis to watch`);
 
       // Create watcher for each sub-wiki
       for (const subWiki of subWikis) {
@@ -298,7 +296,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
         // Check if the path exists before trying to watch
         if (!fs.existsSync(subWikiPath)) {
-          this.logger.log(`[WATCH_FS_SUBWIKI] Path does not exist for sub-wiki ${subWiki.name}: ${subWikiPath}`);
+          this.logger.log(`WatchFileSystemAdaptor Path does not exist for sub-wiki ${subWiki.name}: ${subWikiPath}`);
           continue;
         }
 
@@ -311,7 +309,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
             {
               debounceMS: 100,
               errorCallback: (error) => {
-                this.logger.alert(`[WATCH_FS_ERROR] NSFW error for sub-wiki ${subWiki.name}:`, error);
+                this.logger.alert(`WatchFileSystemAdaptor NSFW error for sub-wiki ${subWiki.name}:`, error);
               },
             },
           );
@@ -319,13 +317,13 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
           await subWikiWatcher.start();
           this.inverseFilesIndex.registerSubWiki(subWiki.id, subWikiPath, subWikiWatcher);
 
-          this.logger.log(`[WATCH_FS_SUBWIKI] Watching sub-wiki: ${subWiki.name} at ${subWikiPath}`);
+          this.logger.log(`WatchFileSystemAdaptor Watching sub-wiki: ${subWiki.name} at ${subWikiPath}`);
         } catch (error) {
-          this.logger.alert(`[WATCH_FS_ERROR] Failed to watch sub-wiki ${subWiki.name}:`, error);
+          this.logger.alert(`WatchFileSystemAdaptor Failed to watch sub-wiki ${subWiki.name}:`, error);
         }
       }
     } catch (error) {
-      this.logger.alert('[WATCH_FS_ERROR] Failed to initialize sub-wiki watchers:', error);
+      this.logger.alert('WatchFileSystemAdaptor Failed to initialize sub-wiki watchers:', error);
     }
   }
 
@@ -350,7 +348,6 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * @param absoluteFilePath Absolute file path
    */
   private excludeFile(absoluteFilePath: string): void {
-    this.logger.log(`[WATCH_FS_EXCLUDE] Excluding file: ${absoluteFilePath}`);
     this.inverseFilesIndex.excludeFile(absoluteFilePath);
   }
 
@@ -367,7 +364,6 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     }
 
     const timer = setTimeout(() => {
-      this.logger.log(`[WATCH_FS_INCLUDE] Including file: ${absoluteFilePath}`);
       this.inverseFilesIndex.includeFile(absoluteFilePath);
       this.pendingInclusions.delete(absoluteFilePath);
       // Notify git service when file is included after being saved
@@ -387,7 +383,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     if (existingTimer) {
       clearTimeout(existingTimer);
       this.pendingDeletions.delete(fileAbsolutePath);
-      this.logger.log(`[WATCH_FS_CANCEL_DELETE] Cancelled pending deletion for: ${fileAbsolutePath}`);
+      this.logger.log(`WatchFileSystemAdaptor Cancelled pending deletion for: ${fileAbsolutePath}`);
     }
   }
 
@@ -409,7 +405,6 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     }, FILE_DELETION_DELAY_MS);
 
     this.pendingDeletions.set(fileAbsolutePath, timer);
-    this.logger.log(`[WATCH_FS_SCHEDULE_DELETE] Scheduled deletion for: ${fileAbsolutePath}`);
   }
 
   /**
@@ -439,7 +434,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
         : this.inverseFilesIndex.isMainFileExcluded(fileAbsolutePath);
 
       if (isExcluded) {
-        this.logger.log(`[WATCH_FS_SKIP_EXCLUDED] Skipping excluded file: ${fileAbsolutePath}`);
+        this.logger.log(`WatchFileSystemAdaptor Skipping excluded file: ${fileAbsolutePath}`);
         continue;
       }
 
@@ -456,15 +451,13 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       const fileMimeType = $tw.utils.getFileExtensionInfo(fileExtension)?.type ?? 'text/vnd.tiddlywiki';
       const metaFileAbsolutePath = `${fileAbsolutePath}.meta`;
 
-      this.logger.log('[WATCH_FS_EVENT]', getActionName(action), fileName, `(directory: ${directory})`);
-
       // Handle different event types
       if (action === nsfw.actions.CREATED || action === nsfw.actions.MODIFIED) {
         // Skip if it's a directory (nsfw sometimes reports directory changes)
         try {
           const stats = fs.statSync(fileAbsolutePath);
           if (stats.isDirectory()) {
-            this.logger.log(`[WATCH_FS_SKIP_DIR] Skipping directory: ${fileAbsolutePath}`);
+            this.logger.log(`WatchFileSystemAdaptor Skipping directory: ${fileAbsolutePath}`);
             continue;
           }
         } catch {
@@ -548,13 +541,9 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // watchPathBase is wiki/tiddlers, but wikiFolderLocation should be wiki
       const wikiFolderLocation = path.dirname(this.watchPathBase);
       try {
-        (git.notifyFileChange as ((path: string, options?: { onlyWhenGitLogOpened?: boolean }) => void))(
-          wikiFolderLocation,
-          { onlyWhenGitLogOpened: true },
-        );
-        this.logger.log(`[WATCH_FS_GIT_NOTIFY] Notified git service about file changes in ${wikiFolderLocation}`);
+        void git.notifyFileChange(wikiFolderLocation, { onlyWhenGitLogOpened: true });
       } catch (error) {
-        this.logger.alert('[WATCH_FS_GIT_NOTIFY_ERROR] Failed to notify git service:', error);
+        this.logger.alert('WatchFileSystemAdaptor Failed to notify git service:', error);
       }
       this.gitNotificationTimer = undefined;
     }, GIT_NOTIFICATION_DELAY_MS);
@@ -587,7 +576,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     try {
       tiddlersDescriptor = $tw.loadTiddlersFromFile(actualFileToLoad);
     } catch (error) {
-      this.logger.alert('[WATCH_FS_LOAD_ERROR] Failed to load file:', actualFileToLoad, error);
+      this.logger.alert('WatchFileSystemAdaptor Failed to load file:', actualFileToLoad, error);
       return;
     }
 
@@ -613,7 +602,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // not wrapped in a .fields property
       const tiddlerTitle = tiddler?.title;
       if (!tiddlerTitle) {
-        this.logger.alert(`[WATCH_FS_ERROR] Tiddler has no title. Tiddler object: ${JSON.stringify(tiddler)}`);
+        this.logger.alert(`WatchFileSystemAdaptor Tiddler has no title. Tiddler object: ${JSON.stringify(tiddler)}`);
         continue;
       }
 
@@ -717,15 +706,15 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     this.pendingInclusions.clear();
 
     if (this.watcher) {
-      this.logger.log('[WATCH_FS_CLEANUP] Closing filesystem watcher');
+      this.logger.log('WatchFileSystemAdaptor Closing filesystem watcher');
       await this.watcher.stop();
       this.watcher = undefined;
-      this.logger.log('[WATCH_FS_CLEANUP] Filesystem watcher closed');
+      this.logger.log('WatchFileSystemAdaptor Filesystem watcher closed');
     }
 
     // Close all sub-wiki watchers
     for (const subWiki of this.inverseFilesIndex.getSubWikis()) {
-      this.logger.log(`[WATCH_FS_CLEANUP] Closing sub-wiki watcher: ${subWiki.id}`);
+      this.logger.log(`WatchFileSystemAdaptor Closing sub-wiki watcher: ${subWiki.id}`);
       await subWiki.watcher.stop();
       this.inverseFilesIndex.unregisterSubWiki(subWiki.id);
     }
