@@ -105,13 +105,17 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       const oldFileInfo = this.boot.files[tiddler.fields.title];
 
       // For new tiddlers, pre-calculate the file path and exclude it to prevent echo
-      // This prevents the watch-fs from processing its own save operations, especially large tiddler like drag & drop plugin json tiddler, which may taker longer than expected FILE_INCLUSION_DELAY_MS time to write to disk
+      // Must exclude both the main file and its .meta file to prevent watch-fs from detecting our own save operations
+      // This is critical for plugin JSON files which always have a separate .meta file
       let excludedNewFilePath: string | undefined;
       if (!oldFileInfo) {
         try {
           const newFileInfo = await this.getTiddlerFileInfo(tiddler);
           if (newFileInfo?.filepath) {
             this.excludeFile(newFileInfo.filepath);
+            // Also exclude the .meta file if it exists
+            const metaFilePath = `${newFileInfo.filepath}.meta`;
+            this.excludeFile(metaFilePath);
             excludedNewFilePath = newFileInfo.filepath;
           }
         } catch (error) {
@@ -122,6 +126,9 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // Exclude old file path before save (if it exists)
       if (oldFileInfo) {
         this.excludeFile(oldFileInfo.filepath);
+        // Also exclude the .meta file if it exists
+        const metaFilePath = `${oldFileInfo.filepath}.meta`;
+        this.excludeFile(metaFilePath);
         this.logger.log(`[WATCH_FS_SAVE] Excluded existing file: ${oldFileInfo.filepath}`);
       }
 
@@ -142,16 +149,20 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Schedule re-inclusion after delay to avoid echo
       this.scheduleFileInclusion(finalFileInfo.filepath);
+      // Also re-include the .meta file
+      this.scheduleFileInclusion(`${finalFileInfo.filepath}.meta`);
 
       // For edge case, rarely if we wrongly pre-excluded a new file path and it's different from the final path that tw decided to use, re-include it to revoke the influence
       if (excludedNewFilePath && excludedNewFilePath !== finalFileInfo.filepath) {
         this.scheduleFileInclusion(excludedNewFilePath);
+        this.scheduleFileInclusion(`${excludedNewFilePath}.meta`);
       }
 
       // If old file path was different and we excluded it, re-include it
       // The old file should be deleted by now via cleanupTiddlerFiles
       if (oldFileInfo && oldFileInfo.filepath !== finalFileInfo.filepath) {
         this.scheduleFileInclusion(oldFileInfo.filepath);
+        this.scheduleFileInclusion(`${oldFileInfo.filepath}.meta`);
       }
     } catch (error) {
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
@@ -449,6 +460,18 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Handle different event types
       if (action === nsfw.actions.CREATED || action === nsfw.actions.MODIFIED) {
+        // Skip if it's a directory (nsfw sometimes reports directory changes)
+        try {
+          const stats = fs.statSync(fileAbsolutePath);
+          if (stats.isDirectory()) {
+            this.logger.log(`[WATCH_FS_SKIP_DIR] Skipping directory: ${fileAbsolutePath}`);
+            continue;
+          }
+        } catch {
+          // File might have been deleted already, skip
+          continue;
+        }
+
         // Cancel any pending deletion for this file (e.g., git revert scenario)
         this.cancelPendingDeletion(fileAbsolutePath);
 
