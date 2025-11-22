@@ -2,8 +2,8 @@ import { git, workspace } from '@services/wiki/wikiWorker/services';
 import fs from 'fs';
 import nsfw from 'nsfw';
 import path from 'path';
-import type { Tiddler, Wiki } from 'tiddlywiki';
-import { FileSystemAdaptor, type IFileSystemAdaptorCallback } from './FileSystemAdaptor';
+import type { IFileInfo, Tiddler, Wiki } from 'tiddlywiki';
+import { FileSystemAdaptor } from './FileSystemAdaptor';
 import { type IBootFilesIndexItemWithTitle, InverseFilesIndex } from './InverseFilesIndex';
 
 /**
@@ -98,7 +98,11 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * Save a tiddler to the filesystem (with file watching support)
    * Can be used with callback (legacy) or as async/await
    */
-  override async saveTiddler(tiddler: Tiddler, callback?: IFileSystemAdaptorCallback, options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
+  override async saveTiddler(
+    tiddler: Tiddler,
+    callback?: (error: Error | null | string, adaptorInfo?: IFileInfo | null, revision?: string) => void,
+    options?: { tiddlerInfo?: Record<string, unknown> },
+  ): Promise<void> {
     try {
       // Get existing file info (if tiddler already exists on disk)
       const oldFileInfo = this.boot.files[tiddler.fields.title];
@@ -173,7 +177,11 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * Delete a tiddler from the filesystem (with file watching support)
    * Can be used with callback (legacy) or as async/await
    */
-  override async deleteTiddler(title: string, callback?: IFileSystemAdaptorCallback, _options?: unknown): Promise<void> {
+  override async deleteTiddler(
+    title: string,
+    callback?: (error: Error | null | string, adaptorInfo?: IFileInfo | null) => void,
+    _options?: unknown,
+  ): Promise<void> {
     const fileInfo = this.boot.files[title];
 
     if (!fileInfo) {

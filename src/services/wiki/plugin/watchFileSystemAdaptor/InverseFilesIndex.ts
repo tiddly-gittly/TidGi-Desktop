@@ -1,8 +1,8 @@
 import type nsfw from 'nsfw';
 import path from 'path';
-import type { FileInfo } from 'tiddlywiki';
+import type { IFileInfo } from 'tiddlywiki';
 
-export type IBootFilesIndexItemWithTitle = FileInfo & { tiddlerTitle: string };
+export type IBootFilesIndexItemWithTitle = IFileInfo & { tiddlerTitle: string };
 
 export interface ISubWikiInfo {
   id: string;
