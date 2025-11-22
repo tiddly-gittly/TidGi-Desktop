@@ -387,7 +387,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
               )
               : (
                 <Typography variant='body2' color='text.secondary'>
-                  {t('CreateAgent.LoadingSchema')}
+                  {t('CreateAgent.NoTemplateSelected')}
                 </Typography>
               )}
           </StepContainer>

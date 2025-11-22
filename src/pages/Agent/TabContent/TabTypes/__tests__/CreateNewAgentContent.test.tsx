@@ -219,22 +219,27 @@ describe('CreateNewAgentContent', () => {
   it('should show correct step content based on currentStep', () => {
     // Test step 1 (currentStep: 0) - Setup Agent (name + template)
     const step1Tab = { ...mockTab, currentStep: 0 };
-    const { rerender } = render(<TestComponent tab={step1Tab} />);
+    const { unmount } = render(<TestComponent tab={step1Tab} />);
 
     expect(screen.getByRole('heading', { name: '设置智能体' })).toBeInTheDocument();
     expect(screen.getByLabelText('智能体名称')).toBeInTheDocument();
     expect(screen.getByTestId('template-search-input')).toBeInTheDocument();
 
+    // Clean up before next render
+    unmount();
+
     // Test step 2 (currentStep: 1) - Edit Prompt
     const step2Tab = { ...mockTab, currentStep: 1 };
-    rerender(<TestComponent tab={step2Tab} />);
+    const { unmount: unmount2 } = render(<TestComponent tab={step2Tab} />);
 
     // Should show editPrompt placeholder when no template selected
     expect(screen.getByText('请先选择一个模板')).toBeInTheDocument();
 
+    unmount2();
+
     // Test step 3 (currentStep: 2) - Immediate Use
     const step3Tab = { ...mockTab, currentStep: 2 };
-    rerender(<TestComponent tab={step3Tab} />);
+    render(<TestComponent tab={step3Tab} />);
 
     expect(screen.getByRole('heading', { name: '测试并使用' })).toBeInTheDocument();
   });
