@@ -616,7 +616,8 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       } as IBootFilesIndexItemWithTitle);
 
       // Add tiddler to wiki (this will update if it exists or add if new)
-      $tw.syncadaptor!.wiki.addTiddler(tiddler);
+      const syncAdaptor = $tw.syncadaptor as { wiki: Wiki } | undefined | null;
+      syncAdaptor?.wiki.addTiddler(tiddler);
 
       // Log appropriate event
       if (isNewFile) {
@@ -654,7 +655,8 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     }
 
     // Check if tiddler exists in wiki before trying to delete
-    if (!$tw.syncadaptor!.wiki.tiddlerExists(tiddlerTitle)) {
+    const syncAdaptor = $tw.syncadaptor as { wiki: Wiki } | undefined | null;
+    if (!syncAdaptor?.wiki.tiddlerExists(tiddlerTitle)) {
       // Tiddler doesn't exist in wiki, nothing to delete
       return;
     }
@@ -663,7 +665,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     this.removeTiddlerFileInfo(tiddlerTitle);
 
     // Delete the tiddler from wiki to trigger change event
-    $tw.syncadaptor!.wiki.deleteTiddler(tiddlerTitle);
+    syncAdaptor?.wiki.deleteTiddler(tiddlerTitle);
     this.logger.log(`[test-id-WATCH_FS_TIDDLER_DELETED] ${tiddlerTitle}`, { level: 'debug' });
 
     // Delete system tiddler empty file if exists

@@ -101,7 +101,7 @@ async function beforeExit(): Promise<void> {
   // Cleanup watch-filesystem adaptor
   const wikiInstance = getWikiInstance();
   // Call our custom cleanup method if it exists `src/services/wiki/plugin/watchFileSystemAdaptor/watch-filesystem-adaptor.ts`
-  const syncAdaptor = wikiInstance?.syncadaptor as SyncAdaptor & { cleanup?: () => Promise<void> };
+  const syncAdaptor = wikiInstance?.syncadaptor as (SyncAdaptor & { cleanup?: () => Promise<void> }) | undefined;
   if (syncAdaptor?.cleanup) {
     await syncAdaptor.cleanup();
   }
