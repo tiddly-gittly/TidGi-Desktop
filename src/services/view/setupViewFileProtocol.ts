@@ -72,25 +72,60 @@ export function handleViewFileContentLoading(view: WebContentsView) {
 
 function handleFileLink(details: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) {
   const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
-  const absolutePath: string | undefined = nativeService.formatFileUrlToAbsolutePath(details.url);
-  // When details.url is an absolute route, we just load it, don't need any redirect
+  const absolutePath: string = nativeService.formatFileUrlToAbsolutePath(details.url);
+
+  // Prevent infinite redirect loop when path resolution failed
+  // formatFileUrlToAbsolutePath already checks file existence internally (3 times with different path strategies)
+  // If file not found, it returns the original URL as fallback
+  // Case 1: formatFileUrlToAbsolutePath returns the original URL (file not found fallback)
+  // Case 2: Resolved path still contains protocol (resolution failed)
+  // Case 3: Resolved path is relative (./xxx or ../xxx) - these cannot be loaded by Electron
   if (
-    `file://${absolutePath}` === decodeURI(details.url) ||
-    absolutePath === decodeURI(details.url) ||
-    // also allow malformed `file:///` on `details.url` on windows, prevent infinite redirect when this check failed.
-    (process.platform === 'win32' && `file:///${absolutePath}` === decodeURI(details.url))
+    absolutePath === details.url ||
+    absolutePath.startsWith('file://') ||
+    absolutePath.startsWith('open://') ||
+    absolutePath.startsWith('./') ||
+    absolutePath.startsWith('../')
   ) {
-    logger.debug('open file protocol', {
+    logger.warn('File path resolution failed or returned invalid path, request canceled to prevent redirect loop', {
       function: 'handleFileLink',
-      absolutePath: absolutePath ?? '',
+      originalUrl: details.url,
+      resolvedPath: absolutePath,
+      reason: absolutePath === details.url
+        ? 'same as original'
+        : absolutePath.startsWith('file://') || absolutePath.startsWith('open://')
+        ? 'contains protocol'
+        : 'relative path',
+    });
+    callback({
+      cancel: true,
+    });
+    return;
+  }
+
+  // When details.url is already an absolute file path, load it directly without redirect
+  const decodedUrl = decodeURI(details.url);
+  if (
+    `file://${absolutePath}` === decodedUrl ||
+    absolutePath === decodedUrl ||
+    // also allow malformed `file:///` on `details.url` on windows
+    (process.platform === 'win32' && `file:///${absolutePath}` === decodedUrl)
+  ) {
+    logger.debug('Loading file without redirect', {
+      function: 'handleFileLink',
+      absolutePath,
+      originalUrl: details.url,
     });
     callback({
       cancel: false,
     });
   } else {
-    logger.info('redirecting file protocol', {
+    // Need to redirect relative path to absolute path
+    logger.info('Redirecting file protocol to absolute path', {
       function: 'handleFileLink',
-      absolutePath: absolutePath ?? '',
+      originalUrl: details.url,
+      absolutePath,
+      redirectURL: `file://${absolutePath}`,
     });
     callback({
       cancel: false,

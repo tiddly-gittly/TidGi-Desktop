@@ -1,6 +1,6 @@
 import { workspace } from '@services/wiki/wikiWorker/services';
 import type { IWikiWorkspace } from '@services/workspaces/interface';
-import type { FileInfo, Tiddler, Wiki } from 'tiddlywiki';
+import type { IFileInfo, Tiddler, Wiki } from 'tiddlywiki';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemAdaptor } from '../FileSystemAdaptor';
 
@@ -34,7 +34,7 @@ global.$tw = {
   node: true,
   boot: {
     wikiTiddlersPath: '/test/wiki/tiddlers',
-    files: {} as Record<string, FileInfo>,
+    files: {} as Record<string, IFileInfo>,
   },
   utils: mockUtils,
 };
@@ -166,7 +166,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
     });
 
     it('should pass existing fileInfo with overwrite flag', async () => {
-      const existingFileInfo: FileInfo = {
+      const existingFileInfo: IFileInfo = {
         filepath: '/test/old.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,

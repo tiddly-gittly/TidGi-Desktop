@@ -138,8 +138,8 @@ importers:
         specifier: 11.3.2
         version: 11.3.2
       git-sync-js:
-        specifier: ^2.3.0
-        version: 2.3.0
+        specifier: ^2.3.1
+        version: 2.3.1
       graphql-hooks:
         specifier: 8.2.0
         version: 8.2.0(react@19.2.0)
@@ -297,9 +297,6 @@ importers:
       '@electron-forge/cli':
         specifier: 7.10.2
         version: 7.10.2(@swc/core@1.12.0)(bluebird@3.7.2)(encoding@0.1.13)(esbuild@0.27.0)
-      '@electron-forge/maker-msix':
-        specifier: ^7.10.2
-        version: 7.10.2(bluebird@3.7.2)
       '@electron-forge/plugin-auto-unpack-natives':
         specifier: 7.10.2
         version: 7.10.2(bluebird@3.7.2)
@@ -446,6 +443,9 @@ importers:
         specifier: 7.10.2
         version: 7.10.2(bluebird@3.7.2)
       '@electron-forge/maker-flatpak':
+        specifier: 7.10.2
+        version: 7.10.2(bluebird@3.7.2)
+      '@electron-forge/maker-msix':
         specifier: 7.10.2
         version: 7.10.2(bluebird@3.7.2)
       '@electron-forge/maker-rpm':
@@ -4572,8 +4572,8 @@ packages:
   gifwrap@0.10.1:
     resolution: {integrity: sha512-2760b1vpJHNmLzZ/ubTtNnEx5WApN/PYWJvXvgS+tL1egTTthayFYIQQNi136FLEDcN/IyEY2EcGpIITD6eYUw==}
 
-  git-sync-js@2.3.0:
-    resolution: {integrity: sha512-RFyyWBjdZskl2Jxg3a9g2tzAShhhFkxyS83lON6asaKHov4Rks8P7irCMjQIRiFTlqLrvZFDgjeWbo7jc1IKhQ==}
+  git-sync-js@2.3.1:
+    resolution: {integrity: sha512-EbX6SIsUc2hcXEQXsaYz0EyDSQwlKi3AbZk00hIB97YOyKQPtKeQWQ7+6w87GSKD6m2mfBGVyIgF57DA0ajo3g==}
 
   github-from-package@0.0.0:
     resolution: {integrity: sha512-SyHy3T1v2NUXn29OsWdxmK6RwHD+vkj3v8en8AOBZ1wBQ/hCAQ5bAQTD02kW4W9tUp/3Qh6J8r9EvntiyCmOOw==}
@@ -8456,6 +8456,7 @@ snapshots:
     transitivePeerDependencies:
       - bluebird
       - supports-color
+    optional: true
 
   '@electron-forge/maker-rpm@7.10.2(bluebird@3.7.2)':
     dependencies:
@@ -11122,6 +11123,7 @@ snapshots:
     dependencies:
       ansi-styles: 4.3.0
       supports-color: 7.2.0
+    optional: true
 
   chalk@4.1.2:
     dependencies:
@@ -11650,6 +11652,7 @@ snapshots:
       xml-escape: 1.1.0
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   electron-winstaller@5.4.0:
     dependencies:
@@ -12657,7 +12660,7 @@ snapshots:
       image-q: 4.0.0
       omggif: 1.0.10
 
-  git-sync-js@2.3.0:
+  git-sync-js@2.3.1:
     dependencies:
       dugite: 3.0.0-rc12
       fs-extra: 11.3.2
@@ -15844,7 +15847,8 @@ snapshots:
 
   ws@8.18.3: {}
 
-  xml-escape@1.1.0: {}
+  xml-escape@1.1.0:
+    optional: true
 
   xml-name-validator@5.0.0: {}
 

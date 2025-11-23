@@ -38,37 +38,52 @@ export function startNodeJSWiki({
   userName,
   workspace,
 }: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
-  // Wait for services to be ready before using intercept with logFor
-  onWorkerServicesReady(() => {
-    void native.logFor(workspace.name, 'info', 'test-id-WorkerServicesReady');
-    const textDecoder = new TextDecoder();
-    intercept(
-      (newStdOut: string | Uint8Array) => {
-        const message = typeof newStdOut === 'string' ? newStdOut : textDecoder.decode(newStdOut);
-        // Send to main process logger if services are ready
-        void native.logFor(workspace.name, 'info', message).catch((error: unknown) => {
-          console.error('[intercept] Failed to send stdout to main process:', error, message, JSON.stringify(workspace));
-        });
-        return message;
-      },
-      (newStdError: string | Uint8Array) => {
-        const message = typeof newStdError === 'string' ? newStdError : textDecoder.decode(newStdError);
-        // Send to main process logger if services are ready
-        void native.logFor(workspace.name, 'error', message).catch((error: unknown) => {
-          console.error('[intercept] Failed to send stderr to main process:', error, message);
-        });
-        return message;
-      },
-    );
-  });
-
-  if (openDebugger === true) {
-    inspector.open();
-    inspector.waitForDebugger();
-    // eslint-disable-next-line no-debugger
-    debugger;
-  }
   return new Observable<IWikiMessage>((observer) => {
+    if (openDebugger === true) {
+      inspector.open();
+      inspector.waitForDebugger();
+      // eslint-disable-next-line no-debugger
+      debugger;
+    }
+    // Wait for services to be ready before using intercept with logFor
+    onWorkerServicesReady(() => {
+      void native.logFor(workspace.name, 'info', 'test-id-WorkerServicesReady');
+      const textDecoder = new TextDecoder();
+      intercept(
+        (newStdOut: string | Uint8Array) => {
+          const message = typeof newStdOut === 'string' ? newStdOut : textDecoder.decode(newStdOut);
+          // Send to main process logger if services are ready
+          void native.logFor(workspace.name, 'info', message).catch((error: unknown) => {
+            console.error('[intercept] Failed to send stdout to main process:', error, message, JSON.stringify(workspace));
+          });
+          return message;
+        },
+        (newStdError: string | Uint8Array) => {
+          const message = typeof newStdError === 'string' ? newStdError : textDecoder.decode(newStdError);
+          // Send to main process logger if services are ready
+          void native.logFor(workspace.name, 'error', message).catch((error: unknown) => {
+            console.error('[intercept] Failed to send stderr to main process:', error, message);
+          });
+
+          // Detect critical plugin loading errors that can cause white screen
+          // These errors occur during TiddlyWiki boot module execution
+          if (
+            message.includes('Error executing boot module') ||
+            message.includes('Cannot find module')
+          ) {
+            observer.next({
+              type: 'control',
+              source: 'plugin-error',
+              actions: WikiControlActions.error,
+              message,
+              argv: [],
+            });
+          }
+
+          return message;
+        },
+      );
+    });
     let fullBootArgv: string[] = [];
     // mark isDev as used to satisfy lint when not needed directly
     void isDev;

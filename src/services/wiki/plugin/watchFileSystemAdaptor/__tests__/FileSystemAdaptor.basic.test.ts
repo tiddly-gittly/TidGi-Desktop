@@ -1,6 +1,6 @@
 import { workspace } from '@services/wiki/wikiWorker/services';
 import path from 'path';
-import type { FileInfo, Tiddler, Wiki } from 'tiddlywiki';
+import type { IFileInfo, Tiddler, Wiki } from 'tiddlywiki';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemAdaptor } from '../FileSystemAdaptor';
 
@@ -34,7 +34,7 @@ global.$tw = {
   node: true,
   boot: {
     wikiTiddlersPath: '/test/wiki/tiddlers',
-    files: {} as Record<string, FileInfo>,
+    files: {} as Record<string, IFileInfo>,
   },
   utils: mockUtils,
 };
@@ -139,7 +139,7 @@ describe('FileSystemAdaptor - Basic Functionality', () => {
 
   describe('getTiddlerInfo', () => {
     it('should return file info for existing tiddler', () => {
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,

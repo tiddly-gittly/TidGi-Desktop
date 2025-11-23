@@ -241,6 +241,15 @@ export class Wiki implements IWikiService {
                 function: 'startWiki',
               });
               await workspaceService.updateMetaData(workspaceID, { isLoading: false, didFailLoadErrorMessage: errorMessage });
+
+              // For plugin errors that occur after wiki boot, realign the view to hide it and show error message
+              const isPluginError = message.source === 'plugin-error';
+              if (isPluginError && workspace.active) {
+                const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+                await workspaceViewService.realignActiveWorkspace(workspaceID);
+                logger.info('Realigned view after plugin error', { workspaceID, function: 'startWiki' });
+              }
+
               // fix "message":"listen EADDRINUSE: address already in use 0.0.0.0:5212"
               if (errorMessage.includes('EADDRINUSE')) {
                 const portChange = {
@@ -253,7 +262,11 @@ export class Wiki implements IWikiService {
                 reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
                 return;
               }
-              reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, false, { ...workspace }));
+
+              // For plugin errors, don't reject - let user see the error and try to recover
+              if (!isPluginError) {
+                reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, false, { ...workspace }));
+              }
             }
           }
         }
