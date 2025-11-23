@@ -13,7 +13,7 @@ import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { getFileStatusStyles } from './fileStatusStyles';
+import { getFileStatusStyles, type GitFileStatus } from './fileStatusStyles';
 import type { GitLogEntry } from './types';
 
 const Panel = styled(Box)`
@@ -54,7 +54,7 @@ const ActionsWrapper = styled(Box)`
   gap: 12px;
 `;
 
-const FileStatusBadge = styled(Box)<{ $status?: string }>`
+const FileStatusBadge = styled(Box)<{ $status?: GitFileStatus }>`
   display: inline-block;
   font-size: 0.6rem;
   padding: 1px 4px;
@@ -62,7 +62,7 @@ const FileStatusBadge = styled(Box)<{ $status?: string }>`
   border-radius: 2px;
   font-weight: 600;
   text-transform: uppercase;
-  ${({ $status, theme }) => getFileStatusStyles($status as any, theme)}
+  ${({ $status, theme }) => getFileStatusStyles($status, theme)}
 `;
 
 interface ICommitDetailsPanelProps {

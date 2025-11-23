@@ -23,7 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { CommitDetailsPanel } from './CommitDetailsPanel';
 import { CustomGitTooltip } from './CustomGitTooltip';
 import { FileDiffPanel } from './FileDiffPanel';
-import { getFileStatusStyles } from './fileStatusStyles';
+import { getFileStatusStyles, type GitFileStatus } from './fileStatusStyles';
 import type { GitLogEntry } from './types';
 import { useCommitDetails } from './useCommitDetails';
 import { useGitLogData } from './useGitLogData';
@@ -111,7 +111,7 @@ const LoadingContainer = styled(Box)`
   height: 100%;
 `;
 
-const FileChip = styled(Box)<{ $status?: string }>`
+const FileChip = styled(Box)<{ $status?: GitFileStatus }>`
   display: inline-block;
   font-size: 0.7rem;
   font-family: monospace;
@@ -122,7 +122,7 @@ const FileChip = styled(Box)<{ $status?: string }>`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  ${({ $status, theme }) => getFileStatusStyles($status as any, theme)}
+  ${({ $status, theme }) => getFileStatusStyles($status, theme)}
 `;
 
 interface ICommitTableRowProps {
