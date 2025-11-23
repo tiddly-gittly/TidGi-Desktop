@@ -31,7 +31,7 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
   const skip = page * pageSize;
 
   // Check for uncommitted changes
-  const statusResult = await gitExec(['status', '--porcelain'], repoPath);
+  const statusResult = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain'], repoPath);
   const hasUncommittedChanges = statusResult.stdout.trim().length > 0;
 
   // Build git log command arguments
@@ -127,7 +127,7 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
 export async function getCommitFiles(repoPath: string, commitHash: string): Promise<string[]> {
   // Handle uncommitted changes
   if (!commitHash || commitHash === '') {
-    const result = await gitExec(['status', '--porcelain'], repoPath);
+    const result = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain'], repoPath);
 
     if (result.exitCode !== 0) {
       throw new Error(`Failed to get uncommitted files: ${result.stderr}`);
@@ -154,7 +154,7 @@ export async function getCommitFiles(repoPath: string, commitHash: string): Prom
   }
 
   const result = await gitExec(
-    ['diff-tree', '--no-commit-id', '--name-only', '-r', commitHash],
+    ['-c', 'core.quotePath=false', 'diff-tree', '--no-commit-id', '--name-only', '-r', commitHash],
     repoPath,
   );
 
@@ -183,7 +183,7 @@ export async function getFileDiff(
   maxChars = 10000,
 ): Promise<import('./interface').IFileDiffResult> {
   if (!commitHash) {
-    const statusResult = await gitExec(['status', '--porcelain', '--', filePath], repoPath);
+    const statusResult = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain', '--', filePath], repoPath);
 
     if (statusResult.exitCode !== 0) {
       throw new Error(`Failed to get status for working tree diff: ${statusResult.stderr}`);
@@ -555,7 +555,7 @@ export async function getDeletedTiddlersSinceDate(repoPath: string, sinceDate: D
     // Get list of deleted files since sinceDate
     // Using git log with --diff-filter=D to show only deletions
     const logResult = await gitExec(
-      ['log', `--since=${sinceISOString}`, '--diff-filter=D', '--name-only', '--pretty=format:'],
+      ['-c', 'core.quotePath=false', 'log', `--since=${sinceISOString}`, '--diff-filter=D', '--name-only', '--pretty=format:'],
       repoPath,
     );
 
@@ -636,7 +636,7 @@ export async function getTiddlerAtTime(
     // First, find all .tid and .meta files that might contain this tiddler
     // We need to search for files because the title might not match the filename
     const logResult = await gitExec(
-      ['log', `--before=${beforeISOString}`, '--name-only', '--pretty=format:%H', '--', '*.tid', '*.meta'],
+      ['-c', 'core.quotePath=false', 'log', `--before=${beforeISOString}`, '--name-only', '--pretty=format:%H', '--', '*.tid', '*.meta'],
       repoPath,
     );
 
