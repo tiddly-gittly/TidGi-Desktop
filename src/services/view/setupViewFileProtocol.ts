@@ -74,12 +74,28 @@ function handleFileLink(details: Electron.OnBeforeRequestListenerDetails, callba
   const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
   const absolutePath: string = nativeService.formatFileUrlToAbsolutePath(details.url);
 
-  // Prevent infinite redirect loop when path resolution failed. If absolutePath equals original URL or contains protocol, it means resolution failed
-  if (absolutePath === details.url || absolutePath.startsWith('file://') || absolutePath.startsWith('open://')) {
-    logger.warn('File path resolution failed, potential redirect loop prevented', {
+  // Prevent infinite redirect loop when path resolution failed
+  // formatFileUrlToAbsolutePath already checks file existence internally (3 times with different path strategies)
+  // If file not found, it returns the original URL as fallback
+  // Case 1: formatFileUrlToAbsolutePath returns the original URL (file not found fallback)
+  // Case 2: Resolved path still contains protocol (resolution failed)
+  // Case 3: Resolved path is relative (./xxx or ../xxx) - these cannot be loaded by Electron
+  if (
+    absolutePath === details.url ||
+    absolutePath.startsWith('file://') ||
+    absolutePath.startsWith('open://') ||
+    absolutePath.startsWith('./') ||
+    absolutePath.startsWith('../')
+  ) {
+    logger.warn('File path resolution failed or returned invalid path, request canceled to prevent redirect loop', {
       function: 'handleFileLink',
       originalUrl: details.url,
       resolvedPath: absolutePath,
+      reason: absolutePath === details.url
+        ? 'same as original'
+        : absolutePath.startsWith('file://') || absolutePath.startsWith('open://')
+        ? 'contains protocol'
+        : 'relative path',
     });
     callback({
       cancel: true,

@@ -428,14 +428,14 @@ ${message.message}
   }
 
   public formatFileUrlToAbsolutePath(urlWithFileProtocol: string): string {
-    logger.info('getting url', { url: urlWithFileProtocol, function: 'formatFileUrlToAbsolutePath' });
+    logger.debug('formatting file URL to absolute path', { url: urlWithFileProtocol, function: 'formatFileUrlToAbsolutePath' });
     let pathname = '';
     let hostname = '';
     try {
       ({ hostname, pathname } = new URL(urlWithFileProtocol));
     } catch {
       pathname = urlWithFileProtocol.replace('file://', '').replace('open://', '');
-      logger.error(`Parse URL failed, use original url replace file:// instead`, { pathname, function: 'formatFileUrlToAbsolutePath.error' });
+      logger.debug(`Parse URL failed, using fallback string replace`, { pathname, function: 'formatFileUrlToAbsolutePath' });
     }
     /**
      * urlWithFileProtocol: `file://./files/xxx.png`
@@ -446,38 +446,33 @@ ${message.message}
     if (process.platform === 'win32' && filePath.startsWith('/')) {
       filePath = filePath.substring(1);
     }
-    logger.info('handle file:// or open:// This url will open file in-wiki', { hostname, pathname, filePath, function: 'formatFileUrlToAbsolutePath' });
-    let fileExists = fs.existsSync(filePath);
-    logger.info('file exists (decodeURI)', {
-      function: 'formatFileUrlToAbsolutePath',
-      filePath,
-      exists: fileExists,
-    });
-    if (fileExists) {
+    
+    // Strategy 1: Try as-is (for absolute paths)
+    if (fs.existsSync(filePath)) {
+      logger.debug('file found (direct path)', { filePath, function: 'formatFileUrlToAbsolutePath' });
       return filePath;
     }
-    logger.info(`try find file relative to workspace folder`, { filePath, function: 'formatFileUrlToAbsolutePath' });
+    
+    // Strategy 2: Try relative to workspace folder
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspace = workspaceService.getActiveWorkspaceSync();
-    if (workspace === undefined || !isWikiWorkspace(workspace)) {
-      logger.error(`No active workspace or not a wiki workspace, abort. Try loading filePath as-is.`, { filePath, function: 'formatFileUrlToAbsolutePath' });
-      return filePath;
+    if (workspace !== undefined && isWikiWorkspace(workspace)) {
+      const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, filePath);
+      if (fs.existsSync(filePathInWorkspaceFolder)) {
+        logger.debug('file found (workspace relative)', { filePathInWorkspaceFolder, function: 'formatFileUrlToAbsolutePath' });
+        return filePathInWorkspaceFolder;
+      }
     }
-    // try concat workspace path + file path to get relative path
-    const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, filePath);
-    fileExists = fs.existsSync(filePathInWorkspaceFolder);
-    logger.info(`This file ${fileExists ? '' : 'not '}exists in workspace folder.`, { filePathInWorkspaceFolder, function: 'formatFileUrlToAbsolutePath' });
-    if (fileExists) {
-      return filePathInWorkspaceFolder;
-    }
-    // on production, __dirname will be in .webpack/main
+    
+    // Strategy 3: Try relative to TidGi App folder (for bundled assets)
     const inTidGiAppAbsoluteFilePath = path.join(app.getAppPath(), '.webpack', 'renderer', filePath);
-    logger.info(`try find file relative to TidGi App folder`, { inTidGiAppAbsoluteFilePath, function: 'formatFileUrlToAbsolutePath' });
-    fileExists = fs.existsSync(inTidGiAppAbsoluteFilePath);
-    if (fileExists) {
+    if (fs.existsSync(inTidGiAppAbsoluteFilePath)) {
+      logger.debug('file found (app relative)', { inTidGiAppAbsoluteFilePath, function: 'formatFileUrlToAbsolutePath' });
       return inTidGiAppAbsoluteFilePath;
     }
-    logger.warn(`This url can't be loaded in-wiki. Try loading url as-is.`, { url: urlWithFileProtocol, function: 'formatFileUrlToAbsolutePath' });
+    
+    // File not found - return original URL as fallback
+    logger.warn('file not found in any location, returning original URL', { url: urlWithFileProtocol, filePath, function: 'formatFileUrlToAbsolutePath' });
     return urlWithFileProtocol;
   }
 
