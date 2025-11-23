@@ -3,7 +3,7 @@ import fs from 'fs';
 import nsfw from 'nsfw';
 import path from 'path';
 import type { IFileInfo, Tiddler, Wiki } from 'tiddlywiki';
-import { hasMeaningfulChanges } from './comparsion';
+import { hasMeaningfulChanges } from './comparison';
 import { FileSystemAdaptor } from './FileSystemAdaptor';
 import { type IBootFilesIndexItemWithTitle, InverseFilesIndex } from './InverseFilesIndex';
 

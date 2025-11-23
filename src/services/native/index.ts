@@ -446,13 +446,13 @@ ${message.message}
     if (process.platform === 'win32' && filePath.startsWith('/')) {
       filePath = filePath.substring(1);
     }
-    
+
     // Strategy 1: Try as-is (for absolute paths)
     if (fs.existsSync(filePath)) {
       logger.debug('file found (direct path)', { filePath, function: 'formatFileUrlToAbsolutePath' });
       return filePath;
     }
-    
+
     // Strategy 2: Try relative to workspace folder
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspace = workspaceService.getActiveWorkspaceSync();
@@ -463,14 +463,14 @@ ${message.message}
         return filePathInWorkspaceFolder;
       }
     }
-    
+
     // Strategy 3: Try relative to TidGi App folder (for bundled assets)
     const inTidGiAppAbsoluteFilePath = path.join(app.getAppPath(), '.webpack', 'renderer', filePath);
     if (fs.existsSync(inTidGiAppAbsoluteFilePath)) {
       logger.debug('file found (app relative)', { inTidGiAppAbsoluteFilePath, function: 'formatFileUrlToAbsolutePath' });
       return inTidGiAppAbsoluteFilePath;
     }
-    
+
     // File not found - return original URL as fallback
     logger.warn('file not found in any location, returning original URL', { url: urlWithFileProtocol, filePath, function: 'formatFileUrlToAbsolutePath' });
     return urlWithFileProtocol;
