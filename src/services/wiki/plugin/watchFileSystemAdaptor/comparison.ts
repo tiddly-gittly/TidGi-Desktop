@@ -37,28 +37,23 @@ export function hasMeaningfulChanges(
   }
 
   // Get field keys excluding auto-generated ones
-  const oldKeys = Object.keys(oldTiddler).filter(key => !EXCLUDED_FIELDS.has(key));
-  const newKeys = Object.keys(newTiddler).filter(key => !EXCLUDED_FIELDS.has(key));
+  const oldKeys = new Set(Object.keys(oldTiddler)).difference(EXCLUDED_FIELDS);
+  const newKeys = new Set(Object.keys(newTiddler)).difference(EXCLUDED_FIELDS);
 
   // Quick check: Different number of fields
-  if (oldKeys.length !== newKeys.length) {
+  if (oldKeys.size !== newKeys.size) {
     return true;
   }
 
-  // Deep comparison: Check each field value
-  for (const key of oldKeys) {
-    if (!Object.hasOwn(newTiddler, key)) {
-      return true; // Field removed
-    }
-    if (oldTiddler[key] !== newTiddler[key]) {
-      return true; // Field value changed
-    }
+  // Check if there are any different keys (fields added or removed)
+  if (oldKeys.difference(newKeys).size > 0) {
+    return true;
   }
 
-  // Check for new fields
-  for (const key of newKeys) {
-    if (!Object.hasOwn(oldTiddler, key)) {
-      return true; // New field added
+  // Deep comparison: Check each field value (keys are the same at this point)
+  for (const key of oldKeys) {
+    if (oldTiddler[key] !== newTiddler[key]) {
+      return true; // Field value changed
     }
   }
 
