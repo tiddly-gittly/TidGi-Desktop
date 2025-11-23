@@ -1,6 +1,8 @@
 import type { Theme } from '@mui/material/styles';
+import type { GitFileStatus } from '../../services/git/interface';
 
-export type GitFileStatus = 'added' | 'modified' | 'deleted' | 'renamed' | 'copied' | 'untracked' | 'unknown';
+// Re-export for convenience
+export type { GitFileStatus };
 
 /**
  * Get styled CSS for file status badge/chip based on the status and theme

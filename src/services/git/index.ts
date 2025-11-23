@@ -24,7 +24,18 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
 import * as gitOperations from './gitOperations';
 import type { GitWorker } from './gitWorker';
-import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitLogOptions, IGitLogResult, IGitService, IGitStateChange, IGitUserInfos } from './interface';
+import type {
+  ICommitAndSyncConfigs,
+  IFileDiffResult,
+  IFileWithStatus,
+  IForcePullConfigs,
+  IGitLogMessage,
+  IGitLogOptions,
+  IGitLogResult,
+  IGitService,
+  IGitStateChange,
+  IGitUserInfos,
+} from './interface';
 import { registerMenu } from './registerMenu';
 import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 
@@ -359,15 +370,15 @@ export class Git implements IGitService {
     return await gitOperations.getGitLog(wikiFolderPath, options);
   }
 
-  public async getCommitFiles(wikiFolderPath: string, commitHash: string): Promise<string[]> {
+  public async getCommitFiles(wikiFolderPath: string, commitHash: string): Promise<IFileWithStatus[]> {
     return await gitOperations.getCommitFiles(wikiFolderPath, commitHash);
   }
 
-  public async getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<import('./interface').IFileDiffResult> {
+  public async getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<IFileDiffResult> {
     return await gitOperations.getFileDiff(wikiFolderPath, commitHash, filePath, maxLines, maxChars);
   }
 
-  public async getFileContent(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<import('./interface').IFileDiffResult> {
+  public async getFileContent(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<IFileDiffResult> {
     return await gitOperations.getFileContent(wikiFolderPath, commitHash, filePath, maxLines, maxChars);
   }
 

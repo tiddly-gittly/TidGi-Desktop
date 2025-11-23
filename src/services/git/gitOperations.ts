@@ -7,7 +7,7 @@ import { exec as gitExec } from 'dugite';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { defaultGitInfo } from './defaultGitInfo';
-import type { IGitLogOptions, IGitLogResult } from './interface';
+import type { GitFileStatus, IFileDiffResult, IGitLogOptions, IGitLogResult } from './interface';
 
 /**
  * Helper to create git environment variables for commit operations
@@ -125,7 +125,7 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
  * Handles both git status --porcelain (two-character codes like "M ", " D", "??")
  * and git diff-tree --name-status (single-character codes like "M", "D", "A")
  */
-function parseGitStatusCode(statusCode: string): 'added' | 'modified' | 'deleted' | 'renamed' | 'copied' | 'untracked' | 'unknown' {
+function parseGitStatusCode(statusCode: string): GitFileStatus {
   // Handle single-character status codes from diff-tree
   if (statusCode.length === 1) {
     if (statusCode === 'A') return 'added';
@@ -508,7 +508,7 @@ function createBinaryDiffPlaceholder(filePath: string): string {
  * Truncate diff output if it exceeds the limits
  */
 
-function truncateDiff(diff: string, maxLines: number, maxChars: number): import('./interface').IFileDiffResult {
+function truncateDiff(diff: string, maxLines: number, maxChars: number): IFileDiffResult {
   let truncated = diff;
   let isTruncated = false;
 
@@ -532,9 +532,9 @@ function truncateDiff(diff: string, maxLines: number, maxChars: number): import(
 }
 
 /**
- * Truncate content if it exceeds the limits
+ * Truncate content output if it exceeds the limits
  */
-function truncateContent(content: string, maxLines: number, maxChars: number): import('./interface').IFileDiffResult {
+function truncateContent(content: string, maxLines: number, maxChars: number): IFileDiffResult {
   return truncateDiff(content, maxLines, maxChars);
 }
 

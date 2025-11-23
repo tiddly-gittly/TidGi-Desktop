@@ -1,3 +1,5 @@
+import type { GitFileStatus, IFileWithStatus } from '../../services/git/interface';
+
 /**
  * Represents the author or committer of a commit.
  */
@@ -12,18 +14,8 @@ export interface CommitAuthor {
   name: string;
 }
 
-/**
- * File status in git
- */
-export type GitFileStatus = 'added' | 'modified' | 'deleted' | 'renamed' | 'copied' | 'untracked' | 'unknown';
-
-/**
- * File with status information
- */
-export interface FileWithStatus {
-  path: string;
-  status: GitFileStatus;
-}
+// Re-export for convenience
+export type { GitFileStatus, IFileWithStatus };
 
 /**
  * Represents a single entry in the git log.
@@ -60,5 +52,5 @@ export interface GitLogEntry {
   /**
    * Array of files with status changed in this commit.
    */
-  files?: FileWithStatus[];
+  files?: IFileWithStatus[];
 }
