@@ -62,31 +62,14 @@ export async function getSimplifiedWorkspaceMenuTemplate(
   const { id, storageService, isSubWiki } = workspace;
   const template: MenuItemConstructorOptions[] = [];
 
-  // Add command palette first
-  template.push({
-    label: t('ContextMenu.OpenCommandPalette'),
-    click: async () => {
-      await service.wiki.wikiOperationInBrowser(WikiChannel.dispatchEvent, id, ['open-command-palette']);
-    },
-  });
-
-  // Edit workspace
-  template.push({
-    label: t('WorkspaceSelector.EditWorkspace'),
-    click: async () => {
-      await service.window.open(WindowNames.editWorkspace, { workspaceID: id });
-    },
-  });
-
-  // Check if AI-generated backup title is enabled
-  const aiGenerateBackupTitleEnabled = await service.git.isAIGenerateBackupTitleEnabled();
-
-  // Backup/Sync options (based on storage service)
-  if (storageService === SupportedStorageServices.local) {
-    const backupItems = createBackupMenuItems(workspace, t, service.window, service.git, aiGenerateBackupTitleEnabled, false);
-    template.push(...backupItems);
+  // Add "Current Workspace" submenu with full menu
+  const fullMenuTemplate = await getWorkspaceMenuTemplate(workspace, t, service);
+  if (fullMenuTemplate.length > 0) {
+    template.push({
+      label: t('Menu.CurrentWorkspace'),
+      submenu: fullMenuTemplate,
+    });
   }
-
   // Restart and Reload (only for non-sub wikis)
   if (!isSubWiki) {
     template.push(
@@ -103,17 +86,29 @@ export async function getSimplifiedWorkspaceMenuTemplate(
           await service.view.reloadViewsWebContents(id);
         },
       },
+      {
+        label: t('ContextMenu.OpenCommandPalette'),
+        click: async () => {
+          await service.wiki.wikiOperationInBrowser(WikiChannel.dispatchEvent, id, ['open-command-palette']);
+        },
+      },
     );
   }
+  // Edit workspace
+  template.push({
+    label: t('WorkspaceSelector.EditWorkspace'),
+    click: async () => {
+      await service.window.open(WindowNames.editWorkspace, { workspaceID: id });
+    },
+  });
 
-  // Add "Current Workspace" submenu with full menu
-  const fullMenuTemplate = await getWorkspaceMenuTemplate(workspace, t, service);
-  if (fullMenuTemplate.length > 0) {
-    template.push({ type: 'separator' });
-    template.push({
-      label: t('Menu.CurrentWorkspace'),
-      submenu: fullMenuTemplate,
-    });
+  // Check if AI-generated backup title is enabled
+  const aiGenerateBackupTitleEnabled = await service.git.isAIGenerateBackupTitleEnabled();
+
+  // Backup/Sync options (based on storage service)
+  if (storageService === SupportedStorageServices.local) {
+    const backupItems = createBackupMenuItems(workspace, t, service.window, service.git, aiGenerateBackupTitleEnabled, false);
+    template.push(...backupItems);
   }
 
   return template;

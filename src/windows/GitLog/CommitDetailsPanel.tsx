@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { getFileStatusStyles, type GitFileStatus } from './fileStatusStyles';
 import type { GitLogEntry } from './types';
 
 const Panel = styled(Box)`
@@ -51,6 +52,17 @@ const ActionsWrapper = styled(Box)`
   display: flex;
   flex-direction: column;
   gap: 12px;
+`;
+
+const FileStatusBadge = styled(Box)<{ $status?: GitFileStatus }>`
+  display: inline-block;
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  margin-right: 4px;
+  border-radius: 2px;
+  font-weight: 600;
+  text-transform: uppercase;
+  ${({ $status, theme }) => getFileStatusStyles($status, theme)}
 `;
 
 interface ICommitDetailsPanelProps {
@@ -241,13 +253,18 @@ export function CommitDetailsPanel(
               {fileChanges.map((file, index) => (
                 <ListItem key={index} disablePadding>
                   <ListItemButton
-                    selected={file === selectedFile}
+                    selected={file.path === selectedFile}
                     onClick={() => {
-                      onFileSelect?.(file === selectedFile ? null : file);
+                      onFileSelect?.(file.path === selectedFile ? null : file.path);
                     }}
                   >
                     <ListItemText
-                      primary={file}
+                      primary={
+                        <>
+                          <FileStatusBadge $status={file.status}>{file.status.charAt(0)}</FileStatusBadge>
+                          {file.path}
+                        </>
+                      }
                       slotProps={{
                         primary: {
                           variant: 'body2',

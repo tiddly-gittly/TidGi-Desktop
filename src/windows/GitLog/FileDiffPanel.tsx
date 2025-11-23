@@ -136,9 +136,10 @@ interface IFileDiffPanelProps {
   commitHash: string;
   filePath: string | null;
   onDiscardSuccess?: () => void;
+  showSnackbar?: (message: string, severity: 'success' | 'error' | 'info') => void;
 }
 
-export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess }: IFileDiffPanelProps): React.JSX.Element {
+export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess, showSnackbar: showSnackbarFromParent }: IFileDiffPanelProps): React.JSX.Element {
   const { t } = useTranslation();
   const [diff, setDiff] = useState<string>('');
   const [fileContent, setFileContent] = useState<string>('');
@@ -152,6 +153,9 @@ export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess }: IFileD
   const [isContentTruncated, setIsContentTruncated] = useState(false);
   const [isLoadingFullDiff, setIsLoadingFullDiff] = useState(false);
   const [isLoadingFullContent, setIsLoadingFullContent] = useState(false);
+
+  // Use parent's showSnackbar if provided, otherwise create local one
+  const showSnackbar = showSnackbarFromParent ?? (() => {});
 
   const getWorkspace = async () => {
     const meta = window.meta();
@@ -192,11 +196,13 @@ export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess }: IFileD
 
     try {
       await window.service.git.discardFileChanges(workspace.wikiFolderLocation, filePath);
+      showSnackbar(t('GitLog.DiscardSuccess'), 'success');
       // Clear selection and trigger refresh
       onDiscardSuccess?.();
     } catch (error) {
       console.error('Failed to discard changes:', error);
-      // TODO: Show error message
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      showSnackbar(t('GitLog.DiscardFailed') + ': ' + errorMessage, 'error');
     }
   };
 
@@ -207,10 +213,13 @@ export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess }: IFileD
 
     try {
       await window.service.git.addToGitignore(workspace.wikiFolderLocation, filePath);
-      // TODO: Show success message
+      showSnackbar(t('GitLog.IgnoreSuccess'), 'success');
+      // Trigger refresh after adding to .gitignore
+      onDiscardSuccess?.();
     } catch (error) {
       console.error('Failed to add to .gitignore:', error);
-      // TODO: Show error message
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      showSnackbar(t('GitLog.IgnoreFailed') + ': ' + errorMessage, 'error');
     }
   };
 
@@ -221,10 +230,13 @@ export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess }: IFileD
 
     try {
       await window.service.git.addToGitignore(workspace.wikiFolderLocation, `*.${fileExtension}`);
-      // TODO: Show success message
+      showSnackbar(t('GitLog.IgnoreSuccess'), 'success');
+      // Trigger refresh after adding to .gitignore
+      onDiscardSuccess?.();
     } catch (error) {
       console.error('Failed to add extension to .gitignore:', error);
-      // TODO: Show error message
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      showSnackbar(t('GitLog.IgnoreFailed') + ': ' + errorMessage, 'error');
     }
   };
 
@@ -235,13 +247,13 @@ export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess }: IFileD
 
     const fullPath = `${workspace.wikiFolderLocation}/${filePath}`;
     await navigator.clipboard.writeText(fullPath);
-    // TODO: Show success message
+    showSnackbar(t('GitLog.CopySuccess'), 'success');
   };
 
   const handleCopyRelativePath = async () => {
     if (!filePath) return;
     await navigator.clipboard.writeText(filePath);
-    // TODO: Show success message
+    showSnackbar(t('GitLog.CopySuccess'), 'success');
   };
 
   const handleShowInExplorer = async () => {
