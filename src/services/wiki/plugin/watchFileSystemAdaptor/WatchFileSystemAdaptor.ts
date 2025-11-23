@@ -3,6 +3,7 @@ import fs from 'fs';
 import nsfw from 'nsfw';
 import path from 'path';
 import type { IFileInfo, Tiddler, Wiki } from 'tiddlywiki';
+import { hasMeaningfulChanges } from './comparsion';
 import { FileSystemAdaptor } from './FileSystemAdaptor';
 import { type IBootFilesIndexItemWithTitle, InverseFilesIndex } from './InverseFilesIndex';
 
@@ -623,8 +624,20 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
         tiddlerTitle,
       } as IBootFilesIndexItemWithTitle);
 
-      // Add tiddler to wiki (this will update if it exists or add if new)
+      // Get existing tiddler to check if content actually changed
       const syncAdaptor = $tw.syncadaptor as { wiki: Wiki } | undefined | null;
+      const existingTiddler = syncAdaptor?.wiki.getTiddler(tiddlerTitle);
+
+      // Use content comparison to prevent unnecessary saves
+      // This is critical for large JSON imports that would otherwise cause infinite loops
+      if (existingTiddler) {
+        if (!hasMeaningfulChanges(existingTiddler.fields, tiddler)) {
+          // Content is identical, skip addTiddler to prevent save cycle
+          continue;
+        }
+      }
+
+      // Add tiddler to wiki (this will trigger save if content changed)
       syncAdaptor?.wiki.addTiddler(tiddler);
 
       // Log appropriate event
