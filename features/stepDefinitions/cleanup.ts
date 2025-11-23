@@ -40,7 +40,11 @@ After(async function(this: ApplicationWorld, { pickle }) {
               // Add timeout protection for window.close() to prevent hanging
               await Promise.race([
                 window.close(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Window close timeout')), 5000)),
+                new Promise((_, reject) =>
+                  setTimeout(() => {
+                    reject(new Error('Window close timeout'));
+                  }, 5000)
+                ),
               ]);
             }
           } catch (error) {
@@ -48,11 +52,15 @@ After(async function(this: ApplicationWorld, { pickle }) {
           }
         }),
       );
-      
+
       // Add timeout protection for app.close() to prevent hanging
       await Promise.race([
         this.app.close(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('App close timeout')), 10000)),
+        new Promise((_, reject) =>
+          setTimeout(() => {
+            reject(new Error('App close timeout'));
+          }, 10000)
+        ),
       ]);
     } catch (error) {
       console.error('Error during cleanup:', error);
