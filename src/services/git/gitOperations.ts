@@ -122,8 +122,21 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
 
 /**
  * Parse git status code to file status
+ * Handles both git status --porcelain (two-character codes like "M ", " D", "??")
+ * and git diff-tree --name-status (single-character codes like "M", "D", "A")
  */
-function parseGitStatusCode(statusCode: string): import('./interface').GitFileStatus {
+function parseGitStatusCode(statusCode: string): 'added' | 'modified' | 'deleted' | 'renamed' | 'copied' | 'untracked' | 'unknown' {
+  // Handle single-character status codes from diff-tree
+  if (statusCode.length === 1) {
+    if (statusCode === 'A') return 'added';
+    if (statusCode === 'M') return 'modified';
+    if (statusCode === 'D') return 'deleted';
+    if (statusCode.startsWith('R')) return 'renamed';
+    if (statusCode.startsWith('C')) return 'copied';
+    return 'unknown';
+  }
+
+  // Handle two-character status codes from git status --porcelain
   const index = statusCode[0];
   const workTree = statusCode[1];
 
@@ -157,7 +170,7 @@ export async function getCommitFiles(repoPath: string, commitHash: string): Prom
       .filter((line: string) => line.length > 0)
       .map((line: string) => {
         if (line.length <= 3) {
-          return { path: line.trim(), status: 'unknown' as import('./interface').GitFileStatus };
+          return { path: line.trim(), status: 'unknown' as const };
         }
 
         // Parse git status format: "XY filename"
@@ -197,14 +210,7 @@ export async function getCommitFiles(repoPath: string, commitHash: string): Prom
       const statusChar = parts[0];
       const filePath = parts[parts.length - 1]; // Use last part for renames
 
-      let status: import('./interface').GitFileStatus = 'unknown';
-      if (statusChar === 'A') status = 'added';
-      else if (statusChar === 'M') status = 'modified';
-      else if (statusChar === 'D') status = 'deleted';
-      else if (statusChar.startsWith('R')) status = 'renamed';
-      else if (statusChar.startsWith('C')) status = 'copied';
-
-      return { path: filePath, status };
+      return { path: filePath, status: parseGitStatusCode(statusChar) };
     });
 }
 
@@ -345,11 +351,13 @@ export async function getFileContent(
   if (!commitHash) {
     const absolutePath = path.join(repoPath, filePath);
 
-    // Check if file exists in working tree
     try {
-      await fs.access(absolutePath);
-    } catch {
-      // File doesn't exist (deleted), try to get from HEAD
+      // Try to read the file directly
+      const content = await fs.readFile(absolutePath, 'utf-8');
+      return truncateContent(content, maxLines, maxChars);
+    } catch (error) {
+      // File doesn't exist or can't be read - it might be deleted
+      // Try to get from HEAD
       try {
         const result = await gitExec(
           ['show', `HEAD:${filePath}`],
@@ -362,14 +370,8 @@ export async function getFileContent(
       } catch {
         // Silently fail and throw main error
       }
-      throw new Error(`File not found: ${filePath} (deleted)`);
-    }
-
-    try {
-      const content = await fs.readFile(absolutePath, 'utf-8');
-      return truncateContent(content, maxLines, maxChars);
-    } catch (error) {
-      throw new Error(`Failed to read working tree file: ${error instanceof Error ? error.message : String(error)}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to read file: ${errorMessage}`);
     }
   }
 

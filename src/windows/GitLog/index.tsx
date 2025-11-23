@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { CommitDetailsPanel } from './CommitDetailsPanel';
 import { CustomGitTooltip } from './CustomGitTooltip';
 import { FileDiffPanel } from './FileDiffPanel';
+import { getFileStatusStyles } from './fileStatusStyles';
 import type { GitLogEntry } from './types';
 import { useCommitDetails } from './useCommitDetails';
 import { useGitLogData } from './useGitLogData';
@@ -121,56 +122,7 @@ const FileChip = styled(Box)<{ $status?: string }>`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  ${({ $status, theme }) => {
-  const isDark = theme.palette.mode === 'dark';
-  switch ($status) {
-    case 'added':
-    case 'untracked':
-      return isDark
-        ? `
-          background-color: rgba(46, 160, 67, 0.3);
-          color: #7ee787;
-        `
-        : `
-          background-color: rgba(46, 160, 67, 0.2);
-          color: #116329;
-        `;
-    case 'deleted':
-      return isDark
-        ? `
-          background-color: rgba(248, 81, 73, 0.3);
-          color: #ffa198;
-        `
-        : `
-          background-color: rgba(248, 81, 73, 0.2);
-          color: #82071e;
-        `;
-    case 'modified':
-      return isDark
-        ? `
-          background-color: rgba(187, 128, 9, 0.3);
-          color: #f0b83f;
-        `
-        : `
-          background-color: rgba(187, 128, 9, 0.2);
-          color: #7d4e00;
-        `;
-    case 'renamed':
-      return isDark
-        ? `
-          background-color: rgba(56, 139, 253, 0.3);
-          color: #79c0ff;
-        `
-        : `
-          background-color: rgba(56, 139, 253, 0.2);
-          color: #0969da;
-        `;
-    default:
-      return `
-          background-color: ${theme.palette.action.hover};
-        `;
-  }
-}}
+  ${({ $status, theme }) => getFileStatusStyles($status as any, theme)}
 `;
 
 interface ICommitTableRowProps {

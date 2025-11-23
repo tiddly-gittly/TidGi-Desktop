@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { getFileStatusStyles } from './fileStatusStyles';
 import type { GitLogEntry } from './types';
 
 const Panel = styled(Box)`
@@ -61,57 +62,7 @@ const FileStatusBadge = styled(Box)<{ $status?: string }>`
   border-radius: 2px;
   font-weight: 600;
   text-transform: uppercase;
-  ${({ $status, theme }) => {
-  const isDark = theme.palette.mode === 'dark';
-  switch ($status) {
-    case 'added':
-    case 'untracked':
-      return isDark
-        ? `
-          background-color: rgba(46, 160, 67, 0.3);
-          color: #7ee787;
-        `
-        : `
-          background-color: rgba(46, 160, 67, 0.2);
-          color: #116329;
-        `;
-    case 'deleted':
-      return isDark
-        ? `
-          background-color: rgba(248, 81, 73, 0.3);
-          color: #ffa198;
-        `
-        : `
-          background-color: rgba(248, 81, 73, 0.2);
-          color: #82071e;
-        `;
-    case 'modified':
-      return isDark
-        ? `
-          background-color: rgba(187, 128, 9, 0.3);
-          color: #f0b83f;
-        `
-        : `
-          background-color: rgba(187, 128, 9, 0.2);
-          color: #7d4e00;
-        `;
-    case 'renamed':
-      return isDark
-        ? `
-          background-color: rgba(56, 139, 253, 0.3);
-          color: #79c0ff;
-        `
-        : `
-          background-color: rgba(56, 139, 253, 0.2);
-          color: #0969da;
-        `;
-    default:
-      return `
-          background-color: ${theme.palette.action.hover};
-          color: ${theme.palette.text.secondary};
-        `;
-  }
-}}
+  ${({ $status, theme }) => getFileStatusStyles($status as any, theme)}
 `;
 
 interface ICommitDetailsPanelProps {
