@@ -1,5 +1,5 @@
 import { workspace } from '@services/wiki/wikiWorker/services';
-import type { FileInfo, Wiki } from 'tiddlywiki';
+import type { IFileInfo, Wiki } from 'tiddlywiki';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemAdaptor } from '../FileSystemAdaptor';
 
@@ -33,7 +33,7 @@ global.$tw = {
   node: true,
   boot: {
     wikiTiddlersPath: '/test/wiki/tiddlers',
-    files: {} as Record<string, FileInfo>,
+    files: {} as Record<string, IFileInfo>,
   },
   utils: mockUtils,
 };
@@ -73,7 +73,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
 
   describe('deleteTiddler - Callback Mode', () => {
     it('should delete tiddler and call callback on success', async () => {
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -105,7 +105,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
     });
 
     it('should handle EPERM error gracefully', async () => {
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -137,7 +137,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
     });
 
     it('should handle EACCES error gracefully', async () => {
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -163,7 +163,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
     });
 
     it('should propagate non-permission errors', async () => {
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -186,7 +186,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
     });
 
     it('should not treat EPERM as graceful if syscall is not unlink', async () => {
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -212,7 +212,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
 
   describe('deleteTiddler - Async/Await Mode', () => {
     it('should resolve successfully without callback', async () => {
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -236,7 +236,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
     });
 
     it('should reject on non-permission errors', async () => {
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -253,7 +253,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
     });
 
     it('should handle permission errors gracefully even without callback', async () => {
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -278,7 +278,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
 
   describe('deleteTiddler - Error Conversion', () => {
     it('should convert string errors to Error objects', async () => {
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -300,7 +300,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
     });
 
     it('should convert unknown errors to Error objects', async () => {
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,

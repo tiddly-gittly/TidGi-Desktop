@@ -103,7 +103,7 @@ function initWikiGit(
 function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs, errorI18NDict: Record<string, string>): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
     // For sub-wiki, show sync progress in main workspace
-    const workspaceIDForNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
+    const workspaceIDForNotification = isWikiWorkspace(workspace) && workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     void commitAndSync({
       ...configs,
       defaultGitInfo,
@@ -149,7 +149,7 @@ function forcePullWiki(workspace: IWorkspace, configs: IForcePullConfigs, errorI
       return;
     }
     // For sub-wiki, show sync progress in main workspace
-    const workspaceIDForNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
+    const workspaceIDForNotification = isWikiWorkspace(workspace) && workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     void forcePull({
       dir: workspace.wikiFolderLocation,
       ...configs,

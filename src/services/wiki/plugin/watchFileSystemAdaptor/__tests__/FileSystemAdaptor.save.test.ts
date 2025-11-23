@@ -1,5 +1,5 @@
 import { workspace } from '@services/wiki/wikiWorker/services';
-import type { FileInfo, Tiddler, Wiki } from 'tiddlywiki';
+import type { IFileInfo, Tiddler, Wiki } from 'tiddlywiki';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemAdaptor } from '../FileSystemAdaptor';
 
@@ -33,7 +33,7 @@ global.$tw = {
   node: true,
   boot: {
     wikiTiddlersPath: '/test/wiki/tiddlers',
-    files: {} as Record<string, FileInfo>,
+    files: {} as Record<string, IFileInfo>,
   },
   utils: mockUtils,
 };
@@ -77,7 +77,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
         fields: { title: 'TestTiddler', text: 'Test content' },
       } as Tiddler;
 
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -155,7 +155,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
         fields: { title: 'TestTiddler' },
       } as Tiddler;
 
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -182,7 +182,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
         fields: { title: 'TestTiddler' },
       } as Tiddler;
 
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -236,7 +236,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
         fields: { title: 'TestTiddler' },
       } as Tiddler;
 
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -264,7 +264,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
         fields: { title: 'TestTiddler' },
       } as Tiddler;
 
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
@@ -304,7 +304,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
         fields: { title: 'TestTiddler' },
       } as Tiddler;
 
-      const fileInfo: FileInfo = {
+      const fileInfo: IFileInfo = {
         filepath: '/test/wiki/tiddlers/test.tid',
         type: 'application/x-tiddler',
         hasMetaFile: false,
