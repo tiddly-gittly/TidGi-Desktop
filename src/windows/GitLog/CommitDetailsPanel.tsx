@@ -53,6 +53,67 @@ const ActionsWrapper = styled(Box)`
   gap: 12px;
 `;
 
+const FileStatusBadge = styled(Box)<{ $status?: string }>`
+  display: inline-block;
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  margin-right: 4px;
+  border-radius: 2px;
+  font-weight: 600;
+  text-transform: uppercase;
+  ${({ $status, theme }) => {
+  const isDark = theme.palette.mode === 'dark';
+  switch ($status) {
+    case 'added':
+    case 'untracked':
+      return isDark
+        ? `
+          background-color: rgba(46, 160, 67, 0.3);
+          color: #7ee787;
+        `
+        : `
+          background-color: rgba(46, 160, 67, 0.2);
+          color: #116329;
+        `;
+    case 'deleted':
+      return isDark
+        ? `
+          background-color: rgba(248, 81, 73, 0.3);
+          color: #ffa198;
+        `
+        : `
+          background-color: rgba(248, 81, 73, 0.2);
+          color: #82071e;
+        `;
+    case 'modified':
+      return isDark
+        ? `
+          background-color: rgba(187, 128, 9, 0.3);
+          color: #f0b83f;
+        `
+        : `
+          background-color: rgba(187, 128, 9, 0.2);
+          color: #7d4e00;
+        `;
+    case 'renamed':
+      return isDark
+        ? `
+          background-color: rgba(56, 139, 253, 0.3);
+          color: #79c0ff;
+        `
+        : `
+          background-color: rgba(56, 139, 253, 0.2);
+          color: #0969da;
+        `;
+    default:
+      return `
+          background-color: ${theme.palette.action.hover};
+          color: ${theme.palette.text.secondary};
+        `;
+  }
+}}
+`;
+
 interface ICommitDetailsPanelProps {
   commit: GitLogEntry | null;
   isLatestCommit?: boolean;
@@ -241,13 +302,18 @@ export function CommitDetailsPanel(
               {fileChanges.map((file, index) => (
                 <ListItem key={index} disablePadding>
                   <ListItemButton
-                    selected={file === selectedFile}
+                    selected={file.path === selectedFile}
                     onClick={() => {
-                      onFileSelect?.(file === selectedFile ? null : file);
+                      onFileSelect?.(file.path === selectedFile ? null : file.path);
                     }}
                   >
                     <ListItemText
-                      primary={file}
+                      primary={
+                        <>
+                          <FileStatusBadge $status={file.status}>{file.status.charAt(0)}</FileStatusBadge>
+                          {file.path}
+                        </>
+                      }
                       slotProps={{
                         primary: {
                           variant: 'body2',

@@ -1,7 +1,9 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
+import Snackbar from '@mui/material/Snackbar';
 import { styled } from '@mui/material/styles';
 import Tab from '@mui/material/Tab';
 import Table from '@mui/material/Table';
@@ -108,18 +110,67 @@ const LoadingContainer = styled(Box)`
   height: 100%;
 `;
 
-const FileChip = styled(Box)`
+const FileChip = styled(Box)<{ $status?: string }>`
   display: inline-block;
   font-size: 0.7rem;
   font-family: monospace;
   padding: 2px 4px;
   margin: 2px;
-  background-color: ${({ theme }) => theme.palette.action.hover};
   border-radius: 3px;
   max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  ${({ $status, theme }) => {
+  const isDark = theme.palette.mode === 'dark';
+  switch ($status) {
+    case 'added':
+    case 'untracked':
+      return isDark
+        ? `
+          background-color: rgba(46, 160, 67, 0.3);
+          color: #7ee787;
+        `
+        : `
+          background-color: rgba(46, 160, 67, 0.2);
+          color: #116329;
+        `;
+    case 'deleted':
+      return isDark
+        ? `
+          background-color: rgba(248, 81, 73, 0.3);
+          color: #ffa198;
+        `
+        : `
+          background-color: rgba(248, 81, 73, 0.2);
+          color: #82071e;
+        `;
+    case 'modified':
+      return isDark
+        ? `
+          background-color: rgba(187, 128, 9, 0.3);
+          color: #f0b83f;
+        `
+        : `
+          background-color: rgba(187, 128, 9, 0.2);
+          color: #7d4e00;
+        `;
+    case 'renamed':
+      return isDark
+        ? `
+          background-color: rgba(56, 139, 253, 0.3);
+          color: #79c0ff;
+        `
+        : `
+          background-color: rgba(56, 139, 253, 0.2);
+          color: #0969da;
+        `;
+    default:
+      return `
+          background-color: ${theme.palette.action.hover};
+        `;
+  }
+}}
 `;
 
 interface ICommitTableRowProps {
@@ -158,10 +209,10 @@ function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTable
       <TableCell>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
           {displayFiles.map((file, index) => {
-            const fileName = file.split('/').pop() || file;
+            const fileName = file.path.split('/').pop() || file.path;
             return (
-              <Tooltip key={index} title={file} placement='top'>
-                <FileChip>{fileName}</FileChip>
+              <Tooltip key={index} title={`${file.path} (${file.status})`} placement='top'>
+                <FileChip $status={file.status}>{fileName}</FileChip>
               </Tooltip>
             );
           })}
@@ -195,6 +246,19 @@ export default function GitHistory(): React.JSX.Element {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'current' | 'all'>('current');
   const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({
+    open: false,
+    message: '',
+    severity: 'info',
+  });
+
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' = 'info') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(previous => ({ ...previous, open: false }));
+  };
 
   // Create a tooltip wrapper that passes the translation function
   // The props coming from react-git-log don't include 't', so we add it
@@ -387,9 +451,21 @@ export default function GitHistory(): React.JSX.Element {
               // Trigger git log refresh after discard
               setShouldSelectFirst(true);
             }}
+            showSnackbar={showSnackbar}
           />
         </DiffPanelWrapper>
       </ContentWrapper>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Root>
   );
 }

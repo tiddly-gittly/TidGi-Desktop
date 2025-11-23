@@ -65,6 +65,13 @@ export interface IFileDiffResult {
   isTruncated: boolean;
 }
 
+export type GitFileStatus = 'added' | 'modified' | 'deleted' | 'renamed' | 'copied' | 'untracked' | 'unknown';
+
+export interface IFileWithStatus {
+  path: string;
+  status: GitFileStatus;
+}
+
 /**
  * Git state change event
  */
@@ -117,7 +124,7 @@ export interface IGitService {
   /**
    * Get files changed in a specific commit
    */
-  getCommitFiles(wikiFolderPath: string, commitHash: string): Promise<string[]>;
+  getCommitFiles(wikiFolderPath: string, commitHash: string): Promise<IFileWithStatus[]>;
   /**
    * Get the diff for a specific file in a commit
    * @param maxLines - Maximum number of lines to return (default: 500)

@@ -121,10 +121,28 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
 }
 
 /**
+ * Parse git status code to file status
+ */
+function parseGitStatusCode(statusCode: string): import('./interface').GitFileStatus {
+  const index = statusCode[0];
+  const workTree = statusCode[1];
+
+  // Check for specific patterns
+  if (statusCode === '??') return 'untracked';
+  if (index === 'A' || workTree === 'A') return 'added';
+  if (index === 'D' || workTree === 'D') return 'deleted';
+  if (index === 'R' || workTree === 'R') return 'renamed';
+  if (index === 'C' || workTree === 'C') return 'copied';
+  if (index === 'M' || workTree === 'M') return 'modified';
+
+  return 'unknown';
+}
+
+/**
  * Get files changed in a specific commit
  * If commitHash is empty, returns uncommitted changes
  */
-export async function getCommitFiles(repoPath: string, commitHash: string): Promise<string[]> {
+export async function getCommitFiles(repoPath: string, commitHash: string): Promise<Array<import('./interface').IFileWithStatus>> {
   // Handle uncommitted changes
   if (!commitHash || commitHash === '') {
     const result = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain'], repoPath);
@@ -139,22 +157,29 @@ export async function getCommitFiles(repoPath: string, commitHash: string): Prom
       .filter((line: string) => line.length > 0)
       .map((line: string) => {
         if (line.length <= 3) {
-          return line.trim();
+          return { path: line.trim(), status: 'unknown' as import('./interface').GitFileStatus };
         }
 
         // Parse git status format: "XY filename"
         // XY is two-letter status code, filename starts at position 3
+        const statusCode = line.slice(0, 2);
         const rawPath = line.slice(3);
 
         // Handle rename format: "old -> new" – we want the new path
         const renameParts = rawPath.split(' -> ');
-        return renameParts[renameParts.length - 1].trim();
+        const filePath = renameParts[renameParts.length - 1].trim();
+
+        return {
+          path: filePath,
+          status: parseGitStatusCode(statusCode),
+        };
       })
-      .filter((line: string) => line.length > 0);
+      .filter((item) => item.path.length > 0);
   }
 
+  // For committed changes, use diff-tree with --name-status to get file status
   const result = await gitExec(
-    ['-c', 'core.quotePath=false', 'diff-tree', '--no-commit-id', '--name-only', '-r', commitHash],
+    ['-c', 'core.quotePath=false', 'diff-tree', '--no-commit-id', '--name-status', '-r', commitHash],
     repoPath,
   );
 
@@ -165,7 +190,22 @@ export async function getCommitFiles(repoPath: string, commitHash: string): Prom
   return result.stdout
     .trim()
     .split('\n')
-    .filter((line: string) => line.length > 0);
+    .filter((line: string) => line.length > 0)
+    .map((line: string) => {
+      // Format: "STATUS\tFILENAME" or "STATUS\tOLDNAME\tNEWNAME" for renames
+      const parts = line.split('\t');
+      const statusChar = parts[0];
+      const filePath = parts[parts.length - 1]; // Use last part for renames
+
+      let status: import('./interface').GitFileStatus = 'unknown';
+      if (statusChar === 'A') status = 'added';
+      else if (statusChar === 'M') status = 'modified';
+      else if (statusChar === 'D') status = 'deleted';
+      else if (statusChar.startsWith('R')) status = 'renamed';
+      else if (statusChar.startsWith('C')) status = 'copied';
+
+      return { path: filePath, status };
+    });
 }
 
 /**
@@ -221,6 +261,40 @@ export async function getFileDiff(
       }
     }
 
+    // Check if file is deleted
+    const isDeleted = statusCode.includes('D');
+
+    if (isDeleted) {
+      // For deleted files, show the deletion diff
+      const result = await gitExec(
+        ['diff', 'HEAD', '--', filePath],
+        repoPath,
+      );
+
+      if (result.exitCode !== 0) {
+        // If diff fails, try to show the file content from HEAD
+        const headContent = await gitExec(
+          ['show', `HEAD:${filePath}`],
+          repoPath,
+        );
+
+        if (headContent.exitCode === 0) {
+          const diff = [
+            `diff --git a/${filePath} b/${filePath}`,
+            'deleted file mode 100644',
+            `--- a/${filePath}`,
+            '+++ /dev/null',
+            ...headContent.stdout.split(/\r?\n/).map(line => `-${line}`),
+          ].join('\n');
+          return truncateDiff(diff, maxLines, maxChars);
+        }
+
+        throw new Error(`Failed to get diff for deleted file: ${result.stderr}`);
+      }
+
+      return truncateDiff(result.stdout, maxLines, maxChars);
+    }
+
     const result = await gitExec(
       ['diff', 'HEAD', '--', filePath],
       repoPath,
@@ -270,6 +344,26 @@ export async function getFileContent(
 ): Promise<import('./interface').IFileDiffResult> {
   if (!commitHash) {
     const absolutePath = path.join(repoPath, filePath);
+
+    // Check if file exists in working tree
+    try {
+      await fs.access(absolutePath);
+    } catch {
+      // File doesn't exist (deleted), try to get from HEAD
+      try {
+        const result = await gitExec(
+          ['show', `HEAD:${filePath}`],
+          repoPath,
+        );
+
+        if (result.exitCode === 0) {
+          return truncateContent(result.stdout, maxLines, maxChars);
+        }
+      } catch {
+        // Silently fail and throw main error
+      }
+      throw new Error(`File not found: ${filePath} (deleted)`);
+    }
 
     try {
       const content = await fs.readFile(absolutePath, 'utf-8');
@@ -484,13 +578,43 @@ export async function revertCommit(repoPath: string, commitHash: string, commitM
 }
 
 /**
- * Discard changes for a specific file (restore from HEAD)
+ * Discard changes for a specific file (restore from HEAD or delete if untracked)
  */
 export async function discardFileChanges(repoPath: string, filePath: string): Promise<void> {
-  const result = await gitExec(['checkout', 'HEAD', '--', filePath], repoPath);
+  // First check the file status to determine if it's untracked (new file)
+  const statusResult = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain', '--', filePath], repoPath);
 
-  if (result.exitCode !== 0) {
-    throw new Error(`Failed to discard changes: ${result.stderr}`);
+  if (statusResult.exitCode !== 0) {
+    throw new Error(`Failed to check file status: ${statusResult.stderr}`);
+  }
+
+  const statusLine = statusResult.stdout.trim();
+
+  // If empty, file is not modified
+  if (!statusLine) {
+    return;
+  }
+
+  // Parse status code (first two characters)
+  const statusCode = statusLine.slice(0, 2);
+
+  // Check if file is untracked (new file not yet added)
+  // Status code "??" means untracked
+  if (statusCode === '??') {
+    // For untracked files, we need to delete them
+    const fullPath = path.join(repoPath, filePath);
+    try {
+      await fs.unlink(fullPath);
+    } catch (error) {
+      throw new Error(`Failed to delete untracked file: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  } else {
+    // For tracked files, use git checkout to restore from HEAD
+    const result = await gitExec(['checkout', 'HEAD', '--', filePath], repoPath);
+
+    if (result.exitCode !== 0) {
+      throw new Error(`Failed to discard changes: ${result.stderr}`);
+    }
   }
 }
 

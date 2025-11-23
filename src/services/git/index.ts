@@ -408,6 +408,8 @@ export class Git implements IGitService {
 
   public async addToGitignore(wikiFolderPath: string, pattern: string): Promise<void> {
     await gitOperations.addToGitignore(wikiFolderPath, pattern);
+    // Notify git state change to refresh git log
+    this.notifyGitStateChange(wikiFolderPath, 'file-change');
   }
 
   public async isAIGenerateBackupTitleEnabled(): Promise<boolean> {

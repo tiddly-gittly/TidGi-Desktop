@@ -13,6 +13,19 @@ export interface CommitAuthor {
 }
 
 /**
+ * File status in git
+ */
+export type GitFileStatus = 'added' | 'modified' | 'deleted' | 'renamed' | 'copied' | 'untracked' | 'unknown';
+
+/**
+ * File with status information
+ */
+export interface FileWithStatus {
+  path: string;
+  status: GitFileStatus;
+}
+
+/**
  * Represents a single entry in the git log.
  */
 export interface GitLogEntry {
@@ -45,7 +58,7 @@ export interface GitLogEntry {
    */
   parents: string[];
   /**
-   * Array of file paths changed in this commit.
+   * Array of files with status changed in this commit.
    */
-  files?: string[];
+  files?: FileWithStatus[];
 }
