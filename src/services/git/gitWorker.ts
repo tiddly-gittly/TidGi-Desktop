@@ -102,6 +102,8 @@ function initWikiGit(
  */
 function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs, errorI18NDict: Record<string, string>): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
+    // For sub-wiki, show sync progress in main workspace
+    const workspaceIDForNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     void commitAndSync({
       ...configs,
       defaultGitInfo,
@@ -113,7 +115,7 @@ function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs
           observer.next({ message, level: 'warn', meta: { callerFunction: 'commitAndSync', ...context } });
         },
         info: (message: GitStep, context: ILoggerContext): void => {
-          observer.next({ message, level: 'info', meta: { handler: WikiChannel.syncProgress, id: workspace.id, callerFunction: 'commitAndSync', ...context } });
+          observer.next({ message, level: 'info', meta: { handler: WikiChannel.syncProgress, id: workspaceIDForNotification, callerFunction: 'commitAndSync', ...context } });
         },
       },
       filesToIgnore: ['.DS_Store'],
@@ -146,6 +148,8 @@ function forcePullWiki(workspace: IWorkspace, configs: IForcePullConfigs, errorI
       observer.error(new Error('forcePullWiki can only be called on wiki workspaces'));
       return;
     }
+    // For sub-wiki, show sync progress in main workspace
+    const workspaceIDForNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     void forcePull({
       dir: workspace.wikiFolderLocation,
       ...configs,
@@ -158,7 +162,7 @@ function forcePullWiki(workspace: IWorkspace, configs: IForcePullConfigs, errorI
           observer.next({ message, level: 'warn', meta: { callerFunction: 'forcePull', ...context } });
         },
         info: (message: GitStep, context: ILoggerContext): void => {
-          observer.next({ message, level: 'info', meta: { handler: WikiChannel.syncProgress, id: workspace.id, callerFunction: 'forcePull', ...context } });
+          observer.next({ message, level: 'info', meta: { handler: WikiChannel.syncProgress, id: workspaceIDForNotification, callerFunction: 'forcePull', ...context } });
         },
       },
     }).then(
