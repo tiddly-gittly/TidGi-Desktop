@@ -297,9 +297,6 @@ importers:
       '@electron-forge/cli':
         specifier: 7.10.2
         version: 7.10.2(@swc/core@1.12.0)(bluebird@3.7.2)(encoding@0.1.13)(esbuild@0.27.0)
-      '@electron-forge/maker-msix':
-        specifier: ^7.10.2
-        version: 7.10.2(bluebird@3.7.2)
       '@electron-forge/plugin-auto-unpack-natives':
         specifier: 7.10.2
         version: 7.10.2(bluebird@3.7.2)
@@ -446,6 +443,9 @@ importers:
         specifier: 7.10.2
         version: 7.10.2(bluebird@3.7.2)
       '@electron-forge/maker-flatpak':
+        specifier: 7.10.2
+        version: 7.10.2(bluebird@3.7.2)
+      '@electron-forge/maker-msix':
         specifier: 7.10.2
         version: 7.10.2(bluebird@3.7.2)
       '@electron-forge/maker-rpm':
@@ -8456,6 +8456,7 @@ snapshots:
     transitivePeerDependencies:
       - bluebird
       - supports-color
+    optional: true
 
   '@electron-forge/maker-rpm@7.10.2(bluebird@3.7.2)':
     dependencies:
@@ -11122,6 +11123,7 @@ snapshots:
     dependencies:
       ansi-styles: 4.3.0
       supports-color: 7.2.0
+    optional: true
 
   chalk@4.1.2:
     dependencies:
@@ -11650,6 +11652,7 @@ snapshots:
       xml-escape: 1.1.0
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   electron-winstaller@5.4.0:
     dependencies:
@@ -15844,7 +15847,8 @@ snapshots:
 
   ws@8.18.3: {}
 
-  xml-escape@1.1.0: {}
+  xml-escape@1.1.0:
+    optional: true
 
   xml-name-validator@5.0.0: {}
 

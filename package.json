@@ -129,6 +129,7 @@
   "optionalDependencies": {
     "@electron-forge/maker-deb": "7.10.2",
     "@electron-forge/maker-flatpak": "7.10.2",
+    "@electron-forge/maker-msix": "7.10.2",
     "@electron-forge/maker-rpm": "7.10.2",
     "@electron-forge/maker-snap": "7.10.2",
     "@electron-forge/maker-squirrel": "7.10.2",
@@ -138,7 +139,6 @@
   "devDependencies": {
     "@cucumber/cucumber": "^12.2.0",
     "@electron-forge/cli": "7.10.2",
-    "@electron-forge/maker-msix": "^7.10.2",
     "@electron-forge/plugin-auto-unpack-natives": "7.10.2",
     "@electron-forge/plugin-vite": "7.10.2",
     "@electron/rebuild": "^4.0.1",
