@@ -18,7 +18,7 @@ import path from 'path';
 export default (
   buildPath: string,
   _electronVersion: string,
-  _platform: string,
+  platform: string,
   _arch: string,
   callback: () => void,
 ): void => {
@@ -46,8 +46,6 @@ export default (
       ['tiddlywiki', 'plugins', 'tiddlywiki', 'filesystem'],
       ['tiddlywiki', 'plugins', 'tiddlywiki', 'tiddlyweb'],
       ['tiddlywiki', 'tiddlywiki.js'],
-      // we only need its `main` binary, no need its dependency and code, because we already copy it to src/services/native/externalApp
-      ['app-path', 'main'],
       // node binary
       ['better-sqlite3', 'build', 'Release', 'better_sqlite3.node'],
       // nsfw native module
@@ -58,6 +56,11 @@ export default (
       ['sqlite-vec', 'index.cjs'],
       [`sqlite-vec-${process.platform === 'win32' ? 'windows' : process.platform}-${process.arch}`],
     ];
+
+    // macOS only: copy app-path binary for finding apps
+    if (platform === 'darwin') {
+      packagePathsToCopyDereferenced.push(['app-path', 'main']);
+    }
 
     console.log('Copying packagePathsToCopyDereferenced');
     for (const packagePathInNodeModules of packagePathsToCopyDereferenced) {
@@ -84,6 +87,16 @@ export default (
       path.join(cwd, 'node_modules', 'dugite'),
       { dereference: false },
     );
+
+    if (platform === 'win32') {
+      console.log('Copy registry-js (Windows only)');
+      // registry-js has native binary that is loaded using relative path (../../build/Release/registry.node)
+      fs.copySync(
+        path.join(sourceNodeModulesFolder, 'registry-js'),
+        path.join(cwd, 'node_modules', 'registry-js'),
+        { dereference: true },
+      );
+    }
   }
 
   /** complete this hook */
