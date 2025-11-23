@@ -1,4 +1,5 @@
 import { Then, When } from '@cucumber/cucumber';
+import { exec as gitExec } from 'dugite';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
@@ -536,14 +537,18 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
     // Ignore if .git doesn't exist
   });
 
-  // Initialize fresh git repository for the new wiki
-  const { execSync } = await import('child_process');
+  // Initialize fresh git repository for the new wiki using dugite
   try {
-    execSync('git init', { cwd: wikiPath });
-    execSync('git config user.email "test@tidgi.test"', { cwd: wikiPath });
-    execSync('git config user.name "TidGi Test"', { cwd: wikiPath });
-    execSync('git add .', { cwd: wikiPath });
-    execSync('git commit -m "Initial commit"', { cwd: wikiPath });
+    // Initialize git repository with master branch
+    await gitExec(['init', '-b', 'master'], wikiPath);
+
+    // Configure git user
+    await gitExec(['config', 'user.email', 'test@tidgi.test'], wikiPath);
+    await gitExec(['config', 'user.name', 'TidGi Test'], wikiPath);
+
+    // Add all files and create initial commit
+    await gitExec(['add', '.'], wikiPath);
+    await gitExec(['commit', '-m', 'Initial commit'], wikiPath);
   } catch (error) {
     // Git initialization is not critical for the test, continue anyway
     console.log('Git initialization skipped:', (error as Error).message);

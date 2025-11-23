@@ -37,16 +37,33 @@ After(async function(this: ApplicationWorld, { pickle }) {
         allWindows.map(async (window) => {
           try {
             if (!window.isClosed()) {
-              await window.close();
+              // Add timeout protection for window.close() to prevent hanging
+              await Promise.race([
+                window.close(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Window close timeout')), 5000)),
+              ]);
             }
           } catch (error) {
             console.error('Error closing window:', error);
           }
         }),
       );
-      await this.app.close();
+      
+      // Add timeout protection for app.close() to prevent hanging
+      await Promise.race([
+        this.app.close(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('App close timeout')), 10000)),
+      ]);
     } catch (error) {
       console.error('Error during cleanup:', error);
+      // Force kill the app if it hangs
+      try {
+        if (this.app) {
+          await this.app.context().close();
+        }
+      } catch (forceCloseError) {
+        console.error('Error force closing app:', forceCloseError);
+      }
     }
     this.app = undefined;
     this.mainWindow = undefined;
