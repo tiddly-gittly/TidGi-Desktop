@@ -207,7 +207,7 @@ export class Window implements IWindowService {
       ...(hideTitleBar && process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
       alwaysOnTop: windowName === WindowNames.tidgiMiniWindow ? tidgiMiniWindowAlwaysOnTop : alwaysOnTop,
       webPreferences: {
-        devTools: !isTest,
+        devTools: true, // Always enable devTools, even in test mode for debugging
         nodeIntegration: false,
         webSecurity: false,
         allowRunningInsecureContent: true,

@@ -14,7 +14,6 @@ import path from 'path';
 import { Observable } from 'rxjs';
 
 import type { IWikiWorkspace } from '@services/workspaces/interface';
-import type { SyncAdaptor } from 'tiddlywiki';
 import { IZxWorkerMessage, ZxWorkerControlActions } from '../interface';
 import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts, type IVariableContextList } from '../plugin/zxPlugin';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
@@ -101,7 +100,7 @@ async function beforeExit(): Promise<void> {
   // Cleanup watch-filesystem adaptor
   const wikiInstance = getWikiInstance();
   // Call our custom cleanup method if it exists `src/services/wiki/plugin/watchFileSystemAdaptor/watch-filesystem-adaptor.ts`
-  const syncAdaptor = wikiInstance?.syncadaptor as SyncAdaptor & { cleanup?: () => Promise<void> };
+  const syncAdaptor = wikiInstance?.syncadaptor as { cleanup?: () => Promise<void> } | undefined;
   if (syncAdaptor?.cleanup) {
     await syncAdaptor.cleanup();
   }

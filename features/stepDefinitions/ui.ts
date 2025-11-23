@@ -20,7 +20,6 @@ When('I wait for the page to load completely', async function(this: ApplicationW
 
 Then('I should see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
   const currentWindow = this.currentWindow;
-
   try {
     await currentWindow?.waitForSelector(selector, { timeout: 10000 });
     const isVisible = await currentWindow?.isVisible(selector);

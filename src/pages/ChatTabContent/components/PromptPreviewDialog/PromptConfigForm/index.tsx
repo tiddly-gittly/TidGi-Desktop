@@ -10,7 +10,7 @@ import { ErrorDisplay } from './components/ErrorDisplay';
 import { ArrayItemProvider } from './context/ArrayItemContext';
 import { useDefaultUiSchema } from './defaultUiSchema';
 import { fields } from './fields';
-import { ArrayFieldTemplate, FieldTemplate, ObjectFieldTemplate, RootObjectFieldTemplate } from './templates';
+import { ArrayFieldItemTemplate, ArrayFieldTemplate, FieldTemplate, ObjectFieldTemplate, RootObjectFieldTemplate } from './templates';
 import { widgets } from './widgets';
 
 /**
@@ -67,7 +67,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
 
   const templates = useMemo(() => {
     const rootObjectFieldTemplate = (props: ObjectFieldTemplateProps) => {
-      const isRootLevel = props.idSchema.$id === 'root';
+      const isRootLevel = props.fieldPathId?.$id === 'root';
       return isRootLevel
         ? <RootObjectFieldTemplate {...props} />
         : <ObjectFieldTemplate {...props} />;
@@ -75,6 +75,8 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
 
     return {
       ArrayFieldTemplate,
+
+      ArrayFieldItemTemplate,
       FieldTemplate,
       ObjectFieldTemplate: rootObjectFieldTemplate,
     };
@@ -145,7 +147,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
           widgets={widgets}
           fields={fields}
           showErrorList={false}
-          liveValidate
+          liveValidate='onChange'
           noHtml5Validate
         >
           <div />

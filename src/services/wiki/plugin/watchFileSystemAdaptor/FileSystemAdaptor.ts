@@ -4,11 +4,9 @@ import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface'
 import { backOff } from 'exponential-backoff';
 import fs from 'fs';
 import path from 'path';
-import type { FileInfo } from 'tiddlywiki';
+import type { IFileInfo } from 'tiddlywiki';
 import type { Tiddler, Wiki } from 'tiddlywiki';
 import { isFileLockError } from './utilities';
-
-export type IFileSystemAdaptorCallback = (error: Error | null | string, fileInfo?: FileInfo | null) => void;
 
 /**
  * Base filesystem adaptor that handles tiddler save/delete operations and sub-wiki routing.
@@ -110,7 +108,7 @@ export class FileSystemAdaptor {
     return true;
   }
 
-  getTiddlerInfo(tiddler: Tiddler): FileInfo | undefined {
+  getTiddlerInfo(tiddler: Tiddler): IFileInfo | undefined {
     const title = tiddler.fields.title;
     return this.boot.files[title];
   }
@@ -119,7 +117,7 @@ export class FileSystemAdaptor {
    * Main routing logic: determine where a tiddler should be saved based on its tags.
    * For draft tiddlers, check the original tiddler's tags.
    */
-  async getTiddlerFileInfo(tiddler: Tiddler): Promise<FileInfo | null> {
+  async getTiddlerFileInfo(tiddler: Tiddler): Promise<IFileInfo | null> {
     if (!this.boot.wikiTiddlersPath) {
       throw new Error('filesystem adaptor requires a valid wiki folder');
     }
@@ -165,7 +163,7 @@ export class FileSystemAdaptor {
    * Generate file info for sub-wiki directory
    * Handles symlinks correctly across platforms (Windows junctions and Linux symlinks)
    */
-  protected generateSubWikiFileInfo(tiddler: Tiddler, subWiki: IWikiWorkspace, fileInfo: FileInfo | undefined): FileInfo {
+  protected generateSubWikiFileInfo(tiddler: Tiddler, subWiki: IWikiWorkspace, fileInfo: IFileInfo | undefined): IFileInfo {
     let targetDirectory = subWiki.wikiFolderLocation;
 
     // Resolve symlinks to ensure consistent path handling across platforms
@@ -186,14 +184,14 @@ export class FileSystemAdaptor {
       pathFilters: undefined,
       extFilters: this.extensionFilters,
       wiki: this.wiki,
-      fileInfo: fileInfo ? { ...fileInfo, overwrite: true } : { overwrite: true } as FileInfo,
+      fileInfo: fileInfo ? { ...fileInfo, overwrite: true } : { overwrite: true } as IFileInfo,
     });
   }
 
   /**
    * Generate file info using default FileSystemPaths logic
    */
-  protected generateDefaultFileInfo(tiddler: Tiddler, fileInfo: FileInfo | undefined): FileInfo {
+  protected generateDefaultFileInfo(tiddler: Tiddler, fileInfo: IFileInfo | undefined): IFileInfo {
     let pathFilters: string[] | undefined;
 
     if (this.wiki.tiddlerExists('$:/config/FileSystemPaths')) {
@@ -206,7 +204,7 @@ export class FileSystemAdaptor {
       pathFilters,
       extFilters: this.extensionFilters,
       wiki: this.wiki,
-      fileInfo: fileInfo ? { ...fileInfo, overwrite: true } : { overwrite: true } as FileInfo,
+      fileInfo: fileInfo ? { ...fileInfo, overwrite: true } : { overwrite: true } as IFileInfo,
     });
   }
 
@@ -214,7 +212,11 @@ export class FileSystemAdaptor {
    * Save a tiddler to the filesystem
    * Can be used with callback (legacy) or as async/await
    */
-  async saveTiddler(tiddler: Tiddler, callback?: IFileSystemAdaptorCallback, _options?: { tiddlerInfo?: Record<string, unknown> }): Promise<void> {
+  async saveTiddler(
+    tiddler: Tiddler,
+    callback?: (error: Error | null | string, adaptorInfo?: IFileInfo | null, revision?: string) => void,
+    _options?: { tiddlerInfo?: Record<string, unknown> },
+  ): Promise<void> {
     try {
       const fileInfo = await this.getTiddlerFileInfo(tiddler);
 
@@ -240,7 +242,7 @@ export class FileSystemAdaptor {
           bootInfo: savedFileInfo, // New file info to be kept
           title: tiddler.fields.title,
         };
-        $tw.utils.cleanupTiddlerFiles(cleanupOptions, (cleanupError: Error | null, _cleanedFileInfo?: FileInfo) => {
+        $tw.utils.cleanupTiddlerFiles(cleanupOptions, (cleanupError: Error | null, _cleanedFileInfo?: IFileInfo) => {
           if (cleanupError) {
             reject(cleanupError);
             return;
@@ -260,7 +262,10 @@ export class FileSystemAdaptor {
   /**
    * Load a tiddler - not needed as all tiddlers are loaded during boot
    */
-  loadTiddler(_title: string, callback: IFileSystemAdaptorCallback): void {
+  loadTiddler(
+    _title: string,
+    callback: (error: Error | null | string, tiddlerFields?: Record<string, unknown> | null) => void,
+  ): void {
     callback(null, null);
   }
 
@@ -268,7 +273,11 @@ export class FileSystemAdaptor {
    * Delete a tiddler from the filesystem
    * Can be used with callback (legacy) or as async/await
    */
-  async deleteTiddler(title: string, callback?: IFileSystemAdaptorCallback, _options?: unknown): Promise<void> {
+  async deleteTiddler(
+    title: string,
+    callback?: (error: Error | null | string, adaptorInfo?: IFileInfo | null) => void,
+    _options?: unknown,
+  ): Promise<void> {
     const fileInfo = this.boot.files[title];
 
     if (!fileInfo) {
@@ -278,7 +287,7 @@ export class FileSystemAdaptor {
 
     try {
       await new Promise<void>((resolve, reject) => {
-        $tw.utils.deleteTiddlerFile(fileInfo, (error: Error | null, deletedFileInfo?: FileInfo) => {
+        $tw.utils.deleteTiddlerFile(fileInfo, (error: Error | null, deletedFileInfo?: IFileInfo) => {
           if (error) {
             const errorCode = (error as NodeJS.ErrnoException).code;
             const errorSyscall = (error as NodeJS.ErrnoException).syscall;
@@ -339,9 +348,9 @@ export class FileSystemAdaptor {
    */
   protected async saveTiddlerWithRetry(
     tiddler: Tiddler,
-    fileInfo: FileInfo,
+    fileInfo: IFileInfo,
     options: { maxRetries?: number; initialDelay?: number; maxDelay?: number } = {},
-  ): Promise<FileInfo> {
+  ): Promise<IFileInfo> {
     const maxRetries = options.maxRetries ?? 10;
     const initialDelay = options.initialDelay ?? 50;
     const maxDelay = options.maxDelay ?? 2000;
@@ -349,8 +358,8 @@ export class FileSystemAdaptor {
     try {
       return await backOff(
         async () => {
-          return await new Promise<FileInfo>((resolve, reject) => {
-            $tw.utils.saveTiddlerToFile(tiddler, fileInfo, (saveError: Error | null, savedFileInfo?: FileInfo) => {
+          return await new Promise<IFileInfo>((resolve, reject) => {
+            $tw.utils.saveTiddlerToFile(tiddler, fileInfo, (saveError: Error | null, savedFileInfo?: IFileInfo) => {
               if (saveError) {
                 reject(saveError);
                 return;

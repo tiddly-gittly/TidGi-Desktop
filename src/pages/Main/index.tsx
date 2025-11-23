@@ -1,8 +1,7 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
-import { styled, Theme } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
 import { lazy } from 'react';
 import { useTranslation } from 'react-i18next';
-import is, { isNot } from 'typescript-styled-is';
 import { Route, Switch } from 'wouter';
 
 import { PageType } from '@/constants/pageTypes';
@@ -42,20 +41,25 @@ const Root = styled('div')`
   }
 `;
 
-const ContentRoot = styled('div')<{ $sidebar: boolean }>`
+const ContentRoot = styled('div')<{ $sidebar: boolean }>(
+  ({ theme, $sidebar }) => `
   flex: 1;
   display: flex;
   flex-direction: column;
-
-  ${is('$sidebar')`
-    width: calc(100% - ${({ theme }: { theme: Theme }) => theme.sidebar.width}px);
-    max-width: calc(100% - ${({ theme }: { theme: Theme }) => theme.sidebar.width}px);
-  `}
-  ${isNot('$sidebar')`
-    width: 100%;
-  `}
   height: 100%;
-`;
+  
+  ${
+    $sidebar
+      ? `
+    width: calc(100% - ${theme.sidebar.width}px);
+    max-width: calc(100% - ${theme.sidebar.width}px);
+  `
+      : `
+    width: 100%;
+  `
+  }
+`,
+);
 
 export default function Main(): React.JSX.Element {
   const { t } = useTranslation();

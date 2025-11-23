@@ -8,6 +8,7 @@ import { defaultServerIP } from '@/constants/urls';
 import { DARK_LIGHT_CHANGE_ACTIONS_TAG } from '@services/theme/interface';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
+import type { Server } from 'node:http';
 import inspector from 'node:inspector';
 import path from 'path';
 import { Observable } from 'rxjs';
@@ -180,8 +181,8 @@ export function startNodeJSWiki({
         : [homePath, '--version'];
       wikiInstance.boot.argv = [...fullBootArgv];
 
-      wikiInstance.hooks.addHook('th-server-command-post-start', function(_listenCommand, server) {
-        server.on('error', function(error: Error) {
+      wikiInstance.hooks.addHook('th-server-command-post-start', function(_server: unknown, nodeServer: Server) {
+        nodeServer.on('error', function(error: Error) {
           observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message, argv: fullBootArgv });
         });
         // Similar to how updateActiveWikiTheme calls WikiChannel.invokeActionsByTag
@@ -189,7 +190,7 @@ export function startNodeJSWiki({
         wikiInstance.rootWidget.invokeActionsByTag(DARK_LIGHT_CHANGE_ACTIONS_TAG, new Event('TidGi-invokeActionByTag') as unknown as IWidgetEvent, {
           'dark-mode': shouldUseDarkColors ? 'yes' : 'no',
         });
-        server.on('listening', function() {
+        nodeServer.on('listening', function() {
           observer.next({
             type: 'control',
             actions: WikiControlActions.listening,

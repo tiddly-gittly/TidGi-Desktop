@@ -14,6 +14,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData } from './common/browserViewMetaData';
 import './view';
 import { syncTidgiStateWhenWikiLoads } from './appState';
+import { consoleLogToLogFile } from './fixer/consoleLogToLogFile';
 import { fixAlertConfirm } from './fixer/fixAlertConfirm';
 
 declare global {
@@ -26,6 +27,9 @@ declare global {
 
 switch (browserViewMetaData.windowName) {
   case WindowNames.main: {
+    // Enable console logging to file for main window
+    void consoleLogToLogFile('TidGi');
+
     /**
      * automatically reload page/wiki when wifi/network is re-connected to a different one, which may cause local ip changed. Or wifi status changed when wiki startup, causing wiki not loaded properly.
      * @url https://www.electronjs.org/docs/latest/tutorial/online-offline-events
