@@ -235,39 +235,21 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
           this.logger.log('WatchFileSystemAdaptor File system watching is disabled for this workspace');
           return;
         }
-
-        // Initialize inverse index from boot.files
-        this.initializeInverseFilesIndex();
-
-        // Setup base excluded paths (permanent exclusions) for main wiki
-        // wikiFolderLocation is the parent of watchPathBase (tiddlers folder)
-        const wikiFolderLocation = currentWorkspace && 'wikiFolderLocation' in currentWorkspace
-          ? currentWorkspace.wikiFolderLocation
-          : path.dirname(this.watchPathBase);
-
-        this.baseExcludedPaths = [
-          path.join(this.watchPathBase, 'subwiki'),
-          path.join(this.watchPathBase, '$__StoryList'),
-          // Add pattern-based exclusions at wiki folder level (not tiddlers folder)
-          // .git is at wiki folder level: wiki/.git, not wiki/tiddlers/.git
-          ...this.excludedPathPatterns.map(pattern => path.join(wikiFolderLocation, pattern)),
-        ];
       } catch (error) {
         this.logger.alert('WatchFileSystemAdaptor Failed to check enableFileSystemWatch setting:', error);
         return;
       }
-    } else {
-      // Fallback when workspaceID is not available
-      this.initializeInverseFilesIndex();
-      // Use parent directory as wikiFolderLocation fallback
-      const wikiFolderLocation = path.dirname(this.watchPathBase);
-      this.baseExcludedPaths = [
-        path.join(this.watchPathBase, 'subwiki'),
-        path.join(this.watchPathBase, '$__StoryList'),
-        // Add pattern-based exclusions at wiki folder level
-        ...this.excludedPathPatterns.map(pattern => path.join(wikiFolderLocation, pattern)),
-      ];
     }
+
+    // Initialize inverse index from boot.files
+    this.initializeInverseFilesIndex();
+
+    // Setup base excluded paths (permanent exclusions) for main wiki
+    // Only include paths that are subdirectories of watchPathBase
+    this.baseExcludedPaths = [
+      path.join(this.watchPathBase, 'subwiki'),
+      path.join(this.watchPathBase, '$__StoryList'),
+    ];
 
     // Setup nsfw watcher
     try {
@@ -439,6 +421,23 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
   }
 
   /**
+   * Check if a path contains any excluded pattern (like .git, node_modules)
+   * This checks all parts of the path, so it will catch:
+   * - Direct .git directories: wiki/.git/config
+   * - Sub-wiki .git directories: wiki/tiddlers/subwiki/.git/index.lock
+   * - Symlinked .git directories: wiki/tiddlers/link-to-subwiki/.git/config
+   * @param filePath File or directory path to check
+   * @returns true if path should be excluded
+   */
+  private shouldExcludeByPattern(filePath: string): boolean {
+    // Check if any part of the path contains excluded patterns
+    return this.excludedPathPatterns.some(pattern => {
+      const pathParts = filePath.split(path.sep);
+      return pathParts.includes(pattern);
+    });
+  }
+
+  /**
    * Handle NSFW file system change events
    */
   private handleNsfwEvents(events: nsfw.FileChangeEvent[]): void {
@@ -457,6 +456,27 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Compute absolute path
       const fileAbsolutePath = path.join(directory, fileName);
+
+      // Early check: skip files in excluded patterns (e.g., .git, node_modules)
+      if (this.shouldExcludeByPattern(fileAbsolutePath) || this.shouldExcludeByPattern(directory)) {
+        this.logger.log(`WatchFileSystemAdaptor Skipping file in excluded pattern directory: ${fileAbsolutePath}`);
+        continue;
+      }
+
+      // Early check: skip if it's a directory (nsfw sometimes reports directory changes)
+      // Must check before processing to avoid creating tiddlers for .git files
+      if (action === nsfw.actions.CREATED || action === nsfw.actions.MODIFIED) {
+        try {
+          const stats = fs.statSync(fileAbsolutePath);
+          if (stats.isDirectory()) {
+            this.logger.log(`WatchFileSystemAdaptor Skipping directory: ${fileAbsolutePath}`);
+            continue;
+          }
+        } catch {
+          // File might have been deleted already, skip
+          continue;
+        }
+      }
 
       // Check if this file is in our dynamic exclusion list (for files being saved/deleted by the app)
       const subWikiForExclusion = this.inverseFilesIndex.getSubWikiForFile(fileAbsolutePath);
@@ -484,18 +504,6 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Handle different event types
       if (action === nsfw.actions.CREATED || action === nsfw.actions.MODIFIED) {
-        // Skip if it's a directory (nsfw sometimes reports directory changes)
-        try {
-          const stats = fs.statSync(fileAbsolutePath);
-          if (stats.isDirectory()) {
-            this.logger.log(`WatchFileSystemAdaptor Skipping directory: ${fileAbsolutePath}`);
-            continue;
-          }
-        } catch {
-          // File might have been deleted already, skip
-          continue;
-        }
-
         // Cancel any pending deletion for this file (e.g., git revert scenario)
         this.cancelPendingDeletion(fileAbsolutePath);
 
