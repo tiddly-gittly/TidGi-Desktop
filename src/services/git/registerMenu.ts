@@ -150,6 +150,7 @@ export async function registerMenu(): Promise<void> {
           await gitService.commitAndSync(activeWorkspace, {
             dir: activeWorkspace.wikiFolderLocation,
             commitOnly: false,
+            commitMessage: i18n.t('LOG.CommitBackupMessage'),
             remoteUrl: activeWorkspace.gitUrl,
             userInfo,
           });
