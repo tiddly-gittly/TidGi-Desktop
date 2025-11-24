@@ -83,6 +83,7 @@ Feature: Filesystem Plugin
     # Modify the tiddler file externally - need to preserve .tid format with metadata
     When I modify file "{tmpDir}/SubWiki/TestTiddlerTitle.tid" to contain "Content modified in SubWiki symlink"
     # Wait for watch-fs to detect the change
+    And I wait for 1 seconds for "watch-fs to detect file change"
     Then I wait for tiddler "TestTiddlerTitle" to be updated by watch-fs
     And I wait for 2 seconds
     # Verify the modified content appears in the wiki
