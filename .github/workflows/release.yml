@@ -134,7 +134,9 @@ jobs:
           draft: true
           generate_release_notes: true
           files: |
-            ${{ matrix.platform == 'win' && 'out/make/**/*.{exe,msix,appx}' || 'out/make/**/*' }}
+            ${{ matrix.platform == 'win' && 'out/make/**/*.exe
+            out/make/**/*.msix
+            out/make/**/*.appx' || 'out/make/**/*' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
