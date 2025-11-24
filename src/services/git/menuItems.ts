@@ -156,8 +156,8 @@ export function createSyncMenuItems(
   t: TFunction,
   gitService: Pick<IGitService, 'commitAndSync'>,
   aiEnabled: boolean,
-  isOnline: boolean = true,
-  userInfo: IGitUserInfos | undefined = undefined,
+  isOnline: boolean,
+  userInfo: IGitUserInfos | undefined,
   _useDeferred: boolean = true,
 ): DeferredMenuItemConstructorOptions[] | import('electron').MenuItemConstructorOptions[] {
   if (!isWikiWorkspace(workspace) || !workspace.gitUrl) {
