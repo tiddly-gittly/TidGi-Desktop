@@ -2,7 +2,7 @@
  * Utility functions for creating Git-related menu items
  * This file is safe to import from both frontend and backend code
  */
-import type { IGitService } from '@services/git/interface';
+import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import { DeferredMenuItemConstructorOptions } from '@services/menu/interface';
 import { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -118,6 +118,7 @@ export function createBackupMenuItems(
  * @param gitService Git service instance (or Pick with commitAndSync)
  * @param aiEnabled Whether AI-generated commit messages are enabled
  * @param isOnline Whether the network is online (optional, defaults to true)
+ * @param userInfo User authentication info for git operations
  * @returns Array of menu items
  */
 export function createSyncMenuItems(
@@ -125,7 +126,8 @@ export function createSyncMenuItems(
   t: TFunction,
   gitService: Pick<IGitService, 'commitAndSync'>,
   aiEnabled: boolean,
-  isOnline?: boolean,
+  isOnline: boolean,
+  userInfo: IGitUserInfos | undefined,
 ): DeferredMenuItemConstructorOptions[];
 
 /**
@@ -135,6 +137,7 @@ export function createSyncMenuItems(
  * @param gitService Git service instance (or Pick with commitAndSync)
  * @param aiEnabled Whether AI-generated commit messages are enabled
  * @param isOnline Whether the network is online (optional, defaults to true)
+ * @param userInfo User authentication info for git operations
  * @param useDeferred Set to false for context menu
  * @returns Array of menu items
  */
@@ -144,6 +147,7 @@ export function createSyncMenuItems(
   gitService: Pick<IGitService, 'commitAndSync'>,
   aiEnabled: boolean,
   isOnline: boolean,
+  userInfo: IGitUserInfos | undefined,
   useDeferred: false,
 ): import('electron').MenuItemConstructorOptions[];
 
@@ -153,13 +157,14 @@ export function createSyncMenuItems(
   gitService: Pick<IGitService, 'commitAndSync'>,
   aiEnabled: boolean,
   isOnline: boolean = true,
+  userInfo: IGitUserInfos | undefined = undefined,
   _useDeferred: boolean = true,
 ): DeferredMenuItemConstructorOptions[] | import('electron').MenuItemConstructorOptions[] {
   if (!isWikiWorkspace(workspace) || !workspace.gitUrl) {
     return [];
   }
 
-  const { wikiFolderLocation } = workspace;
+  const { wikiFolderLocation, gitUrl } = workspace;
   const offlineText = isOnline ? '' : ` (${t('ContextMenu.NoNetworkConnection')})`;
 
   if (aiEnabled) {
@@ -172,6 +177,8 @@ export function createSyncMenuItems(
             dir: wikiFolderLocation,
             commitOnly: false,
             commitMessage: t('LOG.CommitBackupMessage'),
+            remoteUrl: gitUrl,
+            userInfo,
           });
         },
       },
@@ -183,6 +190,8 @@ export function createSyncMenuItems(
             dir: wikiFolderLocation,
             commitOnly: false,
             // Don't provide commitMessage to trigger AI generation
+            remoteUrl: gitUrl,
+            userInfo,
           });
         },
       },
@@ -197,6 +206,8 @@ export function createSyncMenuItems(
         await gitService.commitAndSync(workspace, {
           dir: wikiFolderLocation,
           commitOnly: false,
+          remoteUrl: gitUrl,
+          userInfo,
         });
       },
     },

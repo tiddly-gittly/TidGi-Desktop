@@ -22,6 +22,7 @@ export function useForm(
       return;
     }
     await window.service.workspace.update(workspace.id, workspace);
+    await window.service.native.log('info', '[test-id-WORKSPACE_SAVED]', { workspaceId: workspace.id, workspaceName: workspace.name });
     if (requestRestartAfterSave) {
       requestRestartCountDown();
     }
