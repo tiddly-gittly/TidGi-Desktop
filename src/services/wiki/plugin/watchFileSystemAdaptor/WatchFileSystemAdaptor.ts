@@ -63,8 +63,10 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
   private inverseFilesIndex: InverseFilesIndex = new InverseFilesIndex();
   /** NSFW watcher instance for main wiki */
   private watcher: nsfw.NSFW | undefined;
-  /** Base excluded paths (permanent) */
+  /** Base excluded paths (permanent) - absolute paths for main wiki */
   private baseExcludedPaths: string[] = [];
+  /** Excluded path patterns that apply to all wikis (main and sub-wikis) */
+  private readonly excludedPathPatterns: string[] = ['.git', 'node_modules', '.DS_Store'];
   /**
    * Track pending file deletions to handle git revert/checkout scenarios.
    * Maps absolute file path to deletion timer.
@@ -233,22 +235,39 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
           this.logger.log('WatchFileSystemAdaptor File system watching is disabled for this workspace');
           return;
         }
+
+        // Initialize inverse index from boot.files
+        this.initializeInverseFilesIndex();
+
+        // Setup base excluded paths (permanent exclusions) for main wiki
+        // wikiFolderLocation is the parent of watchPathBase (tiddlers folder)
+        const wikiFolderLocation = currentWorkspace && 'wikiFolderLocation' in currentWorkspace
+          ? currentWorkspace.wikiFolderLocation
+          : path.dirname(this.watchPathBase);
+
+        this.baseExcludedPaths = [
+          path.join(this.watchPathBase, 'subwiki'),
+          path.join(this.watchPathBase, '$__StoryList'),
+          // Add pattern-based exclusions at wiki folder level (not tiddlers folder)
+          // .git is at wiki folder level: wiki/.git, not wiki/tiddlers/.git
+          ...this.excludedPathPatterns.map(pattern => path.join(wikiFolderLocation, pattern)),
+        ];
       } catch (error) {
         this.logger.alert('WatchFileSystemAdaptor Failed to check enableFileSystemWatch setting:', error);
         return;
       }
+    } else {
+      // Fallback when workspaceID is not available
+      this.initializeInverseFilesIndex();
+      // Use parent directory as wikiFolderLocation fallback
+      const wikiFolderLocation = path.dirname(this.watchPathBase);
+      this.baseExcludedPaths = [
+        path.join(this.watchPathBase, 'subwiki'),
+        path.join(this.watchPathBase, '$__StoryList'),
+        // Add pattern-based exclusions at wiki folder level
+        ...this.excludedPathPatterns.map(pattern => path.join(wikiFolderLocation, pattern)),
+      ];
     }
-
-    // Initialize inverse index from boot.files
-    this.initializeInverseFilesIndex();
-
-    // Setup base excluded paths (permanent exclusions)
-    this.baseExcludedPaths = [
-      path.join(this.watchPathBase, 'subwiki'),
-      path.join(this.watchPathBase, '.git'),
-      path.join(this.watchPathBase, '$__StoryList'),
-      path.join(this.watchPathBase, '.DS_Store'),
-    ];
 
     // Setup nsfw watcher
     try {
@@ -262,7 +281,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
           errorCallback: (error) => {
             this.logger.alert('WatchFileSystemAdaptor NSFW error:', error);
           },
-          // Start with base excluded paths
+          // Start with base excluded paths - nsfw will filter these at the native level
           // @ts-expect-error - nsfw types are incorrect, it accepts string[] not just [string]
           excludedPaths: [...this.baseExcludedPaths],
         },
@@ -320,6 +339,9 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
               errorCallback: (error) => {
                 this.logger.alert(`WatchFileSystemAdaptor NSFW error for sub-wiki ${subWiki.name}:`, error);
               },
+              // Exclude common patterns for sub-wikis (e.g., .git, node_modules)
+              // @ts-expect-error - nsfw types are incorrect, it accepts string[] not just [string]
+              excludedPaths: this.excludedPathPatterns.map(pattern => path.join(subWikiPath, pattern)),
             },
           );
 
@@ -436,7 +458,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // Compute absolute path
       const fileAbsolutePath = path.join(directory, fileName);
 
-      // Check if this file is in our exclusion list - if so, skip processing
+      // Check if this file is in our dynamic exclusion list (for files being saved/deleted by the app)
       const subWikiForExclusion = this.inverseFilesIndex.getSubWikiForFile(fileAbsolutePath);
       const isExcluded = subWikiForExclusion
         ? this.inverseFilesIndex.isSubWikiFileExcluded(subWikiForExclusion.id, fileAbsolutePath)
@@ -595,10 +617,14 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     const isCreatingNewNonTiddlerFile = changeType === 'add' && !fs.existsSync(metaFileAbsolutePath) && !ignoredExtension.includes(fileExtension.slice(1));
     if (isCreatingNewNonTiddlerFile) {
       const createdTime = $tw.utils.formatDateString(new Date(), '[UTC]YYYY0MM0DD0hh0mm0ss0XXX');
+      // Exclude the .meta file before creating it to avoid triggering another watch event
+      this.excludeFile(metaFileAbsolutePath);
       fs.writeFileSync(
         metaFileAbsolutePath,
         `caption: ${fileNameBase}\ncreated: ${createdTime}\nmodified: ${createdTime}\ntitle: ${fileName}\ntype: ${fileMimeType}\n`,
       );
+      // Schedule re-inclusion after delay
+      this.scheduleFileInclusion(metaFileAbsolutePath);
       // After creating .meta, continue to process the file normally
       // TiddlyWiki will detect the .meta file on next event
     }
