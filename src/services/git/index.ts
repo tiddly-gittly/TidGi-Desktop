@@ -326,17 +326,35 @@ export class Git implements IGitService {
         return;
       }
 
-      observable.subscribe(this.getWorkerMessageObserver(wikiFolderPath, () => {}, reject, workspaceID));
       let hasChanges = false;
       observable.subscribe({
         next: (messageObject: IGitLogMessage) => {
+          // Log the message
           if (messageObject.level === 'error') {
+            const errorMessage = (messageObject.error).message;
+            // if workspace exists, show notification in workspace, else use dialog instead
+            if (workspaceID === undefined) {
+              this.createFailedDialog(errorMessage, wikiFolderPath);
+            } else {
+              this.createFailedNotification(errorMessage, workspaceID);
+            }
+            // Reject the promise on error to prevent service restart
+            reject(messageObject.error);
             return;
           }
-          const { meta } = messageObject;
-          if (typeof meta === 'object' && meta !== null && 'step' in meta && stepsAboutChange.includes((meta as { step: GitStep }).step)) {
-            hasChanges = true;
+          const { message, meta, level } = messageObject;
+          if (typeof meta === 'object' && meta !== null && 'step' in meta) {
+            this.popGitErrorNotificationToUser((meta as { step: GitStep }).step, message);
+            // Check if this step indicates changes
+            if (stepsAboutChange.includes((meta as { step: GitStep }).step)) {
+              hasChanges = true;
+            }
           }
+          logger.log(level, translateMessage(message), meta);
+        },
+        error: (error) => {
+          // this normally won't happen. And will become unhandled error. Because Observable error can't be catch, don't know why.
+          reject(error as Error);
         },
         complete: () => {
           resolve(hasChanges);
