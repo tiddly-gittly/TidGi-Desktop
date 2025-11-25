@@ -101,7 +101,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
     const loadSchema = async () => {
       if (temporaryAgentDefinition?.handlerID) {
         try {
-          const schema = await window.service.agentInstance.getHandlerConfigSchema(temporaryAgentDefinition.handlerID);
+          const schema = await window.service.agentInstance.getFrameworkConfigSchema(temporaryAgentDefinition.handlerID);
           setPromptSchema(schema as RJSFSchema);
         } catch (error) {
           console.error('Failed to load handler config schema:', error);

@@ -4,17 +4,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Note: global mocks from src/__tests__/setup-vitest.ts provide container and logger
-import type { IPromptConcatPlugin } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { IPromptConcatTool } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { AgentHandlerContext } from '../../buildInAgentHandlers/type';
+import type { AgentFrameworkContext } from '../../agentFrameworks/utilities/type';
 import type { AgentInstance } from '../../interface';
 import type { PromptConcatHookContext } from '../types';
 
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { createHandlerHooks } from '../index';
-import { workspacesListPlugin } from '../workspacesListPlugin';
+import { createAgentFrameworkHooks } from '../index';
+import { workspacesListPlugin } from '../workspacesList';
 
 describe('workspacesListPlugin', () => {
   beforeEach(async () => {
@@ -27,7 +27,7 @@ describe('workspacesListPlugin', () => {
 
   describe('workspaces list injection', () => {
     it('should inject workspaces list when plugin is configured', async () => {
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       workspacesListPlugin(hooks);
 
       const context: PromptConcatHookContext = {
@@ -41,7 +41,7 @@ describe('workspacesListPlugin', () => {
           } as AgentInstance,
           agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown,
           isCancelled: () => false,
-        } as AgentHandlerContext,
+        } as AgentFrameworkContext,
         messages: [],
         prompts: [
           {
@@ -59,7 +59,7 @@ describe('workspacesListPlugin', () => {
             targetId: 'target-prompt',
             position: 'after' as const,
           },
-        } as unknown as IPromptConcatPlugin,
+        } as unknown as IPromptConcatTool,
       };
 
       await hooks.processPrompts.promise(context);
@@ -74,7 +74,7 @@ describe('workspacesListPlugin', () => {
     });
 
     it('should inject workspaces list when position is before', async () => {
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       workspacesListPlugin(hooks);
 
       const context: PromptConcatHookContext = {
@@ -88,7 +88,7 @@ describe('workspacesListPlugin', () => {
           } as AgentInstance,
           agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown,
           isCancelled: () => false,
-        } as AgentHandlerContext,
+        } as AgentFrameworkContext,
         messages: [],
         prompts: [
           {
@@ -106,7 +106,7 @@ describe('workspacesListPlugin', () => {
             targetId: 'target-prompt',
             position: 'before' as const,
           },
-        } as unknown as IPromptConcatPlugin,
+        } as unknown as IPromptConcatTool,
       };
 
       await hooks.processPrompts.promise(context);
@@ -118,7 +118,7 @@ describe('workspacesListPlugin', () => {
     });
 
     it('should not inject content when plugin is not configured', async () => {
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       workspacesListPlugin(hooks);
 
       const context: PromptConcatHookContext = {
@@ -132,7 +132,7 @@ describe('workspacesListPlugin', () => {
           } as AgentInstance,
           agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown,
           isCancelled: () => false,
-        } as AgentHandlerContext,
+        } as AgentFrameworkContext,
         messages: [],
         prompts: [
           {
@@ -141,7 +141,7 @@ describe('workspacesListPlugin', () => {
             children: [],
           },
         ],
-        pluginConfig: { id: 'test-plugin', pluginId: 'otherPlugin', forbidOverrides: false } as unknown as IPromptConcatPlugin,
+        pluginConfig: { id: 'test-plugin', pluginId: 'otherPlugin', forbidOverrides: false } as unknown as IPromptConcatTool,
       };
 
       await hooks.processPrompts.promise(context);
@@ -155,7 +155,7 @@ describe('workspacesListPlugin', () => {
       const workspaceService = container.get<Partial<IWorkspaceService>>(serviceIdentifier.Workspace);
       workspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([]) as unknown as IWorkspaceService['getWorkspacesAsList'];
 
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       workspacesListPlugin(hooks);
 
       const context: PromptConcatHookContext = {
@@ -169,7 +169,7 @@ describe('workspacesListPlugin', () => {
           } as AgentInstance,
           agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown,
           isCancelled: () => false,
-        } as AgentHandlerContext,
+        } as AgentFrameworkContext,
         messages: [],
         prompts: [
           {
@@ -187,7 +187,7 @@ describe('workspacesListPlugin', () => {
             targetId: 'target-prompt',
             position: 'after' as const,
           },
-        } as unknown as IPromptConcatPlugin,
+        } as unknown as IPromptConcatTool,
       };
 
       await hooks.processPrompts.promise(context);
@@ -200,7 +200,7 @@ describe('workspacesListPlugin', () => {
     });
 
     it('should warn when target prompt is not found', async () => {
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       workspacesListPlugin(hooks);
 
       const context: PromptConcatHookContext = {
@@ -214,7 +214,7 @@ describe('workspacesListPlugin', () => {
           } as AgentInstance,
           agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown,
           isCancelled: () => false,
-        } as AgentHandlerContext,
+        } as AgentFrameworkContext,
         messages: [],
         prompts: [
           {
@@ -232,7 +232,7 @@ describe('workspacesListPlugin', () => {
             targetId: 'non-existent-prompt',
             position: 'after' as const,
           },
-        } as unknown as IPromptConcatPlugin,
+        } as unknown as IPromptConcatTool,
       };
 
       await hooks.processPrompts.promise(context);

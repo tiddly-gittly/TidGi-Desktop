@@ -119,7 +119,7 @@ export interface IAgentInstanceService {
   /**
    * For testing purposes, only initialize the built-in handlers without database
    */
-  initializeHandlers(): Promise<void>;
+  initializeFrameworks(): Promise<void>;
 
   /**
    * Create a new agent instance from a definition
@@ -204,7 +204,7 @@ export interface IAgentInstanceService {
    * @param handlerId Handler ID to get schema for
    * @returns JSON Schema for handler configuration
    */
-  getHandlerConfigSchema(handlerId: string): Record<string, unknown>;
+  getFrameworkConfigSchema(frameworkId: string): Record<string, unknown>;
 
   /**
    * Save user message to database
@@ -233,7 +233,7 @@ export const AgentInstanceServiceIPCDescriptor = {
     deleteAgent: ProxyPropertyType.Function,
     getAgent: ProxyPropertyType.Function,
     getAgents: ProxyPropertyType.Function,
-    getHandlerConfigSchema: ProxyPropertyType.Function,
+    getFrameworkConfigSchema: ProxyPropertyType.Function,
     saveUserMessage: ProxyPropertyType.Function,
     sendMsgToAgent: ProxyPropertyType.Function,
     subscribeToAgentUpdates: ProxyPropertyType.Function$,

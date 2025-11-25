@@ -55,7 +55,7 @@ Object.defineProperty(window, 'observables', {
             try {
               // Need to register plugins first. In test environment, this needs to be called manually. While in real
               // environment, this is handled in `main.ts` when app start.
-              await agentInstanceService.initializeHandlers();
+              await agentInstanceService.initializeFrameworks();
               const resultObservable = agentInstanceService.concatPrompt(promptDescription, messages);
               // Subscribe to the result and forward to our observer
               resultObservable.subscribe(observer);

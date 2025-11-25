@@ -1,17 +1,17 @@
 /**
  * Tests for Full Replacement plugin duration mechanism
  * Tests that expired messages (with duration) are filtered out from AI context
- * Based on real configuration from defaultAgents.json
+ * Based on real configuration from taskAgents.json
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentInstanceMessage } from '../../interface';
-import type { IPromptConcatPlugin } from '../../promptConcat/promptConcatSchema';
+import type { IPromptConcatTool } from '../../promptConcat/promptConcatSchema';
 import type { IPrompt } from '../../promptConcat/promptConcatSchema/prompts';
 
 import { cloneDeep } from 'lodash';
-import defaultAgents from '../../buildInAgentHandlers/defaultAgents.json';
-import { createHandlerHooks, PromptConcatHookContext } from '../index';
-import { fullReplacementPlugin } from '../promptPlugins';
+import defaultAgents from '../../agentFrameworks/taskAgents.json';
+import { createAgentFrameworkHooks, PromptConcatHookContext } from '../index';
+import { fullReplacementPlugin } from '../prompt';
 
 // Use the real agent config
 const exampleAgent = defaultAgents[0];
@@ -24,14 +24,14 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
 
   describe('History Source Type with Duration Filtering', () => {
     it('should filter out expired messages (duration=1) from historyOfSession', async () => {
-      // Find the real fullReplacement plugin for history from defaultAgents.json
+      // Find the real fullReplacement plugin for history from taskAgents.json
       const historyPlugin = realHandlerConfig.plugins.find(
         p => p.pluginId === 'fullReplacement' && p.fullReplacementParam?.sourceType === 'historyOfSession',
       );
       expect(historyPlugin).toBeDefined();
       expect(historyPlugin!.fullReplacementParam!.targetId).toBe('default-history'); // Real target ID
 
-      // Use real prompts structure from defaultAgents.json
+      // Use real prompts structure from taskAgents.json
       const testPrompts = cloneDeep(realHandlerConfig.prompts) as IPrompt[];
 
       const messages: AgentInstanceMessage[] = [
@@ -107,12 +107,12 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
           agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
           isCancelled: () => false,
         },
-        pluginConfig: historyPlugin! as unknown as IPromptConcatPlugin, // Type cast due to JSON import limitations
+        pluginConfig: historyPlugin! as unknown as IPromptConcatTool, // Type cast due to JSON import limitations
         prompts: testPrompts,
         messages,
       };
 
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       fullReplacementPlugin(hooks);
 
       // Execute the processPrompts hook
@@ -195,12 +195,12 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
           agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
           isCancelled: () => false,
         },
-        pluginConfig: historyPlugin! as unknown as IPromptConcatPlugin, // Type cast for JSON import
+        pluginConfig: historyPlugin! as unknown as IPromptConcatTool, // Type cast for JSON import
         prompts: testPrompts,
         messages,
       };
 
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       fullReplacementPlugin(hooks);
 
       await hooks.processPrompts.promise(context);
@@ -277,12 +277,12 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
           agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
           isCancelled: () => false,
         },
-        pluginConfig: historyPlugin! as unknown as IPromptConcatPlugin, // Type cast for JSON import
+        pluginConfig: historyPlugin! as unknown as IPromptConcatTool, // Type cast for JSON import
         prompts: testPrompts,
         messages,
       };
 
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       fullReplacementPlugin(hooks);
 
       await hooks.processPrompts.promise(context);

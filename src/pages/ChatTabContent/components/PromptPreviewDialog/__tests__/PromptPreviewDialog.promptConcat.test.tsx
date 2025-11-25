@@ -9,7 +9,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
 
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
-import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
+import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.json';
 import { IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { ModelMessage } from 'ai';
 import { PromptPreviewDialog } from '../index';
@@ -36,7 +36,7 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     useAgentChatStore.setState({
       agent: {
         id: 'test-agent',
-        agentDefId: 'example-agent',
+        agentDefId: 'task-agent',
         status: { state: 'working', modified: new Date() },
         created: new Date(),
       },
@@ -63,7 +63,7 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     // Test if the real concatPrompt is working
     expect(globalThis.window?.observables?.agentInstance?.concatPrompt).toBeDefined();
 
-    // Create test data matching defaultAgents.json - cast to avoid type issues in test
+    // Create test data matching taskAgents.json - cast to avoid type issues in test
     const handlerConfig = defaultAgents[0].handlerConfig as never;
     const messages = [{
       id: 'test-message-1',

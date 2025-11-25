@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
 
 import type { IAgentBrowserService } from '@services/agentBrowser/interface';
-import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
+import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.json';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
@@ -71,7 +71,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       if (existingCount === 0) {
         logger.info('Agent database is empty, initializing with default agents');
         const defaultAgentsList = defaultAgents as AgentDefinition[];
-        // Create agent definition entities with complete data from defaultAgents.json
+        // Create agent definition entities with complete data from taskAgents.json
         const agentDefinitionEntities = defaultAgentsList.map(defaultAgent =>
           this.agentDefRepository!.create({
             id: defaultAgent.id,

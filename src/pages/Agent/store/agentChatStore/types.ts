@@ -93,7 +93,7 @@ export interface BasicActions {
   getHandlerId: () => Promise<string>;
 
   /** Get the configuration schema for the current handler */
-  getHandlerConfigSchema: () => Promise<Record<string, unknown>>;
+  getFrameworkConfigSchema: () => Promise<Record<string, unknown>>;
 
   /** Process raw agent data into store format */
   processAgentData: (

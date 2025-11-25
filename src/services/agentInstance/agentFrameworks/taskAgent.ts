@@ -4,14 +4,14 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { merge } from 'lodash';
 import type { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
-import { createHooksWithPlugins } from '../plugins';
-import { YieldNextRoundTarget } from '../plugins/types';
 import { AgentPromptDescription, AiAPIConfig, HandlerConfig } from '../promptConcat/promptConcatSchema';
-import type { IPromptConcatPlugin } from '../promptConcat/promptConcatSchema/plugin';
+import type { IPromptConcatTool } from '../promptConcat/promptConcatSchema/plugin';
 import { responseConcat } from '../promptConcat/responseConcat';
 import { getFinalPromptResult } from '../promptConcat/utilities';
-import { canceled, completed, error, working } from './statusUtilities';
-import { AgentHandlerContext } from './type';
+import { createHooksWithTools } from '../tools';
+import { YieldNextRoundTarget } from '../tools/types';
+import { canceled, completed, error, working } from './utilities/statusUtilities';
+import { AgentFrameworkContext } from './utilities/type';
 
 /**
  * Main conversation orchestrator for AI agents
@@ -27,12 +27,12 @@ import { AgentHandlerContext } from './type';
  *
  * @param context - Agent handling context containing configuration and message history
  */
-export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
+export async function* basicPromptConcatHandler(context: AgentFrameworkContext) {
   // Initialize variables for request tracking
   let currentRequestId: string | undefined;
   const lastUserMessage: AgentInstanceMessage | undefined = context.agent.messages[context.agent.messages.length - 1];
   // Create and register handler hooks based on handler config
-  const { hooks: handlerHooks, pluginConfigs } = await createHooksWithPlugins(context.agentDef.handlerConfig || {});
+  const { hooks: handlerHooks, pluginConfigs } = await createHooksWithTools(context.agentDef.handlerConfig || {});
 
   // Log the start of handler execution with context information
   logger.debug('Starting prompt handler execution', {
@@ -151,7 +151,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                 response,
                 requestId: currentRequestId,
                 isFinal: false,
-                pluginConfig: {} as IPromptConcatPlugin, // Empty config for streaming updates
+                pluginConfig: {} as IPromptConcatTool, // Empty config for streaming updates
               });
             }
 
@@ -168,7 +168,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
                 response,
                 requestId: currentRequestId,
                 isFinal: true,
-                pluginConfig: (pluginConfigs.length > 0 ? pluginConfigs[0] : {}) as IPromptConcatPlugin, // First config for compatibility
+                pluginConfig: (pluginConfigs.length > 0 ? pluginConfigs[0] : {}) as IPromptConcatTool, // First config for compatibility
                 handlerConfig: context.agentDef.handlerConfig, // Pass complete config for plugin access
                 actions: undefined as { yieldNextRoundTo?: 'self' | 'human'; newUserMessage?: string } | undefined,
               };

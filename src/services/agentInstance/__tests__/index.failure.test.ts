@@ -6,7 +6,7 @@ import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentInstanceService } from '..';
-import { basicPromptConcatHandler } from '../buildInAgentHandlers/basicPromptConcatHandler';
+import { basicPromptConcatHandler } from '../agentFrameworks/taskAgent';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import type { AiAPIConfig } from '../promptConcat/promptConcatSchema';
 

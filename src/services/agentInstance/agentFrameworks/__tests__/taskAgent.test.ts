@@ -18,7 +18,7 @@ import { WikiChannel } from '@/constants/channels';
 // types are provided by shared mock; no local type assertions needed
 
 // Import defaultAgents configuration
-import defaultAgents from '../defaultAgents.json';
+import defaultAgents from '../taskAgents.json';
 
 // Configurable test hooks for mocks
 let testWikiImplementation: ((channel: WikiChannel, workspaceId?: string, args?: string[]) => Promise<unknown>) | undefined;
@@ -27,12 +27,12 @@ let testStreamResponses: Array<{ status: string; content: string; requestId: str
 // Use real AgentInstanceService in tests; do not mock
 
 // Import plugin components for direct testing
-import type { IPromptConcatPlugin } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { IPromptConcatTool } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import type { IDatabaseService } from '@services/database/interface';
-import { createHandlerHooks, createHooksWithPlugins, initializePluginSystem, PromptConcatHookContext } from '../../plugins/index';
-import { wikiSearchPlugin } from '../../plugins/wikiSearchPlugin';
-import { basicPromptConcatHandler } from '../basicPromptConcatHandler';
-import type { AgentHandlerContext } from '../type';
+import { createAgentFrameworkHooks, createHooksWithTools, initializeToolSystem, PromptConcatHookContext } from '../../tools/index';
+import { wikiSearchPlugin } from '../../tools/wikiSearch';
+import { basicPromptConcatHandler } from '../taskAgent';
+import type { AgentFrameworkContext } from '../utilities/type';
 
 describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
   beforeEach(async () => {
@@ -41,8 +41,8 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
     testStreamResponses = [];
     const { container } = await import('@services/container');
 
-    // Ensure built-in plugin registry includes all built-in plugins
-    await initializePluginSystem();
+    // Ensure built-in tool registry includes all built-in tools
+    await initializeToolSystem();
 
     // Prepare a mock DataSource/repository so AgentInstanceService.initialize() can run
     const mockRepo = {
@@ -88,7 +88,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
 
   describe('Complete Workflow Integration', () => {
     it('should complete full wiki search workflow: tool list -> tool execution -> response', async () => {
-      // Use real agent config from defaultAgents.json
+      // Use real agent config from taskAgents.json
       const exampleAgent = defaultAgents[0];
       const handlerConfig = exampleAgent.handlerConfig;
 
@@ -113,7 +113,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
           agentDef: { id: exampleAgent.id, name: exampleAgent.name, handlerConfig: exampleAgent.handlerConfig },
           isCancelled: () => false,
         },
-        pluginConfig: wikiPlugin as IPromptConcatPlugin,
+        pluginConfig: wikiPlugin as IPromptConcatTool,
         prompts,
         messages: [
           {
@@ -128,7 +128,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       };
 
       // Create hooks and register plugins as defined in handlerConfig
-      const { hooks: promptHooks } = await createHooksWithPlugins(handlerConfig);
+      const { hooks: promptHooks } = await createHooksWithTools(handlerConfig);
       // First run workspacesList plugin to inject available workspaces (if present)
       const workspacesPlugin = handlerConfig.plugins?.find(p => p.pluginId === 'workspacesList');
       if (workspacesPlugin) {
@@ -191,7 +191,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
         },
         requestId: 'test-request',
         isFinal: true,
-        pluginConfig: wikiPlugin as IPromptConcatPlugin,
+        pluginConfig: wikiPlugin as IPromptConcatTool,
         prompts: [],
         messages: [],
         llmResponse: 'I will search for important content using wiki-search tool.',
@@ -200,7 +200,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       };
 
       // Use hooks registered with all plugins from handlerConfig
-      const { hooks: responseHooks } = await createHooksWithPlugins(handlerConfig);
+      const { hooks: responseHooks } = await createHooksWithTools(handlerConfig);
       // Execute the response complete hook
       await responseHooks.responseComplete.promise(responseContext);
       // reuse containerForAssert from above assertions
@@ -222,7 +222,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
     });
 
     it('should handle errors in wiki search gracefully', async () => {
-      // Use real agent config from defaultAgents.json
+      // Use real agent config from taskAgents.json
       const exampleAgent = defaultAgents[0];
       const handlerConfig = exampleAgent.handlerConfig;
 
@@ -255,7 +255,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
         },
         requestId: 'test-request',
         isFinal: true,
-        pluginConfig: wikiPlugin as IPromptConcatPlugin,
+        pluginConfig: wikiPlugin as IPromptConcatTool,
         prompts: [],
         messages: [],
         llmResponse: 'Search in nonexistent wiki',
@@ -264,7 +264,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       };
 
       // Use real handler hooks
-      const responseHooks = createHandlerHooks();
+      const responseHooks = createAgentFrameworkHooks();
 
       // Register the plugin
       wikiSearchPlugin(responseHooks);
@@ -295,7 +295,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       const exampleAgent = defaultAgents[0];
       const testAgentId = `test-agent-${Date.now()}`;
 
-      const context: AgentHandlerContext = {
+      const context: AgentFrameworkContext = {
         agent: {
           id: testAgentId,
           agentDefId: exampleAgent.id,

@@ -1,20 +1,22 @@
 import { logger } from '@services/libs/log';
 import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
-import { registerPluginParameterSchema } from './schemaRegistry';
-import { AgentResponse, PromptConcatHookContext, PromptConcatHooks, PromptConcatPlugin, ResponseHookContext } from './types';
+import { registerToolParameterSchema } from './schemaRegistry';
+import { AgentResponse, PromptConcatHookContext, PromptConcatHooks, PromptConcatTool, ResponseHookContext } from './types';
 
 // Re-export types for convenience
-export type { AgentResponse, PromptConcatHookContext, PromptConcatHooks, PromptConcatPlugin, ResponseHookContext };
+export type { AgentResponse, PromptConcatHookContext, PromptConcatHooks, PromptConcatTool, ResponseHookContext };
+// Backward compatibility aliases
+export type { PromptConcatTool as PromptConcatPlugin };
 
 /**
- * Registry for built-in plugins
+ * Registry for built-in tools
  */
-export const builtInPlugins = new Map<string, PromptConcatPlugin>();
+export const builtInTools = new Map<string, PromptConcatTool>();
 
 /**
- * Create unified hooks instance for the complete plugin system
+ * Create unified hooks instance for the complete agent framework tool system
  */
-export function createHandlerHooks(): PromptConcatHooks {
+export function createAgentFrameworkHooks(): PromptConcatHooks {
   return {
     // Prompt processing hooks
     processPrompts: new AsyncSeriesWaterfallHook(['context']),
@@ -30,9 +32,9 @@ export function createHandlerHooks(): PromptConcatHooks {
 }
 
 /**
- * Get all available plugins
+ * Get all available tools
  */
-async function getAllPlugins() {
+async function getAllTools() {
   const [
     promptPluginsModule,
     wikiSearchModule,
@@ -40,11 +42,11 @@ async function getAllPlugins() {
     workspacesListModule,
     messageManagementModule,
   ] = await Promise.all([
-    import('./promptPlugins'),
-    import('./wikiSearchPlugin'),
-    import('./wikiOperationPlugin'),
-    import('./workspacesListPlugin'),
-    import('./messageManagementPlugin'),
+    import('./prompt'),
+    import('./wikiSearch'),
+    import('./wikiOperation'),
+    import('./workspacesList'),
+    import('./messageManagement'),
   ]);
 
   return {
@@ -57,42 +59,42 @@ async function getAllPlugins() {
 }
 
 /**
- * Register plugins to hooks based on handler configuration
- * @param hooks - The hooks instance to register plugins to
- * @param handlerConfig - The handler configuration containing plugin settings
+ * Register tools to hooks based on framework configuration
+ * @param hooks - The hooks instance to register tools to
+ * @param frameworkConfig - The framework configuration containing tool settings
  */
-export async function registerPluginsToHooksFromConfig(
+export async function registerToolsToHooksFromConfig(
   hooks: PromptConcatHooks,
-  handlerConfig: { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
+  frameworkConfig: { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
 ): Promise<void> {
-  // Always register core plugins that are needed for basic functionality
-  const messageManagementModule = await import('./messageManagementPlugin');
+  // Always register core tools that are needed for basic functionality
+  const messageManagementModule = await import('./messageManagement');
   messageManagementModule.messageManagementPlugin(hooks);
   logger.debug('Registered messageManagementPlugin to hooks');
 
-  // Register plugins based on handler configuration
-  if (handlerConfig.plugins) {
-    for (const pluginConfig of handlerConfig.plugins) {
+  // Register tools based on framework configuration
+  if (frameworkConfig.plugins) {
+    for (const pluginConfig of frameworkConfig.plugins) {
       const { pluginId } = pluginConfig;
 
-      // Get plugin from global registry (supports both built-in and dynamic plugins)
-      const plugin = builtInPlugins.get(pluginId);
+      // Get tool from global registry (supports both built-in and dynamic tools)
+      const plugin = builtInTools.get(pluginId);
       if (plugin) {
         plugin(hooks);
-        logger.debug(`Registered plugin ${pluginId} to hooks`);
+        logger.debug(`Registered tool ${pluginId} to hooks`);
       } else {
-        logger.warn(`Plugin not found in registry: ${pluginId}`);
+        logger.warn(`Tool not found in registry: ${pluginId}`);
       }
     }
   }
 }
 
 /**
- * Initialize plugin system - register all built-in plugins to global registry
+ * Initialize tool system - register all built-in tools to global registry
  * This should be called once during service initialization
  */
-export async function initializePluginSystem(): Promise<void> {
-  // Import plugin schemas and register them
+export async function initializeToolSystem(): Promise<void> {
+  // Import tool schemas and register them
   const [
     promptPluginsModule,
     wikiSearchModule,
@@ -100,15 +102,15 @@ export async function initializePluginSystem(): Promise<void> {
     workspacesListModule,
     modelContextProtocolModule,
   ] = await Promise.all([
-    import('./promptPlugins'),
-    import('./wikiSearchPlugin'),
-    import('./wikiOperationPlugin'),
-    import('./workspacesListPlugin'),
-    import('./modelContextProtocolPlugin'),
+    import('./prompt'),
+    import('./wikiSearch'),
+    import('./wikiOperation'),
+    import('./workspacesList'),
+    import('./modelContextProtocol'),
   ]);
 
-  // Register plugin parameter schemas
-  registerPluginParameterSchema(
+  // Register tool parameter schemas
+  registerToolParameterSchema(
     'fullReplacement',
     promptPluginsModule.getFullReplacementParameterSchema(),
     {
@@ -117,7 +119,7 @@ export async function initializePluginSystem(): Promise<void> {
     },
   );
 
-  registerPluginParameterSchema(
+  registerToolParameterSchema(
     'dynamicPosition',
     promptPluginsModule.getDynamicPositionParameterSchema(),
     {
@@ -126,7 +128,7 @@ export async function initializePluginSystem(): Promise<void> {
     },
   );
 
-  registerPluginParameterSchema(
+  registerToolParameterSchema(
     'wikiSearch',
     wikiSearchModule.getWikiSearchParameterSchema(),
     {
@@ -135,7 +137,7 @@ export async function initializePluginSystem(): Promise<void> {
     },
   );
 
-  registerPluginParameterSchema(
+  registerToolParameterSchema(
     'wikiOperation',
     wikiOperationModule.getWikiOperationParameterSchema(),
     {
@@ -144,7 +146,7 @@ export async function initializePluginSystem(): Promise<void> {
     },
   );
 
-  registerPluginParameterSchema(
+  registerToolParameterSchema(
     'workspacesList',
     workspacesListModule.getWorkspacesListParameterSchema(),
     {
@@ -153,7 +155,7 @@ export async function initializePluginSystem(): Promise<void> {
     },
   );
 
-  registerPluginParameterSchema(
+  registerToolParameterSchema(
     'modelContextProtocol',
     modelContextProtocolModule.getModelContextProtocolParameterSchema(),
     {
@@ -162,27 +164,27 @@ export async function initializePluginSystem(): Promise<void> {
     },
   );
 
-  const plugins = await getAllPlugins();
-  // Register all built-in plugins to global registry for discovery
-  builtInPlugins.set('messageManagement', plugins.messageManagementPlugin);
-  builtInPlugins.set('fullReplacement', plugins.fullReplacementPlugin);
-  builtInPlugins.set('wikiSearch', plugins.wikiSearchPlugin);
-  builtInPlugins.set('wikiOperation', plugins.wikiOperationPlugin);
-  builtInPlugins.set('workspacesList', plugins.workspacesListPlugin);
-  logger.debug('All built-in plugins and schemas registered successfully');
+  const plugins = await getAllTools();
+  // Register all built-in tools to global registry for discovery
+  builtInTools.set('messageManagement', plugins.messageManagementPlugin);
+  builtInTools.set('fullReplacement', plugins.fullReplacementPlugin);
+  builtInTools.set('wikiSearch', plugins.wikiSearchPlugin);
+  builtInTools.set('wikiOperation', plugins.wikiOperationPlugin);
+  builtInTools.set('workspacesList', plugins.workspacesListPlugin);
+  logger.debug('All built-in tools and schemas registered successfully');
 }
 
 /**
- * Create hooks and register plugins based on handler configuration
- * This creates a new hooks instance and registers plugins for that specific context
+ * Create hooks and register tools based on framework configuration
+ * This creates a new hooks instance and registers tools for that specific context
  */
-export async function createHooksWithPlugins(
-  handlerConfig: { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
+export async function createHooksWithTools(
+  frameworkConfig: { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
 ): Promise<{ hooks: PromptConcatHooks; pluginConfigs: Array<{ pluginId: string; [key: string]: unknown }> }> {
-  const hooks = createHandlerHooks();
-  await registerPluginsToHooksFromConfig(hooks, handlerConfig);
+  const hooks = createAgentFrameworkHooks();
+  await registerToolsToHooksFromConfig(hooks, frameworkConfig);
   return {
     hooks,
-    pluginConfigs: handlerConfig.plugins || [],
+    pluginConfigs: frameworkConfig.plugins || [],
   };
 }

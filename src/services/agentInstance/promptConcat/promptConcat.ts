@@ -16,11 +16,11 @@
 import { logger } from '@services/libs/log';
 import { ModelMessage } from 'ai';
 import { cloneDeep } from 'lodash';
-import { AgentHandlerContext } from '../buildInAgentHandlers/type';
+import { AgentFrameworkContext } from '../agentFrameworks/utilities/type';
 import { AgentInstanceMessage } from '../interface';
-import { builtInPlugins, createHandlerHooks, PromptConcatHookContext } from '../plugins';
+import { builtInTools, createAgentFrameworkHooks, PromptConcatHookContext } from '../tools';
 import type { AgentPromptDescription, IPrompt } from './promptConcatSchema';
-import type { IPromptConcatPlugin } from './promptConcatSchema/plugin';
+import type { IPromptConcatTool } from './promptConcatSchema/plugin';
 
 /**
  * Context type specific for prompt concatenation operations
@@ -37,7 +37,7 @@ export interface PromptConcatContext {
  * Generate ID-based path mapping for prompts to enable source tracking
  * Uses actual node IDs instead of indices to avoid path conflicts with dynamic content
  */
-function generateSourcePaths(prompts: IPrompt[], plugins: IPromptConcatPlugin[] = []): Map<string, string[]> {
+function generateSourcePaths(prompts: IPrompt[], plugins: IPromptConcatTool[] = []): Map<string, string[]> {
   const pathMap = new Map<string, string[]>();
   function traversePrompts(items: IPrompt[], currentPath: string[]): void {
     items.forEach((item) => {
@@ -48,7 +48,7 @@ function generateSourcePaths(prompts: IPrompt[], plugins: IPromptConcatPlugin[] 
       }
     });
   }
-  function traversePlugins(items: IPromptConcatPlugin[], currentPath: string[]): void {
+  function traversePlugins(items: IPromptConcatTool[], currentPath: string[]): void {
     items.forEach((item) => {
       const itemPath = [...currentPath, item.id];
       pathMap.set(item.id, itemPath);
@@ -191,7 +191,7 @@ export interface PromptConcatStreamState {
   /** Current processing step */
   step: 'plugin' | 'finalize' | 'flatten' | 'complete';
   /** Current plugin being processed (if step is 'plugin') */
-  currentPlugin?: IPromptConcatPlugin;
+  currentPlugin?: IPromptConcatTool;
   /** Processing progress (0-1) */
   progress: number;
   /** Whether processing is complete */
@@ -205,17 +205,17 @@ export interface PromptConcatStreamState {
 export async function* promptConcatStream(
   agentConfig: Pick<AgentPromptDescription, 'handlerConfig'>,
   messages: AgentInstanceMessage[],
-  handlerContext: AgentHandlerContext,
+  handlerContext: AgentFrameworkContext,
 ): AsyncGenerator<PromptConcatStreamState, PromptConcatStreamState, unknown> {
   const promptConfigs = Array.isArray(agentConfig.handlerConfig.prompts) ? agentConfig.handlerConfig.prompts : [];
-  const pluginConfigs = (Array.isArray(agentConfig.handlerConfig.plugins) ? agentConfig.handlerConfig.plugins : []) as IPromptConcatPlugin[];
+  const pluginConfigs = (Array.isArray(agentConfig.handlerConfig.plugins) ? agentConfig.handlerConfig.plugins : []) as IPromptConcatTool[];
   const promptsCopy = cloneDeep(promptConfigs);
   const sourcePaths = generateSourcePaths(promptsCopy, pluginConfigs);
 
-  const hooks = createHandlerHooks();
+  const hooks = createAgentFrameworkHooks();
   // Register plugins that match the configuration
   for (const plugin of pluginConfigs) {
-    const builtInPlugin = builtInPlugins.get(plugin.pluginId);
+    const builtInPlugin = builtInTools.get(plugin.pluginId);
     if (builtInPlugin) {
       builtInPlugin(hooks);
       logger.debug('Registered plugin', {
@@ -281,7 +281,7 @@ export async function* promptConcatStream(
     handlerContext,
     messages,
     prompts: modifiedPrompts,
-    pluginConfig: {} as IPromptConcatPlugin, // Empty plugin for finalization
+    pluginConfig: {} as IPromptConcatTool, // Empty plugin for finalization
     metadata: { sourcePaths },
   };
 
@@ -343,7 +343,7 @@ export async function* promptConcatStream(
 export async function promptConcat(
   agentConfig: Pick<AgentPromptDescription, 'handlerConfig'>,
   messages: AgentInstanceMessage[],
-  handlerContext: AgentHandlerContext,
+  handlerContext: AgentFrameworkContext,
 ): Promise<{
   flatPrompts: ModelMessage[];
   processedPrompts: IPrompt[];

@@ -17,7 +17,7 @@ const mockCreateAgent = vi.fn();
 const mockDeleteAgent = vi.fn();
 const mockGetAgentDef = vi.fn();
 const mockUpdateAgentDef = vi.fn();
-const mockGetHandlerConfigSchema = vi.fn();
+const mockGetFrameworkConfigSchema = vi.fn();
 const mockLog = vi.fn();
 
 Object.defineProperty(window, 'service', {
@@ -33,7 +33,7 @@ Object.defineProperty(window, 'service', {
     agentInstance: {
       createAgent: mockCreateAgent,
       deleteAgent: mockDeleteAgent,
-      getHandlerConfigSchema: mockGetHandlerConfigSchema,
+      getFrameworkConfigSchema: mockGetFrameworkConfigSchema,
     },
     agentDefinition: {
       getAgentDef: mockGetAgentDef,
@@ -69,7 +69,7 @@ describe('EditAgentDefinitionContent', () => {
     mockGetAllTabs.mockResolvedValue([]);
     mockGetActiveTabId.mockResolvedValue(null);
     mockGetAgentDef.mockResolvedValue(mockAgentDefinition);
-    mockGetHandlerConfigSchema.mockResolvedValue(mockSchema);
+    mockGetFrameworkConfigSchema.mockResolvedValue(mockSchema);
     mockCreateAgent.mockResolvedValue({
       id: 'test-agent-id',
       name: 'Test Agent',
@@ -234,7 +234,7 @@ describe('EditAgentDefinitionContent', () => {
     await renderComponent();
 
     await waitFor(() => {
-      expect(mockGetHandlerConfigSchema).toHaveBeenCalledWith('testHandler');
+      expect(mockGetFrameworkConfigSchema).toHaveBeenCalledWith('testHandler');
     });
 
     await waitFor(() => {
@@ -277,7 +277,7 @@ describe('EditAgentDefinitionContent', () => {
     await renderComponent();
 
     await waitFor(() => {
-      expect(mockGetHandlerConfigSchema).toHaveBeenCalledWith('testHandler');
+      expect(mockGetFrameworkConfigSchema).toHaveBeenCalledWith('testHandler');
     });
   });
 

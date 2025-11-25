@@ -10,7 +10,7 @@ import { findPromptById } from '../promptConcat/promptConcat';
 import type { IPrompt } from '../promptConcat/promptConcatSchema';
 import { filterMessagesByDuration } from '../utilities/messageDurationFilter';
 import { normalizeRole } from '../utilities/normalizeRole';
-import { AgentResponse, PromptConcatPlugin, ResponseHookContext } from './types';
+import { AgentResponse, PromptConcatTool, ResponseHookContext } from './types';
 
 const t = identity;
 
@@ -76,7 +76,7 @@ export function getDynamicPositionParameterSchema() {
  * Full replacement plugin
  * Replaces target content with content from specified source
  */
-export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
+export const fullReplacementPlugin: PromptConcatTool = (hooks) => {
   // Normalize an AgentInstanceMessage role to Prompt role
   hooks.processPrompts.tapAsync('fullReplacementPlugin', async (context, callback) => {
     const { pluginConfig, prompts, messages } = context;
@@ -230,7 +230,7 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
  * Dynamic position plugin
  * Inserts content at a specific position relative to a target element
  */
-export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
+export const dynamicPositionPlugin: PromptConcatTool = (hooks) => {
   hooks.processPrompts.tapAsync('dynamicPositionPlugin', async (context, callback) => {
     const { pluginConfig, prompts } = context;
 

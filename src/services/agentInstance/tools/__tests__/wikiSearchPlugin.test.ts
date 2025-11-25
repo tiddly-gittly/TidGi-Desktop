@@ -13,15 +13,15 @@ import type { AIResponseContext, YieldNextRoundTarget } from '../types';
 import { WikiChannel } from '@/constants/channels';
 import serviceIdentifier from '@services/serviceIdentifier';
 
-import type { AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
+import type { AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import type { IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import type { IPromptConcatPlugin } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { IPromptConcatTool } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { cloneDeep } from 'lodash';
-import defaultAgents from '../../buildInAgentHandlers/defaultAgents.json';
-import { createHandlerHooks, PromptConcatHookContext } from '../index';
-import { messageManagementPlugin } from '../messageManagementPlugin';
-import { wikiSearchPlugin } from '../wikiSearchPlugin';
+import defaultAgents from '../../agentFrameworks/taskAgents.json';
+import { createAgentFrameworkHooks, PromptConcatHookContext } from '../index';
+import { messageManagementPlugin } from '../messageManagement';
+import { wikiSearchPlugin } from '../wikiSearch';
 
 // Mock i18n
 vi.mock('@services/libs/i18n', () => ({
@@ -77,7 +77,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
 
     it('should inject wiki tools into prompts when configured', async () => {
       // Find the wiki search plugin config, make sure our default config
-      const wikiPlugin = handlerConfig.plugins.find((p: unknown): p is IPromptConcatPlugin => (p as IPromptConcatPlugin).pluginId === 'wikiSearch');
+      const wikiPlugin = handlerConfig.plugins.find((p: unknown): p is IPromptConcatTool => (p as IPromptConcatTool).pluginId === 'wikiSearch');
       expect(wikiPlugin).toBeDefined();
       if (!wikiPlugin) {
         // throw error to keep ts believe the plugin exists
@@ -113,7 +113,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       };
 
       // Use real hooks from the plugin system
-      const promptHooks = createHandlerHooks();
+      const promptHooks = createAgentFrameworkHooks();
       wikiSearchPlugin(promptHooks);
 
       // Execute the processPrompts hook
@@ -162,10 +162,10 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         ],
       };
 
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       wikiSearchPlugin(hooks);
       // build a minimal PromptConcatHookContext to run the plugin's processPrompts
-      const handlerCtx: AgentHandlerContext = {
+      const handlerCtx: AgentFrameworkContext = {
         agent: {
           id: 'test',
           agentDefId: 'test',
@@ -178,7 +178,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       };
       const hookContext: PromptConcatHookContext = {
         handlerContext: handlerCtx,
-        pluginConfig: wikiPlugin as IPromptConcatPlugin,
+        pluginConfig: wikiPlugin as IPromptConcatTool,
         prompts: prompts as IPrompt[],
         messages: context.messages as AgentInstanceMessage[],
       };
@@ -221,8 +221,8 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
     });
 
     it('should execute wiki search with correct duration=1 and trigger next round', async () => {
-      // Find the real wikiSearch plugin config from defaultAgents.json
-      const wikiPlugin = handlerConfig.plugins.find((p: unknown): p is IPromptConcatPlugin => (p as IPromptConcatPlugin).pluginId === 'wikiSearch');
+      // Find the real wikiSearch plugin config from taskAgents.json
+      const wikiPlugin = handlerConfig.plugins.find((p: unknown): p is IPromptConcatTool => (p as IPromptConcatTool).pluginId === 'wikiSearch');
       expect(wikiPlugin).toBeDefined();
       expect(wikiPlugin!.wikiSearchParam).toBeDefined();
 
@@ -283,7 +283,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       };
 
       // Use real handler hooks
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
 
       // Register the plugin
       wikiSearchPlugin(hooks);
@@ -383,7 +383,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         },
       };
 
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       wikiSearchPlugin(hooks);
 
       await hooks.responseComplete.promise(context);
@@ -480,7 +480,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         },
       };
 
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       wikiSearchPlugin(hooks);
 
       await hooks.responseComplete.promise(context);
@@ -513,13 +513,13 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
 
       const context: AIResponseContext = {
         handlerContext: handlerCtx,
-        pluginConfig: { id: 'test-plugin', pluginId: 'wikiSearch' } as IPromptConcatPlugin,
+        pluginConfig: { id: 'test-plugin', pluginId: 'wikiSearch' } as IPromptConcatTool,
         response: { requestId: 'test-request-345', content: 'Just a regular response without any tool calls', status: 'done' },
         requestId: 'test-request',
         isFinal: true,
       };
 
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       wikiSearchPlugin(hooks);
 
       await hooks.responseComplete.promise(context);
@@ -654,7 +654,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         actions: {} as ActionBag,
       };
 
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       wikiSearchPlugin(hooks);
 
       await hooks.responseComplete.promise(context);
@@ -751,7 +751,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         actions: {} as ActionBag,
       };
 
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       wikiSearchPlugin(hooks);
 
       await hooks.responseComplete.promise(context);
@@ -822,7 +822,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         actions: {} as ActionBag,
       };
 
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       wikiSearchPlugin(hooks);
 
       await hooks.responseComplete.promise(context);
@@ -889,7 +889,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         },
       };
 
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       wikiSearchPlugin(hooks);
       messageManagementPlugin(hooks);
 

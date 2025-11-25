@@ -8,13 +8,13 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IAgentInstanceService } from '../interface';
 import { createAgentMessage } from '../utilities';
-import type { AgentStatusContext, AIResponseContext, PromptConcatPlugin, ToolExecutionContext, UserMessageContext } from './types';
+import type { AgentStatusContext, AIResponseContext, PromptConcatTool, ToolExecutionContext, UserMessageContext } from './types';
 
 /**
  * Message management plugin
  * Handles all message-related operations: persistence, streaming, UI updates, and duration-based filtering
  */
-export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
+export const messageManagementPlugin: PromptConcatTool = (hooks) => {
   // Handle user message persistence
   hooks.userMessageReceived.tapAsync('messageManagementPlugin', async (context: UserMessageContext, callback) => {
     try {

@@ -1,9 +1,9 @@
 import { ToolCallingMatch } from '@services/agentDefinition/interface';
-import { AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
+import { AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
 import { AgentInstanceMessage } from '@services/agentInstance/interface';
 import { AIStreamResponse } from '@services/externalAPI/interface';
 import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
-import type { IPrompt, IPromptConcatPlugin } from '../promptConcat/promptConcatSchema/';
+import type { IPrompt, IPromptConcatTool } from '../promptConcat/promptConcatSchema';
 
 /**
  * Next round target options
@@ -11,9 +11,9 @@ import type { IPrompt, IPromptConcatPlugin } from '../promptConcat/promptConcatS
 export type YieldNextRoundTarget = 'human' | 'self' | `agent:${string}`; // allows for future agent IDs like "agent:agent-id"
 
 /**
- * Unified actions interface for all plugin hooks
+ * Unified actions interface for all tool hooks
  */
-export interface PluginActions {
+export interface ToolActions {
   /** Whether to yield next round to continue processing */
   yieldNextRoundTo?: YieldNextRoundTarget;
   /** New user message to append */
@@ -23,27 +23,27 @@ export interface PluginActions {
 }
 
 /**
- * Base context interface for all plugin hooks
+ * Base context interface for all tool hooks
  */
-export interface BasePluginContext {
-  /** Handler context */
-  handlerContext: AgentHandlerContext;
+export interface BaseToolContext {
+  /** Framework context */
+  handlerContext: AgentFrameworkContext;
   /** Additional context data */
   metadata?: Record<string, unknown>;
-  /** Actions set by plugins during processing */
-  actions?: PluginActions;
+  /** Actions set by tools during processing */
+  actions?: ToolActions;
 }
 
 /**
  * Context for prompt processing hooks (processPrompts, finalizePrompts)
  */
-export interface PromptConcatHookContext extends BasePluginContext {
+export interface PromptConcatHookContext extends BaseToolContext {
   /** Array of agent instance messages for context */
   messages: AgentInstanceMessage[];
   /** Current prompt tree */
   prompts: IPrompt[];
-  /** Plugin configuration */
-  pluginConfig: IPromptConcatPlugin;
+  /** Tool configuration */
+  pluginConfig: IPromptConcatTool;
 }
 
 /**
@@ -59,10 +59,10 @@ export interface PostProcessContext extends PromptConcatHookContext {
 /**
  * Context for AI response hooks (responseUpdate, responseComplete)
  */
-export interface AIResponseContext extends BasePluginContext {
-  /** Plugin configuration - for backward compatibility */
-  pluginConfig: IPromptConcatPlugin;
-  /** Complete handler configuration - allows plugins to access all configs */
+export interface AIResponseContext extends BaseToolContext {
+  /** Tool configuration - for backward compatibility */
+  pluginConfig: IPromptConcatTool;
+  /** Complete framework configuration - allows tools to access all configs */
   handlerConfig?: { plugins?: Array<{ pluginId: string; [key: string]: unknown }> };
   /** AI streaming response */
   response: AIStreamResponse;
@@ -75,7 +75,7 @@ export interface AIResponseContext extends BasePluginContext {
 /**
  * Context for user message hooks
  */
-export interface UserMessageContext extends BasePluginContext {
+export interface UserMessageContext extends BaseToolContext {
   /** User message content */
   content: { text: string; file?: File };
   /** Generated message ID */
@@ -87,7 +87,7 @@ export interface UserMessageContext extends BasePluginContext {
 /**
  * Context for agent status hooks
  */
-export interface AgentStatusContext extends BasePluginContext {
+export interface AgentStatusContext extends BaseToolContext {
   /** New status state */
   status: {
     state: 'working' | 'completed' | 'failed' | 'canceled';
@@ -98,7 +98,7 @@ export interface AgentStatusContext extends BasePluginContext {
 /**
  * Context for tool execution hooks
  */
-export interface ToolExecutionContext extends BasePluginContext {
+export interface ToolExecutionContext extends BaseToolContext {
   /** Tool execution result */
   toolResult: {
     success: boolean;
@@ -136,7 +136,7 @@ export interface ResponseHookContext extends PromptConcatHookContext {
 }
 
 /**
- * Handler hooks for unified plugin system
+ * Framework hooks for unified tool system
  * Handles both prompt processing and agent lifecycle events
  */
 export interface PromptConcatHooks {
@@ -159,6 +159,6 @@ export interface PromptConcatHooks {
 }
 
 /**
- * Universal plugin function interface - can register handlers for any hooks
+ * Universal tool function interface - can register handlers for any hooks
  */
-export type PromptConcatPlugin = (hooks: PromptConcatHooks) => void;
+export type PromptConcatTool = (hooks: PromptConcatHooks) => void;

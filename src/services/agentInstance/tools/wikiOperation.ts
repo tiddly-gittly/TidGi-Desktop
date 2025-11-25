@@ -16,7 +16,7 @@ import { z } from 'zod/v4';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { findPromptById } from '../promptConcat/promptConcat';
 import { schemaToToolContent } from '../utilities/schemaToToolContent';
-import type { PromptConcatPlugin } from './types';
+import type { PromptConcatTool } from './types';
 
 /**
  * Wiki Operation Parameter Schema
@@ -101,7 +101,7 @@ const WikiOperationToolParameterSchema = z.object({
  * Wiki Operation plugin - Prompt processing
  * Handles tool list injection for wiki operation functionality
  */
-export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
+export const wikiOperationPlugin: PromptConcatTool = (hooks) => {
   // First tapAsync: Tool list injection
   hooks.processPrompts.tapAsync('wikiOperationPlugin-toolList', async (context, callback) => {
     const { pluginConfig, prompts } = context;

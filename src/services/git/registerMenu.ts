@@ -105,7 +105,7 @@ export async function registerMenu(): Promise<void> {
               dir: activeWorkspace.wikiFolderLocation,
               commitOnly: false,
               commitMessage: i18n.t('LOG.CommitBackupMessage'),
-              remoteUrl: activeWorkspace.gitUrl,
+              remoteUrl: activeWorkspace.gitUrl ?? undefined,
               userInfo,
             });
           }
@@ -127,7 +127,7 @@ export async function registerMenu(): Promise<void> {
               dir: activeWorkspace.wikiFolderLocation,
               commitOnly: false,
               // Don't provide commitMessage to trigger AI generation
-              remoteUrl: activeWorkspace.gitUrl,
+              remoteUrl: activeWorkspace.gitUrl ?? undefined,
               userInfo,
             });
           }
@@ -151,7 +151,7 @@ export async function registerMenu(): Promise<void> {
             dir: activeWorkspace.wikiFolderLocation,
             commitOnly: false,
             commitMessage: i18n.t('LOG.CommitBackupMessage'),
-            remoteUrl: activeWorkspace.gitUrl,
+            remoteUrl: activeWorkspace.gitUrl ?? undefined,
             userInfo,
           });
         }

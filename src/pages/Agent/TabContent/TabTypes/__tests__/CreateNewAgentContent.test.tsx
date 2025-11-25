@@ -17,7 +17,7 @@ const mockGetAgentDefs = vi.fn();
 const mockUpdateTab = vi.fn();
 const mockGetAllTabs = vi.fn();
 const mockGetActiveTabId = vi.fn();
-const mockGetHandlerConfigSchema = vi.fn();
+const mockGetFrameworkConfigSchema = vi.fn();
 
 Object.defineProperty(window, 'service', {
   writable: true,
@@ -30,7 +30,7 @@ Object.defineProperty(window, 'service', {
       getAgentDefs: mockGetAgentDefs,
     },
     agentInstance: {
-      getHandlerConfigSchema: mockGetHandlerConfigSchema,
+      getFrameworkConfigSchema: mockGetFrameworkConfigSchema,
     },
     agentBrowser: {
       updateTab: mockUpdateTab,
@@ -117,7 +117,7 @@ describe('CreateNewAgentContent', () => {
     mockUpdateTab.mockResolvedValue(undefined);
     mockGetAllTabs.mockResolvedValue([]);
     mockGetActiveTabId.mockResolvedValue('test-tab-123');
-    mockGetHandlerConfigSchema.mockResolvedValue({
+    mockGetFrameworkConfigSchema.mockResolvedValue({
       type: 'object',
       properties: {
         prompts: {
@@ -315,7 +315,7 @@ describe('CreateNewAgentContent', () => {
 
     // After restoration, the component should have the handlerID and trigger schema loading
     await waitFor(() => {
-      expect(mockGetHandlerConfigSchema).toHaveBeenCalledWith('test-handler');
+      expect(mockGetFrameworkConfigSchema).toHaveBeenCalledWith('test-handler');
     }, { timeout: 2000 });
   });
 
@@ -465,10 +465,10 @@ describe('CreateNewAgentContent', () => {
     }, { timeout: 500 });
   });
 
-  it('should handle nested prompt structure like defaultAgents.json', async () => {
-    // This is the actual structure from defaultAgents.json
+  it('should handle nested prompt structure like taskAgents.json', async () => {
+    // This is the actual structure from taskAgents.json
     const mockTemplate = {
-      id: 'example-agent',
+      id: 'task-agent',
       name: 'Example Agent',
       handlerID: 'basicPromptConcatHandler',
       handlerConfig: {

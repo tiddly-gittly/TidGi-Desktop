@@ -45,13 +45,13 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { findPromptById } from '../promptConcat/promptConcat';
-import type { PromptConcatPlugin } from './types';
+import type { PromptConcatTool } from './types';
 
 /**
  * Workspaces List plugin - Prompt processing
  * Handles injection of available wiki workspaces list
  */
-export const workspacesListPlugin: PromptConcatPlugin = (hooks) => {
+export const workspacesListPlugin: PromptConcatTool = (hooks) => {
   // Tool list injection
   hooks.processPrompts.tapAsync('workspacesListPlugin-injection', async (context, callback) => {
     const { pluginConfig, prompts } = context;

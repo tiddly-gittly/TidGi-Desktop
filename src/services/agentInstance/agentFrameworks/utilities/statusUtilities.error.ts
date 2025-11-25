@@ -3,8 +3,8 @@
  */
 
 import { nanoid } from 'nanoid';
-import { AgentInstanceLatestStatus } from '../interface';
-import { AgentHandlerContext } from './type';
+import { AgentInstanceLatestStatus } from '../../interface';
+import { AgentFrameworkContext } from './type';
 
 /**
  * Creates a completed status with error information in message metadata
@@ -22,7 +22,7 @@ export function completedWithError(
     provider: string;
     message?: string;
   } | undefined,
-  context: AgentHandlerContext,
+  context: AgentFrameworkContext,
   messageId?: string,
 ): AgentInstanceLatestStatus {
   return {

@@ -1,6 +1,6 @@
 import { AgentDefinitionService } from '@services/agentDefinition';
 import { AgentDefinition } from '@services/agentDefinition/interface';
-import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
+import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.json';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
@@ -160,7 +160,7 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
     // Should include all default agents
     expect(templates.length).toBe((defaultAgents as AgentDefinition[]).length);
 
-    // Check that template has complete data from defaultAgents.json
+    // Check that template has complete data from taskAgents.json
     const exampleTemplate = templates.find(t => t.id === (defaultAgents as AgentDefinition[])[0].id);
     expect(exampleTemplate).toBeDefined();
     expect(exampleTemplate!.name).toBeDefined();

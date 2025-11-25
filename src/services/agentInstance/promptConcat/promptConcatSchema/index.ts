@@ -1,4 +1,4 @@
-import { createDynamicPromptConcatPluginSchema } from '@services/agentInstance/plugins/schemaRegistry';
+import { createDynamicPromptConcatToolSchema } from '@services/agentInstance/tools/schemaRegistry';
 import { t } from '@services/libs/i18n/placeholder';
 import { z } from 'zod/v4';
 import { ModelParametersSchema, ProviderModelSchema } from './modelParameters';
@@ -34,12 +34,12 @@ export const AIConfigSchema = BaseAPIConfigSchema
   });
 
 /**
- * Handler configuration schema
- * Contains the handler-related configuration fields for prompts, responses, and plugins
- * This is dynamically generated to include all registered plugins
+ * Framework configuration schema
+ * Contains the framework-related configuration fields for prompts, responses, and tools
+ * This is dynamically generated to include all registered tools
  */
-export function getHandlerConfigSchema() {
-  const dynamicPluginSchema = createDynamicPromptConcatPluginSchema();
+export function getFrameworkConfigSchema() {
+  const dynamicToolSchema = createDynamicPromptConcatToolSchema();
 
   return z.object({
     prompts: z.array(PromptSchema).meta({
@@ -50,7 +50,7 @@ export function getHandlerConfigSchema() {
       description: t('Schema.AgentConfig.PromptConfig.Response'),
       title: t('PromptConfig.Tabs.Response'),
     }),
-    plugins: z.array(dynamicPluginSchema).meta({
+    plugins: z.array(dynamicToolSchema).meta({
       description: t('Schema.AgentConfig.PromptConfig.Plugins'),
       title: t('PromptConfig.Tabs.Plugins'),
     }),
@@ -66,7 +66,7 @@ export function getHandlerConfigSchema() {
  * @example
  * ```json
  * {
- *   "id": "example-agent",
+ *   "id": "task-agent",
  *   "api": {
  *     "provider": "siliconflow",
  *     "model": "Qwen/Qwen2.5-7B-Instruct"
@@ -81,14 +81,14 @@ export function getHandlerConfigSchema() {
  * ```
  */
 export function getAgentConfigSchema() {
-  const dynamicHandlerConfigSchema = getHandlerConfigSchema();
+  const dynamicFrameworkConfigSchema = getFrameworkConfigSchema();
 
   return BaseAPIConfigSchema.extend({
     id: z.string().meta({
       title: t('Schema.AgentConfig.IdTitle'),
       description: t('Schema.AgentConfig.Id'),
     }),
-    handlerConfig: dynamicHandlerConfigSchema,
+    handlerConfig: dynamicFrameworkConfigSchema,
   }).meta({
     title: t('Schema.AgentConfig.Title'),
     description: t('Schema.AgentConfig.Description'),
@@ -110,10 +110,13 @@ export function getDefaultAgentsSchema() {
 export type DefaultAgents = z.infer<ReturnType<typeof getDefaultAgentsSchema>>;
 export type AgentPromptDescription = z.infer<ReturnType<typeof getAgentConfigSchema>>;
 export type AiAPIConfig = z.infer<typeof AIConfigSchema>;
-export type HandlerConfig = z.infer<ReturnType<typeof getHandlerConfigSchema>>;
+export type HandlerConfig = z.infer<ReturnType<typeof getFrameworkConfigSchema>>;
 
 // Re-export all schemas and types
 export * from './modelParameters';
 export * from './plugin';
 export * from './prompts';
 export * from './response';
+
+// Also export IPromptConcatTool as IPrompt for easier imports
+export type { IPromptConcatTool as IPromptConcatPlugin } from './plugin';

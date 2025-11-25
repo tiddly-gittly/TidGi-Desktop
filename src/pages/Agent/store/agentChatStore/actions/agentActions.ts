@@ -327,10 +327,10 @@ export const agentActions = (
   /**
    * Get handler configuration schema for current handler
    */
-  getHandlerConfigSchema: async () => {
+  getFrameworkConfigSchema: async () => {
     try {
       const handlerId = await get().getHandlerId();
-      return await window.service.agentInstance.getHandlerConfigSchema(handlerId);
+      return await window.service.agentInstance.getFrameworkConfigSchema(handlerId);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const finalError = new Error(`Failed to get handler schema: ${errorMessage}`);

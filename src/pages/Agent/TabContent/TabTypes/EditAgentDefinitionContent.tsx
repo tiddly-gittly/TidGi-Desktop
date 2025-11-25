@@ -103,8 +103,8 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
       }
 
       try {
-        // Loading handler config schema
-        const schema = await window.service.agentInstance.getHandlerConfigSchema(agentDefinition.handlerID);
+        // Loading framework config schema
+        const schema = await window.service.agentInstance.getFrameworkConfigSchema(agentDefinition.handlerID);
         // Schema loaded successfully
         setPromptSchema(schema);
       } catch (error) {

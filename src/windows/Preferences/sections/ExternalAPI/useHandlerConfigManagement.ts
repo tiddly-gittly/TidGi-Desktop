@@ -49,8 +49,8 @@ export const useHandlerConfigManagement = ({ agentDefId, agentId }: UseHandlerCo
 
         if (handlerID) {
           try {
-            const handlerSchema = await window.service.agentInstance.getHandlerConfigSchema(handlerID);
-            setSchema(handlerSchema);
+            const frameworkSchema = await window.service.agentInstance.getFrameworkConfigSchema(handlerID);
+            setSchema(frameworkSchema);
           } catch (error) {
             void window.service.native.log('error', 'Failed to load handler schema', { function: 'useHandlerConfigManagement.fetchConfig', error });
           }

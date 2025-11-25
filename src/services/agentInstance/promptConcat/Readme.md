@@ -6,7 +6,7 @@ If final prompt is a food, then `handlerConfig.prompts` is the recipe. Chat hist
 
 ## Implementation
 
-The `promptConcat` function uses a tapable hooks-based plugin system. Built-in plugins are registered by `pluginId` and loaded based on configuration in `defaultAgents.json`.
+The `promptConcat` function uses a tapable hooks-based plugin system. Built-in plugins are registered by `pluginId` and loaded based on configuration in `taskAgents.json`.
 
 ### Plugin System Architecture
 

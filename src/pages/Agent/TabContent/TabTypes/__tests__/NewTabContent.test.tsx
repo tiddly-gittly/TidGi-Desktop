@@ -41,7 +41,7 @@ describe('NewTabContent', () => {
     mockCreateAgent.mockResolvedValue({
       id: 'test-agent-id',
       name: 'Test Agent',
-      agentDefId: 'example-agent',
+      agentDefId: 'task-agent',
     });
     mockAddTab.mockResolvedValue({
       id: 'test-tab-id',

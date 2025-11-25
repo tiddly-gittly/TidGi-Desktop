@@ -6,11 +6,11 @@
 import { ToolCallingMatch } from '@services/agentDefinition/interface';
 import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
-import { AgentHandlerContext } from '../buildInAgentHandlers/type';
+import { AgentFrameworkContext } from '../agentFrameworks/utilities/type';
 import { AgentInstanceMessage } from '../interface';
-import { builtInPlugins, createHandlerHooks } from '../plugins';
-import { AgentResponse, PostProcessContext, YieldNextRoundTarget } from '../plugins/types';
-import type { IPromptConcatPlugin } from './promptConcatSchema';
+import { builtInTools, createAgentFrameworkHooks } from '../tools';
+import { AgentResponse, PostProcessContext, YieldNextRoundTarget } from '../tools/types';
+import type { IPromptConcatTool } from './promptConcatSchema';
 import { AgentPromptDescription, HandlerConfig } from './promptConcatSchema';
 
 /**
@@ -24,7 +24,7 @@ import { AgentPromptDescription, HandlerConfig } from './promptConcatSchema';
 export async function responseConcat(
   agentConfig: AgentPromptDescription,
   llmResponse: string,
-  context: AgentHandlerContext,
+  context: AgentFrameworkContext,
   messages: AgentInstanceMessage[] = [],
 ): Promise<{
   processedResponse: string;
@@ -40,14 +40,14 @@ export async function responseConcat(
 
   const { handlerConfig } = agentConfig;
   const responses: HandlerConfig['response'] = Array.isArray(handlerConfig.response) ? handlerConfig.response : [];
-  const plugins = (Array.isArray(handlerConfig.plugins) ? handlerConfig.plugins : []) as IPromptConcatPlugin[];
+  const plugins = (Array.isArray(handlerConfig.plugins) ? handlerConfig.plugins : []) as IPromptConcatTool[];
 
   let modifiedResponses = cloneDeep(responses) as AgentResponse[];
   // Create hooks instance
-  const hooks = createHandlerHooks();
+  const hooks = createAgentFrameworkHooks();
   // Register all plugins from configuration
   for (const plugin of plugins) {
-    const builtInPlugin = builtInPlugins.get(plugin.pluginId);
+    const builtInPlugin = builtInTools.get(plugin.pluginId);
     if (builtInPlugin) {
       builtInPlugin(hooks);
     } else {

@@ -1,9 +1,9 @@
 [
   {
-    "id": "example-agent",
-    "name": "Example Agent",
+    "id": "task-agent",
+    "name": "Task Agent",
     "description": "Example agent with prompt processing",
-    "avatarUrl": "https://example.com/example-agent.png",
+    "avatarUrl": "https://example.com/task-agent.png",
     "handlerID": "basicPromptConcatHandler",
     "handlerConfig": {
       "prompts": [

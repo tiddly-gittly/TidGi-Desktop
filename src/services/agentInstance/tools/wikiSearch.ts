@@ -19,7 +19,7 @@ import { findPromptById } from '../promptConcat/promptConcat';
 import type { AiAPIConfig } from '../promptConcat/promptConcatSchema';
 import type { IPrompt } from '../promptConcat/promptConcatSchema';
 import { schemaToToolContent } from '../utilities/schemaToToolContent';
-import type { PromptConcatPlugin } from './types';
+import type { PromptConcatTool } from './types';
 
 /**
  * Wiki Search Parameter Schema
@@ -488,7 +488,7 @@ async function executeWikiUpdateEmbeddingsTool(
  * Wiki Search plugin - Prompt processing
  * Handles tool list injection for wiki search and update embeddings functionality
  */
-export const wikiSearchPlugin: PromptConcatPlugin = (hooks) => {
+export const wikiSearchPlugin: PromptConcatTool = (hooks) => {
   // First tapAsync: Tool list injection
   hooks.processPrompts.tapAsync('wikiSearchPlugin-toolList', async (context, callback) => {
     const { pluginConfig, prompts } = context;

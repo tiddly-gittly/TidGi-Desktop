@@ -1,6 +1,6 @@
 /**
  * Deep integration tests for messageManagementPlugin with real SQLite database
- * Tests actual message persistence scenarios using defaultAgents.json configuration
+ * Tests actual message persistence scenarios using taskAgents.json configuration
  */
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
@@ -8,20 +8,20 @@ import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity 
 import serviceIdentifier from '@services/serviceIdentifier';
 import { DataSource } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import defaultAgents from '../../buildInAgentHandlers/defaultAgents.json';
+import defaultAgents from '../../agentFrameworks/taskAgents.json';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../../interface';
-import { createHandlerHooks } from '../index';
-import { messageManagementPlugin } from '../messageManagementPlugin';
+import { createAgentFrameworkHooks } from '../index';
+import { messageManagementPlugin } from '../messageManagement';
 import type { ToolExecutionContext, UserMessageContext } from '../types';
 
-// Use the real agent config from defaultAgents.json
+// Use the real agent config from taskAgents.json
 const exampleAgent = defaultAgents[0];
 
 describe('Message Management Plugin - Real Database Integration', () => {
   let testAgentId: string;
   // agentInstanceServiceImpl available to test blocks
   let agentInstanceServiceImpl: IAgentInstanceService;
-  let hooks: ReturnType<typeof createHandlerHooks>;
+  let hooks: ReturnType<typeof createAgentFrameworkHooks>;
   let realDataSource: DataSource;
 
   beforeEach(async () => {
@@ -69,7 +69,7 @@ describe('Message Management Plugin - Real Database Integration', () => {
     await agentInstanceServiceImpl.initialize();
 
     // Initialize plugin
-    hooks = createHandlerHooks();
+    hooks = createAgentFrameworkHooks();
     messageManagementPlugin(hooks);
   });
 

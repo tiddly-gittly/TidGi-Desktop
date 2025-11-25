@@ -11,16 +11,16 @@ import type { IWikiService } from '@services/wiki/interface';
 // Removed logger import as it is unused
 
 import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
-import type { IPromptConcatPlugin } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { IPromptConcatTool } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import type { IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import type { AIStreamResponse } from '@services/externalAPI/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import type { AgentHandlerContext } from '../../buildInAgentHandlers/type';
+import type { AgentFrameworkContext } from '../../agentFrameworks/utilities/type';
 import type { AgentInstance } from '../../interface';
-import { createHandlerHooks } from '../index';
-import type { AIResponseContext, PluginActions, PromptConcatHookContext } from '../types';
-import { wikiOperationPlugin } from '../wikiOperationPlugin';
-import { workspacesListPlugin } from '../workspacesListPlugin';
+import { createAgentFrameworkHooks } from '../index';
+import type { AIResponseContext, ToolActions, PromptConcatHookContext } from '../types';
+import { wikiOperationPlugin } from '../wikiOperation';
+import { workspacesListPlugin } from '../workspacesList';
 
 // Mock i18n
 vi.mock('@services/libs/i18n', () => ({
@@ -51,7 +51,7 @@ vi.mock('@services/libs/i18n', () => ({
 }));
 
 // Helper to construct a complete AgentHandlerContext for tests
-const makeHandlerContext = (agentId = 'test-agent'): AgentHandlerContext => ({
+const makeHandlerContext = (agentId = 'test-agent'): AgentFrameworkContext => ({
   agent: {
     id: agentId,
     agentDefId: 'test-agent-def',
@@ -73,7 +73,7 @@ describe('wikiOperationPlugin', () => {
   });
 
   it('should inject wiki operation tool content when plugin is configured', async () => {
-    const hooks = createHandlerHooks();
+    const hooks = createAgentFrameworkHooks();
     // First register workspacesListPlugin to inject available workspaces from the global mock
     workspacesListPlugin(hooks);
     wikiOperationPlugin(hooks);
@@ -104,7 +104,7 @@ describe('wikiOperationPlugin', () => {
           targetId: 'target-prompt',
           position: 'after' as const,
         },
-      } as unknown as IPromptConcatPlugin,
+      } as unknown as IPromptConcatTool,
     };
 
     await hooks.processPrompts.promise(workspacesContext);
@@ -123,7 +123,7 @@ describe('wikiOperationPlugin', () => {
             position: 'after' as const,
           },
         },
-      } as unknown as IPromptConcatPlugin,
+      } as unknown as IPromptConcatTool,
     };
 
     await hooks.processPrompts.promise(wikiOpContext);
@@ -147,7 +147,7 @@ describe('wikiOperationPlugin', () => {
 
   describe('tool execution', () => {
     it('should execute create operation successfully', async () => {
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       wikiOperationPlugin(hooks);
 
       const handlerContext = makeHandlerContext();
@@ -210,12 +210,12 @@ describe('wikiOperationPlugin', () => {
 
       const responseCtx: AIResponseContext = {
         handlerContext,
-        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatPlugin,
+        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatTool,
         handlerConfig: context.handlerConfig as { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
         response: { requestId: 'r-create', content: context.response.content, status: 'done' } as AIStreamResponse,
         requestId: 'r-create',
         isFinal: true,
-        actions: {} as PluginActions,
+        actions: {} as ToolActions,
       };
 
       await hooks.responseComplete.promise(responseCtx);
@@ -238,7 +238,7 @@ describe('wikiOperationPlugin', () => {
     });
 
     it('should execute update operation successfully', async () => {
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       wikiOperationPlugin(hooks);
 
       const handlerContext = makeHandlerContext();
@@ -275,10 +275,10 @@ describe('wikiOperationPlugin', () => {
 
       const respCtx2: AIResponseContext = {
         handlerContext,
-        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatPlugin,
+        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatTool,
         handlerConfig: context.handlerConfig as { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
         response: { requestId: 'r-update', content: context.response.content, status: 'done' } as AIStreamResponse,
-        actions: {} as PluginActions,
+        actions: {} as ToolActions,
         requestId: 'r-update',
         isFinal: true,
       };
@@ -298,7 +298,7 @@ describe('wikiOperationPlugin', () => {
     });
 
     it('should execute delete operation successfully', async () => {
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       wikiOperationPlugin(hooks);
 
       const handlerContext = makeHandlerContext();
@@ -334,10 +334,10 @@ describe('wikiOperationPlugin', () => {
 
       const respCtx3: AIResponseContext = {
         handlerContext,
-        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatPlugin,
+        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatTool,
         handlerConfig: context.handlerConfig as { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
         response: { requestId: 'r-delete', content: context.response.content, status: 'done' } as AIStreamResponse,
-        actions: {} as PluginActions,
+        actions: {} as ToolActions,
         requestId: 'r-delete',
         isFinal: true,
       };
@@ -355,7 +355,7 @@ describe('wikiOperationPlugin', () => {
     });
 
     it('should handle workspace not found error', async () => {
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       wikiOperationPlugin(hooks);
 
       // Use an actual tool_use payload with a nonexistent workspace
@@ -391,10 +391,10 @@ describe('wikiOperationPlugin', () => {
 
       const respCtx4: AIResponseContext = {
         handlerContext,
-        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatPlugin,
+        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatTool,
         handlerConfig: context.handlerConfig as { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
         response: { requestId: 'r-error', content: context.response.content, status: 'done' } as AIStreamResponse,
-        actions: {} as PluginActions,
+        actions: {} as ToolActions,
         requestId: 'r-error',
         isFinal: true,
       };
@@ -408,7 +408,7 @@ describe('wikiOperationPlugin', () => {
     });
 
     it('should not execute when tool call is not found', async () => {
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
       wikiOperationPlugin(hooks);
 
       // No tool_use in response
@@ -429,10 +429,10 @@ describe('wikiOperationPlugin', () => {
 
       await hooks.responseComplete.promise({
         handlerContext,
-        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatPlugin,
+        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatTool,
         handlerConfig: context.handlerConfig as { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
         response: { requestId: 'r-none', content: context.response.content, status: 'done' } as AIStreamResponse,
-        actions: {} as PluginActions,
+        actions: {} as ToolActions,
         requestId: 'r-none',
         isFinal: true,
       });
