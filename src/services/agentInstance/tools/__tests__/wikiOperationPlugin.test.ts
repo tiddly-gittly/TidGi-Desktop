@@ -18,7 +18,7 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { AgentFrameworkContext } from '../../agentFrameworks/utilities/type';
 import type { AgentInstance } from '../../interface';
 import { createAgentFrameworkHooks } from '../index';
-import type { AIResponseContext, ToolActions, PromptConcatHookContext } from '../types';
+import type { AIResponseContext, PromptConcatHookContext, ToolActions } from '../types';
 import { wikiOperationPlugin } from '../wikiOperation';
 import { workspacesListPlugin } from '../workspacesList';
 
