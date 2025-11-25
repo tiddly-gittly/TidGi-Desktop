@@ -5,12 +5,12 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import { basicPromptConcatHandler } from '@services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler';
-import type { AgentHandler, AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
-import { createHooksWithPlugins, initializePluginSystem } from '@services/agentInstance/plugins';
+import { basicPromptConcatHandler } from '@services/agentInstance/agentFrameworks/taskAgent';
+import type { AgentFramework, AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
 import { promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { getPromptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
+import { getPromptConcatAgentFrameworkConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
+import { createHooksWithTools, initializeToolSystem } from '@services/agentInstance/tools';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
@@ -34,15 +34,15 @@ export class AgentInstanceService implements IAgentInstanceService {
   private agentInstanceSubjects: Map<string, BehaviorSubject<AgentInstance | undefined>> = new Map();
   private statusSubjects: Map<string, BehaviorSubject<AgentInstanceLatestStatus | undefined>> = new Map();
 
-  private agentHandlers: Map<string, AgentHandler> = new Map();
-  private handlerSchemas: Map<string, Record<string, unknown>> = new Map();
+  private agentFrameworks: Map<string, AgentFramework> = new Map();
+  private frameworkSchemas: Map<string, Record<string, unknown>> = new Map();
   private cancelTokenMap: Map<string, { value: boolean }> = new Map();
   private debouncedUpdateFunctions: Map<string, (message: AgentInstanceLatestStatus['message'] & { id: string }, agentId?: string) => void> = new Map();
 
   public async initialize(): Promise<void> {
     try {
       await this.initializeDatabase();
-      await this.initializeHandlers();
+      await this.initializeFrameworks();
     } catch (error) {
       logger.error('Failed to initialize agent instance service', { error });
       throw error;
@@ -62,37 +62,37 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async initializeHandlers(): Promise<void> {
+  public async initializeFrameworks(): Promise<void> {
     try {
-      // Register plugins to global registry once during initialization
-      await initializePluginSystem();
-      logger.debug('AgentInstance Plugin system initialized and plugins registered to global registry');
+      // Register tools to global registry once during initialization
+      await initializeToolSystem();
+      logger.debug('AgentInstance Tool system initialized and tools registered to global registry');
 
-      // Register built-in handlers
-      this.registerBuiltinHandlers();
-      logger.debug('AgentInstance handlers registered');
+      // Register built-in frameworks
+      this.registerBuiltinFrameworks();
+      logger.debug('AgentInstance frameworks registered');
     } catch (error) {
-      logger.error('Failed to initialize agent instance handlers', { error });
+      logger.error('Failed to initialize agent instance frameworks', { error });
       throw error;
     }
   }
 
-  public registerBuiltinHandlers(): void {
-    // Plugins are already registered in initialize(), so we only register handlers here
-    // Register basic prompt concatenation handler with its schema
-    this.registerHandler('basicPromptConcatHandler', basicPromptConcatHandler, getPromptConcatHandlerConfigJsonSchema());
+  public registerBuiltinFrameworks(): void {
+    // Tools are already registered in initialize(), so we only register frameworks here
+    // Register basic prompt concatenation framework with its schema
+    this.registerFramework('basicPromptConcatHandler', basicPromptConcatHandler, getPromptConcatAgentFrameworkConfigJsonSchema());
   }
 
   /**
-   * Register a handler with an optional schema
-   * @param handlerId ID for the handler
-   * @param handler The handler function
-   * @param schema Optional JSON schema for the handler configuration
+   * Register a framework with an optional schema
+   * @param frameworkId ID for the framework
+   * @param framework The framework function
+   * @param schema Optional JSON schema for the framework configuration
    */
-  private registerHandler(handlerId: string, handler: AgentHandler, schema?: Record<string, unknown>): void {
-    this.agentHandlers.set(handlerId, handler);
+  private registerFramework(frameworkId: string, framework: AgentFramework, schema?: Record<string, unknown>): void {
+    this.agentFrameworks.set(frameworkId, framework);
     if (schema) {
-      this.handlerSchemas.set(handlerId, schema);
+      this.frameworkSchemas.set(frameworkId, schema);
     }
   }
 
@@ -216,7 +216,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       }
 
       // Update fields using pick + Object.assign for consistency with updateAgentDef
-      const pickedProperties = pick(data, ['name', 'status', 'avatarUrl', 'aiApiConfig', 'closed', 'handlerConfig']);
+      const pickedProperties = pick(data, ['name', 'status', 'avatarUrl', 'aiApiConfig', 'closed', 'agentFrameworkConfig']);
       Object.assign(instanceEntity, pickedProperties);
 
       // Save instance updates
@@ -353,20 +353,20 @@ export class AgentInstanceService implements IAgentInstanceService {
         throw new Error(`Agent definition not found: ${agentInstance.agentDefId}`);
       }
 
-      // Get appropriate handler
-      const handlerId = agentDefinition.handlerID;
-      if (!handlerId) {
-        throw new Error(`Handler ID not found in agent definition: ${agentDefinition.id}`);
+      // Get appropriate framework
+      const agentFrameworkId = agentDefinition.agentFrameworkID;
+      if (!agentFrameworkId) {
+        throw new Error(`Agent framework ID not found in agent definition: ${agentDefinition.id}`);
       }
-      const handler = this.agentHandlers.get(handlerId);
-      if (!handler) {
-        throw new Error(`Handler not found: ${handlerId}`);
+      const framework = this.agentFrameworks.get(agentFrameworkId);
+      if (!framework) {
+        throw new Error(`Framework not found: ${agentFrameworkId}`);
       }
 
-      // Create handler context with temporary message added for processing
+      // Create framework context with temporary message added for processing
       const cancelToken = { value: false };
       this.cancelTokenMap.set(agentId, cancelToken);
-      const handlerContext: AgentHandlerContext = {
+      const frameworkContext: AgentFrameworkContext = {
         agent: {
           ...agentInstance,
           messages: [...agentInstance.messages],
@@ -379,23 +379,23 @@ export class AgentInstanceService implements IAgentInstanceService {
         isCancelled: () => cancelToken.value,
       };
 
-      // Create fresh hooks for this handler execution and register plugins based on handlerConfig
-      const { hooks: handlerHooks } = await createHooksWithPlugins(agentDefinition.handlerConfig || {});
+      // Create fresh hooks for this framework execution and register tools based on frameworkConfig
+      const { hooks: frameworkHooks } = await createHooksWithTools(agentDefinition.agentFrameworkConfig || {});
 
-      // Trigger userMessageReceived hook with the configured plugins
-      await handlerHooks.userMessageReceived.promise({
-        handlerContext,
+      // Trigger userMessageReceived hook with the configured tools
+      await frameworkHooks.userMessageReceived.promise({
+        agentFrameworkContext: frameworkContext,
         content,
         messageId,
         timestamp: now,
       });
 
       // Notify agent update after user message is added
-      this.notifyAgentUpdate(agentId, handlerContext.agent);
+      this.notifyAgentUpdate(agentId, frameworkContext.agent);
 
       try {
         // Create async generator
-        const generator = handler(handlerContext);
+        const generator = framework(frameworkContext);
 
         // Track the last message for completion handling
         let lastResult: AgentInstanceLatestStatus | undefined;
@@ -415,7 +415,7 @@ export class AgentInstanceService implements IAgentInstanceService {
             }
 
             // Notify agent update with latest messages for real-time UI updates
-            this.notifyAgentUpdate(agentId, handlerContext.agent);
+            this.notifyAgentUpdate(agentId, frameworkContext.agent);
           }
 
           // Store the last result for completion handling
@@ -442,8 +442,8 @@ export class AgentInstanceService implements IAgentInstanceService {
           }
 
           // Trigger agentStatusChanged hook for completion
-          await handlerHooks.agentStatusChanged.promise({
-            handlerContext,
+          await frameworkHooks.agentStatusChanged.promise({
+            agentFrameworkContext: frameworkContext,
             status: {
               state: 'completed',
               modified: new Date(),
@@ -458,8 +458,8 @@ export class AgentInstanceService implements IAgentInstanceService {
         logger.error(`Agent handler execution failed: ${errorMessage}`);
 
         // Trigger agentStatusChanged hook for failure
-        await handlerHooks.agentStatusChanged.promise({
-          handlerContext,
+        await frameworkHooks.agentStatusChanged.promise({
+          agentFrameworkContext: frameworkContext,
           status: {
             state: 'failed',
             modified: new Date(),
@@ -848,31 +848,31 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public concatPrompt(promptDescription: Pick<AgentPromptDescription, 'handlerConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState> {
+  public concatPrompt(promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState> {
     logger.debug('AgentInstanceService.concatPrompt called', {
-      hasPromptConfig: !!promptDescription.handlerConfig,
-      promptConfigKeys: Object.keys(promptDescription.handlerConfig),
+      hasPromptConfig: !!promptDescription.agentFrameworkConfig,
+      promptConfigKeys: Object.keys(promptDescription.agentFrameworkConfig || {}),
       messagesCount: messages.length,
     });
 
     return new Observable<PromptConcatStreamState>((observer) => {
       const processStream = async () => {
         try {
-          // Create a minimal handler context for prompt concatenation
-          const handlerContext = {
+          // Create a minimal framework context for prompt concatenation
+          const frameworkContext = {
             agent: {
               id: 'temp',
               messages,
               agentDefId: 'temp',
               status: { state: 'working' as const, modified: new Date() },
               created: new Date(),
-              handlerConfig: {},
+              agentFrameworkConfig: {},
             },
-            agentDef: { id: 'temp', name: 'temp', handlerConfig: promptDescription.handlerConfig },
+            agentDef: { id: 'temp', name: 'temp', agentFrameworkConfig: promptDescription.agentFrameworkConfig || {} },
             isCancelled: () => false,
           };
 
-          const streamGenerator = promptConcatStream(promptDescription as AgentPromptDescription, messages, handlerContext);
+          const streamGenerator = promptConcatStream(promptDescription as AgentPromptDescription, messages, frameworkContext);
           for await (const state of streamGenerator) {
             observer.next(state);
             if (state.isComplete) {
@@ -893,21 +893,21 @@ export class AgentInstanceService implements IAgentInstanceService {
     });
   }
 
-  public getHandlerConfigSchema(handlerId: string): Record<string, unknown> {
+  public getFrameworkConfigSchema(frameworkId: string): Record<string, unknown> {
     try {
-      logger.debug('AgentInstanceService.getHandlerConfigSchema called', { handlerId });
-      // Check if we have a schema for this handler
-      const schema = this.handlerSchemas.get(handlerId);
+      logger.debug('AgentInstanceService.getFrameworkConfigSchema called', { frameworkId });
+      // Check if we have a schema for this framework
+      const schema = this.frameworkSchemas.get(frameworkId);
       if (schema) {
         return schema;
       }
       // If no schema found, return an empty schema
-      logger.warn(`No schema found for handler: ${handlerId}`);
+      logger.warn(`No schema found for framework: ${frameworkId}`);
       return { type: 'object', properties: {} };
     } catch (error) {
-      logger.error('Error in AgentInstanceService.getHandlerConfigSchema', {
+      logger.error('Error in AgentInstanceService.getFrameworkConfigSchema', {
         error,
-        handlerId,
+        frameworkId,
       });
       throw error;
     }

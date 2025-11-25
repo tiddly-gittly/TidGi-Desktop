@@ -29,11 +29,11 @@ export class AgentDefinitionEntity implements Partial<AgentDefinition> {
 
   /** Agent handler function ID, nullable indicates using default handler */
   @Column({ nullable: true })
-  handlerID?: string;
+  agentFrameworkID?: string;
 
   /** Agent handler configuration parameters, stored as JSON */
   @Column({ type: 'simple-json', nullable: true })
-  handlerConfig?: Record<string, unknown>;
+  agentFrameworkConfig?: Record<string, unknown>;
 
   /** Agent's AI API configuration, can override global default config */
   @Column({ type: 'simple-json', nullable: true })
@@ -88,7 +88,7 @@ export class AgentInstanceEntity implements Partial<AgentInstance> {
 
   /** Agent handler configuration parameters, inherited from AgentDefinition */
   @Column({ type: 'simple-json', nullable: true })
-  handlerConfig?: Record<string, unknown>;
+  agentFrameworkConfig?: Record<string, unknown>;
 
   @Column({ default: false })
   closed: boolean = false;

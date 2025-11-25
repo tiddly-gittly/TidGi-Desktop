@@ -10,7 +10,7 @@ import { findPromptById } from '../promptConcat/promptConcat';
 import type { IPrompt } from '../promptConcat/promptConcatSchema';
 import { filterMessagesByDuration } from '../utilities/messageDurationFilter';
 import { normalizeRole } from '../utilities/normalizeRole';
-import { AgentResponse, PromptConcatPlugin, ResponseHookContext } from './types';
+import { AgentResponse, PromptConcatTool, ResponseHookContext } from './types';
 
 const t = identity;
 
@@ -76,17 +76,17 @@ export function getDynamicPositionParameterSchema() {
  * Full replacement plugin
  * Replaces target content with content from specified source
  */
-export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
+export const fullReplacementTool: PromptConcatTool = (hooks) => {
   // Normalize an AgentInstanceMessage role to Prompt role
-  hooks.processPrompts.tapAsync('fullReplacementPlugin', async (context, callback) => {
-    const { pluginConfig, prompts, messages } = context;
+  hooks.processPrompts.tapAsync('fullReplacementTool', async (context, callback) => {
+    const { toolConfig, prompts, messages } = context;
 
-    if (pluginConfig.pluginId !== 'fullReplacement' || !pluginConfig.fullReplacementParam) {
+    if (toolConfig.toolId !== 'fullReplacement' || !toolConfig.fullReplacementParam) {
       callback();
       return;
     }
 
-    const fullReplacementConfig = pluginConfig.fullReplacementParam;
+    const fullReplacementConfig = toolConfig.fullReplacementParam;
     if (!fullReplacementConfig) {
       callback();
       return;
@@ -98,7 +98,7 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
     if (!found) {
       logger.warn('Target prompt not found for fullReplacement', {
         targetId,
-        pluginId: pluginConfig.id,
+        toolId: toolConfig.id,
       });
       callback();
       return;
@@ -173,16 +173,16 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
   });
 
   // Handle response phase for llmResponse source type
-  hooks.postProcess.tapAsync('fullReplacementPlugin', async (context, callback) => {
+  hooks.postProcess.tapAsync('fullReplacementTool', async (context, callback) => {
     const responseContext = context as ResponseHookContext;
-    const { pluginConfig, llmResponse, responses } = responseContext;
+    const { toolConfig, llmResponse, responses } = responseContext;
 
-    if (pluginConfig.pluginId !== 'fullReplacement' || !pluginConfig.fullReplacementParam) {
+    if (toolConfig.toolId !== 'fullReplacement' || !toolConfig.fullReplacementParam) {
       callback();
       return;
     }
 
-    const fullReplacementParameter = pluginConfig.fullReplacementParam;
+    const fullReplacementParameter = toolConfig.fullReplacementParam;
     if (!fullReplacementParameter) {
       callback();
       return;
@@ -202,7 +202,7 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
     if (!found) {
       logger.warn('Full replacement target not found in responses', {
         targetId,
-        pluginId: pluginConfig.id,
+        toolId: toolConfig.id,
       });
       callback();
       return;
@@ -212,7 +212,7 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
     logger.debug('Replacing target with LLM response', {
       targetId,
       responseLength: llmResponse.length,
-      pluginId: pluginConfig.id,
+      toolId: toolConfig.id,
     });
 
     found.text = llmResponse;
@@ -220,6 +220,7 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
     logger.debug('Full replacement completed in response phase', {
       targetId,
       sourceType,
+      toolId: toolConfig.id,
     });
 
     callback();
@@ -230,16 +231,16 @@ export const fullReplacementPlugin: PromptConcatPlugin = (hooks) => {
  * Dynamic position plugin
  * Inserts content at a specific position relative to a target element
  */
-export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
-  hooks.processPrompts.tapAsync('dynamicPositionPlugin', async (context, callback) => {
-    const { pluginConfig, prompts } = context;
+export const dynamicPositionTool: PromptConcatTool = (hooks) => {
+  hooks.processPrompts.tapAsync('dynamicPositionTool', async (context, callback) => {
+    const { toolConfig, prompts } = context;
 
-    if (pluginConfig.pluginId !== 'dynamicPosition' || !pluginConfig.dynamicPositionParam || !pluginConfig.content) {
+    if (toolConfig.toolId !== 'dynamicPosition' || !toolConfig.dynamicPositionParam || !toolConfig.content) {
       callback();
       return;
     }
 
-    const dynamicPositionConfig = pluginConfig.dynamicPositionParam;
+    const dynamicPositionConfig = toolConfig.dynamicPositionParam;
     if (!dynamicPositionConfig) {
       callback();
       return;
@@ -251,7 +252,7 @@ export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
     if (!found) {
       logger.warn('Target prompt not found for dynamicPosition', {
         targetId,
-        pluginId: pluginConfig.id,
+        toolId: toolConfig.id,
       });
       callback();
       return;
@@ -259,9 +260,9 @@ export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
 
     // Create new prompt part
     const newPart: IPrompt = {
-      id: `dynamic-${pluginConfig.id}-${Date.now()}`,
-      caption: pluginConfig.caption || 'Dynamic Content',
-      text: pluginConfig.content,
+      id: `dynamic-${toolConfig.id}-${Date.now()}`,
+      caption: toolConfig.caption || 'Dynamic Content',
+      text: toolConfig.content,
     };
 
     // Insert based on position
@@ -288,7 +289,8 @@ export const dynamicPositionPlugin: PromptConcatPlugin = (hooks) => {
     logger.debug('Dynamic position insertion completed', {
       targetId,
       position,
-      contentLength: pluginConfig.content.length,
+      contentLength: toolConfig.content.length,
+      toolId: toolConfig.id,
     });
 
     callback();

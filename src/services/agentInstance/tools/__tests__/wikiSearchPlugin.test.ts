@@ -13,15 +13,15 @@ import type { AIResponseContext, YieldNextRoundTarget } from '../types';
 import { WikiChannel } from '@/constants/channels';
 import serviceIdentifier from '@services/serviceIdentifier';
 
-import type { AgentHandlerContext } from '@services/agentInstance/buildInAgentHandlers/type';
+import type { AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import type { IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import type { IPromptConcatPlugin } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { IPromptConcatTool } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { cloneDeep } from 'lodash';
-import defaultAgents from '../../buildInAgentHandlers/defaultAgents.json';
-import { createHandlerHooks, PromptConcatHookContext } from '../index';
-import { messageManagementPlugin } from '../messageManagementPlugin';
-import { wikiSearchPlugin } from '../wikiSearchPlugin';
+import defaultAgents from '../../agentFrameworks/taskAgents.json';
+import { createAgentFrameworkHooks, PromptConcatHookContext } from '../index';
+import { messageManagementTool } from '../messageManagement';
+import { wikiSearchTool } from '../wikiSearch';
 
 // Mock i18n
 vi.mock('@services/libs/i18n', () => ({
@@ -53,7 +53,7 @@ vi.mock('@services/libs/i18n', () => ({
 
 // Use the real agent config
 const exampleAgent = defaultAgents[0];
-const handlerConfig = exampleAgent.handlerConfig as AgentPromptDescription['handlerConfig'];
+const agentFrameworkConfig = (exampleAgent.agentFrameworkConfig || {}) as AgentPromptDescription['agentFrameworkConfig'];
 
 // Services will be retrieved from container on demand inside each test/describe
 
@@ -77,7 +77,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
 
     it('should inject wiki tools into prompts when configured', async () => {
       // Find the wiki search plugin config, make sure our default config
-      const wikiPlugin = handlerConfig.plugins.find((p: unknown): p is IPromptConcatPlugin => (p as IPromptConcatPlugin).pluginId === 'wikiSearch');
+      const wikiPlugin = agentFrameworkConfig.plugins.find((p: unknown): p is IPromptConcatTool => (p as IPromptConcatTool).toolId === 'wikiSearch');
       expect(wikiPlugin).toBeDefined();
       if (!wikiPlugin) {
         // throw error to keep ts believe the plugin exists
@@ -89,7 +89,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       expect(wikiPlugin.wikiSearchParam?.toolListPosition).toBeDefined();
 
       // Create a copy of prompts to test modification
-      const prompts = cloneDeep(handlerConfig.prompts);
+      const prompts = cloneDeep(agentFrameworkConfig.prompts);
       const messages = [
         {
           id: 'user-1',
@@ -102,19 +102,19 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       ];
 
       const context: PromptConcatHookContext = {
-        handlerContext: {
+        agentFrameworkContext: {
           agent: { id: 'test', messages: [], agentDefId: 'test', status: { state: 'working' as const, modified: new Date() }, created: new Date() },
-          agentDef: { id: 'test', name: 'test', handlerConfig: {} },
+          agentDef: { id: 'test', name: 'test', agentFrameworkConfig: {} },
           isCancelled: () => false,
         },
-        pluginConfig: wikiPlugin,
+        toolConfig: wikiPlugin,
         prompts: prompts,
         messages,
       };
 
       // Use real hooks from the plugin system
-      const promptHooks = createHandlerHooks();
-      wikiSearchPlugin(promptHooks);
+      const promptHooks = createAgentFrameworkHooks();
+      wikiSearchTool(promptHooks);
 
       // Execute the processPrompts hook
       await promptHooks.processPrompts.promise(context);
@@ -130,7 +130,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       // Create a plugin config with trigger that won't match
       const wikiPlugin = {
         id: 'test-wiki-plugin',
-        pluginId: 'wikiSearch' as const,
+        toolId: 'wikiSearch' as const,
         forbidOverrides: false,
         retrievalAugmentedGenerationParam: {
           sourceType: 'wiki' as const,
@@ -144,11 +144,11 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         },
       };
 
-      const prompts = cloneDeep(defaultAgents[0].handlerConfig.prompts);
+      const prompts = cloneDeep(defaultAgents[0].agentFrameworkConfig.prompts);
       const originalPromptsText = JSON.stringify(prompts);
 
       const context = {
-        pluginConfig: wikiPlugin,
+        toolConfig: wikiPlugin,
         prompts,
         messages: [
           {
@@ -162,10 +162,10 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         ],
       };
 
-      const hooks = createHandlerHooks();
-      wikiSearchPlugin(hooks);
+      const hooks = createAgentFrameworkHooks();
+      wikiSearchTool(hooks);
       // build a minimal PromptConcatHookContext to run the plugin's processPrompts
-      const handlerCtx: AgentHandlerContext = {
+      const handlerCtx: AgentFrameworkContext = {
         agent: {
           id: 'test',
           agentDefId: 'test',
@@ -173,12 +173,12 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
           status: { state: 'working' as const, modified: new Date() },
           created: new Date(),
         } as AgentInstance,
-        agentDef: { id: 'test', name: 'test', handlerConfig: {} } as AgentDefinition,
+        agentDef: { id: 'test', name: 'test', agentFrameworkConfig: {} } as AgentDefinition,
         isCancelled: () => false,
       };
       const hookContext: PromptConcatHookContext = {
-        handlerContext: handlerCtx,
-        pluginConfig: wikiPlugin as IPromptConcatPlugin,
+        agentFrameworkContext: handlerCtx,
+        toolConfig: wikiPlugin as IPromptConcatTool,
         prompts: prompts as IPrompt[],
         messages: context.messages as AgentInstanceMessage[],
       };
@@ -221,12 +221,12 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
     });
 
     it('should execute wiki search with correct duration=1 and trigger next round', async () => {
-      // Find the real wikiSearch plugin config from defaultAgents.json
-      const wikiPlugin = handlerConfig.plugins.find((p: unknown): p is IPromptConcatPlugin => (p as IPromptConcatPlugin).pluginId === 'wikiSearch');
+      // Find the real wikiSearch plugin config from taskAgents.json
+      const wikiPlugin = agentFrameworkConfig.plugins.find((p: unknown): p is IPromptConcatTool => (p as IPromptConcatTool).toolId === 'wikiSearch');
       expect(wikiPlugin).toBeDefined();
       expect(wikiPlugin!.wikiSearchParam).toBeDefined();
 
-      const handlerContext = {
+      const agentFrameworkContext = {
         agent: {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
@@ -258,7 +258,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 
@@ -270,11 +270,11 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       };
 
       const context = {
-        handlerContext,
+        agentFrameworkContext,
         response,
         requestId: 'test-request-123',
         isFinal: true,
-        pluginConfig: wikiPlugin!,
+        toolConfig: wikiPlugin!,
         prompts: [],
         messages: [],
         llmResponse: response.content,
@@ -283,10 +283,10 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       };
 
       // Use real handler hooks
-      const hooks = createHandlerHooks();
+      const hooks = createAgentFrameworkHooks();
 
       // Register the plugin
-      wikiSearchPlugin(hooks);
+      wikiSearchTool(hooks);
 
       // Execute the response complete hook
       await hooks.responseComplete.promise(context);
@@ -307,15 +307,15 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       );
 
       // Check that AI tool call message now has duration=1 (should gray out immediately)
-      const aiToolCallMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
+      const aiToolCallMessage = agentFrameworkContext.agent.messages[1] as AgentInstanceMessage;
       expect(aiToolCallMessage.id).toBe('ai-tool-call-msg');
       expect(aiToolCallMessage.duration).toBe(1); // Should be 1 to gray out immediately
       expect(aiToolCallMessage.metadata?.containsToolCall).toBe(true);
       expect(aiToolCallMessage.metadata?.toolId).toBe('wiki-search');
 
       // Verify tool result message was added to agent history with correct settings
-      expect(handlerContext.agent.messages.length).toBe(3); // user + ai + tool_result
-      const toolResultMessage = handlerContext.agent.messages[2] as AgentInstanceMessage;
+      expect(agentFrameworkContext.agent.messages.length).toBe(3); // user + ai + tool_result
+      const toolResultMessage = agentFrameworkContext.agent.messages[2] as AgentInstanceMessage;
       expect(toolResultMessage.role).toBe('tool'); // Tool result message
       expect(toolResultMessage.content).toContain('<functions_result>');
       expect(toolResultMessage.content).toContain('Tool: wiki-search');
@@ -325,13 +325,13 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       expect(toolResultMessage.duration).toBe(1); // Tool result uses configurable toolResultDuration (default 1)
 
       // Check that previous user message is unchanged
-      const userMessage = handlerContext.agent.messages[0] as AgentInstanceMessage;
+      const userMessage = agentFrameworkContext.agent.messages[0] as AgentInstanceMessage;
       expect(userMessage.id).toBe('user-msg-1');
       expect(userMessage.duration).toBeUndefined(); // Should stay visible
     });
 
     it('should handle wiki search errors gracefully and set duration=1 for both messages', async () => {
-      const handlerContext = {
+      const agentFrameworkContext = {
         agent: {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
@@ -352,7 +352,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 
@@ -364,13 +364,13 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       };
 
       const context = {
-        handlerContext,
+        agentFrameworkContext,
         response,
         requestId: 'test-request-error',
         isFinal: true,
-        pluginConfig: {
+        toolConfig: {
           id: 'test-plugin',
-          pluginId: 'wikiSearch' as const,
+          toolId: 'wikiSearch' as const,
           forbidOverrides: false,
         },
         prompts: [],
@@ -383,8 +383,8 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         },
       };
 
-      const hooks = createHandlerHooks();
-      wikiSearchPlugin(hooks);
+      const hooks = createAgentFrameworkHooks();
+      wikiSearchTool(hooks);
 
       await hooks.responseComplete.promise(context);
 
@@ -392,14 +392,14 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       expect(context.actions.yieldNextRoundTo).toBe('self');
 
       // Check that AI tool call message has duration=1 even after error (should gray out immediately)
-      const aiToolCallMessage = handlerContext.agent.messages[0] as AgentInstanceMessage;
+      const aiToolCallMessage = agentFrameworkContext.agent.messages[0] as AgentInstanceMessage;
       expect(aiToolCallMessage.id).toBe('ai-error-tool-call');
       expect(aiToolCallMessage.duration).toBe(1); // Should be 1 to gray out immediately
       expect(aiToolCallMessage.metadata?.containsToolCall).toBe(true);
 
       // Verify error message was added to agent history
-      expect(handlerContext.agent.messages.length).toBe(2); // tool_call + error_result
-      const errorResultMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
+      expect(agentFrameworkContext.agent.messages.length).toBe(2); // tool_call + error_result
+      const errorResultMessage = agentFrameworkContext.agent.messages[1] as AgentInstanceMessage;
       expect(errorResultMessage.role).toBe('tool'); // Tool error message
       expect(errorResultMessage.content).toContain('<functions_result>');
       expect(errorResultMessage.content).toContain('Error:');
@@ -411,7 +411,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
     });
 
     it('should not modify duration of unrelated messages', async () => {
-      const handlerContext = {
+      const agentFrameworkContext = {
         agent: {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
@@ -450,7 +450,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 
@@ -461,13 +461,13 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       };
 
       const context = {
-        handlerContext,
+        agentFrameworkContext,
         response,
         requestId: 'test-request-selective',
         isFinal: true,
-        pluginConfig: {
+        toolConfig: {
           id: 'test-plugin',
-          pluginId: 'wikiSearch' as const,
+          toolId: 'wikiSearch' as const,
           forbidOverrides: false,
         },
         prompts: [],
@@ -480,20 +480,20 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         },
       };
 
-      const hooks = createHandlerHooks();
-      wikiSearchPlugin(hooks);
+      const hooks = createAgentFrameworkHooks();
+      wikiSearchTool(hooks);
 
       await hooks.responseComplete.promise(context);
 
       // Check that unrelated messages were not modified
-      const unrelatedUserMsg = handlerContext.agent.messages[0] as AgentInstanceMessage;
+      const unrelatedUserMsg = agentFrameworkContext.agent.messages[0] as AgentInstanceMessage;
       expect(unrelatedUserMsg.duration).toBe(5); // Should remain unchanged
 
-      const unrelatedAiMsg = handlerContext.agent.messages[1] as AgentInstanceMessage;
+      const unrelatedAiMsg = agentFrameworkContext.agent.messages[1] as AgentInstanceMessage;
       expect(unrelatedAiMsg.duration).toBeUndefined(); // Should remain unchanged
 
       // Check that only the tool call message was modified
-      const toolCallMsg = handlerContext.agent.messages[2] as AgentInstanceMessage;
+      const toolCallMsg = agentFrameworkContext.agent.messages[2] as AgentInstanceMessage;
       expect(toolCallMsg.duration).toBe(1); // Should be set to 1
       expect(toolCallMsg.metadata?.containsToolCall).toBe(true);
     });
@@ -507,20 +507,20 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
           status: { state: 'working' as const, modified: new Date() },
           created: new Date(),
         } as AgentInstance,
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} } as AgentDefinition,
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} } as AgentDefinition,
         isCancelled: () => false,
       };
 
       const context: AIResponseContext = {
-        handlerContext: handlerCtx,
-        pluginConfig: { id: 'test-plugin', pluginId: 'wikiSearch' } as IPromptConcatPlugin,
+        agentFrameworkContext: handlerCtx,
+        toolConfig: { id: 'test-plugin', toolId: 'wikiSearch' } as IPromptConcatTool,
         response: { requestId: 'test-request-345', content: 'Just a regular response without any tool calls', status: 'done' },
         requestId: 'test-request',
         isFinal: true,
       };
 
-      const hooks = createHandlerHooks();
-      wikiSearchPlugin(hooks);
+      const hooks = createAgentFrameworkHooks();
+      wikiSearchTool(hooks);
 
       await hooks.responseComplete.promise(context);
 
@@ -597,7 +597,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         }) as unknown as IWikiService['wikiOperationInServer'],
       );
 
-      const handlerContext = {
+      const agentFrameworkContext = {
         agent: {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
@@ -627,7 +627,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 
@@ -638,13 +638,13 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       };
 
       const context = {
-        handlerContext,
+        agentFrameworkContext,
         response,
-        requestId: 'test-request-vector',
+        requestId: 'test-request-vector-error',
         isFinal: true,
-        pluginConfig: {
+        toolConfig: {
           id: 'test-plugin',
-          pluginId: 'wikiSearch' as const,
+          toolId: 'wikiSearch' as const,
           forbidOverrides: false,
         },
         prompts: [],
@@ -654,8 +654,8 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         actions: {} as ActionBag,
       };
 
-      const hooks = createHandlerHooks();
-      wikiSearchPlugin(hooks);
+      const hooks = createAgentFrameworkHooks();
+      wikiSearchTool(hooks);
 
       await hooks.responseComplete.promise(context);
 
@@ -676,9 +676,9 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
 
       // Verify results were processed
       expect(context.actions.yieldNextRoundTo).toBe('self');
-      expect(handlerContext.agent.messages.length).toBe(2);
+      expect(agentFrameworkContext.agent.messages.length).toBe(2);
 
-      const toolResultMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
+      const toolResultMessage = agentFrameworkContext.agent.messages[1] as AgentInstanceMessage;
       expect(toolResultMessage.content).toContain('<functions_result>');
       expect(toolResultMessage.content).toContain('Vector Result 1');
       expect(toolResultMessage.content).toContain('Vector Result 2');
@@ -696,7 +696,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         new Error('Vector database not initialized'),
       );
 
-      const handlerContext = {
+      const agentFrameworkContext = {
         agent: {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
@@ -724,7 +724,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 
@@ -735,13 +735,13 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       };
 
       const context = {
-        handlerContext,
+        agentFrameworkContext,
         response,
         requestId: 'test-request-vector-error',
         isFinal: true,
-        pluginConfig: {
+        toolConfig: {
           id: 'test-plugin',
-          pluginId: 'wikiSearch' as const,
+          toolId: 'wikiSearch' as const,
           forbidOverrides: false,
         },
         prompts: [],
@@ -751,15 +751,15 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         actions: {} as ActionBag,
       };
 
-      const hooks = createHandlerHooks();
-      wikiSearchPlugin(hooks);
+      const hooks = createAgentFrameworkHooks();
+      wikiSearchTool(hooks);
 
       await hooks.responseComplete.promise(context);
 
       // Should still set up next round with error message
       expect(context.actions.yieldNextRoundTo).toBe('self');
 
-      const errorResultMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
+      const errorResultMessage = agentFrameworkContext.agent.messages[1] as AgentInstanceMessage;
       expect(errorResultMessage.content).toContain('Error:');
       // Error message contains i18n key or actual error
       expect(errorResultMessage.content).toMatch(/Vector database not initialized|Tool\.WikiSearch\.Error\.VectorSearchFailed/);
@@ -767,7 +767,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
     });
 
     it('should require query parameter for vector search', async () => {
-      const handlerContext = {
+      const agentFrameworkContext = {
         agent: {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
@@ -795,7 +795,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 
@@ -806,13 +806,13 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       };
 
       const context = {
-        handlerContext,
+        agentFrameworkContext,
         response,
         requestId: 'test-request-no-query',
         isFinal: true,
-        pluginConfig: {
+        toolConfig: {
           id: 'test-plugin',
-          pluginId: 'wikiSearch' as const,
+          toolId: 'wikiSearch' as const,
           forbidOverrides: false,
         },
         prompts: [],
@@ -822,13 +822,13 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         actions: {} as ActionBag,
       };
 
-      const hooks = createHandlerHooks();
-      wikiSearchPlugin(hooks);
+      const hooks = createAgentFrameworkHooks();
+      wikiSearchTool(hooks);
 
       await hooks.responseComplete.promise(context);
 
       // Should return error about missing query
-      const errorMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
+      const errorMessage = agentFrameworkContext.agent.messages[1] as AgentInstanceMessage;
       expect(errorMessage.content).toContain('Error:');
       // Error message contains i18n key or translated text
       expect(errorMessage.content).toMatch(/query|Tool\.WikiSearch\.Error\.VectorSearchRequiresQuery/);
@@ -836,9 +836,9 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
   });
 
   describe('Message Persistence Integration', () => {
-    it('should work with messageManagementPlugin for complete persistence flow', async () => {
-      // This test ensures wikiSearchPlugin works well with messageManagementPlugin
-      const handlerContext = {
+    it('should work with messageManagementTool for complete persistence flow', async () => {
+      // This test ensures wikiSearchTool works well with messageManagementTool
+      const agentFrameworkContext = {
         agent: {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
@@ -859,7 +859,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 
@@ -870,13 +870,13 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       };
 
       const context = {
-        handlerContext,
+        agentFrameworkContext,
         response,
         requestId: 'test-request-integration',
         isFinal: true,
-        pluginConfig: {
+        toolConfig: {
           id: 'test-plugin',
-          pluginId: 'wikiSearch' as const,
+          toolId: 'wikiSearch' as const,
           forbidOverrides: false,
         },
         prompts: [],
@@ -889,19 +889,19 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         },
       };
 
-      const hooks = createHandlerHooks();
-      wikiSearchPlugin(hooks);
-      messageManagementPlugin(hooks);
+      const hooks = createAgentFrameworkHooks();
+      wikiSearchTool(hooks);
+      messageManagementTool(hooks);
 
       await hooks.responseComplete.promise(context);
 
       // Verify integration works
       expect(context.actions.yieldNextRoundTo).toBe('self');
-      expect(handlerContext.agent.messages.length).toBe(2); // original + tool result
+      expect(agentFrameworkContext.agent.messages.length).toBe(2); // original + tool result
 
-      const toolResultMessage = handlerContext.agent.messages[1] as AgentInstanceMessage;
+      const toolResultMessage = agentFrameworkContext.agent.messages[1] as AgentInstanceMessage;
       expect(toolResultMessage.metadata?.isToolResult).toBe(true);
-      expect(toolResultMessage.metadata?.isPersisted).toBe(true); // Should be true after messageManagementPlugin processing
+      expect(toolResultMessage.metadata?.isPersisted).toBe(true); // Should be true after messageManagementTool processing
     });
 
     it('should prevent regression: tool result not filtered in second round', async () => {

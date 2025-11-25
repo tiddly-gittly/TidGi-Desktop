@@ -1,21 +1,21 @@
 /**
  * Tests for Full Replacement plugin duration mechanism
  * Tests that expired messages (with duration) are filtered out from AI context
- * Based on real configuration from defaultAgents.json
+ * Based on real configuration from taskAgents.json
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentInstanceMessage } from '../../interface';
-import type { IPromptConcatPlugin } from '../../promptConcat/promptConcatSchema';
+import type { IPromptConcatTool } from '../../promptConcat/promptConcatSchema';
 import type { IPrompt } from '../../promptConcat/promptConcatSchema/prompts';
 
 import { cloneDeep } from 'lodash';
-import defaultAgents from '../../buildInAgentHandlers/defaultAgents.json';
-import { createHandlerHooks, PromptConcatHookContext } from '../index';
-import { fullReplacementPlugin } from '../promptPlugins';
+import defaultAgents from '../../agentFrameworks/taskAgents.json';
+import { createAgentFrameworkHooks, PromptConcatHookContext } from '../index';
+import { fullReplacementTool } from '../prompt';
 
 // Use the real agent config
 const exampleAgent = defaultAgents[0];
-const realHandlerConfig = exampleAgent.handlerConfig;
+const realAgentFrameworkConfig = exampleAgent.agentFrameworkConfig;
 
 describe('Full Replacement Plugin - Duration Mechanism', () => {
   beforeEach(() => {
@@ -24,15 +24,15 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
 
   describe('History Source Type with Duration Filtering', () => {
     it('should filter out expired messages (duration=1) from historyOfSession', async () => {
-      // Find the real fullReplacement plugin for history from defaultAgents.json
-      const historyPlugin = realHandlerConfig.plugins.find(
-        p => p.pluginId === 'fullReplacement' && p.fullReplacementParam?.sourceType === 'historyOfSession',
+      // Find the real fullReplacement plugin for history from taskAgents.json
+      const historyPlugin = realAgentFrameworkConfig.plugins.find(
+        p => p.toolId === 'fullReplacement' && p.fullReplacementParam?.sourceType === 'historyOfSession',
       );
       expect(historyPlugin).toBeDefined();
       expect(historyPlugin!.fullReplacementParam!.targetId).toBe('default-history'); // Real target ID
 
-      // Use real prompts structure from defaultAgents.json
-      const testPrompts = cloneDeep(realHandlerConfig.prompts) as IPrompt[];
+      // Use real prompts structure from taskAgents.json
+      const testPrompts = cloneDeep(realAgentFrameworkConfig.prompts) as IPrompt[];
 
       const messages: AgentInstanceMessage[] = [
         // Message 0: User message, no duration - should be included
@@ -96,7 +96,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
       ];
 
       const context: PromptConcatHookContext = {
-        handlerContext: {
+        agentFrameworkContext: {
           agent: {
             id: 'test-agent',
             messages,
@@ -104,16 +104,16 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
             status: { state: 'working' as const, modified: new Date() },
             created: new Date(),
           },
-          agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+          agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
           isCancelled: () => false,
         },
-        pluginConfig: historyPlugin! as unknown as IPromptConcatPlugin, // Type cast due to JSON import limitations
+        toolConfig: historyPlugin! as unknown as IPromptConcatTool, // Type cast due to JSON import limitations
         prompts: testPrompts,
         messages,
       };
 
-      const hooks = createHandlerHooks();
-      fullReplacementPlugin(hooks);
+      const hooks = createAgentFrameworkHooks();
+      fullReplacementTool(hooks);
 
       // Execute the processPrompts hook
       await hooks.processPrompts.promise(context);
@@ -126,8 +126,8 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
       const targetPrompt = historyPrompt!.children?.find(child => child.id === targetId);
       expect(targetPrompt).toBeDefined();
 
-      // The fullReplacementPlugin puts filtered messages in children array
-      // Note: fullReplacementPlugin removes the last message (current user message)
+      // The fullReplacementTool puts filtered messages in children array
+      // Note: fullReplacementTool removes the last message (current user message)
       const children = (targetPrompt as unknown as { children?: IPrompt[] }).children || [];
       expect(children.length).toBe(2); // Only non-expired messages (user1, ai-response), excluding last user message
 
@@ -147,8 +147,8 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
     });
 
     it('should include messages with duration=0 (visible in current round)', async () => {
-      const historyPlugin = realHandlerConfig.plugins.find(
-        p => p.pluginId === 'fullReplacement' && p.fullReplacementParam?.sourceType === 'historyOfSession',
+      const historyPlugin = realAgentFrameworkConfig.plugins.find(
+        p => p.toolId === 'fullReplacement' && p.fullReplacementParam?.sourceType === 'historyOfSession',
       );
 
       const messages: AgentInstanceMessage[] = [
@@ -181,10 +181,10 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
         },
       ];
 
-      const testPrompts = cloneDeep(realHandlerConfig.prompts) as IPrompt[];
+      const testPrompts = cloneDeep(realAgentFrameworkConfig.prompts) as IPrompt[];
 
       const context: PromptConcatHookContext = {
-        handlerContext: {
+        agentFrameworkContext: {
           agent: {
             id: 'test-agent',
             messages,
@@ -192,16 +192,16 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
             status: { state: 'working' as const, modified: new Date() },
             created: new Date(),
           },
-          agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+          agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
           isCancelled: () => false,
         },
-        pluginConfig: historyPlugin! as unknown as IPromptConcatPlugin, // Type cast for JSON import
+        toolConfig: historyPlugin! as unknown as IPromptConcatTool, // Type cast for JSON import
         prompts: testPrompts,
         messages,
       };
 
-      const hooks = createHandlerHooks();
-      fullReplacementPlugin(hooks);
+      const hooks = createAgentFrameworkHooks();
+      fullReplacementTool(hooks);
 
       await hooks.processPrompts.promise(context);
 
@@ -220,8 +220,8 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
     });
 
     it('should handle mixed duration values correctly', async () => {
-      const historyPlugin = realHandlerConfig.plugins.find(
-        p => p.pluginId === 'fullReplacement' && p.fullReplacementParam?.sourceType === 'historyOfSession',
+      const historyPlugin = realAgentFrameworkConfig.plugins.find(
+        p => p.toolId === 'fullReplacement' && p.fullReplacementParam?.sourceType === 'historyOfSession',
       );
 
       const messages: AgentInstanceMessage[] = [
@@ -263,10 +263,10 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
         },
       ];
 
-      const testPrompts = cloneDeep(realHandlerConfig.prompts) as IPrompt[];
+      const testPrompts = cloneDeep(realAgentFrameworkConfig.prompts) as IPrompt[];
 
       const context: PromptConcatHookContext = {
-        handlerContext: {
+        agentFrameworkContext: {
           agent: {
             id: 'test-agent',
             messages,
@@ -274,16 +274,16 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
             status: { state: 'working' as const, modified: new Date() },
             created: new Date(),
           },
-          agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+          agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
           isCancelled: () => false,
         },
-        pluginConfig: historyPlugin! as unknown as IPromptConcatPlugin, // Type cast for JSON import
+        toolConfig: historyPlugin! as unknown as IPromptConcatTool, // Type cast for JSON import
         prompts: testPrompts,
         messages,
       };
 
-      const hooks = createHandlerHooks();
-      fullReplacementPlugin(hooks);
+      const hooks = createAgentFrameworkHooks();
+      fullReplacementTool(hooks);
 
       await hooks.processPrompts.promise(context);
 
@@ -308,8 +308,8 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
   describe('LLM Response Source Type', () => {
     it('should verify LLM response replacement config exists', () => {
       // Verify the real config has LLM response replacement
-      const llmResponsePlugin = realHandlerConfig.plugins.find(
-        p => p.pluginId === 'fullReplacement' && p.fullReplacementParam?.sourceType === 'llmResponse',
+      const llmResponsePlugin = realAgentFrameworkConfig.plugins.find(
+        p => p.toolId === 'fullReplacement' && p.fullReplacementParam?.sourceType === 'llmResponse',
       );
       expect(llmResponsePlugin).toBeDefined();
       expect(llmResponsePlugin!.fullReplacementParam!.targetId).toBe('default-response');

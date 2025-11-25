@@ -70,14 +70,14 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
 
   getPreviewPromptResult: async (
     inputText: string,
-    handlerConfig: AgentPromptDescription['handlerConfig'],
+    agentFrameworkConfig: AgentPromptDescription['agentFrameworkConfig'],
   ) => {
     try {
       set({ previewLoading: true });
       const messages = Array.from(get().messages.values());
 
-      // Safety check - if handlerConfig is empty, fail early
-      if (Object.keys(handlerConfig).length === 0) {
+      // Safety check - if agentFrameworkConfig is empty, fail early
+      if (!agentFrameworkConfig || Object.keys(agentFrameworkConfig).length === 0) {
         set({ previewLoading: false, previewResult: null });
         return null;
       }
@@ -93,7 +93,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
       }
 
       // Use the streaming API with progress updates
-      const concatStream = window.observables.agentInstance.concatPrompt({ handlerConfig }, messages);
+      const concatStream = window.observables.agentInstance.concatPrompt({ agentFrameworkConfig }, messages);
 
       // Initialize progress
       set({
@@ -113,7 +113,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
           next: (state) => {
             // Update progress and current step
             const stepDescription = state.step === 'plugin'
-              ? `Processing plugin: ${state.currentPlugin?.pluginId || 'unknown'}`
+              ? `Processing tool: ${state.currentPlugin?.toolId || 'unknown'}`
               : state.step === 'finalize'
               ? 'Finalizing prompts...'
               : state.step === 'flatten'
@@ -123,7 +123,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
             set({
               previewProgress: state.progress,
               previewCurrentStep: stepDescription,
-              previewCurrentPlugin: state.currentPlugin?.pluginId || null,
+              previewCurrentPlugin: state.currentPlugin?.toolId || null,
               // Update intermediate results
               previewResult: {
                 flatPrompts: state.flatPrompts,

@@ -16,7 +16,7 @@ import { z } from 'zod/v4';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { findPromptById } from '../promptConcat/promptConcat';
 import { schemaToToolContent } from '../utilities/schemaToToolContent';
-import type { PromptConcatPlugin } from './types';
+import type { PromptConcatTool } from './types';
 
 /**
  * Wiki Operation Parameter Schema
@@ -101,17 +101,17 @@ const WikiOperationToolParameterSchema = z.object({
  * Wiki Operation plugin - Prompt processing
  * Handles tool list injection for wiki operation functionality
  */
-export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
+export const wikiOperationTool: PromptConcatTool = (hooks) => {
   // First tapAsync: Tool list injection
-  hooks.processPrompts.tapAsync('wikiOperationPlugin-toolList', async (context, callback) => {
-    const { pluginConfig, prompts } = context;
+  hooks.processPrompts.tapAsync('wikiOperationTool-toolList', async (context, callback) => {
+    const { toolConfig, prompts } = context;
 
-    if (pluginConfig.pluginId !== 'wikiOperation' || !pluginConfig.wikiOperationParam) {
+    if (toolConfig.toolId !== 'wikiOperation' || !toolConfig.wikiOperationParam) {
       callback();
       return;
     }
 
-    const wikiOperationParameter = pluginConfig.wikiOperationParam;
+    const wikiOperationParameter = toolConfig.wikiOperationParam;
 
     try {
       // Handle tool list injection if toolListPosition is configured
@@ -121,7 +121,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
         if (!toolListTarget) {
           logger.warn('Tool list target prompt not found', {
             targetId: toolListPosition.targetId,
-            pluginId: pluginConfig.id,
+            toolId: toolConfig.id,
           });
           callback();
           return;
@@ -140,7 +140,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
           }
           const insertIndex = toolListTarget.prompt.children.length;
           toolListTarget.prompt.children.splice(insertIndex, 0, {
-            id: `wiki-operation-tool-${pluginConfig.id}`,
+            id: `wiki-operation-tool-${toolConfig.id}`,
             caption: 'Wiki Operation Tool',
             text: wikiOperationToolContent,
           });
@@ -149,7 +149,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
             toolListTarget.prompt.children = [];
           }
           toolListTarget.prompt.children.unshift({
-            id: `wiki-operation-tool-${pluginConfig.id}`,
+            id: `wiki-operation-tool-${toolConfig.id}`,
             caption: 'Wiki Operation Tool',
             text: wikiOperationToolContent,
           });
@@ -161,7 +161,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
         logger.debug('Wiki operation tool list injected', {
           targetId: toolListPosition.targetId,
           position: toolListPosition.position,
-          pluginId: pluginConfig.id,
+          toolId: toolConfig.id,
         });
       }
 
@@ -169,20 +169,20 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
     } catch (error) {
       logger.error('Error in wiki operation tool list injection', {
         error,
-        pluginId: pluginConfig.id,
+        toolId: toolConfig.id,
       });
       callback();
     }
   });
 
   // 2. Tool execution when AI response is complete
-  hooks.responseComplete.tapAsync('wikiOperationPlugin-handler', async (context, callback) => {
+  hooks.responseComplete.tapAsync('wikiOperationTool-handler', async (context, callback) => {
     try {
-      const { handlerContext, response, handlerConfig } = context;
+      const { agentFrameworkContext, response, agentFrameworkConfig } = context;
 
-      // Find this plugin's configuration from handlerConfig
-      const wikiOperationPluginConfig = handlerConfig?.plugins?.find(p => p.pluginId === 'wikiOperation');
-      const wikiOperationParameter = wikiOperationPluginConfig?.wikiOperationParam as { toolResultDuration?: number } | undefined;
+      // Find this plugin's configuration import { AgentFrameworkConfig }
+      const wikiOperationToolConfig = agentFrameworkConfig?.plugins?.find((p: { toolId: string; [key: string]: unknown }) => p.toolId === 'wikiOperation');
+      const wikiOperationParameter = wikiOperationToolConfig?.wikiOperationParam as { toolResultDuration?: number } | undefined;
       const toolResultDuration = wikiOperationParameter?.toolResultDuration || 1; // Default to 1 round
 
       if (response.status !== 'done' || !response.content) {
@@ -200,19 +200,19 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
 
       logger.debug('Wiki operation tool call detected', {
         toolId: toolMatch.toolId,
-        agentId: handlerContext.agent.id,
+        agentId: agentFrameworkContext.agent.id,
       });
 
       // Set duration=1 for the AI message containing the tool call
       // Find the most recent AI message (should be the one containing the tool call)
-      const aiMessages = handlerContext.agent.messages.filter(message => message.role === 'assistant');
+      const aiMessages = agentFrameworkContext.agent.messages.filter((message: AgentInstanceMessage) => message.role === 'assistant');
       if (aiMessages.length > 0) {
         const latestAiMessage = aiMessages[aiMessages.length - 1];
         latestAiMessage.duration = toolResultDuration;
         logger.debug('Set AI message duration for tool call', {
           messageId: latestAiMessage.id,
           duration: toolResultDuration,
-          agentId: handlerContext.agent.id,
+          agentId: agentFrameworkContext.agent.id,
         });
       }
 
@@ -220,7 +220,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
       try {
         logger.debug('Parsing wiki operation tool parameters', {
           toolMatch: toolMatch.parameters,
-          agentId: handlerContext.agent.id,
+          agentId: agentFrameworkContext.agent.id,
         });
 
         // Use parameters returned by matchToolCalling directly. Let zod schema validate.
@@ -253,7 +253,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
           workspaceName,
           operation,
           title,
-          agentId: handlerContext.agent.id,
+          agentId: agentFrameworkContext.agent.id,
         });
 
         let result: string;
@@ -293,7 +293,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
           workspaceID,
           operation,
           title,
-          agentId: handlerContext.agent.id,
+          agentId: agentFrameworkContext.agent.id,
         });
 
         // Format the tool result for display
@@ -307,8 +307,8 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
 
         logger.debug('Wiki operation setting yieldNextRoundTo=self', {
           toolId: 'wiki-operation',
-          agentId: handlerContext.agent.id,
-          messageCount: handlerContext.agent.messages.length,
+          agentId: agentFrameworkContext.agent.id,
+          messageCount: agentFrameworkContext.agent.messages.length,
           toolResultPreview: toolResultText.slice(0, 200),
         });
 
@@ -316,7 +316,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
         const toolResultTime = new Date();
         const toolResultMessage: AgentInstanceMessage = {
           id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          agentId: handlerContext.agent.id,
+          agentId: agentFrameworkContext.agent.id,
           role: 'tool', // Tool result message
           content: toolResultText,
           modified: toolResultTime,
@@ -331,7 +331,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
             artificialOrder: Date.now() + 10, // Additional ordering hint
           },
         };
-        handlerContext.agent.messages.push(toolResultMessage);
+        agentFrameworkContext.agent.messages.push(toolResultMessage);
 
         // Persist tool result immediately so DB ordering matches in-memory order
         try {
@@ -347,7 +347,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
 
         // Signal that tool was executed AFTER adding and persisting the message
         await hooks.toolExecuted.promise({
-          handlerContext,
+          agentFrameworkContext,
           toolResult: {
             success: true,
             data: result,
@@ -370,7 +370,7 @@ export const wikiOperationPlugin: PromptConcatPlugin = (hooks) => {
       } catch (error) {
         logger.error('Wiki operation tool execution failed', {
           error,
-          agentId: handlerContext.agent.id,
+          agentId: agentFrameworkContext.agent.id,
           toolParameters: toolMatch.parameters,
         });
 
@@ -389,7 +389,7 @@ Error: ${error instanceof Error ? error.message : String(error)}
         const errorResultTime = new Date();
         const errorResultMessage: AgentInstanceMessage = {
           id: `tool-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          agentId: handlerContext.agent.id,
+          agentId: agentFrameworkContext.agent.id,
           role: 'tool', // Tool error message
           content: errorMessage,
           modified: errorResultTime,
@@ -402,11 +402,11 @@ Error: ${error instanceof Error ? error.message : String(error)}
             isComplete: true, // Mark as complete to prevent messageManagementPlugin from overwriting content
           },
         };
-        handlerContext.agent.messages.push(errorResultMessage);
+        agentFrameworkContext.agent.messages.push(errorResultMessage);
 
         // Signal that tool was executed (with error) AFTER adding the message
         await hooks.toolExecuted.promise({
-          handlerContext,
+          agentFrameworkContext,
           toolResult: {
             success: false,
             error: error instanceof Error ? error.message : String(error),

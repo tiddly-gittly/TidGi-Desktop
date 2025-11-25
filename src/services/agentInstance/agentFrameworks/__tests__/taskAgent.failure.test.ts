@@ -8,8 +8,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../../interface';
 import type { AiAPIConfig } from '../../promptConcat/promptConcatSchema';
-import { basicPromptConcatHandler } from '../basicPromptConcatHandler';
-import type { AgentHandlerContext } from '../type';
+import { basicPromptConcatHandler } from '../taskAgent';
+import type { AgentFrameworkContext } from '../utilities/type';
 
 // Use real normalizeRole implementation — do not mock plugins or persistence in these integration tests
 
@@ -21,7 +21,7 @@ const mockErrorDetail = {
   message: 'Invalid prompt: message must be a ModelMessage or a UI message',
 };
 
-function makeContext(agentId: string, agentDefId: string, messages: AgentInstanceMessage[]): AgentHandlerContext {
+function makeContext(agentId: string, agentDefId: string, messages: AgentInstanceMessage[]): AgentFrameworkContext {
   return {
     agent: {
       id: agentId,
@@ -33,11 +33,11 @@ function makeContext(agentId: string, agentDefId: string, messages: AgentInstanc
     agentDef: {
       id: agentDefId,
       name: 'Test Agent',
-      handlerConfig: {},
+      agentFrameworkConfig: {},
       aiApiConfig: { api: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } } as AiAPIConfig,
     },
     isCancelled: () => false,
-  } as unknown as AgentHandlerContext;
+  } as unknown as AgentFrameworkContext;
 }
 
 describe('basicPromptConcatHandler - failure path persists error message and logs', () => {
@@ -94,10 +94,10 @@ describe('basicPromptConcatHandler - failure path persists error message and log
       vi.spyOn(agentDefSvc, 'getAgentDef').mockResolvedValue({
         id: 'def-1',
         name: 'Def 1',
-        handlerID: 'basicPromptConcatHandler',
-        handlerConfig: {
+        agentFrameworkID: 'basicPromptConcatHandler',
+        agentFrameworkConfig: {
           plugins: [
-            { pluginId: 'wikiOperation', wikiOperationParam: {} },
+            { toolId: 'wikiOperation', wikiOperationParam: {} },
           ],
         },
       });

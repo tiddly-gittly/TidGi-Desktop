@@ -8,16 +8,16 @@ import { AgentPromptDescription } from '@services/agentInstance/promptConcat/pro
 
 /**
  * Content of a session instance that user chat with an agent.
- * Inherits from AgentDefinition but makes handlerConfig optional to allow fallback.
+ * Inherits import { AgentFrameworkConfig } optional to allow fallback.
  * The instance can override the definition's configuration, or fall back to using it.
  */
-export interface AgentInstance extends Omit<AgentDefinition, 'name' | 'handlerConfig'> {
+export interface AgentInstance extends Omit<AgentDefinition, 'name' | 'agentFrameworkConfig'> {
   /** Agent description ID that generates this instance */
   agentDefId: string;
   /** Session name, optional in instance unlike definition */
   name?: string;
-  /** Agent handler's config - optional, falls back to AgentDefinition.handlerConfig if not set */
-  handlerConfig?: Record<string, unknown>;
+  /** Agent framework's config - optional, falls back to AgentDefinition.agentFrameworkConfig if not set */
+  agentFrameworkConfig?: Record<string, unknown>;
   /**
    * Message history.
    * latest on top, so it's easy to get first one as user's latest input, and rest as history.
@@ -119,7 +119,7 @@ export interface IAgentInstanceService {
   /**
    * For testing purposes, only initialize the built-in handlers without database
    */
-  initializeHandlers(): Promise<void>;
+  initializeFrameworks(): Promise<void>;
 
   /**
    * Create a new agent instance from a definition
@@ -196,15 +196,15 @@ export interface IAgentInstanceService {
    * @param messages Messages to be included in prompt generation
    * @returns Observable stream of processing states, with final state containing complete results
    */
-  concatPrompt(promptDescription: Pick<AgentPromptDescription, 'handlerConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState>;
+  concatPrompt(promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState>;
 
   /**
    * Get JSON Schema for handler configuration
    * This allows frontend to generate a form based on the schema for a specific handler
-   * @param handlerId Handler ID to get schema for
+   * @param agentFrameworkID Handler ID to get schema for
    * @returns JSON Schema for handler configuration
    */
-  getHandlerConfigSchema(handlerId: string): Record<string, unknown>;
+  getFrameworkConfigSchema(frameworkId: string): Record<string, unknown>;
 
   /**
    * Save user message to database
@@ -233,7 +233,7 @@ export const AgentInstanceServiceIPCDescriptor = {
     deleteAgent: ProxyPropertyType.Function,
     getAgent: ProxyPropertyType.Function,
     getAgents: ProxyPropertyType.Function,
-    getHandlerConfigSchema: ProxyPropertyType.Function,
+    getFrameworkConfigSchema: ProxyPropertyType.Function,
     saveUserMessage: ProxyPropertyType.Function,
     sendMsgToAgent: ProxyPropertyType.Function,
     subscribeToAgentUpdates: ProxyPropertyType.Function$,

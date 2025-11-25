@@ -1,4 +1,4 @@
-import { useHandlerConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useHandlerConfigManagement';
+import { useAgentFrameworkConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
@@ -36,9 +36,9 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   const [isEditMode, setIsEditMode] = useState(false);
 
   const {
-    loading: handlerConfigLoading,
-    config: handlerConfig,
-  } = useHandlerConfigManagement({
+    loading: agentFrameworkConfigLoading,
+    config: agentFrameworkConfig,
+  } = useAgentFrameworkConfigManagement({
     agentDefId: agent?.agentDefId,
     agentId: agent?.id,
   });
@@ -54,17 +54,17 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   );
   useEffect(() => {
     const fetchInitialPreview = async () => {
-      if (!agent?.agentDefId || handlerConfigLoading || !handlerConfig || !open) {
+      if (!agent?.agentDefId || agentFrameworkConfigLoading || !agentFrameworkConfig || !open) {
         return;
       }
       try {
-        await getPreviewPromptResult(inputText, handlerConfig);
+        await getPreviewPromptResult(inputText, agentFrameworkConfig);
       } catch (error) {
         console.error('PromptPreviewDialog: Error fetching initial preview:', error);
       }
     };
     void fetchInitialPreview();
-  }, [agent?.agentDefId, handlerConfig, handlerConfigLoading, inputText, open]); // 移除 getPreviewPromptResult
+  }, [agent?.agentDefId, agentFrameworkConfig, agentFrameworkConfigLoading, inputText, open]); // 移除 getPreviewPromptResult
 
   const handleToggleFullScreen = useCallback((): void => {
     setIsFullScreen(previous => !previous);
