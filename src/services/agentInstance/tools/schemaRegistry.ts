@@ -24,7 +24,7 @@ const toolMetadata = new Map<string, {
 
 /**
  * Register a tool parameter schema
- * @param toolId The tool ID (should match pluginId enum values)
+ * @param toolId The tool ID (should match toolId enum values)
  * @param schema The Zod schema for this tool's parameters
  * @param metadata Optional metadata for display purposes
  */
@@ -76,16 +76,16 @@ export function createDynamicPromptConcatToolSchema(): z.ZodType {
   // Base tool configuration without parameter-specific fields
   const baseToolSchema = z.object({
     id: z.string().meta({
-      title: t('Schema.Plugin.IdTitle'),
-      description: t('Schema.Plugin.Id'),
+      title: t('Schema.Tool.IdTitle'),
+      description: t('Schema.Tool.Id'),
     }),
     caption: z.string().optional().meta({
-      title: t('Schema.Plugin.CaptionTitle'),
-      description: t('Schema.Plugin.Caption'),
+      title: t('Schema.Tool.CaptionTitle'),
+      description: t('Schema.Tool.Caption'),
     }),
     content: z.string().optional().meta({
-      title: t('Schema.Plugin.ContentTitle'),
-      description: t('Schema.Plugin.Content'),
+      title: t('Schema.Tool.ContentTitle'),
+      description: t('Schema.Tool.Content'),
     }),
     forbidOverrides: z.boolean().optional().default(false).meta({
       title: t('Schema.Plugin.ForbidOverridesTitle'),
@@ -99,17 +99,17 @@ export function createDynamicPromptConcatToolSchema(): z.ZodType {
   if (registeredToolIds.length === 0) {
     // Fallback to a basic schema if no tools are registered yet
     return baseToolSchema.extend({
-      pluginId: z.string().meta({
-        title: t('Schema.Plugin.PluginIdTitle'),
-        description: t('Schema.Plugin.PluginId'),
+      toolId: z.string().meta({
+        title: t('Schema.Tool.ToolIdTitle'),
+        description: t('Schema.Tool.ToolId'),
       }),
     });
   }
 
   // Create enum from registered tool IDs
-  const pluginIdEnum = z.enum(registeredToolIds as [string, ...string[]]).meta({
-    title: t('Schema.Plugin.PluginIdTitle'),
-    description: t('Schema.Plugin.PluginId'),
+  const toolIdEnum = z.enum(registeredToolIds as [string, ...string[]]).meta({
+    title: t('Schema.Tool.ToolIdTitle'),
+    description: t('Schema.Tool.ToolId'),
     enumOptions: registeredToolIds.map(toolId => {
       const metadata = getToolMetadata(toolId);
       return {
@@ -135,7 +135,7 @@ export function createDynamicPromptConcatToolSchema(): z.ZodType {
 
   // Combine base schema with tool ID and parameters
   return baseToolSchema.extend({
-    pluginId: pluginIdEnum,
+    toolId: toolIdEnum,
     ...parameterSchema,
   });
 }

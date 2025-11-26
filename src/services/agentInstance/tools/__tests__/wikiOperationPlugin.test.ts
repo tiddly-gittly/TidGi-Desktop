@@ -1,5 +1,5 @@
-/**
- * Tests for wikiOperationPlugin
+﻿/**
+ * Tests for wikiOperationTool
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -19,8 +19,8 @@ import type { AgentFrameworkContext } from '../../agentFrameworks/utilities/type
 import type { AgentInstance } from '../../interface';
 import { createAgentFrameworkHooks } from '../index';
 import type { AIResponseContext, PromptConcatHookContext, ToolActions } from '../types';
-import { wikiOperationPlugin } from '../wikiOperation';
-import { workspacesListPlugin } from '../workspacesList';
+import { wikiOperationTool } from '../wikiOperation';
+import { workspacesListTool } from '../workspacesList';
 
 // Mock i18n
 vi.mock('@services/libs/i18n', () => ({
@@ -50,8 +50,8 @@ vi.mock('@services/libs/i18n', () => ({
   },
 }));
 
-// Helper to construct a complete AgentHandlerContext for tests
-const makeHandlerContext = (agentId = 'test-agent'): AgentFrameworkContext => ({
+// Helper to construct a complete AgentagentFrameworkContext for tests
+const makeagentFrameworkContext = (agentId = 'test-agent'): AgentFrameworkContext => ({
   agent: {
     id: agentId,
     agentDefId: 'test-agent-def',
@@ -63,7 +63,7 @@ const makeHandlerContext = (agentId = 'test-agent'): AgentFrameworkContext => ({
   isCancelled: () => false,
 });
 
-describe('wikiOperationPlugin', () => {
+describe('wikiOperationTool', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
   });
@@ -74,11 +74,11 @@ describe('wikiOperationPlugin', () => {
 
   it('should inject wiki operation tool content when plugin is configured', async () => {
     const hooks = createAgentFrameworkHooks();
-    // First register workspacesListPlugin to inject available workspaces from the global mock
-    workspacesListPlugin(hooks);
-    wikiOperationPlugin(hooks);
+    // First register workspacesListTool to inject available workspaces from the global mock
+    workspacesListTool(hooks);
+    wikiOperationTool(hooks);
 
-    // Start with prompts and run workspacesList injection first (pluginConfig for workspacesList)
+    // Start with prompts and run workspacesList injection first (toolConfig for workspacesList)
     const prompts: IPrompt[] = [
       {
         id: 'target-prompt',
@@ -88,18 +88,18 @@ describe('wikiOperationPlugin', () => {
     ];
 
     const workspacesContext: PromptConcatHookContext = {
-      handlerContext: {
+      agentFrameworkContext: {
         agent: { id: 'test-agent', messages: [], agentDefId: 'test', status: { state: 'working' as const, modified: new Date() }, created: new Date() },
         agentDef: { id: 'test', name: 'test', handlerConfig: {} },
         isCancelled: () => false,
       },
       messages: [],
       prompts,
-      pluginConfig: {
+      toolConfig: {
         id: 'workspaces-plugin',
         caption: 'Workspaces Plugin',
         forbidOverrides: false,
-        pluginId: 'workspacesList',
+        toolId: 'workspacesList',
         workspacesListParam: {
           targetId: 'target-prompt',
           position: 'after' as const,
@@ -111,12 +111,12 @@ describe('wikiOperationPlugin', () => {
 
     // Then run wikiOperation injection which will append its tool content to the same prompt
     const wikiOpContext: PromptConcatHookContext = {
-      handlerContext: workspacesContext.handlerContext,
+      agentFrameworkContext: workspacesContext.agentFrameworkContext,
       messages: [],
       prompts,
-      pluginConfig: {
+      toolConfig: {
         id: 'test-plugin',
-        pluginId: 'wikiOperation',
+        toolId: 'wikiOperation',
         wikiOperationParam: {
           toolListPosition: {
             targetId: 'target-prompt',
@@ -129,7 +129,7 @@ describe('wikiOperationPlugin', () => {
     await hooks.processPrompts.promise(wikiOpContext);
 
     const targetPrompt = prompts[0];
-    // workspacesListPlugin and wikiOperationPlugin may both add children; assert the combined children text contains expected snippets
+    // workspacesListTool and wikiOperationTool may both add children; assert the combined children text contains expected snippets
     const childrenText = JSON.stringify(targetPrompt.children);
     expect(childrenText).toContain('wiki-operation');
     // Ensure the injected tool content documents the supported operations (enum values)
@@ -148,16 +148,16 @@ describe('wikiOperationPlugin', () => {
   describe('tool execution', () => {
     it('should execute create operation successfully', async () => {
       const hooks = createAgentFrameworkHooks();
-      wikiOperationPlugin(hooks);
+      wikiOperationTool(hooks);
 
-      const handlerContext = makeHandlerContext();
+      const agentFrameworkContext = makeagentFrameworkContext();
 
       const context = {
-        handlerContext,
-        handlerConfig: {
+        agentFrameworkContext,
+        agentFrameworkConfig: {
           plugins: [
             {
-              pluginId: 'wikiOperation',
+              toolId: 'wikiOperation',
               wikiOperationParam: {
                 toolResultDuration: 1,
               },
@@ -183,9 +183,9 @@ describe('wikiOperationPlugin', () => {
       context.response.content = `<tool_use name="wiki-operation">${JSON.stringify(createParams)}</tool_use>`;
 
       // Add an assistant message containing the tool_use so the plugin can find it
-      handlerContext.agent.messages.push({
+      agentFrameworkContext.agent.messages.push({
         id: `m-${Date.now()}`,
-        agentId: handlerContext.agent.id,
+        agentId: agentFrameworkContext.agent.id,
         role: 'assistant',
         content: context.response.content,
         modified: new Date(),
@@ -209,9 +209,9 @@ describe('wikiOperationPlugin', () => {
       expect(typeof wikiSvc.wikiOperationInServer).toBe('function');
 
       const responseCtx: AIResponseContext = {
-        handlerContext,
-        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatTool,
-        handlerConfig: context.handlerConfig as { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
+        agentFrameworkContext,
+        toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
+        agentFrameworkConfig: context.agentFrameworkConfig as { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
         response: { requestId: 'r-create', content: context.response.content, status: 'done' } as AIStreamResponse,
         requestId: 'r-create',
         isFinal: true,
@@ -227,7 +227,7 @@ describe('wikiOperationPlugin', () => {
       );
 
       // Verify a tool result message was added to agent history
-      const toolResultMessage = handlerContext.agent.messages.find(m => m.metadata?.isToolResult);
+      const toolResultMessage = agentFrameworkContext.agent.messages.find(m => m.metadata?.isToolResult);
       expect(toolResultMessage).toBeTruthy();
       expect(toolResultMessage?.content).toContain('<functions_result>');
       // Check for general success wording and tiddler title
@@ -239,14 +239,14 @@ describe('wikiOperationPlugin', () => {
 
     it('should execute update operation successfully', async () => {
       const hooks = createAgentFrameworkHooks();
-      wikiOperationPlugin(hooks);
+      wikiOperationTool(hooks);
 
-      const handlerContext = makeHandlerContext();
+      const agentFrameworkContext = makeagentFrameworkContext();
 
       const context = {
-        handlerContext,
-        handlerConfig: {
-          plugins: [{ pluginId: 'wikiOperation', wikiOperationParam: {} }],
+        agentFrameworkContext,
+        agentFrameworkConfig: {
+          plugins: [{ toolId: 'wikiOperation', wikiOperationParam: {} }],
         },
         response: {
           status: 'done' as const,
@@ -256,9 +256,9 @@ describe('wikiOperationPlugin', () => {
       };
 
       // Add assistant message so plugin can detect the tool call
-      handlerContext.agent.messages.push({
+      agentFrameworkContext.agent.messages.push({
         id: `m-${Date.now()}`,
-        agentId: handlerContext.agent.id,
+        agentId: agentFrameworkContext.agent.id,
         role: 'assistant',
         content: context.response.content,
         modified: new Date(),
@@ -274,9 +274,9 @@ describe('wikiOperationPlugin', () => {
       context.response.content = `<tool_use name="wiki-operation">${JSON.stringify(updateParams)}</tool_use>`;
 
       const respCtx2: AIResponseContext = {
-        handlerContext,
-        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatTool,
-        handlerConfig: context.handlerConfig as { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
+        agentFrameworkContext,
+        toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
+        agentFrameworkConfig: context.agentFrameworkConfig as { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
         response: { requestId: 'r-update', content: context.response.content, status: 'done' } as AIStreamResponse,
         actions: {} as ToolActions,
         requestId: 'r-update',
@@ -291,7 +291,7 @@ describe('wikiOperationPlugin', () => {
       );
 
       // Check general update success wording and tiddler title
-      const updateResult = handlerContext.agent.messages.find(m => m.metadata?.isToolResult);
+      const updateResult = agentFrameworkContext.agent.messages.find(m => m.metadata?.isToolResult);
       expect(updateResult).toBeTruthy();
       expect(updateResult?.content).toContain('成功在Wiki工作空间');
       expect(updateResult?.content).toContain('Existing Note');
@@ -299,14 +299,14 @@ describe('wikiOperationPlugin', () => {
 
     it('should execute delete operation successfully', async () => {
       const hooks = createAgentFrameworkHooks();
-      wikiOperationPlugin(hooks);
+      wikiOperationTool(hooks);
 
-      const handlerContext = makeHandlerContext();
+      const agentFrameworkContext = makeagentFrameworkContext();
 
       const context = {
-        handlerContext,
-        handlerConfig: {
-          plugins: [{ pluginId: 'wikiOperation', wikiOperationParam: {} }],
+        agentFrameworkContext,
+        agentFrameworkConfig: {
+          plugins: [{ toolId: 'wikiOperation', wikiOperationParam: {} }],
         },
         response: {
           status: 'done' as const,
@@ -316,9 +316,9 @@ describe('wikiOperationPlugin', () => {
       };
 
       // Add assistant message so plugin can detect the tool call
-      handlerContext.agent.messages.push({
+      agentFrameworkContext.agent.messages.push({
         id: `m-${Date.now()}`,
-        agentId: handlerContext.agent.id,
+        agentId: agentFrameworkContext.agent.id,
         role: 'assistant',
         content: context.response.content,
         modified: new Date(),
@@ -333,9 +333,9 @@ describe('wikiOperationPlugin', () => {
       context.response.content = `<tool_use name="wiki-operation">${JSON.stringify(deleteParams)}</tool_use>`;
 
       const respCtx3: AIResponseContext = {
-        handlerContext,
-        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatTool,
-        handlerConfig: context.handlerConfig as { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
+        agentFrameworkContext,
+        toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
+        agentFrameworkConfig: context.agentFrameworkConfig as { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
         response: { requestId: 'r-delete', content: context.response.content, status: 'done' } as AIStreamResponse,
         actions: {} as ToolActions,
         requestId: 'r-delete',
@@ -349,22 +349,22 @@ describe('wikiOperationPlugin', () => {
         ['Note to Delete'],
       );
 
-      const deleteResult = handlerContext.agent.messages.find(m => m.metadata?.isToolResult);
+      const deleteResult = agentFrameworkContext.agent.messages.find(m => m.metadata?.isToolResult);
       expect(deleteResult).toBeTruthy();
       expect(deleteResult?.content).toContain('成功从Wiki工作空间');
     });
 
     it('should handle workspace not found error', async () => {
       const hooks = createAgentFrameworkHooks();
-      wikiOperationPlugin(hooks);
+      wikiOperationTool(hooks);
 
       // Use an actual tool_use payload with a nonexistent workspace
-      const handlerContext = makeHandlerContext();
+      const agentFrameworkContext = makeagentFrameworkContext();
 
       const context = {
-        handlerContext,
-        handlerConfig: {
-          plugins: [{ pluginId: 'wikiOperation', wikiOperationParam: {} }],
+        agentFrameworkContext,
+        agentFrameworkConfig: {
+          plugins: [{ toolId: 'wikiOperation', wikiOperationParam: {} }],
         },
         response: {
           status: 'done',
@@ -374,9 +374,9 @@ describe('wikiOperationPlugin', () => {
       };
 
       // Add assistant message so plugin can detect the tool call
-      handlerContext.agent.messages.push({
+      agentFrameworkContext.agent.messages.push({
         id: `m-${Date.now()}`,
-        agentId: handlerContext.agent.id,
+        agentId: agentFrameworkContext.agent.id,
         role: 'assistant',
         content: context.response.content,
         modified: new Date(),
@@ -390,9 +390,9 @@ describe('wikiOperationPlugin', () => {
       context.response.content = `<tool_use name="wiki-operation">${JSON.stringify(badParams)}</tool_use>`;
 
       const respCtx4: AIResponseContext = {
-        handlerContext,
-        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatTool,
-        handlerConfig: context.handlerConfig as { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
+        agentFrameworkContext,
+        toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
+        agentFrameworkConfig: context.agentFrameworkConfig as { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
         response: { requestId: 'r-error', content: context.response.content, status: 'done' } as AIStreamResponse,
         actions: {} as ToolActions,
         requestId: 'r-error',
@@ -400,7 +400,7 @@ describe('wikiOperationPlugin', () => {
       };
       await hooks.responseComplete.promise(respCtx4);
 
-      const errResult = handlerContext.agent.messages.find(m => m.metadata?.isToolResult);
+      const errResult = agentFrameworkContext.agent.messages.find(m => m.metadata?.isToolResult);
       expect(errResult).toBeTruthy();
       expect(errResult?.content).toContain('工作空间名称或ID');
       // Ensure control is yielded to self on error so AI gets the next round
@@ -409,16 +409,16 @@ describe('wikiOperationPlugin', () => {
 
     it('should not execute when tool call is not found', async () => {
       const hooks = createAgentFrameworkHooks();
-      wikiOperationPlugin(hooks);
+      wikiOperationTool(hooks);
 
       // No tool_use in response
 
-      const handlerContext = makeHandlerContext();
+      const agentFrameworkContext = makeagentFrameworkContext();
 
       const context = {
-        handlerContext,
-        handlerConfig: {
-          plugins: [{ pluginId: 'wikiOperation', wikiOperationParam: {} }],
+        agentFrameworkContext,
+        agentFrameworkConfig: {
+          plugins: [{ toolId: 'wikiOperation', wikiOperationParam: {} }],
         },
         response: {
           status: 'done' as const,
@@ -428,9 +428,9 @@ describe('wikiOperationPlugin', () => {
       };
 
       await hooks.responseComplete.promise({
-        handlerContext,
-        pluginConfig: context.handlerConfig?.plugins?.[0] as unknown as IPromptConcatTool,
-        handlerConfig: context.handlerConfig as { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
+        agentFrameworkContext,
+        toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
+        agentFrameworkConfig: context.agentFrameworkConfig as { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
         response: { requestId: 'r-none', content: context.response.content, status: 'done' } as AIStreamResponse,
         actions: {} as ToolActions,
         requestId: 'r-none',
@@ -439,7 +439,7 @@ describe('wikiOperationPlugin', () => {
 
       const wikiLocalAssert = container.get<Partial<IWikiService>>(serviceIdentifier.Wiki);
       expect(wikiLocalAssert.wikiOperationInServer).not.toHaveBeenCalled();
-      expect(handlerContext.agent.messages).toHaveLength(0);
+      expect(agentFrameworkContext.agent.messages).toHaveLength(0);
     });
   });
 });

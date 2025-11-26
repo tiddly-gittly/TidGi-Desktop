@@ -97,7 +97,7 @@ describe('basicPromptConcatHandler - failure path persists error message and log
         handlerID: 'basicPromptConcatHandler',
         handlerConfig: {
           plugins: [
-            { pluginId: 'wikiOperation', wikiOperationParam: {} },
+            { toolId: 'wikiOperation', wikiOperationParam: {} },
           ],
         },
       });

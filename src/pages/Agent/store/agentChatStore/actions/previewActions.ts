@@ -113,7 +113,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
           next: (state) => {
             // Update progress and current step
             const stepDescription = state.step === 'plugin'
-              ? `Processing plugin: ${state.currentPlugin?.pluginId || 'unknown'}`
+              ? `Processing tool: ${state.currentPlugin?.toolId || 'unknown'}`
               : state.step === 'finalize'
               ? 'Finalizing prompts...'
               : state.step === 'flatten'
@@ -123,7 +123,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
             set({
               previewProgress: state.progress,
               previewCurrentStep: stepDescription,
-              previewCurrentPlugin: state.currentPlugin?.pluginId || null,
+              previewCurrentPlugin: state.currentPlugin?.toolId || null,
               // Update intermediate results
               previewResult: {
                 flatPrompts: state.flatPrompts,

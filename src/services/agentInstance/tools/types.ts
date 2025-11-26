@@ -27,7 +27,7 @@ export interface ToolActions {
  */
 export interface BaseToolContext {
   /** Framework context */
-  handlerContext: AgentFrameworkContext;
+  agentFrameworkContext: AgentFrameworkContext;
   /** Additional context data */
   metadata?: Record<string, unknown>;
   /** Actions set by tools during processing */
@@ -43,7 +43,7 @@ export interface PromptConcatHookContext extends BaseToolContext {
   /** Current prompt tree */
   prompts: IPrompt[];
   /** Tool configuration */
-  pluginConfig: IPromptConcatTool;
+  toolConfig: IPromptConcatTool;
 }
 
 /**
@@ -61,9 +61,9 @@ export interface PostProcessContext extends PromptConcatHookContext {
  */
 export interface AIResponseContext extends BaseToolContext {
   /** Tool configuration - for backward compatibility */
-  pluginConfig: IPromptConcatTool;
+  toolConfig: IPromptConcatTool;
   /** Complete framework configuration - allows tools to access all configs */
-  handlerConfig?: { plugins?: Array<{ pluginId: string; [key: string]: unknown }> };
+  agentFrameworkConfig?: { plugins?: Array<{ toolId: string; [key: string]: unknown }> };
   /** AI streaming response */
   response: AIStreamResponse;
   /** Current request ID */

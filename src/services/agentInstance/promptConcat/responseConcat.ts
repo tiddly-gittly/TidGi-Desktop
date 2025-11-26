@@ -39,32 +39,33 @@ export async function responseConcat(
   });
 
   const { handlerConfig } = agentConfig;
-  const responses: HandlerConfig['response'] = Array.isArray(handlerConfig.response) ? handlerConfig.response : [];
-  const plugins = (Array.isArray(handlerConfig.plugins) ? handlerConfig.plugins : []) as IPromptConcatTool[];
+  const agentFrameworkConfig = handlerConfig;
+  const responses: HandlerConfig['response'] = Array.isArray(agentFrameworkConfig.response) ? agentFrameworkConfig.response : [];
+  const toolConfigs = (Array.isArray(agentFrameworkConfig.plugins) ? agentFrameworkConfig.plugins : []) as IPromptConcatTool[];
 
   let modifiedResponses = cloneDeep(responses) as AgentResponse[];
   // Create hooks instance
   const hooks = createAgentFrameworkHooks();
-  // Register all plugins from configuration
-  for (const plugin of plugins) {
-    const builtInPlugin = builtInTools.get(plugin.pluginId);
-    if (builtInPlugin) {
-      builtInPlugin(hooks);
+  // Register all tools from configuration
+  for (const tool of toolConfigs) {
+    const builtInTool = builtInTools.get(tool.toolId);
+    if (builtInTool) {
+      builtInTool(hooks);
     } else {
-      logger.warn(`No built-in plugin found for response pluginId: ${plugin.pluginId}`);
+      logger.warn(`No built-in tool found for response toolId: ${tool.toolId}`);
     }
   }
 
-  // Process each plugin through hooks
+  // Process each tool through hooks
   let yieldNextRoundTo: YieldNextRoundTarget | undefined;
   let toolCallInfo: ToolCallingMatch | undefined;
 
-  for (const plugin of plugins) {
+  for (const tool of toolConfigs) {
     const responseContext: PostProcessContext = {
-      handlerContext: context,
+      agentFrameworkContext: context,
       messages,
       prompts: [], // Not used in response processing
-      pluginConfig: plugin,
+      toolConfig: tool,
       llmResponse,
       responses: modifiedResponses,
       metadata: {},
@@ -78,31 +79,31 @@ export async function responseConcat(
         modifiedResponses = result.responses;
       }
 
-      // Check if plugin indicated need for new LLM call via actions
+      // Check if tool indicated need for new LLM call via actions
       if (result.actions?.yieldNextRoundTo) {
         yieldNextRoundTo = result.actions.yieldNextRoundTo;
         if (result.actions.toolCalling) {
           toolCallInfo = result.actions.toolCalling;
         }
-        logger.debug('Plugin requested yield next round', {
-          pluginId: plugin.pluginId,
-          pluginInstanceId: plugin.id,
+        logger.debug('Tool requested yield next round', {
+          toolId: tool.toolId,
+          toolInstanceId: tool.id,
           yieldNextRoundTo,
           hasToolCall: !!result.actions.toolCalling,
         });
       }
 
-      logger.debug('Response plugin processed successfully', {
-        pluginId: plugin.pluginId,
-        pluginInstanceId: plugin.id,
+      logger.debug('Response tool processed successfully', {
+        toolId: tool.toolId,
+        toolInstanceId: tool.id,
       });
     } catch (error) {
-      logger.error('Response plugin processing error', {
-        pluginId: plugin.pluginId,
-        pluginInstanceId: plugin.id,
+      logger.error('Response tool processing error', {
+        toolId: tool.toolId,
+        toolInstanceId: tool.id,
         error,
       });
-      // Continue processing other plugins even if one fails
+      // Continue processing other tools even if one fails
     }
   }
 

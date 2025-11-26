@@ -9,7 +9,7 @@ export type { AgentResponse, PromptConcatHookContext, PromptConcatHooks, PromptC
 export type { PromptConcatTool as PromptConcatPlugin };
 
 /**
- * Registry for built-in tools
+ * Registry for built-in framework tools
  */
 export const builtInTools = new Map<string, PromptConcatTool>();
 
@@ -36,7 +36,7 @@ export function createAgentFrameworkHooks(): PromptConcatHooks {
  */
 async function getAllTools() {
   const [
-    promptPluginsModule,
+    promptToolsModule,
     wikiSearchModule,
     wikiOperationModule,
     workspacesListModule,
@@ -50,40 +50,40 @@ async function getAllTools() {
   ]);
 
   return {
-    messageManagementPlugin: messageManagementModule.messageManagementPlugin,
-    fullReplacementPlugin: promptPluginsModule.fullReplacementPlugin,
-    wikiSearchPlugin: wikiSearchModule.wikiSearchPlugin,
-    wikiOperationPlugin: wikiOperationModule.wikiOperationPlugin,
-    workspacesListPlugin: workspacesListModule.workspacesListPlugin,
+    messageManagement: messageManagementModule.messageManagementTool,
+    fullReplacement: promptToolsModule.fullReplacementTool,
+    wikiSearch: wikiSearchModule.wikiSearchTool,
+    wikiOperation: wikiOperationModule.wikiOperationTool,
+    workspacesList: workspacesListModule.workspacesListTool,
   };
 }
 
 /**
  * Register tools to hooks based on framework configuration
  * @param hooks - The hooks instance to register tools to
- * @param frameworkConfig - The framework configuration containing tool settings
+ * @param agentFrameworkConfig - The framework configuration containing tool settings
  */
 export async function registerToolsToHooksFromConfig(
   hooks: PromptConcatHooks,
-  frameworkConfig: { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
+  agentFrameworkConfig: { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
 ): Promise<void> {
   // Always register core tools that are needed for basic functionality
   const messageManagementModule = await import('./messageManagement');
-  messageManagementModule.messageManagementPlugin(hooks);
-  logger.debug('Registered messageManagementPlugin to hooks');
+  messageManagementModule.messageManagementTool(hooks);
+  logger.debug('Registered messageManagementTool to hooks');
 
   // Register tools based on framework configuration
-  if (frameworkConfig.plugins) {
-    for (const pluginConfig of frameworkConfig.plugins) {
-      const { pluginId } = pluginConfig;
+  if (agentFrameworkConfig.plugins) {
+    for (const toolConfig of agentFrameworkConfig.plugins) {
+      const { toolId } = toolConfig;
 
       // Get tool from global registry (supports both built-in and dynamic tools)
-      const plugin = builtInTools.get(pluginId);
-      if (plugin) {
-        plugin(hooks);
-        logger.debug(`Registered tool ${pluginId} to hooks`);
+      const tool = builtInTools.get(toolId);
+      if (tool) {
+        tool(hooks);
+        logger.debug(`Registered tool ${toolId} to hooks`);
       } else {
-        logger.warn(`Tool not found in registry: ${pluginId}`);
+        logger.warn(`Tool not found in registry: ${toolId}`);
       }
     }
   }
@@ -96,7 +96,7 @@ export async function registerToolsToHooksFromConfig(
 export async function initializeToolSystem(): Promise<void> {
   // Import tool schemas and register them
   const [
-    promptPluginsModule,
+    promptToolsModule,
     wikiSearchModule,
     wikiOperationModule,
     workspacesListModule,
@@ -112,7 +112,7 @@ export async function initializeToolSystem(): Promise<void> {
   // Register tool parameter schemas
   registerToolParameterSchema(
     'fullReplacement',
-    promptPluginsModule.getFullReplacementParameterSchema(),
+    promptToolsModule.getFullReplacementParameterSchema(),
     {
       displayName: 'Full Replacement',
       description: 'Replace target content with content from specified source',
@@ -121,7 +121,7 @@ export async function initializeToolSystem(): Promise<void> {
 
   registerToolParameterSchema(
     'dynamicPosition',
-    promptPluginsModule.getDynamicPositionParameterSchema(),
+    promptToolsModule.getDynamicPositionParameterSchema(),
     {
       displayName: 'Dynamic Position',
       description: 'Insert content at a specific position relative to a target element',
@@ -164,13 +164,13 @@ export async function initializeToolSystem(): Promise<void> {
     },
   );
 
-  const plugins = await getAllTools();
+  const tools = await getAllTools();
   // Register all built-in tools to global registry for discovery
-  builtInTools.set('messageManagement', plugins.messageManagementPlugin);
-  builtInTools.set('fullReplacement', plugins.fullReplacementPlugin);
-  builtInTools.set('wikiSearch', plugins.wikiSearchPlugin);
-  builtInTools.set('wikiOperation', plugins.wikiOperationPlugin);
-  builtInTools.set('workspacesList', plugins.workspacesListPlugin);
+  builtInTools.set('messageManagement', tools.messageManagement);
+  builtInTools.set('fullReplacement', tools.fullReplacement);
+  builtInTools.set('wikiSearch', tools.wikiSearch);
+  builtInTools.set('wikiOperation', tools.wikiOperation);
+  builtInTools.set('workspacesList', tools.workspacesList);
   logger.debug('All built-in tools and schemas registered successfully');
 }
 
@@ -179,12 +179,12 @@ export async function initializeToolSystem(): Promise<void> {
  * This creates a new hooks instance and registers tools for that specific context
  */
 export async function createHooksWithTools(
-  frameworkConfig: { plugins?: Array<{ pluginId: string; [key: string]: unknown }> },
-): Promise<{ hooks: PromptConcatHooks; pluginConfigs: Array<{ pluginId: string; [key: string]: unknown }> }> {
+  agentFrameworkConfig: { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
+): Promise<{ hooks: PromptConcatHooks; toolConfigs: Array<{ toolId: string; [key: string]: unknown }> }> {
   const hooks = createAgentFrameworkHooks();
-  await registerToolsToHooksFromConfig(hooks, frameworkConfig);
+  await registerToolsToHooksFromConfig(hooks, agentFrameworkConfig);
   return {
     hooks,
-    pluginConfigs: frameworkConfig.plugins || [],
+    toolConfigs: agentFrameworkConfig.plugins || [],
   };
 }

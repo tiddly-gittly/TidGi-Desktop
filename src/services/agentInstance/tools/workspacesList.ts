@@ -51,17 +51,17 @@ import type { PromptConcatTool } from './types';
  * Workspaces List plugin - Prompt processing
  * Handles injection of available wiki workspaces list
  */
-export const workspacesListPlugin: PromptConcatTool = (hooks) => {
+export const workspacesListTool: PromptConcatTool = (hooks) => {
   // Tool list injection
-  hooks.processPrompts.tapAsync('workspacesListPlugin-injection', async (context, callback) => {
-    const { pluginConfig, prompts } = context;
+  hooks.processPrompts.tapAsync('workspacesListTool-injection', async (context, callback) => {
+    const { toolConfig, prompts } = context;
 
-    if (pluginConfig.pluginId !== 'workspacesList' || !pluginConfig.workspacesListParam) {
+    if (toolConfig.toolId !== 'workspacesList' || !toolConfig.workspacesListParam) {
       callback();
       return;
     }
 
-    const workspacesListParameter = pluginConfig.workspacesListParam;
+    const workspacesListParameter = toolConfig.workspacesListParam;
 
     try {
       // Handle workspaces list injection if targetId is configured
@@ -70,7 +70,7 @@ export const workspacesListPlugin: PromptConcatTool = (hooks) => {
         if (!target) {
           logger.warn('Workspaces list target prompt not found', {
             targetId: workspacesListParameter.targetId,
-            pluginId: pluginConfig.id,
+            toolId: toolConfig.id,
           });
           callback();
           return;
@@ -96,7 +96,7 @@ export const workspacesListPlugin: PromptConcatTool = (hooks) => {
             }
             const insertIndex = target.prompt.children.length;
             target.prompt.children.splice(insertIndex, 0, {
-              id: `workspaces-list-${pluginConfig.id}`,
+              id: `workspaces-list-${toolConfig.id}`,
               caption: 'Available Workspaces',
               text: workspacesListContent,
             });
@@ -105,7 +105,7 @@ export const workspacesListPlugin: PromptConcatTool = (hooks) => {
               target.prompt.children = [];
             }
             target.prompt.children.unshift({
-              id: `workspaces-list-${pluginConfig.id}`,
+              id: `workspaces-list-${toolConfig.id}`,
               caption: 'Available Workspaces',
               text: workspacesListContent,
             });
@@ -117,12 +117,12 @@ export const workspacesListPlugin: PromptConcatTool = (hooks) => {
           logger.debug('Workspaces list injected successfully', {
             targetId: workspacesListParameter.targetId,
             position: workspacesListParameter.position,
-            pluginId: pluginConfig.id,
+            toolId: toolConfig.id,
             workspaceCount: wikiWorkspaces.length,
           });
         } else {
           logger.debug('No wiki workspaces found to inject', {
-            pluginId: pluginConfig.id,
+            toolId: toolConfig.id,
           });
         }
       }
@@ -131,7 +131,7 @@ export const workspacesListPlugin: PromptConcatTool = (hooks) => {
     } catch (error) {
       logger.error('Error in workspaces list injection', {
         error,
-        pluginId: pluginConfig.id,
+        toolId: toolConfig.id,
       });
       callback();
     }

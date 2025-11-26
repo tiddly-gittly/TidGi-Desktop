@@ -1,5 +1,5 @@
-/**
- * Tests for workspacesListPlugin
+﻿/**
+ * Tests for workspacesListTool
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -14,9 +14,9 @@ import type { PromptConcatHookContext } from '../types';
 
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { createAgentFrameworkHooks } from '../index';
-import { workspacesListPlugin } from '../workspacesList';
+import { workspacesListTool } from '../workspacesList';
 
-describe('workspacesListPlugin', () => {
+describe('workspacesListTool', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
   });
@@ -28,10 +28,10 @@ describe('workspacesListPlugin', () => {
   describe('workspaces list injection', () => {
     it('should inject workspaces list when plugin is configured', async () => {
       const hooks = createAgentFrameworkHooks();
-      workspacesListPlugin(hooks);
+      workspacesListTool(hooks);
 
       const context: PromptConcatHookContext = {
-        handlerContext: {
+        agentFrameworkContext: {
           agent: {
             id: 'test-agent',
             agentDefId: 'test-agent-def',
@@ -50,11 +50,11 @@ describe('workspacesListPlugin', () => {
             children: [],
           },
         ],
-        pluginConfig: {
+        toolConfig: {
           id: 'test-plugin',
           caption: 'Test Plugin',
           forbidOverrides: false,
-          pluginId: 'workspacesList',
+          toolId: 'workspacesList',
           workspacesListParam: {
             targetId: 'target-prompt',
             position: 'after' as const,
@@ -75,10 +75,10 @@ describe('workspacesListPlugin', () => {
 
     it('should inject workspaces list when position is before', async () => {
       const hooks = createAgentFrameworkHooks();
-      workspacesListPlugin(hooks);
+      workspacesListTool(hooks);
 
       const context: PromptConcatHookContext = {
-        handlerContext: {
+        agentFrameworkContext: {
           agent: {
             id: 'test-agent',
             agentDefId: 'test-agent-def',
@@ -97,11 +97,11 @@ describe('workspacesListPlugin', () => {
             children: [],
           },
         ],
-        pluginConfig: {
+        toolConfig: {
           id: 'test-plugin',
           caption: 'Test Plugin',
           forbidOverrides: false,
-          pluginId: 'workspacesList',
+          toolId: 'workspacesList',
           workspacesListParam: {
             targetId: 'target-prompt',
             position: 'before' as const,
@@ -119,10 +119,10 @@ describe('workspacesListPlugin', () => {
 
     it('should not inject content when plugin is not configured', async () => {
       const hooks = createAgentFrameworkHooks();
-      workspacesListPlugin(hooks);
+      workspacesListTool(hooks);
 
       const context: PromptConcatHookContext = {
-        handlerContext: {
+        agentFrameworkContext: {
           agent: {
             id: 'test-agent',
             agentDefId: 'test-agent-def',
@@ -141,7 +141,7 @@ describe('workspacesListPlugin', () => {
             children: [],
           },
         ],
-        pluginConfig: { id: 'test-plugin', pluginId: 'otherPlugin', forbidOverrides: false } as unknown as IPromptConcatTool,
+        toolConfig: { id: 'test-plugin', pluginId: 'otherPlugin', forbidOverrides: false } as unknown as IPromptConcatTool,
       };
 
       await hooks.processPrompts.promise(context);
@@ -156,10 +156,10 @@ describe('workspacesListPlugin', () => {
       workspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([]) as unknown as IWorkspaceService['getWorkspacesAsList'];
 
       const hooks = createAgentFrameworkHooks();
-      workspacesListPlugin(hooks);
+      workspacesListTool(hooks);
 
       const context: PromptConcatHookContext = {
-        handlerContext: {
+        agentFrameworkContext: {
           agent: {
             id: 'test-agent',
             agentDefId: 'test-agent-def',
@@ -178,11 +178,11 @@ describe('workspacesListPlugin', () => {
             children: [],
           },
         ],
-        pluginConfig: {
+        toolConfig: {
           id: 'test-plugin',
           caption: 'Test Plugin',
           forbidOverrides: false,
-          pluginId: 'workspacesList',
+          toolId: 'workspacesList',
           workspacesListParam: {
             targetId: 'target-prompt',
             position: 'after' as const,
@@ -195,16 +195,16 @@ describe('workspacesListPlugin', () => {
       const targetPrompt = context.prompts[0];
       expect(targetPrompt.children).toHaveLength(0);
       expect(logger.debug).toHaveBeenCalledWith('No wiki workspaces found to inject', {
-        pluginId: 'test-plugin',
+        toolId: 'test-plugin',
       });
     });
 
     it('should warn when target prompt is not found', async () => {
       const hooks = createAgentFrameworkHooks();
-      workspacesListPlugin(hooks);
+      workspacesListTool(hooks);
 
       const context: PromptConcatHookContext = {
-        handlerContext: {
+        agentFrameworkContext: {
           agent: {
             id: 'test-agent',
             agentDefId: 'test-agent-def',
@@ -223,11 +223,11 @@ describe('workspacesListPlugin', () => {
             children: [],
           },
         ],
-        pluginConfig: {
+        toolConfig: {
           id: 'test-plugin',
           caption: 'Test Plugin',
           forbidOverrides: false,
-          pluginId: 'workspacesList',
+          toolId: 'workspacesList',
           workspacesListParam: {
             targetId: 'non-existent-prompt',
             position: 'after' as const,
@@ -239,7 +239,7 @@ describe('workspacesListPlugin', () => {
 
       expect(logger.warn).toHaveBeenCalledWith('Workspaces list target prompt not found', {
         targetId: 'non-existent-prompt',
-        pluginId: 'test-plugin',
+        toolId: 'test-plugin',
       });
     });
   });

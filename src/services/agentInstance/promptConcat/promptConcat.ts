@@ -10,7 +10,7 @@
  * Main Concepts:
  * - Prompts are tree-structured, can have roles (system/user/assistant) and children.
  * - Plugins use hooks to modify the prompt tree at runtime.
- * - Built-in plugins are registered by pluginId and executed when matching plugins are found.
+ * - Built-in tools are registered by toolId and executed when matching tools are found.
  */
 
 import { logger } from '@services/libs/log';
@@ -205,38 +205,39 @@ export interface PromptConcatStreamState {
 export async function* promptConcatStream(
   agentConfig: Pick<AgentPromptDescription, 'handlerConfig'>,
   messages: AgentInstanceMessage[],
-  handlerContext: AgentFrameworkContext,
+  agentFrameworkContext: AgentFrameworkContext,
 ): AsyncGenerator<PromptConcatStreamState, PromptConcatStreamState, unknown> {
-  const promptConfigs = Array.isArray(agentConfig.handlerConfig.prompts) ? agentConfig.handlerConfig.prompts : [];
-  const pluginConfigs = (Array.isArray(agentConfig.handlerConfig.plugins) ? agentConfig.handlerConfig.plugins : []) as IPromptConcatTool[];
+  const agentFrameworkConfig = agentConfig.handlerConfig;
+  const promptConfigs = Array.isArray(agentFrameworkConfig.prompts) ? agentFrameworkConfig.prompts : [];
+  const toolConfigs = (Array.isArray(agentFrameworkConfig.plugins) ? agentFrameworkConfig.plugins : []) as IPromptConcatTool[];
   const promptsCopy = cloneDeep(promptConfigs);
-  const sourcePaths = generateSourcePaths(promptsCopy, pluginConfigs);
+  const sourcePaths = generateSourcePaths(promptsCopy, toolConfigs);
 
   const hooks = createAgentFrameworkHooks();
-  // Register plugins that match the configuration
-  for (const plugin of pluginConfigs) {
-    const builtInPlugin = builtInTools.get(plugin.pluginId);
-    if (builtInPlugin) {
-      builtInPlugin(hooks);
-      logger.debug('Registered plugin', {
-        pluginId: plugin.pluginId,
-        pluginInstanceId: plugin.id,
+  // Register tools that match the configuration
+  for (const tool of toolConfigs) {
+    const builtInTool = builtInTools.get(tool.toolId);
+    if (builtInTool) {
+      builtInTool(hooks);
+      logger.debug('Registered tool', {
+        toolId: tool.toolId,
+        toolInstanceId: tool.id,
       });
     } else {
-      logger.info(`No built-in plugin found for pluginId: ${plugin.pluginId}`);
+      logger.info(`No built-in tool found for toolId: ${tool.toolId}`);
     }
   }
 
   // Process each plugin through hooks with streaming
   let modifiedPrompts = promptsCopy;
-  const totalSteps = pluginConfigs.length + 2; // plugins + finalize + flatten
+  const totalSteps = toolConfigs.length + 2; // plugins + finalize + flatten
 
-  for (let index = 0; index < pluginConfigs.length; index++) {
+  for (let index = 0; index < toolConfigs.length; index++) {
     const context: PromptConcatHookContext = {
-      handlerContext,
+      agentFrameworkContext: agentFrameworkContext,
       messages,
       prompts: modifiedPrompts,
-      pluginConfig: pluginConfigs[index],
+      toolConfig: toolConfigs[index],
       metadata: { sourcePaths },
     };
     try {
@@ -255,13 +256,13 @@ export async function* promptConcatStream(
         processedPrompts: modifiedPrompts,
         flatPrompts: intermediateFlat,
         step: 'plugin',
-        currentPlugin: pluginConfigs[index],
+        currentPlugin: toolConfigs[index],
         progress: (index + 1) / totalSteps,
         isComplete: false,
       };
     } catch (error) {
       logger.error('Plugin processing error', {
-        pluginConfig: pluginConfigs[index],
+        toolConfig: toolConfigs[index],
         error,
       });
       // Continue processing other plugins even if one fails
@@ -273,15 +274,15 @@ export async function* promptConcatStream(
     processedPrompts: modifiedPrompts,
     flatPrompts: flattenPrompts(modifiedPrompts),
     step: 'finalize',
-    progress: (pluginConfigs.length + 1) / totalSteps,
+    progress: (toolConfigs.length + 1) / totalSteps,
     isComplete: false,
   };
 
   const finalContext: PromptConcatHookContext = {
-    handlerContext,
+    agentFrameworkContext: agentFrameworkContext,
     messages,
     prompts: modifiedPrompts,
-    pluginConfig: {} as IPromptConcatTool, // Empty plugin for finalization
+    toolConfig: {} as IPromptConcatTool, // Empty plugin for finalization
     metadata: { sourcePaths },
   };
 
@@ -297,7 +298,7 @@ export async function* promptConcatStream(
     processedPrompts: modifiedPrompts,
     flatPrompts: flattenPrompts(modifiedPrompts),
     step: 'flatten',
-    progress: (pluginConfigs.length + 2) / totalSteps,
+    progress: (toolConfigs.length + 2) / totalSteps,
     isComplete: false,
   };
 
@@ -343,13 +344,13 @@ export async function* promptConcatStream(
 export async function promptConcat(
   agentConfig: Pick<AgentPromptDescription, 'handlerConfig'>,
   messages: AgentInstanceMessage[],
-  handlerContext: AgentFrameworkContext,
+  agentFrameworkContext: AgentFrameworkContext,
 ): Promise<{
   flatPrompts: ModelMessage[];
   processedPrompts: IPrompt[];
 }> {
   // Use the streaming version and just return the final result
-  const stream = promptConcatStream(agentConfig, messages, handlerContext);
+  const stream = promptConcatStream(agentConfig, messages, agentFrameworkContext);
   let finalResult: PromptConcatStreamState;
 
   // Consume all intermediate states to get the final result

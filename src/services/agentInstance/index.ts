@@ -384,7 +384,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       // Trigger userMessageReceived hook with the configured tools
       await frameworkHooks.userMessageReceived.promise({
-        handlerContext: frameworkContext,
+        agentFrameworkContext: frameworkContext,
         content,
         messageId,
         timestamp: now,
@@ -443,7 +443,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
           // Trigger agentStatusChanged hook for completion
           await frameworkHooks.agentStatusChanged.promise({
-            handlerContext: frameworkContext,
+            agentFrameworkContext: frameworkContext,
             status: {
               state: 'completed',
               modified: new Date(),
@@ -459,7 +459,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
         // Trigger agentStatusChanged hook for failure
         await frameworkHooks.agentStatusChanged.promise({
-          handlerContext: frameworkContext,
+          agentFrameworkContext: frameworkContext,
           status: {
             state: 'failed',
             modified: new Date(),

@@ -14,7 +14,7 @@ export type IPromptConcatTool = {
   caption?: string;
   content?: string;
   forbidOverrides?: boolean;
-  pluginId: string;
+  toolId: string;
 
   // Tool-specific parameters
   fullReplacementParam?: FullReplacementParameter;

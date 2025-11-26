@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Wiki Search plugin
  * Handles wiki search tool list injection, tool calling detection and response processing
  */
@@ -488,17 +488,17 @@ async function executeWikiUpdateEmbeddingsTool(
  * Wiki Search plugin - Prompt processing
  * Handles tool list injection for wiki search and update embeddings functionality
  */
-export const wikiSearchPlugin: PromptConcatTool = (hooks) => {
+export const wikiSearchTool: PromptConcatTool = (hooks) => {
   // First tapAsync: Tool list injection
-  hooks.processPrompts.tapAsync('wikiSearchPlugin-toolList', async (context, callback) => {
-    const { pluginConfig, prompts } = context;
+  hooks.processPrompts.tapAsync('wikiSearchTool-toolList', async (context, callback) => {
+    const { toolConfig, prompts } = context;
 
-    if (pluginConfig.pluginId !== 'wikiSearch' || !pluginConfig.wikiSearchParam) {
+    if (toolConfig.toolId !== 'wikiSearch' || !toolConfig.wikiSearchParam) {
       callback();
       return;
     }
 
-    const wikiSearchParameter = pluginConfig.wikiSearchParam;
+    const wikiSearchParameter = toolConfig.wikiSearchParam;
 
     try {
       // Handle tool list injection if toolListPosition is configured
@@ -508,7 +508,7 @@ export const wikiSearchPlugin: PromptConcatTool = (hooks) => {
         if (!toolListTarget) {
           logger.warn('Tool list target prompt not found', {
             targetId: toolListPosition.targetId,
-            pluginId: pluginConfig.id,
+            toolId: toolConfig.id,
           });
           callback();
           return;
@@ -544,7 +544,7 @@ export const wikiSearchPlugin: PromptConcatTool = (hooks) => {
           targetId: toolListPosition.targetId,
           position: toolListPosition.position,
           toolCount: 2, // wiki-search and wiki-update-embeddings
-          pluginId: pluginConfig.id,
+          toolId: toolConfig.id,
         });
       }
 
@@ -552,20 +552,20 @@ export const wikiSearchPlugin: PromptConcatTool = (hooks) => {
     } catch (error) {
       logger.error('Error in wiki search tool list injection', {
         error,
-        pluginId: pluginConfig.id,
+        toolId: toolConfig.id,
       });
       callback();
     }
   });
 
   // 2. Tool execution when AI response is complete
-  hooks.responseComplete.tapAsync('wikiSearchPlugin-handler', async (context, callback) => {
+  hooks.responseComplete.tapAsync('wikiSearchTool-handler', async (context, callback) => {
     try {
-      const { handlerContext, response, handlerConfig } = context;
+      const { agentFrameworkContext, response, agentFrameworkConfig } = context;
 
-      // Find this plugin's configuration from handlerConfig
-      const wikiSearchPluginConfig = handlerConfig?.plugins?.find(p => p.pluginId === 'wikiSearch');
-      const wikiSearchParameter = wikiSearchPluginConfig?.wikiSearchParam as { toolResultDuration?: number } | undefined;
+      // Find this plugin's configuration from agentFrameworkConfig
+      const wikiSearchToolConfig = agentFrameworkConfig?.plugins?.find((p: { toolId: string; [key: string]: unknown }) => p.toolId === 'wikiSearch');
+      const wikiSearchParameter = wikiSearchToolConfig?.wikiSearchParam as { toolResultDuration?: number } | undefined;
       const toolResultDuration = wikiSearchParameter?.toolResultDuration || 1; // Default to 1 round
 
       if (response.status !== 'done' || !response.content) {
@@ -583,12 +583,12 @@ export const wikiSearchPlugin: PromptConcatTool = (hooks) => {
 
       logger.debug('Wiki tool call detected', {
         toolId: toolMatch.toolId,
-        agentId: handlerContext.agent.id,
+        agentId: agentFrameworkContext.agent.id,
       });
 
       // Set duration=1 for the AI message containing the tool call
       // Find the most recent AI message (should be the one containing the tool call)
-      const aiMessages = handlerContext.agent.messages.filter(message => message.role === 'assistant');
+      const aiMessages = agentFrameworkContext.agent.messages.filter((message: AgentInstanceMessage) => message.role === 'assistant');
       if (aiMessages.length > 0) {
         const latestAiMessage = aiMessages[aiMessages.length - 1];
         if (latestAiMessage.content === response.content) {
@@ -614,7 +614,7 @@ export const wikiSearchPlugin: PromptConcatTool = (hooks) => {
           }
 
           // Also update UI immediately
-          agentInstanceService.debounceUpdateMessage(latestAiMessage, handlerContext.agent.id, 0); // No delay
+          agentInstanceService.debounceUpdateMessage(latestAiMessage, agentFrameworkContext.agent.id, 0); // No delay
 
           logger.debug('Set duration=1 for AI tool call message', {
             messageId: latestAiMessage.id,
@@ -626,10 +626,10 @@ export const wikiSearchPlugin: PromptConcatTool = (hooks) => {
       // Execute the appropriate tool
       try {
         // Check if cancelled before starting tool execution
-        if (handlerContext.isCancelled()) {
+        if (agentFrameworkContext.isCancelled()) {
           logger.debug('Wiki tool cancelled before execution', {
             toolId: toolMatch.toolId,
-            agentId: handlerContext.agent.id,
+            agentId: agentFrameworkContext.agent.id,
           });
           callback();
           return;
@@ -644,9 +644,9 @@ export const wikiSearchPlugin: PromptConcatTool = (hooks) => {
           result = await executeWikiSearchTool(
             validatedParameters,
             {
-              agentId: handlerContext.agent.id,
-              messageId: handlerContext.agent.messages[handlerContext.agent.messages.length - 1]?.id,
-              config: handlerContext.agent.aiApiConfig as AiAPIConfig | undefined,
+              agentId: agentFrameworkContext.agent.id,
+              messageId: agentFrameworkContext.agent.messages[agentFrameworkContext.agent.messages.length - 1]?.id,
+              config: agentFrameworkContext.agent.aiApiConfig as AiAPIConfig | undefined,
             },
           );
         } else {
@@ -655,18 +655,18 @@ export const wikiSearchPlugin: PromptConcatTool = (hooks) => {
           result = await executeWikiUpdateEmbeddingsTool(
             validatedParameters,
             {
-              agentId: handlerContext.agent.id,
-              messageId: handlerContext.agent.messages[handlerContext.agent.messages.length - 1]?.id,
-              aiConfig: handlerContext.agent.aiApiConfig,
+              agentId: agentFrameworkContext.agent.id,
+              messageId: agentFrameworkContext.agent.messages[agentFrameworkContext.agent.messages.length - 1]?.id,
+              aiConfig: agentFrameworkContext.agent.aiApiConfig,
             },
           );
         }
 
         // Check if cancelled after tool execution
-        if (handlerContext.isCancelled()) {
+        if (agentFrameworkContext.isCancelled()) {
           logger.debug('Wiki tool cancelled after execution', {
             toolId: toolMatch.toolId,
-            agentId: handlerContext.agent.id,
+            agentId: agentFrameworkContext.agent.id,
           });
           callback();
           return;
@@ -692,8 +692,8 @@ export const wikiSearchPlugin: PromptConcatTool = (hooks) => {
 
         logger.debug('Wiki search setting yieldNextRoundTo=self', {
           toolId: 'wiki-search',
-          agentId: handlerContext.agent.id,
-          messageCount: handlerContext.agent.messages.length,
+          agentId: agentFrameworkContext.agent.id,
+          messageCount: agentFrameworkContext.agent.messages.length,
           toolResultPreview: toolResultText.slice(0, 200),
         });
 
@@ -701,7 +701,7 @@ export const wikiSearchPlugin: PromptConcatTool = (hooks) => {
         const nowTool = new Date();
         const toolResultMessage: AgentInstanceMessage = {
           id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          agentId: handlerContext.agent.id,
+          agentId: agentFrameworkContext.agent.id,
           role: 'tool', // Tool result message
           content: toolResultText,
           created: nowTool,
@@ -717,13 +717,13 @@ export const wikiSearchPlugin: PromptConcatTool = (hooks) => {
             artificialOrder: Date.now() + 10, // Additional ordering hint
           },
         };
-        handlerContext.agent.messages.push(toolResultMessage);
+        agentFrameworkContext.agent.messages.push(toolResultMessage);
 
         // Do not persist immediately here. Let messageManagementPlugin handle persistence
 
         // Signal that tool was executed AFTER adding and persisting the message
         await hooks.toolExecuted.promise({
-          handlerContext,
+          agentFrameworkContext,
           toolResult: {
             success: true,
             data: result.success ? result.data : result.error,
@@ -765,7 +765,7 @@ Error: ${error instanceof Error ? error.message : String(error)}
         const nowError = new Date();
         const errorResultMessage: AgentInstanceMessage = {
           id: `tool-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          agentId: handlerContext.agent.id,
+          agentId: agentFrameworkContext.agent.id,
           role: 'tool', // Tool error message
           content: errorMessage,
           created: nowError,
@@ -779,11 +779,11 @@ Error: ${error instanceof Error ? error.message : String(error)}
             isComplete: true, // Mark as complete to prevent messageManagementPlugin from overwriting content
           },
         };
-        handlerContext.agent.messages.push(errorResultMessage);
+        agentFrameworkContext.agent.messages.push(errorResultMessage);
 
         // Do not persist immediately; let messageManagementPlugin handle it during toolExecuted
         await hooks.toolExecuted.promise({
-          handlerContext,
+          agentFrameworkContext,
           toolResult: {
             success: false,
             error: error instanceof Error ? error.message : String(error),
