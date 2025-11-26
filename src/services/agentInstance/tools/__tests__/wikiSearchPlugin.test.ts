@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Comprehensive tests for Wiki Search plugin
  * Covers tool list injection, tool execution, duration mechanism, message persistence, and integration scenarios
  */
@@ -53,7 +53,7 @@ vi.mock('@services/libs/i18n', () => ({
 
 // Use the real agent config
 const exampleAgent = defaultAgents[0];
-const handlerConfig = exampleAgent.handlerConfig as AgentPromptDescription['handlerConfig'];
+const agentFrameworkConfig = (exampleAgent.agentFrameworkConfig || {}) as AgentPromptDescription['agentFrameworkConfig'];
 
 // Services will be retrieved from container on demand inside each test/describe
 
@@ -77,7 +77,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
 
     it('should inject wiki tools into prompts when configured', async () => {
       // Find the wiki search plugin config, make sure our default config
-      const wikiPlugin = handlerConfig.plugins.find((p: unknown): p is IPromptConcatTool => (p as IPromptConcatTool).toolId === 'wikiSearch');
+      const wikiPlugin = agentFrameworkConfig.plugins.find((p: unknown): p is IPromptConcatTool => (p as IPromptConcatTool).toolId === 'wikiSearch');
       expect(wikiPlugin).toBeDefined();
       if (!wikiPlugin) {
         // throw error to keep ts believe the plugin exists
@@ -89,7 +89,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       expect(wikiPlugin.wikiSearchParam?.toolListPosition).toBeDefined();
 
       // Create a copy of prompts to test modification
-      const prompts = cloneDeep(handlerConfig.prompts);
+      const prompts = cloneDeep(agentFrameworkConfig.prompts);
       const messages = [
         {
           id: 'user-1',
@@ -104,7 +104,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       const context: PromptConcatHookContext = {
         agentFrameworkContext: {
           agent: { id: 'test', messages: [], agentDefId: 'test', status: { state: 'working' as const, modified: new Date() }, created: new Date() },
-          agentDef: { id: 'test', name: 'test', handlerConfig: {} },
+          agentDef: { id: 'test', name: 'test', agentFrameworkConfig: {} },
           isCancelled: () => false,
         },
         toolConfig: wikiPlugin,
@@ -144,7 +144,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         },
       };
 
-      const prompts = cloneDeep(defaultAgents[0].handlerConfig.prompts);
+      const prompts = cloneDeep(defaultAgents[0].agentFrameworkConfig.prompts);
       const originalPromptsText = JSON.stringify(prompts);
 
       const context = {
@@ -173,7 +173,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
           status: { state: 'working' as const, modified: new Date() },
           created: new Date(),
         } as AgentInstance,
-        agentDef: { id: 'test', name: 'test', handlerConfig: {} } as AgentDefinition,
+        agentDef: { id: 'test', name: 'test', agentFrameworkConfig: {} } as AgentDefinition,
         isCancelled: () => false,
       };
       const hookContext: PromptConcatHookContext = {
@@ -222,7 +222,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
 
     it('should execute wiki search with correct duration=1 and trigger next round', async () => {
       // Find the real wikiSearch plugin config from taskAgents.json
-      const wikiPlugin = handlerConfig.plugins.find((p: unknown): p is IPromptConcatTool => (p as IPromptConcatTool).toolId === 'wikiSearch');
+      const wikiPlugin = agentFrameworkConfig.plugins.find((p: unknown): p is IPromptConcatTool => (p as IPromptConcatTool).toolId === 'wikiSearch');
       expect(wikiPlugin).toBeDefined();
       expect(wikiPlugin!.wikiSearchParam).toBeDefined();
 
@@ -258,7 +258,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 
@@ -352,7 +352,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 
@@ -450,7 +450,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 
@@ -507,7 +507,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
           status: { state: 'working' as const, modified: new Date() },
           created: new Date(),
         } as AgentInstance,
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} } as AgentDefinition,
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} } as AgentDefinition,
         isCancelled: () => false,
       };
 
@@ -627,7 +627,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 
@@ -724,7 +724,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 
@@ -795,7 +795,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 
@@ -859,7 +859,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
             },
           ],
         },
-        agentDef: { id: 'test-agent-def', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test-agent-def', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
 

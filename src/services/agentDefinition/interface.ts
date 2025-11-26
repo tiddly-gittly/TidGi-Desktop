@@ -42,10 +42,10 @@ export interface AgentDefinition {
   description?: string;
   /** Agent icon or avatar URL */
   avatarUrl?: string;
-  /** Agent handler function's id, we will find function by this id */
-  handlerID?: string;
-  /** Agent handler's config, specific to the handler. This is required to ensure agent has valid configuration. */
-  handlerConfig: Record<string, unknown>;
+  /** Agent framework function's id, we will find function by this id */
+  agentFrameworkID?: string;
+  /** Agent framework's config, specific to the framework. This is required to ensure agent has valid configuration. */
+  agentFrameworkConfig: Record<string, unknown>;
   /**
    * Overwrite the default AI configuration for this agent.
    * Priority is higher than the global default agent config.

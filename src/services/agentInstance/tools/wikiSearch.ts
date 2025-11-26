@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Wiki Search plugin
  * Handles wiki search tool list injection, tool calling detection and response processing
  */

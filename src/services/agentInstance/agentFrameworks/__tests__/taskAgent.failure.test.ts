@@ -33,7 +33,7 @@ function makeContext(agentId: string, agentDefId: string, messages: AgentInstanc
     agentDef: {
       id: agentDefId,
       name: 'Test Agent',
-      handlerConfig: {},
+      agentFrameworkConfig: {},
       aiApiConfig: { api: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } } as AiAPIConfig,
     },
     isCancelled: () => false,
@@ -94,8 +94,8 @@ describe('basicPromptConcatHandler - failure path persists error message and log
       vi.spyOn(agentDefSvc, 'getAgentDef').mockResolvedValue({
         id: 'def-1',
         name: 'Def 1',
-        handlerID: 'basicPromptConcatHandler',
-        handlerConfig: {
+        agentFrameworkID: 'basicPromptConcatHandler',
+        agentFrameworkConfig: {
           plugins: [
             { toolId: 'wikiOperation', wikiOperationParam: {} },
           ],

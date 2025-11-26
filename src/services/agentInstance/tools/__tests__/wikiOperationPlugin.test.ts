@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Tests for wikiOperationTool
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -59,7 +59,7 @@ const makeagentFrameworkContext = (agentId = 'test-agent'): AgentFrameworkContex
     status: { state: 'working', modified: new Date() },
     created: new Date(),
   } as unknown as AgentInstance,
-  agentDef: { id: 'test-agent-def', name: 'test-agent-def', handlerConfig: {} } as unknown as { id: string; name: string; handlerConfig: Record<string, unknown> },
+  agentDef: { id: 'test-agent-def', name: 'test-agent-def', agentFrameworkConfig: {} } as unknown as { id: string; name: string; agentFrameworkConfig: Record<string, unknown> },
   isCancelled: () => false,
 });
 
@@ -90,7 +90,7 @@ describe('wikiOperationTool', () => {
     const workspacesContext: PromptConcatHookContext = {
       agentFrameworkContext: {
         agent: { id: 'test-agent', messages: [], agentDefId: 'test', status: { state: 'working' as const, modified: new Date() }, created: new Date() },
-        agentDef: { id: 'test', name: 'test', handlerConfig: {} },
+        agentDef: { id: 'test', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       },
       messages: [],

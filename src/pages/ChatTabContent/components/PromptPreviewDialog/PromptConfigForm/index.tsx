@@ -3,7 +3,7 @@ import { IChangeEvent } from '@rjsf/core';
 import Form from '@rjsf/mui';
 import { ObjectFieldTemplateProps, RJSFSchema, RJSFValidationError } from '@rjsf/utils';
 import validator from '@rjsf/validator-ajv8';
-import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { agentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ErrorDisplay } from './components/ErrorDisplay';
@@ -37,9 +37,9 @@ interface PromptConfigFormProps {
   /** UI schema for layout customization */
   uiSchema?: Record<string, unknown>;
   /** Initial form data */
-  formData?: HandlerConfig;
+  formData?: agentFrameworkConfig;
   /** Change handler for form data */
-  onChange?: (formData: HandlerConfig) => void;
+  onChange?: (formData: agentFrameworkConfig) => void;
   /** Error handler for form validation errors */
   onError?: (errors: RJSFValidationError[]) => void;
   /** Whether the form is disabled */
@@ -87,7 +87,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
     onError?.(errors);
   }, [onError]);
 
-  const handleChange = useCallback((changeEvent: IChangeEvent<HandlerConfig>) => {
+  const handleChange = useCallback((changeEvent: IChangeEvent<agentFrameworkConfig>) => {
     const formData = changeEvent.formData;
     if (formData) {
       onChange?.(formData);

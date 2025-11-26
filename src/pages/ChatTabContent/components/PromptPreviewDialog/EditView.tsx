@@ -1,4 +1,4 @@
-import { useHandlerConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useHandlerConfigManagement';
+import { useAgentFrameworkConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement';
 import MonacoEditor from '@monaco-editor/react';
 import { Box, styled } from '@mui/material';
 import Tab from '@mui/material/Tab';
@@ -9,7 +9,7 @@ import React, { FC, SyntheticEvent, useCallback, useEffect, useState } from 'rea
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
-import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { agentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { useAgentChatStore } from '../../../Agent/store/agentChatStore/index';
 import { PromptConfigForm } from './PromptConfigForm';
 
@@ -40,11 +40,11 @@ export const EditView: FC<EditViewProps> = ({
   );
 
   const {
-    loading: handlerConfigLoading,
-    config: handlerConfig,
+    loading: agentFrameworkConfigLoading,
+    config: agentFrameworkConfig,
     schema: handlerSchema,
     handleConfigChange,
-  } = useHandlerConfigManagement({
+  } = useAgentFrameworkConfigManagement({
     agentDefId: agent?.agentDefId,
     agentId: agent?.id,
   });
@@ -98,7 +98,7 @@ export const EditView: FC<EditViewProps> = ({
   );
 
   const handleFormChange = useDebouncedCallback(
-    async (updatedConfig: HandlerConfig) => {
+    async (updatedConfig: agentFrameworkConfig) => {
       try {
         // Ensure the config change is fully persisted before proceeding
         await handleConfigChange(updatedConfig);
@@ -121,7 +121,7 @@ export const EditView: FC<EditViewProps> = ({
   const handleEditorChange = useCallback((value: string | undefined) => {
     if (!value) return;
     try {
-      const parsedConfig = JSON.parse(value) as HandlerConfig;
+      const parsedConfig = JSON.parse(value) as agentFrameworkConfig;
       void handleFormChange(parsedConfig);
     } catch (error) {
       void window.service.native.log('error', 'EditView: Invalid JSON in code editor:', { error });
@@ -163,16 +163,16 @@ export const EditView: FC<EditViewProps> = ({
         {editorMode === 'form' && (
           <PromptConfigForm
             schema={handlerSchema ?? {}}
-            formData={handlerConfig}
+            formData={agentFrameworkConfig}
             onChange={handleFormChange}
-            loading={handlerConfigLoading}
+            loading={agentFrameworkConfigLoading}
           />
         )}
         {editorMode === 'code' && (
           <MonacoEditor
             height='100%'
             defaultLanguage='json'
-            value={handlerConfig ? JSON.stringify(handlerConfig, null, 2) : '{}'}
+            value={agentFrameworkConfig ? JSON.stringify(agentFrameworkConfig, null, 2) : '{}'}
             onChange={handleEditorChange}
             options={{
               minimap: { enabled: true },

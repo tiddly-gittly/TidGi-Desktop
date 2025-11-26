@@ -302,35 +302,35 @@ export const agentActions = (
     }
   },
 
-  getHandlerId: async () => {
+  getAgentFrameworkId: async () => {
     try {
       const { agent, agentDef } = get();
-      if (agentDef?.handlerID) {
-        return agentDef.handlerID;
+      if (agentDef?.agentFrameworkID) {
+        return agentDef.agentFrameworkID;
       }
       if (agent?.agentDefId) {
         const fetchedAgentDefinition = await window.service.agentDefinition.getAgentDef(agent.agentDefId);
-        if (fetchedAgentDefinition?.handlerID) {
-          return fetchedAgentDefinition.handlerID;
+        if (fetchedAgentDefinition?.agentFrameworkID) {
+          return fetchedAgentDefinition.agentFrameworkID;
         }
       }
 
-      throw new Error('No active agent in store or handler ID not found');
+      throw new Error('No active agent in store or agent framework ID not found');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const finalError = new Error(`Failed to get handler ID: ${errorMessage}`);
+      const finalError = new Error(`Failed to get agent framework ID: ${errorMessage}`);
       set({ error: finalError });
       throw finalError;
     }
   },
 
   /**
-   * Get handler configuration schema for current handler
+   * Get framework configuration schema for current framework
    */
   getFrameworkConfigSchema: async () => {
     try {
-      const handlerId = await get().getHandlerId();
-      return await window.service.agentInstance.getFrameworkConfigSchema(handlerId);
+      const agentFrameworkId = await get().getAgentFrameworkId();
+      return await window.service.agentInstance.getFrameworkConfigSchema(agentFrameworkId);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const finalError = new Error(`Failed to get handler schema: ${errorMessage}`);

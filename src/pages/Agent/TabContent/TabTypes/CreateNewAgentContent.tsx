@@ -4,7 +4,7 @@ import { Box, Button, Container, Step, StepLabel, Stepper, TextField, Typography
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
-import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { nanoid } from 'nanoid';
 import React, { useEffect, useState } from 'react';
@@ -99,19 +99,19 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
   // Load schema when temporaryAgentDefinition is available
   useEffect(() => {
     const loadSchema = async () => {
-      if (temporaryAgentDefinition?.handlerID) {
+      if (temporaryAgentDefinition?.agentFrameworkID) {
         try {
-          const schema = await window.service.agentInstance.getFrameworkConfigSchema(temporaryAgentDefinition.handlerID);
+          const schema = await window.service.agentInstance.getFrameworkConfigSchema(temporaryAgentDefinition.agentFrameworkID);
           setPromptSchema(schema as RJSFSchema);
         } catch (error) {
-          console.error('Failed to load handler config schema:', error);
+          console.error('Failed to load framework config schema:', error);
           setPromptSchema(null);
         }
       }
     };
 
     void loadSchema();
-  }, [temporaryAgentDefinition?.handlerID]);
+  }, [temporaryAgentDefinition?.agentFrameworkID]);
 
   // Create preview agent when entering step 3
   useEffect(() => {
@@ -374,11 +374,11 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
                 <Box sx={{ mt: 2, height: 400, overflow: 'auto' }}>
                   <PromptConfigForm
                     schema={promptSchema}
-                    formData={(temporaryAgentDefinition.handlerConfig || {}) as HandlerConfig}
+                    formData={(temporaryAgentDefinition.agentFrameworkConfig || {}) as AgentFrameworkConfig}
                     onChange={(updatedConfig) => {
                       void handleAgentDefinitionChange({
                         ...temporaryAgentDefinition,
-                        handlerConfig: updatedConfig as Record<string, unknown>,
+                        agentFrameworkConfig: updatedConfig as Record<string, unknown>,
                       });
                     }}
                     loading={false}

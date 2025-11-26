@@ -2,7 +2,7 @@ import { Box, Button, CircularProgress, Container, Divider, TextField, Typograph
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
-import { HandlerConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -94,30 +94,30 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
     void loadAgentDefinition();
   }, [tab.agentDefId]);
 
-  // Load handler config schema
+  // Load framework config schema
   useEffect(() => {
     const loadSchema = async () => {
-      if (!agentDefinition?.handlerID) {
-        // No handlerID found
+      if (!agentDefinition?.agentFrameworkID) {
+        // No agentFrameworkID found
         return;
       }
 
       try {
         // Loading framework config schema
-        const schema = await window.service.agentInstance.getFrameworkConfigSchema(agentDefinition.handlerID);
+        const schema = await window.service.agentInstance.getFrameworkConfigSchema(agentDefinition.agentFrameworkID);
         // Schema loaded successfully
         setPromptSchema(schema);
       } catch (error) {
-        void window.service.native.log('error', 'EditAgentDefinitionContent: Failed to load handler config schema', {
+        void window.service.native.log('error', 'EditAgentDefinitionContent: Failed to load framework config schema', {
           error,
-          handlerID: agentDefinition.handlerID,
+          agentFrameworkID: agentDefinition.agentFrameworkID,
         });
-        console.error('Failed to load handler config schema:', error);
+        console.error('Failed to load framework config schema:', error);
       }
     };
 
     void loadSchema();
-  }, [agentDefinition?.handlerID]);
+  }, [agentDefinition?.agentFrameworkID]);
 
   // Auto-save to backend whenever agentDefinition changes (debounced)
   const saveToBackendDebounced = useDebouncedCallback(
@@ -235,7 +235,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
 
         return {
           ...previous,
-          handlerConfig: formData as Record<string, unknown>,
+          agentFrameworkConfig: formData as Record<string, unknown>,
         };
       },
     );
@@ -356,7 +356,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
               <Box sx={{ mt: 2 }} data-testid='edit-agent-prompt-form'>
                 <PromptConfigForm
                   schema={promptSchema}
-                  formData={agentDefinition.handlerConfig as HandlerConfig}
+                  formData={agentDefinition.agentFrameworkConfig as AgentFrameworkConfig}
                   onChange={handlePromptConfigChange}
                 />
               </Box>

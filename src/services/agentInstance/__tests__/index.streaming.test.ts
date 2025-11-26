@@ -73,7 +73,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
     // Mock agent definition service to return our test agent definition
     mockAgentDefinitionService.getAgentDef = vi.fn().mockResolvedValue({
       ...exampleAgent,
-      handlerID: 'basicPromptConcatHandler',
+      agentFrameworkID: 'basicPromptConcatHandler',
     });
     // Mock the getAgent method to return our test instance
     vi.spyOn(agentInstanceService, 'getAgent').mockResolvedValue(testAgentInstance);

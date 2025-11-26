@@ -14,8 +14,8 @@ export function createAgentInstanceData(agentDefinition: {
   name: string;
   avatarUrl?: string;
   aiApiConfig?: Record<string, unknown>;
-  handlerConfig?: Record<string, unknown>;
-  handlerID?: string;
+  agentFrameworkConfig?: Record<string, unknown>;
+  agentFrameworkID?: string;
 }): {
   instanceData: Omit<AgentInstance, 'created' | 'modified'>;
   instanceId: string;
@@ -31,7 +31,7 @@ export function createAgentInstanceData(agentDefinition: {
   };
 
   // Extract necessary fields from agent definition
-  const { avatarUrl, aiApiConfig, handlerID } = agentDefinition;
+  const { avatarUrl, aiApiConfig, agentFrameworkID } = agentDefinition;
 
   const instanceData = {
     id: instanceId,
@@ -40,9 +40,9 @@ export function createAgentInstanceData(agentDefinition: {
     status: initialStatus,
     avatarUrl,
     aiApiConfig,
-    // Don't copy handlerConfig to instance - it should fallback to definition
-    handlerConfig: undefined,
-    handlerID,
+    // Don't copy agentFrameworkConfig to instance - it should fallback to definition
+    agentFrameworkConfig: undefined,
+    agentFrameworkID,
     messages: [],
     closed: false,
   };
@@ -119,6 +119,6 @@ export const AGENT_INSTANCE_FIELDS = [
   'modified',
   'avatarUrl',
   'aiApiConfig',
-  'handlerConfig',
+  'agentFrameworkConfig',
   'closed',
 ] as const;

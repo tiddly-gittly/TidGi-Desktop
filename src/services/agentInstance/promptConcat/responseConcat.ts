@@ -11,7 +11,7 @@ import { AgentInstanceMessage } from '../interface';
 import { builtInTools, createAgentFrameworkHooks } from '../tools';
 import { AgentResponse, PostProcessContext, YieldNextRoundTarget } from '../tools/types';
 import type { IPromptConcatTool } from './promptConcatSchema';
-import { AgentPromptDescription, HandlerConfig } from './promptConcatSchema';
+import { AgentFrameworkConfig, AgentPromptDescription } from './promptConcatSchema';
 
 /**
  * Process response configuration, apply plugins, and return final response
@@ -38,9 +38,8 @@ export async function responseConcat(
     responseLength: llmResponse.length,
   });
 
-  const { handlerConfig } = agentConfig;
-  const agentFrameworkConfig = handlerConfig;
-  const responses: HandlerConfig['response'] = Array.isArray(agentFrameworkConfig.response) ? agentFrameworkConfig.response : [];
+  const { agentFrameworkConfig } = agentConfig;
+  const responses: AgentFrameworkConfig['response'] = Array.isArray(agentFrameworkConfig?.response) ? (agentFrameworkConfig?.response || []) : [];
   const toolConfigs = (Array.isArray(agentFrameworkConfig.plugins) ? agentFrameworkConfig.plugins : []) as IPromptConcatTool[];
 
   let modifiedResponses = cloneDeep(responses) as AgentResponse[];

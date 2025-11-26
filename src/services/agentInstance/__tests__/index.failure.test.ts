@@ -78,7 +78,7 @@ describe('AgentInstance failure path - external API logs on error', () => {
       agentDef: {
         id: 'def-1',
         name: 'Def 1',
-        handlerConfig: {},
+        agentFrameworkConfig: {},
         aiApiConfig: { api: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
       },
       isCancelled: () => false,

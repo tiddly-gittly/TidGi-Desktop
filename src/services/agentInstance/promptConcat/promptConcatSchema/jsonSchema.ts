@@ -11,7 +11,7 @@ import { getFrameworkConfigSchema } from './index';
  *
  * Description field is i18n key, use i18nAlly extension to see it on VSCode. And use react-i18next to translate it on frontend.
  */
-export function getPromptConcatHandlerConfigJsonSchema() {
+export function getPromptConcatAgentFrameworkConfigJsonSchema() {
   const dynamicFrameworkConfigSchema = getFrameworkConfigSchema();
   return z.toJSONSchema(dynamicFrameworkConfigSchema, { target: 'draft-7' });
 }

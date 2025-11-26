@@ -49,7 +49,7 @@ const mockAgentDefinition = {
   id: 'test-agent-def-id',
   name: 'Test Agent',
   description: 'A test agent for editing',
-  handlerID: 'testHandler',
+  agentFrameworkID: 'testHandler',
   config: {},
 };
 

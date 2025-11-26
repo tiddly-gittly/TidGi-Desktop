@@ -90,7 +90,7 @@ export interface BasicActions {
   cancelAgent: () => Promise<void>;
 
   /** Get the handler ID for the current agent */
-  getHandlerId: () => Promise<string>;
+  getAgentFrameworkId: () => Promise<string>;
 
   /** Get the configuration schema for the current handler */
   getFrameworkConfigSchema: () => Promise<Record<string, unknown>>;
@@ -188,12 +188,12 @@ export interface PreviewActions {
   /**
    * Generates a preview of prompts for the current agent state
    * @param inputText Input text to include in the preview
-   * @param handlerConfig Prompt configuration to use for preview
+   * @param agentFrameworkConfig Framework configuration to use for preview
    * @returns Promise that resolves when preview is generated and state is updated
    */
   getPreviewPromptResult: (
     inputText: string,
-    handlerConfig: AgentPromptDescription['handlerConfig'],
+    agentFrameworkConfig: AgentPromptDescription['agentFrameworkConfig'],
   ) => Promise<
     {
       flatPrompts: ModelMessage[];

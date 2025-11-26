@@ -203,13 +203,13 @@ export interface PromptConcatStreamState {
  * Yields intermediate results for real-time UI updates
  */
 export async function* promptConcatStream(
-  agentConfig: Pick<AgentPromptDescription, 'handlerConfig'>,
+  agentConfig: Pick<AgentPromptDescription, 'agentFrameworkConfig'>,
   messages: AgentInstanceMessage[],
   agentFrameworkContext: AgentFrameworkContext,
 ): AsyncGenerator<PromptConcatStreamState, PromptConcatStreamState, unknown> {
-  const agentFrameworkConfig = agentConfig.handlerConfig;
-  const promptConfigs = Array.isArray(agentFrameworkConfig.prompts) ? agentFrameworkConfig.prompts : [];
-  const toolConfigs = (Array.isArray(agentFrameworkConfig.plugins) ? agentFrameworkConfig.plugins : []) as IPromptConcatTool[];
+  const agentFrameworkConfig = agentConfig.agentFrameworkConfig;
+  const promptConfigs = Array.isArray(agentFrameworkConfig?.prompts) ? agentFrameworkConfig.prompts : [];
+  const toolConfigs = (Array.isArray(agentFrameworkConfig?.plugins) ? agentFrameworkConfig.plugins : []) as IPromptConcatTool[];
   const promptsCopy = cloneDeep(promptConfigs);
   const sourcePaths = generateSourcePaths(promptsCopy, toolConfigs);
 
@@ -342,7 +342,7 @@ export async function* promptConcatStream(
  * @returns Processed prompt array and original prompt tree
  */
 export async function promptConcat(
-  agentConfig: Pick<AgentPromptDescription, 'handlerConfig'>,
+  agentConfig: Pick<AgentPromptDescription, 'agentFrameworkConfig'>,
   messages: AgentInstanceMessage[],
   agentFrameworkContext: AgentFrameworkContext,
 ): Promise<{

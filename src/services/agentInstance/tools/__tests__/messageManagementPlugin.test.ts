@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Deep integration tests for messageManagementTool with real SQLite database
  * Tests actual message persistence scenarios using taskAgents.json configuration
  */
@@ -90,7 +90,7 @@ describe('Message Management Plugin - Real Database Integration', () => {
       name: exampleAgent.name,
       version: '1.0.0',
       capabilities: [],
-      handlerConfig: exampleAgent.handlerConfig,
+      agentFrameworkConfig: exampleAgent.agentFrameworkConfig,
     },
     isCancelled: () => false,
   });

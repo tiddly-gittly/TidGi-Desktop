@@ -13,10 +13,10 @@ import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.js
 import { PromptPreviewDialog } from '../index';
 
 // Mock handler config management hook
-vi.mock('@/windows/Preferences/sections/ExternalAPI/useHandlerConfigManagement', () => ({
-  useHandlerConfigManagement: vi.fn(() => ({
+vi.mock('@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement', () => ({
+  useAgentFrameworkConfigManagement: vi.fn(() => ({
     loading: false,
-    config: defaultAgents[0].handlerConfig,
+    config: defaultAgents[0].agentFrameworkConfig,
     handleConfigChange: vi.fn(),
   })),
 }));

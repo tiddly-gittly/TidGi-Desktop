@@ -78,8 +78,8 @@ export class AgentDefinitionService implements IAgentDefinitionService {
             name: defaultAgent.name,
             description: defaultAgent.description,
             avatarUrl: defaultAgent.avatarUrl,
-            handlerID: defaultAgent.handlerID,
-            handlerConfig: defaultAgent.handlerConfig,
+            agentFrameworkID: defaultAgent.agentFrameworkID,
+            agentFrameworkConfig: defaultAgent.agentFrameworkConfig,
             aiApiConfig: defaultAgent.aiApiConfig,
             agentTools: defaultAgent.agentTools,
           })
@@ -143,7 +143,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         throw new Error(`Agent definition not found: ${agent.id}`);
       }
 
-      const pickedProperties = pick(agent, ['name', 'description', 'avatarUrl', 'handlerID', 'handlerConfig', 'aiApiConfig']);
+      const pickedProperties = pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'aiApiConfig']);
       Object.assign(existingAgent, pickedProperties);
 
       await this.agentDefRepository!.save(existingAgent);
@@ -171,8 +171,8 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         name: entity.name || undefined,
         description: entity.description || undefined,
         avatarUrl: entity.avatarUrl || undefined,
-        handlerID: entity.handlerID || undefined,
-        handlerConfig: entity.handlerConfig || {},
+        agentFrameworkID: entity.agentFrameworkID || undefined,
+        agentFrameworkConfig: entity.agentFrameworkConfig || {},
         aiApiConfig: entity.aiApiConfig || undefined,
         agentTools: entity.agentTools || undefined,
       }));
@@ -212,8 +212,8 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         name: entity.name || undefined,
         description: entity.description || undefined,
         avatarUrl: entity.avatarUrl || undefined,
-        handlerID: entity.handlerID || undefined,
-        handlerConfig: entity.handlerConfig || {},
+        agentFrameworkID: entity.agentFrameworkID || undefined,
+        agentFrameworkConfig: entity.agentFrameworkConfig || {},
         aiApiConfig: entity.aiApiConfig || undefined,
         agentTools: entity.agentTools || undefined,
       };

@@ -72,7 +72,7 @@ export function getFrameworkConfigSchema() {
  *     "model": "Qwen/Qwen2.5-7B-Instruct"
  *   },
  *   "modelParameters": { ... },
- *   "handlerConfig": {
+ *   "agentFrameworkConfig": {
  *     "prompts": [ ... ],
  *     "response": [ ... ],
  *     "plugins": [ ... ],
@@ -88,7 +88,7 @@ export function getAgentConfigSchema() {
       title: t('Schema.AgentConfig.IdTitle'),
       description: t('Schema.AgentConfig.Id'),
     }),
-    handlerConfig: dynamicFrameworkConfigSchema,
+    agentFrameworkConfig: dynamicFrameworkConfigSchema,
   }).meta({
     title: t('Schema.AgentConfig.Title'),
     description: t('Schema.AgentConfig.Description'),
@@ -110,7 +110,9 @@ export function getDefaultAgentsSchema() {
 export type DefaultAgents = z.infer<ReturnType<typeof getDefaultAgentsSchema>>;
 export type AgentPromptDescription = z.infer<ReturnType<typeof getAgentConfigSchema>>;
 export type AiAPIConfig = z.infer<typeof AIConfigSchema>;
-export type HandlerConfig = z.infer<ReturnType<typeof getFrameworkConfigSchema>>;
+export type AgentFrameworkConfig = z.infer<ReturnType<typeof getFrameworkConfigSchema>>;
+// Backward compat alias
+export type agentFrameworkConfig = AgentFrameworkConfig;
 
 // Re-export all schemas and types
 export * from './modelParameters';

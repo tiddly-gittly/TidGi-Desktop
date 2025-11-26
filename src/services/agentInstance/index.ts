@@ -9,7 +9,7 @@ import { basicPromptConcatHandler } from '@services/agentInstance/agentFramework
 import type { AgentFramework, AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
 import { promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { getPromptConcatHandlerConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
+import { getPromptConcatAgentFrameworkConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
 import { createHooksWithTools, initializeToolSystem } from '@services/agentInstance/tools';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
@@ -80,7 +80,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   public registerBuiltinFrameworks(): void {
     // Tools are already registered in initialize(), so we only register frameworks here
     // Register basic prompt concatenation framework with its schema
-    this.registerFramework('basicPromptConcatHandler', basicPromptConcatHandler, getPromptConcatHandlerConfigJsonSchema());
+    this.registerFramework('basicPromptConcatHandler', basicPromptConcatHandler, getPromptConcatAgentFrameworkConfigJsonSchema());
   }
 
   /**
@@ -216,7 +216,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       }
 
       // Update fields using pick + Object.assign for consistency with updateAgentDef
-      const pickedProperties = pick(data, ['name', 'status', 'avatarUrl', 'aiApiConfig', 'closed', 'handlerConfig']);
+      const pickedProperties = pick(data, ['name', 'status', 'avatarUrl', 'aiApiConfig', 'closed', 'agentFrameworkConfig']);
       Object.assign(instanceEntity, pickedProperties);
 
       // Save instance updates
@@ -354,13 +354,13 @@ export class AgentInstanceService implements IAgentInstanceService {
       }
 
       // Get appropriate framework
-      const handlerId = agentDefinition.handlerID;
-      if (!handlerId) {
-        throw new Error(`Handler ID not found in agent definition: ${agentDefinition.id}`);
+      const agentFrameworkId = agentDefinition.agentFrameworkID;
+      if (!agentFrameworkId) {
+        throw new Error(`Agent framework ID not found in agent definition: ${agentDefinition.id}`);
       }
-      const framework = this.agentFrameworks.get(handlerId);
+      const framework = this.agentFrameworks.get(agentFrameworkId);
       if (!framework) {
-        throw new Error(`Framework not found: ${handlerId}`);
+        throw new Error(`Framework not found: ${agentFrameworkId}`);
       }
 
       // Create framework context with temporary message added for processing
@@ -380,7 +380,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       };
 
       // Create fresh hooks for this framework execution and register tools based on frameworkConfig
-      const { hooks: frameworkHooks } = await createHooksWithTools(agentDefinition.handlerConfig || {});
+      const { hooks: frameworkHooks } = await createHooksWithTools(agentDefinition.agentFrameworkConfig || {});
 
       // Trigger userMessageReceived hook with the configured tools
       await frameworkHooks.userMessageReceived.promise({
@@ -848,10 +848,10 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public concatPrompt(promptDescription: Pick<AgentPromptDescription, 'handlerConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState> {
+  public concatPrompt(promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState> {
     logger.debug('AgentInstanceService.concatPrompt called', {
-      hasPromptConfig: !!promptDescription.handlerConfig,
-      promptConfigKeys: Object.keys(promptDescription.handlerConfig),
+      hasPromptConfig: !!promptDescription.agentFrameworkConfig,
+      promptConfigKeys: Object.keys(promptDescription.agentFrameworkConfig || {}),
       messagesCount: messages.length,
     });
 
@@ -866,9 +866,9 @@ export class AgentInstanceService implements IAgentInstanceService {
               agentDefId: 'temp',
               status: { state: 'working' as const, modified: new Date() },
               created: new Date(),
-              handlerConfig: {},
+              agentFrameworkConfig: {},
             },
-            agentDef: { id: 'temp', name: 'temp', handlerConfig: promptDescription.handlerConfig },
+            agentDef: { id: 'temp', name: 'temp', agentFrameworkConfig: promptDescription.agentFrameworkConfig || {} },
             isCancelled: () => false,
           };
 

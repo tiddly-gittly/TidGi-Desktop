@@ -4,7 +4,7 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { merge } from 'lodash';
 import type { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
-import { AgentPromptDescription, AiAPIConfig, HandlerConfig } from '../promptConcat/promptConcatSchema';
+import { AgentFrameworkConfig, AgentPromptDescription, AiAPIConfig } from '../promptConcat/promptConcatSchema';
 import type { IPromptConcatTool } from '../promptConcat/promptConcatSchema/plugin';
 import { responseConcat } from '../promptConcat/responseConcat';
 import { getFinalPromptResult } from '../promptConcat/utilities';
@@ -31,15 +31,15 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
   // Initialize variables for request tracking
   let currentRequestId: string | undefined;
   const lastUserMessage: AgentInstanceMessage | undefined = context.agent.messages[context.agent.messages.length - 1];
-  // Create and register handler hooks based on handler config
-  const { hooks: agentFrameworkHooks, toolConfigs } = await createHooksWithTools(context.agentDef.handlerConfig || {});
+  // Create and register handler hooks based on framework config
+  const { hooks: agentFrameworkHooks, toolConfigs } = await createHooksWithTools(context.agentDef.agentFrameworkConfig || {});
 
   // Log the start of handler execution with context information
   logger.debug('Starting prompt handler execution', {
     method: 'basicPromptConcatHandler',
     agentId: context.agent.id,
     defId: context.agentDef.id,
-    handlerId: context.agentDef.handlerID,
+    agentFrameworkId: context.agentDef.agentFrameworkID,
     messageCount: context.agent.messages.length,
   });
   // Check if there's a new user message to process - trigger user message received hook
@@ -94,12 +94,12 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
 
   // Process prompts using common handler function
   try {
-    const handlerConfig: HandlerConfig = context.agentDef.handlerConfig as HandlerConfig;
+    const agentFrameworkConfig = context.agentDef.agentFrameworkConfig as AgentFrameworkConfig;
     const agentPromptDescription: AgentPromptDescription = {
       id: context.agentDef.id,
       api: aiApiConfig.api,
       modelParameters: aiApiConfig.modelParameters,
-      handlerConfig,
+      agentFrameworkConfig,
     };
 
     const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
@@ -169,7 +169,7 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
                 requestId: currentRequestId,
                 isFinal: true,
                 toolConfig: (toolConfigs.length > 0 ? toolConfigs[0] : {}) as IPromptConcatTool, // First config for compatibility
-                agentFrameworkConfig: context.agentDef.handlerConfig, // Pass complete config for tool access
+                agentFrameworkConfig: context.agentDef.agentFrameworkConfig, // Pass complete config for tool access
                 actions: undefined as { yieldNextRoundTo?: 'self' | 'human'; newUserMessage?: string } | undefined,
               };
 
