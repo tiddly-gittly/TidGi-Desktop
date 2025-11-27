@@ -1,5 +1,5 @@
 import { z } from 'zod/v4';
-import { getHandlerConfigSchema } from './index';
+import { getFrameworkConfigSchema } from './index';
 
 /**
  * Get the dynamically generated JSON Schema for handler configuration
@@ -11,7 +11,7 @@ import { getHandlerConfigSchema } from './index';
  *
  * Description field is i18n key, use i18nAlly extension to see it on VSCode. And use react-i18next to translate it on frontend.
  */
-export function getPromptConcatHandlerConfigJsonSchema() {
-  const dynamicHandlerConfigSchema = getHandlerConfigSchema();
-  return z.toJSONSchema(dynamicHandlerConfigSchema, { target: 'draft-7' });
+export function getPromptConcatAgentFrameworkConfigJsonSchema() {
+  const dynamicFrameworkConfigSchema = getFrameworkConfigSchema();
+  return z.toJSONSchema(dynamicFrameworkConfigSchema, { target: 'draft-7' });
 }

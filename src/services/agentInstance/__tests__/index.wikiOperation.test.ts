@@ -7,7 +7,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import defaultAgents from '../buildInAgentHandlers/defaultAgents.json';
+import defaultAgents from '../agentFrameworks/taskAgents.json';
 
 // Follow structure of index.streaming.test.ts
 describe('AgentInstanceService Wiki Operation', () => {
@@ -26,9 +26,9 @@ describe('AgentInstanceService Wiki Operation', () => {
     agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
     // Initialize both database repositories and handlers
-    await agentInstanceService.initializeHandlers();
+    await agentInstanceService.initializeFrameworks();
 
-    // Setup test agent instance using data from defaultAgents.json
+    // Setup test agent instance using data from taskAgents.json
     const exampleAgent = defaultAgents[0];
     testAgentInstance = {
       id: nanoid(),

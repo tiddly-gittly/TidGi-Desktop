@@ -86,7 +86,7 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
 
   const createAgentChatTab = async (agentDefinitionId?: string) => {
     try {
-      const agentDefinitionIdToUse = agentDefinitionId || 'example-agent';
+      const agentDefinitionIdToUse = agentDefinitionId || 'task-agent';
 
       // Handle current active tab - close temp tabs or NEW_TAB type tabs
       if (activeTabId) {
@@ -162,7 +162,7 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
 
   const handleEditDefinition = useCallback(() => {
     // Use the example agent ID for now - in the future this could be configurable
-    void editAgentDefinitionTab('example-agent');
+    void editAgentDefinitionTab('task-agent');
     handleCloseContextMenu();
   }, []);
 

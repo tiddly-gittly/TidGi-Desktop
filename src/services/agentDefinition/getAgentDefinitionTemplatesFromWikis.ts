@@ -116,21 +116,21 @@ export function validateAndConvertWikiTiddlerToAgentTemplate(
     };
 
     // Try to parse the tiddler text as JSON for agent configuration
-    let handlerConfig: Record<string, unknown>;
+    let agentFrameworkConfig: Record<string, unknown>;
     try {
       const textContent = typeof tiddler.text === 'string' ? tiddler.text : JSON.stringify(tiddler.text || '{}');
       const parsed = JSON.parse(textContent) as unknown;
 
-      // Ensure handlerConfig is a valid object
+      // Ensure agentFrameworkConfig is a valid object
       if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        logger.warn('Invalid handlerConfig in tiddler', {
+        logger.warn('Invalid agentFrameworkConfig in tiddler', {
           function: 'validateAndConvertWikiTiddlerToAgentTemplate',
           title: getStringField(tiddler.title),
           reason: 'not an object',
         });
         return null;
       }
-      handlerConfig = parsed as Record<string, unknown>;
+      agentFrameworkConfig = parsed as Record<string, unknown>;
     } catch (parseError) {
       logger.warn('Failed to parse agent template from tiddler', {
         function: 'validateAndConvertWikiTiddlerToAgentTemplate',
@@ -146,8 +146,8 @@ export function validateAndConvertWikiTiddlerToAgentTemplate(
       name: getStringField(tiddler.caption) || getStringField(tiddler.title),
       description: getStringField(tiddler.description) || `Agent template from ${workspaceName || 'wiki'}`,
       avatarUrl: getStringField(tiddler.avatar_url) || undefined,
-      handlerID: getStringField(tiddler.handler_id) || 'basicPromptConcatHandler',
-      handlerConfig,
+      agentFrameworkID: getStringField(tiddler.agentFrameworkID) || 'basicPromptConcatHandler',
+      agentFrameworkConfig,
       aiApiConfig: parseAiApiConfig(tiddler.ai_api_config),
       agentTools: parseAgentTools(tiddler.agent_tools),
     };

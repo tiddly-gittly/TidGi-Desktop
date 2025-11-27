@@ -9,14 +9,14 @@ import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
 
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
-import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
+import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.json';
 import { PromptPreviewDialog } from '../index';
 
 // Mock handler config management hook
-vi.mock('@/windows/Preferences/sections/ExternalAPI/useHandlerConfigManagement', () => ({
-  useHandlerConfigManagement: vi.fn(() => ({
+vi.mock('@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement', () => ({
+  useAgentFrameworkConfigManagement: vi.fn(() => ({
     loading: false,
-    config: defaultAgents[0].handlerConfig,
+    config: defaultAgents[0].agentFrameworkConfig,
     handleConfigChange: vi.fn(),
   })),
 }));

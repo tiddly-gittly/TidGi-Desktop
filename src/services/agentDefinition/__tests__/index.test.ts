@@ -1,6 +1,6 @@
 import { AgentDefinitionService } from '@services/agentDefinition';
 import { AgentDefinition } from '@services/agentDefinition/interface';
-import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
+import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.json';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
@@ -90,12 +90,13 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
     const defs = await freshService.getAgentDefs();
     expect(defs.length).toBeGreaterThan(0);
 
-    const exampleAgent = defs.find(d => d.id === (defaultAgents as AgentDefinition[])[0].id);
+    // Fixed
+    const exampleAgent = defs.find(d => d.id === (defaultAgents as unknown as AgentDefinition[])[0].id);
     expect(exampleAgent).toBeDefined();
     expect(exampleAgent!.name).toBeDefined();
-    expect(exampleAgent!.handlerID).toBeDefined();
-    expect(exampleAgent!.handlerConfig).toBeDefined();
-    expect(typeof exampleAgent!.handlerConfig).toBe('object');
+    expect(exampleAgent!.agentFrameworkID).toBeDefined();
+    expect(exampleAgent!.agentFrameworkConfig).toBeDefined();
+    expect(typeof exampleAgent!.agentFrameworkConfig).toBe('object');
   });
 
   it('should return only database data without fallback to defaultAgents', async () => {
@@ -105,7 +106,7 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
     const agentDefRepo = realDataSource.getRepository(AgentDefinitionEntity);
 
     // Save only minimal record (id only) to test new behavior
-    const example = (defaultAgents as AgentDefinition[])[0];
+    const example = (defaultAgents as unknown as AgentDefinition[])[0];
     await agentDefRepo.save({
       id: example.id,
     });
@@ -116,11 +117,11 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
     expect(found).toBeDefined();
     // With new behavior, only id should be present, other fields should be undefined or empty
     expect(found!.id).toBe(example.id);
-    expect(found!.handlerID).toBeUndefined();
+    expect(found!.agentFrameworkID).toBeUndefined();
     expect(found!.name).toBeUndefined();
     expect(found!.description).toBeUndefined();
     expect(found!.avatarUrl).toBeUndefined();
-    expect(found!.handlerConfig).toEqual({});
+    expect(found!.agentFrameworkConfig).toEqual({});
     expect(found!.aiApiConfig).toBeUndefined();
     expect(found!.agentTools).toBeUndefined();
   });
@@ -132,7 +133,7 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
     const agentDefRepo = realDataSource.getRepository(AgentDefinitionEntity);
 
     // Save only minimal record (id only) as per new behavior
-    const example = (defaultAgents as AgentDefinition[])[0];
+    const example = (defaultAgents as unknown as AgentDefinition[])[0];
     await agentDefRepo.save({
       id: example.id,
     });
@@ -148,8 +149,8 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
     expect(entity!.name).toBeNull();
     expect(entity!.description).toBeNull();
     expect(entity!.avatarUrl).toBeNull();
-    expect(entity!.handlerID).toBeNull();
-    expect(entity!.handlerConfig).toBeNull();
+    expect(entity!.agentFrameworkID).toBeNull();
+    expect(entity!.agentFrameworkConfig).toBeNull();
     expect(entity!.aiApiConfig).toBeNull();
     expect(entity!.agentTools).toBeNull();
   });
@@ -158,15 +159,15 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
     const templates = await agentDefinitionService.getAgentTemplates();
 
     // Should include all default agents
-    expect(templates.length).toBe((defaultAgents as AgentDefinition[]).length);
+    expect(templates.length).toBe((defaultAgents as unknown as AgentDefinition[]).length);
 
-    // Check that template has complete data from defaultAgents.json
-    const exampleTemplate = templates.find(t => t.id === (defaultAgents as AgentDefinition[])[0].id);
+    // Check that template has complete data from taskAgents.json
+    const exampleTemplate = templates.find(t => t.id === (defaultAgents as unknown as AgentDefinition[])[0].id);
     expect(exampleTemplate).toBeDefined();
     expect(exampleTemplate!.name).toBeDefined();
-    expect(exampleTemplate!.handlerID).toBeDefined();
-    expect(exampleTemplate!.handlerConfig).toBeDefined();
-    expect(typeof exampleTemplate!.handlerConfig).toBe('object');
+    expect(exampleTemplate!.agentFrameworkID).toBeDefined();
+    expect(exampleTemplate!.agentFrameworkConfig).toBeDefined();
+    expect(typeof exampleTemplate!.agentFrameworkConfig).toBe('object');
   });
 
   it('should not throw when searchName filtering is requested (client-side filtering expected)', async () => {
@@ -185,6 +186,6 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
 
     // Should still return default agents and not throw
     const templates = await agentDefinitionService.getAgentTemplates();
-    expect(templates.length).toBe((defaultAgents as AgentDefinition[]).length);
+    expect(templates.length).toBe((defaultAgents as unknown as AgentDefinition[]).length);
   });
 });

@@ -6,7 +6,7 @@ import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentInstanceService } from '..';
-import { basicPromptConcatHandler } from '../buildInAgentHandlers/basicPromptConcatHandler';
+import { basicPromptConcatHandler } from '../agentFrameworks/taskAgent';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import type { AiAPIConfig } from '../promptConcat/promptConcatSchema';
 
@@ -78,7 +78,7 @@ describe('AgentInstance failure path - external API logs on error', () => {
       agentDef: {
         id: 'def-1',
         name: 'Def 1',
-        handlerConfig: {},
+        agentFrameworkConfig: {},
         aiApiConfig: { api: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
       },
       isCancelled: () => false,

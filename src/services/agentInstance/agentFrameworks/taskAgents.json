@@ -1,11 +1,11 @@
 [
   {
-    "id": "example-agent",
-    "name": "Example Agent",
+    "id": "task-agent",
+    "name": "Task Agent",
     "description": "Example agent with prompt processing",
-    "avatarUrl": "https://example.com/example-agent.png",
-    "handlerID": "basicPromptConcatHandler",
-    "handlerConfig": {
+    "avatarUrl": "https://example.com/task-agent.png",
+    "agentFrameworkID": "basicPromptConcatHandler",
+    "agentFrameworkConfig": {
       "prompts": [
         {
           "id": "system",
@@ -72,7 +72,7 @@
       "plugins": [
         {
           "id": "efe5be74-540d-487d-8a05-7377e486953d",
-          "pluginId": "fullReplacement",
+          "toolId": "fullReplacement",
           "fullReplacementParam": {
             "targetId": "default-history",
             "sourceType": "historyOfSession"
@@ -84,7 +84,7 @@
           "id": "f0e1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
           "caption": "Wiki工作空间列表",
           "description": "自动在提示词中注入可用的Wiki工作空间列表",
-          "pluginId": "workspacesList",
+          "toolId": "workspacesList",
           "workspacesListParam": {
             "targetId": "default-before-tool",
             "position": "after"
@@ -94,7 +94,7 @@
           "id": "d0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
           "caption": "Wiki搜索和向量索引工具",
           "description": "提供Wiki搜索（filter和vector）以及向量嵌入索引管理功能",
-          "pluginId": "wikiSearch",
+          "toolId": "wikiSearch",
           "wikiSearchParam": {
             "sourceType": "wiki",
             "toolListPosition": {
@@ -107,7 +107,7 @@
           "id": "e1f2b3c4-5d6e-7f8g-9h0i-k1l2m3n4o5p6",
           "caption": "Wiki操作工具",
           "description": "允许AI在Wiki工作空间中创建、更新和删除笔记",
-          "pluginId": "wikiOperation",
+          "toolId": "wikiOperation",
           "wikiOperationParam": {
             "toolListPosition": {
               "position": "after",
@@ -117,7 +117,7 @@
         },
         {
           "id": "a0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
-          "pluginId": "fullReplacement",
+          "toolId": "fullReplacement",
           "fullReplacementParam": {
             "targetId": "default-response",
             "sourceType": "llmResponse"

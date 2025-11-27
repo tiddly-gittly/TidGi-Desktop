@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-invalid-void-type */
-import { AgentDefinition } from '../../agentDefinition/interface';
-import { AgentInstance, AgentInstanceLatestStatus } from '../interface';
+import { AgentDefinition } from '../../../agentDefinition/interface';
+import { AgentInstance, AgentInstanceLatestStatus } from '../../interface';
 
-export interface AgentHandlerContext {
+export interface AgentFrameworkContext {
   agent: AgentInstance;
   agentDef: AgentDefinition;
 
@@ -28,6 +28,6 @@ export interface AgentHandlerContext {
  *   (needed for non-streaming 'tasks/send'). If void is returned, the server uses the
  *   last known state from the store after processing all yields.
  */
-export type AgentHandler = (
-  context: AgentHandlerContext,
+export type AgentFramework = (
+  context: AgentFrameworkContext,
 ) => AsyncGenerator<AgentInstanceLatestStatus, AgentInstance | undefined | void, unknown>;

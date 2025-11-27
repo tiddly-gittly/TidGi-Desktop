@@ -12,7 +12,7 @@ import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import defaultAgents from '../buildInAgentHandlers/defaultAgents.json';
+import defaultAgents from '../agentFrameworks/taskAgents.json';
 
 describe('AgentInstanceService Streaming Behavior', () => {
   let agentInstanceService: IAgentInstanceService;
@@ -55,7 +55,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
     agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
     await agentInstanceService.initialize();
-    // Setup test agent instance using data from defaultAgents.json
+    // Setup test agent instance using data from taskAgents.json
     const exampleAgent = defaultAgents[0];
     testAgentInstance = {
       id: nanoid(),
@@ -73,7 +73,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
     // Mock agent definition service to return our test agent definition
     mockAgentDefinitionService.getAgentDef = vi.fn().mockResolvedValue({
       ...exampleAgent,
-      handlerID: 'basicPromptConcatHandler',
+      agentFrameworkID: 'basicPromptConcatHandler',
     });
     // Mock the getAgent method to return our test instance
     vi.spyOn(agentInstanceService, 'getAgent').mockResolvedValue(testAgentInstance);

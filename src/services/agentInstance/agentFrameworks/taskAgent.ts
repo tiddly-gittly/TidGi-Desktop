@@ -4,14 +4,14 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { merge } from 'lodash';
 import type { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
-import { createHooksWithPlugins } from '../plugins';
-import { YieldNextRoundTarget } from '../plugins/types';
-import { AgentPromptDescription, AiAPIConfig, HandlerConfig } from '../promptConcat/promptConcatSchema';
-import type { IPromptConcatPlugin } from '../promptConcat/promptConcatSchema/plugin';
+import { AgentFrameworkConfig, AgentPromptDescription, AiAPIConfig } from '../promptConcat/promptConcatSchema';
+import type { IPromptConcatTool } from '../promptConcat/promptConcatSchema/plugin';
 import { responseConcat } from '../promptConcat/responseConcat';
 import { getFinalPromptResult } from '../promptConcat/utilities';
-import { canceled, completed, error, working } from './statusUtilities';
-import { AgentHandlerContext } from './type';
+import { createHooksWithTools } from '../tools';
+import { YieldNextRoundTarget } from '../tools/types';
+import { canceled, completed, error, working } from './utilities/statusUtilities';
+import { AgentFrameworkContext } from './utilities/type';
 
 /**
  * Main conversation orchestrator for AI agents
@@ -27,19 +27,19 @@ import { AgentHandlerContext } from './type';
  *
  * @param context - Agent handling context containing configuration and message history
  */
-export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
+export async function* basicPromptConcatHandler(context: AgentFrameworkContext) {
   // Initialize variables for request tracking
   let currentRequestId: string | undefined;
   const lastUserMessage: AgentInstanceMessage | undefined = context.agent.messages[context.agent.messages.length - 1];
-  // Create and register handler hooks based on handler config
-  const { hooks: handlerHooks, pluginConfigs } = await createHooksWithPlugins(context.agentDef.handlerConfig || {});
+  // Create and register handler hooks based on framework config
+  const { hooks: agentFrameworkHooks, toolConfigs } = await createHooksWithTools(context.agentDef.agentFrameworkConfig || {});
 
   // Log the start of handler execution with context information
   logger.debug('Starting prompt handler execution', {
     method: 'basicPromptConcatHandler',
     agentId: context.agent.id,
     defId: context.agentDef.id,
-    handlerId: context.agentDef.handlerID,
+    agentFrameworkId: context.agentDef.agentFrameworkID,
     messageCount: context.agent.messages.length,
   });
   // Check if there's a new user message to process - trigger user message received hook
@@ -48,8 +48,8 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
 
   if (isNewUserMessage) {
     // Trigger user message received hook
-    await handlerHooks.userMessageReceived.promise({
-      handlerContext: context,
+    await agentFrameworkHooks.userMessageReceived.promise({
+      agentFrameworkContext: context,
       content: {
         text: lastUserMessage.content,
         file: lastUserMessage.metadata?.file as File | undefined,
@@ -62,8 +62,8 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
     lastUserMessage.metadata = { ...lastUserMessage.metadata, processed: true };
 
     // Trigger agent status change to working
-    await handlerHooks.agentStatusChanged.promise({
-      handlerContext: context,
+    await agentFrameworkHooks.agentStatusChanged.promise({
+      agentFrameworkContext: context,
       status: {
         state: 'working',
         modified: new Date(),
@@ -94,12 +94,12 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
 
   // Process prompts using common handler function
   try {
-    const handlerConfig: HandlerConfig = context.agentDef.handlerConfig as HandlerConfig;
+    const agentFrameworkConfig = context.agentDef.agentFrameworkConfig as AgentFrameworkConfig;
     const agentPromptDescription: AgentPromptDescription = {
       id: context.agentDef.id,
       api: aiApiConfig.api,
       modelParameters: aiApiConfig.modelParameters,
-      handlerConfig,
+      agentFrameworkConfig,
     };
 
     const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
@@ -146,12 +146,12 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
             if (response.status === 'update') {
               // For responseUpdate, we'll skip plugin-specific config for now
               // since it's called frequently during streaming
-              await handlerHooks.responseUpdate.promise({
-                handlerContext: context,
+              await agentFrameworkHooks.responseUpdate.promise({
+                agentFrameworkContext: context,
                 response,
                 requestId: currentRequestId,
                 isFinal: false,
-                pluginConfig: {} as IPromptConcatPlugin, // Empty config for streaming updates
+                toolConfig: {} as IPromptConcatTool, // Empty config for streaming updates
               });
             }
 
@@ -164,16 +164,16 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
 
               // Delegate final response processing to handler hooks
               const responseCompleteContext = {
-                handlerContext: context,
+                agentFrameworkContext: context,
                 response,
                 requestId: currentRequestId,
                 isFinal: true,
-                pluginConfig: (pluginConfigs.length > 0 ? pluginConfigs[0] : {}) as IPromptConcatPlugin, // First config for compatibility
-                handlerConfig: context.agentDef.handlerConfig, // Pass complete config for plugin access
+                toolConfig: (toolConfigs.length > 0 ? toolConfigs[0] : {}) as IPromptConcatTool, // First config for compatibility
+                agentFrameworkConfig: context.agentDef.agentFrameworkConfig, // Pass complete config for tool access
                 actions: undefined as { yieldNextRoundTo?: 'self' | 'human'; newUserMessage?: string } | undefined,
               };
 
-              await handlerHooks.responseComplete.promise(responseCompleteContext);
+              await agentFrameworkHooks.responseComplete.promise(responseCompleteContext);
 
               // Check if responseComplete hooks set yieldNextRoundTo
               let yieldNextRoundFromHooks: YieldNextRoundTarget | undefined;

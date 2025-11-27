@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
-import { AgentInstanceLatestStatus } from '../interface';
-import { AgentHandlerContext } from './type';
+import { AgentInstanceLatestStatus } from '../../interface';
+import { AgentFrameworkContext } from './type';
 
 /**
  * Creates a working status with a message
@@ -11,7 +11,7 @@ import { AgentHandlerContext } from './type';
  */
 export function working(
   content: string,
-  context: AgentHandlerContext,
+  context: AgentFrameworkContext,
   messageId?: string,
 ): AgentInstanceLatestStatus {
   return {
@@ -34,7 +34,7 @@ export function working(
  */
 export function completed(
   content: string,
-  context: AgentHandlerContext,
+  context: AgentFrameworkContext,
   messageId?: string,
 ): AgentInstanceLatestStatus {
   return {
@@ -72,7 +72,7 @@ export function error(
     provider: string;
     message?: string;
   } | undefined,
-  context: AgentHandlerContext,
+  context: AgentFrameworkContext,
   messageId?: string,
 ): AgentInstanceLatestStatus {
   return {

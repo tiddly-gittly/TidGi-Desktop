@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
 
 import type { IAgentBrowserService } from '@services/agentBrowser/interface';
-import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
+import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.json';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
@@ -71,15 +71,15 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       if (existingCount === 0) {
         logger.info('Agent database is empty, initializing with default agents');
         const defaultAgentsList = defaultAgents as AgentDefinition[];
-        // Create agent definition entities with complete data from defaultAgents.json
+        // Create agent definition entities with complete data from taskAgents.json
         const agentDefinitionEntities = defaultAgentsList.map(defaultAgent =>
           this.agentDefRepository!.create({
             id: defaultAgent.id,
             name: defaultAgent.name,
             description: defaultAgent.description,
             avatarUrl: defaultAgent.avatarUrl,
-            handlerID: defaultAgent.handlerID,
-            handlerConfig: defaultAgent.handlerConfig,
+            agentFrameworkID: defaultAgent.agentFrameworkID,
+            agentFrameworkConfig: defaultAgent.agentFrameworkConfig,
             aiApiConfig: defaultAgent.aiApiConfig,
             agentTools: defaultAgent.agentTools,
           })
@@ -143,7 +143,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         throw new Error(`Agent definition not found: ${agent.id}`);
       }
 
-      const pickedProperties = pick(agent, ['name', 'description', 'avatarUrl', 'handlerID', 'handlerConfig', 'aiApiConfig']);
+      const pickedProperties = pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'aiApiConfig']);
       Object.assign(existingAgent, pickedProperties);
 
       await this.agentDefRepository!.save(existingAgent);
@@ -171,8 +171,8 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         name: entity.name || undefined,
         description: entity.description || undefined,
         avatarUrl: entity.avatarUrl || undefined,
-        handlerID: entity.handlerID || undefined,
-        handlerConfig: entity.handlerConfig || {},
+        agentFrameworkID: entity.agentFrameworkID || undefined,
+        agentFrameworkConfig: entity.agentFrameworkConfig || {},
         aiApiConfig: entity.aiApiConfig || undefined,
         agentTools: entity.agentTools || undefined,
       }));
@@ -212,8 +212,8 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         name: entity.name || undefined,
         description: entity.description || undefined,
         avatarUrl: entity.avatarUrl || undefined,
-        handlerID: entity.handlerID || undefined,
-        handlerConfig: entity.handlerConfig || {},
+        agentFrameworkID: entity.agentFrameworkID || undefined,
+        agentFrameworkConfig: entity.agentFrameworkConfig || {},
         aiApiConfig: entity.aiApiConfig || undefined,
         agentTools: entity.agentTools || undefined,
       };

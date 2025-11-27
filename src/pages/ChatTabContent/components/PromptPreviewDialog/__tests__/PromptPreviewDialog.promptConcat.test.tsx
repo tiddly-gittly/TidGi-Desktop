@@ -9,16 +9,16 @@ import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
 
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
-import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
+import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.json';
 import { IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { ModelMessage } from 'ai';
 import { PromptPreviewDialog } from '../index';
 
 // Mock handler config management hook
-vi.mock('@/windows/Preferences/sections/ExternalAPI/useHandlerConfigManagement', () => ({
-  useHandlerConfigManagement: vi.fn(() => ({
+vi.mock('@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement', () => ({
+  useAgentFrameworkConfigManagement: vi.fn(() => ({
     loading: false,
-    config: defaultAgents[0].handlerConfig,
+    config: defaultAgents[0].agentFrameworkConfig,
     handleConfigChange: vi.fn(),
   })),
 }));
@@ -36,7 +36,7 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     useAgentChatStore.setState({
       agent: {
         id: 'test-agent',
-        agentDefId: 'example-agent',
+        agentDefId: 'task-agent',
         status: { state: 'working', modified: new Date() },
         created: new Date(),
       },
@@ -63,8 +63,8 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     // Test if the real concatPrompt is working
     expect(globalThis.window?.observables?.agentInstance?.concatPrompt).toBeDefined();
 
-    // Create test data matching defaultAgents.json - cast to avoid type issues in test
-    const handlerConfig = defaultAgents[0].handlerConfig as never;
+    // Create test data matching taskAgents.json - cast to avoid type issues in test
+    const agentFrameworkConfig = defaultAgents[0].agentFrameworkConfig as never;
     const messages = [{
       id: 'test-message-1',
       agentId: 'test-agent',
@@ -74,7 +74,7 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
 
     // Call the real concatPrompt implementation
     const observable = globalThis.window.observables.agentInstance.concatPrompt(
-      { handlerConfig },
+      { agentFrameworkConfig },
       messages,
     );
 
@@ -118,11 +118,11 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
 
   it('should render workspaces and tools info from real concatPrompt execution', async () => {
     // First execute real concatPrompt to get the structured data
-    const handlerConfig = defaultAgents[0].handlerConfig;
+    const agentFrameworkConfig = defaultAgents[0].agentFrameworkConfig;
     const messages = [{ id: 'test', role: 'user' as const, content: 'Hello world', created: new Date(), modified: new Date(), agentId: 'test' }];
 
-    // Pass handlerConfig wrapped (same shape used elsewhere)
-    const observable = window.observables.agentInstance.concatPrompt({ handlerConfig } as never, messages);
+    // Pass agentFrameworkConfig wrapped (same shape used elsewhere)
+    const observable = window.observables.agentInstance.concatPrompt({ agentFrameworkConfig } as never, messages);
 
     const results: unknown[] = [];
     let finalResult: { flatPrompts: ModelMessage[]; processedPrompts: IPrompt[] } | undefined;

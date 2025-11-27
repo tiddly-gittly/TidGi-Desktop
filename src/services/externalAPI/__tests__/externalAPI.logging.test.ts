@@ -1,5 +1,5 @@
 import type { AgentDefinition } from '@services/agentDefinition/interface';
-import defaultAgents from '@services/agentInstance/buildInAgentHandlers/defaultAgents.json';
+import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.json';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';

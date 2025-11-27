@@ -17,7 +17,7 @@ const mockGetAgentDefs = vi.fn();
 const mockUpdateTab = vi.fn();
 const mockGetAllTabs = vi.fn();
 const mockGetActiveTabId = vi.fn();
-const mockGetHandlerConfigSchema = vi.fn();
+const mockGetFrameworkConfigSchema = vi.fn();
 
 Object.defineProperty(window, 'service', {
   writable: true,
@@ -30,7 +30,7 @@ Object.defineProperty(window, 'service', {
       getAgentDefs: mockGetAgentDefs,
     },
     agentInstance: {
-      getHandlerConfigSchema: mockGetHandlerConfigSchema,
+      getFrameworkConfigSchema: mockGetFrameworkConfigSchema,
     },
     agentBrowser: {
       updateTab: mockUpdateTab,
@@ -117,7 +117,7 @@ describe('CreateNewAgentContent', () => {
     mockUpdateTab.mockResolvedValue(undefined);
     mockGetAllTabs.mockResolvedValue([]);
     mockGetActiveTabId.mockResolvedValue('test-tab-123');
-    mockGetHandlerConfigSchema.mockResolvedValue({
+    mockGetFrameworkConfigSchema.mockResolvedValue({
       type: 'object',
       properties: {
         prompts: {
@@ -157,7 +157,7 @@ describe('CreateNewAgentContent', () => {
       id: 'template-1',
       name: 'Test Template',
       description: 'Test Description',
-      handlerConfig: { systemPrompt: 'Test prompt' },
+      agentFrameworkConfig: { systemPrompt: 'Test prompt' },
     };
 
     mockCreateAgentDef.mockResolvedValue({
@@ -258,8 +258,8 @@ describe('CreateNewAgentContent', () => {
     const mockAgentDefinition = {
       id: 'temp-123',
       name: 'Test Agent',
-      handlerID: 'test-handler',
-      handlerConfig: { prompts: [{ text: 'Original prompt', role: 'system' }] },
+      agentFrameworkID: 'test-handler',
+      agentFrameworkConfig: { prompts: [{ text: 'Original prompt', role: 'system' }] },
     };
 
     mockGetAgentDef.mockResolvedValue(mockAgentDefinition);
@@ -285,13 +285,13 @@ describe('CreateNewAgentContent', () => {
     expect(mockUpdateAgentDef).not.toHaveBeenCalled();
   });
 
-  it('should trigger schema loading when temporaryAgentDefinition has handlerID', async () => {
-    // Mock agent definition with handlerID that will be restored
+  it('should trigger schema loading when temporaryAgentDefinition has agentFrameworkID', async () => {
+    // Mock agent definition with agentFrameworkID that will be restored
     const mockAgentDefinition = {
       id: 'temp-123',
       name: 'Test Agent',
-      handlerID: 'test-handler',
-      handlerConfig: { prompts: [{ text: 'Test prompt', role: 'system' }] },
+      agentFrameworkID: 'test-handler',
+      agentFrameworkConfig: { prompts: [{ text: 'Test prompt', role: 'system' }] },
     };
 
     mockGetAgentDef.mockResolvedValue(mockAgentDefinition);
@@ -313,9 +313,9 @@ describe('CreateNewAgentContent', () => {
       expect(mockGetAgentDef).toHaveBeenCalledWith('temp-123');
     }, { timeout: 1000 });
 
-    // After restoration, the component should have the handlerID and trigger schema loading
+    // After restoration, the component should have the agentFrameworkID and trigger schema loading
     await waitFor(() => {
-      expect(mockGetHandlerConfigSchema).toHaveBeenCalledWith('test-handler');
+      expect(mockGetFrameworkConfigSchema).toHaveBeenCalledWith('test-handler');
     }, { timeout: 2000 });
   });
 
@@ -341,8 +341,8 @@ describe('CreateNewAgentContent', () => {
     const mockTemplate = {
       id: 'template-1',
       name: 'Test Template',
-      handlerID: 'test-handler',
-      handlerConfig: { prompts: [{ text: 'Test prompt', role: 'system' }] },
+      agentFrameworkID: 'test-handler',
+      agentFrameworkConfig: { prompts: [{ text: 'Test prompt', role: 'system' }] },
     };
 
     const mockCreatedDefinition = {
@@ -378,8 +378,8 @@ describe('CreateNewAgentContent', () => {
     const mockTemplate = {
       id: 'template-1',
       name: 'Test Template',
-      handlerID: 'test-handler',
-      handlerConfig: { prompts: [{ text: 'Original prompt' }] },
+      agentFrameworkID: 'test-handler',
+      agentFrameworkConfig: { prompts: [{ text: 'Original prompt' }] },
     };
 
     const mockCreatedDefinition = {
@@ -443,7 +443,7 @@ describe('CreateNewAgentContent', () => {
       expect(mockCreateAgentDef).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'My Agent',
-          handlerID: 'test-handler',
+          agentFrameworkID: 'test-handler',
         }),
       );
     });
@@ -459,19 +459,19 @@ describe('CreateNewAgentContent', () => {
       expect(mockUpdateAgentDef).toHaveBeenCalledWith(
         expect.objectContaining({
           id: expect.stringContaining('temp-'),
-          handlerID: 'test-handler',
+          agentFrameworkID: 'test-handler',
         }),
       );
     }, { timeout: 500 });
   });
 
-  it('should handle nested prompt structure like defaultAgents.json', async () => {
-    // This is the actual structure from defaultAgents.json
+  it('should handle nested prompt structure like taskAgents.json', async () => {
+    // This is the actual structure from taskAgents.json
     const mockTemplate = {
-      id: 'example-agent',
+      id: 'task-agent',
       name: 'Example Agent',
-      handlerID: 'basicPromptConcatHandler',
-      handlerConfig: {
+      agentFrameworkID: 'basicPromptConcatHandler',
+      agentFrameworkConfig: {
         prompts: [
           {
             id: 'system',
@@ -503,7 +503,7 @@ describe('CreateNewAgentContent', () => {
     // Step 1: Create agent definition (simulates template selection)
     const createdDef = await window.service.agentDefinition.createAgentDef(mockCreatedDefinition);
     expect(createdDef).toBeDefined();
-    const prompts = (createdDef.handlerConfig).prompts as Array<{
+    const prompts = (createdDef.agentFrameworkConfig).prompts as Array<{
       children?: Array<{ text?: string }>;
     }>;
     expect((prompts as Array<{ children?: Array<{ text?: string }> }>)[0]?.children?.[0]?.text).toBe('You are a helpful assistant for Tiddlywiki user.');
@@ -511,14 +511,14 @@ describe('CreateNewAgentContent', () => {
     // Step 2: Update system prompt in nested structure
     const updatedDefinition = {
       ...mockCreatedDefinition,
-      handlerConfig: {
-        ...mockCreatedDefinition.handlerConfig,
+      agentFrameworkConfig: {
+        ...mockCreatedDefinition.agentFrameworkConfig,
         prompts: [
           {
-            ...mockCreatedDefinition.handlerConfig.prompts[0],
+            ...mockCreatedDefinition.agentFrameworkConfig.prompts[0],
             children: [
               {
-                ...mockCreatedDefinition.handlerConfig.prompts[0].children[0],
+                ...mockCreatedDefinition.agentFrameworkConfig.prompts[0].children[0],
                 text: '你是一个专业的代码助手，请用中文回答编程问题。',
               },
             ],
@@ -532,7 +532,7 @@ describe('CreateNewAgentContent', () => {
     // Verify the correct nested structure is updated
     expect(mockUpdateAgentDef).toHaveBeenCalledWith(
       expect.objectContaining({
-        handlerConfig: expect.objectContaining({
+        agentFrameworkConfig: expect.objectContaining({
           prompts: expect.arrayContaining([
             expect.objectContaining({
               role: 'system',

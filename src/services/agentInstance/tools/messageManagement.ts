@@ -8,20 +8,20 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IAgentInstanceService } from '../interface';
 import { createAgentMessage } from '../utilities';
-import type { AgentStatusContext, AIResponseContext, PromptConcatPlugin, ToolExecutionContext, UserMessageContext } from './types';
+import type { AgentStatusContext, AIResponseContext, PromptConcatTool, ToolExecutionContext, UserMessageContext } from './types';
 
 /**
  * Message management plugin
  * Handles all message-related operations: persistence, streaming, UI updates, and duration-based filtering
  */
-export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
+export const messageManagementTool: PromptConcatTool = (hooks) => {
   // Handle user message persistence
-  hooks.userMessageReceived.tapAsync('messageManagementPlugin', async (context: UserMessageContext, callback) => {
+  hooks.userMessageReceived.tapAsync('messageManagementTool', async (context: UserMessageContext, callback) => {
     try {
-      const { handlerContext, content, messageId } = context;
+      const { agentFrameworkContext, content, messageId } = context;
 
       // Create user message using the helper function
-      const userMessage = createAgentMessage(messageId, handlerContext.agent.id, {
+      const userMessage = createAgentMessage(messageId, agentFrameworkContext.agent.id, {
         role: 'user',
         content: content.text,
         contentType: 'text/plain',
@@ -30,7 +30,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
       });
 
       // Add message to the agent's message array for immediate use (do this before persistence so plugins see it)
-      handlerContext.agent.messages.push(userMessage);
+      agentFrameworkContext.agent.messages.push(userMessage);
 
       // Get the agent instance service to access repositories
       const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
@@ -40,7 +40,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
 
       logger.debug('User message persisted to database', {
         messageId,
-        agentId: handlerContext.agent.id,
+        agentId: agentFrameworkContext.agent.id,
         contentLength: content.text.length,
       });
 
@@ -49,30 +49,30 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
       logger.error('Message management plugin error in userMessageReceived', {
         error,
         messageId: context.messageId,
-        agentId: context.handlerContext.agent.id,
+        agentId: context.agentFrameworkContext.agent.id,
       });
       callback();
     }
   });
 
   // Handle agent status persistence
-  hooks.agentStatusChanged.tapAsync('messageManagementPlugin', async (context: AgentStatusContext, callback) => {
+  hooks.agentStatusChanged.tapAsync('messageManagementTool', async (context: AgentStatusContext, callback) => {
     try {
-      const { handlerContext, status } = context;
+      const { agentFrameworkContext, status } = context;
 
       // Get the agent instance service to update status
       const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
       // Update agent status in database
-      await agentInstanceService.updateAgent(handlerContext.agent.id, {
+      await agentInstanceService.updateAgent(agentFrameworkContext.agent.id, {
         status,
       });
 
       // Update the agent object for immediate use
-      handlerContext.agent.status = status;
+      agentFrameworkContext.agent.status = status;
 
       logger.debug('Agent status updated in database', {
-        agentId: handlerContext.agent.id,
+        agentId: agentFrameworkContext.agent.id,
         state: status.state,
       });
 
@@ -80,7 +80,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
     } catch (error) {
       logger.error('Message management plugin error in agentStatusChanged', {
         error,
-        agentId: context.handlerContext.agent.id,
+        agentId: context.agentFrameworkContext.agent.id,
         status: context.status,
       });
       callback();
@@ -88,13 +88,13 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
   });
 
   // Handle AI response updates during streaming
-  hooks.responseUpdate.tapAsync('messageManagementPlugin', async (context: AIResponseContext, callback) => {
+  hooks.responseUpdate.tapAsync('messageManagementTool', async (context: AIResponseContext, callback) => {
     try {
-      const { handlerContext, response } = context;
+      const { agentFrameworkContext, response } = context;
 
       if (response.status === 'update' && response.content) {
         // Find or create AI response message in agent's message array
-        let aiMessage = handlerContext.agent.messages.find(
+        let aiMessage = agentFrameworkContext.agent.messages.find(
           (message) => message.role === 'assistant' && !message.metadata?.isComplete,
         );
 
@@ -103,7 +103,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
           const now = new Date();
           aiMessage = {
             id: `ai-response-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            agentId: handlerContext.agent.id,
+            agentId: agentFrameworkContext.agent.id,
             role: 'assistant',
             content: response.content,
             created: now,
@@ -111,7 +111,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
             metadata: { isComplete: false },
             duration: undefined, // AI responses persist indefinitely by default
           };
-          handlerContext.agent.messages.push(aiMessage);
+          agentFrameworkContext.agent.messages.push(aiMessage);
           // Persist immediately so DB timestamp reflects conversation order
           try {
             const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
@@ -132,7 +132,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
         // Update UI using the agent instance service
         try {
           const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-          agentInstanceService.debounceUpdateMessage(aiMessage, handlerContext.agent.id);
+          agentInstanceService.debounceUpdateMessage(aiMessage, agentFrameworkContext.agent.id);
         } catch (serviceError) {
           logger.warn('Failed to update UI for streaming message', {
             error: serviceError,
@@ -150,13 +150,13 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
   });
 
   // Handle AI response completion
-  hooks.responseComplete.tapAsync('messageManagementPlugin', async (context: AIResponseContext, callback) => {
+  hooks.responseComplete.tapAsync('messageManagementTool', async (context: AIResponseContext, callback) => {
     try {
-      const { handlerContext, response } = context;
+      const { agentFrameworkContext, response } = context;
 
       if (response.status === 'done' && response.content) {
         // Find and finalize AI response message
-        let aiMessage = handlerContext.agent.messages.find(
+        let aiMessage = agentFrameworkContext.agent.messages.find(
           (message) => message.role === 'assistant' && !message.metadata?.isComplete && !message.metadata?.isToolResult,
         );
 
@@ -170,7 +170,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
           const nowFinal = new Date();
           aiMessage = {
             id: `ai-response-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            agentId: handlerContext.agent.id,
+            agentId: agentFrameworkContext.agent.id,
             role: 'assistant',
             content: response.content,
             created: nowFinal,
@@ -180,7 +180,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
             },
             duration: undefined, // Default duration for AI responses
           };
-          handlerContext.agent.messages.push(aiMessage);
+          agentFrameworkContext.agent.messages.push(aiMessage);
         }
 
         // Get the agent instance service for persistence and UI updates
@@ -191,7 +191,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
 
         // Final UI update
         try {
-          agentInstanceService.debounceUpdateMessage(aiMessage, handlerContext.agent.id);
+          agentInstanceService.debounceUpdateMessage(aiMessage, agentFrameworkContext.agent.id);
         } catch (serviceError) {
           logger.warn('Failed to update UI for completed message', {
             error: serviceError,
@@ -215,12 +215,12 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
   });
 
   // Handle tool result messages persistence and UI updates
-  hooks.toolExecuted.tapAsync('messageManagementPlugin', async (context: ToolExecutionContext, callback) => {
+  hooks.toolExecuted.tapAsync('messageManagementTool', async (context: ToolExecutionContext, callback) => {
     try {
-      const { handlerContext } = context;
+      const { agentFrameworkContext } = context;
 
       // Find newly added tool result messages that need to be persisted
-      const newToolResultMessages = handlerContext.agent.messages.filter(
+      const newToolResultMessages = agentFrameworkContext.agent.messages.filter(
         (message) => message.metadata?.isToolResult && !message.metadata.isPersisted,
       );
 
@@ -233,7 +233,7 @@ export const messageManagementPlugin: PromptConcatPlugin = (hooks) => {
           await agentInstanceService.saveUserMessage(message);
 
           // Update UI
-          agentInstanceService.debounceUpdateMessage(message, handlerContext.agent.id);
+          agentInstanceService.debounceUpdateMessage(message, agentFrameworkContext.agent.id);
 
           // Mark as persisted to avoid duplicate saves
           message.metadata = { ...message.metadata, isPersisted: true, uiUpdated: true };

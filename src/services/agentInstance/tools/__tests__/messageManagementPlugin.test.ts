@@ -1,6 +1,6 @@
 /**
- * Deep integration tests for messageManagementPlugin with real SQLite database
- * Tests actual message persistence scenarios using defaultAgents.json configuration
+ * Deep integration tests for messageManagementTool with real SQLite database
+ * Tests actual message persistence scenarios using taskAgents.json configuration
  */
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
@@ -8,20 +8,20 @@ import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity 
 import serviceIdentifier from '@services/serviceIdentifier';
 import { DataSource } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import defaultAgents from '../../buildInAgentHandlers/defaultAgents.json';
+import defaultAgents from '../../agentFrameworks/taskAgents.json';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../../interface';
-import { createHandlerHooks } from '../index';
-import { messageManagementPlugin } from '../messageManagementPlugin';
+import { createAgentFrameworkHooks } from '../index';
+import { messageManagementTool } from '../messageManagement';
 import type { ToolExecutionContext, UserMessageContext } from '../types';
 
-// Use the real agent config from defaultAgents.json
+// Use the real agent config from taskAgents.json
 const exampleAgent = defaultAgents[0];
 
 describe('Message Management Plugin - Real Database Integration', () => {
   let testAgentId: string;
   // agentInstanceServiceImpl available to test blocks
   let agentInstanceServiceImpl: IAgentInstanceService;
-  let hooks: ReturnType<typeof createHandlerHooks>;
+  let hooks: ReturnType<typeof createAgentFrameworkHooks>;
   let realDataSource: DataSource;
 
   beforeEach(async () => {
@@ -69,15 +69,15 @@ describe('Message Management Plugin - Real Database Integration', () => {
     await agentInstanceServiceImpl.initialize();
 
     // Initialize plugin
-    hooks = createHandlerHooks();
-    messageManagementPlugin(hooks);
+    hooks = createAgentFrameworkHooks();
+    messageManagementTool(hooks);
   });
 
   afterEach(async () => {
     // Clean up is handled automatically by beforeEach for each test
   });
 
-  const createHandlerContext = (messages: AgentInstanceMessage[] = []) => ({
+  const createAgentFrameworkContext = (messages: AgentInstanceMessage[] = []) => ({
     agent: {
       id: testAgentId,
       agentDefId: exampleAgent.id,
@@ -90,19 +90,19 @@ describe('Message Management Plugin - Real Database Integration', () => {
       name: exampleAgent.name,
       version: '1.0.0',
       capabilities: [],
-      handlerConfig: exampleAgent.handlerConfig,
+      agentFrameworkConfig: exampleAgent.agentFrameworkConfig,
     },
     isCancelled: () => false,
   });
 
   describe('Real Wiki Search Scenario - The Missing Tool Result Bug', () => {
     it('should persist all messages in wiki search flow: user query → AI tool call → tool result → AI final response', async () => {
-      const handlerContext = createHandlerContext();
+      const agentFrameworkContext = createAgentFrameworkContext();
 
       // Step 1: User asks to search wiki
       const userMessageId = `user-msg-${Date.now()}`;
       const userContext: UserMessageContext = {
-        handlerContext,
+        agentFrameworkContext,
         content: { text: '搜索 wiki 中的 Index 条目并解释' },
         messageId: userMessageId,
         timestamp: new Date(),
@@ -133,10 +133,10 @@ describe('Message Management Plugin - Real Database Integration', () => {
       };
 
       await agentInstanceServiceImpl.saveUserMessage(aiToolCallMessage);
-      handlerContext.agent.messages.push(aiToolCallMessage);
+      agentFrameworkContext.agent.messages.push(aiToolCallMessage);
 
       // Step 3: Tool result message (THIS IS THE MISSING PIECE!)
-      // This simulates what wikiSearchPlugin does when tool execution completes
+      // This simulates what wikiSearchTool does when tool execution completes
       const toolResultMessage: AgentInstanceMessage = {
         id: `tool-result-${Date.now()}`,
         agentId: testAgentId,
@@ -164,11 +164,11 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
         duration: 10, // Tool results might have expiration
       };
 
-      // Add tool result to agent messages (simulating what wikiSearchPlugin does)
-      handlerContext.agent.messages.push(toolResultMessage);
+      // Add tool result to agent messages (simulating what wikiSearchTool does)
+      agentFrameworkContext.agent.messages.push(toolResultMessage);
 
       const toolContext: ToolExecutionContext = {
-        handlerContext,
+        agentFrameworkContext,
         toolResult: {
           success: true,
           data: 'Wiki search completed successfully',
@@ -202,7 +202,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       expect(savedToolResult?.duration).toBe(10);
 
       // Verify isPersisted flag was updated
-      const toolMessageInMemory = handlerContext.agent.messages.find(
+      const toolMessageInMemory = agentFrameworkContext.agent.messages.find(
         (m) => m.metadata?.isToolResult,
       );
       expect(toolMessageInMemory?.metadata?.isPersisted).toBe(true);
@@ -249,7 +249,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
     });
 
     it('should handle multiple tool results in one execution', async () => {
-      const handlerContext = createHandlerContext();
+      const agentFrameworkContext = createAgentFrameworkContext();
 
       // Add multiple tool result messages
       const toolResult1: AgentInstanceMessage = {
@@ -282,10 +282,10 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
         duration: 3,
       };
 
-      handlerContext.agent.messages.push(toolResult1, toolResult2);
+      agentFrameworkContext.agent.messages.push(toolResult1, toolResult2);
 
       const toolContext: ToolExecutionContext = {
-        handlerContext,
+        agentFrameworkContext,
         toolResult: {
           success: true,
           data: 'Multiple tool search completed',
@@ -316,7 +316,7 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
 
     it('should maintain message integrity when reloading from database (simulating page refresh)', async () => {
       // This test simulates the issue where tool results are missing after page refresh
-      const handlerContext = createHandlerContext();
+      const agentFrameworkContext = createAgentFrameworkContext();
 
       // Step 1: Complete chat flow with user message → AI tool call → tool result → AI response
       const userMessage: AgentInstanceMessage = {
@@ -372,9 +372,9 @@ Result: 在wiki中找到了名为"Index"的条目。这个条目包含以下内�
       await agentInstanceServiceImpl.saveUserMessage(aiToolCallMessage);
 
       // Add tool result to context and trigger persistence via toolExecuted hook
-      handlerContext.agent.messages.push(toolResultMessage);
+      agentFrameworkContext.agent.messages.push(toolResultMessage);
       const toolContext: ToolExecutionContext = {
-        handlerContext,
+        agentFrameworkContext,
         toolResult: { success: true, data: 'Search completed' },
         toolInfo: { toolId: 'wiki-search', parameters: {} },
       };

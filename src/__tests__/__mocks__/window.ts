@@ -46,7 +46,7 @@ Object.defineProperty(window, 'observables', {
       userInfo$: new BehaviorSubject(undefined).asObservable(),
     },
     agentInstance: {
-      concatPrompt: vi.fn((promptDescription: Pick<AgentPromptDescription, 'handlerConfig'>, messages: AgentInstanceMessage[]) => {
+      concatPrompt: vi.fn((promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: AgentInstanceMessage[]) => {
         const agentInstanceService = container.get<AgentInstanceService>(serviceIdentifier.AgentInstance);
         // Initialize handlers (plugins and built-in handlers) before calling concatPrompt
         // We need to wrap this in an Observable since concatPrompt returns an Observable
@@ -55,7 +55,7 @@ Object.defineProperty(window, 'observables', {
             try {
               // Need to register plugins first. In test environment, this needs to be called manually. While in real
               // environment, this is handled in `main.ts` when app start.
-              await agentInstanceService.initializeHandlers();
+              await agentInstanceService.initializeFrameworks();
               const resultObservable = agentInstanceService.concatPrompt(promptDescription, messages);
               // Subscribe to the result and forward to our observer
               resultObservable.subscribe(observer);
