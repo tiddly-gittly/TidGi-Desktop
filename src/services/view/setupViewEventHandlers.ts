@@ -224,7 +224,9 @@ export default function setupViewEventHandlers(
     if (workspaceObject === undefined) {
       return;
     }
-    if (workspaceObject.active) {
+    // For main/tidgiMiniWindow, only update title if workspace is active
+    // For secondary/other windows, always update title regardless of active status
+    if (windowName === WindowNames.secondary || workspaceObject.active) {
       browserWindow.setTitle(title);
     }
   });
