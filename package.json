@@ -4,7 +4,7 @@
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
   "version": "0.13.0-prerelease11",
   "license": "MPL 2.0",
-  "packageManager": "pnpm@10.18.2",
+  "packageManager": "pnpm@10.24.0",
   "scripts": {
     "start:init": "pnpm run clean && pnpm run init:git-submodule && pnpm run build:plugin && cross-env NODE_ENV=development tsx scripts/developmentMkdir.ts && pnpm run start:dev",
     "start:dev": "cross-env NODE_ENV=development electron-forge start",
