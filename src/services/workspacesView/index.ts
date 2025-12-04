@@ -22,6 +22,7 @@ import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import type { ISyncService } from '@services/sync/interface';
+import { workspaceSorter } from '@services/workspaces/utilities';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
 import { registerMenu } from './registerMenu';
 import { getTidgiMiniWindowTargetWorkspace } from './utilities';
@@ -49,9 +50,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     workspacesList.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.pageType).forEach((workspace) => {
       wikiService.setWikiStartLockOn(workspace.id);
     });
-    // sorting (-1 will make a in the front, b in the back)
     const sortedList = workspacesList
-      .sort((a, b) => a.order - b.order) // sort by order, 1-2<0, so first will be the first
+      .sort(workspaceSorter)
       .sort((a, b) => (a.active && !b.active ? -1 : 0)) // put active wiki first
       .sort((a, b) => (isWikiWorkspace(a) && a.isSubWiki && (!isWikiWorkspace(b) || !b.isSubWiki) ? -1 : 0)); // put subwiki on top, they can't restart wiki, so need to sync them first, then let main wiki restart the wiki // revert this after tw can reload tid from fs
     await mapSeries(sortedList, async (workspace) => {

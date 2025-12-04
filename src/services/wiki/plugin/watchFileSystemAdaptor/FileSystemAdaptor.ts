@@ -1,6 +1,7 @@
 import type { Logger } from '$:/core/modules/utils/logger.js';
 import { workspace } from '@services/wiki/wikiWorker/services';
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
+import { workspaceSorter } from '@services/workspaces/utilities';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs';
 import path from 'path';
@@ -19,9 +20,10 @@ export class FileSystemAdaptor {
   boot: typeof $tw.boot;
   logger: Logger;
   workspaceID: string;
-  protected subWikisWithTag: IWikiWorkspace[] = [];
-  /** Map of tagName -> subWiki for O(1) tag lookup instead of O(n) find */
-  protected tagNameToSubWiki: Map<string, IWikiWorkspace> = new Map();
+  /** All workspaces (main + sub-wikis) that have tagName configured, sorted by order */
+  protected wikisWithTag: IWikiWorkspace[] = [];
+  /** Map of tagName -> workspace for O(1) tag lookup instead of O(n) find */
+  protected tagNameToWiki: Map<string, IWikiWorkspace> = new Map();
   /** Cached extension filters from $:/config/FileSystemExtensions. Requires restart to reflect changes. */
   protected extensionFilters: string[] | undefined;
   protected watchPathBase!: string;
@@ -64,40 +66,54 @@ export class FileSystemAdaptor {
   }
 
   /**
-   * Update the cached sub-wikis list and rebuild tag lookup map
+   * Update the cached workspaces list (main + sub-wikis) and rebuild tag lookup map.
+   * Sorted by order to ensure consistent priority when matching tags.
+   * Main workspace can also have tagName/includeTagTree for priority routing.
    */
   protected async updateSubWikisCache(): Promise<void> {
     try {
       if (!this.workspaceID) {
-        this.subWikisWithTag = [];
-        this.tagNameToSubWiki.clear();
+        this.wikisWithTag = [];
+        this.tagNameToWiki.clear();
         return;
       }
 
       const currentWorkspace = await workspace.get(this.workspaceID);
       if (!currentWorkspace) {
-        this.subWikisWithTag = [];
-        this.tagNameToSubWiki.clear();
+        this.wikisWithTag = [];
+        this.tagNameToWiki.clear();
         return;
       }
 
       const allWorkspaces = await workspace.getWorkspacesAsList();
 
-      const subWikisWithTag = allWorkspaces.filter((workspaceItem: IWorkspace) =>
-        'isSubWiki' in workspaceItem &&
-        workspaceItem.isSubWiki &&
-        workspaceItem.mainWikiID === currentWorkspace.id &&
-        'tagName' in workspaceItem &&
-        workspaceItem.tagName &&
-        'wikiFolderLocation' in workspaceItem &&
-        workspaceItem.wikiFolderLocation
-      ) as IWikiWorkspace[];
+      // Include both main workspace and sub-wikis for tag-based routing
+      const isWikiWorkspaceWithTag = (workspaceItem: IWorkspace): workspaceItem is IWikiWorkspace => {
+        // Include if it's the main workspace with tagName
+        const isMainWithTag = workspaceItem.id === currentWorkspace.id &&
+          'tagName' in workspaceItem &&
+          workspaceItem.tagName &&
+          'wikiFolderLocation' in workspaceItem &&
+          workspaceItem.wikiFolderLocation;
 
-      this.subWikisWithTag = subWikisWithTag;
+        // Include if it's a sub-wiki with tagName
+        const isSubWikiWithTag = 'isSubWiki' in workspaceItem &&
+          workspaceItem.isSubWiki &&
+          workspaceItem.mainWikiID === currentWorkspace.id &&
+          'tagName' in workspaceItem &&
+          workspaceItem.tagName &&
+          'wikiFolderLocation' in workspaceItem &&
+          workspaceItem.wikiFolderLocation;
 
-      this.tagNameToSubWiki.clear();
-      for (const subWiki of subWikisWithTag) {
-        this.tagNameToSubWiki.set(subWiki.tagName!, subWiki);
+        return Boolean(isMainWithTag) || Boolean(isSubWikiWithTag);
+      };
+      const workspacesWithTag = allWorkspaces.filter(isWikiWorkspaceWithTag).sort(workspaceSorter);
+
+      this.wikisWithTag = workspacesWithTag;
+
+      this.tagNameToWiki.clear();
+      for (const workspaceWithTag of workspacesWithTag) {
+        this.tagNameToWiki.set(workspaceWithTag.tagName!, workspaceWithTag);
       }
     } catch (error) {
       this.logger.alert('filesystem: Failed to update sub-wikis cache:', error);
@@ -116,6 +132,11 @@ export class FileSystemAdaptor {
   /**
    * Main routing logic: determine where a tiddler should be saved based on its tags.
    * For draft tiddlers, check the original tiddler's tags.
+   *
+   * For existing tiddlers (already in boot.files), we use the existing file path.
+   * For new tiddlers, we check:
+   * 1. Direct tag match with sub-wiki tagName
+   * 2. If includeTagTree is enabled, use in-tagtree-of filter for recursive tag matching
    */
   async getTiddlerFileInfo(tiddler: Tiddler): Promise<IFileInfo | null> {
     if (!this.boot.wikiTiddlersPath) {
@@ -140,12 +161,19 @@ export class FileSystemAdaptor {
         }
       }
 
+      // First try direct tag match (O(1) lookup)
       let matchingSubWiki: IWikiWorkspace | undefined;
       for (const tag of tags) {
-        matchingSubWiki = this.tagNameToSubWiki.get(tag);
+        matchingSubWiki = this.tagNameToWiki.get(tag);
         if (matchingSubWiki) {
           break;
         }
+      }
+
+      // If no direct match, try in-tagtree-of for sub-wikis with includeTagTree enabled
+      // Only for new tiddlers (no existing fileInfo) to save CPU
+      if (!matchingSubWiki) {
+        matchingSubWiki = this.matchTitleToWikiByTagTree(title);
       }
 
       if (matchingSubWiki) {
@@ -157,6 +185,28 @@ export class FileSystemAdaptor {
       this.logger.alert(`filesystem: Error in getTiddlerFileInfo for "${title}":`, error);
       return this.generateDefaultFileInfo(tiddler, fileInfo);
     }
+  }
+
+  /**
+   * Find matching sub-wiki using in-tagtree-of filter for sub-wikis with includeTagTree enabled.
+   * Iterates through sub-wikis sorted by order (priority).
+   */
+  protected matchTitleToWikiByTagTree(title: string): IWikiWorkspace | undefined {
+    for (const subWiki of this.wikisWithTag) {
+      if (!subWiki.includeTagTree || !subWiki.tagName) {
+        continue;
+      }
+      /**
+       * Use build-in in-tagtree-of (at `src/services/wiki/plugin/watchFileSystemAdaptor/in-tagtree-of.ts`) filter
+       * to check if tiddler is in tag tree.
+       * The filter returns the title if it's in the tag tree, empty otherwise
+       */
+      const result = $tw.wiki.filterTiddlers(`[in-tagtree-of:inclusive[${subWiki.tagName}]]`, undefined, $tw.wiki.makeTiddlerIterator([title]));
+      if (result.length > 0) {
+        return subWiki;
+      }
+    }
+    return undefined;
   }
 
   /**

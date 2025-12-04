@@ -140,6 +140,12 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
    */
   tagName: string | null;
   /**
+   * When enabled, tiddlers that are indirectly tagged (tag of tag of tag...) with this sub-wiki's tagName
+   * will also be saved to this sub-wiki. Uses the in-tagtree-of filter operator.
+   * Only applies when creating new tiddlers, not when modifying existing ones.
+   */
+  includeTagTree: boolean;
+  /**
    * Use authenticated-user-header to provide `TIDGI_AUTH_TOKEN_HEADER` as header key to receive a value as username (we use it as token)
    */
   tokenAuth: boolean;
@@ -240,11 +246,11 @@ export interface IWorkspaceService {
   getMetaData: (id: string) => Promise<Partial<IWorkspaceMetaData>>;
   getNextWorkspace: (id: string) => Promise<IWorkspace | undefined>;
   getPreviousWorkspace: (id: string) => Promise<IWorkspace | undefined>;
-  getSubWorkspacesAsList(workspaceID: string): Promise<IWorkspace[]>;
+  getSubWorkspacesAsList(workspaceID: string): Promise<IWikiWorkspace[]>;
   /**
    * Only meant to be used in TidGi's services internally.
    */
-  getSubWorkspacesAsListSync(workspaceID: string): IWorkspace[];
+  getSubWorkspacesAsListSync(workspaceID: string): IWikiWorkspace[];
   getWorkspaces(): Promise<Record<string, IWorkspace>>;
   getWorkspacesAsList(): Promise<IWorkspace[]>;
   getWorkspacesWithMetadata(): IWorkspacesWithMetadata;

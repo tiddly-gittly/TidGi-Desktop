@@ -68,7 +68,7 @@ export function NewWikiForm({
             label={t('AddWorkspace.MainWorkspaceLocation')}
             helperText={form.mainWikiToLink.wikiFolderLocation &&
               `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
-                    ${form.mainWikiToLink.wikiFolderLocation}/tiddlers/subwiki/${form.wikiFolderName}`}
+                    ${form.mainWikiToLink.wikiFolderLocation}`}
             value={form.mainWikiToLinkIndex}
             slotProps={{ htmlInput: { 'data-testid': 'main-wiki-select' } }}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

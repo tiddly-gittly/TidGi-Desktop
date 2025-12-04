@@ -24,7 +24,16 @@ import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import type { IDedicatedWorkspace, INewWikiWorkspaceConfig, IWorkspace, IWorkspaceMetaData, IWorkspaceService, IWorkspacesWithMetadata, IWorkspaceWithMetadata } from './interface';
+import type {
+  IDedicatedWorkspace,
+  INewWikiWorkspaceConfig,
+  IWikiWorkspace,
+  IWorkspace,
+  IWorkspaceMetaData,
+  IWorkspaceService,
+  IWorkspacesWithMetadata,
+  IWorkspaceWithMetadata,
+} from './interface';
 import { isWikiWorkspace } from './interface';
 import { registerMenu } from './registerMenu';
 import { workspaceSorter } from './utilities';
@@ -136,18 +145,18 @@ export class Workspace implements IWorkspaceService {
     return Object.values(this.getWorkspacesSync()).sort(workspaceSorter);
   }
 
-  public async getSubWorkspacesAsList(workspaceID: string): Promise<IWorkspace[]> {
+  public async getSubWorkspacesAsList(workspaceID: string): Promise<IWikiWorkspace[]> {
     const workspace = this.getSync(workspaceID);
     if (workspace === undefined || !isWikiWorkspace(workspace)) return [];
     if (workspace.isSubWiki) return [];
-    return this.getWorkspacesAsListSync().filter((w) => isWikiWorkspace(w) && w.mainWikiID === workspaceID).sort(workspaceSorter);
+    return this.getWorkspacesAsListSync().filter((w): w is IWikiWorkspace => isWikiWorkspace(w) && w.mainWikiID === workspaceID).sort(workspaceSorter);
   }
 
-  public getSubWorkspacesAsListSync(workspaceID: string): IWorkspace[] {
+  public getSubWorkspacesAsListSync(workspaceID: string): IWikiWorkspace[] {
     const workspace = this.getSync(workspaceID);
     if (workspace === undefined || !isWikiWorkspace(workspace)) return [];
     if (workspace.isSubWiki) return [];
-    return this.getWorkspacesAsListSync().filter((w) => isWikiWorkspace(w) && w.mainWikiID === workspaceID).sort(workspaceSorter);
+    return this.getWorkspacesAsListSync().filter((w): w is IWikiWorkspace => isWikiWorkspace(w) && w.mainWikiID === workspaceID).sort(workspaceSorter);
   }
 
   public async get(id: string): Promise<IWorkspace | undefined> {
@@ -225,6 +234,7 @@ export class Workspace implements IWorkspaceService {
       backupOnInterval: true,
       excludedPlugins: [],
       enableHTTPAPI: false,
+      includeTagTree: false,
     };
     const fixingValues: Partial<typeof workspaceToSanitize> = {};
     // we add mainWikiID in creation, we fix this value for old existed workspaces
@@ -289,7 +299,7 @@ export class Workspace implements IWorkspaceService {
 
   public async getByWikiName(wikiName: string): Promise<IWorkspace | undefined> {
     return (await this.getWorkspacesAsList())
-      .sort((a, b) => a.order - b.order)
+      .sort(workspaceSorter)
       .find((workspace) => workspace.name === wikiName);
   }
 

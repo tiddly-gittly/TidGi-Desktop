@@ -134,6 +134,10 @@ export class Wiki implements IWikiService {
       });
     }
     const shouldUseDarkColors = await this.themeService.shouldUseDarkColors();
+
+    // Get sub-wikis for this main wiki to load their tiddlers
+    const subWikis = await workspaceService.getSubWorkspacesAsList(workspaceID);
+
     const workerData: IStartNodeJSWikiConfigs = {
       authToken,
       constants: { TIDDLYWIKI_PACKAGE_FOLDER: getTiddlyWikiBootPath(wikiFolderLocation) },
@@ -146,6 +150,7 @@ export class Wiki implements IWikiService {
       readOnlyMode,
       rootTiddler,
       shouldUseDarkColors,
+      subWikis,
       tiddlyWikiHost: defaultServerIP,
       tiddlyWikiPort: port,
       tokenAuth,

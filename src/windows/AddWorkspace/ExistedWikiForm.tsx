@@ -112,7 +112,7 @@ export function ExistedWikiForm({
             label={t('AddWorkspace.MainWorkspaceLocation')}
             helperText={mainWikiToLink.wikiFolderLocation &&
               `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
-                    ${mainWikiToLink.wikiFolderLocation}/tiddlers/${wikiFolderName}`}
+                    ${mainWikiToLink.wikiFolderLocation}`}
             value={mainWikiToLinkIndex}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
               const index = Number(event.target.value);

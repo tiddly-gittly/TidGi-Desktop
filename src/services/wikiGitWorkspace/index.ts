@@ -156,6 +156,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       excludedPlugins: [],
       enableHTTPAPI: false,
       enableFileSystemWatch: true,
+      includeTagTree: false,
       lastNodeJSArgv: [],
       homeUrl: '',
       gitUrl: null,

@@ -7,6 +7,7 @@ import { PageType } from '@/constants/pageTypes';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { SortableWorkspaceSelectorButton } from './SortableWorkspaceSelectorButton';
+import { workspaceSorter } from '@services/workspaces/utilities';
 
 export interface ISortableListProps {
   showSideBarIcon: boolean;
@@ -62,7 +63,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     >
       <SortableContext items={workspaceIDs} strategy={verticalListSortingStrategy}>
         {filteredWorkspacesList
-          .sort((a, b) => a.order - b.order)
+          .sort(workspaceSorter)
           .map((workspace, index) => (
             <SortableWorkspaceSelectorButton
               key={`item-${workspace.id}`}

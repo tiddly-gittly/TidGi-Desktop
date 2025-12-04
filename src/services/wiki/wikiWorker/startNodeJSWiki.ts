@@ -18,6 +18,7 @@ import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOpera
 import type { IStartNodeJSWikiConfigs } from '../wikiWorker';
 import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
+import { createLoadWikiTiddlersWithSubWikis } from './loadWikiTiddlersWithSubWikis';
 import { authTokenIsProvided } from './wikiWorkerUtilities';
 
 export function startNodeJSWiki({
@@ -32,6 +33,7 @@ export function startNodeJSWiki({
   readOnlyMode,
   rootTiddler = '$:/core/save/all',
   shouldUseDarkColors,
+  subWikis = [],
   tiddlyWikiHost = defaultServerIP,
   tiddlyWikiPort = 5112,
   tokenAuth,
@@ -102,6 +104,20 @@ export function startNodeJSWiki({
       setWikiInstance(wikiInstance);
       process.env.TIDDLYWIKI_PLUGIN_PATH = path.resolve(homePath, 'plugins');
       process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
+
+      /**
+       * Hook loadWikiTiddlers to inject sub-wiki tiddlers after main wiki is loaded.
+       */
+      if (subWikis.length > 0) {
+        wikiInstance.loadWikiTiddlers = createLoadWikiTiddlersWithSubWikis(
+          wikiInstance,
+          homePath,
+          subWikis,
+          workspace.name,
+          native,
+        );
+      }
+
       // don't add `+` prefix to plugin name here. `+` only used in args[0], but we are not prepend this list to the args list.
       wikiInstance.boot.extraPlugins = [
         // add tiddly filesystem back if is not readonly https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416

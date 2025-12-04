@@ -438,8 +438,8 @@ describe('FileSystemAdaptor - Routing Logic', () => {
       // Manually trigger cache update and wait for it
       await adaptor['updateSubWikisCache']();
 
-      expect(adaptor['subWikisWithTag']).toEqual([]);
-      expect(adaptor['tagNameToSubWiki'].size).toBe(0);
+      expect(adaptor['wikisWithTag']).toEqual([]);
+      expect(adaptor['tagNameToWiki'].size).toBe(0);
     });
 
     it('should clear cache when currentWorkspace is not found', async () => {
@@ -454,8 +454,8 @@ describe('FileSystemAdaptor - Routing Logic', () => {
       // Manually trigger cache update and wait for it
       await adaptor['updateSubWikisCache']();
 
-      expect(adaptor['subWikisWithTag']).toEqual([]);
-      expect(adaptor['tagNameToSubWiki'].size).toBe(0);
+      expect(adaptor['wikisWithTag']).toEqual([]);
+      expect(adaptor['tagNameToWiki'].size).toBe(0);
     });
 
     it('should handle errors in updateSubWikisCache gracefully', async () => {
