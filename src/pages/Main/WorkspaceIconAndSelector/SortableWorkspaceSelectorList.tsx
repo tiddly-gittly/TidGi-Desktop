@@ -6,8 +6,8 @@ import { useMemo } from 'react';
 import { PageType } from '@/constants/pageTypes';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interface';
-import { SortableWorkspaceSelectorButton } from './SortableWorkspaceSelectorButton';
 import { workspaceSorter } from '@services/workspaces/utilities';
+import { SortableWorkspaceSelectorButton } from './SortableWorkspaceSelectorButton';
 
 export interface ISortableListProps {
   showSideBarIcon: boolean;

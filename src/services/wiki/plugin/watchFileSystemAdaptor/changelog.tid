@@ -28,16 +28,20 @@ private async getCurrentWorkspace(): Promise<IWorkspace | undefined>
 private async getSubWikis(currentWorkspace: IWorkspace): Promise<IWorkspace[]>
 ```
 
-!!!! 2. Tag-Based Sub-Wiki Routing
+!!!! 2. Tag-Based and Filter-Based Sub-Wiki Routing
 
 * ''Original'': Routes based on filter expressions in `FileSystemPaths`
-* ''Modified'': Automatically routes tiddlers to sub-wikis based on tag matching
+* ''Modified'': Automatically routes tiddlers to sub-wikis based on:
+** Multiple tag names (`tagNames: string[]`) - tiddler matches if any of its tags matches any of workspace's `tagNames`
+** Tag tree matching (`includeTagTree`) - recursive tag hierarchy matching using `in-tagtree-of` filter
+** Custom filter expressions (`fileSystemPathFilter`) - user-defined TiddlyWiki filters (one per line, any match wins)
 * ''Modified'': Made `getTiddlerFileInfo`, `saveTiddler`, and `deleteTiddler` async for cleaner code
 * ''Modified'': Caches sub-wikis list to avoid repeated IPC calls on every save operation
+* ''Important'': Always recalculates path on save to handle tag changes - old `fileInfo` only used for cleanup
 * ''Implementation'':
-** Checks tiddler tags against sub-workspace `tagName` fields
+** Checks tiddler tags/filters against sub-workspace routing rules (in priority order)
 ** Routes matching tiddlers to sub-wiki's `tiddlers` folder
-** Falls back to default `FileSystemPaths` logic for non-matching tiddlers
+** Falls back to TiddlyWiki's `$:/config/FileSystemPaths` logic for non-matching tiddlers
 ** Loads sub-wikis cache on initialization
 ** Currently loads sub-wikis once, future enhancements can watch for workspace changes
 

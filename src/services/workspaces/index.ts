@@ -235,6 +235,9 @@ export class Workspace implements IWorkspaceService {
       excludedPlugins: [],
       enableHTTPAPI: false,
       includeTagTree: false,
+      fileSystemPathFilterEnable: false,
+      fileSystemPathFilter: null,
+      tagNames: [],
     };
     const fixingValues: Partial<typeof workspaceToSanitize> = {};
     // we add mainWikiID in creation, we fix this value for old existed workspaces
@@ -244,9 +247,11 @@ export class Workspace implements IWorkspaceService {
         fixingValues.mainWikiID = mainWorkspace.id;
       }
     }
-    // fix WikiChannel.openTiddler in src/services/wiki/wikiOperations/executor/wikiOperationInBrowser.ts have \n on the end
-    if (workspaceToSanitize.tagName?.endsWith('\n') === true) {
-      fixingValues.tagName = workspaceToSanitize.tagName.replaceAll('\n', '');
+    // Migrate old tagName (string) to tagNames (string[])
+
+    const legacyTagName = (workspaceToSanitize as { tagName?: string | null }).tagName;
+    if (legacyTagName && (!workspaceToSanitize.tagNames || workspaceToSanitize.tagNames.length === 0)) {
+      fixingValues.tagNames = [legacyTagName.replaceAll('\n', '')];
     }
     // before 0.8.0, tidgi was loading http content, so lastUrl will be http protocol, but later we switch to tidgi:// protocol, so old value can't be used.
     if (!workspaceToSanitize.lastUrl?.startsWith('tidgi')) {
@@ -271,11 +276,11 @@ export class Workspace implements IWorkspaceService {
     if (!isWikiWorkspace(newWorkspaceConfig)) return;
 
     const existedWorkspace = this.getSync(newWorkspaceConfig.id);
-    const { id, tagName } = newWorkspaceConfig;
-    // when update tagName of subWiki
+    const { id, tagNames } = newWorkspaceConfig;
+    // when update tagNames of subWiki
     if (
-      existedWorkspace !== undefined && isWikiWorkspace(existedWorkspace) && existedWorkspace.isSubWiki && typeof tagName === 'string' && tagName.length > 0 &&
-      existedWorkspace.tagName !== tagName
+      existedWorkspace !== undefined && isWikiWorkspace(existedWorkspace) && existedWorkspace.isSubWiki && tagNames.length > 0 &&
+      JSON.stringify(existedWorkspace.tagNames) !== JSON.stringify(tagNames)
     ) {
       const { mainWikiToLink } = existedWorkspace;
       if (typeof mainWikiToLink !== 'string') {
@@ -546,7 +551,7 @@ export class Workspace implements IWorkspaceService {
     // Only handle wiki workspaces
     if (!isWikiWorkspace(workspace)) return;
 
-    const { isSubWiki, mainWikiID, tagName } = workspace;
+    const { isSubWiki, mainWikiID, tagNames } = workspace;
 
     logger.log('debug', 'openWorkspaceTiddler', { workspace });
     // If is main wiki, open the wiki, and open provided title, or simply switch to it if no title provided
@@ -568,7 +573,8 @@ export class Workspace implements IWorkspaceService {
       if (oldActiveWorkspace?.id !== mainWikiID) {
         await workspaceViewService.setActiveWorkspaceView(mainWikiID);
       }
-      const subWikiTag = title ?? tagName;
+      // Use provided title, or first tag name, or nothing
+      const subWikiTag = title ?? tagNames[0];
       if (subWikiTag) {
         await wikiService.wikiOperationInBrowser(WikiChannel.openTiddler, mainWikiID, [subWikiTag]);
       }

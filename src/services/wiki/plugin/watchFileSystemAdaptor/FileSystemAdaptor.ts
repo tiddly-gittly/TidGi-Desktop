@@ -87,33 +87,41 @@ export class FileSystemAdaptor {
 
       const allWorkspaces = await workspace.getWorkspacesAsList();
 
-      // Include both main workspace and sub-wikis for tag-based routing
-      const isWikiWorkspaceWithTag = (workspaceItem: IWorkspace): workspaceItem is IWikiWorkspace => {
-        // Include if it's the main workspace with tagName
-        const isMainWithTag = workspaceItem.id === currentWorkspace.id &&
-          'tagName' in workspaceItem &&
-          workspaceItem.tagName &&
-          'wikiFolderLocation' in workspaceItem &&
-          workspaceItem.wikiFolderLocation;
+      // Include both main workspace and sub-wikis for tag-based routing or filter-based routing
+      const isWikiWorkspaceWithRouting = (workspaceItem: IWorkspace): workspaceItem is IWikiWorkspace => {
+        if (!('wikiFolderLocation' in workspaceItem) || !workspaceItem.wikiFolderLocation) {
+          return false;
+        }
 
-        // Include if it's a sub-wiki with tagName
-        const isSubWikiWithTag = 'isSubWiki' in workspaceItem &&
+        // Check if workspace has routing config (either tagNames or fileSystemPathFilter)
+        const hasRoutingConfig = ('tagNames' in workspaceItem && workspaceItem.tagNames.length > 0) ||
+          ('fileSystemPathFilterEnable' in workspaceItem && workspaceItem.fileSystemPathFilterEnable && 'fileSystemPathFilter' in workspaceItem &&
+            workspaceItem.fileSystemPathFilter);
+
+        if (!hasRoutingConfig) {
+          return false;
+        }
+
+        // Include if it's the main workspace
+        const isMain = workspaceItem.id === currentWorkspace.id;
+
+        // Include if it's a sub-wiki of the current main workspace
+        const isSubWiki = 'isSubWiki' in workspaceItem &&
           workspaceItem.isSubWiki &&
-          workspaceItem.mainWikiID === currentWorkspace.id &&
-          'tagName' in workspaceItem &&
-          workspaceItem.tagName &&
-          'wikiFolderLocation' in workspaceItem &&
-          workspaceItem.wikiFolderLocation;
+          workspaceItem.mainWikiID === currentWorkspace.id;
 
-        return Boolean(isMainWithTag) || Boolean(isSubWikiWithTag);
+        return isMain || isSubWiki;
       };
-      const workspacesWithTag = allWorkspaces.filter(isWikiWorkspaceWithTag).sort(workspaceSorter);
+      const workspacesWithTag = allWorkspaces.filter(isWikiWorkspaceWithRouting).sort(workspaceSorter);
 
       this.wikisWithTag = workspacesWithTag;
 
       this.tagNameToWiki.clear();
       for (const workspaceWithTag of workspacesWithTag) {
-        this.tagNameToWiki.set(workspaceWithTag.tagName!, workspaceWithTag);
+        // Build map for all tag names in this workspace
+        for (const tagName of workspaceWithTag.tagNames) {
+          this.tagNameToWiki.set(tagName, workspaceWithTag);
+        }
       }
     } catch (error) {
       this.logger.alert('filesystem: Failed to update sub-wikis cache:', error);
@@ -133,10 +141,15 @@ export class FileSystemAdaptor {
    * Main routing logic: determine where a tiddler should be saved based on its tags.
    * For draft tiddlers, check the original tiddler's tags.
    *
-   * For existing tiddlers (already in boot.files), we use the existing file path.
-   * For new tiddlers, we check:
-   * 1. Direct tag match with sub-wiki tagName
-   * 2. If includeTagTree is enabled, use in-tagtree-of filter for recursive tag matching
+   * Priority:
+   * 1. If fileSystemPathFilterEnable is enabled, use custom filterExpression
+   * 2. Direct tag match with sub-wiki tagNames
+   * 3. If includeTagTree is enabled, use in-tagtree-of filter for recursive tag matching
+   * 4. Fall back to TiddlyWiki's FileSystemPaths logic
+   *
+   * IMPORTANT: We check if the target directory has changed. Only when directory changes
+   * do we regenerate the file path. This prevents echo loops where slightly different
+   * filenames trigger constant saves.
    */
   async getTiddlerFileInfo(tiddler: Tiddler): Promise<IFileInfo | null> {
     if (!this.boot.wikiTiddlersPath) {
@@ -145,7 +158,7 @@ export class FileSystemAdaptor {
 
     const title = tiddler.fields.title;
     let tags = tiddler.fields.tags ?? [];
-    const fileInfo = this.boot.files[title];
+    const existingFileInfo = this.boot.files[title];
 
     try {
       // For draft tiddlers (draft.of field), also check the original tiddler's tags
@@ -161,49 +174,95 @@ export class FileSystemAdaptor {
         }
       }
 
-      // First try direct tag match (O(1) lookup)
-      let matchingSubWiki: IWikiWorkspace | undefined;
-      for (const tag of tags) {
-        matchingSubWiki = this.tagNameToWiki.get(tag);
-        if (matchingSubWiki) {
-          break;
+      // Find matching workspace using the routing logic
+      const matchingWiki = this.matchTitleToWiki(title, tags);
+
+      // Determine the target directory based on routing
+      // Sub-wikis store tiddlers directly in their root folder (not in /tiddlers subfolder)
+      // Only the main wiki uses /tiddlers because it has other meta files like .github
+      let targetDirectory: string;
+      if (matchingWiki) {
+        targetDirectory = matchingWiki.wikiFolderLocation;
+        // Resolve symlinks
+        try {
+          targetDirectory = fs.realpathSync(targetDirectory);
+        } catch {
+          // If realpath fails, use original
+        }
+      } else {
+        targetDirectory = this.boot.wikiTiddlersPath;
+      }
+
+      // Check if existing file is already in the correct directory
+      // If so, just return the existing fileInfo to avoid echo loops
+      if (existingFileInfo?.filepath) {
+        const existingDir = path.dirname(existingFileInfo.filepath);
+        // For sub-wikis, check if file is in that wiki's folder (or subfolder)
+        // For main wiki, check if file is in main wiki's tiddlers folder (or subfolder)
+        const normalizedExisting = path.normalize(existingDir);
+        const normalizedTarget = path.normalize(targetDirectory);
+
+        // Check if existing file is within the target directory tree
+        if (normalizedExisting.startsWith(normalizedTarget) || normalizedExisting === normalizedTarget) {
+          // File is already in correct location, return existing fileInfo with overwrite flag
+          return { ...existingFileInfo, overwrite: true };
         }
       }
 
-      // If no direct match, try in-tagtree-of for sub-wikis with includeTagTree enabled
-      // Only for new tiddlers (no existing fileInfo) to save CPU
-      if (!matchingSubWiki) {
-        matchingSubWiki = this.matchTitleToWikiByTagTree(title);
-      }
-
-      if (matchingSubWiki) {
-        return this.generateSubWikiFileInfo(tiddler, matchingSubWiki, fileInfo);
+      // Directory has changed (or no existing file), generate new file info
+      if (matchingWiki) {
+        return this.generateSubWikiFileInfo(tiddler, matchingWiki);
       } else {
-        return this.generateDefaultFileInfo(tiddler, fileInfo);
+        return this.generateDefaultFileInfo(tiddler);
       }
     } catch (error) {
       this.logger.alert(`filesystem: Error in getTiddlerFileInfo for "${title}":`, error);
-      return this.generateDefaultFileInfo(tiddler, fileInfo);
+      return this.generateDefaultFileInfo(tiddler);
     }
   }
 
   /**
-   * Find matching sub-wiki using in-tagtree-of filter for sub-wikis with includeTagTree enabled.
-   * Iterates through sub-wikis sorted by order (priority).
+   * Match a tiddler to a workspace based on routing rules.
+   * Checks workspaces in order (priority) and returns the first match.
+   *
+   * For each workspace:
+   * 1. If fileSystemPathFilterEnable is enabled, use custom filter expressions (one per line, any match wins)
+   * 2. Else try direct tag match (including if tiddler's title IS one of the tagNames - it's a "tag tiddler")
+   * 3. Else if includeTagTree is enabled, use in-tagtree-of filter
    */
-  protected matchTitleToWikiByTagTree(title: string): IWikiWorkspace | undefined {
-    for (const subWiki of this.wikisWithTag) {
-      if (!subWiki.includeTagTree || !subWiki.tagName) {
+  protected matchTitleToWiki(title: string, tags: string[]): IWikiWorkspace | undefined {
+    for (const wiki of this.wikisWithTag) {
+      // If fileSystemPathFilterEnable is enabled, use the custom filter expressions
+      if (wiki.fileSystemPathFilterEnable && wiki.fileSystemPathFilter) {
+        // Split by newlines and try each filter
+        const filters = wiki.fileSystemPathFilter.split('\n').map(f => f.trim()).filter(f => f.length > 0);
+        for (const filter of filters) {
+          const result = $tw.wiki.filterTiddlers(filter, undefined, $tw.wiki.makeTiddlerIterator([title]));
+          if (result.length > 0) {
+            return wiki;
+          }
+        }
         continue;
       }
-      /**
-       * Use build-in in-tagtree-of (at `src/services/wiki/plugin/watchFileSystemAdaptor/in-tagtree-of.ts`) filter
-       * to check if tiddler is in tag tree.
-       * The filter returns the title if it's in the tag tree, empty otherwise
-       */
-      const result = $tw.wiki.filterTiddlers(`[in-tagtree-of:inclusive[${subWiki.tagName}]]`, undefined, $tw.wiki.makeTiddlerIterator([title]));
-      if (result.length > 0) {
-        return subWiki;
+
+      // Direct tag match - check if any of the tiddler's tags match any of the wiki's tagNames
+      // Also check if the tiddler's title IS one of the tagNames (it's a "tag tiddler" that defines that tag)
+      if (wiki.tagNames.length > 0) {
+        const hasMatchingTag = wiki.tagNames.some(tagName => tags.includes(tagName));
+        const isTitleATagName = wiki.tagNames.includes(title);
+        if (hasMatchingTag || isTitleATagName) {
+          return wiki;
+        }
+      }
+
+      // Tag tree match if enabled - check all tagNames
+      if (wiki.includeTagTree && wiki.tagNames.length > 0) {
+        for (const tagName of wiki.tagNames) {
+          const result = $tw.wiki.filterTiddlers(`[in-tagtree-of:inclusive[${tagName}]]`, undefined, $tw.wiki.makeTiddlerIterator([title]));
+          if (result.length > 0) {
+            return wiki;
+          }
+        }
       }
     }
     return undefined;
@@ -212,8 +271,14 @@ export class FileSystemAdaptor {
   /**
    * Generate file info for sub-wiki directory
    * Handles symlinks correctly across platforms (Windows junctions and Linux symlinks)
+   *
+   * CRITICAL: We must temporarily remove the tiddler from boot.files before calling
+   * generateTiddlerFileInfo, otherwise TiddlyWiki will use the old path as a base
+   * and FileSystemPaths filters will apply repeatedly, causing path accumulation.
    */
-  protected generateSubWikiFileInfo(tiddler: Tiddler, subWiki: IWikiWorkspace, fileInfo: IFileInfo | undefined): IFileInfo {
+  protected generateSubWikiFileInfo(tiddler: Tiddler, subWiki: IWikiWorkspace): IFileInfo {
+    // Sub-wikis store tiddlers directly in their root folder (not in /tiddlers subfolder)
+    // Only the main wiki uses /tiddlers because it has other meta files like .github
     let targetDirectory = subWiki.wikiFolderLocation;
 
     // Resolve symlinks to ensure consistent path handling across platforms
@@ -229,19 +294,38 @@ export class FileSystemAdaptor {
 
     $tw.utils.createDirectory(targetDirectory);
 
-    return $tw.utils.generateTiddlerFileInfo(tiddler, {
-      directory: targetDirectory,
-      pathFilters: undefined,
-      extFilters: this.extensionFilters,
-      wiki: this.wiki,
-      fileInfo: fileInfo ? { ...fileInfo, overwrite: true } : { overwrite: true } as IFileInfo,
-    });
+    const title = tiddler.fields.title;
+    const oldFileInfo = this.boot.files[title];
+
+    // Temporarily remove from boot.files to force fresh path generation
+    if (oldFileInfo) {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete this.boot.files[title];
+    }
+
+    try {
+      return $tw.utils.generateTiddlerFileInfo(tiddler, {
+        directory: targetDirectory,
+        pathFilters: undefined,
+        extFilters: this.extensionFilters,
+        wiki: this.wiki,
+      });
+    } finally {
+      // Restore old fileInfo for potential cleanup in saveTiddler
+      if (oldFileInfo) {
+        this.boot.files[title] = oldFileInfo;
+      }
+    }
   }
 
   /**
    * Generate file info using default FileSystemPaths logic
+   *
+   * CRITICAL: We must temporarily remove the tiddler from boot.files before calling
+   * generateTiddlerFileInfo, otherwise TiddlyWiki will use the old path as a base
+   * and FileSystemPaths filters will apply repeatedly, causing path accumulation.
    */
-  protected generateDefaultFileInfo(tiddler: Tiddler, fileInfo: IFileInfo | undefined): IFileInfo {
+  protected generateDefaultFileInfo(tiddler: Tiddler): IFileInfo {
     let pathFilters: string[] | undefined;
 
     if (this.wiki.tiddlerExists('$:/config/FileSystemPaths')) {
@@ -249,13 +333,28 @@ export class FileSystemAdaptor {
       pathFilters = pathFiltersText.split('\n').filter(line => line.trim().length > 0);
     }
 
-    return $tw.utils.generateTiddlerFileInfo(tiddler, {
-      directory: this.boot.wikiTiddlersPath ?? '',
-      pathFilters,
-      extFilters: this.extensionFilters,
-      wiki: this.wiki,
-      fileInfo: fileInfo ? { ...fileInfo, overwrite: true } : { overwrite: true } as IFileInfo,
-    });
+    const title = tiddler.fields.title;
+    const oldFileInfo = this.boot.files[title];
+
+    // Temporarily remove from boot.files to force fresh path generation
+    if (oldFileInfo) {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete this.boot.files[title];
+    }
+
+    try {
+      return $tw.utils.generateTiddlerFileInfo(tiddler, {
+        directory: this.boot.wikiTiddlersPath ?? '',
+        pathFilters,
+        extFilters: this.extensionFilters,
+        wiki: this.wiki,
+      });
+    } finally {
+      // Restore old fileInfo for potential cleanup in saveTiddler
+      if (oldFileInfo) {
+        this.boot.files[title] = oldFileInfo;
+      }
+    }
   }
 
   /**

@@ -242,7 +242,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         name: 'Sub Wiki',
         isSubWiki: true,
         mainWikiID: 'test-workspace',
-        tagName: 'SubWikiTag',
+        tagNames: ['SubWikiTag'],
         wikiFolderLocation: '/test/wiki/subwiki/sub1',
       };
 
@@ -278,7 +278,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         id: 'sub-1',
         isSubWiki: true,
         mainWikiID: 'test-workspace',
-        tagName: 'Tag1',
+        tagNames: ['Tag1'],
         wikiFolderLocation: '/test/wiki/sub1',
       };
 
@@ -286,7 +286,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         id: 'sub-2',
         isSubWiki: true,
         mainWikiID: 'test-workspace',
-        tagName: 'Tag2',
+        tagNames: ['Tag2'],
         wikiFolderLocation: '/test/wiki/sub2',
       };
 
@@ -322,15 +322,16 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         id: 'sub-wiki-1',
         isSubWiki: true,
         mainWikiID: 'test-workspace',
-        tagName: 'SubWikiTag',
+        tagNames: ['SubWikiTag'],
         wikiFolderLocation: '/test/wiki/subwiki',
       };
 
-      // Test scenario 2: Sub-wiki without tagName
+      // Test scenario 2: Sub-wiki without tagNames
       const subWikiWithoutTag = {
         id: 'sub-wiki-2',
         isSubWiki: true,
         mainWikiID: 'test-workspace',
+        tagNames: [],
         wikiFolderLocation: '/test/wiki/subwiki2',
       };
 
@@ -339,7 +340,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         id: 'sub-wiki-3',
         isSubWiki: true,
         mainWikiID: 'other-workspace',
-        tagName: 'AnotherTag',
+        tagNames: ['AnotherTag'],
         wikiFolderLocation: '/test/otherwiki/subwiki',
       };
 

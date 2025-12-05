@@ -363,7 +363,7 @@ export class MenuService implements IMenuService {
         submenu: workspaces.map((workspace) => ({
           label: i18n.t('WorkspaceSelector.OpenWorkspaceTagTiddler', {
             tagName: isWikiWorkspace(workspace)
-              ? (workspace.tagName ?? (workspace.isSubWiki ? workspace.name : `${workspace.name} ${i18n.t('WorkspaceSelector.DefaultTiddlers')}`))
+              ? (workspace.tagNames[0] ?? (workspace.isSubWiki ? workspace.name : `${workspace.name} ${i18n.t('WorkspaceSelector.DefaultTiddlers')}`))
               : workspace.name,
           }),
           click: async () => {

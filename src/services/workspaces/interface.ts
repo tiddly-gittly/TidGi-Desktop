@@ -136,15 +136,27 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
    */
   syncOnStartup: boolean;
   /**
-   * Tag name in tiddlywiki's filesystemPath, tiddler with this tag will be save into this subwiki
+   * Tag names in tiddlywiki's filesystemPath, tiddlers with any of these tags will be saved into this subwiki
    */
-  tagName: string | null;
+  tagNames: string[];
   /**
-   * When enabled, tiddlers that are indirectly tagged (tag of tag of tag...) with this sub-wiki's tagName
+   * When enabled, tiddlers that are indirectly tagged (tag of tag of tag...) with any of this sub-wiki's tagNames
    * will also be saved to this sub-wiki. Uses the in-tagtree-of filter operator.
    * Only applies when creating new tiddlers, not when modifying existing ones.
    */
   includeTagTree: boolean;
+  /**
+   * When enabled, use fileSystemPathFilter instead of tagName/includeTagTree to match tiddlers.
+   * This allows more complex matching logic using TiddlyWiki filter expressions.
+   */
+  fileSystemPathFilterEnable: boolean;
+  /**
+   * TiddlyWiki filter expressions to match tiddlers for this workspace (one per line).
+   * Example: `[in-tagtree-of[Calendar]!tag[Public]!tag[Draft]]`
+   * Any matching filter will route the tiddler to this workspace.
+   * Only used when fileSystemPathFilterEnable is true.
+   */
+  fileSystemPathFilter: string | null;
   /**
    * Use authenticated-user-header to provide `TIDGI_AUTH_TOKEN_HEADER` as header key to receive a value as username (we use it as token)
    */

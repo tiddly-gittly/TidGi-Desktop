@@ -36,15 +36,14 @@ export function createLoadWikiTiddlersWithSubWikis(
     // Call original function first to load main wiki
     const wikiInfo = originalLoadWikiTiddlers(wikiPath, options);
 
-    // defensive check
-    if (wikiPath === homePath && wikiInfo && subWikis.length > 0) {
-      return;
+    // Only inject sub-wikis when loading the main wiki (not when loading included wikis)
+    if (wikiPath !== homePath || !wikiInfo || subWikis.length === 0) {
+      return wikiInfo;
     }
     for (const subWiki of subWikis) {
-      const subWikiTiddlersPath = path.resolve(
-        subWiki.wikiFolderLocation,
-        wikiInstance.config.wikiTiddlersSubDir,
-      );
+      // Sub-wikis store tiddlers directly in their root folder (not in /tiddlers subfolder)
+      // Only the main wiki uses /tiddlers because it has other meta files like .github
+      const subWikiTiddlersPath = subWiki.wikiFolderLocation;
 
       try {
         // Load tiddlers from sub-wiki directory

@@ -46,7 +46,7 @@ export function useValidateExistedWiki(
     form.gitRepoUrl,
     form.gitUserInfo,
     form.mainWikiToLink.wikiFolderLocation,
-    form.tagName,
+    form.tagNames,
     errorInWhichComponentSetter,
   ]);
   return [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter];
@@ -86,7 +86,7 @@ export function useExistedWiki(
           wikiFolderNameForExistedFolder,
           'subwiki',
           form.mainWikiToLink.wikiFolderLocation,
-          form.tagName,
+          form.tagNames[0] ?? '',
           true,
         );
       }

@@ -361,8 +361,9 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (isWikiWorkspace(newWorkspace) && newWorkspace.isSubWiki && typeof newWorkspace.mainWikiID === 'string') {
       logger.debug(`${nextWorkspaceID} is a subwiki, set its main wiki ${newWorkspace.mainWikiID} to active instead.`);
       await this.setActiveWorkspaceView(newWorkspace.mainWikiID);
-      if (typeof newWorkspace.tagName === 'string') {
-        await container.get<IWikiService>(serviceIdentifier.Wiki).wikiOperationInBrowser(WikiChannel.openTiddler, newWorkspace.mainWikiID, [newWorkspace.tagName]);
+      // Open the first tag if available
+      if (newWorkspace.tagNames.length > 0) {
+        await container.get<IWikiService>(serviceIdentifier.Wiki).wikiOperationInBrowser(WikiChannel.openTiddler, newWorkspace.mainWikiID, [newWorkspace.tagNames[0]]);
       }
       return;
     }

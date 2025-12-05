@@ -50,7 +50,7 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
       return firstMainWiki ? { wikiFolderLocation: firstMainWiki.wikiFolderLocation, port: firstMainWiki.port, id: firstMainWiki.id } : { wikiFolderLocation: '', port: 0, id: '' };
     },
   );
-  const [tagName, tagNameSetter] = useState<string>('');
+  const [tagNames, tagNamesSetter] = useState<string[]>([]);
   let mainWikiToLinkIndex = mainWorkspaceList.findIndex((workspace) => workspace.id === mainWikiToLink.id);
   if (mainWikiToLinkIndex < 0) {
     mainWikiToLinkIndex = 0;
@@ -123,8 +123,8 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
     wikiPortSetter,
     mainWikiToLink,
     mainWikiToLinkSetter,
-    tagName,
-    tagNameSetter,
+    tagNames,
+    tagNamesSetter,
     gitRepoUrl,
     gitRepoUrlSetter,
     parentFolderLocation,
@@ -162,7 +162,7 @@ export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreate
     mainWikiID: isCreateMainWorkspace ? null : form.mainWikiToLink.id,
     name: form.wikiFolderName,
     storageService: form.storageProvider,
-    tagName: isCreateMainWorkspace ? null : form.tagName,
+    tagNames: isCreateMainWorkspace ? [] : form.tagNames,
     port: form.wikiPort,
     wikiFolderLocation: form.wikiFolderLocation!,
     backupOnInterval: true,
@@ -174,6 +174,8 @@ export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreate
     enableHTTPAPI: false,
     enableFileSystemWatch: true,
     includeTagTree: false,
+    fileSystemPathFilterEnable: false,
+    fileSystemPathFilter: null,
     lastNodeJSArgv: [],
   };
 }

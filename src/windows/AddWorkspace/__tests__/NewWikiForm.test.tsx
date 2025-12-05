@@ -47,8 +47,8 @@ const createMockForm = (overrides: Partial<IWikiWorkspaceForm> = {}): IWikiWorks
       metadata: {},
     } as unknown as IWorkspace,
   ],
-  tagName: '',
-  tagNameSetter: vi.fn(),
+  tagNames: [] as string[],
+  tagNamesSetter: vi.fn(),
   gitRepoUrl: '',
   gitRepoUrlSetter: vi.fn(),
   gitUserInfo: undefined as IGitUserInfos | undefined,
@@ -194,7 +194,7 @@ describe('NewWikiForm Component', () => {
       const user = userEvent.setup();
       const mockSetter = vi.fn();
       const form = createMockForm({
-        tagNameSetter: mockSetter,
+        tagNamesSetter: mockSetter,
       });
 
       await renderNewWikiForm({
@@ -206,7 +206,7 @@ describe('NewWikiForm Component', () => {
       const tagInput = screen.getByTestId('tagname-autocomplete-input');
       await user.type(tagInput, 'MyTag');
       await user.keyboard('{enter}');
-      expect(mockSetter).toHaveBeenCalledWith('MyTag');
+      expect(mockSetter).toHaveBeenCalledWith(['MyTag']);
     });
   });
 
@@ -231,7 +231,7 @@ describe('NewWikiForm Component', () => {
         isCreateMainWorkspace: false,
         errorInWhichComponent: {
           mainWikiToLink: true,
-          tagName: true,
+          tagNames: true,
         },
       });
 
