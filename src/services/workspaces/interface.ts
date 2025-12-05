@@ -146,7 +146,7 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
    */
   includeTagTree: boolean;
   /**
-   * When enabled, use fileSystemPathFilter instead of tagName/includeTagTree to match tiddlers.
+   * When enabled, also use fileSystemPathFilter expressions to match tiddlers, in addition to tagName/includeTagTree matching.
    * This allows more complex matching logic using TiddlyWiki filter expressions.
    */
   fileSystemPathFilterEnable: boolean;

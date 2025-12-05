@@ -130,9 +130,9 @@ export class FileSystemAdaptor {
    * For draft tiddlers, check the original tiddler's tags.
    *
    * Priority:
-   * 1. If fileSystemPathFilterEnable is enabled, use custom filterExpression
-   * 2. Direct tag match with sub-wiki tagNames
-   * 3. If includeTagTree is enabled, use in-tagtree-of filter for recursive tag matching
+   * 1. Direct tag match with sub-wiki tagNames
+   * 2. If includeTagTree is enabled, use in-tagtree-of filter for recursive tag matching
+   * 3. If fileSystemPathFilterEnable is enabled, use custom filterExpression
    * 4. Fall back to TiddlyWiki's FileSystemPaths logic
    *
    * IMPORTANT: We check if the target directory has changed. Only when directory changes
@@ -233,7 +233,11 @@ export class FileSystemAdaptor {
       // Tag tree match if enabled - check all tagNames
       if (wiki.includeTagTree && wiki.tagNames.length > 0) {
         for (const tagName of wiki.tagNames) {
-          const result = $tw.wiki.filterTiddlers(`[in-tagtree-of:inclusive[${tagName}]]`, undefined, $tw.wiki.makeTiddlerIterator([title]));
+          const result = $tw.wiki.filterTiddlers(
+            `[in-tagtree-of:inclusive<tagName>]`,
+            $tw.rootWidget.makeFakeWidgetWithVariables({ tagName }),
+            $tw.wiki.makeTiddlerIterator([title]),
+          );
           if (result.length > 0) {
             return wiki;
           }
