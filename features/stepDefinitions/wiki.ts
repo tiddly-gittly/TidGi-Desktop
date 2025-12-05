@@ -1,10 +1,10 @@
-import { Then, When } from '@cucumber/cucumber';
+import { DataTable, Given, Then, When } from '@cucumber/cucumber';
 import { exec as gitExec } from 'dugite';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
 import type { IWorkspace } from '../../src/services/workspaces/interface';
-import { settingsPath, wikiTestRootPath, wikiTestWikiPath } from '../supports/paths';
+import { settingsDirectory, settingsPath, wikiTestRootPath, wikiTestWikiPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
@@ -56,7 +56,23 @@ export async function waitForLogMarker(searchString: string, errorMessage: strin
 }
 
 When('I cleanup test wiki so it could create a new one on start', async function() {
+  // Clean up main wiki folder
   if (fs.existsSync(wikiTestWikiPath)) fs.removeSync(wikiTestWikiPath);
+
+  // Clean up all sub-wiki folders in wiki-test directory (SubWiki*, SubWikiPreload, SubWikiTagTree, SubWikiFilter, etc.)
+  if (fs.existsSync(wikiTestRootPath)) {
+    const entries = fs.readdirSync(wikiTestRootPath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory() && entry.name !== 'wiki') {
+        const subWikiPath = path.join(wikiTestRootPath, entry.name);
+        try {
+          fs.removeSync(subWikiPath);
+        } catch (error) {
+          console.warn(`Failed to remove sub-wiki folder ${entry.name}:`, error);
+        }
+      }
+    }
+  }
 
   /**
    * Clean up log files to prevent reading stale logs from previous scenarios.
@@ -110,9 +126,11 @@ When('I cleanup test wiki so it could create a new one on start', async function
   const filtered: Record<string, IWorkspace> = {};
   for (const id of Object.keys(workspaces)) {
     const ws = workspaces[id];
-    const name = ws.name;
-    if (name === 'wiki' || id === 'wiki') continue;
-    filtered[id] = ws;
+    // Keep only page-type workspaces (agent, help, guide, add), remove all wiki workspaces
+    // This includes main wiki and all sub-wikis
+    if ('pageType' in ws && ws.pageType) {
+      filtered[id] = ws;
+    }
   }
 
   // Write with exponential backoff retry logic to handle file locks
@@ -264,6 +282,97 @@ Then('file {string} should not exist in {string}', { timeout: 15000 }, async fun
       `File "${fileName}" should not exist but was found in directory: ${directoryPath}`,
     );
   }
+});
+
+/**
+ * Verify that a workspace in settings.json has a specific property set to a specific value
+ */
+Then('settings.json should have workspace {string} with {string} set to {string}', { timeout: 10000 }, async function(
+  this: ApplicationWorld,
+  workspaceName: string,
+  propertyName: string,
+  expectedValue: string,
+) {
+  await backOff(
+    async () => {
+      if (!await fs.pathExists(settingsPath)) {
+        throw new Error(`settings.json not found at ${settingsPath}`);
+      }
+
+      type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
+      const settings = await fs.readJson(settingsPath) as SettingsFile;
+
+      if (!settings.workspaces) {
+        throw new Error('No workspaces found in settings.json');
+      }
+
+      // Find the workspace by name
+      const workspace = Object.values(settings.workspaces).find(ws => ws.name === workspaceName);
+      if (!workspace) {
+        const existingNames = Object.values(settings.workspaces).map(ws => ws.name).join(', ');
+        throw new Error(`Workspace "${workspaceName}" not found in settings.json. Existing workspaces: ${existingNames}`);
+      }
+
+      // Get the property value
+      const actualValue = (workspace as unknown as Record<string, unknown>)[propertyName];
+
+      // Convert expected value to appropriate type for comparison
+      let parsedExpectedValue: unknown = expectedValue;
+      if (expectedValue === 'true') parsedExpectedValue = true;
+      else if (expectedValue === 'false') parsedExpectedValue = false;
+      else if (expectedValue === 'null') parsedExpectedValue = null;
+      else if (!isNaN(Number(expectedValue))) parsedExpectedValue = Number(expectedValue);
+
+      if (actualValue !== parsedExpectedValue) {
+        throw new Error(`Expected "${propertyName}" to be "${expectedValue}" but got "${String(actualValue)}"`);
+      }
+    },
+    BACKOFF_OPTIONS,
+  );
+});
+
+/**
+ * Verify that a workspace in settings.json has a property array that contains a specific value
+ */
+Then('settings.json should have workspace {string} with {string} containing {string}', { timeout: 10000 }, async function(
+  this: ApplicationWorld,
+  workspaceName: string,
+  propertyName: string,
+  expectedValue: string,
+) {
+  await backOff(
+    async () => {
+      if (!await fs.pathExists(settingsPath)) {
+        throw new Error(`settings.json not found at ${settingsPath}`);
+      }
+
+      type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
+      const settings = await fs.readJson(settingsPath) as SettingsFile;
+
+      if (!settings.workspaces) {
+        throw new Error('No workspaces found in settings.json');
+      }
+
+      // Find the workspace by name
+      const workspace = Object.values(settings.workspaces).find(ws => ws.name === workspaceName);
+      if (!workspace) {
+        const existingNames = Object.values(settings.workspaces).map(ws => ws.name).join(', ');
+        throw new Error(`Workspace "${workspaceName}" not found in settings.json. Existing workspaces: ${existingNames}`);
+      }
+
+      // Get the property value
+      const actualValue = (workspace as unknown as Record<string, unknown>)[propertyName];
+
+      if (!Array.isArray(actualValue)) {
+        throw new Error(`Expected "${propertyName}" to be an array but got "${typeof actualValue}"`);
+      }
+
+      if (!actualValue.includes(expectedValue)) {
+        throw new Error(`Expected "${propertyName}" to contain "${expectedValue}" but got [${actualValue.join(', ')}]`);
+      }
+    },
+    BACKOFF_OPTIONS,
+  );
 });
 
 /**
@@ -644,6 +753,195 @@ async function clearHibernationTestData() {
     }
   }
 }
+
+/**
+ * Setup a sub-wiki with optional settings and multiple pre-existing tiddlers.
+ * This creates the sub-wiki folder, tiddler files, and settings configuration
+ * so the app loads everything on first startup.
+ *
+ * @param subWikiName - Name of the sub-wiki folder
+ * @param tagName - Tag name for the sub-wiki routing
+ * @param options - Optional settings: includeTagTree, fileSystemPathFilter
+ * @param tiddlers - Array of {title, tags, content} objects from DataTable.hashes()
+ */
+async function setupSubWiki(
+  subWikiName: string,
+  tagName: string,
+  options: {
+    includeTagTree?: boolean;
+    fileSystemPathFilter?: string;
+  },
+  tiddlers: Record<string, string>[],
+) {
+  // 1. Create sub-wiki folder
+  const subWikiPath = path.join(wikiTestRootPath, subWikiName);
+  await fs.ensureDir(subWikiPath);
+
+  // 2. Create tiddler files
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[-:T.Z]/g, '').slice(0, 17);
+
+  for (const tiddler of tiddlers) {
+    const tiddlerFilePath = path.join(subWikiPath, `${tiddler.title}.tid`);
+    const tiddlerFileContent = `created: ${timestamp}
+modified: ${timestamp}
+tags: ${tiddler.tags}
+title: ${tiddler.title}
+
+${tiddler.content}
+`;
+    await fs.writeFile(tiddlerFilePath, tiddlerFileContent, 'utf-8');
+  }
+
+  // 3. Create main wiki folder structure (if not exists)
+  const mainWikiPath = wikiTestWikiPath;
+  const templatePath = path.join(process.cwd(), 'template', 'wiki');
+  if (!await fs.pathExists(mainWikiPath)) {
+    await fs.copy(templatePath, mainWikiPath);
+    // Remove .git from template
+    await fs.remove(path.join(mainWikiPath, '.git')).catch(() => { /* ignore */ });
+  }
+
+  // 4. Update settings.json with both main wiki and sub-wiki workspaces
+  await fs.ensureDir(settingsDirectory);
+  let settings: { workspaces?: Record<string, IWorkspace> } & Record<string, unknown> = {};
+  if (await fs.pathExists(settingsPath)) {
+    settings = await fs.readJson(settingsPath);
+  }
+
+  // Generate unique IDs
+  const mainWikiId = 'main-wiki-test-id';
+  const subWikiId = `sub-wiki-${subWikiName}-test-id`;
+
+  // Create main wiki workspace if not exists
+  if (!settings.workspaces) {
+    settings.workspaces = {};
+  }
+
+  // Check if main wiki already exists
+  const existingMainWiki = Object.values(settings.workspaces).find(
+    ws => 'wikiFolderLocation' in ws && ws.wikiFolderLocation === mainWikiPath,
+  );
+
+  const mainWikiIdToUse = existingMainWiki?.id ?? mainWikiId;
+
+  if (!existingMainWiki) {
+    settings.workspaces[mainWikiId] = {
+      id: mainWikiId,
+      name: 'wiki',
+      wikiFolderLocation: mainWikiPath,
+      isSubWiki: false,
+      storageService: 'local',
+      backupOnInterval: true,
+      excludedPlugins: [],
+      enableHTTPAPI: false,
+      includeTagTree: false,
+      fileSystemPathFilterEnable: false,
+      fileSystemPathFilter: null,
+      tagNames: [],
+      userName: '',
+      order: 0,
+      port: 5212,
+      readOnlyMode: false,
+      tokenAuth: false,
+      tagName: null,
+      mainWikiToLink: null,
+      mainWikiID: null,
+      enableFileSystemWatch: true,
+      lastNodeJSArgv: [],
+      homeUrl: `tidgi://${mainWikiId}`,
+      gitUrl: null,
+      active: true,
+      hibernated: false,
+      hibernateWhenUnused: false,
+      lastUrl: null,
+      picturePath: null,
+      subWikiFolderName: 'subwiki',
+      syncOnInterval: false,
+      syncOnStartup: true,
+      transparentBackground: false,
+    } as unknown as IWorkspace;
+  }
+
+  // Create sub-wiki workspace with optional settings
+  settings.workspaces[subWikiId] = {
+    id: subWikiId,
+    name: subWikiName,
+    wikiFolderLocation: subWikiPath,
+    isSubWiki: true,
+    mainWikiToLink: mainWikiPath,
+    mainWikiID: mainWikiIdToUse,
+    storageService: 'local',
+    backupOnInterval: true,
+    excludedPlugins: [],
+    enableHTTPAPI: false,
+    includeTagTree: options.includeTagTree ?? false,
+    fileSystemPathFilterEnable: Boolean(options.fileSystemPathFilter),
+    fileSystemPathFilter: options.fileSystemPathFilter ?? null,
+    tagNames: [tagName],
+    tagName: tagName,
+    userName: '',
+    order: 1,
+    port: 5213,
+    readOnlyMode: false,
+    tokenAuth: false,
+    enableFileSystemWatch: true,
+    lastNodeJSArgv: [],
+    homeUrl: `tidgi://${subWikiId}`,
+    gitUrl: null,
+    active: false,
+    hibernated: false,
+    hibernateWhenUnused: false,
+    lastUrl: null,
+    picturePath: null,
+    subWikiFolderName: 'subwiki',
+    syncOnInterval: false,
+    syncOnStartup: true,
+    transparentBackground: false,
+  } as unknown as IWorkspace;
+
+  await fs.writeJson(settingsPath, settings, { spaces: 2 });
+}
+
+/**
+ * Setup a sub-wiki with tiddlers (basic, no special options)
+ */
+Given('I setup a sub-wiki {string} with tag {string} and tiddlers:', async function(
+  this: ApplicationWorld,
+  subWikiName: string,
+  tagName: string,
+  dataTable: DataTable,
+) {
+  const rows = dataTable.hashes();
+  await setupSubWiki(subWikiName, tagName, {}, rows);
+});
+
+/**
+ * Setup a sub-wiki with includeTagTree enabled and tiddlers
+ */
+Given('I setup a sub-wiki {string} with tag {string} and includeTagTree enabled and tiddlers:', async function(
+  this: ApplicationWorld,
+  subWikiName: string,
+  tagName: string,
+  dataTable: DataTable,
+) {
+  const rows = dataTable.hashes();
+  await setupSubWiki(subWikiName, tagName, { includeTagTree: true }, rows);
+});
+
+/**
+ * Setup a sub-wiki with custom filter and tiddlers
+ */
+Given('I setup a sub-wiki {string} with tag {string} and filter {string} and tiddlers:', async function(
+  this: ApplicationWorld,
+  subWikiName: string,
+  tagName: string,
+  filter: string,
+  dataTable: DataTable,
+) {
+  const rows = dataTable.hashes();
+  await setupSubWiki(subWikiName, tagName, { fileSystemPathFilter: filter }, rows);
+});
 
 export { clearGitTestData, clearHibernationTestData, clearSubWikiRoutingTestData, clearTestIdLogs };
 

@@ -460,6 +460,7 @@ export default function EditWorkspace(): React.JSX.Element {
                       edge='end'
                       color='primary'
                       checked={includeTagTree}
+                      data-testid='include-tag-tree-switch'
                       onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                         workspaceSetter({ ...workspace, includeTagTree: event.target.checked }, true);
                       }}

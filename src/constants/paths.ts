@@ -83,7 +83,7 @@ export const LOCALIZATION_FOLDER = isPackaged
 // For E2E tests, always use project root's wiki-test (outside asar)
 // Windows/Linux: process.resourcesPath = out/TidGi-.../resources -> need ../../.. (3 levels) to get to project root
 // macOS: process.resourcesPath = out/TidGi-darwin-x64/TidGi.app/Contents/Resources -> need ../../../../../ (5 levels) to get to project root
-export const DEFAULT_FIRST_WIKI_FOLDER_PATH = isTest && isPackaged
+export const DEFAULT_FIRST_WIKI_FOLDER_PATH = (isTest && isPackaged)
   ? (isMac
     ? path.resolve(process.resourcesPath, '..', '..', '..', '..', '..', testWikiFolderName) // macOS E2E: 5 levels up
     : path.resolve(process.resourcesPath, '..', '..', '..', testWikiFolderName)) // Windows/Linux E2E: 3 levels up

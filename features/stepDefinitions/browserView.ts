@@ -1,6 +1,6 @@
 import { Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
-import { clickElement, clickElementWithText, elementExists, getDOMContent, getTextContent, isLoaded, pressKey, typeText } from '../supports/webContentsViewHelper';
+import { clickElement, clickElementWithText, elementExists, executeTiddlyWikiCode, getDOMContent, getTextContent, isLoaded, pressKey, typeText } from '../supports/webContentsViewHelper';
 import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
@@ -79,6 +79,28 @@ Then('the browser view should be loaded and visible', { timeout: 15000 }, async 
     { ...BACKOFF_OPTIONS, numOfAttempts: 15 },
   ).catch(() => {
     throw new Error('Browser view is not loaded or visible after multiple attempts');
+  });
+});
+
+Then('I wait for {string} element in browser view with selector {string}', { timeout: 15000 }, async function(
+  this: ApplicationWorld,
+  elementComment: string,
+  selector: string,
+) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+
+  await backOff(
+    async () => {
+      const exists = await elementExists(this.app!, selector);
+      if (!exists) {
+        throw new Error(`Element "${elementComment}" with selector "${selector}" not found yet`);
+      }
+    },
+    { ...BACKOFF_OPTIONS, numOfAttempts: 20, startingDelay: 200 },
+  ).catch(() => {
+    throw new Error(`Element "${elementComment}" with selector "${selector}" did not appear in browser view after multiple attempts`);
   });
 });
 
@@ -212,4 +234,17 @@ Then('I should see a(n) {string} element in browser view with selector {string}'
   ).catch(() => {
     throw new Error(`Element "${elementComment}" with selector "${selector}" not found in browser view after multiple attempts`);
   });
+});
+
+When('I open tiddler {string} in browser view', async function(this: ApplicationWorld, tiddlerTitle: string) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+
+  try {
+    // Use TiddlyWiki's addToStory API to open the tiddler
+    await executeTiddlyWikiCode(this.app, `$tw.wiki.addToStory("${tiddlerTitle.replace(/"/g, '\\"')}")`);
+  } catch (error) {
+    throw new Error(`Failed to open tiddler "${tiddlerTitle}" in browser view: ${error as Error}`);
+  }
 });
