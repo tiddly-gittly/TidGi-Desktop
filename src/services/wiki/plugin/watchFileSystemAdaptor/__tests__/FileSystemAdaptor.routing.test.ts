@@ -39,7 +39,7 @@ global.$tw = {
   utils: mockUtils,
   wiki: {
     filterTiddlers: vi.fn(() => []),
-    makeTiddlerIterator: vi.fn((titles) => titles),
+    makeTiddlerIterator: vi.fn((titles: string[]) => titles),
   },
   rootWidget: {
     makeFakeWidgetWithVariables: vi.fn(() => ({})),
