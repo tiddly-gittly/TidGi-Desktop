@@ -799,14 +799,14 @@ ${tiddler.content}
   if (!await fs.pathExists(mainWikiPath)) {
     await fs.copy(templatePath, mainWikiPath);
     // Remove .git from template
-    await fs.remove(path.join(mainWikiPath, '.git')).catch(() => { /* ignore */ });
+    await fs.remove(path.join(mainWikiPath, '.git')).catch(() => {/* ignore */});
   }
 
   // 4. Update settings.json with both main wiki and sub-wiki workspaces
   await fs.ensureDir(settingsDirectory);
   let settings: { workspaces?: Record<string, IWorkspace> } & Record<string, unknown> = {};
   if (await fs.pathExists(settingsPath)) {
-    settings = await fs.readJson(settingsPath);
+    settings = await fs.readJson(settingsPath) as { workspaces?: Record<string, IWorkspace> };
   }
 
   // Generate unique IDs

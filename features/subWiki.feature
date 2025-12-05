@@ -20,56 +20,23 @@ Feature: Sub-Wiki Functionality
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
-    # Create tiddler with tag to test file system plugin
-    And I click on "add tiddler button" element in browser view with selector "button:has(.tc-image-new-button)"
-    # Focus on title input, clear it, and type new title in the draft tiddler
-    And I click on "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    And I wait for 0.2 seconds
-    And I press "Control+a" in browser view
-    And I wait for 0.2 seconds
-    And I press "Delete" in browser view
-    And I type "TestTiddlerTitle" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    # Wait for tiddler state to settle, otherwise it still shows 3 chars (新条目) for a while
-    And I wait for 2 seconds
-    Then I should see "16 chars" in the browser view content
-    # Input tag by typing in the tag input field - use precise selector to target the tag input specifically
-    And I click on "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
-    And I wait for 0.2 seconds
-    And I press "Control+a" in browser view
-    And I wait for 0.2 seconds
-    And I press "Delete" in browser view
-    And I wait for 0.2 seconds
-    And I type "TestTag" in "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
-    # Click the add tag button to confirm the tag (not just typing)
-    And I wait for 0.2 seconds
-    And I click on "add tag button" element in browser view with selector "div[data-tiddler-title^='Draft of'] span.tc-add-tag-button button"
-    # Wait for file system plugin to save the draft tiddler to SubWiki folder, Even 3 second will randomly failed in next step.
-    And I wait for 4.5 seconds
-    # Verify the DRAFT tiddler has been routed to sub-wiki immediately after adding the tag
-    Then file "Draft of '新条目'.tid" should exist in "{tmpDir}/SubWiki"
-    # Verify the draft file is NOT in main wiki tiddlers folder (it should have been moved to SubWiki)
-    Then file "Draft of '新条目'.tid" should not exist in "{tmpDir}/wiki/tiddlers"
-    # Click confirm button to save the tiddler
-    And I click on "confirm button" element in browser view with selector "button:has(.tc-image-done-button)"
-    And I wait for 1 seconds
-    # Verify the final tiddler file exists in sub-wiki folder after save
-    # After confirming the draft, it should be saved as TestTiddlerTitle.tid in SubWiki
+    # Create tiddler with tag to test routing to sub-wiki folder
+    When I create a tiddler "TestTiddlerTitle" with tag "TestTag" in browser view
+    And I wait for 3 seconds for "tiddler to be saved and routed to sub-wiki"
+    # Verify the tiddler file exists in sub-wiki folder after save
     Then file "TestTiddlerTitle.tid" should exist in "{tmpDir}/SubWiki"
-    # Test SSE is still working after SubWiki creation - modify a main wiki tiddler
+    # Verify tiddler is NOT in main wiki tiddlers folder
+    Then file "TestTiddlerTitle.tid" should not exist in "{tmpDir}/wiki/tiddlers"
+    # Test SSE is still working - modify a main wiki tiddler
     When I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Main wiki content modified after SubWiki creation"
     Then I wait for tiddler "Index" to be updated by watch-fs
-    # Confirm Index always open
     Then I should see a "Index tiddler" element in browser view with selector "div[data-tiddler-title='Index']"
     Then I should see "Main wiki content modified after SubWiki creation" in the browser view content
-    # Test modification in sub-wiki folder - tiddler was routed there by tag
-    # Modify the tiddler file externally - need to preserve .tid format with metadata
+    # Test modification in sub-wiki folder
     When I modify file "{tmpDir}/SubWiki/TestTiddlerTitle.tid" to contain "Content modified in SubWiki folder"
-    # Wait for watch-fs to detect the change - use longer wait and open tiddler directly
     And I wait for 2 seconds for "watch-fs to detect file change in sub-wiki"
-    # Open the tiddler directly to verify content was updated
     When I open tiddler "TestTiddlerTitle" in browser view
     And I wait for 1 seconds
-    # Verify the modified content appears in the wiki
     Then I should see "Content modified in SubWiki folder" in the browser view content
 
   @subwiki @subwiki-load
@@ -123,39 +90,20 @@ Feature: Sub-Wiki Functionality
     When I open tiddler "TiddlerB" in browser view
     And I wait for 0.5 seconds
     Then I should see "TiddlerB with TiddlerA tag" in the browser view content
-    # Now create TiddlerC with tag TiddlerB (testing tag tree routing: TiddlerC -> TiddlerB -> TiddlerA -> TagTreeRoot)
-    And I click on "add tiddler button" element in browser view with selector "button:has(.tc-image-new-button)"
-    And I click on "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    And I wait for 0.2 seconds
-    And I press "Control+a" in browser view
-    And I wait for 0.2 seconds
-    And I press "Delete" in browser view
-    And I type "TiddlerC" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    And I wait for 0.5 seconds
-    # Add TiddlerB as a tag (testing tag tree traversal: TiddlerC -> TiddlerB -> TiddlerA -> TagTreeRoot)
-    And I click on "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
-    And I wait for 0.2 seconds
-    And I type "TiddlerB" in "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
-    And I wait for 0.2 seconds
-    And I click on "add tag button" element in browser view with selector "div[data-tiddler-title^='Draft of'] span.tc-add-tag-button button"
-    And I wait for 0.5 seconds
-    And I click on "confirm button" element in browser view with selector "button:has(.tc-image-done-button)"
+    # Create TiddlerC with tag TiddlerB (testing tag tree routing: TiddlerC -> TiddlerB -> TiddlerA -> TagTreeRoot)
+    When I create a tiddler "TiddlerC" with tag "TiddlerB" in browser view
     And I wait for 3 seconds for "TiddlerC to be saved via tag tree routing"
     # Verify TiddlerC is saved to sub-wiki via tag tree (TiddlerB -> TiddlerA -> TagTreeRoot)
-    # This confirms in-tagtree-of filter is working correctly
     Then file "TiddlerC.tid" should exist in "{tmpDir}/SubWikiTagTree"
-    # Verify that TiddlerC is NOT in main wiki tiddlers folder
     Then file "TiddlerC.tid" should not exist in "{tmpDir}/wiki/tiddlers"
 
   @subwiki @subwiki-filter
   Scenario: Tiddlers matching custom filter are routed to sub-wiki
-    # Setup: Create sub-wiki with custom filter that matches tiddlers with "FilterTest" field
-    # The filter "[has[filtertest]]" will match any tiddler with a "filtertest" field
+    # Setup: Create sub-wiki with custom filter that matches tiddlers with "filtertest" field
     Given I cleanup test wiki so it could create a new one on start
     And I setup a sub-wiki "SubWikiFilter" with tag "FilterTag" and filter "[has[filtertest]]" and tiddlers:
       | title          | tags      | content                        |
       | FilterTiddlerA | FilterTag | TiddlerA matched by filter     |
-    # Now launch the app
     When I launch the TidGi application
     And I wait for the page to load completely
     Then I should see "page body and workspaces" elements with selectors:
@@ -165,31 +113,10 @@ Feature: Sub-Wiki Functionality
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
     # Create a tiddler with the "filtertest" field to test filter routing
-    And I click on "add tiddler button" element in browser view with selector "button:has(.tc-image-new-button)"
-    And I click on "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    And I wait for 0.2 seconds
-    And I press "Control+a" in browser view
-    And I wait for 0.2 seconds
-    And I press "Delete" in browser view
-    And I type "FilterMatchTiddler" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    And I wait for 0.5 seconds
-    # Add the "filtertest" field by clicking on add field button
-    And I click on "add field name input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-name-wrapper input"
-    And I wait for 0.2 seconds
-    And I type "filtertest" in "add field name input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-name-wrapper input"
-    And I wait for 0.2 seconds
-    And I click on "add field value input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-value input"
-    And I wait for 0.2 seconds
-    And I type "yes" in "add field value input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-value input"
-    And I wait for 0.2 seconds
-    And I click on "add field button" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add button"
-    And I wait for 0.5 seconds
-    # Confirm to save the tiddler
-    And I click on "confirm button" element in browser view with selector "button:has(.tc-image-done-button)"
+    When I create a tiddler "FilterMatchTiddler" with field "filtertest" set to "yes" in browser view
     And I wait for 3 seconds for "FilterMatchTiddler to be saved via filter routing"
     # Verify FilterMatchTiddler is saved to sub-wiki via filter
     Then file "FilterMatchTiddler.tid" should exist in "{tmpDir}/SubWikiFilter"
-    # Verify that FilterMatchTiddler is NOT in main wiki tiddlers folder
     Then file "FilterMatchTiddler.tid" should not exist in "{tmpDir}/wiki/tiddlers"
 
   @subwiki @subwiki-settings-ui

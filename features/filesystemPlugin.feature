@@ -25,12 +25,9 @@ Feature: Filesystem Plugin
       """
     # Wait for watch-fs to detect and add the tiddler
     Then I wait for tiddler "WatchTestTiddler" to be added by watch-fs
-    # Open sidebar "最近" tab to see the timeline
-    And I click on "sidebar tab" element in browser view with selector "div.tc-tab-buttons.tc-sidebar-tabs-main > button:has-text('最近')"
-    # wait for tw animation, sidebar need time to show
-    And I wait for 1 seconds
-    # Click on the tiddler link in timeline to open it
-    And I click on "timeline link" element in browser view with selector "div.tc-timeline a.tc-tiddlylink:has-text('WatchTestTiddler')"
+    # Open the tiddler directly
+    When I open tiddler "WatchTestTiddler" in browser view
+    And I wait for 0.5 seconds
     # Verify the tiddler content is displayed
     Then I should see "Initial content from filesystem" in the browser view content
 
@@ -46,10 +43,8 @@ Feature: Filesystem Plugin
       Original content
       """
     Then I wait for tiddler "TestTiddler" to be added by watch-fs
-    # Open the tiddler to view it
-    And I click on "sidebar tab" element in browser view with selector "div.tc-tab-buttons.tc-sidebar-tabs-main > button:has-text('最近')"
-    And I wait for 0.5 seconds
-    And I click on "timeline link" element in browser view with selector "div.tc-timeline a.tc-tiddlylink:has-text('TestTiddler')"
+    # Open the tiddler directly
+    When I open tiddler "TestTiddler" in browser view
     And I wait for 0.5 seconds
     Then I should see "Original content" in the browser view content
     # Modify the file externally
@@ -61,10 +56,9 @@ Feature: Filesystem Plugin
     # Now delete the file externally
     When I delete file "{tmpDir}/wiki/tiddlers/TestTiddler.tid"
     Then I wait for tiddler "TestTiddler" to be deleted by watch-fs
-    # Re-open timeline to see updated list
-    And I click on "sidebar tab" element in browser view with selector "div.tc-tab-buttons.tc-sidebar-tabs-main > button:has-text('最近')"
-    # The timeline should not have a clickable link to TestTiddler anymore
-    Then I should not see a "TestTiddler timeline link" element in browser view with selector "div.tc-timeline a.tc-tiddlylink:has-text('TestTiddler')"
+    And I wait for 0.5 seconds
+    # The tiddler should show missing message
+    Then I should see "佚失条目" in the browser view content
 
   @file-watching
   Scenario: Deleting open tiddler file shows missing tiddler message
@@ -87,10 +81,9 @@ Feature: Filesystem Plugin
       Content before rename
       """
     Then I wait for tiddler "OldName" to be added by watch-fs
-    # Open sidebar to see the timeline
-    And I click on "sidebar tab" element in browser view with selector "div.tc-tab-buttons.tc-sidebar-tabs-main > button:has-text('最近')"
+    # Open the tiddler directly
+    When I open tiddler "OldName" in browser view
     And I wait for 0.5 seconds
-    And I click on "timeline link" element in browser view with selector "div.tc-timeline a.tc-tiddlylink:has-text('OldName')"
     Then I should see "Content before rename" in the browser view content
     # Rename the file externally
     When I rename file "{tmpDir}/wiki/tiddlers/OldName.tid" to "{tmpDir}/wiki/tiddlers/NewName.tid"
@@ -105,11 +98,9 @@ Feature: Filesystem Plugin
       """
     # Wait for the new tiddler to be detected and synced
     Then I wait for tiddler "NewName" to be updated by watch-fs
-    # Navigate to timeline to verify changes
-    And I click on "sidebar tab" element in browser view with selector "div.tc-tab-buttons.tc-sidebar-tabs-main > button:has-text('最近')"
-    And I wait for 1 seconds
-    # Verify new name appears
-    And I click on "timeline link" element in browser view with selector "div.tc-timeline a.tc-tiddlylink:has-text('NewName')"
+    # Open the renamed tiddler directly
+    When I open tiddler "NewName" in browser view
+    And I wait for 0.5 seconds
     Then I should see "Content before rename" in the browser view content
 
   @file-watching
@@ -117,11 +108,9 @@ Feature: Filesystem Plugin
     # Modify an existing tiddler file by adding a tags field to TiddlyWikiIconBlue.png
     When I modify file "{tmpDir}/wiki/tiddlers/TiddlyWikiIconBlue.png.tid" to add field "tags: TestTag"
     Then I wait for tiddler "TiddlyWikiIconBlue.png" to be updated by watch-fs
-    # Open the tiddler to verify the tag was added
-    And I click on "sidebar tab" element in browser view with selector "div.tc-tab-buttons.tc-sidebar-tabs-main > button:has-text('最近')"
-    And I wait for 1 seconds
-    And I click on "timeline link" element in browser view with selector "div.tc-timeline a.tc-tiddlylink:has-text('TiddlyWikiIconBlue.png')"
-    And I wait for 1 seconds
+    # Open the tiddler directly to verify the tag was added
+    When I open tiddler "TiddlyWikiIconBlue.png" in browser view
+    And I wait for 0.5 seconds
     # Verify the tag appears in the tiddler using data attribute
     Then I should see a "TestTag tag" element in browser view with selector "[data-tiddler-title='TiddlyWikiIconBlue.png'] [data-tag-title='TestTag']"
     # Now modify Index.tid by adding a tags field
@@ -133,10 +122,8 @@ Feature: Filesystem Plugin
     # Modify favicon.ico.meta file by adding a tags field
     When I modify file "{tmpDir}/wiki/tiddlers/favicon.ico.meta" to add field "tags: IconTag"
     Then I wait for tiddler "favicon.ico" to be updated by watch-fs
-    # Navigate to favicon.ico tiddler
-    And I click on "sidebar tab" element in browser view with selector "div.tc-tab-buttons.tc-sidebar-tabs-main > button:has-text('最近')"
+    # Open the favicon.ico tiddler directly
+    When I open tiddler "favicon.ico" in browser view
     And I wait for 0.5 seconds
-    And I click on "timeline link" element in browser view with selector "div.tc-timeline a.tc-tiddlylink[href='#favicon.ico']"
-    And I wait for 1 seconds
     # Verify the IconTag appears in favicon.ico tiddler
     Then I should see a "IconTag tag" element in browser view with selector "[data-tiddler-title='favicon.ico'] [data-tag-title='IconTag']"
