@@ -879,7 +879,6 @@ ${tiddler.content}
     fileSystemPathFilterEnable: Boolean(options.fileSystemPathFilter),
     fileSystemPathFilter: options.fileSystemPathFilter ?? null,
     tagNames: [tagName],
-    tagName: tagName,
     userName: '',
     order: 1,
     port: 5213,
