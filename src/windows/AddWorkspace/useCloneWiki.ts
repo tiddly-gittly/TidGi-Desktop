@@ -73,10 +73,8 @@ export function useCloneWiki(
         await window.service.wiki.cloneSubWiki(
           form.parentFolderLocation,
           form.wikiFolderName,
-          form.mainWikiToLink.wikiFolderLocation,
           form.gitRepoUrl,
           form.gitUserInfo!,
-          form.tagNames[0] ?? '',
         );
       }
       await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo, { from: WikiCreationMethod.Clone });

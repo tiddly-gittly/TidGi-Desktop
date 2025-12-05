@@ -81,14 +81,7 @@ export function useExistedWiki(
           );
         }
         await window.service.wiki.ensureWikiExist(form.wikiFolderLocation, false);
-        await window.service.wiki.createSubWiki(
-          parentFolderLocationForExistedFolder,
-          wikiFolderNameForExistedFolder,
-          'subwiki',
-          form.mainWikiToLink.wikiFolderLocation,
-          form.tagNames[0] ?? '',
-          true,
-        );
+        await window.service.wiki.createSubWiki(parentFolderLocationForExistedFolder, wikiFolderNameForExistedFolder, true);
       }
       await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo, { from: WikiCreationMethod.LoadExisting });
     } catch (error) {

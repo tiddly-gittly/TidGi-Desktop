@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import type { IFileInfo } from 'tiddlywiki';
 import type { Tiddler, Wiki } from 'tiddlywiki';
+import { isWikiWorkspaceWithRouting, matchTiddlerToWorkspace } from './routingUtilities';
 import { isFileLockError } from './utilities';
 
 /**
@@ -83,32 +84,10 @@ export class FileSystemAdaptor {
 
       const allWorkspaces = await workspace.getWorkspacesAsList();
 
-      // Include both main workspace and sub-wikis for tag-based routing or filter-based routing
-      const isWikiWorkspaceWithRouting = (workspaceItem: IWorkspace): workspaceItem is IWikiWorkspace => {
-        if (!('wikiFolderLocation' in workspaceItem) || !workspaceItem.wikiFolderLocation) {
-          return false;
-        }
-
-        // Check if workspace has routing config (either tagNames or fileSystemPathFilter)
-        const hasRoutingConfig = ('tagNames' in workspaceItem && workspaceItem.tagNames.length > 0) ||
-          ('fileSystemPathFilterEnable' in workspaceItem && workspaceItem.fileSystemPathFilterEnable && 'fileSystemPathFilter' in workspaceItem &&
-            workspaceItem.fileSystemPathFilter);
-
-        if (!hasRoutingConfig) {
-          return false;
-        }
-
-        // Include if it's the main workspace
-        const isMain = workspaceItem.id === currentWorkspace.id;
-
-        // Include if it's a sub-wiki of the current main workspace
-        const isSubWiki = 'isSubWiki' in workspaceItem &&
-          workspaceItem.isSubWiki &&
-          workspaceItem.mainWikiID === currentWorkspace.id;
-
-        return isMain || isSubWiki;
-      };
-      const workspacesWithRouting = allWorkspaces.filter(isWikiWorkspaceWithRouting).sort(workspaceSorter);
+      // Filter to wiki workspaces with routing config (main or sub-wikis)
+      const workspacesWithRouting = allWorkspaces
+        .filter((w: IWorkspace): w is IWikiWorkspace => isWikiWorkspaceWithRouting(w, currentWorkspace.id))
+        .sort(workspaceSorter);
 
       this.wikisWithRouting = workspacesWithRouting;
     } catch (error) {
@@ -163,7 +142,7 @@ export class FileSystemAdaptor {
       }
 
       // Find matching workspace using the routing logic
-      const matchingWiki = this.matchTitleToWiki(title, tags);
+      const matchingWiki = matchTiddlerToWorkspace(title, tags, this.wikisWithRouting, $tw.wiki, $tw.rootWidget);
 
       // Determine the target directory based on routing
       // Sub-wikis store tiddlers directly in their root folder (not in /tiddlers subfolder)
@@ -207,56 +186,6 @@ export class FileSystemAdaptor {
       this.logger.alert(`filesystem: Error in getTiddlerFileInfo for "${title}":`, error);
       return this.generateDefaultFileInfo(tiddler);
     }
-  }
-
-  /**
-   * Match a tiddler to a workspace based on routing rules.
-   * Checks workspaces in order (priority) and returns the first match.
-   *
-   * For each workspace, checks in order (any match wins):
-   * 1. Direct tag match (including if tiddler's title IS one of the tagNames - it's a "tag tiddler")
-   * 2. If includeTagTree is enabled, use in-tagtree-of filter for recursive tag matching
-   * 3. If fileSystemPathFilterEnable is enabled, use custom filter expressions (one per line, any match wins)
-   */
-  protected matchTitleToWiki(title: string, tags: string[]): IWikiWorkspace | undefined {
-    for (const wiki of this.wikisWithRouting) {
-      // Direct tag match - check if any of the tiddler's tags match any of the wiki's tagNames
-      // Also check if the tiddler's title IS one of the tagNames (it's a "tag tiddler" that defines that tag)
-      if (wiki.tagNames.length > 0) {
-        const hasMatchingTag = wiki.tagNames.some(tagName => tags.includes(tagName));
-        const isTitleATagName = wiki.tagNames.includes(title);
-        if (hasMatchingTag || isTitleATagName) {
-          return wiki;
-        }
-      }
-
-      // Tag tree match if enabled - check all tagNames
-      if (wiki.includeTagTree && wiki.tagNames.length > 0) {
-        for (const tagName of wiki.tagNames) {
-          const result = $tw.wiki.filterTiddlers(
-            `[in-tagtree-of:inclusive<tagName>]`,
-            $tw.rootWidget.makeFakeWidgetWithVariables({ tagName }),
-            $tw.wiki.makeTiddlerIterator([title]),
-          );
-          if (result.length > 0) {
-            return wiki;
-          }
-        }
-      }
-
-      // Custom filter match if enabled
-      if (wiki.fileSystemPathFilterEnable && wiki.fileSystemPathFilter) {
-        // Split by newlines and try each filter
-        const filters = wiki.fileSystemPathFilter.split('\n').map(f => f.trim()).filter(f => f.length > 0);
-        for (const filter of filters) {
-          const result = $tw.wiki.filterTiddlers(filter, undefined, $tw.wiki.makeTiddlerIterator([title]));
-          if (result.length > 0) {
-            return wiki;
-          }
-        }
-      }
-    }
-    return undefined;
   }
 
   /**
