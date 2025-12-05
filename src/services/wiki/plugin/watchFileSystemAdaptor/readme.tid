@@ -8,11 +8,11 @@ This plugin provides an enhanced filesystem adaptor that automatically routes ti
 !!! How It Works
 
 # Queries workspace information from TidGi's main process via IPC
-# Checks each tiddler's tags/filters against sub-workspace routing rules:
-#* Multiple tag names (`tagNames`) - matches if any tag matches
+# Checks each tiddler against sub-workspace routing rules (any match wins):
+#* Direct tag match - if any of the tiddler's tags match any of the workspace's `tagNames`
 #* Tag tiddlers - if a tiddler's title IS one of the `tagNames`, it's also routed (e.g., tiddler "Test" goes to sub-wiki with tagNames=["Test"])
-#* Tag tree (`includeTagTree`) - recursive tag hierarchy using `in-tagtree-of`
-#* Custom filter expressions (`fileSystemPathFilter`) - one per line, any match wins
+#* Tag tree (`includeTagTree`) - if enabled, uses `in-tagtree-of` filter for recursive tag hierarchy matching
+#* Custom filter expressions (`fileSystemPathFilter`) - if enabled, uses custom TiddlyWiki filter expressions (one per line, any match wins)
 # Routes tiddlers with matching rules to the corresponding sub-wiki's root folder
 # Falls back to standard `$:/config/FileSystemPaths` logic for non-matching tiddlers
 # Only moves files when target directory changes (avoids echo loops)
@@ -30,6 +30,7 @@ This plugin provides an enhanced filesystem adaptor that automatically routes ti
 * Supports multiple tags per workspace
 * Supports tag hierarchy matching
 * Supports custom TiddlyWiki filter expressions
+* All routing methods work together (tag match, tag tree, custom filter)
 * Handles tag changes - moves tiddlers when tags are modified
 * Tag tiddlers (tiddlers whose title matches a tag name) are also routed correctly
 * More robust than string manipulation

@@ -142,7 +142,7 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
   /**
    * When enabled, tiddlers that are indirectly tagged (tag of tag of tag...) with any of this sub-wiki's tagNames
    * will also be saved to this sub-wiki. Uses the in-tagtree-of filter operator.
-   * Only applies when creating new tiddlers, not when modifying existing ones.
+   * Applies when creating new tiddlers and when modifying existing ones (e.g., when tags change).
    */
   includeTagTree: boolean;
   /**

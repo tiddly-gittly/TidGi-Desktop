@@ -7,7 +7,6 @@ import {
   Autocomplete,
   AutocompleteRenderInputParams,
   Button as ButtonRaw,
-  Chip,
   Divider,
   Paper,
   Switch,
@@ -431,7 +430,47 @@ export default function EditWorkspace(): React.JSX.Element {
               <Typography variant='body2' color='textSecondary' sx={{ mb: 2 }}>
                 {isSubWiki ? t('AddWorkspace.SubWorkspaceOptionsDescriptionForSub') : t('AddWorkspace.SubWorkspaceOptionsDescriptionForMain')}
               </Typography>
+              <Autocomplete
+                multiple
+                freeSolo
+                options={availableTags}
+                value={tagNames}
+                onChange={(_event: React.SyntheticEvent, newValue: string[]) => {
+                  void _event;
+                  workspaceSetter({ ...workspace, tagNames: newValue }, true);
+                }}
+                slotProps={{
+                  chip: {
+                    variant: 'outlined',
+                  },
+                }}
+                renderInput={(parameters: AutocompleteRenderInputParams) => (
+                  <TextField
+                    {...parameters}
+                    label={t('AddWorkspace.TagName')}
+                    helperText={isSubWiki ? t('AddWorkspace.TagNameHelp') : t('AddWorkspace.TagNameHelpForMain')}
+                  />
+                )}
+              />
               <List>
+                <ListItem
+                  disableGutters
+                  secondaryAction={
+                    <Switch
+                      edge='end'
+                      color='primary'
+                      checked={includeTagTree}
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                        workspaceSetter({ ...workspace, includeTagTree: event.target.checked }, true);
+                      }}
+                    />
+                  }
+                >
+                  <ListItemText
+                    primary={t('AddWorkspace.IncludeTagTree')}
+                    secondary={isSubWiki ? t('AddWorkspace.IncludeTagTreeHelp') : t('AddWorkspace.IncludeTagTreeHelpForMain')}
+                  />
+                </ListItem>
                 <ListItem
                   disableGutters
                   secondaryAction={
@@ -451,68 +490,21 @@ export default function EditWorkspace(): React.JSX.Element {
                   />
                 </ListItem>
               </List>
-              {fileSystemPathFilterEnable
-                ? (
-                  <TextField
-                    fullWidth
-                    multiline
-                    minRows={2}
-                    maxRows={10}
-                    value={fileSystemPathFilter ?? ''}
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                      workspaceSetter({ ...workspace, fileSystemPathFilter: event.target.value || null }, true);
-                    }}
-                    label={t('AddWorkspace.FilterExpression')}
-                    helperText={t('AddWorkspace.FilterExpressionHelp')}
-                    sx={{ mb: 2 }}
-                  />
-                )
-                : (
-                  <>
-                    <Autocomplete
-                      multiple
-                      freeSolo
-                      options={availableTags}
-                      value={tagNames}
-                      onChange={(_event: React.SyntheticEvent, newValue: string[]) => {
-                        void _event;
-                        workspaceSetter({ ...workspace, tagNames: newValue }, true);
-                      }}
-                      renderTags={(value: string[], getTagProps) =>
-                        value.map((option: string, index: number) => {
-                          const { key, ...tagProps } = getTagProps({ index });
-                          return <Chip variant='outlined' label={option} key={key} {...tagProps} />;
-                        })}
-                      renderInput={(parameters: AutocompleteRenderInputParams) => (
-                        <TextField
-                          {...parameters}
-                          label={t('AddWorkspace.TagName')}
-                          helperText={isSubWiki ? t('AddWorkspace.TagNameHelp') : t('AddWorkspace.TagNameHelpForMain')}
-                        />
-                      )}
-                    />
-                    <List>
-                      <ListItem
-                        disableGutters
-                        secondaryAction={
-                          <Switch
-                            edge='end'
-                            color='primary'
-                            checked={includeTagTree}
-                            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                              workspaceSetter({ ...workspace, includeTagTree: event.target.checked }, true);
-                            }}
-                          />
-                        }
-                      >
-                        <ListItemText
-                          primary={t('AddWorkspace.IncludeTagTree')}
-                          secondary={isSubWiki ? t('AddWorkspace.IncludeTagTreeHelp') : t('AddWorkspace.IncludeTagTreeHelpForMain')}
-                        />
-                      </ListItem>
-                    </List>
-                  </>
-                )}
+              {fileSystemPathFilterEnable && (
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  maxRows={10}
+                  value={fileSystemPathFilter ?? ''}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    workspaceSetter({ ...workspace, fileSystemPathFilter: event.target.value || null }, true);
+                  }}
+                  label={t('AddWorkspace.FilterExpression')}
+                  helperText={t('AddWorkspace.FilterExpressionHelp')}
+                  sx={{ mb: 2 }}
+                />
+              )}
             </AccordionDetails>
           </OptionsAccordion>
         )}

@@ -13,6 +13,10 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </ThemeProvider>
 );
 
+// Helper to get the correct modifier key based on platform
+// On macOS, ctrlKey is displayed as 'Cmd', on other platforms as 'Ctrl'
+const getCtrlModifier = () => process.platform === 'darwin' ? 'Cmd' : 'Ctrl';
+
 describe('KeyboardShortcutRegister Component', () => {
   let mockOnChange: ReturnType<typeof vi.fn>;
 
@@ -158,6 +162,7 @@ describe('KeyboardShortcutRegister Component', () => {
       const dialogContent = screen.getByTestId('shortcut-dialog-content');
 
       // Simulate keyboard event with Ctrl+Shift+T
+      // On macOS, ctrlKey is displayed as 'Cmd'
       fireEvent.keyDown(dialogContent, {
         key: 'T',
         ctrlKey: true,
@@ -167,7 +172,7 @@ describe('KeyboardShortcutRegister Component', () => {
 
       await waitFor(() => {
         const display = screen.getByTestId('shortcut-display');
-        expect(display).toHaveTextContent('Ctrl+Shift+T');
+        expect(display).toHaveTextContent(`${getCtrlModifier()}+Shift+T`);
       });
     });
 
@@ -284,7 +289,7 @@ describe('KeyboardShortcutRegister Component', () => {
 
       await waitFor(() => {
         const display = screen.getByTestId('shortcut-display');
-        expect(display).toHaveTextContent('Ctrl+A');
+        expect(display).toHaveTextContent(`${getCtrlModifier()}+A`);
       });
 
       // Press second combination - should replace
@@ -297,7 +302,7 @@ describe('KeyboardShortcutRegister Component', () => {
 
       await waitFor(() => {
         const display = screen.getByTestId('shortcut-display');
-        expect(display).toHaveTextContent('Ctrl+Shift+B');
+        expect(display).toHaveTextContent(`${getCtrlModifier()}+Shift+B`);
       });
     });
   });
@@ -372,14 +377,14 @@ describe('KeyboardShortcutRegister Component', () => {
 
       await waitFor(() => {
         const display = screen.getByTestId('shortcut-display');
-        expect(display).toHaveTextContent('Ctrl+N');
+        expect(display).toHaveTextContent(`${getCtrlModifier()}+N`);
       });
 
       // Press Enter to confirm
       fireEvent.keyDown(document, { key: 'Enter', code: 'Enter' });
 
       await waitFor(() => {
-        expect(mockOnChange).toHaveBeenCalledWith('Ctrl+N');
+        expect(mockOnChange).toHaveBeenCalledWith(`${getCtrlModifier()}+N`);
       });
     });
 
@@ -406,7 +411,7 @@ describe('KeyboardShortcutRegister Component', () => {
 
       await waitFor(() => {
         const display = screen.getByTestId('shortcut-display');
-        expect(display).toHaveTextContent('Ctrl+B');
+        expect(display).toHaveTextContent(`${getCtrlModifier()}+B`);
       });
 
       // Press ESC to cancel without saving
@@ -485,6 +490,8 @@ describe('KeyboardShortcutRegister Component', () => {
       });
 
       // Simulate Ctrl+X key press on document
+      // On macOS, ctrlKey is displayed as 'Cmd', on other platforms as 'Ctrl'
+      const expectedModifier = process.platform === 'darwin' ? 'Cmd' : 'Ctrl';
       fireEvent.keyDown(document, {
         key: 'X',
         ctrlKey: true,
@@ -493,14 +500,14 @@ describe('KeyboardShortcutRegister Component', () => {
 
       // Wait for the key combination to be processed
       await waitFor(() => {
-        expect(screen.getByText('Ctrl+X')).toBeInTheDocument();
+        expect(screen.getByText(`${expectedModifier}+X`)).toBeInTheDocument();
       });
 
       // Press Enter to confirm
       fireEvent.keyDown(document, { key: 'Enter', code: 'Enter' });
 
       await waitFor(() => {
-        expect(customOnChange).toHaveBeenCalledWith('Ctrl+X');
+        expect(customOnChange).toHaveBeenCalledWith(`${expectedModifier}+X`);
       });
     });
   });

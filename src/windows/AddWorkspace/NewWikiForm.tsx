@@ -1,5 +1,5 @@
 import FolderIcon from '@mui/icons-material/Folder';
-import { Autocomplete, AutocompleteRenderInputParams, Chip, MenuItem, Typography } from '@mui/material';
+import { Autocomplete, AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
 import { isWikiWorkspace } from '@services/workspaces/interface';
@@ -97,11 +97,11 @@ export function NewWikiForm({
             onChange={(_event, newValue) => {
               form.tagNamesSetter(newValue);
             }}
-            renderTags={(value, getTagProps) =>
-              value.map((option, index) => {
-                const { key, ...tagProps } = getTagProps({ index });
-                return <Chip variant='outlined' label={option} key={key} {...tagProps} />;
-              })}
+            slotProps={{
+              chip: {
+                variant: 'outlined',
+              },
+            }}
             renderInput={(parameters: AutocompleteRenderInputParams) => (
               <LocationPickerInput
                 error={errorInWhichComponent.tagNames}

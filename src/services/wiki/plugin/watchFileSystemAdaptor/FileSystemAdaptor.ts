@@ -20,10 +20,8 @@ export class FileSystemAdaptor {
   boot: typeof $tw.boot;
   logger: Logger;
   workspaceID: string;
-  /** All workspaces (main + sub-wikis) that have tagName configured, sorted by order */
-  protected wikisWithTag: IWikiWorkspace[] = [];
-  /** Map of tagName -> workspace for O(1) tag lookup instead of O(n) find */
-  protected tagNameToWiki: Map<string, IWikiWorkspace> = new Map();
+  /** All workspaces (main + sub-wikis) that have tagName or filter configured, sorted by order */
+  protected wikisWithRouting: IWikiWorkspace[] = [];
   /** Cached extension filters from $:/config/FileSystemExtensions. Requires restart to reflect changes. */
   protected extensionFilters: string[] | undefined;
   protected watchPathBase!: string;
@@ -73,15 +71,13 @@ export class FileSystemAdaptor {
   protected async updateSubWikisCache(): Promise<void> {
     try {
       if (!this.workspaceID) {
-        this.wikisWithTag = [];
-        this.tagNameToWiki.clear();
+        this.wikisWithRouting = [];
         return;
       }
 
       const currentWorkspace = await workspace.get(this.workspaceID);
       if (!currentWorkspace) {
-        this.wikisWithTag = [];
-        this.tagNameToWiki.clear();
+        this.wikisWithRouting = [];
         return;
       }
 
@@ -112,17 +108,9 @@ export class FileSystemAdaptor {
 
         return isMain || isSubWiki;
       };
-      const workspacesWithTag = allWorkspaces.filter(isWikiWorkspaceWithRouting).sort(workspaceSorter);
+      const workspacesWithRouting = allWorkspaces.filter(isWikiWorkspaceWithRouting).sort(workspaceSorter);
 
-      this.wikisWithTag = workspacesWithTag;
-
-      this.tagNameToWiki.clear();
-      for (const workspaceWithTag of workspacesWithTag) {
-        // Build map for all tag names in this workspace
-        for (const tagName of workspaceWithTag.tagNames) {
-          this.tagNameToWiki.set(tagName, workspaceWithTag);
-        }
-      }
+      this.wikisWithRouting = workspacesWithRouting;
     } catch (error) {
       this.logger.alert('filesystem: Failed to update sub-wikis cache:', error);
     }
@@ -196,10 +184,10 @@ export class FileSystemAdaptor {
       // Check if existing file is already in the correct directory
       // If so, just return the existing fileInfo to avoid echo loops
       if (existingFileInfo?.filepath) {
-        const existingDir = path.dirname(existingFileInfo.filepath);
+        const existingDirectory = path.dirname(existingFileInfo.filepath);
         // For sub-wikis, check if file is in that wiki's folder (or subfolder)
         // For main wiki, check if file is in main wiki's tiddlers folder (or subfolder)
-        const normalizedExisting = path.normalize(existingDir);
+        const normalizedExisting = path.normalize(existingDirectory);
         const normalizedTarget = path.normalize(targetDirectory);
 
         // Check if existing file is within the target directory tree
@@ -225,26 +213,13 @@ export class FileSystemAdaptor {
    * Match a tiddler to a workspace based on routing rules.
    * Checks workspaces in order (priority) and returns the first match.
    *
-   * For each workspace:
-   * 1. If fileSystemPathFilterEnable is enabled, use custom filter expressions (one per line, any match wins)
-   * 2. Else try direct tag match (including if tiddler's title IS one of the tagNames - it's a "tag tiddler")
-   * 3. Else if includeTagTree is enabled, use in-tagtree-of filter
+   * For each workspace, checks in order (any match wins):
+   * 1. Direct tag match (including if tiddler's title IS one of the tagNames - it's a "tag tiddler")
+   * 2. If includeTagTree is enabled, use in-tagtree-of filter for recursive tag matching
+   * 3. If fileSystemPathFilterEnable is enabled, use custom filter expressions (one per line, any match wins)
    */
   protected matchTitleToWiki(title: string, tags: string[]): IWikiWorkspace | undefined {
-    for (const wiki of this.wikisWithTag) {
-      // If fileSystemPathFilterEnable is enabled, use the custom filter expressions
-      if (wiki.fileSystemPathFilterEnable && wiki.fileSystemPathFilter) {
-        // Split by newlines and try each filter
-        const filters = wiki.fileSystemPathFilter.split('\n').map(f => f.trim()).filter(f => f.length > 0);
-        for (const filter of filters) {
-          const result = $tw.wiki.filterTiddlers(filter, undefined, $tw.wiki.makeTiddlerIterator([title]));
-          if (result.length > 0) {
-            return wiki;
-          }
-        }
-        continue;
-      }
-
+    for (const wiki of this.wikisWithRouting) {
       // Direct tag match - check if any of the tiddler's tags match any of the wiki's tagNames
       // Also check if the tiddler's title IS one of the tagNames (it's a "tag tiddler" that defines that tag)
       if (wiki.tagNames.length > 0) {
@@ -259,6 +234,18 @@ export class FileSystemAdaptor {
       if (wiki.includeTagTree && wiki.tagNames.length > 0) {
         for (const tagName of wiki.tagNames) {
           const result = $tw.wiki.filterTiddlers(`[in-tagtree-of:inclusive[${tagName}]]`, undefined, $tw.wiki.makeTiddlerIterator([title]));
+          if (result.length > 0) {
+            return wiki;
+          }
+        }
+      }
+
+      // Custom filter match if enabled
+      if (wiki.fileSystemPathFilterEnable && wiki.fileSystemPathFilter) {
+        // Split by newlines and try each filter
+        const filters = wiki.fileSystemPathFilter.split('\n').map(f => f.trim()).filter(f => f.length > 0);
+        for (const filter of filters) {
+          const result = $tw.wiki.filterTiddlers(filter, undefined, $tw.wiki.makeTiddlerIterator([title]));
           if (result.length > 0) {
             return wiki;
           }

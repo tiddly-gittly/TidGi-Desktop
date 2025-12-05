@@ -165,9 +165,31 @@ describe('FileSystemAdaptor - Routing Logic', () => {
       );
     });
 
-    it('should pass existing fileInfo with overwrite flag', async () => {
+    it('should return existing fileInfo with overwrite flag when file is in correct directory', async () => {
       const existingFileInfo: IFileInfo = {
-        filepath: '/test/old.tid',
+        filepath: '/test/wiki/tiddlers/old.tid', // Already in the correct tiddlers directory
+        type: 'application/x-tiddler',
+        hasMetaFile: false,
+      };
+
+      // @ts-expect-error - TiddlyWiki global
+      global.$tw.boot.files['TestTiddler'] = existingFileInfo;
+
+      const tiddler: Tiddler = {
+        fields: { title: 'TestTiddler', tags: [] },
+      } as unknown as Tiddler;
+
+      const result = await adaptor.getTiddlerFileInfo(tiddler);
+
+      // Should return the existing fileInfo with overwrite flag, not call generateTiddlerFileInfo
+      expect(result).toEqual({ ...existingFileInfo, overwrite: true });
+      // Should NOT call generateTiddlerFileInfo since file is already in correct location
+      expect(mockUtils.generateTiddlerFileInfo).not.toHaveBeenCalled();
+    });
+
+    it('should regenerate fileInfo when file is in wrong directory', async () => {
+      const existingFileInfo: IFileInfo = {
+        filepath: '/wrong/directory/old.tid', // In wrong directory
         type: 'application/x-tiddler',
         hasMetaFile: false,
       };
@@ -181,14 +203,8 @@ describe('FileSystemAdaptor - Routing Logic', () => {
 
       await adaptor.getTiddlerFileInfo(tiddler);
 
-      expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
-        tiddler,
-        expect.objectContaining({
-          fileInfo: expect.objectContaining({
-            overwrite: true,
-          }),
-        }),
-      );
+      // Should call generateTiddlerFileInfo since file needs to be moved
+      expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalled();
     });
 
     it('should throw error when wikiTiddlersPath is not set', async () => {
@@ -439,8 +455,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
       // Manually trigger cache update and wait for it
       await adaptor['updateSubWikisCache']();
 
-      expect(adaptor['wikisWithTag']).toEqual([]);
-      expect(adaptor['tagNameToWiki'].size).toBe(0);
+      expect(adaptor['wikisWithRouting']).toEqual([]);
     });
 
     it('should clear cache when currentWorkspace is not found', async () => {
@@ -455,8 +470,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
       // Manually trigger cache update and wait for it
       await adaptor['updateSubWikisCache']();
 
-      expect(adaptor['wikisWithTag']).toEqual([]);
-      expect(adaptor['tagNameToWiki'].size).toBe(0);
+      expect(adaptor['wikisWithRouting']).toEqual([]);
     });
 
     it('should handle errors in updateSubWikisCache gracefully', async () => {

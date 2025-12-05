@@ -276,11 +276,11 @@ describe('NewWikiForm Component', () => {
         isCreateMainWorkspace: false,
       });
 
-      // Because the text is rendered with a template literal and newlines, we need to use a regex
+      // The helper text shows the main wiki location that will be linked
       expect(screen.getByText((content, _element) => {
         // The actual text might have whitespace and newlines
         const normalized = content.replace(/\s+/g, ' ').trim();
-        return normalized === 'AddWorkspace.SubWorkspaceWillLinkTo /main/wiki/tiddlers/subwiki/sub-wiki';
+        return normalized === 'AddWorkspace.SubWorkspaceWillLinkTo /main/wiki';
       })).toBeInTheDocument();
     });
   });

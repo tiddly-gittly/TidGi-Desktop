@@ -1,5 +1,4 @@
 import type { IWikiWorkspace } from '@services/workspaces/interface';
-import path from 'path';
 import type { TiddlyWiki } from 'tiddlywiki';
 
 /**
