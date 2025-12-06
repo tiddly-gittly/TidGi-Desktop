@@ -34,8 +34,11 @@ Feature: Filesystem Plugin
     Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
     # Click SubWiki workspace again to ensure TestTag tiddler is displayed
     And I wait for 1 seconds
+    # Clear previous VIEW_LOADED marker before clicking SubWiki
+    And I clear log lines containing "[test-id-VIEW_LOADED]"
     When I click on a "SubWiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('SubWiki')"
-    And I wait for 1 seconds
+    # Wait for the view to reload with SubWiki content
+    Then I wait for "view loaded after SubWiki click" log marker "[test-id-VIEW_LOADED]"
     # Verify TestTag tiddler is visible
     And I should see "TestTag" in the browser view content
     # Create tiddler with tag to test file system plugin

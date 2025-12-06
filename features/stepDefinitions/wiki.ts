@@ -19,13 +19,15 @@ const BACKOFF_OPTIONS = {
  */
 export async function waitForLogMarker(searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = 'wiki-'): Promise<void> {
   const logPath = path.join(process.cwd(), 'userData-test', 'logs');
+  // Support multiple patterns separated by '|'
+  const patterns = logFilePattern.split('|');
 
   try {
     await backOff(
       async () => {
         try {
           const files = await fs.readdir(logPath);
-          const logFiles = files.filter(f => f.startsWith(logFilePattern) && f.endsWith('.log'));
+          const logFiles = files.filter(f => patterns.some(p => f.startsWith(p)) && f.endsWith('.log'));
 
           for (const file of logFiles) {
             const content = await fs.readFile(path.join(logPath, file), 'utf-8');
@@ -321,7 +323,8 @@ async function clearGitTestData() {
  * This searches in TidGi- log files by default
  */
 Then('I wait for {string} log marker {string}', async function(this: ApplicationWorld, description: string, marker: string) {
-  await waitForLogMarker(marker, `Log marker "${marker}" not found. Expected: ${description}`, 10000, 'TidGi-');
+  // Search in both TidGi- and wiki log files (wiki logs include wiki- and wiki2- etc.)
+  await waitForLogMarker(marker, `Log marker "${marker}" not found. Expected: ${description}`, 10000, 'TidGi-|wiki');
 });
 
 /**
@@ -334,7 +337,7 @@ Then('I wait for SSE and watch-fs to be ready', async function(this: Application
 });
 
 /**
- * Remove log lines containing specific text from all TidGi- log files.
+ * Remove log lines containing specific text from all log files (TidGi- and wiki- prefixed).
  * This is useful when you need to wait for a log marker that may have appeared earlier in the scenario,
  * and you want to ensure you're waiting for a new occurrence of that marker.
  * @param marker - The text pattern to remove from log files
@@ -343,9 +346,9 @@ When('I clear log lines containing {string}', async function(this: ApplicationWo
   const logDirectory = path.join(process.cwd(), 'userData-test', 'logs');
   if (!fs.existsSync(logDirectory)) return;
 
-  const today = new Date().toISOString().split('T')[0];
+  // Clear from both TidGi- and wiki- prefixed log files
   const logFiles = fs.readdirSync(logDirectory).filter(f => 
-    (f.startsWith('TidGi-') || f === `TidGi-${today}.log`) && f.endsWith('.log')
+    (f.startsWith('TidGi-') || f.startsWith('wiki')) && f.endsWith('.log')
   );
 
   for (const logFile of logFiles) {

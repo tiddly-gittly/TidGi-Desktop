@@ -54,6 +54,8 @@ Feature: Workspace Hibernation
     And I wait for 0.2 seconds
     Then I should see a "WikiTestTiddler tiddler" element in browser view with selector "div[data-tiddler-title='WikiTestTiddler']"
     # Switch to wiki2 - wiki should hibernate, wiki2 should load
+    # Clear previous VIEW_LOADED markers before waiting for a new one
+    And I clear log lines containing "[test-id-VIEW_LOADED]"
     When I click on a "wiki2 workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki2')"
     Then the browser view should be loaded and visible
     # Wait for view to be fully loaded
@@ -68,6 +70,8 @@ Feature: Workspace Hibernation
     Then I should not see a "WikiTestTiddler tiddler" element in browser view with selector "div[data-tiddler-title='WikiTestTiddler']"
     # Switch back to wiki - wiki2 should hibernate, wiki should wake up (reproduces issue #556)
     # This also tests issue #593 - browser view should persist after wake up
+    # Clear previous VIEW_LOADED markers before waiting for a new one
+    And I clear log lines containing "[test-id-VIEW_LOADED]"
     When I click on a "wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
     # Wait for view to be fully loaded
