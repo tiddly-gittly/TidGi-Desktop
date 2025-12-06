@@ -105,6 +105,28 @@ When('I click on {string} element in browser view with selector {string}', async
   }
 });
 
+Then('I wait for {string} element in browser view with selector {string}', { timeout: 15000 }, async function(
+  this: ApplicationWorld,
+  elementComment: string,
+  selector: string,
+) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+
+  await backOff(
+    async () => {
+      const exists = await elementExists(this.app!, selector);
+      if (!exists) {
+        throw new Error(`Element "${elementComment}" with selector "${selector}" not found yet`);
+      }
+    },
+    { ...BACKOFF_OPTIONS, numOfAttempts: 20, startingDelay: 200 },
+  ).catch(() => {
+    throw new Error(`Element "${elementComment}" with selector "${selector}" did not appear in browser view after multiple attempts`);
+  });
+});
+
 When('I type {string} in {string} element in browser view with selector {string}', async function(this: ApplicationWorld, text: string, elementComment: string, selector: string) {
   if (!this.app) {
     throw new Error('Application not launched');

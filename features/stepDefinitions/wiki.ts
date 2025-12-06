@@ -325,9 +325,10 @@ Then('I wait for {string} log marker {string}', async function(this: Application
   const isGitOperation = marker.includes('git-') || marker.includes('revert');
   const isWikiRestart = marker.includes('MAIN_WIKI_RESTARTED');
   const isWorkspaceOperation = marker.includes('WORKSPACE_');
+  const isTidgiMiniWindowOperation = marker.includes('TIDGI_MINI_WINDOW');
   const isRevert = marker.includes('revert');
   const timeout = isRevert ? 30000 : (isWikiRestart ? 25000 : (isGitOperation ? 25000 : 15000));
-  const logPrefix = (isGitOperation || isWikiRestart || isWorkspaceOperation) ? 'TidGi-' : undefined;
+  const logPrefix = (isGitOperation || isWikiRestart || isWorkspaceOperation || isTidgiMiniWindowOperation) ? 'TidGi-' : undefined;
   await waitForLogMarker(marker, `Log marker "${marker}" not found. Expected: ${description}`, timeout, logPrefix);
 });
 

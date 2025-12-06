@@ -56,7 +56,12 @@ Feature: Workspace Hibernation
     # Switch to wiki2 - wiki should hibernate, wiki2 should load
     When I click on a "wiki2 workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki2')"
     Then the browser view should be loaded and visible
+    # Wait for view to be fully loaded
+    Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
+    # Wait for TiddlyWiki to fully render the page (site title appears)
+    Then I wait for "site title" element in browser view with selector "h1.tc-site-title"
     # Verify wiki workspace is now hibernated (icon should be grayed out)
+    # UI updates via observable, faster than waiting for log markers
     Then I should see a "wiki workspace hibernated icon" element with selector "div[data-testid^='workspace-']:has-text('wiki')[data-hibernated='true']"
     # Verify we're in wiki2 by checking Index tiddler (default open) - not WikiTestTiddler
     Then I should see a "Index tiddler" element in browser view with selector "div[data-tiddler-title='Index']"
@@ -65,7 +70,12 @@ Feature: Workspace Hibernation
     # This also tests issue #593 - browser view should persist after wake up
     When I click on a "wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
+    # Wait for view to be fully loaded
+    Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
+    # Wait for TiddlyWiki to fully render the page (site title appears)
+    Then I wait for "site title" element in browser view with selector "h1.tc-site-title"
     # Verify wiki2 workspace is now hibernated
+    # UI updates via observable, faster than waiting for log markers
     Then I should see a "wiki2 workspace hibernated icon" element with selector "div[data-testid^='workspace-']:has-text('wiki2')[data-hibernated='true']"
     # Verify wiki workspace is no longer hibernated
     Then I should see a "wiki workspace active icon" element with selector "div[data-testid^='workspace-']:has-text('wiki')[data-hibernated='false'][data-active='true']"
