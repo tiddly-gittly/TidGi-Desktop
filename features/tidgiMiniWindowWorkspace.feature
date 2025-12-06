@@ -14,9 +14,7 @@ Feature: TidGi Mini Window Workspace Switching
     Then I wait for "git init complete" log marker "[test-id-git-init-complete]"
     # Wait for wiki worker to start (~3s after git-init-complete)
     Then I wait for "wiki worker started" log marker "[test-id-WIKI_WORKER_STARTED]"
-    # Wait for view to finish loading (~4s after wiki worker started)
-    Then I wait for "view load url done" log marker "[test-id-VIEW_LOAD_URL_DONE]"
-    # Wait for all workspace views to be initialized
+    # Wait for all workspace views to be initialized (~4s after wiki worker started)
     Then I wait for "all workspace views initialized" log marker "[test-id-ALL_WORKSPACE_VIEW_INITIALIZED]"
 
   Scenario: TidGi mini window syncs with main window switching to agent workspace
