@@ -1,3 +1,4 @@
+import { isTest } from '@/constants/environment';
 import { TIDGI_MINI_WINDOW_ICON_PATH } from '@/constants/paths';
 import { isMac } from '@/helpers/system';
 import { container } from '@services/container';
@@ -14,7 +15,6 @@ import { Menubar, menubar } from 'menubar';
 import type { IWindowService } from './interface';
 import { getMainWindowEntry } from './viteEntry';
 import { WindowNames } from './WindowProperties';
-import { isTest } from '@/constants/environment';
 
 export async function handleAttachToTidgiMiniWindow(
   windowConfig: BrowserWindowConstructorOptions,

@@ -347,9 +347,7 @@ When('I clear log lines containing {string}', async function(this: ApplicationWo
   if (!fs.existsSync(logDirectory)) return;
 
   // Clear from both TidGi- and wiki- prefixed log files
-  const logFiles = fs.readdirSync(logDirectory).filter(f => 
-    (f.startsWith('TidGi-') || f.startsWith('wiki')) && f.endsWith('.log')
-  );
+  const logFiles = fs.readdirSync(logDirectory).filter(f => (f.startsWith('TidGi-') || f.startsWith('wiki')) && f.endsWith('.log'));
 
   for (const logFile of logFiles) {
     const logPath = path.join(logDirectory, logFile);
