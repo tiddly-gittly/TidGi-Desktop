@@ -414,6 +414,7 @@ export class Window implements IWindowService {
 
           // Use menuBar.showWindow() instead of direct window.show() for proper tidgi mini window behavior
           void this.tidgiMiniWindowMenubar.showWindow();
+          logger.info('[test-id-TIDGI_MINI_WINDOW_SHOWN] TidGi mini window showWindow called', { function: 'openTidgiMiniWindow' });
         }
         return;
       }
@@ -421,7 +422,7 @@ export class Window implements IWindowService {
       // Create tidgi mini window (create and open when enableIt is true)
       await this.open(WindowNames.tidgiMiniWindow);
       if (enableIt) {
-        logger.debug('TidGi mini window enabled', { function: 'openTidgiMiniWindow' });
+        logger.debug('[test-id-TIDGI_MINI_WINDOW_CREATED] TidGi mini window enabled', { function: 'openTidgiMiniWindow' });
         // After creating the tidgi mini window, show it if requested
         if (showWindow && this.tidgiMiniWindowMenubar) {
           logger.debug('Showing newly created tidgi mini window', { function: 'openTidgiMiniWindow' });

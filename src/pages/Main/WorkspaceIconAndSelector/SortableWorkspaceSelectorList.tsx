@@ -6,6 +6,7 @@ import { useMemo } from 'react';
 import { PageType } from '@/constants/pageTypes';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interface';
+import { workspaceSorter } from '@services/workspaces/utilities';
 import { SortableWorkspaceSelectorButton } from './SortableWorkspaceSelectorButton';
 
 export interface ISortableListProps {
@@ -62,7 +63,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     >
       <SortableContext items={workspaceIDs} strategy={verticalListSortingStrategy}>
         {filteredWorkspacesList
-          .sort((a, b) => a.order - b.order)
+          .sort(workspaceSorter)
           .map((workspace, index) => (
             <SortableWorkspaceSelectorButton
               key={`item-${workspace.id}`}

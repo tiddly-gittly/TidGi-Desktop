@@ -48,7 +48,7 @@ export function useValidateCloneWiki(
     form.gitRepoUrl,
     form.gitUserInfo,
     form.mainWikiToLink.wikiFolderLocation,
-    form.tagName,
+    form.tagNames,
     errorInWhichComponentSetter,
   ]);
   return [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter];
@@ -73,10 +73,8 @@ export function useCloneWiki(
         await window.service.wiki.cloneSubWiki(
           form.parentFolderLocation,
           form.wikiFolderName,
-          form.mainWikiToLink.wikiFolderLocation,
           form.gitRepoUrl,
           form.gitUserInfo!,
-          form.tagName,
         );
       }
       await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo, { from: WikiCreationMethod.Clone });

@@ -26,14 +26,7 @@ export interface IWikiService {
   /** return true if wiki does existed and folder is a valid tiddlywiki folder, return error message (a string) if there is an error checking wiki existence */
   checkWikiExist(workspace: IWorkspace, options?: { shouldBeMainWiki?: boolean; showDialog?: boolean }): Promise<string | true>;
   checkWikiStartLock(wikiFolderLocation: string): boolean;
-  cloneSubWiki(
-    parentFolderLocation: string,
-    wikiFolderName: string,
-    mainWikiPath: string,
-    gitRepoUrl: string,
-    gitUserInfo: IGitUserInfos,
-    tagName?: string,
-  ): Promise<void>;
+  cloneSubWiki(parentFolderLocation: string, wikiFolderName: string, gitRepoUrl: string, gitUserInfo: IGitUserInfos): Promise<void>;
   cloneWiki(parentFolderLocation: string, wikiFolderName: string, gitRepoUrl: string, gitUserInfo: IGitUserInfos): Promise<void>;
   copyWikiTemplate(newFolderPath: string, folderName: string): Promise<void>;
   /**
@@ -43,7 +36,7 @@ export interface IWikiService {
    * @param mainWikiToLink
    * @param onlyLink not creating new subwiki folder, just link existed subwiki folder to main wiki folder
    */
-  createSubWiki(parentFolderLocation: string, folderName: string, subWikiFolderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
+  createSubWiki(parentFolderLocation: string, folderName: string, onlyLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
   extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined>;
   /**

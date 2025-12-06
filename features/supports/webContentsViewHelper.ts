@@ -346,3 +346,30 @@ export async function captureScreenshot(app: ElectronApplication, screenshotPath
     return false;
   }
 }
+
+/**
+ * Execute TiddlyWiki code in the browser view
+ * Useful for directly manipulating the wiki, e.g., opening tiddlers
+ */
+export async function executeTiddlyWikiCode<T>(
+  app: ElectronApplication,
+  code: string,
+): Promise<T | null> {
+  const webContentsId = await getFirstWebContentsView(app);
+
+  if (!webContentsId) {
+    throw new Error('No WebContentsView found');
+  }
+
+  return await app.evaluate(
+    async ({ webContents }, [id, codeContent]) => {
+      const targetWebContents = webContents.fromId(id as number);
+      if (!targetWebContents) {
+        throw new Error('WebContents not found');
+      }
+      const result: T = await targetWebContents.executeJavaScript(codeContent as string, true) as T;
+      return result;
+    },
+    [webContentsId, code],
+  );
+}

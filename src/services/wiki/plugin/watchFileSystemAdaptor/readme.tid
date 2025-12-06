@@ -3,22 +3,39 @@ type: text/vnd.tiddlywiki
 
 !! Watch Filesystem Adaptor
 
-This plugin provides an enhanced filesystem adaptor that automatically routes tiddlers to sub-wikis based on their tags.
+This plugin provides an enhanced filesystem adaptor that automatically routes tiddlers to sub-wikis based on their tags or custom filters.
 
 !!! How It Works
 
 # Queries workspace information from TidGi's main process via IPC
-# Checks each tiddler's tags against sub-workspace `tagName` fields
-# Routes tiddlers with matching tags to the corresponding sub-wiki's tiddlers folder
+# Checks each tiddler against sub-workspace routing rules (any match wins):
+#* Direct tag match - if any of the tiddler's tags match any of the workspace's `tagNames`
+#* Tag tiddlers - if a tiddler's title IS one of the `tagNames`, it's also routed (e.g., tiddler "Test" goes to sub-wiki with tagNames=["Test"])
+#* Tag tree (`includeTagTree`) - if enabled, uses `in-tagtree-of` filter for recursive tag hierarchy matching
+#* Custom filter expressions (`fileSystemPathFilter`) - if enabled, uses custom TiddlyWiki filter expressions (one per line, any match wins)
+# Routes tiddlers with matching rules to the corresponding sub-wiki's root folder
 # Falls back to standard `$:/config/FileSystemPaths` logic for non-matching tiddlers
+# Only moves files when target directory changes (avoids echo loops)
+# Existing tiddlers in wrong location will be moved when modified
+
+!!! Directory Structure
+
+* ''Main wiki'': tiddlers are stored in `wiki/tiddlers/` (because main wiki has other meta files like `.github`)
+* ''Sub-wikis'': tiddlers are stored directly in the sub-wiki root folder (e.g., `wiki-sub/`)
 
 !!! Advantages
 
 * No need to manually edit `$:/config/FileSystemPaths` 
 * Automatically stays in sync with workspace configuration
+* Supports multiple tags per workspace
+* Supports tag hierarchy matching
+* Supports custom TiddlyWiki filter expressions
+* All routing methods work together (tag match, tag tree, custom filter)
+* Handles tag changes - moves tiddlers when tags are modified
+* Tag tiddlers (tiddlers whose title matches a tag name) are also routed correctly
 * More robust than string manipulation
 * Works seamlessly with TidGi's workspace management
 
 !!! Technical Details
 
-This adaptor runs in the wiki worker (Node.js) and communicates with TidGi's main process using worker threads IPC to access workspace service methods. It dynamically resolves the current workspace and its sub-wikis, then routes tiddlers based on their tags.
+This adaptor runs in the wiki worker (Node.js) and communicates with TidGi's main process using worker threads IPC to access workspace service methods. It dynamically resolves the current workspace and its sub-wikis, then routes tiddlers based on their tags or custom filters.

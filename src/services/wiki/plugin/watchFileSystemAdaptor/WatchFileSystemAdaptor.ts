@@ -274,7 +274,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       // Initialize sub-wiki watchers
       await this.initializeSubWikiWatchers();
       // Log stabilization marker for tests
-      this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized', { level: 'debug' });
+      this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized');
     } catch (error) {
       this.logger.alert('WatchFileSystemAdaptor Failed to initialize file watching:', error);
     }

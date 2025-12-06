@@ -167,7 +167,10 @@ export default function EditWorkspace(): React.JSX.Element {
   const storageService = isWiki ? workspace.storageService : SupportedStorageServices.github;
   const syncOnInterval = isWiki ? workspace.syncOnInterval : false;
   const syncOnStartup = isWiki ? workspace.syncOnStartup : false;
-  const tagName = isWiki ? workspace.tagName : null;
+  const tagNames = isWiki ? workspace.tagNames : [];
+  const includeTagTree = isWiki ? workspace.includeTagTree : false;
+  const fileSystemPathFilterEnable = isWiki ? workspace.fileSystemPathFilterEnable : false;
+  const fileSystemPathFilter = isWiki ? workspace.fileSystemPathFilter : null;
   const transparentBackground = isWiki ? workspace.transparentBackground : false;
   const userName = isWiki ? workspace.userName : '';
   const lastUrl = isWiki ? workspace.lastUrl : null;
@@ -176,6 +179,16 @@ export default function EditWorkspace(): React.JSX.Element {
 
   // Fetch all tags from main wiki for autocomplete suggestions
   const availableTags = useAvailableTags(mainWikiToLink ?? undefined, isSubWiki);
+
+  // Check if there are sub-workspaces for this main workspace
+  const hasSubWorkspaces = usePromiseValue(async () => {
+    if (isSubWiki) return false;
+    const subWorkspaces = await window.service.workspace.getSubWorkspacesAsList(workspaceID);
+    return subWorkspaces.length > 0;
+  }, false);
+
+  // Show sub-workspace routing options for sub-wikis, or for main wikis that have sub-workspaces
+  const showSubWorkspaceRouting = isSubWiki || hasSubWorkspaces;
 
   const rememberLastPageVisited = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
   if (workspaceID === undefined) {
@@ -309,31 +322,19 @@ export default function EditWorkspace(): React.JSX.Element {
                 disabled
               />
             )}
-            <TextField
-              helperText={t('AddWorkspace.WorkspaceUserNameDetail')}
-              fullWidth
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                workspaceSetter({ ...workspace, userName: event.target.value }, true);
-              }}
-              label={t('AddWorkspace.WorkspaceUserName')}
-              placeholder={fallbackUserName}
-              value={userName}
-            />
-            <Divider />
-            {isSubWiki && (
-              <Autocomplete
-                freeSolo
-                options={availableTags}
-                value={tagName}
-                onInputChange={(_event: React.SyntheticEvent, value: string) => {
-                  void _event;
-                  workspaceSetter({ ...workspace, tagName: value }, true);
+            {!isSubWiki && (
+              <TextField
+                helperText={t('AddWorkspace.WorkspaceUserNameDetail')}
+                fullWidth
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  workspaceSetter({ ...workspace, userName: event.target.value }, true);
                 }}
-                renderInput={(parameters: AutocompleteRenderInputParams) => (
-                  <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />
-                )}
+                label={t('AddWorkspace.WorkspaceUserName')}
+                placeholder={fallbackUserName}
+                value={userName}
               />
             )}
+            <Divider />
             <SyncedWikiDescription
               isCreateSyncedWorkspace={isCreateSyncedWorkspace}
               isCreateSyncedWorkspaceSetter={(isSynced: boolean) => {
@@ -418,6 +419,96 @@ export default function EditWorkspace(): React.JSX.Element {
             )}
           </AccordionDetails>
         </OptionsAccordion>
+        {showSubWorkspaceRouting && (
+          <OptionsAccordion defaultExpanded={isSubWiki}>
+            <Tooltip title={t('EditWorkspace.ClickToExpand')}>
+              <OptionsAccordionSummary expandIcon={<ExpandMoreIcon />} data-testid='preference-section-subWorkspaceOptions'>
+                {t('AddWorkspace.SubWorkspaceOptions')}
+              </OptionsAccordionSummary>
+            </Tooltip>
+            <AccordionDetails>
+              <Typography variant='body2' color='textSecondary' sx={{ mb: 2 }}>
+                {isSubWiki ? t('AddWorkspace.SubWorkspaceOptionsDescriptionForSub') : t('AddWorkspace.SubWorkspaceOptionsDescriptionForMain')}
+              </Typography>
+              <Autocomplete
+                multiple
+                freeSolo
+                options={availableTags}
+                value={tagNames}
+                onChange={(_event: React.SyntheticEvent, newValue: string[]) => {
+                  void _event;
+                  workspaceSetter({ ...workspace, tagNames: newValue }, true);
+                }}
+                slotProps={{
+                  chip: {
+                    variant: 'outlined',
+                  },
+                }}
+                renderInput={(parameters: AutocompleteRenderInputParams) => (
+                  <TextField
+                    {...parameters}
+                    label={t('AddWorkspace.TagName')}
+                    helperText={isSubWiki ? t('AddWorkspace.TagNameHelp') : t('AddWorkspace.TagNameHelpForMain')}
+                  />
+                )}
+              />
+              <List>
+                <ListItem
+                  disableGutters
+                  secondaryAction={
+                    <Switch
+                      edge='end'
+                      color='primary'
+                      checked={includeTagTree}
+                      data-testid='include-tag-tree-switch'
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                        workspaceSetter({ ...workspace, includeTagTree: event.target.checked }, true);
+                      }}
+                    />
+                  }
+                >
+                  <ListItemText
+                    primary={t('AddWorkspace.IncludeTagTree')}
+                    secondary={isSubWiki ? t('AddWorkspace.IncludeTagTreeHelp') : t('AddWorkspace.IncludeTagTreeHelpForMain')}
+                  />
+                </ListItem>
+                <ListItem
+                  disableGutters
+                  secondaryAction={
+                    <Switch
+                      edge='end'
+                      color='primary'
+                      checked={fileSystemPathFilterEnable}
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                        workspaceSetter({ ...workspace, fileSystemPathFilterEnable: event.target.checked }, true);
+                      }}
+                    />
+                  }
+                >
+                  <ListItemText
+                    primary={t('AddWorkspace.UseFilter')}
+                    secondary={t('AddWorkspace.UseFilterHelp')}
+                  />
+                </ListItem>
+              </List>
+              {fileSystemPathFilterEnable && (
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  maxRows={10}
+                  value={fileSystemPathFilter ?? ''}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    workspaceSetter({ ...workspace, fileSystemPathFilter: event.target.value || null }, true);
+                  }}
+                  label={t('AddWorkspace.FilterExpression')}
+                  helperText={t('AddWorkspace.FilterExpressionHelp')}
+                  sx={{ mb: 2 }}
+                />
+              )}
+            </AccordionDetails>
+          </OptionsAccordion>
+        )}
         <OptionsAccordion>
           <Tooltip title={t('EditWorkspace.ClickToExpand')}>
             <OptionsAccordionSummary expandIcon={<ExpandMoreIcon />} data-testid='preference-section-miscOptions'>

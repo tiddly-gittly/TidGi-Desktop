@@ -131,12 +131,12 @@ export async function getWorkspaceMenuTemplate(
     }];
   }
 
-  const { hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, enableHTTPAPI, lastUrl, homeUrl } = workspace;
+  const { hibernated, tagNames, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, enableHTTPAPI, lastUrl, homeUrl } = workspace;
 
   const template: MenuItemConstructorOptions[] = [
     {
       label: t('WorkspaceSelector.OpenWorkspaceTagTiddler', {
-        tagName: tagName ?? (isSubWiki ? name : `${name} ${t('WorkspaceSelector.DefaultTiddlers')}`),
+        tagName: tagNames[0] ?? (isSubWiki ? name : `${name} ${t('WorkspaceSelector.DefaultTiddlers')}`),
       }),
       click: async () => {
         await service.workspace.openWorkspaceTiddler(workspace);

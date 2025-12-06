@@ -136,9 +136,27 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
    */
   syncOnStartup: boolean;
   /**
-   * Tag name in tiddlywiki's filesystemPath, tiddler with this tag will be save into this subwiki
+   * Tag names in tiddlywiki's filesystemPath, tiddlers with any of these tags will be saved into this subwiki
    */
-  tagName: string | null;
+  tagNames: string[];
+  /**
+   * When enabled, tiddlers that are indirectly tagged (tag of tag of tag...) with any of this sub-wiki's tagNames
+   * will also be saved to this sub-wiki. Uses the in-tagtree-of filter operator.
+   * Applies when creating new tiddlers and when modifying existing ones (e.g., when tags change).
+   */
+  includeTagTree: boolean;
+  /**
+   * When enabled, also use fileSystemPathFilter expressions to match tiddlers, in addition to tagName/includeTagTree matching.
+   * This allows more complex matching logic using TiddlyWiki filter expressions.
+   */
+  fileSystemPathFilterEnable: boolean;
+  /**
+   * TiddlyWiki filter expressions to match tiddlers for this workspace (one per line).
+   * Example: `[in-tagtree-of[Calendar]!tag[Public]!tag[Draft]]`
+   * Any matching filter will route the tiddler to this workspace.
+   * Only used when fileSystemPathFilterEnable is true.
+   */
+  fileSystemPathFilter: string | null;
   /**
    * Use authenticated-user-header to provide `TIDGI_AUTH_TOKEN_HEADER` as header key to receive a value as username (we use it as token)
    */
@@ -240,11 +258,11 @@ export interface IWorkspaceService {
   getMetaData: (id: string) => Promise<Partial<IWorkspaceMetaData>>;
   getNextWorkspace: (id: string) => Promise<IWorkspace | undefined>;
   getPreviousWorkspace: (id: string) => Promise<IWorkspace | undefined>;
-  getSubWorkspacesAsList(workspaceID: string): Promise<IWorkspace[]>;
+  getSubWorkspacesAsList(workspaceID: string): Promise<IWikiWorkspace[]>;
   /**
    * Only meant to be used in TidGi's services internally.
    */
-  getSubWorkspacesAsListSync(workspaceID: string): IWorkspace[];
+  getSubWorkspacesAsListSync(workspaceID: string): IWikiWorkspace[];
   getWorkspaces(): Promise<Record<string, IWorkspace>>;
   getWorkspacesAsList(): Promise<IWorkspace[]>;
   getWorkspacesWithMetadata(): IWorkspacesWithMetadata;

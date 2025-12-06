@@ -134,6 +134,10 @@ export class Wiki implements IWikiService {
       });
     }
     const shouldUseDarkColors = await this.themeService.shouldUseDarkColors();
+
+    // Get sub-wikis for this main wiki to load their tiddlers
+    const subWikis = await workspaceService.getSubWorkspacesAsList(workspaceID);
+
     const workerData: IStartNodeJSWikiConfigs = {
       authToken,
       constants: { TIDDLYWIKI_PACKAGE_FOLDER: getTiddlyWikiBootPath(wikiFolderLocation) },
@@ -146,6 +150,7 @@ export class Wiki implements IWikiService {
       readOnlyMode,
       rootTiddler,
       shouldUseDarkColors,
+      subWikis,
       tiddlyWikiHost: defaultServerIP,
       tiddlyWikiPort: port,
       tokenAuth,
@@ -477,7 +482,7 @@ export class Wiki implements IWikiService {
     this.logProgress(i18n.t('AddWorkspace.WikiTemplateCopyCompleted') + newWikiPath);
   }
 
-  public async createSubWiki(parentFolderLocation: string, folderName: string, _subWikiFolderName: string, _mainWikiPath: string, _tagName = '', onlyLink = false): Promise<void> {
+  public async createSubWiki(parentFolderLocation: string, folderName: string, onlyLink = false): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCreatingSubWiki'));
     const newWikiPath = path.join(parentFolderLocation, folderName);
     if (!(await pathExists(parentFolderLocation))) {
@@ -620,14 +625,7 @@ export class Wiki implements IWikiService {
     await gitService.clone(gitRepoUrl, path.join(parentFolderLocation, wikiFolderName), gitUserInfo);
   }
 
-  public async cloneSubWiki(
-    parentFolderLocation: string,
-    wikiFolderName: string,
-    _mainWikiPath: string,
-    gitRepoUrl: string,
-    gitUserInfo: IGitUserInfos,
-    _tagName = '',
-  ): Promise<void> {
+  public async cloneSubWiki(parentFolderLocation: string, wikiFolderName: string, gitRepoUrl: string, gitUserInfo: IGitUserInfos): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCloningSubWiki'));
     const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
     if (!(await pathExists(parentFolderLocation))) {
@@ -692,8 +690,9 @@ export class Wiki implements IWikiService {
           function: 'startWiki',
         });
         await this.startWiki(id, userName);
-        logger.debug('done', {
+        logger.info('[test-id-WIKI_WORKER_STARTED] Wiki worker started successfully', {
           function: 'startWiki',
+          workspaceId: id,
         });
       } catch (error) {
         logger.warn('startWiki failed', { function: 'startWiki', error });

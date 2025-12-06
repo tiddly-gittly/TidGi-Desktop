@@ -22,6 +22,7 @@ import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import type { ISyncService } from '@services/sync/interface';
+import { workspaceSorter } from '@services/workspaces/utilities';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
 import { registerMenu } from './registerMenu';
 import { getTidgiMiniWindowTargetWorkspace } from './utilities';
@@ -49,9 +50,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     workspacesList.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.pageType).forEach((workspace) => {
       wikiService.setWikiStartLockOn(workspace.id);
     });
-    // sorting (-1 will make a in the front, b in the back)
     const sortedList = workspacesList
-      .sort((a, b) => a.order - b.order) // sort by order, 1-2<0, so first will be the first
+      .sort(workspaceSorter)
       .sort((a, b) => (a.active && !b.active ? -1 : 0)) // put active wiki first
       .sort((a, b) => (isWikiWorkspace(a) && a.isSubWiki && (!isWikiWorkspace(b) || !b.isSubWiki) ? -1 : 0)); // put subwiki on top, they can't restart wiki, so need to sync them first, then let main wiki restart the wiki // revert this after tw can reload tid from fs
     await mapSeries(sortedList, async (workspace) => {
@@ -361,13 +361,21 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (isWikiWorkspace(newWorkspace) && newWorkspace.isSubWiki && typeof newWorkspace.mainWikiID === 'string') {
       logger.debug(`${nextWorkspaceID} is a subwiki, set its main wiki ${newWorkspace.mainWikiID} to active instead.`);
       await this.setActiveWorkspaceView(newWorkspace.mainWikiID);
-      if (typeof newWorkspace.tagName === 'string') {
-        await container.get<IWikiService>(serviceIdentifier.Wiki).wikiOperationInBrowser(WikiChannel.openTiddler, newWorkspace.mainWikiID, [newWorkspace.tagName]);
+      // Open the first tag if available
+      if (newWorkspace.tagNames.length > 0) {
+        await container.get<IWikiService>(serviceIdentifier.Wiki).wikiOperationInBrowser(WikiChannel.openTiddler, newWorkspace.mainWikiID, [newWorkspace.tagNames[0]]);
       }
       return;
     }
     // later process will use the current active workspace
     await container.get<IWorkspaceService>(serviceIdentifier.Workspace).setActiveWorkspace(nextWorkspaceID, oldActiveWorkspace?.id);
+
+    // Schedule hibernation of old workspace before waking up new workspace
+    // This prevents blocking when wakeUp calls loadURL
+    if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID) {
+      void this.hibernateWorkspace(oldActiveWorkspace.id);
+    }
+
     if (isWikiWorkspace(newWorkspace) && newWorkspace.hibernated) {
       await this.wakeUpWorkspaceView(nextWorkspaceID);
     }
@@ -383,6 +391,12 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
 
     try {
+      // Schedule hibernation of old workspace before loading new workspace
+      // This prevents blocking on loadURL and allows faster UI updates
+      if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID) {
+        void this.hibernateWorkspace(oldActiveWorkspace.id);
+      }
+
       await container.get<IViewService>(serviceIdentifier.View).setActiveViewForAllBrowserViews(nextWorkspaceID);
       await this.realignActiveWorkspace(nextWorkspaceID);
     } catch (error) {
@@ -392,13 +406,18 @@ export class WorkspaceView implements IWorkspaceViewService {
       });
       throw error;
     }
-    // if we are switching to a new workspace, we hide and/or hibernate old view, and activate new view
-    // This must happen after view setup succeeds to avoid issues with workspace that hasn't started yet
-    if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID) {
-      await this.hideWorkspaceView(oldActiveWorkspace.id);
-      if (isWikiWorkspace(oldActiveWorkspace) && oldActiveWorkspace.hibernateWhenUnused) {
-        await this.hibernateWorkspaceView(oldActiveWorkspace.id);
-      }
+  }
+
+  /**
+   * This promise could be `void` to let go, not blocking other logic like switch to new workspace, and hibernate workspace on background.
+   */
+  private async hibernateWorkspace(workspaceID: string): Promise<void> {
+    const workspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(workspaceID);
+    if (workspace === undefined) return;
+
+    await this.hideWorkspaceView(workspaceID);
+    if (isWikiWorkspace(workspace) && workspace.hibernateWhenUnused) {
+      await this.hibernateWorkspaceView(workspaceID);
     }
   }
 
