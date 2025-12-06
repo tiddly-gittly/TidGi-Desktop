@@ -5,6 +5,14 @@ import type { TFunction } from 'i18next';
 import type { ReactElement } from 'react';
 
 /**
+ * File object structure that can be either a string or an object with path and status.
+ */
+interface FileObject {
+  path?: string;
+  status?: string;
+}
+
+/**
  * Commit data structure matching react-git-log's Commit type.
  */
 interface CommitData {
@@ -15,7 +23,7 @@ interface CommitData {
     name?: string;
     email?: string;
   };
-  files?: string[];
+  files?: (string | FileObject)[];
 }
 
 /**
@@ -116,7 +124,9 @@ export function CustomGitTooltip({ commit, borderColour, backgroundColour, t }: 
       {displayFiles.length > 0 && (
         <Box sx={{ marginTop: '4px' }}>
           {displayFiles.map((file, index) => {
-            const fileName = file.split('/').pop() || file;
+            // Handle both string and object file formats
+            const filePath = typeof file === 'string' ? file : (file as FileObject).path || '';
+            const fileName = filePath.split('/').pop() || filePath;
             return (
               <Typography
                 key={index}
@@ -131,7 +141,7 @@ export function CustomGitTooltip({ commit, borderColour, backgroundColour, t }: 
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }}
-                title={file}
+                title={filePath}
               >
                 {fileName}
               </Typography>
