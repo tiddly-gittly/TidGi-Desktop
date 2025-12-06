@@ -39,6 +39,12 @@ export interface IStartNodeJSWikiConfigs {
   readOnlyMode?: boolean;
   rootTiddler?: string;
   shouldUseDarkColors: boolean;
+  /**
+   * Sub-wikis to load their tiddlers into the main wiki.
+   * Sorted by order (lower = higher priority).
+   * Note: Tag-based routing is handled separately by FileSystemAdaptor.
+   */
+  subWikis?: IWikiWorkspace[];
   tiddlyWikiHost: string;
   tiddlyWikiPort: number;
   tokenAuth?: boolean;

@@ -319,6 +319,8 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
           ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
         }),
       },
+      // Set cwd to repo root so process.cwd() in app returns the correct path for userData-test
+      cwd: process.cwd(),
       timeout: 30000, // Increase timeout to 30 seconds for CI
     });
 

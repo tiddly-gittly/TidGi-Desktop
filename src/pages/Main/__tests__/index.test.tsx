@@ -45,7 +45,7 @@ const workspacesSubject = new BehaviorSubject([
     mainWikiID: 'workspace-1',
     mainWikiToLink: '/path/to/wiki1',
     port: 5213,
-    tagName: 'WorkNotes',
+    tagNames: ['WorkNotes'],
     metadata: { badgeCount: 5 },
   },
   // Built-in page workspaces generated from pageTypes

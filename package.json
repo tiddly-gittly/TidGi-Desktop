@@ -4,7 +4,7 @@
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
   "version": "0.13.0-prerelease11",
   "license": "MPL 2.0",
-  "packageManager": "pnpm@10.18.2",
+  "packageManager": "pnpm@10.24.0",
   "scripts": {
     "start:init": "pnpm run clean && pnpm run init:git-submodule && pnpm run build:plugin && cross-env NODE_ENV=development tsx scripts/developmentMkdir.ts && pnpm run start:dev",
     "start:dev": "cross-env NODE_ENV=development electron-forge start",
@@ -179,7 +179,7 @@
     "rimraf": "^6.1.2",
     "ts-node": "10.9.2",
     "tsx": "^4.20.6",
-    "tw5-typed": "^1.0.5",
+    "tw5-typed": "^1.1.1",
     "typescript": "5.9.3",
     "typesync": "0.14.3",
     "unplugin-swc": "^1.5.8",

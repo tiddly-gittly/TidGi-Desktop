@@ -1,9 +1,9 @@
 import FolderIcon from '@mui/icons-material/Folder';
-import { AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
+import { Autocomplete, AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
 import { isWikiWorkspace } from '@services/workspaces/interface';
-import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput, SoftLinkToMainWikiSelect, SubWikiTagAutoComplete } from './FormComponents';
+import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput, SoftLinkToMainWikiSelect } from './FormComponents';
 
 import { useAvailableTags } from './useAvailableTags';
 import type { IWikiWorkspaceFormProps } from './useForm';
@@ -68,7 +68,7 @@ export function NewWikiForm({
             label={t('AddWorkspace.MainWorkspaceLocation')}
             helperText={form.mainWikiToLink.wikiFolderLocation &&
               `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
-                    ${form.mainWikiToLink.wikiFolderLocation}/tiddlers/subwiki/${form.wikiFolderName}`}
+                    ${form.mainWikiToLink.wikiFolderLocation}`}
             value={form.mainWikiToLinkIndex}
             slotProps={{ htmlInput: { 'data-testid': 'main-wiki-select' } }}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -89,16 +89,22 @@ export function NewWikiForm({
               </MenuItem>
             ))}
           </SoftLinkToMainWikiSelect>
-          <SubWikiTagAutoComplete
+          <Autocomplete<string, true, false, true>
+            multiple
             freeSolo
             options={availableTags}
-            value={form.tagName}
-            onInputChange={(_event: React.SyntheticEvent, value: string) => {
-              form.tagNameSetter(value);
+            value={form.tagNames}
+            onChange={(_event, newValue) => {
+              form.tagNamesSetter(newValue);
+            }}
+            slotProps={{
+              chip: {
+                variant: 'outlined',
+              },
             }}
             renderInput={(parameters: AutocompleteRenderInputParams) => (
               <LocationPickerInput
-                error={errorInWhichComponent.tagName}
+                error={errorInWhichComponent.tagNames}
                 {...parameters}
                 label={t('AddWorkspace.TagName')}
                 helperText={t('AddWorkspace.TagNameHelp')}

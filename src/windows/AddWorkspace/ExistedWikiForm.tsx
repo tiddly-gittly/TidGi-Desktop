@@ -1,10 +1,10 @@
 import FolderIcon from '@mui/icons-material/Folder';
-import { AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
+import { Autocomplete, AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isWikiWorkspace } from '@services/workspaces/interface';
-import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput, SoftLinkToMainWikiSelect, SubWikiTagAutoComplete } from './FormComponents';
+import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput, SoftLinkToMainWikiSelect } from './FormComponents';
 
 import { useAvailableTags } from './useAvailableTags';
 import { useValidateExistedWiki } from './useExistedWiki';
@@ -32,8 +32,8 @@ export function ExistedWikiForm({
     mainWikiToLinkIndex,
     mainWikiToLinkSetter,
     mainWorkspaceList,
-    tagName,
-    tagNameSetter,
+    tagNames,
+    tagNamesSetter,
   } = form;
 
   // Local state for the full path input - like NewWikiForm's direct state binding
@@ -112,7 +112,7 @@ export function ExistedWikiForm({
             label={t('AddWorkspace.MainWorkspaceLocation')}
             helperText={mainWikiToLink.wikiFolderLocation &&
               `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
-                    ${mainWikiToLink.wikiFolderLocation}/tiddlers/${wikiFolderName}`}
+                    ${mainWikiToLink.wikiFolderLocation}`}
             value={mainWikiToLinkIndex}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
               const index = Number(event.target.value);
@@ -132,17 +132,23 @@ export function ExistedWikiForm({
               </MenuItem>
             ))}
           </SoftLinkToMainWikiSelect>
-          <SubWikiTagAutoComplete
+          <Autocomplete<string, true, false, true>
+            multiple
             freeSolo
             options={availableTags}
-            value={tagName}
-            onInputChange={(_event: React.SyntheticEvent, value: string) => {
-              tagNameSetter(value);
+            value={tagNames}
+            onChange={(_event, newValue) => {
+              tagNamesSetter(newValue);
+            }}
+            slotProps={{
+              chip: {
+                variant: 'outlined',
+              },
             }}
             renderInput={(parameters: AutocompleteRenderInputParams) => (
               <LocationPickerInput
                 {...parameters}
-                error={errorInWhichComponent.tagName}
+                error={errorInWhichComponent.tagNames}
                 label={t('AddWorkspace.TagName')}
                 helperText={t('AddWorkspace.TagNameHelp')}
               />

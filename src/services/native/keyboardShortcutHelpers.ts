@@ -1,3 +1,4 @@
+import { isTest } from '@/constants/environment';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -82,6 +83,11 @@ export function getShortcutCallback(key: string): (() => Promise<void>) | undefi
  * @param shortcut The shortcut string (e.g. "CmdOrCtrl+Shift+T")
  */
 export async function registerShortcutByKey(key: string, shortcut: string): Promise<void> {
+  // Skip in test, we use `src/helpers/testKeyboardShortcuts.ts` for test environment
+  if (isTest) {
+    logger.info('Skipping shortcut registration in test environment', { key, shortcut, function: 'registerShortcutByKey' });
+    return;
+  }
   // Unregister any existing shortcut first
   if (globalShortcut.isRegistered(shortcut)) {
     globalShortcut.unregister(shortcut);

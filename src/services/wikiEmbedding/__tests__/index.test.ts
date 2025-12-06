@@ -54,7 +54,7 @@ describe('WikiEmbeddingService Integration Tests', () => {
       port: 5212,
       isSubWiki: false,
       mainWikiToLink: null,
-      tagName: null,
+      tagNames: [],
       lastUrl: null,
       active: true,
       hibernated: false,

@@ -138,7 +138,7 @@ export default function setupViewEventHandlers(
     void throttledDidFinishedLoad('did-finish-load');
   });
   view.webContents.on('did-stop-loading', () => {
-    logger.debug('did-stop-loading called');
+    logger.debug(`did-stop-loading called ${workspace.id}`);
     void throttledDidFinishedLoad('did-stop-loading');
   });
   view.webContents.on('dom-ready', () => {
@@ -224,7 +224,9 @@ export default function setupViewEventHandlers(
     if (workspaceObject === undefined) {
       return;
     }
-    if (workspaceObject.active) {
+    // For main/tidgiMiniWindow, only update title if workspace is active
+    // For secondary/other windows, always update title regardless of active status
+    if (windowName === WindowNames.secondary || workspaceObject.active) {
       browserWindow.setTitle(title);
     }
   });

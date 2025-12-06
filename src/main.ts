@@ -145,6 +145,7 @@ const commonInit = async (): Promise<void> => {
   await workspaceService.initializeDefaultPageWorkspaces();
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();
+  logger.info('[test-id-ALL_WORKSPACE_VIEW_INITIALIZED] All workspace views initialized');
 
   // Process any pending deep link after workspaces are initialized
   await deepLinkService.processPendingDeepLink();
