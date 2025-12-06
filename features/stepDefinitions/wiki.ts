@@ -318,18 +318,10 @@ async function clearGitTestData() {
  * @param description - Human-readable description of what we're waiting for (comes first for readability)
  * @param marker - The test-id marker to look for in logs
  *
- * This searches in both TidGi- and wiki- log files with appropriate timeouts
+ * This searches in TidGi- log files by default
  */
 Then('I wait for {string} log marker {string}', async function(this: ApplicationWorld, description: string, marker: string) {
-  // Determine timeout and log prefix based on operation type
-  const isGitOperation = marker.includes('git-') || marker.includes('revert');
-  const isWikiRestart = marker.includes('MAIN_WIKI_RESTARTED');
-  const isWorkspaceOperation = marker.includes('WORKSPACE_');
-  const isTidgiMiniWindowOperation = marker.includes('TIDGI_MINI_WINDOW');
-  const isRevert = marker.includes('revert');
-  const timeout = isRevert ? 30000 : (isWikiRestart ? 25000 : (isGitOperation ? 25000 : 15000));
-  const logPrefix = (isGitOperation || isWikiRestart || isWorkspaceOperation || isTidgiMiniWindowOperation) ? 'TidGi-' : undefined;
-  await waitForLogMarker(marker, `Log marker "${marker}" not found. Expected: ${description}`, timeout, logPrefix);
+  await waitForLogMarker(marker, `Log marker "${marker}" not found. Expected: ${description}`, 10000, 'TidGi-');
 });
 
 /**
@@ -339,6 +331,34 @@ Then('I wait for {string} log marker {string}', async function(this: Application
 Then('I wait for SSE and watch-fs to be ready', async function(this: ApplicationWorld) {
   await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', 20000);
   await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 20000);
+});
+
+/**
+ * Remove log lines containing specific text from all TidGi- log files.
+ * This is useful when you need to wait for a log marker that may have appeared earlier in the scenario,
+ * and you want to ensure you're waiting for a new occurrence of that marker.
+ * @param marker - The text pattern to remove from log files
+ */
+When('I clear log lines containing {string}', async function(this: ApplicationWorld, marker: string) {
+  const logDirectory = path.join(process.cwd(), 'userData-test', 'logs');
+  if (!fs.existsSync(logDirectory)) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const logFiles = fs.readdirSync(logDirectory).filter(f => 
+    (f.startsWith('TidGi-') || f === `TidGi-${today}.log`) && f.endsWith('.log')
+  );
+
+  for (const logFile of logFiles) {
+    const logPath = path.join(logDirectory, logFile);
+    try {
+      const content = fs.readFileSync(logPath, 'utf-8');
+      const lines = content.split('\n');
+      const filteredLines = lines.filter(line => !line.includes(marker));
+      fs.writeFileSync(logPath, filteredLines.join('\n'), 'utf-8');
+    } catch {
+      // Ignore errors if file is locked or doesn't exist
+    }
+  }
 });
 
 /**

@@ -10,6 +10,14 @@ Feature: TidGi Mini Window Workspace Switching
     Then I launch the TidGi application
     And I wait for the page to load completely
     Then I switch to "main" window
+    # Wait for git init to complete (early sync point, ~1s after app start)
+    Then I wait for "git init complete" log marker "[test-id-git-init-complete]"
+    # Wait for wiki worker to start (~3s after git-init-complete)
+    Then I wait for "wiki worker started" log marker "[test-id-WIKI_WORKER_STARTED]"
+    # Wait for view to finish loading (~4s after wiki worker started)
+    Then I wait for "view load url done" log marker "[test-id-VIEW_LOAD_URL_DONE]"
+    # Wait for all workspace views to be initialized
+    Then I wait for "all workspace views initialized" log marker "[test-id-ALL_WORKSPACE_VIEW_INITIALIZED]"
 
   Scenario: TidGi mini window syncs with main window switching to agent workspace
     # Switch main window to agent workspace
@@ -50,12 +58,17 @@ Feature: TidGi Mini Window Workspace Switching
     And I wait for 0.2 seconds
     Then I switch to "preferences" window
     When I press the key combination "CommandOrControl+Shift+M"
+    And I wait for 1 seconds
     And I confirm the "tidgiMiniWindow" window not visible
     # Get the first wiki workspace ID and select it
     And I select "wiki" from MUI Select with test id "tidgi-mini-window-fixed-workspace-select"
     And I wait for 0.2 seconds
+    # Clear previous occurrences of the log marker before waiting for a new one
+    And I clear log lines containing "[test-id-TIDGI_MINI_WINDOW_SHOWN]"
     # Open tidgi mini window again - should show wiki workspace with browser view
     When I press the key combination "CommandOrControl+Shift+M"
+    # Wait for the view to be loaded and window to be shown
+    Then I wait for "tidgi mini window shown" log marker "[test-id-TIDGI_MINI_WINDOW_SHOWN]"
     And I confirm the "tidgiMiniWindow" window visible
     And I confirm the "tidgiMiniWindow" window browser view is positioned within visible window bounds
     Then I switch to "tidgiMiniWindow" window

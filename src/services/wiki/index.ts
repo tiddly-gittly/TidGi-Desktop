@@ -692,8 +692,9 @@ export class Wiki implements IWikiService {
           function: 'startWiki',
         });
         await this.startWiki(id, userName);
-        logger.debug('done', {
+        logger.info('[test-id-WIKI_WORKER_STARTED] Wiki worker started successfully', {
           function: 'startWiki',
+          workspaceId: id,
         });
       } catch (error) {
         logger.warn('startWiki failed', { function: 'startWiki', error });

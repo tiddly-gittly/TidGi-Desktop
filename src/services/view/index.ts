@@ -361,6 +361,7 @@ export class View implements IViewService {
       logger.debug('await loadURL done', {
         function: 'loadUrlForView',
       });
+      logger.info('[test-id-VIEW_LOAD_URL_DONE] View loadURL completed', { workspaceId: workspace.id, urlToLoad });
       const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
       view.webContents.on('destroyed', () => {
         unregisterContextMenu();

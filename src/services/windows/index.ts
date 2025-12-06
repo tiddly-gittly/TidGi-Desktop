@@ -414,6 +414,7 @@ export class Window implements IWindowService {
 
           // Use menuBar.showWindow() instead of direct window.show() for proper tidgi mini window behavior
           void this.tidgiMiniWindowMenubar.showWindow();
+          logger.info('[test-id-TIDGI_MINI_WINDOW_SHOWN] TidGi mini window showWindow called', { function: 'openTidgiMiniWindow' });
         }
         return;
       }
