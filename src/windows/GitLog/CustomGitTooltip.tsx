@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import { format } from 'date-fns';
 import type { TFunction } from 'i18next';
@@ -58,6 +59,7 @@ interface CustomGitTooltipProps {
  * The translation function is passed as a prop instead.
  */
 export function CustomGitTooltip({ commit, borderColour, backgroundColour, t }: CustomGitTooltipProps): ReactElement<HTMLElement> {
+  const theme = useTheme();
   const files = commit.files ?? [];
   const fileCount = files.length;
 
@@ -74,7 +76,7 @@ export function CustomGitTooltip({ commit, borderColour, backgroundColour, t }: 
       sx={{
         border: `2px solid ${borderColour}`,
         backgroundColor: backgroundColour,
-        color: 'white',
+        color: theme.palette.text.primary,
         padding: '8px 12px',
         borderRadius: '4px',
         minWidth: '200px',
@@ -125,7 +127,7 @@ export function CustomGitTooltip({ commit, borderColour, backgroundColour, t }: 
         <Box sx={{ marginTop: '4px' }}>
           {displayFiles.map((file, index) => {
             // Handle both string and object file formats
-            const filePath = typeof file === 'string' ? file : (file as FileObject).path || '';
+            const filePath = typeof file === 'string' ? file : (file as unknown as FileObject).path || '';
             const fileName = filePath.split('/').pop() || filePath;
             return (
               <Typography

@@ -4,7 +4,7 @@ import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import Snackbar from '@mui/material/Snackbar';
-import { styled } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles';
 import Tab from '@mui/material/Tab';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -52,6 +52,7 @@ const GitLogWrapper = styled(Box)`
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.palette.divider};
   border-radius: 4px;
+  color: ${({ theme }) => theme.palette.text.primary};
 `;
 
 const TabsContainer = styled(Box)`
@@ -193,6 +194,7 @@ function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTable
 
 export default function GitHistory(): React.JSX.Element {
   const { t } = useTranslation();
+  const theme = useTheme();
   const { entries, loading, error, workspaceInfo, currentBranch, lastChangeType } = useGitLogData();
   const { selectedCommit, setSelectedCommit } = useCommitDetails();
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -203,6 +205,9 @@ export default function GitHistory(): React.JSX.Element {
     message: '',
     severity: 'info',
   });
+
+  // Determine theme mode for react-git-log
+  const gitLogTheme = theme.palette.mode as 'light' | 'dark';
 
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' = 'info') => {
     setSnackbar({ open: true, message, severity });
@@ -356,7 +361,7 @@ export default function GitHistory(): React.JSX.Element {
                       <ReactGitLog
                         entries={entries}
                         currentBranch={currentBranch}
-                        theme='dark'
+                        theme={gitLogTheme}
                         onSelectCommit={(commit) => {
                           setSelectedCommit(commit as unknown as GitLogEntry);
                           setSelectedFile(null);
