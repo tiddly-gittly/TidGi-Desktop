@@ -14,6 +14,7 @@ import { Menubar, menubar } from 'menubar';
 import type { IWindowService } from './interface';
 import { getMainWindowEntry } from './viteEntry';
 import { WindowNames } from './WindowProperties';
+import { isTest } from '@/constants/environment';
 
 export async function handleAttachToTidgiMiniWindow(
   windowConfig: BrowserWindowConstructorOptions,
@@ -108,7 +109,7 @@ export async function handleAttachToTidgiMiniWindow(
   // });
   // https://github.com/maxogden/menubar/issues/120
   tidgiMiniWindow.on('after-hide', () => {
-    if (isMac) {
+    if (isMac && !isTest) {
       tidgiMiniWindow.app.hide();
     }
   });
