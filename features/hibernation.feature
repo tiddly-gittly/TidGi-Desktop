@@ -14,8 +14,8 @@ Feature: Workspace Hibernation
     And I wait for 1 seconds for "wiki2 workspace icon to appear"
     Then I should see a "wiki2 workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki2')"
 
-  Scenario: Hibernate both workspaces and verify switching with wake up (issues #556 and #593)
-    # Enable hibernation for both wiki workspaces
+  Scenario: Hibernate both workspaces and verify switching with wake up
+    # Enable hibernation for both wiki workspaces (issues #556 and #593)
     # Enable for wiki
     When I open edit workspace window for workspace with name "wiki"
     And I switch to "editWorkspace" window
