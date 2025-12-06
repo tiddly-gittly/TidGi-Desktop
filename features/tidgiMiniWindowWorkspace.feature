@@ -15,8 +15,7 @@ Feature: TidGi Mini Window Workspace Switching
     # Switch main window to agent workspace
     When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
     # Verify tidgi mini window exists in background (created but not visible)
-    # Wait longer for window creation in full test run
-    And I wait for 1 seconds for "tidgi mini window to be created"
+    Then I wait for "tidgi mini window created" log marker "[test-id-TIDGI_MINI_WINDOW_CREATED]"
     Then I confirm the "tidgiMiniWindow" window exists
     And I confirm the "tidgiMiniWindow" window not visible
     When I press the key combination "CommandOrControl+Shift+M"
