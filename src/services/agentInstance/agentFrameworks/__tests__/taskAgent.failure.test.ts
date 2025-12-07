@@ -34,7 +34,7 @@ function makeContext(agentId: string, agentDefId: string, messages: AgentInstanc
       id: agentDefId,
       name: 'Test Agent',
       agentFrameworkConfig: {},
-      aiApiConfig: { api: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } } as AiAPIConfig,
+      aiApiConfig: { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } } as AiAPIConfig,
     },
     isCancelled: () => false,
   } as unknown as AgentFrameworkContext;
@@ -75,7 +75,7 @@ describe('basicPromptConcatHandler - failure path persists error message and log
     const dbService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const aiSettings = {
       providers: [{ provider: 'test-provider', models: [{ name: 'test-model' }] }],
-      defaultConfig: { api: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
+      defaultConfig: { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
     };
     vi.spyOn(dbService, 'getSetting').mockImplementation((k: string) => (k === 'aiSettings' ? aiSettings : undefined));
 

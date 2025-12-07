@@ -46,7 +46,7 @@ describe('AgentInstance failure path - external API logs on error', () => {
     const dbService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const aiSettings = {
       providers: [{ provider: 'test-provider', models: [{ name: 'test-model' }] }],
-      defaultConfig: { api: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
+      defaultConfig: { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
     };
     vi.spyOn(dbService, 'getSetting').mockImplementation((k: string) => (k === 'aiSettings' ? aiSettings : undefined));
 
@@ -79,7 +79,7 @@ describe('AgentInstance failure path - external API logs on error', () => {
         id: 'def-1',
         name: 'Def 1',
         agentFrameworkConfig: {},
-        aiApiConfig: { api: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
+        aiApiConfig: { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
       },
       isCancelled: () => false,
     } as Parameters<typeof basicPromptConcatHandler>[0];

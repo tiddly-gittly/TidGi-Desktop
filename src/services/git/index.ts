@@ -451,7 +451,7 @@ export class Git implements IGitService {
       const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
       const aiConfig = await externalAPIService.getAIConfig();
 
-      return !!(aiConfig?.api?.freeModel && aiConfig?.api?.provider);
+      return !!(aiConfig?.free?.model && aiConfig?.free?.provider);
     } catch {
       return false;
     }

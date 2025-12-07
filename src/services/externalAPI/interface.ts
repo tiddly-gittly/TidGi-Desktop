@@ -1,5 +1,5 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 import { ExternalAPIChannel } from '@/constants/channels';
 import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
@@ -314,6 +314,16 @@ export interface IExternalAPIService {
   getAIConfig(): Promise<AiAPIConfig>;
 
   /**
+   * Observable for changes to default AI configuration
+   */
+  defaultConfig$: BehaviorSubject<AiAPIConfig>;
+
+  /**
+   * Observable for changes to providers list
+   */
+  providers$: BehaviorSubject<AIProviderConfig[]>;
+
+  /**
    * Update provider configuration
    */
   updateProvider(provider: string, config: Partial<AIProviderConfig>): Promise<void>;
@@ -355,6 +365,8 @@ export const ExternalAPIServiceIPCDescriptor = {
     cancelAIRequest: ProxyPropertyType.Function,
     getAIProviders: ProxyPropertyType.Function,
     getAIConfig: ProxyPropertyType.Function,
+    defaultConfig$: ProxyPropertyType.Value$,
+    providers$: ProxyPropertyType.Value$,
     updateProvider: ProxyPropertyType.Function,
     deleteProvider: ProxyPropertyType.Function,
     updateDefaultAIConfig: ProxyPropertyType.Function,

@@ -3,7 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { ThemeProvider } from '@mui/material/styles';
+import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { lightTheme } from '@services/theme/defaultTheme';
+import { BehaviorSubject } from 'rxjs';
 
 import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
 import { ExternalAPI } from '../index';
@@ -84,6 +86,15 @@ describe('ExternalAPI Component', () => {
     // Mock the new delete field API
     Object.defineProperty(window.service.externalAPI, 'deleteFieldFromDefaultAIConfig', {
       value: vi.fn().mockResolvedValue(undefined),
+      writable: true,
+    });
+
+    // Mock observables for externalAPI
+    Object.defineProperty(window.observables, 'externalAPI', {
+      value: {
+        defaultConfig$: new BehaviorSubject<AiAPIConfig>(mockAIConfig),
+        providers$: new BehaviorSubject<AIProviderConfig[]>([mockProvider]),
+      },
       writable: true,
     });
   });

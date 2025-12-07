@@ -30,9 +30,9 @@ Feature: AI-Generated Git Commit Messages
     And I switch to "gitHistory" window
     And I wait for the page to load completely
     # Should see uncommitted changes row
-    Then I should see a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    Then I should see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     # Click on the uncommitted changes row
-    When I click on a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    When I click on a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     # Verify we can see the modified Index.tid file
     Then I should see a "Index.tid file in uncommitted list" element with selector "li:has-text('Index.tid')"
     # Switch to Actions tab

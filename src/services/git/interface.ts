@@ -35,10 +35,21 @@ export interface IForcePullConfigs {
   userInfo?: IGitUserInfos;
 }
 
+export type GitLogSearchMode = 'message' | 'file' | 'dateRange' | 'none';
+
 export interface IGitLogOptions {
   page?: number;
   pageSize?: number;
+  /** Search query string */
   searchQuery?: string;
+  /** Search mode */
+  searchMode?: GitLogSearchMode;
+  /** File path pattern for file search mode */
+  filePath?: string;
+  /** Start date for date range search (ISO string) */
+  since?: string;
+  /** End date for date range search (ISO string) */
+  until?: string;
 }
 
 export interface IGitLogResult {

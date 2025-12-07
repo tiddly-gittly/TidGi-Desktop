@@ -1,30 +1,45 @@
 import type { IWorkspace } from '@services/workspaces/interface';
 import useObservable from 'beautiful-react-hooks/useObservable';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { filter } from 'rxjs/operators';
 
+import type { ISearchParameters } from './SearchBar';
 import type { GitLogEntry } from './types';
 
 export interface IGitLogData {
   entries: GitLogEntry[];
   loading: boolean;
+  loadingMore: boolean;
   error: string | null;
   currentBranch: string | null;
   workspaceInfo: IWorkspace | null;
   lastChangeType: string | null;
+  hasMore: boolean;
+  loadMore: () => Promise<void>;
+  setSearchParams: (parameters: ISearchParameters) => void;
+  isSearchMode: boolean;
 }
 
 export function useGitLogData(): IGitLogData {
   const [entries, setEntries] = useState<GitLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentBranch, setCurrentBranch] = useState<string | null>(null);
   const [workspaceInfo, setWorkspaceInfo] = useState<IWorkspace | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [lastChangeType, setLastChangeType] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [searchParameters, setSearchParameters] = useState<ISearchParameters>({ mode: 'none', query: '', startDate: null, endDate: null });
   const lastLoggedEntriesCount = useRef<number>(0);
   const lastRefreshTime = useRef<number>(0);
   const lastChangeTimestamp = useRef<number>(0);
+  const loadingMoreReference = useRef(false);
+  const isFirstLoad = useRef(true);
+
+  const isSearchMode = searchParameters.mode !== 'none';
+  const hasMore = entries.length < totalCount;
 
   // Get workspace info once
   useEffect(() => {
@@ -57,20 +72,24 @@ export function useGitLogData(): IGitLogData {
     void loadWorkspaceInfo();
   }, []);
 
-  // Subscribe to git state changes
+  // Subscribe to git state changes (only in normal mode, not in search mode)
   const gitStateChange$ = useMemo(
     () =>
-      window.observables.git.gitStateChange$.pipe(
+      window.observables?.git?.gitStateChange$?.pipe(
         filter((change) => {
+          // Skip updates when in search mode to prevent interference
+          if (isSearchMode) return false;
           // Only trigger refresh if the change is for our workspace
           if (!change || !workspaceInfo || !('wikiFolderLocation' in workspaceInfo)) return false;
           return change.wikiFolderLocation === workspaceInfo.wikiFolderLocation;
         }),
-      ),
-    [workspaceInfo],
+      ) ?? null,
+    [workspaceInfo, isSearchMode],
   );
 
   useObservable(gitStateChange$, (change) => {
+    if (!gitStateChange$) return;
+
     // Debounce git state changes to prevent excessive refreshes
     // Git operations (like discard) may trigger multiple file system events
     const now = Date.now();
@@ -102,20 +121,42 @@ export function useGitLogData(): IGitLogData {
     if (!workspaceInfo || !('wikiFolderLocation' in workspaceInfo)) return;
 
     const loadGitLog = async () => {
-      // Capture initial load state once at the beginning
-      const isInitialLoad = entries.length === 0;
-
       try {
-        // Only show loading on initial load
-        if (isInitialLoad) {
+        // Only show global loading on first load
+        if (isFirstLoad.current) {
           setLoading(true);
+          isFirstLoad.current = false;
         }
         setError(null);
+
+        // Build options based on search params
+        const options: Parameters<typeof window.service.git.getGitLog>[1] = {
+          page: 0,
+          pageSize: 100,
+        };
+
+        if (searchParameters.mode === 'message') {
+          options.searchMode = 'message';
+          options.searchQuery = searchParameters.query;
+        } else if (searchParameters.mode === 'file') {
+          options.searchMode = 'file';
+          options.filePath = searchParameters.query;
+        } else if (searchParameters.mode === 'dateRange') {
+          options.searchMode = 'dateRange';
+          if (searchParameters.startDate) {
+            options.since = searchParameters.startDate.toISOString();
+          }
+          if (searchParameters.endDate) {
+            options.until = searchParameters.endDate.toISOString();
+          }
+        } else {
+          options.searchMode = 'none';
+        }
 
         // Get git log from service
         const result = await window.service.git.getGitLog(
           workspaceInfo.wikiFolderLocation,
-          { page: 0, pageSize: 100 },
+          options,
         );
 
         // Load files for each commit
@@ -139,6 +180,8 @@ export function useGitLogData(): IGitLogData {
         requestAnimationFrame(() => {
           setEntries(entriesWithFiles);
           setCurrentBranch(result.currentBranch);
+          setTotalCount(result.totalCount);
+          setCurrentPage(0);
         });
 
         // Log for E2E test timing - only log once per load, not in requestAnimationFrame
@@ -151,15 +194,15 @@ export function useGitLogData(): IGitLogData {
         console.error('Failed to load git log:', error);
         setError(error.message);
       } finally {
-        // Only clear loading on initial load (use the captured flag)
-        if (isInitialLoad) {
+        // Only clear loading if it was set (first load)
+        if (loading) {
           setLoading(false);
         }
       }
     };
 
     void loadGitLog();
-  }, [workspaceInfo, refreshTrigger]);
+  }, [workspaceInfo, refreshTrigger, searchParameters]);
 
   // Log when entries are updated and rendered to DOM
   useEffect(() => {
@@ -178,5 +221,84 @@ export function useGitLogData(): IGitLogData {
     }
   }, [entries, workspaceInfo]);
 
-  return { entries, loading, error, currentBranch, workspaceInfo, lastChangeType };
+  // Load more function for infinite scroll
+  const loadMore = useCallback(async () => {
+    if (!workspaceInfo || !('wikiFolderLocation' in workspaceInfo)) return;
+    if (loadingMoreReference.current || !hasMore) return;
+
+    loadingMoreReference.current = true;
+    setLoadingMore(true);
+
+    try {
+      const nextPage = currentPage + 1;
+
+      // Build options based on search params
+      const options: Parameters<typeof window.service.git.getGitLog>[1] = {
+        page: nextPage,
+        pageSize: 100,
+      };
+
+      if (searchParameters.mode === 'message') {
+        options.searchMode = 'message';
+        options.searchQuery = searchParameters.query;
+      } else if (searchParameters.mode === 'file') {
+        options.searchMode = 'file';
+        options.filePath = searchParameters.query;
+      } else if (searchParameters.mode === 'dateRange') {
+        options.searchMode = 'dateRange';
+        if (searchParameters.startDate) {
+          options.since = searchParameters.startDate.toISOString();
+        }
+        if (searchParameters.endDate) {
+          options.until = searchParameters.endDate.toISOString();
+        }
+      } else {
+        options.searchMode = 'none';
+      }
+
+      const result = await window.service.git.getGitLog(
+        workspaceInfo.wikiFolderLocation,
+        options,
+      );
+
+      // Load files for each commit
+      const entriesWithFiles = await Promise.all(
+        result.entries.map(async (entry) => {
+          try {
+            const files = await window.service.git.getCommitFiles(
+              workspaceInfo.wikiFolderLocation,
+              entry.hash,
+            );
+            return { ...entry, files };
+          } catch (error) {
+            console.error(`Failed to load files for commit ${entry.hash || 'uncommitted'}:`, error);
+            return { ...entry, files: [] };
+          }
+        }),
+      );
+
+      setEntries((previous) => [...previous, ...entriesWithFiles]);
+      setCurrentPage(nextPage);
+    } catch (error_) {
+      const error = error_ as Error;
+      console.error('Failed to load more commits:', error);
+    } finally {
+      setLoadingMore(false);
+      loadingMoreReference.current = false;
+    }
+  }, [workspaceInfo, currentPage, hasMore, searchParameters]);
+
+  return {
+    entries,
+    loading,
+    loadingMore,
+    error,
+    currentBranch,
+    workspaceInfo,
+    lastChangeType,
+    hasMore,
+    loadMore,
+    setSearchParams: setSearchParameters,
+    isSearchMode,
+  };
 }

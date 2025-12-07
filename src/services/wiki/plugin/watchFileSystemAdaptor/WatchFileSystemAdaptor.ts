@@ -1,4 +1,5 @@
 import { git, workspace } from '@services/wiki/wikiWorker/services';
+import { isWikiWorkspace, IWikiWorkspace } from '@services/workspaces/interface';
 import fs from 'fs';
 import nsfw from 'nsfw';
 import path from 'path';
@@ -85,6 +86,13 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    * Aggregates multiple file changes into a single git status check.
    */
   private gitNotificationTimer: NodeJS.Timeout | undefined;
+  /**
+   * Whether to ignore symlinks when processing file system events.
+   * When true (default), symlink changes are skipped to avoid issues with legacy sub-wiki symlinks.
+   * When false, symlinks are processed normally.
+   */
+  private ignoreSymlinks: boolean = true;
+  private workspace: IWikiWorkspace | undefined;
 
   constructor(options: { boot?: typeof $tw.boot; wiki: Wiki }) {
     super(options);
@@ -93,8 +101,32 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     // Initialize main wiki path in index
     this.inverseFilesIndex.setMainWikiPath(this.watchPathBase);
 
-    // Initialize file watching
-    void this.initializeFileWatching();
+    // Initialize asynchronously
+    void this.initializeAsync();
+  }
+
+  /**
+   * Asynchronous initialization: load workspace config, then init ignoreSymlinks and file watching
+   */
+  private async initializeAsync(): Promise<void> {
+    try {
+      const workspaceId = this.workspaceID;
+      if (workspaceId) {
+        const loadedWorkspaceData = await workspace.get(workspaceId);
+        if (!loadedWorkspaceData || typeof loadedWorkspaceData !== 'object' || !isWikiWorkspace(loadedWorkspaceData)) {
+          throw new Error('Invalid workspace data');
+        }
+        this.workspace = loadedWorkspaceData;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.log(`Failed to load workspace data: ${errorMessage}`);
+    }
+
+    if (this.workspace) {
+      this.ignoreSymlinks = this.workspace.ignoreSymlinks;
+    }
+    await this.initializeFileWatching();
   }
 
   /**
@@ -116,7 +148,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       let excludedNewFilePath: string | undefined;
       if (!oldFileInfo) {
         try {
-          const newFileInfo = await this.getTiddlerFileInfo(tiddler);
+          const newFileInfo = this.getTiddlerFileInfo(tiddler);
           if (newFileInfo?.filepath) {
             this.excludeFile(newFileInfo.filepath);
             // Also exclude the .meta file if it exists
@@ -228,17 +260,9 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     }
 
     // Check if file system watch is enabled for this workspace
-    if (this.workspaceID) {
-      try {
-        const currentWorkspace = await workspace.get(this.workspaceID);
-        if (currentWorkspace && 'enableFileSystemWatch' in currentWorkspace && !currentWorkspace.enableFileSystemWatch) {
-          this.logger.log('WatchFileSystemAdaptor File system watching is disabled for this workspace');
-          return;
-        }
-      } catch (error) {
-        this.logger.alert('WatchFileSystemAdaptor Failed to check enableFileSystemWatch setting:', error);
-        return;
-      }
+    if (this.workspace && !this.workspace.enableFileSystemWatch) {
+      this.logger.log('WatchFileSystemAdaptor File system watching is disabled for this workspace');
+      return;
     }
 
     // Initialize inverse index from boot.files
@@ -252,6 +276,13 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     ];
 
     // Setup nsfw watcher
+    await this.setupNsfwWatcher();
+  }
+
+  /**
+   * Setup NSFW watcher asynchronously
+   */
+  private async setupNsfwWatcher(): Promise<void> {
     try {
       this.watcher = await nsfw(
         this.watchPathBase,
@@ -472,6 +503,11 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
             this.logger.log(`WatchFileSystemAdaptor Skipping directory: ${fileAbsolutePath}`);
             continue;
           }
+          // Check if ignoreSymlinks is enabled and this is a symlink
+          if (this.ignoreSymlinks && stats.isSymbolicLink()) {
+            this.logger.log(`WatchFileSystemAdaptor Skipping symlink (ignoreSymlinks enabled): ${fileAbsolutePath}`);
+            continue;
+          }
         } catch {
           // File might have been deleted already, skip
           continue;
@@ -676,9 +712,9 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Log appropriate event
       if (isNewFile) {
-        this.logger.log(`[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`, { level: 'debug' });
+        this.logger.log(`[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`);
       } else {
-        this.logger.log(`[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`, { level: 'debug' });
+        this.logger.log(`[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`);
       }
     }
   }

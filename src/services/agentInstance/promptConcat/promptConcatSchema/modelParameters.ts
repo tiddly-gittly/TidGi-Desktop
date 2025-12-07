@@ -2,42 +2,23 @@ import { t } from '@services/libs/i18n/placeholder';
 import { z } from 'zod/v4';
 
 /**
- * Provider and model selection schema
+ * Single model selection schema with provider and model
+ * Used for each model type (default, embedding, speech, etc.)
  */
-export const ProviderModelSchema = z.object({
+export const ModelSelectionSchema = z.object({
   provider: z.string().meta({
-    title: t('Schema.ProviderModel.ProviderTitle'),
-    description: t('Schema.ProviderModel.Provider'),
+    title: t('Schema.ModelSelection.ProviderTitle'),
+    description: t('Schema.ModelSelection.Provider'),
   }),
   model: z.string().meta({
-    title: t('Schema.ProviderModel.ModelTitle'),
-    description: t('Schema.ProviderModel.Model'),
-  }),
-  embeddingModel: z.string().optional().meta({
-    title: t('Schema.ProviderModel.EmbeddingModelTitle'),
-    description: t('Schema.ProviderModel.EmbeddingModel'),
-  }),
-  speechModel: z.string().optional().meta({
-    title: t('Schema.ProviderModel.SpeechModelTitle'),
-    description: t('Schema.ProviderModel.SpeechModel'),
-  }),
-  imageGenerationModel: z.string().optional().meta({
-    title: t('Schema.ProviderModel.ImageGenerationModelTitle'),
-    description: t('Schema.ProviderModel.ImageGenerationModel'),
-  }),
-  transcriptionsModel: z.string().optional().meta({
-    title: t('Schema.ProviderModel.TranscriptionsModelTitle'),
-    description: t('Schema.ProviderModel.TranscriptionsModel'),
-  }),
-  freeModel: z.string().optional().meta({
-    title: t('Schema.ProviderModel.FreeModelTitle'),
-    description: t('Schema.ProviderModel.FreeModel'),
+    title: t('Schema.ModelSelection.ModelTitle'),
+    description: t('Schema.ModelSelection.Model'),
   }),
 })
   .catchall(z.unknown())
   .meta({
-    title: t('Schema.ProviderModel.Title'),
-    description: t('Schema.ProviderModel.Description'),
+    title: t('Schema.ModelSelection.Title'),
+    description: t('Schema.ModelSelection.Description'),
   });
 
 /**
@@ -68,4 +49,4 @@ export const ModelParametersSchema = z.object({
   });
 
 export type ModelParameters = z.infer<typeof ModelParametersSchema>;
-export type ProviderModel = z.infer<typeof ProviderModelSchema>;
+export type ModelSelection = z.infer<typeof ModelSelectionSchema>;

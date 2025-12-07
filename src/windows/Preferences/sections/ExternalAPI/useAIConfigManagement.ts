@@ -75,6 +75,23 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     };
 
     void fetchConfig();
+
+    // Subscribe to config changes from backend
+    const configSubscription = window.observables.externalAPI.defaultConfig$.subscribe(updatedConfig => {
+      // Only update if we're using global config (not agent-specific config)
+      if (!agentId && !agentDefId) {
+        setConfig(updatedConfig);
+      }
+    });
+
+    const providersSubscription = window.observables.externalAPI.providers$.subscribe(updatedProviders => {
+      setProviders(updatedProviders);
+    });
+
+    return () => {
+      configSubscription.unsubscribe();
+      providersSubscription.unsubscribe();
+    };
   }, [agentDefId, agentId]);
 
   const updateConfig = useCallback(async (updatedConfig: AiAPIConfig) => {
@@ -98,12 +115,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
 
     try {
       const updatedConfig = cloneDeep(config);
-      if (typeof updatedConfig.api === 'undefined') {
-        updatedConfig.api = { provider, model };
-      } else {
-        updatedConfig.api.provider = provider;
-        updatedConfig.api.model = model;
-      }
+      updatedConfig.default = { provider, model };
 
       setConfig(updatedConfig);
       await updateConfig(updatedConfig);
@@ -117,11 +129,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
 
     try {
       const updatedConfig = cloneDeep(config);
-      if (typeof updatedConfig.api === 'undefined') {
-        updatedConfig.api = { provider, model, embeddingModel: model };
-      } else {
-        updatedConfig.api.embeddingModel = model;
-      }
+      updatedConfig.embedding = { provider, model };
 
       setConfig(updatedConfig);
       await updateConfig(updatedConfig);
@@ -138,11 +146,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
 
     try {
       const updatedConfig = cloneDeep(config);
-      if (typeof updatedConfig.api === 'undefined') {
-        updatedConfig.api = { provider, model, speechModel: model };
-      } else {
-        updatedConfig.api.speechModel = model;
-      }
+      updatedConfig.speech = { provider, model };
 
       setConfig(updatedConfig);
       await updateConfig(updatedConfig);
@@ -159,11 +163,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
 
     try {
       const updatedConfig = cloneDeep(config);
-      if (typeof updatedConfig.api === 'undefined') {
-        updatedConfig.api = { provider, model, imageGenerationModel: model };
-      } else {
-        updatedConfig.api.imageGenerationModel = model;
-      }
+      updatedConfig.imageGeneration = { provider, model };
 
       setConfig(updatedConfig);
       await updateConfig(updatedConfig);
@@ -180,11 +180,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
 
     try {
       const updatedConfig = cloneDeep(config);
-      if (typeof updatedConfig.api === 'undefined') {
-        updatedConfig.api = { provider, model, transcriptionsModel: model };
-      } else {
-        updatedConfig.api.transcriptionsModel = model;
-      }
+      updatedConfig.transcriptions = { provider, model };
 
       setConfig(updatedConfig);
       await updateConfig(updatedConfig);
@@ -201,11 +197,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
 
     try {
       const updatedConfig = cloneDeep(config);
-      if (typeof updatedConfig.api === 'undefined') {
-        updatedConfig.api = { provider, model, freeModel: model };
-      } else {
-        updatedConfig.api.freeModel = model;
-      }
+      updatedConfig.free = { provider, model };
 
       setConfig(updatedConfig);
       await updateConfig(updatedConfig);

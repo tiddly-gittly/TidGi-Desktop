@@ -13,12 +13,22 @@ interface ModelSelectorProps {
   onlyShowEnabled?: boolean;
 }
 
+/**
+ * Type guard to check if config has api field
+ */
+const hasApiField = (config: AiAPIConfig | null): config is AiAPIConfig & { api: { provider: string; model: string } } => {
+  return config !== null && 'api' in config && typeof config.api === 'object' && config.api !== null &&
+    'provider' in config.api && 'model' in config.api;
+};
+
 export function ModelSelector({ selectedConfig, modelOptions, onChange, onClear, onlyShowEnabled }: ModelSelectorProps) {
   const { t } = useTranslation('agent');
-  const selectedValue = selectedConfig && selectedConfig.api.model && selectedConfig.api.provider &&
+
+  const selectedValue = hasApiField(selectedConfig) && selectedConfig.api.model && selectedConfig.api.provider &&
       selectedConfig.api.model !== '' && selectedConfig.api.provider !== ''
     ? modelOptions.find(m => m[0].provider === selectedConfig.api.provider && m[1].name === selectedConfig.api.model) || null
     : null;
+
   const filteredModelOptions = onlyShowEnabled
     ? modelOptions.filter(m => m[0].enabled)
     : modelOptions;

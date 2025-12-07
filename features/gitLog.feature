@@ -37,11 +37,11 @@ Feature: Git Log Window
     # Wait for git log to query history and render UI
     Then I wait for "git log UI refreshed" log marker "[test-id-git-log-refreshed]"
     # Verify the git log window shows commits
-    Then I should see a "git log table" element with selector "table"
+    Then I should see a "git log list" element with selector "[data-testid='git-log-list']"
     # Verify commit with default message - message is in p.MuiTypography-body2
     Then I should see a "commit with default message" element with selector "p.MuiTypography-body2:has-text('使用太记桌面版备份')"
     # Click on the commit row containing GitLogTestTiddler file
-    When I click on a "commit row with GitLogTestTiddler" element with selector "tr:has-text('GitLogTestTiddler')"
+    When I click on a "commit row with GitLogTestTiddler" element with selector "[data-testid^='commit-row-']:has-text('GitLogTestTiddler')"
     And I wait for 1 seconds for "commit details panel to load and file list to populate"
     # Verify the filename appears in the details panel (may include path like tiddlers/GitLogTestTiddler.tid)
     Then I should see a "GitLogTestTiddler.tid file in details" element with selector "li:has-text('GitLogTestTiddler')"
@@ -60,9 +60,9 @@ Feature: Git Log Window
     And I wait for the page to load completely
     # Wait for git log data to stabilize - increased from implicit to explicit
     And I wait for 2 seconds for "git log data to load"
-    Then I should see a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    Then I should see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     # Click on the uncommitted changes row
-    When I click on a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    When I click on a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     # Verify we can see the modified Index.tid file
     Then I should see a "Index.tid file in uncommitted list" element with selector "li:has-text('Index.tid')"
     # Switch to Actions tab
@@ -107,9 +107,9 @@ Feature: Git Log Window
     And I wait for the page to load completely
     # Wait for git log data to load
     And I wait for 2 seconds for "git log data to load"
-    Then I should see a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    Then I should see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     # Click on the uncommitted changes row
-    When I click on a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    When I click on a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     And I wait for 0.5 seconds for "file list to populate"
     # Verify we can see the modified Index.tid file
     Then I should see a "Index.tid file in uncommitted list" element with selector "li:has-text('Index.tid')"
@@ -144,7 +144,7 @@ Feature: Git Log Window
     And I switch to "gitHistory" window
     And I wait for the page to load completely
     # Should see initial commits
-    Then I should see a "commit history table" element with selector "table"
+    Then I should see a "commit history list" element with selector "[data-testid='git-log-list']"
     # Now modify a file WHILE window is open - this should trigger auto-refresh
     When I switch to "main" window
     And I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Modified with window open"
@@ -154,9 +154,9 @@ Feature: Git Log Window
     # Switch back to git log window
     When I switch to "gitHistory" window
     # Should see uncommitted changes row appear or update
-    Then I should see a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    Then I should see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     # Click on uncommitted changes to verify the modified file is there
-    When I click on a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    When I click on a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     And I wait for 1 seconds for "file list to load"
     # Should see Index.tid in the uncommitted list
     Then I should see a "Index.tid in uncommitted list" element with selector "li:has-text('Index.tid')"
@@ -177,9 +177,9 @@ Feature: Git Log Window
     # Switch back to git log window
     When I switch to "gitHistory" window
     # The uncommitted changes row should still be visible
-    Then I should see a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    Then I should see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     # Click on uncommitted changes again to see both files
-    When I click on a "uncommitted changes row" element with selector "tr:has-text('未提交')"
+    When I click on a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     And I wait for 1 seconds for "file list to reload"
     # Both Index.tid and AutoRefreshTest.tid should be in the uncommitted list
     Then I should see a "Index.tid in uncommitted list" element with selector "li:has-text('Index.tid')"

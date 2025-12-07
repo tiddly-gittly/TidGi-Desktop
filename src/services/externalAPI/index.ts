@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import { cloneDeep, mergeWith } from 'lodash';
 import { nanoid } from 'nanoid';
-import { defer, from, Observable } from 'rxjs';
+import { BehaviorSubject, defer, from, Observable } from 'rxjs';
 import { filter, finalize, startWith } from 'rxjs/operators';
 
 import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
@@ -27,6 +27,7 @@ import type {
   AIStreamResponse,
   AITranscriptionResponse,
   IExternalAPIService,
+  ModelInfo,
 } from './interface';
 
 /**
@@ -53,7 +54,7 @@ export class ExternalAPIService implements IExternalAPIService {
   private userSettings: AIGlobalSettings = {
     providers: [],
     defaultConfig: {
-      api: {
+      default: {
         provider: '',
         model: '',
       },
@@ -64,6 +65,10 @@ export class ExternalAPIService implements IExternalAPIService {
       },
     },
   };
+
+  // Observable to emit config changes
+  public defaultConfig$ = new BehaviorSubject<AiAPIConfig>(this.userSettings.defaultConfig);
+  public providers$ = new BehaviorSubject<AIProviderConfig[]>(this.userSettings.providers);
 
   /**
    * Initialize the external API service
@@ -96,6 +101,106 @@ export class ExternalAPIService implements IExternalAPIService {
 
   private saveSettingsToDatabase(): void {
     this.databaseService.setSetting('aiSettings', this.userSettings);
+    // Emit updated config and providers to subscribers
+    this.defaultConfig$.next(cloneDeep(this.userSettings.defaultConfig));
+    this.providers$.next(cloneDeep(this.userSettings.providers));
+  }
+
+  /**
+   * React to configuration changes - implements form field linkage logic
+   * Similar to Preference service's reactWhenPreferencesChanged pattern
+   * This centralizes all auto-fill and field linkage logic in one place
+   *
+   * Called after any config update to handle:
+   * 1. Auto-fill empty default model fields when new models are added
+   * 2. Future: other field linkage rules
+   */
+  private reactToConfigChange(): void {
+    const defaultConfig = this.userSettings.defaultConfig;
+    const providers = this.userSettings.providers;
+    let configChanged = false;
+
+    // Collect all available models from all enabled providers
+    const allModels: Array<{ provider: string; model: ModelInfo }> = [];
+    for (const provider of providers) {
+      if (provider.enabled === false) continue;
+      for (const model of provider.models) {
+        allModels.push({ provider: provider.provider, model });
+      }
+    }
+
+    // Auto-fill empty default fields with first matching model
+    for (const { provider, model } of allModels) {
+      if (!model.features || model.features.length === 0) continue;
+
+      // Auto-fill default language model - only if not set
+      if (
+        model.features.includes('language') &&
+        (!defaultConfig.default?.model || !defaultConfig.default?.provider)
+      ) {
+        defaultConfig.default = { provider, model: model.name };
+        configChanged = true;
+        logger.info(`Auto-filled default language model: ${provider}/${model.name}`);
+      }
+
+      // Auto-fill embedding model
+      if (
+        model.features.includes('embedding') &&
+        (!defaultConfig.embedding?.model || !defaultConfig.embedding?.provider)
+      ) {
+        defaultConfig.embedding = { provider, model: model.name };
+        configChanged = true;
+        logger.info(`Auto-filled default embedding model: ${provider}/${model.name}`);
+      }
+
+      // Auto-fill speech model
+      if (
+        model.features.includes('speech') &&
+        (!defaultConfig.speech?.model || !defaultConfig.speech?.provider)
+      ) {
+        defaultConfig.speech = { provider, model: model.name };
+        configChanged = true;
+        logger.info(`Auto-filled default speech model: ${provider}/${model.name}`);
+      }
+
+      // Auto-fill image generation model
+      if (
+        model.features.includes('imageGeneration') &&
+        (!defaultConfig.imageGeneration?.model || !defaultConfig.imageGeneration?.provider)
+      ) {
+        defaultConfig.imageGeneration = { provider, model: model.name };
+        configChanged = true;
+        logger.info(`Auto-filled default image generation model: ${provider}/${model.name}`);
+      }
+
+      // Auto-fill transcriptions model
+      if (
+        model.features.includes('transcriptions') &&
+        (!defaultConfig.transcriptions?.model || !defaultConfig.transcriptions?.provider)
+      ) {
+        defaultConfig.transcriptions = { provider, model: model.name };
+        configChanged = true;
+        logger.info(`Auto-filled default transcriptions model: ${provider}/${model.name}`);
+      }
+
+      // Auto-fill free model
+      if (
+        model.features.includes('free') &&
+        (!defaultConfig.free?.model || !defaultConfig.free?.provider)
+      ) {
+        defaultConfig.free = { provider, model: model.name };
+        configChanged = true;
+        logger.info(`Auto-filled default free model: ${provider}/${model.name}`);
+      }
+    }
+
+    // Only save if we actually changed something
+    if (configChanged) {
+      // Save without triggering reactToConfigChange again (use internal save)
+      this.databaseService.setSetting('aiSettings', this.userSettings);
+      this.defaultConfig$.next(cloneDeep(this.userSettings.defaultConfig));
+      this.providers$.next(cloneDeep(this.userSettings.providers));
+    }
   }
 
   /**
@@ -193,6 +298,7 @@ export class ExternalAPIService implements IExternalAPIService {
   async updateProvider(provider: string, config: Partial<AIProviderConfig>): Promise<void> {
     this.ensureSettingsLoaded();
     const existingProvider = this.userSettings.providers.find(p => p.provider === provider);
+
     if (existingProvider) {
       Object.assign(existingProvider, config);
     } else {
@@ -203,7 +309,11 @@ export class ExternalAPIService implements IExternalAPIService {
       });
     }
 
+    // Save the provider update
     this.saveSettingsToDatabase();
+
+    // React to the change: check if any default model fields need auto-filling
+    this.reactToConfigChange();
   }
 
   async deleteProvider(provider: string): Promise<void> {
@@ -217,12 +327,27 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async updateDefaultAIConfig(config: Partial<AiAPIConfig>): Promise<void> {
     this.ensureSettingsLoaded();
+
+    // Deep merge with custom strategy: ignore undefined values to prevent clearing existing fields
     this.userSettings.defaultConfig = mergeWith(
       {},
       this.userSettings.defaultConfig,
       config,
+      // Custom merge function: skip undefined values
+      (objectValue: unknown, sourceValue: unknown) => {
+        // If source value is undefined, keep the original value
+        if (sourceValue === undefined) {
+          return objectValue;
+        }
+        // For other values, let lodash handle the merge
+        return undefined;
+      },
     ) as typeof this.userSettings.defaultConfig;
+
     this.saveSettingsToDatabase();
+
+    // React to config change for potential auto-fill
+    this.reactToConfigChange();
   }
 
   async deleteFieldFromDefaultAIConfig(fieldPath: string): Promise<void> {
@@ -301,6 +426,23 @@ export class ExternalAPIService implements IExternalAPIService {
   ): AsyncGenerator<AIStreamResponse, void, unknown> {
     // Prepare request with minimal context
     const { requestId, controller } = this.prepareAIRequest();
+
+    // Get the default model configuration
+    const modelConfig = config.default;
+    if (!modelConfig?.provider || !modelConfig?.model) {
+      yield {
+        requestId,
+        content: 'No default model configured',
+        status: 'error',
+        errorDetail: {
+          name: 'MissingConfigError',
+          code: 'NO_DEFAULT_MODEL',
+          provider: 'unknown',
+        },
+      };
+      return;
+    }
+
     logger.debug(`[${requestId}] Starting generateFromAI with messages`, messages);
 
     // Log request start. If caller requested blocking logs (tests), await the DB write so it's visible synchronously.
@@ -308,8 +450,8 @@ export class ExternalAPIService implements IExternalAPIService {
       await this.logAPICall(requestId, 'streaming', 'start', {
         agentInstanceId: options?.agentInstanceId,
         requestMetadata: {
-          provider: config.api.provider,
-          model: config.api.model,
+          provider: modelConfig.provider,
+          model: modelConfig.model,
           messageCount: messages.length,
         },
         requestPayload: {
@@ -321,8 +463,8 @@ export class ExternalAPIService implements IExternalAPIService {
       void this.logAPICall(requestId, 'streaming', 'start', {
         agentInstanceId: options?.agentInstanceId,
         requestMetadata: {
-          provider: config.api.provider,
-          model: config.api.model,
+          provider: modelConfig.provider,
+          model: modelConfig.model,
           messageCount: messages.length,
         },
         requestPayload: {
@@ -337,9 +479,9 @@ export class ExternalAPIService implements IExternalAPIService {
       yield { requestId, content: '', status: 'start' };
 
       // Get provider configuration
-      const providerConfig = await this.getProviderConfig(config.api.provider);
+      const providerConfig = await this.getProviderConfig(modelConfig.provider);
       if (!providerConfig) {
-        const errorMessage = `Provider ${config.api.provider} not found or not configured`;
+        const errorMessage = `Provider ${modelConfig.provider} not found or not configured`;
         const errorResponse = {
           requestId,
           content: errorMessage,
@@ -347,7 +489,7 @@ export class ExternalAPIService implements IExternalAPIService {
           errorDetail: {
             name: 'MissingProviderError',
             code: 'PROVIDER_NOT_FOUND',
-            provider: config.api.provider,
+            provider: modelConfig.provider,
           },
         };
         if (options?.awaitLogs) {
@@ -374,7 +516,7 @@ export class ExternalAPIService implements IExternalAPIService {
         );
       } catch (providerError) {
         // Handle provider creation errors directly
-        const errorDetail = extractErrorDetails(providerError, config.api.provider);
+        const errorDetail = extractErrorDetails(providerError, modelConfig.provider);
         if (options?.awaitLogs) {
           await this.logAPICall(requestId, 'streaming', 'error', { errorDetail });
         } else {
@@ -430,7 +572,7 @@ export class ExternalAPIService implements IExternalAPIService {
       yield { requestId, content: fullResponse, status: 'done' };
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, config.api.provider);
+      const errorDetail = extractErrorDetails(error, modelConfig.provider);
 
       if (options?.awaitLogs) {
         await this.logAPICall(requestId, 'streaming', 'error', { errorDetail });
@@ -468,22 +610,40 @@ export class ExternalAPIService implements IExternalAPIService {
   ): Promise<AIEmbeddingResponse> {
     // Prepare request context
     const { requestId, controller } = this.prepareAIRequest();
+
+    // Get embedding model configuration, fallback to default
+    const modelConfig = config.embedding ?? config.default;
+    if (!modelConfig?.provider || !modelConfig?.model) {
+      return {
+        requestId,
+        embeddings: [],
+        model: 'unknown',
+        object: 'error',
+        status: 'error',
+        errorDetail: {
+          name: 'MissingConfigError',
+          code: 'NO_EMBEDDING_MODEL',
+          provider: 'unknown',
+        },
+      };
+    }
+
     logger.debug(`[${requestId}] Starting generateEmbeddings with config`, { inputCount: inputs.length });
 
     try {
       // Get provider configuration
-      const providerConfig = await this.getProviderConfig(config.api.provider);
+      const providerConfig = await this.getProviderConfig(modelConfig.provider);
       if (!providerConfig) {
         return {
           requestId,
           embeddings: [],
-          model: config.api.model,
+          model: modelConfig.model,
           object: 'error',
           status: 'error',
           errorDetail: {
             name: 'MissingProviderError',
             code: 'PROVIDER_NOT_FOUND',
-            provider: config.api.provider,
+            provider: modelConfig.provider,
           },
         };
       }
@@ -500,12 +660,12 @@ export class ExternalAPIService implements IExternalAPIService {
       return result;
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, config.api.provider);
+      const errorDetail = extractErrorDetails(error, modelConfig.provider);
 
       return {
         requestId,
         embeddings: [],
-        model: config.api.model,
+        model: modelConfig.model,
         object: 'error',
         status: 'error',
         errorDetail,
@@ -530,22 +690,40 @@ export class ExternalAPIService implements IExternalAPIService {
   ): Promise<AISpeechResponse> {
     // Prepare request context
     const { requestId, controller } = this.prepareAIRequest();
+
+    // Get speech model configuration, fallback to default
+    const modelConfig = config.speech ?? config.default;
+    if (!modelConfig?.provider || !modelConfig?.model) {
+      return {
+        requestId,
+        audio: new ArrayBuffer(0),
+        format: 'mp3',
+        model: 'unknown',
+        status: 'error',
+        errorDetail: {
+          name: 'MissingConfigError',
+          code: 'NO_SPEECH_MODEL',
+          provider: 'unknown',
+        },
+      };
+    }
+
     logger.debug(`[${requestId}] Starting generateSpeech with config`, { inputLength: input.length });
 
     try {
       // Get provider configuration
-      const providerConfig = await this.getProviderConfig(config.api.provider);
+      const providerConfig = await this.getProviderConfig(modelConfig.provider);
       if (!providerConfig) {
         return {
           requestId,
           audio: new ArrayBuffer(0),
           format: 'mp3',
-          model: config.api.speechModel || config.api.model,
+          model: modelConfig.model,
           status: 'error',
           errorDetail: {
             name: 'MissingProviderError',
             code: 'PROVIDER_NOT_FOUND',
-            provider: config.api.provider,
+            provider: modelConfig.provider,
           },
         };
       }
@@ -562,13 +740,13 @@ export class ExternalAPIService implements IExternalAPIService {
       return result;
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, config.api.provider);
+      const errorDetail = extractErrorDetails(error, modelConfig.provider);
 
       return {
         requestId,
         audio: new ArrayBuffer(0),
         format: 'mp3',
-        model: config.api.speechModel || config.api.model,
+        model: modelConfig.model,
         status: 'error',
         errorDetail,
       };
@@ -589,21 +767,38 @@ export class ExternalAPIService implements IExternalAPIService {
   ): Promise<AITranscriptionResponse> {
     // Prepare request context
     const { requestId, controller } = this.prepareAIRequest();
+
+    // Get transcriptions model configuration, fallback to default
+    const modelConfig = config.transcriptions ?? config.default;
+    if (!modelConfig?.provider || !modelConfig?.model) {
+      return {
+        requestId,
+        text: '',
+        model: 'unknown',
+        status: 'error',
+        errorDetail: {
+          name: 'MissingConfigError',
+          code: 'NO_TRANSCRIPTIONS_MODEL',
+          provider: 'unknown',
+        },
+      };
+    }
+
     logger.debug(`[${requestId}] Starting generateTranscription with config`);
 
     try {
       // Get provider configuration
-      const providerConfig = await this.getProviderConfig(config.api.provider);
+      const providerConfig = await this.getProviderConfig(modelConfig.provider);
       if (!providerConfig) {
         return {
           requestId,
           text: '',
-          model: config.api.transcriptionsModel || config.api.model,
+          model: modelConfig.model,
           status: 'error',
           errorDetail: {
             name: 'MissingProviderError',
             code: 'PROVIDER_NOT_FOUND',
-            provider: config.api.provider,
+            provider: modelConfig.provider,
           },
         };
       }
@@ -620,12 +815,12 @@ export class ExternalAPIService implements IExternalAPIService {
       return result;
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, config.api.provider);
+      const errorDetail = extractErrorDetails(error, modelConfig.provider);
 
       return {
         requestId,
         text: '',
-        model: config.api.transcriptionsModel || config.api.model,
+        model: modelConfig.model,
         status: 'error',
         errorDetail,
       };
@@ -645,21 +840,38 @@ export class ExternalAPIService implements IExternalAPIService {
   ): Promise<AIImageGenerationResponse> {
     // Prepare request context
     const { requestId, controller } = this.prepareAIRequest();
+
+    // Get image generation model configuration, fallback to default
+    const modelConfig = config.imageGeneration ?? config.default;
+    if (!modelConfig?.provider || !modelConfig?.model) {
+      return {
+        requestId,
+        images: [],
+        model: 'unknown',
+        status: 'error',
+        errorDetail: {
+          name: 'MissingConfigError',
+          code: 'NO_IMAGE_GENERATION_MODEL',
+          provider: 'unknown',
+        },
+      };
+    }
+
     logger.debug(`[${requestId}] Starting generateImage with config`, { promptLength: prompt.length });
 
     try {
       // Get provider configuration
-      const providerConfig = await this.getProviderConfig(config.api.provider);
+      const providerConfig = await this.getProviderConfig(modelConfig.provider);
       if (!providerConfig) {
         return {
           requestId,
           images: [],
-          model: config.api.imageGenerationModel || config.api.model,
+          model: modelConfig.model,
           status: 'error',
           errorDetail: {
             name: 'MissingProviderError',
             code: 'PROVIDER_NOT_FOUND',
-            provider: config.api.provider,
+            provider: modelConfig.provider,
           },
         };
       }
@@ -676,12 +888,12 @@ export class ExternalAPIService implements IExternalAPIService {
       return result;
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, config.api.provider);
+      const errorDetail = extractErrorDetails(error, modelConfig.provider);
 
       return {
         requestId,
         images: [],
-        model: config.api.imageGenerationModel || config.api.model,
+        model: modelConfig.model,
         status: 'error',
         errorDetail,
       };

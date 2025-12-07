@@ -42,29 +42,15 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
     if (!config) return;
 
     try {
-      // Only delete the model field, keep the provider if there's an embedding model using it
-      await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.model');
+      // Delete the default model configuration
+      await window.service.externalAPI.deleteFieldFromDefaultAIConfig('default');
 
-      // Check if we should also clear the provider
-      // Only clear provider if there's no embedding model set
-      if (!config.api.embeddingModel) {
-        await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.provider');
-      }
-
-      // For frontend state, we use empty strings to indicate "no selection"
-      // The ModelSelector component should handle empty strings by showing no selection
+      // Update local state to reflect deletion
       const updatedConfig = {
         ...config,
-        api: {
-          ...config.api,
-          // Always clear the model
-          model: '',
-          // Only clear provider if no embedding model exists
-          provider: config.api.embeddingModel ? config.api.provider : '',
-        },
+        default: undefined,
       };
 
-      // Update local state - this will show no selection in the UI
       await handleConfigChange(updatedConfig);
     } catch (error) {
       console.error('Failed to clear model configuration:', error);
@@ -74,14 +60,13 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
   const handleEmbeddingModelClear = async () => {
     if (!config) return;
 
-    // Use the new API to delete the embeddingModel field
-    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.embeddingModel');
+    // Delete the embedding model configuration
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('embedding');
 
     // Update local state to reflect the change
-    const { embeddingModel: _, ...apiWithoutEmbeddingModel } = config.api;
     const updatedConfig = {
       ...config,
-      api: apiWithoutEmbeddingModel,
+      embedding: undefined,
     };
     await handleConfigChange(updatedConfig);
   };
@@ -89,12 +74,11 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
   const handleSpeechModelClear = async () => {
     if (!config) return;
 
-    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.speechModel');
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('speech');
 
-    const { speechModel: _, ...apiWithoutSpeechModel } = config.api;
     const updatedConfig = {
       ...config,
-      api: apiWithoutSpeechModel,
+      speech: undefined,
     };
     await handleConfigChange(updatedConfig);
   };
@@ -102,12 +86,11 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
   const handleImageGenerationModelClear = async () => {
     if (!config) return;
 
-    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.imageGenerationModel');
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('imageGeneration');
 
-    const { imageGenerationModel: _, ...apiWithoutImageGenerationModel } = config.api;
     const updatedConfig = {
       ...config,
-      api: apiWithoutImageGenerationModel,
+      imageGeneration: undefined,
     };
     await handleConfigChange(updatedConfig);
   };
@@ -115,71 +98,77 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
   const handleTranscriptionsModelClear = async () => {
     if (!config) return;
 
-    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.transcriptionsModel');
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('transcriptions');
 
-    const { transcriptionsModel: _, ...apiWithoutTranscriptionsModel } = config.api;
     const updatedConfig = {
       ...config,
-      api: apiWithoutTranscriptionsModel,
+      transcriptions: undefined,
     };
     await handleConfigChange(updatedConfig);
   };
 
-  // Create embedding config from current AI config
-  const embeddingConfig = config
+  // Create default model config for ModelSelector
+  const defaultModelConfig = config && config.default
     ? {
       api: {
-        provider: config.api.provider,
-        model: config.api.embeddingModel || config.api.model,
-        embeddingModel: config.api.embeddingModel,
+        provider: config.default.provider,
+        model: config.default.model,
+      },
+      modelParameters: config.modelParameters,
+    }
+    : null;
+
+  // Create embedding config from current AI config
+  // Use the provider that actually has the embedding model
+  const embeddingConfig = config && config.embedding
+    ? {
+      api: {
+        provider: config.embedding.provider,
+        model: config.embedding.model,
       },
       modelParameters: config.modelParameters,
     }
     : null;
 
   // Create speech config from current AI config
-  const speechConfig = config
+  const speechConfig = config && config.speech
     ? {
       api: {
-        provider: config.api.provider,
-        model: config.api.speechModel || config.api.model,
-        speechModel: config.api.speechModel,
+        provider: config.speech.provider,
+        model: config.speech.model,
       },
       modelParameters: config.modelParameters,
     }
     : null;
 
   // Create image generation config from current AI config
-  const imageGenerationConfig = config
+  const imageGenerationConfig = config && config.imageGeneration
     ? {
       api: {
-        provider: config.api.provider,
-        model: config.api.imageGenerationModel || config.api.model,
-        imageGenerationModel: config.api.imageGenerationModel,
+        provider: config.imageGeneration.provider,
+        model: config.imageGeneration.model,
       },
       modelParameters: config.modelParameters,
     }
     : null;
 
   // Create transcriptions config from current AI config
-  const transcriptionsConfig = config
+  const transcriptionsConfig = config && config.transcriptions
     ? {
       api: {
-        provider: config.api.provider,
-        model: config.api.transcriptionsModel || config.api.model,
-        transcriptionsModel: config.api.transcriptionsModel,
+        provider: config.transcriptions.provider,
+        model: config.transcriptions.model,
       },
       modelParameters: config.modelParameters,
     }
     : null;
 
   // Create free model config from current AI config
-  const freeModelConfig = config
+  const freeModelConfig = config && config.free
     ? {
       api: {
-        provider: config.api.provider,
-        model: config.api.freeModel || '', // Use freeModel value for display
-        freeModel: config.api.freeModel,
+        provider: config.free.provider,
+        model: config.free.model,
       },
       modelParameters: config.modelParameters,
     }
@@ -188,12 +177,11 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
   const handleFreeModelClear = async () => {
     if (!config) return;
 
-    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('api.freeModel');
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('free');
 
-    const { freeModel: _, ...apiWithoutFreeModel } = config.api;
     const updatedConfig = {
       ...config,
-      api: apiWithoutFreeModel,
+      free: undefined,
     };
     await handleConfigChange(updatedConfig);
   };
@@ -213,7 +201,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
                       secondary={t('Preference.DefaultAIModelSelectionDescription')}
                     />
                     <ModelSelector
-                      selectedConfig={config}
+                      selectedConfig={defaultModelConfig}
                       modelOptions={providers.flatMap(provider =>
                         provider.models
                           .filter(model => Array.isArray(model.features) && model.features.includes('language'))

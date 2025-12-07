@@ -165,17 +165,9 @@ export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreate
     tagNames: isCreateMainWorkspace ? [] : form.tagNames,
     port: form.wikiPort,
     wikiFolderLocation: form.wikiFolderLocation!,
-    backupOnInterval: true,
     readOnlyMode: false,
     tokenAuth: false,
-    // let global config override this
-    userName: undefined,
-    excludedPlugins: [],
-    enableHTTPAPI: false,
     enableFileSystemWatch: true,
-    includeTagTree: false,
-    fileSystemPathFilterEnable: false,
-    fileSystemPathFilter: null,
-    lastNodeJSArgv: [],
+    // Additional fields will be set with default values in `sanitizeWorkspace`, see also `INewWikiWorkspaceConfig`
   };
 }

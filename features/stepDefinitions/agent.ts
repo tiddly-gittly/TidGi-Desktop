@@ -257,10 +257,10 @@ Given('I ensure test ai settings exists', function() {
 
   // Verify default config
   const defaultConfig = actual.defaultConfig as Record<string, unknown>;
-  const api = defaultConfig.api as Record<string, unknown>;
-  if (api.provider !== providerName || api.model !== modelName) {
+  const defaultModel = defaultConfig.default as Record<string, unknown>;
+  if (defaultModel?.provider !== providerName || defaultModel?.model !== modelName) {
     console.error('Default config mismatch. expected provider:', providerName, 'model:', modelName);
-    console.error('actual api:', JSON.stringify(api, null, 2));
+    console.error('actual defaultModel:', JSON.stringify(defaultModel, null, 2));
     throw new Error('Default configuration does not match expected');
   }
 });
@@ -281,11 +281,17 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
   const newAi: AIGlobalSettings = {
     providers: [providerConfig],
     defaultConfig: {
-      api: {
+      default: {
         provider: providerConfig.provider,
         model: modelName,
-        embeddingModel: embeddingModelName,
-        speechModel: speechModelName,
+      },
+      embedding: {
+        provider: providerConfig.provider,
+        model: embeddingModelName,
+      },
+      speech: {
+        provider: providerConfig.provider,
+        model: speechModelName,
       },
       modelParameters: desiredModelParameters,
     },
@@ -338,13 +344,26 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
   const newAi: AIGlobalSettings = {
     providers: [providerConfig],
     defaultConfig: {
-      api: {
+      default: {
         provider: providerConfig.provider,
         model: modelName,
-        embeddingModel: embeddingModelName,
-        speechModel: speechModelName,
-        ...(freeModel ? { freeModel } : {}),
       },
+      embedding: {
+        provider: providerConfig.provider,
+        model: embeddingModelName,
+      },
+      speech: {
+        provider: providerConfig.provider,
+        model: speechModelName,
+      },
+      ...(freeModel
+        ? {
+          free: {
+            provider: providerConfig.provider,
+            model: freeModel,
+          },
+        }
+        : {}),
       modelParameters: desiredModelParameters,
     },
   };

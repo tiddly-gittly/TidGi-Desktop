@@ -44,95 +44,20 @@ interface ProviderFormState {
 }
 
 /**
- * Auto-fill default models based on model features
- * This function is reused by both handleAddModel and handleAddProvider
+ * Note: Auto-fill default models logic has been moved to the backend (ExternalAPIService)
+ * The backend will automatically fill in default models when a new model is added to a provider
+ * Frontend doesn't need to handle this anymore, just listen to the Observable changes
  */
-async function autoFillDefaultModels(
-  providerName: string,
-  model: ModelInfo,
-  options: {
-    changeDefaultModel?: (provider: string, model: string) => Promise<void>;
-    changeDefaultEmbeddingModel?: (provider: string, model: string) => Promise<void>;
-    changeDefaultSpeechModel?: (provider: string, model: string) => Promise<void>;
-    changeDefaultImageGenerationModel?: (provider: string, model: string) => Promise<void>;
-    changeDefaultTranscriptionsModel?: (provider: string, model: string) => Promise<void>;
-    changeDefaultFreeModel?: (provider: string, model: string) => Promise<void>;
-    isFirstModel?: boolean;
-  },
-) {
-  try {
-    const defaultConfig = await window.service.externalAPI.getAIConfig();
-
-    // Auto-fill default language model if empty or if this is the first model
-    if (
-      model.features?.includes('language') &&
-      (!defaultConfig.api.model || !defaultConfig.api.provider || options.isFirstModel) &&
-      options.changeDefaultModel
-    ) {
-      await options.changeDefaultModel(providerName, model.name);
-    }
-
-    // Auto-fill default embedding model if empty and this model supports embedding
-    if (
-      model.features?.includes('embedding') &&
-      !defaultConfig.api.embeddingModel &&
-      options.changeDefaultEmbeddingModel
-    ) {
-      await options.changeDefaultEmbeddingModel(providerName, model.name);
-    }
-
-    // Auto-fill default speech model if empty and this model supports speech
-    if (
-      model.features?.includes('speech') &&
-      !defaultConfig.api.speechModel &&
-      options.changeDefaultSpeechModel
-    ) {
-      await options.changeDefaultSpeechModel(providerName, model.name);
-    }
-
-    // Auto-fill default image generation model if empty and this model supports image generation
-    if (
-      model.features?.includes('imageGeneration') &&
-      !defaultConfig.api.imageGenerationModel &&
-      options.changeDefaultImageGenerationModel
-    ) {
-      await options.changeDefaultImageGenerationModel(providerName, model.name);
-    }
-
-    // Auto-fill default transcriptions model if empty and this model supports transcriptions
-    if (
-      model.features?.includes('transcriptions') &&
-      !defaultConfig.api.transcriptionsModel &&
-      options.changeDefaultTranscriptionsModel
-    ) {
-      await options.changeDefaultTranscriptionsModel(providerName, model.name);
-    }
-
-    // Auto-fill default free model if empty and this model supports free feature
-    if (
-      model.features?.includes('free') &&
-      !defaultConfig.api.freeModel &&
-      options.changeDefaultFreeModel
-    ) {
-      await options.changeDefaultFreeModel(providerName, model.name);
-    }
-  } catch (error) {
-    void window.service.native.log('error', 'Failed to auto-fill default models', {
-      function: 'autoFillDefaultModels',
-      error,
-    });
-  }
-}
 
 export function ProviderConfig({
   providers,
   setProviders,
-  changeDefaultModel,
-  changeDefaultEmbeddingModel,
-  changeDefaultSpeechModel,
-  changeDefaultImageGenerationModel,
-  changeDefaultTranscriptionsModel,
-  changeDefaultFreeModel,
+  changeDefaultModel: _changeDefaultModel,
+  changeDefaultEmbeddingModel: _changeDefaultEmbeddingModel,
+  changeDefaultSpeechModel: _changeDefaultSpeechModel,
+  changeDefaultImageGenerationModel: _changeDefaultImageGenerationModel,
+  changeDefaultTranscriptionsModel: _changeDefaultTranscriptionsModel,
+  changeDefaultFreeModel: _changeDefaultFreeModel,
 }: ProviderConfigProps) {
   const { t } = useTranslation('agent');
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
@@ -426,19 +351,6 @@ export function ProviderConfig({
 
         setProviders(previous => previous.map(p => p.provider === currentProvider ? { ...p, models: updatedModels } : p));
 
-        // Auto-fill default models based on features (only for new models, not edits)
-        if (!editingModelName) {
-          await autoFillDefaultModels(currentProvider, newModel, {
-            changeDefaultModel,
-            changeDefaultEmbeddingModel,
-            changeDefaultSpeechModel,
-            changeDefaultImageGenerationModel,
-            changeDefaultTranscriptionsModel,
-            changeDefaultFreeModel,
-            isFirstModel: provider.models.length === 0,
-          });
-        }
-
         showMessage(editingModelName ? t('Preference.ModelUpdatedSuccessfully') : t('Preference.ModelAddedSuccessfully'), 'success');
         closeModelDialog();
       }
@@ -621,19 +533,6 @@ export function ProviderConfig({
       }));
       setSelectedTabIndex(updatedProviders.length - 1);
       setNewProviderForm({ provider: '', providerClass: 'openAICompatible', baseURL: '' });
-
-      // Auto-fill default models for all added models
-      for (const model of modelsToAdd) {
-        await autoFillDefaultModels(newProvider.provider, model, {
-          changeDefaultModel,
-          changeDefaultEmbeddingModel,
-          changeDefaultSpeechModel,
-          changeDefaultImageGenerationModel,
-          changeDefaultTranscriptionsModel,
-          changeDefaultFreeModel,
-          isFirstModel: true,
-        });
-      }
 
       setShowAddProviderForm(false);
       showMessage(t('Preference.ProviderAddedSuccessfully'), 'success');

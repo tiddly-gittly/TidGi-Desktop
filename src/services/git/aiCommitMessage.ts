@@ -56,7 +56,7 @@ export async function generateAICommitMessage(wikiFolderPath: string): Promise<s
     const aiConfig = await externalAPIService.getAIConfig();
 
     // Check if free model is configured
-    if (!aiConfig?.api?.freeModel || !aiConfig?.api?.provider) {
+    if (!aiConfig?.free?.model || !aiConfig?.free?.provider) {
       return undefined;
     }
 

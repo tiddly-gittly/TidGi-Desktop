@@ -51,8 +51,14 @@ export function streamFromProvider(
   signal: AbortSignal,
   providerConfig?: AIProviderConfig,
 ): AIStreamResult {
-  const provider = config.api.provider;
-  const model = config.api.model;
+  // Get default model configuration
+  const modelConfig = config.default;
+  if (!modelConfig?.provider || !modelConfig?.model) {
+    throw new Error('No default model configured');
+  }
+
+  const provider = modelConfig.provider;
+  const model = modelConfig.model;
   const modelParameters = config.modelParameters || {};
   const { temperature = 0.7, systemPrompt: fallbackSystemPrompt = 'You are a helpful assistant.' } = modelParameters;
 

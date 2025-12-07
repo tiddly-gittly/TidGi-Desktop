@@ -45,6 +45,13 @@ Object.defineProperty(window, 'observables', {
     auth: {
       userInfo$: new BehaviorSubject(undefined).asObservable(),
     },
+    externalAPI: {
+      defaultConfig$: new BehaviorSubject({
+        default: { provider: 'openai', model: 'gpt-4' },
+        modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 },
+      }).asObservable(),
+      providers$: new BehaviorSubject([]).asObservable(),
+    },
     agentInstance: {
       concatPrompt: vi.fn((promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: AgentInstanceMessage[]) => {
         const agentInstanceService = container.get<AgentInstanceService>(serviceIdentifier.AgentInstance);

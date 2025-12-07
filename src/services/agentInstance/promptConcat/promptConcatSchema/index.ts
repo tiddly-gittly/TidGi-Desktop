@@ -1,33 +1,53 @@
 import { createDynamicPromptConcatToolSchema } from '@services/agentInstance/tools/schemaRegistry';
 import { t } from '@services/libs/i18n/placeholder';
 import { z } from 'zod/v4';
-import { ModelParametersSchema, ProviderModelSchema } from './modelParameters';
+import { ModelParametersSchema, ModelSelectionSchema } from './modelParameters';
 import { PromptSchema } from './prompts';
 import { ResponseSchema } from './response';
 import { HANDLER_CONFIG_UI_SCHEMA } from './uiSchema';
 
 /**
- * Base API configuration schema
- * Contains common fields shared between AIConfigSchema and AgentConfigSchema
+ * AI configuration schema with separate model selections
+ * Each model type has its own provider and model fields
  */
-export const BaseAPIConfigSchema = z.object({
-  api: ProviderModelSchema.meta({
-    title: t('Schema.BaseAPIConfig.APITitle'),
-    description: t('Schema.BaseAPIConfig.API'),
+export const AIConfigSchema = z.object({
+  // Default language model
+  default: ModelSelectionSchema.optional().meta({
+    title: t('Schema.AIConfig.DefaultTitle'),
+    description: t('Schema.AIConfig.Default'),
   }),
+  // Embedding model
+  embedding: ModelSelectionSchema.optional().meta({
+    title: t('Schema.AIConfig.EmbeddingTitle'),
+    description: t('Schema.AIConfig.Embedding'),
+  }),
+  // Speech synthesis model (TTS)
+  speech: ModelSelectionSchema.optional().meta({
+    title: t('Schema.AIConfig.SpeechTitle'),
+    description: t('Schema.AIConfig.Speech'),
+  }),
+  // Image generation model
+  imageGeneration: ModelSelectionSchema.optional().meta({
+    title: t('Schema.AIConfig.ImageGenerationTitle'),
+    description: t('Schema.AIConfig.ImageGeneration'),
+  }),
+  // Transcriptions model (STT)
+  transcriptions: ModelSelectionSchema.optional().meta({
+    title: t('Schema.AIConfig.TranscriptionsTitle'),
+    description: t('Schema.AIConfig.Transcriptions'),
+  }),
+  // Free model (for cost-sensitive tasks)
+  free: ModelSelectionSchema.optional().meta({
+    title: t('Schema.AIConfig.FreeTitle'),
+    description: t('Schema.AIConfig.Free'),
+  }),
+  // Model parameters shared across all models
   modelParameters: ModelParametersSchema.meta({
     title: t('Schema.BaseAPIConfig.ModelParametersTitle'),
     description: t('Schema.BaseAPIConfig.ModelParameters'),
   }),
-}).meta({
-  title: t('Schema.BaseAPIConfig.Title'),
-  description: t('Schema.BaseAPIConfig.Description'),
-});
-
-/**
- * AI configuration schema for session settings
- */
-export const AIConfigSchema = BaseAPIConfigSchema
+})
+  .catchall(z.unknown())
   .meta({
     title: t('Schema.AIConfig.Title'),
     description: t('Schema.AIConfig.Description'),
@@ -83,7 +103,7 @@ export function getFrameworkConfigSchema() {
 export function getAgentConfigSchema() {
   const dynamicFrameworkConfigSchema = getFrameworkConfigSchema();
 
-  return BaseAPIConfigSchema.extend({
+  return AIConfigSchema.extend({
     id: z.string().meta({
       title: t('Schema.AgentConfig.IdTitle'),
       description: t('Schema.AgentConfig.Id'),
