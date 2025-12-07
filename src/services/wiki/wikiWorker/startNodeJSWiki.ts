@@ -131,9 +131,8 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
 
       // don't add `+` prefix to plugin name here. `+` only used in args[0], but we are not prepend this list to the args list.
       wikiInstance.boot.extraPlugins = [
-        // add tiddly filesystem back if is not readonly https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416
-        readOnlyMode === true ? undefined : 'plugins/tiddlywiki/filesystem',
         /**
+         * add tiddly filesystem back if is not readonly https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416
          * Enhanced filesystem adaptor that routes tiddlers to sub-wikis based on tags.
          * Replaces the complex string manipulation of $:/config/FileSystemPaths with direct IPC calls to workspace service.
          * Only enabled in non-readonly mode since it handles filesystem operations.
@@ -192,7 +191,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
         : [];
       /**
        * Set excluded plugins or tiddler content to empty string.
-       * Should disable plugins/tiddlywiki/filesystem (so only work in readonly mode), otherwise will write empty string to tiddlers.
+       * Should disable plugins/tiddlywiki/filesystem and $:/plugins/linonetwo/watch-filesystem-adaptor (so only work in readonly mode), otherwise will write empty string to tiddlers.
        * @url https://github.com/linonetwo/wiki/blob/8f1f091455eec23a9f016d6972b7f38fe85efde1/tiddlywiki.info#LL35C1-L39C20
        */
       const excludePluginsArguments = readOnlyMode === true
