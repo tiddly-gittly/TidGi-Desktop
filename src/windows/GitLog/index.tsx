@@ -35,6 +35,8 @@ const Root = styled((properties: React.ComponentProps<typeof Container>) => <Con
   overflow: hidden;
 `;
 
+const HEADER_AND_CONTROLS_HEIGHT = 250;
+
 const ContentWrapper = styled(Box)`
   display: flex;
   flex: 1;
@@ -340,7 +342,6 @@ export default function GitHistory(): React.JSX.Element {
   }
 
   const workspaceName = workspaceInfo && 'name' in workspaceInfo ? workspaceInfo.name : '';
-
   return (
     <Root maxWidth={false}>
       <Helmet>
@@ -369,12 +370,11 @@ export default function GitHistory(): React.JSX.Element {
                   {entries.length > 0
                     ? (
                       <VirtualList
-                        defaultHeight={window.innerHeight - 250}
+                        defaultHeight={window.innerHeight - HEADER_AND_CONTROLS_HEIGHT}
                         rowCount={entries.length}
                         rowHeight={60}
                         rowProps={{}}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-                        onRowsRendered={onRowsRendered as any}
+                        onRowsRendered={onRowsRendered}
                         rowComponent={({ index, style }) => {
                           const entry = entries[index];
                           // Should always exist, but TypeScript doesn't know that

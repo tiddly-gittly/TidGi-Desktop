@@ -55,6 +55,8 @@ describe('FileSystemAdaptor - Routing Logic', () => {
 
     // @ts-expect-error - TiddlyWiki global
     global.$tw.boot.files = {};
+    // @ts-expect-error - TiddlyWiki global
+    global.$tw.boot.wikiTiddlersPath = '/test/wiki/tiddlers';
 
     mockWiki = {
       getTiddlerText: vi.fn(() => ''),
@@ -228,13 +230,9 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler' },
       } as unknown as Tiddler;
 
-      await expect(adaptor.getTiddlerFileInfo(tiddler)).rejects.toThrow(
+      expect(() => adaptor.getTiddlerFileInfo(tiddler)).toThrow(
         'filesystem adaptor requires a valid wiki folder',
       );
-
-      // Restore for other tests
-      // @ts-expect-error - TiddlyWiki global
-      global.$tw.boot.wikiTiddlersPath = '/test/wiki/tiddlers';
     });
   });
 
