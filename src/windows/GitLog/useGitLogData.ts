@@ -36,6 +36,7 @@ export function useGitLogData(): IGitLogData {
   const lastRefreshTime = useRef<number>(0);
   const lastChangeTimestamp = useRef<number>(0);
   const loadingMoreReference = useRef(false);
+  const isFirstLoad = useRef(true);
 
   const isSearchMode = searchParameters.mode !== 'none';
   const hasMore = entries.length < totalCount;
@@ -120,13 +121,11 @@ export function useGitLogData(): IGitLogData {
     if (!workspaceInfo || !('wikiFolderLocation' in workspaceInfo)) return;
 
     const loadGitLog = async () => {
-      // Capture initial load state once at the beginning
-      const isInitialLoad = entries.length === 0;
-
       try {
-        // Only show loading on initial load
-        if (isInitialLoad) {
+        // Only show global loading on first load
+        if (isFirstLoad.current) {
           setLoading(true);
+          isFirstLoad.current = false;
         }
         setError(null);
 
@@ -195,8 +194,8 @@ export function useGitLogData(): IGitLogData {
         console.error('Failed to load git log:', error);
         setError(error.message);
       } finally {
-        // Only clear loading on initial load (use the captured flag)
-        if (isInitialLoad) {
+        // Only clear loading if it was set (first load)
+        if (loading) {
           setLoading(false);
         }
       }

@@ -277,6 +277,7 @@
     "EndDate": "End Date",
     "FailedToLoadDiff": "Failed to load differences",
     "FileNameSearch": "File Name",
+    "FileSearchPlaceholder": "e.g., pages, *.tsx, config.json",
     "Files": "a file",
     "FilesChanged": "{{count}} file changed",
     "FilesChanged_other": "{{count}} files changed",

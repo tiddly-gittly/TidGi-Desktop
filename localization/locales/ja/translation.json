@@ -277,6 +277,7 @@
     "EndDate": "終了日",
     "FailedToLoadDiff": "差分の読み込みに失敗しました",
     "FileNameSearch": "ファイル名",
+    "FileSearchPlaceholder": "例えば：pages、*.tsx、config.json",
     "Files": "ファイル",
     "FilesChanged": "変更されたファイル",
     "FilesChanged_other": "{{count}} 個のファイルに変更があります",

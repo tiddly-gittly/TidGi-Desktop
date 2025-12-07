@@ -277,6 +277,7 @@
     "EndDate": "結束日期",
     "FailedToLoadDiff": "載入差異失敗",
     "FileNameSearch": "檔案名稱",
+    "FileSearchPlaceholder": "例如：pages、*.tsx、config.json",
     "Files": "檔案",
     "FilesChanged": "變更了 {{count}} 個文件",
     "FilesChanged_other": "{{count}} 個檔案有變更",

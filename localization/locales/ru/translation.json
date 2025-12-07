@@ -277,6 +277,7 @@
     "EndDate": "дата окончания",
     "FailedToLoadDiff": "Не удалось загрузить различия",
     "FileNameSearch": "имя файла",
+    "FileSearchPlaceholder": "Например: pages, *.tsx, config.json",
     "Files": "файл",
     "FilesChanged": "измененные файлы",
     "FilesChanged_other": "{{count}} файлов изменено",

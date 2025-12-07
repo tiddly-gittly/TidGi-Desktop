@@ -46,10 +46,12 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
 
   // Add search filters based on mode
   if (searchMode === 'message' && searchQuery) {
-    logArguments.push(`--grep=${searchQuery}`);
+    logArguments.push(`--grep=${searchQuery}`, '-i'); // -i for case-insensitive
   } else if (searchMode === 'file' && filePath) {
-    // File path search - shows commits that modified this file
-    logArguments.push('--', filePath);
+    // File path search - shows commits that modified files matching the pattern
+    // Support glob patterns like *.tsx or *pages*
+    const pattern = filePath.includes('*') ? filePath : `*${filePath}*`;
+    logArguments.push('--', pattern);
   } else if (searchMode === 'dateRange') {
     if (since) {
       logArguments.push(`--since=${since}`);
@@ -72,9 +74,10 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
   // Get total count
   const countArguments = ['rev-list', '--all', '--count'];
   if (searchMode === 'message' && searchQuery) {
-    countArguments.push(`--grep=${searchQuery}`);
+    countArguments.push(`--grep=${searchQuery}`, '-i'); // -i for case-insensitive
   } else if (searchMode === 'file' && filePath) {
-    countArguments.push('--', filePath);
+    const pattern = filePath.includes('*') ? filePath : `*${filePath}*`;
+    countArguments.push('--', pattern);
   } else if (searchMode === 'dateRange') {
     if (since) {
       countArguments.push(`--since=${since}`);

@@ -13,7 +13,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { enUS, zhCN } from 'date-fns/locale';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export type SearchMode = 'message' | 'file' | 'dateRange' | 'none';
@@ -58,8 +58,19 @@ export function SearchBar({ onSearch, disabled = false, currentSearchParams }: I
   const [query, setQuery] = useState('');
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const messageInputReference = useRef<HTMLInputElement>(null);
+  const fileInputReference = useRef<HTMLInputElement>(null);
 
   const locale = i18n.language.startsWith('zh') ? zhCN : enUS;
+
+  // Auto-focus input when mode changes to message or file
+  useEffect(() => {
+    if (mode === 'message' && messageInputReference.current) {
+      messageInputReference.current.focus();
+    } else if (mode === 'file' && fileInputReference.current) {
+      fileInputReference.current.focus();
+    }
+  }, [mode]);
 
   // Sync with external search params
   useEffect(() => {
@@ -80,7 +91,10 @@ export function SearchBar({ onSearch, disabled = false, currentSearchParams }: I
       setQuery('');
       setStartDate(null);
       setEndDate(null);
-      onSearch({ mode: 'none', query: '', startDate: null, endDate: null });
+      // Use setTimeout to ensure state updates are processed first
+      setTimeout(() => {
+        onSearch({ mode: 'none', query: '', startDate: null, endDate: null });
+      }, 0);
     }
   };
 
@@ -93,6 +107,9 @@ export function SearchBar({ onSearch, disabled = false, currentSearchParams }: I
     } else if (query.trim()) {
       // Message and file search require query
       onSearch({ mode, query: query.trim(), startDate: null, endDate: null });
+    } else {
+      // If query is empty, switch to none mode
+      handleClear();
     }
   };
 
@@ -101,11 +118,13 @@ export function SearchBar({ onSearch, disabled = false, currentSearchParams }: I
     setQuery('');
     setStartDate(null);
     setEndDate(null);
+    // Immediately trigger search with cleared params
     onSearch({ mode: 'none', query: '', startDate: null, endDate: null });
   };
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter') {
+      event.preventDefault(); // Prevent form submission/page refresh
       handleSearch();
     }
   };
@@ -134,6 +153,7 @@ export function SearchBar({ onSearch, disabled = false, currentSearchParams }: I
         <SearchInputContainer>
           {mode === 'message' && (
             <TextField
+              inputRef={messageInputReference}
               size='small'
               fullWidth
               placeholder={t('GitLog.SearchCommits')}
@@ -157,9 +177,10 @@ export function SearchBar({ onSearch, disabled = false, currentSearchParams }: I
 
           {mode === 'file' && (
             <TextField
+              inputRef={fileInputReference}
               size='small'
               fullWidth
-              placeholder='*.tsx'
+              placeholder={t('GitLog.FileSearchPlaceholder')}
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value);

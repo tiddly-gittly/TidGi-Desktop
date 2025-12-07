@@ -277,6 +277,7 @@
     "EndDate": "date de fin",
     "FailedToLoadDiff": "Échec du chargement des différences",
     "FileNameSearch": "nom de fichier",
+    "FileSearchPlaceholder": "Par exemple : pages, *.tsx, config.json",
     "Files": "fichier",
     "FilesChanged": "fichiers modifiés",
     "FilesChanged_other": "{{count}} fichiers modifiés",
