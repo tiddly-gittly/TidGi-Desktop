@@ -676,9 +676,9 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Log appropriate event
       if (isNewFile) {
-        this.logger.log(`[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`, { level: 'debug' });
+        this.logger.log(`[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`);
       } else {
-        this.logger.log(`[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`, { level: 'debug' });
+        this.logger.log(`[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`);
       }
     }
   }
