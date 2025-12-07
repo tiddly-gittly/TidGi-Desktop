@@ -238,6 +238,7 @@ export class Workspace implements IWorkspaceService {
       fileSystemPathFilterEnable: false,
       fileSystemPathFilter: null,
       tagNames: [],
+      ignoreSymlinks: true,
     };
     const fixingValues: Partial<typeof workspaceToSanitize> = {};
     // we add mainWikiID in creation, we fix this value for old existed workspaces

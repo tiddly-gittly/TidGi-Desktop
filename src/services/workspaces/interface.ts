@@ -222,7 +222,22 @@ export type IWorkspacesWithMetadata = Record<string, IWorkspaceWithMetadata>;
  */
 export type INewWikiWorkspaceConfig = SetOptional<
   Omit<IWikiWorkspace, 'active' | 'hibernated' | 'id' | 'lastUrl' | 'syncOnInterval' | 'syncOnStartup'>,
-  'homeUrl' | 'transparentBackground' | 'picturePath' | 'disableNotifications' | 'disableAudio' | 'hibernateWhenUnused' | 'subWikiFolderName' | 'userName' | 'order'
+  | 'homeUrl'
+  | 'transparentBackground'
+  | 'picturePath'
+  | 'disableNotifications'
+  | 'disableAudio'
+  | 'hibernateWhenUnused'
+  | 'subWikiFolderName'
+  | 'userName'
+  | 'order'
+  | 'ignoreSymlinks'
+  | 'backupOnInterval'
+  | 'enableHTTPAPI'
+  | 'excludedPlugins'
+  | 'includeTagTree'
+  | 'fileSystemPathFilterEnable'
+  | 'fileSystemPathFilter'
 >;
 
 /**
