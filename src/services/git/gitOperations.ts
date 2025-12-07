@@ -27,12 +27,12 @@ function getGitCommitEnvironment(username: string = defaultGitInfo.gitUserName, 
  * Get git log with pagination
  */
 export async function getGitLog(repoPath: string, options: IGitLogOptions = {}): Promise<IGitLogResult> {
-  const { page = 0, pageSize = 100, searchQuery } = options;
+  const { page = 0, pageSize = 100, searchQuery, searchMode = 'none', filePath, since, until } = options;
   const skip = page * pageSize;
 
-  // Check for uncommitted changes
+  // Check for uncommitted changes (only in normal mode)
   const statusResult = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain'], repoPath);
-  const hasUncommittedChanges = statusResult.stdout.trim().length > 0;
+  const hasUncommittedChanges = statusResult.stdout.trim().length > 0 && searchMode === 'none';
 
   // Build git log command arguments
   const logArguments = [
@@ -44,9 +44,19 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
     `--max-count=${pageSize}`,
   ];
 
-  // Add search query if provided
-  if (searchQuery) {
+  // Add search filters based on mode
+  if (searchMode === 'message' && searchQuery) {
     logArguments.push(`--grep=${searchQuery}`);
+  } else if (searchMode === 'file' && filePath) {
+    // File path search - shows commits that modified this file
+    logArguments.push('--', filePath);
+  } else if (searchMode === 'dateRange') {
+    if (since) {
+      logArguments.push(`--since=${since}`);
+    }
+    if (until) {
+      logArguments.push(`--until=${until}`);
+    }
   }
 
   const result = await gitExec(logArguments, repoPath);
@@ -61,8 +71,17 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
 
   // Get total count
   const countArguments = ['rev-list', '--all', '--count'];
-  if (searchQuery) {
+  if (searchMode === 'message' && searchQuery) {
     countArguments.push(`--grep=${searchQuery}`);
+  } else if (searchMode === 'file' && filePath) {
+    countArguments.push('--', filePath);
+  } else if (searchMode === 'dateRange') {
+    if (since) {
+      countArguments.push(`--since=${since}`);
+    }
+    if (until) {
+      countArguments.push(`--until=${until}`);
+    }
   }
   const countResult = await gitExec(countArguments, repoPath);
   const totalCount = Number.parseInt(countResult.stdout.trim(), 10);

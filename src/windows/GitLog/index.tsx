@@ -6,24 +6,22 @@ import Container from '@mui/material/Container';
 import Snackbar from '@mui/material/Snackbar';
 import { styled, useTheme } from '@mui/material/styles';
 import Tab from '@mui/material/Tab';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
 import Tabs from '@mui/material/Tabs';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { GitLog as ReactGitLog } from '@tomplum/react-git-log';
 import { formatDistanceToNow } from 'date-fns';
 import { enUS, zhCN } from 'date-fns/locale';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { List as VirtualList } from 'react-window';
+import { useInfiniteLoader } from 'react-window-infinite-loader';
 
 import { CommitDetailsPanel } from './CommitDetailsPanel';
 import { CustomGitTooltip } from './CustomGitTooltip';
 import { FileDiffPanel } from './FileDiffPanel';
 import { getFileStatusStyles, type GitFileStatus } from './fileStatusStyles';
+import { type ISearchParameters, SearchBar } from './SearchBar';
 import type { GitLogEntry } from './types';
 import { useCommitDetails } from './useCommitDetails';
 import { useGitLogData } from './useGitLogData';
@@ -61,11 +59,15 @@ const TabsContainer = styled(Box)`
 
 const TabContent = styled(Box)`
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
 `;
 
-const StyledTableRow = styled(TableRow)<{ selected?: boolean }>`
+const StyledTableRow = styled(Box)<{ selected?: boolean }>`
+  display: flex;
+  align-items: center;
+  padding: 8px;
   cursor: pointer;
+  border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
   
   &:hover {
     background-color: ${({ theme }) => theme.palette.action.hover};
@@ -79,6 +81,11 @@ const StyledTableRow = styled(TableRow)<{ selected?: boolean }>`
       background-color: ${theme.palette.action.selected};
     }
   `}
+`;
+
+const CellBox = styled(Box)`
+  padding: 0 8px;
+  overflow: hidden;
 `;
 
 const DetailsWrapper = styled(Box)`
@@ -143,11 +150,10 @@ function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTable
 
   return (
     <StyledTableRow
-      key={commit.hash}
       selected={selected}
       onClick={onSelect}
     >
-      <TableCell>
+      <CellBox sx={{ width: '40%' }}>
         <Typography
           variant='body2'
           sx={{
@@ -158,9 +164,21 @@ function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTable
         >
           {commit.message}
         </Typography>
-      </TableCell>
-      <TableCell>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+      </CellBox>
+      <CellBox sx={{ width: '40%' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 0.5,
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            maxHeight: '44px',
+            '&::-webkit-scrollbar': {
+              display: 'none',
+            },
+            scrollbarWidth: 'none',
+          }}
+        >
           {displayFiles.map((file, index) => {
             const fileName = file.path.split('/').pop() || file.path;
             return (
@@ -170,24 +188,24 @@ function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTable
             );
           })}
           {hasMore && (
-            <Typography variant='caption' color='text.secondary' sx={{ alignSelf: 'center', ml: 0.5 }}>
+            <Box component='span' sx={{ alignSelf: 'center', ml: 0.5, fontSize: '0.75rem', color: 'text.secondary' }}>
               +{files.length - 3}
-            </Typography>
+            </Box>
           )}
           {files.length === 0 && (
-            <Typography variant='caption' color='text.secondary'>
+            <Box component='span' sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
               {t('GitLog.NoFilesChanged')}
-            </Typography>
+            </Box>
           )}
         </Box>
-      </TableCell>
-      <TableCell>
+      </CellBox>
+      <CellBox sx={{ width: '20%' }}>
         <Tooltip title={commitDate.toLocaleString()}>
           <Typography variant='body2' color='text.secondary' sx={{ cursor: 'default' }}>
             {formatDistanceToNow(commitDate, { addSuffix: true, locale: i18n.language.startsWith('zh') ? zhCN : enUS })}
           </Typography>
         </Tooltip>
-      </TableCell>
+      </CellBox>
     </StyledTableRow>
   );
 }
@@ -195,11 +213,12 @@ function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTable
 export default function GitHistory(): React.JSX.Element {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { entries, loading, error, workspaceInfo, currentBranch, lastChangeType } = useGitLogData();
+  const { entries, loading, loadingMore, error, workspaceInfo, currentBranch, lastChangeType, hasMore, loadMore, setSearchParams } = useGitLogData();
   const { selectedCommit, setSelectedCommit } = useCommitDetails();
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'current' | 'all'>('current');
   const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
+  const [currentSearchParameters, setCurrentSearchParameters] = useState<ISearchParameters>({ mode: 'none', query: '', startDate: null, endDate: null });
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({
     open: false,
     message: '',
@@ -265,6 +284,35 @@ export default function GitHistory(): React.JSX.Element {
     setShouldSelectFirst(true);
   };
 
+  const handleSearch = useCallback((parameters: ISearchParameters) => {
+    setSearchParams(parameters);
+    setCurrentSearchParameters(parameters);
+    // Reset selection when searching
+    setSelectedCommit(undefined);
+    setSelectedFile(null);
+  }, [setSearchParams, setSelectedCommit]);
+
+  // Check if an item is loaded
+  const isRowLoaded = (index: number) => !hasMore || index < entries.length;
+
+  // Load more items callback for InfiniteLoader
+  const loadMoreRows = useCallback(
+    async (_startIndex: number, _stopIndex: number) => {
+      if (loadingMore || !hasMore) return;
+
+      await loadMore();
+    },
+    [loadingMore, hasMore, loadMore],
+  );
+
+  // Use the infinite loader hook
+
+  const onRowsRendered = useInfiniteLoader({
+    isRowLoaded,
+    loadMoreRows,
+    rowCount: hasMore ? entries.length + 1 : entries.length,
+  });
+
   if (loading) {
     return (
       <Root>
@@ -298,6 +346,7 @@ export default function GitHistory(): React.JSX.Element {
       <Helmet>
         <title>{workspaceName ? `${t('GitLog.Title')} - ${workspaceName}` : t('GitLog.Title')}</title>
       </Helmet>
+
       <ContentWrapper>
         <GitLogWrapper>
           <TabsContainer>
@@ -316,24 +365,27 @@ export default function GitHistory(): React.JSX.Element {
             {viewMode === 'current'
               ? (
                 <>
+                  <SearchBar onSearch={handleSearch} disabled={loading} currentSearchParams={currentSearchParameters} />
                   {entries.length > 0
                     ? (
-                      <Table stickyHeader size='small'>
-                        <TableHead>
-                          <TableRow>
-                            <TableCell width='40%'>{t('GitLog.Message')}</TableCell>
-                            <TableCell width='40%'>{t('GitLog.Files')}</TableCell>
-                            <TableCell width='20%'>{t('GitLog.Date')}</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {entries.map((entry) => {
-                            const commitDate = new Date(entry.committerDate);
-                            const isSelected = selectedCommit?.hash === entry.hash;
+                      <VirtualList
+                        defaultHeight={window.innerHeight - 250}
+                        rowCount={entries.length}
+                        rowHeight={60}
+                        rowProps={{}}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+                        onRowsRendered={onRowsRendered as any}
+                        rowComponent={({ index, style }) => {
+                          const entry = entries[index];
+                          // Should always exist, but TypeScript doesn't know that
+                          if (!entry) return <div style={style} />;
 
-                            return (
+                          const commitDate = new Date(entry.committerDate);
+                          const isSelected = selectedCommit?.hash === entry.hash;
+
+                          return (
+                            <div style={style}>
                               <CommitTableRow
-                                key={entry.hash}
                                 commit={entry}
                                 selected={isSelected}
                                 commitDate={commitDate}
@@ -342,16 +394,22 @@ export default function GitHistory(): React.JSX.Element {
                                   setSelectedFile(null);
                                 }}
                               />
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
+                            </div>
+                          );
+                        }}
+                      />
                     )
                     : (
                       <Box p={2}>
                         <Typography>{t('GitLog.NoCommits')}</Typography>
                       </Box>
                     )}
+                  {loadingMore && (
+                    <Box p={2} display='flex' justifyContent='center'>
+                      <CircularProgress size={24} />
+                      <Typography ml={1}>{t('GitLog.LoadingMore')}</Typography>
+                    </Box>
+                  )}
                 </>
               )
               : (
