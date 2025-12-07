@@ -166,6 +166,8 @@
     "EnableHTTPSDescription": "提供安全的TLS加密訪問，需要你有自己的HTTPS證書，可以從域名提供商那下載，也可以搜索免費的HTTPS證書申請方式。",
     "ExcludedPlugins": "需忽略的插件",
     "ExcludedPluginsDescription": "在只讀模式啟動知識庫作為部落格時，你可能希望不載入一些編輯相關的插件以減小初次載入的網頁大小，例如 $:/plugins/tiddlywiki/codemirror 等，畢竟載入的部落格不需要這些編輯功能。",
+    "IgnoreSymlinks": "忽略符號連結",
+    "IgnoreSymlinksDescription": "符號連結類似捷徑，舊版曾用它實現子工作區功能，但新版已經不再需要。你可以手動刪除遺留的符號連結。",
     "Generate": "生成",
     "HTTPSCertPath": "Cert文件路徑",
     "HTTPSCertPathDescription": "後綴為 .crt 的證書文件的所在位置，一般以 xxx_public.crt 結尾。",

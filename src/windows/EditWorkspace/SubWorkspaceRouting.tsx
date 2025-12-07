@@ -22,6 +22,7 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
     includeTagTree,
     fileSystemPathFilterEnable,
     fileSystemPathFilter,
+    ignoreSymlinks,
   } = workspace;
 
   return (
@@ -93,6 +94,24 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
             <ListItemText
               primary={t('AddWorkspace.UseFilter')}
               secondary={t('AddWorkspace.UseFilterHelp')}
+            />
+          </ListItem>
+          <ListItem
+            disableGutters
+            secondaryAction={
+              <Switch
+                edge='end'
+                color='primary'
+                checked={ignoreSymlinks}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  workspaceSetter({ ...workspace, ignoreSymlinks: event.target.checked }, true);
+                }}
+              />
+            }
+          >
+            <ListItemText
+              primary={t('EditWorkspace.IgnoreSymlinks')}
+              secondary={t('EditWorkspace.IgnoreSymlinksDescription')}
             />
           </ListItem>
         </List>

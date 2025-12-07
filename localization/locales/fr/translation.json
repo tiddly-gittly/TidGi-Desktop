@@ -177,6 +177,8 @@
     "HTTPSUploadKey": "Ajouter un fichier de clé",
     "HibernateDescription": "Économiser l'utilisation du CPU, de la mémoire et de la batterie. Cela désactivera la synchronisation automatique, vous devrez effectuer manuellement les commits et la synchronisation pour sauvegarder les données.",
     "HibernateTitle": "Mettre en veille lorsqu'il n'est pas utilisé",
+    "IgnoreSymlinks": "ignorer les liens symboliques",
+    "IgnoreSymlinksDescription": "Les liens symboliques sont similaires aux raccourcis. Les anciennes versions les utilisaient pour implémenter la fonctionnalité des sous-espaces de travail, mais ils ne sont plus nécessaires dans les nouvelles versions. Vous pouvez supprimer manuellement les liens symboliques résiduels.",
     "IsSubWorkspace": "Est un sous-espace de travail",
     "LastNodeJSArgv": "Arguments de ligne de commande du dernier démarrage",
     "LastVisitState": "Dernière page visitée",

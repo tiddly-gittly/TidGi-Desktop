@@ -166,6 +166,8 @@
     "EnableHTTPSDescription": "To provide secure TLS encrypted access, you need to have your own HTTPS certificate, which can be downloaded from the domain name provider, or you can search for free HTTPS certificate application methods.",
     "ExcludedPlugins": "plugins to ignore",
     "ExcludedPluginsDescription": "When starting the wiki as a blog in read-only mode, you may want to not load some editing-related plugins to reduce the size of the first-loaded web page, such as $:/plugins/tiddlywiki/codemirror, etc. After all, the loaded blog does not need these editing functions.",
+    "IgnoreSymlinks": "Ignore Symlinks",
+    "IgnoreSymlinksDescription": "Symlinks are similar to shortcuts. The old version used them to implement sub-wiki functionality, but the new version no longer needs them. You can manually delete legacy symlinks.",
     "Generate": "Generate",
     "HTTPSCertPath": "Cert file path",
     "HTTPSCertPathDescription": "The location of the certificate file with the suffix .crt, generally ending with xxx_public.crt.",

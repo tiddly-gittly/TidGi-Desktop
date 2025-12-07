@@ -118,7 +118,7 @@ export class FileSystemAdaptor {
    * do we regenerate the file path. This prevents echo loops where slightly different
    * filenames trigger constant saves.
    */
-  async getTiddlerFileInfo(tiddler: Tiddler): Promise<IFileInfo | null> {
+  getTiddlerFileInfo(tiddler: Tiddler): IFileInfo | null {
     if (!this.boot.wikiTiddlersPath) {
       throw new Error('filesystem adaptor requires a valid wiki folder');
     }
@@ -287,7 +287,7 @@ export class FileSystemAdaptor {
     _options?: { tiddlerInfo?: Record<string, unknown> },
   ): Promise<void> {
     try {
-      const fileInfo = await this.getTiddlerFileInfo(tiddler);
+      const fileInfo = this.getTiddlerFileInfo(tiddler);
 
       if (!fileInfo) {
         const error = new Error('No fileInfo returned from getTiddlerFileInfo');

@@ -173,6 +173,7 @@ export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreate
     excludedPlugins: [],
     enableHTTPAPI: false,
     enableFileSystemWatch: true,
+    ignoreSymlinks: true,
     includeTagTree: false,
     fileSystemPathFilterEnable: false,
     fileSystemPathFilter: null,

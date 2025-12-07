@@ -173,6 +173,12 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
    * This is an experimental feature and may have bugs
    */
   enableFileSystemWatch: boolean;
+  /**
+   * Symlinks are similar to shortcuts. The old version used them to implement sub-wiki functionality,
+   * but the new version no longer needs them.You can manually delete legacy symlinks.
+   * When enabled, the file system watcher will skip symlinks to avoid redundant file sync operations.
+   */
+  ignoreSymlinks: boolean;
 }
 export type IWorkspace = IWikiWorkspace | IDedicatedWorkspace;
 
