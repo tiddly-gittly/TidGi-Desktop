@@ -89,7 +89,7 @@ export function useGitLogData(): IGitLogData {
 
   useObservable(gitStateChange$, (change) => {
     if (!gitStateChange$) return;
-    
+
     // Debounce git state changes to prevent excessive refreshes
     // Git operations (like discard) may trigger multiple file system events
     const now = Date.now();
