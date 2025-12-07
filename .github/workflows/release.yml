@@ -107,6 +107,23 @@ jobs:
           ANALYZE: ${{ matrix.platform == 'linux' && matrix.arch == 'x64' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Repackage macOS ZIP using ditto to preserve symlinks (cross-zip doesn't preserve symlinks properly on CI) To prevent dugite git binary symlink dereference issues
+      - name: Repackage macOS ZIP with ditto
+        if: matrix.platform == 'mac'
+        run: |
+          cd out/make/zip/darwin/${{ matrix.arch }}
+          ZIP_FILE=$(ls *.zip | head -1)
+          APP_NAME="TidGi.app"
+          # Extract the original zip
+          unzip -q "$ZIP_FILE" -d temp_extract
+          # Remove the original zip
+          rm "$ZIP_FILE"
+          # Repackage using ditto (preserves symlinks and macOS metadata)
+          ditto -ck --keepParent "temp_extract/$APP_NAME" "$ZIP_FILE"
+          # Cleanup
+          rm -rf temp_extract
+          echo "Repackaged $ZIP_FILE with ditto to preserve symlinks"
+
       # Upload analyzer reports and packaged apps as workflow artifacts (only linux x64)
       - name: Upload analyzer reports
         if: matrix.platform == 'linux' && matrix.arch == 'x64'
