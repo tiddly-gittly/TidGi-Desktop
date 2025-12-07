@@ -121,11 +121,11 @@ describe('WikiEmbeddingService Integration Tests', () => {
         ]); // Fourth call: get tiddlers data
 
       const testConfig = {
-        api: {
+        embedding: {
           provider: 'openai',
           model: 'text-embedding-ada-002',
-          apiKey: 'test-api-key',
-          baseURL: 'https://api.openai.com/v1',
+          // apiKey: 'test-api-key',
+          // baseURL: 'https://api.openai.com/v1',
         },
         modelParameters: {
           temperature: 0.7,
@@ -234,11 +234,11 @@ describe('WikiEmbeddingService Integration Tests', () => {
       }
 
       const testConfig = {
-        api: {
+        embedding: {
           provider: 'openai',
           model: 'text-embedding-ada-002',
-          apiKey: 'test-api-key',
-          baseURL: 'https://api.openai.com/v1',
+          // apiKey: 'test-api-key',
+          // baseURL: 'https://api.openai.com/v1',
         },
         modelParameters: {
           temperature: 0.7,
@@ -309,11 +309,11 @@ describe('WikiEmbeddingService Integration Tests', () => {
       });
 
       const testConfig = {
-        api: {
+        embedding: {
           provider: 'openai',
           model: 'text-embedding-ada-002',
-          apiKey: 'test-api-key',
-          baseURL: 'https://api.openai.com/v1',
+          // apiKey: 'test-api-key',
+          // baseURL: 'https://api.openai.com/v1',
         },
         modelParameters: {
           temperature: 0.7,
@@ -394,11 +394,11 @@ describe('WikiEmbeddingService Integration Tests', () => {
         });
 
       const testConfig = {
-        api: {
+        embedding: {
           provider: 'openai',
           model: 'text-embedding-ada-002',
-          apiKey: 'test-api-key',
-          baseURL: 'https://api.openai.com/v1',
+          // apiKey: 'test-api-key',
+          // baseURL: 'https://api.openai.com/v1',
         },
         modelParameters: {
           temperature: 0.7,
@@ -464,11 +464,11 @@ describe('WikiEmbeddingService Integration Tests', () => {
         ]); // Fourth call: get tiddlers data
 
       const testConfig = {
-        api: {
+        embedding: {
           provider: 'openai',
           model: 'text-embedding-ada-002',
-          apiKey: 'test-api-key',
-          baseURL: 'https://api.openai.com/v1',
+          // apiKey: 'test-api-key',
+          // baseURL: 'https://api.openai.com/v1',
         },
         modelParameters: {
           temperature: 0.7,

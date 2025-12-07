@@ -97,7 +97,14 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
     const agentFrameworkConfig = context.agentDef.agentFrameworkConfig as AgentFrameworkConfig;
     const agentPromptDescription: AgentPromptDescription = {
       id: context.agentDef.id,
-      api: aiApiConfig.api,
+      // Use default model selection for the agent description
+      // This maintains backward compatibility while using the new schema
+      api: aiApiConfig.default
+        ? {
+          provider: aiApiConfig.default.provider,
+          model: aiApiConfig.default.model,
+        }
+        : { provider: '', model: '' },
       modelParameters: aiApiConfig.modelParameters,
       agentFrameworkConfig,
     };
@@ -115,7 +122,7 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
 
         logger.debug('Starting AI generation', {
           method: 'processLLMCall',
-          modelName: aiApiConfig.api.model,
+          modelName: aiApiConfig.default?.model || 'unknown',
           flatPrompts,
           messages: context.agent.messages,
         });

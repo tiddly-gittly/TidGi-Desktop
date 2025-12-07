@@ -25,8 +25,14 @@ export async function generateTranscriptionFromProvider(
   providerConfig?: AIProviderConfig,
   options: TranscriptionOptions = {},
 ): Promise<AITranscriptionResponse> {
-  const provider = config.api.provider;
-  const model = config.api.transcriptionsModel || config.api.model;
+  // Extract provider and model from config
+  // Use transcriptions config if available, fallback to default
+  const transcriptionsConfig = config.transcriptions || config.default;
+  if (!transcriptionsConfig) {
+    throw new Error('No transcriptions model or default model configured');
+  }
+  const provider = transcriptionsConfig.provider;
+  const model = transcriptionsConfig.model;
 
   logger.info(`Using AI transcription provider: ${provider}, model: ${model}`);
 

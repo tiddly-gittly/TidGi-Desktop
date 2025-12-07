@@ -31,8 +31,14 @@ export async function generateSpeechFromProvider(
   providerConfig?: AIProviderConfig,
   options: SpeechOptions = {},
 ): Promise<AISpeechResponse> {
-  const provider = config.api.provider;
-  const model = config.api.speechModel || config.api.model;
+  // Extract provider and model from config
+  // Use speech config if available, fallback to default
+  const speechConfig = config.speech || config.default;
+  if (!speechConfig) {
+    throw new Error('No speech model or default model configured');
+  }
+  const provider = speechConfig.provider;
+  const model = speechConfig.model;
 
   logger.info(`Using AI speech provider: ${provider}, model: ${model}`);
 

@@ -7,17 +7,14 @@ export async function waitForAIStreamResult(
   externalAPIService: IExternalAPIService,
 ): Promise<string | undefined> {
   try {
-    if (!aiConfig?.api?.freeModel || !aiConfig?.api?.provider) {
+    if (!aiConfig?.free?.model || !aiConfig?.free?.provider) {
       return undefined;
     }
 
     // Use the free model for generation
     const config = {
       ...aiConfig,
-      api: {
-        ...aiConfig.api,
-        model: aiConfig.api.freeModel,
-      },
+      default: aiConfig.free,
     };
 
     const messages = [

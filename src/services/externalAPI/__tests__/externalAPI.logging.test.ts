@@ -47,7 +47,7 @@ describe('ExternalAPIService logging', () => {
     const db = container.get<IDatabaseService>(serviceIdentifier.Database);
     const aiSettings: AIGlobalSettings = {
       providers: [{ provider: 'test-provider', apiKey: 'fake', models: [{ name: 'test-model' }] }],
-      defaultConfig: { api: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
+      defaultConfig: { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
     };
     // Mock getSetting to return our test AI settings
     vi.spyOn(db, 'getSetting').mockImplementation((k: string) => (k === 'aiSettings' ? aiSettings : undefined));
@@ -79,8 +79,8 @@ describe('ExternalAPIService logging', () => {
     const db = container.get<IDatabaseService>(serviceIdentifier.Database);
     const aiSettings: AIGlobalSettings = {
       // Provider without apiKey should trigger an error
-      providers: [{ provider: 'test-provider', models: [{ name: 'test-model' }] }],
-      defaultConfig: { api: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
+      providers: [{ provider: 'test-provider', models: [{ name: 'test-model' }] }], // No apiKey
+      defaultConfig: { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
     };
     // Mock getSetting to return our test AI settings
     vi.spyOn(db, 'getSetting').mockImplementation((k: string) => (k === 'aiSettings' ? aiSettings : undefined));

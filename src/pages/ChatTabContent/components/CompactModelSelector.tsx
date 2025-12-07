@@ -45,8 +45,8 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({
   }
 
   // Find the currently selected model for the tooltip display
-  const currentModel = config?.api
-    ? `${config.api.provider} - ${config.api.model}`
+  const currentModel = config?.default
+    ? `${config.default.provider} - ${config.default.model}`
     : t('ModelSelector.NoModelSelected');
 
   const handleOpenDialog = () => {
@@ -63,8 +63,8 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({
   };
 
   // Find currently selected model in options
-  const selectedModel = config?.api
-    ? modelOptions.find(m => m[0].provider === config.api.provider && m[1].name === config.api.model)
+  const selectedModel = config?.default
+    ? modelOptions.find(m => m[0].provider === config.default?.provider && m[1].name === config.default?.model)
     : undefined;
 
   return (

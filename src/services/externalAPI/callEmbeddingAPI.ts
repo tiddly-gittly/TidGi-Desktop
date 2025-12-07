@@ -30,8 +30,14 @@ export async function generateEmbeddingsFromProvider(
   providerConfig?: AIProviderConfig,
   options: EmbeddingOptions = {},
 ): Promise<AIEmbeddingResponse> {
-  const provider = config.api.provider;
-  const model = config.api.model;
+  // Extract provider and model from config
+  // Use embedding config if available, fallback to default
+  const embeddingConfig = config.embedding || config.default;
+  if (!embeddingConfig) {
+    throw new Error('No embedding model or default model configured');
+  }
+  const provider = embeddingConfig.provider;
+  const model = embeddingConfig.model;
 
   logger.info(`Using AI embedding provider: ${provider}, model: ${model}`);
 

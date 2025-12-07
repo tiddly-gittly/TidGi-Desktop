@@ -270,7 +270,7 @@ describe('Mock OpenAI Server', () => {
     ];
 
     // streamFromProvider returns an object from streamText; call it and iterate
-    const aiConfig: AiAPIConfig = { api: { provider: 'TestProvider', model: 'test-model' }, modelParameters: {} } as AiAPIConfig;
+    const aiConfig: AiAPIConfig = { default: { provider: 'TestProvider', model: 'test-model' }, modelParameters: {} } as AiAPIConfig;
     const stream = streamFromProvider(aiConfig, messages, new AbortController().signal, providerConfig);
 
     // The returned stream should expose `.textStream` as an AsyncIterable

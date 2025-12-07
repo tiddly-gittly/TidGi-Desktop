@@ -24,8 +24,14 @@ export async function generateImageFromProvider(
   providerConfig?: AIProviderConfig,
   options: ImageGenerationOptions = {},
 ): Promise<AIImageGenerationResponse> {
-  const provider = config.api.provider;
-  const model = config.api.imageGenerationModel || config.api.model;
+  // Extract provider and model from config
+  // Use imageGeneration config if available, fallback to default
+  const imageConfig = config.imageGeneration || config.default;
+  if (!imageConfig) {
+    throw new Error('No image generation model or default model configured');
+  }
+  const provider = imageConfig.provider;
+  const model = imageConfig.model;
 
   logger.info(`Using AI image generation provider: ${provider}, model: ${model}`);
 

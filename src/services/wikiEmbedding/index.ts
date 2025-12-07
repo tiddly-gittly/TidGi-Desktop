@@ -372,12 +372,17 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
 
         // Check if embedding already exists and is up-to-date
         if (!forceUpdate) {
+          const embeddingConfig = config.embedding || config.default;
+          if (!embeddingConfig) {
+            throw new Error('No embedding model or default model configured');
+          }
+
           const existingEmbedding = await this.embeddingRepository!.findOne({
             where: {
               workspaceId,
               tiddlerTitle: noteTitle,
-              model: config.api.model,
-              provider: config.api.provider,
+              model: embeddingConfig.model,
+              provider: embeddingConfig.provider,
             },
           });
 
@@ -389,11 +394,16 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
         }
 
         // Delete existing embeddings for this note
+        const embeddingConfig = config.embedding || config.default;
+        if (!embeddingConfig) {
+          throw new Error('No embedding model or default model configured');
+        }
+
         await this.embeddingRepository!.delete({
           workspaceId,
           tiddlerTitle: noteTitle,
-          model: config.api.model,
-          provider: config.api.provider,
+          model: embeddingConfig.model,
+          provider: embeddingConfig.provider,
         });
 
         // Chunk content if necessary
@@ -404,17 +414,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
           const chunk = chunks[index];
 
           try {
-            // Generate embeddings using embeddingModel if available, otherwise use regular model
-            const embeddingModel = config.api.embeddingModel || config.api.model;
-            const embeddingConfig = {
-              ...config,
-              api: {
-                ...config.api,
-                model: embeddingModel,
-              },
-            };
-
-            const embeddingResponse = await this.externalAPIService.generateEmbeddings([chunk], embeddingConfig);
+            // Use embedding config for generation
+            const embeddingResponse = await this.externalAPIService.generateEmbeddings([chunk], config);
 
             if (embeddingResponse.status === 'error') {
               throw new Error(`Embedding generation failed: ${embeddingResponse.errorDetail?.message}`);
@@ -436,8 +437,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
               totalChunks: chunks.length > 1 ? chunks.length : undefined,
               created: new Date(),
               modified: new Date(),
-              model: config.api.model,
-              provider: config.api.provider,
+              model: embeddingConfig.model,
+              provider: embeddingConfig.provider,
               dimensions,
             };
 
@@ -619,12 +620,18 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
       // Check if vector table exists for this dimension
       await this.ensureVectorTableExists(dimensions);
 
+      // Get embedding config
+      const embeddingConfig = config.embedding || config.default;
+      if (!embeddingConfig) {
+        throw new Error('No embedding model or default model configured');
+      }
+
       // Get metadata for embeddings with the same model/provider/workspace
       const metadataRecords = await this.embeddingRepository!.find({
         where: {
           workspaceId,
-          model: config.api.model,
-          provider: config.api.provider,
+          model: embeddingConfig.model,
+          provider: embeddingConfig.provider,
           dimensions,
         },
       });

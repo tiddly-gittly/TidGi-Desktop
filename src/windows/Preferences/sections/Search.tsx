@@ -131,7 +131,7 @@ export function Search(
       // Get AI config from external API service
       const aiConfig = await window.service.externalAPI.getAIConfig();
 
-      if (!aiConfig.api.provider) {
+      if (!aiConfig.default?.provider && !aiConfig.embedding?.provider) {
         showInfoSnackbar?.({
           message: t('Preference.SearchEmbeddingNoAIConfigError'),
           severity: 'error',
@@ -142,7 +142,7 @@ export function Search(
       }
 
       // Check if embeddingModel is configured, otherwise use regular model
-      if (!aiConfig.api.embeddingModel) {
+      if (!aiConfig.embedding?.model) {
         showInfoSnackbar?.({
           message: t('Preference.SearchEmbeddingNoEmbeddingModelError'),
           severity: 'warning',
