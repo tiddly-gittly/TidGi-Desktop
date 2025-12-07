@@ -26,6 +26,8 @@ import type { GitLogEntry } from './types';
 import { useCommitDetails } from './useCommitDetails';
 import { useGitLogData } from './useGitLogData';
 
+const HEADER_AND_CONTROLS_HEIGHT = 250;
+const ROW_HEIGHT = 60;
 const Root = styled((properties: React.ComponentProps<typeof Container>) => <Container {...properties} />)`
   width: 100%;
   height: 100vh;
@@ -34,8 +36,6 @@ const Root = styled((properties: React.ComponentProps<typeof Container>) => <Con
   padding: 16px;
   overflow: hidden;
 `;
-
-const HEADER_AND_CONTROLS_HEIGHT = 250;
 
 const ContentWrapper = styled(Box)`
   display: flex;
@@ -372,7 +372,7 @@ export default function GitHistory(): React.JSX.Element {
                       <VirtualList
                         defaultHeight={window.innerHeight - HEADER_AND_CONTROLS_HEIGHT}
                         rowCount={entries.length}
-                        rowHeight={60}
+                        rowHeight={ROW_HEIGHT}
                         rowProps={{}}
                         onRowsRendered={onRowsRendered}
                         rowComponent={({ index, style }) => {
