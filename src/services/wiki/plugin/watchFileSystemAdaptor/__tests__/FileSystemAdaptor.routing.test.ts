@@ -93,7 +93,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler', tags: [] },
       } as unknown as Tiddler;
 
-      const result = await adaptor.getTiddlerFileInfo(tiddler);
+      const result = adaptor.getTiddlerFileInfo(tiddler);
 
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
         tiddler,
@@ -114,7 +114,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler', tags: [] },
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
         tiddler,
@@ -132,7 +132,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler', tags: [] },
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
         tiddler,
@@ -162,7 +162,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler', tags: [] },
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
         tiddler,
@@ -186,7 +186,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler', tags: [] },
       } as unknown as Tiddler;
 
-      const result = await adaptor.getTiddlerFileInfo(tiddler);
+      const result = adaptor.getTiddlerFileInfo(tiddler);
 
       // Should return the existing fileInfo with overwrite flag, not call generateTiddlerFileInfo
       expect(result).toEqual({ ...existingFileInfo, overwrite: true });
@@ -208,7 +208,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler', tags: [] },
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       // Should call generateTiddlerFileInfo since file needs to be moved
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalled();
@@ -284,7 +284,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler', tags: ['SubWikiTag', 'OtherTag'] },
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       expect(mockUtils.createDirectory).toHaveBeenCalledWith('/test/wiki/subwiki/sub1');
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
@@ -328,7 +328,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler', tags: ['Tag1', 'Tag2'] },
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       // Should use Tag1's directory (first match)
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
@@ -387,7 +387,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler', tags: ['UnmatchedTag'] },
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       // Should use default directory in all scenarios
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
@@ -433,7 +433,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler', tags: [] },
       } as unknown as Tiddler;
 
-      const result = await adaptor.getTiddlerFileInfo(tiddler);
+      const result = adaptor.getTiddlerFileInfo(tiddler);
 
       expect(mockLogger.alert).toHaveBeenCalledWith(
         expect.stringContaining('Error in getTiddlerFileInfo'),
@@ -567,7 +567,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'ChildTiddler', tags: ['ParentTag'] }, // Not directly tagged with RootTag
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       // Should use sub-wiki directory because tag tree matching found a match
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
@@ -607,7 +607,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'ChildTiddler', tags: ['ParentTag'] }, // Not directly tagged with RootTag
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       // Should use default directory because includeTagTree is disabled
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
@@ -674,7 +674,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'FilterMatchTiddler', tags: [] },
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       // Should use sub-wiki directory because custom filter matched
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
@@ -711,7 +711,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'FilterMatchTiddler', tags: [] },
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       // Should use default directory because filter is disabled
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
@@ -757,7 +757,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TiddlerWithField2', tags: [] },
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       // Should use sub-wiki directory because second filter line matched
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
@@ -831,7 +831,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler', tags: ['DirectTag'] },
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       // Should use direct tag sub-wiki (first match wins, and direct tag check happens before tag tree)
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
@@ -873,7 +873,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler', tags: ['MatchTag'] },
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       // Should match via tag (filter shouldn't even be checked for this tiddler)
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
@@ -919,7 +919,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         fields: { title: 'TestTiddler', tags: ['SharedTag'] },
       } as unknown as Tiddler;
 
-      await adaptor.getTiddlerFileInfo(tiddler);
+     adaptor.getTiddlerFileInfo(tiddler);
 
       // Should use first sub-wiki (order 0)
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
