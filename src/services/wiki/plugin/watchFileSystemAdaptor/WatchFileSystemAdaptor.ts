@@ -126,8 +126,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     if (this.workspace) {
       this.ignoreSymlinks = this.workspace.ignoreSymlinks;
     }
-    // Initialize file watching
-    this.initializeFileWatching();
+    await this.initializeFileWatching();
   }
 
   /**
@@ -255,7 +254,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
   /**
    * Initialize file system watching
    */
-  private initializeFileWatching(): void {
+  private async initializeFileWatching(): Promise<void> {
     if (!this.watchPathBase) {
       return;
     }
@@ -277,7 +276,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     ];
 
     // Setup nsfw watcher
-    void this.setupNsfwWatcher();
+    await this.setupNsfwWatcher();
   }
 
   /**
