@@ -154,6 +154,7 @@ function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTable
     <StyledTableRow
       selected={selected}
       onClick={onSelect}
+      data-testid={commit.hash === '' ? 'uncommitted-changes-row' : `commit-row-${commit.hash}`}
     >
       <CellBox sx={{ width: '40%' }}>
         <Typography
@@ -349,7 +350,7 @@ export default function GitHistory(): React.JSX.Element {
       </Helmet>
 
       <ContentWrapper>
-        <GitLogWrapper>
+        <GitLogWrapper data-testid="git-log-list">
           <TabsContainer>
             <Tabs
               value={viewMode}
