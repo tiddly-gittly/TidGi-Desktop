@@ -82,7 +82,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Rebuild native modules for Electron
-        run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
+        run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
       - name: Remove windows only deps
         if: matrix.platform != 'win'
         run: pnpm remove registry-js
