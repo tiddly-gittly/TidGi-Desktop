@@ -13,7 +13,7 @@ import WikiWorkerFactory from './wikiWorker/index?nodeWorker';
 import { container } from '@services/container';
 
 import { WikiChannel } from '@/constants/channels';
-import { getTiddlyWikiBootPath, TIDDLERS_PATH, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
+import { getTiddlyWikiBootPath, TIDDLERS_PATH, TIDDLYWIKI_BUILT_IN_PLUGINS_PATH, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
@@ -140,7 +140,7 @@ export class Wiki implements IWikiService {
 
     const workerData: IStartNodeJSWikiConfigs = {
       authToken,
-      constants: { TIDDLYWIKI_PACKAGE_FOLDER: getTiddlyWikiBootPath(wikiFolderLocation) },
+      constants: { TIDDLY_WIKI_BOOT_PATH: getTiddlyWikiBootPath(wikiFolderLocation), TIDDLYWIKI_BUILT_IN_PLUGINS_PATH },
       enableHTTPAPI,
       excludedPlugins,
       homePath: wikiFolderLocation,
@@ -368,7 +368,7 @@ export class Wiki implements IWikiService {
       if (await exists(saveWikiFolderPath)) {
         throw new AlreadyExistError(saveWikiFolderPath);
       }
-      await worker.extractWikiHTML(htmlWikiPath, saveWikiFolderPath, { TIDDLYWIKI_PACKAGE_FOLDER: getTiddlyWikiBootPath(saveWikiFolderPath) });
+      await worker.extractWikiHTML(htmlWikiPath, saveWikiFolderPath, { TIDDLY_WIKI_BOOT_PATH: getTiddlyWikiBootPath(saveWikiFolderPath) });
     } catch (error) {
       const result = `${(error as Error).name} ${(error as Error).message}`;
       logger.error(result, { worker: 'NodeJSWiki', method: 'extractWikiHTML', htmlWikiPath, saveWikiFolderPath });
@@ -385,7 +385,7 @@ export class Wiki implements IWikiService {
     const worker = createWorkerProxy<WikiWorker>(nativeWorker);
 
     try {
-      await worker.packetHTMLFromWikiFolder(wikiFolderLocation, pathOfNewHTML, { TIDDLYWIKI_PACKAGE_FOLDER: getTiddlyWikiBootPath(wikiFolderLocation) });
+      await worker.packetHTMLFromWikiFolder(wikiFolderLocation, pathOfNewHTML, { TIDDLY_WIKI_BOOT_PATH: getTiddlyWikiBootPath(wikiFolderLocation) });
     } finally {
       // this worker is only for one time use. we will spawn a new one for starting wiki later.
       await terminateWorker(nativeWorker);

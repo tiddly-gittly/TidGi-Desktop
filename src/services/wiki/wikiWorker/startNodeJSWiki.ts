@@ -21,25 +21,26 @@ import { ipcServerRoutes } from './ipcServerRoutes';
 import { createLoadWikiTiddlersWithSubWikis } from './loadWikiTiddlersWithSubWikis';
 import { authTokenIsProvided } from './wikiWorkerUtilities';
 
-export function startNodeJSWiki({
-  enableHTTPAPI,
-  authToken,
-  constants: { TIDDLYWIKI_PACKAGE_FOLDER },
-  excludedPlugins = [],
-  homePath,
-  https,
-  isDev,
-  openDebugger,
-  readOnlyMode,
-  rootTiddler = '$:/core/save/all',
-  shouldUseDarkColors,
-  subWikis = [],
-  tiddlyWikiHost = defaultServerIP,
-  tiddlyWikiPort = 5112,
-  tokenAuth,
-  userName,
-  workspace,
-}: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
+export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
+  const {
+    enableHTTPAPI,
+    authToken,
+    constants: { TIDDLYWIKI_BUILT_IN_PLUGINS_PATH, TIDDLY_WIKI_BOOT_PATH },
+    excludedPlugins = [],
+    homePath,
+    https,
+    isDev,
+    openDebugger,
+    readOnlyMode,
+    rootTiddler = '$:/core/save/all',
+    shouldUseDarkColors,
+    subWikis = [],
+    tiddlyWikiHost = defaultServerIP,
+    tiddlyWikiPort = 5112,
+    tokenAuth,
+    userName,
+    workspace,
+  } = configs;
   return new Observable<IWikiMessage>((observer) => {
     if (openDebugger === true) {
       inspector.open();
@@ -49,7 +50,7 @@ export function startNodeJSWiki({
     }
     // Wait for services to be ready before using intercept with logFor
     onWorkerServicesReady(() => {
-      void native.logFor(workspace.name, 'info', 'test-id-WorkerServicesReady');
+      void native.logFor(workspace.name, 'debug', 'test-id-WorkerServicesReady', configs as unknown as Record<string, unknown>);
       const textDecoder = new TextDecoder();
       intercept(
         (newStdOut: string | Uint8Array) => {
@@ -93,16 +94,26 @@ export function startNodeJSWiki({
 
     try {
       // Log which TiddlyWiki version is being used (local vs built-in)
-      const isUsingLocalTiddlyWiki = TIDDLYWIKI_PACKAGE_FOLDER.includes(path.join(homePath, 'node_modules'));
+      const isUsingLocalTiddlyWiki = TIDDLY_WIKI_BOOT_PATH.includes(path.join(homePath, 'node_modules'));
       void native.logFor(
         workspace.name,
         'info',
-        `Starting TiddlyWiki from ${isUsingLocalTiddlyWiki ? 'wiki-local installation' : 'built-in installation'}: ${TIDDLYWIKI_PACKAGE_FOLDER}`,
+        `Starting TiddlyWiki from ${isUsingLocalTiddlyWiki ? 'wiki-local installation' : 'built-in installation'}: ${TIDDLY_WIKI_BOOT_PATH}`,
       );
 
       const wikiInstance = TiddlyWiki();
       setWikiInstance(wikiInstance);
-      process.env.TIDDLYWIKI_PLUGIN_PATH = path.resolve(homePath, 'plugins');
+      /**
+       * Set plugin search paths. When wiki uses local TiddlyWiki installation,
+       * we still need to include TidGi's built-in plugins path so our custom plugins can be found.
+       * Path separator is ':' on Unix and ';' on Windows.
+       */
+      const pathSeparator = process.platform === 'win32' ? ';' : ':';
+      const pluginPaths = [
+        path.resolve(homePath, 'plugins'),
+        TIDDLYWIKI_BUILT_IN_PLUGINS_PATH,
+      ];
+      process.env.TIDDLYWIKI_PLUGIN_PATH = pluginPaths.join(pathSeparator);
       process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
 
       /**
@@ -233,7 +244,7 @@ export function startNodeJSWiki({
           });
         });
       });
-      wikiInstance.boot.startup({ bootPath: TIDDLYWIKI_PACKAGE_FOLDER });
+      wikiInstance.boot.startup({ bootPath: TIDDLY_WIKI_BOOT_PATH });
       // after setWikiInstance, ipc server routes will start serving content
       ipcServerRoutes.setConfig({ readOnlyMode });
       ipcServerRoutes.setWikiInstance(wikiInstance);

@@ -25,7 +25,7 @@ import { startNodeJSWiki } from './startNodeJSWiki';
 
 export interface IStartNodeJSWikiConfigs {
   authToken?: string;
-  constants: { TIDDLYWIKI_PACKAGE_FOLDER: string };
+  constants: { TIDDLY_WIKI_BOOT_PATH: string; TIDDLYWIKI_BUILT_IN_PLUGINS_PATH: string };
   enableHTTPAPI: boolean;
   excludedPlugins: string[];
   homePath: string;

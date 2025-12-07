@@ -52,6 +52,11 @@ export const PACKAGE_PATH_BASE = isPackaged
 // Package-specific paths
 export const ZX_FOLDER = path.resolve(PACKAGE_PATH_BASE, 'zx', 'build', 'cli.js');
 export const TIDDLYWIKI_PACKAGE_FOLDER = path.resolve(PACKAGE_PATH_BASE, 'tiddlywiki', 'boot');
+/**
+ * Path to TidGi's built-in TiddlyWiki plugins (compiled by scripts/compilePlugins.mjs).
+ * When wiki uses a local TiddlyWiki installation, we still need to load TidGi's custom plugins from here.
+ */
+export const TIDDLYWIKI_BUILT_IN_PLUGINS_PATH = path.resolve(PACKAGE_PATH_BASE, 'tiddlywiki', 'plugins');
 export const SQLITE_BINARY_PATH = path.resolve(PACKAGE_PATH_BASE, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
 
 /**
