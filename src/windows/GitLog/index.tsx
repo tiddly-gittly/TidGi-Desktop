@@ -350,7 +350,7 @@ export default function GitHistory(): React.JSX.Element {
       </Helmet>
 
       <ContentWrapper>
-        <GitLogWrapper data-testid="git-log-list">
+        <GitLogWrapper data-testid='git-log-list'>
           <TabsContainer>
             <Tabs
               value={viewMode}
