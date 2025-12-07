@@ -5,6 +5,7 @@
  */
 import fs from 'fs-extra';
 import path from 'path';
+import { trimUnusedGitCommands } from './trimDugite';
 
 /**
  * Running afterPack hook
@@ -82,11 +83,13 @@ export default (
 
     console.log('Copy dugite');
     // it has things like `git/bin/libexec/git-core/git-add` link to `git/bin/libexec/git-core/git`, to reduce size, so can't use `dereference: true, recursive: true` here.
+    const dugiteDestination = path.join(cwd, 'node_modules', 'dugite');
     fs.copySync(
       path.join(sourceNodeModulesFolder, 'dugite'),
-      path.join(cwd, 'node_modules', 'dugite'),
+      dugiteDestination,
       { dereference: false },
     );
+    trimUnusedGitCommands(dugiteDestination, platform);
 
     if (platform === 'win32') {
       console.log('Copy registry-js (Windows only)');
