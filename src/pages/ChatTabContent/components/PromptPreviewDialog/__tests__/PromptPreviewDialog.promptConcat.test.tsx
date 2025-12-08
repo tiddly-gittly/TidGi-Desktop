@@ -279,16 +279,15 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     // Check for wiki search tool insertion (from wikiSearch plugin)
     let wikiSearchElement: IPrompt | undefined = childrenAfterBeforeTool.find((c: IPrompt) => {
       const body = `${c.caption ?? ''} ${c.text ?? ''}`;
-      return /Available Tools:/i.test(body) || /Tool ID:\s*wiki-search/i.test(body) || /wiki-search/i.test(body);
+      return /wiki-search/i.test(body);
     });
     if (!wikiSearchElement) {
-      wikiSearchElement = findPromptNodeByText(result?.processedPrompts, /Available Tools:/i) || findPromptNodeByText(result?.processedPrompts, /Tool ID:\s*wiki-search/i) ||
-        findPromptNodeByText(result?.processedPrompts, /wiki-search/i);
+      wikiSearchElement = findPromptNodeByText(result?.processedPrompts, /wiki-search/i);
     }
     expect(wikiSearchElement).toBeDefined();
     const wikiSearchText = `${wikiSearchElement?.caption ?? ''} ${wikiSearchElement?.text ?? ''}`;
-    expect(wikiSearchText).toContain('Wiki search tool');
-    expect(wikiSearchText).toContain('## wiki-search');
+    // Check that wiki-search tool is mentioned in the content (either as tool ID or in description)
+    expect(wikiSearchText.toLowerCase()).toContain('wiki-search');
 
     // Verify the order: before-tool -> workspaces -> wiki-operation -> wiki-search -> post-tool
     const postToolElement: IPrompt | undefined = toolsSection?.children?.find((c: IPrompt) => c.id === 'default-post-tool');

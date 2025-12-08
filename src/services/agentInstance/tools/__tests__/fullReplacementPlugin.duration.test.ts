@@ -10,8 +10,8 @@ import type { IPrompt } from '../../promptConcat/promptConcatSchema/prompts';
 
 import { cloneDeep } from 'lodash';
 import defaultAgents from '../../agentFrameworks/taskAgents.json';
+import { fullReplacementModifier } from '../../promptConcat/modifiers/fullReplacement';
 import { createAgentFrameworkHooks, PromptConcatHookContext } from '../index';
-import { fullReplacementTool } from '../prompt';
 
 // Use the real agent config
 const exampleAgent = defaultAgents[0];
@@ -113,7 +113,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
       };
 
       const hooks = createAgentFrameworkHooks();
-      fullReplacementTool(hooks);
+      fullReplacementModifier(hooks);
 
       // Execute the processPrompts hook
       await hooks.processPrompts.promise(context);
@@ -126,8 +126,8 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
       const targetPrompt = historyPrompt!.children?.find(child => child.id === targetId);
       expect(targetPrompt).toBeDefined();
 
-      // The fullReplacementTool puts filtered messages in children array
-      // Note: fullReplacementTool removes the last message (current user message)
+      // The fullReplacementModifier puts filtered messages in children array
+      // Note: fullReplacementModifier removes the last message (current user message)
       const children = (targetPrompt as unknown as { children?: IPrompt[] }).children || [];
       expect(children.length).toBe(2); // Only non-expired messages (user1, ai-response), excluding last user message
 
@@ -201,7 +201,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
       };
 
       const hooks = createAgentFrameworkHooks();
-      fullReplacementTool(hooks);
+      fullReplacementModifier(hooks);
 
       await hooks.processPrompts.promise(context);
 
@@ -283,7 +283,7 @@ describe('Full Replacement Plugin - Duration Mechanism', () => {
       };
 
       const hooks = createAgentFrameworkHooks();
-      fullReplacementTool(hooks);
+      fullReplacementModifier(hooks);
 
       await hooks.processPrompts.promise(context);
 

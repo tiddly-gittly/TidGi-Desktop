@@ -18,9 +18,9 @@ import { ModelMessage } from 'ai';
 import { cloneDeep } from 'lodash';
 import { AgentFrameworkContext } from '../agentFrameworks/utilities/type';
 import { AgentInstanceMessage } from '../interface';
-import { builtInTools, createAgentFrameworkHooks, PromptConcatHookContext } from '../tools';
+import { createAgentFrameworkHooks, pluginRegistry, PromptConcatHookContext } from '../tools';
 import type { AgentPromptDescription, IPrompt } from './promptConcatSchema';
-import type { IPromptConcatTool } from './promptConcatSchema/plugin';
+import type { IPromptConcatTool } from './promptConcatSchema/tools';
 
 /**
  * Context type specific for prompt concatenation operations
@@ -216,7 +216,7 @@ export async function* promptConcatStream(
   const hooks = createAgentFrameworkHooks();
   // Register tools that match the configuration
   for (const tool of toolConfigs) {
-    const builtInTool = builtInTools.get(tool.toolId);
+    const builtInTool = pluginRegistry.get(tool.toolId);
     if (builtInTool) {
       builtInTool(hooks);
       logger.debug('Registered tool', {

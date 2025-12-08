@@ -131,14 +131,9 @@ export type DefaultAgents = z.infer<ReturnType<typeof getDefaultAgentsSchema>>;
 export type AgentPromptDescription = z.infer<ReturnType<typeof getAgentConfigSchema>>;
 export type AiAPIConfig = z.infer<typeof AIConfigSchema>;
 export type AgentFrameworkConfig = z.infer<ReturnType<typeof getFrameworkConfigSchema>>;
-// Backward compat aliases - deprecated, use AgentFrameworkConfig directly
-export type HandlerConfig = AgentFrameworkConfig;
 
 // Re-export all schemas and types
 export * from './modelParameters';
-export * from './plugin';
 export * from './prompts';
 export * from './response';
-
-// Export IPromptConcatTool as IPromptConcatPlugin for backward compatibility
-export type { IPromptConcatTool as IPromptConcatPlugin } from './plugin';
+export * from './tools';

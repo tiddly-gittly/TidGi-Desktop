@@ -14,43 +14,99 @@ The `promptConcat` function uses a tapable hooks-based tool system. Built-in too
    - `processPrompts`: Modifies prompt tree during processing
    - `finalizePrompts`: Final processing before LLM call
    - `postProcess`: Handles response processing
+   - `responseComplete`: Called when AI response is done (for tool execution)
 
 2. **Built-in Tools**:
    - `fullReplacement`: Replaces content from various sources
    - `dynamicPosition`: Inserts content at specific positions
-   - `retrievalAugmentedGeneration`: Retrieves content from wiki/external sources
+   - `wikiSearch`: Search wiki content with filter or vector search
+   - `wikiOperation`: Create, update, delete tiddlers
+   - `workspacesList`: Inject available workspaces into prompts
    - `modelContextProtocol`: Integrates with external MCP servers
-   - `toolCalling`: Processes function calls in responses
 
 3. **Tool Registration**:
-   - Tools are registered by `toolId` field in the `plugins` array
+   - Tools created with `registerToolDefinition` are auto-registered
    - Each tool instance has its own configuration parameters
-   - Built-in tools are auto-registered on system initialization
 
-### Tool Lifecycle
+### Adding New Tools (New API)
 
-1. **Registration**: Tools are registered during initialization
-2. **Configuration**: Tools are loaded based on `agentFrameworkConfig.plugins` array
-3. **Execution**: Hooks execute tools in registration order
-4. **Error Handling**: Individual tool failures don't stop the pipeline
+Use the `registerToolDefinition` function for a declarative, low-boilerplate approach:
 
-### Adding New Tools
+```typescript
+import { z } from 'zod/v4';
+import { registerToolDefinition } from './defineTool';
 
-1. Create tool function in `tools/` directory
-2. Register in `tools/index.ts`
-3. Add `toolId` to schema enum
-4. Add parameter schema if needed
+// 1. Define config schema (user-configurable in UI)
+const MyToolConfigSchema = z.object({
+  targetId: z.string(),
+  enabled: z.boolean().optional().default(true),
+});
 
-Each tool receives a hooks object and registers handlers for specific hook points. Tools can modify prompt trees, inject content, process responses, and trigger additional LLM calls.
+// 2. Define LLM-callable tool schema (injected into prompts)
+const MyLLMToolSchema = z.object({
+  query: z.string(),
+  limit: z.number().optional().default(10),
+}).meta({
+  title: 'my-tool',  // Tool name for LLM
+  description: 'Search for something',
+  examples: [{ query: 'example', limit: 5 }],
+});
 
-### Example Tool Structure
+// 3. Register the tool
+const myToolDef = registerToolDefinition({
+  toolId: 'myTool',
+  displayName: 'My Tool',
+  description: 'Does something useful',
+  configSchema: MyToolConfigSchema,
+  llmToolSchemas: {
+    'my-tool': MyLLMToolSchema,
+  },
+
+  // Called during prompt processing
+  onProcessPrompts({ config, injectToolList, injectContent }) {
+    // Inject tool description into prompts
+    injectToolList({
+      targetId: config.targetId,
+      position: 'after',
+    });
+  },
+
+  // Called when AI response is complete
+  async onResponseComplete({ toolCall, executeToolCall }) {
+    if (toolCall?.toolId !== 'my-tool') return;
+
+    await executeToolCall('my-tool', async (params) => {
+      // Execute the tool and return result
+      const result = await doSomething(params.query, params.limit);
+      return { success: true, data: result };
+    });
+  },
+});
+
+export const myTool = myToolDef.tool;
+```
+
+### Handler Context Utilities
+
+The `defineTool` API provides helpful utilities:
+
+- `findPrompt(id)` - Find a prompt by ID in the tree
+- `injectToolList(options)` - Inject LLM tool schemas at a position
+- `injectContent(options)` - Inject arbitrary content
+- `executeToolCall(toolName, executor)` - Execute and handle tool results
+- `addToolResult(options)` - Manually add a tool result message
+- `yieldToSelf()` - Signal the agent should continue with another round
+
+### Legacy Tool Structure
+
+For more complex scenarios, you can still use the raw tapable hooks:
 
 ```typescript
 export const myTool: PromptConcatTool = (hooks) => {
   hooks.processPrompts.tapAsync('myTool', async (context, callback) => {
-    const { tool, prompts, messages } = context;
+    const { toolConfig, prompts, messages } = context;
     // Tool logic here
-    callback(null, context);
+    callback();
   });
 };
 ```

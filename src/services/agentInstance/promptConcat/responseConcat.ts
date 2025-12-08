@@ -8,7 +8,7 @@ import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
 import { AgentFrameworkContext } from '../agentFrameworks/utilities/type';
 import { AgentInstanceMessage } from '../interface';
-import { builtInTools, createAgentFrameworkHooks } from '../tools';
+import { createAgentFrameworkHooks, pluginRegistry } from '../tools';
 import { AgentResponse, PostProcessContext, YieldNextRoundTarget } from '../tools/types';
 import type { IPromptConcatTool } from './promptConcatSchema';
 import { AgentFrameworkConfig, AgentPromptDescription } from './promptConcatSchema';
@@ -47,7 +47,7 @@ export async function responseConcat(
   const hooks = createAgentFrameworkHooks();
   // Register all tools from configuration
   for (const tool of toolConfigs) {
-    const builtInTool = builtInTools.get(tool.toolId);
+    const builtInTool = pluginRegistry.get(tool.toolId);
     if (builtInTool) {
       builtInTool(hooks);
     } else {

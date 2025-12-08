@@ -1,20 +1,41 @@
+/**
+ * Agent Framework Plugin System
+ *
+ * This module provides a unified registration and hook system for:
+ * 1. Modifiers - Transform the prompt tree (fullReplacement, dynamicPosition)
+ * 2. LLM Tools - Inject tool descriptions and handle AI tool calls (wikiSearch, wikiOperation, etc.)
+ * 3. Core Infrastructure - Message persistence, streaming, status (always enabled)
+ *
+ * All plugins are configured via the `plugins` array in agentFrameworkConfig.
+ * Each plugin has a `toolId` that identifies it and a corresponding `xxxParam` object for configuration.
+ */
 import { logger } from '@services/libs/log';
 import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
+
+import { registerCoreInfrastructure } from '../promptConcat/infrastructure';
+import { getAllModifiers } from '../promptConcat/modifiers';
+import { getAllToolDefinitions } from './defineTool';
 import { registerToolParameterSchema } from './schemaRegistry';
-import { AgentResponse, PromptConcatHookContext, PromptConcatHooks, PromptConcatTool, ResponseHookContext } from './types';
+import { PromptConcatHooks, PromptConcatTool } from './types';
 
 // Re-export types for convenience
-export type { AgentResponse, PromptConcatHookContext, PromptConcatHooks, PromptConcatTool, ResponseHookContext };
-// Backward compatibility aliases
-export type { PromptConcatTool as PromptConcatPlugin };
+export type { AgentResponse, PostProcessContext, PromptConcatHookContext, PromptConcatHooks, PromptConcatTool, ResponseHookContext } from './types';
+
+// Re-export defineTool API for LLM tools
+export { defineTool, getAllToolDefinitions, registerToolDefinition } from './defineTool';
+export type { ResponseHandlerContext, ToolDefinition, ToolExecutionResult, ToolHandlerContext } from './defineTool';
+
+// Re-export modifier API
+export { defineModifier, getAllModifiers, registerModifier } from '../promptConcat/modifiers';
+export type { InsertContentOptions, ModifierDefinition, ModifierHandlerContext } from '../promptConcat/modifiers';
 
 /**
- * Registry for built-in framework tools
+ * Registry for all plugins (modifiers + LLM tools)
  */
-export const builtInTools = new Map<string, PromptConcatTool>();
+export const pluginRegistry = new Map<string, PromptConcatTool>();
 
 /**
- * Create unified hooks instance for the complete agent framework tool system
+ * Create unified hooks instance for the agent framework
  */
 export function createAgentFrameworkHooks(): PromptConcatHooks {
   return {
@@ -32,159 +53,87 @@ export function createAgentFrameworkHooks(): PromptConcatHooks {
 }
 
 /**
- * Get all available tools
+ * Register plugins to hooks based on framework configuration
  */
-async function getAllTools() {
-  const [
-    promptToolsModule,
-    wikiSearchModule,
-    wikiOperationModule,
-    workspacesListModule,
-    messageManagementModule,
-  ] = await Promise.all([
-    import('./prompt'),
-    import('./wikiSearch'),
-    import('./wikiOperation'),
-    import('./workspacesList'),
-    import('./messageManagement'),
-  ]);
-
-  return {
-    messageManagement: messageManagementModule.messageManagementTool,
-    fullReplacement: promptToolsModule.fullReplacementTool,
-    wikiSearch: wikiSearchModule.wikiSearchTool,
-    wikiOperation: wikiOperationModule.wikiOperationTool,
-    workspacesList: workspacesListModule.workspacesListTool,
-  };
-}
-
-/**
- * Register tools to hooks based on framework configuration
- * @param hooks - The hooks instance to register tools to
- * @param agentFrameworkConfig - The framework configuration containing tool settings
- */
-export async function registerToolsToHooksFromConfig(
+export async function registerPluginsToHooks(
   hooks: PromptConcatHooks,
   agentFrameworkConfig: { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
 ): Promise<void> {
-  // Always register core tools that are needed for basic functionality
-  const messageManagementModule = await import('./messageManagement');
-  messageManagementModule.messageManagementTool(hooks);
-  logger.debug('Registered messageManagementTool to hooks');
+  // Always register core infrastructure first (message persistence, streaming, status)
+  registerCoreInfrastructure(hooks);
+  logger.debug('Registered core infrastructure to hooks');
 
-  // Register tools based on framework configuration
+  // Register plugins based on framework configuration
   if (agentFrameworkConfig.plugins) {
-    for (const toolConfig of agentFrameworkConfig.plugins) {
-      const { toolId } = toolConfig;
+    for (const pluginConfig of agentFrameworkConfig.plugins) {
+      const { toolId } = pluginConfig;
 
-      // Get tool from global registry (supports both built-in and dynamic tools)
-      const tool = builtInTools.get(toolId);
-      if (tool) {
-        tool(hooks);
-        logger.debug(`Registered tool ${toolId} to hooks`);
+      const plugin = pluginRegistry.get(toolId);
+      if (plugin) {
+        plugin(hooks);
+        logger.debug(`Registered plugin ${toolId} to hooks`);
       } else {
-        logger.warn(`Tool not found in registry: ${toolId}`);
+        logger.warn(`Plugin not found in registry: ${toolId}`);
       }
     }
   }
 }
 
 /**
- * Initialize tool system - register all built-in tools to global registry
+ * Initialize plugin system - register all built-in modifiers and LLM tools
  * This should be called once during service initialization
  */
-export async function initializeToolSystem(): Promise<void> {
-  // Import tool schemas and register them
-  const [
-    promptToolsModule,
-    wikiSearchModule,
-    wikiOperationModule,
-    workspacesListModule,
-    modelContextProtocolModule,
-  ] = await Promise.all([
-    import('./prompt'),
+export async function initializePluginSystem(): Promise<void> {
+  // Import all plugin modules to trigger registration
+  await Promise.all([
+    // LLM Tools
     import('./wikiSearch'),
     import('./wikiOperation'),
     import('./workspacesList'),
     import('./modelContextProtocol'),
+    // Modifiers (imported via modifiers/index.ts)
+    import('../promptConcat/modifiers'),
   ]);
 
-  // Register tool parameter schemas
-  registerToolParameterSchema(
-    'fullReplacement',
-    promptToolsModule.getFullReplacementParameterSchema(),
-    {
-      displayName: 'Full Replacement',
-      description: 'Replace target content with content from specified source',
-    },
-  );
+  // Register modifiers from the modifier registry
+  const modifiers = getAllModifiers();
+  for (const [modifierId, modifierDefinition] of modifiers) {
+    pluginRegistry.set(modifierId, modifierDefinition.modifier);
+    registerToolParameterSchema(modifierId, modifierDefinition.configSchema, {
+      displayName: modifierDefinition.displayName,
+      description: modifierDefinition.description,
+    });
+    logger.debug(`Registered modifier: ${modifierId}`);
+  }
 
-  registerToolParameterSchema(
-    'dynamicPosition',
-    promptToolsModule.getDynamicPositionParameterSchema(),
-    {
-      displayName: 'Dynamic Position',
-      description: 'Insert content at a specific position relative to a target element',
-    },
-  );
+  // Register LLM tools from the tool registry
+  const llmTools = getAllToolDefinitions();
+  for (const [toolId, toolDefinition] of llmTools) {
+    pluginRegistry.set(toolId, toolDefinition.tool);
+    registerToolParameterSchema(toolId, toolDefinition.configSchema, {
+      displayName: toolDefinition.displayName,
+      description: toolDefinition.description,
+    });
+    logger.debug(`Registered LLM tool: ${toolId}`);
+  }
 
-  registerToolParameterSchema(
-    'wikiSearch',
-    wikiSearchModule.getWikiSearchParameterSchema(),
-    {
-      displayName: 'Wiki Search',
-      description: 'Search content in wiki workspaces and manage vector embeddings',
-    },
-  );
-
-  registerToolParameterSchema(
-    'wikiOperation',
-    wikiOperationModule.getWikiOperationParameterSchema(),
-    {
-      displayName: 'Wiki Operation',
-      description: 'Perform operations on wiki workspaces (create, update, delete tiddlers)',
-    },
-  );
-
-  registerToolParameterSchema(
-    'workspacesList',
-    workspacesListModule.getWorkspacesListParameterSchema(),
-    {
-      displayName: 'Workspaces List',
-      description: 'Inject available wiki workspaces list into prompts',
-    },
-  );
-
-  registerToolParameterSchema(
-    'modelContextProtocol',
-    modelContextProtocolModule.getModelContextProtocolParameterSchema(),
-    {
-      displayName: 'Model Context Protocol',
-      description: 'MCP (Model Context Protocol) integration',
-    },
-  );
-
-  const tools = await getAllTools();
-  // Register all built-in tools to global registry for discovery
-  builtInTools.set('messageManagement', tools.messageManagement);
-  builtInTools.set('fullReplacement', tools.fullReplacement);
-  builtInTools.set('wikiSearch', tools.wikiSearch);
-  builtInTools.set('wikiOperation', tools.wikiOperation);
-  builtInTools.set('workspacesList', tools.workspacesList);
-  logger.debug('All built-in tools and schemas registered successfully');
+  logger.debug('Plugin system initialized', {
+    totalPlugins: pluginRegistry.size,
+    modifiers: modifiers.size,
+    llmTools: llmTools.size,
+  });
 }
 
 /**
- * Create hooks and register tools based on framework configuration
- * This creates a new hooks instance and registers tools for that specific context
+ * Create hooks and register plugins based on framework configuration
  */
-export async function createHooksWithTools(
+export async function createHooksWithPlugins(
   agentFrameworkConfig: { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
-): Promise<{ hooks: PromptConcatHooks; toolConfigs: Array<{ toolId: string; [key: string]: unknown }> }> {
+): Promise<{ hooks: PromptConcatHooks; pluginConfigs: Array<{ toolId: string; [key: string]: unknown }> }> {
   const hooks = createAgentFrameworkHooks();
-  await registerToolsToHooksFromConfig(hooks, agentFrameworkConfig);
+  await registerPluginsToHooks(hooks, agentFrameworkConfig);
   return {
     hooks,
-    toolConfigs: agentFrameworkConfig.plugins || [],
+    pluginConfigs: agentFrameworkConfig.plugins ?? [],
   };
 }

@@ -5,10 +5,10 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { merge } from 'lodash';
 import type { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { AgentFrameworkConfig, AgentPromptDescription, AiAPIConfig } from '../promptConcat/promptConcatSchema';
-import type { IPromptConcatTool } from '../promptConcat/promptConcatSchema/plugin';
+import type { IPromptConcatTool } from '../promptConcat/promptConcatSchema/tools';
 import { responseConcat } from '../promptConcat/responseConcat';
 import { getFinalPromptResult } from '../promptConcat/utilities';
-import { createHooksWithTools } from '../tools';
+import { createHooksWithPlugins } from '../tools';
 import { YieldNextRoundTarget } from '../tools/types';
 import { canceled, completed, error, working } from './utilities/statusUtilities';
 import { AgentFrameworkContext } from './utilities/type';
@@ -32,7 +32,7 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
   let currentRequestId: string | undefined;
   const lastUserMessage: AgentInstanceMessage | undefined = context.agent.messages[context.agent.messages.length - 1];
   // Create and register handler hooks based on framework config
-  const { hooks: agentFrameworkHooks, toolConfigs } = await createHooksWithTools(context.agentDef.agentFrameworkConfig || {});
+  const { hooks: agentFrameworkHooks, pluginConfigs } = await createHooksWithPlugins(context.agentDef.agentFrameworkConfig || {});
 
   // Log the start of handler execution with context information
   logger.debug('Starting prompt handler execution', {
@@ -175,7 +175,7 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
                 response,
                 requestId: currentRequestId,
                 isFinal: true,
-                toolConfig: (toolConfigs.length > 0 ? toolConfigs[0] : {}) as IPromptConcatTool, // First config for compatibility
+                toolConfig: (pluginConfigs.length > 0 ? pluginConfigs[0] : {}) as IPromptConcatTool, // First config for compatibility
                 agentFrameworkConfig: context.agentDef.agentFrameworkConfig, // Pass complete config for tool access
                 actions: undefined as { yieldNextRoundTo?: 'self' | 'human'; newUserMessage?: string } | undefined,
               };

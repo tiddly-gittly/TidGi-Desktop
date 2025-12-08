@@ -12,6 +12,7 @@ import './__mocks__/services-container';
 import { vi } from 'vitest';
 vi.mock('react-i18next', () => import('./__mocks__/react-i18next'));
 vi.mock('@services/libs/log', () => import('./__mocks__/services-log'));
+vi.mock('@services/libs/i18n', () => import('./__mocks__/services-i18n'));
 
 /**
  * Mock the `electron` module for testing

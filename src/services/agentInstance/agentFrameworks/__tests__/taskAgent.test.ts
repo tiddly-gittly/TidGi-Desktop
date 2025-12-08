@@ -29,7 +29,7 @@ let testStreamResponses: Array<{ status: string; content: string; requestId: str
 // Import plugin components for direct testing
 import type { IPromptConcatTool } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import type { IDatabaseService } from '@services/database/interface';
-import { createAgentFrameworkHooks, createHooksWithTools, initializeToolSystem, PromptConcatHookContext } from '../../tools/index';
+import { createAgentFrameworkHooks, createHooksWithPlugins, initializePluginSystem, PromptConcatHookContext } from '../../tools/index';
 import { wikiSearchTool } from '../../tools/wikiSearch';
 import { basicPromptConcatHandler } from '../taskAgent';
 import type { AgentFrameworkContext } from '../utilities/type';
@@ -42,7 +42,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
     const { container } = await import('@services/container');
 
     // Ensure built-in tool registry includes all built-in tools
-    await initializeToolSystem();
+    await initializePluginSystem();
 
     // Prepare a mock DataSource/repository so AgentInstanceService.initialize() can run
     const mockRepo = {
@@ -127,8 +127,8 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
         ],
       };
 
-      // Create hooks and register tools as defined in agentFrameworkConfig
-      const { hooks: promptHooks } = await createHooksWithTools(agentFrameworkConfig);
+      // Create hooks and register plugins as defined in agentFrameworkConfig
+      const { hooks: promptHooks } = await createHooksWithPlugins(agentFrameworkConfig);
       // First run workspacesList tool to inject available workspaces (if present)
       const workspacesPlugin = agentFrameworkConfig.plugins?.find(p => p.toolId === 'workspacesList');
       if (workspacesPlugin) {
@@ -200,7 +200,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       };
 
       // Use hooks registered with all plugins import { AgentFrameworkConfig }
-      const { hooks: responseHooks } = await createHooksWithTools(agentFrameworkConfig);
+      const { hooks: responseHooks } = await createHooksWithPlugins(agentFrameworkConfig);
       // Execute the response complete hook
       await responseHooks.responseComplete.promise(responseContext);
       // reuse containerForAssert from above assertions

@@ -10,8 +10,8 @@ import { DataSource } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import defaultAgents from '../../agentFrameworks/taskAgents.json';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../../interface';
+import { registerCoreInfrastructure } from '../../promptConcat/infrastructure';
 import { createAgentFrameworkHooks } from '../index';
-import { messageManagementTool } from '../messageManagement';
 import type { ToolExecutionContext, UserMessageContext } from '../types';
 
 // Use the real agent config from taskAgents.json
@@ -70,7 +70,7 @@ describe('Message Management Plugin - Real Database Integration', () => {
 
     // Initialize plugin
     hooks = createAgentFrameworkHooks();
-    messageManagementTool(hooks);
+    registerCoreInfrastructure(hooks);
   });
 
   afterEach(async () => {
