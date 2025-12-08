@@ -2,7 +2,9 @@
 // Modifiers
 import type { DynamicPositionParameter, FullReplacementParameter } from '../modifiers';
 // LLM Tools
+import type { GitToolParameter } from '@services/agentInstance/tools/git';
 import type { ModelContextProtocolParameter } from '@services/agentInstance/tools/modelContextProtocol';
+import type { TiddlyWikiPluginParameter } from '@services/agentInstance/tools/tiddlywikiPlugin';
 import type { WikiOperationParameter } from '@services/agentInstance/tools/wikiOperation';
 import type { WikiSearchParameter } from '@services/agentInstance/tools/wikiSearch';
 import type { WorkspacesListParameter } from '@services/agentInstance/tools/workspacesList';
@@ -27,4 +29,6 @@ export type IPromptConcatTool = {
   wikiSearchParam?: WikiSearchParameter;
   workspacesListParam?: WorkspacesListParameter;
   modelContextProtocolParam?: ModelContextProtocolParameter;
+  gitParam?: GitToolParameter;
+  tiddlyWikiPluginParam?: TiddlyWikiPluginParameter;
 };

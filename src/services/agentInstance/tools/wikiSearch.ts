@@ -331,7 +331,7 @@ const wikiSearchDefinition = registerToolDefinition({
 
     injectToolList({
       targetId: toolListPosition.targetId,
-      position: 'child', // Add as child of target prompt
+      position: toolListPosition.position || 'child',
       caption: 'Wiki search tool',
     });
 

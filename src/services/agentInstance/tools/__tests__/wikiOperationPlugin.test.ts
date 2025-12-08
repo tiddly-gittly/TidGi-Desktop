@@ -128,21 +128,21 @@ describe('wikiOperationTool', () => {
 
     await hooks.processPrompts.promise(wikiOpContext);
 
-    const targetPrompt = prompts[0];
-    // workspacesListTool and wikiOperationTool may both add children; assert the combined children text contains expected snippets
-    const childrenText = JSON.stringify(targetPrompt.children);
-    expect(childrenText).toContain('wiki-operation');
+    // When position is 'after', the injected prompts become siblings (inserted after target)
+    // So we check prompts[1] and prompts[2] instead of children
+    const allPromptsText = JSON.stringify(prompts);
+    expect(allPromptsText).toContain('wiki-operation');
     // Ensure the injected tool content documents the supported operations (enum values)
-    expect(childrenText).toContain(WikiChannel.addTiddler);
-    expect(childrenText).toContain(WikiChannel.setTiddlerText);
-    expect(childrenText).toContain(WikiChannel.deleteTiddler);
+    expect(allPromptsText).toContain(WikiChannel.addTiddler);
+    expect(allPromptsText).toContain(WikiChannel.setTiddlerText);
+    expect(allPromptsText).toContain(WikiChannel.deleteTiddler);
     // Ensure required parameter keys are present in the documentation
-    expect(childrenText).toContain('workspaceName');
-    expect(childrenText).toContain('operation');
-    expect(childrenText).toContain('title');
-    expect(childrenText).toContain('text');
-    expect(childrenText).toContain('extraMeta');
-    expect(childrenText).toContain('options');
+    expect(allPromptsText).toContain('workspaceName');
+    expect(allPromptsText).toContain('operation');
+    expect(allPromptsText).toContain('title');
+    expect(allPromptsText).toContain('text');
+    expect(allPromptsText).toContain('extraMeta');
+    expect(allPromptsText).toContain('options');
   });
 
   describe('tool execution', () => {

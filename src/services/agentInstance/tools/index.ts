@@ -90,6 +90,8 @@ export async function initializePluginSystem(): Promise<void> {
     import('./wikiSearch'),
     import('./wikiOperation'),
     import('./workspacesList'),
+    import('./git'),
+    import('./tiddlywikiPlugin'),
     import('./modelContextProtocol'),
     // Modifiers (imported via modifiers/index.ts)
     import('../promptConcat/modifiers'),

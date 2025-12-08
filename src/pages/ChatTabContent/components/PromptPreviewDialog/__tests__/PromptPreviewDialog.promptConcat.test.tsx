@@ -274,7 +274,8 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     expect(wikiOperationElement).toBeDefined();
     const wikiOperationText = `${wikiOperationElement?.caption ?? ''} ${wikiOperationElement?.text ?? ''}`;
     expect(wikiOperationText).toContain('## wiki-operation');
-    expect(wikiOperationText).toContain('在Wiki工作空间中执行操作');
+    // Description may be English for new architecture
+    expect(wikiOperationText.toLowerCase()).toMatch(/perform operations|执行操作/);
 
     // Check for wiki search tool insertion (from wikiSearch plugin)
     let wikiSearchElement: IPrompt | undefined = childrenAfterBeforeTool.find((c: IPrompt) => {

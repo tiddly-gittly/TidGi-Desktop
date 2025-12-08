@@ -16,13 +16,17 @@ The `promptConcat` function uses a tapable hooks-based tool system. Built-in too
    - `postProcess`: Handles response processing
    - `responseComplete`: Called when AI response is done (for tool execution)
 
-2. **Built-in Tools**:
-   - `fullReplacement`: Replaces content from various sources
-   - `dynamicPosition`: Inserts content at specific positions
-   - `wikiSearch`: Search wiki content with filter or vector search
-   - `wikiOperation`: Create, update, delete tiddlers
-   - `workspacesList`: Inject available workspaces into prompts
-   - `modelContextProtocol`: Integrates with external MCP servers
+2. **Built-in Components**:
+   - **Internal Plugins** (for prompt processing):
+     - `fullReplacement`: Replaces content from various sources
+     - `dynamicPosition`: Inserts content at specific positions
+     - `workspacesList`: Inject available workspaces into prompts
+   - **LLM-Callable Tools** (AI can invoke):
+     - `wikiSearch`: Search wiki content with filter or vector search
+     - `wikiOperation`: Create, update, delete tiddlers, or invoke action tiddlers
+     - `git`: Search git commit history and read file content from specific commits
+     - `tiddlywikiPlugin`: Load TiddlyWiki plugin metadata (DataSource, Describe, Actions tags)
+     - `modelContextProtocol`: Integrates with external MCP servers
 
 3. **Tool Registration**:
    - Tools created with `registerToolDefinition` are auto-registered
