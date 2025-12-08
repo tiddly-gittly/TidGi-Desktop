@@ -35,9 +35,13 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             arch: arm64
-          - os: macos-latest
+          # Use macos-13 (Intel) for x64 builds to get correct dugite git binaries
+          # Note: macos-13 is deprecated but macos-15-large (Intel) requires paid plan
+          # When macos-13 is fully deprecated, switch to macos-15-large or use cross-compilation workaround
+          - os: macos-13
             platform: mac
             arch: x64
+          # Use macos-latest (ARM64) for arm64 builds
           - os: macos-latest
             platform: mac
             arch: arm64
