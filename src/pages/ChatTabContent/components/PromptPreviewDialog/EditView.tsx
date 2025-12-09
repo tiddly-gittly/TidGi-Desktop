@@ -1,17 +1,19 @@
 import { useAgentFrameworkConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement';
-import MonacoEditor from '@monaco-editor/react';
-import { Box, styled } from '@mui/material';
+import { Box, CircularProgress, styled } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 
-import React, { FC, SyntheticEvent, useCallback, useEffect, useState } from 'react';
+import React, { FC, lazy, Suspense, SyntheticEvent, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { useAgentChatStore } from '../../../Agent/store/agentChatStore/index';
 import { PromptConfigForm } from './PromptConfigForm';
+
+// Lazy load Monaco Editor only when needed
+const MonacoEditor = lazy(async () => await import('@monaco-editor/react'));
 
 const EditorTabs = styled(Tabs)`
   margin-bottom: ${({ theme }) => theme.spacing(2)};
@@ -30,6 +32,7 @@ export const EditView: FC<EditViewProps> = ({
   const { t } = useTranslation('agent');
   const agent = useAgentChatStore(state => state.agent);
   const [editorMode, setEditorMode] = useState<'form' | 'code'>('form');
+  const [monacoInitialized, setMonacoInitialized] = useState(false);
 
   const { formFieldsToScrollTo, setFormFieldsToScrollTo, expandPathToTarget } = useAgentChatStore(
     useShallow((state) => ({
@@ -114,9 +117,15 @@ export const EditView: FC<EditViewProps> = ({
     { leading: true },
   );
 
-  const handleEditorModeChange = useCallback((_event: SyntheticEvent, newValue: 'form' | 'code') => {
+  const handleEditorModeChange = useCallback(async (_event: SyntheticEvent, newValue: 'form' | 'code') => {
     setEditorMode(newValue);
-  }, []);
+    // Only initialize Monaco when switching to code mode
+    if (newValue === 'code' && !monacoInitialized) {
+      const { initMonacoEditor } = await import('@/helpers/monacoConfig');
+      initMonacoEditor();
+      setMonacoInitialized(true);
+    }
+  }, [monacoInitialized]);
 
   const handleEditorChange = useCallback((value: string | undefined) => {
     if (!value) return;
@@ -169,21 +178,29 @@ export const EditView: FC<EditViewProps> = ({
           />
         )}
         {editorMode === 'code' && (
-          <MonacoEditor
-            height='100%'
-            defaultLanguage='json'
-            value={agentFrameworkConfig ? JSON.stringify(agentFrameworkConfig, null, 2) : '{}'}
-            onChange={handleEditorChange}
-            options={{
-              minimap: { enabled: true },
-              fontSize: 14,
-              wordWrap: 'on',
-              automaticLayout: true,
-              formatOnPaste: true,
-              formatOnType: true,
-              scrollBeyondLastLine: false,
-            }}
-          />
+          <Suspense
+            fallback={
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                <CircularProgress />
+              </Box>
+            }
+          >
+            <MonacoEditor
+              height='100%'
+              defaultLanguage='json'
+              value={agentFrameworkConfig ? JSON.stringify(agentFrameworkConfig, null, 2) : '{}'}
+              onChange={handleEditorChange}
+              options={{
+                minimap: { enabled: true },
+                fontSize: 14,
+                wordWrap: 'on',
+                automaticLayout: true,
+                formatOnPaste: true,
+                formatOnType: true,
+                scrollBeyondLastLine: false,
+              }}
+            />
+          </Suspense>
         )}
       </Box>
     </Box>
