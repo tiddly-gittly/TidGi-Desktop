@@ -26,16 +26,16 @@ export const WikiSearchParameterSchema = z.object({
   }),
   toolListPosition: z.object({
     targetId: z.string().meta({
-      title: t('Schema.WikiSearch.ToolListPosition.TargetIdTitle'),
-      description: t('Schema.WikiSearch.ToolListPosition.TargetId'),
+      title: t('Schema.Common.ToolListPosition.TargetIdTitle'),
+      description: t('Schema.Common.ToolListPosition.TargetId'),
     }),
     position: z.enum(['before', 'after']).meta({
-      title: t('Schema.WikiSearch.ToolListPosition.PositionTitle'),
-      description: t('Schema.WikiSearch.ToolListPosition.Position'),
+      title: t('Schema.Common.ToolListPosition.PositionTitle'),
+      description: t('Schema.Common.ToolListPosition.Position'),
     }),
   }).optional().meta({
-    title: t('Schema.WikiSearch.ToolListPositionTitle'),
-    description: t('Schema.WikiSearch.ToolListPosition'),
+    title: t('Schema.Common.ToolListPositionTitle'),
+    description: t('Schema.Common.ToolListPosition.Description'),
   }),
   toolResultDuration: z.number().optional().default(1).meta({
     title: t('Schema.WikiSearch.ToolResultDurationTitle'),
@@ -317,8 +317,8 @@ async function executeWikiUpdateEmbeddings(
  */
 const wikiSearchDefinition = registerToolDefinition({
   toolId: 'wikiSearch',
-  displayName: 'Wiki Search',
-  description: 'Search content in wiki workspaces and manage vector embeddings',
+  displayName: t('Schema.WikiSearch.Title'),
+  description: t('Schema.WikiSearch.Description'),
   configSchema: WikiSearchParameterSchema,
   llmToolSchemas: {
     'wiki-search': WikiSearchToolSchema,

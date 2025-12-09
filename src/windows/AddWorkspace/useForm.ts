@@ -90,8 +90,8 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
 
   /** full path of created wiki folder */
   const wikiFolderLocation = usePromiseValue(
-    async () => await window.service.native.path('join', parentFolderLocation ?? t('Error') ?? 'Error', wikiFolderName),
-    'Error',
+    async () => await window.service.native.path('join', parentFolderLocation, wikiFolderName),
+    '',
     [parentFolderLocation, wikiFolderName],
   );
 

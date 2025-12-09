@@ -259,7 +259,6 @@
     "AndMoreFiles": "残り {{count}} ファイル",
     "Author": "著者",
     "BinaryFileCannotDisplay": "バイナリファイルはテキストとして表示できません",
-    "ClearSearch": "検索をクリア",
     "Committing": "送信中...",
     "ContentView": "ファイル内容",
     "CopyFilePath": "ファイルパスをコピー",
@@ -278,7 +277,6 @@
     "FailedToLoadDiff": "差分の読み込みに失敗しました",
     "FileNameSearch": "ファイル名",
     "FileSearchPlaceholder": "例えば：pages、*.tsx、config.json",
-    "Files": "ファイル",
     "FilesChanged": "変更されたファイル",
     "FilesChanged_other": "{{count}} 個のファイルに変更があります",
     "Hash": "ハッシュ値",
@@ -564,8 +562,6 @@
   "Save": "保存",
   "Schema": {
     "ProviderModel": {
-      "FreeModel": "要約タイトルの生成やバックアップタイトルの作成に使用する無料の小型モデル",
-      "FreeModelTitle": "無料モデル"
     }
   },
   "Scripting": {

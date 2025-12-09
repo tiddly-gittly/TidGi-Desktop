@@ -259,7 +259,6 @@
     "AndMoreFiles": "Il reste encore {{count}} fichier(s)",
     "Author": "auteur",
     "BinaryFileCannotDisplay": "Le fichier binaire ne peut pas être affiché sous forme de texte.",
-    "ClearSearch": "Effacer la recherche",
     "Committing": "En cours de soumission...",
     "ContentView": "contenu du fichier",
     "CopyFilePath": "copier le chemin du fichier",
@@ -278,7 +277,6 @@
     "FailedToLoadDiff": "Échec du chargement des différences",
     "FileNameSearch": "nom de fichier",
     "FileSearchPlaceholder": "Par exemple : pages, *.tsx, config.json",
-    "Files": "fichier",
     "FilesChanged": "fichiers modifiés",
     "FilesChanged_other": "{{count}} fichiers modifiés",
     "Hash": "valeur de hachage",
@@ -565,8 +563,6 @@
   "Save": "sauvegarder",
   "Schema": {
     "ProviderModel": {
-      "FreeModel": "petit modèle gratuit utilisé pour générer des titres de résumé et des titres de sauvegarde",
-      "FreeModelTitle": "modèle gratuit"
     }
   },
   "Scripting": {

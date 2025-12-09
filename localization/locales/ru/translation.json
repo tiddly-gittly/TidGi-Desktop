@@ -259,7 +259,6 @@
     "AndMoreFiles": "Осталось {{count}} файлов",
     "Author": "автор",
     "BinaryFileCannotDisplay": "Двоичный файл не может быть отображен как текст.",
-    "ClearSearch": "Очистить поиск",
     "Committing": "Отправка...",
     "ContentView": "содержание файла",
     "CopyFilePath": "скопировать путь к файлу",
@@ -278,7 +277,6 @@
     "FailedToLoadDiff": "Не удалось загрузить различия",
     "FileNameSearch": "имя файла",
     "FileSearchPlaceholder": "Например: pages, *.tsx, config.json",
-    "Files": "файл",
     "FilesChanged": "измененные файлы",
     "FilesChanged_other": "{{count}} файлов изменено",
     "Hash": "хэш-значение",
@@ -564,8 +562,6 @@
   "Save": "сохранить",
   "Schema": {
     "ProviderModel": {
-      "FreeModel": "бесплатная небольшая модель для генерации заголовков сводок и резервных заголовков",
-      "FreeModelTitle": "бесплатная модель"
     }
   },
   "Scripting": {

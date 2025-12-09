@@ -41,8 +41,8 @@ export function getWorkspacesListParameterSchema() {
  */
 const workspacesListDefinition = registerToolDefinition({
   toolId: 'workspacesList',
-  displayName: 'Workspaces List',
-  description: 'Inject available wiki workspaces list into prompts',
+  displayName: t('Schema.WorkspacesList.Title'),
+  description: t('Schema.WorkspacesList.Description'),
   configSchema: WorkspacesListParameterSchema,
 
   async onProcessPrompts({ config, toolConfig, findPrompt }) {

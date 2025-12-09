@@ -16,16 +16,16 @@ import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
 export const GitToolParameterSchema = z.object({
   toolListPosition: z.object({
     targetId: z.string().meta({
-      title: t('Schema.Git.ToolListPosition.TargetIdTitle'),
-      description: t('Schema.Git.ToolListPosition.TargetId'),
+      title: t('Schema.Common.ToolListPosition.TargetIdTitle'),
+      description: t('Schema.Common.ToolListPosition.TargetId'),
     }),
     position: z.enum(['before', 'after', 'child']).default('child').meta({
-      title: t('Schema.Git.ToolListPosition.PositionTitle'),
-      description: t('Schema.Git.ToolListPosition.Position'),
+      title: t('Schema.Common.ToolListPosition.PositionTitle'),
+      description: t('Schema.Common.ToolListPosition.Position'),
     }),
   }).optional().meta({
-    title: t('Schema.Git.ToolListPositionTitle'),
-    description: t('Schema.Git.ToolListPosition'),
+    title: t('Schema.Common.ToolListPositionTitle'),
+    description: t('Schema.Common.ToolListPosition.Description'),
   }),
 }).meta({
   title: t('Schema.Git.Title'),
@@ -216,8 +216,8 @@ async function executeGitReadFile(parameters: GitReadFileParameters): Promise<To
 
 const gitToolDefinition = registerToolDefinition({
   toolId: 'git',
-  displayName: 'Git',
-  description: 'Git log search and file retrieval',
+  displayName: t('Schema.Git.Title'),
+  description: t('Schema.Git.Description'),
   configSchema: GitToolParameterSchema,
   llmToolSchemas: {
     'git-log': GitLogToolSchema,

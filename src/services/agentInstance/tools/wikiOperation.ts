@@ -20,16 +20,16 @@ import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
 export const WikiOperationParameterSchema = z.object({
   toolListPosition: z.object({
     targetId: z.string().meta({
-      title: t('Schema.WikiOperation.ToolListPosition.TargetIdTitle'),
-      description: t('Schema.WikiOperation.ToolListPosition.TargetId'),
+      title: t('Schema.Common.ToolListPosition.TargetIdTitle'),
+      description: t('Schema.Common.ToolListPosition.TargetId'),
     }),
     position: z.enum(['before', 'after']).meta({
-      title: t('Schema.WikiOperation.ToolListPosition.PositionTitle'),
-      description: t('Schema.WikiOperation.ToolListPosition.Position'),
+      title: t('Schema.Common.ToolListPosition.PositionTitle'),
+      description: t('Schema.Common.ToolListPosition.Position'),
     }),
   }).optional().meta({
-    title: t('Schema.WikiOperation.ToolListPositionTitle'),
-    description: t('Schema.WikiOperation.ToolListPosition'),
+    title: t('Schema.Common.ToolListPositionTitle'),
+    description: t('Schema.Common.ToolListPosition.Description'),
   }),
   toolResultDuration: z.number().optional().default(1).meta({
     title: t('Schema.WikiOperation.ToolResultDurationTitle'),
@@ -193,8 +193,8 @@ async function executeWikiOperation(parameters: WikiOperationToolParameters): Pr
  */
 const wikiOperationDefinition = registerToolDefinition({
   toolId: 'wikiOperation',
-  displayName: 'Wiki Operation',
-  description: 'Perform operations on wiki workspaces (create, update, delete tiddlers)',
+  displayName: t('Schema.WikiOperation.Title'),
+  description: t('Schema.WikiOperation.Description'),
   configSchema: WikiOperationParameterSchema,
   llmToolSchemas: {
     'wiki-operation': WikiOperationToolSchema,

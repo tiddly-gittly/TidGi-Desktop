@@ -57,16 +57,16 @@ export const TiddlyWikiPluginParameterSchema = z.object({
   }),
   toolListPosition: z.object({
     targetId: z.string().meta({
-      title: t('Schema.TiddlyWikiPlugin.ToolListPosition.TargetIdTitle'),
-      description: t('Schema.TiddlyWikiPlugin.ToolListPosition.TargetId'),
+      title: t('Schema.Common.ToolListPosition.TargetIdTitle'),
+      description: t('Schema.Common.ToolListPosition.TargetId'),
     }),
     position: z.enum(['before', 'after', 'child']).default('child').meta({
-      title: t('Schema.TiddlyWikiPlugin.ToolListPosition.PositionTitle'),
-      description: t('Schema.TiddlyWikiPlugin.ToolListPosition.Position'),
+      title: t('Schema.Common.ToolListPosition.PositionTitle'),
+      description: t('Schema.Common.ToolListPosition.Position'),
     }),
   }).optional().meta({
-    title: t('Schema.TiddlyWikiPlugin.ToolListPositionTitle'),
-    description: t('Schema.TiddlyWikiPlugin.ToolListPosition'),
+    title: t('Schema.Common.ToolListPositionTitle'),
+    description: t('Schema.Common.ToolListPosition.Description'),
   }),
 }).meta({
   title: t('Schema.TiddlyWikiPlugin.Title'),
@@ -158,8 +158,8 @@ async function executeTiddlyWikiPlugin(parameters: TiddlyWikiPluginParameters, c
 
 const tiddlyWikiPluginDefinition = registerToolDefinition({
   toolId: 'tiddlywikiPlugin',
-  displayName: 'TiddlyWiki Plugin',
-  description: 'Load plugin details by title (DataSource and Actions). Describe tags auto-load in system prompt.',
+  displayName: t('Schema.TiddlyWikiPlugin.Title'),
+  description: t('Schema.TiddlyWikiPlugin.Description'),
   configSchema: TiddlyWikiPluginParameterSchema,
   llmToolSchemas: {
     'tiddlywiki-plugin': TiddlyWikiPluginToolSchema,

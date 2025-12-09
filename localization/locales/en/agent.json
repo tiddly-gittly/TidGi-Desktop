@@ -40,9 +40,7 @@
       "Title": "Configuration Issue"
     },
     "InputPlaceholder": "Type a message, Ctrl+Enter to send",
-    "Send": "Send",
-    "SessionGroup": {
-    }
+    "Send": "Send"
   },
   "Common": {
     "None": "Not selected"
@@ -83,8 +81,6 @@
     "SelectedTemplate": "Selected Template",
     "SetupAgent": "Setup Agent",
     "SetupAgentDescription": "Configure your new agent by choosing a name and template",
-    "Steps": {
-    },
     "Title": "Create New Agent"
   },
   "EditAgent": {
@@ -106,8 +102,6 @@
     "PreviewChat": "Preview Chat",
     "Save": "Save",
     "Saving": "Saving...",
-    "Steps": {
-    },
     "Title": "Edit Agent"
   },
   "ModelFeature": {
@@ -176,6 +170,7 @@
     "ExternalApiDatabaseDescription": "Database containing external API debug information, occupying {{size}}",
     "FailedToAddModel": "Failed to add model",
     "FailedToAddProvider": "Failed to add provider",
+    "FailedToDeleteProvider": "Failed to delete provider {{providerName}}",
     "FailedToRemoveModel": "Failed to remove model",
     "FailedToSaveSettings": "Failed to save settings",
     "FailedToUpdateModel": "Failed to update model",
@@ -206,6 +201,7 @@
     "ProviderClass": "Provider Interface Type",
     "ProviderConfiguration": "Provider Configuration",
     "ProviderConfigurationDescription": "Configure the API key and other settings for AI providers",
+    "ProviderDeleted": "Provider {{providerName}} has been deleted",
     "ProviderDisabled": "Provider disabled",
     "ProviderEnabled": "Provider enabled",
     "ProviderName": "Provider Name",
@@ -242,10 +238,13 @@
   },
   "PromptConfig": {
     "AddItem": "Add project",
+    "Collapse": "fold",
     "EmptyArray": "No items have been added yet. Click the button below to add your first item.",
+    "Expand": "Expand",
     "ItemCount": "{{count}} items",
-    "RemoveItem": "Remove item",
+    "ItemIndex": "Item {{index}}",
     "Tabs": {
+      "Plugins": "plugin",
       "Prompts": "prompt",
       "Response": "response"
     },
@@ -257,8 +256,20 @@
   },
   "Schema": {
     "AIConfig": {
+      "Default": "Default conversation model used",
+      "DefaultTitle": "default model",
       "Description": "AI Conversation Settings Configuration",
-      "Title": "AI Configuration"
+      "Embedding": "Embedding models for vector search",
+      "EmbeddingTitle": "embedding model",
+      "Free": "Low-cost models used for cost-sensitive tasks",
+      "FreeTitle": "free/low-cost models",
+      "ImageGeneration": "Models for image generation",
+      "ImageGenerationTitle": "Image generation model",
+      "Speech": "Model for text-to-speech (TTS)",
+      "SpeechTitle": "Speech synthesis model",
+      "Title": "AI Configuration",
+      "Transcriptions": "Model for Speech-to-Text (STT)",
+      "TranscriptionsTitle": "Speech-to-text model"
     },
     "AgentConfig": {
       "Description": "Agent Configuration",
@@ -266,50 +277,103 @@
       "IdTitle": "Agent ID",
       "PromptConfig": {
         "Description": "Prompt configuration",
+        "Plugins": "Plugin Configuration List",
         "Prompts": "Prompt Configuration List",
         "Response": "Response Configuration List",
         "Title": "Prompt Configuration"
       },
       "Title": "Agent Configuration"
     },
-    "AutoReroll": {
-    },
     "BaseAPIConfig": {
-      "API": "API providers and model configurations",
-      "APITitle": "API Configuration",
-      "Description": "Basic API Configuration",
       "ModelParameters": "Model parameter configuration",
-      "ModelParametersTitle": "model parameters",
-      "Title": "Basic API Configuration"
+      "ModelParametersTitle": "model parameters"
+    },
+    "Common": {
+      "ToolListPosition": {
+        "Description": "Configuration for tool list insertion position in prompts",
+        "Position": "Insertion position relative to target",
+        "PositionTitle": "Position",
+        "TargetId": "ID of target element",
+        "TargetIdTitle": "Target ID"
+      },
+      "ToolListPositionTitle": "Tool List Position"
     },
     "DefaultAgents": {
       "Description": "Default Agent Configuration List",
       "Title": "default intelligent agent"
     },
-    "DynamicPosition": {
-    },
     "FullReplacement": {
       "Description": "Complete replacement of parameter configuration",
       "SourceType": "source type",
       "SourceTypeTitle": "source type",
-      "SourceTypes": {
-      },
       "TargetId": "Target Element ID",
       "TargetIdTitle": "Target ID",
       "Title": "Fully replace parameters"
     },
-    "Function": {
-    },
-    "HandlerConfig": {
-    },
-    "JavascriptTool": {
+    "Git": {
+      "Description": "Search Git commit logs and read specific file contents",
+      "Title": "Git Tools",
+      "Tool": {
+        "Parameters": {
+          "commitHash": {
+            "Description": "Submit hash value",
+            "Title": "Submit hash"
+          },
+          "filePath": {
+            "Description": "File path (for file search mode)",
+            "Title": "File Path"
+          },
+          "maxLines": {
+            "Description": "Maximum number of lines (default: 500)",
+            "Title": "Maximum number of lines"
+          },
+          "page": {
+            "Description": "Result page number (starting from 1)",
+            "Title": "Page"
+          },
+          "pageSize": {
+            "Description": "Number of results per page",
+            "Title": "Page Size"
+          },
+          "searchMode": {
+            "Description": "Search mode: message, file, dateRange, or none",
+            "Title": "Search Mode"
+          },
+          "searchQuery": {
+            "Description": "Search query string (for message search mode)",
+            "Title": "Search Query"
+          },
+          "since": {
+            "Description": "Start date (ISO 8601 format)",
+            "Title": "Since"
+          },
+          "until": {
+            "Description": "End date (ISO 8601 format)",
+            "Title": "Until"
+          },
+          "workspaceName": {
+            "Description": "Workspace name or ID to search",
+            "Title": "Workspace Name"
+          }
+        },
+        "ReadFile": {
+          "Parameters": {
+            "commitHash": {
+            },
+            "filePath": {
+            },
+            "maxLines": {
+            },
+            "workspaceName": {
+            }
+          }
+        }
+      }
     },
     "MCP": {
       "Description": "Model Context Protocol Parameter Configuration",
       "Id": "MCP Server ID",
       "IdTitle": "Server ID",
-      "ResponseProcessing": {
-      },
       "TimeoutMessage": "timeout message",
       "TimeoutMessageTitle": "timeout message",
       "TimeoutSecond": "Timeout (seconds)",
@@ -328,29 +392,23 @@
       "TopP": "Top P sampling parameter",
       "TopPTitle": "Top P"
     },
+    "ModelSelection": {
+      "Description": "Select model provider and specific model name",
+      "Model": "Model name (e.g., gpt-4o, Qwen2.5-7B-Instruct)",
+      "ModelTitle": "model",
+      "Provider": "Model providers (such as OpenAI, SiliconFlow, Google, etc.)",
+      "ProviderTitle": "provider",
+      "Title": "model selection"
+    },
     "Plugin": {
-      "Caption": "brief description",
-      "CaptionTitle": "Title",
-      "Content": "Plugin content or description",
-      "ContentTitle": "content",
-      "ForbidOverrides": "Is it prohibited to override this plugin's parameters at runtime?",
-      "ForbidOverridesTitle": "Do not overwrite",
-      "Id": "Plugin ID",
-      "IdTitle": "ID",
-      "PluginId": "Identifier for selecting specific plugins",
-      "PluginIdTitle": "Plugin identifier"
     },
     "Position": {
-      "Bottom": "Offset a few messages from the bottom",
-      "BottomTitle": "bottom offset",
       "Description": "Position Parameter Configuration",
       "TargetId": "target element ID",
       "TargetIdTitle": "Target ID",
       "Title": "positional arguments",
       "Type": "Location Type",
-      "TypeTitle": "Location Type",
-      "Types": {
-      }
+      "TypeTitle": "Location Type"
     },
     "Prompt": {
       "Caption": "brief description",
@@ -369,66 +427,72 @@
         "System": "System - Defines the behavioral rules and background settings for AI",
         "User": "User - Simulate user input and requests"
       },
+      "Source": "The source or citation of this prompt (e.g., file path, URL, etc.)",
+      "SourceTitle": "source",
       "Tags": "Tag List",
       "TagsTitle": "label",
       "Text": "The prompt content can include syntax supported by wiki text, such as <<variable name>>.",
       "TextTitle": "text",
       "Title": "prompt"
     },
-    "PromptDynamicModification": {
-      "DynamicModificationTypes": {
-      }
-    },
-    "PromptPart": {
-    },
     "ProviderModel": {
-      "Description": "Provider and Model Configuration",
-      "EmbeddingModel": "Embedding model name for semantic search and vector operations",
-      "EmbeddingModelTitle": "Embedding Model",
-      "FreeModel": "Free small model for generating summary titles and backup titles",
-      "FreeModelTitle": "Free Model",
-      "ImageGenerationModel": "Image generation model name for creating images from text",
-      "ImageGenerationModelTitle": "Image Generation Model",
-      "Model": "AI model name",
-      "ModelTitle": "Model",
-      "Provider": "AI provider name",
-      "ProviderTitle": "Provider",
-      "SpeechModel": "Speech generation model name for text-to-speech operations",
-      "SpeechModelTitle": "Speech Model",
-      "Title": "Provider and Model",
-      "TranscriptionsModel": "Transcriptions model name for speech-to-text operations",
-      "TranscriptionsModelTitle": "Transcriptions Model"
-    },
-    "RAG": {
-      "Removal": {
-      },
-      "SourceTypes": {
-      }
     },
     "Response": {
+      "Caption": "Response header, used to identify the response entry",
+      "CaptionTitle": "Title",
       "Description": "The response from an external API, typically used as the target for dynamic modifications in responses, shares the same structure as the prompt. It can be filled with preset content or serve as a placeholder or container, where ResponseDynamicModification injects the specific content from the external API's response.",
+      "Id": "Unique identifier for response configuration, facilitating reference.",
+      "IdTitle": "ID",
       "Title": "response"
     },
-    "ResponseDynamicModification": {
-      "DynamicModificationTypes": {
+    "TiddlyWikiPlugin": {
+      "ActionsTag": {
+        "Description": "Tag marking Action Tiddlers, which AI can find to discover executable actions",
+        "Title": "Actions Tag"
       },
-      "ResponseProcessingTypes": {
+      "DataSourceTag": {
+        "Description": "Tag marking DataSource tiddlers, which AI can use to understand data fetching and filtering methods",
+        "Title": "DataSource Tag"
+      },
+      "DescribeTag": {
+        "Description": "Tag marking brief descriptions, which auto-load into prompts to help AI understand available functionality",
+        "Title": "Describe Tag"
+      },
+      "Description": "Load DataSource and Actions details for specific plugins. Describe-tagged entries auto-load as background information",
+      "EnableCache": {
+        "Description": "Enable caching to avoid re-querying wiki each time prompts are generated. Disable cache to refresh and reload descriptions",
+        "Title": "Enable Cache"
+      },
+      "Title": "TiddlyWiki Plugin",
+      "Tool": {
+        "Parameters": {
+          "pluginTitle": {
+            "Description": "Plugin title to load details for. System searches for DataSource and Actions entries containing this title",
+            "Title": "Plugin Title"
+          }
+        }
+      },
+      "WorkspaceNameOrID": {
+        "Description": "Workspace name or ID to load plugin info from (default 'wiki')",
+        "Title": "Workspace Name or ID"
       }
     },
-    "ToolCalling": {
-    },
-    "Trigger": {
-      "Model": {
-      }
-    },
-    "Wiki": {
+    "Tool": {
+      "Caption": "Brief description (for UI display.",
+      "CaptionTitle": "Title",
+      "Content": "Plugin content or description",
+      "ContentTitle": "content",
+      "ForbidOverrides": "Is it prohibited to override the parameters of this plugin at runtime?",
+      "ForbidOverridesTitle": "Do not overwrite",
+      "Id": "Plugin instance ID (unique within the same handler)",
+      "IdTitle": "Plugin instance ID",
+      "ToolId": "Select the type of tool to use",
+      "ToolIdTitle": "Tool Type"
     },
     "WikiOperation": {
       "Description": "Execute Tiddler operations (add, delete, or set text) in wiki workspaces",
       "Title": "Wiki Operation",
       "Tool": {
-        "Examples": {
-        },
         "Parameters": {
           "extraMeta": {
             "Description": "JSON string of extra metadata such as tags and fields, defaults to \"{}\"",
@@ -450,17 +514,15 @@
             "Description": "Title of the Tiddler",
             "Title": "Tiddler Title"
           },
+          "variables": {
+            "Description": "Variables passed to the action tiddler, in JSON format string, default is \"{}\"",
+            "Title": "variable"
+          },
           "workspaceName": {
             "Description": "Name or ID of the workspace to operate on",
             "Title": "Workspace Name"
           }
         }
-      },
-      "ToolListPosition": {
-        "Position": "Position relative to target element (before/after)",
-        "PositionTitle": "Insert Position",
-        "TargetId": "ID of the target element where the tool list will be inserted",
-        "TargetIdTitle": "Target ID"
       },
       "ToolResultDuration": "Number of rounds tool execution results remain visible in conversation, after which they become grayed out",
       "ToolResultDurationTitle": "Tool Result Duration"
@@ -500,12 +562,6 @@
         },
         "UpdateEmbeddings": {
           "Description": "Generate or update vector embedding indexes for Wiki workspaces to enable semantic search.",
-          "Parameters": {
-            "forceUpdate": {
-            },
-            "workspaceName": {
-            }
-          },
           "forceUpdate": {
             "Description": "Whether to forcibly regenerate the embedding index, overwriting existing embedded data (if set to true, incremental updates will be ignored).",
             "Title": "Forced Update"
@@ -516,15 +572,16 @@
           }
         }
       },
-      "ToolListPosition": {
-        "Position": "Insertion position relative to the target position",
-        "PositionTitle": "insertion position",
-        "TargetId": "The ID of the target element, the tool list will be inserted relative to this element.",
-        "TargetIdTitle": "Target ID"
-      },
-      "ToolListPositionTitle": "Tool List Location",
       "ToolResultDuration": "The number of turns during which the tool execution result remains visible in the conversation; after exceeding this number, the result will be displayed grayed out.",
       "ToolResultDurationTitle": "Tool Result Duration Rounds"
+    },
+    "WorkspacesList": {
+      "Description": "Inject the list of available Wiki workspaces into the prompt",
+      "Position": "Insertion position: 'before' means prepend, 'after' means append.",
+      "PositionTitle": "insertion position",
+      "TargetId": "The ID of the target prompt word, the list will be inserted relative to this prompt word.",
+      "TargetIdTitle": "Target ID",
+      "Title": "Workspace List"
     }
   },
   "Search": {
@@ -550,7 +607,10 @@
     }
   },
   "Tool": {
-    "Plugin": {
+    "Git": {
+      "Error": {
+        "WorkspaceNotFound": "Workspace with name or ID \"{{workspaceName}}\" does not exist"
+      }
     },
     "Schema": {
       "Description": "Description",
@@ -559,12 +619,19 @@
       "Parameters": "Parameters",
       "Required": "Required"
     },
+    "TiddlyWikiPlugin": {
+      "Error": {
+        "PluginTitleRequired": "Plugin title is required",
+        "WorkspaceNotFound": "The workspace name or ID \"{{workspaceNameOrID}}\" does not exist"
+      }
+    },
     "WikiOperation": {
       "Error": {
         "WorkspaceNotExist": "Workspace {{workspaceID}} does not exist",
         "WorkspaceNotFound": "Workspace with name or ID \"{{workspaceName}}\" does not exist. Available workspaces: {{availableWorkspaces}}"
       },
       "Success": {
+        "ActionInvoked": "Action item \"{{actionTitle}}\" was successfully executed in the wiki workspace \"{{workspaceName}}\".",
         "Added": "Successfully added tiddler \"{{title}}\" in wiki workspace \"{{workspaceName}}\"",
         "Deleted": "Successfully deleted tiddler \"{{title}}\" from wiki workspace \"{{workspaceName}}\"",
         "Updated": "Successfully set text for tiddler \"{{title}}\" in wiki workspace \"{{workspaceName}}\""
