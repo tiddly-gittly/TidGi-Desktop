@@ -71,6 +71,8 @@ pnpm run start:dev:debug-main      # Debug main process
 pnpm run start:dev:debug-react     # Debug React renderer, react-devtool will be available in devtools
 ```
 
+MCP DevTools: see [docs/MCP.md](./MCP.md) for connecting the chrome-devtools MCP to the running Electron app.
+
 #### Show electron-packager debug logs
 
 If you want to see detailed logs from electron-packager during packaging, set the environment variable `DEBUG=electron-packager`:

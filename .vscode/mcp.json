@@ -2,8 +2,9 @@
   "servers": {
     "chromedevtools/chrome-devtools-mcp": {
       "type": "stdio",
-      "command": "pnpm dlx",
+      "command": "pnpm",
       "args": [
+        "dlx",
         "chrome-devtools-mcp@latest",
         "--browserUrl=http://localhost:9222"
       ]
