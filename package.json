@@ -7,10 +7,10 @@
   "packageManager": "pnpm@10.24.0",
   "scripts": {
     "start:init": "pnpm run clean && pnpm run init:git-submodule && pnpm run build:plugin && cross-env NODE_ENV=development tsx scripts/developmentMkdir.ts && pnpm run start:dev",
+    "start:dev:mcp": "cross-env NODE_ENV=development DEBUG_WORKER=true electron-forge start -- --remote-debugging-port=9222",
     "start:dev": "cross-env NODE_ENV=development electron-forge start",
     "clean": "pnpm run clean:cache && rimraf -- ./out ./logs ./userData-dev ./userData-test ./wiki-dev ./wiki-test ./node_modules/tiddlywiki/plugins/linonetwo",
     "clean:cache": "rimraf -- ./node_modules/.vite .vite",
-    "start:dev:mcp": "cross-env NODE_ENV=development DEBUG_WORKER=true electron-forge start -- --remote-debugging-port=9222",
     "start:dev:debug-worker": "cross-env NODE_ENV=development DEBUG_WORKER=true electron-forge start",
     "start:dev:debug-main": "cross-env NODE_ENV=development DEBUG_MAIN=true electron-forge start",
     "start:dev:debug-vite": "cross-env NODE_ENV=development DEBUG=electron-forge:* electron-forge start",
