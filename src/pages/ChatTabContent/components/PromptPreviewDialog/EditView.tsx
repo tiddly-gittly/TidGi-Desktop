@@ -100,12 +100,17 @@ export const EditView: FC<EditViewProps> = ({
     })),
   );
 
+  // Keep local ref to track if preview should be updated
+  const isUserEditingReference = React.useRef(false);
+
   const handleFormChange = useDebouncedCallback(
     async (updatedConfig: AgentFrameworkConfig) => {
       try {
-        // Ensure the config change is fully persisted before proceeding
+        // Always persist the config change to backend
         await handleConfigChange(updatedConfig);
-        if (agent?.agentDefId) {
+        
+        // Only update preview if user is actually editing (not just drag-reordering)
+        if (isUserEditingReference.current && agent?.agentDefId) {
           void getPreviewPromptResult(inputText, updatedConfig);
         }
       } catch (error) {
@@ -113,9 +118,15 @@ export const EditView: FC<EditViewProps> = ({
       }
     },
     [handleConfigChange, agent?.agentDefId, getPreviewPromptResult, inputText],
-    1000,
-    { leading: true },
+    500,
+    { leading: false, maxWait: 2000 },
   );
+
+  const handleInputChange = useCallback((changedFormData: AgentFrameworkConfig) => {
+    // Mark as user editing when form data changes
+    isUserEditingReference.current = true;
+    void handleFormChange(changedFormData);
+  }, [handleFormChange]);
 
   const handleEditorModeChange = useCallback(async (_event: SyntheticEvent, newValue: 'form' | 'code') => {
     setEditorMode(newValue);
@@ -173,7 +184,7 @@ export const EditView: FC<EditViewProps> = ({
           <PromptConfigForm
             schema={handlerSchema ?? {}}
             formData={agentFrameworkConfig}
-            onChange={handleFormChange}
+            onChange={handleInputChange}
             loading={agentFrameworkConfigLoading}
           />
         )}

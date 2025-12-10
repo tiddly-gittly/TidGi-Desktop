@@ -5,6 +5,10 @@ interface ArrayItemContextValue {
   isInArrayItem: boolean;
   /** Whether the array item controls should show collapse/expand functionality */
   arrayItemCollapsible: boolean;
+  /** The current item's form data */
+  itemData?: unknown;
+  /** The index of the current item in the array */
+  itemIndex?: number;
 }
 
 const ArrayItemContext = createContext<ArrayItemContextValue>({
@@ -18,16 +22,21 @@ interface ArrayItemProviderProps {
   children: React.ReactNode;
   isInArrayItem: boolean;
   arrayItemCollapsible?: boolean;
+  itemData?: unknown;
+  itemIndex?: number;
 }
 
 export const ArrayItemProvider: React.FC<ArrayItemProviderProps> = ({
   children,
   isInArrayItem,
   arrayItemCollapsible = false,
+  itemData,
+  itemIndex,
 }) => {
   return (
-    <ArrayItemContext.Provider value={{ isInArrayItem, arrayItemCollapsible }}>
+    <ArrayItemContext.Provider value={{ isInArrayItem, arrayItemCollapsible, itemData, itemIndex }}>
       {children}
     </ArrayItemContext.Provider>
   );
 };
+
