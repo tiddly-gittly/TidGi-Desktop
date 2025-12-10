@@ -1,7 +1,8 @@
 import AddIcon from '@mui/icons-material/Add';
 import { Alert, Box, Button, Snackbar, Tab, Tabs } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { Dispatch, SetStateAction, SyntheticEvent, useEffect, useMemo, useState } from 'react';
+import { debounce } from 'lodash';
+import { Dispatch, SetStateAction, SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItemText } from '@/components/ListItem';
@@ -82,18 +83,26 @@ export function ProviderConfig({
   const [selectedDefaultModel, setSelectedDefaultModel] = useState('');
   const [availableDefaultModels, setAvailableDefaultModels] = useState<ModelInfo[]>([]);
 
+  // Track if we're currently updating from user input to prevent Observable overwrite
+  const isUserInputting = useRef<Record<string, boolean>>({});
+
   // Update local providers and initialize form states
   useEffect(() => {
     const forms: Record<string, ProviderFormState> = {};
     providers.forEach(provider => {
-      forms[provider.provider] = {
-        apiKey: provider.apiKey || '',
-        baseURL: provider.baseURL || '',
-        models: [...provider.models],
-        newModel: { name: '', caption: '', features: ['language' as ModelFeature] },
-      };
+      // Only update form if user is not currently inputting for this provider
+      if (!isUserInputting.current[provider.provider]) {
+        forms[provider.provider] = {
+          apiKey: provider.apiKey || '',
+          baseURL: provider.baseURL || '',
+          models: [...provider.models],
+          newModel: { name: '', caption: '', features: ['language' as ModelFeature] },
+        };
+      }
     });
-    setProviderForms(forms);
+    if (Object.keys(forms).length > 0) {
+      setProviderForms(previous => ({ ...previous, ...forms }));
+    }
   }, [providers]);
 
   // Update available default providers
@@ -128,26 +137,44 @@ export function ProviderConfig({
     setSelectedTabIndex(newValue);
   };
 
-  const handleFormChange = async (providerName: string, field: keyof AIProviderConfig, value: string) => {
-    try {
-      setProviderForms(previous => {
-        const currentForm = previous[providerName];
-        if (!currentForm) return previous;
+  // Debounced save function
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedSave = useCallback(
+    debounce(async (providerName: string, field: keyof AIProviderConfig, value: string) => {
+      try {
+        await window.service.externalAPI.updateProvider(providerName, { [field]: value });
+        showMessage(t('Preference.SettingsSaved'), 'success');
+        // Clear inputting flag after save
+        isUserInputting.current[providerName] = false;
+      } catch (error) {
+        void window.service.native.log('error', 'Failed to update provider', { function: 'ProviderConfig.debouncedSave', error });
+        showMessage(t('Preference.FailedToSaveSettings'), 'error');
+        isUserInputting.current[providerName] = false;
+      }
+    }, 1000),
+    [t],
+  );
 
-        return {
-          ...previous,
-          [providerName]: {
-            ...currentForm,
-            [field]: value,
-          } as ProviderFormState,
-        };
-      });
-      await window.service.externalAPI.updateProvider(providerName, { [field]: value });
-      showMessage(t('Preference.SettingsSaved'), 'success');
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to update provider', { function: 'ProviderConfig.handleFormChange', error });
-      showMessage(t('Preference.FailedToSaveSettings'), 'error');
-    }
+  const handleFormChange = async (providerName: string, field: keyof AIProviderConfig, value: string) => {
+    // Mark that user is inputting for this provider
+    isUserInputting.current[providerName] = true;
+
+    // Update local form state immediately for responsive UI
+    setProviderForms(previous => {
+      const currentForm = previous[providerName];
+      if (!currentForm) return previous;
+
+      return {
+        ...previous,
+        [providerName]: {
+          ...currentForm,
+          [field]: value,
+        } as ProviderFormState,
+      };
+    });
+
+    // Debounced save to backend
+    void debouncedSave(providerName, field, value);
   };
 
   const handleProviderEnabledChange = async (providerName: string, enabled: boolean) => {
