@@ -602,10 +602,13 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
           aiApiConfig: {
-            api: {
+            default: {
               provider: 'openai',
               model: 'gpt-4',
-              embeddingModel: 'text-embedding-ada-002',
+            },
+            embedding: {
+              provider: 'openai',
+              model: 'text-embedding-ada-002',
             },
             modelParameters: {},
           },
@@ -665,9 +668,13 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         expect.any(String), // workspaceID
         'How to use AI agents',
         expect.objectContaining({
-          api: expect.objectContaining({
+          default: expect.objectContaining({
             provider: 'openai',
             model: 'gpt-4',
+          }),
+          embedding: expect.objectContaining({
+            provider: 'openai',
+            model: 'text-embedding-ada-002',
           }),
         }),
         10,
@@ -701,7 +708,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
           aiApiConfig: {
-            api: {
+            default: {
               provider: 'openai',
               model: 'gpt-4',
             },
@@ -772,7 +779,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
           aiApiConfig: {
-            api: {
+            default: {
               provider: 'openai',
               model: 'gpt-4',
             },

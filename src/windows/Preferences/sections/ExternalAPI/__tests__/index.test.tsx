@@ -23,21 +23,71 @@ const mockEmbeddingModel: ModelInfo = {
   features: ['embedding' as ModelFeature],
 };
 
+const mockSpeechModel: ModelInfo = {
+  name: 'gpt-speech',
+  caption: 'GPT Speech',
+  features: ['speech' as ModelFeature],
+};
+
+const mockImageModel: ModelInfo = {
+  name: 'dall-e',
+  caption: 'DALL-E',
+  features: ['imageGeneration' as ModelFeature],
+};
+
+const mockTranscriptionsModel: ModelInfo = {
+  name: 'whisper',
+  caption: 'Whisper',
+  features: ['transcriptions' as ModelFeature],
+};
+
+const mockFreeModel: ModelInfo = {
+  name: 'gpt-free',
+  caption: 'GPT Free',
+  features: ['free' as ModelFeature],
+};
+
 const mockProvider: AIProviderConfig = {
   provider: 'openai',
   apiKey: 'sk-test',
   baseURL: 'https://api.openai.com/v1',
-  models: [mockLanguageModel, mockEmbeddingModel],
+  models: [
+    mockLanguageModel,
+    mockEmbeddingModel,
+    mockSpeechModel,
+    mockImageModel,
+    mockTranscriptionsModel,
+    mockFreeModel,
+  ],
   providerClass: 'openai',
   isPreset: false,
   enabled: true,
 };
 
 const mockAIConfig = {
-  api: {
+  default: {
     provider: 'openai',
     model: 'gpt-4',
-    embeddingModel: 'text-embedding-3-small',
+  },
+  embedding: {
+    provider: 'openai',
+    model: 'text-embedding-3-small',
+  },
+  speech: {
+    provider: 'openai',
+    model: 'gpt-speech',
+  },
+  imageGeneration: {
+    provider: 'openai',
+    model: 'dall-e',
+  },
+  transcriptions: {
+    provider: 'openai',
+    model: 'whisper',
+  },
+  free: {
+    provider: 'openai',
+    model: 'gpt-free',
   },
   modelParameters: {
     temperature: 0.7,
@@ -155,11 +205,11 @@ describe('ExternalAPI Component', () => {
     // Mock config with no embedding model
     Object.defineProperty(window.service.externalAPI, 'getAIConfig', {
       value: vi.fn().mockResolvedValue({
-        api: {
+        default: {
           provider: 'openai',
           model: 'gpt-4',
-          // No embeddingModel
         },
+        // No embedding
         modelParameters: {
           temperature: 0.7,
           systemPrompt: 'You are a helpful assistant.',
@@ -180,12 +230,9 @@ describe('ExternalAPI Component', () => {
     if (clearButton) {
       await user.click(clearButton as HTMLElement);
 
-      // Verify both model and provider fields are deleted when no embedding model exists
+      // Verify default field is deleted
       await waitFor(() => {
-        expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('api.model');
-      });
-      await waitFor(() => {
-        expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('api.provider');
+        expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('default');
       });
 
       // Also verify that handleConfigChange was called to update local state
@@ -203,23 +250,25 @@ describe('ExternalAPI Component', () => {
 
         // Verify the delete API was called
         await waitFor(() => {
-          expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('api.model');
-          expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('api.provider');
+          expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('default');
         });
       }
     }
   });
 
-  it('should only clear model field when embedding model exists', async () => {
+  it('should only clear default field when embedding model exists', async () => {
     const user = userEvent.setup();
 
-    // Mock config with embedding model - this should preserve the provider
+    // Mock config with embedding model
     Object.defineProperty(window.service.externalAPI, 'getAIConfig', {
       value: vi.fn().mockResolvedValue({
-        api: {
+        default: {
           provider: 'openai',
           model: 'gpt-4',
-          embeddingModel: 'text-embedding-3-small', // Has embedding model
+        },
+        embedding: {
+          provider: 'openai',
+          model: 'text-embedding-3-small',
         },
         modelParameters: {
           temperature: 0.7,
@@ -241,13 +290,10 @@ describe('ExternalAPI Component', () => {
     if (clearButton) {
       await user.click(clearButton as HTMLElement);
 
-      // Should only delete model, NOT provider (because embedding model uses the provider)
+      // Should delete default field
       await waitFor(() => {
-        expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('api.model');
+        expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('default');
       });
-
-      // Should NOT delete provider when embedding model exists
-      expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).not.toHaveBeenCalledWith('api.provider');
 
       // Verify that handleConfigChange was called
       await waitFor(() => {
@@ -262,10 +308,8 @@ describe('ExternalAPI Component', () => {
         await user.keyboard('{Escape}');
 
         await waitFor(() => {
-          expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('api.model');
+          expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('default');
         });
-
-        expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).not.toHaveBeenCalledWith('api.provider');
       }
     }
   });
@@ -285,7 +329,7 @@ describe('ExternalAPI Component', () => {
 
       // Verify the delete API was called
       await waitFor(() => {
-        expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('api.embeddingModel');
+        expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('embedding');
       });
 
       // Also verify that handleConfigChange was called to update local state
@@ -303,7 +347,7 @@ describe('ExternalAPI Component', () => {
 
         // Verify the delete API was called
         await waitFor(() => {
-          expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('api.embeddingModel');
+          expect(window.service.externalAPI.deleteFieldFromDefaultAIConfig).toHaveBeenCalledWith('embedding');
         });
       }
     }
@@ -316,19 +360,15 @@ describe('ExternalAPI Component', () => {
     // Create a simple test for ModelSelector clear functionality
     const { ModelSelector } = await import('../components/ModelSelector');
 
-    const testConfig = {
-      api: {
-        provider: 'openai',
-        model: 'text-embedding-3-small',
-        embeddingModel: 'text-embedding-3-small',
-      },
-      modelParameters: {},
+    const testModel = {
+      provider: 'openai',
+      model: 'text-embedding-3-small',
     };
 
     render(
       <TestWrapper>
         <ModelSelector
-          selectedConfig={testConfig}
+          selectedModel={testModel}
           modelOptions={[[mockProvider, mockEmbeddingModel]]}
           onChange={vi.fn()}
           onClear={mockOnClear}
@@ -344,6 +384,34 @@ describe('ExternalAPI Component', () => {
       await userEvent.click(clearButton);
       expect(mockOnClear).toHaveBeenCalled();
     }
+  });
+
+  it('should display default models from backend config on initial load', async () => {
+    await renderExternalAPI();
+
+    // Wait for all comboboxes to be rendered
+    const comboboxes = screen.getAllByRole('combobox');
+    
+    // We have 6 model selectors (default, embedding, speech, imageGeneration, transcriptions, free)
+    expect(comboboxes).toHaveLength(6);
+
+    // Check that default model is displayed (first combobox)
+    expect(comboboxes[0]).toHaveValue('gpt-4');
+
+    // Check that embedding model is displayed (second combobox)
+    expect(comboboxes[1]).toHaveValue('text-embedding-3-small');
+
+    // Check that speech model is displayed (third combobox)
+    expect(comboboxes[2]).toHaveValue('gpt-speech');
+
+    // Check that image generation model is displayed (fourth combobox)
+    expect(comboboxes[3]).toHaveValue('dall-e');
+
+    // Check that transcriptions model is displayed (fifth combobox)
+    expect(comboboxes[4]).toHaveValue('whisper');
+
+    // Check that free model is displayed (sixth combobox)
+    expect(comboboxes[5]).toHaveValue('gpt-free');
   });
 
   it('should render provider configuration section', async () => {

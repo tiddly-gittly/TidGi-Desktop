@@ -353,8 +353,8 @@ export class ExternalAPIService implements IExternalAPIService {
   async deleteFieldFromDefaultAIConfig(fieldPath: string): Promise<void> {
     this.ensureSettingsLoaded();
 
-    // Support nested field deletion like 'api.embeddingModel'
-    const pathParts = fieldPath.split('.');
+    // Support field deletion like 'embedding', 'speech', 'default'
+    const parts = fieldPath.split('.');
     let current: Record<string, unknown> = this.userSettings.defaultConfig;
 
     // Navigate to the parent object
