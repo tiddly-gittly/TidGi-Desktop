@@ -2,7 +2,7 @@ import { Box, styled } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import { ModelMessage } from 'ai';
-import React, { useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -11,7 +11,6 @@ import { FlatPromptList } from '../FlatPromptList';
 import { LastUpdatedIndicator } from '../LastUpdatedIndicator';
 import { PromptTree } from '../PromptTree';
 import { getFormattedContent } from '../types';
-import { LoadingView } from './LoadingView';
 
 // Styled components
 const PreviewTabs = styled(Tabs)`
@@ -40,41 +39,70 @@ interface PreviewTabsViewProps {
 }
 
 /**
- * Preview tabs component with flat and tree views
+ * Memoized tree content to prevent re-renders when data hasn't changed
  */
-export const PreviewTabsView: React.FC<PreviewTabsViewProps> = ({
+const TreeContent = memo<{ isFullScreen: boolean }>(({ isFullScreen }) => {
+  const processedPrompts = useAgentChatStore((state) => state.previewResult?.processedPrompts);
+  const lastUpdated = useAgentChatStore((state) => state.lastUpdated);
+
+  return (
+    <PreviewContent isFullScreen={isFullScreen}>
+      <PromptTree prompts={processedPrompts} />
+      <LastUpdatedIndicator lastUpdated={lastUpdated} />
+    </PreviewContent>
+  );
+});
+TreeContent.displayName = 'TreeContent';
+
+/**
+ * Memoized flat content to prevent re-renders when data hasn't changed
+ */
+const FlatContent = memo<{ isFullScreen: boolean }>(({ isFullScreen }) => {
+  const flatPrompts = useAgentChatStore((state) => state.previewResult?.flatPrompts);
+  const lastUpdated = useAgentChatStore((state) => state.lastUpdated);
+
+  // Memoize formatted preview to prevent unnecessary recalculations
+  const formattedFlatPrompts = useMemo(() => {
+    return flatPrompts?.map((message: ModelMessage) => ({
+      role: message.role as string,
+      content: getFormattedContent(message.content),
+    }));
+  }, [flatPrompts]);
+
+  return (
+    <PreviewContent isFullScreen={isFullScreen}>
+      <FlatPromptList flatPrompts={formattedFlatPrompts} />
+      <LastUpdatedIndicator lastUpdated={lastUpdated} />
+    </PreviewContent>
+  );
+});
+FlatContent.displayName = 'FlatContent';
+
+/**
+ * Preview tabs component with flat and tree views
+ * Uses memoized sub-components to prevent unnecessary re-renders
+ */
+export const PreviewTabsView: React.FC<PreviewTabsViewProps> = memo(({
   isFullScreen,
 }) => {
   const { t } = useTranslation('agent');
 
   const {
     previewDialogTab: tab,
-    previewLoading,
-    previewResult,
-    lastUpdated,
     setPreviewDialogTab,
   } = useAgentChatStore(
     useShallow((state) => ({
       previewDialogTab: state.previewDialogTab,
-      previewLoading: state.previewLoading,
-      previewResult: state.previewResult,
-      lastUpdated: state.lastUpdated,
       setPreviewDialogTab: state.setPreviewDialogTab,
     })),
   );
 
-  // Memoize formatted preview to prevent unnecessary recalculations
-  const formattedPreview = useMemo(() => {
-    return previewResult
-      ? {
-        flatPrompts: previewResult.flatPrompts.map((message: ModelMessage) => ({
-          role: message.role as string,
-          content: getFormattedContent(message.content),
-        })),
-        processedPrompts: previewResult.processedPrompts,
-      }
-      : null;
-  }, [previewResult]);
+  // Use ref to track if we've ever had content (to avoid flashing on initial load)
+  const hasHadContentRef = useRef(false);
+  const previewResult = useAgentChatStore((state) => state.previewResult);
+  if (previewResult) {
+    hasHadContentRef.current = true;
+  }
 
   const handleTabChange = useCallback((_event: React.SyntheticEvent, value: string): void => {
     if (value === 'flat' || value === 'tree') {
@@ -84,8 +112,10 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = ({
     }
   }, [setPreviewDialogTab]);
 
-  if (previewLoading) {
-    return <LoadingView />;
+  // Show nothing if we've never had content (initial loading state)
+  // But once we have content, always show it (even during updates)
+  if (!hasHadContentRef.current && !previewResult) {
+    return null;
   }
 
   return (
@@ -117,18 +147,8 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = ({
         </PreviewTabs>
       </Box>
 
-      {tab === 'tree' && (
-        <PreviewContent isFullScreen={isFullScreen}>
-          <PromptTree prompts={formattedPreview?.processedPrompts} />
-          <LastUpdatedIndicator lastUpdated={lastUpdated} />
-        </PreviewContent>
-      )}
-      {tab === 'flat' && (
-        <PreviewContent isFullScreen={isFullScreen}>
-          <FlatPromptList flatPrompts={formattedPreview?.flatPrompts} />
-          <LastUpdatedIndicator lastUpdated={lastUpdated} />
-        </PreviewContent>
-      )}
+      {tab === 'tree' && <TreeContent isFullScreen={isFullScreen} />}
+      {tab === 'flat' && <FlatContent isFullScreen={isFullScreen} />}
     </Box>
   );
-};
+});

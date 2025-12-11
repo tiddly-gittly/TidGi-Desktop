@@ -1,5 +1,5 @@
 import { Box, List, Paper, styled, Typography } from '@mui/material';
-import React from 'react';
+import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export interface PreviewMessage {
@@ -58,8 +58,9 @@ const EmptyState = styled(Box)(({ theme }) => ({
 
 /**
  * Flat prompt list component
+ * Memoized to prevent unnecessary re-renders
  */
-export const FlatPromptList = ({ flatPrompts }: { flatPrompts?: PreviewMessage[] }): React.ReactElement => {
+export const FlatPromptList = memo(({ flatPrompts }: { flatPrompts?: PreviewMessage[] }): React.ReactElement => {
   const { t } = useTranslation('agent');
 
   if (!flatPrompts?.length) {
@@ -87,4 +88,5 @@ export const FlatPromptList = ({ flatPrompts }: { flatPrompts?: PreviewMessage[]
       ))}
     </List>
   );
-};
+});
+FlatPromptList.displayName = 'FlatPromptList';

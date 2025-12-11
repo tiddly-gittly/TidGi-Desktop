@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 
 interface ArrayItemContextValue {
   /** Whether this field is rendered within an array item */
@@ -9,6 +9,8 @@ interface ArrayItemContextValue {
   itemData?: unknown;
   /** The index of the current item in the array */
   itemIndex?: number;
+  /** The stable field path for the parent array */
+  arrayFieldPath?: string;
 }
 
 const ArrayItemContext = createContext<ArrayItemContextValue>({
@@ -24,6 +26,7 @@ interface ArrayItemProviderProps {
   arrayItemCollapsible?: boolean;
   itemData?: unknown;
   itemIndex?: number;
+  arrayFieldPath?: string;
 }
 
 export const ArrayItemProvider: React.FC<ArrayItemProviderProps> = ({
@@ -32,9 +35,18 @@ export const ArrayItemProvider: React.FC<ArrayItemProviderProps> = ({
   arrayItemCollapsible = false,
   itemData,
   itemIndex,
+  arrayFieldPath,
 }) => {
+  const value = useMemo(() => ({
+    isInArrayItem,
+    arrayItemCollapsible,
+    itemData,
+    itemIndex,
+    arrayFieldPath,
+  }), [isInArrayItem, arrayItemCollapsible, itemData, itemIndex, arrayFieldPath]);
+
   return (
-    <ArrayItemContext.Provider value={{ isInArrayItem, arrayItemCollapsible, itemData, itemIndex }}>
+    <ArrayItemContext.Provider value={value}>
       {children}
     </ArrayItemContext.Provider>
   );

@@ -5,23 +5,45 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, IconButton } from '@mui/material';
 import { ArrayFieldItemTemplateProps, FormContextType, getTemplate, getUiOptions, RJSFSchema } from '@rjsf/utils';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrayItemProvider, useArrayItemContext } from '../context/ArrayItemContext';
+import { useArrayFieldStore } from '../store/arrayFieldStore';
 
 /**
  * Custom Array Field Item Template with collapse and dnd-kit drag-and-drop support
- * In RJSF 6.x, this template is called by ArrayField to render each item
+ * Uses zustand store for state management to avoid re-render flashing
  */
 export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFSchema, F extends FormContextType = FormContextType>(
   props: ArrayFieldItemTemplateProps<T, S, F>,
 ): React.ReactElement {
   const { children, index, hasToolbar, buttonsProps, registry, uiSchema } = props;
   const { t } = useTranslation('agent');
-  const [expanded, setExpanded] = useState(false);
 
-  // 从 context 获取当前项的数据
-  const { itemData } = useArrayItemContext();
+  // Get item context - includes the stable fieldPath from parent ArrayFieldTemplate
+  const arrayItemContext = useArrayItemContext();
+  const { itemData } = arrayItemContext;
+
+  // Use arrayFieldPath from context (set by parent ArrayFieldTemplate)
+  // This ensures consistent path between template and item
+  const fieldPath = arrayItemContext.arrayFieldPath ?? 'array';
+
+  // Get expanded state from store using shallow comparison
+  const expanded = useArrayFieldStore(
+    useCallback((state) => state.expandedStates[fieldPath]?.[index] ?? false, [fieldPath, index]),
+  );
+  const setItemExpanded = useArrayFieldStore((state) => state.setItemExpanded);
+  const registerMoveCallbacks = useArrayFieldStore((state) => state.registerMoveCallbacks);
+
+  // Register move callbacks so they can be accessed during drag operations
+  useEffect(() => {
+    if (buttonsProps.hasMoveUp || buttonsProps.hasMoveDown) {
+      registerMoveCallbacks(fieldPath, index, {
+        onMoveUp: buttonsProps.onMoveUpItem,
+        onMoveDown: buttonsProps.onMoveDownItem,
+      });
+    }
+  }, [fieldPath, index, buttonsProps.onMoveUpItem, buttonsProps.onMoveDownItem, buttonsProps.hasMoveUp, buttonsProps.hasMoveDown, registerMoveCallbacks]);
 
   // Use dnd-kit sortable
   const sortableId = `item-${index}`;
@@ -29,27 +51,16 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
     id: sortableId,
   });
 
-  // Store callbacks for dnd-kit to use
-  useEffect(() => {
-    // Store the callbacks on a data attribute so parent can access them
-    if (setNodeRef) {
-      const element = document.getElementById(sortableId);
-      if (element) {
-        (element as any).__rjsfMoveUp = buttonsProps.onMoveUpItem;
-        (element as any).__rjsfMoveDown = buttonsProps.onMoveDownItem;
-      }
-    }
-  }, [buttonsProps.onMoveUpItem, buttonsProps.onMoveDownItem, sortableId]);
-
   const handleToggleExpanded = useCallback(() => {
-    setExpanded((previous) => !previous);
-  }, []);
+    setItemExpanded(fieldPath, index, !expanded);
+  }, [fieldPath, index, expanded, setItemExpanded]);
 
   // 获取当前项的数据来显示 caption
   const itemCaption = useMemo(() => {
     if (itemData && typeof itemData === 'object') {
       const data = itemData as Record<string, unknown>;
-      return data.caption || data.title || '';
+      const caption = data.caption || data.title || '';
+      return typeof caption === 'string' ? caption : '';
     }
     return '';
   }, [itemData]);
@@ -152,7 +163,11 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
 
         {/* Action buttons (remove, move up/down, etc.) */}
         {hasToolbar && (
-          <Box onClick={(event) => event.stopPropagation()}>
+          <Box
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+          >
             <ArrayFieldItemButtonsTemplate {...buttonsProps} />
           </Box>
         )}

@@ -9,7 +9,7 @@ This repo ships a ready-to-use [chrome-devtools-mcp](https://github.com/ChromeDe
 
 ## Start Electron with DevTools port
 
-- Run `pnpm run start:dev:mcp`
+- Run `pnpm run start:dev:mcp` (check active terminal see if it is already running)
 - Ports: `9222` for Chrome DevTools (renderer), `9229` for Node Inspector (main process)
 
 ## Connect from VS Code MCP

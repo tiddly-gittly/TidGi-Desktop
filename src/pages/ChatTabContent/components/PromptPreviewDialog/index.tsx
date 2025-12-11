@@ -148,7 +148,6 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
           }),
         }}
       >
-        <PreviewProgressBar show={previewLoading} />
         {isEditMode
           ? (
             <Box sx={{ display: 'flex', gap: 2, height: isFullScreen ? '100%' : '70vh' }}>
@@ -160,6 +159,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
                   flexDirection: 'column',
                 }}
               >
+                <PreviewProgressBar show={previewLoading} />
                 <PreviewTabsView
                   isFullScreen={isFullScreen}
                 />
@@ -180,9 +180,12 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
             </Box>
           )
           : (
-            <PreviewTabsView
-              isFullScreen={isFullScreen}
-            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: isFullScreen ? '100%' : '70vh' }}>
+              <PreviewProgressBar show={previewLoading} />
+              <PreviewTabsView
+                isFullScreen={isFullScreen}
+              />
+            </Box>
           )}
       </MuiDialogContent>
     </Dialog>

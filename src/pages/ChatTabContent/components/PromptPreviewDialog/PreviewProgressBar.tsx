@@ -1,7 +1,13 @@
 import { Box, Chip, LinearProgress, Typography } from '@mui/material';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAgentChatStore } from '../../../Agent/store/agentChatStore';
+
+/**
+ * Debounce delay before showing the progress bar (ms)
+ * Prevents flashing for quick operations
+ */
+const SHOW_DELAY_MS = 200;
 
 interface PreviewProgressBarProps {
   /**
@@ -13,6 +19,7 @@ interface PreviewProgressBarProps {
 /**
  * Progress bar component for preview generation
  * Shows real-time progress and current processing step
+ * Uses debounce to prevent flashing for quick operations
  */
 export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show }) => {
   const {
@@ -29,7 +36,25 @@ export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show }) 
     })),
   );
 
-  if (!show || !previewLoading) {
+  // Debounce visibility to prevent flashing for quick operations
+  const [showDelayed, setShowDelayed] = useState(false);
+
+  useEffect(() => {
+    if (show && previewLoading) {
+      // Delay showing the progress bar
+      const timer = setTimeout(() => {
+        setShowDelayed(true);
+      }, SHOW_DELAY_MS);
+      return () => {
+        clearTimeout(timer);
+      };
+    } else {
+      // Hide immediately when loading is done
+      setShowDelayed(false);
+    }
+  }, [show, previewLoading]);
+
+  if (!showDelayed) {
     return null;
   }
 

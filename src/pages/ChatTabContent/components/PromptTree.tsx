@@ -1,6 +1,6 @@
 import { Box, styled, Typography } from '@mui/material';
 import { IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
 
@@ -38,8 +38,9 @@ const EmptyState = styled(Box)(({ theme }) => ({
 
 /**
  * Prompt tree node component for nested display
+ * Memoized to prevent unnecessary re-renders
  */
-export const PromptTreeNode = ({
+export const PromptTreeNode = memo(({
   node,
   depth,
   fieldPath = [],
@@ -54,14 +55,14 @@ export const PromptTreeNode = ({
       expandPathToTarget: state.expandPathToTarget,
     })),
   );
-  const handleNodeClick = (event: React.MouseEvent) => {
+  const handleNodeClick = useCallback((event: React.MouseEvent) => {
     event.stopPropagation();
 
     const targetFieldPath = (node.source && node.source.length > 0) ? node.source : [...fieldPath, node.id];
 
     setFormFieldsToScrollTo(targetFieldPath);
     expandPathToTarget(targetFieldPath);
-  };
+  }, [node.source, node.id, fieldPath, setFormFieldsToScrollTo, expandPathToTarget]);
 
   return (
     <TreeItem
@@ -97,12 +98,14 @@ export const PromptTreeNode = ({
       })}
     </TreeItem>
   );
-};
+});
+PromptTreeNode.displayName = 'PromptTreeNode';
 
 /**
  * Prompt tree component
+ * Memoized to prevent unnecessary re-renders
  */
-export const PromptTree = ({ prompts }: { prompts?: IPrompt[] }): React.ReactElement => {
+export const PromptTree = memo(({ prompts }: { prompts?: IPrompt[] }): React.ReactElement => {
   if (!prompts?.length) {
     return <EmptyState>No prompt tree to display</EmptyState>;
   }
@@ -115,4 +118,5 @@ export const PromptTree = ({ prompts }: { prompts?: IPrompt[] }): React.ReactEle
       })}
     </Box>
   );
-};
+});
+PromptTree.displayName = 'PromptTree';

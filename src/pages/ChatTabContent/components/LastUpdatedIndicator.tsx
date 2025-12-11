@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import React from 'react';
+import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export interface LastUpdatedIndicatorProps {
@@ -9,8 +9,9 @@ export interface LastUpdatedIndicatorProps {
 /**
  * Component to display when the prompt preview was last updated
  * Shows timestamp and update method (manual, auto, or initial)
+ * Memoized to prevent unnecessary re-renders
  */
-export const LastUpdatedIndicator: React.FC<LastUpdatedIndicatorProps> = ({ lastUpdated }) => {
+export const LastUpdatedIndicator: React.FC<LastUpdatedIndicatorProps> = memo(({ lastUpdated }) => {
   const { t } = useTranslation('agent');
 
   if (!lastUpdated) return null;
@@ -31,4 +32,5 @@ export const LastUpdatedIndicator: React.FC<LastUpdatedIndicatorProps> = ({ last
       </Typography>
     </Box>
   );
-};
+});
+LastUpdatedIndicator.displayName = 'LastUpdatedIndicator';
