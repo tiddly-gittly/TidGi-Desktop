@@ -1,4 +1,5 @@
-import { useSortable } from '@dnd-kit/sortable';
+import { defaultAnimateLayoutChanges, useSortable } from '@dnd-kit/sortable';
+import type { AnimateLayoutChanges } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -9,6 +10,12 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrayItemProvider, useArrayItemContext } from '../context/ArrayItemContext';
 import { useArrayFieldStore } from '../store/arrayFieldStore';
+
+/**
+ * Custom animateLayoutChanges that always animates when wasDragging is true.
+ * This ensures smooth transitions after drag ends when items are reordered.
+ */
+const animateLayoutChanges: AnimateLayoutChanges = (arguments_) => defaultAnimateLayoutChanges({ ...arguments_, wasDragging: true });
 
 /**
  * Custom Array Field Item Template with collapse and dnd-kit drag-and-drop support
@@ -32,6 +39,10 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
   const expanded = useArrayFieldStore(
     useCallback((state) => state.expandedStates[fieldPath]?.[index] ?? false, [fieldPath, index]),
   );
+  // Get stable item ID from store for dnd-kit
+  const stableItemId = useArrayFieldStore(
+    useCallback((state) => state.stableItemIds[fieldPath]?.[index] ?? `item-${index}`, [fieldPath, index]),
+  );
   const setItemExpanded = useArrayFieldStore((state) => state.setItemExpanded);
   const registerMoveCallbacks = useArrayFieldStore((state) => state.registerMoveCallbacks);
 
@@ -45,10 +56,10 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
     }
   }, [fieldPath, index, buttonsProps.onMoveUpItem, buttonsProps.onMoveDownItem, buttonsProps.hasMoveUp, buttonsProps.hasMoveDown, registerMoveCallbacks]);
 
-  // Use dnd-kit sortable
-  const sortableId = `item-${index}`;
+  // Use dnd-kit sortable with stable ID from store
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: sortableId,
+    id: stableItemId,
+    animateLayoutChanges,
   });
 
   const handleToggleExpanded = useCallback(() => {
@@ -80,7 +91,7 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
 
   return (
     <Box
-      id={sortableId}
+      id={stableItemId}
       ref={setNodeRef}
       style={style}
       sx={{

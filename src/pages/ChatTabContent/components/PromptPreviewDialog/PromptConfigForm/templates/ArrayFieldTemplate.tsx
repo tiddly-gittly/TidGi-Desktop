@@ -32,6 +32,11 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
   const initializeField = useArrayFieldStore((state) => state.initializeField);
   const updateItemsData = useArrayFieldStore((state) => state.updateItemsData);
   const cleanupField = useArrayFieldStore((state) => state.cleanupField);
+  const moveItem = useArrayFieldStore((state) => state.moveItem);
+  // Get stable item IDs from store - these persist across re-renders
+  const stableItemIds = useArrayFieldStore((state) => state.stableItemIds[fieldPath] ?? []);
+  // Get items order from store - used for optimistic rendering during drag
+  const itemsOrder = useArrayFieldStore((state) => state.itemsOrder[fieldPath] ?? []);
 
   // Track active drag item for overlay
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -42,7 +47,7 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
     initializeField(fieldPath, items.length, itemsData);
   }, [fieldPath, items.length, initializeField]);
 
-  // Update store when formData changes
+  // Update store when formData changes (from RJSF)
   useEffect(() => {
     const itemsData = Array.isArray(formData) ? formData : [];
     updateItemsData(fieldPath, itemsData);
@@ -64,10 +69,14 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
     }),
   );
 
-  // Generate stable IDs for sortable items
+  // Use stable IDs from store, fallback to index-based IDs if store not initialized yet
   const itemIds = useMemo(() => {
+    if (stableItemIds.length === items.length) {
+      return stableItemIds;
+    }
+    // Fallback during initialization
     return items.map((_, index) => `item-${index}`);
-  }, [items.length]);
+  }, [stableItemIds, items.length]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(String(event.active.id));
@@ -77,19 +86,33 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
     const { active, over } = event;
     setActiveId(null);
 
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+      return;
+    }
 
-    const oldIndex = Number.parseInt(String(active.id).replace('item-', ''), 10);
-    const newIndex = Number.parseInt(String(over.id).replace('item-', ''), 10);
+    // Find indices by looking up the stable IDs
+    const oldIndex = itemIds.indexOf(String(active.id));
+    const newIndex = itemIds.indexOf(String(over.id));
 
-    if (Number.isNaN(oldIndex) || Number.isNaN(newIndex)) return;
-    if (!formData || !formContext?.onFormDataChange || !formContext.rootFormData) return;
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+    if (!formData || !formContext?.onFormDataChange || !formContext.rootFormData) {
+      return;
+    }
 
-    // Use arrayMove from dnd-kit to reorder the array
+    // IMPORTANT: Update store state FIRST (synchronously) for optimistic rendering
+    // This moves stableItemIds, expandedStates, and itemsOrder together
+    // The component will immediately re-render with the new order, avoiding the
+    // ~500-700ms delay while waiting for RJSF to update formData
+    moveItem(fieldPath, oldIndex, newIndex);
+
+    // Create the new array data with reordered items
     const newArrayData = arrayMove([...formData], oldIndex, newIndex);
 
     // Update the root form data with the reordered array
-    // Navigate to the array location using fieldPathId.path
+    // This triggers RJSF to re-render, but the UI already shows the new order
+    // thanks to the optimistic update above
     const path = fieldPathId?.path;
     if (!path || path.length === 0) {
       // If no path, this array is the root (unlikely but handle it)
@@ -112,19 +135,19 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
     current[finalKey] = newArrayData;
 
     formContext.onFormDataChange(newRootData as never);
-  }, [formData, formContext, fieldPathId]);
+  }, [formData, formContext, fieldPathId, itemIds, moveItem, fieldPath]);
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null);
   }, []);
 
-  // Find active item for drag overlay
+  // Find active item for drag overlay using stable IDs
   const activeItem = useMemo(() => {
     if (!activeId) return null;
-    const activeIndex = Number.parseInt(activeId.replace('item-', ''), 10);
-    if (Number.isNaN(activeIndex)) return null;
+    const activeIndex = itemIds.indexOf(activeId);
+    if (activeIndex === -1) return null;
     return items[activeIndex];
-  }, [activeId, items]);
+  }, [activeId, items, itemIds]);
 
   return (
     <ArrayContainer>
@@ -163,16 +186,22 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
           >
             <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {items.map((item, index) => {
-                  const itemData = formData?.[index];
+                {itemsOrder.map((originalIndex, renderPosition) => {
+                  // itemsOrder[renderPosition] tells us which original item should be at this position
+                  // This enables optimistic rendering - store updates immediately, RJSF updates later
+                  const item = items[originalIndex];
+                  const itemData = formData?.[originalIndex];
+                  const stableId = itemIds[renderPosition];
+                  
+                  if (!item) return null;
                   
                   return (
                     <ArrayItemProvider
-                      key={itemIds[index]}
+                      key={stableId}
                       isInArrayItem
                       arrayItemCollapsible
                       itemData={itemData}
-                      itemIndex={index}
+                      itemIndex={renderPosition}
                       arrayFieldPath={fieldPath}
                     >
                       {item}
@@ -181,7 +210,7 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
                 })}
               </Box>
             </SortableContext>
-            <DragOverlay>
+            <DragOverlay dropAnimation={null}>
               {activeItem
                 ? (
                   <Box
