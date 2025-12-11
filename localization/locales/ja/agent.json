@@ -239,6 +239,12 @@
   "Prompt": {
     "AutoRefresh": "プレビューは入力テキストの変更に応じて自動的に更新されます",
     "CodeEditor": "コードエディタ",
+    "Edit": "プロンプト編集",
+    "EnterEditSideBySide": "分割画面表示編集",
+    "EnterFullScreen": "全画面表示に入る",
+    "EnterPreviewSideBySide": "分割画面表示プレビュー",
+    "ExitFullScreen": "全画面表示を終了",
+    "ExitSideBySide": "分割画面を終了する",
     "Flat": "グリッドビュー",
     "FormEditor": "フォームエディター",
     "LastUpdated": "前回の更新時間",

@@ -225,6 +225,12 @@
   "Prompt": {
     "AutoRefresh": "Preview auto-refreshes with input text changes",
     "CodeEditor": "Code Editor",
+    "Edit": "Edit",
+    "EnterEditSideBySide": "Show editor side-by-side",
+    "EnterFullScreen": "Enter full screen",
+    "EnterPreviewSideBySide": "Show preview side-by-side",
+    "ExitFullScreen": "Exit full screen",
+    "ExitSideBySide": "Exit side-by-side",
     "Flat": "Flat View",
     "FormEditor": "Form Editor",
     "LastUpdated": "Last updated",

@@ -11,6 +11,8 @@ interface ArrayItemContextValue {
   itemIndex?: number;
   /** The stable field path for the parent array */
   arrayFieldPath?: string;
+  /** The path segments to locate the array in root form data */
+  arrayFieldPathSegments?: Array<string | number>;
 }
 
 const ArrayItemContext = createContext<ArrayItemContextValue>({
@@ -27,6 +29,7 @@ interface ArrayItemProviderProps {
   itemData?: unknown;
   itemIndex?: number;
   arrayFieldPath?: string;
+  arrayFieldPathSegments?: Array<string | number>;
 }
 
 export const ArrayItemProvider: React.FC<ArrayItemProviderProps> = ({
@@ -36,6 +39,7 @@ export const ArrayItemProvider: React.FC<ArrayItemProviderProps> = ({
   itemData,
   itemIndex,
   arrayFieldPath,
+  arrayFieldPathSegments,
 }) => {
   const value = useMemo(() => ({
     isInArrayItem,
@@ -43,7 +47,8 @@ export const ArrayItemProvider: React.FC<ArrayItemProviderProps> = ({
     itemData,
     itemIndex,
     arrayFieldPath,
-  }), [isInArrayItem, arrayItemCollapsible, itemData, itemIndex, arrayFieldPath]);
+    arrayFieldPathSegments,
+  }), [isInArrayItem, arrayItemCollapsible, itemData, itemIndex, arrayFieldPath, arrayFieldPathSegments]);
 
   return (
     <ArrayItemContext.Provider value={value}>
@@ -51,4 +56,3 @@ export const ArrayItemProvider: React.FC<ArrayItemProviderProps> = ({
     </ArrayItemContext.Provider>
   );
 };
-

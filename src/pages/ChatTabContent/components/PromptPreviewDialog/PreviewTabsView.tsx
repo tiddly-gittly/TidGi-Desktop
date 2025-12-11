@@ -98,10 +98,10 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = memo(({
   );
 
   // Use ref to track if we've ever had content (to avoid flashing on initial load)
-  const hasHadContentRef = useRef(false);
+  const hasHadContentReference = useRef(false);
   const previewResult = useAgentChatStore((state) => state.previewResult);
   if (previewResult) {
-    hasHadContentRef.current = true;
+    hasHadContentReference.current = true;
   }
 
   const handleTabChange = useCallback((_event: React.SyntheticEvent, value: string): void => {
@@ -114,7 +114,7 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = memo(({
 
   // Show nothing if we've never had content (initial loading state)
   // But once we have content, always show it (even during updates)
-  if (!hasHadContentRef.current && !previewResult) {
+  if (!hasHadContentReference.current && !previewResult) {
     return null;
   }
 

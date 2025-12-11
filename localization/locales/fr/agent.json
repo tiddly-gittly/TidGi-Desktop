@@ -238,6 +238,12 @@
   "Prompt": {
     "AutoRefresh": "L'aperçu se rafraîchit automatiquement en fonction des modifications du texte saisi.",
     "CodeEditor": "Éditeur de code",
+    "Edit": "Édition des mots-clés",
+    "EnterEditSideBySide": "Édition en affichage partagé",
+    "EnterFullScreen": "entrer en plein écran",
+    "EnterPreviewSideBySide": "Aperçu en mode écran partagé",
+    "ExitFullScreen": "quitter le mode plein écran",
+    "ExitSideBySide": "quitter le mode d'écran partagé",
     "Flat": "vue en mosaïque",
     "FormEditor": "Éditeur de formulaire",
     "LastUpdated": "Dernière mise à jour",

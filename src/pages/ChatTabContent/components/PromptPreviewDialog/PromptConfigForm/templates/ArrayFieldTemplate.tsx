@@ -123,13 +123,13 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
     // Deep clone and update the nested array
     const newRootData = structuredClone(formContext.rootFormData);
     let current: Record<string, unknown> = newRootData;
-    
+
     // Navigate to parent of the array
     for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++) {
       const key = path[pathIndex];
       current = current[key] as Record<string, unknown>;
     }
-    
+
     // Set the array at the final path segment
     const finalKey = path[path.length - 1];
     current[finalKey] = newArrayData;
@@ -192,9 +192,9 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
                   const item = items[originalIndex];
                   const itemData = formData?.[originalIndex];
                   const stableId = itemIds[renderPosition];
-                  
+
                   if (!item) return null;
-                  
+
                   return (
                     <ArrayItemProvider
                       key={stableId}
@@ -203,6 +203,7 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
                       itemData={itemData}
                       itemIndex={renderPosition}
                       arrayFieldPath={fieldPath}
+                      arrayFieldPathSegments={fieldPathId?.path}
                     >
                       {item}
                     </ArrayItemProvider>

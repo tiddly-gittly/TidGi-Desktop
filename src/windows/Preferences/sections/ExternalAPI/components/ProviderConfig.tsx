@@ -138,7 +138,7 @@ export function ProviderConfig({
   };
 
   // Debounced save function
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   const debouncedSave = useCallback(
     debounce(async (providerName: string, field: keyof AIProviderConfig, value: string) => {
       try {

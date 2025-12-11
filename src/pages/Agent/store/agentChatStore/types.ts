@@ -27,6 +27,7 @@ export interface AgentChatBaseState {
 // Preview dialog specific state
 export interface PreviewDialogState {
   previewDialogOpen: boolean;
+  previewDialogBaseMode: 'preview' | 'edit';
   previewDialogTab: 'flat' | 'tree';
   previewLoading: boolean;
   previewProgress: number; // 0-1, processing progress
@@ -139,7 +140,7 @@ export interface PreviewActions {
   /**
    * Opens the preview dialog
    */
-  openPreviewDialog: () => void;
+  openPreviewDialog: (options?: { baseMode?: 'preview' | 'edit' }) => void;
 
   /**
    * Closes the preview dialog

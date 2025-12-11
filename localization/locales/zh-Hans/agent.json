@@ -222,6 +222,12 @@
   "Prompt": {
     "AutoRefresh": "预览会随输入文本的变化自动刷新",
     "CodeEditor": "代码编辑器",
+    "Edit": "提示词编辑",
+    "EnterEditSideBySide": "分屏显示编辑",
+    "EnterFullScreen": "进入全屏",
+    "EnterPreviewSideBySide": "分屏显示预览",
+    "ExitFullScreen": "退出全屏",
+    "ExitSideBySide": "退出分屏",
     "Flat": "平铺视图",
     "FormEditor": "表单编辑器",
     "LastUpdated": "上次更新时间",

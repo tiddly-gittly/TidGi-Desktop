@@ -222,6 +222,12 @@
   "Prompt": {
     "AutoRefresh": "預覽會隨輸入文本的變化自動刷新",
     "CodeEditor": "代碼編輯器",
+    "Edit": "提示詞編輯",
+    "EnterEditSideBySide": "分屏顯示編輯",
+    "EnterFullScreen": "進入全螢幕",
+    "EnterPreviewSideBySide": "分屏顯示預覽",
+    "ExitFullScreen": "退出全螢幕",
+    "ExitSideBySide": "退出分屏",
     "Flat": "平鋪視圖",
     "FormEditor": "表單編輯器",
     "LastUpdated": "上次更新時間",

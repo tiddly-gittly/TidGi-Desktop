@@ -108,7 +108,7 @@ export const EditView: FC<EditViewProps> = ({
       try {
         // Always persist the config change to backend
         await handleConfigChange(updatedConfig);
-        
+
         // Only update preview if user is actually editing (not just drag-reordering)
         if (isUserEditingReference.current && agent?.agentDefId) {
           void getPreviewPromptResult(inputText, updatedConfig);

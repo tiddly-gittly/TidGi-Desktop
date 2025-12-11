@@ -391,7 +391,7 @@ describe('ExternalAPI Component', () => {
 
     // Wait for all comboboxes to be rendered
     const comboboxes = screen.getAllByRole('combobox');
-    
+
     // We have 6 model selectors (default, embedding, speech, imageGeneration, transcriptions, free)
     expect(comboboxes).toHaveLength(6);
 

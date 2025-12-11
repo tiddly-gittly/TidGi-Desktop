@@ -20,8 +20,8 @@ import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { findPromptById } from '../promptConcat/promptConcat';
 import type { IPrompt } from '../promptConcat/promptConcatSchema';
 import { schemaToToolContent } from '../utilities/schemaToToolContent';
-import type { AIResponseContext, PostProcessContext, PromptConcatHookContext, PromptConcatHooks, PromptConcatTool } from './types';
 import { registerToolParameterSchema } from './schemaRegistry';
+import type { AIResponseContext, PostProcessContext, PromptConcatHookContext, PromptConcatHooks, PromptConcatTool } from './types';
 
 /**
  * Tool definition configuration
@@ -659,13 +659,13 @@ export function registerToolDefinition<
   TLLMToolSchemas extends Record<string, z.ZodType>,
 >(definition: ToolDefinition<TConfigSchema, TLLMToolSchemas>): ReturnType<typeof defineTool<TConfigSchema, TLLMToolSchemas>> {
   const toolDefinition = defineTool(definition);
-  
+
   // Register tool parameter schema and metadata for dynamic schema generation
   registerToolParameterSchema(toolDefinition.toolId, toolDefinition.configSchema, {
     displayName: toolDefinition.displayName,
     description: toolDefinition.description,
   });
-  
+
   toolRegistry.set(toolDefinition.toolId, toolDefinition as ReturnType<typeof defineTool>);
   return toolDefinition;
 }

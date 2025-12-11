@@ -4,11 +4,12 @@ import { CSS } from '@dnd-kit/utilities';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Box, IconButton } from '@mui/material';
+import { Box, Checkbox, IconButton } from '@mui/material';
 import { ArrayFieldItemTemplateProps, FormContextType, getTemplate, getUiOptions, RJSFSchema } from '@rjsf/utils';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrayItemProvider, useArrayItemContext } from '../context/ArrayItemContext';
+import { ExtendedFormContext } from '../index';
 import { useArrayFieldStore } from '../store/arrayFieldStore';
 
 /**
@@ -26,6 +27,7 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
 ): React.ReactElement {
   const { children, index, hasToolbar, buttonsProps, registry, uiSchema } = props;
   const { t } = useTranslation('agent');
+  const formContext = registry.formContext as ExtendedFormContext | undefined;
 
   // Get item context - includes the stable fieldPath from parent ArrayFieldTemplate
   const arrayItemContext = useArrayItemContext();
@@ -75,6 +77,37 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
     }
     return '';
   }, [itemData]);
+
+  const itemEnabled = useMemo(() => Boolean((itemData as Record<string, unknown> | undefined)?.enabled), [itemData]);
+
+  const handleToggleEnabled = useCallback(() => {
+    const pathSegments: Array<string | number> | null = Array.isArray(arrayItemContext.arrayFieldPathSegments)
+      ? (arrayItemContext.arrayFieldPathSegments)
+      : null;
+    if (!formContext?.onFormDataChange || !formContext.rootFormData || !pathSegments || pathSegments.length === 0 || index === undefined) {
+      return;
+    }
+
+    const newRootData = structuredClone(formContext.rootFormData);
+    let parent: Record<string | number, unknown> | undefined = newRootData as Record<string | number, unknown>;
+    for (let pathIndex = 0; pathIndex < pathSegments.length - 1; pathIndex += 1) {
+      parent = parent?.[pathSegments[pathIndex]] as Record<string | number, unknown> | undefined;
+      if (!parent) return;
+    }
+
+    const arrayKey = pathSegments[pathSegments.length - 1];
+    const targetArray = Array.isArray(parent?.[arrayKey]) ? [...(parent?.[arrayKey] as unknown[])] : undefined;
+    if (!targetArray || targetArray[index] === undefined) {
+      return;
+    }
+
+    const currentItem = { ...(targetArray[index] as Record<string, unknown> ?? {}) };
+    currentItem.enabled = !itemEnabled;
+    targetArray[index] = currentItem;
+    parent[arrayKey] = targetArray;
+
+    formContext.onFormDataChange(newRootData as never);
+  }, [arrayItemContext.arrayFieldPathSegments, formContext, index, itemEnabled]);
 
   // Get the ArrayFieldItemButtonsTemplate to render buttons
   const uiOptions = getUiOptions<T, S, F>(uiSchema);
@@ -145,6 +178,17 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
           <DragHandleIcon fontSize='small' />
         </Box>
 
+        <Checkbox
+          size='small'
+          checked={itemEnabled}
+          onChange={handleToggleEnabled}
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+          slotProps={{ input: { 'aria-label': t('Prompt.Enabled', { defaultValue: 'Enabled' }) } }}
+          sx={{ p: 0.5, mr: 0.5 }}
+        />
+
         {/* Item title - 显示 caption 或 index */}
         <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Box
@@ -195,4 +239,3 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
     </Box>
   );
 }
-

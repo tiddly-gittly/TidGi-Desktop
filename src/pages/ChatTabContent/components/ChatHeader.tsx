@@ -1,5 +1,6 @@
 import ArticleIcon from '@mui/icons-material/Article';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import EditIcon from '@mui/icons-material/Edit';
 import TuneIcon from '@mui/icons-material/Tune';
 import { Box, CircularProgress, IconButton } from '@mui/material';
 import { styled } from '@mui/material/styles';
@@ -47,10 +48,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const preference = usePreferenceObservable();
   const [apiLogsDialogOpen, setApiLogsDialogOpen] = useState(false);
 
-  const { agent, previewDialogOpen, openPreviewDialog, closePreviewDialog, updateAgent } = useAgentChatStore(
+  const { agent, previewDialogOpen, previewDialogBaseMode, openPreviewDialog, closePreviewDialog, updateAgent } = useAgentChatStore(
     useShallow((state) => ({
       agent: state.agent,
       previewDialogOpen: state.previewDialogOpen,
+      previewDialogBaseMode: state.previewDialogBaseMode,
       updateAgent: state.updateAgent,
       openPreviewDialog: state.openPreviewDialog,
       closePreviewDialog: state.closePreviewDialog,
@@ -74,10 +76,21 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       <ControlsContainer>
         <IconButton
           size='small'
-          onClick={openPreviewDialog}
+          onClick={() => {
+            openPreviewDialog();
+          }}
           title={t('Prompt.Preview')}
         >
           <ArticleIcon />
+        </IconButton>
+        <IconButton
+          size='small'
+          onClick={() => {
+            openPreviewDialog({ baseMode: 'edit' });
+          }}
+          title={t('Prompt.Edit')}
+        >
+          <EditIcon />
         </IconButton>
         {showDebugButton && (
           <IconButton
@@ -102,6 +115,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         open={previewDialogOpen}
         onClose={closePreviewDialog}
         inputText={inputText}
+        initialBaseMode={previewDialogBaseMode}
       />
       <APILogsDialog
         open={apiLogsDialogOpen}

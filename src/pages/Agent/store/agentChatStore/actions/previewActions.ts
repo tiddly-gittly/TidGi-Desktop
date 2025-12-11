@@ -11,13 +11,17 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
   set,
   get,
 ) => ({
-  openPreviewDialog: () => {
-    set({ previewDialogOpen: true });
+  openPreviewDialog: (options) => {
+    set({
+      previewDialogOpen: true,
+      previewDialogBaseMode: options?.baseMode ?? 'preview',
+    });
   },
 
   closePreviewDialog: () => {
     set({
       previewDialogOpen: false,
+      previewDialogBaseMode: 'preview',
       lastUpdated: null,
       expandedArrayItems: new Map(),
       formFieldsToScrollTo: [],
