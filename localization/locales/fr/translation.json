@@ -71,6 +71,7 @@
     "TagName": "Nom de l'étiquette",
     "TagNameHelp": "Appuyez sur Entrée pour confirmer. Les tiddlers avec cette étiquette seront ajoutés à ce sous-wiki (vous pouvez ajouter ou modifier cette étiquette plus tard, en cliquant avec le bouton droit sur l'icône de l'espace de travail et en choisissant Modifier l'espace de travail)",
     "TagNameHelpForMain": "Appuyez sur Entrée pour confirmer. Les nouvelles entrées avec cette étiquette seront prioritairement enregistrées dans cet espace de travail.",
+    "TagNameInputWarning": "⚠️ Veuillez appuyer sur Entrée pour confirmer la saisie de l'étiquette",
     "ThisPathIsNotAWikiFolder": "Le répertoire n'est pas un dossier Wiki \"{{wikiPath}}\"",
     "UseFilter": "utiliser un filtre",
     "UseFilterHelp": "Utilisez des expressions de filtre plutôt que des étiquettes pour correspondre aux entrées et décider si elles doivent être stockées dans l'espace de travail actuel.",

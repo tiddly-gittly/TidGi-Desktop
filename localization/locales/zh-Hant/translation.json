@@ -71,6 +71,7 @@
     "TagName": "標籤名",
     "TagNameHelp": "按回車確認。加上此標籤的筆記將會自動被放入這個子知識庫內（可先不填，之後右鍵點擊這個工作區的圖示選擇編輯工作區修改）",
     "TagNameHelpForMain": "按回車確認。帶有此標籤的新條目將優先保存在此工作區",
+    "TagNameInputWarning": "⚠️ 請按Enter確認標籤輸入",
     "ThisPathIsNotAWikiFolder": "該目錄不是一個知識庫文件夾 \"{{wikiPath}}\"",
     "UseFilter": "使用篩選器",
     "UseFilterHelp": "用篩選器運算式而不是標籤來匹配條目，決定是否存入當前工作區",

@@ -1,6 +1,6 @@
 import FolderIcon from '@mui/icons-material/Folder';
 import { Autocomplete, AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isWikiWorkspace } from '@services/workspaces/interface';
@@ -12,10 +12,17 @@ import type { IWikiWorkspaceFormProps } from './useForm';
 
 export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichComponent, errorInWhichComponentSetter }: IWikiWorkspaceFormProps): React.JSX.Element {
   const { t } = useTranslation();
+  const [tagInputValue, setTagInputValue] = useState<string>('');
   useValidateCloneWiki(isCreateMainWorkspace, form, errorInWhichComponentSetter);
 
   // Fetch all tags from main wiki for autocomplete suggestions
   const availableTags = useAvailableTags(form.mainWikiToLink.id, !isCreateMainWorkspace);
+
+  const tagHelperText = tagInputValue.trim().length > 0
+    ? t('AddWorkspace.TagNameInputWarning')
+    : (isCreateMainWorkspace
+      ? t('AddWorkspace.TagNameHelpForMain')
+      : t('AddWorkspace.TagNameHelp'));
 
   return (
     <CreateContainer elevation={2} square>
@@ -88,8 +95,12 @@ export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichCompone
             freeSolo
             options={availableTags}
             value={form.tagNames}
+            onInputChange={(_event, newInputValue) => {
+              setTagInputValue(newInputValue);
+            }}
             onChange={(_event, newValue) => {
               form.tagNamesSetter(newValue);
+              setTagInputValue('');
             }}
             slotProps={{
               chip: {
@@ -98,10 +109,10 @@ export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichCompone
             }}
             renderInput={(parameters: AutocompleteRenderInputParams) => (
               <LocationPickerInput
-                {...parameters}
                 error={errorInWhichComponent.tagNames}
+                {...parameters}
                 label={t('AddWorkspace.TagName')}
-                helperText={t('AddWorkspace.TagNameHelp')}
+                helperText={tagHelperText}
               />
             )}
           />

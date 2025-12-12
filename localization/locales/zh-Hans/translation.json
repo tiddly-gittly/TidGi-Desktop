@@ -71,6 +71,7 @@
     "TagName": "标签名",
     "TagNameHelp": "按回车确认。加上这些标签之一的笔记将会自动被放入这个子知识库内（可先不填，之后右键点击这个工作区的图标选择编辑工作区修改）",
     "TagNameHelpForMain": "按回车确认。带有这些标签的新条目将优先保存在此工作区",
+    "TagNameInputWarning": "⚠️ 请按回车确认标签输入",
     "ThisPathIsNotAWikiFolder": "该目录不是一个知识库文件夹 \"{{wikiPath}}\"",
     "UseFilter": "使用筛选器",
     "UseFilterHelp": "用筛选器表达式而不是标签来匹配条目，决定是否存入当前工作区",

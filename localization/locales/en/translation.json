@@ -71,6 +71,7 @@
     "TagName": "Tag Name",
     "TagNameHelp": "Press Enter to confirm. Tiddlers with this Tag will be add to this sub-wiki (you can add or change this Tag later, by right-click workspace Icon and choose Edit Workspace)",
     "TagNameHelpForMain": "Press Enter to confirm. New entries with this tag will be prioritized for storage in this workspace.",
+    "TagNameInputWarning": "⚠️ Please press Enter to confirm tag input",
     "ThisPathIsNotAWikiFolder": "The directory is not a Wiki folder \"{{wikiPath}}\"",
     "UseFilter": "Use filters",
     "UseFilterHelp": "Use filter expressions instead of tags to match entries and determine whether to save them in the current workspace.",

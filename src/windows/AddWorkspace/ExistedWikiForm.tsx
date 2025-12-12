@@ -18,9 +18,16 @@ export function ExistedWikiForm({
   errorInWhichComponentSetter,
 }: IWikiWorkspaceFormProps & { isCreateSyncedWorkspace: boolean }): React.JSX.Element {
   const { t } = useTranslation();
+  const [tagInputValue, setTagInputValue] = useState<string>('');
 
   // Fetch all tags from main wiki for autocomplete suggestions
   const availableTags = useAvailableTags(form.mainWikiToLink.id, !isCreateMainWorkspace);
+
+  const tagHelperText = tagInputValue.trim().length > 0
+    ? t('AddWorkspace.TagNameInputWarning')
+    : (isCreateMainWorkspace
+      ? t('AddWorkspace.TagNameHelpForMain')
+      : t('AddWorkspace.TagNameHelp'));
 
   const {
     wikiFolderLocation,
@@ -137,8 +144,12 @@ export function ExistedWikiForm({
             freeSolo
             options={availableTags}
             value={tagNames}
+            onInputChange={(_event, newInputValue) => {
+              setTagInputValue(newInputValue);
+            }}
             onChange={(_event, newValue) => {
               tagNamesSetter(newValue);
+              setTagInputValue('');
             }}
             slotProps={{
               chip: {
@@ -150,7 +161,7 @@ export function ExistedWikiForm({
                 {...parameters}
                 error={errorInWhichComponent.tagNames}
                 label={t('AddWorkspace.TagName')}
-                helperText={t('AddWorkspace.TagNameHelp')}
+                helperText={tagHelperText}
               />
             )}
           />
