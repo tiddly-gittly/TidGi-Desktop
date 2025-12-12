@@ -293,9 +293,6 @@ export class Workspace implements IWorkspaceService {
           }`,
         );
       }
-      const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-      // Sub-wiki configuration is now handled by FileSystemAdaptor in watch-filesystem plugin
-      await wikiService.wikiStartup(newWorkspaceConfig);
     }
   }
 
