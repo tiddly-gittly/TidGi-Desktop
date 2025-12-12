@@ -44,6 +44,8 @@ export interface PromptConcatHookContext extends BaseToolContext {
   prompts: IPrompt[];
   /** Tool configuration */
   toolConfig: IPromptConcatTool;
+  /** Index of the current plugin in the plugins array (for source tracking) */
+  pluginIndex?: number;
 }
 
 /**

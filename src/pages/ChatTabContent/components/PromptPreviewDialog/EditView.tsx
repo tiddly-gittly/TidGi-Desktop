@@ -66,16 +66,20 @@ export const EditView: FC<EditViewProps> = ({
       savedPathReference.current = [...formFieldsToScrollTo];
       const savedPath = savedPathReference.current;
       
-      // Clear formFieldsToScrollTo - but don't let the cleanup cancel our timeouts
-      setFormFieldsToScrollTo([]);
+      // NOTE: Don't clear formFieldsToScrollTo immediately!
+      // RootObjectFieldTemplate also listens to this to switch tabs.
+      // We'll clear it after the tab has had time to switch.
       
       // Path format: ['prompts', 'system', 'child-id', 'child-id'] or ['prompts', 'system']
       // - savedPath[0]: top-level key (prompts, plugins, response)
       // - savedPath[1]: parent item id
       // - savedPath[2+]: nested child item ids (if present)
       
-      // Step 1: Expand the top-level item first
+      // Step 1: Wait for RootObjectFieldTemplate to switch tabs, then expand items
       setTimeout(() => {
+        // Now clear the path after tab has switched
+        setFormFieldsToScrollTo([]);
+        
         const topLevelKey = savedPath[0];
         if (savedPath.length > 1) {
           const firstItemId = savedPath[1];

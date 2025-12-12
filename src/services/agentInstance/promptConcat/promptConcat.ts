@@ -238,6 +238,7 @@ export async function* promptConcatStream(
       messages,
       prompts: modifiedPrompts,
       toolConfig: toolConfigs[index],
+      pluginIndex: index,
       metadata: { sourcePaths },
     };
     try {

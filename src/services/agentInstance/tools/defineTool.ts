@@ -280,11 +280,17 @@ export function defineTool<
               const schemas = options.toolSchemas ?? (llmToolSchemas ? Object.values(llmToolSchemas) : []);
               const toolContent = schemas.map((schema) => schemaToToolContent(schema)).join('\n\n');
 
+              // Build source path pointing to the plugin configuration
+              // Format: ['plugins', pluginId] so clicking navigates to plugins tab
+              const pluginIndex = context.pluginIndex;
+              const source = pluginIndex !== undefined ? ['plugins', toolConfig.id] : undefined;
+
               const toolPrompt: IPrompt = {
                 id: `${toolId}-tool-list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
                 text: toolContent,
                 caption: options.caption ?? `${definition.displayName} Tools`,
                 enabled: true,
+                source,
               };
 
               if (options.position === 'child') {
@@ -316,11 +322,16 @@ export function defineTool<
                 return;
               }
 
+              // Build source path pointing to the plugin configuration
+              const pluginIndex = context.pluginIndex;
+              const source = pluginIndex !== undefined ? ['plugins', toolConfig.id] : undefined;
+
               const contentPrompt: IPrompt = {
                 id: options.id ?? `${toolId}-content-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
                 text: options.content,
                 caption: options.caption ?? 'Injected Content',
                 enabled: true,
+                source,
               };
 
               if (options.position === 'child') {
