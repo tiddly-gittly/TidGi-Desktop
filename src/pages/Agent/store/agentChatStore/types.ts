@@ -39,7 +39,6 @@ export interface PreviewDialogState {
   } | null;
   lastUpdated: Date | null;
   formFieldsToScrollTo: string[];
-  expandedArrayItems: Map<string, boolean>;
 }
 
 // Basic actions interface
@@ -158,25 +157,6 @@ export interface PreviewActions {
    * @param fieldPaths [targetTab, ...targetFieldPath] where targetTab is the tab name and targetFieldPath is the field path array
    */
   setFormFieldsToScrollTo: (fieldPaths: string[]) => void;
-
-  /**
-   * Sets the expansion state of a specific array item by its ID
-   * @param itemId The unique ID of the array item
-   * @param expanded Whether the item should be expanded
-   */
-  setArrayItemExpanded: (itemId: string, expanded: boolean) => void;
-
-  /**
-   * Checks if a specific array item is expanded by its ID
-   * @param itemId The unique ID of the array item
-   */
-  isArrayItemExpanded: (itemId: string) => boolean;
-
-  /**
-   * Expands all parent paths leading to a target field
-   * @param targetPath The target field path to expand to
-   */
-  expandPathToTarget: (targetPath: string[]) => void;
 
   /**
    * Updates preview progress state

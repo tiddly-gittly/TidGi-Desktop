@@ -28,7 +28,6 @@ export const useAgentChatStore = create<AgentChatStoreType>()((set, get, api) =>
     previewResult: null,
     lastUpdated: null,
     formFieldsToScrollTo: [],
-    expandedArrayItems: new Map(),
   };
 
   // Merge all actions and initial state

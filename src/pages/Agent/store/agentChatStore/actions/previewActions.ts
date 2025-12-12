@@ -23,7 +23,6 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
       previewDialogOpen: false,
       previewDialogBaseMode: 'preview',
       lastUpdated: null,
-      expandedArrayItems: new Map(),
       formFieldsToScrollTo: [],
     });
   },
@@ -34,34 +33,6 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
 
   setFormFieldsToScrollTo: (fieldPaths: string[]) => {
     set({ formFieldsToScrollTo: fieldPaths });
-  },
-  setArrayItemExpanded: (itemId: string, expanded: boolean) => {
-    const { expandedArrayItems } = get();
-    const newMap = new Map(expandedArrayItems);
-    if (expanded) {
-      newMap.set(itemId, true);
-    } else {
-      newMap.delete(itemId);
-    }
-    set({ expandedArrayItems: newMap });
-  },
-  isArrayItemExpanded: (itemId: string) => {
-    const { expandedArrayItems } = get();
-    return expandedArrayItems.get(itemId) ?? false;
-  },
-  expandPathToTarget: (targetPath: string[]) => {
-    const { expandedArrayItems } = get();
-    const newMap = new Map(expandedArrayItems);
-
-    // For a path like ['prompts', 'system', 'children', 'default-main']
-    // We need to expand each ID that represents an array item: 'system' and 'default-main'
-    for (let index = 1; index < targetPath.length; index += 1) {
-      if (targetPath[index]) {
-        newMap.set(targetPath[index], true);
-      }
-    }
-
-    set({ expandedArrayItems: newMap });
   },
 
   updatePreviewProgress: (progress: number, step: string, currentPlugin?: string) => {

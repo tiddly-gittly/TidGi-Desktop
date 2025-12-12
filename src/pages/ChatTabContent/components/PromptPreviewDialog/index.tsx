@@ -38,6 +38,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [baseMode, setBaseMode] = useState<'preview' | 'edit'>(initialBaseMode);
   const [showSideBySide, setShowSideBySide] = useState(false);
+  const [baseModeBeforeSideBySide, setBaseModeBeforeSideBySide] = useState<'preview' | 'edit'>(initialBaseMode);
 
   const {
     loading: agentFrameworkConfigLoading,
@@ -75,10 +76,19 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   }, []);
 
   const handleToggleEditMode = useCallback((): void => {
-    setShowSideBySide(previous => !previous);
-  }, []);
+    setShowSideBySide(previous => {
+      if (!previous) {
+        // Entering side-by-side, save current baseMode
+        setBaseModeBeforeSideBySide(baseMode);
+      } else {
+        // Exiting side-by-side, restore previous baseMode
+        setBaseMode(baseModeBeforeSideBySide);
+      }
+      return !previous;
+    });
+  }, [baseMode, baseModeBeforeSideBySide]);
 
-  // Listen for form field scroll targets to automatically switch to edit mode
+  // Listen for form field scroll targets to automatically switch to side-by-side mode
   const { formFieldsToScrollTo } = useAgentChatStore(
     useShallow((state) => ({
       formFieldsToScrollTo: state.formFieldsToScrollTo,
@@ -86,10 +96,12 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   );
   useEffect(() => {
     if (formFieldsToScrollTo.length > 0) {
+      // Save current baseMode before switching to side-by-side
+      setBaseModeBeforeSideBySide(baseMode);
       setBaseMode('edit');
-      setShowSideBySide(false);
+      setShowSideBySide(true); // Show side-by-side when clicking from PromptTree
     }
-  }, [formFieldsToScrollTo]);
+  }, [formFieldsToScrollTo, baseMode]);
 
   useEffect(() => {
     if (open) {

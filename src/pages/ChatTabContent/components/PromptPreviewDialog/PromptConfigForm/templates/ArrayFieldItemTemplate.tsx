@@ -8,6 +8,7 @@ import { Box, Checkbox, IconButton } from '@mui/material';
 import { ArrayFieldItemTemplateProps, FormContextType, getTemplate, getUiOptions, RJSFSchema } from '@rjsf/utils';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 import { ArrayItemProvider, useArrayItemContext } from '../context/ArrayItemContext';
 import { ExtendedFormContext } from '../index';
 import { useArrayFieldStore } from '../store/arrayFieldStore';
@@ -37,16 +38,25 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
   // This ensures consistent path between template and item
   const fieldPath = arrayItemContext.arrayFieldPath ?? 'array';
 
-  // Get expanded state from store using shallow comparison
-  const expanded = useArrayFieldStore(
-    useCallback((state) => state.expandedStates[fieldPath]?.[index] ?? false, [fieldPath, index]),
+  // Get ALL relevant store data in one subscription
+  // Use useShallow to prevent unnecessary re-renders
+  const {
+    expandedStates,
+    stableItemIds: allStableItemIds,
+    setItemExpanded,
+    registerMoveCallbacks,
+  } = useArrayFieldStore(
+    useShallow((state) => ({
+      expandedStates: state.expandedStates,
+      stableItemIds: state.stableItemIds,
+      setItemExpanded: state.setItemExpanded,
+      registerMoveCallbacks: state.registerMoveCallbacks,
+    })),
   );
-  // Get stable item ID from store for dnd-kit
-  const stableItemId = useArrayFieldStore(
-    useCallback((state) => state.stableItemIds[fieldPath]?.[index] ?? `item-${index}`, [fieldPath, index]),
-  );
-  const setItemExpanded = useArrayFieldStore((state) => state.setItemExpanded);
-  const registerMoveCallbacks = useArrayFieldStore((state) => state.registerMoveCallbacks);
+  
+  // Get data for this specific item
+  const expanded = expandedStates[fieldPath]?.[index] ?? false;
+  const stableItemId = allStableItemIds[fieldPath]?.[index] ?? `item-${index}`;
 
   // Register move callbacks so they can be accessed during drag operations
   useEffect(() => {
@@ -65,8 +75,15 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
   });
 
   const handleToggleExpanded = useCallback(() => {
+    console.log('[ArrayFieldItemTemplate] handleToggleExpanded called', {
+      fieldPath,
+      index,
+      currentExpanded: expanded,
+      willBeExpanded: !expanded,
+      itemCaption: (itemData as any)?.caption,
+    });
     setItemExpanded(fieldPath, index, !expanded);
-  }, [fieldPath, index, expanded, setItemExpanded]);
+  }, [fieldPath, index, expanded, setItemExpanded, itemData]);
 
   // 获取当前项的数据来显示 caption
   const itemCaption = useMemo(() => {

@@ -50,7 +50,6 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
       previewCurrentPlugin: null,
       lastUpdated: null,
       formFieldsToScrollTo: [],
-      expandedArrayItems: new Map(),
     });
 
     // Clear all mock calls

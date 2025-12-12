@@ -49,10 +49,9 @@ export const PromptTreeNode = memo(({
   depth: number;
   fieldPath?: string[];
 }): React.ReactElement => {
-  const { setFormFieldsToScrollTo, expandPathToTarget } = useAgentChatStore(
+  const { setFormFieldsToScrollTo } = useAgentChatStore(
     useShallow((state) => ({
       setFormFieldsToScrollTo: state.setFormFieldsToScrollTo,
-      expandPathToTarget: state.expandPathToTarget,
     })),
   );
   const handleNodeClick = useCallback((event: React.MouseEvent) => {
@@ -61,8 +60,7 @@ export const PromptTreeNode = memo(({
     const targetFieldPath = (node.source && node.source.length > 0) ? node.source : [...fieldPath, node.id];
 
     setFormFieldsToScrollTo(targetFieldPath);
-    expandPathToTarget(targetFieldPath);
-  }, [node.source, node.id, fieldPath, setFormFieldsToScrollTo, expandPathToTarget]);
+  }, [node.source, node.id, fieldPath, setFormFieldsToScrollTo]);
 
   return (
     <TreeItem

@@ -49,6 +49,8 @@ interface ArrayFieldActions {
   cleanupField: (fieldPath: string) => void;
   /** Register move callbacks for an item */
   registerMoveCallbacks: (fieldPath: string, itemIndex: number, callbacks: ItemMoveCallbacks) => void;
+  /** Expand items along a path by their IDs (caption field) */
+  expandItemsByPath: (fieldPath: string, itemIds: string[]) => void;
   /** Reset all state */
   reset: () => void;
 }
@@ -67,11 +69,20 @@ export const useArrayFieldStore = create<ArrayFieldState & ArrayFieldActions>()(
     ...initialState,
 
     setItemExpanded: (fieldPath, itemIndex, expanded) => {
+      console.log('[arrayFieldStore] setItemExpanded called', {
+        fieldPath,
+        itemIndex,
+        expanded,
+      });
       set((state) => {
         if (!state.expandedStates[fieldPath]) {
           state.expandedStates[fieldPath] = [];
         }
         state.expandedStates[fieldPath][itemIndex] = expanded;
+        console.log('[arrayFieldStore] expandedStates updated', {
+          fieldPath,
+          newExpandedStates: state.expandedStates[fieldPath],
+        });
       });
     },
 
@@ -192,6 +203,34 @@ export const useArrayFieldStore = create<ArrayFieldState & ArrayFieldActions>()(
           state.moveCallbacks[fieldPath] = {};
         }
         state.moveCallbacks[fieldPath][itemIndex] = callbacks;
+      });
+    },
+
+    expandItemsByPath: (fieldPath, itemIds) => {
+      set((state) => {
+        const items = state.itemsData[fieldPath];
+        if (!items || !Array.isArray(items)) {
+          return;
+        }
+
+        const expandedStates = state.expandedStates[fieldPath];
+        if (!expandedStates) {
+          return;
+        }
+
+        // For each ID in the path, find matching item and expand it
+        itemIds.forEach((itemId) => {
+          const itemIndex = items.findIndex((item) => {
+            if (!item || typeof item !== 'object') return false;
+            const data = item as Record<string, unknown>;
+            // Match by id, caption, or title field
+            return data.id === itemId || data.caption === itemId || data.title === itemId;
+          });
+
+          if (itemIndex !== -1 && itemIndex < expandedStates.length) {
+            expandedStates[itemIndex] = true;
+          }
+        });
       });
     },
 
