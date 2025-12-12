@@ -11,7 +11,6 @@ import { useForm } from './useForm';
 import { RestartSnackbarType, useRestartSnackbar } from '@/components/RestartSnackbar';
 import { isWikiWorkspace, nonConfigFields } from '@services/workspaces/interface';
 import { isEqual, omit } from 'lodash';
-import { useAvailableTags } from '../AddWorkspace/useAvailableTags';
 import { AppearanceOptions } from './AppearanceOptions';
 import { MiscOptions } from './MiscOptions';
 import { SaveAndSyncOptions } from './SaveAndSyncOptions';
@@ -31,10 +30,6 @@ export default function EditWorkspace(): React.JSX.Element {
   const { name } = workspace ?? {};
 
   const isSubWiki = isWiki ? workspace.isSubWiki : false;
-  const mainWikiToLink = isWiki ? workspace.mainWikiToLink : null;
-
-  // Fetch all tags from main wiki for autocomplete suggestions
-  const availableTags = useAvailableTags(mainWikiToLink ?? undefined, isSubWiki);
 
   // Check if there are sub-workspaces for this main workspace
   const hasSubWorkspaces = usePromiseValue(async () => {
@@ -75,7 +70,6 @@ export default function EditWorkspace(): React.JSX.Element {
           <SubWorkspaceRouting
             workspace={workspace}
             workspaceSetter={workspaceSetter}
-            availableTags={availableTags}
             isSubWiki={isSubWiki}
           />
         )}

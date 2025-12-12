@@ -4,18 +4,18 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { IWikiWorkspace } from '@services/workspaces/interface';
+import { useAvailableTags } from '../AddWorkspace/useAvailableTags';
 import { OptionsAccordion, OptionsAccordionSummary, TextField } from './styles';
 
 interface SubWorkspaceRoutingProps {
   workspace: IWikiWorkspace;
   workspaceSetter: (newValue: IWikiWorkspace, requestSaveAndRestart?: boolean) => void;
-  availableTags: string[];
   isSubWiki: boolean;
 }
 
 export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.Element {
   const { t } = useTranslation();
-  const { workspace, workspaceSetter, availableTags, isSubWiki } = props;
+  const { workspace, workspaceSetter, isSubWiki } = props;
   const [tagInputValue, setTagInputValue] = useState<string>('');
 
   const {
@@ -30,6 +30,7 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
     ? t('AddWorkspace.TagNameInputWarning')
     : (isSubWiki ? t('AddWorkspace.TagNameHelp') : t('AddWorkspace.TagNameHelpForMain'));
 
+  const availableTags = useAvailableTags(workspace.mainWikiID ?? undefined, true);
   return (
     <OptionsAccordion defaultExpanded={isSubWiki}>
       <Tooltip title={t('EditWorkspace.ClickToExpand')}>
