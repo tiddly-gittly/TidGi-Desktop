@@ -58,7 +58,7 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
       itemsOrder: state.itemsOrder,
     })),
   );
-  
+
   // Get data for this specific fieldPath
   const stableItemIds = allStableItemIds[fieldPath] ?? [];
   const itemsOrder = allItemsOrder[fieldPath] ?? [];
@@ -76,11 +76,11 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
   // Use ref to track previous formData and only update when content actually changes
   const previousFormDataReference = React.useRef<unknown[] | undefined>(undefined);
   const previousLengthReference = React.useRef<number>(-1);
-  
+
   useEffect(() => {
     const itemsData = Array.isArray(formData) ? formData : [];
     const currentLength = itemsData.length;
-    
+
     // Only update if:
     // 1. This is the first render (previousLengthReference.current === -1)
     // 2. Length changed

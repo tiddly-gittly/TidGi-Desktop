@@ -100,7 +100,6 @@ export function CommitDetailsPanel(
 
       // Pass the commit message to revertCommit for better revert message
       await window.service.git.revertCommit(workspace.wikiFolderLocation, commit.hash, commit.message);
-      console.log('Revert success');
       // Notify parent to select the new revert commit
       if (onRevertSuccess) {
         onRevertSuccess();
@@ -129,7 +128,6 @@ export function CommitDetailsPanel(
         dir: workspace.wikiFolderLocation,
         commitOnly: true,
       });
-      console.log('Commit success');
       // Notify parent to select the new commit
       if (onCommitSuccess) {
         onCommitSuccess();
@@ -143,11 +141,7 @@ export function CommitDetailsPanel(
 
   const handleCopyHash = () => {
     if (!commit) return;
-    navigator.clipboard.writeText(commit.hash).then(() => {
-      console.log('Hash copied');
-    }).catch((error: unknown) => {
-      console.error('Failed to copy hash:', error);
-    });
+    navigator.clipboard.writeText(commit.hash);
   };
 
   const handleOpenInGitHub = async () => {

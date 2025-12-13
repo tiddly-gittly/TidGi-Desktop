@@ -58,35 +58,35 @@ export const EditView: FC<EditViewProps> = ({
   // Use a ref to track if we're currently processing a scroll request
   const isProcessingScrollReference = React.useRef(false);
   const savedPathReference = React.useRef<string[]>([]);
-  
+
   useEffect(() => {
     if (formFieldsToScrollTo.length > 0 && editorMode === 'form' && agentFrameworkConfig && !isProcessingScrollReference.current) {
       // Mark as processing and save the path
       isProcessingScrollReference.current = true;
       savedPathReference.current = [...formFieldsToScrollTo];
       const savedPath = savedPathReference.current;
-      
+
       // NOTE: Don't clear formFieldsToScrollTo immediately!
       // RootObjectFieldTemplate also listens to this to switch tabs.
       // We'll clear it after the tab has had time to switch.
-      
+
       // Path format: ['prompts', 'system', 'child-id', 'child-id'] or ['prompts', 'system']
       // - savedPath[0]: top-level key (prompts, plugins, response)
       // - savedPath[1]: parent item id
       // - savedPath[2+]: nested child item ids (if present)
-      
+
       // Step 1: Wait for RootObjectFieldTemplate to switch tabs, then expand items
       setTimeout(() => {
         // Now clear the path after tab has switched
         setFormFieldsToScrollTo([]);
-        
+
         const topLevelKey = savedPath[0];
         if (savedPath.length > 1) {
           const firstItemId = savedPath[1];
           expandItemsByPath(topLevelKey, [firstItemId]);
         }
       }, 100);
-      
+
       // Step 2: After the parent expands and children render, expand nested items
       // If path has more than 2 elements, we have nested children to expand
       const hasNestedChildren = savedPath.length > 2;
@@ -100,7 +100,7 @@ export const EditView: FC<EditViewProps> = ({
               const data = item as Record<string, unknown> | null;
               return data?.id === firstItemId || data?.caption === firstItemId || data?.title === firstItemId;
             });
-            
+
             if (parentIndex !== -1) {
               const nestedFieldPath = `${topLevelKey}_${parentIndex}_children`;
               // Get the nested item IDs (from savedPath[2] onwards)
@@ -131,7 +131,7 @@ export const EditView: FC<EditViewProps> = ({
             }
           }, 300);
         }
-        
+
         // Mark processing as complete
         isProcessingScrollReference.current = false;
       }, scrollDelay);

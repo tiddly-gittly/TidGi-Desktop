@@ -53,7 +53,7 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
       registerMoveCallbacks: state.registerMoveCallbacks,
     })),
   );
-  
+
   // Get data for this specific item
   const expanded = expandedStates[fieldPath]?.[index] ?? false;
   const stableItemId = allStableItemIds[fieldPath]?.[index] ?? `item-${index}`;
@@ -75,15 +75,8 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
   });
 
   const handleToggleExpanded = useCallback(() => {
-    console.log('[ArrayFieldItemTemplate] handleToggleExpanded called', {
-      fieldPath,
-      index,
-      currentExpanded: expanded,
-      willBeExpanded: !expanded,
-      itemCaption: (itemData as any)?.caption,
-    });
     setItemExpanded(fieldPath, index, !expanded);
-  }, [fieldPath, index, expanded, setItemExpanded, itemData]);
+  }, [fieldPath, index, expanded, setItemExpanded]);
 
   // 获取当前项的数据来显示 caption
   const itemCaption = useMemo(() => {

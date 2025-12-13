@@ -442,14 +442,11 @@ export async function getFileBinaryContent(
 
   if (result.exitCode !== 0) {
     const errorMessage = Buffer.isBuffer(result.stderr) ? result.stderr.toString('utf-8') : String(result.stderr);
-    console.error('[getFileBinaryContent] Git error:', errorMessage);
     throw new Error(`Failed to get binary file content: ${errorMessage}`);
   }
 
   // When encoding is 'buffer', stdout is a Buffer (dugite 3.x)
   const buffer = Buffer.isBuffer(result.stdout) ? result.stdout : Buffer.from(String(result.stdout), 'binary');
-  console.log('[getFileBinaryContent] Buffer size:', buffer.length);
-
   return bufferToDataUrl(buffer, filePath);
 }
 
