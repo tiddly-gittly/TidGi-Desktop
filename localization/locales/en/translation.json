@@ -218,6 +218,9 @@
     "WikiRootTiddler": "Wiki Root Tiddler",
     "WikiRootTiddlerDescription": "Wiki's root tiddler determines the core behavior of the system, please read the official documentation to understand before modifying",
     "WikiRootTiddlerItems": {
+      "all": "Load all at once",
+      "lazy-images": "Load images on demand",
+      "lazy-all": "Load images and text on demand"
     }
   },
   "Error": {

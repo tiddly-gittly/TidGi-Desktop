@@ -218,6 +218,9 @@
     "WikiRootTiddler": "Tiddler racine du Wiki",
     "WikiRootTiddlerDescription": "Le tiddler racine du Wiki détermine le comportement de base du système, veuillez lire la documentation officielle pour comprendre avant de modifier",
     "WikiRootTiddlerItems": {
+      "all": "Tout charger en une fois",
+      "lazy-images": "Charger les images à la demande",
+      "lazy-all": "Charger les images et le texte à la demande"
     }
   },
   "Error": {

@@ -218,6 +218,9 @@
     "WikiRootTiddler": "知識庫根條目",
     "WikiRootTiddlerDescription": "知識庫的根條目（root-tiddler）決定了系統的核心行為，修改前請閱讀官方文件來了解",
     "WikiRootTiddlerItems": {
+      "all": "全量載入",
+      "lazy-all": "按需載入圖片和文字",
+      "lazy-images": "按需載入圖片"
     }
   },
   "Error": {

@@ -218,6 +218,9 @@
     "WikiRootTiddler": "WikiルートTiddler",
     "WikiRootTiddlerDescription": "WikiのルートTiddlerはシステムのコア動作を決定します。変更する前に公式ドキュメントを読んで理解してください",
     "WikiRootTiddlerItems": {
+      "all": "一度にすべて読み込む",
+      "lazy-images": "必要に応じて画像を読み込む",
+      "lazy-all": "必要に応じて画像とテキストを読み込む"
     }
   },
   "Error": {
