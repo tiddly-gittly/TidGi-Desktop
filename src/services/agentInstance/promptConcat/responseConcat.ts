@@ -41,12 +41,13 @@ export async function responseConcat(
   const { agentFrameworkConfig } = agentConfig;
   const responses: AgentFrameworkConfig['response'] = Array.isArray(agentFrameworkConfig?.response) ? (agentFrameworkConfig?.response || []) : [];
   const toolConfigs = (Array.isArray(agentFrameworkConfig.plugins) ? agentFrameworkConfig.plugins : []) as IPromptConcatTool[];
+  const enabledToolConfigs = toolConfigs.filter((tool) => tool.enabled !== false);
 
   let modifiedResponses = cloneDeep(responses) as AgentResponse[];
   // Create hooks instance
   const hooks = createAgentFrameworkHooks();
   // Register all tools from configuration
-  for (const tool of toolConfigs) {
+  for (const tool of enabledToolConfigs) {
     const builtInTool = pluginRegistry.get(tool.toolId);
     if (builtInTool) {
       builtInTool(hooks);
@@ -59,7 +60,7 @@ export async function responseConcat(
   let yieldNextRoundTo: YieldNextRoundTarget | undefined;
   let toolCallInfo: ToolCallingMatch | undefined;
 
-  for (const tool of toolConfigs) {
+  for (const tool of enabledToolConfigs) {
     const responseContext: PostProcessContext = {
       agentFrameworkContext: context,
       messages,

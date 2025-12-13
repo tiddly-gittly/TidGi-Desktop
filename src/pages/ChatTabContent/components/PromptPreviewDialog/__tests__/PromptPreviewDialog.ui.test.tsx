@@ -55,6 +55,12 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
   });
 
   it('should render dialog when open=true', async () => {
+    act(() => {
+      useAgentChatStore.setState({
+        previewResult: { flatPrompts: [], processedPrompts: [] },
+      });
+    });
+
     render(
       <TestWrapper>
         <PromptPreviewDialog
@@ -75,6 +81,8 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
 
   // IMPROVED: Example of testing with state changes using real store
   it('should handle loading states properly', async () => {
+    vi.useFakeTimers();
+
     // Set initial loading state using real store (wrap in act)
     act(() => {
       useAgentChatStore.setState({
@@ -94,6 +102,11 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
       </TestWrapper>,
     );
 
+    // PreviewProgressBar is debounced to avoid flashing
+    act(() => {
+      vi.advanceTimersByTime(250);
+    });
+
     // Should show loading indicator via visible text
     expect(screen.getByText('Starting...')).toBeInTheDocument();
     expect(screen.getByText('⚡ Live preview - this is not the final version and is still loading')).toBeInTheDocument();
@@ -111,5 +124,7 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     const currentState = useAgentChatStore.getState();
     expect(currentState.previewLoading).toBe(false);
     expect(currentState.previewProgress).toBe(1);
+
+    vi.useRealTimers();
   });
 });

@@ -146,6 +146,67 @@ describe('wikiOperationTool', () => {
   });
 
   describe('tool execution', () => {
+    it('should ignore tool calls when plugin is disabled', async () => {
+      const hooks = createAgentFrameworkHooks();
+      wikiOperationTool(hooks);
+
+      const agentFrameworkContext = makeAgentFrameworkContext();
+
+      const context = {
+        agentFrameworkContext,
+        agentFrameworkConfig: {
+          plugins: [
+            {
+              toolId: 'wikiOperation',
+              enabled: false,
+              wikiOperationParam: {
+                toolResultDuration: 1,
+              },
+            },
+          ],
+        },
+        response: {
+          status: 'done' as const,
+          content: 'AI response with tool call',
+        },
+        actions: {},
+      };
+
+      const createParams = {
+        workspaceName: 'Test Wiki 1',
+        operation: WikiChannel.addTiddler,
+        title: 'Test Note',
+        text: 'Test content',
+        extraMeta: JSON.stringify({ tags: ['tag1', 'tag2'] }),
+        options: JSON.stringify({}),
+      } as const;
+      context.response.content = `<tool_use name="wiki-operation">${JSON.stringify(createParams)}</tool_use>`;
+
+      agentFrameworkContext.agent.messages.push({
+        id: `m-${Date.now()}`,
+        agentId: agentFrameworkContext.agent.id,
+        role: 'assistant',
+        content: context.response.content,
+        modified: new Date(),
+      });
+
+      const responseCtx: AIResponseContext = {
+        agentFrameworkContext,
+        toolConfig: context.agentFrameworkConfig.plugins[0] as unknown as IPromptConcatTool,
+        agentFrameworkConfig: context.agentFrameworkConfig as { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
+        response: { requestId: 'r-disabled', content: context.response.content, status: 'done' } as AIStreamResponse,
+        requestId: 'r-disabled',
+        isFinal: true,
+        actions: {} as ToolActions,
+      };
+
+      await hooks.responseComplete.promise(responseCtx);
+
+      expect(container.get<Partial<IWikiService>>(serviceIdentifier.Wiki).wikiOperationInServer).not.toHaveBeenCalled();
+      expect(agentFrameworkContext.agent.messages.some(m => m.metadata?.isToolResult)).toBe(false);
+      expect(responseCtx.actions?.yieldNextRoundTo).toBeUndefined();
+    });
+
     it('should execute create operation successfully', async () => {
       const hooks = createAgentFrameworkHooks();
       wikiOperationTool(hooks);

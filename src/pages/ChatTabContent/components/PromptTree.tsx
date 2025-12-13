@@ -49,6 +49,10 @@ export const PromptTreeNode = memo(({
   depth: number;
   fieldPath?: string[];
 }): React.ReactElement => {
+  if (node.enabled === false) {
+    return <></>;
+  }
+
   const { setFormFieldsToScrollTo } = useAgentChatStore(
     useShallow((state) => ({
       setFormFieldsToScrollTo: state.setFormFieldsToScrollTo,
@@ -108,9 +112,11 @@ export const PromptTree = memo(({ prompts }: { prompts?: IPrompt[] }): React.Rea
     return <EmptyState>No prompt tree to display</EmptyState>;
   }
 
+  const enabledPrompts = prompts.filter((prompt) => prompt.enabled !== false);
+
   return (
     <Box>
-      {prompts.map((item) => {
+      {enabledPrompts.map((item) => {
         const fieldPath = ['prompts', item.id];
         return <PromptTreeNode key={item.id} node={item} depth={0} fieldPath={fieldPath} />;
       })}

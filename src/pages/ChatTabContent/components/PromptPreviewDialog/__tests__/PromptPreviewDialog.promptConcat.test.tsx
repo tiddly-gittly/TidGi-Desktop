@@ -107,6 +107,44 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     expect(hasValidResults).toBe(true);
   });
 
+  it('should not inject tool info for disabled plugins', async () => {
+    const baseConfig = defaultAgents[0].agentFrameworkConfig as Record<string, unknown>;
+    const agentFrameworkConfig = structuredClone(baseConfig) as { plugins?: Array<Record<string, unknown>> };
+
+    if (Array.isArray(agentFrameworkConfig.plugins)) {
+      agentFrameworkConfig.plugins = agentFrameworkConfig.plugins.map((plugin) => {
+        if (plugin.toolId === 'wikiOperation') {
+          return { ...plugin, enabled: false };
+        }
+        return plugin;
+      });
+    }
+
+    const messages = [{ id: 'test', role: 'user' as const, content: 'Hello world', created: new Date(), modified: new Date(), agentId: 'test' }];
+    const observable = window.observables.agentInstance.concatPrompt({ agentFrameworkConfig } as never, messages);
+
+    let finalState: unknown;
+    await new Promise<void>((resolve) => {
+      observable.subscribe({
+        next: (state) => {
+          const s = state as { isComplete?: boolean };
+          if (s.isComplete) {
+            finalState = state;
+          }
+        },
+        complete: () => resolve(),
+        error: () => resolve(),
+      });
+    });
+
+    expect(isPreviewResult(finalState)).toBe(true);
+    if (!isPreviewResult(finalState)) return;
+
+    const allPromptsText = JSON.stringify(finalState.processedPrompts);
+    expect(allPromptsText).not.toContain('wiki-operation');
+    expect(allPromptsText).toContain('wiki-search');
+  });
+
   // Type guard for preview result shape
   const isPreviewResult = (v: unknown): v is { flatPrompts: ModelMessage[]; processedPrompts: IPrompt[] } => {
     if (!v || typeof v !== 'object') return false;

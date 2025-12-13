@@ -246,8 +246,13 @@ export function defineTool<
             return;
           }
 
+          if (toolConfig && typeof toolConfig === 'object' && 'enabled' in toolConfig && toolConfig.enabled === false) {
+            callback();
+            return;
+          }
+
           // Get the typed config
-          const rawConfig = (toolConfig as Record<string, unknown>)[parameterKey];
+          const rawConfig = toolConfig && typeof toolConfig === 'object' ? (toolConfig as Record<string, unknown>)[parameterKey] : undefined;
           if (!rawConfig) {
             callback();
             return;
@@ -372,16 +377,23 @@ export function defineTool<
 
           // Find our tool's config - first try agentFrameworkConfig.plugins, then fall back to direct toolConfig
           let ourToolConfig = agentFrameworkConfig?.plugins?.find(
-            (p: { toolId: string }) => p.toolId === toolId,
+            (p) => typeof p === 'object' && p !== null && 'toolId' in p && (p as { toolId: string }).toolId === toolId,
           );
 
           // Fall back to direct toolConfig if provided (for backward compatibility with tests)
-          if (!ourToolConfig && directToolConfig?.toolId === toolId) {
+          if (
+            !ourToolConfig && directToolConfig && typeof directToolConfig === 'object' && 'toolId' in directToolConfig && (directToolConfig as { toolId: string }).toolId === toolId
+          ) {
             ourToolConfig = directToolConfig;
           }
 
           // Skip if this tool is not configured for this agent
           if (!ourToolConfig) {
+            callback();
+            return;
+          }
+
+          if (ourToolConfig && typeof ourToolConfig === 'object' && 'enabled' in ourToolConfig && ourToolConfig.enabled === false) {
             callback();
             return;
           }
@@ -397,7 +409,7 @@ export function defineTool<
           const toolCall = toolMatch.found ? toolMatch : null;
 
           // Try to parse config (may be empty for tools that only handle LLM tool calls)
-          const rawConfig = (ourToolConfig as Record<string, unknown>)[parameterKey];
+          const rawConfig = ourToolConfig && typeof ourToolConfig === 'object' ? (ourToolConfig as Record<string, unknown>)[parameterKey] : undefined;
           let config: z.infer<TConfigSchema> | undefined;
           if (rawConfig) {
             try {

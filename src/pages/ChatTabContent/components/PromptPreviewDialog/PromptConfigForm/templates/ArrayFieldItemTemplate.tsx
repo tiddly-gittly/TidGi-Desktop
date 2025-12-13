@@ -88,7 +88,7 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
     return '';
   }, [itemData]);
 
-  const itemEnabled = useMemo(() => Boolean((itemData as Record<string, unknown> | undefined)?.enabled), [itemData]);
+  const itemEnabled = useMemo(() => (itemData as Record<string, unknown> | undefined)?.enabled !== false, [itemData]);
 
   const handleToggleEnabled = useCallback(() => {
     const pathSegments: Array<string | number> | null = Array.isArray(arrayItemContext.arrayFieldPathSegments)

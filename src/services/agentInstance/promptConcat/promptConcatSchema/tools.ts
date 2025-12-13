@@ -17,6 +17,7 @@ export type IPromptConcatTool = {
   id: string;
   caption?: string;
   content?: string;
+  enabled?: boolean;
   forbidOverrides?: boolean;
   toolId: string;
 

@@ -210,12 +210,13 @@ export async function* promptConcatStream(
   const agentFrameworkConfig = agentConfig.agentFrameworkConfig;
   const promptConfigs = Array.isArray(agentFrameworkConfig?.prompts) ? agentFrameworkConfig.prompts : [];
   const toolConfigs = (Array.isArray(agentFrameworkConfig?.plugins) ? agentFrameworkConfig.plugins : []) as IPromptConcatTool[];
+  const enabledToolConfigs = toolConfigs.filter((tool) => tool.enabled !== false);
   const promptsCopy = cloneDeep(promptConfigs);
   const sourcePaths = generateSourcePaths(promptsCopy, toolConfigs);
 
   const hooks = createAgentFrameworkHooks();
   // Register tools that match the configuration
-  for (const tool of toolConfigs) {
+  for (const tool of enabledToolConfigs) {
     const builtInTool = pluginRegistry.get(tool.toolId);
     if (builtInTool) {
       builtInTool(hooks);
@@ -230,14 +231,14 @@ export async function* promptConcatStream(
 
   // Process each plugin through hooks with streaming
   let modifiedPrompts = promptsCopy;
-  const totalSteps = toolConfigs.length + 2; // plugins + finalize + flatten
+  const totalSteps = enabledToolConfigs.length + 2; // plugins + finalize + flatten
 
-  for (let index = 0; index < toolConfigs.length; index++) {
+  for (let index = 0; index < enabledToolConfigs.length; index++) {
     const context: PromptConcatHookContext = {
       agentFrameworkContext: agentFrameworkContext,
       messages,
       prompts: modifiedPrompts,
-      toolConfig: toolConfigs[index],
+      toolConfig: enabledToolConfigs[index],
       pluginIndex: index,
       metadata: { sourcePaths },
     };
@@ -257,13 +258,13 @@ export async function* promptConcatStream(
         processedPrompts: modifiedPrompts,
         flatPrompts: intermediateFlat,
         step: 'plugin',
-        currentPlugin: toolConfigs[index],
+        currentPlugin: enabledToolConfigs[index],
         progress: (index + 1) / totalSteps,
         isComplete: false,
       };
     } catch (error) {
       logger.error('Plugin processing error', {
-        toolConfig: toolConfigs[index],
+        toolConfig: enabledToolConfigs[index],
         error,
       });
       // Continue processing other plugins even if one fails
@@ -275,7 +276,7 @@ export async function* promptConcatStream(
     processedPrompts: modifiedPrompts,
     flatPrompts: flattenPrompts(modifiedPrompts),
     step: 'finalize',
-    progress: (toolConfigs.length + 1) / totalSteps,
+    progress: (enabledToolConfigs.length + 1) / totalSteps,
     isComplete: false,
   };
 
@@ -299,7 +300,7 @@ export async function* promptConcatStream(
     processedPrompts: modifiedPrompts,
     flatPrompts: flattenPrompts(modifiedPrompts),
     step: 'flatten',
-    progress: (toolConfigs.length + 2) / totalSteps,
+    progress: (enabledToolConfigs.length + 2) / totalSteps,
     isComplete: false,
   };
 
