@@ -14,6 +14,7 @@ import type { WorkspacesListParameter } from '@services/agentInstance/tools/work
  * This includes all possible parameter fields for type safety
  */
 export type IPromptConcatTool = {
+  [key: string]: unknown;
   id: string;
   caption?: string;
   content?: string;

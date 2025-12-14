@@ -132,8 +132,12 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
             finalState = state;
           }
         },
-        complete: () => resolve(),
-        error: () => resolve(),
+        complete: () => {
+          resolve();
+        },
+        error: () => {
+          resolve();
+        },
       });
     });
 

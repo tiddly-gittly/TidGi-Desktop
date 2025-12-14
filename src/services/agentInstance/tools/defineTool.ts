@@ -246,13 +246,13 @@ export function defineTool<
             return;
           }
 
-          if (toolConfig && typeof toolConfig === 'object' && 'enabled' in toolConfig && toolConfig.enabled === false) {
+          if (toolConfig.enabled === false) {
             callback();
             return;
           }
 
           // Get the typed config
-          const rawConfig = toolConfig && typeof toolConfig === 'object' ? (toolConfig as Record<string, unknown>)[parameterKey] : undefined;
+          const rawConfig: unknown = toolConfig[parameterKey];
           if (!rawConfig) {
             callback();
             return;
@@ -376,16 +376,8 @@ export function defineTool<
           };
 
           // Find our tool's config - first try agentFrameworkConfig.plugins, then fall back to direct toolConfig
-          let ourToolConfig = agentFrameworkConfig?.plugins?.find(
-            (p) => typeof p === 'object' && p !== null && 'toolId' in p && (p as { toolId: string }).toolId === toolId,
-          );
-
-          // Fall back to direct toolConfig if provided (for backward compatibility with tests)
-          if (
-            !ourToolConfig && directToolConfig && typeof directToolConfig === 'object' && 'toolId' in directToolConfig && (directToolConfig as { toolId: string }).toolId === toolId
-          ) {
-            ourToolConfig = directToolConfig;
-          }
+          const configuredToolConfig = agentFrameworkConfig?.plugins?.find((p) => p.toolId === toolId);
+          const ourToolConfig = configuredToolConfig ?? (directToolConfig?.toolId === toolId ? directToolConfig : undefined);
 
           // Skip if this tool is not configured for this agent
           if (!ourToolConfig) {
@@ -393,7 +385,7 @@ export function defineTool<
             return;
           }
 
-          if (ourToolConfig && typeof ourToolConfig === 'object' && 'enabled' in ourToolConfig && ourToolConfig.enabled === false) {
+          if (ourToolConfig.enabled === false) {
             callback();
             return;
           }
@@ -409,7 +401,7 @@ export function defineTool<
           const toolCall = toolMatch.found ? toolMatch : null;
 
           // Try to parse config (may be empty for tools that only handle LLM tool calls)
-          const rawConfig = ourToolConfig && typeof ourToolConfig === 'object' ? (ourToolConfig as Record<string, unknown>)[parameterKey] : undefined;
+          const rawConfig: unknown = ourToolConfig[parameterKey];
           let config: z.infer<TConfigSchema> | undefined;
           if (rawConfig) {
             try {
@@ -422,7 +414,7 @@ export function defineTool<
           // Build handler context
           const handlerContext: ResponseHandlerContext<TConfigSchema, TLLMToolSchemas> = {
             config,
-            toolConfig: ourToolConfig as PromptConcatHookContext['toolConfig'],
+            toolConfig: ourToolConfig,
             messages: agentFrameworkContext.agent.messages,
             agentFrameworkContext,
             response,
@@ -621,7 +613,12 @@ ${options.isError ? 'Error' : 'Result'}: ${options.result}
             return;
           }
 
-          const rawConfig = (toolConfig as Record<string, unknown>)[parameterKey];
+          if (toolConfig.enabled === false) {
+            callback();
+            return;
+          }
+
+          const rawConfig: unknown = toolConfig[parameterKey];
           if (!rawConfig) {
             callback();
             return;

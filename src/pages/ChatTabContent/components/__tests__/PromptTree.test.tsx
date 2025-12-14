@@ -1,9 +1,9 @@
 /**
  * Tests for PromptTree component
  */
-import { render, screen } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import type { IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
