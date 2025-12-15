@@ -1,21 +1,22 @@
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { AccordionDetails, Autocomplete, AutocompleteRenderInputParams, List, ListItem, ListItemText, Switch, Tooltip, Typography } from '@mui/material';
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { IWikiWorkspace } from '@services/workspaces/interface';
+import { useAvailableTags } from '../AddWorkspace/useAvailableTags';
 import { OptionsAccordion, OptionsAccordionSummary, TextField } from './styles';
 
 interface SubWorkspaceRoutingProps {
   workspace: IWikiWorkspace;
   workspaceSetter: (newValue: IWikiWorkspace, requestSaveAndRestart?: boolean) => void;
-  availableTags: string[];
   isSubWiki: boolean;
 }
 
 export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.Element {
   const { t } = useTranslation();
-  const { workspace, workspaceSetter, availableTags, isSubWiki } = props;
+  const { workspace, workspaceSetter, isSubWiki } = props;
+  const [tagInputValue, setTagInputValue] = useState<string>('');
 
   const {
     tagNames,
@@ -25,6 +26,11 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
     ignoreSymlinks,
   } = workspace;
 
+  const tagHelperText = tagInputValue.trim().length > 0
+    ? t('AddWorkspace.TagNameInputWarning')
+    : (isSubWiki ? t('AddWorkspace.TagNameHelp') : t('AddWorkspace.TagNameHelpForMain'));
+
+  const availableTags = useAvailableTags(workspace.mainWikiID ?? undefined, true);
   return (
     <OptionsAccordion defaultExpanded={isSubWiki}>
       <Tooltip title={t('EditWorkspace.ClickToExpand')}>
@@ -41,9 +47,13 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
           freeSolo
           options={availableTags}
           value={tagNames}
+          onInputChange={(_event: React.SyntheticEvent, newInputValue: string) => {
+            setTagInputValue(newInputValue);
+          }}
           onChange={(_event: React.SyntheticEvent, newValue: string[]) => {
             void _event;
             workspaceSetter({ ...workspace, tagNames: newValue }, true);
+            setTagInputValue('');
           }}
           slotProps={{
             chip: {
@@ -54,7 +64,7 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
             <TextField
               {...parameters}
               label={t('AddWorkspace.TagName')}
-              helperText={isSubWiki ? t('AddWorkspace.TagNameHelp') : t('AddWorkspace.TagNameHelpForMain')}
+              helperText={tagHelperText}
             />
           )}
         />

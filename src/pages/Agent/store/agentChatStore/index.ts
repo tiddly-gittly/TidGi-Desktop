@@ -19,6 +19,7 @@ export const useAgentChatStore = create<AgentChatStoreType>()((set, get, api) =>
 
     // Preview dialog state
     previewDialogOpen: false,
+    previewDialogBaseMode: 'preview',
     previewDialogTab: 'tree',
     previewLoading: false,
     previewProgress: 0,
@@ -27,7 +28,6 @@ export const useAgentChatStore = create<AgentChatStoreType>()((set, get, api) =>
     previewResult: null,
     lastUpdated: null,
     formFieldsToScrollTo: [],
-    expandedArrayItems: new Map(),
   };
 
   // Merge all actions and initial state

@@ -1,12 +1,13 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { styled } from '@mui/material/styles';
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Route, Switch } from 'wouter';
 
 import { PageType } from '@/constants/pageTypes';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
+import { ContentLoading } from './ContentLoading';
 import FindInPage from './FindInPage';
 import { SideBar } from './Sidebar';
 import { useInitialPage } from './useInitialPage';
@@ -77,14 +78,16 @@ export default function Main(): React.JSX.Element {
         {showSidebar && <SideBar />}
         <ContentRoot $sidebar={showSidebar}>
           <FindInPage />
-          <Switch>
-            <Route path={`/${PageType.wiki}/:id/`} component={WikiBackground} />
-            <Route path={`/${PageType.agent}`} component={subPages.Agent} />
-            <Route path={`/${PageType.guide}`} component={subPages.Guide} />
-            <Route path={`/${PageType.help}`} component={subPages.Help} />
-            <Route path='/' component={subPages.Guide} />
-            <Route component={subPages.Guide} />
-          </Switch>
+          <Suspense fallback={<ContentLoading />}>
+            <Switch>
+              <Route path={`/${PageType.wiki}/:id/`} component={WikiBackground} />
+              <Route path={`/${PageType.agent}`} component={subPages.Agent} />
+              <Route path={`/${PageType.guide}`} component={subPages.Guide} />
+              <Route path={`/${PageType.help}`} component={subPages.Help} />
+              <Route path='/' component={subPages.Guide} />
+              <Route component={subPages.Guide} />
+            </Switch>
+          </Suspense>
         </ContentRoot>
       </Root>
     </OuterRoot>

@@ -40,9 +40,7 @@
       "Title": "設定の問題"
     },
     "InputPlaceholder": "メッセージを入力、Ctrl+Enterで送信",
-    "Send": "送信",
-    "SessionGroup": {
-    }
+    "Send": "送信"
   },
   "Common": {
     "None": "選択されていません"
@@ -173,6 +171,7 @@
     "ExternalApiDatabaseDescription": "外部APIデバッグ情報を含むデータベースで、占有スペースは{{size}}です",
     "FailedToAddModel": "モデルの追加に失敗しました",
     "FailedToAddProvider": "プロバイダーの追加に失敗しました",
+    "FailedToDeleteProvider": "プロバイダー {{providerName}} の削除に失敗しました",
     "FailedToRemoveModel": "モデルの削除に失敗しました",
     "FailedToSaveSettings": "設定の保存に失敗しました",
     "FailedToUpdateModel": "モデルを更新できません",
@@ -202,6 +201,7 @@
     "ProviderClass": "プロバイダーインターフェースタイプ",
     "ProviderConfiguration": "プロバイダー設定",
     "ProviderConfigurationDescription": "AIプロバイダーのAPIキーやその他の設定を構成します",
+    "ProviderDeleted": "プロバイダー {{providerName}} は削除されました",
     "ProviderDisabled": "プロバイダーが無効になりました",
     "ProviderEnabled": "プロバイダーが有効になりました",
     "ProviderName": "プロバイダー名",
@@ -239,6 +239,12 @@
   "Prompt": {
     "AutoRefresh": "プレビューは入力テキストの変更に応じて自動的に更新されます",
     "CodeEditor": "コードエディタ",
+    "Edit": "プロンプト編集",
+    "EnterEditSideBySide": "分割画面表示編集",
+    "EnterFullScreen": "全画面表示に入る",
+    "EnterPreviewSideBySide": "分割画面表示プレビュー",
+    "ExitFullScreen": "全画面表示を終了",
+    "ExitSideBySide": "分割画面を終了する",
     "Flat": "グリッドビュー",
     "FormEditor": "フォームエディター",
     "LastUpdated": "前回の更新時間",
@@ -252,10 +258,13 @@
   },
   "PromptConfig": {
     "AddItem": "プロジェクトを追加",
+    "Collapse": "折りたたみ",
     "EmptyArray": "まだアイテムが追加されていません。下のボタンをクリックして最初のアイテムを追加してください。",
+    "Expand": "展開",
     "ItemCount": "{{count}} 件",
-    "RemoveItem": "リスト項目を削除",
+    "ItemIndex": "第 {{index}} 項",
     "Tabs": {
+      "Plugins": "プラグイン",
       "Prompts": "プロンプト",
       "Response": "応答"
     },
@@ -267,8 +276,20 @@
   },
   "Schema": {
     "AIConfig": {
+      "Default": "デフォルトで使用される対話モデル",
+      "DefaultTitle": "デフォルトモデル",
       "Description": "AI 会話設定の構成",
-      "Title": "AI設定"
+      "Embedding": "ベクトル検索用の埋め込みモデル",
+      "EmbeddingTitle": "埋め込みモデル",
+      "Free": "低コストモデルを使用したコストセンシティブタスク",
+      "FreeTitle": "無料/低コストモデル",
+      "ImageGeneration": "画像生成用のモデル",
+      "ImageGenerationTitle": "画像生成モデル",
+      "Speech": "テキスト読み上げ（TTS）用のモデル",
+      "SpeechTitle": "音声合成モデル",
+      "Title": "AI設定",
+      "Transcriptions": "音声からテキストへの変換（STT）に使用されるモデル",
+      "TranscriptionsTitle": "音声テキスト変換モデル"
     },
     "AgentConfig": {
       "Description": "エージェント設定",
@@ -276,50 +297,103 @@
       "IdTitle": "エージェントID",
       "PromptConfig": {
         "Description": "プロンプト設定",
+        "Plugins": "プラグイン設定リスト",
         "Prompts": "プロンプト設定リスト",
         "Response": "応答設定リスト",
         "Title": "プロンプト設定"
       },
       "Title": "エージェント設定"
     },
-    "AutoReroll": {
-    },
     "BaseAPIConfig": {
-      "API": "APIプロバイダーとモデル設定",
-      "APITitle": "API設定",
-      "Description": "基本API設定",
       "ModelParameters": "モデルパラメータ設定",
-      "ModelParametersTitle": "モデルパラメータ",
-      "Title": "基本API設定"
+      "ModelParametersTitle": "モデルパラメータ"
+    },
+    "Common": {
+      "ToolListPosition": {
+        "Description": "プロンプト内でのツールリスト挿入位置の設定",
+        "Position": "ターゲットに対する挿入位置",
+        "PositionTitle": "挿入",
+        "TargetId": "ターゲット要素のID",
+        "TargetIdTitle": "ターゲットID"
+      },
+      "ToolListPositionTitle": "ツールリスト位置"
     },
     "DefaultAgents": {
       "Description": "デフォルトのインテリジェントエージェント設定リスト",
       "Title": "デフォルトエージェント"
     },
-    "DynamicPosition": {
-    },
     "FullReplacement": {
       "Description": "完全置換パラメータ設定",
       "SourceType": "ソースタイプ",
       "SourceTypeTitle": "ソースタイプ",
-      "SourceTypes": {
-      },
       "TargetId": "ターゲット要素ID",
       "TargetIdTitle": "ターゲットID",
       "Title": "完全置換パラメータ"
     },
-    "Function": {
-    },
-    "HandlerConfig": {
-    },
-    "JavascriptTool": {
+    "Git": {
+      "Description": "Gitのコミットログを検索し、特定のファイル内容を読み取る",
+      "Title": "Git ツール",
+      "Tool": {
+        "Parameters": {
+          "commitHash": {
+            "Description": "ハッシュ値を提出",
+            "Title": "ハッシュを提出"
+          },
+          "filePath": {
+            "Description": "ファイルパス（ファイル検索モード用）",
+            "Title": "ファイルパス"
+          },
+          "maxLines": {
+            "Description": "最大行数（デフォルト500）",
+            "Title": "最大行数"
+          },
+          "page": {
+            "Description": "結果ページ番号（1から開始）",
+            "Title": "ページ番号"
+          },
+          "pageSize": {
+            "Description": "ページあたりの結果数",
+            "Title": "ページあたりの数量"
+          },
+          "searchMode": {
+            "Description": "検索モード：提出情報、ファイルパス、日付範囲で検索または検索しない",
+            "Title": "検索モード"
+          },
+          "searchQuery": {
+            "Description": "検索クエリ文字列（メッセージ検索モード）",
+            "Title": "検索クエリ"
+          },
+          "since": {
+            "Description": "開始日（ISO 8601形式）",
+            "Title": "開始日"
+          },
+          "until": {
+            "Description": "終了日（ISO 8601形式）",
+            "Title": "終了日"
+          },
+          "workspaceName": {
+            "Description": "検索するワークスペース名またはID",
+            "Title": "ワークスペース名"
+          }
+        },
+        "ReadFile": {
+          "Parameters": {
+            "commitHash": {
+            },
+            "filePath": {
+            },
+            "maxLines": {
+            },
+            "workspaceName": {
+            }
+          }
+        }
+      }
     },
     "MCP": {
       "Description": "モデルコンテキストプロトコルパラメータ設定",
       "Id": "MCP サーバー ID",
       "IdTitle": "サーバーID",
-      "ResponseProcessing": {
-      },
       "TimeoutMessage": "タイムアウトメッセージ",
       "TimeoutMessageTitle": "タイムアウトメッセージ",
       "TimeoutSecond": "タイムアウト時間（秒）",
@@ -338,29 +412,23 @@
       "TopP": "Top P サンプリングパラメータ",
       "TopPTitle": "トップP"
     },
+    "ModelSelection": {
+      "Description": "モデルプロバイダーと具体的なモデル名を選択する",
+      "Model": "モデル名（例：gpt-4o、Qwen2.5-7B-Instruct）",
+      "ModelTitle": "モデル",
+      "Provider": "モデルプロバイダー（例：OpenAI、SiliconFlow、Googleなど）",
+      "ProviderTitle": "プロバイダー",
+      "Title": "モデル選択"
+    },
     "Plugin": {
-      "Caption": "簡単な説明",
-      "CaptionTitle": "タイトル",
-      "Content": "プラグインの内容または説明",
-      "ContentTitle": "内容",
-      "ForbidOverrides": "このプラグインのパラメータを実行時に上書きすることを禁止しますか？",
-      "ForbidOverridesTitle": "上書き禁止",
-      "Id": "プラグインID",
-      "IdTitle": "ID",
-      "PluginId": "特定のプラグインを選択するための識別子",
-      "PluginIdTitle": "プラグイン識別子"
     },
     "Position": {
-      "Bottom": "下部から数件のメッセージをオフセット",
-      "BottomTitle": "底部オフセット",
       "Description": "位置パラメータ設定",
       "TargetId": "ターゲット要素ID",
       "TargetIdTitle": "ターゲットID",
       "Title": "位置引数",
       "Type": "位置タイプ",
-      "TypeTitle": "位置タイプ",
-      "Types": {
-      }
+      "TypeTitle": "位置タイプ"
     },
     "Prompt": {
       "Caption": "簡単な説明",
@@ -379,64 +447,72 @@
         "System": "システム - AIの行動ルールと背景設定を定義する",
         "User": "ユーザー - ユーザーの入力とリクエストをシミュレートする"
       },
+      "Source": "このプロンプトの出典または引用（例：ファイルパス、URLなど）",
+      "SourceTitle": "出典",
       "Tags": "タグリスト",
       "TagsTitle": "ラベル",
       "Text": "プロンプトの内容には、<<変数名>>などのウィキテキストでサポートされている構文を含めることができます。",
       "TextTitle": "テキスト",
       "Title": "プロンプト"
     },
-    "PromptDynamicModification": {
-      "DynamicModificationTypes": {
-      }
-    },
-    "PromptPart": {
-    },
     "ProviderModel": {
-      "Description": "プロバイダーとモデル設定",
-      "EmbeddingModel": "意味検索とベクトル操作のための埋め込みモデルの名称",
-      "EmbeddingModelTitle": "埋め込みモデル",
-      "ImageGenerationModel": "テキストから画像を生成する操作に使用される画像生成モデルの名称",
-      "ImageGenerationModelTitle": "画像生成モデル",
-      "Model": "AIモデル名",
-      "ModelTitle": "モデル",
-      "Provider": "AIプロバイダー名",
-      "ProviderTitle": "プロバイダー",
-      "SpeechModel": "音声生成モデルの名称（テキスト読み上げ操作用）",
-      "SpeechModelTitle": "音声モデル",
-      "Title": "プロバイダーモデル",
-      "TranscriptionsModel": "音声をテキストに変換する操作に使用される音声認識モデルの名称",
-      "TranscriptionsModelTitle": "音声認識モデル"
-    },
-    "RAG": {
-      "Removal": {
-      },
-      "SourceTypes": {
-      }
     },
     "Response": {
+      "Caption": "レスポンスヘッダー、このレスポンスエントリを識別するために使用されます",
+      "CaptionTitle": "タイトル",
       "Description": "外部APIのレスポンスは、通常、動的に変更される対象として応答され、その構造はプロンプトと同じです。プリセット内容を記入することもできますし、プレースホルダーやコンテナとして機能させ、ResponseDynamicModificationによって外部APIのレスポンスの具体的な内容が入力されることもあります。",
+      "Id": "応答設定の一意の識別子。参照用に便利です。",
+      "IdTitle": "ID",
       "Title": "応答"
     },
-    "ResponseDynamicModification": {
-      "DynamicModificationTypes": {
+    "TiddlyWikiPlugin": {
+      "ActionsTag": {
+        "Description": "Action Tiddlerにタグ付けするラベル、AIはこのラベルを通じて実行可能なアクションを見つけることができます",
+        "Title": "Actions タグ"
       },
-      "ResponseProcessingTypes": {
+      "DataSourceTag": {
+        "Description": "データソースエントリにタグを付け、AIはこのタグを通じてデータの取得とフィルタリング方法を理解できます",
+        "Title": "DataSource タグ"
+      },
+      "DescribeTag": {
+        "Description": "短い説明をマークするタグで、これらの説明は自動的にプロンプトに読み込まれ、AIが利用可能な機能を理解するのに役立ちます。",
+        "Title": "Describe タグ"
+      },
+      "Description": "特定のプラグインのデータソースとアクションの説明をロードします。システムは自動的にDescribeタグのエントリを背景情報としてロードします。",
+      "EnableCache": {
+        "Description": "キャッシュを有効にして、プロンプト生成時に毎回Wikiを再クエリするのを防ぎます。キャッシュを無効にすると、説明内容がクリアされ再読み込みされます。",
+        "Title": "キャッシュを有効にする"
+      },
+      "Title": "TiddlyWiki プラグイン",
+      "Tool": {
+        "Parameters": {
+          "pluginTitle": {
+            "Description": "詳細をロードするためのプラグインのタイトル。システムはこのタイトルを含むDataSourceとActionsのエントリを検索します。",
+            "Title": "プラグインタイトル"
+          }
+        }
+      },
+      "WorkspaceNameOrID": {
+        "Description": "プラグイン情報を読み込むワークスペース名またはID（デフォルトは 'wiki'）",
+        "Title": "ワークスペース名またはID"
       }
     },
-    "ToolCalling": {
-    },
-    "Trigger": {
-      "Model": {
-      }
-    },
-    "Wiki": {
+    "Tool": {
+      "Caption": "短い説明（UI表示用）",
+      "CaptionTitle": "タイトル",
+      "Content": "プラグインの内容または説明",
+      "ContentTitle": "内容",
+      "ForbidOverrides": "このプラグインのパラメータを実行時に上書きすることを禁止しますか？",
+      "ForbidOverridesTitle": "上書き禁止",
+      "Id": "プラグインインスタンスID（同一ハンドラ内で一意）",
+      "IdTitle": "プラグインインスタンスID",
+      "ToolId": "使用するツールの種類を選択",
+      "ToolIdTitle": "ツールタイプ"
     },
     "WikiOperation": {
       "Description": "Wiki ワークスペースで Tiddler 操作を実行する（追加、削除、またはテキストの設定）",
       "Title": "Wiki 操作",
       "Tool": {
-        "Examples": {
-        },
         "Parameters": {
           "extraMeta": {
             "Description": "追加メタデータのJSON文字列（例：タグやフィールド）、デフォルトは「{}」",
@@ -458,17 +534,15 @@
             "Description": "Tiddler のタイトル",
             "Title": "Tiddler タイトル"
           },
+          "variables": {
+            "Description": "アクションタドラーに渡される変数、JSON形式の文字列、デフォルトは\"{}\"",
+            "Title": "変数"
+          },
           "workspaceName": {
             "Description": "操作するワークスペースの名前またはID",
             "Title": "ワークスペース名"
           }
         }
-      },
-      "ToolListPosition": {
-        "Position": "ターゲット要素に対する挿入位置（before/after）",
-        "PositionTitle": "挿入位置",
-        "TargetId": "ツールリストを挿入する対象要素のID",
-        "TargetIdTitle": "ターゲットID"
       },
       "ToolResultDuration": "ツールの実行結果が会話内で表示されるターン数。この数を超えると、結果はグレー表示になります。",
       "ToolResultDurationTitle": "ツール結果の持続ターン数"
@@ -508,12 +582,6 @@
         },
         "UpdateEmbeddings": {
           "Description": "Wikiワークスペースのベクトル埋め込みインデックスを生成または更新し、セマンティック検索に使用します",
-          "Parameters": {
-            "forceUpdate": {
-            },
-            "workspaceName": {
-            }
-          },
           "forceUpdate": {
             "Description": "強制的に埋め込みインデックスを再生成し、既存の埋め込みデータを上書きするかどうか（trueに設定すると増分更新が無視されます）。",
             "Title": "強制更新"
@@ -524,15 +592,16 @@
           }
         }
       },
-      "ToolListPosition": {
-        "Position": "目標位置に対する挿入位置",
-        "PositionTitle": "挿入位置",
-        "TargetId": "ターゲット要素のID、ツールリストはこの要素に対して挿入されます",
-        "TargetIdTitle": "ターゲットID"
-      },
-      "ToolListPositionTitle": "ツールリストの位置",
       "ToolResultDuration": "ツールの実行結果が会話中に表示されるターン数。このターン数を超えると、結果はグレー表示になります。",
       "ToolResultDurationTitle": "ツール結果の継続ラウンド数"
+    },
+    "WorkspacesList": {
+      "Description": "利用可能なWikiワークスペースのリストをプロンプトに注入する",
+      "Position": "挿入位置：before は前挿入、after は後挿入",
+      "PositionTitle": "挿入位置",
+      "TargetId": "ターゲットプロンプトのID、リストはこのプロンプトに対して挿入されます",
+      "TargetIdTitle": "ターゲットID",
+      "Title": "ワークスペースリスト"
     }
   },
   "Search": {
@@ -558,7 +627,10 @@
     }
   },
   "Tool": {
-    "Plugin": {
+    "Git": {
+      "Error": {
+        "WorkspaceNotFound": "ワークスペース名またはID「{{workspaceName}}」は存在しません"
+      }
     },
     "Schema": {
       "Description": "説明",
@@ -567,12 +639,19 @@
       "Parameters": "パラメータ",
       "Required": "必須"
     },
+    "TiddlyWikiPlugin": {
+      "Error": {
+        "PluginTitleRequired": "プラグインのタイトルは空にできません",
+        "WorkspaceNotFound": "ワークスペース名またはID「{{workspaceNameOrID}}」は存在しません"
+      }
+    },
     "WikiOperation": {
       "Error": {
         "WorkspaceNotExist": "ワークスペース{{workspaceID}}は存在しません",
         "WorkspaceNotFound": "ワークスペース名またはID「{{workspaceName}}」は存在しません。利用可能なワークスペース：{{availableWorkspaces}}"
       },
       "Success": {
+        "ActionInvoked": "ワークスペース「{{workspaceName}}」でアクション項目「{{actionTitle}}」が正常に実行されました",
         "Added": "Wikiワークスペース「{{workspaceName}}」にTiddler「{{title}}」を追加しました",
         "Deleted": "Wikiワークスペース「{{workspaceName}}」からTiddler「{{title}}」の削除に成功しました",
         "Updated": "Wikiワークスペース「{{workspaceName}}」でTiddler「{{title}}」のテキストを正常に設定しました"

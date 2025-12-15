@@ -40,9 +40,7 @@
       "Title": "配置問題"
     },
     "InputPlaceholder": "輸入消息，Ctrl+Enter 發送",
-    "Send": "發送",
-    "SessionGroup": {
-    }
+    "Send": "發送"
   },
   "Common": {
     "None": "未選擇"
@@ -83,8 +81,6 @@
     "SelectedTemplate": "已選擇模板",
     "SetupAgent": "設置智慧體",
     "SetupAgentDescription": "為您的智慧體命名並選擇一個模板作為起點",
-    "Steps": {
-    },
     "Title": "創建新智慧體"
   },
   "EditAgent": {
@@ -106,8 +102,6 @@
     "PreviewChat": "預覽聊天",
     "Save": "保存",
     "Saving": "保存中...",
-    "Steps": {
-    },
     "Title": "編輯智慧體定義"
   },
   "ModelFeature": {
@@ -174,6 +168,7 @@
     "ExternalApiDatabaseDescription": "包含外部介面Debug 資訊的資料庫，占用空間為 {{size}}",
     "FailedToAddModel": "無法添加模型",
     "FailedToAddProvider": "添加提供商失敗",
+    "FailedToDeleteProvider": "刪除提供商 {{providerName}} 失敗",
     "FailedToRemoveModel": "無法刪除模型",
     "FailedToSaveSettings": "無法保存設置",
     "FailedToUpdateModel": "無法更新模型",
@@ -203,6 +198,7 @@
     "ProviderClass": "提供商介面類型",
     "ProviderConfiguration": "提供商配置",
     "ProviderConfigurationDescription": "配置人工智慧提供商的介面金鑰和其他設置",
+    "ProviderDeleted": "提供商 {{providerName}} 已刪除",
     "ProviderDisabled": "提供方已禁用",
     "ProviderEnabled": "提供方已啟用",
     "ProviderName": "提供商名稱",
@@ -226,6 +222,12 @@
   "Prompt": {
     "AutoRefresh": "預覽會隨輸入文本的變化自動刷新",
     "CodeEditor": "代碼編輯器",
+    "Edit": "提示詞編輯",
+    "EnterEditSideBySide": "分屏顯示編輯",
+    "EnterFullScreen": "進入全螢幕",
+    "EnterPreviewSideBySide": "分屏顯示預覽",
+    "ExitFullScreen": "退出全螢幕",
+    "ExitSideBySide": "退出分屏",
     "Flat": "平鋪視圖",
     "FormEditor": "表單編輯器",
     "LastUpdated": "上次更新時間",
@@ -239,10 +241,13 @@
   },
   "PromptConfig": {
     "AddItem": "添加項目",
+    "Collapse": "折疊",
     "EmptyArray": "還沒有添加任何項目。點擊下面的按鈕添加第一個項目。",
+    "Expand": "展開",
     "ItemCount": "{{count}} 項",
-    "RemoveItem": "刪除列表項",
+    "ItemIndex": "第 {{index}} 項",
     "Tabs": {
+      "Plugins": "外掛程式",
       "Prompts": "提示詞",
       "Response": "響應"
     },
@@ -254,8 +259,20 @@
   },
   "Schema": {
     "AIConfig": {
+      "Default": "預設使用的對話模型",
+      "DefaultTitle": "預設模型",
       "Description": "AI 會話設置配置",
-      "Title": "AI 配置"
+      "Embedding": "用於向量搜索的嵌入模型",
+      "EmbeddingTitle": "嵌入模型",
+      "Free": "成本敏感任務使用的低成本模型",
+      "FreeTitle": "免費/低成本模型",
+      "ImageGeneration": "用於圖像生成的模型",
+      "ImageGenerationTitle": "圖像生成模型",
+      "Speech": "用於文本轉語音（TTS）的模型",
+      "SpeechTitle": "語音合成模型",
+      "Title": "AI 配置",
+      "Transcriptions": "用於語音轉文本（STT）的模型",
+      "TranscriptionsTitle": "語音轉文本模型"
     },
     "AgentConfig": {
       "Description": "智慧體配置",
@@ -263,50 +280,103 @@
       "IdTitle": "智慧體 ID",
       "PromptConfig": {
         "Description": "提示詞配置",
+        "Plugins": "外掛配置清單",
         "Prompts": "提示詞配置列表",
         "Response": "響應配置列表",
         "Title": "提示詞配置"
       },
       "Title": "智慧體配置"
     },
-    "AutoReroll": {
-    },
     "BaseAPIConfig": {
-      "API": "API 提供商和模型配置",
-      "APITitle": "API 配置",
-      "Description": "基礎介面配置",
       "ModelParameters": "模型參數配置",
-      "ModelParametersTitle": "模型參數",
-      "Title": "基礎介面配置"
+      "ModelParametersTitle": "模型參數"
+    },
+    "Common": {
+      "ToolListPosition": {
+        "Description": "工具列表在提示詞中的插入位置配置",
+        "Position": "相對於目標位置的插入位置",
+        "PositionTitle": "插入位置",
+        "TargetId": "目標元素的ID，工具列表將相對於此元素插入",
+        "TargetIdTitle": "目標ID"
+      },
+      "ToolListPositionTitle": "工具列表位置"
     },
     "DefaultAgents": {
       "Description": "默認智慧體配置列表",
       "Title": "默認智慧體"
     },
-    "DynamicPosition": {
-    },
     "FullReplacement": {
       "Description": "完全替換參數配置",
       "SourceType": "數據來源類型，決定用什麼內容來替換目標元素",
       "SourceTypeTitle": "源類型",
-      "SourceTypes": {
-      },
       "TargetId": "目標元素ID",
       "TargetIdTitle": "目標ID",
       "Title": "完全替換參數"
     },
-    "Function": {
-    },
-    "HandlerConfig": {
-    },
-    "JavascriptTool": {
+    "Git": {
+      "Description": "搜尋 Git 提交日誌和讀取特定檔案內容",
+      "Title": "Git 工具",
+      "Tool": {
+        "Parameters": {
+          "commitHash": {
+            "Description": "提交雜湊值",
+            "Title": "提交雜湊"
+          },
+          "filePath": {
+            "Description": "檔案路徑（用於檔案搜尋模式）",
+            "Title": "檔案路徑"
+          },
+          "maxLines": {
+            "Description": "最大行數（預設500）",
+            "Title": "最大行數"
+          },
+          "page": {
+            "Description": "結果頁碼（從1開始）",
+            "Title": "頁碼"
+          },
+          "pageSize": {
+            "Description": "每頁結果數量",
+            "Title": "每頁數量"
+          },
+          "searchMode": {
+            "Description": "搜尋模式：依提交資訊、檔案路徑、日期範圍或不搜尋",
+            "Title": "搜尋模式"
+          },
+          "searchQuery": {
+            "Description": "搜尋查詢字串（訊息搜尋模式）",
+            "Title": "搜尋查詢"
+          },
+          "since": {
+            "Description": "開始日期（ISO 8601 格式）",
+            "Title": "開始日期"
+          },
+          "until": {
+            "Description": "結束日期（ISO 8601 格式）",
+            "Title": "結束日期"
+          },
+          "workspaceName": {
+            "Description": "要搜尋的工作區名稱或ID",
+            "Title": "工作區名稱"
+          }
+        },
+        "ReadFile": {
+          "Parameters": {
+            "commitHash": {
+            },
+            "filePath": {
+            },
+            "maxLines": {
+            },
+            "workspaceName": {
+            }
+          }
+        }
+      }
     },
     "MCP": {
       "Description": "模型上下文協議參數配置",
       "Id": "MCP 伺服器 ID",
       "IdTitle": "伺服器 ID",
-      "ResponseProcessing": {
-      },
       "TimeoutMessage": "超時消息",
       "TimeoutMessageTitle": "超時消息",
       "TimeoutSecond": "超時時間（秒）",
@@ -325,29 +395,23 @@
       "TopP": "Top P 採樣參數",
       "TopPTitle": "Top P"
     },
+    "ModelSelection": {
+      "Description": "選擇模型提供商與具體模型名稱",
+      "Model": "模型名稱（如 gpt-4o、Qwen2.5-7B-Instruct）",
+      "ModelTitle": "模型",
+      "Provider": "模型供應商（如 OpenAI、SiliconFlow、Google 等）",
+      "ProviderTitle": "供應商",
+      "Title": "模型選擇"
+    },
     "Plugin": {
-      "Caption": "簡短描述",
-      "CaptionTitle": "標題",
-      "Content": "外掛內容或說明",
-      "ContentTitle": "內容",
-      "ForbidOverrides": "是否禁止在執行時覆蓋此插件的參數",
-      "ForbidOverridesTitle": "禁止覆蓋",
-      "Id": "外掛 ID",
-      "IdTitle": "ID",
-      "PluginId": "用於選擇具體插件的識別符",
-      "PluginIdTitle": "插件標識"
     },
     "Position": {
-      "Bottom": "自底部偏移幾條消息",
-      "BottomTitle": "底部偏移",
       "Description": "位置參數配置，用於確定內容插入的精確位置。支持相對位置、絕對位置、前置和後置四種定位方式",
       "TargetId": "目標元素ID",
       "TargetIdTitle": "目標ID",
       "Title": "位置參數",
       "Type": "位置類型，用於確定內容插入的精確位置。支持相對位置、絕對位置、前置和後置四種定位方式",
-      "TypeTitle": "位置類型",
-      "Types": {
-      }
+      "TypeTitle": "位置類型"
     },
     "Prompt": {
       "Caption": "簡短描述",
@@ -366,64 +430,72 @@
         "System": "系統 - 定義AI的行為規則和背景設定",
         "User": "用戶 - 模擬用戶的輸入和請求"
       },
+      "Source": "此提示詞的來源或引用（例如檔案路徑、URL 等）",
+      "SourceTitle": "來源",
       "Tags": "標籤列表",
       "TagsTitle": "標籤",
       "Text": "提示詞內容，可以包含維基文本支持的語法，例如<<變數名>>。",
       "TextTitle": "文本",
       "Title": "提示詞"
     },
-    "PromptDynamicModification": {
-      "DynamicModificationTypes": {
-      }
-    },
-    "PromptPart": {
-    },
     "ProviderModel": {
-      "Description": "提供商和模型配置",
-      "EmbeddingModel": "用於語義搜索和向量操作的嵌入模型名稱",
-      "EmbeddingModelTitle": "嵌入模型",
-      "ImageGenerationModel": "用於文字生成圖像操作的圖像生成模型名稱",
-      "ImageGenerationModelTitle": "圖像生成模型",
-      "Model": "AI 模型名稱",
-      "ModelTitle": "模型",
-      "Provider": "AI 提供商名稱",
-      "ProviderTitle": "提供商",
-      "SpeechModel": "用於文字轉語音操作的語音生成模型名稱",
-      "SpeechModelTitle": "語音模型",
-      "Title": "提供商模型",
-      "TranscriptionsModel": "用於語音轉文字操作的語音識別模型名稱",
-      "TranscriptionsModelTitle": "語音識別模型"
-    },
-    "RAG": {
-      "Removal": {
-      },
-      "SourceTypes": {
-      }
     },
     "Response": {
+      "Caption": "回應標題，用於識別該回應條目",
+      "CaptionTitle": "標題",
       "Description": "外部API的響應，通常作為響應動態修改的目標，結構與提示詞的一樣，可以填寫預置內容，也可以作為占位符或容器，由 ResponseDynamicModification 填入外部API的響應的具體內容。",
+      "Id": "回應配置的唯一識別符，便於引用",
+      "IdTitle": "ID",
       "Title": "響應"
     },
-    "ResponseDynamicModification": {
-      "DynamicModificationTypes": {
+    "TiddlyWikiPlugin": {
+      "ActionsTag": {
+        "Description": "標記 Action Tiddler 的標籤，AI 可以通過這個標籤找到可執行的動作",
+        "Title": "Actions 標籤"
       },
-      "ResponseProcessingTypes": {
+      "DataSourceTag": {
+        "Description": "標記數據源條目的標籤，AI 可以通過這個標籤了解數據的獲取和篩選方法",
+        "Title": "DataSource 標籤"
+      },
+      "DescribeTag": {
+        "Description": "標記簡短描述的標籤，這些描述會自動載入到提示詞中，幫助 AI 理解可用功能",
+        "Title": "描述 標籤"
+      },
+      "Description": "載入特定插件的數據源和動作說明。系統會自動載入 Describe 標籤的條目作為背景資訊。",
+      "EnableCache": {
+        "Description": "啟用快取以避免每次生成提示詞時重新查詢 wiki。停用快取時將清除並重新載入描述內容。",
+        "Title": "啟用快取"
+      },
+      "Title": "TiddlyWiki 插件",
+      "Tool": {
+        "Parameters": {
+          "pluginTitle": {
+            "Description": "要載入詳情的插件標題。系統會搜尋包含該標題的 DataSource 和 Actions 條目。",
+            "Title": "外掛程式標題"
+          }
+        }
+      },
+      "WorkspaceNameOrID": {
+        "Description": "要載入插件資訊的工作區名稱或ID（預設為 'wiki'）",
+        "Title": "工作區名稱或ID"
       }
     },
-    "ToolCalling": {
-    },
-    "Trigger": {
-      "Model": {
-      }
-    },
-    "Wiki": {
+    "Tool": {
+      "Caption": "簡短描述（用於 UI 展示）",
+      "CaptionTitle": "標題",
+      "Content": "外掛內容或說明",
+      "ContentTitle": "內容",
+      "ForbidOverrides": "是否禁止在執行時覆蓋此插件的參數",
+      "ForbidOverridesTitle": "禁止覆蓋",
+      "Id": "外掛實例 ID（同一 handler 內唯一）",
+      "IdTitle": "插件實例 ID",
+      "ToolId": "選擇要使用的工具類型",
+      "ToolIdTitle": "工具類型"
     },
     "WikiOperation": {
       "Description": "在維基工作區中執行 條目操作（添加、刪除或設置文本）",
       "Title": "Wiki 操作",
       "Tool": {
-        "Examples": {
-        },
         "Parameters": {
           "extraMeta": {
             "Description": "額外元數據的 JSON 字串，如標籤和欄位，預設為 \"{}\"",
@@ -445,17 +517,15 @@
             "Description": "條目的標題",
             "Title": "條目標題"
           },
+          "variables": {
+            "Description": "傳遞給 action tiddler 的變量，JSON 格式字符串，默認為 \"{}\"",
+            "Title": "變數"
+          },
           "workspaceName": {
             "Description": "要操作的工作區名稱或ID",
             "Title": "工作區名稱"
           }
         }
-      },
-      "ToolListPosition": {
-        "Position": "相對於目標元素的插入位置（before/after）",
-        "PositionTitle": "插入位置",
-        "TargetId": "要插入工具列表的目標元素的ID",
-        "TargetIdTitle": "目標ID"
       },
       "ToolResultDuration": "工具執行結果在對話中保持可見的輪數，超過此輪數後結果將變灰顯示",
       "ToolResultDurationTitle": "工具結果持續輪數"
@@ -495,12 +565,6 @@
         },
         "UpdateEmbeddings": {
           "Description": "為Wiki工作區生成或更新向量嵌入索引，用於語義搜尋",
-          "Parameters": {
-            "forceUpdate": {
-            },
-            "workspaceName": {
-            }
-          },
           "forceUpdate": {
             "Description": "是否強制重新生成嵌入索引，覆蓋已有的嵌入數據（如果設置為 true 則忽略增量更新）。",
             "Title": "強制更新"
@@ -511,15 +575,16 @@
           }
         }
       },
-      "ToolListPosition": {
-        "Position": "相對於目標位置的插入位置",
-        "PositionTitle": "插入位置",
-        "TargetId": "目標元素的ID，工具列表將相對於此元素插入",
-        "TargetIdTitle": "目標ID"
-      },
-      "ToolListPositionTitle": "工具列表位置",
       "ToolResultDuration": "工具執行結果在對話中保持可見的輪數，超過此輪數後結果將變灰顯示",
       "ToolResultDurationTitle": "工具結果持續輪數"
+    },
+    "WorkspacesList": {
+      "Description": "將可用的 Wiki 工作區列表注入到提示詞中",
+      "Position": "插入位置：before 為前置，after 為後置",
+      "PositionTitle": "插入位置",
+      "TargetId": "目標提示詞的 ID，列表將相對於此提示詞插入",
+      "TargetIdTitle": "目標 ID",
+      "Title": "工作區列表"
     }
   },
   "Search": {
@@ -545,7 +610,10 @@
     }
   },
   "Tool": {
-    "Plugin": {
+    "Git": {
+      "Error": {
+        "WorkspaceNotFound": "工作區名稱或ID\"{{workspaceName}}\"不存在"
+      }
     },
     "Schema": {
       "Description": "描述",
@@ -554,12 +622,19 @@
       "Parameters": "參數",
       "Required": "必需"
     },
+    "TiddlyWikiPlugin": {
+      "Error": {
+        "PluginTitleRequired": "插件標題不能為空",
+        "WorkspaceNotFound": "工作區名稱或ID\"{{workspaceNameOrID}}\"不存在"
+      }
+    },
     "WikiOperation": {
       "Error": {
         "WorkspaceNotExist": "工作區{{workspaceID}}不存在",
         "WorkspaceNotFound": "工作區名稱或ID\"{{workspaceName}}\"不存在。可用工作區：{{availableWorkspaces}}"
       },
       "Success": {
+        "ActionInvoked": "成功在維基工作區\"{{workspaceName}}\"中執行了動作條目\"{{actionTitle}}\"",
         "Added": "成功在維基工作區\"{{workspaceName}}\"中添加了條目\"{{title}}\"",
         "Deleted": "成功從維基工作區\"{{workspaceName}}\"中刪除了條目\"{{title}}\"",
         "Updated": "成功在維基工作區\"{{workspaceName}}\"中設置了條目\"{{title}}\"的文本"

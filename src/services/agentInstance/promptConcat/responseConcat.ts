@@ -8,7 +8,7 @@ import { logger } from '@services/libs/log';
 import { cloneDeep } from 'lodash';
 import { AgentFrameworkContext } from '../agentFrameworks/utilities/type';
 import { AgentInstanceMessage } from '../interface';
-import { builtInTools, createAgentFrameworkHooks } from '../tools';
+import { createAgentFrameworkHooks, pluginRegistry } from '../tools';
 import { AgentResponse, PostProcessContext, YieldNextRoundTarget } from '../tools/types';
 import type { IPromptConcatTool } from './promptConcatSchema';
 import { AgentFrameworkConfig, AgentPromptDescription } from './promptConcatSchema';
@@ -41,13 +41,14 @@ export async function responseConcat(
   const { agentFrameworkConfig } = agentConfig;
   const responses: AgentFrameworkConfig['response'] = Array.isArray(agentFrameworkConfig?.response) ? (agentFrameworkConfig?.response || []) : [];
   const toolConfigs = (Array.isArray(agentFrameworkConfig.plugins) ? agentFrameworkConfig.plugins : []) as IPromptConcatTool[];
+  const enabledToolConfigs = toolConfigs.filter((tool) => tool.enabled !== false);
 
   let modifiedResponses = cloneDeep(responses) as AgentResponse[];
   // Create hooks instance
   const hooks = createAgentFrameworkHooks();
   // Register all tools from configuration
-  for (const tool of toolConfigs) {
-    const builtInTool = builtInTools.get(tool.toolId);
+  for (const tool of enabledToolConfigs) {
+    const builtInTool = pluginRegistry.get(tool.toolId);
     if (builtInTool) {
       builtInTool(hooks);
     } else {
@@ -59,7 +60,7 @@ export async function responseConcat(
   let yieldNextRoundTo: YieldNextRoundTarget | undefined;
   let toolCallInfo: ToolCallingMatch | undefined;
 
-  for (const tool of toolConfigs) {
+  for (const tool of enabledToolConfigs) {
     const responseContext: PostProcessContext = {
       agentFrameworkContext: context,
       messages,

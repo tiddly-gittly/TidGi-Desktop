@@ -107,72 +107,13 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
     await handleConfigChange(updatedConfig);
   };
 
-  // Create default model config for ModelSelector
-  const defaultModelConfig = config && config.default
-    ? {
-      api: {
-        provider: config.default.provider,
-        model: config.default.model,
-      },
-      modelParameters: config.modelParameters,
-    }
-    : null;
-
-  // Create embedding config from current AI config
-  // Use the provider that actually has the embedding model
-  const embeddingConfig = config && config.embedding
-    ? {
-      api: {
-        provider: config.embedding.provider,
-        model: config.embedding.model,
-      },
-      modelParameters: config.modelParameters,
-    }
-    : null;
-
-  // Create speech config from current AI config
-  const speechConfig = config && config.speech
-    ? {
-      api: {
-        provider: config.speech.provider,
-        model: config.speech.model,
-      },
-      modelParameters: config.modelParameters,
-    }
-    : null;
-
-  // Create image generation config from current AI config
-  const imageGenerationConfig = config && config.imageGeneration
-    ? {
-      api: {
-        provider: config.imageGeneration.provider,
-        model: config.imageGeneration.model,
-      },
-      modelParameters: config.modelParameters,
-    }
-    : null;
-
-  // Create transcriptions config from current AI config
-  const transcriptionsConfig = config && config.transcriptions
-    ? {
-      api: {
-        provider: config.transcriptions.provider,
-        model: config.transcriptions.model,
-      },
-      modelParameters: config.modelParameters,
-    }
-    : null;
-
-  // Create free model config from current AI config
-  const freeModelConfig = config && config.free
-    ? {
-      api: {
-        provider: config.free.provider,
-        model: config.free.model,
-      },
-      modelParameters: config.modelParameters,
-    }
-    : null;
+  // Extract model selections directly from config
+  const defaultModelConfig = config?.default;
+  const embeddingConfig = config?.embedding;
+  const speechConfig = config?.speech;
+  const imageGenerationConfig = config?.imageGeneration;
+  const transcriptionsConfig = config?.transcriptions;
+  const freeModelConfig = config?.free;
 
   const handleFreeModelClear = async () => {
     if (!config) return;
@@ -201,7 +142,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
                       secondary={t('Preference.DefaultAIModelSelectionDescription')}
                     />
                     <ModelSelector
-                      selectedConfig={defaultModelConfig}
+                      selectedModel={defaultModelConfig}
                       modelOptions={providers.flatMap(provider =>
                         provider.models
                           .filter(model => Array.isArray(model.features) && model.features.includes('language'))
@@ -218,7 +159,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
                       secondary={t('Preference.DefaultEmbeddingModelSelectionDescription')}
                     />
                     <ModelSelector
-                      selectedConfig={embeddingConfig}
+                      selectedModel={embeddingConfig}
                       modelOptions={providers.flatMap(provider =>
                         provider.models
                           .filter(model => Array.isArray(model.features) && model.features.includes('embedding'))
@@ -235,7 +176,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
                       secondary={t('Preference.DefaultSpeechModelSelectionDescription')}
                     />
                     <ModelSelector
-                      selectedConfig={speechConfig}
+                      selectedModel={speechConfig}
                       modelOptions={providers.flatMap(provider =>
                         provider.models
                           .filter(model => Array.isArray(model.features) && model.features.includes('speech'))
@@ -252,7 +193,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
                       secondary={t('Preference.DefaultImageGenerationModelSelectionDescription')}
                     />
                     <ModelSelector
-                      selectedConfig={imageGenerationConfig}
+                      selectedModel={imageGenerationConfig}
                       modelOptions={providers.flatMap(provider =>
                         provider.models
                           .filter(model => Array.isArray(model.features) && model.features.includes('imageGeneration'))
@@ -269,7 +210,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
                       secondary={t('Preference.DefaultTranscriptionsModelSelectionDescription')}
                     />
                     <ModelSelector
-                      selectedConfig={transcriptionsConfig}
+                      selectedModel={transcriptionsConfig}
                       modelOptions={providers.flatMap(provider =>
                         provider.models
                           .filter(model => Array.isArray(model.features) && model.features.includes('transcriptions'))
@@ -286,7 +227,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
                       secondary={t('Preference.DefaultFreeModelSelectionDescription')}
                     />
                     <ModelSelector
-                      selectedConfig={freeModelConfig}
+                      selectedModel={freeModelConfig}
                       modelOptions={providers.flatMap(provider =>
                         provider.models
                           .filter(model => Array.isArray(model.features) && model.features.includes('free'))

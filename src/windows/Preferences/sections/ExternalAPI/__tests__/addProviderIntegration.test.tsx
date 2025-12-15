@@ -51,11 +51,11 @@ describe('ExternalAPI Add Provider with Embedding Model', () => {
 
     Object.defineProperty(window.service.externalAPI, 'getAIConfig', {
       value: vi.fn().mockResolvedValue({
-        api: {
+        default: {
           provider: 'existing-provider',
           model: 'gpt-4o',
-          // No embeddingModel initially
         },
+        // No embedding initially
         modelParameters: {
           temperature: 0.7,
           systemPrompt: 'You are a helpful assistant.',
@@ -87,7 +87,7 @@ describe('ExternalAPI Add Provider with Embedding Model', () => {
 
     // Mock observables for externalAPI
     const mockConfig: AiAPIConfig = {
-      api: {
+      default: {
         provider: 'existing-provider',
         model: 'gpt-4o',
       },

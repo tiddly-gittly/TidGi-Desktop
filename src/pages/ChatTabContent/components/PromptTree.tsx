@@ -1,6 +1,6 @@
 import { Box, styled, Typography } from '@mui/material';
 import { IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
 
@@ -38,8 +38,9 @@ const EmptyState = styled(Box)(({ theme }) => ({
 
 /**
  * Prompt tree node component for nested display
+ * Memoized to prevent unnecessary re-renders
  */
-export const PromptTreeNode = ({
+export const PromptTreeNode = memo(({
   node,
   depth,
   fieldPath = [],
@@ -48,20 +49,22 @@ export const PromptTreeNode = ({
   depth: number;
   fieldPath?: string[];
 }): React.ReactElement => {
-  const { setFormFieldsToScrollTo, expandPathToTarget } = useAgentChatStore(
+  if (node.enabled === false) {
+    return <></>;
+  }
+
+  const { setFormFieldsToScrollTo } = useAgentChatStore(
     useShallow((state) => ({
       setFormFieldsToScrollTo: state.setFormFieldsToScrollTo,
-      expandPathToTarget: state.expandPathToTarget,
     })),
   );
-  const handleNodeClick = (event: React.MouseEvent) => {
+  const handleNodeClick = useCallback((event: React.MouseEvent) => {
     event.stopPropagation();
 
     const targetFieldPath = (node.source && node.source.length > 0) ? node.source : [...fieldPath, node.id];
 
     setFormFieldsToScrollTo(targetFieldPath);
-    expandPathToTarget(targetFieldPath);
-  };
+  }, [node.source, node.id, fieldPath, setFormFieldsToScrollTo]);
 
   return (
     <TreeItem
@@ -97,22 +100,27 @@ export const PromptTreeNode = ({
       })}
     </TreeItem>
   );
-};
+});
+PromptTreeNode.displayName = 'PromptTreeNode';
 
 /**
  * Prompt tree component
+ * Memoized to prevent unnecessary re-renders
  */
-export const PromptTree = ({ prompts }: { prompts?: IPrompt[] }): React.ReactElement => {
+export const PromptTree = memo(({ prompts }: { prompts?: IPrompt[] }): React.ReactElement => {
   if (!prompts?.length) {
     return <EmptyState>No prompt tree to display</EmptyState>;
   }
 
+  const enabledPrompts = prompts.filter((prompt) => prompt.enabled !== false);
+
   return (
     <Box>
-      {prompts.map((item) => {
+      {enabledPrompts.map((item) => {
         const fieldPath = ['prompts', item.id];
         return <PromptTreeNode key={item.id} node={item} depth={0} fieldPath={fieldPath} />;
       })}
     </Box>
   );
-};
+});
+PromptTree.displayName = 'PromptTree';

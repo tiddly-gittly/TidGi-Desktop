@@ -151,7 +151,7 @@ export default {
     },
   ],
   defaultConfig: {
-    api: {
+    default: {
       provider: 'siliconflow',
       model: 'Qwen/Qwen2.5-7B-Instruct',
     },

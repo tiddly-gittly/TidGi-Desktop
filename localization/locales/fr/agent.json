@@ -40,9 +40,7 @@
       "Title": "Problème de configuration"
     },
     "InputPlaceholder": "Tapez un message, Ctrl+Entrée pour envoyer",
-    "Send": "Envoyer",
-    "SessionGroup": {
-    }
+    "Send": "Envoyer"
   },
   "Common": {
     "None": "non sélectionné"
@@ -172,6 +170,7 @@
     "ExternalApiDatabaseDescription": "Base de données contenant des informations de débogage d'API externes, occupant un espace de {{size}}",
     "FailedToAddModel": "Échec de l'ajout du modèle",
     "FailedToAddProvider": "Échec de l'ajout du fournisseur",
+    "FailedToDeleteProvider": "Échec de la suppression du fournisseur {{providerName}}",
     "FailedToRemoveModel": "Échec de la suppression du modèle",
     "FailedToSaveSettings": "Échec de l'enregistrement des paramètres",
     "FailedToUpdateModel": "Impossible de mettre à jour le modèle",
@@ -201,6 +200,7 @@
     "ProviderClass": "Type d'interface du fournisseur",
     "ProviderConfiguration": "Configuration du fournisseur",
     "ProviderConfigurationDescription": "Configurer la clé API et d'autres paramètres pour les fournisseurs AI",
+    "ProviderDeleted": "Le fournisseur {{providerName}} a été supprimé",
     "ProviderDisabled": "Fournisseur désactivé",
     "ProviderEnabled": "Fournisseur activé",
     "ProviderName": "Nom du fournisseur",
@@ -238,6 +238,12 @@
   "Prompt": {
     "AutoRefresh": "L'aperçu se rafraîchit automatiquement en fonction des modifications du texte saisi.",
     "CodeEditor": "Éditeur de code",
+    "Edit": "Édition des mots-clés",
+    "EnterEditSideBySide": "Édition en affichage partagé",
+    "EnterFullScreen": "entrer en plein écran",
+    "EnterPreviewSideBySide": "Aperçu en mode écran partagé",
+    "ExitFullScreen": "quitter le mode plein écran",
+    "ExitSideBySide": "quitter le mode d'écran partagé",
     "Flat": "vue en mosaïque",
     "FormEditor": "Éditeur de formulaire",
     "LastUpdated": "Dernière mise à jour",
@@ -251,10 +257,13 @@
   },
   "PromptConfig": {
     "AddItem": "ajouter un projet",
+    "Collapse": "plier",
     "EmptyArray": "Aucun élément n'a encore été ajouté. Cliquez sur le bouton ci-dessous pour ajouter votre premier élément.",
+    "Expand": "déployer",
     "ItemCount": "{{count}} éléments",
-    "RemoveItem": "supprimer l'élément de la liste",
+    "ItemIndex": "Article {{index}}",
     "Tabs": {
+      "Plugins": "plugin",
       "Prompts": "mot-clé",
       "Response": "réponse"
     },
@@ -266,8 +275,20 @@
   },
   "Schema": {
     "AIConfig": {
+      "Default": "modèle de dialogue utilisé par défaut",
+      "DefaultTitle": "modèle par défaut",
       "Description": "Configuration des paramètres de conversation IA",
-      "Title": "Configuration de l'IA"
+      "Embedding": "modèle d'incorporation pour la recherche vectorielle",
+      "EmbeddingTitle": "modèle d'intégration",
+      "Free": "modèle à faible coût utilisé pour les tâches sensibles aux coûts",
+      "FreeTitle": "modèles gratuits/à faible coût",
+      "ImageGeneration": "Modèle pour la génération d'images",
+      "ImageGenerationTitle": "modèle de génération d'images",
+      "Speech": "Modèle pour la synthèse vocale (TTS)",
+      "SpeechTitle": "modèle de synthèse vocale",
+      "Title": "Configuration de l'IA",
+      "Transcriptions": "Modèle pour la conversion de parole en texte (STT)",
+      "TranscriptionsTitle": "modèle de reconnaissance vocale"
     },
     "AgentConfig": {
       "Description": "Configuration de l'agent intelligent",
@@ -275,50 +296,103 @@
       "IdTitle": "ID de l'agent intelligent",
       "PromptConfig": {
         "Description": "configuration des mots-clés",
+        "Plugins": "Liste de configuration des plugins",
         "Prompts": "Liste de configuration des mots-clés",
         "Response": "Liste de configuration des réponses",
         "Title": "configuration des mots-clés"
       },
       "Title": "Configuration de l'agent intelligent"
     },
-    "AutoReroll": {
-    },
     "BaseAPIConfig": {
-      "API": "Fournisseur d'API et configuration du modèle",
-      "APITitle": "Configuration de l'API",
-      "Description": "Configuration de l'API de base",
       "ModelParameters": "Configuration des paramètres du modèle",
-      "ModelParametersTitle": "paramètres du modèle",
-      "Title": "Configuration de base des API"
+      "ModelParametersTitle": "paramètres du modèle"
+    },
+    "Common": {
+      "ToolListPosition": {
+        "Description": "Configuration de la position d'insertion de la liste des outils dans les invites",
+        "Position": "Position d'insertion par rapport à la cible",
+        "PositionTitle": "position",
+        "TargetId": "ID de l'élément cible",
+        "TargetIdTitle": "ID cible"
+      },
+      "ToolListPositionTitle": "position de la liste des outils"
     },
     "DefaultAgents": {
       "Description": "Liste de configuration des agents intelligents par défaut",
       "Title": "agent intelligent par défaut"
     },
-    "DynamicPosition": {
-    },
     "FullReplacement": {
       "Description": "remplacement complet de la configuration des paramètres",
       "SourceType": "type source",
       "SourceTypeTitle": "type source",
-      "SourceTypes": {
-      },
       "TargetId": "ID de l'élément cible",
       "TargetIdTitle": "ID cible",
       "Title": "paramètre de remplacement complet"
     },
-    "Function": {
-    },
-    "HandlerConfig": {
-    },
-    "JavascriptTool": {
+    "Git": {
+      "Description": "Rechercher les journaux de validation Git et lire le contenu de fichiers spécifiques",
+      "Title": "Outils Git",
+      "Tool": {
+        "Parameters": {
+          "commitHash": {
+            "Description": "soumettre le hachage",
+            "Title": "hash de soumission"
+          },
+          "filePath": {
+            "Description": "Chemin du fichier (pour le mode de recherche de fichiers)",
+            "Title": "chemin du fichier"
+          },
+          "maxLines": {
+            "Description": "Nombre maximum de lignes (500 par défaut)",
+            "Title": "nombre maximum de lignes"
+          },
+          "page": {
+            "Description": "Numéro de page du résultat (commençant à 1)",
+            "Title": "numéro de page"
+          },
+          "pageSize": {
+            "Description": "Nombre de résultats par page",
+            "Title": "Nombre par page"
+          },
+          "searchMode": {
+            "Description": "Mode de recherche : par informations soumises, chemin du fichier, plage de dates ou ne pas rechercher",
+            "Title": "mode de recherche"
+          },
+          "searchQuery": {
+            "Description": "chaîne de requête de recherche (mode de recherche de messages)",
+            "Title": "requête de recherche"
+          },
+          "since": {
+            "Description": "Date de début (format ISO 8601)",
+            "Title": "date de début"
+          },
+          "until": {
+            "Description": "Date de fin (format ISO 8601)",
+            "Title": "date de fin"
+          },
+          "workspaceName": {
+            "Description": "Nom ou ID de l'espace de travail à rechercher",
+            "Title": "Nom de l'espace de travail"
+          }
+        },
+        "ReadFile": {
+          "Parameters": {
+            "commitHash": {
+            },
+            "filePath": {
+            },
+            "maxLines": {
+            },
+            "workspaceName": {
+            }
+          }
+        }
+      }
     },
     "MCP": {
       "Description": "Configuration des paramètres du protocole de contexte du modèle",
       "Id": "ID du serveur MCP",
       "IdTitle": "ID du serveur",
-      "ResponseProcessing": {
-      },
       "TimeoutMessage": "message en retard",
       "TimeoutMessageTitle": "message en retard",
       "TimeoutSecond": "Délai d'expiration (secondes)",
@@ -337,29 +411,23 @@
       "TopP": "Paramètre d'échantillonnage Top P",
       "TopPTitle": "Top P"
     },
+    "ModelSelection": {
+      "Description": "Choisir le fournisseur de modèles et le nom spécifique du modèle",
+      "Model": "Nom du modèle (par exemple gpt-4o, Qwen2.5-7B-Instruct)",
+      "ModelTitle": "modèle",
+      "Provider": "Fournisseurs de modèles (comme OpenAI, SiliconFlow, Google, etc.)",
+      "ProviderTitle": "fournisseur",
+      "Title": "sélection de modèle"
+    },
     "Plugin": {
-      "Caption": "brève description",
-      "CaptionTitle": "titre",
-      "Content": "Contenu ou description du plugin",
-      "ContentTitle": "contenu",
-      "ForbidOverrides": "Est-il interdit de remplacer les paramètres de ce plugin pendant l'exécution ?",
-      "ForbidOverridesTitle": "Interdiction de couvrir",
-      "Id": "ID du plugin",
-      "IdTitle": "ID",
-      "PluginId": "Identifiant utilisé pour sélectionner un plugin spécifique",
-      "PluginIdTitle": "identifiant du plugin"
     },
     "Position": {
-      "Bottom": "Décaler quelques messages depuis le bas",
-      "BottomTitle": "décalage du bas",
       "Description": "configuration des paramètres de position",
       "TargetId": "ID de l'élément cible",
       "TargetIdTitle": "ID cible",
       "Title": "paramètre positionnel",
       "Type": "type d'emplacement",
-      "TypeTitle": "type d'emplacement",
-      "Types": {
-      }
+      "TypeTitle": "type d'emplacement"
     },
     "Prompt": {
       "Caption": "brève description",
@@ -378,64 +446,72 @@
         "System": "Système - Définir les règles de comportement et le contexte de l'IA",
         "User": "Utilisateur - Simuler les entrées et requêtes de l'utilisateur"
       },
+      "Source": "La source ou la référence de cette invite (par exemple, chemin du fichier, URL, etc.)",
+      "SourceTitle": "source",
       "Tags": "Liste des étiquettes",
       "TagsTitle": "étiquette",
       "Text": "Le contenu des mots d'invite peut inclure la syntaxe prise en charge par le texte wiki, comme <<nom de variable>>.",
       "TextTitle": "texte",
       "Title": "mot-clé"
     },
-    "PromptDynamicModification": {
-      "DynamicModificationTypes": {
-      }
-    },
-    "PromptPart": {
-    },
     "ProviderModel": {
-      "Description": "Fournisseur et configuration du modèle",
-      "EmbeddingModel": "Nom du modèle d'incorporation pour la recherche sémantique et les opérations vectorielles",
-      "EmbeddingModelTitle": "modèle d'intégration",
-      "ImageGenerationModel": "Nom du modèle de génération d'images utilisé pour les opérations de génération d'images à partir de texte",
-      "ImageGenerationModelTitle": "modèle de génération d'images",
-      "Model": "Nom du modèle d'IA",
-      "ModelTitle": "modèle",
-      "Provider": "Nom du fournisseur d'IA",
-      "ProviderTitle": "fournisseur",
-      "SpeechModel": "Nom du modèle de génération vocale utilisé pour les opérations de synthèse vocale",
-      "SpeechModelTitle": "modèle vocal",
-      "Title": "modèle de fournisseur",
-      "TranscriptionsModel": "Nom du modèle de reconnaissance vocale utilisé pour la conversion de la parole en texte",
-      "TranscriptionsModelTitle": "modèle de reconnaissance vocale"
-    },
-    "RAG": {
-      "Removal": {
-      },
-      "SourceTypes": {
-      }
     },
     "Response": {
+      "Caption": "En-tête de réponse, utilisé pour identifier cette entrée de réponse",
+      "CaptionTitle": "titre",
       "Description": "La réponse de l'API externe, souvent utilisée comme cible pour des modifications dynamiques en réponse, a la même structure que les mots d'invite. Elle peut être préremplie avec du contenu prédéfini ou servir d'espace réservé (placeholder) ou de conteneur, où ResponseDynamicModification insère le contenu spécifique de la réponse de l'API externe.",
+      "Id": "Identifiant unique de configuration de réponse pour faciliter la référence",
+      "IdTitle": "ID",
       "Title": "réponse"
     },
-    "ResponseDynamicModification": {
-      "DynamicModificationTypes": {
+    "TiddlyWikiPlugin": {
+      "ActionsTag": {
+        "Description": "Balise Action Tiddler, l'IA peut trouver des actions exécutables grâce à cette étiquette.",
+        "Title": "Balises Actions"
       },
-      "ResponseProcessingTypes": {
+      "DataSourceTag": {
+        "Description": "Étiquette des entrées de source de données, grâce à laquelle l'IA peut comprendre les méthodes d'acquisition et de filtrage des données.",
+        "Title": "Balise DataSource"
+      },
+      "DescribeTag": {
+        "Description": "Balises pour les descriptions courtes qui sont automatiquement chargées dans les invites afin d'aider l'IA à comprendre les fonctionnalités disponibles.",
+        "Title": "Décrire l'étiquette"
+      },
+      "Description": "Chargement des sources de données et des instructions d'action pour les plugins spécifiques. Le système chargera automatiquement les entrées avec l'étiquette Describe comme informations contextuelles.",
+      "EnableCache": {
+        "Description": "Activer le cache pour éviter de réinterroger le wiki à chaque génération d'invites. Lorsque le cache est désactivé, les descriptions sont effacées et rechargées.",
+        "Title": "Activer le cache"
+      },
+      "Title": "Plugin TiddlyWiki",
+      "Tool": {
+        "Parameters": {
+          "pluginTitle": {
+            "Description": "Titre du plugin à charger pour les détails. Le système recherchera les entrées DataSource et Actions contenant ce titre.",
+            "Title": "Titre du plugin"
+          }
+        }
+      },
+      "WorkspaceNameOrID": {
+        "Description": "Nom ou ID de l'espace de travail pour charger les informations du plugin (par défaut 'wiki')",
+        "Title": "Nom ou ID de l'espace de travail"
       }
     },
-    "ToolCalling": {
-    },
-    "Trigger": {
-      "Model": {
-      }
-    },
-    "Wiki": {
+    "Tool": {
+      "Caption": "Brève description (pour l'affichage dans l'interface utilisateur)",
+      "CaptionTitle": "titre",
+      "Content": "Contenu ou description du plugin",
+      "ContentTitle": "contenu",
+      "ForbidOverrides": "Est-il interdit de remplacer les paramètres de ce plugin pendant l'exécution ?",
+      "ForbidOverridesTitle": "Interdiction de couvrir",
+      "Id": "ID d'instance du plugin (unique dans le même gestionnaire)",
+      "IdTitle": "ID d'instance du plugin",
+      "ToolId": "Choisissez le type d'outil à utiliser",
+      "ToolIdTitle": "type d'outil"
     },
     "WikiOperation": {
       "Description": "Effectuer des opérations sur les Tiddlers (ajout, suppression ou définition de texte) dans l'espace de travail Wiki",
       "Title": "Opérations Wiki",
       "Tool": {
-        "Examples": {
-        },
         "Parameters": {
           "extraMeta": {
             "Description": "Chaîne JSON de métadonnées supplémentaires, telles que des étiquettes et des champs, par défaut \"{}\"",
@@ -457,17 +533,15 @@
             "Description": "Le titre de Tiddler",
             "Title": "Titre du Tiddler"
           },
+          "variables": {
+            "Description": "Variables transmises à l'action tiddler, chaîne de caractères au format JSON, par défaut \"{}\"",
+            "Title": "variable"
+          },
           "workspaceName": {
             "Description": "Nom ou ID de l'espace de travail à manipuler",
             "Title": "Nom de l'espace de travail"
           }
         }
-      },
-      "ToolListPosition": {
-        "Position": "par rapport à la position d'insertion de l'élément cible (avant/après)",
-        "PositionTitle": "position d'insertion",
-        "TargetId": "ID de l'élément cible pour insérer la liste des outils",
-        "TargetIdTitle": "ID cible"
       },
       "ToolResultDuration": "Le nombre de tours pendant lesquels les résultats de l'exécution des outils restent visibles dans la conversation, après quoi ils seront affichés en gris.",
       "ToolResultDurationTitle": "nombre de tours consécutifs des résultats de l'outil"
@@ -507,12 +581,6 @@
         },
         "UpdateEmbeddings": {
           "Description": "Générer ou mettre à jour l'index d'embedding vectoriel pour l'espace de travail Wiki, destiné à la recherche sémantique.",
-          "Parameters": {
-            "forceUpdate": {
-            },
-            "workspaceName": {
-            }
-          },
           "forceUpdate": {
             "Description": "Forcer la régénération de l'index d'incorporation, écrasant les données incorporées existantes (si défini sur true, ignore les mises à jour incrémentielles).",
             "Title": "mise à jour forcée"
@@ -523,15 +591,16 @@
           }
         }
       },
-      "ToolListPosition": {
-        "Position": "position d'insertion par rapport à la position cible",
-        "PositionTitle": "position d'insertion",
-        "TargetId": "ID de l'élément cible, la liste des outils sera insérée par rapport à cet élément",
-        "TargetIdTitle": "ID cible"
-      },
-      "ToolListPositionTitle": "Emplacement de la liste des outils",
       "ToolResultDuration": "Le nombre de tours pendant lesquels les résultats de l'exécution des outils restent visibles dans la conversation, après quoi ils seront affichés en gris.",
       "ToolResultDurationTitle": "nombre de tours consécutifs avec résultat d'outil"
+    },
+    "WorkspacesList": {
+      "Description": "Injecter la liste des espaces de travail Wiki disponibles dans l'invite",
+      "Position": "Position d'insertion : before pour avant, after pour après",
+      "PositionTitle": "position d'insertion",
+      "TargetId": "ID du mot-clé cible, la liste sera insérée par rapport à ce mot-clé",
+      "TargetIdTitle": "ID cible",
+      "Title": "Liste des espaces de travail"
     }
   },
   "Search": {
@@ -557,7 +626,10 @@
     }
   },
   "Tool": {
-    "Plugin": {
+    "Git": {
+      "Error": {
+        "WorkspaceNotFound": "Le nom ou l'ID de l'espace de travail \"{{workspaceName}}\" n'existe pas."
+      }
     },
     "Schema": {
       "Description": "décrire",
@@ -566,12 +638,19 @@
       "Parameters": "paramètre",
       "Required": "nécessaire"
     },
+    "TiddlyWikiPlugin": {
+      "Error": {
+        "PluginTitleRequired": "Le titre du plugin ne peut pas être vide.",
+        "WorkspaceNotFound": "Le nom ou l'ID de l'espace de travail \"{{workspaceNameOrID}}\" n'existe pas"
+      }
+    },
     "WikiOperation": {
       "Error": {
         "WorkspaceNotExist": "L'espace de travail {{workspaceID}} n'existe pas.",
         "WorkspaceNotFound": "Le nom ou l'ID de l'espace de travail \"{{workspaceName}}\" n'existe pas. Espaces de travail disponibles : {{availableWorkspaces}}"
       },
       "Success": {
+        "ActionInvoked": "L'action \"{{actionTitle}}\" a été exécutée avec succès dans l'espace de travail Wiki \"{{workspaceName}}\".",
         "Added": "Le Tiddler \"{{title}}\" a été ajouté avec succès à l'espace de travail Wiki \"{{workspaceName}}\".",
         "Deleted": "Le Tiddler \"{{title}}\" a été supprimé avec succès de l'espace de travail Wiki \"{{workspaceName}}\".",
         "Updated": "Le texte du Tiddler \"{{title}}\" a été défini avec succès dans l'espace de travail Wiki \"{{workspaceName}}\"."

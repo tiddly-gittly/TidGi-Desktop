@@ -1,17 +1,20 @@
 import { useAgentFrameworkConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement';
-import MonacoEditor from '@monaco-editor/react';
-import { Box, styled } from '@mui/material';
+import { Box, CircularProgress, styled } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 
-import React, { FC, SyntheticEvent, useCallback, useEffect, useState } from 'react';
+import React, { FC, lazy, Suspense, SyntheticEvent, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { useAgentChatStore } from '../../../Agent/store/agentChatStore/index';
 import { PromptConfigForm } from './PromptConfigForm';
+import { useArrayFieldStore } from './PromptConfigForm/store/arrayFieldStore';
+
+// Lazy load Monaco Editor only when needed
+const MonacoEditor = lazy(async () => await import('@monaco-editor/react'));
 
 const EditorTabs = styled(Tabs)`
   margin-bottom: ${({ theme }) => theme.spacing(2)};
@@ -30,14 +33,17 @@ export const EditView: FC<EditViewProps> = ({
   const { t } = useTranslation('agent');
   const agent = useAgentChatStore(state => state.agent);
   const [editorMode, setEditorMode] = useState<'form' | 'code'>('form');
+  const [monacoInitialized, setMonacoInitialized] = useState(false);
 
-  const { formFieldsToScrollTo, setFormFieldsToScrollTo, expandPathToTarget } = useAgentChatStore(
+  const { formFieldsToScrollTo, setFormFieldsToScrollTo } = useAgentChatStore(
     useShallow((state) => ({
       formFieldsToScrollTo: state.formFieldsToScrollTo,
       setFormFieldsToScrollTo: state.setFormFieldsToScrollTo,
-      expandPathToTarget: state.expandPathToTarget,
     })),
   );
+
+  // Use a stable reference for expandItemsByPath
+  const expandItemsByPath = useArrayFieldStore(useCallback((state) => state.expandItemsByPath, []));
 
   const {
     loading: agentFrameworkConfigLoading,
@@ -49,26 +55,70 @@ export const EditView: FC<EditViewProps> = ({
     agentId: agent?.id,
   });
 
-  useEffect(() => {
-    if (formFieldsToScrollTo.length > 0 && editorMode === 'form') {
-      expandPathToTarget(formFieldsToScrollTo);
+  // Use a ref to track if we're currently processing a scroll request
+  const isProcessingScrollReference = React.useRef(false);
+  const savedPathReference = React.useRef<string[]>([]);
 
-      const scrollTimeout = setTimeout(() => {
-        const targetId = formFieldsToScrollTo[formFieldsToScrollTo.length - 1];
+  useEffect(() => {
+    if (formFieldsToScrollTo.length > 0 && editorMode === 'form' && agentFrameworkConfig && !isProcessingScrollReference.current) {
+      // Mark as processing and save the path
+      isProcessingScrollReference.current = true;
+      savedPathReference.current = [...formFieldsToScrollTo];
+      const savedPath = savedPathReference.current;
+
+      // NOTE: Don't clear formFieldsToScrollTo immediately!
+      // RootObjectFieldTemplate also listens to this to switch tabs.
+      // We'll clear it after the tab has had time to switch.
+
+      // Path format: ['prompts', 'system', 'child-id', 'child-id'] or ['prompts', 'system']
+      // - savedPath[0]: top-level key (prompts, plugins, response)
+      // - savedPath[1]: parent item id
+      // - savedPath[2+]: nested child item ids (if present)
+
+      // Step 1: Wait for RootObjectFieldTemplate to switch tabs, then expand items
+      setTimeout(() => {
+        // Now clear the path after tab has switched
+        setFormFieldsToScrollTo([]);
+
+        const topLevelKey = savedPath[0];
+        if (savedPath.length > 1) {
+          const firstItemId = savedPath[1];
+          expandItemsByPath(topLevelKey, [firstItemId]);
+        }
+      }, 100);
+
+      // Step 2: After the parent expands and children render, expand nested items
+      // If path has more than 2 elements, we have nested children to expand
+      const hasNestedChildren = savedPath.length > 2;
+      if (hasNestedChildren) {
+        setTimeout(() => {
+          const topLevelKey = savedPath[0];
+          const firstItemId = savedPath[1];
+          const topLevelArray = agentFrameworkConfig[topLevelKey as keyof typeof agentFrameworkConfig];
+          if (Array.isArray(topLevelArray)) {
+            const parentIndex = topLevelArray.findIndex((item: unknown) => {
+              const data = item as Record<string, unknown> | null;
+              return data?.id === firstItemId || data?.caption === firstItemId || data?.title === firstItemId;
+            });
+
+            if (parentIndex !== -1) {
+              const nestedFieldPath = `${topLevelKey}_${parentIndex}_children`;
+              // Get the nested item IDs (from savedPath[2] onwards)
+              const nestedItemIds = savedPath.slice(2);
+              expandItemsByPath(nestedFieldPath, nestedItemIds);
+            }
+          }
+        }, 300); // Longer delay to wait for nested array to render
+      }
+
+      // Step 3: Scroll to the target element (after nested items have expanded)
+      const scrollDelay = hasNestedChildren ? 500 : 200;
+      setTimeout(() => {
+        const targetId = savedPath[savedPath.length - 1];
 
         // Find input element whose value exactly matches the target ID
         const targetElement = document.querySelector(`input[value="${targetId}"]`);
         if (targetElement) {
-          // Expand parent accordions
-          let current = targetElement.parentElement;
-          while (current) {
-            const accordion = current.querySelector('[aria-expanded="false"]');
-            if (accordion instanceof HTMLElement) {
-              accordion.click();
-            }
-            current = current.parentElement;
-          }
-
           // Scroll to element and highlight
           setTimeout(() => {
             if (targetElement instanceof HTMLElement) {
@@ -82,14 +132,11 @@ export const EditView: FC<EditViewProps> = ({
           }, 300);
         }
 
-        setFormFieldsToScrollTo([]);
-      }, 100);
-
-      return () => {
-        clearTimeout(scrollTimeout);
-      };
+        // Mark processing as complete
+        isProcessingScrollReference.current = false;
+      }, scrollDelay);
     }
-  }, [formFieldsToScrollTo, editorMode, setFormFieldsToScrollTo, expandPathToTarget]);
+  }, [formFieldsToScrollTo, editorMode, expandItemsByPath, agentFrameworkConfig, setFormFieldsToScrollTo]);
 
   const { getPreviewPromptResult } = useAgentChatStore(
     useShallow((state) => ({
@@ -97,12 +144,17 @@ export const EditView: FC<EditViewProps> = ({
     })),
   );
 
+  // Keep local ref to track if preview should be updated
+  const isUserEditingReference = React.useRef(false);
+
   const handleFormChange = useDebouncedCallback(
     async (updatedConfig: AgentFrameworkConfig) => {
       try {
-        // Ensure the config change is fully persisted before proceeding
+        // Always persist the config change to backend
         await handleConfigChange(updatedConfig);
-        if (agent?.agentDefId) {
+
+        // Only update preview if user is actually editing (not just drag-reordering)
+        if (isUserEditingReference.current && agent?.agentDefId) {
           void getPreviewPromptResult(inputText, updatedConfig);
         }
       } catch (error) {
@@ -110,13 +162,25 @@ export const EditView: FC<EditViewProps> = ({
       }
     },
     [handleConfigChange, agent?.agentDefId, getPreviewPromptResult, inputText],
-    1000,
-    { leading: true },
+    500,
+    { leading: false, maxWait: 2000 },
   );
 
-  const handleEditorModeChange = useCallback((_event: SyntheticEvent, newValue: 'form' | 'code') => {
+  const handleInputChange = useCallback((changedFormData: AgentFrameworkConfig) => {
+    // Mark as user editing when form data changes
+    isUserEditingReference.current = true;
+    void handleFormChange(changedFormData);
+  }, [handleFormChange]);
+
+  const handleEditorModeChange = useCallback(async (_event: SyntheticEvent, newValue: 'form' | 'code') => {
     setEditorMode(newValue);
-  }, []);
+    // Only initialize Monaco when switching to code mode
+    if (newValue === 'code' && !monacoInitialized) {
+      const { initMonacoEditor } = await import('@/helpers/monacoConfig');
+      initMonacoEditor();
+      setMonacoInitialized(true);
+    }
+  }, [monacoInitialized]);
 
   const handleEditorChange = useCallback((value: string | undefined) => {
     if (!value) return;
@@ -164,26 +228,34 @@ export const EditView: FC<EditViewProps> = ({
           <PromptConfigForm
             schema={handlerSchema ?? {}}
             formData={agentFrameworkConfig}
-            onChange={handleFormChange}
+            onChange={handleInputChange}
             loading={agentFrameworkConfigLoading}
           />
         )}
         {editorMode === 'code' && (
-          <MonacoEditor
-            height='100%'
-            defaultLanguage='json'
-            value={agentFrameworkConfig ? JSON.stringify(agentFrameworkConfig, null, 2) : '{}'}
-            onChange={handleEditorChange}
-            options={{
-              minimap: { enabled: true },
-              fontSize: 14,
-              wordWrap: 'on',
-              automaticLayout: true,
-              formatOnPaste: true,
-              formatOnType: true,
-              scrollBeyondLastLine: false,
-            }}
-          />
+          <Suspense
+            fallback={
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                <CircularProgress />
+              </Box>
+            }
+          >
+            <MonacoEditor
+              height='100%'
+              defaultLanguage='json'
+              value={agentFrameworkConfig ? JSON.stringify(agentFrameworkConfig, null, 2) : '{}'}
+              onChange={handleEditorChange}
+              options={{
+                minimap: { enabled: true },
+                fontSize: 14,
+                wordWrap: 'on',
+                automaticLayout: true,
+                formatOnPaste: true,
+                formatOnType: true,
+                scrollBeyondLastLine: false,
+              }}
+            />
+          </Suspense>
         )}
       </Box>
     </Box>

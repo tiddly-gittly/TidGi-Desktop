@@ -62,7 +62,7 @@ describe('ProviderConfig Component', () => {
 
     Object.defineProperty(window.service.externalAPI, 'getAIConfig', {
       value: vi.fn().mockResolvedValue({
-        api: {
+        default: {
           provider: 'openai',
           model: 'gpt-4',
         },
@@ -194,7 +194,7 @@ describe('ProviderConfig Component', () => {
     // Mock AI config to simulate no existing embedding model
     Object.defineProperty(window.service.externalAPI, 'getAIConfig', {
       value: vi.fn().mockResolvedValue({
-        api: {
+        default: {
           provider: '',
           model: '',
         },

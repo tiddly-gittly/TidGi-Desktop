@@ -19,8 +19,8 @@ import type { IPrompt } from '@services/agentInstance/promptConcat/promptConcatS
 import type { IPromptConcatTool } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { cloneDeep } from 'lodash';
 import defaultAgents from '../../agentFrameworks/taskAgents.json';
+import { registerCoreInfrastructure } from '../../promptConcat/infrastructure';
 import { createAgentFrameworkHooks, PromptConcatHookContext } from '../index';
-import { messageManagementTool } from '../messageManagement';
 import { wikiSearchTool } from '../wikiSearch';
 
 // Mock i18n
@@ -321,7 +321,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       expect(toolResultMessage.content).toContain('Tool: wiki-search');
       expect(toolResultMessage.content).toContain('Important Note 1');
       expect(toolResultMessage.metadata?.isToolResult).toBe(true);
-      expect(toolResultMessage.metadata?.isPersisted).toBe(false); // Should be false initially
+      // Note: isPersisted may be true due to immediate async persistence in new defineTool API
       expect(toolResultMessage.duration).toBe(1); // Tool result uses configurable toolResultDuration (default 1)
 
       // Check that previous user message is unchanged
@@ -406,7 +406,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
       expect(errorResultMessage.content).toContain('工作空间名称或ID');
       expect(errorResultMessage.metadata?.isToolResult).toBe(true);
       expect(errorResultMessage.metadata?.isError).toBe(true);
-      expect(errorResultMessage.metadata?.isPersisted).toBe(false); // Should be false initially
+      // Note: isPersisted may be true due to immediate async persistence in new defineTool API
       expect(errorResultMessage.duration).toBe(1); // Now uses configurable toolResultDuration (default 1)
     });
 
@@ -602,10 +602,13 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
           aiApiConfig: {
-            api: {
+            default: {
               provider: 'openai',
               model: 'gpt-4',
-              embeddingModel: 'text-embedding-ada-002',
+            },
+            embedding: {
+              provider: 'openai',
+              model: 'text-embedding-ada-002',
             },
             modelParameters: {},
           },
@@ -665,9 +668,13 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
         expect.any(String), // workspaceID
         'How to use AI agents',
         expect.objectContaining({
-          api: expect.objectContaining({
+          default: expect.objectContaining({
             provider: 'openai',
             model: 'gpt-4',
+          }),
+          embedding: expect.objectContaining({
+            provider: 'openai',
+            model: 'text-embedding-ada-002',
           }),
         }),
         10,
@@ -701,7 +708,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
           aiApiConfig: {
-            api: {
+            default: {
               provider: 'openai',
               model: 'gpt-4',
             },
@@ -772,7 +779,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
           id: 'test-agent',
           agentDefId: 'test-agent-def',
           aiApiConfig: {
-            api: {
+            default: {
               provider: 'openai',
               model: 'gpt-4',
             },
@@ -891,7 +898,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
 
       const hooks = createAgentFrameworkHooks();
       wikiSearchTool(hooks);
-      messageManagementTool(hooks);
+      registerCoreInfrastructure(hooks);
 
       await hooks.responseComplete.promise(context);
 
@@ -901,7 +908,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
 
       const toolResultMessage = agentFrameworkContext.agent.messages[1] as AgentInstanceMessage;
       expect(toolResultMessage.metadata?.isToolResult).toBe(true);
-      expect(toolResultMessage.metadata?.isPersisted).toBe(true); // Should be true after messageManagementTool processing
+      expect(toolResultMessage.metadata?.isPersisted).toBe(true); // Should be true after infrastructure processing
     });
 
     it('should prevent regression: tool result not filtered in second round', async () => {

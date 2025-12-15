@@ -40,9 +40,7 @@
       "Title": "配置问题"
     },
     "InputPlaceholder": "输入消息，Ctrl+Enter 发送",
-    "Send": "发送",
-    "SessionGroup": {
-    }
+    "Send": "发送"
   },
   "Common": {
     "None": "未选择"
@@ -83,8 +81,6 @@
     "SelectedTemplate": "已选择模板",
     "SetupAgent": "设置智能体",
     "SetupAgentDescription": "为您的智能体命名并选择一个模板作为起点",
-    "Steps": {
-    },
     "Title": "创建新智能体"
   },
   "EditAgent": {
@@ -106,8 +102,6 @@
     "PreviewChat": "预览聊天",
     "Save": "保存",
     "Saving": "保存中...",
-    "Steps": {
-    },
     "Title": "编辑智能体定义"
   },
   "ModelFeature": {
@@ -228,6 +222,12 @@
   "Prompt": {
     "AutoRefresh": "预览会随输入文本的变化自动刷新",
     "CodeEditor": "代码编辑器",
+    "Edit": "提示词编辑",
+    "EnterEditSideBySide": "分屏显示编辑",
+    "EnterFullScreen": "进入全屏",
+    "EnterPreviewSideBySide": "分屏显示预览",
+    "ExitFullScreen": "退出全屏",
+    "ExitSideBySide": "退出分屏",
     "Flat": "平铺视图",
     "FormEditor": "表单编辑器",
     "LastUpdated": "上次更新时间",
@@ -241,10 +241,13 @@
   },
   "PromptConfig": {
     "AddItem": "添加项目",
+    "Collapse": "折叠",
     "EmptyArray": "还没有添加任何项目。点击下面的按钮添加第一个项目。",
+    "Expand": "展开",
     "ItemCount": "{{count}} 项",
-    "RemoveItem": "删除列表项",
+    "ItemIndex": "第 {{index}} 项",
     "Tabs": {
+      "Plugins": "插件",
       "Prompts": "提示词",
       "Response": "响应"
     },
@@ -256,8 +259,20 @@
   },
   "Schema": {
     "AIConfig": {
+      "Default": "默认使用的对话模型",
+      "DefaultTitle": "默认模型",
       "Description": "AI 会话设置配置",
-      "Title": "AI 配置"
+      "Embedding": "用于向量搜索的嵌入模型",
+      "EmbeddingTitle": "嵌入模型",
+      "Free": "成本敏感任务使用的低成本模型",
+      "FreeTitle": "免费/低成本模型",
+      "ImageGeneration": "用于图像生成的模型",
+      "ImageGenerationTitle": "图像生成模型",
+      "Speech": "用于文本转语音（TTS）的模型",
+      "SpeechTitle": "语音合成模型",
+      "Title": "AI 配置",
+      "Transcriptions": "用于语音转文本（STT）的模型",
+      "TranscriptionsTitle": "语音转文本模型"
     },
     "AgentConfig": {
       "Description": "智能体配置",
@@ -265,50 +280,91 @@
       "IdTitle": "智能体 ID",
       "PromptConfig": {
         "Description": "提示词配置",
+        "Plugins": "插件配置列表",
         "Prompts": "提示词配置列表",
         "Response": "响应配置列表",
         "Title": "提示词配置"
       },
       "Title": "智能体配置"
     },
-    "AutoReroll": {
-    },
     "BaseAPIConfig": {
-      "API": "API 提供商和模型配置",
-      "APITitle": "API 配置",
-      "Description": "基础接口配置",
       "ModelParameters": "模型参数配置",
-      "ModelParametersTitle": "模型参数",
-      "Title": "基础接口配置"
+      "ModelParametersTitle": "模型参数"
+    },
+    "Common": {
+      "ToolListPosition": {
+        "Description": "工具列表在提示词中的插入位置配置",
+        "Position": "相对于目标位置的插入位置",
+        "PositionTitle": "插入位置",
+        "TargetId": "目标元素的ID，工具列表将相对于此元素插入",
+        "TargetIdTitle": "目标ID"
+      },
+      "ToolListPositionTitle": "工具列表位置"
     },
     "DefaultAgents": {
       "Description": "默认智能体配置列表",
       "Title": "默认智能体"
     },
-    "DynamicPosition": {
-    },
     "FullReplacement": {
       "Description": "完全替换参数配置",
       "SourceType": "数据来源类型，决定用什么内容来替换目标元素",
       "SourceTypeTitle": "源类型",
-      "SourceTypes": {
-      },
       "TargetId": "目标元素ID",
       "TargetIdTitle": "目标ID",
       "Title": "完全替换参数"
     },
-    "Function": {
-    },
-    "HandlerConfig": {
-    },
-    "JavascriptTool": {
+    "Git": {
+      "Description": "搜索 Git 提交日志和读取特定文件内容",
+      "Title": "Git 工具",
+      "Tool": {
+        "Parameters": {
+          "commitHash": {
+            "Description": "提交哈希值",
+            "Title": "提交哈希"
+          },
+          "filePath": {
+            "Description": "文件路径（用于文件搜索模式）",
+            "Title": "文件路径"
+          },
+          "maxLines": {
+            "Description": "最大行数（默认500）",
+            "Title": "最大行数"
+          },
+          "page": {
+            "Description": "结果页码（从1开始）",
+            "Title": "页码"
+          },
+          "pageSize": {
+            "Description": "每页结果数量",
+            "Title": "每页数量"
+          },
+          "searchMode": {
+            "Description": "搜索模式：按提交信息、文件路径、日期范围或不搜索",
+            "Title": "搜索模式"
+          },
+          "searchQuery": {
+            "Description": "搜索查询字符串（消息搜索模式）",
+            "Title": "搜索查询"
+          },
+          "since": {
+            "Description": "开始日期（ISO 8601 格式）",
+            "Title": "开始日期"
+          },
+          "until": {
+            "Description": "结束日期（ISO 8601 格式）",
+            "Title": "结束日期"
+          },
+          "workspaceName": {
+            "Description": "要搜索的工作区名称或ID",
+            "Title": "工作区名称"
+          }
+        }
+      }
     },
     "MCP": {
       "Description": "模型上下文协议参数配置",
       "Id": "MCP 服务器 ID",
       "IdTitle": "服务器 ID",
-      "ResponseProcessing": {
-      },
       "TimeoutMessage": "超时消息",
       "TimeoutMessageTitle": "超时消息",
       "TimeoutSecond": "超时时间（秒）",
@@ -327,29 +383,21 @@
       "TopP": "Top P 采样参数",
       "TopPTitle": "Top P"
     },
-    "Plugin": {
-      "Caption": "简短描述",
-      "CaptionTitle": "标题",
-      "Content": "插件内容或说明",
-      "ContentTitle": "内容",
-      "ForbidOverrides": "是否禁止在运行时覆盖此插件的参数",
-      "ForbidOverridesTitle": "禁止覆盖",
-      "Id": "插件 ID",
-      "IdTitle": "ID",
-      "PluginId": "用于选择具体插件的标识符",
-      "PluginIdTitle": "插件标识"
+    "ModelSelection": {
+      "Description": "选择模型提供商与具体模型名称",
+      "Model": "模型名称（如 gpt-4o、Qwen2.5-7B-Instruct）",
+      "ModelTitle": "模型",
+      "Provider": "模型提供商（如 OpenAI、SiliconFlow、Google 等）",
+      "ProviderTitle": "提供商",
+      "Title": "模型选择"
     },
     "Position": {
-      "Bottom": "自底部偏移几条消息",
-      "BottomTitle": "底部偏移",
       "Description": "位置参数配置，用于确定内容插入的精确位置。支持相对位置、绝对位置、前置和后置四种定位方式",
       "TargetId": "目标元素ID",
       "TargetIdTitle": "目标ID",
       "Title": "位置参数",
       "Type": "位置类型，用于确定内容插入的精确位置。支持相对位置、绝对位置、前置和后置四种定位方式",
-      "TypeTitle": "位置类型",
-      "Types": {
-      }
+      "TypeTitle": "位置类型"
     },
     "Prompt": {
       "Caption": "简短描述",
@@ -368,66 +416,70 @@
         "System": "系统 - 定义AI的行为规则和背景设定",
         "User": "用户 - 模拟用户的输入和请求"
       },
+      "Source": "此提示词的来源或引用（例如文件路径、URL 等）",
+      "SourceTitle": "来源",
       "Tags": "标签列表",
       "TagsTitle": "标签",
       "Text": "提示词内容，可以包含维基文本支持的语法，例如<<变量名>>。",
       "TextTitle": "文本",
       "Title": "提示词"
     },
-    "PromptDynamicModification": {
-      "DynamicModificationTypes": {
-      }
-    },
-    "PromptPart": {
-    },
-    "ProviderModel": {
-      "Description": "提供商和模型配置",
-      "EmbeddingModel": "用于语义搜索和向量操作的嵌入模型名称",
-      "EmbeddingModelTitle": "嵌入模型",
-      "FreeModel": "用于生成总结标题、生成备份标题时使用的免费小模型",
-      "FreeModelTitle": "免费模型",
-      "ImageGenerationModel": "用于文字生成图像操作的图像生成模型名称",
-      "ImageGenerationModelTitle": "图像生成模型",
-      "Model": "AI 模型名称",
-      "ModelTitle": "模型",
-      "Provider": "AI 提供商名称",
-      "ProviderTitle": "提供商",
-      "SpeechModel": "用于文字转语音操作的语音生成模型名称",
-      "SpeechModelTitle": "语音模型",
-      "Title": "提供商模型",
-      "TranscriptionsModel": "用于语音转文字操作的语音识别模型名称",
-      "TranscriptionsModelTitle": "语音识别模型"
-    },
-    "RAG": {
-      "Removal": {
-      },
-      "SourceTypes": {
-      }
-    },
     "Response": {
+      "Caption": "响应标题，用于标识该响应条目",
+      "CaptionTitle": "标题",
       "Description": "外部API的响应，通常作为响应动态修改的目标，结构与提示词的一样，可以填写预置内容，也可以作为占位符或容器，由 ResponseDynamicModification 填入外部API的响应的具体内容。",
+      "Id": "响应配置的唯一标识符，便于引用",
+      "IdTitle": "ID",
       "Title": "响应"
     },
-    "ResponseDynamicModification": {
-      "DynamicModificationTypes": {
+    "TiddlyWikiPlugin": {
+      "ActionsTag": {
+        "Description": "标记 Action Tiddler 的标签，AI 可以通过这个标签找到可执行的动作",
+        "Title": "Actions 标签"
       },
-      "ResponseProcessingTypes": {
+      "DataSourceTag": {
+        "Description": "标记数据源条目的标签，AI 可以通过这个标签了解数据的获取和筛选方法",
+        "Title": "DataSource 标签"
+      },
+      "DescribeTag": {
+        "Description": "标记简短描述的标签，这些描述会自动加载到提示词中，帮助 AI 理解可用功能",
+        "Title": "Describe 标签"
+      },
+      "Description": "加载特定插件的数据源和动作说明。系统会自动加载 Describe 标签的条目作为背景信息。",
+      "EnableCache": {
+        "Description": "启用缓存以避免每次生成提示词时重新查询 wiki。禁用缓存时将清除并重新加载描述内容。",
+        "Title": "启用缓存"
+      },
+      "Title": "TiddlyWiki 插件",
+      "Tool": {
+        "Parameters": {
+          "pluginTitle": {
+            "Description": "要加载详情的插件标题。系统会搜索包含该标题的 DataSource 和 Actions 条目。",
+            "Title": "插件标题"
+          }
+        }
+      },
+      "WorkspaceNameOrID": {
+        "Description": "要加载插件信息的工作区名称或ID（默认为 'wiki'）",
+        "Title": "工作区名称或ID"
       }
     },
-    "ToolCalling": {
-    },
-    "Trigger": {
-      "Model": {
-      }
-    },
-    "Wiki": {
+    "Tool": {
+      "Caption": "简短描述（用于 UI 展示）",
+      "CaptionTitle": "标题",
+      "Content": "插件内容或说明",
+      "ContentTitle": "内容",
+      "ForbidOverrides": "是否禁止在运行时覆盖此插件的参数",
+      "ForbidOverridesTitle": "禁止覆盖",
+      "Id": "插件实例 ID（同一 handler 内唯一）",
+      "IdTitle": "插件实例 ID",
+      "ToolId": "选择要使用的工具类型",
+      "ToolIdTitle": "工具类型"
     },
     "WikiOperation": {
       "Description": "在维基工作区中执行 条目操作（添加、删除或设置文本）",
       "Title": "Wiki 操作",
       "Tool": {
-        "Examples": {
-        },
         "Parameters": {
           "extraMeta": {
             "Description": "额外元数据的 JSON 字符串，如标签和字段，默认为 \"{}\"",
@@ -449,17 +501,15 @@
             "Description": "条目的标题",
             "Title": "条目标题"
           },
+          "variables": {
+            "Description": "传递给 action tiddler 的变量，JSON 格式字符串，默认为 \"{}\"",
+            "Title": "变量"
+          },
           "workspaceName": {
             "Description": "要操作的工作区名称或ID",
             "Title": "工作区名称"
           }
         }
-      },
-      "ToolListPosition": {
-        "Position": "相对于目标元素的插入位置（before/after）",
-        "PositionTitle": "插入位置",
-        "TargetId": "要插入工具列表的目标元素的ID",
-        "TargetIdTitle": "目标ID"
       },
       "ToolResultDuration": "工具执行结果在对话中保持可见的轮数，超过此轮数后结果将变灰显示",
       "ToolResultDurationTitle": "工具结果持续轮数"
@@ -499,12 +549,6 @@
         },
         "UpdateEmbeddings": {
           "Description": "为Wiki工作区生成或更新向量嵌入索引，用于语义搜索",
-          "Parameters": {
-            "forceUpdate": {
-            },
-            "workspaceName": {
-            }
-          },
           "forceUpdate": {
             "Description": "是否强制重新生成嵌入索引，覆盖已有的嵌入数据（如果设置为 true 则忽略增量更新）。",
             "Title": "强制更新"
@@ -515,15 +559,16 @@
           }
         }
       },
-      "ToolListPosition": {
-        "Position": "相对于目标位置的插入位置",
-        "PositionTitle": "插入位置",
-        "TargetId": "目标元素的ID，工具列表将相对于此元素插入",
-        "TargetIdTitle": "目标ID"
-      },
-      "ToolListPositionTitle": "工具列表位置",
       "ToolResultDuration": "工具执行结果在对话中保持可见的轮数，超过此轮数后结果将变灰显示",
       "ToolResultDurationTitle": "工具结果持续轮数"
+    },
+    "WorkspacesList": {
+      "Description": "将可用的 Wiki 工作区列表注入到提示词中",
+      "Position": "插入位置：before 为前置，after 为后置",
+      "PositionTitle": "插入位置",
+      "TargetId": "目标提示词的 ID，列表将相对于此提示词插入",
+      "TargetIdTitle": "目标 ID",
+      "Title": "工作区列表"
     }
   },
   "Search": {
@@ -549,7 +594,10 @@
     }
   },
   "Tool": {
-    "Plugin": {
+    "Git": {
+      "Error": {
+        "WorkspaceNotFound": "工作区名称或ID\"{{workspaceName}}\"不存在"
+      }
     },
     "Schema": {
       "Description": "描述",
@@ -558,12 +606,19 @@
       "Parameters": "参数",
       "Required": "必需"
     },
+    "TiddlyWikiPlugin": {
+      "Error": {
+        "PluginTitleRequired": "插件标题不能为空",
+        "WorkspaceNotFound": "工作区名称或ID\"{{workspaceNameOrID}}\"不存在"
+      }
+    },
     "WikiOperation": {
       "Error": {
         "WorkspaceNotExist": "工作区{{workspaceID}}不存在",
         "WorkspaceNotFound": "工作区名称或ID\"{{workspaceName}}\"不存在。可用工作区：{{availableWorkspaces}}"
       },
       "Success": {
+        "ActionInvoked": "成功在维基工作区\"{{workspaceName}}\"中执行了动作条目\"{{actionTitle}}\"",
         "Added": "成功在维基工作区\"{{workspaceName}}\"中添加了条目\"{{title}}\"",
         "Deleted": "成功从维基工作区\"{{workspaceName}}\"中删除了条目\"{{title}}\"",
         "Updated": "成功在维基工作区\"{{workspaceName}}\"中设置了条目\"{{title}}\"的文本"

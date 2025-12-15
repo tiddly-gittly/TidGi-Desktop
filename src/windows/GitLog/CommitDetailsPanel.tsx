@@ -10,7 +10,7 @@ import { styled } from '@mui/material/styles';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getFileStatusStyles, type GitFileStatus } from './fileStatusStyles';
@@ -85,6 +85,13 @@ export function CommitDetailsPanel(
   // Use files from commit entry (already loaded in useGitLogData)
   const fileChanges = commit?.files ?? [];
 
+  // Auto-select the first file if none is selected
+  useEffect(() => {
+    if (fileChanges.length > 0 && !selectedFile && onFileSelect) {
+      onFileSelect(fileChanges[0].path);
+    }
+  }, [commit, fileChanges, selectedFile, onFileSelect]);
+
   const handleRevert = async () => {
     if (!commit || isReverting) return;
 
@@ -100,7 +107,6 @@ export function CommitDetailsPanel(
 
       // Pass the commit message to revertCommit for better revert message
       await window.service.git.revertCommit(workspace.wikiFolderLocation, commit.hash, commit.message);
-      console.log('Revert success');
       // Notify parent to select the new revert commit
       if (onRevertSuccess) {
         onRevertSuccess();
@@ -129,7 +135,6 @@ export function CommitDetailsPanel(
         dir: workspace.wikiFolderLocation,
         commitOnly: true,
       });
-      console.log('Commit success');
       // Notify parent to select the new commit
       if (onCommitSuccess) {
         onCommitSuccess();
@@ -143,11 +148,7 @@ export function CommitDetailsPanel(
 
   const handleCopyHash = () => {
     if (!commit) return;
-    navigator.clipboard.writeText(commit.hash).then(() => {
-      console.log('Hash copied');
-    }).catch((error: unknown) => {
-      console.error('Failed to copy hash:', error);
-    });
+    void navigator.clipboard.writeText(commit.hash);
   };
 
   const handleOpenInGitHub = async () => {

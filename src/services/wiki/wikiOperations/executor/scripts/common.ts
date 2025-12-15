@@ -76,4 +76,20 @@ export const wikiOperationScripts = {
     const event = new Event('TidGi-invokeActionByTag');
     return $tw.rootWidget.invokeActionsByTag(${JSON.stringify(tag)},event,${stringifiedData});
   `,
+  /**
+   * Invoke a specific action tiddler by title with variables
+   * This is more precise than invokeActionsByTag as it executes exactly one action
+   *
+   * @param title - The title of the action tiddler to execute
+   * @param stringifiedData - Stringified JSON object containing variables to pass to the action
+   */
+  invokeActionString: (title: string, stringifiedData: string) => `
+    const actionText = $tw.wiki.getTiddlerText(${JSON.stringify(title)});
+    if (!actionText) {
+      throw new Error('Action tiddler not found: ' + ${JSON.stringify(title)});
+    }
+    const event = new Event('TidGi-invokeActionString');
+    Object.assign(event, ${stringifiedData});
+    return $tw.rootWidget.invokeActionString(actionText, event, ${stringifiedData});
+  `,
 } as const;

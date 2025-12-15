@@ -340,7 +340,7 @@ export interface IExternalAPIService {
 
   /**
    * Delete a field from default AI configuration
-   * @param fieldPath - Dot-separated path to the field (e.g., 'api.embeddingModel')
+   * @param fieldPath - Dot-separated path to the field (e.g., 'embedding', 'speech', 'default')
    */
   deleteFieldFromDefaultAIConfig(fieldPath: string): Promise<void>;
 

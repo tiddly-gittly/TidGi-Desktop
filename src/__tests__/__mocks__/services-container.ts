@@ -80,7 +80,7 @@ export const serviceInstances: {
     } as Partial<IPreferenceService>;
   })(),
   externalAPI: {
-    getAIConfig: vi.fn(async () => ({ api: { model: 'test-model', provider: 'test-provider' }, modelParameters: {} })),
+    getAIConfig: vi.fn(async () => ({ default: { model: 'test-model', provider: 'test-provider' }, modelParameters: {} })),
     getAIProviders: vi.fn(async () => []),
     generateFromAI: vi.fn(async function*() {
       // harmless await for linter

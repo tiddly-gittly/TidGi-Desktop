@@ -71,6 +71,7 @@
     "TagName": "Nom de l'étiquette",
     "TagNameHelp": "Les tiddlers avec cette étiquette seront ajoutés à ce sous-wiki (vous pouvez ajouter ou modifier cette étiquette plus tard, en cliquant avec le bouton droit sur l'icône de l'espace de travail et en choisissant Modifier l'espace de travail)",
     "TagNameHelpForMain": "Les nouvelles entrées avec cette étiquette seront prioritairement enregistrées dans cet espace de travail.",
+    "TagNameInputWarning": "⚠️ Veuillez appuyer sur Entrée pour confirmer la saisie de l'étiquette",
     "ThisPathIsNotAWikiFolder": "Le répertoire n'est pas un dossier Wiki \"{{wikiPath}}\"",
     "UseFilter": "utiliser un filtre",
     "UseFilterHelp": "Utilisez des expressions de filtre plutôt que des étiquettes pour correspondre aux entrées et décider si elles doivent être stockées dans l'espace de travail actuel.",
@@ -217,6 +218,9 @@
     "WikiRootTiddler": "Tiddler racine du Wiki",
     "WikiRootTiddlerDescription": "Le tiddler racine du Wiki détermine le comportement de base du système, veuillez lire la documentation officielle pour comprendre avant de modifier",
     "WikiRootTiddlerItems": {
+      "all": "Tout charger en une fois",
+      "lazy-images": "Charger les images à la demande",
+      "lazy-all": "Charger les images et le texte à la demande"
     }
   },
   "Error": {
@@ -259,7 +263,6 @@
     "AndMoreFiles": "Il reste encore {{count}} fichier(s)",
     "Author": "auteur",
     "BinaryFileCannotDisplay": "Le fichier binaire ne peut pas être affiché sous forme de texte.",
-    "ClearSearch": "Effacer la recherche",
     "Committing": "En cours de soumission...",
     "ContentView": "contenu du fichier",
     "CopyFilePath": "copier le chemin du fichier",
@@ -278,7 +281,6 @@
     "FailedToLoadDiff": "Échec du chargement des différences",
     "FileNameSearch": "nom de fichier",
     "FileSearchPlaceholder": "Par exemple : pages, *.tsx, config.json",
-    "Files": "fichier",
     "FilesChanged": "fichiers modifiés",
     "FilesChanged_other": "{{count}} fichiers modifiés",
     "Hash": "valeur de hachage",
@@ -565,8 +567,6 @@
   "Save": "sauvegarder",
   "Schema": {
     "ProviderModel": {
-      "FreeModel": "petit modèle gratuit utilisé pour générer des titres de résumé et des titres de sauvegarde",
-      "FreeModelTitle": "modèle gratuit"
     }
   },
   "Scripting": {

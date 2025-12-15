@@ -71,6 +71,7 @@
     "TagName": "タグ名",
     "TagNameHelp": "このタグを持つTiddlerはこのサブWikiに追加されます（後で右クリックしてワークスペースアイコンを選択し、ワークスペースを編集することでこのタグを追加または変更できます）",
     "TagNameHelpForMain": "このタグが付いた新しいエントリは、このワークスペースに優先的に保存されます",
+    "TagNameInputWarning": "⚠️ ラベル入力を確認するにはEnterキーを押してください",
     "ThisPathIsNotAWikiFolder": "このディレクトリはWikiフォルダではありません \"{{wikiPath}}\"",
     "UseFilter": "フィルターを使用する",
     "UseFilterHelp": "フィルター式を使用してエントリをマッチングし、現在のワークスペースに保存するかどうかを決定します。タグではなくフィルター式を用います。",
@@ -217,6 +218,9 @@
     "WikiRootTiddler": "WikiルートTiddler",
     "WikiRootTiddlerDescription": "WikiのルートTiddlerはシステムのコア動作を決定します。変更する前に公式ドキュメントを読んで理解してください",
     "WikiRootTiddlerItems": {
+      "all": "一度にすべて読み込む",
+      "lazy-images": "必要に応じて画像を読み込む",
+      "lazy-all": "必要に応じて画像とテキストを読み込む"
     }
   },
   "Error": {
@@ -259,7 +263,6 @@
     "AndMoreFiles": "残り {{count}} ファイル",
     "Author": "著者",
     "BinaryFileCannotDisplay": "バイナリファイルはテキストとして表示できません",
-    "ClearSearch": "検索をクリア",
     "Committing": "送信中...",
     "ContentView": "ファイル内容",
     "CopyFilePath": "ファイルパスをコピー",
@@ -278,7 +281,6 @@
     "FailedToLoadDiff": "差分の読み込みに失敗しました",
     "FileNameSearch": "ファイル名",
     "FileSearchPlaceholder": "例えば：pages、*.tsx、config.json",
-    "Files": "ファイル",
     "FilesChanged": "変更されたファイル",
     "FilesChanged_other": "{{count}} 個のファイルに変更があります",
     "Hash": "ハッシュ値",
@@ -564,8 +566,6 @@
   "Save": "保存",
   "Schema": {
     "ProviderModel": {
-      "FreeModel": "要約タイトルの生成やバックアップタイトルの作成に使用する無料の小型モデル",
-      "FreeModelTitle": "無料モデル"
     }
   },
   "Scripting": {

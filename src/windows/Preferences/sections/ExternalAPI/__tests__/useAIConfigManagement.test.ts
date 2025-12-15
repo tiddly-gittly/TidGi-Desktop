@@ -7,7 +7,7 @@ import { useAIConfigManagement } from '../useAIConfigManagement';
 
 describe('useAIConfigManagement', () => {
   const mockAIConfig: AiAPIConfig = {
-    api: {
+    default: {
       provider: 'openai',
       model: 'gpt-4',
     },

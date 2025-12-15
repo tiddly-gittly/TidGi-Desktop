@@ -1,5 +1,6 @@
 import FolderIcon from '@mui/icons-material/Folder';
 import { Autocomplete, AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isWikiWorkspace } from '@services/workspaces/interface';
@@ -17,10 +18,17 @@ export function NewWikiForm({
   errorInWhichComponentSetter,
 }: IWikiWorkspaceFormProps & { isCreateSyncedWorkspace: boolean }): React.JSX.Element {
   const { t } = useTranslation();
+  const [tagInputValue, setTagInputValue] = useState<string>('');
   useValidateNewWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, errorInWhichComponentSetter);
 
   // Fetch all tags from main wiki for autocomplete suggestions
   const availableTags = useAvailableTags(form.mainWikiToLink.id, !isCreateMainWorkspace);
+
+  const tagHelperText = tagInputValue.trim().length > 0
+    ? t('AddWorkspace.TagNameInputWarning')
+    : (isCreateMainWorkspace
+      ? t('AddWorkspace.TagNameHelpForMain')
+      : t('AddWorkspace.TagNameHelp'));
 
   return (
     <CreateContainer elevation={2} square>
@@ -94,8 +102,12 @@ export function NewWikiForm({
             freeSolo
             options={availableTags}
             value={form.tagNames}
+            onInputChange={(_event, newInputValue) => {
+              setTagInputValue(newInputValue);
+            }}
             onChange={(_event, newValue) => {
               form.tagNamesSetter(newValue);
+              setTagInputValue('');
             }}
             slotProps={{
               chip: {
@@ -107,7 +119,7 @@ export function NewWikiForm({
                 error={errorInWhichComponent.tagNames}
                 {...parameters}
                 label={t('AddWorkspace.TagName')}
-                helperText={t('AddWorkspace.TagNameHelp')}
+                helperText={tagHelperText}
                 slotProps={{ htmlInput: { ...parameters.inputProps, 'data-testid': 'tagname-autocomplete-input' } }}
               />
             )}

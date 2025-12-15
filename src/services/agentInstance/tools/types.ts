@@ -44,6 +44,8 @@ export interface PromptConcatHookContext extends BaseToolContext {
   prompts: IPrompt[];
   /** Tool configuration */
   toolConfig: IPromptConcatTool;
+  /** Index of the current plugin in the plugins array (for source tracking) */
+  pluginIndex?: number;
 }
 
 /**
@@ -63,7 +65,7 @@ export interface AIResponseContext extends BaseToolContext {
   /** Tool configuration - for backward compatibility */
   toolConfig: IPromptConcatTool;
   /** Complete framework configuration - allows tools to access all configs */
-  agentFrameworkConfig?: { plugins?: Array<{ toolId: string; [key: string]: unknown }> };
+  agentFrameworkConfig?: { plugins?: IPromptConcatTool[] };
   /** AI streaming response */
   response: AIStreamResponse;
   /** Current request ID */

@@ -66,7 +66,7 @@ export class ExternalAPIService implements IExternalAPIService {
     },
   };
 
-  // Observable to emit config changes
+  // Observable to emit config changes - will be updated when settings are loaded
   public defaultConfig$ = new BehaviorSubject<AiAPIConfig>(this.userSettings.defaultConfig);
   public providers$ = new BehaviorSubject<AIProviderConfig[]>(this.userSettings.providers);
 
@@ -74,6 +74,9 @@ export class ExternalAPIService implements IExternalAPIService {
    * Initialize the external API service
    */
   public async initialize(): Promise<void> {
+    // Load settings from database first
+    this.ensureSettingsLoaded();
+
     /**
      * Initialize database connection for API logging
      */
@@ -91,6 +94,10 @@ export class ExternalAPIService implements IExternalAPIService {
     const savedSettings = this.databaseService.getSetting('aiSettings');
     this.userSettings = savedSettings ?? this.userSettings;
     this.settingsLoaded = true;
+
+    // Update Observables with loaded settings
+    this.defaultConfig$.next(this.userSettings.defaultConfig);
+    this.providers$.next(this.userSettings.providers);
   }
 
   private ensureSettingsLoaded(): void {
@@ -353,7 +360,7 @@ export class ExternalAPIService implements IExternalAPIService {
   async deleteFieldFromDefaultAIConfig(fieldPath: string): Promise<void> {
     this.ensureSettingsLoaded();
 
-    // Support nested field deletion like 'api.embeddingModel'
+    // Support field deletion like 'embedding', 'speech', 'default'
     const pathParts = fieldPath.split('.');
     let current: Record<string, unknown> = this.userSettings.defaultConfig;
 

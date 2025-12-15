@@ -1,28 +1,31 @@
 /**
  * Tests for schemaToToolContent utility
  */
-import { describe, expect, it, vi } from 'vitest';
+import { i18n } from '@services/libs/i18n';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod/v4';
 
 import { schemaToToolContent } from '../schemaToToolContent';
 
-// Mock i18n
-vi.mock('@services/libs/i18n', () => ({
-  i18n: {
-    t: vi.fn((key: string) => {
-      const translations: Record<string, string> = {
-        'Tool.Schema.Required': '必需',
-        'Tool.Schema.Optional': '可选',
-        'Tool.Schema.Description': '描述',
-        'Tool.Schema.Parameters': '参数',
-        'Tool.Schema.Examples': '使用示例',
-      };
-      return translations[key] || key;
-    }),
-  },
-}));
-
 describe('schemaToToolContent', () => {
+  beforeEach(() => {
+    // Setup i18n mock for each test
+
+    vi.mocked(i18n.t).mockImplementation(
+      ((...args: unknown[]) => {
+        const key = String(args[0]);
+        const translations: Record<string, string> = {
+          'Tool.Schema.Required': '必需',
+          'Tool.Schema.Optional': '可选',
+          'Tool.Schema.Description': '描述',
+          'Tool.Schema.Parameters': '参数',
+          'Tool.Schema.Examples': '使用示例',
+        };
+        return translations[key] ?? key;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }) as any,
+    );
+  });
   it('should generate tool content from schema with title and description', () => {
     const testSchema = z.object({
       name: z.string().describe('The name parameter'),

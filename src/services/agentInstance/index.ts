@@ -10,7 +10,7 @@ import type { AgentFramework, AgentFrameworkContext } from '@services/agentInsta
 import { promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { getPromptConcatAgentFrameworkConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
-import { createHooksWithTools, initializeToolSystem } from '@services/agentInstance/tools';
+import { createHooksWithPlugins, initializePluginSystem } from '@services/agentInstance/tools';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
@@ -65,7 +65,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   public async initializeFrameworks(): Promise<void> {
     try {
       // Register tools to global registry once during initialization
-      await initializeToolSystem();
+      await initializePluginSystem();
       logger.debug('AgentInstance Tool system initialized and tools registered to global registry');
 
       // Register built-in frameworks
@@ -379,8 +379,8 @@ export class AgentInstanceService implements IAgentInstanceService {
         isCancelled: () => cancelToken.value,
       };
 
-      // Create fresh hooks for this framework execution and register tools based on frameworkConfig
-      const { hooks: frameworkHooks } = await createHooksWithTools(agentDefinition.agentFrameworkConfig || {});
+      // Create fresh hooks for this framework execution and register plugins based on frameworkConfig
+      const { hooks: frameworkHooks } = await createHooksWithPlugins(agentDefinition.agentFrameworkConfig || {});
 
       // Trigger userMessageReceived hook with the configured tools
       await frameworkHooks.userMessageReceived.promise({

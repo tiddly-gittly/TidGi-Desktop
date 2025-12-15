@@ -19,6 +19,7 @@ import { widgets } from './widgets';
  */
 export interface ExtendedFormContext {
   rootFormData?: Record<string, unknown>;
+  onFormDataChange?: (formData: AgentFrameworkConfig) => void;
 }
 
 /**
@@ -96,7 +97,8 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
 
   const formContext = useMemo((): ExtendedFormContext => ({
     rootFormData: formData,
-  }), [formData]);
+    onFormDataChange: onChange,
+  }), [formData, onChange]);
 
   if (loading) {
     return (

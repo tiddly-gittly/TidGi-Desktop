@@ -71,6 +71,7 @@
     "TagName": "標籤名",
     "TagNameHelp": "加上此標籤的筆記將會自動被放入這個子知識庫內（可先不填，之後右鍵點擊這個工作區的圖示選擇編輯工作區修改）",
     "TagNameHelpForMain": "帶有此標籤的新條目將優先保存在此工作區",
+    "TagNameInputWarning": "⚠️ 請按Enter確認標籤輸入",
     "ThisPathIsNotAWikiFolder": "該目錄不是一個知識庫文件夾 \"{{wikiPath}}\"",
     "UseFilter": "使用篩選器",
     "UseFilterHelp": "用篩選器運算式而不是標籤來匹配條目，決定是否存入當前工作區",
@@ -217,6 +218,9 @@
     "WikiRootTiddler": "知識庫根條目",
     "WikiRootTiddlerDescription": "知識庫的根條目（root-tiddler）決定了系統的核心行為，修改前請閱讀官方文件來了解",
     "WikiRootTiddlerItems": {
+      "all": "全量載入",
+      "lazy-all": "按需載入圖片和文字",
+      "lazy-images": "按需載入圖片"
     }
   },
   "Error": {
@@ -259,7 +263,6 @@
     "AndMoreFiles": "還有 {{count}} 個文件",
     "Author": "作者",
     "BinaryFileCannotDisplay": "二進位檔案無法顯示為文字",
-    "ClearSearch": "清除搜尋",
     "Committing": "提交中...",
     "ContentView": "檔案內容",
     "CopyFilePath": "複製檔案路徑",
@@ -278,7 +281,6 @@
     "FailedToLoadDiff": "載入差異失敗",
     "FileNameSearch": "檔案名稱",
     "FileSearchPlaceholder": "例如：pages、*.tsx、config.json",
-    "Files": "檔案",
     "FilesChanged": "變更了 {{count}} 個文件",
     "FilesChanged_other": "{{count}} 個檔案有變更",
     "Hash": "雜湊值",
@@ -582,8 +584,6 @@
   "Save": "保存",
   "Schema": {
     "ProviderModel": {
-      "FreeModel": "用於生成總結標題、生成備份標題時使用的免費小模型",
-      "FreeModelTitle": "免費模型"
     }
   },
   "Scripting": {

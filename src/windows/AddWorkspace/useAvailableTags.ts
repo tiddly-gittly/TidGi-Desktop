@@ -17,7 +17,7 @@ export function useAvailableTags(workspaceID: string | undefined, enabled: boole
           const tags = await window.service.wiki.wikiOperationInServer(
             WikiChannel.runFilter,
             workspaceID,
-            ['[all[tags]]'],
+            ['[all[tags]!is[system]]'],
           );
           if (Array.isArray(tags)) {
             setAvailableTags(tags);

@@ -86,6 +86,9 @@ export class WikiOperationsInWikiWorker {
     [WikiChannel.invokeActionsByTag]: async (tag: string, data: Record<string, unknown>) => {
       await this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.invokeActionsByTag](tag, JSON.stringify(data)));
     },
+    invokeActionString: async (title: string, data: Record<string, unknown>) => {
+      await this.executeTWJavaScriptWhenIdle(wikiOperationScripts.invokeActionString(title, JSON.stringify(data)));
+    },
     [WikiChannel.deleteTiddler]: async (title: string) => {
       await this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.deleteTiddler](title));
     },

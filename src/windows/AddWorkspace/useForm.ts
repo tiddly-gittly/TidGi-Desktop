@@ -1,6 +1,5 @@
 // ...existing code...
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useStorageServiceUserInfoObservable } from '@services/auth/hooks';
@@ -22,8 +21,6 @@ export function useIsCreateSyncedWorkspace(): [boolean, React.Dispatch<React.Set
 }
 
 export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
-  const { t } = useTranslation();
-
   const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList(), []);
 
   const [wikiPort, wikiPortSetter] = useState(5212);
@@ -90,8 +87,8 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
 
   /** full path of created wiki folder */
   const wikiFolderLocation = usePromiseValue(
-    async () => await window.service.native.path('join', parentFolderLocation ?? t('Error') ?? 'Error', wikiFolderName),
-    'Error',
+    async () => await window.service.native.path('join', parentFolderLocation, wikiFolderName),
+    '',
     [parentFolderLocation, wikiFolderName],
   );
 

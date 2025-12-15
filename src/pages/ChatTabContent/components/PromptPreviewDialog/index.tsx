@@ -1,4 +1,5 @@
 import { useAgentFrameworkConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement';
+import ArticleIcon from '@mui/icons-material/Article';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
@@ -22,18 +23,22 @@ interface PromptPreviewDialogProps {
   open: boolean;
   onClose: () => void;
   inputText?: string;
+  initialBaseMode?: 'preview' | 'edit';
 }
 
 export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   open,
   onClose,
   inputText = '',
+  initialBaseMode = 'preview',
 }) => {
   const { t } = useTranslation('agent');
   const agent = useAgentChatStore(state => state.agent);
 
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [baseMode, setBaseMode] = useState<'preview' | 'edit'>(initialBaseMode);
+  const [showSideBySide, setShowSideBySide] = useState(false);
+  const [baseModeBeforeSideBySide, setBaseModeBeforeSideBySide] = useState<'preview' | 'edit'>(initialBaseMode);
 
   const {
     loading: agentFrameworkConfigLoading,
@@ -71,10 +76,19 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   }, []);
 
   const handleToggleEditMode = useCallback((): void => {
-    setIsEditMode(previous => !previous);
-  }, []);
+    setShowSideBySide(previous => {
+      if (!previous) {
+        // Entering side-by-side, save current baseMode
+        setBaseModeBeforeSideBySide(baseMode);
+      } else {
+        // Exiting side-by-side, restore previous baseMode
+        setBaseMode(baseModeBeforeSideBySide);
+      }
+      return !previous;
+    });
+  }, [baseMode, baseModeBeforeSideBySide]);
 
-  // Listen for form field scroll targets to automatically switch to edit mode
+  // Listen for form field scroll targets to automatically switch to side-by-side mode
   const { formFieldsToScrollTo } = useAgentChatStore(
     useShallow((state) => ({
       formFieldsToScrollTo: state.formFieldsToScrollTo,
@@ -82,9 +96,29 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   );
   useEffect(() => {
     if (formFieldsToScrollTo.length > 0) {
-      setIsEditMode(true);
+      // Save current baseMode before switching to side-by-side
+      setBaseModeBeforeSideBySide(baseMode);
+      setBaseMode('edit');
+      setShowSideBySide(true); // Show side-by-side when clicking from PromptTree
     }
-  }, [formFieldsToScrollTo]);
+  }, [formFieldsToScrollTo, baseMode]);
+
+  useEffect(() => {
+    if (open) {
+      setBaseMode(initialBaseMode);
+      setShowSideBySide(false);
+    }
+  }, [initialBaseMode, open]);
+
+  const showPreview = showSideBySide || baseMode === 'preview';
+  const showEdit = showSideBySide || baseMode === 'edit';
+  const isSideBySide = showSideBySide;
+
+  const sideBySideTooltip = isSideBySide
+    ? t('Prompt.ExitSideBySide')
+    : baseMode === 'edit'
+    ? t('Prompt.EnterPreviewSideBySide')
+    : t('Prompt.EnterEditSideBySide');
 
   return (
     <Dialog
@@ -112,21 +146,21 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <Box>{t('Prompt.Preview')}</Box>
           <Box sx={{ display: 'flex' }}>
-            <Tooltip title={t(isEditMode ? 'Prompt.ExitEditMode' : 'Prompt.EnterEditMode', isEditMode ? 'Exit side-by-side editing' : 'Enter side-by-side editing')}>
+            <Tooltip title={sideBySideTooltip}>
               <IconButton
-                aria-label='toggle-edit-mode'
+                aria-label={sideBySideTooltip}
                 onClick={handleToggleEditMode}
                 sx={{ mr: 1 }}
-                color={isEditMode ? 'primary' : 'default'}
+                color={isSideBySide ? 'primary' : 'default'}
               >
-                {isEditMode ? <ViewSidebarIcon /> : <EditIcon />}
+                {isSideBySide ? <ViewSidebarIcon /> : baseMode === 'edit' ? <ArticleIcon /> : <EditIcon />}
               </IconButton>
             </Tooltip>
             <IconButton
               aria-label='toggle-fullscreen'
               onClick={handleToggleFullScreen}
               sx={{ mr: 1 }}
-              title={t(isFullScreen ? 'Prompt.ExitFullScreen' : 'Prompt.EnterFullScreen')}
+              title={isFullScreen ? t('Prompt.ExitFullScreen') : t('Prompt.EnterFullScreen')}
             >
               {isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
             </IconButton>
@@ -148,42 +182,54 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
           }),
         }}
       >
-        <PreviewProgressBar show={previewLoading} />
-        {isEditMode
-          ? (
-            <Box sx={{ display: 'flex', gap: 2, height: isFullScreen ? '100%' : '70vh' }}>
-              <Box
-                sx={{
-                  flex: '1',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <PreviewTabsView
-                  isFullScreen={isFullScreen}
-                />
-              </Box>
-              <Box
-                sx={{
-                  flex: '0 0 50%',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <EditView
-                  isFullScreen={isFullScreen}
-                  inputText={inputText}
-                />
-              </Box>
+        {showPreview && showEdit && (
+          <Box sx={{ display: 'flex', gap: 2, height: isFullScreen ? '100%' : '70vh' }}>
+            <Box
+              sx={{
+                flex: '1',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <PreviewProgressBar show={previewLoading} />
+              <PreviewTabsView
+                isFullScreen={isFullScreen}
+              />
             </Box>
-          )
-          : (
+            <Box
+              sx={{
+                flex: '0 0 50%',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <EditView
+                isFullScreen={isFullScreen}
+                inputText={inputText}
+              />
+            </Box>
+          </Box>
+        )}
+
+        {showPreview && !showEdit && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: isFullScreen ? '100%' : '70vh' }}>
+            <PreviewProgressBar show={previewLoading} />
             <PreviewTabsView
               isFullScreen={isFullScreen}
             />
-          )}
+          </Box>
+        )}
+
+        {showEdit && !showPreview && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: isFullScreen ? '100%' : '70vh' }}>
+            <EditView
+              isFullScreen={isFullScreen}
+              inputText={inputText}
+            />
+          </Box>
+        )}
       </MuiDialogContent>
     </Dialog>
   );

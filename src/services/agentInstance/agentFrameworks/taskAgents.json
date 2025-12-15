@@ -116,6 +116,35 @@
           }
         },
         {
+          "id": "f2e3c4d5-6e7f-8g9h-0i1j-k2l3m4n5o6p7",
+          "caption": "TiddlyWiki AI标签工具",
+          "description": "读取带有标准AI标签的tiddler（数据源、描述、操作）",
+          "toolId": "tiddlywikiPlugin",
+          "tiddlyWikiPluginParam": {
+            "workspaceNameOrID": "wiki",
+            "dataSourceTag": "$:/tags/AI/Prompt/DataSource",
+            "describeTag": "$:/tags/AI/Prompt/Describe",
+            "actionsTag": "$:/tags/AI/Prompt/Actions",
+            "enableCache": true,
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
+          }
+        },
+        {
+          "id": "g3f4e5d6-7e8f-9g0h-1i2j-l3m4n5o6p7q8",
+          "caption": "Git版本历史工具",
+          "description": "搜索git提交记录并读取特定提交的文件内容",
+          "toolId": "git",
+          "gitParam": {
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
+          }
+        },
+        {
           "id": "a0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
           "toolId": "fullReplacement",
           "fullReplacementParam": {

@@ -62,6 +62,9 @@ export const wikiOperations = {
   [WikiChannel.invokeActionsByTag]: async (_nonceReceived: number, tag: string, stringifiedData: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.invokeActionsByTag](tag, stringifiedData));
   },
+  invokeActionString: async (_nonceReceived: number, title: string, stringifiedData: string) => {
+    await executeTWJavaScriptWhenIdle(wikiOperationScripts.invokeActionString(title, stringifiedData));
+  },
   [WikiChannel.deleteTiddler]: async (_nonceReceived: number, title: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.deleteTiddler](title));
   },

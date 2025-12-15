@@ -87,6 +87,10 @@ export function createDynamicPromptConcatToolSchema(): z.ZodType {
       title: t('Schema.Tool.ContentTitle'),
       description: t('Schema.Tool.Content'),
     }),
+    enabled: z.boolean().optional().default(true).meta({
+      title: t('Schema.Tool.EnabledTitle'),
+      description: t('Schema.Tool.Enabled'),
+    }),
     forbidOverrides: z.boolean().optional().default(false).meta({
       title: t('Schema.Tool.ForbidOverridesTitle'),
       description: t('Schema.Tool.ForbidOverrides'),
