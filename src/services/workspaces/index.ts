@@ -426,7 +426,6 @@ export class Workspace implements IWorkspaceService {
   public async remove(id: string): Promise<void> {
     const workspaces = this.getWorkspacesSync();
     if (id in workspaces) {
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete workspaces[id];
       const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
       databaseService.setSetting('workspaces', workspaces);

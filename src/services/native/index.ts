@@ -95,7 +95,6 @@ export class NativeService implements INativeService {
 
       // Remove from preferences
       const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete shortcuts[key];
       await preferenceService.set('keyboardShortcuts', shortcuts);
 

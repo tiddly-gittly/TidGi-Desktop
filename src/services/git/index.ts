@@ -96,8 +96,7 @@ export class Git implements IGitService {
 
     try {
       // Use Vite's ?nodeWorker import instead of dynamic Worker path
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      const worker = GitWorkerFactory() as Worker;
+      const worker = (GitWorkerFactory as () => Worker)();
       this.nativeWorker = worker;
       this.gitWorker = createWorkerProxy<GitWorker>(worker);
       logger.debug('gitWorker initialized successfully', { function: 'Git.initWorker' });

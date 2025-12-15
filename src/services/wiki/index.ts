@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-dynamic-delete */
 import { createWorkerProxy, terminateWorker } from '@services/libs/workerAdapter';
 import { dialog, shell } from 'electron';
 import { attachWorker } from 'electron-ipc-cat/server';
@@ -163,8 +162,7 @@ export class Wiki implements IWikiService {
     });
 
     // Create native nodejs worker using Vite's ?nodeWorker import
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    const wikiWorker = WikiWorkerFactory() as Worker;
+    const wikiWorker = (WikiWorkerFactory as () => Worker)();
 
     // Attach worker to all registered services (from bindServiceAndProxy)
     const detachWorker = attachWorker(wikiWorker);
@@ -357,8 +355,7 @@ export class Wiki implements IWikiService {
   public async extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined> {
     // hope saveWikiFolderPath = ParentFolderPath + wikifolderPath
     // We want the folder where the WIKI is saved to be empty, and we want the input htmlWiki to be an HTML file even if it is a non-wikiHTML file. Otherwise the program will exit abnormally.
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    const nativeWorker = WikiWorkerFactory() as Worker;
+    const nativeWorker = (WikiWorkerFactory as () => Worker)();
     const worker = createWorkerProxy<WikiWorker>(nativeWorker);
 
     try {
@@ -380,8 +377,7 @@ export class Wiki implements IWikiService {
   }
 
   public async packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    const nativeWorker = WikiWorkerFactory() as Worker;
+    const nativeWorker = (WikiWorkerFactory as () => Worker)();
     const worker = createWorkerProxy<WikiWorker>(nativeWorker);
 
     try {

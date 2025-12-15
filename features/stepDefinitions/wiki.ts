@@ -743,7 +743,6 @@ async function clearHibernationTestData() {
         });
 
         if (wiki2WorkspaceId && settings.workspaces) {
-          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
           delete settings.workspaces[wiki2WorkspaceId];
           await fs.writeJson(settingsPath, settings, { spaces: 2 });
         }

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-dynamic-delete */
 import { ipcRenderer, IpcRendererEvent, MenuItemConstructorOptions, WebContents } from 'electron';
 
 export interface IpcSafeMenuItem {
