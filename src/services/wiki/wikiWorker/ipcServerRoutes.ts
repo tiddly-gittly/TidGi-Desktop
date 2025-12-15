@@ -91,7 +91,7 @@ export class IpcServerRoutes {
     const extension = path.extname(filename);
 
     // Security check: prevent path traversal
-    if (path.relative(baseFilename, filename).indexOf('..') === 0) {
+    if (!(filename === baseFilename || filename.startsWith(baseFilename + path.sep))) {
       return null;
     }
 
