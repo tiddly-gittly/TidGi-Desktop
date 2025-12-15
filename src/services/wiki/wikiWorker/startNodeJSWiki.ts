@@ -247,6 +247,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
       // after setWikiInstance, ipc server routes will start serving content
       ipcServerRoutes.setConfig({ readOnlyMode });
       ipcServerRoutes.setWikiInstance(wikiInstance);
+      ipcServerRoutes.setSubWikiPaths(subWikis.map(subWiki => subWiki.wikiFolderLocation));
       wikiOperationsInWikiWorker.setWikiInstance(wikiInstance);
       observer.next({
         type: 'control',

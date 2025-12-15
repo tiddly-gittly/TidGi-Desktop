@@ -475,13 +475,13 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
   private shouldExcludeByPattern(filePath: string): boolean {
     // Check if any part of the path contains excluded patterns
     const pathParts = filePath.split(path.sep);
-    
+
     // Check standard excluded patterns
     const hasExcludedPattern = this.excludedPathPatterns.some(pattern => pathParts.includes(pattern));
-    
+
     // Check external attachments folder
     const hasExternalAttachmentsFolder = pathParts.includes(this.externalAttachmentsFolder);
-    
+
     return hasExcludedPattern || hasExternalAttachmentsFolder;
   }
 
