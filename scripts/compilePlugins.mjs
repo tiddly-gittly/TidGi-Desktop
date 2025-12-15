@@ -44,6 +44,10 @@ const nativeNodeModulesPlugin = {
     build.onResolve({ filter: /nsfw[/\\]build[/\\]Release[/\\]nsfw\.node$/ }, () => ({
       external: true,
     }));
+    // External '$:/' files
+    build.onResolve({ filter: /^\$:\// }, () => ({
+      external: true,
+    }));
   },
 };
 
@@ -70,6 +74,9 @@ const PLUGINS = [
     sourceFolder: '../src/services/wiki/plugin/watchFileSystemAdaptor',
     entryPoints: [
       'loader.ts',
+      'in-tagtree-of.ts',
+      'WatchFileSystemAdaptor.ts',
+      'routingUtilities.ts',
     ],
   },
 ];
