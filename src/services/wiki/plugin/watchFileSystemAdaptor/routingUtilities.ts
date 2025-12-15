@@ -1,9 +1,15 @@
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
+import { workspaceSorter } from '@services/workspaces/utilities';
+
+/**
+ * Sub-wiki routing utilities for matching tiddlers/files to workspaces.
+ * These utilities are exposed as $tw.utils functions for use in plugins.
+ */
 
 /**
  * Check if a workspace has routing configuration (tagNames or fileSystemPathFilter).
  */
-export function hasRoutingConfig(workspaceItem: IWorkspace): boolean {
+function hasRoutingConfig(workspaceItem: IWorkspace): boolean {
   const hasTagNames = 'tagNames' in workspaceItem && Array.isArray(workspaceItem.tagNames) && workspaceItem.tagNames.length > 0;
   const hasFilter = 'fileSystemPathFilterEnable' in workspaceItem &&
     workspaceItem.fileSystemPathFilterEnable &&
@@ -16,7 +22,7 @@ export function hasRoutingConfig(workspaceItem: IWorkspace): boolean {
  * Check if a workspace is a wiki workspace with routing configuration.
  * This filters to wiki workspaces that are either the main workspace or sub-wikis of it.
  */
-export function isWikiWorkspaceWithRouting(
+function isWikiWorkspaceWithRouting(
   workspaceItem: IWorkspace,
   mainWorkspaceId: string,
 ): workspaceItem is IWikiWorkspace {
@@ -48,7 +54,7 @@ export function isWikiWorkspaceWithRouting(
  * - Any of the tiddler's tags match any of the workspace's tagNames
  * - The tiddler's title IS one of the tagNames (it's a "tag tiddler")
  */
-export function matchesDirectTag(
+function matchesDirectTag(
   tiddlerTitle: string,
   tiddlerTags: string[],
   workspaceTagNames: string[],
@@ -67,7 +73,7 @@ export function matchesDirectTag(
  * Check if a tiddler matches a workspace's tag tree routing.
  * Uses TiddlyWiki's in-tagtree-of filter for recursive tag hierarchy matching.
  */
-export function matchesTagTree(
+function matchesTagTree(
   tiddlerTitle: string,
   workspaceTagNames: string[],
   wiki: typeof $tw.wiki,
@@ -90,7 +96,7 @@ export function matchesTagTree(
  * Check if a tiddler matches a workspace's custom filter routing.
  * Filters are separated by newlines; any match wins.
  */
-export function matchesCustomFilter(
+function matchesCustomFilter(
   tiddlerTitle: string,
   filterExpression: string,
   wiki: typeof $tw.wiki,
@@ -116,7 +122,7 @@ export function matchesCustomFilter(
  * 2. If includeTagTree is enabled, use in-tagtree-of filter for recursive tag matching
  * 3. If fileSystemPathFilterEnable is enabled, use custom filter expressions
  */
-export function matchTiddlerToWorkspace(
+function matchTiddlerToWorkspace(
   tiddlerTitle: string,
   tiddlerTags: string[],
   workspacesWithRouting: IWikiWorkspace[],
@@ -146,3 +152,12 @@ export function matchTiddlerToWorkspace(
 
   return undefined;
 }
+
+declare const exports: Record<string, unknown>;
+exports.hasRoutingConfig = hasRoutingConfig;
+exports.isWikiWorkspaceWithRouting = isWikiWorkspaceWithRouting;
+exports.workspaceSorter = workspaceSorter;
+exports.matchesDirectTag = matchesDirectTag;
+exports.matchesTagTree = matchesTagTree;
+exports.matchesCustomFilter = matchesCustomFilter;
+exports.matchTiddlerToWorkspace = matchTiddlerToWorkspace;

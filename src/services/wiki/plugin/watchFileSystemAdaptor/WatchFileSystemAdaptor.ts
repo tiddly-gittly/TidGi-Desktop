@@ -69,6 +69,11 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
   /** Excluded path patterns that apply to all wikis (main and sub-wikis) */
   private readonly excludedPathPatterns: string[] = ['.git', 'node_modules', '.DS_Store'];
   /**
+   * External attachments folder to exclude (read from config)
+   * Default is 'files', but can be configured via $:/config/ExternalAttachments/WikiFolderToMove
+   */
+  private externalAttachmentsFolder: string = 'files';
+  /**
    * Track pending file deletions to handle git revert/checkout scenarios.
    * Maps absolute file path to deletion timer.
    * When a file is deleted then quickly recreated (e.g., git revert),
@@ -124,6 +129,12 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     }
 
     if (this.workspace) {
+      // Load external attachments folder name from config
+      const externalAttachmentsFolderConfig = this.wiki.getTiddlerText('$:/config/ExternalAttachments/WikiFolderToMove', 'files');
+      if (externalAttachmentsFolderConfig) {
+        this.externalAttachmentsFolder = externalAttachmentsFolderConfig;
+      }
+
       this.ignoreSymlinks = this.workspace.ignoreSymlinks;
     }
     await this.initializeFileWatching();
@@ -452,20 +463,26 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
   }
 
   /**
-   * Check if a path contains any excluded pattern (like .git, node_modules)
+   * Check if a path contains any excluded pattern (like .git, node_modules, or external attachments folder)
    * This checks all parts of the path, so it will catch:
    * - Direct .git directories: wiki/.git/config
    * - Sub-wiki .git directories: wiki/tiddlers/subwiki/.git/index.lock
    * - Symlinked .git directories: wiki/tiddlers/link-to-subwiki/.git/config
+   * - External attachments folders: wiki/files/image.png
    * @param filePath File or directory path to check
    * @returns true if path should be excluded
    */
   private shouldExcludeByPattern(filePath: string): boolean {
     // Check if any part of the path contains excluded patterns
-    return this.excludedPathPatterns.some(pattern => {
-      const pathParts = filePath.split(path.sep);
-      return pathParts.includes(pattern);
-    });
+    const pathParts = filePath.split(path.sep);
+    
+    // Check standard excluded patterns
+    const hasExcludedPattern = this.excludedPathPatterns.some(pattern => pathParts.includes(pattern));
+    
+    // Check external attachments folder
+    const hasExternalAttachmentsFolder = pathParts.includes(this.externalAttachmentsFolder);
+    
+    return hasExcludedPattern || hasExternalAttachmentsFolder;
   }
 
   /**
