@@ -219,7 +219,6 @@ export class FileSystemAdaptor {
 
     // Temporarily remove from boot.files to force fresh path generation
     if (oldFileInfo) {
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete this.boot.files[title];
     }
 
@@ -258,7 +257,6 @@ export class FileSystemAdaptor {
 
     // Temporarily remove from boot.files to force fresh path generation
     if (oldFileInfo) {
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete this.boot.files[title];
     }
 
@@ -387,7 +385,6 @@ export class FileSystemAdaptor {
    */
   removeTiddlerFileInfo(title: string): void {
     if (this.boot.files[title]) {
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete this.boot.files[title];
     }
   }
