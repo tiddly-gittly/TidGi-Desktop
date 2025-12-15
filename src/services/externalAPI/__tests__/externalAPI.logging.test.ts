@@ -31,6 +31,14 @@ describe('ExternalAPIService logging', () => {
 
   it('records streaming logs when provider has apiKey (API success)', async () => {
     const externalAPI = container.get<import('../interface').IExternalAPIService>(serviceIdentifier.ExternalAPI);
+    const db = container.get<IDatabaseService>(serviceIdentifier.Database);
+
+    // Set up provider config BEFORE initialization
+    const aiSettings: AIGlobalSettings = {
+      providers: [{ provider: 'test-provider', apiKey: 'fake', models: [{ name: 'test-model' }] }],
+      defaultConfig: { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
+    };
+    db.setSetting('aiSettings', aiSettings);
 
     // spy the provider stream to avoid real network and to be deterministic
     const callProvider = await import('../callProviderAPI');
@@ -43,14 +51,6 @@ describe('ExternalAPIService logging', () => {
     } as unknown as StreamReturn));
 
     await externalAPI.initialize();
-
-    const db = container.get<IDatabaseService>(serviceIdentifier.Database);
-    const aiSettings: AIGlobalSettings = {
-      providers: [{ provider: 'test-provider', apiKey: 'fake', models: [{ name: 'test-model' }] }],
-      defaultConfig: { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
-    };
-    // Mock getSetting to return our test AI settings
-    vi.spyOn(db, 'getSetting').mockImplementation((k: string) => (k === 'aiSettings' ? aiSettings : undefined));
 
     const messages: ModelMessage[] = [{ role: 'user', content: 'hi' }];
     const config = await externalAPI.getAIConfig();
@@ -74,16 +74,16 @@ describe('ExternalAPIService logging', () => {
 
   it('records streaming error when apiKey missing (error path)', async () => {
     const svc = container.get<import('../interface').IExternalAPIService>(serviceIdentifier.ExternalAPI);
-    await svc.initialize();
-
     const db = container.get<IDatabaseService>(serviceIdentifier.Database);
+
+    // Set up provider config WITHOUT apiKey BEFORE initialization to trigger error
     const aiSettings: AIGlobalSettings = {
-      // Provider without apiKey should trigger an error
       providers: [{ provider: 'test-provider', models: [{ name: 'test-model' }] }], // No apiKey
       defaultConfig: { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
     };
-    // Mock getSetting to return our test AI settings
-    vi.spyOn(db, 'getSetting').mockImplementation((k: string) => (k === 'aiSettings' ? aiSettings : undefined));
+    db.setSetting('aiSettings', aiSettings);
+
+    await svc.initialize();
 
     const messages: ModelMessage[] = [{ role: 'user', content: 'hi' }];
     const config = await svc.getAIConfig();
