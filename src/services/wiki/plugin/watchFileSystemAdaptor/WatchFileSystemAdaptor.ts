@@ -131,9 +131,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     if (this.workspace) {
       // Load external attachments folder name from config
       const externalAttachmentsFolderConfig = this.wiki.getTiddlerText('$:/config/ExternalAttachments/WikiFolderToMove', 'files');
-      if (externalAttachmentsFolderConfig) {
-        this.externalAttachmentsFolder = externalAttachmentsFolderConfig;
-      }
+      this.externalAttachmentsFolder = externalAttachmentsFolderConfig;
 
       this.ignoreSymlinks = this.workspace.ignoreSymlinks;
     }
