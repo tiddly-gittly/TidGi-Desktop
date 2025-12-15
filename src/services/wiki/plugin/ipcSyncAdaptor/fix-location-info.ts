@@ -60,4 +60,5 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
   return infoTiddlerFields;
 }
 
-(exports as unknown as { getInfoTiddlerFields: typeof getInfoTiddlerFields }).getInfoTiddlerFields = getInfoTiddlerFields;
+declare const exports: Record<string, unknown>;
+exports.getInfoTiddlerFields = getInfoTiddlerFields;
