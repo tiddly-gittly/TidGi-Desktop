@@ -7,7 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import type { IFileInfo } from 'tiddlywiki';
 import type { Tiddler, Wiki } from 'tiddlywiki';
-import { isWikiWorkspaceWithRouting, matchTiddlerToWorkspace } from './routingUtilities';
+import type { ExtendedUtilities } from './routingUtilities.type';
 import { isFileLockError } from './utilities';
 
 /**
@@ -86,7 +86,7 @@ export class FileSystemAdaptor {
 
       // Filter to wiki workspaces with routing config (main or sub-wikis)
       const workspacesWithRouting = allWorkspaces
-        .filter((w: IWorkspace): w is IWikiWorkspace => isWikiWorkspaceWithRouting(w, currentWorkspace.id))
+        .filter((w: IWorkspace): w is IWikiWorkspace => ($tw.utils as unknown as ExtendedUtilities).isWikiWorkspaceWithRouting(w, currentWorkspace.id))
         .sort(workspaceSorter);
 
       this.wikisWithRouting = workspacesWithRouting;
@@ -142,7 +142,7 @@ export class FileSystemAdaptor {
       }
 
       // Find matching workspace using the routing logic
-      const matchingWiki = matchTiddlerToWorkspace(title, tags, this.wikisWithRouting, $tw.wiki, $tw.rootWidget);
+      const matchingWiki = ($tw.utils as unknown as ExtendedUtilities).matchTiddlerToWorkspace(title, tags, this.wikisWithRouting, $tw.wiki, $tw.rootWidget);
 
       // Determine the target directory based on routing
       // Sub-wikis store tiddlers directly in their root folder (not in /tiddlers subfolder)
