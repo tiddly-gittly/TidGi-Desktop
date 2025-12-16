@@ -270,10 +270,10 @@ export default function GitHistory(): React.JSX.Element {
     setIsSyncing(true);
     try {
       await window.service.sync.syncWikiIfNeeded(workspaceInfo);
-      showSnackbar(t('ContextMenu.SyncNow'), 'success');
+      showSnackbar(t('Sync.Success'), 'success');
     } catch (error) {
       console.error('Failed to sync:', error);
-      showSnackbar(t('ContextMenu.SyncNow') + ' ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
+      showSnackbar(t('Sync.Failure', { error: error instanceof Error ? error.message : 'Unknown error' }), 'error');
     } finally {
       setIsSyncing(false);
     }

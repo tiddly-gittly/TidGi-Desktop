@@ -219,8 +219,8 @@
     "WikiRootTiddlerDescription": "WikiのルートTiddlerはシステムのコア動作を決定します。変更する前に公式ドキュメントを読んで理解してください",
     "WikiRootTiddlerItems": {
       "all": "一度にすべて読み込む",
-      "lazy-images": "必要に応じて画像を読み込む",
-      "lazy-all": "必要に応じて画像とテキストを読み込む"
+      "lazy-all": "必要に応じて画像とテキストを読み込む",
+      "lazy-images": "必要に応じて画像を読み込む"
     }
   },
   "Error": {
@@ -574,6 +574,10 @@
   "SideBar": {
     "Preferences": "設定...",
     "UpdateAvailable": "更新があります！"
+  },
+  "Sync": {
+    "Failure": "同期に失敗しました：{{error}}",
+    "Success": "同期に成功しました"
   },
   "Update": "更新",
   "Updater": {

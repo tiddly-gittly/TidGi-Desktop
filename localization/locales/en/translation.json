@@ -219,8 +219,8 @@
     "WikiRootTiddlerDescription": "Wiki's root tiddler determines the core behavior of the system, please read the official documentation to understand before modifying",
     "WikiRootTiddlerItems": {
       "all": "Load all at once",
-      "lazy-images": "Load images on demand",
-      "lazy-all": "Load images and text on demand"
+      "lazy-all": "Load images and text on demand",
+      "lazy-images": "Load images on demand"
     }
   },
   "Error": {
@@ -585,6 +585,10 @@
   "SideBar": {
     "Preferences": "Pref...",
     "UpdateAvailable": "Update!"
+  },
+  "Sync": {
+    "Failure": "Sync failed: {{error}}",
+    "Success": "Synchronization successful"
   },
   "Unknown": "Unknown",
   "Update": "update",

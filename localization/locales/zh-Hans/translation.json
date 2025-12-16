@@ -219,8 +219,8 @@
     "WikiRootTiddlerDescription": "知识库的根条目（root-tiddler）决定了系统的核心行为，修改前请阅读官方文档来了解",
     "WikiRootTiddlerItems": {
       "all": "全量加载",
-      "lazy-images": "按需加载图片",
-      "lazy-all": "按需加载图片和文本"
+      "lazy-all": "按需加载图片和文本",
+      "lazy-images": "按需加载图片"
     }
   },
   "Error": {
@@ -612,6 +612,10 @@
   "SideBar": {
     "Preferences": "设置...",
     "UpdateAvailable": "有新版本！"
+  },
+  "Sync": {
+    "Failure": "同步失败：{{error}}",
+    "Success": "同步成功"
   },
   "Unknown": "未知",
   "Update": "更新",
