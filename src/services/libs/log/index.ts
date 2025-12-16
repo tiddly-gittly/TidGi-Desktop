@@ -96,8 +96,9 @@ export function destroyLogger(): void {
       try {
         // May cause `TypeError: Cannot read properties of undefined (reading 'length') at DerivedLogger.remove`
         logger.remove(t);
-        // eslint-disable-next-line no-empty
-      } catch {}
+      } catch {
+        // Ignore because without logger we can't even log the error
+      }
     }
   });
 
@@ -107,8 +108,9 @@ export function destroyLogger(): void {
       if (t) {
         try {
           labeledLogger.remove(t);
-          // eslint-disable-next-line no-empty
-        } catch {}
+        } catch {
+          // Ignore because without logger we can't even log the error
+        }
       }
     });
     labeledLoggers.delete(label);

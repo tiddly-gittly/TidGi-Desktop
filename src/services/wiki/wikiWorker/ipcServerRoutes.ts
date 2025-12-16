@@ -29,9 +29,15 @@ export class IpcServerRoutes {
   #readonlyMode = false;
   /** Track tiddlers that were just saved via IPC to prevent echo */
   private readonly recentlySavedTiddlers = new Set<string>();
+  /** List of sub-wiki paths for file searching */
+  private subWikiPaths: string[] = [];
 
   setConfig({ readOnlyMode }: { readOnlyMode?: boolean }) {
     this.#readonlyMode = Boolean(readOnlyMode);
+  }
+
+  setSubWikiPaths(subWikiPaths: string[]) {
+    this.subWikiPaths = subWikiPaths;
   }
 
   setWikiInstance(wikiInstance: ITiddlyWiki) {
@@ -68,27 +74,64 @@ export class IpcServerRoutes {
     return { headers: { 'Content-Type': 'image/x-icon; charset=base64' }, data: buffer, statusCode: 200 };
   }
 
+  /**
+   * Try to read file from a specific wiki folder
+   * @param wikiPath - Wiki folder path
+   * @param externalAttachmentsFolder - External attachments folder name (e.g., 'files')
+   * @param suppliedFilename - Requested filename
+   * @returns File data and mime type, or null if not found or invalid path
+   */
+  private async tryReadFile(
+    wikiPath: string,
+    externalAttachmentsFolder: string,
+    suppliedFilename: string,
+  ): Promise<{ data: Buffer; type: string } | null> {
+    const baseFilename = path.resolve(wikiPath, externalAttachmentsFolder);
+    const filename = path.resolve(baseFilename, suppliedFilename);
+    const extension = path.extname(filename);
+
+    // Security check: prevent path traversal
+    if (!(filename === baseFilename || filename.startsWith(baseFilename + path.sep))) {
+      return null;
+    }
+
+    try {
+      const data = await fs.readFile(filename);
+      const type = this.wikiInstance.config.fileExtensionInfo[extension]?.type ?? 'application/octet-stream';
+      return { data, type };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get file from files/ folder (configured by `$:/config/ExternalAttachments/WikiFolderToMove`) and sub-wiki's files folder.
+   */
   async getFile(suppliedFilename: string): Promise<IWikiServerRouteResponse> {
     await this.waitForIpcServerRoutesAvailable();
     if (this.wikiInstance.boot.wikiPath === undefined) {
       return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `$tw.wiki.boot.wikiPath === undefined.` };
     }
-    const baseFilename = path.resolve(this.wikiInstance.boot.wikiPath, 'files');
-    const filename = path.resolve(baseFilename, suppliedFilename);
-    const extension = path.extname(filename);
-    if (path.relative(baseFilename, filename).indexOf('..') === 0) {
-      return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `File ${suppliedFilename} not found` };
-    } else {
-      // Send the file
-      try {
-        const data = await fs.readFile(filename);
 
-        const type = this.wikiInstance.config.fileExtensionInfo[extension] ? this.wikiInstance.config.fileExtensionInfo[extension].type : 'application/octet-stream';
-        return ({ statusCode: 200, headers: { 'Content-Type': type }, data });
-      } catch (error) {
-        return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `Error accessing file ${suppliedFilename} with error: ${(error as Error).toString()}` };
+    // Get external attachments folder name from config (default to 'files')
+    const externalAttachmentsFolder = this.wikiInstance.wiki.getTiddlerText('$:/config/ExternalAttachments/WikiFolderToMove', 'files');
+
+    // Try main wiki first
+    const mainResult = await this.tryReadFile(this.wikiInstance.boot.wikiPath, externalAttachmentsFolder, suppliedFilename);
+    if (mainResult !== null) {
+      return { statusCode: 200, headers: { 'Content-Type': mainResult.type }, data: mainResult.data };
+    }
+
+    // Try sub-wikis
+    for (const subWikiPath of this.subWikiPaths) {
+      const subResult = await this.tryReadFile(subWikiPath, externalAttachmentsFolder, suppliedFilename);
+      if (subResult !== null) {
+        return { statusCode: 200, headers: { 'Content-Type': subResult.type }, data: subResult.data };
       }
     }
+
+    // File not found in any wiki
+    return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `File ${suppliedFilename} not found` };
   }
 
   async getIndex(rootTiddler: string): Promise<IWikiServerRouteResponse> {

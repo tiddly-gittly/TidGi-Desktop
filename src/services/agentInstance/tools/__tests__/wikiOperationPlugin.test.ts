@@ -157,6 +157,7 @@ describe('wikiOperationTool', () => {
         agentFrameworkConfig: {
           plugins: [
             {
+              id: 'wikiOperation-plugin',
               toolId: 'wikiOperation',
               enabled: false,
               wikiOperationParam: {
@@ -193,7 +194,7 @@ describe('wikiOperationTool', () => {
       const responseCtx: AIResponseContext = {
         agentFrameworkContext,
         toolConfig: context.agentFrameworkConfig.plugins[0] as unknown as IPromptConcatTool,
-        agentFrameworkConfig: context.agentFrameworkConfig as { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
+        agentFrameworkConfig: context.agentFrameworkConfig,
         response: { requestId: 'r-disabled', content: context.response.content, status: 'done' } as AIStreamResponse,
         requestId: 'r-disabled',
         isFinal: true,
@@ -218,6 +219,7 @@ describe('wikiOperationTool', () => {
         agentFrameworkConfig: {
           plugins: [
             {
+              id: 'wikiOperation-plugin',
               toolId: 'wikiOperation',
               wikiOperationParam: {
                 toolResultDuration: 1,
@@ -272,7 +274,7 @@ describe('wikiOperationTool', () => {
       const responseCtx: AIResponseContext = {
         agentFrameworkContext,
         toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
-        agentFrameworkConfig: context.agentFrameworkConfig as { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
+        agentFrameworkConfig: context.agentFrameworkConfig,
         response: { requestId: 'r-create', content: context.response.content, status: 'done' } as AIStreamResponse,
         requestId: 'r-create',
         isFinal: true,
@@ -307,7 +309,7 @@ describe('wikiOperationTool', () => {
       const context = {
         agentFrameworkContext,
         agentFrameworkConfig: {
-          plugins: [{ toolId: 'wikiOperation', wikiOperationParam: {} }],
+          plugins: [{ id: 'wikiOperation-plugin', toolId: 'wikiOperation', wikiOperationParam: { toolResultDuration: 1 } }],
         },
         response: {
           status: 'done' as const,
@@ -337,7 +339,7 @@ describe('wikiOperationTool', () => {
       const respCtx2: AIResponseContext = {
         agentFrameworkContext,
         toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
-        agentFrameworkConfig: context.agentFrameworkConfig as { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
+        agentFrameworkConfig: context.agentFrameworkConfig,
         response: { requestId: 'r-update', content: context.response.content, status: 'done' } as AIStreamResponse,
         actions: {} as ToolActions,
         requestId: 'r-update',
@@ -367,7 +369,7 @@ describe('wikiOperationTool', () => {
       const context = {
         agentFrameworkContext,
         agentFrameworkConfig: {
-          plugins: [{ toolId: 'wikiOperation', wikiOperationParam: {} }],
+          plugins: [{ id: 'wikiOperation-plugin', toolId: 'wikiOperation', wikiOperationParam: { toolResultDuration: 1 } }],
         },
         response: {
           status: 'done' as const,
@@ -396,7 +398,7 @@ describe('wikiOperationTool', () => {
       const respCtx3: AIResponseContext = {
         agentFrameworkContext,
         toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
-        agentFrameworkConfig: context.agentFrameworkConfig as { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
+        agentFrameworkConfig: context.agentFrameworkConfig,
         response: { requestId: 'r-delete', content: context.response.content, status: 'done' } as AIStreamResponse,
         actions: {} as ToolActions,
         requestId: 'r-delete',
@@ -425,7 +427,7 @@ describe('wikiOperationTool', () => {
       const context = {
         agentFrameworkContext,
         agentFrameworkConfig: {
-          plugins: [{ toolId: 'wikiOperation', wikiOperationParam: {} }],
+          plugins: [{ id: 'wikiOperation-plugin', toolId: 'wikiOperation', wikiOperationParam: { toolResultDuration: 1 } }],
         },
         response: {
           status: 'done',
@@ -453,7 +455,7 @@ describe('wikiOperationTool', () => {
       const respCtx4: AIResponseContext = {
         agentFrameworkContext,
         toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
-        agentFrameworkConfig: context.agentFrameworkConfig as { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
+        agentFrameworkConfig: context.agentFrameworkConfig,
         response: { requestId: 'r-error', content: context.response.content, status: 'done' } as AIStreamResponse,
         actions: {} as ToolActions,
         requestId: 'r-error',
@@ -479,7 +481,7 @@ describe('wikiOperationTool', () => {
       const context = {
         agentFrameworkContext,
         agentFrameworkConfig: {
-          plugins: [{ toolId: 'wikiOperation', wikiOperationParam: {} }],
+          plugins: [{ id: 'wikiOperation-plugin', toolId: 'wikiOperation', wikiOperationParam: { toolResultDuration: 1 } }],
         },
         response: {
           status: 'done' as const,
@@ -491,7 +493,7 @@ describe('wikiOperationTool', () => {
       await hooks.responseComplete.promise({
         agentFrameworkContext,
         toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
-        agentFrameworkConfig: context.agentFrameworkConfig as { plugins?: Array<{ toolId: string; [key: string]: unknown }> },
+        agentFrameworkConfig: context.agentFrameworkConfig,
         response: { requestId: 'r-none', content: context.response.content, status: 'done' } as AIStreamResponse,
         actions: {} as ToolActions,
         requestId: 'r-none',

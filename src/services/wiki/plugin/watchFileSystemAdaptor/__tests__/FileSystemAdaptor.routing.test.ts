@@ -3,6 +3,8 @@ import type { IWikiWorkspace } from '@services/workspaces/interface';
 import type { IFileInfo, Tiddler, Wiki } from 'tiddlywiki';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemAdaptor } from '../FileSystemAdaptor';
+// @ts-expect-error TS2459: Module declares 'matchTiddlerToWorkspace' locally, but it is not exported. Ignore: TiddlyWiki uses exports.xxx style.
+import { isWikiWorkspaceWithRouting, matchTiddlerToWorkspace } from '../routingUtilities';
 
 // Mock the workspace service
 vi.mock('@services/wiki/wikiWorker/services', () => ({
@@ -26,6 +28,8 @@ const mockUtils = {
   deleteTiddlerFile: vi.fn(),
   cleanupTiddlerFiles: vi.fn(),
   getFileExtensionInfo: vi.fn(() => ({ type: 'application/x-tiddler' })),
+  matchTiddlerToWorkspace,
+  isWikiWorkspaceWithRouting,
 };
 
 // Setup TiddlyWiki global

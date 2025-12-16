@@ -60,5 +60,5 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
   return infoTiddlerFields;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+declare const exports: Record<string, unknown>;
 exports.getInfoTiddlerFields = getInfoTiddlerFields;

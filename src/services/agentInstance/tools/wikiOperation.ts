@@ -169,8 +169,7 @@ async function executeWikiOperation(parameters: WikiOperationToolParameters): Pr
           ? parsedVariables as Record<string, unknown>
           : {};
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await wikiService.wikiOperationInServer('invokeActionString' as any, workspaceID, [title, variablePayload]);
+      await wikiService.wikiOperationInServer('invokeActionString', workspaceID, [title, variablePayload]);
       result = i18n.t('Tool.WikiOperation.Success.ActionInvoked', { actionTitle: title, workspaceName });
       break;
     }
