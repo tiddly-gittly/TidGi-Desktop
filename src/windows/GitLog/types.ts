@@ -1,5 +1,14 @@
 import type { GitFileStatus, IFileWithStatus } from '../../services/git/interface';
 
+export type SearchMode = 'message' | 'file' | 'dateRange' | 'none';
+
+export interface ISearchParameters {
+  mode: SearchMode;
+  query: string;
+  startDate: Date | null;
+  endDate: Date | null;
+}
+
 /**
  * Represents the author or committer of a commit.
  */
