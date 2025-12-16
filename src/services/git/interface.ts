@@ -129,33 +129,13 @@ export interface IGitService {
    */
   syncOrForcePull(workspace: IWorkspace, configs: IForcePullConfigs & ICommitAndSyncConfigs): Promise<boolean>;
   /**
-   * Get git log entries with pagination support
+   * Generic type-safe proxy method for git operations
+   * Automatically infers parameter types and return types from gitOperations module
    */
-  getGitLog(wikiFolderPath: string, options?: IGitLogOptions): Promise<IGitLogResult>;
-  /**
-   * Get files changed in a specific commit
-   */
-  getCommitFiles(wikiFolderPath: string, commitHash: string): Promise<IFileWithStatus[]>;
-  /**
-   * Get the diff for a specific file in a commit
-   * @param maxLines - Maximum number of lines to return (default: 500)
-   * @param maxChars - Maximum number of characters to return (default: 10000)
-   */
-  getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<IFileDiffResult>;
-  /**
-   * Get the content of a specific file at a commit
-   * @param maxLines - Maximum number of lines to return (default: 500)
-   * @param maxChars - Maximum number of characters to return (default: 10000)
-   */
-  getFileContent(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<IFileDiffResult>;
-  /**
-   * Get binary file content (e.g., images) from a commit as base64 data URL
-   */
-  getFileBinaryContent(wikiFolderPath: string, commitHash: string, filePath: string): Promise<string>;
-  /**
-   * Get image comparison data (previous and current versions) for a file
-   */
-  getImageComparison(wikiFolderPath: string, commitHash: string, filePath: string): Promise<{ previous: string | null; current: string | null }>;
+  callGitOp<K extends keyof typeof import('./gitOperations')>(
+    method: K,
+    ...arguments_: Parameters<typeof import('./gitOperations')[K]>
+  ): Promise<Awaited<ReturnType<typeof import('./gitOperations')[K]>>>;
   /**
    * Checkout a specific commit
    */
@@ -178,23 +158,6 @@ export interface IGitService {
    */
   isAIGenerateBackupTitleEnabled(): Promise<boolean>;
   /**
-   * Get deleted tiddler titles from git history since a specific date
-   * This looks for deleted .tid and .meta files and extracts their title field
-   * @param wikiFolderPath - Path to the wiki folder
-   * @param sinceDate - Date to check for deletions after this time
-   * @returns Array of deleted tiddler titles
-   */
-  getDeletedTiddlersSinceDate(wikiFolderPath: string, sinceDate: Date): Promise<string[]>;
-  /**
-   * Get tiddler content at a specific point in time from git history
-   * This is used for 3-way merge to get the base version
-   * @param wikiFolderPath - Path to the wiki folder
-   * @param tiddlerTitle - Title of the tiddler
-   * @param beforeDate - Get the version that existed before this date
-   * @returns Tiddler fields including text, or null if not found
-   */
-  getTiddlerAtTime(wikiFolderPath: string, tiddlerTitle: string, beforeDate: Date): Promise<{ fields: Record<string, unknown>; text: string } | null>;
-  /**
    * Notify that file system changes have been detected
    * This is called by watch-fs plugin to trigger git log refresh
    * @param wikiFolderLocation - The workspace folder where files changed
@@ -207,20 +170,13 @@ export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,
   properties: {
     addToGitignore: ProxyPropertyType.Function,
+    callGitOp: ProxyPropertyType.Function,
     checkoutCommit: ProxyPropertyType.Function,
     clone: ProxyPropertyType.Function,
     commitAndSync: ProxyPropertyType.Function,
     discardFileChanges: ProxyPropertyType.Function,
     forcePull: ProxyPropertyType.Function,
-    getCommitFiles: ProxyPropertyType.Function,
-    getDeletedTiddlersSinceDate: ProxyPropertyType.Function,
-    getFileBinaryContent: ProxyPropertyType.Function,
-    getFileContent: ProxyPropertyType.Function,
-    getFileDiff: ProxyPropertyType.Function,
-    getGitLog: ProxyPropertyType.Function,
-    getImageComparison: ProxyPropertyType.Function,
     getModifiedFileList: ProxyPropertyType.Function,
-    getTiddlerAtTime: ProxyPropertyType.Function,
     getWorkspacesRemote: ProxyPropertyType.Function,
     gitStateChange$: ProxyPropertyType.Value$,
     initWikiGit: ProxyPropertyType.Function,

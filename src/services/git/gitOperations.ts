@@ -902,3 +902,48 @@ function extractTitleFromTiddlerContent(content: string): string | null {
 
   return null;
 }
+
+/**
+ * Get commits that are unpushed to the remote tracking branch
+ * Returns a Set of commit hashes that exist locally but not on the remote
+ */
+export async function getUnpushedCommitHashes(repoPath: string): Promise<Set<string>> {
+  try {
+    // Get the current branch name
+    const branchResult = await gitExec(['rev-parse', '--abbrev-ref', 'HEAD'], repoPath);
+    if (branchResult.exitCode !== 0) {
+      return new Set();
+    }
+    const currentBranch = branchResult.stdout.trim();
+
+    // Check if remote tracking branch exists
+    const remoteTrackingBranch = `origin/${currentBranch}`;
+    const checkRemoteResult = await gitExec(['rev-parse', '--verify', remoteTrackingBranch], repoPath);
+
+    // If remote tracking branch doesn't exist, no unpushed commits
+    if (checkRemoteResult.exitCode !== 0) {
+      return new Set();
+    }
+
+    // Get commit hashes that are on local but not on remote: local commits ahead of remote
+    const logResult = await gitExec(
+      ['log', '--pretty=format:%H', `${remoteTrackingBranch}..HEAD`],
+      repoPath,
+    );
+
+    if (logResult.exitCode !== 0) {
+      return new Set();
+    }
+
+    const hashes = logResult.stdout
+      .trim()
+      .split('\n')
+      .filter((hash: string) => hash.length > 0);
+
+    return new Set(hashes);
+  } catch (error: unknown) {
+    // If any error occurs, return empty set (no unpushed commits known)
+    console.debug('Failed to get unpushed commits:', error);
+    return new Set();
+  }
+}

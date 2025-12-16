@@ -3,6 +3,7 @@ import useObservable from 'beautiful-react-hooks/useObservable';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { filter } from 'rxjs/operators';
 
+import type { getGitLog } from '@services/git/gitOperations';
 import type { ISearchParameters } from './SearchBar';
 import type { GitLogEntry } from './types';
 
@@ -130,7 +131,7 @@ export function useGitLogData(): IGitLogData {
         setError(null);
 
         // Build options based on search params
-        const options: Parameters<typeof window.service.git.getGitLog>[1] = {
+        const options: Parameters<typeof getGitLog>[1] = {
           page: 0,
           pageSize: 100,
         };
@@ -154,9 +155,16 @@ export function useGitLogData(): IGitLogData {
         }
 
         // Get git log from service
-        const result = await window.service.git.getGitLog(
+        const result = await window.service.git.callGitOp(
+          'getGitLog',
           workspaceInfo.wikiFolderLocation,
           options,
+        );
+
+        // Get unpushed commit hashes in parallel with loading files
+        const unpushedHashesPromise = window.service.git.callGitOp(
+          'getUnpushedCommitHashes',
+          workspaceInfo.wikiFolderLocation,
         );
 
         // Load files for each commit
@@ -164,7 +172,8 @@ export function useGitLogData(): IGitLogData {
           result.entries.map(async (entry) => {
             try {
               // getCommitFiles handles both committed (with hash) and uncommitted (empty hash) changes
-              const files = await window.service.git.getCommitFiles(
+              const files = await window.service.git.callGitOp(
+                'getCommitFiles',
                 workspaceInfo.wikiFolderLocation,
                 entry.hash,
               );
@@ -176,9 +185,16 @@ export function useGitLogData(): IGitLogData {
           }),
         );
 
+        // Get unpushed hashes and mark entries
+        const unpushedHashes = await unpushedHashesPromise;
+        const entriesWithUnpushedFlag = entriesWithFiles.map((entry) => ({
+          ...entry,
+          isUnpushed: unpushedHashes.has(entry.hash),
+        }));
+
         // Use requestAnimationFrame to batch the state updates and reduce flicker
         requestAnimationFrame(() => {
-          setEntries(entriesWithFiles);
+          setEntries(entriesWithUnpushedFlag);
           setCurrentBranch(result.currentBranch);
           setTotalCount(result.totalCount);
           setCurrentPage(0);
@@ -233,7 +249,7 @@ export function useGitLogData(): IGitLogData {
       const nextPage = currentPage + 1;
 
       // Build options based on search params
-      const options: Parameters<typeof window.service.git.getGitLog>[1] = {
+      const options: Parameters<typeof getGitLog>[1] = {
         page: nextPage,
         pageSize: 100,
       };
@@ -256,16 +272,24 @@ export function useGitLogData(): IGitLogData {
         options.searchMode = 'none';
       }
 
-      const result = await window.service.git.getGitLog(
+      const result = await window.service.git.callGitOp(
+        'getGitLog',
         workspaceInfo.wikiFolderLocation,
         options,
+      );
+
+      // Get unpushed commit hashes in parallel with loading files
+      const unpushedHashesPromise = window.service.git.callGitOp(
+        'getUnpushedCommitHashes',
+        workspaceInfo.wikiFolderLocation,
       );
 
       // Load files for each commit
       const entriesWithFiles = await Promise.all(
         result.entries.map(async (entry) => {
           try {
-            const files = await window.service.git.getCommitFiles(
+            const files = await window.service.git.callGitOp(
+              'getCommitFiles',
               workspaceInfo.wikiFolderLocation,
               entry.hash,
             );
@@ -277,7 +301,14 @@ export function useGitLogData(): IGitLogData {
         }),
       );
 
-      setEntries((previous) => [...previous, ...entriesWithFiles]);
+      // Get unpushed hashes and mark entries
+      const unpushedHashes = await unpushedHashesPromise;
+      const entriesWithUnpushedFlag = entriesWithFiles.map((entry) => ({
+        ...entry,
+        isUnpushed: unpushedHashes.has(entry.hash),
+      }));
+
+      setEntries((previous) => [...previous, ...entriesWithUnpushedFlag]);
       setCurrentPage(nextPage);
     } catch (error_) {
       const error = error_ as Error;

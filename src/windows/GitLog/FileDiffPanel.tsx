@@ -175,7 +175,7 @@ export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess, showSnac
       if (!workspace) return;
 
       // Load full diff without limits (pass very large values)
-      const fileDiffResult = await window.service.git.getFileDiff(workspace.wikiFolderLocation, commitHash, filePath, 50000, 1000000);
+      const fileDiffResult = await window.service.git.callGitOp('getFileDiff', workspace.wikiFolderLocation, commitHash, filePath, 50000, 1000000);
       setDiff(fileDiffResult.content);
       setIsDiffTruncated(fileDiffResult.isTruncated);
     } catch (error) {
@@ -297,7 +297,7 @@ export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess, showSnac
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
       // Load full content without limits (pass very large values)
-      const fileContentResult = await window.service.git.getFileContent(workspace.wikiFolderLocation, commitHash, filePath, 50000, 1000000);
+      const fileContentResult = await window.service.git.callGitOp('getFileContent', workspace.wikiFolderLocation, commitHash, filePath, 50000, 1000000);
       setFileContent(fileContentResult.content);
       setIsContentTruncated(fileContentResult.isTruncated);
     } catch (error) {
@@ -331,7 +331,7 @@ export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess, showSnac
         const isImageExtension = imageExtensions.some((extension) => filePath.toLowerCase().endsWith(extension));
 
         // First, try to get the diff to check if it's a binary file
-        const fileDiffResult = await window.service.git.getFileDiff(workspace.wikiFolderLocation, commitHash, filePath);
+        const fileDiffResult = await window.service.git.callGitOp('getFileDiff', workspace.wikiFolderLocation, commitHash, filePath);
         const isBinaryFile = fileDiffResult.content.includes('Binary files') || fileDiffResult.content.includes('differ');
 
         // Handle binary files
@@ -341,7 +341,7 @@ export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess, showSnac
             setIsImage(true);
             setImageError('');
             try {
-              const imageComparison = await window.service.git.getImageComparison(workspace.wikiFolderLocation, commitHash, filePath);
+              const imageComparison = await window.service.git.callGitOp('getImageComparison', workspace.wikiFolderLocation, commitHash, filePath);
               setImageDataUrl(imageComparison.current || '');
               setPreviousImageDataUrl(imageComparison.previous || '');
             } catch (error) {
@@ -358,7 +358,7 @@ export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess, showSnac
         } else {
           // For text files, get both diff and content
           setIsImage(false);
-          const fileContentResult = await window.service.git.getFileContent(workspace.wikiFolderLocation, commitHash, filePath);
+          const fileContentResult = await window.service.git.callGitOp('getFileContent', workspace.wikiFolderLocation, commitHash, filePath);
           setDiff(fileDiffResult.content);
           setFileContent(fileContentResult.content);
           setIsDiffTruncated(fileDiffResult.isTruncated);

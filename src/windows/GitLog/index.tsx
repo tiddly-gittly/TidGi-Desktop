@@ -1,4 +1,5 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -140,9 +141,10 @@ interface ICommitTableRowProps {
   commitDate: Date;
   onSelect: () => void;
   selected: boolean;
+  onSyncClick?: () => void;
 }
 
-function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTableRowProps): React.JSX.Element {
+function CommitTableRow({ commit, selected, commitDate, onSelect, onSyncClick }: ICommitTableRowProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
 
   // Use files from commit entry (already loaded in useGitLogData)
@@ -156,17 +158,43 @@ function CommitTableRow({ commit, selected, commitDate, onSelect }: ICommitTable
       onClick={onSelect}
       data-testid={commit.hash === '' ? 'uncommitted-changes-row' : `commit-row-${commit.hash}`}
     >
-      <CellBox sx={{ width: '40%' }}>
+      <CellBox sx={{ width: '40%', display: 'flex', alignItems: 'center', gap: 1 }}>
         <Typography
           variant='body2'
           sx={{
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
+            flex: 1,
           }}
         >
           {commit.message}
         </Typography>
+        {commit.isUnpushed && commit.hash !== '' && (
+          <Tooltip title={t('ContextMenu.SyncNow')}>
+            <Box
+              component='div'
+              onClick={(event) => {
+                event.stopPropagation();
+                onSyncClick?.();
+              }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'primary.main',
+                '&:hover': {
+                  opacity: 0.7,
+                },
+                flexShrink: 0,
+              }}
+              data-testid={`sync-button-${commit.hash}`}
+            >
+              <CloudUploadIcon sx={{ fontSize: '1rem' }} />
+            </Box>
+          </Tooltip>
+        )}
       </CellBox>
       <CellBox sx={{ width: '40%' }}>
         <Box
@@ -222,6 +250,7 @@ export default function GitHistory(): React.JSX.Element {
   const [viewMode, setViewMode] = useState<'current' | 'all'>('current');
   const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
   const [currentSearchParameters, setCurrentSearchParameters] = useState<ISearchParameters>({ mode: 'none', query: '', startDate: null, endDate: null });
+  const [isSyncing, setIsSyncing] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({
     open: false,
     message: '',
@@ -234,6 +263,21 @@ export default function GitHistory(): React.JSX.Element {
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' = 'info') => {
     setSnackbar({ open: true, message, severity });
   };
+
+  const handleSyncClick = useCallback(async () => {
+    if (isSyncing || !workspaceInfo || !('wikiFolderLocation' in workspaceInfo)) return;
+
+    setIsSyncing(true);
+    try {
+      await window.service.sync.syncWikiIfNeeded(workspaceInfo);
+      showSnackbar(t('ContextMenu.SyncNow'), 'success');
+    } catch (error) {
+      console.error('Failed to sync:', error);
+      showSnackbar(t('ContextMenu.SyncNow') + ' ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [workspaceInfo, isSyncing, t]);
 
   const handleCloseSnackbar = () => {
     setSnackbar(previous => ({ ...previous, open: false }));
@@ -394,6 +438,7 @@ export default function GitHistory(): React.JSX.Element {
                                   setSelectedCommit(entry);
                                   setSelectedFile(null);
                                 }}
+                                onSyncClick={handleSyncClick}
                               />
                             </div>
                           );

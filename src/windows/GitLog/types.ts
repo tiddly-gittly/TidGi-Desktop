@@ -53,4 +53,8 @@ export interface GitLogEntry {
    * Array of files with status changed in this commit.
    */
   files?: IFileWithStatus[];
+  /**
+   * Whether this commit is unpushed to the remote tracking branch
+   */
+  isUnpushed?: boolean;
 }
