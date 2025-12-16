@@ -7,6 +7,7 @@ import type { IMenuService } from '@services/menu/interface';
 import { DeferredMenuItemConstructorOptions } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
+import type { ISyncService } from '@services/sync/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceService } from '@services/workspaces/interface';
@@ -19,6 +20,7 @@ export async function registerMenu(): Promise<void> {
   const gitService = container.get<IGitService>(serviceIdentifier.Git);
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
   const contextService = container.get<IContextService>(serviceIdentifier.Context);
+  const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
 
   const hasActiveWikiWorkspace = async (): Promise<boolean> => {
     const activeWorkspace = await workspaceService.getActiveWorkspace();
@@ -100,14 +102,7 @@ export async function registerMenu(): Promise<void> {
         click: async () => {
           const activeWorkspace = await workspaceService.getActiveWorkspace();
           if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
-            const userInfo = await authService.getStorageServiceUserInfo(activeWorkspace.storageService);
-            await gitService.commitAndSync(activeWorkspace, {
-              dir: activeWorkspace.wikiFolderLocation,
-              commitOnly: false,
-              commitMessage: i18n.t('LOG.CommitBackupMessage'),
-              remoteUrl: activeWorkspace.gitUrl ?? undefined,
-              userInfo,
-            });
+            await syncService.syncWikiIfNeeded(activeWorkspace, { commitMessage: i18n.t('LOG.CommitBackupMessage') });
           }
         },
       },
@@ -122,14 +117,7 @@ export async function registerMenu(): Promise<void> {
         click: async () => {
           const activeWorkspace = await workspaceService.getActiveWorkspace();
           if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
-            const userInfo = await authService.getStorageServiceUserInfo(activeWorkspace.storageService);
-            await gitService.commitAndSync(activeWorkspace, {
-              dir: activeWorkspace.wikiFolderLocation,
-              commitOnly: false,
-              // Don't provide commitMessage to trigger AI generation
-              remoteUrl: activeWorkspace.gitUrl ?? undefined,
-              userInfo,
-            });
+            await syncService.syncWikiIfNeeded(activeWorkspace, { useAICommitMessage: true });
           }
         },
       },
@@ -146,14 +134,7 @@ export async function registerMenu(): Promise<void> {
       click: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
-          const userInfo = await authService.getStorageServiceUserInfo(activeWorkspace.storageService);
-          await gitService.commitAndSync(activeWorkspace, {
-            dir: activeWorkspace.wikiFolderLocation,
-            commitOnly: false,
-            commitMessage: i18n.t('LOG.CommitBackupMessage'),
-            remoteUrl: activeWorkspace.gitUrl ?? undefined,
-            userInfo,
-          });
+          await syncService.syncWikiIfNeeded(activeWorkspace, { commitMessage: i18n.t('LOG.CommitBackupMessage') });
         }
       },
     });

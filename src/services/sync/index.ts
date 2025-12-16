@@ -14,7 +14,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import type { ISyncService } from './interface';
+import type { ISyncOptions, ISyncService } from './interface';
 
 @injectable()
 export class Sync implements ISyncService {
@@ -24,7 +24,7 @@ export class Sync implements ISyncService {
   ) {
   }
 
-  public async syncWikiIfNeeded(workspace: IWorkspace): Promise<void> {
+  public async syncWikiIfNeeded(workspace: IWorkspace, options?: ISyncOptions): Promise<void> {
     if (!isWikiWorkspace(workspace)) {
       logger.warn('syncWikiIfNeeded called on non-wiki workspace', { workspaceId: workspace.id });
       return;
@@ -39,7 +39,10 @@ export class Sync implements ISyncService {
 
     const { gitUrl, storageService, id, isSubWiki, wikiFolderLocation } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
+    const { commitMessage: overrideCommitMessage, useAICommitMessage = false } = options ?? {};
     const defaultCommitMessage = i18n.t('LOG.CommitMessage');
+    const commitMessage = useAICommitMessage ? undefined : (overrideCommitMessage ?? defaultCommitMessage);
+    const localCommitMessage = useAICommitMessage ? undefined : overrideCommitMessage;
     const syncOnlyWhenNoDraft = await this.preferenceService.get('syncOnlyWhenNoDraft');
     const mainWorkspace = isSubWiki ? workspaceService.getMainWorkspace(workspace) : undefined;
     if (isSubWiki && mainWorkspace === undefined) {
@@ -54,12 +57,12 @@ export class Sync implements ISyncService {
     }
     if (storageService === SupportedStorageServices.local) {
       // for local workspace, commitOnly, no sync and no force pull.
-      await gitService.commitAndSync(workspace, { dir: wikiFolderLocation, commitOnly: true });
+      await gitService.commitAndSync(workspace, { dir: wikiFolderLocation, commitOnly: true, commitMessage: localCommitMessage });
     } else if (
       typeof gitUrl === 'string' &&
       userInfo !== undefined
     ) {
-      const syncOrForcePullConfigs = { remoteUrl: gitUrl, userInfo, dir: wikiFolderLocation, commitMessage: defaultCommitMessage } satisfies ICommitAndSyncConfigs;
+      const syncOrForcePullConfigs = { remoteUrl: gitUrl, userInfo, dir: wikiFolderLocation, commitMessage } satisfies ICommitAndSyncConfigs;
       // sync current workspace first
       const hasChanges = await gitService.syncOrForcePull(workspace, syncOrForcePullConfigs);
       if (isSubWiki) {
@@ -82,7 +85,7 @@ export class Sync implements ISyncService {
             remoteUrl: subGitUrl,
             userInfo: subUserInfo,
             dir: subGitFolderLocation,
-            commitMessage: defaultCommitMessage,
+            commitMessage,
           });
           return hasChanges;
         });
