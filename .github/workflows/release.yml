@@ -94,7 +94,6 @@ jobs:
         run: pnpm run build:plugin
       - name: Make ${{ matrix.platform }} (${{ matrix.arch }})
         run: |
-          set -e
           pnpm exec electron-forge make --platform=${{ matrix.platform == 'mac' && 'darwin' || matrix.platform == 'win' && 'win32' || 'linux' }} --arch=${{ matrix.arch }}
         env:
           NODE_ENV: production
