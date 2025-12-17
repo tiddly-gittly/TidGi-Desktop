@@ -599,6 +599,28 @@ export async function revertCommit(repoPath: string, commitHash: string, commitM
 }
 
 /**
+ * Undo a commit by resetting to the previous commit and keeping changes as unstaged
+ * This is similar to GitHub Desktop's "Undo" feature
+ */
+export async function undoCommit(repoPath: string, commitHash: string): Promise<void> {
+  // Get the parent commit of the current commit
+  const parentResult = await gitExec(['rev-parse', `${commitHash}^`], repoPath);
+
+  if (parentResult.exitCode !== 0) {
+    throw new Error('Unable to undo this commit - it may be the first commit in the repository');
+  }
+
+  const parentCommit = parentResult.stdout.trim();
+
+  // Reset to the parent commit with --mixed flag (keeps changes as unstaged)
+  const resetResult = await gitExec(['reset', '--mixed', parentCommit], repoPath);
+
+  if (resetResult.exitCode !== 0) {
+    throw new Error(`Failed to undo commit: ${resetResult.stderr}`);
+  }
+}
+
+/**
  * Discard changes for a specific file (restore from HEAD or delete if untracked)
  */
 export async function discardFileChanges(repoPath: string, filePath: string): Promise<void> {

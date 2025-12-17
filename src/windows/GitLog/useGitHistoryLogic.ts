@@ -91,6 +91,7 @@ export function useSyncHandler({ workspaceInfo, isSyncing, showSnackbar }: IUseS
 
 interface IUseCommitSelectionReturn {
   handleCommitSuccess: () => void;
+  handleUndoSuccess: () => void;
   handleSearch: (parameters: ISearchParameters) => void;
 }
 
@@ -159,6 +160,25 @@ export function useCommitSelection({
     setShouldSelectFirst(true);
   }, [setShouldSelectFirst]);
 
+  const handleUndoSuccess = useCallback(() => {
+    // After undo, select the uncommitted changes if available
+    // The entries will be refreshed automatically, so we set a flag to select uncommitted
+    // We use a callback approach: find uncommitted entry after data refreshes
+    const selectUncommitted = () => {
+      const uncommittedEntry = entries.find((entry) => entry.hash === '');
+      if (uncommittedEntry) {
+        setSelectedCommit(uncommittedEntry);
+      } else {
+        // If no uncommitted changes, deselect
+        setSelectedCommit(undefined);
+      }
+    };
+    
+    // Schedule the selection for after entries are updated
+    // Use setTimeout to ensure entries are already loaded
+    setTimeout(selectUncommitted, 0);
+  }, [entries, setSelectedCommit]);
+
   const handleSearch = useCallback(
     (parameters: ISearchParameters) => {
       setSearchParams(parameters);
@@ -170,7 +190,7 @@ export function useCommitSelection({
     [setSearchParams, setCurrentSearchParameters, setSelectedCommit, setSelectedFile],
   );
 
-  return { handleCommitSuccess, handleSearch };
+  return { handleCommitSuccess, handleUndoSuccess, handleSearch };
 }
 
 interface IUseInfiniteScrollReturn {

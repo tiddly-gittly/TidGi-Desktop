@@ -61,8 +61,17 @@ export async function generateAICommitMessage(wikiFolderPath: string): Promise<s
     }
 
     // Get git diff for all changes (both staged and unstaged)
-    // Use HEAD as the comparison point to include all uncommitted changes
-    const diffResult = await gitExec(['diff', 'HEAD'], wikiFolderPath);
+    // Use 'git diff' for unstaged changes and 'git diff --cached' for staged changes, then combine
+    const unstagedResult = await gitExec(['diff'], wikiFolderPath);
+    const stagedResult = await gitExec(['diff', '--cached'], wikiFolderPath);
+
+    // Combine both outputs
+    const combinedDiff = [unstagedResult.stdout || '', stagedResult.stdout || ''].filter(Boolean).join('\n');
+    const diffResult = {
+      exitCode: unstagedResult.exitCode === 0 && stagedResult.exitCode === 0 ? 0 : 1,
+      stdout: combinedDiff,
+      stderr: unstagedResult.stderr || stagedResult.stderr,
+    };
 
     if (diffResult.exitCode !== 0 || !diffResult.stdout || diffResult.stdout.trim().length === 0) {
       logger.info('No changes found, skipping AI commit message generation');
@@ -89,22 +98,31 @@ ${truncatedDiff}
 
 Generate only the commit message, nothing else:`;
 
-    // Call AI with timeout
-    const timeout = preferences.aiGenerateBackupTitleTimeout || 1500;
+    // Call AI with timeout (default 5000ms to account for network latency)
+    const timeout = preferences.aiGenerateBackupTitleTimeout ?? 5000;
+    logger.debug('Starting AI commit message generation', { timeout });
+
+    const startTime = Date.now();
     const commitMessage = await Promise.race([
-      waitForAIStreamResult(prompt, aiConfig, externalAPIService),
+      waitForAIStreamResult(prompt, aiConfig, externalAPIService).then((result) => {
+        logger.debug('AI commit message generation completed', { elapsed: Date.now() - startTime });
+        return result;
+      }),
       new Promise<undefined>((resolve) =>
         setTimeout(() => {
+          logger.warn('AI commit message generation timed out', { timeout, elapsed: Date.now() - startTime });
           resolve(undefined);
         }, timeout)
       ),
     ]);
 
+    const elapsed = Date.now() - startTime;
     if (commitMessage) {
-      logger.info('AI generated commit message', { commitMessage });
+      logger.info('AI generated commit message', { commitMessage, elapsed });
       return commitMessage.trim();
     }
 
+    logger.debug('AI commit message generation returned undefined', { elapsed, timeout });
     return undefined;
   } catch (error) {
     logger.error('Failed to generate AI commit message', { error });

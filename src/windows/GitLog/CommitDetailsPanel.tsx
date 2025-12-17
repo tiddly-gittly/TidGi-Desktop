@@ -71,16 +71,20 @@ interface ICommitDetailsPanelProps {
   onCommitSuccess?: () => void;
   onFileSelect?: (file: string | null) => void;
   onRevertSuccess?: () => void;
+  onUndoSuccess?: () => void;
   selectedFile?: string | null;
 }
 
 export function CommitDetailsPanel(
-  { commit, isLatestCommit: _isLatestCommit, onCommitSuccess, onFileSelect, onRevertSuccess, selectedFile }: ICommitDetailsPanelProps,
+  { commit, isLatestCommit: _isLatestCommit, onCommitSuccess, onFileSelect, onRevertSuccess, onUndoSuccess, selectedFile }: ICommitDetailsPanelProps,
 ): React.JSX.Element {
   const { t } = useTranslation();
   const [currentTab, setCurrentTab] = useState<'details' | 'actions'>('details');
   const [isReverting, setIsReverting] = useState(false);
+  const [isUndoing, setIsUndoing] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
+  const [isAIEnabled, setIsAIEnabled] = useState(false);
+  const [isCommittingWithAI, setIsCommittingWithAI] = useState(false);
 
   // Use files from commit entry (already loaded in useGitLogData)
   const fileChanges = commit?.files ?? [];
@@ -91,6 +95,21 @@ export function CommitDetailsPanel(
       onFileSelect(fileChanges[0].path);
     }
   }, [commit, fileChanges, selectedFile, onFileSelect]);
+
+  // Check if AI commit message generation is enabled
+  useEffect(() => {
+    const checkAIEnabled = async () => {
+      try {
+        const enabled = await window.service.git.isAIGenerateBackupTitleEnabled();
+        setIsAIEnabled(enabled);
+      } catch (error) {
+        console.error('Failed to check AI generation status:', error);
+        setIsAIEnabled(false);
+      }
+    };
+
+    void checkAIEnabled();
+  }, []);
 
   const handleRevert = async () => {
     if (!commit || isReverting) return;
@@ -115,6 +134,32 @@ export function CommitDetailsPanel(
       console.error('Failed to revert commit:', error);
     } finally {
       setIsReverting(false);
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!commit || isUndoing) return;
+
+    setIsUndoing(true);
+    try {
+      const meta = window.meta();
+      const workspaceID = (meta as { workspaceID?: string }).workspaceID;
+
+      if (!workspaceID) return;
+
+      const workspace = await window.service.workspace.get(workspaceID);
+      if (!workspace || !('wikiFolderLocation' in workspace)) return;
+
+      // Undo commit - reset to parent and keep changes as unstaged
+      await window.service.git.undoCommit(workspace.wikiFolderLocation, commit.hash);
+      // Notify parent to select uncommitted changes
+      if (onUndoSuccess) {
+        onUndoSuccess();
+      }
+    } catch (error) {
+      console.error('Failed to undo commit:', error);
+    } finally {
+      setIsUndoing(false);
     }
   };
 
@@ -143,6 +188,35 @@ export function CommitDetailsPanel(
       console.error('Failed to commit:', error);
     } finally {
       setIsCommitting(false);
+    }
+  };
+
+  const handleCommitNowWithAI = async () => {
+    if (isCommittingWithAI) return;
+
+    setIsCommittingWithAI(true);
+    try {
+      const meta = window.meta();
+      const workspaceID = (meta as { workspaceID?: string }).workspaceID;
+
+      if (!workspaceID) return;
+
+      const workspace = await window.service.workspace.get(workspaceID);
+      if (!workspace || !('wikiFolderLocation' in workspace)) return;
+
+      await window.service.git.commitAndSync(workspace, {
+        dir: workspace.wikiFolderLocation,
+        commitOnly: true,
+        // Don't provide commitMessage to trigger AI generation
+      });
+      // Notify parent to select the new commit
+      if (onCommitSuccess) {
+        onCommitSuccess();
+      }
+    } catch (error) {
+      console.error('Failed to commit with AI:', error);
+    } finally {
+      setIsCommittingWithAI(false);
     }
   };
 
@@ -313,12 +387,35 @@ export function CommitDetailsPanel(
               >
                 {isCommitting ? t('GitLog.Committing') : t('ContextMenu.BackupNow')}
               </Button>
+              {isAIEnabled && (
+                <Button
+                  variant='contained'
+                  color='primary'
+                  onClick={handleCommitNowWithAI}
+                  fullWidth
+                  disabled={isCommittingWithAI}
+                  startIcon={isCommittingWithAI ? <CircularProgress size={16} color='inherit' /> : undefined}
+                >
+                  {isCommittingWithAI ? t('GitLog.Committing') : t('ContextMenu.BackupNow') + t('ContextMenu.WithAI')}
+                </Button>
+              )}
               <Divider sx={{ my: 1 }} />
             </>
           )}
 
           {!isUncommitted && (
             <>
+              <Button
+                variant='contained'
+                color='error'
+                onClick={handleUndo}
+                fullWidth
+                disabled={isUndoing}
+                startIcon={isUndoing ? <CircularProgress size={16} color='inherit' /> : undefined}
+              >
+                {isUndoing ? t('GitLog.Undoing', { defaultValue: 'Undoing...' }) : t('GitLog.UndoCommit', { defaultValue: 'Undo this commit' })}
+              </Button>
+
               <Button
                 variant='contained'
                 color='warning'

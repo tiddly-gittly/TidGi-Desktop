@@ -410,6 +410,19 @@ export class Git implements IGitService {
     }
   }
 
+  public async undoCommit(wikiFolderPath: string, commitHash: string): Promise<void> {
+    try {
+      await this.callGitOp('undoCommit', wikiFolderPath, commitHash);
+      // Notify git state change
+      this.notifyGitStateChange(wikiFolderPath, 'undo');
+      // Log for e2e test detection
+      logger.debug(`[test-id-git-undo-complete]`, { wikiFolderPath, commitHash });
+    } catch (error) {
+      logger.error('undoCommit failed', { error, wikiFolderPath, commitHash });
+      throw error;
+    }
+  }
+
   public async discardFileChanges(wikiFolderPath: string, filePath: string): Promise<void> {
     await this.callGitOp('discardFileChanges', wikiFolderPath, filePath);
     // Notify git state change
