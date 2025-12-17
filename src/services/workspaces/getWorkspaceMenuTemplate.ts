@@ -204,7 +204,7 @@ export async function getWorkspaceMenuTemplate(
     if (userInfo !== undefined) {
       const isOnline = await service.context.isOnline();
 
-      const syncItems = createSyncMenuItems(workspace, t, service.git, aiGenerateBackupTitleEnabled, isOnline, userInfo, false);
+      const syncItems = createSyncMenuItems(workspace, t, service.sync, aiGenerateBackupTitleEnabled, isOnline, false);
       template.push(...syncItems);
     }
   }

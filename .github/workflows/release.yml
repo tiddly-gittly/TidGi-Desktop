@@ -97,6 +97,8 @@ jobs:
           pnpm exec electron-forge make --platform=${{ matrix.platform == 'mac' && 'darwin' || matrix.platform == 'win' && 'win32' || 'linux' }} --arch=${{ matrix.arch }}
         env:
           NODE_ENV: production
+          # Increase Node.js heap size to prevent OOM during build
+          NODE_OPTIONS: --max-old-space-size=8192
           # macOS specific environment variables
           APPLE_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_ID || '' }}
           APPLE_ID_PASSWORD: ${{ matrix.platform == 'mac' && secrets.APPLE_ID_PASSWORD || '' }}

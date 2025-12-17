@@ -168,7 +168,7 @@ async function executeGitLog(parameters: GitLogParameters): Promise<ToolExecutio
   };
 
   logger.debug('Executing git log search', { workspaceID, options });
-  const result = await gitService.getGitLog(wikiFolderLocation, options);
+  const result = await gitService.callGitOp('getGitLog', wikiFolderLocation, options);
 
   return {
     success: true,
@@ -193,7 +193,8 @@ async function executeGitReadFile(parameters: GitReadFileParameters): Promise<To
   const gitService = container.get<IGitService>(serviceIdentifier.Git);
   logger.debug('Reading file from commit', { workspaceID, filePath: parameters.filePath, commitHash: parameters.commitHash });
 
-  const fileResult = await gitService.getFileContent(
+  const fileResult = await gitService.callGitOp(
+    'getFileContent',
     wikiFolderLocation,
     parameters.commitHash,
     parameters.filePath,

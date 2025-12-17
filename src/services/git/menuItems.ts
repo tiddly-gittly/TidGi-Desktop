@@ -2,8 +2,9 @@
  * Utility functions for creating Git-related menu items
  * This file is safe to import from both frontend and backend code
  */
-import type { IGitService, IGitUserInfos } from '@services/git/interface';
+import type { IGitService } from '@services/git/interface';
 import { DeferredMenuItemConstructorOptions } from '@services/menu/interface';
+import type { ISyncService } from '@services/sync/interface';
 import { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace } from '@services/workspaces/interface';
@@ -115,56 +116,50 @@ export function createBackupMenuItems(
  * Create sync menu items for a workspace (for menubar - returns DeferredMenuItemConstructorOptions)
  * @param workspace The workspace to create menu items for
  * @param t Translation function
- * @param gitService Git service instance (or Pick with commitAndSync)
+ * @param syncService Sync service instance (or Pick with syncWikiIfNeeded)
  * @param aiEnabled Whether AI-generated commit messages are enabled
  * @param isOnline Whether the network is online (optional, defaults to true)
- * @param userInfo User authentication info for git operations
  * @returns Array of menu items
  */
 export function createSyncMenuItems(
   workspace: IWorkspace,
   t: TFunction,
-  gitService: Pick<IGitService, 'commitAndSync'>,
+  syncService: Pick<ISyncService, 'syncWikiIfNeeded'>,
   aiEnabled: boolean,
   isOnline: boolean,
-  userInfo: IGitUserInfos | undefined,
 ): DeferredMenuItemConstructorOptions[];
 
 /**
  * Create sync menu items for a workspace (for context menu - returns MenuItemConstructorOptions)
  * @param workspace The workspace to create menu items for
  * @param t Translation function
- * @param gitService Git service instance (or Pick with commitAndSync)
+ * @param syncService Sync service instance (or Pick with syncWikiIfNeeded)
  * @param aiEnabled Whether AI-generated commit messages are enabled
  * @param isOnline Whether the network is online (optional, defaults to true)
- * @param userInfo User authentication info for git operations
  * @param useDeferred Set to false for context menu
  * @returns Array of menu items
  */
 export function createSyncMenuItems(
   workspace: IWorkspace,
   t: TFunction,
-  gitService: Pick<IGitService, 'commitAndSync'>,
+  syncService: Pick<ISyncService, 'syncWikiIfNeeded'>,
   aiEnabled: boolean,
   isOnline: boolean,
-  userInfo: IGitUserInfos | undefined,
   useDeferred: false,
 ): import('electron').MenuItemConstructorOptions[];
 
 export function createSyncMenuItems(
   workspace: IWorkspace,
   t: TFunction,
-  gitService: Pick<IGitService, 'commitAndSync'>,
+  syncService: Pick<ISyncService, 'syncWikiIfNeeded'>,
   aiEnabled: boolean,
   isOnline: boolean,
-  userInfo: IGitUserInfos | undefined,
   _useDeferred: boolean = true,
 ): DeferredMenuItemConstructorOptions[] | import('electron').MenuItemConstructorOptions[] {
   if (!isWikiWorkspace(workspace) || !workspace.gitUrl) {
     return [];
   }
 
-  const { wikiFolderLocation, gitUrl } = workspace;
   const offlineText = isOnline ? '' : ` (${t('ContextMenu.NoNetworkConnection')})`;
 
   if (aiEnabled) {
@@ -173,26 +168,14 @@ export function createSyncMenuItems(
         label: t('ContextMenu.SyncNow') + offlineText,
         enabled: isOnline,
         click: async () => {
-          await gitService.commitAndSync(workspace, {
-            dir: wikiFolderLocation,
-            commitOnly: false,
-            commitMessage: t('LOG.CommitBackupMessage'),
-            remoteUrl: gitUrl,
-            userInfo,
-          });
+          await syncService.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage') });
         },
       },
       {
         label: t('ContextMenu.SyncNow') + t('ContextMenu.WithAI') + offlineText,
         enabled: isOnline,
         click: async () => {
-          await gitService.commitAndSync(workspace, {
-            dir: wikiFolderLocation,
-            commitOnly: false,
-            // Don't provide commitMessage to trigger AI generation
-            remoteUrl: gitUrl,
-            userInfo,
-          });
+          await syncService.syncWikiIfNeeded(workspace, { useAICommitMessage: true });
         },
       },
     ];
@@ -203,12 +186,7 @@ export function createSyncMenuItems(
       label: t('ContextMenu.SyncNow') + offlineText,
       enabled: isOnline,
       click: async () => {
-        await gitService.commitAndSync(workspace, {
-          dir: wikiFolderLocation,
-          commitOnly: false,
-          remoteUrl: gitUrl,
-          userInfo,
-        });
+        await syncService.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage') });
       },
     },
   ];

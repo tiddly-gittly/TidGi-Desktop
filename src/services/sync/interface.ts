@@ -19,7 +19,12 @@ export interface ISyncService {
    * Trigger git sync for a wiki workspace.
    * Simply do some check before calling `gitService.syncOrForcePull`, and after that, restart workspaceViewService if needed.
    */
-  syncWikiIfNeeded(workspace: IWorkspace): Promise<void>;
+  syncWikiIfNeeded(workspace: IWorkspace, options?: ISyncOptions): Promise<void>;
+}
+
+export interface ISyncOptions {
+  commitMessage?: string;
+  useAICommitMessage?: boolean;
 }
 export const SyncServiceIPCDescriptor = {
   channel: SyncChannel.name,

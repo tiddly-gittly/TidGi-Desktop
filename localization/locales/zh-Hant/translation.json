@@ -593,6 +593,10 @@
     "Preferences": "設置...",
     "UpdateAvailable": "有新版本！"
   },
+  "Sync": {
+    "Failure": "同步失敗：{{error}}",
+    "Success": "同步成功"
+  },
   "Unknown": "未知",
   "Update": "更新",
   "Updater": {

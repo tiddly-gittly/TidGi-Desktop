@@ -219,8 +219,8 @@
     "WikiRootTiddlerDescription": "Le tiddler racine du Wiki détermine le comportement de base du système, veuillez lire la documentation officielle pour comprendre avant de modifier",
     "WikiRootTiddlerItems": {
       "all": "Tout charger en une fois",
-      "lazy-images": "Charger les images à la demande",
-      "lazy-all": "Charger les images et le texte à la demande"
+      "lazy-all": "Charger les images et le texte à la demande",
+      "lazy-images": "Charger les images à la demande"
     }
   },
   "Error": {
@@ -575,6 +575,10 @@
   "SideBar": {
     "Preferences": "Préférences...",
     "UpdateAvailable": "Mise à jour !"
+  },
+  "Sync": {
+    "Failure": "Échec de la synchronisation : {{error}}",
+    "Success": "Synchronisation réussie"
   },
   "Update": "mise à jour",
   "Updater": {

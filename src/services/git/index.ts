@@ -24,18 +24,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
 import * as gitOperations from './gitOperations';
 import type { GitWorker } from './gitWorker';
-import type {
-  ICommitAndSyncConfigs,
-  IFileDiffResult,
-  IFileWithStatus,
-  IForcePullConfigs,
-  IGitLogMessage,
-  IGitLogOptions,
-  IGitLogResult,
-  IGitService,
-  IGitStateChange,
-  IGitUserInfos,
-} from './interface';
+import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitStateChange, IGitUserInfos } from './interface';
 import { registerMenu } from './registerMenu';
 import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 
@@ -383,32 +372,25 @@ export class Git implements IGitService {
     }
   }
 
-  public async getGitLog(wikiFolderPath: string, options?: IGitLogOptions): Promise<IGitLogResult> {
-    return await gitOperations.getGitLog(wikiFolderPath, options);
-  }
-
-  public async getCommitFiles(wikiFolderPath: string, commitHash: string): Promise<IFileWithStatus[]> {
-    return await gitOperations.getCommitFiles(wikiFolderPath, commitHash);
-  }
-
-  public async getFileDiff(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<IFileDiffResult> {
-    return await gitOperations.getFileDiff(wikiFolderPath, commitHash, filePath, maxLines, maxChars);
-  }
-
-  public async getFileContent(wikiFolderPath: string, commitHash: string, filePath: string, maxLines?: number, maxChars?: number): Promise<IFileDiffResult> {
-    return await gitOperations.getFileContent(wikiFolderPath, commitHash, filePath, maxLines, maxChars);
-  }
-
-  public async getFileBinaryContent(wikiFolderPath: string, commitHash: string, filePath: string): Promise<string> {
-    return await gitOperations.getFileBinaryContent(wikiFolderPath, commitHash, filePath);
-  }
-
-  public async getImageComparison(wikiFolderPath: string, commitHash: string, filePath: string): Promise<{ previous: string | null; current: string | null }> {
-    return await gitOperations.getImageComparison(wikiFolderPath, commitHash, filePath);
+  /**
+   * Generic type-safe proxy method for git operations
+   * Uses conditional types and mapped types to ensure complete type safety
+   */
+  public async callGitOp<K extends keyof typeof gitOperations>(
+    method: K,
+    ...arguments_: Parameters<typeof gitOperations[K]>
+  ): Promise<Awaited<ReturnType<typeof gitOperations[K]>>> {
+    const operation = gitOperations[method];
+    if (typeof operation !== 'function') {
+      throw new Error(`gitOperations.${method} is not a function`);
+    }
+    // Type assertion through unknown is necessary here because TypeScript cannot verify
+    // that the union type of all gitOperations functions matches the generic K constraint
+    return await (operation as unknown as (...arguments__: Parameters<typeof gitOperations[K]>) => ReturnType<typeof gitOperations[K]>)(...arguments_);
   }
 
   public async checkoutCommit(wikiFolderPath: string, commitHash: string): Promise<void> {
-    await gitOperations.checkoutCommit(wikiFolderPath, commitHash);
+    await this.callGitOp('checkoutCommit', wikiFolderPath, commitHash);
     // Notify git state change
     this.notifyGitStateChange(wikiFolderPath, 'checkout');
     // Log for e2e test detection
@@ -417,7 +399,7 @@ export class Git implements IGitService {
 
   public async revertCommit(wikiFolderPath: string, commitHash: string, commitMessage?: string): Promise<void> {
     try {
-      await gitOperations.revertCommit(wikiFolderPath, commitHash, commitMessage);
+      await this.callGitOp('revertCommit', wikiFolderPath, commitHash, commitMessage);
       // Notify git state change
       this.notifyGitStateChange(wikiFolderPath, 'revert');
       // Log for e2e test detection
@@ -429,13 +411,13 @@ export class Git implements IGitService {
   }
 
   public async discardFileChanges(wikiFolderPath: string, filePath: string): Promise<void> {
-    await gitOperations.discardFileChanges(wikiFolderPath, filePath);
+    await this.callGitOp('discardFileChanges', wikiFolderPath, filePath);
     // Notify git state change
     this.notifyGitStateChange(wikiFolderPath, 'discard');
   }
 
   public async addToGitignore(wikiFolderPath: string, pattern: string): Promise<void> {
-    await gitOperations.addToGitignore(wikiFolderPath, pattern);
+    await this.callGitOp('addToGitignore', wikiFolderPath, pattern);
     // Notify git state change to refresh git log
     this.notifyGitStateChange(wikiFolderPath, 'file-change');
   }
@@ -454,13 +436,5 @@ export class Git implements IGitService {
     } catch {
       return false;
     }
-  }
-
-  public async getDeletedTiddlersSinceDate(wikiFolderPath: string, sinceDate: Date): Promise<string[]> {
-    return await gitOperations.getDeletedTiddlersSinceDate(wikiFolderPath, sinceDate);
-  }
-
-  public async getTiddlerAtTime(wikiFolderPath: string, tiddlerTitle: string, beforeDate: Date): Promise<{ fields: Record<string, unknown>; text: string } | null> {
-    return await gitOperations.getTiddlerAtTime(wikiFolderPath, tiddlerTitle, beforeDate);
   }
 }
