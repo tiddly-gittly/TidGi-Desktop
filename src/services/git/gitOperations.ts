@@ -296,7 +296,7 @@ export async function getFileDiff(
     if (isDeleted) {
       // For deleted files, show the deletion diff
       const result = await gitExec(
-        ['diff', 'HEAD', '--', filePath],
+        ['-c', 'core.quotePath=false', 'diff', 'HEAD', '--', filePath],
         repoPath,
       );
 
@@ -325,7 +325,7 @@ export async function getFileDiff(
     }
 
     const result = await gitExec(
-      ['diff', 'HEAD', '--', filePath],
+      ['-c', 'core.quotePath=false', 'diff', 'HEAD', '--', filePath],
       repoPath,
     );
 
@@ -348,7 +348,7 @@ export async function getFileDiff(
 
   // Use git show with --pretty=format: to get only the diff without commit message
   const result = await gitExec(
-    ['show', '--pretty=format:', commitHash, '--', filePath],
+    ['-c', 'core.quotePath=false', 'show', '--pretty=format:', commitHash, '--', filePath],
     repoPath,
   );
 
