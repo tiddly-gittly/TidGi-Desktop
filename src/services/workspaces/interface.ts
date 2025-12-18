@@ -10,6 +10,47 @@ import { SetOptional } from 'type-fest';
  */
 export const nonConfigFields = ['metadata', 'lastNodeJSArgv'];
 
+/**
+ * Default values for IWikiWorkspace fields. These are used for:
+ * 1. Initializing new workspaces
+ * 2. Providing default values when fields are missing from persisted config
+ * 3. Determining which fields need to be saved (only non-default values are persisted)
+ */
+export const wikiWorkspaceDefaultValues = {
+  id: '',
+  name: '',
+  order: 0,
+  picturePath: null,
+  gitUrl: null,
+  active: false,
+  backupOnInterval: true,
+  disableAudio: false,
+  disableNotifications: false,
+  enableFileSystemWatch: true,
+  enableHTTPAPI: false,
+  excludedPlugins: [],
+  fileSystemPathFilter: null,
+  fileSystemPathFilterEnable: false,
+  hibernateWhenUnused: false,
+  hibernated: false,
+  ignoreSymlinks: true,
+  includeTagTree: false,
+  lastNodeJSArgv: [],
+  lastUrl: null,
+  mainWikiID: null,
+  mainWikiToLink: null,
+  pageType: null,
+  readOnlyMode: false,
+  storageService: SupportedStorageServices.github,
+  subWikiFolderName: 'subwiki',
+  syncOnInterval: false,
+  syncOnStartup: true,
+  tagNames: [],
+  tokenAuth: false,
+  transparentBackground: false,
+  userName: '',
+} satisfies Omit<IWikiWorkspace, 'https' | 'wikiFolderLocation' | 'port' | 'isSubWiki' | 'authToken' | 'homeUrl'>;
+
 export interface IDedicatedWorkspace {
   /**
    * Is this workspace selected by user, and showing corresponding webview?
@@ -349,3 +390,36 @@ export const WorkspaceServiceIPCDescriptor = {
     workspaces$: ProxyPropertyType.Value$,
   },
 };
+
+/**
+ * Apply default values to a wiki workspace, using the centralized defaults from wikiWorkspaceDefaultValues.
+ * This ensures that missing fields get their default values when loading from persisted config.
+ * @param workspace The workspace object that may have missing fields
+ * @returns A new workspace object with defaults applied to missing fields
+ */
+export function applyWorkspaceDefaults(workspace: IWikiWorkspace): IWikiWorkspace {
+  return { ...wikiWorkspaceDefaultValues, ...workspace };
+}
+
+/**
+ * Get only the fields that differ from defaults, for persisting to storage.
+ * This reduces storage size and makes configs more readable by only storing non-default values.
+ * @param workspace The workspace object with all fields
+ * @returns An object containing only fields that differ from defaults
+ */
+export function getDifferencesFromDefaults(workspace: IWikiWorkspace): Partial<IWikiWorkspace> {
+  const differences = {} as Partial<IWikiWorkspace>;
+  const keys = Object.keys(workspace) as Array<keyof IWikiWorkspace>;
+
+  keys.forEach((typedKey) => {
+    const defaultValue = (wikiWorkspaceDefaultValues as Partial<IWikiWorkspace>)[typedKey];
+    const workspaceValue = workspace[typedKey];
+
+    // Include field if it has a value and differs from default, or if there's no default defined
+    if (defaultValue === undefined || defaultValue !== workspaceValue) {
+      (differences as unknown as Record<string, unknown>)[typedKey as string] = workspaceValue;
+    }
+  });
+
+  return differences;
+}

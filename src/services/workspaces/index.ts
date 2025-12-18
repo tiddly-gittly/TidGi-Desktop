@@ -19,7 +19,6 @@ import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -34,7 +33,7 @@ import type {
   IWorkspacesWithMetadata,
   IWorkspaceWithMetadata,
 } from './interface';
-import { isWikiWorkspace } from './interface';
+import { isWikiWorkspace, wikiWorkspaceDefaultValues } from './interface';
 import { registerMenu } from './registerMenu';
 import { workspaceSorter } from './utilities';
 
@@ -229,17 +228,6 @@ export class Workspace implements IWorkspaceService {
       return workspaceToSanitize;
     }
 
-    const defaultValues: Partial<typeof workspaceToSanitize> = {
-      storageService: SupportedStorageServices.github,
-      backupOnInterval: true,
-      excludedPlugins: [],
-      enableHTTPAPI: false,
-      includeTagTree: false,
-      fileSystemPathFilterEnable: false,
-      fileSystemPathFilter: null,
-      tagNames: [],
-      ignoreSymlinks: true,
-    };
     const fixingValues: Partial<typeof workspaceToSanitize> = {};
     // we add mainWikiID in creation, we fix this value for old existed workspaces
     if (workspaceToSanitize.isSubWiki && !workspaceToSanitize.mainWikiID) {
@@ -265,7 +253,7 @@ export class Workspace implements IWorkspaceService {
       const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
       fixingValues.authToken = authService.generateOneTimeAdminAuthTokenForWorkspaceSync(workspaceToSanitize.id);
     }
-    return { ...defaultValues, ...workspaceToSanitize, ...fixingValues };
+    return { ...wikiWorkspaceDefaultValues, ...workspaceToSanitize, ...fixingValues };
   }
 
   /**
@@ -439,24 +427,14 @@ export class Workspace implements IWorkspaceService {
   public async create(newWorkspaceConfig: INewWikiWorkspaceConfig): Promise<IWorkspace> {
     const newID = nanoid();
     const newWorkspace: IWorkspace = {
-      userName: '',
+      ...wikiWorkspaceDefaultValues,
       ...newWorkspaceConfig,
-      active: false,
-      hibernated: false,
-      hibernateWhenUnused: false,
       homeUrl: getDefaultTidGiUrl(newID),
       id: newID,
       lastUrl: null,
       lastNodeJSArgv: [],
       order: typeof newWorkspaceConfig.order === 'number' ? newWorkspaceConfig.order : ((await this.getWorkspacesAsList()).length + 1),
       picturePath: null,
-      subWikiFolderName: 'subwiki',
-      syncOnInterval: false,
-      syncOnStartup: true,
-      transparentBackground: false,
-      enableHTTPAPI: false,
-      excludedPlugins: [],
-      enableFileSystemWatch: true,
     };
 
     await this.set(newID, newWorkspace);

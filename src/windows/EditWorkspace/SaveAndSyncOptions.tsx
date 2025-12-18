@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { TokenForm } from '@/components/TokenForm';
 import { SupportedStorageServices } from '@services/types';
-import { isWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, IWorkspace, wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
 import { SyncedWikiDescription } from '../AddWorkspace/Description';
 import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
 import { OptionsAccordion, OptionsAccordionSummary, TextField } from './styles';
@@ -26,10 +26,10 @@ export function SaveAndSyncOptions(props: SaveAndSyncOptionsProps): React.JSX.El
     homeUrl: _homeUrl = '',
     isSubWiki = false,
     lastUrl: _lastUrl = null,
-    storageService = SupportedStorageServices.github,
+    storageService = wikiWorkspaceDefaultValues.storageService,
     syncOnInterval = false,
     syncOnStartup = false,
-    backupOnInterval = false,
+    backupOnInterval = wikiWorkspaceDefaultValues.backupOnInterval,
     userName = '',
     wikiFolderLocation = '',
   } = isWiki ? workspace : {
@@ -37,10 +37,10 @@ export function SaveAndSyncOptions(props: SaveAndSyncOptionsProps): React.JSX.El
     homeUrl: '',
     isSubWiki: false,
     lastUrl: null,
-    storageService: SupportedStorageServices.github,
+    storageService: wikiWorkspaceDefaultValues.storageService,
     syncOnInterval: false,
     syncOnStartup: false,
-    backupOnInterval: false,
+    backupOnInterval: wikiWorkspaceDefaultValues.backupOnInterval,
     userName: '',
     wikiFolderLocation: '',
   };
