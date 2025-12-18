@@ -5,45 +5,94 @@ import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { exec as gitExec } from 'dugite';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+
+const MAX_UNTRACKED_FILES = 5;
+const MAX_FILE_CONTENT_LENGTH = 500;
+const MAX_DIFF_LENGTH = 3000;
 
 /**
  * Filter out large plugin file diffs to avoid sending huge JSON to AI
- * For plugin files (tiddlers/$__plugins_*.json), only include the filename
- * @param diff - The git diff output
- * @returns Filtered diff with plugin files replaced by filename only
  */
 function filterLargePluginDiffs(diff: string): string {
-  // Split diff into file chunks (each chunk starts with "diff --git")
   const diffChunks = diff.split(/(?=diff --git)/);
-
-  const filteredChunks = diffChunks.map((chunk) => {
-    // Check if this is a plugin file (.json in tiddlers/$__plugins_*)
+  return diffChunks.map((chunk) => {
     const pluginFileMatch = chunk.match(/diff --git a\/(.*?tiddlers\/\$__plugins_.*?\.json) b\//);
-
     if (pluginFileMatch) {
       const filename = pluginFileMatch[1];
-      // For plugin files, only include the filename, not the full diff
-      return `diff --git a/${filename} b/${filename}
---- a/${filename}
-+++ b/${filename}
-@@ Plugin file modified (content omitted due to size) @@
-`;
+      return `diff --git a/${filename} b/${filename}\n@@ Plugin file modified (content omitted) @@\n`;
     }
-
     return chunk;
-  });
+  }).join('');
+}
 
-  return filteredChunks.join('');
+/**
+ * Read content of untracked tiddler files for AI context
+ */
+async function getUntrackedFileContents(wikiFolderPath: string): Promise<string> {
+  const statusResult = await gitExec(['status', '--porcelain'], wikiFolderPath);
+  if (statusResult.exitCode !== 0 || !statusResult.stdout?.trim()) {
+    return '';
+  }
+
+  const lines = statusResult.stdout.trim().split('\n');
+  const untrackedFiles = lines
+    .filter((line: string) => line.startsWith('??'))
+    .map((line: string) => line.slice(3).trim())
+    .filter((file: string) => file.endsWith('.tid') || file.endsWith('.meta'));
+
+  if (untrackedFiles.length === 0) {
+    return `Git status:\n${statusResult.stdout.trim()}`;
+  }
+
+  const filesToRead = untrackedFiles.slice(0, MAX_UNTRACKED_FILES);
+  const fileContents = await Promise.all(filesToRead.map(async (file) => {
+    try {
+      const content = await fs.readFile(path.join(wikiFolderPath, file), 'utf-8');
+      const truncated = content.length > MAX_FILE_CONTENT_LENGTH ? content.slice(0, MAX_FILE_CONTENT_LENGTH) + '...' : content;
+      return `=== New file: ${file} ===\n${truncated}`;
+    } catch {
+      return `=== New file: ${file} (content unavailable) ===`;
+    }
+  }));
+
+  let result = `New tiddler files added:\n${fileContents.join('\n\n')}`;
+  if (untrackedFiles.length > filesToRead.length) {
+    result += `\n\n... and ${untrackedFiles.length - filesToRead.length} more files`;
+  }
+  return result;
+}
+
+/**
+ * Get git changes (diff for tracked files, content for untracked files)
+ */
+async function getGitChanges(wikiFolderPath: string): Promise<string | undefined> {
+  const [unstagedResult, stagedResult] = await Promise.all([
+    gitExec(['diff'], wikiFolderPath),
+    gitExec(['diff', '--cached'], wikiFolderPath),
+  ]);
+
+  let changes = [unstagedResult.stdout || '', stagedResult.stdout || ''].filter(Boolean).join('\n').trim();
+
+  // If no tracked changes, check untracked files
+  if (!changes) {
+    changes = await getUntrackedFileContents(wikiFolderPath);
+  }
+
+  if (!changes) {
+    return undefined;
+  }
+
+  const filtered = filterLargePluginDiffs(changes);
+  return filtered.length > MAX_DIFF_LENGTH ? filtered.slice(0, MAX_DIFF_LENGTH) + '\n... (truncated)' : filtered;
 }
 
 /**
  * Generate a commit message using AI based on git diff
- * @param wikiFolderPath - Path to the wiki folder
- * @returns AI-generated commit message, or undefined if generation failed or timed out
  */
 export async function generateAICommitMessage(wikiFolderPath: string): Promise<string | undefined> {
   try {
-    // Check if AI generation is enabled
     const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
     const preferences = preferenceService.getPreferences();
 
@@ -51,54 +100,29 @@ export async function generateAICommitMessage(wikiFolderPath: string): Promise<s
       return undefined;
     }
 
-    // Get AI config
     const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
     const aiConfig = await externalAPIService.getAIConfig();
 
-    // Check if free model is configured
     if (!aiConfig?.free?.model || !aiConfig?.free?.provider) {
       return undefined;
     }
 
-    // Get git diff for all changes (both staged and unstaged)
-    // Use 'git diff' for unstaged changes and 'git diff --cached' for staged changes, then combine
-    const unstagedResult = await gitExec(['diff'], wikiFolderPath);
-    const stagedResult = await gitExec(['diff', '--cached'], wikiFolderPath);
-
-    // Combine both outputs
-    const combinedDiff = [unstagedResult.stdout || '', stagedResult.stdout || ''].filter(Boolean).join('\n');
-    const diffResult = {
-      exitCode: unstagedResult.exitCode === 0 && stagedResult.exitCode === 0 ? 0 : 1,
-      stdout: combinedDiff,
-      stderr: unstagedResult.stderr || stagedResult.stderr,
-    };
-
-    if (diffResult.exitCode !== 0 || !diffResult.stdout || diffResult.stdout.trim().length === 0) {
+    const changes = await getGitChanges(wikiFolderPath);
+    if (!changes) {
       logger.info('No changes found, skipping AI commit message generation');
       return undefined;
     }
 
-    const diff = diffResult.stdout;
-
-    // Filter out large plugin files - only include filename for .json files in tiddlers/$__plugins_*
-    // This prevents sending huge plugin diffs to AI
-    const filteredDiff = filterLargePluginDiffs(diff);
-
-    // Limit diff size to avoid token limits (keep first 3000 characters)
-    const truncatedDiff = filteredDiff.length > 3000 ? filteredDiff.slice(0, 3000) + '\n... (truncated)' : filteredDiff;
-
-    // Prepare prompt for AI
     const prompt = `You are a helpful assistant that generates concise git commit messages.
 Based on the following tiddlywiki note git diff, generate a clear and concise commit message in the same language as the changes (In most possible language that user is using).
 The message should be a single line, no more than 80 characters, describing what changed.
 Do not include prefixes like "feat:" or "fix:", just describe the change naturally.
 
 Git diff:
-${truncatedDiff}
+${changes}
 
 Generate only the commit message, nothing else:`;
 
-    // Call AI with timeout (default 5000ms to account for network latency)
     const timeout = preferences.aiGenerateBackupTitleTimeout ?? 5000;
     logger.debug('Starting AI commit message generation', { timeout });
 
@@ -116,13 +140,12 @@ Generate only the commit message, nothing else:`;
       ),
     ]);
 
-    const elapsed = Date.now() - startTime;
     if (commitMessage) {
-      logger.info('AI generated commit message', { commitMessage, elapsed });
+      logger.info('AI generated commit message', { commitMessage, elapsed: Date.now() - startTime });
       return commitMessage.trim();
     }
 
-    logger.debug('AI commit message generation returned undefined', { elapsed, timeout });
+    logger.debug('AI commit message generation returned undefined', { elapsed: Date.now() - startTime, timeout });
     return undefined;
   } catch (error) {
     logger.error('Failed to generate AI commit message', { error });
