@@ -173,7 +173,7 @@ export function useCommitSelection({
         setSelectedCommit(undefined);
       }
     };
-    
+
     // Schedule the selection for after entries are updated
     // Use setTimeout to ensure entries are already loaded
     setTimeout(selectUncommitted, 0);

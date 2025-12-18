@@ -146,6 +146,10 @@ export interface IGitService {
    */
   revertCommit(wikiFolderPath: string, commitHash: string, commitMessage?: string): Promise<void>;
   /**
+   * Amend latest commit message
+   */
+  amendCommitMessage(wikiFolderPath: string, newMessage: string): Promise<void>;
+  /**
    * Undo a specific commit by resetting to the parent and keeping changes as unstaged
    */
   undoCommit(wikiFolderPath: string, commitHash: string): Promise<void>;
@@ -186,6 +190,7 @@ export const GitServiceIPCDescriptor = {
     initWikiGit: ProxyPropertyType.Function,
     notifyFileChange: ProxyPropertyType.Function,
     revertCommit: ProxyPropertyType.Function,
+    amendCommitMessage: ProxyPropertyType.Function,
     undoCommit: ProxyPropertyType.Function,
     syncOrForcePull: ProxyPropertyType.Function,
     isAIGenerateBackupTitleEnabled: ProxyPropertyType.Function,

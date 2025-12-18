@@ -10,6 +10,8 @@ import Typography from '@mui/material/Typography';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { WindowNames } from '@services/windows/WindowProperties';
+import type { WindowMeta } from '@services/windows/WindowProperties';
 import { AllBranchesView } from './AllBranchesView';
 import { CommitDetailsPanel } from './CommitDetailsPanel';
 import { CurrentBranchView } from './CurrentBranchView';
@@ -23,7 +25,29 @@ import { useGitLogData } from './useGitLogData';
 export default function GitHistory(): React.JSX.Element {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { entries, loading, loadingMore, error, workspaceInfo, currentBranch, lastChangeType, hasMore, loadMore, setSearchParams } = useGitLogData();
+
+  // Get workspace ID from window.meta() - type is guaranteed by WindowMeta
+  const meta = window.meta() as WindowMeta[WindowNames.gitHistory];
+  const workspaceID = meta.workspaceID;
+
+  // If no workspaceID, show loading - this should never happen in normal flow
+  if (!workspaceID) {
+    return (
+      <Root maxWidth={false}>
+        <Helmet>
+          <title>{t('GitLog.Title')}</title>
+        </Helmet>
+        <LoadingContainer>
+          <CircularProgress />
+          <Typography variant='body2' color='textSecondary' sx={{ mt: 2 }}>
+            {t('GitLog.LoadingWorkspace', { defaultValue: '正在加载工作区...' })}
+          </Typography>
+        </LoadingContainer>
+      </Root>
+    );
+  }
+
+  const { entries, loading, loadingMore, error, workspaceInfo, currentBranch, lastChangeType, hasMore, loadMore, setSearchParams } = useGitLogData(workspaceID);
   const { selectedCommit, setSelectedCommit } = useCommitDetails();
   const {
     selectedFile,
@@ -175,30 +199,63 @@ export default function GitHistory(): React.JSX.Element {
           </TabContent>
         </GitLogWrapper>
         <DetailsWrapper>
-          <DetailsPanelWrapper>
-            <CommitDetailsPanel
-              commit={selectedCommit ?? null}
-              onFileSelect={setSelectedFile}
-              selectedFile={selectedFile}
-              onCommitSuccess={handleCommitSuccess}
-              onRevertSuccess={handleCommitSuccess}
-              onUndoSuccess={handleUndoSuccess}
-              isLatestCommit={selectedCommit?.hash === entries.find((entry) => entry.hash !== '')?.hash}
-            />
-          </DetailsPanelWrapper>
+          {workspaceInfo
+            ? (
+              <DetailsPanelWrapper>
+                <CommitDetailsPanel
+                  commit={selectedCommit ?? null}
+                  workspaceID={workspaceInfo.id}
+                  onFileSelect={setSelectedFile}
+                  selectedFile={selectedFile}
+                  onCommitSuccess={handleCommitSuccess}
+                  onRevertSuccess={handleCommitSuccess}
+                  onUndoSuccess={handleUndoSuccess}
+                  isLatestCommit={selectedCommit?.hash === entries.find((entry) => entry.hash !== '')?.hash}
+                />
+              </DetailsPanelWrapper>
+            )
+            : (
+              <DetailsPanelWrapper
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                }}
+              >
+                <CircularProgress />
+              </DetailsPanelWrapper>
+            )}
         </DetailsWrapper>
 
         <DiffPanelWrapper>
-          <FileDiffPanel
-            commitHash={selectedCommit?.hash || ''}
-            filePath={selectedFile}
-            onDiscardSuccess={() => {
-              setSelectedFile(null);
-              // Trigger git log refresh after discard
-              setShouldSelectFirst(true);
-            }}
-            showSnackbar={showSnackbar}
-          />
+          {workspaceInfo
+            ? (
+              <FileDiffPanel
+                commitHash={selectedCommit?.hash || ''}
+                filePath={selectedFile}
+                workspaceID={workspaceInfo.id}
+                onDiscardSuccess={() => {
+                  setSelectedFile(null);
+                  // Trigger git log refresh after discard
+                  setShouldSelectFirst(true);
+                }}
+                showSnackbar={showSnackbar}
+              />
+            )
+            : (
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  width: '100%',
+                }}
+              >
+                <CircularProgress />
+              </Box>
+            )}
         </DiffPanelWrapper>
       </ContentWrapper>
 

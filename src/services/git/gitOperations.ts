@@ -5,6 +5,7 @@
 import { i18n } from '@services/libs/i18n';
 import { exec as gitExec } from 'dugite';
 import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { defaultGitInfo } from './defaultGitInfo';
 import type { GitFileStatus, IFileDiffResult, IGitLogOptions, IGitLogResult } from './interface';
@@ -694,16 +695,26 @@ export async function addToGitignore(repoPath: string, pattern: string): Promise
  * Amend the last commit with a new message
  */
 export async function amendCommitMessage(repoPath: string, newMessage: string): Promise<void> {
-  const result = await gitExec(
-    ['commit', '--amend', '-m', newMessage],
-    repoPath,
-    {
-      env: getGitCommitEnvironment(),
-    },
-  );
+  // Use a temporary index so we amend only the commit message and do not
+  // accidentally include user's staged changes or alter their index state.
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'tidgi-git-index-'));
+  const temporaryIndex = path.join(temporaryDirectory, 'index');
+  try {
+    const baseEnvironment = { ...process.env, GIT_INDEX_FILE: temporaryIndex } as NodeJS.ProcessEnv;
 
-  if (result.exitCode !== 0) {
-    throw new Error(`Failed to amend commit message: ${result.stderr}`);
+    // Populate the temporary index with HEAD so the tree stays identical
+    const readTree = await gitExec(['read-tree', 'HEAD'], repoPath, { env: baseEnvironment });
+    if (readTree.exitCode !== 0) {
+      throw new Error(`Failed to prepare temporary index from HEAD: ${readTree.stderr}`);
+    }
+
+    const commitEnvironment = { ...getGitCommitEnvironment(), GIT_INDEX_FILE: temporaryIndex } as NodeJS.ProcessEnv;
+    const amend = await gitExec(['commit', '--amend', '-m', newMessage], repoPath, { env: commitEnvironment });
+    if (amend.exitCode !== 0) {
+      throw new Error(`Failed to amend commit message: ${amend.stderr}`);
+    }
+  } finally {
+    await fs.rm(temporaryDirectory, { recursive: true, force: true });
   }
 }
 

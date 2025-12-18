@@ -1,6 +1,10 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -9,6 +13,7 @@ import ListItemText from '@mui/material/ListItemText';
 import { styled } from '@mui/material/styles';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -68,6 +73,7 @@ const FileStatusBadge = styled(Box)<{ $status?: GitFileStatus }>`
 interface ICommitDetailsPanelProps {
   commit: GitLogEntry | null;
   isLatestCommit?: boolean;
+  workspaceID: string;
   onCommitSuccess?: () => void;
   onFileSelect?: (file: string | null) => void;
   onRevertSuccess?: () => void;
@@ -76,7 +82,7 @@ interface ICommitDetailsPanelProps {
 }
 
 export function CommitDetailsPanel(
-  { commit, isLatestCommit: _isLatestCommit, onCommitSuccess, onFileSelect, onRevertSuccess, onUndoSuccess, selectedFile }: ICommitDetailsPanelProps,
+  { commit, isLatestCommit: _isLatestCommit, workspaceID, onCommitSuccess, onFileSelect, onRevertSuccess, onUndoSuccess, selectedFile }: ICommitDetailsPanelProps,
 ): React.JSX.Element {
   const { t } = useTranslation();
   const [currentTab, setCurrentTab] = useState<'details' | 'actions'>('details');
@@ -85,6 +91,9 @@ export function CommitDetailsPanel(
   const [isCommitting, setIsCommitting] = useState(false);
   const [isAIEnabled, setIsAIEnabled] = useState(false);
   const [isCommittingWithAI, setIsCommittingWithAI] = useState(false);
+  const [isEditMessageOpen, setIsEditMessageOpen] = useState(false);
+  const [newCommitMessage, setNewCommitMessage] = useState('');
+  const [isAmending, setIsAmending] = useState(false);
 
   // Use files from commit entry (already loaded in useGitLogData)
   const fileChanges = commit?.files ?? [];
@@ -116,11 +125,6 @@ export function CommitDetailsPanel(
 
     setIsReverting(true);
     try {
-      const meta = window.meta();
-      const workspaceID = (meta as { workspaceID?: string }).workspaceID;
-
-      if (!workspaceID) return;
-
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
@@ -142,11 +146,6 @@ export function CommitDetailsPanel(
 
     setIsUndoing(true);
     try {
-      const meta = window.meta();
-      const workspaceID = (meta as { workspaceID?: string }).workspaceID;
-
-      if (!workspaceID) return;
-
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
@@ -163,16 +162,40 @@ export function CommitDetailsPanel(
     }
   };
 
+  const handleOpenEditMessage = (): void => {
+    if (!commit) return;
+    setNewCommitMessage(commit.message || '');
+    setIsEditMessageOpen(true);
+  };
+
+  const handleConfirmEditMessage = async (): Promise<void> => {
+    if (isAmending || !commit) return;
+    setIsAmending(true);
+    try {
+      const workspace = await window.service.workspace.get(workspaceID);
+      if (!workspace || !('wikiFolderLocation' in workspace)) return;
+
+      await window.service.git.amendCommitMessage(workspace.wikiFolderLocation, newCommitMessage.trim());
+      setIsEditMessageOpen(false);
+      if (onCommitSuccess) {
+        onCommitSuccess();
+      }
+    } catch (error) {
+      console.error('Failed to amend commit message:', error);
+    } finally {
+      setIsAmending(false);
+    }
+  };
+
+  const handleCloseEditMessage = (): void => {
+    setIsEditMessageOpen(false);
+  };
+
   const handleCommitNow = async () => {
     if (isCommitting) return;
 
     setIsCommitting(true);
     try {
-      const meta = window.meta();
-      const workspaceID = (meta as { workspaceID?: string }).workspaceID;
-
-      if (!workspaceID) return;
-
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
@@ -196,11 +219,6 @@ export function CommitDetailsPanel(
 
     setIsCommittingWithAI(true);
     try {
-      const meta = window.meta();
-      const workspaceID = (meta as { workspaceID?: string }).workspaceID;
-
-      if (!workspaceID) return;
-
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
@@ -228,11 +246,6 @@ export function CommitDetailsPanel(
   const handleOpenInGitHub = async () => {
     if (!commit) return;
     try {
-      const meta = window.meta();
-      const workspaceID = (meta as { workspaceID?: string }).workspaceID;
-
-      if (!workspaceID) return;
-
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace) || !('gitUrl' in workspace)) return;
 
@@ -427,6 +440,18 @@ export function CommitDetailsPanel(
                 {isReverting ? t('GitLog.Reverting') : t('GitLog.RevertCommit')}
               </Button>
 
+              {_isLatestCommit && (
+                <Button
+                  variant='contained'
+                  color='info'
+                  onClick={handleOpenEditMessage}
+                  fullWidth
+                  disabled={isAmending}
+                >
+                  {t('GitLog.EditCommitMessage', { defaultValue: '修改提交信息' })}
+                </Button>
+              )}
+
               <Button variant='outlined' onClick={handleCopyHash} fullWidth>
                 {t('GitLog.CopyHash')}
               </Button>
@@ -462,6 +487,33 @@ export function CommitDetailsPanel(
       </TabsWrapper>
 
       {currentTab === 'details' ? renderDetailsTab() : renderActionsTab()}
+
+      {/* Edit Commit Message Modal */}
+      <Dialog open={isEditMessageOpen} onClose={handleCloseEditMessage} fullWidth maxWidth='sm'>
+        <DialogTitle>{t('GitLog.EditCommitMessageTitle', { defaultValue: '修改最近一次提交的信息' })}</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin='dense'
+            label={t('GitLog.EditCommitMessagePlaceholder', { defaultValue: '新的提交信息' })}
+            type='text'
+            fullWidth
+            value={newCommitMessage}
+            onChange={(event) => {
+              setNewCommitMessage(event.target.value);
+            }}
+          />
+          <Typography variant='caption' color='text.secondary'>
+            {t('GitLog.EditCommitMessageHint', { defaultValue: '仅可修改最近一次提交的提交信息；若暂存区有变更，它们将包含进新的提交。' })}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseEditMessage}>{t('Common.Cancel', { defaultValue: '取消' })}</Button>
+          <Button onClick={handleConfirmEditMessage} disabled={isAmending} variant='contained'>
+            {isAmending ? t('GitLog.Committing', { defaultValue: '提交中...' }) : t('GitLog.EditCommitMessageConfirm', { defaultValue: '保存' })}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Panel>
   );
 }
