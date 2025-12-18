@@ -84,6 +84,34 @@ export interface IPreferences {
   useHardwareAcceleration: boolean;
 }
 
+/**
+ * Get only the fields that differ from defaults, for persisting to storage.
+ * This reduces storage size and makes configs more readable by only storing non-default values.
+ * @param preferences The preferences object with all fields
+ * @param defaults The default preferences object
+ * @returns An object containing only fields that differ from defaults
+ */
+export function getPreferenceDifferencesFromDefaults(preferences: IPreferences, defaults: IPreferences): Partial<IPreferences> {
+  const differences = {} as Partial<IPreferences>;
+  const keys = Object.keys(preferences) as Array<keyof IPreferences>;
+  
+  keys.forEach((key) => {
+    const defaultValue = defaults[key];
+    const preferenceValue = preferences[key];
+    
+    // For complex types like objects and arrays, do deep comparison
+    if (typeof defaultValue === 'object' && typeof preferenceValue === 'object') {
+      if (JSON.stringify(defaultValue) !== JSON.stringify(preferenceValue)) {
+        (differences as Record<string, unknown>)[key] = preferenceValue;
+      }
+    } else if (defaultValue !== preferenceValue) {
+      (differences as Record<string, unknown>)[key] = preferenceValue;
+    }
+  });
+  
+  return differences;
+}
+
 export enum PreferenceSections {
   developers = 'developers',
   downloads = 'downloads',

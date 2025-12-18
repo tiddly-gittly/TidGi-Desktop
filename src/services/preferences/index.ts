@@ -12,6 +12,7 @@ import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { defaultPreferences } from './defaultPreferences';
 import type { IPreferences, IPreferenceService } from './interface';
+import { getPreferenceDifferencesFromDefaults } from './interface';
 
 @injectable()
 export class Preference implements IPreferenceService {
@@ -107,13 +108,17 @@ export class Preference implements IPreferenceService {
   }
 
   /**
-   * Batch update all preferences, update cache and observable
+   * Batch update all preferences, update cache and observable.
+   * Only saves preferences that differ from defaults to reduce storage size.
    */
   private async setPreferences(newPreferences: IPreferences): Promise<void> {
     this.cachedPreferences = newPreferences;
 
+    // Only save preferences that differ from defaults
+    const preferencesToSave = getPreferenceDifferencesFromDefaults(newPreferences, defaultPreferences);
+
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    databaseService.setSetting('preferences', newPreferences);
+    databaseService.setSetting('preferences', preferencesToSave);
     this.updatePreferenceSubject();
   }
 
