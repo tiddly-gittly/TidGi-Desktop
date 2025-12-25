@@ -25,6 +25,7 @@ const mockUtils = {
   deleteTiddlerFile: vi.fn(),
   cleanupTiddlerFiles: vi.fn(),
   getFileExtensionInfo: vi.fn(() => ({ type: 'application/x-tiddler' })),
+  moveExternalAttachmentIfNeeded: vi.fn().mockResolvedValue(undefined),
 };
 
 // Setup TiddlyWiki global
