@@ -152,7 +152,7 @@ export async function registerMenu(): Promise<void> {
         click: async () => {
           const activeWorkspace = await workspaceService.getActiveWorkspace();
           if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
-            await windowService.open(WindowNames.gitHistory, { workspaceID: activeWorkspace.id });
+            await windowService.open(WindowNames.gitHistory, { workspaceID: activeWorkspace.id }, { recreate: true });
           }
         },
       },

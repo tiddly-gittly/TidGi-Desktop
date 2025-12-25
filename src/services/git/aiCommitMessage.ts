@@ -31,7 +31,8 @@ function filterLargePluginDiffs(diff: string): string {
  * Read content of untracked tiddler files for AI context
  */
 async function getUntrackedFileContents(wikiFolderPath: string): Promise<string> {
-  const statusResult = await gitExec(['status', '--porcelain'], wikiFolderPath);
+  // Use -uall to show all untracked files, not just directories
+  const statusResult = await gitExec(['status', '--porcelain', '-uall'], wikiFolderPath);
   if (statusResult.exitCode !== 0 || !statusResult.stdout?.trim()) {
     return '';
   }

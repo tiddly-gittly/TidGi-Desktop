@@ -181,7 +181,8 @@ function parseGitStatusCode(statusCode: string): GitFileStatus {
 export async function getCommitFiles(repoPath: string, commitHash: string): Promise<Array<import('./interface').IFileWithStatus>> {
   // Handle uncommitted changes
   if (!commitHash || commitHash === '') {
-    const result = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain'], repoPath);
+    // Use -uall to show all untracked files, not just directories
+    const result = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain', '-uall'], repoPath);
 
     if (result.exitCode !== 0) {
       throw new Error(`Failed to get uncommitted files: ${result.stderr}`);
