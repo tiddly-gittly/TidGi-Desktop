@@ -49,6 +49,16 @@ export function createLoadWikiTiddlersWithSubWikis(
         const tiddlerFiles = wikiInstance.loadTiddlersFromPath(subWikiTiddlersPath);
 
         for (const tiddlerFile of tiddlerFiles) {
+          // Skip files in the external attachments folder (default: files/)
+          // These are referenced by tiddlers via _canonical_uri and should not be loaded as separate tiddlers
+          if (tiddlerFile.filepath) {
+            const relativePath = tiddlerFile.filepath.replace(subWikiTiddlersPath, '').replace(/^\//, '');
+            const externalAttachmentsFolder = wikiInstance.wiki?.getTiddlerText?.('$:/config/ExternalAttachments/WikiFolderToMove', 'files') ?? 'files';
+            if (relativePath.startsWith(`${externalAttachmentsFolder}/`)) {
+              continue; // Skip files in external attachments folder
+            }
+          }
+
           // Register file info for filesystem adaptor (so tiddlers save back to correct location)
           if (tiddlerFile.filepath) {
             for (const tiddler of tiddlerFile.tiddlers) {

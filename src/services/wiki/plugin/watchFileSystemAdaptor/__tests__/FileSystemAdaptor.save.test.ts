@@ -260,6 +260,40 @@ describe('FileSystemAdaptor - Save Operations', () => {
   });
 
   describe('saveTiddler - File Lock Retry', () => {
+    it('should force .tid extension for tiddlers with _canonical_uri', async () => {
+      const tiddler: Tiddler = {
+        fields: {
+          title: 'TestImage.gif',
+          type: 'image/gif',
+          _canonical_uri: 'files/TestImage.gif',
+        },
+      } as unknown as Tiddler;
+
+      const fileInfo: IFileInfo = {
+        filepath: '/test/wiki/tiddlers/TestImage.gif.tid',
+        type: 'application/x-tiddler',
+        hasMetaFile: false,
+      };
+
+      mockUtils.generateTiddlerFileInfo.mockReturnValue(fileInfo);
+      mockUtils.saveTiddlerToFile.mockImplementation((_t, _f, cb) => {
+        cb(null, fileInfo);
+      });
+      mockUtils.cleanupTiddlerFiles.mockImplementation((_opts, cb) => {
+        cb(null, fileInfo);
+      });
+
+      await adaptor.saveTiddler(tiddler);
+
+      // Verify that generateTiddlerFileInfo was called with .tid extension filter
+      expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
+        tiddler,
+        expect.objectContaining({
+          extFilters: ['.tid'],
+        }),
+      );
+    });
+
     it('should retry on EBUSY error', async () => {
       const tiddler: Tiddler = {
         fields: { title: 'TestTiddler' },

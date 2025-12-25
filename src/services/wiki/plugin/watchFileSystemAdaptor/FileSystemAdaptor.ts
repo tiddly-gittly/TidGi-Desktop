@@ -171,8 +171,18 @@ export class FileSystemAdaptor {
 
         // Check if existing file is within the target directory tree
         if (normalizedExisting.startsWith(normalizedTarget) || normalizedExisting === normalizedTarget) {
-          // File is already in correct location, return existing fileInfo with overwrite flag
-          return { ...existingFileInfo, overwrite: true };
+          // For tiddlers with _canonical_uri (external attachments), we need to ensure
+          // they are saved as .tid files, not as binary files (e.g., .png + .meta)
+          // If existing file is not .tid but tiddler has _canonical_uri, regenerate fileInfo
+          const hasCanonicalUri = typeof tiddler.fields._canonical_uri === 'string' && tiddler.fields._canonical_uri.length > 0;
+          const existingIsTid = existingFileInfo.filepath.endsWith('.tid');
+          if (hasCanonicalUri && !existingIsTid) {
+            // Need to regenerate as .tid file, don't return existing fileInfo
+            // Fall through to generate new file info below
+          } else {
+            // File is already in correct location, return existing fileInfo with overwrite flag
+            return { ...existingFileInfo, overwrite: true };
+          }
         }
       }
 
@@ -223,10 +233,16 @@ export class FileSystemAdaptor {
     }
 
     try {
+      // For tiddlers with _canonical_uri (external attachments), force .tid extension
+      // Otherwise generateTiddlerFileInfo will use the binary type's extension (e.g., .gif)
+      // and create an empty binary file
+      const hasCanonicalUri = typeof tiddler.fields._canonical_uri === 'string' && tiddler.fields._canonical_uri.length > 0;
+      const extFilters = hasCanonicalUri ? ['.tid'] : this.extensionFilters;
+
       return $tw.utils.generateTiddlerFileInfo(tiddler, {
         directory: targetDirectory,
         pathFilters: undefined,
-        extFilters: this.extensionFilters,
+        extFilters,
         wiki: this.wiki,
       });
     } finally {
@@ -261,10 +277,16 @@ export class FileSystemAdaptor {
     }
 
     try {
+      // For tiddlers with _canonical_uri (external attachments), force .tid extension
+      // Otherwise generateTiddlerFileInfo will use the binary type's extension (e.g., .gif)
+      // and create an empty binary file
+      const hasCanonicalUri = typeof tiddler.fields._canonical_uri === 'string' && tiddler.fields._canonical_uri.length > 0;
+      const extFilters = hasCanonicalUri ? ['.tid'] : this.extensionFilters;
+
       return $tw.utils.generateTiddlerFileInfo(tiddler, {
         directory: this.boot.wikiTiddlersPath ?? '',
         pathFilters,
-        extFilters: this.extensionFilters,
+        extFilters,
         wiki: this.wiki,
       });
     } finally {
