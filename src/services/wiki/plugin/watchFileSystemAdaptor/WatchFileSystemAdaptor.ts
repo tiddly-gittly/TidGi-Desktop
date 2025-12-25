@@ -204,12 +204,10 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
         this.scheduleFileInclusion(`${excludedNewFilePath}.meta`);
       }
 
-      // If old file path was different and we excluded it, re-include it
-      // The old file should be deleted by now via cleanupTiddlerFiles
-      if (oldFileInfo && oldFileInfo.filepath !== finalFileInfo.filepath) {
-        this.scheduleFileInclusion(oldFileInfo.filepath);
-        this.scheduleFileInclusion(`${oldFileInfo.filepath}.meta`);
-      }
+      // NOTE: For old file paths that are different from the final path, we do NOT re-include them.
+      // The old files have been deleted by cleanupTiddlerFiles, so re-including them would cause
+      // the DELETE event to be processed, incorrectly triggering WATCH_FS_TIDDLER_DELETED.
+      // Keeping old paths permanently excluded is safe since those files no longer exist.
     } catch (error) {
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
       callback?.(errorObject);

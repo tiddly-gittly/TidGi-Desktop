@@ -94,11 +94,11 @@ export interface IPreferences {
 export function getPreferenceDifferencesFromDefaults(preferences: IPreferences, defaults: IPreferences): Partial<IPreferences> {
   const differences = {} as Partial<IPreferences>;
   const keys = Object.keys(preferences) as Array<keyof IPreferences>;
-  
+
   keys.forEach((key) => {
     const defaultValue = defaults[key];
     const preferenceValue = preferences[key];
-    
+
     // For complex types like objects and arrays, do deep comparison
     if (typeof defaultValue === 'object' && typeof preferenceValue === 'object') {
       if (JSON.stringify(defaultValue) !== JSON.stringify(preferenceValue)) {
@@ -108,7 +108,7 @@ export function getPreferenceDifferencesFromDefaults(preferences: IPreferences, 
       (differences as Record<string, unknown>)[key] = preferenceValue;
     }
   });
-  
+
   return differences;
 }
 
