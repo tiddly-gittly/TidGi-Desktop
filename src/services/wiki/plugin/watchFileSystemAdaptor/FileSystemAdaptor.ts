@@ -238,12 +238,12 @@ export class FileSystemAdaptor {
       // Otherwise generateTiddlerFileInfo will use the binary type's extension (e.g., .gif)
       // and create an empty binary file
       const hasCanonicalUri = typeof tiddler.fields._canonical_uri === 'string' && tiddler.fields._canonical_uri.length > 0;
-      const extFilters = hasCanonicalUri ? ['.tid'] : this.extensionFilters;
+      const extensionFilters = hasCanonicalUri ? ['.tid'] : this.extensionFilters;
 
       return $tw.utils.generateTiddlerFileInfo(tiddler, {
         directory: targetDirectory,
         pathFilters: undefined,
-        extFilters,
+        extFilters: extensionFilters,
         wiki: this.wiki,
       });
     } finally {
@@ -282,12 +282,12 @@ export class FileSystemAdaptor {
       // Otherwise generateTiddlerFileInfo will use the binary type's extension (e.g., .gif)
       // and create an empty binary file
       const hasCanonicalUri = typeof tiddler.fields._canonical_uri === 'string' && tiddler.fields._canonical_uri.length > 0;
-      const extFilters = hasCanonicalUri ? ['.tid'] : this.extensionFilters;
+      const extensionFilters = hasCanonicalUri ? ['.tid'] : this.extensionFilters;
 
       return $tw.utils.generateTiddlerFileInfo(tiddler, {
         directory: this.boot.wikiTiddlersPath ?? '',
         pathFilters,
-        extFilters,
+        extFilters: extensionFilters,
         wiki: this.wiki,
       });
     } finally {

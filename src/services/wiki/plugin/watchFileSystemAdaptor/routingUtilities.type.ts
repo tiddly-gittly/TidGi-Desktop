@@ -3,7 +3,6 @@
  */
 
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
-import type { IFileInfo } from 'tiddlywiki';
 
 /**
  * Extended utilities interface with routing utilities

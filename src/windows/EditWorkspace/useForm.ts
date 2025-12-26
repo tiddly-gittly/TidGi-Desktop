@@ -1,5 +1,5 @@
 import usePreviousValue from 'beautiful-react-hooks/usePreviousValue';
-import { isEqual } from 'lodash';
+import { isEqual, omit } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 
 import type { IWorkspace } from '@services/workspaces/interface';
@@ -17,6 +17,17 @@ export function useForm(
       workspaceSetter(originalWorkspace);
     }
   }, [previous, originalWorkspace]);
+
+  // Sync workspace state with originalWorkspace after save to ensure save button disappears
+  useEffect(() => {
+    if (originalWorkspace !== undefined && workspace !== undefined && previous !== undefined) {
+      // If originalWorkspace changed after a save operation, update workspace state to match it
+      if (!isEqual(originalWorkspace, previous) && isEqual(omit(workspace, ['metadata', 'lastNodeJSArgv']), omit(originalWorkspace, ['metadata', 'lastNodeJSArgv']))) {
+        workspaceSetter(originalWorkspace);
+      }
+    }
+  }, [originalWorkspace, workspace, previous]);
+
   const onSave = useCallback(async () => {
     if (workspace === undefined) {
       return;
