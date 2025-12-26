@@ -77,7 +77,6 @@ const PLUGINS = [
       'in-tagtree-of.ts',
       'WatchFileSystemAdaptor.ts',
       'routingUtilities.ts',
-      'externalAttachmentUtilities.ts',
     ],
   },
 ];

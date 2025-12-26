@@ -17,14 +17,4 @@ export interface ExtendedUtilities {
     wiki: typeof $tw.wiki,
     rootWidget: typeof $tw.rootWidget,
   ): IWikiWorkspace | undefined;
-  moveExternalAttachmentIfNeeded(
-    canonicalUri: string | undefined,
-    oldFileInfo: IFileInfo | undefined,
-    newFileInfo: IFileInfo,
-    wikisWithRouting: IWikiWorkspace[],
-  ): Promise<void>;
-  getWikiRootFromTiddlerPath(
-    tiddlerDirectory: string,
-    wikisWithRouting: IWikiWorkspace[],
-  ): string | undefined;
 }

@@ -5,14 +5,13 @@ import type { IFileInfo } from 'tiddlywiki';
 
 /**
  * External attachment utilities for moving files when tiddlers are routed between workspaces.
- * These utilities are exposed as $tw.utils functions.
  */
 
 /**
  * Determine wiki root folder from a tiddler file path.
  * Main wiki stores tiddlers in /tiddlers subfolder, sub-wikis store directly in root.
  */
-function getWikiRootFromTiddlerPath(
+export function getWikiRootFromTiddlerPath(
   tiddlerDirectory: string,
   wikisWithRouting: IWikiWorkspace[],
 ): string | undefined {
@@ -51,7 +50,7 @@ function getWikiRootFromTiddlerPath(
  * @param newFileInfo - The new file info (after save)
  * @param wikisWithRouting - List of workspaces with routing configuration
  */
-async function moveExternalAttachmentIfNeeded(
+export async function moveExternalAttachmentIfNeeded(
   canonicalUri: string | undefined,
   oldFileInfo: IFileInfo | undefined,
   newFileInfo: IFileInfo,
@@ -140,7 +139,3 @@ async function moveExternalAttachmentIfNeeded(
     }
   }
 }
-
-declare const exports: Record<string, unknown>;
-exports.getWikiRootFromTiddlerPath = getWikiRootFromTiddlerPath;
-exports.moveExternalAttachmentIfNeeded = moveExternalAttachmentIfNeeded;

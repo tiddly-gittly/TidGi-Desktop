@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import type { IFileInfo } from 'tiddlywiki';
 import type { Tiddler, Wiki } from 'tiddlywiki';
+import { moveExternalAttachmentIfNeeded } from './externalAttachmentUtilities';
 import type { ExtendedUtilities } from './routingUtilities.type';
 import { isFileLockError } from './utilities';
 
@@ -321,7 +322,7 @@ export class FileSystemAdaptor {
       const oldFileInfo = this.boot.files[tiddler.fields.title];
 
       // Move external attachment file if tiddler has _canonical_uri and location changed
-      await ($tw.utils as unknown as ExtendedUtilities).moveExternalAttachmentIfNeeded(
+      await moveExternalAttachmentIfNeeded(
         tiddler.fields._canonical_uri as string | undefined,
         oldFileInfo,
         savedFileInfo,

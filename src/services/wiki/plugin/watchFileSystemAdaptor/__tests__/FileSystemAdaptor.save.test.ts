@@ -3,6 +3,12 @@ import type { IFileInfo, Tiddler, Wiki } from 'tiddlywiki';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemAdaptor } from '../FileSystemAdaptor';
 
+// Mock external attachment utilities
+vi.mock('../externalAttachmentUtilities', () => ({
+  moveExternalAttachmentIfNeeded: vi.fn().mockResolvedValue(undefined),
+  getWikiRootFromTiddlerPath: vi.fn(),
+}));
+
 // Mock the workspace service
 vi.mock('@services/wiki/wikiWorker/services', () => ({
   workspace: {
@@ -25,7 +31,6 @@ const mockUtils = {
   deleteTiddlerFile: vi.fn(),
   cleanupTiddlerFiles: vi.fn(),
   getFileExtensionInfo: vi.fn(() => ({ type: 'application/x-tiddler' })),
-  moveExternalAttachmentIfNeeded: vi.fn().mockResolvedValue(undefined),
 };
 
 // Setup TiddlyWiki global
