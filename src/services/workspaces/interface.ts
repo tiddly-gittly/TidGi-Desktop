@@ -26,7 +26,7 @@ export const wikiWorkspaceDefaultValues = {
   backupOnInterval: true,
   disableAudio: false,
   disableNotifications: false,
-  enableFileSystemWatch: true,
+  enableFileSystemWatch: false,
   enableHTTPAPI: false,
   excludedPlugins: [],
   fileSystemPathFilter: null,
