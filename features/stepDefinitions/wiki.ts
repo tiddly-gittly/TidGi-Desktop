@@ -715,6 +715,86 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
 });
 
 /**
+ * Update workspace settings dynamically after app launch
+ * This is useful for enabling features like enableFileSystemWatch in tests
+ *
+ * Usage:
+ * When I update workspace "wiki" settings:
+ *   | property                 | value |
+ *   | enableFileSystemWatch    | true  |
+ *   | syncOnInterval           | false |
+ */
+When('I update workspace {string} settings:', async function(this: ApplicationWorld, workspaceName: string, dataTable: DataTable) {
+  if (!this.app) {
+    throw new Error('Application is not available');
+  }
+
+  // Parse settings from DataTable
+  const rows = dataTable.hashes();
+  const settingsUpdate: Record<string, unknown> = {};
+
+  for (const row of rows) {
+    const { property, value } = row;
+
+    // Convert value to appropriate type
+    let parsedValue: unknown = value;
+    if (value === 'true') parsedValue = true;
+    else if (value === 'false') parsedValue = false;
+    else if (value === 'null') parsedValue = null;
+    else if (!isNaN(Number(value))) parsedValue = Number(value);
+    // Try to parse as JSON array
+    else if (value.startsWith('[') && value.endsWith(']')) {
+      try {
+        parsedValue = JSON.parse(value);
+      } catch {
+        // Keep as string if JSON parse fails
+      }
+    }
+
+    settingsUpdate[property] = parsedValue;
+  }
+
+  // Read settings file to get workspace ID
+  const settings = await fs.readJson(settingsPath) as { workspaces?: Record<string, IWorkspace> };
+  const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
+
+  // Find workspace by name
+  let targetWorkspaceId: string | undefined;
+  for (const [id, workspace] of Object.entries(workspaces)) {
+    if (!workspace.pageType && workspace.name === workspaceName) {
+      targetWorkspaceId = id;
+      break;
+    }
+  }
+
+  if (!targetWorkspaceId) {
+    throw new Error(`No workspace found with name: ${workspaceName}`);
+  }
+
+  // Update workspace settings via main window
+  await this.app.evaluate(async ({ BrowserWindow }, { workspaceId, updates }: { workspaceId: string; updates: Record<string, unknown> }) => {
+    const windows = BrowserWindow.getAllWindows();
+    const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+
+    if (!mainWindow) {
+      throw new Error('Main window not found');
+    }
+
+    // Call workspace service to update workspace settings
+    await mainWindow.webContents.executeJavaScript(`
+      (async () => {
+        await window.service.workspace.update(${JSON.stringify(workspaceId)}, ${JSON.stringify(updates)});
+      })();
+    `);
+  }, { workspaceId: targetWorkspaceId, updates: settingsUpdate });
+
+  // Wait for settings to propagate
+  await this.app.evaluate(async () => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+  });
+});
+
+/**
  * Clean up hibernation test data - remove wiki2 folder and its workspace config
  */
 async function clearHibernationTestData() {

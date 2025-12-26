@@ -5,6 +5,7 @@
 import { i18n } from '@services/libs/i18n';
 import { exec as gitExec } from 'dugite';
 import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { defaultGitInfo } from './defaultGitInfo';
 import type { GitFileStatus, IFileDiffResult, IGitLogOptions, IGitLogResult } from './interface';
@@ -180,7 +181,8 @@ function parseGitStatusCode(statusCode: string): GitFileStatus {
 export async function getCommitFiles(repoPath: string, commitHash: string): Promise<Array<import('./interface').IFileWithStatus>> {
   // Handle uncommitted changes
   if (!commitHash || commitHash === '') {
-    const result = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain'], repoPath);
+    // Use -uall to show all untracked files, not just directories
+    const result = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain', '-uall'], repoPath);
 
     if (result.exitCode !== 0) {
       throw new Error(`Failed to get uncommitted files: ${result.stderr}`);
@@ -295,7 +297,7 @@ export async function getFileDiff(
     if (isDeleted) {
       // For deleted files, show the deletion diff
       const result = await gitExec(
-        ['diff', 'HEAD', '--', filePath],
+        ['-c', 'core.quotePath=false', 'diff', 'HEAD', '--', filePath],
         repoPath,
       );
 
@@ -324,7 +326,7 @@ export async function getFileDiff(
     }
 
     const result = await gitExec(
-      ['diff', 'HEAD', '--', filePath],
+      ['-c', 'core.quotePath=false', 'diff', 'HEAD', '--', filePath],
       repoPath,
     );
 
@@ -347,7 +349,7 @@ export async function getFileDiff(
 
   // Use git show with --pretty=format: to get only the diff without commit message
   const result = await gitExec(
-    ['show', '--pretty=format:', commitHash, '--', filePath],
+    ['-c', 'core.quotePath=false', 'show', '--pretty=format:', commitHash, '--', filePath],
     repoPath,
   );
 
@@ -599,6 +601,28 @@ export async function revertCommit(repoPath: string, commitHash: string, commitM
 }
 
 /**
+ * Undo a commit by resetting to the previous commit and keeping changes as unstaged
+ * This is similar to GitHub Desktop's "Undo" feature
+ */
+export async function undoCommit(repoPath: string, commitHash: string): Promise<void> {
+  // Get the parent commit of the current commit
+  const parentResult = await gitExec(['rev-parse', `${commitHash}^`], repoPath);
+
+  if (parentResult.exitCode !== 0) {
+    throw new Error('Unable to undo this commit - it may be the first commit in the repository');
+  }
+
+  const parentCommit = parentResult.stdout.trim();
+
+  // Reset to the parent commit with --mixed flag (keeps changes as unstaged)
+  const resetResult = await gitExec(['reset', '--mixed', parentCommit], repoPath);
+
+  if (resetResult.exitCode !== 0) {
+    throw new Error(`Failed to undo commit: ${resetResult.stderr}`);
+  }
+}
+
+/**
  * Discard changes for a specific file (restore from HEAD or delete if untracked)
  */
 export async function discardFileChanges(repoPath: string, filePath: string): Promise<void> {
@@ -672,16 +696,26 @@ export async function addToGitignore(repoPath: string, pattern: string): Promise
  * Amend the last commit with a new message
  */
 export async function amendCommitMessage(repoPath: string, newMessage: string): Promise<void> {
-  const result = await gitExec(
-    ['commit', '--amend', '-m', newMessage],
-    repoPath,
-    {
-      env: getGitCommitEnvironment(),
-    },
-  );
+  // Use a temporary index so we amend only the commit message and do not
+  // accidentally include user's staged changes or alter their index state.
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'tidgi-git-index-'));
+  const temporaryIndex = path.join(temporaryDirectory, 'index');
+  try {
+    const baseEnvironment = { ...process.env, GIT_INDEX_FILE: temporaryIndex } as NodeJS.ProcessEnv;
 
-  if (result.exitCode !== 0) {
-    throw new Error(`Failed to amend commit message: ${result.stderr}`);
+    // Populate the temporary index with HEAD so the tree stays identical
+    const readTree = await gitExec(['read-tree', 'HEAD'], repoPath, { env: baseEnvironment });
+    if (readTree.exitCode !== 0) {
+      throw new Error(`Failed to prepare temporary index from HEAD: ${readTree.stderr}`);
+    }
+
+    const commitEnvironment = { ...getGitCommitEnvironment(), GIT_INDEX_FILE: temporaryIndex } as NodeJS.ProcessEnv;
+    const amend = await gitExec(['commit', '--amend', '-m', newMessage], repoPath, { env: commitEnvironment });
+    if (amend.exitCode !== 0) {
+      throw new Error(`Failed to amend commit message: ${amend.stderr}`);
+    }
+  } finally {
+    await fs.rm(temporaryDirectory, { recursive: true, force: true });
   }
 }
 

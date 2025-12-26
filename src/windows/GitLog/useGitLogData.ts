@@ -21,7 +21,7 @@ export interface IGitLogData {
   isSearchMode: boolean;
 }
 
-export function useGitLogData(): IGitLogData {
+export function useGitLogData(workspaceID: string): IGitLogData {
   const [entries, setEntries] = useState<GitLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -46,9 +46,6 @@ export function useGitLogData(): IGitLogData {
   useEffect(() => {
     const loadWorkspaceInfo = async () => {
       try {
-        const meta = window.meta();
-        const workspaceID = (meta as { workspaceID?: string }).workspaceID;
-
         if (!workspaceID) {
           throw new Error('No workspace ID provided');
         }
@@ -71,7 +68,7 @@ export function useGitLogData(): IGitLogData {
     };
 
     void loadWorkspaceInfo();
-  }, []);
+  }, [workspaceID]);
 
   // Subscribe to git state changes (only in normal mode, not in search mode)
   const gitStateChange$ = useMemo(

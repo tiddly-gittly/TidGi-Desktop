@@ -8,6 +8,6 @@
   "stability": "STABILITY_2_STABLE",
   "version": "1.0.0",
   "dependents": [],
-  "list": "readme",
+  "list": "readme tree",
   "plugin-priority": 5
 }

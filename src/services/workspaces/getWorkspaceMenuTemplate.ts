@@ -160,7 +160,7 @@ export async function getWorkspaceMenuTemplate(
     {
       label: t('WorkspaceSelector.ViewGitHistory'),
       click: async () => {
-        await service.window.open(WindowNames.gitHistory, { workspaceID: id });
+        await service.window.open(WindowNames.gitHistory, { workspaceID: id }, { recreate: true });
       },
     },
     {

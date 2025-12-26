@@ -10,7 +10,7 @@ Feature: Tiddler Creation and Editing
     Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
-    And I wait for SSE and watch-fs to be ready
+    And I wait for "SSE backend ready" log marker "[test-id-SSE_READY]"
 
   @tiddler @tiddler-create
   Scenario: Create a new tiddler with tag and custom field via UI

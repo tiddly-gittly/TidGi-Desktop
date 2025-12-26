@@ -354,6 +354,22 @@ ${message.message}
     await fs.mkdirp(absoulutePath);
   }
 
+  public async saveBase64File(filePath: string, base64Data: string): Promise<boolean> {
+    try {
+      logger.debug('saveBase64File called', { filePath, function: 'saveBase64File' });
+      const directory = path.dirname(filePath);
+      await fs.ensureDir(directory);
+      // Convert base64 to buffer and write
+      const buffer = Buffer.from(base64Data, 'base64');
+      await fs.writeFile(filePath, buffer);
+      logger.debug('saveBase64File succeeded', { filePath, function: 'saveBase64File' });
+      return true;
+    } catch (error) {
+      logger.error('saveBase64File failed', { error, filePath, function: 'saveBase64File' });
+      return false;
+    }
+  }
+
   public async quit(): Promise<void> {
     app.quit();
   }

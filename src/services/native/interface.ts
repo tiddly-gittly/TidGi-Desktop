@@ -114,6 +114,13 @@ export interface INativeService {
   pickDirectory(defaultPath?: string, options?: IPickDirectoryOptions): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;
   /**
+   * Save base64 encoded data to a file.
+   * @param filePath The absolute path where the file should be saved.
+   * @param base64Data The base64 encoded string to save.
+   * @returns A promise that resolves to true if successful, false otherwise.
+   */
+  saveBase64File(filePath: string, base64Data: string): Promise<boolean>;
+  /**
    * Move a file or directory to the trash bin.
    * @param filePath The absolute path of the file or directory to move to the trash.
    * @returns A promise that resolves to true if the operation was successful, false otherwise.
@@ -148,6 +155,7 @@ export const NativeServiceIPCDescriptor = {
     logFor: ProxyPropertyType.Function,
     mkdir: ProxyPropertyType.Function,
     movePath: ProxyPropertyType.Function,
+    saveBase64File: ProxyPropertyType.Function,
     moveToTrash: ProxyPropertyType.Function,
     open: ProxyPropertyType.Function,
     openInEditor: ProxyPropertyType.Function,

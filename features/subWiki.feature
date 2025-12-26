@@ -17,6 +17,10 @@ Feature: Sub-Wiki Functionality
     Then I should see "page body and workspaces" elements with selectors:
       | div[data-testid^='workspace-']:has-text('wiki')    |
       | div[data-testid^='workspace-']:has-text('SubWiki') |
+    # Enable file system watch for testing (default is false in production)
+    When I update workspace "wiki" settings:
+      | property              | value |
+      | enableFileSystemWatch | true  |
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready

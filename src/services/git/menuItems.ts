@@ -64,7 +64,7 @@ export function createBackupMenuItems(
       {
         label: t('WorkspaceSelector.ViewGitHistory'),
         click: async () => {
-          await windowService.open(WindowNames.gitHistory, { workspaceID: workspace.id });
+          await windowService.open(WindowNames.gitHistory, { workspaceID: workspace.id }, { recreate: true });
         },
       },
       { type: 'separator' },
@@ -95,7 +95,7 @@ export function createBackupMenuItems(
     {
       label: t('WorkspaceSelector.ViewGitHistory'),
       click: async () => {
-        await windowService.open(WindowNames.gitHistory, { workspaceID: workspace.id });
+        await windowService.open(WindowNames.gitHistory, { workspaceID: workspace.id }, { recreate: true });
       },
     },
     { type: 'separator' },

@@ -89,11 +89,17 @@ Purpose: Monitor file system and maintain wiki state
 
 Key Functions:
 
-- `saveTiddler()`: Write to file system with temporary exclusion
+- `saveTiddler()`: Write to file system with temporary exclusion; automatically move external attachment files when tiddler routes to different workspace
 - `deleteTiddler()`: Remove file with temporary exclusion
 - `initializeFileWatching()`: Setup `nsfw` watcher for main wiki and sub-wikis
 - `handleFileAddOrChange()`: Load changed files into wiki
 - `handleFileDelete()`: Remove deleted tiddlers from wiki
+
+External Attachment Handling:
+
+- `$tw.utils.moveExternalAttachmentIfNeeded()`: Moves external attachment files (referenced by `_canonical_uri`) when tiddler is routed to different workspace based on tag changes
+- Integrated into `saveTiddler()` - runs automatically after tiddler file is saved but before cleanup
+- Uses same routing logic as tiddler files to determine source and target workspace
 
 Two-Layer Echo Prevention:
 

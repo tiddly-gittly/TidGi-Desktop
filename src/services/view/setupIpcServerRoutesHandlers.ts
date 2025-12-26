@@ -55,7 +55,7 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
       name: 'putTiddler',
       handler: async (request: GlobalRequest, workspaceIDFromHost: string, parameters: RegExpMatchArray | null) => {
         const body = await request.json() as ITiddlerFields;
-        await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'putTiddler', parameters?.[1] ?? '', body);
+        return await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'putTiddler', parameters?.[1] ?? '', body);
       },
     },
     {
@@ -100,7 +100,7 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
       handler: async (_request: GlobalRequest, workspaceIDFromHost: string, _parameters: RegExpMatchArray | null) => {
         const workspace = await workspaceService.get(workspaceIDFromHost);
         const userName = workspace === undefined ? '' : await authService.getUserName(workspace);
-        await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'getStatus', userName);
+        return await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'getStatus', userName);
       },
     },
     {
