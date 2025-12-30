@@ -170,12 +170,17 @@ export function CommitDetailsPanel(
 
   const handleConfirmEditMessage = async (): Promise<void> => {
     if (isAmending || !commit) return;
+    // Validate that commit message is not empty after trimming
+    const trimmedMessage = newCommitMessage.trim();
+    if (!trimmedMessage) {
+      return;
+    }
     setIsAmending(true);
     try {
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
-      await window.service.git.amendCommitMessage(workspace.wikiFolderLocation, newCommitMessage.trim());
+      await window.service.git.amendCommitMessage(workspace.wikiFolderLocation, trimmedMessage);
       setIsEditMessageOpen(false);
       if (onCommitSuccess) {
         onCommitSuccess();
@@ -509,7 +514,7 @@ export function CommitDetailsPanel(
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseEditMessage}>{t('Common.Cancel', { defaultValue: '取消' })}</Button>
-          <Button onClick={handleConfirmEditMessage} disabled={isAmending} variant='contained'>
+          <Button onClick={handleConfirmEditMessage} disabled={isAmending || !newCommitMessage.trim()} variant='contained'>
             {isAmending ? t('GitLog.Committing', { defaultValue: '提交中...' }) : t('GitLog.EditCommitMessageConfirm', { defaultValue: '保存' })}
           </Button>
         </DialogActions>

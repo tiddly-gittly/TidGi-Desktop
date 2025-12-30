@@ -141,6 +141,20 @@ export function useCommitSelection({
     }
   }, [lastChangeType, entries, setSelectedCommit]);
 
+  // Auto-select uncommitted changes after undo
+  useEffect(() => {
+    if (lastChangeType === 'undo' && entries.length > 0) {
+      // Find uncommitted entry (hash === '')
+      const uncommittedEntry = entries.find((entry) => entry.hash === '');
+      if (uncommittedEntry) {
+        setSelectedCommit(uncommittedEntry);
+      } else {
+        // If no uncommitted changes, deselect
+        setSelectedCommit(undefined);
+      }
+    }
+  }, [lastChangeType, entries, setSelectedCommit]);
+
   // Maintain selection across refreshes by hash
   // Skip if we should select first (manual commit) or if a commit just happened (auto-selection in progress)
   useEffect(() => {
@@ -161,23 +175,11 @@ export function useCommitSelection({
   }, [setShouldSelectFirst]);
 
   const handleUndoSuccess = useCallback(() => {
-    // After undo, select the uncommitted changes if available
-    // The entries will be refreshed automatically, so we set a flag to select uncommitted
-    // We use a callback approach: find uncommitted entry after data refreshes
-    const selectUncommitted = () => {
-      const uncommittedEntry = entries.find((entry) => entry.hash === '');
-      if (uncommittedEntry) {
-        setSelectedCommit(uncommittedEntry);
-      } else {
-        // If no uncommitted changes, deselect
-        setSelectedCommit(undefined);
-      }
-    };
-
-    // Schedule the selection for after entries are updated
-    // Use setTimeout to ensure entries are already loaded
-    setTimeout(selectUncommitted, 0);
-  }, [entries, setSelectedCommit]);
+    // After undo, we want to select uncommitted changes
+    // Set a special flag that will be handled by the effect above
+    // Using lastChangeType 'undo' will trigger the selection logic
+    setLastChangeType('undo');
+  }, [setLastChangeType]);
 
   const handleSearch = useCallback(
     (parameters: ISearchParameters) => {

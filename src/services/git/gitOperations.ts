@@ -603,8 +603,20 @@ export async function revertCommit(repoPath: string, commitHash: string, commitM
 /**
  * Undo a commit by resetting to the previous commit and keeping changes as unstaged
  * This is similar to GitHub Desktop's "Undo" feature
+ * Only works on the HEAD commit to prevent unexpected behavior
  */
 export async function undoCommit(repoPath: string, commitHash: string): Promise<void> {
+  // Verify that the provided commitHash is actually the HEAD commit
+  const headResult = await gitExec(['rev-parse', 'HEAD'], repoPath);
+  if (headResult.exitCode !== 0) {
+    throw new Error('Failed to get HEAD commit');
+  }
+  const headCommit = headResult.stdout.trim();
+  
+  if (commitHash !== headCommit) {
+    throw new Error('Can only undo the most recent commit (HEAD). The provided commit is not HEAD.');
+  }
+
   // Get the parent commit of the current commit
   const parentResult = await gitExec(['rev-parse', `${commitHash}^`], repoPath);
 
