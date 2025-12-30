@@ -40,6 +40,7 @@ export class Sync implements ISyncService {
     const { gitUrl, storageService, id, isSubWiki, wikiFolderLocation } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
     const { commitMessage: overrideCommitMessage, useAICommitMessage = false } = options ?? {};
+
     const defaultCommitMessage = i18n.t('LOG.CommitMessage');
     const commitMessage = useAICommitMessage ? undefined : (overrideCommitMessage ?? defaultCommitMessage);
     const localCommitMessage = useAICommitMessage ? undefined : overrideCommitMessage;
@@ -139,6 +140,7 @@ export class Sync implements ISyncService {
     if (syncOnInterval || backupOnInterval) {
       const syncDebounceInterval = await this.preferenceService.get('syncDebounceInterval');
       this.wikiSyncIntervals[id] = setInterval(async () => {
+        // Source will be tracked as 'sync' or 'backup' depending on settings
         await this.syncWikiIfNeeded(workspace);
       }, syncDebounceInterval);
     }

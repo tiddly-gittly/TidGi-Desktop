@@ -204,10 +204,7 @@ export function CommitDetailsPanel(
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
-      await window.service.git.commitAndSync(workspace, {
-        dir: workspace.wikiFolderLocation,
-        commitOnly: true,
-      });
+      await window.service.sync.syncWikiIfNeeded(workspace);
       // Notify parent to select the new commit
       if (onCommitSuccess) {
         onCommitSuccess();
@@ -227,11 +224,7 @@ export function CommitDetailsPanel(
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
-      await window.service.git.commitAndSync(workspace, {
-        dir: workspace.wikiFolderLocation,
-        commitOnly: true,
-        // Don't provide commitMessage to trigger AI generation
-      });
+      await window.service.sync.syncWikiIfNeeded(workspace, { useAICommitMessage: true });
       // Notify parent to select the new commit
       if (onCommitSuccess) {
         onCommitSuccess();

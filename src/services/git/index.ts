@@ -252,13 +252,15 @@ export class Git implements IGitService {
       if (!configs.commitMessage) {
         logger.debug('No commit message provided, attempting to generate AI commit message');
         const { generateAICommitMessage } = await import('./aiCommitMessage');
-        const aiCommitMessage = await generateAICommitMessage(workspace.wikiFolderLocation);
+        // Determine source of the call for debugging
+        const source = configs.commitOnly ? 'backup' : 'sync';
+        const aiCommitMessage = await generateAICommitMessage(workspace.wikiFolderLocation, source);
         if (aiCommitMessage) {
           finalConfigs = { ...configs, commitMessage: aiCommitMessage };
-          logger.debug('Using AI-generated commit message', { commitMessage: aiCommitMessage });
+          logger.debug('Using AI-generated commit message', { commitMessage: aiCommitMessage, source });
         } else {
           // If AI generation fails or times out, use default message
-          logger.debug('AI commit message generation returned undefined, using default message');
+          logger.debug('AI commit message generation returned undefined, using default message', { source });
           finalConfigs = { ...configs, commitMessage: i18n.t('LOG.CommitBackupMessage') };
         }
       } else {
@@ -452,9 +454,7 @@ export class Git implements IGitService {
       }
 
       const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
-      const aiConfig = await externalAPIService.getAIConfig();
-
-      return !!(aiConfig?.free?.model && aiConfig?.free?.provider);
+      return await externalAPIService.isAIAvailable();
     } catch {
       return false;
     }

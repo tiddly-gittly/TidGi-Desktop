@@ -107,7 +107,7 @@ export async function getSimplifiedWorkspaceMenuTemplate(
 
   // Backup/Sync options (based on storage service)
   if (storageService === SupportedStorageServices.local) {
-    const backupItems = createBackupMenuItems(workspace, t, service.window, service.git, aiGenerateBackupTitleEnabled, false);
+    const backupItems = createBackupMenuItems(workspace, t, service.window, service.sync, aiGenerateBackupTitleEnabled, false);
     template.push(...backupItems);
   }
 
@@ -210,7 +210,7 @@ export async function getWorkspaceMenuTemplate(
   }
 
   if (storageService === SupportedStorageServices.local) {
-    const backupItems = createBackupMenuItems(workspace, t, service.window, service.git, aiGenerateBackupTitleEnabled, false);
+    const backupItems = createBackupMenuItems(workspace, t, service.window, service.sync, aiGenerateBackupTitleEnabled, false);
     template.push(...backupItems);
   }
 

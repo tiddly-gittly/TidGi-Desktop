@@ -314,6 +314,12 @@ export interface IExternalAPIService {
   getAIConfig(): Promise<AiAPIConfig>;
 
   /**
+   * Check if AI is available (has free model and provider configured)
+   * This is a convenience method to check if aiConfig.free has both model and provider
+   */
+  isAIAvailable(): Promise<boolean>;
+
+  /**
    * Observable for changes to default AI configuration
    */
   defaultConfig$: BehaviorSubject<AiAPIConfig>;
@@ -365,6 +371,7 @@ export const ExternalAPIServiceIPCDescriptor = {
     cancelAIRequest: ProxyPropertyType.Function,
     getAIProviders: ProxyPropertyType.Function,
     getAIConfig: ProxyPropertyType.Function,
+    isAIAvailable: ProxyPropertyType.Function,
     defaultConfig$: ProxyPropertyType.Value$,
     providers$: ProxyPropertyType.Value$,
     updateProvider: ProxyPropertyType.Function,

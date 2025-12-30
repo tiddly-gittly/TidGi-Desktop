@@ -117,6 +117,7 @@ export async function registerMenu(): Promise<void> {
         click: async () => {
           const activeWorkspace = await workspaceService.getActiveWorkspace();
           if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
+            // Source will be tracked as 'sync' in syncWikiIfNeeded
             await syncService.syncWikiIfNeeded(activeWorkspace, { useAICommitMessage: true });
           }
         },

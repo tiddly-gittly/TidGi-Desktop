@@ -293,6 +293,15 @@ export class ExternalAPIService implements IExternalAPIService {
     return cloneDeep(this.userSettings.defaultConfig);
   }
 
+  async isAIAvailable(): Promise<boolean> {
+    try {
+      const aiConfig = await this.getAIConfig();
+      return !!(aiConfig?.free?.model && aiConfig?.free?.provider);
+    } catch {
+      return false;
+    }
+  }
+
   /**
    * Get provider configuration by provider name
    */

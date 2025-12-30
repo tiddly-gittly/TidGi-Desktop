@@ -91,8 +91,10 @@ async function getGitChanges(wikiFolderPath: string): Promise<string | undefined
 
 /**
  * Generate a commit message using AI based on git diff
+ * @param wikiFolderPath The wiki folder path
+ * @param source The source of the call (for debugging)
  */
-export async function generateAICommitMessage(wikiFolderPath: string): Promise<string | undefined> {
+export async function generateAICommitMessage(wikiFolderPath: string, source: string = 'unknown'): Promise<string | undefined> {
   try {
     const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
     const preferences = preferenceService.getPreferences();
@@ -110,7 +112,7 @@ export async function generateAICommitMessage(wikiFolderPath: string): Promise<s
 
     const changes = await getGitChanges(wikiFolderPath);
     if (!changes) {
-      logger.info('No changes found, skipping AI commit message generation');
+      logger.info('No changes found, skipping AI commit message generation', { source });
       return undefined;
     }
 
@@ -125,7 +127,7 @@ ${changes}
 Generate only the commit message, nothing else:`;
 
     const timeout = preferences.aiGenerateBackupTitleTimeout ?? 5000;
-    logger.debug('Starting AI commit message generation', { timeout });
+    logger.debug('Starting AI commit message generation', { timeout, source });
 
     const startTime = Date.now();
     const commitMessage = await Promise.race([
