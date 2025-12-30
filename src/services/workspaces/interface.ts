@@ -6,37 +6,6 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { SetOptional } from 'type-fest';
 
 /**
- * Deep equality check for comparing values (handles primitives, arrays, and objects)
- * Used to determine if a value differs from its default
- */
-function isEqual(a: unknown, b: unknown): boolean {
-  // Handle primitives and null/undefined
-  if (a === b) return true;
-  if (a == null || b == null) return false;
-  if (typeof a !== 'object' || typeof b !== 'object') return false;
-
-  // Handle arrays
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
-    return a.every((item, index) => isEqual(item, b[index]));
-  }
-
-  // One is array, other is not
-  if (Array.isArray(a) || Array.isArray(b)) return false;
-
-  // Handle objects
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) return false;
-
-  return keysA.every(key => {
-    const valueA = (a as Record<string, unknown>)[key];
-    const valueB = (b as Record<string, unknown>)[key];
-    return isEqual(valueA, valueB);
-  });
-}
-
-/**
  * Fields that not part of config that user can edit. Change of these field won't show "save" button on edit page.
  */
 export const nonConfigFields = ['metadata', 'lastNodeJSArgv'];
@@ -430,27 +399,4 @@ export const WorkspaceServiceIPCDescriptor = {
  */
 export function applyWorkspaceDefaults(workspace: IWikiWorkspace): IWikiWorkspace {
   return { ...wikiWorkspaceDefaultValues, ...workspace };
-}
-
-/**
- * Get only the fields that differ from defaults, for persisting to storage.
- * This reduces storage size and makes configs more readable by only storing non-default values.
- * @param workspace The workspace object with all fields
- * @returns An object containing only fields that differ from defaults
- */
-export function getDifferencesFromDefaults(workspace: IWikiWorkspace): Partial<IWikiWorkspace> {
-  const differences = {} as Partial<IWikiWorkspace>;
-  const keys = Object.keys(workspace) as Array<keyof IWikiWorkspace>;
-
-  keys.forEach((typedKey) => {
-    const defaultValue = (wikiWorkspaceDefaultValues as Partial<IWikiWorkspace>)[typedKey];
-    const workspaceValue = workspace[typedKey];
-
-    // Include field if it has a value and differs from default, or if there's no default defined
-    if (defaultValue === undefined || !isEqual(defaultValue, workspaceValue)) {
-      (differences as unknown as Record<string, unknown>)[typedKey as string] = workspaceValue;
-    }
-  });
-
-  return differences;
 }

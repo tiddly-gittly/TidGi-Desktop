@@ -12,7 +12,7 @@ import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { defaultPreferences } from './defaultPreferences';
 import type { IPreferences, IPreferenceService } from './interface';
-import { getPreferenceDifferencesFromDefaults } from './interface';
+import { getPreferenceDifferencesFromDefaults } from './utilities';
 
 @injectable()
 export class Preference implements IPreferenceService {

@@ -101,6 +101,7 @@ interface IUseCommitSelectionProps {
   setShouldSelectFirst: (value: boolean) => void;
   setSelectedCommit: (commit: GitLogEntry | undefined) => void;
   lastChangeType: string | null;
+  setLastChangeType: (value: string | null) => void;
   selectedCommit: GitLogEntry | undefined;
   setSearchParams: (parameters: ISearchParameters) => void;
   setCurrentSearchParameters: (parameters: ISearchParameters) => void;
@@ -113,6 +114,7 @@ export function useCommitSelection({
   setShouldSelectFirst,
   setSelectedCommit,
   lastChangeType,
+  setLastChangeType,
   selectedCommit,
   setSearchParams,
   setCurrentSearchParameters,

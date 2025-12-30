@@ -612,7 +612,7 @@ export async function undoCommit(repoPath: string, commitHash: string): Promise<
     throw new Error('Failed to get HEAD commit');
   }
   const headCommit = headResult.stdout.trim();
-  
+
   if (commitHash !== headCommit) {
     throw new Error('Can only undo the most recent commit (HEAD). The provided commit is not HEAD.');
   }

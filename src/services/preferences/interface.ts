@@ -4,37 +4,6 @@ import { PreferenceChannel } from '@/constants/channels';
 import type { HunspellLanguages } from '@/constants/hunspellLanguages';
 import type { BehaviorSubject } from 'rxjs';
 
-/**
- * Deep equality check for comparing values (handles primitives, arrays, and objects)
- * Used to determine if a value differs from its default
- */
-function isEqual(a: unknown, b: unknown): boolean {
-  // Handle primitives and null/undefined
-  if (a === b) return true;
-  if (a == null || b == null) return false;
-  if (typeof a !== 'object' || typeof b !== 'object') return false;
-
-  // Handle arrays
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
-    return a.every((item, index) => isEqual(item, b[index]));
-  }
-
-  // One is array, other is not
-  if (Array.isArray(a) || Array.isArray(b)) return false;
-
-  // Handle objects
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) return false;
-
-  return keysA.every(key => {
-    const valueA = (a as Record<string, unknown>)[key];
-    const valueB = (b as Record<string, unknown>)[key];
-    return isEqual(valueA, valueB);
-  });
-}
-
 export interface IPreferences {
   allowPrerelease: boolean;
   alwaysOnTop: boolean;
@@ -113,30 +82,6 @@ export interface IPreferences {
   titleBar: boolean;
   unreadCountBadge: boolean;
   useHardwareAcceleration: boolean;
-}
-
-/**
- * Get only the fields that differ from defaults, for persisting to storage.
- * This reduces storage size and makes configs more readable by only storing non-default values.
- * @param preferences The preferences object with all fields
- * @param defaults The default preferences object
- * @returns An object containing only fields that differ from defaults
- */
-export function getPreferenceDifferencesFromDefaults(preferences: IPreferences, defaults: IPreferences): Partial<IPreferences> {
-  const differences = {} as Partial<IPreferences>;
-  const keys = Object.keys(preferences) as Array<keyof IPreferences>;
-
-  keys.forEach((key) => {
-    const defaultValue = defaults[key];
-    const preferenceValue = preferences[key];
-
-    // Use deep equality check for all types
-    if (!isEqual(defaultValue, preferenceValue)) {
-      (differences as Record<string, unknown>)[key] = preferenceValue;
-    }
-  });
-
-  return differences;
 }
 
 export enum PreferenceSections {
