@@ -296,7 +296,25 @@ export class ExternalAPIService implements IExternalAPIService {
   async isAIAvailable(): Promise<boolean> {
     try {
       const aiConfig = await this.getAIConfig();
-      return !!(aiConfig?.free?.model && aiConfig?.free?.provider);
+      // Check if free model and provider are configured
+      if (!aiConfig?.free?.model || !aiConfig?.free?.provider) {
+        return false;
+      }
+
+      // Check if the provider has API key configured
+      const providerConfig = await this.getProviderConfig(aiConfig.free.provider);
+      if (!providerConfig) {
+        return false;
+      }
+
+      // Some providers like Ollama don't require API keys, check if it's enabled
+      // For providers that require API keys (most cloud providers), verify it's not empty
+      const requiresApiKey = providerConfig.providerClass !== 'ollama' && providerConfig.providerClass !== 'comfyui';
+      if (requiresApiKey && !providerConfig.apiKey?.trim()) {
+        return false;
+      }
+
+      return true;
     } catch {
       return false;
     }

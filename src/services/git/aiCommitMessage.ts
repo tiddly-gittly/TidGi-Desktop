@@ -14,14 +14,25 @@ const MAX_DIFF_LENGTH = 3000;
 
 /**
  * Filter out large plugin file diffs to avoid sending huge JSON to AI
+ * Small config files (<1000 chars) are kept for AI to see what changed
  */
 function filterLargePluginDiffs(diff: string): string {
+  const SMALL_FILE_THRESHOLD = 1000; // Characters - config files are usually small
   const diffChunks = diff.split(/(?=diff --git)/);
   return diffChunks.map((chunk) => {
-    const pluginFileMatch = chunk.match(/diff --git a\/(.*?tiddlers\/\$__plugins_.*?\.json) b\//);
+    // Match any file containing $__plugins (regardless of path)
+    const pluginFileMatch = chunk.match(/diff --git a\/(.+\$__plugins_[^/\s]+(?:\.\w+)?)\s+b\//);
     if (pluginFileMatch) {
       const filename = pluginFileMatch[1];
-      return `diff --git a/${filename} b/${filename}\n@@ Plugin file modified (content omitted) @@\n`;
+      const pluginName = filename.match(/(\$__plugins_[^/\s]+)/)?.[1] ?? 'unknown';
+
+      // If diff is small (likely a config file), keep the content
+      if (chunk.length < SMALL_FILE_THRESHOLD) {
+        return chunk;
+      }
+
+      // Large file (plugin itself) - omit content
+      return `diff --git a/${filename} b/${filename}\n@@ Plugin file modified: ${pluginName} (large file content omitted to save tokens) @@\n`;
     }
     return chunk;
   }).join('');

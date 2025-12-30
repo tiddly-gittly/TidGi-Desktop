@@ -1,4 +1,4 @@
-# AI Commit Message Entry Points
+# AI Commit Message
 
 This document tracks all entry points for AI-generated commit messages in TidGi.
 
