@@ -625,9 +625,22 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.info(`realignActiveWorkspaceView: no tidgiMiniWindowBrowserViewWebContent, skip tidgi mini window for ${workspaceToRealign.id}.`);
     } else {
       // For tidgi mini window, decide which workspace to show based on preferences
-      const { targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(workspaceToRealign.id);
-      const tidgiMiniWindowWorkspaceId = targetWorkspaceId || workspaceToRealign.id;
-      tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(tidgiMiniWindow, tidgiMiniWindowWorkspaceId, WindowNames.tidgiMiniWindow));
+      const { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(workspaceToRealign.id);
+
+      if (shouldSync) {
+        // Sync mode - realign with the same workspace as main window
+        tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(tidgiMiniWindow, workspaceToRealign.id, WindowNames.tidgiMiniWindow));
+      } else if (targetWorkspaceId) {
+        // Fixed workspace mode - only realign if the workspace being realigned is the fixed workspace
+        if (workspaceToRealign.id === targetWorkspaceId) {
+          tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(tidgiMiniWindow, targetWorkspaceId, WindowNames.tidgiMiniWindow));
+        } else {
+          // Main window is realigning a different workspace, but tidgi mini window stays on fixed workspace
+          // Still need to realign the fixed workspace to ensure it's displayed correctly
+          tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(tidgiMiniWindow, targetWorkspaceId, WindowNames.tidgiMiniWindow));
+        }
+      }
+      // If not syncing and no fixed workspace, don't realign tidgi mini window
     }
     await Promise.all(tasks);
   }

@@ -150,10 +150,8 @@ const commonInit = async (): Promise<void> => {
   // Process any pending deep link after workspaces are initialized
   await deepLinkService.processPendingDeepLink();
 
-  const tidgiMiniWindow = await preferenceService.get('tidgiMiniWindow');
-  if (tidgiMiniWindow) {
-    await windowService.openTidgiMiniWindow(true, false);
-  }
+  // Initialize tidgi mini window if enabled
+  await windowService.initializeTidgiMiniWindow();
 
   ipcMain.emit('request-update-pause-notifications-info');
   // Fix webview is not resized automatically
@@ -222,6 +220,8 @@ app.on(
   'before-quit',
   async (): Promise<void> => {
     logger.info('App before-quit');
+    // Clean up tidgi mini window before quit to ensure tray is destroyed
+    await windowService.closeTidgiMiniWindow(true);
     destroyLogger();
     await Promise.all([
       databaseService.immediatelyStoreSettingsToFile(),
