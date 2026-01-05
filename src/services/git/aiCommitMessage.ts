@@ -8,6 +8,14 @@ import { exec as gitExec } from 'dugite';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
+// Limits for how much git content we send to the AI service.
+// These values are chosen to balance useful context vs. token / payload size:
+// - MAX_UNTRACKED_FILES: cap the number of untracked files included so a large
+//   number of new files does not overwhelm the prompt or increase latency.
+// - MAX_FILE_CONTENT_LENGTH: truncate individual file contents to keep the
+//   prompt small while still giving the model enough context about changes.
+// - MAX_DIFF_LENGTH: hard cap on total diff length to stay within typical
+//   model/token limits and avoid request failures due to oversized payloads.
 const MAX_UNTRACKED_FILES = 5;
 const MAX_FILE_CONTENT_LENGTH = 500;
 const MAX_DIFF_LENGTH = 3000;

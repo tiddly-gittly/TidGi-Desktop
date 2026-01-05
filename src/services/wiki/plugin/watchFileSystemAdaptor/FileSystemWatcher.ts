@@ -152,11 +152,13 @@ export class FileSystemWatcher {
    */
   async initialize(): Promise<void> {
     if (!this.watchPathBase) {
+      this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized (no watch path)');
       return;
     }
 
     // Check if file system watch is enabled for this workspace
     if (this.workspaceConfig && !this.workspaceConfig.enableFileSystemWatch) {
+      this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized (disabled by config)');
       this.logger.log('FileSystemWatcher File system watching is disabled for this workspace');
       return;
     }
@@ -412,6 +414,9 @@ export class FileSystemWatcher {
       this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized');
     } catch (error) {
       this.logger.alert('FileSystemWatcher Failed to initialize file watching:', error);
+      // Still log stabilized marker even if initialization failed
+      // This prevents tests from hanging waiting for the marker
+      this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized (with errors)');
     }
   }
 

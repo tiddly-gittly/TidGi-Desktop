@@ -10,6 +10,9 @@ import * as path from 'node:path';
 import { defaultGitInfo } from './defaultGitInfo';
 import type { GitFileStatus, IFileDiffResult, IGitLogOptions, IGitLogResult } from './interface';
 
+/** Prefix for temporary Git index directories used during amend/undo operations */
+const TEMP_GIT_INDEX_PREFIX = 'tidgi-git-index-';
+
 /**
  * Helper to create git environment variables for commit operations
  * This ensures commits work in environments without git config (like CI)
@@ -181,7 +184,8 @@ function parseGitStatusCode(statusCode: string): GitFileStatus {
 export async function getCommitFiles(repoPath: string, commitHash: string): Promise<Array<import('./interface').IFileWithStatus>> {
   // Handle uncommitted changes
   if (!commitHash || commitHash === '') {
-    // Use -uall to show all untracked files, not just directories
+    // Use -uall to show all untracked files, not just directories.
+    // This is important for AI commit message generation to see the full context.
     const result = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain', '-uall'], repoPath);
 
     if (result.exitCode !== 0) {
@@ -710,7 +714,7 @@ export async function addToGitignore(repoPath: string, pattern: string): Promise
 export async function amendCommitMessage(repoPath: string, newMessage: string): Promise<void> {
   // Use a temporary index so we amend only the commit message and do not
   // accidentally include user's staged changes or alter their index state.
-  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'tidgi-git-index-'));
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), TEMP_GIT_INDEX_PREFIX));
   const temporaryIndex = path.join(temporaryDirectory, 'index');
   try {
     const baseEnvironment = { ...process.env, GIT_INDEX_FILE: temporaryIndex } as NodeJS.ProcessEnv;

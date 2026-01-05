@@ -38,20 +38,24 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
   }
 
   private async initializeAsync(): Promise<void> {
+    this.logger.log('WatchFileSystemAdaptor initializeAsync starting');
     try {
       const workspaceId = this.workspaceID;
+      this.logger.log(`WatchFileSystemAdaptor loading workspace config for ${workspaceId}`);
       if (workspaceId) {
         const loadedWorkspaceData = await workspace.get(workspaceId);
         if (!loadedWorkspaceData || typeof loadedWorkspaceData !== 'object' || !isWikiWorkspace(loadedWorkspaceData)) {
           throw new Error('Invalid workspace data');
         }
         this.workspace = loadedWorkspaceData;
+        this.logger.log(`WatchFileSystemAdaptor workspace config loaded, enableFileSystemWatch=${this.workspace.enableFileSystemWatch}`);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.log(`Failed to load workspace data: ${errorMessage}`);
     }
 
+    this.logger.log('WatchFileSystemAdaptor creating FileSystemWatcher');
     // Create and initialize the file watcher
     this.watcher = new FileSystemWatcher({
       wiki: this.wiki,
@@ -61,7 +65,9 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       workspaceConfig: this.workspace,
     });
 
+    this.logger.log('WatchFileSystemAdaptor calling watcher.initialize()');
     await this.watcher.initialize();
+    this.logger.log('WatchFileSystemAdaptor initialization complete');
   }
 
   /**
