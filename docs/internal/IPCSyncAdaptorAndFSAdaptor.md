@@ -4,24 +4,30 @@ This document describes how the `tidgi-ipc-syncadaptor` (frontend) and `watch-fi
 
 ## Architecture Overview
 
-```chart
-Frontend (Browser)          Backend (Node.js Worker)
-┌─────────────────┐        ┌──────────────────────┐
-│ TiddlyWiki      │        │ TiddlyWiki (Server)  │
-│ In-Memory Store │◄──────►│ File System Adaptor  │
-└────────┬────────┘        └──────────┬───────────┘
-         │                            │
-         │ IPC Sync                   │ Watch-FS
-         │ Adaptor                    │ Adaptor
-         │                            │
-         ├─ Save to FS ──────────────►│
-         │                            │
-         │◄───── SSE Events ──────────┤
-         │     (File Changes)         │
-         │                            │
-         │                            ├─ nsfw Watcher
-         │                            │  (File System)
-         └────────────────────────────┘
+```
+Frontend (Browser)                    Backend (Node.js Worker)
+┌─────────────────────────────┐      ┌─────────────────────────────────────┐
+│ TiddlyWiki                  │      │ TiddlyWiki (Server)                 │
+│ In-Memory Store             │      │ In-Memory Store                     │
+└──────────┬──────────────────┘      └──────────┬──────────────────────────┘
+           │                                    │
+           │ TidGiIPCSyncAdaptor                │ WatchFileSystemAdaptor
+           │ (syncadaptor)                      │ (syncadaptor)
+           │                                    │
+           │                                    ├── FileSystemWatcher
+           │                                    │   (monitors files via nsfw)
+           │                                    │
+           ├─── Save via IPC ──────────────────►│
+           │                                    │
+           │◄────── IPC Observable ─────────────┤
+           │        (Change Events)             │
+           │                                    │
+           │                                    ├── FileSystemAdaptor
+           │                                    │   (read/write files)
+           │                                    │
+           │                                    ▼
+           │                                 File System
+           └────────────────────────────────────┘
 ```
 
 ## Key Design Principles
@@ -32,271 +38,212 @@ Frontend (Browser)          Backend (Node.js Worker)
 - All file changes (external edits, saves from frontend) flow through file system
 - Backend wiki state reflects file system state
 
-### 2. Two-Layer Echo Prevention
+### 2. Syncer-Driven Updates (Refactored Architecture)
+
+**Previous Approach (Problematic):**
+- FileSystemWatcher directly called `wiki.addTiddler()` when files changed
+- Led to echo problems and complex edge case handling
+
+**Current Approach (Syncer-Driven):**
+- FileSystemWatcher only collects changes into `updatedTiddlers` list
+- Triggers `$tw.syncer.syncFromServer()` to let TiddlyWiki's syncer handle updates
+- Syncer calls `getUpdatedTiddlers()` to get change list
+- Syncer calls `loadTiddler()` for each modified tiddler
+- Syncer uses `storeTiddler()` which properly updates changeCount to prevent echo
+
+Benefits:
+- Leverages TiddlyWiki's built-in sync queue and throttling
+- Proper handling of batch changes (git checkout)
+- Eliminates echo loops via syncer's changeCount tracking
+
+### 3. Two-Layer Echo Prevention
 
 **IPC Layer (First Defense)**:
-
 - `ipcServerRoutes.ts` tracks recently saved tiddlers in `recentlySavedTiddlers` Set
 - When `wiki.addTiddler()` triggers change event, filter out tiddlers in the Set
 - Prevents frontend from receiving its own save operations as change notifications
 
 **Watch-FS Layer (Second Defense)**:
-
-- When saving/deleting, watch-fs temporarily excludes file from monitoring via custom exclusion list
+- When saving/deleting, watch-fs temporarily excludes file from monitoring
 - Prevents watcher from detecting the file write operation
-- Re-includes file immediately after operation completes (no delay)
-- Combined with IPC filtering, ensures no echo even for rapid successive saves
+- Re-includes file after operation completes (with delay for nsfw debounce)
 
-### 3. SSE-like Change Notification (IPC Observable)
+### 4. IPC Observable for Change Notification
 
-- Backend sends change events to frontend via IPC (not real SSE, but Observable pattern via `ipc-cat`)
+- Backend sends change events to frontend via IPC Observable pattern (via `ipc-cat`)
 - Frontend subscribes to `getWikiChangeObserver$` observable from `window.observables.wiki`
-- Change events trigger tw's `syncFromServer()` to pull updates from backend, it will in return call our `getUpdatedTiddlers`
+- Change events trigger frontend's `syncFromServer()` to pull updates
 
-## Plugin Responsibilities
+## Module Responsibilities
 
-### Frontend: `tidgi-ipc-syncadaptor`
+### FileSystemWatcher (Backend - New)
 
-Purpose: Bridge between frontend TiddlyWiki and backend file system
+**Purpose:** Monitor file system changes without directly modifying wiki state
 
-IPC Communication Flow:
+**Key Features:**
+- Uses `nsfw` library for native file system watching
+- Maintains `updatedTiddlers` list for pending changes
+- Implements `getUpdatedTiddlers()` for syncer integration
+- Implements `loadTiddler()` for lazy loading from file system
+- Handles git revert/checkout via delayed deletion processing
+- Manages file exclusion list for echo prevention
 
-- Frontend plugin calls `window.service.wiki` methods (provided by preload script)
-- Preload script uses `setupIpcServerRoutesHandlers.ts` (runs in view context) to set up IPC protocol handlers
-- These handlers forward requests to `ipcServerRoutes.ts` in wiki worker via IPC
-- Uses `tidgi://` custom protocol for RESTful-like API
+**Key Methods:**
+- `getUpdatedTiddlers(syncer, callback)`: Returns collected changes
+- `loadTiddler(title, callback)`: Loads tiddler content from file
+- `excludeFile(path)`: Temporarily exclude file from watching
+- `scheduleFileInclusion(path)`: Re-include file after delay
 
-Key Functions:
+### WatchFileSystemAdaptor (Backend)
 
-- `saveTiddler()`: Send tiddler to backend via IPC → `putTiddler` in `ipcServerRoutes.ts`
-- `loadTiddler()`: Request tiddler from backend via IPC → `getTiddler` in `ipcServerRoutes.ts`
-- `deleteTiddler()`: Request deletion via IPC → `deleteTiddler` in `ipcServerRoutes.ts`
-- `setupSSE()`: Subscribe to file change events from backend (via IPC Observable, not real SSE)
-- `getUpdatedTiddlers()`: Provide list of changed tiddlers to syncer
+**Purpose:** Coordinate between FileSystemWatcher and syncer, implement syncadaptor interface
 
-Echo Prevention Strategy:
+**Key Features:**
+- Extends FileSystemAdaptor for file save/delete operations
+- Delegates file watching to FileSystemWatcher
+- Implements full syncadaptor interface for Node.js syncer
+- Coordinates file exclusion during save/delete operations
 
-Frontend plugin does NOT implement echo detection because:
+**Key Methods:**
+- `getUpdatedTiddlers()`: Delegates to FileSystemWatcher
+- `loadTiddler()`: Delegates to FileSystemWatcher
+- `saveTiddler()`: Saves to file with exclusion handling
+- `deleteTiddler()`: Deletes file with exclusion handling
 
-1. Cannot distinguish between "save to fs and watch fs echo back" and "external user text edit with unchanged 'modified' timestamp metadata"
-2. Echo prevention is handled by backend at two levels:
-   - **IPC level**: `ipcServerRoutes.ts` filters out change events from IPC saves using `recentlySavedTiddlers` Set
-   - **Watch-FS level**: `watch-filesystem-adaptor` temporarily excludes files during save operations
+### FileSystemAdaptor (Backend - Base Class)
 
-### Backend: `watch-filesystem-adaptor`
+**Purpose:** Handle tiddler file save/delete operations with sub-wiki routing
 
-Purpose: Monitor file system and maintain wiki state
+**Key Features:**
+- Routes tiddlers to sub-wikis based on tags
+- Generates file paths using TiddlyWiki's FileSystemPaths
+- Handles external attachment file movement
+- Provides retry logic for file lock errors
 
-Key Functions:
+### TidGiIPCSyncAdaptor (Frontend)
 
-- `saveTiddler()`: Write to file system with temporary exclusion; automatically move external attachment files when tiddler routes to different workspace
-- `deleteTiddler()`: Remove file with temporary exclusion
-- `initializeFileWatching()`: Setup `nsfw` watcher for main wiki and sub-wikis
-- `handleFileAddOrChange()`: Load changed files into wiki
-- `handleFileDelete()`: Remove deleted tiddlers from wiki
+**Purpose:** Bridge between frontend TiddlyWiki and backend file system
 
-External Attachment Handling:
-
-- `$tw.utils.moveExternalAttachmentIfNeeded()`: Moves external attachment files (referenced by `_canonical_uri`) when tiddler is routed to different workspace based on tag changes
-- Integrated into `saveTiddler()` - runs automatically after tiddler file is saved but before cleanup
-- Uses same routing logic as tiddler files to determine source and target workspace
-
-Two-Layer Echo Prevention:
-
-#### Layer 1: IPC Level (in ipcServerRoutes.ts)
-
-```typescript
-async putTiddler(title, fields) {
-  // Mark as recently saved to prevent echo
-  this.recentlySavedTiddlers.add(title);
-  
-  // This triggers 'change' event synchronously
-  this.wikiInstance.wiki.addTiddler(new Tiddler(fields));
-  
-  // Change event handler filters it out and removes the mark
-}
-
-// Change event handler
-wiki.addEventListener('change', (changes) => {
-  const filteredChanges = {};
-  for (const title in changes) {
-    if (this.recentlySavedTiddlers.has(title)) {
-      // Filter out echo from IPC save
-      this.recentlySavedTiddlers.delete(title);
-      continue;
-    }
-    filteredChanges[title] = changes[title];
-  }
-  // Only send filtered changes to frontend
-  observer.next(filteredChanges);
-});
-```
-
-#### Layer 2: Watch-FS Level (in WatchFileSystemAdaptor.ts)
-
-Watch-FS uses a custom exclusion list to prevent detecting its own file operations, and delays DELETE events to handle git operations gracefully.
-
-**Save/Delete Flow:**
-
-```typescript
-async saveTiddler(tiddler) {
-  const filepath = await this.getTiddlerFileInfo(tiddler);
-  
-  // 1. Exclude file BEFORE saving (added to custom exclusion list)
-  await this.excludeFile(filepath);
-  
-  // 2. Save to file system (calls parent saveTiddler)
-  await super.saveTiddler(tiddler);
-  
-  // 3. Re-include IMMEDIATELY after save completes
-  await this.includeFile(filepath);
-  // File is now ready to detect external changes
-}
-```
-
-**Event Processing with DELETE Delay:**
-
-```typescript
-handleNsfwEvents(events) {
-  events.forEach(event => {
-    const filepath = path.join(event.directory, event.file);
-    
-    // Check custom exclusion list at handler level
-    if (this.inverseFilesIndex.isFileExcluded(filepath)) {
-      // Skip if file is excluded (being saved/deleted by us)
-      return;
-    }
-    
-    if (event.action === 'DELETED') {
-      // Delay deletion by 100ms to handle git revert/checkout
-      // Git operations delete then recreate files quickly
-      this.scheduleDeletion(filepath, 100);
-    } else if (event.action === 'CREATED' || event.action === 'MODIFIED') {
-      // Cancel any pending deletion for this file
-      this.cancelPendingDeletion(filepath);
-      
-      // Load changed file into wiki
-      const tiddler = $tw.loadTiddlersFromFile(filepath);
-      $tw.syncadaptor.wiki.addTiddler(tiddler);
-    }
-  });
-}
-```
-
-**Git Operation Handling:**
-
-When `git revert` or `git checkout` executes, files are deleted then recreated:
-
-1. DELETE event → Scheduled for processing after 100ms delay
-2. CREATE event (file recreated) → Cancels pending deletion
-3. Result: Treated as file modification, not deletion + creation
-4. Prevents tiddlers from showing as "missing" (佚失) during git operations
+**Key Features:**
+- Communicates via IPC using `tidgi://` custom protocol
+- Subscribes to change events via IPC Observable
+- Maintains `updatedTiddlers` list from IPC events
+- Implements full syncadaptor interface for browser syncer
 
 ## Data Flow Examples
 
 ### Example 1: User Edits in Frontend
 
-```text
+```
 1. User clicks save in browser
-   ├─► Frontend: saveTiddler() called
+   ├─► Frontend syncer calls saveTiddler()
    │
-2. IPC call to backend
-   ├─► Backend: receives putTiddler request
+2. TidGiIPCSyncAdaptor.saveTiddler()
+   ├─► IPC call to putTiddler in ipcServerRoutes.ts
    │
-3. Backend IPC layer: Mark tiddler in recentlySavedTiddlers
-   ├─► ipcServerRoutes.ts adds title to Set
+3. ipcServerRoutes.putTiddler()
+   ├─► Marks tiddler in recentlySavedTiddlers (IPC echo prevention)
+   ├─► Calls wiki.addTiddler() (triggers change event)
+   ├─► Change event filtered by recentlySavedTiddlers
    │
-4. Backend: wiki.addTiddler(tiddler)
-   ├─► Triggers 'change' event
-   ├─► Event handler checks recentlySavedTiddlers
-   ├─► Filters out this change (IPC echo prevention)
-   ├─► Removes title from recentlySavedTiddlers
+4. Backend syncer detects change
+   ├─► Calls WatchFileSystemAdaptor.saveTiddler()
    │
-5. Backend Watch-FS layer: excludeFile(filepath)
-   ├─► File added to custom exclusion list
+5. WatchFileSystemAdaptor.saveTiddler()
+   ├─► Excludes file path from watching
+   ├─► Calls FileSystemAdaptor.saveTiddler()
+   ├─► Writes file to disk
+   ├─► Schedules file re-inclusion after delay
    │
-6. Backend: write to file system
-   ├─► File content updated on disk
-   │
-7. nsfw detects file change
-   ├─► handleNsfwEvents checks custom exclusion list
-   ├─► File is excluded, change event ignored (Watch-FS echo prevention)
-   │
-8. Immediately after save completes
-   ├─► includeFile(filepath) removes from exclusion list
-   ├─► File ready to detect external changes
+6. nsfw might detect file change
+   ├─► FileSystemWatcher checks exclusion list
+   ├─► File is excluded, event ignored
 ```
 
 ### Example 2: External Editor Modifies File
 
-```text
+```
 1. User edits file in VSCode/Vim
    ├─► File content changes on disk
    │
 2. nsfw detects file change
-   ├─► File NOT in excludedFiles (not being saved)
+   ├─► File NOT in excludedFiles
    │
-3. handleFileAddOrChange() called
-   ├─► Load tiddler from file
-   ├─► wiki.addTiddler(tiddler)
+3. FileSystemWatcher.handleFileAddOrChange()
+   ├─► Adds title to updatedTiddlers.modifications
+   ├─► Stores file info in pendingFileLoads
+   ├─► Schedules syncer trigger (debounced 200ms)
    │
-4. Wiki fires 'change' event
-   ├─► ipcServerRoutes.ts checks recentlySavedTiddlers
-   ├─► Title NOT in Set (external edit, not IPC save)
-   ├─► Change passes through filter
-   ├─► IPC Observable sends event to frontend (via ipc-cat)
+4. $tw.syncer.syncFromServer() called
+   ├─► Creates SyncFromServerTask
    │
-5. Frontend receives change event
-   ├─► Adds to updatedTiddlers.modifications
-   ├─► Triggers syncFromServer()
+5. SyncFromServerTask.run()
+   ├─► Calls getUpdatedTiddlers()
+   ├─► Gets modifications/deletions list
+   ├─► Adds titles to titlesToBeLoaded
    │
-6. Frontend: loadTiddler() via IPC
-   ├─► Gets latest tiddler from backend
-   ├─► Updates frontend wiki
-   ├─► UI re-renders with new content
+6. For each title to load:
+   ├─► LoadTiddlerTask.run()
+   ├─► Calls loadTiddler(title)
+   ├─► FileSystemWatcher loads from file
+   ├─► syncer.storeTiddler() updates wiki
+   ├─► Properly sets changeCount (prevents echo save)
+   │
+7. wiki.addTiddler() triggers change event
+   ├─► getWikiChangeObserver sends to frontend
+   │
+8. Frontend receives change
+   ├─► TidGiIPCSyncAdaptor adds to updatedTiddlers
+   ├─► Frontend syncer.syncFromServer()
+   ├─► Frontend loadTiddler() via IPC
+   ├─► Frontend wiki updated
 ```
 
-### Example 3: Sub-Wiki Synchronization
+### Example 3: Git Checkout (Batch Changes)
 
-```text
-1. Main wiki has sub-wiki folder linked by tag
-   ├─► watch-fs detects sub-wiki in tiddlywiki.info
+```
+1. User runs git checkout
+   ├─► Many files deleted/created/modified
    │
-2. watch-fs starts additional watcher
-   ├─► Monitors SubWiki/ folder
+2. nsfw debounces events (100ms)
+   ├─► Multiple events batched together
    │
-3. User saves tiddler with tag in frontend
-   ├─► Backend determines file should go to SubWiki/
-   ├─► Saves to SubWiki/Tiddler.tid
+3. FileSystemWatcher.handleNsfwEvents()
+   ├─► For each DELETED file:
+   │   └─► Schedule deletion with 100ms delay
+   │       (handles git revert/checkout pattern)
+   ├─► For each CREATED/MODIFIED file:
+   │   └─► Cancel any pending deletion for same path
+   │   └─► Add to updatedTiddlers.modifications
    │
-4. Sub-wiki watcher detects new file
-   ├─► (Excluded during save, so no echo)
+4. Syncer trigger debounced (200ms)
+   ├─► All changes collected before sync starts
    │
-5. External edit in SubWiki/Tiddler.tid
-   ├─► Sub-wiki watcher detects change
-   ├─► Updates main wiki's in-memory store
-   ├─► IPC Observable notifies frontend
-   ├─► Frontend syncs and displays update
+5. Single SyncFromServerTask processes all changes
+   ├─► All modifications queued for loading
+   ├─► All deletions processed (wiki.deleteTiddler)
+   │
+6. LoadTiddlerTasks process sequentially
+   ├─► Each tiddler loaded from file
+   ├─► Frontend notified via IPC Observable
 ```
 
 ## Key Configuration
 
-### File Exclusion and Event Handling
+### Timing Constants
 
-- Custom exclusion list checked at event handler level (not using nsfw's native excludedPaths API)
-- Files are re-included immediately after save/delete operations complete
-- `FILE_DELETION_DELAY_MS = 100`: Delay before processing DELETE events to handle git revert/checkout
-- Prevents echo while allowing immediate re-detection of external changes
+```typescript
+// FileSystemWatcher.ts
+FILE_DELETION_DELAY_MS = 100    // Delay before processing DELETE events
+FILE_INCLUSION_DELAY_MS = 150   // Delay before re-including file after save
+GIT_NOTIFICATION_DELAY_MS = 1000 // Debounce for git status notification
+SYNCER_TRIGGER_DELAY_MS = 200   // Debounce for syncer trigger
+```
 
-### SSE-like Debouncing (IPC Observable)
+### Syncer Configuration
 
-- `debounce(syncFromServer, 500)`: Batch multiple file changes
-- Reduces unnecessary sync operations
-
-### Syncer Polling
-
-- `pollTimerInterval = 2_147_483_647`: Effectively disable polling
-- All updates come via IPC Observable (event-driven, not polling)
+- Frontend: `pollTimerInterval = 2_147_483_647` (effectively disabled)
+- All updates come via IPC Observable (event-driven)
 
 ## Troubleshooting
 
@@ -304,22 +251,44 @@ When `git revert` or `git checkout` executes, files are deleted then recreated:
 
 1. Check IPC Observable connection: Look for `[test-id-SSE_READY]` in logs
 2. Verify watch-fs is running: Look for `[test-id-WATCH_FS_STABILIZED]`
-3. Check file exclusion: Should see `[WATCH_FS_EXCLUDE]` and `[WATCH_FS_INCLUDE]`
+3. Check file exclusion: Should see file being excluded then included
 
 ### Echo/Duplicate Updates
 
-1. Check exclusion list: Files should be excluded during save/delete operations
-2. Verify no multiple watchers on same path
-3. Ensure frontend isn't doing its own timestamp-based filtering
+1. Check `recentlySavedTiddlers` filtering in ipcServerRoutes.ts
+2. Verify file exclusion during save/delete operations
+3. Check syncer's changeCount tracking
+
+### Git Checkout Issues
+
+1. Ensure FILE_DELETION_DELAY_MS is working (files not prematurely deleted)
+2. Check that SYNCER_TRIGGER_DELAY_MS allows batch collection
+3. Verify syncer processes all changes in single SyncFromServerTask
 
 ### Sub-Wiki Not Syncing
 
-1. Check sub-wiki detection: Look for `[WATCH_FS_SUBWIKI]` logs
+1. Check sub-wiki watcher initialization: Look for `[WATCH_FS_SUBWIKI]` logs
 2. Verify tiddlywiki.info has correct configuration
 3. Check workspace `subWikiFolders` setting
 
-### Not Recommended
+## Design Decisions
 
-- ❌ Timestamp-based echo detection (already tried, unreliable)
-- ❌ Frontend-side file watching (duplicates backend effort)
-- ❌ Polling-based synchronization (SSE is better)
+### Why Syncer-Driven Instead of Direct Updates?
+
+1. **Echo Prevention**: Syncer's `storeTiddler()` properly updates changeCount, preventing save loops
+2. **Batch Handling**: Syncer queues all changes and processes them sequentially
+3. **Throttling**: Built-in throttle prevents rapid-fire saves
+4. **Error Recovery**: Syncer has built-in retry logic
+
+### Why Two-Layer Echo Prevention?
+
+1. **IPC Layer**: Prevents frontend from seeing its own saves via IPC
+2. **Watch-FS Layer**: Prevents file watcher from seeing our own file writes
+3. **Both needed**: IPC prevents wiki→wiki echo, Watch-FS prevents file→wiki echo
+
+### Why Delay DELETE Events?
+
+Git operations often delete then recreate files quickly. The delay allows:
+1. CREATE event to arrive and cancel pending DELETE
+2. Treat as modification instead of delete+create
+3. Prevents "missing tiddler" errors during git operations
