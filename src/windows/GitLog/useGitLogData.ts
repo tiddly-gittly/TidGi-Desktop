@@ -108,7 +108,10 @@ export function useGitLogData(workspaceID: string): IGitLogData {
       lastRefreshTime.current = now;
       lastChangeTimestamp.current = change?.timestamp ?? 0;
       // Store the type of change so we can auto-select first commit after a manual commit
-      setLastChangeType(change?.type ?? null);
+      // Don't let file-change events override commit/undo events to preserve auto-selection behavior
+      if (change?.type !== 'file-change' || !lastChangeType || lastChangeType === 'file-change') {
+        setLastChangeType(change?.type ?? null);
+      }
       // Trigger refresh when git state changes
       setRefreshTrigger((previous) => previous + 1);
     }

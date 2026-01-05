@@ -70,7 +70,7 @@ Feature: Git Log Window
     # Verify we can see the modified Index.tid file
     Then I should see a "Index.tid file in uncommitted list" element with selector "li:has-text('Index.tid')"
     # Switch to Actions tab
-    When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作'), button[role='tab']:has-text('Actions')"
+    When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作')"
     # Verify the commit now button is visible
     Then I should see a "commit now button" element with selector "button[data-testid='commit-now-button']"
     # Click the commit now button
@@ -83,8 +83,10 @@ Feature: Git Log Window
     # Don't need to Click on the commit row we just created (contains the commit message) Because we should automatically select it
     And I wait for 1 seconds for "commit details panel to load and git lock to release"
     # Don't need to Switch to Actions tab to test rollback, because we are already on Actions tab
+    # Wait for revert button to be visible (should auto-select first commit after commit)
+    Then I should see a "revert button" element with selector "button:has-text('回滚')"
     # Click revert button
-    When I click on a "revert button" element with selector "button:has-text('回退此提交'), button:has-text('Revert')"
+    When I click on a "revert button" element with selector "button:has-text('回滚')"
     # Wait for git revert operation to complete - git operations can be slow on CI and may take longer than usual when system is under load
     # The git revert process involves file system operations that may be queued by the OS
     Then I wait for "git revert completed" log marker "[test-id-git-revert-complete]"
@@ -124,11 +126,11 @@ Feature: Git Log Window
     Then I should see a "file name header in diff panel" element with selector "h6:has-text('Index.tid')"
     # Click the Actions tab in the file diff panel (the one that has the file name above it)
     # We need to find the Actions tab that is a sibling of the h6 containing "Index.tid"
-    When I click on a "actions tab in file diff panel" element with selector "h6:has-text('Index.tid') ~ div button[role='tab']:has-text('操作'), h6:has-text('Index.tid') ~ div button[role='tab']:has-text('Actions')"
+    When I click on a "actions tab in file diff panel" element with selector "h6:has-text('Index.tid') ~ div button[role='tab']:has-text('操作')"
     And I wait for 1 seconds for "actions tab content to render"
     # Verify the discard changes button exists (only shows for uncommitted changes)
-    Then I should see a "discard changes button" element with selector "button:has-text('放弃修改'), button:has-text('Discard changes')"
-    When I click on a "discard changes button" element with selector "button:has-text('放弃修改'), button:has-text('Discard changes')"
+    Then I should see a "discard changes button" element with selector "button:has-text('放弃修改')"
+    When I click on a "discard changes button" element with selector "button:has-text('放弃修改')"
     # Wait for git discard operation to complete
     And I wait for 2 seconds for "git discard to complete and UI to refresh"
     # Verify the file is no longer in the uncommitted list (should go back to showing no selection)

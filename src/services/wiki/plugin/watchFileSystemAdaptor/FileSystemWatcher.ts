@@ -70,7 +70,7 @@ export class FileSystemWatcher {
   private readonly boot: typeof $tw.boot;
   private readonly watchPathBase: string;
   private readonly workspaceID: string;
-  private readonly workspaceConfig: IWikiWorkspace | undefined;
+  private workspaceConfig: IWikiWorkspace | undefined;
 
   /** Inverse index for mapping file paths to tiddler information */
   private readonly inverseFilesIndex: InverseFilesIndex = new InverseFilesIndex();
@@ -154,6 +154,20 @@ export class FileSystemWatcher {
     if (!this.watchPathBase) {
       this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized (no watch path)');
       return;
+    }
+
+    // Re-fetch workspace config to get the latest enableFileSystemWatch value
+    // This ensures we pick up config changes that happened after constructor
+    if (this.workspaceID) {
+      try {
+        const latestConfig = await workspace.get(this.workspaceID);
+        if (latestConfig && typeof latestConfig === 'object') {
+          this.workspaceConfig = latestConfig as IWikiWorkspace;
+          this.logger.log(`FileSystemWatcher Re-fetched workspace config, enableFileSystemWatch=${this.workspaceConfig.enableFileSystemWatch}`);
+        }
+      } catch (error) {
+        this.logger.log(`FileSystemWatcher Failed to re-fetch workspace config: ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
 
     // Check if file system watch is enabled for this workspace
