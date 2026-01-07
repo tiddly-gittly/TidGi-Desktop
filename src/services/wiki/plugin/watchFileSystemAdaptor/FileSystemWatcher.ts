@@ -156,20 +156,6 @@ export class FileSystemWatcher {
       return;
     }
 
-    // Re-fetch workspace config to get the latest enableFileSystemWatch value
-    // This ensures we pick up config changes that happened after constructor
-    if (this.workspaceID) {
-      try {
-        const latestConfig = await workspace.get(this.workspaceID);
-        if (latestConfig && typeof latestConfig === 'object') {
-          this.workspaceConfig = latestConfig as IWikiWorkspace;
-          this.logger.log(`FileSystemWatcher Re-fetched workspace config, enableFileSystemWatch=${this.workspaceConfig.enableFileSystemWatch}`);
-        }
-      } catch (error) {
-        this.logger.log(`FileSystemWatcher Failed to re-fetch workspace config: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
-
     // Check if file system watch is enabled for this workspace
     if (this.workspaceConfig && !this.workspaceConfig.enableFileSystemWatch) {
       this.logger.log('[test-id-WATCH_FS_STABILIZED] Watcher has stabilized (disabled by config)');

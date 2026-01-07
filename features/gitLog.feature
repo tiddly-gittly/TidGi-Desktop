@@ -65,36 +65,42 @@ Feature: Git Log Window
     # Wait for git log data to stabilize - increased from implicit to explicit
     And I wait for 2 seconds for "git log data to load"
     Then I should see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
-    # Click on the uncommitted changes row
-    When I click on a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
-    # Verify we can see the modified Index.tid file
+    # Verify uncommitted changes is auto-selected by checking if the file list is visible
     Then I should see a "Index.tid file in uncommitted list" element with selector "li:has-text('Index.tid')"
-    # Switch to Actions tab
+    # Switch to Actions tab to access commit button
     When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作')"
     # Verify the commit now button is visible
     Then I should see a "commit now button" element with selector "button[data-testid='commit-now-button']"
     # Click the commit now button
     When I click on a "commit now button" element with selector "button[data-testid='commit-now-button']"
+    # Wait for git commit to complete first
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
-    # Wait for git log data to be updated and rendered to DOM
-    Then I wait for "git log data rendered to DOM" log marker "[test-id-git-log-data-rendered]"
-    # After commit, verify the new commit with default message in p tag
-    And I should see a "commit with default message" element with selector "p.MuiTypography-body2:has-text('使用太记桌面版备份')"
-    # Don't need to Click on the commit row we just created (contains the commit message) Because we should automatically select it
-    And I wait for 1 seconds for "commit details panel to load and git lock to release"
-    # Don't need to Switch to Actions tab to test rollback, because we are already on Actions tab
-    # Wait for revert button to be visible (should auto-select first commit after commit)
-    Then I should see a "revert button" element with selector "button:has-text('回滚')"
+    # Clear old git-log-data-rendered markers to wait for the new one after commit
+    When I clear log lines containing "[test-id-git-log-data-rendered]"
+    # Then wait for UI to render the updated data (without uncommitted changes)
+    Then I wait for "git log data rendered after commit" log marker "[test-id-git-log-data-rendered]"
+    # Verify that uncommitted changes row is gone (commit was successful)
+    Then I should not see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
+    # Verify the correct commit is selected and we're on the latest commit (should show amend button)
+    Then I should see "selected commit row and commit message and amend button and revert button" elements with selectors:
+      | [data-testid^='commit-row-'][data-selected='true']:has-text('使用太记桌面版备份') |
+      | p.MuiTypography-body2:has-text('使用太记桌面版备份')                              |
+      | button:has-text('修改')                                                           |
+      | button:has-text('回滚')                                                           |
     # Click revert button
     When I click on a "revert button" element with selector "button:has-text('回滚')"
-    # Wait for git revert operation to complete - git operations can be slow on CI and may take longer than usual when system is under load
-    # The git revert process involves file system operations that may be queued by the OS
+    # Wait for git revert operation to complete and UI to render the new revert commit
     Then I wait for "git revert completed" log marker "[test-id-git-revert-complete]"
+    When I clear log lines containing "[test-id-git-log-data-rendered]"
+    Then I wait for "git log data rendered after revert" log marker "[test-id-git-log-data-rendered]"
+    # Verify that the new revert commit is auto-selected (should contain "回退提交" in the message)
+    Then I should see a "selected revert commit row" element with selector "[data-testid^='commit-row-'][data-selected='true']:has-text('回退提交')"
+    # Also verify the revert button is visible (confirms we're on the new commit)
+    Then I should see a "revert button for the new revert commit" element with selector "button:has-text('回滚')"
     # Switch back to main window to verify the revert
     When I switch to "main" window
-    # Wait for file system events to stabilize after git revert - the delete-then-recreate events need time to propagate through nsfw watcher
-    # The watch-fs plugin uses a 100ms delay to handle git operations that delete-then-recreate files
-    And I wait for 2 seconds for "file system events to stabilize after git revert"
+    # Wait for tiddler to be updated by watch-fs after git revert
+    Then I wait for tiddler "Index" to be updated by watch-fs
     # The modified content should be reverted, and make sure file won't be deleted
     Then I should not see a "missing tiddler indicator" element in browser view with selector "[data-tiddler-title='Index']:has-text('佚失')"
     Then I should not see a "modified content in Index tiddler" element in browser view with selector "[data-tiddler-title='Index']:has-text('Modified Index content')"

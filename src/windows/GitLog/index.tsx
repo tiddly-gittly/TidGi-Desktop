@@ -98,7 +98,7 @@ export default function GitHistory(): React.JSX.Element {
 
   const renderTooltip = (props: Omit<Parameters<typeof CustomGitTooltip>[0], 't'>) => CustomGitTooltip({ ...props, t });
 
-  const { handleCommitSuccess, handleUndoSuccess, handleSearch } = useCommitSelection({
+  const { handleCommitSuccess, handleRevertSuccess, handleUndoSuccess, handleSearch } = useCommitSelection({
     shouldSelectFirst,
     entries,
     setShouldSelectFirst,
@@ -208,7 +208,7 @@ export default function GitHistory(): React.JSX.Element {
                   onFileSelect={setSelectedFile}
                   selectedFile={selectedFile}
                   onCommitSuccess={handleCommitSuccess}
-                  onRevertSuccess={handleCommitSuccess}
+                  onRevertSuccess={handleRevertSuccess}
                   onUndoSuccess={handleUndoSuccess}
                   isLatestCommit={selectedCommit?.hash === entries.find((entry) => entry.hash !== '')?.hash}
                 />

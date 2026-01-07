@@ -31,6 +31,7 @@ export function CommitTableRow({ commit, selected, commitDate, onSelect, onSyncC
       selected={selected}
       onClick={onSelect}
       data-testid={commit.hash === '' ? 'uncommitted-changes-row' : `commit-row-${commit.hash}`}
+      data-selected={selected}
     >
       <CellBox sx={{ width: '40%', display: 'flex', alignItems: 'center', gap: 1 }}>
         <Typography
