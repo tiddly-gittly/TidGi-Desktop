@@ -81,8 +81,11 @@ export class FileSystemWatcher {
   /** Base excluded paths (permanent) */
   private readonly baseExcludedPaths: string[] = [];
 
-  /** Excluded path patterns that apply to all wikis */
+  /** Excluded path patterns that apply to all wikis (directory names) */
   private readonly excludedPathPatterns: string[] = ['.git', 'node_modules', '.DS_Store'];
+
+  /** Excluded file names that should not be treated as tiddlers */
+  private readonly excludedFileNames: string[] = ['tidgi.config.json'];
 
   /** External attachments folder to exclude */
   private externalAttachmentsFolder: string = 'files';
@@ -683,9 +686,11 @@ export class FileSystemWatcher {
 
   private shouldExcludeByPattern(filePath: string): boolean {
     const pathParts = filePath.split(path.sep);
+    const fileName = path.basename(filePath);
     const hasExcludedPattern = this.excludedPathPatterns.some(pattern => pathParts.includes(pattern));
+    const hasExcludedFileName = this.excludedFileNames.includes(fileName);
     const hasExternalAttachmentsFolder = pathParts.includes(this.externalAttachmentsFolder);
-    return hasExcludedPattern || hasExternalAttachmentsFolder;
+    return hasExcludedPattern || hasExcludedFileName || hasExternalAttachmentsFolder;
   }
 
   private scheduleGitNotification(): void {

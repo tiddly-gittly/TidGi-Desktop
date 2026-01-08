@@ -23,6 +23,7 @@ import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import { extractSyncableConfig, mergeWithSyncedConfig, readTidgiConfig, readTidgiConfigSync, removeSyncableFields, writeTidgiConfig } from '../database/configSetting';
 import type {
   IDedicatedWorkspace,
   INewWikiWorkspaceConfig,
@@ -107,9 +108,24 @@ export class Workspace implements IWorkspaceService {
   private getInitWorkspacesForCache(): Record<string, IWorkspace> {
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const workspacesFromDisk = databaseService.getSetting(`workspaces`) ?? {};
-    return typeof workspacesFromDisk === 'object' && !Array.isArray(workspacesFromDisk)
-      ? mapValues(pickBy(workspacesFromDisk, (value) => !!value), (workspace) => this.sanitizeWorkspace(workspace))
-      : {};
+    logger.debug('getInitWorkspacesForCache: Loading workspaces from settings.json', {
+      workspaceIds: typeof workspacesFromDisk === 'object' ? Object.keys(workspacesFromDisk) : 'invalid',
+    });
+    if (typeof workspacesFromDisk === 'object' && !Array.isArray(workspacesFromDisk)) {
+      const result = mapValues(pickBy(workspacesFromDisk, (value) => !!value), (workspace) => {
+        const sanitized = this.sanitizeWorkspace(workspace, true);
+        logger.debug('getInitWorkspacesForCache: Sanitized workspace', {
+          workspaceId: workspace.id,
+          hasName: 'name' in sanitized,
+          name: sanitized.name,
+          hasPort: 'port' in sanitized,
+          port: (sanitized as { port?: number }).port,
+        });
+        return sanitized;
+      });
+      return result;
+    }
+    return {};
   }
 
   public async getWorkspaces(): Promise<Record<string, IWorkspace>> {
@@ -180,12 +196,41 @@ export class Workspace implements IWorkspaceService {
     const workspaces = this.getWorkspacesSync();
     const workspaceToSave = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspaceToSave);
+
+    // Write syncable config to tidgi.config.json in wiki folder
+    if (isWikiWorkspace(workspaceToSave)) {
+      try {
+        const syncableConfig = extractSyncableConfig(workspaceToSave);
+        await writeTidgiConfig(workspaceToSave.wikiFolderLocation, syncableConfig);
+      } catch (error) {
+        logger.warn('Failed to write tidgi.config.json', {
+          workspaceId: id,
+          error: (error as Error).message,
+        });
+      }
+    }
+
+    // Update memory cache with full workspace data (including syncable fields)
     workspaces[id] = workspaceToSave;
+
+    // Save to settings.json - remove syncable fields from ALL wiki workspaces
+    // They are stored in tidgi.config.json in the wiki folder
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    databaseService.setSetting('workspaces', workspaces);
+    const workspacesForSettings: Record<string, IWorkspace> = {};
+    for (const [key, ws] of Object.entries(workspaces)) {
+      if (isWikiWorkspace(ws)) {
+        // Remove syncable fields from wiki workspaces (they are in tidgi.config.json)
+        workspacesForSettings[key] = removeSyncableFields(ws) as IWorkspace;
+      } else {
+        // Keep dedicated workspaces as is
+        workspacesForSettings[key] = ws;
+      }
+    }
+    databaseService.setSetting('workspaces', workspacesForSettings);
     if (immediate === true) {
       await databaseService.immediatelyStoreSettingsToFile();
     }
+
     // update subject so ui can react to it
     this.updateWorkspaceSubject();
     // menu is mostly invisible, so we don't need to update it immediately
@@ -219,41 +264,92 @@ export class Workspace implements IWorkspaceService {
   }
 
   /**
-   * Pure function that make sure workspace setting is consistent, or doing migration across updates
+   * Pure function that make sure workspace setting is consistent, or doing migration across updates.
+   * Also reads and merges syncable config from tidgi.config.json in wiki folder (only during initial load).
    * @param workspaceToSanitize User input workspace or loaded workspace, that may contains bad values
+   * @param applySyncedConfig Whether to apply config from tidgi.config.json (should only be true during initial load)
    */
-  private sanitizeWorkspace(workspaceToSanitize: IWorkspace): IWorkspace {
+  private sanitizeWorkspace(workspaceToSanitize: IWorkspace, applySyncedConfig = false): IWorkspace {
     // For dedicated workspaces (help, guide, agent), no sanitization needed
     if (!isWikiWorkspace(workspaceToSanitize)) {
       return workspaceToSanitize;
     }
 
-    const fixingValues: Partial<typeof workspaceToSanitize> = {};
+    logger.debug('sanitizeWorkspace: Starting', {
+      workspaceId: workspaceToSanitize.id,
+      applySyncedConfig,
+      hasName: 'name' in workspaceToSanitize,
+      inputName: workspaceToSanitize.name,
+      hasPort: 'port' in workspaceToSanitize,
+      inputPort: workspaceToSanitize.port,
+      wikiFolderLocation: workspaceToSanitize.wikiFolderLocation,
+    });
+
+    // Read syncable config from tidgi.config.json if it exists
+    // Only apply synced config during initial load, not during updates
+    // (to avoid overwriting user's changes with old file content)
+    let workspaceWithSyncedConfig = workspaceToSanitize;
+    if (applySyncedConfig) {
+      try {
+        const syncedConfig = readTidgiConfigSync(workspaceToSanitize.wikiFolderLocation);
+        if (syncedConfig) {
+          logger.debug('sanitizeWorkspace: Loaded syncable config from tidgi.config.json', {
+            workspaceId: workspaceToSanitize.id,
+            fields: Object.keys(syncedConfig),
+            syncedName: syncedConfig.name,
+            syncedPort: syncedConfig.port,
+          });
+          workspaceWithSyncedConfig = mergeWithSyncedConfig(workspaceToSanitize, syncedConfig);
+        } else {
+          logger.debug('sanitizeWorkspace: No syncable config found in tidgi.config.json, will use defaults', {
+            workspaceId: workspaceToSanitize.id,
+            wikiFolderLocation: workspaceToSanitize.wikiFolderLocation,
+          });
+        }
+      } catch (error) {
+        logger.warn('sanitizeWorkspace: Failed to read tidgi.config.json during sanitize', {
+          workspaceId: workspaceToSanitize.id,
+          error: (error as Error).message,
+        });
+      }
+    }
+
+    const fixingValues: Partial<typeof workspaceWithSyncedConfig> = {};
     // we add mainWikiID in creation, we fix this value for old existed workspaces
-    if (workspaceToSanitize.isSubWiki && !workspaceToSanitize.mainWikiID) {
-      const mainWorkspace = this.getMainWorkspace(workspaceToSanitize);
+    if (workspaceWithSyncedConfig.isSubWiki && !workspaceWithSyncedConfig.mainWikiID) {
+      const mainWorkspace = this.getMainWorkspace(workspaceWithSyncedConfig);
       if (mainWorkspace !== undefined) {
         fixingValues.mainWikiID = mainWorkspace.id;
       }
     }
     // Migrate old tagName (string) to tagNames (string[])
 
-    const legacyTagName = (workspaceToSanitize as { tagName?: string | null }).tagName;
-    if (legacyTagName && (!workspaceToSanitize.tagNames || workspaceToSanitize.tagNames.length === 0)) {
+    const legacyTagName = (workspaceWithSyncedConfig as { tagName?: string | null }).tagName;
+    if (legacyTagName && (!workspaceWithSyncedConfig.tagNames || workspaceWithSyncedConfig.tagNames.length === 0)) {
       fixingValues.tagNames = [legacyTagName.replaceAll('\n', '')];
     }
     // before 0.8.0, tidgi was loading http content, so lastUrl will be http protocol, but later we switch to tidgi:// protocol, so old value can't be used.
-    if (!workspaceToSanitize.lastUrl?.startsWith('tidgi')) {
+    if (!workspaceWithSyncedConfig.lastUrl?.startsWith('tidgi')) {
       fixingValues.lastUrl = null;
     }
-    if (!workspaceToSanitize.homeUrl.startsWith('tidgi')) {
-      fixingValues.homeUrl = getDefaultTidGiUrl(workspaceToSanitize.id);
+    if (!workspaceWithSyncedConfig.homeUrl.startsWith('tidgi')) {
+      fixingValues.homeUrl = getDefaultTidGiUrl(workspaceWithSyncedConfig.id);
     }
-    if (workspaceToSanitize.tokenAuth && !workspaceToSanitize.authToken) {
+    if (workspaceWithSyncedConfig.tokenAuth && !workspaceWithSyncedConfig.authToken) {
       const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
-      fixingValues.authToken = authService.generateOneTimeAdminAuthTokenForWorkspaceSync(workspaceToSanitize.id);
+      fixingValues.authToken = authService.generateOneTimeAdminAuthTokenForWorkspaceSync(workspaceWithSyncedConfig.id);
     }
-    return { ...wikiWorkspaceDefaultValues, ...workspaceToSanitize, ...fixingValues };
+
+    // Apply defaults, then workspace data, then fixing values
+    // This ensures all required fields exist even if missing from settings.json/tidgi.config.json
+    const result = { ...wikiWorkspaceDefaultValues, ...workspaceWithSyncedConfig, ...fixingValues };
+    logger.debug('sanitizeWorkspace: Complete', {
+      workspaceId: result.id,
+      finalName: result.name,
+      finalPort: result.port,
+      hasSyncedConfig: workspaceWithSyncedConfig !== workspaceToSanitize,
+    });
+    return result;
   }
 
   /**
@@ -426,9 +522,26 @@ export class Workspace implements IWorkspaceService {
 
   public async create(newWorkspaceConfig: INewWikiWorkspaceConfig): Promise<IWorkspace> {
     const newID = nanoid();
+
+    // Read existing config from tidgi.config.json if it exists (for re-adding an existing wiki)
+    // Synced config should take priority over the passed config for syncable fields
+    // This allows users to restore their previous settings when re-adding a wiki
+    let existingConfig: Partial<INewWikiWorkspaceConfig> = {};
+    if (newWorkspaceConfig.wikiFolderLocation) {
+      const syncedConfig = await readTidgiConfig(newWorkspaceConfig.wikiFolderLocation);
+      if (syncedConfig) {
+        existingConfig = syncedConfig as Partial<INewWikiWorkspaceConfig>;
+        logger.info('Applied synced config from tidgi.config.json during workspace creation', {
+          wikiFolderLocation: newWorkspaceConfig.wikiFolderLocation,
+          syncedConfigFields: Object.keys(syncedConfig),
+        });
+      }
+    }
+
     const newWorkspace: IWorkspace = {
       ...wikiWorkspaceDefaultValues,
-      ...newWorkspaceConfig,
+      ...newWorkspaceConfig, // Apply config from UI/form first
+      ...existingConfig, // Then override with synced config (user's saved settings take priority)
       homeUrl: getDefaultTidGiUrl(newID),
       id: newID,
       lastUrl: null,
@@ -438,6 +551,7 @@ export class Workspace implements IWorkspaceService {
     };
 
     await this.set(newID, newWorkspace);
+    logger.info(`[test-id-WORKSPACE_CREATED] Workspace created`, { workspaceId: newID, workspaceName: newWorkspace.name, wikiFolderLocation: newWorkspace.wikiFolderLocation });
 
     return newWorkspace;
   }

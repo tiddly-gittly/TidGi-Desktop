@@ -41,10 +41,12 @@ Frontend (Browser)                    Backend (Node.js Worker)
 ### 2. Syncer-Driven Updates (Refactored Architecture)
 
 **Previous Approach (Problematic):**
+
 - FileSystemWatcher directly called `wiki.addTiddler()` when files changed
 - Led to echo problems and complex edge case handling
 
 **Current Approach (Syncer-Driven):**
+
 - FileSystemWatcher only collects changes into `updatedTiddlers` list
 - Triggers `$tw.syncer.syncFromServer()` to let TiddlyWiki's syncer handle updates
 - Syncer calls `getUpdatedTiddlers()` to get change list
@@ -52,6 +54,7 @@ Frontend (Browser)                    Backend (Node.js Worker)
 - Syncer uses `storeTiddler()` which properly updates changeCount to prevent echo
 
 Benefits:
+
 - Leverages TiddlyWiki's built-in sync queue and throttling
 - Proper handling of batch changes (git checkout)
 - Eliminates echo loops via syncer's changeCount tracking
@@ -59,11 +62,13 @@ Benefits:
 ### 3. Two-Layer Echo Prevention
 
 **IPC Layer (First Defense)**:
+
 - `ipcServerRoutes.ts` tracks recently saved tiddlers in `recentlySavedTiddlers` Set
 - When `wiki.addTiddler()` triggers change event, filter out tiddlers in the Set
 - Prevents frontend from receiving its own save operations as change notifications
 
 **Watch-FS Layer (Second Defense)**:
+
 - When saving/deleting, watch-fs temporarily excludes file from monitoring
 - Prevents watcher from detecting the file write operation
 - Re-includes file after operation completes (with delay for nsfw debounce)
@@ -81,6 +86,7 @@ Benefits:
 **Purpose:** Monitor file system changes without directly modifying wiki state
 
 **Key Features:**
+
 - Uses `nsfw` library for native file system watching
 - Maintains `updatedTiddlers` list for pending changes
 - Implements `getUpdatedTiddlers()` for syncer integration
@@ -89,6 +95,7 @@ Benefits:
 - Manages file exclusion list for echo prevention
 
 **Key Methods:**
+
 - `getUpdatedTiddlers(syncer, callback)`: Returns collected changes
 - `loadTiddler(title, callback)`: Loads tiddler content from file
 - `excludeFile(path)`: Temporarily exclude file from watching
@@ -99,12 +106,14 @@ Benefits:
 **Purpose:** Coordinate between FileSystemWatcher and syncer, implement syncadaptor interface
 
 **Key Features:**
+
 - Extends FileSystemAdaptor for file save/delete operations
 - Delegates file watching to FileSystemWatcher
 - Implements full syncadaptor interface for Node.js syncer
 - Coordinates file exclusion during save/delete operations
 
 **Key Methods:**
+
 - `getUpdatedTiddlers()`: Delegates to FileSystemWatcher
 - `loadTiddler()`: Delegates to FileSystemWatcher
 - `saveTiddler()`: Saves to file with exclusion handling
@@ -115,6 +124,7 @@ Benefits:
 **Purpose:** Handle tiddler file save/delete operations with sub-wiki routing
 
 **Key Features:**
+
 - Routes tiddlers to sub-wikis based on tags
 - Generates file paths using TiddlyWiki's FileSystemPaths
 - Handles external attachment file movement
@@ -125,6 +135,7 @@ Benefits:
 **Purpose:** Bridge between frontend TiddlyWiki and backend file system
 
 **Key Features:**
+
 - Communicates via IPC using `tidgi://` custom protocol
 - Subscribes to change events via IPC Observable
 - Maintains `updatedTiddlers` list from IPC events
@@ -289,6 +300,7 @@ SYNCER_TRIGGER_DELAY_MS = 200   // Debounce for syncer trigger
 ### Why Delay DELETE Events?
 
 Git operations often delete then recreate files quickly. The delay allows:
+
 1. CREATE event to arrive and cancel pending DELETE
 2. Treat as modification instead of delete+create
 3. Prevents "missing tiddler" errors during git operations

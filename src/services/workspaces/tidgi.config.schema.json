@@ -1,0 +1,164 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/tiddly-gittly/TidGi-Desktop/master/src/services/workspaces/tidgi.config.schema.json",
+  "title": "TidGi Workspace Configuration",
+  "description": "Configuration file for TidGi workspace settings that sync across devices",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "version": {
+      "type": "number",
+      "description": "Configuration file format version",
+      "const": 1
+    },
+    "name": {
+      "type": "string",
+      "description": "Custom display name for the workspace",
+      "default": ""
+    },
+    "port": {
+      "type": "number",
+      "description": "Port number for TiddlyWiki server",
+      "minimum": 1024,
+      "maximum": 65535,
+      "default": 5212
+    },
+    "gitUrl": {
+      "type": ["string", "null"],
+      "description": "Git repository URL for syncing",
+      "format": "uri",
+      "default": null
+    },
+    "storageService": {
+      "type": "string",
+      "description": "Storage service type for syncing",
+      "enum": ["local", "github", "gitlab"],
+      "default": "local"
+    },
+    "userName": {
+      "type": "string",
+      "description": "User name for TiddlyWiki",
+      "default": ""
+    },
+    "readOnlyMode": {
+      "type": "boolean",
+      "description": "Enable read-only mode to prevent editing",
+      "default": false
+    },
+    "tokenAuth": {
+      "type": "boolean",
+      "description": "Enable token-based authentication",
+      "default": false
+    },
+    "enableHTTPAPI": {
+      "type": "boolean",
+      "description": "Enable HTTP API for TiddlyWiki",
+      "default": false
+    },
+    "enableFileSystemWatch": {
+      "type": "boolean",
+      "description": "Enable file system watching for automatic reload",
+      "default": false
+    },
+    "ignoreSymlinks": {
+      "type": "boolean",
+      "description": "Ignore symbolic links when scanning wiki folder",
+      "default": true
+    },
+    "backupOnInterval": {
+      "type": "boolean",
+      "description": "Enable automatic periodic backups",
+      "default": true
+    },
+    "syncOnInterval": {
+      "type": "boolean",
+      "description": "Enable automatic periodic Git sync",
+      "default": false
+    },
+    "syncOnStartup": {
+      "type": "boolean",
+      "description": "Sync with Git repository on startup",
+      "default": true
+    },
+    "disableAudio": {
+      "type": "boolean",
+      "description": "Disable audio playback in this workspace",
+      "default": false
+    },
+    "disableNotifications": {
+      "type": "boolean",
+      "description": "Disable system notifications from this workspace",
+      "default": false
+    },
+    "hibernateWhenUnused": {
+      "type": "boolean",
+      "description": "Hibernate workspace when not in use to save resources",
+      "default": false
+    },
+    "transparentBackground": {
+      "type": "boolean",
+      "description": "Enable transparent window background",
+      "default": false
+    },
+    "excludedPlugins": {
+      "type": "array",
+      "description": "List of TiddlyWiki plugins to exclude",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "tagNames": {
+      "type": "array",
+      "description": "Tag names for sub-wiki filtering (for sub-wikis only)",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "includeTagTree": {
+      "type": "boolean",
+      "description": "Include entire tag tree when filtering tiddlers for sub-wikis",
+      "default": false
+    },
+    "fileSystemPathFilterEnable": {
+      "type": "boolean",
+      "description": "Enable custom file system path filter",
+      "default": false
+    },
+    "fileSystemPathFilter": {
+      "type": ["string", "null"],
+      "description": "Custom TiddlyWiki filter for routing tiddlers to sub-wikis",
+      "default": null
+    },
+    "rootTiddler": {
+      "type": "string",
+      "description": "Root tiddler to display on startup"
+    },
+    "https": {
+      "type": "object",
+      "description": "HTTPS configuration for TiddlyWiki server",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable HTTPS"
+        },
+        "tlsCert": {
+          "type": "string",
+          "description": "Path to TLS certificate file"
+        },
+        "tlsKey": {
+          "type": "string",
+          "description": "Path to TLS private key file"
+        }
+      },
+      "required": ["enabled"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["version"],
+  "additionalProperties": false
+}

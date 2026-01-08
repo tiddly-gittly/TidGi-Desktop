@@ -42,6 +42,7 @@ export class ApplicationWorld {
   currentWindow: Page | undefined; // New state-managed current window
   mockOpenAIServer: MockOpenAIServer | undefined;
   mockOAuthServer: MockOAuthServer | undefined;
+  savedWorkspaceId: string | undefined; // For storing workspace ID between steps
 
   // Helper method to check if window is visible
   async isWindowVisible(page: Page): Promise<boolean> {

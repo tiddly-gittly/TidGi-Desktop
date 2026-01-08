@@ -122,24 +122,24 @@ export function useCommitSelection({
   setSelectedFile,
 }: IUseCommitSelectionProps): IUseCommitSelectionReturn {
   // Track if we've already processed the current change type
-  const lastProcessedChangeRef = useRef<string | null>(null);
+  const lastProcessedChangeReference = useRef<string | null>(null);
   // Track if we've done initial selection
-  const hasInitialSelectionRef = useRef<boolean>(false);
+  const hasInitialSelectionReference = useRef<boolean>(false);
 
   // Auto-select on initial load: uncommitted changes if present, otherwise first commit
   useEffect(() => {
-    if (!hasInitialSelectionRef.current && entries.length > 0 && !selectedCommit) {
+    if (!hasInitialSelectionReference.current && entries.length > 0 && !selectedCommit) {
       // First try to find uncommitted changes
       const uncommittedEntry = entries.find((entry) => entry.hash === '');
       if (uncommittedEntry) {
         setSelectedCommit(uncommittedEntry);
-        hasInitialSelectionRef.current = true;
+        hasInitialSelectionReference.current = true;
       } else {
         // If no uncommitted changes, select the first commit
         const firstCommit = entries[0];
         if (firstCommit) {
           setSelectedCommit(firstCommit);
-          hasInitialSelectionRef.current = true;
+          hasInitialSelectionReference.current = true;
         }
       }
     }
@@ -162,7 +162,7 @@ export function useCommitSelection({
     if (selectedCommit && entries.length > 0 && !shouldSelectFirst) {
       // Try to find the same commit in the new entries
       const stillExists = entries.find((entry) => entry.hash === selectedCommit.hash);
-      
+
       if (stillExists) {
         // Only update if data actually changed (compare by serialization)
         if (JSON.stringify(stillExists) !== JSON.stringify(selectedCommit)) {
@@ -175,7 +175,11 @@ export function useCommitSelection({
         // Select the first non-uncommitted commit
         const firstCommit = entries.find((entry) => entry.hash !== '');
         if (firstCommit) {
-          void window.service.native.log('debug', '[test-id-selection-switched-from-uncommitted]', { oldHash: selectedCommit.hash, newHash: firstCommit.hash, newMessage: firstCommit.message });
+          void window.service.native.log('debug', '[test-id-selection-switched-from-uncommitted]', {
+            oldHash: selectedCommit.hash,
+            newHash: firstCommit.hash,
+            newMessage: firstCommit.message,
+          });
           setSelectedCommit(firstCommit);
         }
       }
@@ -185,7 +189,7 @@ export function useCommitSelection({
   // Handle post-operation selection based on lastChangeType
   useEffect(() => {
     // Skip if we've already processed this change type
-    if (lastChangeType && lastChangeType !== lastProcessedChangeRef.current) {
+    if (lastChangeType && lastChangeType !== lastProcessedChangeReference.current) {
       if (lastChangeType === 'revert' && entries.length > 0) {
         // After revert, wait for the new revert commit to appear in entries
         // The new revert commit should be the first one and different from the currently selected one
@@ -195,7 +199,7 @@ export function useCommitSelection({
         if (firstCommit && (!selectedCommit || firstCommit.hash !== selectedCommit.hash)) {
           void window.service.native.log('debug', '[test-id-revert-auto-select]', { hash: firstCommit.hash, message: firstCommit.message });
           setSelectedCommit(firstCommit);
-          lastProcessedChangeRef.current = lastChangeType;
+          lastProcessedChangeReference.current = lastChangeType;
         }
       } else if (lastChangeType === 'undo' && entries.length > 0) {
         // After undo, select uncommitted changes if they exist
@@ -203,7 +207,7 @@ export function useCommitSelection({
         if (uncommittedEntry) {
           void window.service.native.log('debug', '[test-id-undo-auto-select]', { message: 'Selected uncommitted changes' });
           setSelectedCommit(uncommittedEntry);
-          lastProcessedChangeRef.current = lastChangeType;
+          lastProcessedChangeReference.current = lastChangeType;
         }
       }
     }

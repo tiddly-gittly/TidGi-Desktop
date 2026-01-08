@@ -76,7 +76,6 @@ describe('WikiEmbeddingService Integration Tests', () => {
       enableFileSystemWatch: wikiWorkspaceDefaultValues.enableFileSystemWatch,
       hibernateWhenUnused: wikiWorkspaceDefaultValues.hibernateWhenUnused,
       storageService: SupportedStorageServices.local,
-      subWikiFolderName: wikiWorkspaceDefaultValues.subWikiFolderName,
     });
 
     // Set up spy for external API service

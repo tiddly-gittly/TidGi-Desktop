@@ -11,45 +11,138 @@ import { SetOptional } from 'type-fest';
 export const nonConfigFields = ['metadata', 'lastNodeJSArgv'];
 
 /**
+ * Fields that should be synced to wiki folder's tidgi.config.json.
+ * These are user preferences that should follow the wiki across devices.
+ *
+ * ⚠️ IMPORTANT: When modifying this list, remember to also update:
+ * - src/services/workspaces/tidgi.config.schema.json (JSON Schema definition)
+ * - syncableConfigDefaultValues (default values)
+ */
+export const syncableConfigFields = [
+  'name',
+  'port',
+  'gitUrl',
+  'storageService',
+  'userName',
+  'readOnlyMode',
+  'tokenAuth',
+  'enableHTTPAPI',
+  'enableFileSystemWatch',
+  'ignoreSymlinks',
+  'backupOnInterval',
+  'syncOnInterval',
+  'syncOnStartup',
+  'disableAudio',
+  'disableNotifications',
+  'hibernateWhenUnused',
+  'transparentBackground',
+  'excludedPlugins',
+  'tagNames',
+  'includeTagTree',
+  'fileSystemPathFilterEnable',
+  'fileSystemPathFilter',
+  'rootTiddler',
+  'https',
+] as const;
+
+/**
+ * Type for syncable config fields
+ */
+export type SyncableConfigField = typeof syncableConfigFields[number];
+
+/**
+ * Fields that are device-specific and should only be stored locally.
+ */
+export const localOnlyFields = [
+  'id',
+  'order',
+  'active',
+  'hibernated',
+  'lastUrl',
+  'lastNodeJSArgv',
+  'homeUrl',
+  'authToken',
+  'picturePath',
+  'wikiFolderLocation',
+  'mainWikiToLink',
+  'mainWikiID',
+  'isSubWiki',
+  'pageType',
+] as const;
+
+/**
+ * Default values for syncable config fields (stored in tidgi.config.json)
+ *
+ * ⚠️ IMPORTANT: When modifying this object, remember to also update:
+ * - src/services/workspaces/tidgi.config.schema.json (JSON Schema definition)
+ * - syncableConfigFields (field list)
+ */
+export const syncableConfigDefaultValues = {
+  name: '',
+  port: 5212,
+  gitUrl: null,
+  storageService: SupportedStorageServices.local,
+  userName: '',
+  readOnlyMode: false,
+  tokenAuth: false,
+  enableHTTPAPI: false,
+  enableFileSystemWatch: false,
+  ignoreSymlinks: true,
+  backupOnInterval: true,
+  syncOnInterval: false,
+  syncOnStartup: true,
+  disableAudio: false,
+  disableNotifications: false,
+  hibernateWhenUnused: false,
+  transparentBackground: false,
+  excludedPlugins: [] as string[],
+  tagNames: [] as string[],
+  includeTagTree: false,
+  fileSystemPathFilterEnable: false,
+  fileSystemPathFilter: null as string | null,
+  rootTiddler: undefined as string | undefined,
+  https: undefined as { enabled: boolean; tlsCert?: string; tlsKey?: string } | undefined,
+} as const;
+
+/**
+ * Type for syncable config
+ *
+ * ⚠️ IMPORTANT: This type is derived from syncableConfigDefaultValues.
+ * When modifying types here, remember to also update:
+ * - src/services/workspaces/tidgi.config.schema.json (JSON Schema definition)
+ */
+export type ISyncableWikiConfig = {
+  -readonly [K in keyof typeof syncableConfigDefaultValues]: (typeof syncableConfigDefaultValues)[K];
+};
+
+/**
+ * Default values for local-only fields (stored in database)
+ */
+export const localConfigDefaultValues = {
+  id: '',
+  order: 0,
+  active: false,
+  hibernated: false,
+  lastUrl: null as string | null,
+  lastNodeJSArgv: [] as string[],
+  homeUrl: '',
+  authToken: undefined as string | undefined,
+  picturePath: null as string | null,
+  mainWikiToLink: null as string | null,
+  mainWikiID: null as string | null,
+  pageType: null as PageType.wiki | null,
+} as const;
+
+/**
  * Default values for IWikiWorkspace fields. These are used for:
  * 1. Initializing new workspaces
  * 2. Providing default values when fields are missing from persisted config
  * 3. Determining which fields need to be saved (only non-default values are persisted)
  */
 export const wikiWorkspaceDefaultValues = {
-  id: '',
-  name: '',
-  order: 0,
-  picturePath: null,
-  gitUrl: null,
-  active: false,
-  backupOnInterval: true,
-  disableAudio: false,
-  disableNotifications: false,
-  enableFileSystemWatch: false,
-  enableHTTPAPI: false,
-  excludedPlugins: [],
-  fileSystemPathFilter: null,
-  fileSystemPathFilterEnable: false,
-  hibernateWhenUnused: false,
-  hibernated: false,
-  ignoreSymlinks: true,
-  includeTagTree: false,
-  lastNodeJSArgv: [],
-  lastUrl: null,
-  mainWikiID: null,
-  mainWikiToLink: null,
-  pageType: null,
-  readOnlyMode: false,
-  storageService: SupportedStorageServices.github,
-  subWikiFolderName: 'subwiki',
-  syncOnInterval: false,
-  syncOnStartup: true,
-  tagNames: [],
-  tokenAuth: false,
-  transparentBackground: false,
-  userName: '',
-} satisfies Omit<IWikiWorkspace, 'https' | 'wikiFolderLocation' | 'port' | 'isSubWiki' | 'authToken' | 'homeUrl'>;
+  ...localConfigDefaultValues,
+  ...syncableConfigDefaultValues,
+} satisfies Omit<IWikiWorkspace, 'wikiFolderLocation' | 'isSubWiki'>;
 
 export interface IDedicatedWorkspace {
   /**
@@ -164,10 +257,6 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
    */
   storageService: SupportedStorageServices;
   /**
-   * We basically place sub-wiki in main wiki's `tiddlers/subwiki/` folder, but the `subwiki` part can be configured. Default is `subwiki`
-   */
-  subWikiFolderName: string;
-  /**
    * Sync wiki every interval.
    * If this is false (false by default to save the CPU usage from chokidar watch), then sync will only happen if user manually trigger by click sync button in the wiki, or sync at the app open.
    */
@@ -269,7 +358,6 @@ export type INewWikiWorkspaceConfig = SetOptional<
   | 'disableNotifications'
   | 'disableAudio'
   | 'hibernateWhenUnused'
-  | 'subWikiFolderName'
   | 'userName'
   | 'order'
   | 'ignoreSymlinks'

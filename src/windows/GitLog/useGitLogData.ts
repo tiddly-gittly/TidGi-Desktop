@@ -15,6 +15,7 @@ export interface IGitLogData {
   currentBranch: string | null;
   workspaceInfo: IWorkspace | null;
   lastChangeType: string | null;
+  setLastChangeType: (value: string | null) => void;
   hasMore: boolean;
   loadMore: () => Promise<void>;
   setSearchParams: (parameters: ISearchParameters) => void;
@@ -222,17 +223,17 @@ export function useGitLogData(workspaceID: string): IGitLogData {
   }, [workspaceInfo, refreshTrigger, searchParameters]);
 
   // Track the last logged entries to detect actual changes
-  const lastLoggedEntriesRef = useRef<string>('');
+  const lastLoggedEntriesReference = useRef<string>('');
 
   // Log when entries are actually updated and rendered to DOM
   useEffect(() => {
     if (entries.length > 0 && workspaceInfo && 'wikiFolderLocation' in workspaceInfo) {
       // Create a fingerprint of current entries to detect real changes
-      const entriesFingerprint = entries.map(e => e.hash || 'uncommitted').join(',');
-      
+      const entriesFingerprint = entries.map(entry => entry.hash || 'uncommitted').join(',');
+
       // Only log if entries actually changed
-      if (entriesFingerprint !== lastLoggedEntriesRef.current) {
-        lastLoggedEntriesRef.current = entriesFingerprint;
+      if (entriesFingerprint !== lastLoggedEntriesReference.current) {
+        lastLoggedEntriesReference.current = entriesFingerprint;
         // Use setTimeout to ensure DOM has been updated after state changes
         setTimeout(() => {
           void window.service.native.log('debug', '[test-id-git-log-data-rendered]', {
@@ -335,6 +336,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
     currentBranch,
     workspaceInfo,
     lastChangeType,
+    setLastChangeType,
     hasMore,
     loadMore,
     setSearchParams: setSearchParameters,

@@ -118,7 +118,7 @@ export class Preference implements IPreferenceService {
     const preferencesToSave = getPreferenceDifferencesFromDefaults(newPreferences, defaultPreferences);
 
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    databaseService.setSetting('preferences', preferencesToSave);
+    databaseService.setSetting('preferences', preferencesToSave as IPreferences);
     this.updatePreferenceSubject();
   }
 
