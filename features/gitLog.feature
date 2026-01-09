@@ -75,10 +75,10 @@ Feature: Git Log Window
     When I click on a "commit now button" element with selector "button[data-testid='commit-now-button']"
     # Wait for git commit to complete first
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
-    # Clear old git-log-data-rendered markers to wait for the new one after commit
-    When I clear log lines containing "[test-id-git-log-data-rendered]"
-    # Then wait for UI to render the updated data (without uncommitted changes)
-    Then I wait for "git log data rendered after commit" log marker "[test-id-git-log-data-rendered]"
+    # Clear old git-log-refreshed markers to wait for the new one after commit
+    When I clear log lines containing "[test-id-git-log-refreshed]"
+    # Then wait for UI to load the updated data (without uncommitted changes)
+    Then I wait for "git log refreshed after commit" log marker "[test-id-git-log-refreshed]"
     # Verify that uncommitted changes row is gone (commit was successful)
     Then I should not see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     # Verify the correct commit is selected and we're on the latest commit (should show amend button)
@@ -91,10 +91,8 @@ Feature: Git Log Window
     When I click on a "revert button" element with selector "button:has-text('回滚')"
     # Wait for git revert operation to complete and UI to render the new revert commit
     Then I wait for "git revert completed" log marker "[test-id-git-revert-complete]"
-    When I clear log lines containing "[test-id-git-log-data-rendered]"
-    # Give UI time to start refreshing after revert before waiting for the rendered marker
-    And I wait for 1 seconds for "UI to start refreshing after revert"
-    Then I wait for "git log data rendered after revert" log marker "[test-id-git-log-data-rendered]"
+    When I clear log lines containing "[test-id-git-log-refreshed]"
+    Then I wait for "git log refreshed after revert" log marker "[test-id-git-log-refreshed]"
     # Verify that the new revert commit is auto-selected (should contain "回退提交" in the message)
     Then I should see a "selected revert commit row" element with selector "[data-testid^='commit-row-'][data-selected='true']:has-text('回退提交')"
     # Also verify the revert button is visible (confirms we're on the new commit)

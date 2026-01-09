@@ -602,6 +602,7 @@ export async function revertCommit(repoPath: string, commitHash: string, commitM
   if (commitResult.exitCode !== 0) {
     throw new Error(`Failed to commit revert: ${commitResult.stderr}`);
   }
+  console.debug('[test-id-git-revert-complete]');
 }
 
 /**
