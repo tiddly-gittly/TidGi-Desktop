@@ -402,9 +402,10 @@ export class Git implements IGitService {
   public async revertCommit(wikiFolderPath: string, commitHash: string, commitMessage?: string): Promise<void> {
     try {
       await this.callGitOp('revertCommit', wikiFolderPath, commitHash, commitMessage);
-      // Notify git state change
+      // Notify git state change BEFORE logging test marker
+      // This ensures the notification is sent before tests start waiting for UI refresh
       this.notifyGitStateChange(wikiFolderPath, 'revert');
-      // Log for e2e test detection
+      // Log for e2e test detection - only log after notification is sent
       logger.debug(`[test-id-git-revert-complete]`, { wikiFolderPath, commitHash });
     } catch (error) {
       logger.error('revertCommit failed', { error, wikiFolderPath, commitHash, commitMessage });

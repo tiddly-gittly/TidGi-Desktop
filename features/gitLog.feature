@@ -89,9 +89,11 @@ Feature: Git Log Window
       | button:has-text('回滚')                                                           |
     # Click revert button
     When I click on a "revert button" element with selector "button:has-text('回滚')"
-    # Wait for git revert operation to complete and UI to render the new revert commit
+    # Wait for git revert operation to complete
     Then I wait for "git revert completed" log marker "[test-id-git-revert-complete]"
+    # Clear the git-log-refreshed marker before waiting for the new one after revert
     When I clear log lines containing "[test-id-git-log-refreshed]"
+    # Wait for git log to refresh after revert (this indicates the UI has updated)
     Then I wait for "git log refreshed after revert" log marker "[test-id-git-log-refreshed]"
     # Verify that the new revert commit is auto-selected (should contain "回退提交" in the message)
     Then I should see a "selected revert commit row" element with selector "[data-testid^='commit-row-'][data-selected='true']:has-text('回退提交')"
