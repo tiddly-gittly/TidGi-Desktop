@@ -834,7 +834,7 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
  *   | enableFileSystemWatch    | true  |
  *   | syncOnInterval           | false |
  */
-When('I update workspace {string} settings:', async function(this: ApplicationWorld, workspaceName: string, dataTable: DataTable) {
+When('I update workspace {string} settings:', { timeout: 60000 }, async function(this: ApplicationWorld, workspaceName: string, dataTable: DataTable) {
   if (!this.app) {
     throw new Error('Application is not available');
   }
@@ -930,6 +930,50 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
   await this.app.evaluate(async () => {
     await new Promise(resolve => setTimeout(resolve, 500));
   });
+
+  // If enableFileSystemWatch was changed, we need to restart the wiki for it to take effect
+  // The wiki worker reads this config at startup, so changes don't apply until restart
+  if ('enableFileSystemWatch' in settingsUpdate) {
+    // First, wait for the wiki to be fully started before attempting restart
+    // This prevents conflicts if the wiki is still initializing
+    // Wait for WATCH_FS since it indicates wiki worker is ready, or SSE_READY if watch is disabled
+    try {
+      await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs not ready before restart', 30000);
+    } catch {
+      // If watch-fs is disabled initially, wait for SSE instead
+      await waitForLogMarker('[test-id-SSE_READY]', 'SSE not ready before restart', 30000);
+    }
+
+    // Only clear watch-fs related log markers to ensure we wait for fresh ones after restart
+    // Don't clear other markers like git-init-complete that won't appear again
+    await clearLogLinesContaining('[test-id-WATCH_FS_STABILIZED]');
+    await clearLogLinesContaining('[test-id-SSE_READY]');
+
+    // Restart the wiki
+    await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
+      const windows = BrowserWindow.getAllWindows();
+      const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+
+      if (!mainWindow) {
+        throw new Error('Main window not found');
+      }
+
+      await mainWindow.webContents.executeJavaScript(`
+        (async () => {
+          const workspace = await window.service.workspace.get(${JSON.stringify(workspaceId)});
+          if (workspace) {
+            await window.service.wiki.restartWiki(workspace);
+          }
+        })();
+      `);
+    }, targetWorkspaceId);
+
+    // Wait for wiki to restart and watch-fs to stabilize
+    // Only wait if enableFileSystemWatch was set to true
+    if (settingsUpdate.enableFileSystemWatch === true) {
+      await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not stabilize after restart', 30000);
+    }
+  }
 });
 
 /**
@@ -1190,6 +1234,29 @@ async function clearTestIdLogs() {
 When('I clear test-id markers from logs', async function(this: ApplicationWorld) {
   await clearTestIdLogs();
 });
+
+/**
+ * Clear log lines containing a specific marker from all log files.
+ * This is more targeted than clearTestIdLogs - it only removes lines matching the marker.
+ * @param marker - The text pattern to remove from log files
+ */
+async function clearLogLinesContaining(marker: string) {
+  const logDirectory = path.join(process.cwd(), 'userData-test', 'logs');
+  if (!await fs.pathExists(logDirectory)) return;
+
+  const logFiles = (await fs.readdir(logDirectory)).filter(f => f.endsWith('.log'));
+
+  for (const logFile of logFiles) {
+    const logFilePath = path.join(logDirectory, logFile);
+    try {
+      const content = await fs.readFile(logFilePath, 'utf-8');
+      const filteredLines = content.split('\n').filter(line => !line.includes(marker));
+      await fs.writeFile(logFilePath, filteredLines.join('\n'), 'utf-8');
+    } catch (error) {
+      console.warn(`Failed to clear log lines from ${logFile}:`, error);
+    }
+  }
+}
 
 /**
  * Verify JSON file contains expected values using JSONPath
