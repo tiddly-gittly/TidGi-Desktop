@@ -92,6 +92,8 @@ Feature: Git Log Window
     # Wait for git revert operation to complete and UI to render the new revert commit
     Then I wait for "git revert completed" log marker "[test-id-git-revert-complete]"
     When I clear log lines containing "[test-id-git-log-data-rendered]"
+    # Give UI time to start refreshing after revert before waiting for the rendered marker
+    And I wait for 1 seconds for "UI to start refreshing after revert"
     Then I wait for "git log data rendered after revert" log marker "[test-id-git-log-data-rendered]"
     # Verify that the new revert commit is auto-selected (should contain "回退提交" in the message)
     Then I should see a "selected revert commit row" element with selector "[data-testid^='commit-row-'][data-selected='true']:has-text('回退提交')"
