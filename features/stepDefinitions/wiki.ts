@@ -312,15 +312,48 @@ Then('settings.json should have workspace {string} with {string} set to {string}
         throw new Error('No workspaces found in settings.json');
       }
 
-      // Find the workspace by name
-      const workspace = Object.values(settings.workspaces).find(ws => ws.name === workspaceName);
+      // Find the workspace by name (check both settings.json and tidgi.config.json)
+      let workspace: IWorkspace | undefined;
+      for (const ws of Object.values(settings.workspaces)) {
+        if (ws.name === workspaceName) {
+          workspace = ws;
+          break;
+        }
+        // Also check tidgi.config.json for wiki workspaces
+        if (isWikiWorkspace(ws)) {
+          try {
+            const tidgiConfigPath = path.join(ws.wikiFolderLocation, 'tidgi.config.json');
+            if (await fs.pathExists(tidgiConfigPath)) {
+              const tidgiConfig = await fs.readJson(tidgiConfigPath) as { name?: string };
+              if (tidgiConfig.name === workspaceName) {
+                workspace = ws;
+                break;
+              }
+            }
+          } catch {
+            // Ignore
+          }
+        }
+      }
       if (!workspace) {
-        const existingNames = Object.values(settings.workspaces).map(ws => ws.name).join(', ');
-        throw new Error(`Workspace "${workspaceName}" not found in settings.json. Existing workspaces: ${existingNames}`);
+        throw new Error(`Workspace "${workspaceName}" not found in settings.json or tidgi.config.json`);
       }
 
-      // Get the property value
-      const actualValue = (workspace as unknown as Record<string, unknown>)[propertyName];
+      // Get the property value - check both settings.json and tidgi.config.json
+      let actualValue = (workspace as unknown as Record<string, unknown>)[propertyName];
+
+      // If not found in settings.json, check tidgi.config.json for wiki workspaces
+      if (actualValue === undefined && isWikiWorkspace(workspace)) {
+        try {
+          const tidgiConfigPath = path.join(workspace.wikiFolderLocation, 'tidgi.config.json');
+          if (await fs.pathExists(tidgiConfigPath)) {
+            const tidgiConfig = await fs.readJson(tidgiConfigPath) as Record<string, unknown>;
+            actualValue = tidgiConfig[propertyName];
+          }
+        } catch {
+          // Ignore errors reading tidgi.config.json
+        }
+      }
 
       // Convert expected value to appropriate type for comparison
       let parsedExpectedValue: unknown = expectedValue;
@@ -359,15 +392,48 @@ Then('settings.json should have workspace {string} with {string} containing {str
         throw new Error('No workspaces found in settings.json');
       }
 
-      // Find the workspace by name
-      const workspace = Object.values(settings.workspaces).find(ws => ws.name === workspaceName);
+      // Find the workspace by name (check both settings.json and tidgi.config.json)
+      let workspace: IWorkspace | undefined;
+      for (const ws of Object.values(settings.workspaces)) {
+        if (ws.name === workspaceName) {
+          workspace = ws;
+          break;
+        }
+        // Also check tidgi.config.json for wiki workspaces
+        if (isWikiWorkspace(ws)) {
+          try {
+            const tidgiConfigPath = path.join(ws.wikiFolderLocation, 'tidgi.config.json');
+            if (await fs.pathExists(tidgiConfigPath)) {
+              const tidgiConfig = await fs.readJson(tidgiConfigPath) as { name?: string };
+              if (tidgiConfig.name === workspaceName) {
+                workspace = ws;
+                break;
+              }
+            }
+          } catch {
+            // Ignore
+          }
+        }
+      }
       if (!workspace) {
-        const existingNames = Object.values(settings.workspaces).map(ws => ws.name).join(', ');
-        throw new Error(`Workspace "${workspaceName}" not found in settings.json. Existing workspaces: ${existingNames}`);
+        throw new Error(`Workspace "${workspaceName}" not found in settings.json or tidgi.config.json`);
       }
 
-      // Get the property value
-      const actualValue = (workspace as unknown as Record<string, unknown>)[propertyName];
+      // Get the property value - check both settings.json and tidgi.config.json
+      let actualValue = (workspace as unknown as Record<string, unknown>)[propertyName];
+
+      // If not found in settings.json, check tidgi.config.json for wiki workspaces
+      if (actualValue === undefined && isWikiWorkspace(workspace)) {
+        try {
+          const tidgiConfigPath = path.join(workspace.wikiFolderLocation, 'tidgi.config.json');
+          if (await fs.pathExists(tidgiConfigPath)) {
+            const tidgiConfig = await fs.readJson(tidgiConfigPath) as Record<string, unknown>;
+            actualValue = tidgiConfig[propertyName];
+          }
+        } catch {
+          // Ignore errors reading tidgi.config.json
+        }
+      }
 
       if (!Array.isArray(actualValue)) {
         throw new Error(`Expected "${propertyName}" to be an array but got "${typeof actualValue}"`);
@@ -468,11 +534,11 @@ When('I clear log lines containing {string}', async function(this: ApplicationWo
     const logPath = path.join(logDirectory, logFile);
     try {
       const content = fs.readFileSync(logPath, 'utf-8');
-      const lines = content.split('\n');
-      const filteredLines = lines.filter(line => !line.includes(marker));
+      // Remove lines containing the marker
+      const filteredLines = content.split('\n').filter(line => !line.includes(marker));
       fs.writeFileSync(logPath, filteredLines.join('\n'), 'utf-8');
-    } catch {
-      // Ignore errors if file is locked or doesn't exist
+    } catch (error) {
+      console.warn(`Failed to clear log lines from ${logFile}:`, error);
     }
   }
 });
@@ -619,18 +685,47 @@ When('I open edit workspace window for workspace with name {string}', async func
     throw new Error('Application is not available');
   }
 
-  // Read settings file to get workspace info
-  const settings = await fs.readJson(settingsPath) as { workspaces?: Record<string, IWorkspace> };
-  const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
-
-  // Find workspace by name
+  // Use backOff to retry finding the workspace, as tidgi.config.json might be written asynchronously
   let targetWorkspaceId: string | undefined;
-  for (const [id, workspace] of Object.entries(workspaces)) {
-    if (!workspace.pageType && workspace.name === workspaceName) {
-      targetWorkspaceId = id;
-      break;
-    }
-  }
+
+  await backOff(
+    async () => {
+      // Read settings file to get workspace info
+      const settings = await fs.readJson(settingsPath) as { workspaces?: Record<string, IWorkspace> };
+      const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
+
+      // Find workspace by name or by wikiFolderLocation (in case name is removed from settings.json)
+      for (const [id, workspace] of Object.entries(workspaces)) {
+        if (workspace.pageType) continue; // Skip page workspaces
+
+        // Try to match by name (if available in settings.json)
+        if (workspace.name === workspaceName) {
+          targetWorkspaceId = id;
+          return;
+        }
+
+        // Try to read name from tidgi.config.json
+        if (isWikiWorkspace(workspace)) {
+          try {
+            const tidgiConfigPath = path.join(workspace.wikiFolderLocation, 'tidgi.config.json');
+            if (await fs.pathExists(tidgiConfigPath)) {
+              const tidgiConfig = await fs.readJson(tidgiConfigPath) as { name?: string };
+              if (tidgiConfig.name === workspaceName) {
+                targetWorkspaceId = id;
+                return;
+              }
+            }
+          } catch {
+            // Ignore errors reading tidgi.config.json
+          }
+        }
+      }
+
+      // If not found, throw error to trigger retry
+      throw new Error(`Workspace "${workspaceName}" not found yet, will retry...`);
+    },
+    BACKOFF_OPTIONS,
+  );
 
   if (!targetWorkspaceId) {
     throw new Error(`No workspace found with name: ${workspaceName}`);

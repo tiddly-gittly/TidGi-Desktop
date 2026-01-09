@@ -190,6 +190,7 @@ export function readTidgiConfigSync(wikiFolderLocation: string): Partial<ISyncab
 /**
  * Write syncable config to tidgi.config.json in wiki folder
  * Only writes non-default values to keep the file minimal
+ * If all values are default, removes the config file (if it exists)
  */
 export async function writeTidgiConfig(wikiFolderLocation: string, config: Partial<ISyncableWikiConfig>): Promise<void> {
   const configPath = getTidgiConfigPath(wikiFolderLocation);
@@ -199,6 +200,15 @@ export async function writeTidgiConfig(wikiFolderLocation: string, config: Parti
       const defaultValue = syncableConfigDefaultValues[key as SyncableConfigField];
       return !isEqual(value, defaultValue);
     });
+
+    // If no non-default config, remove the file if it exists
+    if (Object.keys(nonDefaultConfig).length === 0) {
+      if (await fs.pathExists(configPath)) {
+        await fs.remove(configPath);
+        getLogger().debug(`Removed tidgi.config.json (all values are default)`, { configPath });
+      }
+      return;
+    }
 
     const fileContent: ITidgiConfigFile = {
       $schema: 'https://raw.githubusercontent.com/tiddly-gittly/TidGi-Desktop/master/src/services/workspaces/tidgi.config.schema.json',
