@@ -5,6 +5,7 @@ import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from '@services/databa
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
+import { wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the external API function
@@ -59,23 +60,22 @@ describe('WikiEmbeddingService Integration Tests', () => {
       active: true,
       hibernated: false,
       order: 0,
-      disableNotifications: false,
-      backupOnInterval: false,
-      disableAudio: false,
-      enableHTTPAPI: false,
-      excludedPlugins: [],
-      enableFileSystemWatch: true,
       gitUrl: null,
-      hibernateWhenUnused: false,
       readOnlyMode: false,
-      storageService: SupportedStorageServices.local,
-      subWikiFolderName: 'subwiki',
+      tokenAuth: false,
       syncOnInterval: false,
       syncOnStartup: false,
-      tokenAuth: false,
       transparentBackground: false,
       userName: '',
       picturePath: null,
+      backupOnInterval: wikiWorkspaceDefaultValues.backupOnInterval,
+      disableAudio: wikiWorkspaceDefaultValues.disableAudio,
+      disableNotifications: wikiWorkspaceDefaultValues.disableNotifications,
+      enableHTTPAPI: wikiWorkspaceDefaultValues.enableHTTPAPI,
+      excludedPlugins: wikiWorkspaceDefaultValues.excludedPlugins,
+      enableFileSystemWatch: wikiWorkspaceDefaultValues.enableFileSystemWatch,
+      hibernateWhenUnused: wikiWorkspaceDefaultValues.hibernateWhenUnused,
+      storageService: SupportedStorageServices.local,
     });
 
     // Set up spy for external API service

@@ -164,7 +164,7 @@ export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreate
     wikiFolderLocation: form.wikiFolderLocation!,
     readOnlyMode: false,
     tokenAuth: false,
-    enableFileSystemWatch: true,
+    enableFileSystemWatch: false,
     // Additional fields will be set with default values in `sanitizeWorkspace`, see also `INewWikiWorkspaceConfig`
   };
 }

@@ -32,9 +32,25 @@ export async function handleAttachToTidgiMiniWindow(
   // "Segmentation fault (core dumped)" bug on Linux
   // https://github.com/electron/electron/issues/22137#issuecomment-586105622
   // https://github.com/atomery/translatium/issues/164
-  const tray = new Tray(nativeImage.createEmpty());
-  // icon template is not supported on Windows & Linux
-  tray.setImage(nativeImage.createFromPath(TIDGI_MINI_WINDOW_ICON_PATH));
+  let tray: Tray;
+  try {
+    tray = new Tray(nativeImage.createEmpty());
+    // icon template is not supported on Windows & Linux
+    const iconImage = nativeImage.createFromPath(TIDGI_MINI_WINDOW_ICON_PATH);
+    if (iconImage.isEmpty()) {
+      logger.warn('TidGi mini window icon not found or empty', {
+        function: 'handleAttachToTidgiMiniWindow',
+        iconPath: TIDGI_MINI_WINDOW_ICON_PATH,
+      });
+    }
+    tray.setImage(iconImage);
+  } catch (error) {
+    logger.error('Failed to create tray for tidgi mini window', {
+      function: 'handleAttachToTidgiMiniWindow',
+      error,
+    });
+    throw error;
+  }
 
   // Create tidgi mini window-specific window configuration
   // Override titleBar settings from windowConfig with tidgi mini window-specific preference
@@ -70,25 +86,35 @@ export async function handleAttachToTidgiMiniWindow(
   tidgiMiniWindow.on('after-create-window', () => {
     if (tidgiMiniWindow.window !== undefined) {
       tidgiMiniWindow.window.on('focus', async () => {
+        // Re-check window existence after async boundary
+        if (tidgiMiniWindow.window === undefined || tidgiMiniWindow.window.isDestroyed()) {
+          logger.debug('tidgiMiniWindow.window is undefined or destroyed in focus handler', { function: 'handleAttachToTidgiMiniWindow' });
+          return;
+        }
+
         logger.debug('restore window position', { function: 'handleAttachToTidgiMiniWindow' });
         if (windowWithBrowserViewState === undefined) {
           logger.debug('windowWithBrowserViewState is undefined for tidgiMiniWindow', { function: 'handleAttachToTidgiMiniWindow' });
         } else {
-          if (tidgiMiniWindow.window === undefined) {
-            logger.debug('tidgiMiniWindow.window is undefined', { function: 'handleAttachToTidgiMiniWindow' });
-          } else {
-            const haveXYValue = [windowWithBrowserViewState.x, windowWithBrowserViewState.y].every((value) => Number.isFinite(value));
-            const haveWHValue = [windowWithBrowserViewState.width, windowWithBrowserViewState.height].every((value) => Number.isFinite(value));
-            if (haveXYValue) {
-              tidgiMiniWindow.window.setPosition(windowWithBrowserViewState.x, windowWithBrowserViewState.y, false);
-            }
-            if (haveWHValue) {
-              tidgiMiniWindow.window.setSize(windowWithBrowserViewState.width, windowWithBrowserViewState.height, false);
-            }
+          const haveXYValue = [windowWithBrowserViewState.x, windowWithBrowserViewState.y].every((value) => Number.isFinite(value));
+          const haveWHValue = [windowWithBrowserViewState.width, windowWithBrowserViewState.height].every((value) => Number.isFinite(value));
+          if (haveXYValue) {
+            tidgiMiniWindow.window.setPosition(windowWithBrowserViewState.x, windowWithBrowserViewState.y, false);
+          }
+          if (haveWHValue) {
+            tidgiMiniWindow.window.setSize(windowWithBrowserViewState.width, windowWithBrowserViewState.height, false);
           }
         }
-        const view = await viewService.getActiveBrowserView();
-        view?.webContents.focus();
+
+        try {
+          const view = await viewService.getActiveBrowserView();
+          // Check again after async call
+          if (view && !view.webContents.isDestroyed()) {
+            view.webContents.focus();
+          }
+        } catch (error) {
+          logger.warn('Failed to focus view in tidgi mini window', { function: 'handleAttachToTidgiMiniWindow', error });
+        }
       });
       tidgiMiniWindow.window.removeAllListeners('close');
       tidgiMiniWindow.window.on('close', (event) => {

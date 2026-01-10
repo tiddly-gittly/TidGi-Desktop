@@ -1,8 +1,9 @@
+import { Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Box, Button, Chip, FormControlLabel, Switch, Typography } from '@mui/material';
+import { Box, Button, Chip, FormControlLabel, IconButton, InputAdornment, Switch, Typography } from '@mui/material';
 import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextField } from '../../../PreferenceComponents';
 
@@ -39,6 +40,7 @@ export function ProviderPanel({
   const { t } = useTranslation('agent');
   const isEnabled = provider.enabled !== false;
   const shouldShowBaseURL = provider.showBaseURLField || provider.providerClass === 'openAICompatible';
+  const [showApiKey, setShowApiKey] = useState(false);
 
   return (
     <>
@@ -102,7 +104,7 @@ export function ProviderPanel({
 
       <TextField
         label={t('Preference.APIKey')}
-        type='password'
+        type={showApiKey ? 'text' : 'password'}
         value={formState.apiKey}
         onChange={(event) => {
           onFormChange('apiKey', event.target.value);
@@ -110,7 +112,24 @@ export function ProviderPanel({
         fullWidth
         margin='normal'
         disabled={provider.providerClass === 'ollama'} // Ollama doesn't require API key
-        slotProps={{ htmlInput: { 'data-testid': 'provider-api-key-input' } }}
+        slotProps={{
+          htmlInput: { 'data-testid': 'provider-api-key-input' },
+          input: {
+            endAdornment: (
+              <InputAdornment position='end'>
+                <IconButton
+                  onClick={() => {
+                    setShowApiKey(!showApiKey);
+                  }}
+                  edge='end'
+                  size='small'
+                >
+                  {showApiKey ? <VisibilityOffIcon fontSize='small' /> : <VisibilityIcon fontSize='small' />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          },
+        }}
       />
 
       {/* Show baseURL field (if needed) */}

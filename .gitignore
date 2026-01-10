@@ -74,3 +74,4 @@ wiki-test/
 *.tsbuildinfo
 tsconfig.test.json.tsbuildinfo
 /tidgi-codeql-db
+/test-artifacts

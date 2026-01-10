@@ -1,3 +1,9 @@
+/**
+ * The filename for workspace config in wiki folder
+ * Duplicated here to avoid importing from configSetting which would pull in electron dependencies
+ */
+const TIDGI_CONFIG_FILE = 'tidgi.config.json';
+
 import type { IWikiWorkspace } from '@services/workspaces/interface';
 import type { TiddlyWiki } from 'tiddlywiki';
 
@@ -49,6 +55,24 @@ export function createLoadWikiTiddlersWithSubWikis(
         const tiddlerFiles = wikiInstance.loadTiddlersFromPath(subWikiTiddlersPath);
 
         for (const tiddlerFile of tiddlerFiles) {
+          // Skip tidgi.config.json - it's a TidGi configuration file, not a tiddler
+          if (tiddlerFile.filepath) {
+            const fileName = tiddlerFile.filepath.split('/').pop() ?? '';
+            if (fileName === TIDGI_CONFIG_FILE) {
+              continue;
+            }
+          }
+
+          // Skip files in the external attachments folder (default: files/)
+          // These are referenced by tiddlers via _canonical_uri and should not be loaded as separate tiddlers
+          if (tiddlerFile.filepath) {
+            const relativePath = tiddlerFile.filepath.replace(subWikiTiddlersPath, '').replace(/^\//, '');
+            const externalAttachmentsFolder = wikiInstance.wiki?.getTiddlerText?.('$:/config/ExternalAttachments/WikiFolderToMove', 'files') ?? 'files';
+            if (relativePath.startsWith(`${externalAttachmentsFolder}/`)) {
+              continue; // Skip files in external attachments folder
+            }
+          }
+
           // Register file info for filesystem adaptor (so tiddlers save back to correct location)
           if (tiddlerFile.filepath) {
             for (const tiddler of tiddlerFile.tiddlers) {

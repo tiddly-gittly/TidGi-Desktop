@@ -15,13 +15,16 @@ export interface IGitLogData {
   currentBranch: string | null;
   workspaceInfo: IWorkspace | null;
   lastChangeType: string | null;
+  setLastChangeType: (value: string | null) => void;
   hasMore: boolean;
   loadMore: () => Promise<void>;
   setSearchParams: (parameters: ISearchParameters) => void;
   isSearchMode: boolean;
+  /** Manually trigger a data refresh - useful when observable subscription fails */
+  triggerRefresh: () => void;
 }
 
-export function useGitLogData(): IGitLogData {
+export function useGitLogData(workspaceID: string): IGitLogData {
   const [entries, setEntries] = useState<GitLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -33,7 +36,6 @@ export function useGitLogData(): IGitLogData {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [searchParameters, setSearchParameters] = useState<ISearchParameters>({ mode: 'none', query: '', startDate: null, endDate: null });
-  const lastLoggedEntriesCount = useRef<number>(0);
   const lastRefreshTime = useRef<number>(0);
   const lastChangeTimestamp = useRef<number>(0);
   const loadingMoreReference = useRef(false);
@@ -46,9 +48,6 @@ export function useGitLogData(): IGitLogData {
   useEffect(() => {
     const loadWorkspaceInfo = async () => {
       try {
-        const meta = window.meta();
-        const workspaceID = (meta as { workspaceID?: string }).workspaceID;
-
         if (!workspaceID) {
           throw new Error('No workspace ID provided');
         }
@@ -71,7 +70,7 @@ export function useGitLogData(): IGitLogData {
     };
 
     void loadWorkspaceInfo();
-  }, []);
+  }, [workspaceID]);
 
   // Subscribe to git state changes (only in normal mode, not in search mode)
   const gitStateChange$ = useMemo(
@@ -102,12 +101,17 @@ export function useGitLogData(): IGitLogData {
       return;
     }
 
+    // User-initiated operations should always trigger refresh immediately
+    const userOperations = ['commit', 'sync', 'revert', 'undo', 'checkout', 'discard'];
+    const isUserOperation = change?.type && userOperations.includes(change.type);
+
     // For file-change events, use longer debounce (1000ms) to avoid watch-fs storm
     // For other git operations (commit, discard, etc), use shorter debounce (300ms)
+    // User operations bypass debounce entirely
     const debounceTime = change?.type === 'file-change' ? 1000 : 300;
 
-    // Allow refresh if enough time has passed since last refresh
-    if (timeSinceLastRefresh >= debounceTime) {
+    // Allow refresh if enough time has passed since last refresh OR if it's a user operation
+    if (isUserOperation || timeSinceLastRefresh >= debounceTime) {
       lastRefreshTime.current = now;
       lastChangeTimestamp.current = change?.timestamp ?? 0;
       // Store the type of change so we can auto-select first commit after a manual commit
@@ -116,6 +120,12 @@ export function useGitLogData(): IGitLogData {
       setRefreshTrigger((previous) => previous + 1);
     }
   });
+
+  // Manually trigger a refresh - useful when observable subscription doesn't work (e.g., cross-process IPC issues)
+  const triggerRefresh = useCallback(() => {
+    lastRefreshTime.current = Date.now();
+    setRefreshTrigger((previous) => previous + 1);
+  }, []);
 
   // Load git log data
   useEffect(() => {
@@ -220,17 +230,24 @@ export function useGitLogData(): IGitLogData {
     void loadGitLog();
   }, [workspaceInfo, refreshTrigger, searchParameters]);
 
-  // Log when entries are updated and rendered to DOM
+  // Track the last logged entries to detect actual changes
+  const lastLoggedEntriesReference = useRef<string>('');
+
+  // Log when entries are actually updated and rendered to DOM
   useEffect(() => {
     if (entries.length > 0 && workspaceInfo && 'wikiFolderLocation' in workspaceInfo) {
-      // Only log if the entries count actually changed (to avoid logging on every re-render)
-      if (lastLoggedEntriesCount.current !== entries.length) {
-        lastLoggedEntriesCount.current = entries.length;
+      // Create a fingerprint of current entries to detect real changes
+      const entriesFingerprint = entries.map(entry => entry.hash || 'uncommitted').join(',');
+
+      // Only log if entries actually changed
+      if (entriesFingerprint !== lastLoggedEntriesReference.current) {
+        lastLoggedEntriesReference.current = entriesFingerprint;
         // Use setTimeout to ensure DOM has been updated after state changes
         setTimeout(() => {
           void window.service.native.log('debug', '[test-id-git-log-data-rendered]', {
             commitCount: entries.length,
             wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+            entriesFingerprint,
           });
         }, 100);
       }
@@ -327,9 +344,11 @@ export function useGitLogData(): IGitLogData {
     currentBranch,
     workspaceInfo,
     lastChangeType,
+    setLastChangeType,
     hasMore,
     loadMore,
     setSearchParams: setSearchParameters,
     isSearchMode,
+    triggerRefresh,
   };
 }

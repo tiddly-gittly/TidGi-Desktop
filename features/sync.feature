@@ -8,6 +8,10 @@ Feature: Git Sync
     And I launch the TidGi application
     And I wait for the page to load completely
     Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    # Enable file system watch for testing (default is false in production)
+    When I update workspace "wiki" settings:
+      | property              | value |
+      | enableFileSystemWatch | true  |
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
     And I wait for "git initialization" log marker "[test-id-git-init-complete]"

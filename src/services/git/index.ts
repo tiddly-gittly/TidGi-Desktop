@@ -252,13 +252,15 @@ export class Git implements IGitService {
       if (!configs.commitMessage) {
         logger.debug('No commit message provided, attempting to generate AI commit message');
         const { generateAICommitMessage } = await import('./aiCommitMessage');
-        const aiCommitMessage = await generateAICommitMessage(workspace.wikiFolderLocation);
+        // Determine source of the call for debugging
+        const source = configs.commitOnly ? 'backup' : 'sync';
+        const aiCommitMessage = await generateAICommitMessage(workspace.wikiFolderLocation, source);
         if (aiCommitMessage) {
           finalConfigs = { ...configs, commitMessage: aiCommitMessage };
-          logger.debug('Using AI-generated commit message', { commitMessage: aiCommitMessage });
+          logger.debug('Using AI-generated commit message', { commitMessage: aiCommitMessage, source });
         } else {
           // If AI generation fails or times out, use default message
-          logger.debug('AI commit message generation returned undefined, using default message');
+          logger.debug('AI commit message generation returned undefined, using default message', { source });
           finalConfigs = { ...configs, commitMessage: i18n.t('LOG.CommitBackupMessage') };
         }
       } else {
@@ -400,12 +402,35 @@ export class Git implements IGitService {
   public async revertCommit(wikiFolderPath: string, commitHash: string, commitMessage?: string): Promise<void> {
     try {
       await this.callGitOp('revertCommit', wikiFolderPath, commitHash, commitMessage);
-      // Notify git state change
+      // Notify git state change BEFORE logging test marker
+      // This ensures the notification is sent before tests start waiting for UI refresh
       this.notifyGitStateChange(wikiFolderPath, 'revert');
-      // Log for e2e test detection
+      // Log for e2e test detection - only log after notification is sent
       logger.debug(`[test-id-git-revert-complete]`, { wikiFolderPath, commitHash });
     } catch (error) {
       logger.error('revertCommit failed', { error, wikiFolderPath, commitHash, commitMessage });
+      throw error;
+    }
+  }
+
+  public async amendCommitMessage(wikiFolderPath: string, newMessage: string): Promise<void> {
+    try {
+      await this.callGitOp('amendCommitMessage', wikiFolderPath, newMessage);
+      // Notify git state change (commit list and hashes may change)
+      this.notifyGitStateChange(wikiFolderPath, 'commit');
+    } catch (error) {
+      logger.error('amendCommitMessage failed', { error, wikiFolderPath, newMessage });
+      throw error;
+    }
+  }
+
+  public async undoCommit(wikiFolderPath: string, commitHash: string): Promise<void> {
+    try {
+      await this.callGitOp('undoCommit', wikiFolderPath, commitHash);
+      // Notify git state change
+      this.notifyGitStateChange(wikiFolderPath, 'undo');
+    } catch (error) {
+      logger.error('undoCommit failed', { error, wikiFolderPath, commitHash });
       throw error;
     }
   }
@@ -430,9 +455,7 @@ export class Git implements IGitService {
       }
 
       const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
-      const aiConfig = await externalAPIService.getAIConfig();
-
-      return !!(aiConfig?.free?.model && aiConfig?.free?.provider);
+      return await externalAPIService.isAIAvailable();
     } catch {
       return false;
     }

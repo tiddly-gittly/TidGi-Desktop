@@ -1,4 +1,4 @@
-import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from 'react';
+import { type Dispatch, type SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { GitLogEntry, ISearchParameters } from './types';
@@ -91,6 +91,8 @@ export function useSyncHandler({ workspaceInfo, isSyncing, showSnackbar }: IUseS
 
 interface IUseCommitSelectionReturn {
   handleCommitSuccess: () => void;
+  handleRevertSuccess: () => void;
+  handleUndoSuccess: () => void;
   handleSearch: (parameters: ISearchParameters) => void;
 }
 
@@ -100,10 +102,13 @@ interface IUseCommitSelectionProps {
   setShouldSelectFirst: (value: boolean) => void;
   setSelectedCommit: (commit: GitLogEntry | undefined) => void;
   lastChangeType: string | null;
+  setLastChangeType: (value: string | null) => void;
   selectedCommit: GitLogEntry | undefined;
   setSearchParams: (parameters: ISearchParameters) => void;
   setCurrentSearchParameters: (parameters: ISearchParameters) => void;
   setSelectedFile: (value: string | null) => void;
+  /** Manually trigger data refresh - fallback when observable doesn't work */
+  triggerRefresh: () => void;
 }
 
 export function useCommitSelection({
@@ -112,11 +117,37 @@ export function useCommitSelection({
   setShouldSelectFirst,
   setSelectedCommit,
   lastChangeType,
+  setLastChangeType,
   selectedCommit,
   setSearchParams,
   setCurrentSearchParameters,
   setSelectedFile,
+  triggerRefresh,
 }: IUseCommitSelectionProps): IUseCommitSelectionReturn {
+  // Track if we've already processed the current change type
+  const lastProcessedChangeReference = useRef<string | null>(null);
+  // Track if we've done initial selection
+  const hasInitialSelectionReference = useRef<boolean>(false);
+
+  // Auto-select on initial load: uncommitted changes if present, otherwise first commit
+  useEffect(() => {
+    if (!hasInitialSelectionReference.current && entries.length > 0 && !selectedCommit) {
+      // First try to find uncommitted changes
+      const uncommittedEntry = entries.find((entry) => entry.hash === '');
+      if (uncommittedEntry) {
+        setSelectedCommit(uncommittedEntry);
+        hasInitialSelectionReference.current = true;
+      } else {
+        // If no uncommitted changes, select the first commit
+        const firstCommit = entries[0];
+        if (firstCommit) {
+          setSelectedCommit(firstCommit);
+          hasInitialSelectionReference.current = true;
+        }
+      }
+    }
+  }, [entries, selectedCommit, setSelectedCommit]);
+
   // Auto-select first commit after successful manual commit
   useEffect(() => {
     if (shouldSelectFirst && entries.length > 0) {
@@ -129,35 +160,86 @@ export function useCommitSelection({
     }
   }, [shouldSelectFirst, entries, setSelectedCommit, setShouldSelectFirst]);
 
-  // Auto-select first commit when a new commit is detected
-  useEffect(() => {
-    if (lastChangeType === 'commit' && entries.length > 0) {
-      // Find the first non-uncommitted commit (the newly created commit)
-      const firstCommit = entries.find((entry) => entry.hash !== '');
-      if (firstCommit) {
-        setSelectedCommit(firstCommit);
-      }
-    }
-  }, [lastChangeType, entries, setSelectedCommit]);
-
   // Maintain selection across refreshes by hash
-  // Skip if we should select first (manual commit) or if a commit just happened (auto-selection in progress)
   useEffect(() => {
-    if (selectedCommit && entries.length > 0 && !shouldSelectFirst && lastChangeType !== 'commit') {
+    if (selectedCommit && entries.length > 0 && !shouldSelectFirst) {
       // Try to find the same commit in the new entries
       const stillExists = entries.find((entry) => entry.hash === selectedCommit.hash);
-      // Only update if data actually changed (compare by serialization)
-      if (stillExists && JSON.stringify(stillExists) !== JSON.stringify(selectedCommit)) {
-        // Update to the new entry object to get fresh data
-        setSelectedCommit(stillExists);
+
+      if (stillExists) {
+        // Only update if data actually changed (compare by serialization)
+        if (JSON.stringify(stillExists) !== JSON.stringify(selectedCommit)) {
+          // Update to the new entry object to get fresh data
+          void window.service.native.log('debug', '[test-id-selection-maintained]', { hash: stillExists.hash, message: stillExists.message });
+          setSelectedCommit(stillExists);
+        }
+      } else if (selectedCommit.hash === '') {
+        // If selected uncommitted changes no longer exist (e.g., after commit)
+        // Select the first non-uncommitted commit
+        const firstCommit = entries.find((entry) => entry.hash !== '');
+        if (firstCommit) {
+          void window.service.native.log('debug', '[test-id-selection-switched-from-uncommitted]', {
+            oldHash: selectedCommit.hash,
+            newHash: firstCommit.hash,
+            newMessage: firstCommit.message,
+          });
+          setSelectedCommit(firstCommit);
+        }
       }
     }
-  }, [entries, selectedCommit, shouldSelectFirst, lastChangeType, setSelectedCommit]);
+  }, [entries, selectedCommit, shouldSelectFirst, setSelectedCommit]);
+
+  // Handle post-operation selection based on lastChangeType
+  useEffect(() => {
+    // Skip if we've already processed this change type
+    if (lastChangeType && lastChangeType !== lastProcessedChangeReference.current) {
+      if (lastChangeType === 'revert' && entries.length > 0) {
+        // After revert, wait for the new revert commit to appear in entries
+        // The new revert commit should be the first one and different from the currently selected one
+        const firstCommit = entries.find((entry) => entry.hash !== '');
+        // Only auto-select if the first commit is different from what's currently selected
+        // This ensures we're selecting the NEW revert commit, not staying on the old one
+        if (firstCommit && (!selectedCommit || firstCommit.hash !== selectedCommit.hash)) {
+          void window.service.native.log('debug', '[test-id-revert-auto-select]', { hash: firstCommit.hash, message: firstCommit.message });
+          setSelectedCommit(firstCommit);
+          lastProcessedChangeReference.current = lastChangeType;
+        }
+      } else if (lastChangeType === 'undo' && entries.length > 0) {
+        // After undo, select uncommitted changes if they exist
+        const uncommittedEntry = entries.find((entry) => entry.hash === '');
+        if (uncommittedEntry) {
+          void window.service.native.log('debug', '[test-id-undo-auto-select]', { message: 'Selected uncommitted changes' });
+          setSelectedCommit(uncommittedEntry);
+          lastProcessedChangeReference.current = lastChangeType;
+        }
+      }
+    }
+  }, [lastChangeType, entries, setSelectedCommit, selectedCommit]);
 
   const handleCommitSuccess = useCallback(() => {
-    // Trigger selection of first commit after data refreshes
-    setShouldSelectFirst(true);
-  }, [setShouldSelectFirst]);
+    // Don't set shouldSelectFirst - let the maintain selection logic handle it
+    // The uncommitted changes will disappear and it will auto-select the new commit
+    void window.service.native.log('debug', '[test-id-commit-success-handler]', {});
+    // Manually trigger refresh as fallback when observable subscription doesn't work
+    triggerRefresh();
+  }, [triggerRefresh]);
+
+  const handleRevertSuccess = useCallback(() => {
+    // After revert, select the new revert commit (first non-uncommitted)
+    void window.service.native.log('debug', '[test-id-revert-success-handler]', {});
+    setLastChangeType('revert');
+    // Manually trigger refresh as fallback when observable subscription doesn't work
+    triggerRefresh();
+  }, [setLastChangeType, triggerRefresh]);
+
+  const handleUndoSuccess = useCallback(() => {
+    // After undo, we want to select uncommitted changes
+    // Set a special flag that will be handled by the effect above
+    // Using lastChangeType 'undo' will trigger the selection logic
+    setLastChangeType('undo');
+    // Manually trigger refresh as fallback when observable subscription doesn't work
+    triggerRefresh();
+  }, [setLastChangeType, triggerRefresh]);
 
   const handleSearch = useCallback(
     (parameters: ISearchParameters) => {
@@ -170,7 +252,7 @@ export function useCommitSelection({
     [setSearchParams, setCurrentSearchParameters, setSelectedCommit, setSelectedFile],
   );
 
-  return { handleCommitSuccess, handleSearch };
+  return { handleCommitSuccess, handleRevertSuccess, handleUndoSuccess, handleSearch };
 }
 
 interface IUseInfiniteScrollReturn {

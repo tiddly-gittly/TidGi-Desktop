@@ -6,6 +6,7 @@ import './services/database/configSetting';
 import { app, ipcMain, powerMonitor, protocol } from 'electron';
 import unhandled from 'electron-unhandled';
 import inspector from 'node:inspector';
+import { initJsonRepairLogger, initTidgiConfigLogger } from './services/database/configSetting';
 
 import { MainChannel } from '@/constants/channels';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
@@ -14,6 +15,10 @@ import { container } from '@services/container';
 import { initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
 import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
+
+// Initialize loggers for modules that can't directly import logger (to avoid electron in worker bundles)
+initJsonRepairLogger(logger);
+initTidgiConfigLogger(logger);
 
 import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -150,10 +155,8 @@ const commonInit = async (): Promise<void> => {
   // Process any pending deep link after workspaces are initialized
   await deepLinkService.processPendingDeepLink();
 
-  const tidgiMiniWindow = await preferenceService.get('tidgiMiniWindow');
-  if (tidgiMiniWindow) {
-    await windowService.openTidgiMiniWindow(true, false);
-  }
+  // Initialize tidgi mini window if enabled
+  await windowService.initializeTidgiMiniWindow();
 
   ipcMain.emit('request-update-pause-notifications-info');
   // Fix webview is not resized automatically
@@ -222,6 +225,8 @@ app.on(
   'before-quit',
   async (): Promise<void> => {
     logger.info('App before-quit');
+    // Clean up tidgi mini window before quit to ensure tray is destroyed
+    await windowService.closeTidgiMiniWindow(true);
     destroyLogger();
     await Promise.all([
       databaseService.immediatelyStoreSettingsToFile(),

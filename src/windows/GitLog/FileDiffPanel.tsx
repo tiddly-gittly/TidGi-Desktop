@@ -135,11 +135,12 @@ const ImagePreview = styled('img')`
 interface IFileDiffPanelProps {
   commitHash: string;
   filePath: string | null;
+  workspaceID: string;
   onDiscardSuccess?: () => void;
   showSnackbar?: (message: string, severity: 'success' | 'error' | 'info') => void;
 }
 
-export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess, showSnackbar: showSnackbarFromParent }: IFileDiffPanelProps): React.JSX.Element {
+export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSuccess, showSnackbar: showSnackbarFromParent }: IFileDiffPanelProps): React.JSX.Element {
   const { t } = useTranslation();
   const [diff, setDiff] = useState<string>('');
   const [fileContent, setFileContent] = useState<string>('');
@@ -158,9 +159,6 @@ export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess, showSnac
   const showSnackbar = showSnackbarFromParent ?? (() => {});
 
   const getWorkspace = async () => {
-    const meta = window.meta();
-    const workspaceID = (meta as { workspaceID?: string }).workspaceID;
-    if (!workspaceID) return null;
     const workspace = await window.service.workspace.get(workspaceID);
     if (!workspace || !('wikiFolderLocation' in workspace)) return null;
     return workspace;
@@ -288,13 +286,8 @@ export function FileDiffPanel({ commitHash, filePath, onDiscardSuccess, showSnac
 
     setIsLoadingFullContent(true);
     try {
-      const meta = window.meta();
-      const workspaceID = (meta as { workspaceID?: string }).workspaceID;
-
-      if (!workspaceID) return;
-
-      const workspace = await window.service.workspace.get(workspaceID);
-      if (!workspace || !('wikiFolderLocation' in workspace)) return;
+      const workspace = await getWorkspace();
+      if (!workspace) return;
 
       // Load full content without limits (pass very large values)
       const fileContentResult = await window.service.git.callGitOp('getFileContent', workspace.wikiFolderLocation, commitHash, filePath, 50000, 1000000);

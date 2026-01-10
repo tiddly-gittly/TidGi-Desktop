@@ -26,8 +26,8 @@ export async function getTidgiMiniWindowTargetWorkspace(fallbackWorkspaceId?: st
     // Sync with main window - use fallback or active workspace
     targetWorkspaceId = fallbackWorkspaceId ?? (await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace())?.id;
   } else {
-    // Use fixed workspace
-    targetWorkspaceId = tidgiMiniWindowFixedWorkspaceId;
+    // Use fixed workspace - convert empty string to undefined for consistent handling
+    targetWorkspaceId = tidgiMiniWindowFixedWorkspaceId || undefined;
   }
 
   return { shouldSync, targetWorkspaceId };

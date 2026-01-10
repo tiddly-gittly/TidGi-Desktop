@@ -1,0 +1,4 @@
+title: $:/plugins/linonetwo/watch-filesystem-adaptor/tree
+caption: {{$:/language/SideBar/Explorer/Caption}}
+
+<<tree "$:/plugins/linonetwo/watch-filesystem-adaptor/">>

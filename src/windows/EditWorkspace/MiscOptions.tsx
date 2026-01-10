@@ -3,7 +3,7 @@ import { AccordionDetails, Divider, List, ListItem, ListItemText, Switch, Toolti
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { isWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, IWorkspace, wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
 import { OptionsAccordion, OptionsAccordionSummary, TextField } from './styles';
 
 interface MiscOptionsProps {
@@ -18,18 +18,18 @@ export function MiscOptions(props: MiscOptionsProps): React.JSX.Element {
 
   const isWiki = isWikiWorkspace(workspace);
   const {
-    disableAudio = false,
-    disableNotifications = false,
-    enableFileSystemWatch = false,
-    hibernateWhenUnused = false,
+    disableAudio = wikiWorkspaceDefaultValues.disableAudio,
+    disableNotifications = wikiWorkspaceDefaultValues.disableNotifications,
+    enableFileSystemWatch = wikiWorkspaceDefaultValues.enableFileSystemWatch,
+    hibernateWhenUnused = wikiWorkspaceDefaultValues.hibernateWhenUnused,
     homeUrl = '',
     isSubWiki = false,
     lastUrl = null,
   } = isWiki ? workspace : {
-    disableAudio: false,
-    disableNotifications: false,
-    enableFileSystemWatch: false,
-    hibernateWhenUnused: false,
+    disableAudio: wikiWorkspaceDefaultValues.disableAudio,
+    disableNotifications: wikiWorkspaceDefaultValues.disableNotifications,
+    enableFileSystemWatch: wikiWorkspaceDefaultValues.enableFileSystemWatch,
+    hibernateWhenUnused: wikiWorkspaceDefaultValues.hibernateWhenUnused,
     homeUrl: '',
     isSubWiki: false,
     lastUrl: null,

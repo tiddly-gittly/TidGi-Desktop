@@ -24,6 +24,10 @@ Feature: TidGi Default Wiki
 
   @wiki @move-workspace
   Scenario: Move workspace to a new location
+    # Enable file system watch for testing (default is false in production)
+    When I update workspace "wiki" settings:
+      | property              | value |
+      | enableFileSystemWatch | true  |
     When I open edit workspace window for workspace with name "wiki"
     And I switch to "editWorkspace" window
     And I wait for the page to load completely

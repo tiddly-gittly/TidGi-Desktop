@@ -37,7 +37,14 @@ export interface IWindowService {
    */
   hide(windowName: WindowNames): Promise<void>;
   isFullScreen(windowName?: WindowNames): Promise<boolean | undefined>;
+  /**
+   * Check if tidgi mini window is visible (open and showing on screen)
+   */
   isTidgiMiniWindowOpen(): Promise<boolean>;
+  /**
+   * Check if tidgi mini window exists (created but may be hidden)
+   */
+  isTidgiMiniWindowExists(): boolean;
   loadURL(windowName: WindowNames, newUrl?: string): Promise<void>;
   maximize(): Promise<void>;
   /**
@@ -57,6 +64,11 @@ export interface IWindowService {
   stopFindInPage(close?: boolean, windowName?: WindowNames): Promise<void>;
   toggleTidgiMiniWindow(): Promise<void>;
   updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;
+  /**
+   * Initialize tidgi mini window on app startup.
+   * Creates window, determines target workspace based on preferences, and sets up view.
+   */
+  initializeTidgiMiniWindow(): Promise<void>;
   /** Open tidgi mini window without restart - hot reload. enableIt=true means fully enable and open. */
   openTidgiMiniWindow(enableIt?: boolean, showWindow?: boolean): Promise<void>;
   /** Close tidgi mini window. disableIt=true means fully disable and cleanup tray. */
@@ -78,6 +90,8 @@ export const WindowServiceIPCDescriptor = {
     goForward: ProxyPropertyType.Function,
     goHome: ProxyPropertyType.Function,
     isFullScreen: ProxyPropertyType.Function,
+    initializeTidgiMiniWindow: ProxyPropertyType.Function,
+    isTidgiMiniWindowExists: ProxyPropertyType.Function,
     isTidgiMiniWindowOpen: ProxyPropertyType.Function,
     loadURL: ProxyPropertyType.Function,
     maximize: ProxyPropertyType.Function,

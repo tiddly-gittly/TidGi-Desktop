@@ -392,17 +392,40 @@ export class View implements IViewService {
     // For tidgi mini window, decide which workspace to show based on preferences
     let tidgiMiniWindowTask = Promise.resolve();
     if (tidgiMiniWindow) {
-      // Default to sync (undefined or true), otherwise use fixed workspace ID (fallback to main if not set)
-      const { targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(workspaceID);
-      const tidgiMiniWindowWorkspaceId = targetWorkspaceId || workspaceID;
+      // Get preference settings to determine behavior
+      const { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(workspaceID);
 
-      logger.debug('setActiveViewForAllBrowserViews tidgi mini window decision', {
-        function: 'setActiveViewForAllBrowserViews',
-        tidgiMiniWindowWorkspaceId,
-        willSetActiveView: true,
-      });
-
-      tidgiMiniWindowTask = this.setActiveView(tidgiMiniWindowWorkspaceId, WindowNames.tidgiMiniWindow);
+      if (shouldSync) {
+        // Sync with main window - use the same workspace as main window
+        logger.debug('setActiveViewForAllBrowserViews tidgi mini window syncing with main window', {
+          function: 'setActiveViewForAllBrowserViews',
+          workspaceID,
+        });
+        tidgiMiniWindowTask = this.setActiveView(workspaceID, WindowNames.tidgiMiniWindow);
+      } else if (targetWorkspaceId) {
+        // Fixed workspace mode - only update if the main window is switching TO the fixed workspace
+        // Otherwise, keep showing the fixed workspace (don't update)
+        if (workspaceID === targetWorkspaceId) {
+          logger.debug('setActiveViewForAllBrowserViews main window switching to fixed workspace', {
+            function: 'setActiveViewForAllBrowserViews',
+            targetWorkspaceId,
+          });
+          tidgiMiniWindowTask = this.setActiveView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
+        } else {
+          // Main window is switching to a different workspace, but tidgi mini window stays on fixed workspace
+          logger.debug('setActiveViewForAllBrowserViews tidgi mini window staying on fixed workspace', {
+            function: 'setActiveViewForAllBrowserViews',
+            targetWorkspaceId,
+            mainWindowWorkspaceId: workspaceID,
+          });
+          // Don't change tidgi mini window view - it should keep showing the fixed workspace
+        }
+      } else {
+        // Not syncing but no fixed workspace selected - do nothing for tidgi mini window
+        logger.debug('setActiveViewForAllBrowserViews no fixed workspace selected', {
+          function: 'setActiveViewForAllBrowserViews',
+        });
+      }
     } else {
       logger.info('setActiveViewForAllBrowserViews tidgi mini window not enabled', {
         function: 'setActiveViewForAllBrowserViews',
@@ -487,13 +510,40 @@ export class View implements IViewService {
     }
   }
 
-  public removeAllViewOfWorkspace(workspaceID: string): void {
+  /**
+   * Remove all views for a workspace.
+   * @param workspaceID The workspace ID
+   * @param permanent If true, views will be fully destroyed. If false, views are just removed from window but kept in memory for quick restore.
+   */
+  public removeAllViewOfWorkspace(workspaceID: string, permanent = false): void {
     const views = this.views.get(workspaceID);
     if (views !== undefined) {
       [...views.keys()].forEach((windowName) => {
-        this.removeView(workspaceID, windowName);
+        const view = views.get(windowName);
+        if (view) {
+          this.removeView(workspaceID, windowName);
+          if (permanent) {
+            // Fully destroy the webContents to free resources
+            try {
+              if (!view.webContents.isDestroyed()) {
+                view.webContents.close();
+              }
+            } catch (error) {
+              logger.warn('Failed to close webContents during permanent removal', {
+                workspaceID,
+                windowName,
+                error,
+                function: 'removeAllViewOfWorkspace',
+              });
+            }
+          }
+        }
       });
-      views.clear();
+      if (permanent) {
+        this.views.delete(workspaceID);
+      } else {
+        views.clear();
+      }
     }
   }
 

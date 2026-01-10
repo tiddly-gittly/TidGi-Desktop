@@ -119,6 +119,14 @@ export class Wiki implements IWikiService {
       return;
     }
     const { port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI, authToken } = workspace;
+    logger.debug('startWiki: Got workspace from workspaceService', {
+      workspaceID,
+      name,
+      port,
+      enableHTTPAPI,
+      wikiFolderLocation,
+      hasAllRequiredFields: port !== undefined && name !== undefined,
+    });
     if (isSubWiki) {
       logger.error('Try to start wiki, but workspace is sub wiki', { workspace, workspaceID });
       return;
@@ -156,6 +164,17 @@ export class Wiki implements IWikiService {
       userName,
       workspace,
     };
+    logger.debug('Worker configuration prepared', {
+      workspaceID,
+      port,
+      userName,
+      enableHTTPAPI,
+      readOnlyMode,
+      tokenAuth,
+      wikiFolderLocation,
+      workspaceName: workspace.name,
+      function: 'Wiki.startWiki',
+    });
     logger.debug('initializing wikiWorker for workspace', {
       workspaceID,
       function: 'Wiki.startWiki',
@@ -182,6 +201,21 @@ export class Wiki implements IWikiService {
         logger.error(error.message, { function: 'Worker.error', ...loggerMeta });
         reject(new WikiRuntimeError(error, name, false));
       });
+
+      // Capture worker stderr to diagnose crashes
+      if (wikiWorker.stderr) {
+        wikiWorker.stderr.on('data', (data: Buffer | string) => {
+          const message = typeof data === 'string' ? data : data.toString();
+          logger.error('Worker stderr', { message: message.trim(), ...loggerMeta });
+        });
+      }
+      // Capture worker stdout before intercept is set up
+      if (wikiWorker.stdout) {
+        wikiWorker.stdout.on('data', (data: Buffer | string) => {
+          const message = typeof data === 'string' ? data : data.toString();
+          logger.debug('Worker stdout', { message: message.trim(), ...loggerMeta });
+        });
+      }
 
       // Handle worker exit
       wikiWorker.on('exit', (code) => {
