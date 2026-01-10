@@ -121,13 +121,24 @@ export function CommitDetailsPanel(
   }, []);
 
   const handleRevert = async () => {
-    if (!commit || isReverting) return;
+    if (!commit || isReverting) {
+      void window.service.native.log('warn', 'handleRevert: commit is null or already reverting', { hasCommit: !!commit, isReverting });
+      return;
+    }
 
     setIsReverting(true);
     try {
       const workspace = await window.service.workspace.get(workspaceID);
-      if (!workspace || !('wikiFolderLocation' in workspace)) return;
+      if (!workspace) {
+        void window.service.native.log('error', 'handleRevert: workspace not found', { workspaceID });
+        return;
+      }
+      if (!('wikiFolderLocation' in workspace)) {
+        void window.service.native.log('error', 'handleRevert: workspace does not have wikiFolderLocation', { workspaceID, workspace });
+        return;
+      }
 
+      void window.service.native.log('debug', 'handleRevert: calling revertCommit', { workspaceID, commitHash: commit.hash });
       // Pass the commit message to revertCommit for better revert message
       await window.service.git.revertCommit(workspace.wikiFolderLocation, commit.hash, commit.message);
       // Notify parent to select the new revert commit
@@ -135,7 +146,7 @@ export function CommitDetailsPanel(
         onRevertSuccess();
       }
     } catch (error) {
-      console.error('Failed to revert commit:', error);
+      void window.service.native.log('error', 'handleRevert: Failed to revert commit', { error: String(error), workspaceID, commitHash: commit.hash });
     } finally {
       setIsReverting(false);
     }
