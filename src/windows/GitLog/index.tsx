@@ -47,7 +47,7 @@ export default function GitHistory(): React.JSX.Element {
     );
   }
 
-  const { entries, loading, loadingMore, error, workspaceInfo, currentBranch, lastChangeType, setLastChangeType, hasMore, loadMore, setSearchParams } = useGitLogData(workspaceID);
+  const { entries, loading, loadingMore, error, workspaceInfo, currentBranch, lastChangeType, setLastChangeType, hasMore, loadMore, setSearchParams, triggerRefresh } = useGitLogData(workspaceID);
   const { selectedCommit, setSelectedCommit } = useCommitDetails();
   const {
     selectedFile,
@@ -109,6 +109,7 @@ export default function GitHistory(): React.JSX.Element {
     setSearchParams,
     setCurrentSearchParameters,
     setSelectedFile,
+    triggerRefresh,
   });
 
   const { isRowLoaded, loadMoreRows } = useInfiniteScroll({
