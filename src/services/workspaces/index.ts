@@ -200,24 +200,26 @@ export class Workspace implements IWorkspaceService {
     // Update memory cache with full workspace data (including syncable fields)
     workspaces[id] = workspaceToSave;
 
+    // Write syncable config to tidgi.config.json ONLY for the workspace being modified
+    // This avoids redundant writes to all workspaces on every single update
+    if (isWikiWorkspace(workspaceToSave)) {
+      try {
+        const syncableConfig = extractSyncableConfig(workspaceToSave);
+        await writeTidgiConfig(workspaceToSave.wikiFolderLocation, syncableConfig);
+      } catch (error) {
+        logger.warn('Failed to write tidgi.config.json', {
+          workspaceId: id,
+          error: (error as Error).message,
+        });
+      }
+    }
+
     // Save to settings.json - remove syncable fields from ALL wiki workspaces
     // They are stored in tidgi.config.json in the wiki folder
-    // Also ensure tidgi.config.json exists for each wiki workspace before removing fields
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const workspacesForSettings: Record<string, IWorkspace> = {};
     for (const [key, ws] of Object.entries(workspaces)) {
       if (isWikiWorkspace(ws)) {
-        // Write syncable config to tidgi.config.json for ALL wiki workspaces
-        // This ensures config is not lost when removing from settings.json
-        try {
-          const syncableConfig = extractSyncableConfig(ws);
-          await writeTidgiConfig(ws.wikiFolderLocation, syncableConfig);
-        } catch (error) {
-          logger.warn('Failed to write tidgi.config.json', {
-            workspaceId: key,
-            error: (error as Error).message,
-          });
-        }
         // Remove syncable fields from wiki workspaces (they are in tidgi.config.json)
         workspacesForSettings[key] = removeSyncableFields(ws) as IWorkspace;
       } else {
