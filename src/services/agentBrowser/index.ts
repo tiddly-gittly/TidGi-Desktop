@@ -128,6 +128,12 @@ export class AgentBrowserService implements IAgentBrowserService {
           agentDefId: data.agentDefId as string,
           currentStep: data.currentStep as number || 0,
         };
+      case TabType.WIKI_EMBED:
+        return {
+          ...baseTab,
+          type: TabType.WIKI_EMBED,
+          workspaceId: data.workspaceId as string || '',
+        };
       default:
         return baseTab as TabItem;
     }
@@ -193,6 +199,13 @@ export class AgentBrowserService implements IAgentBrowserService {
         entity.data = {
           agentDefId: editAgentTab.agentDefId,
           currentStep: editAgentTab.currentStep || 0,
+        };
+        break;
+      }
+      case TabType.WIKI_EMBED: {
+        const wikiEmbedTab = tab as { workspaceId: string };
+        entity.data = {
+          workspaceId: wikiEmbedTab.workspaceId,
         };
         break;
       }

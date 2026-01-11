@@ -1,4 +1,4 @@
-import { NativeChannel, ViewChannel, WindowChannel } from '@/constants/channels';
+import { IAskAIWithSelectionData, NativeChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { rendererMenuItemProxy } from '@services/menu/contextMenu/rendererMenuItemProxy';
 import type { IOnContextMenuInfo } from '@services/menu/interface';
 import { contextBridge, ipcRenderer, MenuItemConstructorOptions, webFrame, webUtils } from 'electron';
@@ -26,6 +26,10 @@ export const remoteMethods = {
   unregisterOpenFindInPage: (handleOpenFindInPage: () => void): void => void ipcRenderer.removeListener(WindowChannel.openFindInPage, handleOpenFindInPage),
   registerCloseFindInPage: (handleCloseFindInPage: () => void): void => void ipcRenderer.on(WindowChannel.closeFindInPage, handleCloseFindInPage),
   unregisterCloseFindInPage: (handleCloseFindInPage: () => void): void => void ipcRenderer.removeListener(WindowChannel.closeFindInPage, handleCloseFindInPage),
+  registerAskAIWithSelection: (handleAskAI: (event: Electron.IpcRendererEvent, data: IAskAIWithSelectionData) => void): void =>
+    void ipcRenderer.on(WindowChannel.askAIWithSelection, handleAskAI),
+  unregisterAskAIWithSelection: (handleAskAI: (event: Electron.IpcRendererEvent, data: IAskAIWithSelectionData) => void): void =>
+    void ipcRenderer.removeListener(WindowChannel.askAIWithSelection, handleAskAI),
   registerUpdateFindInPageMatches: (updateFindInPageMatches: (event: Electron.IpcRendererEvent, activeMatchOrdinal: number, matches: number) => void): void =>
     void ipcRenderer.on(ViewChannel.updateFindInPageMatches, updateFindInPageMatches),
   unregisterUpdateFindInPageMatches: (updateFindInPageMatches: (event: Electron.IpcRendererEvent, activeMatchOrdinal: number, matches: number) => void): void =>

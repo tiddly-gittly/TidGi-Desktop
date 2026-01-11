@@ -609,8 +609,13 @@
       "EditAgentDefinition": "Edit Agent",
       "NewTab": "New Tab",
       "NewWeb": "Create a new webpage",
-      "SplitView": "Split view"
+      "SplitView": "Split view",
+      "WikiEmbed": "Wiki"
     }
+  },
+  "WikiEmbed": {
+    "Error": "Failed to embed wiki",
+    "Loading": "Loading wiki..."
   },
   "Tool": {
     "Git": {

@@ -1,3 +1,4 @@
+import { IAskAIWithSelectionData, WindowChannel } from '@/constants/channels';
 import { getWorkspaceIdFromUrl } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
@@ -333,6 +334,31 @@ export class MenuService implements IMenuService {
 
     // workspace menus (template items are added at the end via insert(0) in reverse order)
     menu.append(new MenuItem({ type: 'separator' }));
+
+    // Add "Ask AI" menu item when there's selected text
+    if (info.selectionText && info.selectionText.trim().length > 0) {
+      const wikiUrl = webContents.getURL();
+      const workspaceId = getWorkspaceIdFromUrl(wikiUrl);
+      menu.append(
+        new MenuItem({
+          label: i18n.t('ContextMenu.AskAI'),
+          click: async () => {
+            const data: IAskAIWithSelectionData = {
+              selectionText: info.selectionText!,
+              wikiUrl,
+              workspaceId: workspaceId ?? undefined,
+            };
+            // Only send to main window to avoid duplicate processing
+            const mainWindow = windowService.get(WindowNames.main);
+            if (mainWindow !== undefined) {
+              mainWindow.webContents.send(WindowChannel.askAIWithSelection, data);
+            }
+          },
+        }),
+      );
+      menu.append(new MenuItem({ type: 'separator' }));
+    }
+
     // Note: Simplified menu and "Current Workspace" are now provided by the frontend template
     // (from SortableWorkspaceSelectorButton or content view), so we don't add them here
     menu.append(

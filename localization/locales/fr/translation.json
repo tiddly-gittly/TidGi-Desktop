@@ -92,6 +92,7 @@
   "ContextMenu": {
     "About": "À propos",
     "AddToDictionary": "Ajouter au dictionnaire",
+    "AskAI": "Demander à l'IA",
     "Back": "Reculer←",
     "BackupNow": "Sauvegarde Git locale",
     "Copy": "Copier",

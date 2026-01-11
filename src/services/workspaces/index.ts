@@ -234,7 +234,7 @@ export class Workspace implements IWorkspaceService {
     const workspaces = this.getWorkspacesSync();
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const workspacesForSettings: Record<string, IWorkspace> = {};
-    
+
     for (const [key, ws] of Object.entries(workspaces)) {
       if (isWikiWorkspace(ws)) {
         // Remove syncable fields from wiki workspaces (they are in tidgi.config.json)
@@ -244,7 +244,7 @@ export class Workspace implements IWorkspaceService {
         workspacesForSettings[key] = ws;
       }
     }
-    
+
     databaseService.setSetting('workspaces', workspacesForSettings);
     if (immediate === true) {
       await databaseService.immediatelyStoreSettingsToFile();
@@ -263,9 +263,9 @@ export class Workspace implements IWorkspaceService {
   public async setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void> {
     // Process all workspaces without triggering UI updates for each one
     const ids = Object.keys(newWorkspaces);
-    for (let i = 0; i < ids.length; i++) {
-      const id = ids[i];
-      const isLast = i === ids.length - 1;
+    for (let index = 0; index < ids.length; index++) {
+      const id = ids[index];
+      const isLast = index === ids.length - 1;
       // Skip UI update for all but the last workspace
       await this.set(id, newWorkspaces[id], false, !isLast);
     }

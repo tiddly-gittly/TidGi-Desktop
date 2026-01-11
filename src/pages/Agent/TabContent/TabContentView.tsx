@@ -11,6 +11,7 @@ import { EditAgentDefinitionContent } from './TabTypes/EditAgentDefinitionConten
 import { NewTabContent } from './TabTypes/NewTabContent';
 import { SplitViewTabContent } from './TabTypes/SplitViewTabContent';
 import { WebTabContent } from './TabTypes/WebTabContent';
+import { WikiEmbedTabContent } from './TabTypes/WikiEmbedTabContent';
 
 /** Props interface for tab content view component */
 interface TabContentViewProps {
@@ -63,6 +64,8 @@ export const TabContentView: React.FC<TabContentViewProps> = ({ tab, isSplitView
         return <CreateNewAgentContent tab={tab} />;
       case TabType.EDIT_AGENT_DEFINITION:
         return <EditAgentDefinitionContent tab={tab} />;
+      case TabType.WIKI_EMBED:
+        return <WikiEmbedTabContent tab={tab} isSplitView={isSplitView} />;
       default:
         return null;
     }

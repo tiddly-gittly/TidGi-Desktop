@@ -81,6 +81,14 @@ export interface IViewService {
   setActiveViewForAllBrowserViews(workspaceID: string): Promise<void>;
   setViewsAudioPref: (_shouldMuteAudio?: boolean) => void;
   setViewsNotificationsPref: (_shouldPauseNotifications?: boolean) => void;
+  /**
+   * Set custom bounds for a workspace's BrowserView.
+   * Used by Agent page split view to embed Wiki BrowserView in a specific area.
+   * @param workspaceID Workspace ID
+   * @param windowName Window name
+   * @param bounds Custom bounds { x, y, width, height }, or undefined to reset to default
+   */
+  setViewCustomBounds(workspaceID: string, windowName: WindowNames, bounds?: { x: number; y: number; width: number; height: number }): Promise<void>;
 }
 export const ViewServiceIPCDescriptor = {
   channel: ViewChannel.name,
@@ -103,6 +111,7 @@ export const ViewServiceIPCDescriptor = {
     removeView: ProxyPropertyType.Function,
     setActiveView: ProxyPropertyType.Function,
     setActiveViewForAllBrowserViews: ProxyPropertyType.Function,
+    setViewCustomBounds: ProxyPropertyType.Function,
     setViewsAudioPref: ProxyPropertyType.Function,
     setViewsNotificationsPref: ProxyPropertyType.Function,
   },

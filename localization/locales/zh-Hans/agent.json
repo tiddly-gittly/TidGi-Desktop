@@ -590,8 +590,13 @@
       "EditAgentDefinition": "编辑智能体",
       "NewTab": "新建标签页",
       "NewWeb": "新建网页",
-      "SplitView": "分屏展示"
+      "SplitView": "分屏展示",
+      "WikiEmbed": "Wiki"
     }
+  },
+  "WikiEmbed": {
+    "Error": "嵌入Wiki失败",
+    "Loading": "正在加载Wiki..."
   },
   "Tool": {
     "Git": {

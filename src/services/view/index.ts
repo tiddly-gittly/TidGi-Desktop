@@ -704,6 +704,55 @@ export class View implements IViewService {
     }
   }
 
+  /**
+   * Store for custom bounds per workspace. When set, the view will use these bounds instead of default.
+   * Key format: `${workspaceID}-${windowName}`
+   */
+  private customBoundsMap = new Map<string, { x: number; y: number; width: number; height: number } | undefined>();
+
+  public async setViewCustomBounds(
+    workspaceID: string,
+    windowName: WindowNames,
+    bounds?: { x: number; y: number; width: number; height: number },
+  ): Promise<void> {
+    const key = `${workspaceID}-${windowName}`;
+    this.customBoundsMap.set(key, bounds);
+
+    const view = this.getView(workspaceID, windowName);
+    const browserWindow = this.windowService.get(windowName);
+    if (view === undefined) {
+      logger.warn('setViewCustomBounds: view not found', { workspaceID, windowName });
+      return;
+    }
+    if (browserWindow === undefined) {
+      logger.warn('setViewCustomBounds: browserWindow not found', { windowName });
+      return;
+    }
+
+    if (bounds) {
+      // First ensure the view is added to the window's content view
+      // This is necessary if the view was previously hidden (removed from content view)
+      try {
+        browserWindow.contentView.addChildView(view);
+      } catch {
+        // View might already be added, which is fine
+      }
+      // Set the bounds to position the view in the specified area
+      view.setBounds(bounds);
+      logger.info('setViewCustomBounds: set custom bounds', { workspaceID, windowName, bounds: JSON.stringify(bounds) });
+    } else {
+      // Reset: hide the view by moving it off-screen
+      const contentSize = browserWindow.getContentSize();
+      view.setBounds({
+        x: -contentSize[0],
+        y: -contentSize[1],
+        width: contentSize[0],
+        height: contentSize[1],
+      });
+      logger.info('setViewCustomBounds: reset bounds (hiding view)', { workspaceID, windowName });
+    }
+  }
+
   public async getLoadedViewEnsure(workspaceID: string, windowName: WindowNames): Promise<WebContentsView> {
     let view = this.getView(workspaceID, windowName);
     if (view === undefined) {

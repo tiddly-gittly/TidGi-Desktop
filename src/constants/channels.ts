@@ -106,12 +106,29 @@ export enum PreferenceChannel {
 }
 
 export enum WindowChannel {
+  /**
+   * Navigate to Agent page and open a split view with WebView on left and Chat on right, sending the selected text as initial message.
+   * Data payload: IAskAIWithSelectionData
+   */
+  askAIWithSelection = 'ask-ai-with-selection',
   closeFindInPage = 'close-find-in-page',
   name = 'WindowChannel',
   openFindInPage = 'open-find-in-page',
   // TODO: add back the listener as https://github.com/webcatalog/neutron/blob/52a35f103761d82ae5a35e5f90fc39024830bc63/src/listeners/index.js#L80
   updateCanGoBack = 'update-can-go-back',
   updateCanGoForward = 'update-can-go-forward',
+}
+
+/**
+ * Data payload for askAIWithSelection channel
+ */
+export interface IAskAIWithSelectionData {
+  /** The selected text from wiki that user wants to ask AI about */
+  selectionText: string;
+  /** Optional URL of the current wiki page to show in split view left pane */
+  wikiUrl?: string;
+  /** Optional workspace ID for context */
+  workspaceId?: string;
 }
 
 export enum ThemeChannel {
