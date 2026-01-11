@@ -630,7 +630,9 @@ export class Wiki implements IWikiService {
         });
         if (response === 0) {
           const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+          const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
           await workspaceViewService.removeWorkspaceView(workspaceID);
+          await workspaceService.remove(workspaceID);
         }
       }
       return errorMessage;
