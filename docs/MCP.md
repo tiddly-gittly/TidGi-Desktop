@@ -23,6 +23,6 @@ This repo ships a ready-to-use [chrome-devtools-mcp](https://github.com/ChromeDe
 
 ## Troubleshooting
 
-- If pages do not show: close other Chrome instances or change the port in `.vscode/mcp.json` and rerun `start:dev:mcp`
+- If browser pages do not show, app main window react part is shown, but wiki browser view is white or not shown: Seems it is not working with browser view. ~~close other Chrome instances or change the port in `.vscode/mcp.json` and rerun `start:dev:mcp`~~
 - If you see `Debugger listening on ws://127.0.0.1:9229/...`, that is the main-process Node inspector; keep using `9222` for renderer DevTools
 - Multiple windows (e.g., preferences dialog) appear as separate pages in `list_pages` — use `select_page` to switch context
