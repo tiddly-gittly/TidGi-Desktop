@@ -123,6 +123,8 @@ export enum WindowChannel {
  * Data payload for askAIWithSelection channel
  */
 export interface IAskAIWithSelectionData {
+  /** Agent definition ID to use, or undefined for default agent */
+  agentDefId?: string;
   /** The selected text from wiki that user wants to ask AI about */
   selectionText: string;
   /** Optional URL of the current wiki page to show in split view left pane */

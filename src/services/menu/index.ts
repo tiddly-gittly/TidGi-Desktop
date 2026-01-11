@@ -1,5 +1,6 @@
 import { IAskAIWithSelectionData, WindowChannel } from '@/constants/channels';
 import { getWorkspaceIdFromUrl } from '@/constants/urls';
+import type { AgentDefinition, IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
@@ -335,18 +336,27 @@ export class MenuService implements IMenuService {
     // workspace menus (template items are added at the end via insert(0) in reverse order)
     menu.append(new MenuItem({ type: 'separator' }));
 
-    // Add "Ask AI" menu item when there's selected text
+    // Add "Talk with AI" menu items when there's selected text
     if (info.selectionText && info.selectionText.trim().length > 0) {
       const wikiUrl = webContents.getURL();
       const workspaceId = getWorkspaceIdFromUrl(wikiUrl);
+      
+      // Get all agent definitions
+      const agentDefService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
+      const defaultAgentDef = await agentDefService.getAgentDef(); // No parameter = default agent
+      const allAgentDefs = await agentDefService.getAgentDefs();
+      const otherAgentDefs = allAgentDefs.filter((def: AgentDefinition) => def.id !== defaultAgentDef?.id);
+      
+      // Add menu item for default agent
       menu.append(
         new MenuItem({
-          label: i18n.t('ContextMenu.AskAI'),
+          label: i18n.t('ContextMenu.TalkWithAI'),
           click: async () => {
             const data: IAskAIWithSelectionData = {
               selectionText: info.selectionText!,
               wikiUrl,
               workspaceId: workspaceId ?? undefined,
+              agentDefId: undefined, // Use default agent
             };
             // Only send to main window to avoid duplicate processing
             const mainWindow = windowService.get(WindowNames.main);
@@ -356,6 +366,31 @@ export class MenuService implements IMenuService {
           },
         }),
       );
+      
+      // Add submenu for other agents if there are any
+      if (otherAgentDefs.length > 0) {
+        menu.append(
+          new MenuItem({
+            label: i18n.t('ContextMenu.TalkWithAIMore'),
+            submenu: otherAgentDefs.map((agentDef: AgentDefinition) => ({
+              label: agentDef.name,
+              click: async () => {
+                const data: IAskAIWithSelectionData = {
+                  selectionText: info.selectionText!,
+                  wikiUrl,
+                  workspaceId: workspaceId ?? undefined,
+                  agentDefId: agentDef.id,
+                };
+                const mainWindow = windowService.get(WindowNames.main);
+                if (mainWindow !== undefined) {
+                  mainWindow.webContents.send(WindowChannel.askAIWithSelection, data);
+                }
+              },
+            })),
+          }),
+        );
+      }
+      
       menu.append(new MenuItem({ type: 'separator' }));
     }
 

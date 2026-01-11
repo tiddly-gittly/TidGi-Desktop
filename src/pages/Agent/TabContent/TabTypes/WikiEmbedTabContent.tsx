@@ -102,12 +102,25 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
       resizeObserver.observe(containerReference.current);
     }
 
-    // Cleanup: reset bounds when unmounting
+    // Cleanup: only clear custom bounds if not switching to this wiki workspace
     return () => {
       mounted = false;
       resizeObserver.disconnect();
-      // Reset to default bounds (hide the view)
-      void window.service.view.setViewCustomBounds(tab.workspaceId, WindowNames.main, undefined);
+      
+      // Check if we're switching to this wiki workspace
+      // If so, don't clear bounds - let realignActiveView handle it
+      void (async () => {
+        const activeWorkspace = await window.service.workspace.getActiveWorkspace();
+        if (activeWorkspace?.id !== tab.workspaceId) {
+          // Only clear bounds if switching to a different workspace
+          void window.service.view.setViewCustomBounds(tab.workspaceId, WindowNames.main, undefined);
+        } else {
+          // Switching to this wiki workspace, don't clear bounds
+          void window.service.native.log('debug', 'WikiEmbedTabContent: not clearing bounds, switching to wiki workspace', {
+            workspaceId: tab.workspaceId,
+          });
+        }
+      })();
     };
   }, [tab.workspaceId, isSplitView]);
 

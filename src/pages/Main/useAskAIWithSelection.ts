@@ -1,7 +1,8 @@
 import { IAskAIWithSelectionData } from '@/constants/channels';
 import { PageType } from '@/constants/pageTypes';
 import { useTabStore } from '@/pages/Agent/store/tabStore';
-import { TabType } from '@/pages/Agent/types/tab';
+import { IChatTab, IWikiEmbedTab, TabState, TabType } from '@/pages/Agent/types/tab';
+import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 
@@ -54,31 +55,61 @@ export function useAskAIWithSelection(): void {
 
         const { addTab, setActiveTab } = tabStoreReference.current;
 
-        // Create a Wiki Embed tab for the left pane (if workspaceId is provided)
-        let wikiEmbedTab;
-        if (data.workspaceId) {
-          wikiEmbedTab = await addTab(TabType.WIKI_EMBED, {
-            workspaceId: data.workspaceId,
-            title: 'Wiki',
-          });
-        }
+        // Create child tab objects without adding them to the database
+        // These will only exist as part of the split view
+        const timestamp = Date.now();
 
-        // Create a Chat tab with the selected text as initial message
-        const chatTab = await addTab(TabType.CHAT, {
+        const childTabs = [];
+
+        // Create a Chat tab object with the selected text as initial message (LEFT pane)
+        // We need to create an agent instance first for the chat tab
+        // Use the specified agent definition or default if not provided
+        const agent = await window.service.agentInstance.createAgent(data.agentDefId);
+        const chatTab: IChatTab = {
+          id: nanoid(),
+          type: TabType.CHAT,
+          title: agent.name || 'AI Chat',
+          agentDefId: agent.agentDefId,
+          agentId: agent.id,
           initialMessage: data.selectionText,
-        });
+          state: TabState.ACTIVE,
+          isPinned: false,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        };
+        childTabs.push(chatTab);
 
-        // If we have both tabs, create a split view
-        if (wikiEmbedTab && chatTab) {
-          const splitViewTab = await addTab(TabType.SPLIT_VIEW, {
-            childTabs: [wikiEmbedTab, chatTab],
-            splitRatio: 50,
-          });
-          setActiveTab(splitViewTab.id);
-        } else if (chatTab) {
-          // Just activate the chat tab if no wiki embed tab
-          setActiveTab(chatTab.id);
+        // Create a Wiki Embed tab object for the RIGHT pane (if workspaceId is provided)
+        // Put wiki on the right to avoid its BrowserView covering tab context menus
+        if (data.workspaceId) {
+          // Get the actual workspace to ensure we have the correct ID (case-sensitive)
+          const workspace = await window.service.workspace.get(data.workspaceId);
+          if (workspace) {
+            const wikiEmbedTab: IWikiEmbedTab = {
+              id: nanoid(),
+              type: TabType.WIKI_EMBED,
+              title: workspace.name || 'Wiki',
+              workspaceId: workspace.id, // Use the canonical ID from the workspace object
+              state: TabState.ACTIVE,
+              isPinned: false,
+              createdAt: timestamp,
+              updatedAt: timestamp,
+            };
+            childTabs.push(wikiEmbedTab);
+          }
         }
+
+        // Send the initial message to the agent immediately (no need for setTimeout)
+        if (data.selectionText && agent.id) {
+          void window.service.agentInstance.sendMsgToAgent(agent.id, { text: data.selectionText });
+        }
+
+        // Create a split view tab with the child tabs
+        const splitViewTab = await addTab(TabType.SPLIT_VIEW, {
+          childTabs,
+          splitRatio: 50,
+        });
+        setActiveTab(splitViewTab.id);
       } catch (error) {
         void window.service.native.log('error', 'Failed to handle askAIWithSelection', { error: String(error) });
       } finally {

@@ -92,7 +92,8 @@
   "ContextMenu": {
     "About": "關於",
     "AddToDictionary": "添加到字典",
-    "AskAI": "向 AI 提問",
+    "TalkWithAI": "和 AI 討論",
+    "TalkWithAIMore": "和智能體討論…",
     "Back": "向後←",
     "BackupNow": "立即本地Git備份",
     "Copy": "複製",

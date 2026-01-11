@@ -192,7 +192,27 @@ export class View implements IViewService {
   }
 
   public getView(workspaceID: string, windowName: WindowNames): WebContentsView | undefined {
-    return this.views.get(workspaceID)?.get(windowName);
+    // Try exact match first
+    let view = this.views.get(workspaceID)?.get(windowName);
+    if (view) return view;
+    
+    // If not found, try case-insensitive match (for robustness)
+    const lowerWorkspaceID = workspaceID.toLowerCase();
+    for (const [id, windowViews] of this.views.entries()) {
+      if (id.toLowerCase() === lowerWorkspaceID) {
+        view = windowViews?.get(windowName);
+        if (view) {
+          logger.debug('getView: Found view with case-insensitive match', { 
+            requestedId: workspaceID, 
+            actualId: id,
+            windowName 
+          });
+          return view;
+        }
+      }
+    }
+    
+    return undefined;
   }
 
   public setView(workspaceID: string, windowName: WindowNames, newView: WebContentsView): void {
@@ -305,6 +325,17 @@ export class View implements IViewService {
       if (updatedWorkspace === undefined) return;
       // Prevent update non-active (hiding) wiki workspace, so it won't pop up to cover other active agent workspace
       if (windowName === WindowNames.main && !updatedWorkspace.active) return;
+      
+      // Check if this view has custom bounds set - if so, don't auto-resize
+      const key = `${workspace.id}-${windowName}`;
+      if (this.customBoundsMap.has(key) && this.customBoundsMap.get(key) !== undefined) {
+        logger.debug('debouncedOnResize: skipping auto-resize for view with custom bounds', { 
+          workspaceId: workspace.id, 
+          windowName 
+        });
+        return;
+      }
+      
       if ([WindowNames.secondary, WindowNames.main, WindowNames.tidgiMiniWindow].includes(windowName)) {
         const contentSize = browserWindow.getContentSize();
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
@@ -741,7 +772,8 @@ export class View implements IViewService {
       view.setBounds(bounds);
       logger.info('setViewCustomBounds: set custom bounds', { workspaceID, windowName, bounds: JSON.stringify(bounds) });
     } else {
-      // Reset: hide the view by moving it off-screen
+      // Clear custom bounds: hide the view by moving it off-screen
+      // The view will be properly restored when switching back to its workspace via setActiveWorkspaceView
       const contentSize = browserWindow.getContentSize();
       view.setBounds({
         x: -contentSize[0],
@@ -749,7 +781,7 @@ export class View implements IViewService {
         width: contentSize[0],
         height: contentSize[1],
       });
-      logger.info('setViewCustomBounds: reset bounds (hiding view)', { workspaceID, windowName });
+      logger.info('setViewCustomBounds: cleared custom bounds (hiding view)', { workspaceID, windowName });
     }
   }
 
