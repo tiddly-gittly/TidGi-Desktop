@@ -340,13 +340,13 @@ export class MenuService implements IMenuService {
     if (info.selectionText && info.selectionText.trim().length > 0) {
       const wikiUrl = webContents.getURL();
       const workspaceId = getWorkspaceIdFromUrl(wikiUrl);
-      
+
       // Get all agent definitions
-      const agentDefService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
-      const defaultAgentDef = await agentDefService.getAgentDef(); // No parameter = default agent
-      const allAgentDefs = await agentDefService.getAgentDefs();
-      const otherAgentDefs = allAgentDefs.filter((def: AgentDefinition) => def.id !== defaultAgentDef?.id);
-      
+      const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
+      const defaultAgentDefinition = await agentDefinitionService.getAgentDef(); // No parameter = default agent
+      const allAgentDefinitions = await agentDefinitionService.getAgentDefs();
+      const otherAgentDefinitions = allAgentDefinitions.filter((definition: AgentDefinition) => definition.id !== defaultAgentDefinition?.id);
+
       // Add menu item for default agent
       menu.append(
         new MenuItem({
@@ -366,20 +366,20 @@ export class MenuService implements IMenuService {
           },
         }),
       );
-      
+
       // Add submenu for other agents if there are any
-      if (otherAgentDefs.length > 0) {
+      if (otherAgentDefinitions.length > 0) {
         menu.append(
           new MenuItem({
             label: i18n.t('ContextMenu.TalkWithAIMore'),
-            submenu: otherAgentDefs.map((agentDef: AgentDefinition) => ({
-              label: agentDef.name,
+            submenu: otherAgentDefinitions.map((agentDefinition: AgentDefinition) => ({
+              label: agentDefinition.name,
               click: async () => {
                 const data: IAskAIWithSelectionData = {
                   selectionText: info.selectionText!,
                   wikiUrl,
                   workspaceId: workspaceId ?? undefined,
-                  agentDefId: agentDef.id,
+                  agentDefId: agentDefinition.id,
                 };
                 const mainWindow = windowService.get(WindowNames.main);
                 if (mainWindow !== undefined) {
@@ -390,7 +390,7 @@ export class MenuService implements IMenuService {
           }),
         );
       }
-      
+
       menu.append(new MenuItem({ type: 'separator' }));
     }
 

@@ -195,23 +195,23 @@ export class View implements IViewService {
     // Try exact match first
     let view = this.views.get(workspaceID)?.get(windowName);
     if (view) return view;
-    
+
     // If not found, try case-insensitive match (for robustness)
     const lowerWorkspaceID = workspaceID.toLowerCase();
     for (const [id, windowViews] of this.views.entries()) {
       if (id.toLowerCase() === lowerWorkspaceID) {
         view = windowViews?.get(windowName);
         if (view) {
-          logger.debug('getView: Found view with case-insensitive match', { 
-            requestedId: workspaceID, 
+          logger.debug('getView: Found view with case-insensitive match', {
+            requestedId: workspaceID,
             actualId: id,
-            windowName 
+            windowName,
           });
           return view;
         }
       }
     }
-    
+
     return undefined;
   }
 
@@ -325,17 +325,17 @@ export class View implements IViewService {
       if (updatedWorkspace === undefined) return;
       // Prevent update non-active (hiding) wiki workspace, so it won't pop up to cover other active agent workspace
       if (windowName === WindowNames.main && !updatedWorkspace.active) return;
-      
+
       // Check if this view has custom bounds set - if so, don't auto-resize
       const key = `${workspace.id}-${windowName}`;
       if (this.customBoundsMap.has(key) && this.customBoundsMap.get(key) !== undefined) {
-        logger.debug('debouncedOnResize: skipping auto-resize for view with custom bounds', { 
-          workspaceId: workspace.id, 
-          windowName 
+        logger.debug('debouncedOnResize: skipping auto-resize for view with custom bounds', {
+          workspaceId: workspace.id,
+          windowName,
         });
         return;
       }
-      
+
       if ([WindowNames.secondary, WindowNames.main, WindowNames.tidgiMiniWindow].includes(windowName)) {
         const contentSize = browserWindow.getContentSize();
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });

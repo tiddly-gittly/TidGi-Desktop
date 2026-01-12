@@ -235,7 +235,7 @@ When('(Dont do this) I click on a specific button and wait for 2 seconds.', asyn
 5. Streaming Support: Special handling for real-time updates in chat interfaces
 6. **Don't think about adding new step definitions** or **change timeout duration**, unless human ask you to do. You should always reuse existing steps, and debug the fundamental reason that causes timeout. Timeout usually because of expected element not percent.
 7. If you forget to run `pnpm run test:prepare-e2e` after modify code in `./src` folder, you may find expected elements missing.
-8. Usually don't need to add wait time, because most check already will wait for a while. Even add wait, can't be more than 0.2s.
+8. Usually don't need to add wait time, because most check already will wait for a while. Should use exact test-id to wait internal steps, and test-id should contribute larger than 2 second waiting, otherwise it is useless.
 
 ## Testing Library Best Practices
 

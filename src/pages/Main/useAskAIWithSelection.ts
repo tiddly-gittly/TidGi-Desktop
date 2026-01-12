@@ -1,16 +1,14 @@
 import { IAskAIWithSelectionData } from '@/constants/channels';
 import { PageType } from '@/constants/pageTypes';
 import { useTabStore } from '@/pages/Agent/store/tabStore';
-import { IChatTab, IWikiEmbedTab, TabState, TabType } from '@/pages/Agent/types/tab';
-import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 
 /**
  * Hook to handle "Ask AI with selection" from wiki context menu.
- * When triggered, navigates to Agent page and creates a split view with:
- * - Left pane: Embedded Wiki BrowserView (using WIKI_EMBED tab type)
- * - Right pane: Chat tab with the selected text as initial message
+ * When triggered, navigates to Agent page and creates/reuses a split view with:
+ * - Left pane: Chat tab with the selected text as initial message
+ * - Right pane: Embedded Wiki BrowserView (using WIKI_EMBED tab type)
  */
 export function useAskAIWithSelection(): void {
   const [, setLocation] = useLocation();
@@ -53,63 +51,16 @@ export function useAskAIWithSelection(): void {
         // Small delay to ensure navigation completes
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        const { addTab, setActiveTab } = tabStoreReference.current;
+        // Find or create "Talk with AI" tab (backend handles reuse logic)
+        const tabId = await window.service.agentBrowser.findOrCreateTalkWithAITab(
+          data.workspaceId,
+          data.agentDefId,
+          data.selectionText,
+        );
 
-        // Create child tab objects without adding them to the database
-        // These will only exist as part of the split view
-        const timestamp = Date.now();
-
-        const childTabs = [];
-
-        // Create a Chat tab object with the selected text as initial message (LEFT pane)
-        // We need to create an agent instance first for the chat tab
-        // Use the specified agent definition or default if not provided
-        const agent = await window.service.agentInstance.createAgent(data.agentDefId);
-        const chatTab: IChatTab = {
-          id: nanoid(),
-          type: TabType.CHAT,
-          title: agent.name || 'AI Chat',
-          agentDefId: agent.agentDefId,
-          agentId: agent.id,
-          initialMessage: data.selectionText,
-          state: TabState.ACTIVE,
-          isPinned: false,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        };
-        childTabs.push(chatTab);
-
-        // Create a Wiki Embed tab object for the RIGHT pane (if workspaceId is provided)
-        // Put wiki on the right to avoid its BrowserView covering tab context menus
-        if (data.workspaceId) {
-          // Get the actual workspace to ensure we have the correct ID (case-sensitive)
-          const workspace = await window.service.workspace.get(data.workspaceId);
-          if (workspace) {
-            const wikiEmbedTab: IWikiEmbedTab = {
-              id: nanoid(),
-              type: TabType.WIKI_EMBED,
-              title: workspace.name || 'Wiki',
-              workspaceId: workspace.id, // Use the canonical ID from the workspace object
-              state: TabState.ACTIVE,
-              isPinned: false,
-              createdAt: timestamp,
-              updatedAt: timestamp,
-            };
-            childTabs.push(wikiEmbedTab);
-          }
-        }
-
-        // Send the initial message to the agent immediately (no need for setTimeout)
-        if (data.selectionText && agent.id) {
-          void window.service.agentInstance.sendMsgToAgent(agent.id, { text: data.selectionText });
-        }
-
-        // Create a split view tab with the child tabs
-        const splitViewTab = await addTab(TabType.SPLIT_VIEW, {
-          childTabs,
-          splitRatio: 50,
-        });
-        setActiveTab(splitViewTab.id);
+        // Activate the tab
+        const { setActiveTab } = tabStoreReference.current;
+        setActiveTab(tabId);
       } catch (error) {
         void window.service.native.log('error', 'Failed to handle askAIWithSelection', { error: String(error) });
       } finally {

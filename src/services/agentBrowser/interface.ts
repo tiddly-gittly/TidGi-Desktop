@@ -80,6 +80,16 @@ export interface IAgentBrowserService {
    * @returns The restored tab or null if no closed tabs
    */
   restoreClosedTab(): Promise<TabItem | null>;
+
+  /**
+   * Find existing or create new "Talk with AI" split view tab
+   * Reuses existing split view with matching workspace if available
+   * @param workspaceId Wiki workspace ID to embed
+   * @param agentDefinitionId Agent definition ID to use
+   * @param selectionText Selected text to send to agent
+   * @returns The tab ID to activate
+   */
+  findOrCreateTalkWithAITab(workspaceId: string | undefined, agentDefinitionId: string | undefined, selectionText: string): Promise<string>;
 }
 
 /**
@@ -101,5 +111,6 @@ export const AgentBrowserServiceIPCDescriptor = {
     pinTab: ProxyPropertyType.Function,
     getClosedTabs: ProxyPropertyType.Function,
     restoreClosedTab: ProxyPropertyType.Function,
+    findOrCreateTalkWithAITab: ProxyPropertyType.Function,
   },
 };

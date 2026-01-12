@@ -106,7 +106,7 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
     return () => {
       mounted = false;
       resizeObserver.disconnect();
-      
+
       // Check if we're switching to this wiki workspace
       // If so, don't clear bounds - let realignActiveView handle it
       void (async () => {
@@ -136,7 +136,7 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
   }
 
   return (
-    <Container ref={containerReference}>
+    <Container ref={containerReference} data-testid='wiki-embed-view'>
       {isLoading && (
         <LoadingContainer>
           <CircularProgress size={32} />

@@ -1,4 +1,4 @@
-import { After, DataTable, Given, Then } from '@cucumber/cucumber';
+import { After, DataTable, Given, Then, When } from '@cucumber/cucumber';
 import { AIGlobalSettings, AIProviderConfig } from '@services/externalAPI/interface';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
@@ -383,5 +383,61 @@ async function clearAISettings() {
   const cleaned = omit(parsed, ['aiSettings']);
   await fs.writeJson(settingsPath, cleaned, { spaces: 2 });
 }
+
+// Step to send ask AI with selection IPC message
+When('I send ask AI with selection message with text {string} and workspace {string}', async function(this: ApplicationWorld, selectionText: string, workspaceName: string) {
+  const window = await this.getWindow('main');
+  if (!window) {
+    throw new Error('Main window not found');
+  }
+
+  // Get workspace ID from workspace name
+  const workspaceId = await window.evaluate(async (name: string): Promise<string | undefined> => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+    const workspaces = await (window as any).service.workspace.getWorkspacesAsList();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const workspace = workspaces.find((ws: { name: string }) => ws.name === name);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    return workspace?.id as string | undefined;
+  }, workspaceName);
+
+  if (!workspaceId) {
+    throw new Error(`Workspace with name "${workspaceName}" not found`);
+  }
+
+  // Send IPC message to trigger "Talk with AI" through main process
+  // Use app.evaluate to access Electron main process API
+  if (!this.app) {
+    throw new Error('Electron app not found');
+  }
+
+  const sendResult = await this.app.evaluate(async ({ BrowserWindow }, { text, wsId }: { text: string; wsId: string }) => {
+    // Find main window - the first window is always the main window in TidGi
+    const allWindows = BrowserWindow.getAllWindows();
+    const mainWindow = allWindows[0]; // Main window is always the first window created
+
+    if (!mainWindow) {
+      return { success: false, error: 'No windows found', windowCount: allWindows.length };
+    }
+
+    const data = {
+      selectionText: text,
+      wikiUrl: `tidgi://${wsId}`,
+      workspaceId: wsId,
+    };
+
+    // Send IPC message to renderer
+    mainWindow.webContents.send('ask-ai-with-selection', data);
+
+    return { success: true };
+  }, { text: selectionText, wsId: workspaceId });
+
+  if (!sendResult.success) {
+    throw new Error(`Failed to send IPC message: ${sendResult.error || 'Unknown error'}`);
+  }
+
+  // Small delay to ensure IPC message is processed (cross-process communication needs time)
+  await new Promise(resolve => setTimeout(resolve, 200));
+});
 
 export { clearAISettings };
