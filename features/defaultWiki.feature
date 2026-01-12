@@ -22,6 +22,43 @@ Feature: TidGi Default Wiki
     And the browser view should be loaded and visible
     And I should see "我的 TiddlyWiki" in the browser view content
 
+  @wiki @create-main-workspace
+  Scenario: Create new main workspace via UI from top sidebar
+    # Prerequisite: app starts with default wiki workspace
+    Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    # Clear previous log markers before waiting for new ones
+    And I clear log lines containing "[test-id-WORKSPACE_CREATED]"
+    And I clear log lines containing "[test-id-VIEW_LOADED]"
+    # Step 1: Click add workspace button in top sidebar
+    When I click on an "add workspace button" element with selector "#add-workspace-button"
+    And I switch to "addWorkspace" window
+    And I wait for the page to load completely
+    # Step 2: Verify we're on "Create New Wiki" tab (should be default)
+    Then I should see a "create new wiki tab" element with selector "button:has-text('创建新知识库')"
+    # Step 3: Since there's already a default "wiki" workspace, the advanced accordion should be expanded
+    # Verify we're in main workspace mode (not sub-workspace)
+    Then I should see a "main/sub workspace switch" element with selector "[data-testid='main-sub-workspace-switch']"
+    # Step 4: Enter a different wiki folder name (default "wiki" already exists)
+    # First clear any existing value in the input field
+    When I clear text in "wiki folder name input" element with selector "label:has-text('即将新建的知识库文件夹名') + div input"
+    # Then type the new folder name
+    When I type "wiki2" in "wiki folder name input" element with selector "label:has-text('即将新建的知识库文件夹名') + div input"
+    # Step 5: Click the create button to create the workspace
+    When I click on a "create wiki button" element with selector "button:has-text('创建知识库')"
+    # Wait for workspace to be created using log marker
+    Then I wait for "workspace created" log marker "[test-id-WORKSPACE_CREATED]"
+    # Switch back to main window
+    When I switch to "main" window
+    # Wait for wiki view to fully load
+    Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
+    # Step 7: Verify the new workspace appears in the sidebar
+    Then I should see a "wiki2 workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki2')"
+    # Step 8: Verify workspace is functional - click it and check browser view loads
+    When I click on a "wiki2 workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki2')"
+    And the browser view should be loaded and visible
+    # Verify TiddlyWiki content is displayed in the new workspace
+    Then I should see "我的 TiddlyWiki" in the browser view content
+
   @wiki @move-workspace
   Scenario: Move workspace to a new location
     # Enable file system watch for testing (default is false in production)
