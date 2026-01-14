@@ -21,8 +21,9 @@ Feature: Workspace Hibernation
     And I switch to "editWorkspace" window
     And I wait for the page to load completely
     When I click on "misc options accordion and hibernation switch" elements with selectors:
-      | [data-testid='preference-section-miscOptions']     |
-      | [data-testid='hibernate-when-unused-switch']       |
+      | element description     | selector                                           |
+      | misc options accordion  | [data-testid='preference-section-miscOptions']     |
+      | hibernation switch      | [data-testid='hibernate-when-unused-switch']       |
     When I click on a "save button" element with selector "[data-testid='edit-workspace-save-button']"
     Then I should not see a "save button" element with selector "[data-testid='edit-workspace-save-button']"
     Then I switch to "main" window
@@ -32,8 +33,9 @@ Feature: Workspace Hibernation
     And I switch to "editWorkspace" window
     And I wait for the page to load completely
     When I click on "misc options accordion and hibernation switch" elements with selectors:
-      | [data-testid='preference-section-miscOptions']     |
-      | [data-testid='hibernate-when-unused-switch']       |
+      | element description     | selector                                           |
+      | misc options accordion  | [data-testid='preference-section-miscOptions']     |
+      | hibernation switch      | [data-testid='hibernate-when-unused-switch']       |
     When I click on a "save button" element with selector "[data-testid='edit-workspace-save-button']"
     Then I should not see a "save button" element with selector "[data-testid='edit-workspace-save-button']"
     Then I switch to "main" window

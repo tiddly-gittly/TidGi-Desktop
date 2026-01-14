@@ -28,7 +28,8 @@ Feature: Workspace Configuration Sync
     When I remove workspace "WikiRenamed" keeping files
     # Step 4: Verify workspace is removed but config file still exists
     Then I should not see "wiki workspace in sidebar" elements with selectors:
-      | div[data-testid^='workspace-']:has-text('WikiRenamed') |
+      | element description      | selector                                               |
+      | wiki workspace in sidebar| div[data-testid^='workspace-']:has-text('WikiRenamed') |
     Then file "wiki/tidgi.config.json" should exist in "wiki-test"
     # Step 5: Re-add the workspace by opening existing wiki
     # Clear previous log markers before waiting for new ones

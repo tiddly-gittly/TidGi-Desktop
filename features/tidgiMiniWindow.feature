@@ -16,8 +16,9 @@ Feature: TidGi Mini Window
     And I confirm the "tidgiMiniWindow" window exists
     And I confirm the "tidgiMiniWindow" window not visible
     Then I should see "always on top toggle and workspace sync toggle" elements with selectors:
-      | [data-testid='tidgi-mini-window-always-on-top-switch']  |
-      | [data-testid='tidgi-mini-window-sync-workspace-switch'] |
+      | element description      | selector                                                |
+      | always on top toggle     | [data-testid='tidgi-mini-window-always-on-top-switch']  |
+      | workspace sync toggle    | [data-testid='tidgi-mini-window-sync-workspace-switch'] |
     Then I click on a "shortcut register button" element with selector "[data-testid='shortcut-register-button']"
     And I press the key combination "CommandOrControl+Shift+M"
     And I click on a "shortcut confirm button" element with selector "[data-testid='shortcut-confirm-button']"

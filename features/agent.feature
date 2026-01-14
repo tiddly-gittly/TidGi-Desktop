@@ -10,8 +10,9 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see a "page body" element with selector "body"
     # Ensure we are in the correct workspace before each scenario to avoid wrong starting state
     And I click on "agent workspace button and new tab button" elements with selectors:
-      | [data-testid='workspace-agent'] |
-      | [data-tab-id='new-tab-button']  |
+      | element description  | selector                        |
+      | agent workspace      | [data-testid='workspace-agent'] |
+      | new tab button       | [data-tab-id='new-tab-button']  |
 
   @agent @mockOpenAI
   Scenario: Wiki-search tool usage
@@ -36,8 +37,9 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     Then I should see 4 messages in chat history
     # Verify the last message contains the AI explanation about Index
     And I should see "explanation in last message and explanation about edit" elements with selectors:
-      | [data-testid='message-bubble']:last-child:has-text('Index') |
-      | [data-testid='message-bubble']:last-child:has-text('编辑')  |
+      | element description        | selector                                                     |
+      | explanation in last message| [data-testid='message-bubble']:last-child:has-text('Index') |
+      | explanation about edit     | [data-testid='message-bubble']:last-child:has-text('编辑')  |
 
   @agent @mockOpenAI
   Scenario: Wiki operation
@@ -64,14 +66,16 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see a "workspace not exist error" element with selector "[data-testid='message-bubble']:has-text('test-expected-to-fail'):has-text('不存在')"
     # Verify the last message contains success confirmation
     And I should see "success in last message and wiki workspace in last message" elements with selectors:
-      | [data-testid='message-bubble']:last-child:has-text('已成功') |
-      | [data-testid='message-bubble']:last-child:has-text('wiki')   |
+      | element description           | selector                                                     |
+      | success in last message       | [data-testid='message-bubble']:last-child:has-text('已成功') |
+      | wiki workspace in last message| [data-testid='message-bubble']:last-child:has-text('wiki')   |
 
   @agent
   Scenario: Create default agent from New Tab quick access
     When I click on "new tab button and create default agent button" elements with selectors:
-      | [data-tab-id='new-tab-button']              |
-      | [data-testid='create-default-agent-button'] |
+      | element description        | selector                                    |
+      | new tab button             | [data-tab-id='new-tab-button']              |
+      | create default agent button| [data-testid='create-default-agent-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
 
   @agent
@@ -95,17 +99,19 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | response                                                                                               | stream |
       | partial_chunk_1<stream_split>partial_chunk_2<stream_split>partial_chunk_3<stream_split>partial_chunk_4 | true   |
     And I click on "new tab button and create default agent button" elements with selectors:
-      | [data-tab-id='new-tab-button']              |
-      | [data-testid='create-default-agent-button'] |
+      | element description        | selector                                    |
+      | new tab button             | [data-tab-id='new-tab-button']              |
+      | create default agent button| [data-testid='create-default-agent-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "Start long streaming" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     # Wait for streaming container to appear and contain the first chunk
     Then I should see "assistant streaming container and partial assistant text and cancel icon" elements with selectors:
-      | [data-testid='assistant-streaming-text'] |
-      | *:has-text('partial_chunk_1')            |
-      | [data-testid='cancel-icon']              |
+      | element description         | selector                                 |
+      | assistant streaming container| [data-testid='assistant-streaming-text'] |
+      | partial assistant text      | *:has-text('partial_chunk_1')            |
+      | cancel icon                 | [data-testid='cancel-icon']              |
     # Click cancel button mid-stream
     When I click on a "cancel button" element with selector "[data-testid='agent-send-button']"
     And I should see a "send icon" element with selector "[data-testid='send-icon']"

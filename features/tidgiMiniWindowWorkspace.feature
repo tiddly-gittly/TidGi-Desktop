@@ -36,8 +36,9 @@ Feature: TidGi Mini Window Workspace Switching
     And I click on an "open preferences button" element with selector "#open-preferences-button"
     And I switch to "preferences" window
     When I click on "tidgi mini window section and disable sync workspace switch" elements with selectors:
-      | [data-testid='preference-section-tidgiMiniWindow']                |
-      | [data-testid='tidgi-mini-window-sync-workspace-switch']           |
+      | element description              | selector                                                |
+      | tidgi mini window section        | [data-testid='preference-section-tidgiMiniWindow']      |
+      | disable sync workspace switch    | [data-testid='tidgi-mini-window-sync-workspace-switch'] |
     # Enable sidebar to see workspace buttons
     And I click on a "Enable sidebar toggle switch" element with selector "[data-testid='sidebar-on-tidgi-mini-window-switch']"
     And I wait for 0.2 seconds
@@ -79,12 +80,14 @@ Feature: TidGi Mini Window Workspace Switching
   Scenario: Enabling sync workspace automatically hides sidebar
     # Configure tidgi mini window with fixed workspace first
     When I click on "agent workspace button and open preferences button" elements with selectors:
-      | [data-testid='workspace-agent']       |
-      | #open-preferences-button              |
+      | element description         | selector                      |
+      | agent workspace button      | [data-testid='workspace-agent']|
+      | open preferences button     | #open-preferences-button      |
     And I switch to "preferences" window
     When I click on "tidgi mini window section and disable sync workspace switch" elements with selectors:
-      | [data-testid='preference-section-tidgiMiniWindow']                |
-      | [data-testid='tidgi-mini-window-sync-workspace-switch']           |
+      | element description               | selector                                                |
+      | tidgi mini window section         | [data-testid='preference-section-tidgiMiniWindow']      |
+      | disable sync workspace switch     | [data-testid='tidgi-mini-window-sync-workspace-switch'] |
     And I should see a "sidebar toggle switch" element with selector "[data-testid='sidebar-on-tidgi-mini-window-switch']"
     # Enable sidebar to see it in mini window
     And I click on a "Enable sidebar toggle switch" element with selector "[data-testid='sidebar-on-tidgi-mini-window-switch']"
@@ -103,8 +106,9 @@ Feature: TidGi Mini Window Workspace Switching
     When I click on a "Enable tidgi mini window sync workspace switch" element with selector "[data-testid='tidgi-mini-window-sync-workspace-switch']"
     # Verify sidebar option is now hidden
     And I should not see "sidebar toggle switch and fixed workspace select" elements with selectors:
-      | [data-testid='sidebar-on-tidgi-mini-window-switch']        |
-      | [data-testid='tidgi-mini-window-fixed-workspace-select']   |
+      | element description           | selector                                                 |
+      | sidebar toggle switch         | [data-testid='sidebar-on-tidgi-mini-window-switch']      |
+      | fixed workspace select        | [data-testid='tidgi-mini-window-fixed-workspace-select'] |
     # Open tidgi mini window in sync mode - should sync to agent workspace
     When I press the key combination "CommandOrControl+Shift+M"
     And I confirm the "tidgiMiniWindow" window visible
@@ -121,8 +125,9 @@ Feature: TidGi Mini Window Workspace Switching
     And I click on an "open preferences button" element with selector "#open-preferences-button"
     And I switch to "preferences" window
     When I click on "tidgi mini window section and disable sync workspace switch" elements with selectors:
-      | [data-testid='preference-section-tidgiMiniWindow']                |
-      | [data-testid='tidgi-mini-window-sync-workspace-switch']           |
+      | element description              | selector                                                |
+      | tidgi mini window section        | [data-testid='preference-section-tidgiMiniWindow']      |
+      | disable sync workspace switch    | [data-testid='tidgi-mini-window-sync-workspace-switch'] |
     # Enable sidebar to see workspace buttons
     And I click on a "Enable sidebar toggle switch" element with selector "[data-testid='sidebar-on-tidgi-mini-window-switch']"
     And I wait for 0.2 seconds
@@ -140,5 +145,6 @@ Feature: TidGi Mini Window Workspace Switching
     And I wait for 0.2 seconds
     # Verify guide workspace is now active and agent workspace is no longer active
     And I should see "guide workspace button with active state and agent workspace button without active state" elements with selectors:
-      | [data-testid='workspace-guide'][data-active='true']  |
-      | [data-testid='workspace-agent'][data-active='false'] |
+      | element description                    | selector                                             |
+      | guide workspace button with active state| [data-testid='workspace-guide'][data-active='true']  |
+      | agent workspace button without active state| [data-testid='workspace-agent'][data-active='false'] |

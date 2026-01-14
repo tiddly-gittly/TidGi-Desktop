@@ -13,20 +13,19 @@ Feature: OAuth Login Flow
     # Step 1: Start Mock OAuth Server
     When I start Mock OAuth Server on port 8888
     
-    # Step 2: Open preferences window
+    # Step 2: Open preferences window and navigate to Sync section
     When I click on a "settings button" element with selector "#open-preferences-button"
     When I switch to "preferences" window
+    When I click on "sync section and custom server tab" elements with selectors:
+      | element description | selector                                      |
+      | sync section        | [data-testid='preference-section-sync']      |
+      | custom server tab   | [data-testid='custom-server-tab']            |
 
-    # Step 2: Navigate to Sync section
-    When I click on a "sync section" element with selector "[data-testid='preference-section-sync']"
-
-    # Step 3: Click Custom Server tab
-    When I click on a "custom server tab" element with selector "[data-testid='custom-server-tab']"
-
-    # Step 4: Verify Custom Server form is visible
+    # Step 3: Verify Custom Server form is visible
     Then I should see "server url input and client id input" elements with selectors:
-      | [data-testid='custom-server-url-input'] |
-      | [data-testid='custom-client-id-input']  |
+      | element description | selector                                |
+      | server url input    | [data-testid='custom-server-url-input'] |
+      | client id input     | [data-testid='custom-client-id-input']  |
 
     # Step 5: Trigger OAuth login
     # Note: oauth2-mock-server automatically redirects without showing login UI

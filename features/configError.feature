@@ -18,8 +18,9 @@ Feature: Configuration Error Handling
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Create a default agent (this should work without AI config)
     When I click on "new tab button and create default agent button" elements with selectors:
-      | [data-tab-id='new-tab-button']              |
-      | [data-testid='create-default-agent-button'] |
+      | element description         | selector                                    |
+      | new tab button              | [data-tab-id='new-tab-button']              |
+      | create default agent button | [data-testid='create-default-agent-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # Try to send a message - this should fail with MissingConfigError
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
@@ -27,9 +28,10 @@ Feature: Configuration Error Handling
     And I press "Enter" key
     # Verify error message wrapper, internationalized title, and "Go to Settings" button are present
     Then I should see "error message wrapper and configuration issue title and go to settings button" elements with selectors:
-      | [data-testid='error-message']                             |
-      | [data-testid='error-message']:has-text('配置问题')        |
-      | [data-testid='error-message'] button:has-text('前往设置') |
+      | element description           | selector                                           |
+      | error message wrapper         | [data-testid='error-message']                      |
+      | configuration issue title     | [data-testid='error-message']:has-text('配置问题') |
+      | go to settings button         | [data-testid='error-message'] button:has-text('前往设置') |
     # Verify we don't see the raw translation key
     Then I should not see a "raw error key text" element with selector "text='Chat.ConfigError.MissingConfigError'"
     # Click the button to open preferences

@@ -83,10 +83,11 @@ Feature: Git Log Window
     Then I should not see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     # Verify the correct commit is selected and we're on the latest commit (should show amend button)
     Then I should see "selected commit row and commit message and amend button and revert button" elements with selectors:
-      | [data-testid^='commit-row-'][data-selected='true']:has-text('使用太记桌面版备份') |
-      | p.MuiTypography-body2:has-text('使用太记桌面版备份')                              |
-      | button:has-text('修改')                                                           |
-      | button:has-text('回滚')                                                           |
+      | element description   | selector                                                                  |
+      | selected commit row   | [data-testid^='commit-row-'][data-selected='true']:has-text('使用太记桌面版备份') |
+      | commit message        | p.MuiTypography-body2:has-text('使用太记桌面版备份')                              |
+      | amend button          | button:has-text('修改')                                                           |
+      | revert button         | button:has-text('回滚')                                                           |
     # Click revert button
     When I click on a "revert button" element with selector "button:has-text('回滚')"
     # Wait for git revert operation to complete

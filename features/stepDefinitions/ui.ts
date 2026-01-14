@@ -38,17 +38,19 @@ Then('I should see {string} elements with selectors:', async function(this: Appl
     throw new Error('No current window is available');
   }
 
-  const descriptions = elementDescriptions.split(' and ').map(d => d.trim());
   const rows = dataTable.raw();
   const errors: string[] = [];
 
-  if (descriptions.length !== rows.length) {
-    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${rows.length} selectors provided`);
+  // Expect two-column format with header: | element description | selector |
+  const hasHeader = rows[0]?.length === 2 && rows[0][0]?.toLowerCase().includes('description');
+  const dataRows = hasHeader ? rows.slice(1) : rows;
+
+  if (dataRows[0]?.length !== 2) {
+    throw new Error('Table must have exactly 2 columns: | element description | selector |');
   }
 
   // Check all elements in parallel for better performance
-  await Promise.all(rows.map(async ([selector], index) => {
-    const elementComment = descriptions[index];
+  await Promise.all(dataRows.map(async ([elementComment, selector]) => {
     try {
       await currentWindow.waitForSelector(selector, { timeout: 10000 });
       const isVisible = await currentWindow.isVisible(selector);
@@ -106,18 +108,19 @@ Then('I should not see {string} elements with selectors:', async function(this: 
     throw new Error('No current window is available');
   }
 
-  const descriptions = elementDescriptions.split(' and ').map(d => d.trim());
   const rows = dataTable.raw();
   const errors: string[] = [];
 
-  if (descriptions.length !== rows.length) {
-    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${rows.length} selectors provided`);
+  // Expect two-column format with header: | element description | selector |
+  const hasHeader = rows[0]?.length === 2 && rows[0][0]?.toLowerCase().includes('description');
+  const dataRows = hasHeader ? rows.slice(1) : rows;
+
+  if (dataRows[0]?.length !== 2) {
+    throw new Error('Table must have exactly 2 columns: | element description | selector |');
   }
 
   // Check all elements
-  for (let index = 0; index < rows.length; index++) {
-    const [selector] = rows[index];
-    const elementComment = descriptions[index];
+  for (const [elementComment, selector] of dataRows) {
     try {
       const element = currentWindow.locator(selector).first();
       const count = await element.count();
@@ -168,18 +171,19 @@ When('I click on {string} elements with selectors:', async function(this: Applic
     throw new Error('Window "current" is not available');
   }
 
-  const descriptions = elementDescriptions.split(' and ').map(d => d.trim());
   const rows = dataTable.raw();
   const errors: string[] = [];
 
-  if (descriptions.length !== rows.length) {
-    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${rows.length} selectors provided`);
+  // Expect two-column format with header: | element description | selector |
+  const hasHeader = rows[0]?.length === 2 && rows[0][0]?.toLowerCase().includes('description');
+  const dataRows = hasHeader ? rows.slice(1) : rows;
+
+  if (dataRows[0]?.length !== 2) {
+    throw new Error('Table must have exactly 2 columns: | element description | selector |');
   }
 
   // Click elements sequentially (not in parallel) to maintain order and avoid race conditions
-  for (let index = 0; index < rows.length; index++) {
-    const [selector] = rows[index];
-    const elementComment = descriptions[index];
+  for (const [elementComment, selector] of dataRows) {
     try {
       await targetWindow.waitForSelector(selector, { timeout: 10000 });
       const isVisible = await targetWindow.isVisible(selector);

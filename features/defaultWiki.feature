@@ -13,8 +13,9 @@ Feature: TidGi Default Wiki
   @wiki
   Scenario: Application has default wiki workspace
     Then I should see "page body and wiki workspace" elements with selectors:
-      | body                                            |
-      | div[data-testid^='workspace-']:has-text('wiki') |
+      | element description | selector                                        |
+      | page body           | body                                            |
+      | wiki workspace      | div[data-testid^='workspace-']:has-text('wiki') |
     And the window title should contain "太记"
 
   @wiki

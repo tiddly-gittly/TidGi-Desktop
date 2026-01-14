@@ -51,5 +51,6 @@ Feature: AI-Generated Git Commit Messages
     # After commit, verify AI-generated message and file in git log table
     # Message is in p.MuiTypography-body2, file div has aria-label
     Then I should see "commit with AI message and Index.tid file" elements with selectors:
-      | p.MuiTypography-body2:has-text('更新 Index 条目') |
-      | div.MuiBox-root[aria-label*='Index.tid']         |
+      | element description     | selector                                      |
+      | commit with AI message  | p.MuiTypography-body2:has-text('更新 Index 条目') |
+      | Index.tid file          | div.MuiBox-root[aria-label*='Index.tid']     |

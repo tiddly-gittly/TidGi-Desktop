@@ -15,8 +15,9 @@ Feature: Sub-Wiki Functionality
     When I launch the TidGi application
     And I wait for the page to load completely
     Then I should see "page body and workspaces" elements with selectors:
-      | div[data-testid^='workspace-']:has-text('wiki')    |
-      | div[data-testid^='workspace-']:has-text('SubWiki') |
+      | element description | selector                                           |
+      | wiki workspace      | div[data-testid^='workspace-']:has-text('wiki')    |
+      | SubWiki workspace   | div[data-testid^='workspace-']:has-text('SubWiki') |
     # Enable file system watch for testing (default is false in production)
     When I update workspace "wiki" settings:
       | property              | value |
@@ -54,8 +55,9 @@ Feature: Sub-Wiki Functionality
     When I launch the TidGi application
     And I wait for the page to load completely
     Then I should see "page body and workspaces" elements with selectors:
-      | div[data-testid^='workspace-']:has-text('wiki')           |
-      | div[data-testid^='workspace-']:has-text('SubWikiPreload') |
+      | element description      | selector                                                  |
+      | wiki workspace           | div[data-testid^='workspace-']:has-text('wiki')           |
+      | SubWikiPreload workspace | div[data-testid^='workspace-']:has-text('SubWikiPreload') |
     # Enable file system watch for testing (default is false in production)
     When I update workspace "wiki" settings:
       | property              | value |
@@ -86,8 +88,9 @@ Feature: Sub-Wiki Functionality
     When I launch the TidGi application
     And I wait for the page to load completely
     Then I should see "page body and workspaces" elements with selectors:
-      | div[data-testid^='workspace-']:has-text('wiki')           |
-      | div[data-testid^='workspace-']:has-text('SubWikiTagTree') |
+      | element description       | selector                                                   |
+      | wiki workspace            | div[data-testid^='workspace-']:has-text('wiki')            |
+      | SubWikiTagTree workspace  | div[data-testid^='workspace-']:has-text('SubWikiTagTree')  |
     # Enable file system watch for testing (default is false in production)
     When I update workspace "wiki" settings:
       | property              | value |
@@ -119,8 +122,9 @@ Feature: Sub-Wiki Functionality
     When I launch the TidGi application
     And I wait for the page to load completely
     Then I should see "page body and workspaces" elements with selectors:
-      | div[data-testid^='workspace-']:has-text('wiki')          |
-      | div[data-testid^='workspace-']:has-text('SubWikiFilter') |
+      | element description      | selector                                                 |
+      | wiki workspace           | div[data-testid^='workspace-']:has-text('wiki')          |
+      | SubWikiFilter workspace  | div[data-testid^='workspace-']:has-text('SubWikiFilter') |
     # Enable file system watch for testing (default is false in production)
     When I update workspace "wiki" settings:
       | property              | value |
@@ -145,8 +149,9 @@ Feature: Sub-Wiki Functionality
     When I launch the TidGi application
     And I wait for the page to load completely
     Then I should see "page body and workspaces" elements with selectors:
-      | div[data-testid^='workspace-']:has-text('wiki')            |
-      | div[data-testid^='workspace-']:has-text('SubWikiSettings') |
+      | element description        | selector                                                   |
+      | wiki workspace             | div[data-testid^='workspace-']:has-text('wiki')            |
+      | SubWikiSettings workspace  | div[data-testid^='workspace-']:has-text('SubWikiSettings') |
     # Open the edit workspace window using existing step
     When I open edit workspace window for workspace with name "SubWikiSettings"
     And I switch to "editWorkspace" window
