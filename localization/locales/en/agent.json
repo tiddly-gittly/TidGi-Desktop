@@ -37,6 +37,12 @@
     "Cancel": "Cancel",
     "ConfigError": {
       "GoToSettings": "Go to Settings",
+      "MissingConfigError": "No AI provider or model configured. Please configure in Settings.",
+      "MissingAPIKeyError": "API key for {{provider}} not found. Please add it in Settings.",
+      "MissingBaseURLError": "{{provider}} provider requires a base URL. Please configure it in Settings.",
+      "AuthenticationFailed": "{{provider}} authentication failed. Please check your API key in Settings.",
+      "ProviderNotFound": "Provider {{provider}} not found. Please configure it in Settings.",
+      "MissingProviderError": "Provider {{provider}} is not available. Please configure it in Settings.",
       "Title": "Configuration Issue"
     },
     "InputPlaceholder": "Type a message, Ctrl+Enter to send",

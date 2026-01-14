@@ -204,6 +204,16 @@ const providerConfig: AIProviderConfig = {
 
 const desiredModelParameters = { temperature: 0.7, systemPrompt: 'You are a helpful assistant.', topP: 0.95 };
 
+// Step to remove AI settings for testing config errors
+Given('I remove test ai settings', function() {
+  if (fs.existsSync(settingsPath)) {
+    const existing = fs.readJsonSync(settingsPath) as ISettingFile;
+    // Remove aiSettings but keep other settings
+    const { aiSettings: _removed, ...rest } = existing;
+    fs.writeJsonSync(settingsPath, rest, { spaces: 2 });
+  }
+});
+
 Given('I ensure test ai settings exists', function() {
   // Build expected aiSettings from shared providerConfig and compare with actual
   const modelsArray = providerConfig.models;

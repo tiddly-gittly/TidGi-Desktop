@@ -49,14 +49,14 @@ Feature: TidGi Preference
       | text='test-model'           |
       | text='test-embedding-model' |
       | text='test-speech-model'    |
-    # Verify the autocomplete is not empty and negative case remain explicit
-    Then I should not see a "empty first autocomplete placeholder" element with selector "xpath=(//label[contains(text(),'Preference.SelectModel')])[1]"
-    Then I should not see a "test-model after test-embedding-model (wrong order)" element with selector "xpath=//input[@value='test-embedding-model']/following::input[@value='test-model']"
     # Verify there are exactly 3 filled model selectors
     Then I should see "first autocomplete input with test-model and second autocomplete input with test-embedding-model and third autocomplete input with test-speech-model" elements with selectors:
       | xpath=(//div[contains(@class,'MuiAutocomplete-root')]//input[@value='test-model'])[1]           |
       | xpath=(//div[contains(@class,'MuiAutocomplete-root')]//input[@value='test-embedding-model'])[1] |
       | xpath=(//div[contains(@class,'MuiAutocomplete-root')]//input[@value='test-speech-model'])[1]    |
+    # Verify the autocomplete is not empty and negative case remain explicit
+    Then I should not see a "empty first autocomplete placeholder" element with selector "xpath=(//label[contains(text(),'Preference.SelectModel')])[1]"
+    Then I should not see a "test-model after test-embedding-model (wrong order)" element with selector "xpath=//input[@value='test-embedding-model']/following::input[@value='test-model']"
     # Step 10: Add ComfyUI provider with workflow path
     When I click on "add provider button and select from preset dropdown and comfyui preset option and add provider submit and provider tab and add model button" elements with selectors:
       | [data-testid='add-new-provider-button']    |
