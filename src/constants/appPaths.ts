@@ -9,7 +9,8 @@ import { sourcePath } from './paths';
  * Application Path Configuration
  *
  * Sets up isolated userData directories for different environments:
- * - Test: userData-test/ (isolated from dev/prod)
+ * - Test with --test-scenario: test-artifacts/{scenarioSlug}/userData-test (scenario-isolated)
+ * - Test without scenario: userData-test/ (legacy, isolated from dev/prod)
  * - Development: userData-dev/ (isolated from production)
  * - Production: system default userData directory
  */
@@ -17,11 +18,43 @@ import { sourcePath } from './paths';
 // Detect if we're in packaged app (E2E tests use packaged app with NODE_ENV=test)
 const isPackaged = process.resourcesPath && !process.resourcesPath.includes('electron');
 
+/**
+ * Parse --test-scenario=xxx argument from command line
+ * This is used to isolate test data per scenario in E2E tests
+ */
+function getTestScenarioSlug(): string | undefined {
+  const scenarioArg = process.argv.find(arg => arg.startsWith('--test-scenario='));
+  if (!scenarioArg) return undefined;
+  
+  const rawName = scenarioArg.split('=')[1];
+  if (!rawName) return undefined;
+  
+  // Slugify the scenario name (same logic as features/supports/paths.ts makeSlugPath)
+  let s = rawName.normalize('NFKC');
+  s = s.replace(/\./g, ''); // remove dots
+  let slug = s.replace(/[^\p{L}\p{N}\s\-_()]/gu, '-'); // replace unsafe chars
+  slug = slug.replace(/-+/g, '-'); // collapse dashes
+  slug = slug.replace(/\s+/g, ' ').trim(); // collapse spaces
+  slug = slug.replace(/^-+|-+$/g, '').replace(/^[\s]+|[\s]+$/g, ''); // trim edges
+  if (slug.length > 60) slug = slug.substring(0, 60); // limit length
+  return slug || undefined;
+}
+
+export const TEST_SCENARIO_SLUG = getTestScenarioSlug();
+
 // Set isolated userData paths for dev/test
 if (isTest) {
-  const userDataPath = isPackaged
-    ? path.resolve(process.cwd(), 'userData-test') // E2E: packaged, use cwd (outside asar)
-    : path.resolve(sourcePath, 'userData-test'); // Unit tests: project/userData-test
+  let userDataPath: string;
+  if (TEST_SCENARIO_SLUG && isPackaged) {
+    // E2E with scenario isolation: test-artifacts/{scenario}/userData-test
+    userDataPath = path.resolve(process.cwd(), 'test-artifacts', TEST_SCENARIO_SLUG, 'userData-test');
+  } else if (isPackaged) {
+    // E2E without scenario (legacy): cwd/userData-test
+    userDataPath = path.resolve(process.cwd(), 'userData-test');
+  } else {
+    // Unit tests: project/userData-test
+    userDataPath = path.resolve(sourcePath, 'userData-test');
+  }
   app.setPath('userData', userDataPath);
 } else if (isElectronDevelopment) {
   app.setPath('userData', path.resolve(sourcePath, 'userData-dev'));

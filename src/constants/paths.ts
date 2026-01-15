@@ -85,13 +85,36 @@ export const LOCALIZATION_FOLDER = isPackaged
   : path.resolve(sourcePath, localizationFolderName); // Dev/Unit test: project/localization
 
 // Default wiki locations
-// For E2E tests, always use project root's wiki-test (outside asar)
-// Windows/Linux: process.resourcesPath = out/TidGi-.../resources -> need ../../.. (3 levels) to get to project root
-// macOS: process.resourcesPath = out/TidGi-darwin-x64/TidGi.app/Contents/Resources -> need ../../../../../ (5 levels) to get to project root
+// For E2E tests with --test-scenario, use scenario-isolated directory
+// For E2E tests without scenario, use cwd/wiki-test (legacy)
+
+/**
+ * Parse --test-scenario=xxx argument from command line (duplicated from appPaths.ts to avoid circular dependency)
+ */
+function getTestScenarioSlugForWiki(): string | undefined {
+  const scenarioArg = process.argv.find(arg => arg.startsWith('--test-scenario='));
+  if (!scenarioArg) return undefined;
+  
+  const rawName = scenarioArg.split('=')[1];
+  if (!rawName) return undefined;
+  
+  // Slugify the scenario name
+  let s = rawName.normalize('NFKC');
+  s = s.replace(/\./g, '');
+  let slug = s.replace(/[^\p{L}\p{N}\s\-_()]/gu, '-');
+  slug = slug.replace(/-+/g, '-');
+  slug = slug.replace(/\s+/g, ' ').trim();
+  slug = slug.replace(/^-+|-+$/g, '').replace(/^[\s]+|[\s]+$/g, '');
+  if (slug.length > 60) slug = slug.substring(0, 60);
+  return slug || undefined;
+}
+
+const TEST_SCENARIO_SLUG_WIKI = getTestScenarioSlugForWiki();
+
 export const DEFAULT_FIRST_WIKI_FOLDER_PATH = (isTest && isPackaged)
-  ? (isMac
-    ? path.resolve(process.resourcesPath, '..', '..', '..', '..', '..', testWikiFolderName) // macOS E2E: 5 levels up
-    : path.resolve(process.resourcesPath, '..', '..', '..', testWikiFolderName)) // Windows/Linux E2E: 3 levels up
+  ? TEST_SCENARIO_SLUG_WIKI
+    ? path.resolve(process.cwd(), 'test-artifacts', TEST_SCENARIO_SLUG_WIKI, testWikiFolderName) // E2E with scenario: test-artifacts/{scenario}/wiki-test
+    : path.resolve(process.cwd(), testWikiFolderName) // E2E without scenario (legacy): cwd/wiki-test
   : isTest
   ? path.resolve(__dirname, '..', '..', testWikiFolderName) // E2E dev: project root
   : isDevelopmentOrTest

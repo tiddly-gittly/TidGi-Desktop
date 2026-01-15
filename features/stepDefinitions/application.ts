@@ -7,8 +7,7 @@ import type { ElectronApplication, Page } from 'playwright';
 import { windowDimension, WindowNames } from '../../src/services/windows/WindowProperties';
 import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
-import { makeSlugPath, screenshotsDirectory } from '../supports/paths';
-import { getPackedAppPath } from '../supports/paths';
+import { getPackedAppPath, makeSlugPath } from '../supports/paths';
 import { captureScreenshot } from '../supports/webContentsViewHelper';
 
 // Backoff configuration for retries
@@ -43,6 +42,8 @@ export class ApplicationWorld {
   mockOpenAIServer: MockOpenAIServer | undefined;
   mockOAuthServer: MockOAuthServer | undefined;
   savedWorkspaceId: string | undefined; // For storing workspace ID between steps
+  scenarioName: string = 'default'; // Scenario name from Cucumber pickle
+  scenarioSlug: string = 'default'; // Sanitized scenario name for file paths
 
   // Helper method to check if window is visible
   async isWindowVisible(page: Page): Promise<boolean> {
@@ -231,9 +232,10 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
     const cleanStepText = makeSlugPath(stepText, 80);
     const stepStatus = result && typeof result.status === 'string' ? result.status : 'unknown-status';
 
-    const featureDirectory = path.resolve(screenshotsDirectory, cleanScenarioName);
+    // Use scenario-specific screenshots directory
+    const scenarioScreenshotsDir = path.resolve(process.cwd(), 'test-artifacts', cleanScenarioName, 'userData-test', 'logs', 'screenshots');
     // Create directory asynchronously to avoid blocking the event loop in CI
-    await fs.ensureDir(featureDirectory);
+    await fs.ensureDir(scenarioScreenshotsDir);
 
     // Sometimes window close and don't wait for use to take picture, or window haven't open in this step, never mind, just skip.
     /**
@@ -252,12 +254,12 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
     // Try to capture both WebContentsView and Page screenshots
     let webViewCaptured = false;
     if (this.app) {
-      const webViewScreenshotPath = path.resolve(featureDirectory, `${timestamp}-${cleanStepText}-${stepStatus}-webview.png`);
+      const webViewScreenshotPath = path.resolve(scenarioScreenshotsDir, `${timestamp}-${cleanStepText}-${stepStatus}-webview.png`);
       webViewCaptured = await captureScreenshot(this.app, webViewScreenshotPath);
     }
 
     // Always capture page screenshot (UI chrome/window)
-    const pageScreenshotPath = path.resolve(featureDirectory, `${timestamp}-${cleanStepText}-${stepStatus}${webViewCaptured ? '-page' : ''}.png`);
+    const pageScreenshotPath = path.resolve(scenarioScreenshotsDir, `${timestamp}-${cleanStepText}-${stepStatus}${webViewCaptured ? '-page' : ''}.png`);
     await pageToUse.screenshot({ path: pageScreenshotPath, fullPage: true, type: 'png' });
   } catch (screenshotError) {
     console.warn('Failed to take screenshot:', screenshotError);
@@ -273,6 +275,8 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
       executablePath: packedAppPath,
       // Add debugging options to prevent app from closing and CI-specific args
       args: [
+        // Pass scenario name to application for path isolation
+        `--test-scenario=${this.scenarioName}`,
         '--no-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
@@ -320,7 +324,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
           ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
         }),
       },
-      // Set cwd to repo root so process.cwd() in app returns the correct path for userData-test
+      // Set cwd to repo root; scenario isolation is handled via --test-scenario argument
       cwd: process.cwd(),
       timeout: 30000, // Increase timeout to 30 seconds for CI
     });

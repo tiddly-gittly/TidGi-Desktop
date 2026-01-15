@@ -6,7 +6,6 @@ import { isEqual, omit } from 'lodash';
 import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
-import { settingsPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
@@ -83,7 +82,9 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
       }
     }
 
-    this.mockOpenAIServer = new MockOpenAIServer(15121, rules);
+    // Use dynamic port (0) to allow parallel test execution
+    // Each worker gets its own port automatically assigned by the OS
+    this.mockOpenAIServer = new MockOpenAIServer(0, rules);
     this.mockOpenAIServer.start().then(() => {
       done();
     }).catch((error_: unknown) => {
@@ -205,7 +206,8 @@ const providerConfig: AIProviderConfig = {
 const desiredModelParameters = { temperature: 0.7, systemPrompt: 'You are a helpful assistant.', topP: 0.95 };
 
 // Step to remove AI settings for testing config errors
-Given('I remove test ai settings', function() {
+Given('I remove test ai settings', function(this: ApplicationWorld) {
+  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
   if (fs.existsSync(settingsPath)) {
     const existing = fs.readJsonSync(settingsPath) as ISettingFile;
     // Remove aiSettings but keep other settings
@@ -214,12 +216,13 @@ Given('I remove test ai settings', function() {
   }
 });
 
-Given('I ensure test ai settings exists', function() {
+Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
   // Build expected aiSettings from shared providerConfig and compare with actual
   const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
   const providerName = providerConfig.provider;
 
+  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
   const parsed = fs.readJsonSync(settingsPath) as Record<string, unknown>;
   const actual = (parsed.aiSettings as Record<string, unknown> | undefined) || null;
 
@@ -277,6 +280,7 @@ Given('I ensure test ai settings exists', function() {
 
 // Version without datatable for simple cases
 Given('I add test ai settings', async function(this: ApplicationWorld) {
+  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
   let existing = {} as ISettingFile;
   if (fs.existsSync(settingsPath)) {
     existing = fs.readJsonSync(settingsPath) as ISettingFile;
@@ -314,6 +318,7 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
 
 // Version with datatable for advanced configuration
 Given('I add test ai settings:', async function(this: ApplicationWorld, dataTable: DataTable) {
+  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
   let existing = {} as ISettingFile;
   if (fs.existsSync(settingsPath)) {
     existing = fs.readJsonSync(settingsPath) as ISettingFile;
@@ -387,7 +392,9 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
   fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi, preferences: newPreferences } as ISettingFile, { spaces: 2 });
 });
 
-async function clearAISettings() {
+async function clearAISettings(scenarioRoot?: string) {
+  const root = scenarioRoot || process.cwd();
+  const settingsPath = path.resolve(root, 'userData-test', 'settings', 'settings.json');
   if (!(await fs.pathExists(settingsPath))) return;
   const parsed = await fs.readJson(settingsPath) as ISettingFile;
   const cleaned = omit(parsed, ['aiSettings']);

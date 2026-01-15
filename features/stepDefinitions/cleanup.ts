@@ -1,28 +1,30 @@
 import { After, Before } from '@cucumber/cucumber';
 import fs from 'fs-extra';
 import path from 'path';
-import { logsDirectory, screenshotsDirectory } from '../supports/paths';
+import { makeSlugPath } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { ApplicationWorld } from './application';
 import { clearTidgiMiniWindowSettings } from './tidgiMiniWindow';
 import { clearGitTestData, clearHibernationTestData, clearSubWikiRoutingTestData } from './wiki';
 
 Before(async function(this: ApplicationWorld, { pickle }) {
-  // Create necessary directories under userData-test/logs to match appPaths in dev/test
-  if (!(await fs.pathExists(logsDirectory))) {
-    await fs.ensureDir(logsDirectory);
-  }
-
-  // Create screenshots subdirectory in logs
-  if (!(await fs.pathExists(screenshotsDirectory))) {
-    await fs.ensureDir(screenshotsDirectory);
-  }
+  // Initialize scenario-specific paths
+  this.scenarioName = pickle.name;
+  this.scenarioSlug = makeSlugPath(pickle.name, 60);
+  
+  const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);
+  const logsDirectory = path.resolve(scenarioRoot, 'userData-test', 'logs');
+  const screenshotsDirectory = path.resolve(logsDirectory, 'screenshots');
+  
+  // Create necessary directories for this scenario
+  await fs.ensureDir(logsDirectory);
+  await fs.ensureDir(screenshotsDirectory);
 
   if (pickle.tags.some((tag) => tag.name === '@ai-setting')) {
-    await clearAISettings();
+    await clearAISettings(scenarioRoot);
   }
   if (pickle.tags.some((tag) => tag.name === '@tidgi-mini-window')) {
-    await clearTidgiMiniWindowSettings();
+    await clearTidgiMiniWindowSettings(scenarioRoot);
   }
 });
 
@@ -78,52 +80,34 @@ After(async function(this: ApplicationWorld, { pickle }) {
     this.currentWindow = undefined;
   }
 
+  const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);
+  
   // Clean up settings and test data AFTER app is closed
   if (pickle.tags.some((tag) => tag.name === '@tidgi-mini-window')) {
-    await clearTidgiMiniWindowSettings();
+    await clearTidgiMiniWindowSettings(scenarioRoot);
   }
   if (pickle.tags.some((tag) => tag.name === '@ai-setting')) {
-    await clearAISettings();
+    await clearAISettings(scenarioRoot);
   }
   if (pickle.tags.some((tag) => tag.name === '@subwiki')) {
-    await clearSubWikiRoutingTestData();
+    await clearSubWikiRoutingTestData(scenarioRoot);
   }
   // Clean up git test data to prevent state pollution between git tests
   // Removes entire wiki folder - it will be recreated on next test start
   if (pickle.tags.some((tag) => tag.name === '@git')) {
-    await clearGitTestData();
+    await clearGitTestData(scenarioRoot);
   }
   // Clean up hibernation test data - remove wiki2 folder created during tests
   if (pickle.tags.some((tag) => tag.name === '@hibernation')) {
-    await clearHibernationTestData();
+    await clearHibernationTestData(scenarioRoot);
   }
   // Clean up move workspace test data - remove wiki-test-moved folder
   if (pickle.tags.some((tag) => tag.name === '@move-workspace')) {
-    const wikiTestMovedPath = path.resolve(process.cwd(), 'wiki-test-moved');
+    const wikiTestMovedPath = path.resolve(scenarioRoot, 'wiki-test-moved');
     if (await fs.pathExists(wikiTestMovedPath)) {
       await fs.remove(wikiTestMovedPath);
     }
   }
 
-  // Separate logs by test scenario for easier debugging
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const wikiLogFile = `${logsDirectory}/wiki-${today}.log`;
-    const tidgiLogFile = `${logsDirectory}/TidGi-${today}.log`;
-
-    // Create a sanitized scenario name for the log files
-    const scenarioName = pickle.name.replace(/[^a-z0-9]/gi, '_').substring(0, 50);
-
-    if (await fs.pathExists(wikiLogFile)) {
-      const targetWikiLog = `${logsDirectory}/${scenarioName}_wiki.log`;
-      await fs.move(wikiLogFile, targetWikiLog, { overwrite: true });
-    }
-
-    if (await fs.pathExists(tidgiLogFile)) {
-      const targetTidgiLog = `${logsDirectory}/${scenarioName}_TidGi.log`;
-      await fs.move(tidgiLogFile, targetTidgiLog, { overwrite: true });
-    }
-  } catch (error) {
-    console.error('Error moving log files:', error);
-  }
+  // Scenario-specific logs are already in the right place, no need to move them
 });

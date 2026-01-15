@@ -4,21 +4,8 @@ import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
 import type { IWikiWorkspace, IWorkspace } from '../../src/services/workspaces/interface';
-// Scenario-specific paths are computed via helper functions
+import { settingsDirectory, settingsPath, wikiTestRootPath, wikiTestWikiPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
-
-// Helper functions to get scenario-specific paths
-function getSettingsPath(world: ApplicationWorld): string {
-  return path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug, 'userData-test', 'settings', 'settings.json');
-}
-
-function getWikiTestRootPath(world: ApplicationWorld): string {
-  return path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug, 'wiki-test');
-}
-
-function getWikiTestWikiPath(world: ApplicationWorld): string {
-  return path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug, 'wiki-test', 'wiki');
-}
 
 // Type guard for wiki workspace
 function isWikiWorkspace(workspace: IWorkspace): workspace is IWikiWorkspace {
@@ -74,19 +61,16 @@ export async function waitForLogMarker(searchString: string, errorMessage: strin
   }
 }
 
-When('I cleanup test wiki so it could create a new one on start', async function(this: ApplicationWorld) {
-  const wikiTestWikiPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'wiki-test', 'wiki');
-  const wikiTestRootPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'wiki-test');
-  
+When('I cleanup test wiki so it could create a new one on start', async function() {
   // Clean up main wiki folder
-  if (fs.existsSync(getWikiTestWikiPath(this))) fs.removeSync(getWikiTestWikiPath(this));
+  if (fs.existsSync(wikiTestWikiPath)) fs.removeSync(wikiTestWikiPath);
 
   // Clean up all sub-wiki folders in wiki-test directory (SubWiki*, SubWikiPreload, SubWikiTagTree, SubWikiFilter, etc.)
-  if (fs.existsSync(getWikiTestRootPath(this))) {
-    const entries = fs.readdirSync(getWikiTestRootPath(this), { withFileTypes: true });
+  if (fs.existsSync(wikiTestRootPath)) {
+    const entries = fs.readdirSync(wikiTestRootPath, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.isDirectory() && entry.name !== 'wiki') {
-        const subWikiPath = path.join(getWikiTestRootPath(this), entry.name);
+        const subWikiPath = path.join(wikiTestRootPath, entry.name);
         try {
           fs.removeSync(subWikiPath);
         } catch (error) {
@@ -111,7 +95,7 @@ When('I cleanup test wiki so it could create a new one on start', async function
   }
 
   type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
-  if (!fs.existsSync(getSettingsPath(this))) return;
+  if (!fs.existsSync(settingsPath)) return;
 
   // Retry logic with exponential backoff for reading settings.json - it might be temporarily locked or corrupted
   let settings: SettingsFile;
@@ -119,7 +103,7 @@ When('I cleanup test wiki so it could create a new one on start', async function
   try {
     settings = await backOff(
       async () => {
-        return fs.readJsonSync(getSettingsPath(this)) as SettingsFile;
+        return fs.readJsonSync(settingsPath) as SettingsFile;
       },
       {
         numOfAttempts: 3,
@@ -159,7 +143,7 @@ When('I cleanup test wiki so it could create a new one on start', async function
   try {
     await backOff(
       async () => {
-        fs.writeJsonSync(getSettingsPath(this), { ...settings, workspaces: filtered }, { spaces: 2 });
+        fs.writeJsonSync(settingsPath, { ...settings, workspaces: filtered }, { spaces: 2 });
       },
       {
         numOfAttempts: 3,
@@ -218,7 +202,7 @@ async function getDirectoryTree(directory: string, prefix = '', maxDepth = 3, cu
  */
 Then('file {string} should exist in {string}', async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
   // Replace {tmpDir} with wiki test root (not wiki subfolder)
-  let directoryPath = simpleDirectoryPath.replace('{tmpDir}', getWikiTestRootPath(this));
+  let directoryPath = simpleDirectoryPath.replace('{tmpDir}', wikiTestRootPath);
 
   // Resolve symlinks on all platforms to handle sub-wikis correctly
   // On Linux, symlinks might point to the real path, so we need to follow them
@@ -276,7 +260,7 @@ Then('file {string} should exist in {string}', async function(this: ApplicationW
 
 Then('file {string} should not exist in {string}', { timeout: 15000 }, async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
   // Replace {tmpDir} with wiki test root (not wiki subfolder)
-  let directoryPath = simpleDirectoryPath.replace('{tmpDir}', getWikiTestRootPath(this));
+  let directoryPath = simpleDirectoryPath.replace('{tmpDir}', wikiTestRootPath);
 
   // Resolve symlinks on all platforms to handle sub-wikis correctly
   if (await fs.pathExists(directoryPath)) {
@@ -317,12 +301,12 @@ Then('settings.json should have workspace {string} with {string} set to {string}
 ) {
   await backOff(
     async () => {
-      if (!await fs.pathExists(getSettingsPath(this))) {
-        throw new Error(`settings.json not found at ${getSettingsPath(this)}`);
+      if (!await fs.pathExists(settingsPath)) {
+        throw new Error(`settings.json not found at ${settingsPath}`);
       }
 
       type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
-      const settings = await fs.readJson(getSettingsPath(this)) as SettingsFile;
+      const settings = await fs.readJson(settingsPath) as SettingsFile;
 
       if (!settings.workspaces) {
         throw new Error('No workspaces found in settings.json');
@@ -397,12 +381,12 @@ Then('settings.json should have workspace {string} with {string} containing {str
 ) {
   await backOff(
     async () => {
-      if (!await fs.pathExists(getSettingsPath(this))) {
-        throw new Error(`settings.json not found at ${getSettingsPath(this)}`);
+      if (!await fs.pathExists(settingsPath)) {
+        throw new Error(`settings.json not found at ${settingsPath}`);
       }
 
       type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
-      const settings = await fs.readJson(getSettingsPath(this)) as SettingsFile;
+      const settings = await fs.readJson(settingsPath) as SettingsFile;
 
       if (!settings.workspaces) {
         throw new Error('No workspaces found in settings.json');
@@ -467,11 +451,7 @@ Then('settings.json should have workspace {string} with {string} containing {str
  * Cleanup function for sub-wiki routing test
  * Removes test workspaces created during the test
  */
-async function clearSubWikiRoutingTestData(scenarioRoot?: string) {
-  const root = scenarioRoot || process.cwd();
-  const settingsPath = path.resolve(root, 'userData-test', 'settings', 'settings.json');
-  const wikiTestWikiPath = path.resolve(root, 'wiki-test');
-  
+async function clearSubWikiRoutingTestData() {
   if (!(await fs.pathExists(settingsPath))) return;
 
   type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
@@ -505,9 +485,8 @@ async function clearSubWikiRoutingTestData(scenarioRoot?: string) {
  * Clear git test data to prevent state pollution between git tests
  * Removes the entire wiki folder - it will be recreated on next test start
  */
-async function clearGitTestData(scenarioRoot?: string) {
-  const root = scenarioRoot || process.cwd();
-  const wikiPath = path.join(root, 'wiki-test', 'wiki');
+async function clearGitTestData() {
+  const wikiPath = path.join(wikiTestWikiPath, 'wiki');
   if (!(await fs.pathExists(wikiPath))) return;
 
   try {
@@ -593,7 +572,7 @@ Then('I wait for tiddler {string} to be deleted by watch-fs', async function(thi
 
 When('I create file {string} with content:', async function(this: ApplicationWorld, filePath: string, content: string) {
   // Replace {tmpDir} placeholder with actual temp directory
-  const actualPath = filePath.replace('{tmpDir}', getWikiTestRootPath(this));
+  const actualPath = filePath.replace('{tmpDir}', wikiTestRootPath);
 
   // Ensure directory exists
   await fs.ensureDir(path.dirname(actualPath));
@@ -604,7 +583,7 @@ When('I create file {string} with content:', async function(this: ApplicationWor
 
 When('I modify file {string} to contain {string}', async function(this: ApplicationWorld, filePath: string, content: string) {
   // Replace {tmpDir} placeholder with actual temp directory
-  const actualPath = filePath.replace('{tmpDir}', getWikiTestRootPath(this));
+  const actualPath = filePath.replace('{tmpDir}', wikiTestRootPath);
 
   // Read the existing file
   let fileContent = await fs.readFile(actualPath, 'utf-8');
@@ -641,7 +620,7 @@ When('I modify file {string} to contain {string}', async function(this: Applicat
 
 When('I modify file {string} to contain:', async function(this: ApplicationWorld, filePath: string, content: string) {
   // Replace {tmpDir} placeholder with actual temp directory
-  const actualPath = filePath.replace('{tmpDir}', getWikiTestRootPath(this));
+  const actualPath = filePath.replace('{tmpDir}', wikiTestRootPath);
 
   // For multi-line content with headers, just write the content directly
   // (assumes the content includes all headers and structure)
@@ -650,7 +629,7 @@ When('I modify file {string} to contain:', async function(this: ApplicationWorld
 
 When('I delete file {string}', async function(this: ApplicationWorld, filePath: string) {
   // Replace {tmpDir} placeholder with actual temp directory
-  const actualPath = filePath.replace('{tmpDir}', getWikiTestRootPath(this));
+  const actualPath = filePath.replace('{tmpDir}', wikiTestRootPath);
 
   // Delete the file
   await fs.remove(actualPath);
@@ -658,7 +637,7 @@ When('I delete file {string}', async function(this: ApplicationWorld, filePath: 
 
 When('I delete file {string} in {string}', async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
   // Replace {tmpDir} with wiki test root
-  const directoryPath = simpleDirectoryPath.replace('{tmpDir}', getWikiTestRootPath(this));
+  const directoryPath = simpleDirectoryPath.replace('{tmpDir}', wikiTestRootPath);
   const filePath = path.join(directoryPath, fileName);
 
   // Delete the file
@@ -667,8 +646,8 @@ When('I delete file {string} in {string}', async function(this: ApplicationWorld
 
 When('I rename file {string} to {string}', async function(this: ApplicationWorld, oldPath: string, newPath: string) {
   // Replace {tmpDir} placeholder with actual temp directory
-  const actualOldPath = oldPath.replace('{tmpDir}', getWikiTestRootPath(this));
-  const actualNewPath = newPath.replace('{tmpDir}', getWikiTestRootPath(this));
+  const actualOldPath = oldPath.replace('{tmpDir}', wikiTestRootPath);
+  const actualNewPath = newPath.replace('{tmpDir}', wikiTestRootPath);
 
   // Ensure the target directory exists
   await fs.ensureDir(path.dirname(actualNewPath));
@@ -679,7 +658,7 @@ When('I rename file {string} to {string}', async function(this: ApplicationWorld
 
 When('I modify file {string} to add field {string}', async function(this: ApplicationWorld, filePath: string, fieldLine: string) {
   // Replace {tmpDir} placeholder with actual temp directory
-  const actualPath = filePath.replace('{tmpDir}', getWikiTestRootPath(this));
+  const actualPath = filePath.replace('{tmpDir}', wikiTestRootPath);
 
   // Read the existing file
   const fileContent = await fs.readFile(actualPath, 'utf-8');
@@ -712,7 +691,7 @@ When('I open edit workspace window for workspace with name {string}', async func
   await backOff(
     async () => {
       // Read settings file to get workspace info
-      const settings = await fs.readJson(getSettingsPath(this)) as { workspaces?: Record<string, IWorkspace> };
+      const settings = await fs.readJson(settingsPath) as { workspaces?: Record<string, IWorkspace> };
       const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
 
       // Find workspace by name or by wikiFolderLocation (in case name is removed from settings.json)
@@ -787,7 +766,7 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
   }
 
   // Construct the full wiki path
-  const wikiPath = path.join(getWikiTestRootPath(this), workspaceName);
+  const wikiPath = path.join(wikiTestRootPath, workspaceName);
 
   // Create the wiki folder using the template
   const templatePath = path.join(process.cwd(), 'template', 'wiki');
@@ -886,7 +865,7 @@ When('I update workspace {string} settings:', { timeout: 60000 }, async function
   }
 
   // Read settings file to get workspace ID
-  const settings = await fs.readJson(getSettingsPath(this)) as { workspaces?: Record<string, IWorkspace> };
+  const settings = await fs.readJson(settingsPath) as { workspaces?: Record<string, IWorkspace> };
   const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
 
   // Find workspace by name or by wikiFolderLocation (in case name is removed from settings.json)
@@ -1000,10 +979,7 @@ When('I update workspace {string} settings:', { timeout: 60000 }, async function
 /**
  * Clean up hibernation test data - remove wiki2 folder and its workspace config
  */
-async function clearHibernationTestData(scenarioRoot?: string) {
-  const root = scenarioRoot || process.cwd();
-  const wikiTestRootPath = path.resolve(root, 'wiki-test');
-  const settingsPath = path.resolve(root, 'userData-test', 'settings', 'settings.json');
+async function clearHibernationTestData() {
   const wiki2Path = path.join(wikiTestRootPath, 'wiki2');
 
   // Remove wiki2 folder
@@ -1016,6 +992,7 @@ async function clearHibernationTestData(scenarioRoot?: string) {
   }
 
   // Remove wiki2 workspace config from settings.json
+  const settingsPath = path.join(process.cwd(), 'userData-test', 'settings', 'settings.json');
   if (await fs.pathExists(settingsPath)) {
     try {
       type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
@@ -1049,7 +1026,6 @@ async function clearHibernationTestData(scenarioRoot?: string) {
  * @param tiddlers - Array of {title, tags, content} objects from DataTable.hashes()
  */
 async function setupSubWiki(
-  scenarioSlug: string,
   subWikiName: string,
   tagName: string,
   options: {
@@ -1058,11 +1034,6 @@ async function setupSubWiki(
   },
   tiddlers: Record<string, string>[],
 ) {
-  const wikiTestRootPath = path.resolve(process.cwd(), 'test-artifacts', scenarioSlug, 'wiki-test');
-  const wikiTestWikiPath = path.resolve(wikiTestRootPath, 'wiki');
-  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', scenarioSlug, 'userData-test', 'settings', 'settings.json');
-  const settingsDir = path.dirname(settingsPath);
-  
   // 1. Create sub-wiki folder
   const subWikiPath = path.join(wikiTestRootPath, subWikiName);
   await fs.ensureDir(subWikiPath);
@@ -1093,7 +1064,7 @@ ${tiddler.content}
   }
 
   // 4. Update settings.json with both main wiki and sub-wiki workspaces
-  await fs.ensureDir(settingsDir);
+  await fs.ensureDir(settingsDirectory);
   let settings: { workspaces?: Record<string, IWorkspace> } & Record<string, unknown> = {};
   if (await fs.pathExists(settingsPath)) {
     settings = await fs.readJson(settingsPath) as { workspaces?: Record<string, IWorkspace> };
@@ -1200,7 +1171,7 @@ Given('I setup a sub-wiki {string} with tag {string} and tiddlers:', async funct
   dataTable: DataTable,
 ) {
   const rows = dataTable.hashes();
-  await setupSubWiki(this.scenarioSlug, subWikiName, tagName, {}, rows);
+  await setupSubWiki(subWikiName, tagName, {}, rows);
 });
 
 /**
@@ -1213,7 +1184,7 @@ Given('I setup a sub-wiki {string} with tag {string} and includeTagTree enabled 
   dataTable: DataTable,
 ) {
   const rows = dataTable.hashes();
-  await setupSubWiki(this.scenarioSlug, subWikiName, tagName, { includeTagTree: true }, rows);
+  await setupSubWiki(subWikiName, tagName, { includeTagTree: true }, rows);
 });
 
 /**
@@ -1227,7 +1198,7 @@ Given('I setup a sub-wiki {string} with tag {string} and filter {string} and tid
   dataTable: DataTable,
 ) {
   const rows = dataTable.hashes();
-  await setupSubWiki(this.scenarioSlug, subWikiName, tagName, { fileSystemPathFilter: filter }, rows);
+  await setupSubWiki(subWikiName, tagName, { fileSystemPathFilter: filter }, rows);
 });
 
 export { clearGitTestData, clearHibernationTestData, clearSubWikiRoutingTestData, clearTestIdLogs };
@@ -1297,7 +1268,7 @@ async function clearLogLinesContaining(marker: string) {
  */
 Then('file {string} should contain JSON with:', async function(this: ApplicationWorld, fileName: string, dataTable: DataTable) {
   const rows = dataTable.hashes();
-  const filePath = path.join(getWikiTestRootPath(this), fileName);
+  const filePath = path.join(wikiTestRootPath, fileName);
 
   await backOff(
     async () => {
@@ -1346,12 +1317,12 @@ When('I remove workspace {string} keeping files', async function(this: Applicati
     throw new Error('Application not launched');
   }
 
-  if (!await fs.pathExists(getSettingsPath(this))) {
-    throw new Error(`Settings file not found at ${getSettingsPath(this)}`);
+  if (!await fs.pathExists(settingsPath)) {
+    throw new Error(`Settings file not found at ${settingsPath}`);
   }
 
   // Read settings file to get workspace ID
-  const settings = await fs.readJson(getSettingsPath(this)) as { workspaces?: Record<string, IWorkspace> };
+  const settings = await fs.readJson(settingsPath) as { workspaces?: Record<string, IWorkspace> };
   const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
 
   // Find workspace by name - check both settings.json and tidgi.config.json

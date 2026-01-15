@@ -14,6 +14,25 @@ vi.mock('react-i18next', () => import('./__mocks__/react-i18next'));
 vi.mock('@services/libs/log', () => import('./__mocks__/services-log'));
 vi.mock('@services/libs/i18n', () => import('./__mocks__/services-i18n'));
 
+// Mock electron-settings to provide a proper settings object
+vi.mock('electron-settings', () => {
+  const settingsStore: Record<string, unknown> = {};
+  return {
+    default: {
+      getSync: () => settingsStore,
+      get: async (key?: string) => (key ? settingsStore[key] : settingsStore),
+      set: async (keyOrValue: string | Record<string, unknown>, value?: unknown) => {
+        if (typeof keyOrValue === 'string') {
+          settingsStore[keyOrValue] = value;
+        } else {
+          Object.assign(settingsStore, keyOrValue);
+        }
+      },
+      file: () => 'userData-test/settings/settings.json',
+    },
+  };
+});
+
 /**
  * Mock the `electron` module for testing
  *
