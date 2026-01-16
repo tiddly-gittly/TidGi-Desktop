@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import type { ApplicationWorld } from '../stepDefinitions/application';
 
 export function getPackedAppPath(): string {
   const platform = process.platform;
@@ -83,3 +84,39 @@ export const makeSlugPath = (input: string | undefined, maxLength = 120) => {
   if (!slug) slug = 'unknown';
   return slug;
 };
+
+/**
+ * Get base path for test artifacts for a specific scenario
+ * This is the foundation for all scenario-specific paths
+ */
+export function getTestArtifactsPath(world: ApplicationWorld, ...subpaths: string[]): string {
+  return path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug, ...subpaths);
+}
+
+/**
+ * Get path to settings.json for a scenario
+ */
+export function getSettingsPath(world: ApplicationWorld): string {
+  return getTestArtifactsPath(world, 'userData-test', 'settings', 'settings.json');
+}
+
+/**
+ * Get path to wiki-test root folder for a scenario
+ */
+export function getWikiTestRootPath(world: ApplicationWorld): string {
+  return getTestArtifactsPath(world, 'wiki-test');
+}
+
+/**
+ * Get path to the main wiki folder (wiki-test/wiki) for a scenario
+ */
+export function getWikiTestWikiPath(world: ApplicationWorld): string {
+  return getTestArtifactsPath(world, 'wiki-test', 'wiki');
+}
+
+/**
+ * Get path to logs folder for a scenario
+ */
+export function getLogPath(world: ApplicationWorld): string {
+  return getTestArtifactsPath(world, 'userData-test', 'logs');
+}

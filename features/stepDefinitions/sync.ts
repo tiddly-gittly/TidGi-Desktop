@@ -2,12 +2,8 @@ import { Then, When } from '@cucumber/cucumber';
 import { exec as gitExec } from 'dugite';
 import fs from 'fs-extra';
 import path from 'path';
+import { getWikiTestRootPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
-
-// Helper function to get scenario-specific wiki test root path
-function getWikiTestRootPath(world: ApplicationWorld): string {
-  return path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug, 'wiki-test');
-}
 
 /**
  * Create a bare git repository to use as a local remote for testing sync

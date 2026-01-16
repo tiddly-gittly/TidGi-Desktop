@@ -1,11 +1,6 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
-import path from 'path';
+import { getWikiTestRootPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
-
-// Helper function to get scenario-specific wiki test root path
-function getWikiTestRootPath(world: ApplicationWorld): string {
-  return path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug, 'wiki-test');
-}
 
 When('I wait for {float} seconds', async function(seconds: number) {
   await new Promise(resolve => setTimeout(resolve, seconds * 1000));

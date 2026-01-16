@@ -4,25 +4,9 @@ import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
 import type { IWikiWorkspace, IWorkspace } from '../../src/services/workspaces/interface';
+import { getLogPath, getSettingsPath, getWikiTestRootPath, getWikiTestWikiPath } from '../supports/paths';
 // Scenario-specific paths are computed via helper functions
 import type { ApplicationWorld } from './application';
-
-// Helper functions to get scenario-specific paths
-function getSettingsPath(world: ApplicationWorld): string {
-  return path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug, 'userData-test', 'settings', 'settings.json');
-}
-
-function getWikiTestRootPath(world: ApplicationWorld): string {
-  return path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug, 'wiki-test');
-}
-
-function getWikiTestWikiPath(world: ApplicationWorld): string {
-  return path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug, 'wiki-test', 'wiki');
-}
-
-function getLogPath(world: ApplicationWorld): string {
-  return path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug, 'userData-test', 'logs');
-}
 
 // Type guard for wiki workspace
 function isWikiWorkspace(workspace: IWorkspace): workspace is IWikiWorkspace {
