@@ -5,9 +5,6 @@ Feature: Talk with AI from Wiki Selection
 
   Background:
     Given I add test ai settings
-    Then I launch the TidGi application
-    And I wait for the page to load completely
-    And I should see a "page body" element with selector "body"
 
   @talkWithAI @mockOpenAI
   Scenario: Talk with AI - complete workflow
@@ -17,6 +14,10 @@ Feature: Talk with AI from Wiki Selection
       | 第一条消息：这是关于编辑的说明。                                        | false  |
       | 第二条消息：这是关于访问教程的补充说明。                            | false  |
       | 第三条消息：这是第一个对话的回复。                                      | false  |
+    # Launch application after mock server is ready
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
     
     # Part 1: Create new split view from wiki selection
     When I click on a "wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"

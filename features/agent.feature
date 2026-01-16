@@ -5,14 +5,6 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
 
   Background:
     Given I add test ai settings
-    Then I launch the TidGi application
-    And I wait for the page to load completely
-    And I should see a "page body" element with selector "body"
-    # Ensure we are in the correct workspace before each scenario to avoid wrong starting state
-    And I click on "agent workspace button and new tab button" elements with selectors:
-      | element description  | selector                        |
-      | agent workspace      | [data-testid='workspace-agent'] |
-      | new tab button       | [data-tab-id='new-tab-button']  |
 
   @agent @mockOpenAI
   Scenario: Wiki-search tool usage
@@ -20,6 +12,13 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | response                                                                                                                                                             | stream |
       | <tool_use name="wiki-search">{"workspaceName":"-VPTqPdNOEZHGO5vkwllY","filter":"[title[Index]]"}</tool_use>                                                          | false  |
       | 在 TiddlyWiki 中，Index 条目提供了编辑卡片的方法说明，点击右上角的编辑按钮可以开始对当前卡片进行编辑。此外，它还引导您访问中文教程页面和官方英文站点以获取更多信息。 | false  |
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    And I click on "agent workspace button and new tab button" elements with selectors:
+      | element description  | selector                        |
+      | agent workspace      | [data-testid='workspace-agent'] |
+      | new tab button       | [data-tab-id='new-tab-button']  |
     # Proceed with agent workflow in main window
     # Step 1: Click new tab button
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
@@ -45,9 +44,16 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   Scenario: Wiki operation
     Given I have started the mock OpenAI server
       | response                                                                                                                                                                                | stream |
-      | 先测试失败情况<tool_use name="wiki-operation">{"workspaceName":"test-expected-to-fail","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>                                    | false  |
+      | 先测试失败情况<tool_use name="wiki-operation">{"workspaceName":"test-expected-to-fail","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>                      | false  |
       | 然后测试成功情况<tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"}</tool_use>使用启动时自动创建的 wiki 工作区 | false  |
       | 已成功在工作区 wiki 中创建条目 "test"。                                                                                                                                                 | false  |
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    And I click on "agent workspace button and new tab button" elements with selectors:
+      | element description  | selector                        |
+      | agent workspace      | [data-testid='workspace-agent'] |
+      | new tab button       | [data-tab-id='new-tab-button']  |
     # Step 1: Start a fresh tab and run the two-round wiki operation flow
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     And I should see a "search interface" element with selector ".aa-Autocomplete"
@@ -72,6 +78,13 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
 
   @agent
   Scenario: Create default agent from New Tab quick access
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    And I click on "agent workspace button and new tab button" elements with selectors:
+      | element description  | selector                        |
+      | agent workspace      | [data-testid='workspace-agent'] |
+      | new tab button       | [data-tab-id='new-tab-button']  |
     When I click on "new tab button and create default agent button" elements with selectors:
       | element description        | selector                                    |
       | new tab button             | [data-tab-id='new-tab-button']              |
@@ -80,6 +93,13 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
 
   @agent
   Scenario: Close all tabs then create default agent from fallback page
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    And I click on "agent workspace button and new tab button" elements with selectors:
+      | element description  | selector                        |
+      | agent workspace      | [data-testid='workspace-agent'] |
+      | new tab button       | [data-tab-id='new-tab-button']  |
     # Ensure starting from black/fallback page with no open tabs
     Given I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     When I click all "tab" elements matching selector "[data-testid='tab']"
@@ -98,6 +118,13 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     Given I have started the mock OpenAI server
       | response                                                                                               | stream |
       | partial_chunk_1<stream_split>partial_chunk_2<stream_split>partial_chunk_3<stream_split>partial_chunk_4 | true   |
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    And I click on "agent workspace button and new tab button" elements with selectors:
+      | element description  | selector                        |
+      | agent workspace      | [data-testid='workspace-agent'] |
+      | new tab button       | [data-tab-id='new-tab-button']  |
     And I click on "new tab button and create default agent button" elements with selectors:
       | element description        | selector                                    |
       | new tab button             | [data-tab-id='new-tab-button']              |

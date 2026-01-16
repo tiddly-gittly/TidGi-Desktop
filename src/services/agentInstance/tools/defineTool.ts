@@ -536,16 +536,19 @@ ${options.isError ? 'Error' : 'Result'}: ${options.result}
                 },
               };
 
+              // Mark as persisted immediately to prevent duplicate saves from messagePersistence hook
+              toolResultMessage.metadata = { ...toolResultMessage.metadata, isPersisted: true };
               agentFrameworkContext.agent.messages.push(toolResultMessage);
 
-              // Persist immediately
+              // Persist asynchronously
               void (async () => {
                 try {
                   const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
                   await agentInstanceService.saveUserMessage(toolResultMessage);
-                  toolResultMessage.metadata = { ...toolResultMessage.metadata, isPersisted: true };
                 } catch (error) {
                   logger.warn('Failed to persist tool result', { error, messageId: toolResultMessage.id });
+                  // Reset isPersisted flag on failure so it can be retried
+                  toolResultMessage.metadata = { ...toolResultMessage.metadata, isPersisted: false };
                 }
               })();
 
@@ -573,6 +576,7 @@ ${options.isError ? 'Error' : 'Result'}: ${options.result}
                     ...latestAiMessage.metadata,
                     containsToolCall: true,
                     toolId: toolCall?.toolId,
+                    isPersisted: true, // Mark immediately to prevent duplicate saves
                   };
 
                   // Persist and update UI immediately (no debounce delay)
@@ -581,11 +585,12 @@ ${options.isError ? 'Error' : 'Result'}: ${options.result}
                       const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
                       if (!latestAiMessage.created) latestAiMessage.created = new Date();
                       await agentInstanceService.saveUserMessage(latestAiMessage);
-                      latestAiMessage.metadata = { ...latestAiMessage.metadata, isPersisted: true };
                       // Update UI with no delay
                       agentInstanceService.debounceUpdateMessage(latestAiMessage, agentFrameworkContext.agent.id, 0);
                     } catch (error) {
                       logger.warn('Failed to persist AI message with tool call', { error, messageId: latestAiMessage.id });
+                      // Reset isPersisted flag on failure so it can be retried
+                      latestAiMessage.metadata = { ...latestAiMessage.metadata, isPersisted: false };
                     }
                   })();
                 }

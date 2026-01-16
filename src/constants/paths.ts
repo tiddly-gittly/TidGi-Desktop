@@ -105,7 +105,9 @@ function getTestScenarioSlugForWiki(): string | undefined {
   slug = slug.replace(/-+/g, '-');
   slug = slug.replace(/\s+/g, ' ').trim();
   slug = slug.replace(/^-+|-+$/g, '').replace(/^[\s]+|[\s]+$/g, '');
-  if (slug.length > 60) slug = slug.substring(0, 60);
+  if (slug.length > 60) slug = slug.substring(0, 60).trim();
+  // Final cleanup: remove trailing dashes/spaces that may appear after truncation
+  slug = slug.replace(/[-\s]+$/g, '');
   return slug || undefined;
 }
 

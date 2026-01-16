@@ -15,10 +15,12 @@ Before(async function(this: ApplicationWorld, { pickle }) {
   const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);
   const logsDirectory = path.resolve(scenarioRoot, 'userData-test', 'logs');
   const screenshotsDirectory = path.resolve(logsDirectory, 'screenshots');
+  const wikiTestRoot = path.resolve(scenarioRoot, 'wiki-test');
   
   // Create necessary directories for this scenario
   await fs.ensureDir(logsDirectory);
   await fs.ensureDir(screenshotsDirectory);
+  await fs.ensureDir(wikiTestRoot); // Ensure wiki-test root exists for default wiki creation
 
   if (pickle.tags.some((tag) => tag.name === '@ai-setting')) {
     await clearAISettings(scenarioRoot);
@@ -40,12 +42,13 @@ After(async function(this: ApplicationWorld, { pickle }) {
           try {
             if (!window.isClosed()) {
               // Add timeout protection for window.close() to prevent hanging
+              // Use short timeout to leave room for app.close() and force kill
               await Promise.race([
                 window.close(),
                 new Promise((_, reject) =>
                   setTimeout(() => {
                     reject(new Error('Window close timeout'));
-                  }, 5000)
+                  }, 1000)
                 ),
               ]);
             }
@@ -56,12 +59,13 @@ After(async function(this: ApplicationWorld, { pickle }) {
       );
 
       // Add timeout protection for app.close() to prevent hanging
+      // Must be shorter than Cucumber's After hook timeout (5s default) to allow force kill
       await Promise.race([
         this.app.close(),
         new Promise((_, reject) =>
           setTimeout(() => {
             reject(new Error('App close timeout'));
-          }, 10000)
+          }, 3000)
         ),
       ]);
     } catch (error) {

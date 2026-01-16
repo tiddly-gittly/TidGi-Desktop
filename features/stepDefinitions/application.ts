@@ -1,4 +1,4 @@
-import { AfterStep, setDefaultTimeout, setWorldConstructor, When } from '@cucumber/cucumber';
+import { AfterStep, setWorldConstructor, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
@@ -9,6 +9,23 @@ import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getPackedAppPath, makeSlugPath } from '../supports/paths';
 import { captureScreenshot } from '../supports/webContentsViewHelper';
+
+/**
+ * ⚠️ CRITICAL WARNING FOR AI AGENTS ⚠️
+ *
+ * DO NOT add setDefaultTimeout() or increase any timeout values!
+ *
+ * Per docs/Testing.md: "Timeout usually because of expected element not present."
+ * A timeout means the expected condition was NEVER met - this is a REAL BUG in the application code.
+ * Increasing timeouts only masks bugs and makes tests take longer to fail.
+ *
+ * If a test times out:
+ * 1. Check logs in test-artifacts/{scenarioSlug}/userData-test/logs/
+ * 2. Look for actual errors: SQLite constraints, page load failures, missing log markers
+ * 3. Fix the ROOT CAUSE in the application code
+ *
+ * BEFORE attempting ANY timeout modification, you MUST re-read docs/Testing.md completely.
+ */
 
 // Backoff configuration for retries
 const BACKOFF_OPTIONS = {
@@ -44,6 +61,7 @@ export class ApplicationWorld {
   savedWorkspaceId: string | undefined; // For storing workspace ID between steps
   scenarioName: string = 'default'; // Scenario name from Cucumber pickle
   scenarioSlug: string = 'default'; // Sanitized scenario name for file paths
+  providerConfig: import('@services/externalAPI/interface').AIProviderConfig | undefined; // Scenario-specific AI provider config
 
   // Helper method to check if window is visible
   async isWindowVisible(page: Page): Promise<boolean> {
@@ -193,10 +211,6 @@ export class ApplicationWorld {
 
 setWorldConstructor(ApplicationWorld);
 
-if (process.env.CI) {
-  setDefaultTimeout(50000);
-}
-
 AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result }) {
   // Only take screenshots in CI environment
   // if (!process.env.CI) return;
@@ -344,7 +358,10 @@ When('I prepare to select directory in dialog {string}', async function(this: Ap
   if (!this.app) {
     throw new Error('Application is not launched');
   }
-  const targetPath = path.resolve(process.cwd(), directoryName);
+  // Use scenario-specific path for isolation
+  const targetPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, directoryName);
+  // Ensure parent directory exists (but do NOT remove target directory - it may be an existing wiki we want to import)
+  await fs.ensureDir(path.dirname(targetPath));
   // Setup one-time dialog handler that restores after use
   await this.app.evaluate(({ dialog }, targetDirectory: string) => {
     // Save original function with proper binding

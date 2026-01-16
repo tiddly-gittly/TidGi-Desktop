@@ -85,7 +85,22 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
     // Use dynamic port (0) to allow parallel test execution
     // Each worker gets its own port automatically assigned by the OS
     this.mockOpenAIServer = new MockOpenAIServer(0, rules);
+    // Create scenario-specific provider config
+    this.providerConfig = createProviderConfig();
     this.mockOpenAIServer.start().then(() => {
+      // Update provider config with actual mock server URL
+      this.providerConfig!.baseURL = `${this.mockOpenAIServer!.baseUrl}/v1`;
+      
+      // Update AI settings in settings.json with the correct baseURL
+      const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
+      if (fs.existsSync(settingsPath)) {
+        const settings = fs.readJsonSync(settingsPath) as ISettingFile;
+        if (settings.aiSettings?.providers?.[0]) {
+          settings.aiSettings.providers[0].baseURL = this.providerConfig!.baseURL;
+          fs.writeJsonSync(settingsPath, settings, { spaces: 2 });
+        }
+      }
+      
       done();
     }).catch((error_: unknown) => {
       done(error_ as Error);
@@ -189,19 +204,22 @@ Then('the last AI request should have {int} messages', async function(this: Appl
   }
 });
 
-// Shared provider config used across steps (kept at module scope for reuse)
-const providerConfig: AIProviderConfig = {
-  provider: 'TestProvider',
-  baseURL: 'http://127.0.0.1:15121/v1',
-  models: [
-    { name: 'test-model', features: ['language'] },
-    { name: 'test-embedding-model', features: ['language', 'embedding'] },
-    { name: 'test-speech-model', features: ['speech'] },
-  ],
-  providerClass: 'openAICompatible',
-  isPreset: false,
-  enabled: true,
-};
+// Factory function to create scenario-specific provider config
+// Returns a new object each time to avoid state pollution between scenarios
+function createProviderConfig(): AIProviderConfig {
+  return {
+    provider: 'TestProvider',
+    baseURL: 'http://127.0.0.1:0/v1', // Will be updated with actual port when mock server starts
+    models: [
+      { name: 'test-model', features: ['language'] },
+      { name: 'test-embedding-model', features: ['language', 'embedding'] },
+      { name: 'test-speech-model', features: ['speech'] },
+    ],
+    providerClass: 'openAICompatible',
+    isPreset: false,
+    enabled: true,
+  };
+}
 
 const desiredModelParameters = { temperature: 0.7, systemPrompt: 'You are a helpful assistant.', topP: 0.95 };
 
@@ -217,11 +235,6 @@ Given('I remove test ai settings', function(this: ApplicationWorld) {
 });
 
 Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
-  // Build expected aiSettings from shared providerConfig and compare with actual
-  const modelsArray = providerConfig.models;
-  const modelName = modelsArray[0]?.name;
-  const providerName = providerConfig.provider;
-
   const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
   const parsed = fs.readJsonSync(settingsPath) as Record<string, unknown>;
   const actual = (parsed.aiSettings as Record<string, unknown> | undefined) || null;
@@ -231,6 +244,27 @@ Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
   }
 
   const actualProviders = (actual.providers as Array<Record<string, unknown>>) || [];
+  
+  // If providerConfig is set (from mock server), use it; otherwise create expected config
+  // and use actual baseURL from settings (for UI-configured scenarios)
+  let providerConfig: AIProviderConfig;
+  const providerName = 'TestProvider';
+  const existingProvider = actualProviders.find(p => p.provider === providerName) as AIProviderConfig | undefined;
+  
+  if (this.providerConfig) {
+    // Use the mock server's providerConfig
+    providerConfig = this.providerConfig;
+  } else if (existingProvider) {
+    // For UI-configured scenarios: build expected config using actual baseURL
+    providerConfig = createProviderConfig();
+    providerConfig.baseURL = existingProvider.baseURL ?? providerConfig.baseURL;
+  } else {
+    providerConfig = createProviderConfig();
+  }
+  
+  // Build expected aiSettings from providerConfig and compare with actual
+  const modelsArray = providerConfig.models;
+  const modelName = modelsArray[0]?.name;
 
   // Check TestProvider exists
   const testProvider = actualProviders.find(p => p.provider === providerName);
@@ -287,6 +321,13 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
   } else {
     fs.ensureDirSync(path.dirname(settingsPath));
   }
+  
+  // Initialize scenario-specific providerConfig if not set
+  if (!this.providerConfig) {
+    this.providerConfig = createProviderConfig();
+  }
+  const providerConfig = this.providerConfig;
+  
   const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
   const embeddingModelName = modelsArray[1]?.name;
@@ -325,6 +366,13 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
   } else {
     fs.ensureDirSync(path.dirname(settingsPath));
   }
+  
+  // Initialize scenario-specific providerConfig if not set
+  if (!this.providerConfig) {
+    this.providerConfig = createProviderConfig();
+  }
+  const providerConfig = this.providerConfig;
+  
   const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
   const embeddingModelName = modelsArray[1]?.name;

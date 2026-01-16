@@ -20,6 +20,10 @@ function getWikiTestWikiPath(world: ApplicationWorld): string {
   return path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug, 'wiki-test', 'wiki');
 }
 
+function getLogPath(world: ApplicationWorld): string {
+  return path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug, 'userData-test', 'logs');
+}
+
 // Type guard for wiki workspace
 function isWikiWorkspace(workspace: IWorkspace): workspace is IWikiWorkspace {
   return 'wikiFolderLocation' in workspace && workspace.wikiFolderLocation !== undefined;
@@ -34,19 +38,37 @@ const BACKOFF_OPTIONS = {
 
 /**
  * Generic function to wait for a log marker to appear in wiki log files.
+ *
+ * ⚠️ IMPORTANT FOR AI AGENTS ⚠️
+ * DO NOT increase timeout values to "fix" test failures!
+ * Per Testing.md: "Timeout usually because of expected element not present."
+ * Timeout means the expected condition was NEVER met - this indicates a REAL BUG in the code,
+ * not a timing issue. Increasing timeouts only masks the underlying problem.
+ *
+ * If a test times out, you MUST:
+ * 1. Read the test logs in test-artifacts/{scenarioSlug}/userData-test/logs/
+ * 2. Find the REAL error (SQLite constraint, page load failure, missing element, etc.)
+ * 3. Fix the actual code bug, not the test timeout
+ *
+ * Before attempting ANY timeout changes, RE-READ docs/Testing.md completely.
  */
-export async function waitForLogMarker(searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = 'wiki-'): Promise<void> {
-  const logPath = path.join(process.cwd(), 'userData-test', 'logs');
-  // Support multiple patterns separated by '|'
+export async function waitForLogMarker(world: ApplicationWorld, searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = 'wiki-'): Promise<void> {
+  const logPath = getLogPath(world);
+  // Support multiple patterns separated by '|', and '*' for all log files
   const patterns = logFilePattern.split('|');
+  const matchAll = patterns.includes('*');
 
   try {
     await backOff(
       async () => {
         try {
           const files = await fs.readdir(logPath);
-          // Case-insensitive matching for log file patterns
-          const logFiles = files.filter(f => patterns.some(p => f.toLowerCase().startsWith(p.toLowerCase())) && f.endsWith('.log'));
+          // Case-insensitive matching for log file patterns, or match all .log files if '*' is specified
+          const logFiles = files.filter(f => {
+            if (!f.endsWith('.log')) return false;
+            if (matchAll) return true;
+            return patterns.some(p => f.toLowerCase().startsWith(p.toLowerCase()));
+          });
 
           for (const file of logFiles) {
             const content = await fs.readFile(path.join(logPath, file), 'utf-8');
@@ -102,7 +124,7 @@ When('I cleanup test wiki so it could create a new one on start', async function
    * as Node.js file system caching can cause tests to read old log content.
    * Must clean both wiki- and TidGi- log files for git-related tests.
    */
-  const logDirectory = path.join(process.cwd(), 'userData-test', 'logs');
+  const logDirectory = getLogPath(this);
   if (fs.existsSync(logDirectory)) {
     const logFiles = fs.readdirSync(logDirectory).filter(f => (f.startsWith('wiki-') || f.startsWith('TidGi-')) && f.endsWith('.log'));
     for (const logFile of logFiles) {
@@ -219,6 +241,12 @@ async function getDirectoryTree(directory: string, prefix = '', maxDepth = 3, cu
 Then('file {string} should exist in {string}', async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
   // Replace {tmpDir} with wiki test root (not wiki subfolder)
   let directoryPath = simpleDirectoryPath.replace('{tmpDir}', getWikiTestRootPath(this));
+  
+  // If path doesn't contain {tmpDir} and doesn't start with test-artifacts, 
+  // treat it as relative to scenario-specific test-artifacts directory
+  if (!simpleDirectoryPath.includes('{tmpDir}') && !simpleDirectoryPath.startsWith('test-artifacts')) {
+    directoryPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, simpleDirectoryPath);
+  }
 
   // Resolve symlinks on all platforms to handle sub-wikis correctly
   // On Linux, symlinks might point to the real path, so we need to follow them
@@ -522,11 +550,11 @@ async function clearGitTestData(scenarioRoot?: string) {
  * @param description - Human-readable description of what we're waiting for (comes first for readability)
  * @param marker - The test-id marker to look for in logs
  *
- * This searches in TidGi- log files by default
+ * This searches in all log files (TidGi-, wiki-, and any workspace-named logs)
  */
-Then('I wait for {string} log marker {string}', async function(this: ApplicationWorld, description: string, marker: string) {
-  // Search in both TidGi- and wiki log files (wiki logs include wiki- and wiki2- etc.)
-  await waitForLogMarker(marker, `Log marker "${marker}" not found. Expected: ${description}`, 10000, 'TidGi-|wiki');
+Then('I wait for {string} log marker {string}', { timeout: 15 * 1000 }, async function(this: ApplicationWorld, description: string, marker: string) {
+  // Search in all log files using '*' pattern (includes TidGi-, wiki-, and workspace-named logs like WikiRenamed-)
+  await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, 10000, '*');
 });
 
 /**
@@ -534,8 +562,8 @@ Then('I wait for {string} log marker {string}', async function(this: Application
  * This is commonly used in Background sections
  */
 Then('I wait for SSE and watch-fs to be ready', async function(this: ApplicationWorld) {
-  await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', 20000);
-  await waitForLogMarker('[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 20000);
+  await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', 20000);
+  await waitForLogMarker(this, '[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 20000);
 });
 
 /**
@@ -545,7 +573,7 @@ Then('I wait for SSE and watch-fs to be ready', async function(this: Application
  * @param marker - The text pattern to remove from log files
  */
 When('I clear log lines containing {string}', async function(this: ApplicationWorld, marker: string) {
-  const logDirectory = path.join(process.cwd(), 'userData-test', 'logs');
+  const logDirectory = getLogPath(this);
   if (!fs.existsSync(logDirectory)) return;
 
   // Clear from both TidGi- and wiki- prefixed log files
@@ -570,6 +598,7 @@ When('I clear log lines containing {string}', async function(this: ApplicationWo
  */
 Then('I wait for tiddler {string} to be added by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
   await waitForLogMarker(
+    this,
     `[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`,
     `Tiddler "${tiddlerTitle}" was not added within timeout`,
   );
@@ -577,6 +606,7 @@ Then('I wait for tiddler {string} to be added by watch-fs', async function(this:
 
 Then('I wait for tiddler {string} to be updated by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
   await waitForLogMarker(
+    this,
     `[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`,
     `Tiddler "${tiddlerTitle}" was not updated within timeout`,
   );
@@ -584,6 +614,7 @@ Then('I wait for tiddler {string} to be updated by watch-fs', async function(thi
 
 Then('I wait for tiddler {string} to be deleted by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
   await waitForLogMarker(
+    this,
     `[test-id-WATCH_FS_TIDDLER_DELETED] ${tiddlerTitle}`,
     `Tiddler "${tiddlerTitle}" was not deleted within timeout`,
   );
@@ -604,7 +635,12 @@ When('I create file {string} with content:', async function(this: ApplicationWor
 
 When('I modify file {string} to contain {string}', async function(this: ApplicationWorld, filePath: string, content: string) {
   // Replace {tmpDir} placeholder with actual temp directory
-  const actualPath = filePath.replace('{tmpDir}', getWikiTestRootPath(this));
+  let actualPath = filePath.replace('{tmpDir}', getWikiTestRootPath(this));
+  
+  // If path doesn't contain {tmpDir} and is relative, resolve to scenario-specific directory
+  if (!filePath.includes('{tmpDir}') && !path.isAbsolute(filePath)) {
+    actualPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, filePath);
+  }
 
   // Read the existing file
   let fileContent = await fs.readFile(actualPath, 'utf-8');
@@ -641,7 +677,12 @@ When('I modify file {string} to contain {string}', async function(this: Applicat
 
 When('I modify file {string} to contain:', async function(this: ApplicationWorld, filePath: string, content: string) {
   // Replace {tmpDir} placeholder with actual temp directory
-  const actualPath = filePath.replace('{tmpDir}', getWikiTestRootPath(this));
+  let actualPath = filePath.replace('{tmpDir}', getWikiTestRootPath(this));
+  
+  // If path doesn't contain {tmpDir} and is relative, resolve to scenario-specific directory
+  if (!filePath.includes('{tmpDir}') && !path.isAbsolute(filePath)) {
+    actualPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, filePath);
+  }
 
   // For multi-line content with headers, just write the content directly
   // (assumes the content includes all headers and structure)
@@ -709,6 +750,13 @@ When('I open edit workspace window for workspace with name {string}', async func
   // Use backOff to retry finding the workspace, as tidgi.config.json might be written asynchronously
   let targetWorkspaceId: string | undefined;
 
+  // Use extended backoff for workspace lookup as app may take time to sync settings
+  const extendedBackoffOptions = {
+    numOfAttempts: 15,
+    startingDelay: 500,
+    timeMultiple: 1.5,
+  };
+
   await backOff(
     async () => {
       // Read settings file to get workspace info
@@ -745,7 +793,7 @@ When('I open edit workspace window for workspace with name {string}', async func
       // If not found, throw error to trigger retry
       throw new Error(`Workspace "${workspaceName}" not found yet, will retry...`);
     },
-    BACKOFF_OPTIONS,
+    extendedBackoffOptions,
   );
 
   if (!targetWorkspaceId) {
@@ -959,16 +1007,16 @@ When('I update workspace {string} settings:', { timeout: 60000 }, async function
     // This prevents conflicts if the wiki is still initializing
     // Wait for WATCH_FS since it indicates wiki worker is ready, or SSE_READY if watch is disabled
     try {
-      await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs not ready before restart', 30000);
+      await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs not ready before restart', 30000);
     } catch {
       // If watch-fs is disabled initially, wait for SSE instead
-      await waitForLogMarker('[test-id-SSE_READY]', 'SSE not ready before restart', 30000);
+      await waitForLogMarker(this, '[test-id-SSE_READY]', 'SSE not ready before restart', 30000);
     }
 
     // Only clear watch-fs related log markers to ensure we wait for fresh ones after restart
     // Don't clear other markers like git-init-complete that won't appear again
-    await clearLogLinesContaining('[test-id-WATCH_FS_STABILIZED]');
-    await clearLogLinesContaining('[test-id-SSE_READY]');
+    await clearLogLinesContaining(this, '[test-id-WATCH_FS_STABILIZED]');
+    await clearLogLinesContaining(this, '[test-id-SSE_READY]');
 
     // Restart the wiki
     await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
@@ -992,7 +1040,7 @@ When('I update workspace {string} settings:', { timeout: 60000 }, async function
     // Wait for wiki to restart and watch-fs to stabilize
     // Only wait if enableFileSystemWatch was set to true
     if (settingsUpdate.enableFileSystemWatch === true) {
-      await waitForLogMarker('[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not stabilize after restart', 30000);
+      await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not stabilize after restart', 30000);
     }
   }
 });
@@ -1082,6 +1130,10 @@ ${tiddler.content}
 `;
     await fs.writeFile(tiddlerFilePath, tiddlerFileContent, 'utf-8');
   }
+
+  // 2.5. Create tidgi.config.json for sub-wiki (so step can find workspace by name)
+  const subWikiTidgiConfigPath = path.join(subWikiPath, 'tidgi.config.json');
+  await fs.writeJson(subWikiTidgiConfigPath, { name: subWikiName }, { spaces: 2 });
 
   // 3. Create main wiki folder structure (if not exists)
   const mainWikiPath = wikiTestWikiPath;
@@ -1235,8 +1287,8 @@ export { clearGitTestData, clearHibernationTestData, clearSubWikiRoutingTestData
 /**
  * Clear all test-id markers from log files to ensure fresh logs for next test phase
  */
-async function clearTestIdLogs() {
-  const logPath = path.join(process.cwd(), 'userData-test', 'logs');
+async function clearTestIdLogs(world: ApplicationWorld) {
+  const logPath = getLogPath(world);
 
   if (!await fs.pathExists(logPath)) {
     return;
@@ -1261,7 +1313,7 @@ async function clearTestIdLogs() {
 }
 
 When('I clear test-id markers from logs', async function(this: ApplicationWorld) {
-  await clearTestIdLogs();
+  await clearTestIdLogs(this);
 });
 
 /**
@@ -1269,8 +1321,8 @@ When('I clear test-id markers from logs', async function(this: ApplicationWorld)
  * This is more targeted than clearTestIdLogs - it only removes lines matching the marker.
  * @param marker - The text pattern to remove from log files
  */
-async function clearLogLinesContaining(marker: string) {
-  const logDirectory = path.join(process.cwd(), 'userData-test', 'logs');
+async function clearLogLinesContaining(world: ApplicationWorld, marker: string) {
+  const logDirectory = getLogPath(world);
   if (!await fs.pathExists(logDirectory)) return;
 
   const logFiles = (await fs.readdir(logDirectory)).filter(f => f.endsWith('.log'));

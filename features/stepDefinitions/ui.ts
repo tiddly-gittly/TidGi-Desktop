@@ -1,6 +1,11 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
-import { wikiTestRootPath } from '../supports/paths';
+import path from 'path';
 import type { ApplicationWorld } from './application';
+
+// Helper function to get scenario-specific wiki test root path
+function getWikiTestRootPath(world: ApplicationWorld): string {
+  return path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug, 'wiki-test');
+}
 
 When('I wait for {float} seconds', async function(seconds: number) {
   await new Promise(resolve => setTimeout(resolve, seconds * 1000));
@@ -249,7 +254,7 @@ When('I type {string} in {string} element with selector {string}', async functio
   }
 
   // Replace {tmpDir} placeholder with actual test root path
-  const actualText = text.replace('{tmpDir}', wikiTestRootPath);
+  const actualText = text.replace('{tmpDir}', getWikiTestRootPath(this));
 
   try {
     await currentWindow.waitForSelector(selector, { timeout: 10000 });
@@ -268,19 +273,21 @@ When('I type in {string} elements with selectors:', async function(this: Applica
 
   const descriptions = elementDescriptions.split(' and ').map(d => d.trim());
   const rows = dataTable.raw();
+  // Skip header row (first row contains column names)
+  const dataRows = rows.slice(1);
   const errors: string[] = [];
 
-  if (descriptions.length !== rows.length) {
-    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${rows.length} text/selector pairs provided`);
+  if (descriptions.length !== dataRows.length) {
+    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${dataRows.length} text/selector pairs provided`);
   }
 
   // Type in elements sequentially to maintain order
-  for (let index = 0; index < rows.length; index++) {
-    const [text, selector] = rows[index];
+  for (let index = 0; index < dataRows.length; index++) {
+    const [text, selector] = dataRows[index];
     const elementComment = descriptions[index];
 
     // Replace {tmpDir} placeholder with actual test root path
-    const actualText = text.replace('{tmpDir}', wikiTestRootPath);
+    const actualText = text.replace('{tmpDir}', getWikiTestRootPath(this));
 
     try {
       await currentWindow.waitForSelector(selector, { timeout: 10000 });

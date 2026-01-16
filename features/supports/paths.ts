@@ -77,7 +77,9 @@ export const makeSlugPath = (input: string | undefined, maxLength = 120) => {
   slug = slug.replace(collapseSpaces, ' ').trim();
   // trim leading/trailing dashes or spaces
   slug = slug.replace(/^-+|-+$/g, '').replace(/^[\s]+|[\s]+$/g, '');
-  if (slug.length > maxLength) slug = slug.substring(0, maxLength);
+  if (slug.length > maxLength) slug = slug.substring(0, maxLength).trim();
+  // Final cleanup: remove trailing dashes/spaces that may appear after truncation
+  slug = slug.replace(/[-\s]+$/g, '');
   if (!slug) slug = 'unknown';
   return slug;
 };

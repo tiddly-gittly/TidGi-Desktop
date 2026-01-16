@@ -61,7 +61,6 @@ jobs:
         with:
           name: test-artifacts
           path: |
-            userData-test/logs/
-            userData-test/settings/
+            test-artifacts/
           retention-days: 7
         continue-on-error: true

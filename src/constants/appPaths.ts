@@ -36,7 +36,9 @@ function getTestScenarioSlug(): string | undefined {
   slug = slug.replace(/-+/g, '-'); // collapse dashes
   slug = slug.replace(/\s+/g, ' ').trim(); // collapse spaces
   slug = slug.replace(/^-+|-+$/g, '').replace(/^[\s]+|[\s]+$/g, ''); // trim edges
-  if (slug.length > 60) slug = slug.substring(0, 60); // limit length
+  if (slug.length > 60) slug = slug.substring(0, 60).trim(); // limit length and trim
+  // Final cleanup: remove trailing dashes/spaces that may appear after truncation
+  slug = slug.replace(/[-\s]+$/g, '');
   return slug || undefined;
 }
 

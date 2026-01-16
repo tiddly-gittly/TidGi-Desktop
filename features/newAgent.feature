@@ -5,12 +5,6 @@ Feature: Create New Agent Workflow
 
   Background:
     Given I add test ai settings
-    Then I launch the TidGi application
-    And I wait for the page to load completely
-    And I should see a "page body" element with selector "body"
-    # Ensure we are in the correct workspace before each scenario
-    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
-    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
 
   @newAgent @mockOpenAI
   Scenario: Create new agent definition and edit prompt and check server request
@@ -18,6 +12,13 @@ Feature: Create New Agent Workflow
     Given I have started the mock OpenAI server
       | response                                                 | stream |
       | 作为代码助手，我可以帮您解决编程问题。请问需要什么帮助？ | false  |
+    # Launch application after mock server is ready
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    # Ensure we are in the correct workspace before each scenario
+    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
+    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Open new tab and navigate to CreateNewAgent
     When I click on "new tab button and create new agent button" elements with selectors:
       | element description     | selector                                |
@@ -82,6 +83,13 @@ Feature: Create New Agent Workflow
     Given I have started the mock OpenAI server
       | response                                                         | stream |
       | 作为已编辑的代码助手，我可以帮您解决编程问题。请问需要什么帮助？ | false  |
+    # Launch application after mock server is ready
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    # Ensure we are in the correct workspace before each scenario
+    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
+    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Open new tab to access create default agent card
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 2: Right-click on create default agent card to open context menu

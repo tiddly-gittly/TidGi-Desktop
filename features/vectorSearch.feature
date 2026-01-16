@@ -5,12 +5,6 @@ Feature: Vector Search - Embedding Generation and Semantic Search
 
   Background:
     Given I add test ai settings
-    Then I launch the TidGi application
-    And I wait for the page to load completely
-    And I should see a "page body" element with selector "body"
-    # Ensure we are in the agent workspace (not wiki workspace) for agent interaction
-    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
-    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
 
   @vectorSearch @mockOpenAI
   Scenario: Agent workflow - Create notes, update embeddings, then search
@@ -27,6 +21,13 @@ Feature: Vector Search - Embedding Generation and Semantic Search
       | <tool_use name="wiki-search">{"workspaceName":"wiki","searchType":"vector","query":"如何使用AI智能体","limit":5,"threshold":0.7}</tool_use>                                                                     | false  |             |
       |                                                                                                                                                                                                                 | false  | query-note1 |
       | 根据向量搜索结果，在工作区 wiki 中找到以下相关内容：\n\n**Tiddler: AI Agent Guide** (Similarity: 95.0%)\n这篇笔记介绍了AI智能体的基本概念和使用方法。                                                           | false  |             |
+    # Launch application after mock server is ready
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    # Ensure we are in the agent workspace (not wiki workspace) for agent interaction
+    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
+    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Open agent chat interface
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     And I should see a "search interface" element with selector ".aa-Autocomplete"
@@ -68,6 +69,13 @@ Feature: Vector Search - Embedding Generation and Semantic Search
       | <tool_use name="wiki-search">{"workspaceName":"wiki","searchType":"vector","query":"机器学习","limit":5,"threshold":0.7}</tool_use>                                                                            | false  |             |
       |                                                                                                                                                                                                                | false  | query-note3 |
       | 根据向量搜索结果，在工作区 wiki 中找到以下相关内容：\n\n**Tiddler: Machine Learning Basics** (Similarity: 98.0%)\n这篇笔记介绍了机器学习的基本概念。                                                           | false  |             |
+    # Launch application after mock server is ready
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    # Ensure we are in the agent workspace (not wiki workspace) for agent interaction
+    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
+    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Create a test note via agent
     When I click on "new tab button and create default agent button" elements with selectors:
       | element description        | selector                                    |
@@ -127,6 +135,13 @@ Feature: Vector Search - Embedding Generation and Semantic Search
       | <tool_use name="wiki-search">{"workspaceName":"wiki","searchType":"vector","query":"天气预报","limit":5,"threshold":0.1}</tool_use>                            | false  |           |
       |                                                                                                                                                                | false  | unrelated |
       | 根据向量搜索结果，在工作区 wiki 中找到以下相关内容：\n\n**Tiddler: AI Technology** (Similarity: 15.0%)\n低相似度结果。                                         | false  |           |
+    # Launch application after mock server is ready
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    # Ensure we are in the agent workspace (not wiki workspace) for agent interaction
+    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
+    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Open agent chat interface
     When I click on "new tab button and create default agent button" elements with selectors:
       | element description        | selector                                    |
