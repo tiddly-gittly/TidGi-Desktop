@@ -37,7 +37,7 @@ Then('I should see a(n) {string} element with selector {string}', async function
   }
 });
 
-Then('I should see {string} elements with selectors:', async function(this: ApplicationWorld, elementDescriptions: string, dataTable: DataTable) {
+Then('I should see {string} elements with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
   const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
@@ -107,7 +107,7 @@ Then('I should not see a(n) {string} element with selector {string}', async func
   }
 });
 
-Then('I should not see {string} elements with selectors:', async function(this: ApplicationWorld, elementDescriptions: string, dataTable: DataTable) {
+Then('I should not see {string} elements with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
   const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
@@ -169,7 +169,7 @@ When('I click on a(n) {string} element with selector {string}', async function(t
   }
 });
 
-When('I click on {string} elements with selectors:', async function(this: ApplicationWorld, elementDescriptions: string, dataTable: DataTable) {
+When('I click on {string} elements with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
   const targetWindow = await this.getWindow('current');
 
   if (!targetWindow) {

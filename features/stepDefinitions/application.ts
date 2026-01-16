@@ -247,9 +247,9 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
     const stepStatus = result && typeof result.status === 'string' ? result.status : 'unknown-status';
 
     // Use scenario-specific screenshots directory
-    const scenarioScreenshotsDir = path.resolve(process.cwd(), 'test-artifacts', cleanScenarioName, 'userData-test', 'logs', 'screenshots');
+    const scenarioScreenshotsDirectory = path.resolve(process.cwd(), 'test-artifacts', cleanScenarioName, 'userData-test', 'logs', 'screenshots');
     // Create directory asynchronously to avoid blocking the event loop in CI
-    await fs.ensureDir(scenarioScreenshotsDir);
+    await fs.ensureDir(scenarioScreenshotsDirectory);
 
     // Sometimes window close and don't wait for use to take picture, or window haven't open in this step, never mind, just skip.
     /**
@@ -268,12 +268,12 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
     // Try to capture both WebContentsView and Page screenshots
     let webViewCaptured = false;
     if (this.app) {
-      const webViewScreenshotPath = path.resolve(scenarioScreenshotsDir, `${timestamp}-${cleanStepText}-${stepStatus}-webview.png`);
+      const webViewScreenshotPath = path.resolve(scenarioScreenshotsDirectory, `${timestamp}-${cleanStepText}-${stepStatus}-webview.png`);
       webViewCaptured = await captureScreenshot(this.app, webViewScreenshotPath);
     }
 
     // Always capture page screenshot (UI chrome/window)
-    const pageScreenshotPath = path.resolve(scenarioScreenshotsDir, `${timestamp}-${cleanStepText}-${stepStatus}${webViewCaptured ? '-page' : ''}.png`);
+    const pageScreenshotPath = path.resolve(scenarioScreenshotsDirectory, `${timestamp}-${cleanStepText}-${stepStatus}${webViewCaptured ? '-page' : ''}.png`);
     await pageToUse.screenshot({ path: pageScreenshotPath, fullPage: true, type: 'png' });
   } catch (screenshotError) {
     console.warn('Failed to take screenshot:', screenshotError);

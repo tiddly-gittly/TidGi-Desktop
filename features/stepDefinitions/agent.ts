@@ -75,7 +75,7 @@ Given('I have started the mock OpenAI server without rules', function(this: Appl
     this.mockOpenAIServer.start().then(() => {
       // Update provider config with actual mock server URL
       this.providerConfig!.baseURL = `${this.mockOpenAIServer!.baseUrl}/v1`;
-      
+
       // Update AI settings in settings.json with the correct baseURL
       const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
       if (fs.existsSync(settingsPath)) {
@@ -85,7 +85,7 @@ Given('I have started the mock OpenAI server without rules', function(this: Appl
           fs.writeJsonSync(settingsPath, settings, { spaces: 2 });
         }
       }
-      
+
       done();
     }).catch((error_: unknown) => {
       done(error_ as Error);
@@ -129,7 +129,7 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
     this.mockOpenAIServer.start().then(() => {
       // Update provider config with actual mock server URL
       this.providerConfig!.baseURL = `${this.mockOpenAIServer!.baseUrl}/v1`;
-      
+
       // Update AI settings in settings.json with the correct baseURL
       const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
       if (fs.existsSync(settingsPath)) {
@@ -139,7 +139,7 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
           fs.writeJsonSync(settingsPath, settings, { spaces: 2 });
         }
       }
-      
+
       done();
     }).catch((error_: unknown) => {
       done(error_ as Error);
@@ -315,13 +315,13 @@ Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
   }
 
   const actualProviders = (actual.providers as Array<Record<string, unknown>>) || [];
-  
+
   // If providerConfig is set (from mock server), use it; otherwise create expected config
   // and use actual baseURL from settings (for UI-configured scenarios)
   let providerConfig: AIProviderConfig;
   const providerName = 'TestProvider';
   const existingProvider = actualProviders.find(p => p.provider === providerName) as AIProviderConfig | undefined;
-  
+
   if (this.providerConfig) {
     // Use the mock server's providerConfig
     providerConfig = this.providerConfig;
@@ -332,7 +332,7 @@ Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
   } else {
     providerConfig = createProviderConfig();
   }
-  
+
   // Build expected aiSettings from providerConfig and compare with actual
   const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
@@ -392,13 +392,13 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
   } else {
     fs.ensureDirSync(path.dirname(settingsPath));
   }
-  
+
   // Initialize scenario-specific providerConfig if not set
   if (!this.providerConfig) {
     this.providerConfig = createProviderConfig();
   }
   const providerConfig = this.providerConfig;
-  
+
   const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
   const embeddingModelName = modelsArray[1]?.name;
@@ -437,13 +437,13 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
   } else {
     fs.ensureDirSync(path.dirname(settingsPath));
   }
-  
+
   // Initialize scenario-specific providerConfig if not set
   if (!this.providerConfig) {
     this.providerConfig = createProviderConfig();
   }
   const providerConfig = this.providerConfig;
-  
+
   const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
   const embeddingModelName = modelsArray[1]?.name;

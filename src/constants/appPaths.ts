@@ -23,12 +23,12 @@ const isPackaged = process.resourcesPath && !process.resourcesPath.includes('ele
  * This is used to isolate test data per scenario in E2E tests
  */
 function getTestScenarioSlug(): string | undefined {
-  const scenarioArg = process.argv.find(arg => arg.startsWith('--test-scenario='));
-  if (!scenarioArg) return undefined;
-  
-  const rawName = scenarioArg.split('=')[1];
+  const scenarioArgument = process.argv.find(argument => argument.startsWith('--test-scenario='));
+  if (!scenarioArgument) return undefined;
+
+  const rawName = scenarioArgument.split('=')[1];
   if (!rawName) return undefined;
-  
+
   // Slugify the scenario name (same logic as features/supports/paths.ts makeSlugPath)
   let s = rawName.normalize('NFKC');
   s = s.replace(/\./g, ''); // remove dots

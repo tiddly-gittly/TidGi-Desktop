@@ -97,9 +97,6 @@ export async function waitForLogMarker(world: ApplicationWorld, searchString: st
 }
 
 When('I cleanup test wiki so it could create a new one on start', async function(this: ApplicationWorld) {
-  const wikiTestWikiPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'wiki-test', 'wiki');
-  const wikiTestRootPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'wiki-test');
-  
   // Clean up main wiki folder
   if (fs.existsSync(getWikiTestWikiPath(this))) fs.removeSync(getWikiTestWikiPath(this));
 
@@ -241,8 +238,8 @@ async function getDirectoryTree(directory: string, prefix = '', maxDepth = 3, cu
 Then('file {string} should exist in {string}', async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
   // Replace {tmpDir} with wiki test root (not wiki subfolder)
   let directoryPath = simpleDirectoryPath.replace('{tmpDir}', getWikiTestRootPath(this));
-  
-  // If path doesn't contain {tmpDir} and doesn't start with test-artifacts, 
+
+  // If path doesn't contain {tmpDir} and doesn't start with test-artifacts,
   // treat it as relative to scenario-specific test-artifacts directory
   if (!simpleDirectoryPath.includes('{tmpDir}') && !simpleDirectoryPath.startsWith('test-artifacts')) {
     directoryPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, simpleDirectoryPath);
@@ -499,7 +496,7 @@ async function clearSubWikiRoutingTestData(scenarioRoot?: string) {
   const root = scenarioRoot || process.cwd();
   const settingsPath = path.resolve(root, 'userData-test', 'settings', 'settings.json');
   const wikiTestWikiPath = path.resolve(root, 'wiki-test');
-  
+
   if (!(await fs.pathExists(settingsPath))) return;
 
   type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
@@ -636,7 +633,7 @@ When('I create file {string} with content:', async function(this: ApplicationWor
 When('I modify file {string} to contain {string}', async function(this: ApplicationWorld, filePath: string, content: string) {
   // Replace {tmpDir} placeholder with actual temp directory
   let actualPath = filePath.replace('{tmpDir}', getWikiTestRootPath(this));
-  
+
   // If path doesn't contain {tmpDir} and is relative, resolve to scenario-specific directory
   if (!filePath.includes('{tmpDir}') && !path.isAbsolute(filePath)) {
     actualPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, filePath);
@@ -678,7 +675,7 @@ When('I modify file {string} to contain {string}', async function(this: Applicat
 When('I modify file {string} to contain:', async function(this: ApplicationWorld, filePath: string, content: string) {
   // Replace {tmpDir} placeholder with actual temp directory
   let actualPath = filePath.replace('{tmpDir}', getWikiTestRootPath(this));
-  
+
   // If path doesn't contain {tmpDir} and is relative, resolve to scenario-specific directory
   if (!filePath.includes('{tmpDir}') && !path.isAbsolute(filePath)) {
     actualPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, filePath);
@@ -1109,8 +1106,8 @@ async function setupSubWiki(
   const wikiTestRootPath = path.resolve(process.cwd(), 'test-artifacts', scenarioSlug, 'wiki-test');
   const wikiTestWikiPath = path.resolve(wikiTestRootPath, 'wiki');
   const settingsPath = path.resolve(process.cwd(), 'test-artifacts', scenarioSlug, 'userData-test', 'settings', 'settings.json');
-  const settingsDir = path.dirname(settingsPath);
-  
+  const settingsDirectory = path.dirname(settingsPath);
+
   // 1. Create sub-wiki folder
   const subWikiPath = path.join(wikiTestRootPath, subWikiName);
   await fs.ensureDir(subWikiPath);
@@ -1145,7 +1142,7 @@ ${tiddler.content}
   }
 
   // 4. Update settings.json with both main wiki and sub-wiki workspaces
-  await fs.ensureDir(settingsDir);
+  await fs.ensureDir(settingsDirectory);
   let settings: { workspaces?: Record<string, IWorkspace> } & Record<string, unknown> = {};
   if (await fs.pathExists(settingsPath)) {
     settings = await fs.readJson(settingsPath) as { workspaces?: Record<string, IWorkspace> };

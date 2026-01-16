@@ -11,12 +11,12 @@ Before(async function(this: ApplicationWorld, { pickle }) {
   // Initialize scenario-specific paths
   this.scenarioName = pickle.name;
   this.scenarioSlug = makeSlugPath(pickle.name, 60);
-  
+
   const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);
   const logsDirectory = path.resolve(scenarioRoot, 'userData-test', 'logs');
   const screenshotsDirectory = path.resolve(logsDirectory, 'screenshots');
   const wikiTestRoot = path.resolve(scenarioRoot, 'wiki-test');
-  
+
   // Create necessary directories for this scenario
   await fs.ensureDir(logsDirectory);
   await fs.ensureDir(screenshotsDirectory);
@@ -85,7 +85,7 @@ After(async function(this: ApplicationWorld, { pickle }) {
   }
 
   const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);
-  
+
   // Clean up settings and test data AFTER app is closed
   if (pickle.tags.some((tag) => tag.name === '@tidgi-mini-window')) {
     await clearTidgiMiniWindowSettings(scenarioRoot);

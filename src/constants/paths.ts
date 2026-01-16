@@ -92,12 +92,12 @@ export const LOCALIZATION_FOLDER = isPackaged
  * Parse --test-scenario=xxx argument from command line (duplicated from appPaths.ts to avoid circular dependency)
  */
 function getTestScenarioSlugForWiki(): string | undefined {
-  const scenarioArg = process.argv.find(arg => arg.startsWith('--test-scenario='));
-  if (!scenarioArg) return undefined;
-  
-  const rawName = scenarioArg.split('=')[1];
+  const scenarioArgument = process.argv.find(argument => argument.startsWith('--test-scenario='));
+  if (!scenarioArgument) return undefined;
+
+  const rawName = scenarioArgument.split('=')[1];
   if (!rawName) return undefined;
-  
+
   // Slugify the scenario name
   let s = rawName.normalize('NFKC');
   s = s.replace(/\./g, '');
