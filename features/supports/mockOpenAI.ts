@@ -61,6 +61,22 @@ export class MockOpenAIServer {
   }
 
   /**
+   * Add new rules to the existing rules at runtime.
+   * This allows tests to append responses without replacing existing ones.
+   */
+  public addRules(rules: Rule[]): void {
+    if (Array.isArray(rules)) {
+      for (const rule of rules) {
+        if (rule.response) {
+          this.chatRules.push(rule);
+        } else if (rule.embedding) {
+          this.embeddingRules.push({ embedding: rule.embedding });
+        }
+      }
+    }
+  }
+
+  /**
    * Get the most recent request received by the server
    */
   public getLastRequest(): ChatRequest | null {

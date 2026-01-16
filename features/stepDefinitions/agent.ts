@@ -60,6 +60,45 @@ function generateSemanticEmbedding(tag: string): number[] {
 }
 
 // Agent-specific Given steps
+
+/**
+ * Start mock OpenAI server without any rules.
+ * Rules can be added later using "I add mock OpenAI responses" step.
+ */
+Given('I have started the mock OpenAI server without rules', function(this: ApplicationWorld, done: (error?: Error) => void) {
+  try {
+    // Use dynamic port (0) to allow parallel test execution
+    // Each worker gets its own port automatically assigned by the OS
+    this.mockOpenAIServer = new MockOpenAIServer(0, []);
+    // Create scenario-specific provider config
+    this.providerConfig = createProviderConfig();
+    this.mockOpenAIServer.start().then(() => {
+      // Update provider config with actual mock server URL
+      this.providerConfig!.baseURL = `${this.mockOpenAIServer!.baseUrl}/v1`;
+      
+      // Update AI settings in settings.json with the correct baseURL
+      const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
+      if (fs.existsSync(settingsPath)) {
+        const settings = fs.readJsonSync(settingsPath) as ISettingFile;
+        if (settings.aiSettings?.providers?.[0]) {
+          settings.aiSettings.providers[0].baseURL = this.providerConfig!.baseURL;
+          fs.writeJsonSync(settingsPath, settings, { spaces: 2 });
+        }
+      }
+      
+      done();
+    }).catch((error_: unknown) => {
+      done(error_ as Error);
+    });
+  } catch (error) {
+    done(error as Error);
+  }
+});
+
+/**
+ * Start mock OpenAI server with predefined rules from dataTable.
+ * This is the legacy method used when rules are known upfront.
+ */
 Given('I have started the mock OpenAI server', function(this: ApplicationWorld, dataTable: DataTable | undefined, done: (error?: Error) => void) {
   try {
     const rules: Array<{ response: string; stream?: boolean; embedding?: number[] }> = [];
@@ -108,6 +147,38 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
   } catch (error) {
     done(error as Error);
   }
+});
+
+/**
+ * Add new responses to an already-running mock OpenAI server.
+ * This allows scenarios to configure server responses after the application has started.
+ */
+Given('I add mock OpenAI responses:', function(this: ApplicationWorld, dataTable: DataTable | undefined) {
+  if (!this.mockOpenAIServer) {
+    throw new Error('Mock OpenAI server is not running. Use "I have started the mock OpenAI server" first.');
+  }
+
+  const rules: Array<{ response: string; stream?: boolean; embedding?: number[] }> = [];
+  if (dataTable && typeof dataTable.raw === 'function') {
+    const rows = dataTable.raw();
+    // Skip header row
+    for (let index = 1; index < rows.length; index++) {
+      const row = rows[index];
+      const response = (row[0] ?? '').trim();
+      const stream = (row[1] ?? '').trim().toLowerCase() === 'true';
+      const embeddingTag = (row[2] ?? '').trim();
+
+      // Generate embedding from semantic tag if provided
+      let embedding: number[] | undefined;
+      if (embeddingTag) {
+        embedding = generateSemanticEmbedding(embeddingTag);
+      }
+
+      if (response) rules.push({ response, stream, embedding });
+    }
+  }
+
+  this.mockOpenAIServer.addRules(rules);
 });
 
 // Mock OpenAI server cleanup - for scenarios using mock OpenAI
