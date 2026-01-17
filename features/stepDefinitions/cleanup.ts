@@ -42,7 +42,8 @@ After(async function(this: ApplicationWorld, { pickle }) {
           try {
             if (!window.isClosed()) {
               // Add timeout protection for window.close() to prevent hanging
-              // Use short timeout to leave room for app.close() and force kill
+              // Timeout is set to 1000ms to leave room for app.close() and force kill within the overall test timeout
+              // If CI systems prove too slow, consider increasing this or using environment-based timeout (e.g., process.env.CI ? 3000 : 1000)
               await Promise.race([
                 window.close(),
                 new Promise((_, reject) =>

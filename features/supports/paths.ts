@@ -57,12 +57,16 @@ export const repoRoot = path.resolve(process.cwd());
 export const wikiTestRootPath = path.resolve(repoRoot, 'wiki-test'); // Root of all test wikis
 export const wikiTestWikiPath = path.resolve(wikiTestRootPath, 'wiki'); // Main test wiki
 
-// Archive-safe sanitization: generate a slug that is safe for zipping/unzipping across platforms.
-// Rules:
-// - allow Unicode letters/numbers (\p{L}\p{N}) and spaces, hyphen, underscore and parentheses
-// - remove dots completely (to avoid trailing-dot issues on Windows)
-// - replace any other char with '-' (this includes brackets, quotes, punctuation)
-// - collapse multiple '-' into one, collapse multiple spaces into one, trim, and limit length
+/**
+ * Archive-safe sanitization: generate a slug that is safe for zipping/unzipping across platforms.
+ * This is a re-export of the shared slugify function with E2E-appropriate default maxLength.
+ *
+ * Rules:
+ * - allow Unicode letters/numbers (\p{L}\p{N}) and spaces, hyphen, underscore and parentheses
+ * - remove dots completely (to avoid trailing-dot issues on Windows)
+ * - replace any other char with '-' (this includes brackets, quotes, punctuation)
+ * - collapse multiple '-' into one, collapse multiple spaces into one, trim, and limit length
+ */
 const unsafeChars = /[^\p{L}\p{N}\s\-_()]/gu;
 const collapseDashes = /-+/g;
 const collapseSpaces = /\s+/g;

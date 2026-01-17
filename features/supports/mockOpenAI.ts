@@ -32,10 +32,13 @@ export class MockOpenAIServer {
   constructor(private fixedPort?: number, rules?: Rule[]) {
     if (rules && Array.isArray(rules)) {
       // Separate rules: ones with response go to chatRules, embedding-only go to embeddingRules
+      // Note: Rules with both response and embedding will add to both collections
       for (const rule of rules) {
         if (rule.response) {
           this.chatRules.push(rule);
-        } else if (rule.embedding) {
+        }
+        // Separately handle embedding - a rule can have both response and embedding
+        if (rule.embedding) {
           this.embeddingRules.push({ embedding: rule.embedding });
         }
       }
@@ -50,10 +53,13 @@ export class MockOpenAIServer {
     if (Array.isArray(rules)) {
       this.chatRules = [];
       this.embeddingRules = [];
+      // Note: Rules with both response and embedding will add to both collections
       for (const rule of rules) {
         if (rule.response) {
           this.chatRules.push(rule);
-        } else if (rule.embedding) {
+        }
+        // Separately handle embedding - a rule can have both response and embedding
+        if (rule.embedding) {
           this.embeddingRules.push({ embedding: rule.embedding });
         }
       }

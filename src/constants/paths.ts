@@ -89,7 +89,9 @@ export const LOCALIZATION_FOLDER = isPackaged
 // For E2E tests without scenario, use cwd/wiki-test (legacy)
 
 /**
- * Parse --test-scenario=xxx argument from command line (duplicated from appPaths.ts to avoid circular dependency)
+ * Parse --test-scenario=xxx argument from command line
+ * Note: Cannot import slugify from helpers due to circular dependency,
+ * so we use a local version. Consider restructuring imports if this becomes problematic.
  */
 function getTestScenarioSlugForWiki(): string | undefined {
   const scenarioArgument = process.argv.find(argument => argument.startsWith('--test-scenario='));
@@ -98,7 +100,7 @@ function getTestScenarioSlugForWiki(): string | undefined {
   const rawName = scenarioArgument.split('=')[1];
   if (!rawName) return undefined;
 
-  // Slugify the scenario name
+  // Local slugify implementation to avoid circular dependency
   let s = rawName.normalize('NFKC');
   s = s.replace(/\./g, '');
   let slug = s.replace(/[^\p{L}\p{N}\s\-_()]/gu, '-');
@@ -106,7 +108,6 @@ function getTestScenarioSlugForWiki(): string | undefined {
   slug = slug.replace(/\s+/g, ' ').trim();
   slug = slug.replace(/^-+|-+$/g, '').replace(/^[\s]+|[\s]+$/g, '');
   if (slug.length > 60) slug = slug.substring(0, 60).trim();
-  // Final cleanup: remove trailing dashes/spaces that may appear after truncation
   slug = slug.replace(/[-\s]+$/g, '');
   return slug || undefined;
 }

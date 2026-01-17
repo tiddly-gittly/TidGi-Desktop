@@ -1,6 +1,7 @@
 import { app } from 'electron';
 import path from 'path';
 import { __TEST__ as v8CompileCacheLibrary } from 'v8-compile-cache-lib';
+import { slugify } from '../helpers/slugify';
 import { isElectronDevelopment, isTest } from './environment';
 import { cacheDatabaseFolderName, httpsCertKeyFolderName, settingFolderName } from './fileNames';
 import { sourcePath } from './paths';
@@ -29,17 +30,9 @@ function getTestScenarioSlug(): string | undefined {
   const rawName = scenarioArgument.split('=')[1];
   if (!rawName) return undefined;
 
-  // Slugify the scenario name (same logic as features/supports/paths.ts makeSlugPath)
-  let s = rawName.normalize('NFKC');
-  s = s.replace(/\./g, ''); // remove dots
-  let slug = s.replace(/[^\p{L}\p{N}\s\-_()]/gu, '-'); // replace unsafe chars
-  slug = slug.replace(/-+/g, '-'); // collapse dashes
-  slug = slug.replace(/\s+/g, ' ').trim(); // collapse spaces
-  slug = slug.replace(/^-+|-+$/g, '').replace(/^[\s]+|[\s]+$/g, ''); // trim edges
-  if (slug.length > 60) slug = slug.substring(0, 60).trim(); // limit length and trim
-  // Final cleanup: remove trailing dashes/spaces that may appear after truncation
-  slug = slug.replace(/[-\s]+$/g, '');
-  return slug || undefined;
+  // Use shared slugify function for consistent behavior across codebase
+  const slug = slugify(rawName, 60);
+  return slug === 'unknown' ? undefined : slug;
 }
 
 export const TEST_SCENARIO_SLUG = getTestScenarioSlug();

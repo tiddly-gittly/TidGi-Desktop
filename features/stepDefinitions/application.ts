@@ -289,8 +289,9 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
       executablePath: packedAppPath,
       // Add debugging options to prevent app from closing and CI-specific args
       args: [
-        // Pass scenario name to application for path isolation
-        `--test-scenario=${this.scenarioName}`,
+        // Pass slugified scenario name to application for exact path isolation matching
+        // This ensures consistency with the slug generated in appPaths.ts
+        `--test-scenario=${this.scenarioSlug}`,
         '--no-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
