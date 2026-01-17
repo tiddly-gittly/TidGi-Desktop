@@ -11,20 +11,32 @@ import { getPackedAppPath, makeSlugPath } from '../supports/paths';
 import { captureScreenshot } from '../supports/webContentsViewHelper';
 
 /**
- * ⚠️ CRITICAL WARNING FOR AI AGENTS ⚠️
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ⚠️  CRITICAL WARNING FOR ALL AI AGENTS - READ THIS BEFORE ANY MODIFICATION ⚠️
+ * ═══════════════════════════════════════════════════════════════════════════
  *
- * DO NOT add setDefaultTimeout() or increase any timeout values!
+ * ABSOLUTE RULES - NO EXCEPTIONS:
+ *
+ * 1. NEVER INCREASE TIMEOUT VALUES! TIMEOUT = FAILURE = REAL BUG!
+ *    - Timeout is a SYMPTOM, not the disease
+ *    - Fix the ROOT CAUSE in application code, not the timeout
+ *
+ * 2. MAXIMUM TIMEOUTS (STRICTLY ENFORCED):
+ *    - Local: 5 seconds
+ *    - CI: 10 seconds (exactly 2x local, NO MORE)
+ *
+ * 3. BEFORE MODIFYING ANY TIMEOUT:
+ *    - STOP! Read docs/Testing.md completely
+ *    - Investigate test-artifacts/{scenarioSlug}/userData-test/logs/
+ *    - Find the REAL BUG (SQLite errors, missing elements, failed loads)
+ *    - Fix the APPLICATION CODE, not the test
+ *
+ * 4. THIS HAS BEEN VIOLATED 3 TIMES - DO NOT MAKE IT 4!
  *
  * Per docs/Testing.md: "Timeout usually because of expected element not present."
- * A timeout means the expected condition was NEVER met - this is a REAL BUG in the application code.
- * Increasing timeouts only masks bugs and makes tests take longer to fail.
+ * The test is waiting for something that will NEVER happen due to a BUG.
  *
- * If a test times out:
- * 1. Check logs in test-artifacts/{scenarioSlug}/userData-test/logs/
- * 2. Look for actual errors: SQLite constraints, page load failures, missing log markers
- * 3. Fix the ROOT CAUSE in the application code
- *
- * BEFORE attempting ANY timeout modification, you MUST re-read docs/Testing.md completely.
+ * ═══════════════════════════════════════════════════════════════════════════
  */
 
 // Backoff configuration for retries
@@ -280,7 +292,13 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
   }
 });
 
-When('I launch the TidGi application', async function(this: ApplicationWorld) {
+// CRITICAL WARNING FOR ALL AI AGENTS:
+// DO NOT MODIFY TIMEOUT VALUES! NEVER!
+// If a test times out, it means there is a REAL BUG to fix, not a timeout to increase.
+// Timeout is a symptom, not the disease. Fix the root cause.
+// Read docs/Testing.md section "Key E2E Testing Patterns" point 6 before attempting any changes.
+// Maximum allowed timeouts: Local 5s, CI 10s (exactly 2x local, no more)
+When('I launch the TidGi application', { timeout: process.env.CI ? 10000 : 5000 }, async function(this: ApplicationWorld) {
   // For E2E tests on dev mode, use the packaged test version with NODE_ENV environment variable baked in
   const packedAppPath = getPackedAppPath();
 

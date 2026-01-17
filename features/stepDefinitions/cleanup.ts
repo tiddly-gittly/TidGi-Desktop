@@ -41,15 +41,17 @@ After(async function(this: ApplicationWorld, { pickle }) {
         allWindows.map(async (window) => {
           try {
             if (!window.isClosed()) {
-              // Add timeout protection for window.close() to prevent hanging
-              // Timeout is set to 1000ms to leave room for app.close() and force kill within the overall test timeout
-              // If CI systems prove too slow, consider increasing this or using environment-based timeout (e.g., process.env.CI ? 3000 : 1000)
+              // CRITICAL WARNING: DO NOT INCREASE TIMEOUT VALUES!
+              // Timeout = failure. If this times out, there is a real bug to fix.
+              // Read docs/Testing.md before modifying any timeout.
+              // Local: max 5s, CI: max 10s (2x local)
+              const windowCloseTimeout = process.env.CI ? 2000 : 1000;
               await Promise.race([
                 window.close(),
                 new Promise((_, reject) =>
                   setTimeout(() => {
                     reject(new Error('Window close timeout'));
-                  }, 1000)
+                  }, windowCloseTimeout)
                 ),
               ]);
             }
@@ -59,14 +61,17 @@ After(async function(this: ApplicationWorld, { pickle }) {
         }),
       );
 
-      // Add timeout protection for app.close() to prevent hanging
-      // Must be shorter than Cucumber's After hook timeout (5s default) to allow force kill
+      // CRITICAL WARNING: DO NOT INCREASE TIMEOUT VALUES!
+      // Timeout = failure. If this times out, there is a real bug to fix.
+      // Read docs/Testing.md before modifying any timeout.
+      // Local: max 5s, CI: max 10s (2x local)
+      const appCloseTimeout = process.env.CI ? 6000 : 3000;
       await Promise.race([
         this.app.close(),
         new Promise((_, reject) =>
           setTimeout(() => {
             reject(new Error('App close timeout'));
-          }, 3000)
+          }, appCloseTimeout)
         ),
       ]);
     } catch (error) {

@@ -8,6 +8,21 @@ import { getLogPath, getSettingsPath, getWikiTestRootPath, getWikiTestWikiPath }
 // Scenario-specific paths are computed via helper functions
 import type { ApplicationWorld } from './application';
 
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ⚠️  CRITICAL WARNING FOR ALL AI AGENTS - READ THIS BEFORE ANY MODIFICATION ⚠️
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * ABSOLUTE RULES - NO EXCEPTIONS:
+ *
+ * 1. NEVER INCREASE TIMEOUT VALUES! TIMEOUT = FAILURE = REAL BUG!
+ * 2. MAXIMUM TIMEOUTS: Local 5s, CI 10s (exactly 2x, NO MORE)
+ * 3. BEFORE MODIFYING: Read docs/Testing.md, find REAL BUG, fix APPLICATION
+ * 4. THIS HAS BEEN VIOLATED 3 TIMES - DO NOT MAKE IT 4!
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
 // Type guard for wiki workspace
 function isWikiWorkspace(workspace: IWorkspace): workspace is IWikiWorkspace {
   return 'wikiFolderLocation' in workspace && workspace.wikiFolderLocation !== undefined;
@@ -527,15 +542,25 @@ async function clearGitTestData(scenarioRoot?: string) {
 }
 
 /**
+/**
  * Generic step to wait for any log marker
  * @param description - Human-readable description of what we're waiting for (comes first for readability)
  * @param marker - The test-id marker to look for in logs
  *
  * This searches in all log files (TidGi-, wiki-, and any workspace-named logs)
+ *
+ * CRITICAL WARNING FOR ALL AI AGENTS:
+ * DO NOT MODIFY TIMEOUT VALUES! NEVER!
+ * If a test times out, it means there is a REAL BUG to fix, not a timeout to increase.
+ * Timeout is a symptom, not the disease. Fix the root cause.
+ * Read docs/Testing.md section "Key E2E Testing Patterns" point 6 before attempting any changes.
+ * Maximum allowed timeouts: Local 5s, CI 10s (exactly 2x local, no more)
  */
-Then('I wait for {string} log marker {string}', { timeout: 15 * 1000 }, async function(this: ApplicationWorld, description: string, marker: string) {
+Then('I wait for {string} log marker {string}', { timeout: process.env.CI ? 10 * 1000 : 5 * 1000 }, async function(this: ApplicationWorld, description: string, marker: string) {
   // Search in all log files using '*' pattern (includes TidGi-, wiki-, and workspace-named logs like WikiRenamed-)
-  await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, 10000, '*');
+  // Internal wait timeout: Local 3s, CI 6s (to fit within step timeout)
+  const waitTimeout = process.env.CI ? 6000 : 3000;
+  await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, waitTimeout, '*');
 });
 
 /**
