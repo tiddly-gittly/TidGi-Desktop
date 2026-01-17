@@ -513,16 +513,16 @@ async function clearAISettings(scenarioRoot?: string) {
 
 // Step to send ask AI with selection IPC message
 When('I send ask AI with selection message with text {string} and workspace {string}', async function(this: ApplicationWorld, selectionText: string, workspaceName: string) {
-  const window = await this.getWindow('main');
-  if (!window) {
+  const currentWindow = await this.getWindow('main');
+  if (!currentWindow) {
     throw new Error('Main window not found');
   }
 
   // Get workspace ID from workspace name
-  const workspaceId = await window.evaluate(async (name: string): Promise<string | undefined> => {
-    // Access window.service.workspace.getWorkspacesAsList() to get all workspaces
-    // Type is defined in src/preload/index.ts as IServicesWithoutObservables
-    const workspaces = await (window as { service: { workspace: { getWorkspacesAsList: () => Promise<IWorkspace[]> } } }).service.workspace.getWorkspacesAsList();
+  const workspaceId = await currentWindow.evaluate(async (name: string): Promise<string | undefined> => {
+    // Use a narrow type view of window.service to avoid coupling to preload internals.
+    const windowWithService = window as unknown as { service: { workspace: { getWorkspacesAsList: () => Promise<IWorkspace[]> } } };
+    const workspaces = await windowWithService.service.workspace.getWorkspacesAsList();
     const workspace = workspaces.find((ws) => ws.name === name);
     return workspace?.id;
   }, workspaceName);
