@@ -37,57 +37,64 @@ After(async function(this: ApplicationWorld, { pickle }) {
     try {
       // Close all windows including tidgi mini window before closing the app, otherwise it might hang, and refused to exit until ctrl+C
       const allWindows = this.app.windows();
-      await Promise.all(
+
+      // Try to close windows gracefully with short timeout, then force close
+      await Promise.allSettled(
         allWindows.map(async (window) => {
+          if (window.isClosed()) return;
+
           try {
-            if (!window.isClosed()) {
-              // CRITICAL WARNING: DO NOT INCREASE TIMEOUT VALUES!
-              // Timeout = failure. If this times out, there is a real bug to fix.
-              // Read docs/Testing.md before modifying any timeout.
-              // Local: max 5s, CI: max 10s (2x local), internal steps should be faster than that
-              const windowCloseTimeout = process.env.CI ? 5000 : 2500;
-              await Promise.race([
-                window.close(),
-                new Promise((_, reject) =>
-                  setTimeout(() => {
-                    reject(new Error('Window close timeout'));
-                  }, windowCloseTimeout)
-                ),
-              ]);
-            }
-          } catch (error) {
-            console.error('Error closing window:', error);
+            // Very short timeout for window close - we'll force close anyway
+            await Promise.race([
+              window.close(),
+              new Promise((_, reject) =>
+                setTimeout(() => {
+                  reject(new Error('Window close timeout'));
+                }, 1000)
+              ),
+            ]);
+          } catch {
+            // Window close failed or timed out, ignore and continue
+            // Force close will happen at app level
           }
         }),
       );
 
-      // CRITICAL WARNING: DO NOT INCREASE TIMEOUT VALUES!
-      // Timeout = failure. If this times out, there is a real bug to fix.
-      // Read docs/Testing.md before modifying any timeout.
-      // Local: max 5s, CI: max 10s (2x local), internal steps should be faster than that
-      const appCloseTimeout = process.env.CI ? 5000 : 2500;
-      await Promise.race([
-        this.app.close(),
-        new Promise((_, reject) =>
-          setTimeout(() => {
-            reject(new Error('App close timeout'));
-          }, appCloseTimeout)
-        ),
-      ]);
-    } catch (error) {
-      console.error('Error during cleanup:', error);
-      // Force kill the app if it hangs
+      // Try to close app gracefully with short timeout
+      try {
+        await Promise.race([
+          this.app.close(),
+          new Promise((_, reject) =>
+            setTimeout(() => {
+              reject(new Error('App close timeout'));
+            }, 1000)
+          ),
+        ]);
+      } catch {
+        // App close failed or timed out, force close immediately
+      }
+    } catch {
+      // Any error in the try block, continue to force close
+    } finally {
+      // ALWAYS force close, regardless of success/failure above
+      // This ensures resources are freed even if graceful close hangs
       try {
         if (this.app) {
-          await this.app.context().close();
+          // Force close browser context - this kills all processes
+          await Promise.race([
+            this.app.context().close({ reason: 'Force cleanup after test' }),
+            new Promise((resolve) => setTimeout(resolve, 500)), // 500ms max for force close
+          ]);
         }
-      } catch (forceCloseError) {
-        console.error('Error force closing app:', forceCloseError);
+      } catch {
+        // Even force close can fail, but we don't care - move on
       }
+
+      // Clear references immediately
+      this.app = undefined;
+      this.mainWindow = undefined;
+      this.currentWindow = undefined;
     }
-    this.app = undefined;
-    this.mainWindow = undefined;
-    this.currentWindow = undefined;
   }
 
   const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);

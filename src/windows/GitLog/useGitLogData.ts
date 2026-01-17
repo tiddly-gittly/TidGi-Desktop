@@ -210,7 +210,9 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           setCurrentPage(0);
         });
 
-        // Log for E2E test timing - only log once per load, not in requestAnimationFrame
+        // Log for E2E test timing immediately after data processing completes
+        // Must be outside RAF to ensure it executes reliably in CI environments
+        // RAF may be delayed or skipped in headless/CI contexts
         void window.service.native.log('debug', '[test-id-git-log-refreshed]', {
           commitCount: entriesWithFiles.length,
           wikiFolderLocation: workspaceInfo.wikiFolderLocation,

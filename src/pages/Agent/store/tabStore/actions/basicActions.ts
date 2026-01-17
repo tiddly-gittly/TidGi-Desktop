@@ -32,9 +32,22 @@ export const createBasicActions = (): Pick<
     // For chat tab type, we need to create an agent instance first
     if (tabType === TabType.CHAT) {
       const chatData = dataWithoutPosition as Partial<IChatTab>;
-      const agent = await window.service.agentInstance.createAgent(
-        chatData.agentDefId,
-      );
+
+      // Add timeout to agent creation to prevent hanging
+      const createAgentWithTimeout = async () => {
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('Agent creation timeout after 8 seconds'));
+          }, 8000);
+        });
+
+        const createPromise = window.service.agentInstance.createAgent(chatData.agentDefId);
+
+        return Promise.race([createPromise, timeoutPromise]);
+      };
+
+      const agent = await createAgentWithTimeout();
+
       newTab = {
         ...tabBase,
         type: TabType.CHAT,

@@ -345,10 +345,20 @@ export const agentActions = (
       return;
     }
 
+    // Set cancelling flag to block late streaming updates, and clear streaming state immediately
+    set({ isCancelling: true, streamingMessageIds: new Set() });
+
     try {
       await window.service.agentInstance.cancelAgent(storeAgent.id);
     } catch (error) {
       void window.service.native.log('error', 'Store: cancelAgent backend call failed', { function: 'agentActions.cancelAgent', agentId: storeAgent.id, error });
+    } finally {
+      // Reset cancelling flag after backend processes cancel
+      // Use longer timeout (1s) for CI environments where backend updates are slower
+      // This prevents late streaming updates from re-enabling streaming state
+      setTimeout(() => {
+        set({ isCancelling: false });
+      }, 1000);
     }
   },
 });

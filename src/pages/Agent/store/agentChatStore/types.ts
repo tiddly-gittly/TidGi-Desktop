@@ -22,6 +22,8 @@ export interface AgentChatBaseState {
   orderedMessageIds: string[];
   // Tracks which message IDs are currently streaming
   streamingMessageIds: Set<string>;
+  // Flag to prevent late streaming updates after user cancels
+  isCancelling: boolean;
 }
 
 // Preview dialog specific state
