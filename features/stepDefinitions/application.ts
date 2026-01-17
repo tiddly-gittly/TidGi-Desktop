@@ -359,7 +359,8 @@ When('I launch the TidGi application', { timeout: process.env.CI ? 10000 : 5000 
       },
       // Set cwd to repo root; scenario isolation is handled via --test-scenario argument
       cwd: process.cwd(),
-      timeout: 30000, // Increase timeout to 30 seconds for CI
+      // Align Electron launch timeout with step definition (max 10s in CI, 5s locally)
+      timeout: process.env.CI ? 10000 : 5000,
     });
 
     // Wait longer for window in CI environment
