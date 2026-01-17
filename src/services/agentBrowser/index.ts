@@ -692,10 +692,12 @@ export class AgentBrowserService implements IAgentBrowserService {
         // Check if the active tab is a split view with matching workspace
         if (activeTab?.type === TabType.SPLIT_VIEW) {
           const splitTab = activeTab;
-          const hasMatchingWorkspace = splitTab.childTabs.some((child: TabItem) =>
-            child.type === TabType.WIKI_EMBED &&
-            (!workspaceId || (child).workspaceId === workspaceId)
-          );
+          // Use proper type guard to validate workspace matching
+          const hasMatchingWorkspace = splitTab.childTabs.some((child: TabItem) => {
+            if (child.type !== TabType.WIKI_EMBED) return false;
+            const wikiEmbedChild = child;
+            return !workspaceId || wikiEmbedChild.workspaceId === workspaceId;
+          });
 
           if (hasMatchingWorkspace) {
             // Reuse the active tab - find the chat child and send new message
@@ -755,7 +757,10 @@ export class AgentBrowserService implements IAgentBrowserService {
         }
       }
 
-      // Send the initial message to the agent
+      // Send initial message to the agent
+      // Note: When creating SPLIT_VIEW tabs (not plain CHAT tabs), we need to send the message here
+      // because basicActions.ts only handles direct CHAT tab creation.
+      // The child CHAT tab has initialMessage set, but we must explicitly send it.
       if (selectionText && agent.id) {
         await agentInstanceService.sendMsgToAgent(agent.id, { text: selectionText });
       }

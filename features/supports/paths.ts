@@ -45,17 +45,8 @@ export function getPackedAppPath(): string {
   );
 }
 
-// E2E logs paths used by tests
-export const logsDirectory = path.resolve(process.cwd(), 'userData-test', 'logs');
-export const screenshotsDirectory = path.resolve(logsDirectory, 'screenshots');
-// Test settings paths used by E2E
-export const settingsDirectory = path.resolve(process.cwd(), 'userData-test', 'settings');
-export const settingsPath = path.resolve(settingsDirectory, 'settings.json');
-
-// Repo root and test wiki paths
+// Repo root used for packaging-relative resolution in tests.
 export const repoRoot = path.resolve(process.cwd());
-export const wikiTestRootPath = path.resolve(repoRoot, 'wiki-test'); // Root of all test wikis
-export const wikiTestWikiPath = path.resolve(wikiTestRootPath, 'wiki'); // Main test wiki
 
 /**
  * Archive-safe sanitization: generate a slug that is safe for zipping/unzipping across platforms.

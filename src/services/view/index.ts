@@ -197,16 +197,21 @@ export class View implements IViewService {
     if (view) return view;
 
     // If not found, try case-insensitive match (for robustness)
+    // This is a fallback that may indicate a bug in workspace ID handling
     const lowerWorkspaceID = workspaceID.toLowerCase();
     for (const [id, windowViews] of this.views.entries()) {
       if (id.toLowerCase() === lowerWorkspaceID) {
         view = windowViews?.get(windowName);
         if (view) {
-          logger.debug('getView: Found view with case-insensitive match', {
-            requestedId: workspaceID,
-            actualId: id,
-            windowName,
-          });
+          // Log as warning in development to catch inconsistent workspace ID casing
+          logger[process.env.NODE_ENV === 'development' ? 'warn' : 'debug'](
+            'getView: Found view with case-insensitive match - this may indicate inconsistent workspace ID casing',
+            {
+              requestedId: workspaceID,
+              actualId: id,
+              windowName,
+            },
+          );
           return view;
         }
       }
@@ -553,6 +558,11 @@ export class View implements IViewService {
         const view = views.get(windowName);
         if (view) {
           this.removeView(workspaceID, windowName);
+
+          // Clean up custom bounds map to prevent memory leaks
+          const boundsKey = `${workspaceID}-${windowName}`;
+          this.customBoundsMap.delete(boundsKey);
+
           if (permanent) {
             // Fully destroy the webContents to free resources
             try {

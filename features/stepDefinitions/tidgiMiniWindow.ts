@@ -3,10 +3,11 @@ import fs from 'fs-extra';
 import { omit } from 'lodash';
 import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
+import { getSettingsPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
 
 Given('I configure tidgi mini window with shortcut', async function(this: ApplicationWorld) {
-  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
+  const settingsPath = getSettingsPath(this);
   let existing = {} as ISettingFile;
   if (await fs.pathExists(settingsPath)) {
     existing = await fs.readJson(settingsPath) as ISettingFile;

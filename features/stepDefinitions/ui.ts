@@ -1,4 +1,5 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
+import { parseDataTableRows } from '../supports/dataTable';
 import { getWikiTestRootPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
 
@@ -39,11 +40,8 @@ Then('I should see {string} elements with selectors:', async function(this: Appl
   }
 
   const rows = dataTable.raw();
+  const dataRows = parseDataTableRows(rows, 2);
   const errors: string[] = [];
-
-  // Expect two-column format with header: | element description | selector |
-  const hasHeader = rows[0]?.length === 2 && rows[0][0]?.toLowerCase().includes('description');
-  const dataRows = hasHeader ? rows.slice(1) : rows;
 
   if (dataRows[0]?.length !== 2) {
     throw new Error('Table must have exactly 2 columns: | element description | selector |');
@@ -109,11 +107,8 @@ Then('I should not see {string} elements with selectors:', async function(this: 
   }
 
   const rows = dataTable.raw();
+  const dataRows = parseDataTableRows(rows, 2);
   const errors: string[] = [];
-
-  // Expect two-column format with header: | element description | selector |
-  const hasHeader = rows[0]?.length === 2 && rows[0][0]?.toLowerCase().includes('description');
-  const dataRows = hasHeader ? rows.slice(1) : rows;
 
   if (dataRows[0]?.length !== 2) {
     throw new Error('Table must have exactly 2 columns: | element description | selector |');
@@ -172,11 +167,8 @@ When('I click on {string} elements with selectors:', async function(this: Applic
   }
 
   const rows = dataTable.raw();
+  const dataRows = parseDataTableRows(rows, 2);
   const errors: string[] = [];
-
-  // Expect two-column format with header: | element description | selector |
-  const hasHeader = rows[0]?.length === 2 && rows[0][0]?.toLowerCase().includes('description');
-  const dataRows = hasHeader ? rows.slice(1) : rows;
 
   if (dataRows[0]?.length !== 2) {
     throw new Error('Table must have exactly 2 columns: | element description | selector |');
@@ -268,8 +260,7 @@ When('I type in {string} elements with selectors:', async function(this: Applica
 
   const descriptions = elementDescriptions.split(' and ').map(d => d.trim());
   const rows = dataTable.raw();
-  // Skip header row (first row contains column names)
-  const dataRows = rows.slice(1);
+  const dataRows = parseDataTableRows(rows, 2);
   const errors: string[] = [];
 
   if (descriptions.length !== dataRows.length) {

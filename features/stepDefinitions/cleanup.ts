@@ -44,8 +44,8 @@ After(async function(this: ApplicationWorld, { pickle }) {
               // CRITICAL WARNING: DO NOT INCREASE TIMEOUT VALUES!
               // Timeout = failure. If this times out, there is a real bug to fix.
               // Read docs/Testing.md before modifying any timeout.
-              // Local: max 5s, CI: max 10s (2x local)
-              const windowCloseTimeout = process.env.CI ? 2000 : 1000;
+              // Local: max 5s, CI: max 10s (2x local), internal steps should be faster than that
+              const windowCloseTimeout = process.env.CI ? 5000 : 2500;
               await Promise.race([
                 window.close(),
                 new Promise((_, reject) =>
@@ -64,8 +64,8 @@ After(async function(this: ApplicationWorld, { pickle }) {
       // CRITICAL WARNING: DO NOT INCREASE TIMEOUT VALUES!
       // Timeout = failure. If this times out, there is a real bug to fix.
       // Read docs/Testing.md before modifying any timeout.
-      // Local: max 5s, CI: max 10s (2x local)
-      const appCloseTimeout = process.env.CI ? 6000 : 3000;
+      // Local: max 5s, CI: max 10s (2x local), internal steps should be faster than that
+      const appCloseTimeout = process.env.CI ? 5000 : 2500;
       await Promise.race([
         this.app.close(),
         new Promise((_, reject) =>

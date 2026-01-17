@@ -72,11 +72,13 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
             setIsLoading(false);
           }
         } else {
-          // Bounds not ready yet, retry after a short delay
+          // Bounds not ready yet, retry after a short delay (only if still mounted)
           void window.service.native.log('debug', 'WikiEmbedTabContent: bounds not ready, retrying...', {
             bounds: JSON.stringify(bounds),
           });
-          setTimeout(() => void updateBrowserViewBounds(), 100);
+          if (mounted) {
+            setTimeout(() => void updateBrowserViewBounds(), 100);
+          }
         }
       } catch (error_) {
         if (mounted) {
@@ -95,7 +97,11 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
 
     // Update on resize
     const resizeObserver = new ResizeObserver(() => {
-      void updateBrowserViewBounds();
+      try {
+        void updateBrowserViewBounds();
+      } catch (error) {
+        console.error('ResizeObserver callback failed', error);
+      }
     });
 
     if (containerReference.current) {
@@ -107,20 +113,24 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
       mounted = false;
       resizeObserver.disconnect();
 
-      // Check if we're switching to this wiki workspace
-      // If so, don't clear bounds - let realignActiveView handle it
-      void (async () => {
-        const activeWorkspace = await window.service.workspace.getActiveWorkspace();
-        if (activeWorkspace?.id !== tab.workspaceId) {
-          // Only clear bounds if switching to a different workspace
-          void window.service.view.setViewCustomBounds(tab.workspaceId, WindowNames.main, undefined);
-        } else {
-          // Switching to this wiki workspace, don't clear bounds
-          void window.service.native.log('debug', 'WikiEmbedTabContent: not clearing bounds, switching to wiki workspace', {
-            workspaceId: tab.workspaceId,
-          });
+      // Properly handle cleanup async operation to avoid race conditions
+      const cleanup = async () => {
+        try {
+          const activeWorkspace = await window.service.workspace.getActiveWorkspace();
+          if (activeWorkspace?.id !== tab.workspaceId) {
+            // Only clear bounds if switching to a different workspace
+            await window.service.view.setViewCustomBounds(tab.workspaceId, WindowNames.main, undefined);
+          } else {
+            // Switching to this wiki workspace, don't clear bounds
+            void window.service.native.log('debug', 'WikiEmbedTabContent: not clearing bounds, switching to wiki workspace', {
+              workspaceId: tab.workspaceId,
+            });
+          }
+        } catch (error) {
+          console.error('Failed to cleanup WikiEmbedTabContent bounds', error);
         }
-      })();
+      };
+      void cleanup();
     };
   }, [tab.workspaceId, isSplitView]);
 

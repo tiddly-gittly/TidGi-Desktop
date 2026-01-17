@@ -242,7 +242,7 @@ When('(Dont do this) I click on a specific button and wait for 2 seconds.', asyn
 **Important Testing Rules:**
 
 - **Do NOT simplify tests** - write comprehensive, professional unit tests
-- **Can add test-ids** when accessibility queries aren't practical  
+- **Can add test-ids** when accessibility queries aren't practical
 - **Do NOT be lazy** - fix ALL tests until `pnpm test:unit` passes completely
 - **Do NOT summarize** until ALL unit tests pass
 - **Focus on professional, fix all seemly complex unit tests** before moving to E2E

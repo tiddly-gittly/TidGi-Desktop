@@ -1,11 +1,13 @@
 import { After, DataTable, Given, Then, When } from '@cucumber/cucumber';
 import { AIGlobalSettings, AIProviderConfig } from '@services/externalAPI/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import { isEqual, omit } from 'lodash';
 import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
+import { getSettingsPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
@@ -59,6 +61,31 @@ function generateSemanticEmbedding(tag: string): number[] {
   return vector;
 }
 
+// Helper function to start mock OpenAI server and update settings
+async function startMockOpenAIServerAndUpdateSettings(
+  world: ApplicationWorld,
+  rules: Array<{ response: string; stream?: boolean; embedding?: number[] }>,
+): Promise<void> {
+  // Use dynamic port (0) to allow parallel test execution
+  world.mockOpenAIServer = new MockOpenAIServer(0, rules);
+  world.providerConfig = createProviderConfig();
+
+  await world.mockOpenAIServer.start();
+
+  // Update provider config with actual mock server URL
+  world.providerConfig.baseURL = `${world.mockOpenAIServer.baseUrl}/v1`;
+
+  // Update AI settings in settings.json with the correct baseURL
+  const settingsPath = getSettingsPath(world);
+  if (fs.existsSync(settingsPath)) {
+    const settings = fs.readJsonSync(settingsPath) as ISettingFile;
+    if (settings.aiSettings?.providers?.[0]) {
+      settings.aiSettings.providers[0].baseURL = world.providerConfig.baseURL;
+      fs.writeJsonSync(settingsPath, settings, { spaces: 2 });
+    }
+  }
+}
+
 // Agent-specific Given steps
 
 /**
@@ -66,33 +93,13 @@ function generateSemanticEmbedding(tag: string): number[] {
  * Rules can be added later using "I add mock OpenAI responses" step.
  */
 Given('I have started the mock OpenAI server without rules', function(this: ApplicationWorld, done: (error?: Error) => void) {
-  try {
-    // Use dynamic port (0) to allow parallel test execution
-    // Each worker gets its own port automatically assigned by the OS
-    this.mockOpenAIServer = new MockOpenAIServer(0, []);
-    // Create scenario-specific provider config
-    this.providerConfig = createProviderConfig();
-    this.mockOpenAIServer.start().then(() => {
-      // Update provider config with actual mock server URL
-      this.providerConfig!.baseURL = `${this.mockOpenAIServer!.baseUrl}/v1`;
-
-      // Update AI settings in settings.json with the correct baseURL
-      const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
-      if (fs.existsSync(settingsPath)) {
-        const settings = fs.readJsonSync(settingsPath) as ISettingFile;
-        if (settings.aiSettings?.providers?.[0]) {
-          settings.aiSettings.providers[0].baseURL = this.providerConfig!.baseURL;
-          fs.writeJsonSync(settingsPath, settings, { spaces: 2 });
-        }
-      }
-
+  startMockOpenAIServerAndUpdateSettings(this, [])
+    .then(() => {
       done();
-    }).catch((error_: unknown) => {
-      done(error_ as Error);
+    })
+    .catch((error: unknown) => {
+      done(error as Error);
     });
-  } catch (error) {
-    done(error as Error);
-  }
 });
 
 /**
@@ -121,29 +128,13 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
       }
     }
 
-    // Use dynamic port (0) to allow parallel test execution
-    // Each worker gets its own port automatically assigned by the OS
-    this.mockOpenAIServer = new MockOpenAIServer(0, rules);
-    // Create scenario-specific provider config
-    this.providerConfig = createProviderConfig();
-    this.mockOpenAIServer.start().then(() => {
-      // Update provider config with actual mock server URL
-      this.providerConfig!.baseURL = `${this.mockOpenAIServer!.baseUrl}/v1`;
-
-      // Update AI settings in settings.json with the correct baseURL
-      const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
-      if (fs.existsSync(settingsPath)) {
-        const settings = fs.readJsonSync(settingsPath) as ISettingFile;
-        if (settings.aiSettings?.providers?.[0]) {
-          settings.aiSettings.providers[0].baseURL = this.providerConfig!.baseURL;
-          fs.writeJsonSync(settingsPath, settings, { spaces: 2 });
-        }
-      }
-
-      done();
-    }).catch((error_: unknown) => {
-      done(error_ as Error);
-    });
+    startMockOpenAIServerAndUpdateSettings(this, rules)
+      .then(() => {
+        done();
+      })
+      .catch((error: unknown) => {
+        done(error as Error);
+      });
   } catch (error) {
     done(error as Error);
   }
@@ -529,12 +520,11 @@ When('I send ask AI with selection message with text {string} and workspace {str
 
   // Get workspace ID from workspace name
   const workspaceId = await window.evaluate(async (name: string): Promise<string | undefined> => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    const workspaces = await (window as any).service.workspace.getWorkspacesAsList();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    const workspace = workspaces.find((ws: { name: string }) => ws.name === name);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    return workspace?.id as string | undefined;
+    // Access window.service.workspace.getWorkspacesAsList() to get all workspaces
+    // Type is defined in src/preload/index.ts as IServicesWithoutObservables
+    const workspaces = await (window as { service: { workspace: { getWorkspacesAsList: () => Promise<IWorkspace[]> } } }).service.workspace.getWorkspacesAsList();
+    const workspace = workspaces.find((ws) => ws.name === name);
+    return workspace?.id;
   }, workspaceName);
 
   if (!workspaceId) {

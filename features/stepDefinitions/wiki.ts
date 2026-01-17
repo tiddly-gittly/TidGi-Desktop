@@ -50,6 +50,8 @@ const BACKOFF_OPTIONS = {
  * 3. Fix the actual code bug, not the test timeout
  *
  * Before attempting ANY timeout changes, RE-READ docs/Testing.md completely.
+ *
+ * You can add test-id for debugging, And remove unused test-id before you finish the work. Also remove test-id that interval is smaller than 2s.
  */
 export async function waitForLogMarker(world: ApplicationWorld, searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = 'wiki-'): Promise<void> {
   const logPath = getLogPath(world);

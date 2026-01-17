@@ -72,10 +72,13 @@ export class MockOpenAIServer {
    */
   public addRules(rules: Rule[]): void {
     if (Array.isArray(rules)) {
+      // Note: A rule can have both response and embedding - handle them independently
       for (const rule of rules) {
         if (rule.response) {
           this.chatRules.push(rule);
-        } else if (rule.embedding) {
+        }
+        // Removed 'else' - a rule can have both response and embedding
+        if (rule.embedding) {
           this.embeddingRules.push({ embedding: rule.embedding });
         }
       }
