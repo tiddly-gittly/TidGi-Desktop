@@ -236,21 +236,21 @@ export function useGitLogData(workspaceID: string): IGitLogData {
       // Only log if entries actually changed
       if (entriesFingerprint !== lastLoggedEntriesReference.current) {
         lastLoggedEntriesReference.current = entriesFingerprint;
-        // Use setTimeout to ensure DOM has been updated after state changes
-        setTimeout(() => {
-          void window.service.native.log('debug', '[test-id-git-log-data-rendered]', {
-            commitCount: entries.length,
-            wikiFolderLocation: workspaceInfo.wikiFolderLocation,
-            entriesFingerprint,
-          });
-          // Use the rendered marker as the reliable signal for E2E expectations
-          void window.service.native.log('debug', '[test-id-git-log-refreshed]', {
-            commitCount: entries.length,
-            wikiFolderLocation: workspaceInfo.wikiFolderLocation,
-            entriesFingerprint,
-            source: 'entries-rendered',
-          });
-        }, 100);
+        
+        // Log immediately for E2E test reliability
+        // No need for setTimeout - entries state is already updated
+        void window.service.native.log('debug', '[test-id-git-log-data-rendered]', {
+          commitCount: entries.length,
+          wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+          entriesFingerprint,
+        });
+        
+        void window.service.native.log('debug', '[test-id-git-log-refreshed]', {
+          commitCount: entries.length,
+          wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+          entriesFingerprint,
+          source: 'entries-rendered',
+        });
       }
     }
   }, [entries, workspaceInfo]);
