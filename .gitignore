@@ -75,3 +75,4 @@ wiki-test/
 tsconfig.test.json.tsbuildinfo
 /tidgi-codeql-db
 /test-artifacts
+/test-artifacts-ci
