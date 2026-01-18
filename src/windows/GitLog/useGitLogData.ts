@@ -208,6 +208,15 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           setCurrentBranch(result.currentBranch);
           setTotalCount(result.totalCount);
           setCurrentPage(0);
+          
+          // Log refresh marker immediately after data is loaded and state is set
+          // This is the most reliable point for E2E test detection
+          void window.service.native.log('debug', '[test-id-git-log-refreshed]', {
+            commitCount: entriesWithUnpushedFlag.length,
+            wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+            entriesFingerprint: entriesWithUnpushedFlag.map(entry => entry.hash || 'uncommitted').join(','),
+            source: 'data-loaded',
+          });
         });
       } catch (error_) {
         const error = error_ as Error;
@@ -237,19 +246,11 @@ export function useGitLogData(workspaceID: string): IGitLogData {
       if (entriesFingerprint !== lastLoggedEntriesReference.current) {
         lastLoggedEntriesReference.current = entriesFingerprint;
 
-        // Log immediately for E2E test reliability
-        // No need for setTimeout - entries state is already updated
+        // Log data rendered marker for tracking UI updates
         void window.service.native.log('debug', '[test-id-git-log-data-rendered]', {
           commitCount: entries.length,
           wikiFolderLocation: workspaceInfo.wikiFolderLocation,
           entriesFingerprint,
-        });
-
-        void window.service.native.log('debug', '[test-id-git-log-refreshed]', {
-          commitCount: entries.length,
-          wikiFolderLocation: workspaceInfo.wikiFolderLocation,
-          entriesFingerprint,
-          source: 'entries-rendered',
         });
       }
     }
