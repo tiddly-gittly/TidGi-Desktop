@@ -208,16 +208,6 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           setCurrentBranch(result.currentBranch);
           setTotalCount(result.totalCount);
           setCurrentPage(0);
-
-          // Log for E2E test timing AFTER state updates are applied
-          // Must be inside RAF callback to ensure it runs after React processes the state updates
-          // Use queueMicrotask to defer logging until after the current RAF callback completes
-          queueMicrotask(() => {
-            void window.service.native.log('debug', '[test-id-git-log-refreshed]', {
-              commitCount: entriesWithFiles.length,
-              wikiFolderLocation: workspaceInfo.wikiFolderLocation,
-            });
-          });
         });
       } catch (error_) {
         const error = error_ as Error;
@@ -252,6 +242,13 @@ export function useGitLogData(workspaceID: string): IGitLogData {
             commitCount: entries.length,
             wikiFolderLocation: workspaceInfo.wikiFolderLocation,
             entriesFingerprint,
+          });
+          // Use the rendered marker as the reliable signal for E2E expectations
+          void window.service.native.log('debug', '[test-id-git-log-refreshed]', {
+            commitCount: entries.length,
+            wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+            entriesFingerprint,
+            source: 'entries-rendered',
           });
         }, 100);
       }

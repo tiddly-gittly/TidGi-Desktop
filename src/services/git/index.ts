@@ -42,11 +42,13 @@ export class Git implements IGitService {
   ) {}
 
   private notifyGitStateChange(wikiFolderLocation: string, type: IGitStateChange['type']): void {
-    this.gitStateChange$.next({
+    const change = {
       timestamp: Date.now(),
       wikiFolderLocation,
       type,
-    });
+    };
+    logger.debug('notifyGitStateChange called', change);
+    this.gitStateChange$.next(change);
   }
 
   /**
