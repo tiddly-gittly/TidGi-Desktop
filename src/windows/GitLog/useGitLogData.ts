@@ -208,7 +208,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           setCurrentBranch(result.currentBranch);
           setTotalCount(result.totalCount);
           setCurrentPage(0);
-          
+
           // Log refresh marker immediately after data is loaded and state is set
           // This is the most reliable point for E2E test detection
           void window.service.native.log('debug', '[test-id-git-log-refreshed]', {
