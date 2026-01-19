@@ -137,7 +137,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         refreshTrigger,
         wikiFolderLocation: workspaceInfo.wikiFolderLocation,
       });
-      
+
       try {
         // Only show global loading on first load
         if (isFirstLoad.current) {
