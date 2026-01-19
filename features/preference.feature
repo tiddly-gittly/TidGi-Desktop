@@ -13,10 +13,11 @@ Feature: TidGi Preference
     # Step 1: Configure AI settings first - Open preferences window, wait a second so its URL settle down.
     When I click on a "settings button" element with selector "#open-preferences-button"
     When I switch to "preferences" window
-    # Step 2: Navigate to External Services section (wait for sidebar animation)
-    When I click on an "external services section" element with selector "[data-testid='preference-section-externalAPI']"
-    # Step 3: Add new provider
-    When I click on an "add provider button" element with selector "[data-testid='add-new-provider-button']"
+    # Step 2: Navigate to External Services section and add new provider
+    When I click on "external services section and add provider button" elements with selectors:
+      | element description       | selector                                       |
+      | external services section | [data-testid='preference-section-externalAPI'] |
+      | add provider button       | [data-testid='add-new-provider-button']        |
     # Step 4: Fill provider form with mock server details (interface type already selected as openAICompatible)
     When I type "TestProvider" in "provider name input" element with selector "[data-testid='new-provider-name-input']"
     And I type "http://127.0.0.1:15121/v1" in "API endpoint input" element with selector "[data-testid='new-provider-base-url-input']"

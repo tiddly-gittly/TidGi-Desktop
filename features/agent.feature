@@ -12,9 +12,9 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see a "page body" element with selector "body"
     # Navigate to agent workspace for all scenarios
     And I click on "agent workspace button and new tab button" elements with selectors:
-      | element description  | selector                        |
-      | agent workspace      | [data-testid='workspace-agent'] |
-      | new tab button       | [data-tab-id='new-tab-button']  |
+      | element description | selector                        |
+      | agent workspace     | [data-testid='workspace-agent'] |
+      | new tab button      | [data-tab-id='new-tab-button']  |
 
   @agent @mockOpenAI
   Scenario: Wiki-search tool usage
@@ -40,9 +40,9 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     Then I should see 4 messages in chat history
     # Verify the last message contains the AI explanation about Index
     And I should see "explanation in last message and explanation about edit" elements with selectors:
-      | element description        | selector                                                     |
-      | explanation in last message| [data-testid='message-bubble']:last-child:has-text('Index') |
-      | explanation about edit     | [data-testid='message-bubble']:last-child:has-text('编辑')  |
+      | element description         | selector                                                    |
+      | explanation in last message | [data-testid='message-bubble']:last-child:has-text('Index') |
+      | explanation about edit      | [data-testid='message-bubble']:last-child:has-text('编辑')  |
 
   @agent @mockOpenAI
   Scenario: Wiki operation
@@ -66,20 +66,19 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I type "在 wiki 里创建一个新笔记，内容为 test" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 6 messages in chat history
-    # Verify there's an error message about workspace not found (in one of the middle messages)
-    And I should see a "workspace not exist error" element with selector "[data-testid='message-bubble']:has-text('test-expected-to-fail'):has-text('不存在')"
-    # Verify the last message contains success confirmation
-    And I should see "success in last message and wiki workspace in last message" elements with selectors:
-      | element description           | selector                                                     |
-      | success in last message       | [data-testid='message-bubble']:last-child:has-text('已成功') |
-      | wiki workspace in last message| [data-testid='message-bubble']:last-child:has-text('wiki')   |
+    # Verify error and success messages
+    And I should see "workspace not exist error and success in last message and wiki workspace in last message" elements with selectors:
+      | element description            | selector                                                                 |
+      | workspace not exist error      | [data-testid='message-bubble']:has-text('test-expected-to-fail'):has-text('不存在') |
+      | success in last message        | [data-testid='message-bubble']:last-child:has-text('已成功')             |
+      | wiki workspace in last message | [data-testid='message-bubble']:last-child:has-text('wiki')               |
 
   @agent
   Scenario: Create default agent from New Tab quick access
     When I click on "new tab button and create default agent button" elements with selectors:
-      | element description        | selector                                    |
-      | new tab button             | [data-tab-id='new-tab-button']              |
-      | create default agent button| [data-testid='create-default-agent-button'] |
+      | element description         | selector                                    |
+      | new tab button              | [data-tab-id='new-tab-button']              |
+      | create default agent button | [data-testid='create-default-agent-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
 
   @agent
@@ -88,9 +87,11 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     Given I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     When I click all "tab" elements matching selector "[data-testid='tab']"
     When I click all "close tab button" elements matching selector "[data-testid='tab-close-button']"
-    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # When there is no active tab, this is "fallback new tab", it has same thing as new tab.
-    And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
+    And I should see "new tab button and Create Default Agent" elements with selectors:
+      | element description     | selector                                    |
+      | new tab button          | [data-tab-id='new-tab-button']              |
+      | Create Default Agent    | [data-testid='create-default-agent-button'] |
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
     When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
@@ -104,22 +105,24 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | response                                                                                               | stream |
       | partial_chunk_1<stream_split>partial_chunk_2<stream_split>partial_chunk_3<stream_split>partial_chunk_4 | true   |
     And I click on "new tab button and create default agent button" elements with selectors:
-      | element description        | selector                                    |
-      | new tab button             | [data-tab-id='new-tab-button']              |
-      | create default agent button| [data-testid='create-default-agent-button'] |
+      | element description         | selector                                    |
+      | new tab button              | [data-tab-id='new-tab-button']              |
+      | create default agent button | [data-testid='create-default-agent-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "Start long streaming" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     # Wait for streaming container to appear and contain the first chunk
     Then I should see "assistant streaming container and partial assistant text and cancel icon" elements with selectors:
-      | element description         | selector                                 |
-      | assistant streaming container| [data-testid='assistant-streaming-text'] |
-      | partial assistant text      | *:has-text('partial_chunk_1')            |
-      | cancel icon                 | [data-testid='cancel-icon']              |
+      | element description           | selector                                 |
+      | assistant streaming container | [data-testid='assistant-streaming-text'] |
+      | partial assistant text        | *:has-text('partial_chunk_1')            |
+      | cancel icon                   | [data-testid='cancel-icon']              |
     # Click cancel button mid-stream
     When I click on a "cancel button" element with selector "[data-testid='agent-send-button']"
-    And I should see a "send icon" element with selector "[data-testid='send-icon']"
     # Verify send button returned and stream stopped (no further chunks)
-    Then I should see a "send button" element with selector "[data-testid='agent-send-button']"
+    Then I should see "send icon and send button" elements with selectors:
+      | element description | selector                         |
+      | send icon           | [data-testid='send-icon']        |
+      | send button         | [data-testid='agent-send-button']|
     And I should not see a "partial chunk 4 text" element with selector "text='partial_chunk_4'"

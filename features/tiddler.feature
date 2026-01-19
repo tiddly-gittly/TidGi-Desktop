@@ -15,10 +15,11 @@ Feature: Tiddler Creation and Editing
   @tiddler @tiddler-create
   Scenario: Create a new tiddler with tag and custom field via UI
     # These are micro steps of `When I create a tiddler "MyTestTiddler" with field "customfield" set to "customvalue" in browser view` and `When I create a tiddler "MyTestTiddler" with tag "MyTestTag" in browser view`
-    # Click add tiddler button
-    And I click on "add tiddler button" element in browser view with selector "button:has(.tc-image-new-button)"
-    # Focus on title input, clear it, and type new title
-    And I click on "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
+    # Click add tiddler button and focus title input
+    And I click on "add tiddler button and title input" elements in browser view with selectors:
+      | element description | selector                                                                 |
+      | add tiddler button  | button:has(.tc-image-new-button)                                         |
+      | title input         | div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor |
     And I press "Control+a" in browser view
     And I press "Delete" in browser view
     And I type "MyTestTiddler" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
@@ -31,12 +32,14 @@ Feature: Tiddler Creation and Editing
     And I type "customfield" in "add field name input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-name-wrapper input"
     And I click on "add field value input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-value input"
     And I type "customvalue" in "add field value input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-value input"
-    And I click on "add field button" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add button"
-    # Confirm to save the tiddler
-    And I click on "confirm button" element in browser view with selector "button:has(.tc-image-done-button)"
-    # Verify the tiddler was created and is visible
-    Then I should see a "MyTestTiddler tiddler" element in browser view with selector "div[data-tiddler-title='MyTestTiddler']"
-    # Verify the tag was added
-    Then I should see a "MyTestTag tag" element in browser view with selector "[data-tiddler-title='MyTestTiddler'] [data-tag-title='MyTestTag']"
+    And I click on "add field button and confirm button" elements in browser view with selectors:
+      | element description | selector                                                       |
+      | add field button    | div[data-tiddler-title^='Draft of'] .tc-edit-field-add button   |
+      | confirm button      | button:has(.tc-image-done-button)                              |
+    # Verify the tiddler and tag were created
+    Then I should see "MyTestTiddler tiddler and MyTestTag tag" elements in browser view with selectors:
+      | element description | selector                                                         |
+      | MyTestTiddler tiddler | div[data-tiddler-title='MyTestTiddler']                         |
+      | MyTestTag tag         | [data-tiddler-title='MyTestTiddler'] [data-tag-title='MyTestTag'] |
     # Verify the tiddler file was created
     Then file "MyTestTiddler.tid" should exist in "{tmpDir}/wiki/tiddlers"

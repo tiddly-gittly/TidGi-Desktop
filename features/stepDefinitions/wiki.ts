@@ -4,6 +4,7 @@ import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
 import type { IWikiWorkspace, IWorkspace } from '../../src/services/workspaces/interface';
+import { parseDataTableRows } from '../supports/dataTable';
 import { getLogPath, getSettingsPath, getWikiTestRootPath, getWikiTestWikiPath } from '../supports/paths';
 // Scenario-specific paths are computed via helper functions
 import type { ApplicationWorld } from './application';
@@ -563,6 +564,41 @@ Then('I wait for {string} log marker {string}', { timeout: process.env.CI ? 10 *
   // Internal wait timeout: Local 3s, CI 6s (to fit within step timeout)
   const waitTimeout = process.env.CI ? 6000 : 3000;
   await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, waitTimeout, '*');
+});
+
+/**
+ * Wait for multiple log markers in sequence using a DataTable
+ * This is useful when you need to wait for several related log markers (e.g., after workspace restart)
+ * Example usage:
+ *   Then I wait for log markers:
+ *     | description                      | marker                                   |
+ *     | main wiki restarted              | [test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI] |
+ *     | watch-fs stabilized after restart| [test-id-WATCH_FS_STABILIZED]            |
+ *     | SSE ready after restart          | [test-id-SSE_READY]                      |
+ */
+Then('I wait for log markers:', { timeout: process.env.CI ? 10 * 1000 : 5 * 1000 }, async function(this: ApplicationWorld, dataTable: DataTable) {
+  const rows = dataTable.raw();
+  const dataRows = parseDataTableRows(rows, 2);
+
+  if (dataRows[0]?.length !== 2) {
+    throw new Error('Table must have exactly 2 columns: | description | marker |');
+  }
+
+  const waitTimeout = process.env.CI ? 6000 : 3000;
+  const errors: string[] = [];
+
+  // Wait for markers sequentially to maintain order
+  for (const [description, marker] of dataRows) {
+    try {
+      await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, waitTimeout, '*');
+    } catch (error) {
+      errors.push(`Failed to find log marker "${marker}" (${description}): ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Failed to wait for log markers:\n${errors.join('\n')}`);
+  }
 });
 
 /**

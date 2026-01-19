@@ -234,6 +234,9 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
     if (stepText.match(/^I wait for/i)) {
       return;
     }
+    if (stepText.match(/^I clear log/i)) {
+      return;
+    }
 
     // Prefer an existing currentWindow if it's still open
     let pageToUse: Page | undefined;

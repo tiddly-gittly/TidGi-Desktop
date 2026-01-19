@@ -32,7 +32,6 @@ Feature: TidGi Mini Window
     Then the browser view should be loaded and visible
     And I should see "我的 TiddlyWiki" in the browser view content
     Then I switch to "main" window
-    And I wait for 0.2 seconds
     When I press the key combination "CommandOrControl+Shift+M"
     And I confirm the "tidgiMiniWindow" window exists
     And I confirm the "tidgiMiniWindow" window not visible

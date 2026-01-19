@@ -41,9 +41,10 @@ Feature: Git Log Window
     # Wait for git log to query history and render UI
     Then I wait for "git log UI refreshed" log marker "[test-id-git-log-refreshed]"
     # Verify the git log window shows commits
-    Then I should see a "git log list" element with selector "[data-testid='git-log-list']"
-    # Verify commit with default message - message is in p.MuiTypography-body2
-    Then I should see a "commit with default message" element with selector "p.MuiTypography-body2:has-text('使用太记桌面版备份')"
+    Then I should see "git log list and commit with default message" elements with selectors:
+      | element description           | selector                                                     |
+      | git log list                  | [data-testid='git-log-list']                                 |
+      | commit with default message   | p.MuiTypography-body2:has-text('使用太记桌面版备份')          |
     # Click on the commit row containing GitLogTestTiddler file
     When I click on a "commit row with GitLogTestTiddler" element with selector "[data-testid^='commit-row-']:has-text('GitLogTestTiddler')"
     # Verify the filename appears in the details panel (may include path like tiddlers/GitLogTestTiddler.tid)
@@ -59,9 +60,11 @@ Feature: Git Log Window
     And I should see "Modified Index content" in the browser view content
     And I switch to "gitHistory" window
     And I wait for the page to load completely
-    Then I should see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     # Verify uncommitted changes is auto-selected by checking if the file list is visible
-    Then I should see a "Index.tid file in uncommitted list" element with selector "li:has-text('Index.tid')"
+    Then I should see "uncommitted changes row and Index.tid file in uncommitted list" elements with selectors:
+      | element description                 | selector                               |
+      | uncommitted changes row             | [data-testid='uncommitted-changes-row']|
+      | Index.tid file in uncommitted list  | li:has-text('Index.tid')               |
     # Switch to Actions tab to access commit button
     When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作')"
     # Verify the commit now button is visible
@@ -70,31 +73,34 @@ Feature: Git Log Window
     When I clear log lines containing "[test-id-git-log-refreshed]"
     # Click the commit now button
     When I click on a "commit now button" element with selector "button[data-testid='commit-now-button']"
-    # Wait for git commit to complete first
-    Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
-    # Then wait for UI to load the updated data (without uncommitted changes)
-    Then I wait for "git log refreshed after commit" log marker "[test-id-git-log-refreshed]"
+    # Wait for git commit to complete and UI to refresh
+    Then I wait for log markers:
+      | description                    | marker                        |
+      | git commit completed           | [test-id-git-commit-complete] |
+      | git log refreshed after commit | [test-id-git-log-refreshed]   |
     # Verify that uncommitted changes row is gone (commit was successful)
     Then I should not see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     # Verify the correct commit is selected and we're on the latest commit (should show amend button)
     Then I should see "selected commit row and commit message and amend button and revert button" elements with selectors:
-      | element description   | selector                                                                  |
-      | selected commit row   | [data-testid^='commit-row-'][data-selected='true']:has-text('使用太记桌面版备份') |
-      | commit message        | p.MuiTypography-body2:has-text('使用太记桌面版备份')                              |
-      | amend button          | button:has-text('修改')                                                           |
-      | revert button         | button:has-text('回滚')                                                           |
+      | element description | selector                                                                          |
+      | selected commit row | [data-testid^='commit-row-'][data-selected='true']:has-text('使用太记桌面版备份') |
+      | commit message      | p.MuiTypography-body2:has-text('使用太记桌面版备份')                              |
+      | amend button        | button:has-text('修改')                                                           |
+      | revert button       | button:has-text('回滚')                                                           |
     # Clear the git-log-refreshed marker BEFORE clicking revert button
     When I clear log lines containing "[test-id-git-log-refreshed]"
     # Click revert button
     When I click on a "revert button" element with selector "button:has-text('回滚')"
-    # Wait for git revert operation to complete
-    Then I wait for "git revert completed" log marker "[test-id-git-revert-complete]"
-    # Wait for git log to refresh after revert (this indicates the UI has updated)
-    Then I wait for "git log refreshed after revert" log marker "[test-id-git-log-refreshed]"
-    # Verify that the new revert commit is auto-selected (should contain "回退提交" in the message)
-    Then I should see a "selected revert commit row" element with selector "[data-testid^='commit-row-'][data-selected='true']:has-text('回退提交')"
-    # Also verify the revert button is visible (confirms we're on the new commit)
-    Then I should see a "revert button for the new revert commit" element with selector "button:has-text('回滚')"
+    # Wait for git revert operation to complete and UI to refresh
+    Then I wait for log markers:
+      | description                    | marker                        |
+      | git revert completed           | [test-id-git-revert-complete] |
+      | git log refreshed after revert | [test-id-git-log-refreshed]   |
+    # Verify new revert commit is selected and revert button is visible
+    Then I should see "selected revert commit row and revert button for the new revert commit" elements with selectors:
+      | element description                    | selector                                                                 |
+      | selected revert commit row             | [data-testid^='commit-row-'][data-selected='true']:has-text('回退提交')   |
+      | revert button for the new revert commit| button:has-text('回滚')                                                 |
     # Switch back to main window to verify the revert
     When I switch to "main" window
     # Wait for tiddler to be updated by watch-fs after git revert
@@ -178,5 +184,7 @@ Feature: Git Log Window
     # Click on uncommitted changes again to see both files
     When I click on a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     # Both Index.tid and AutoRefreshTest.tid should be in the uncommitted list
-    Then I should see a "Index.tid in uncommitted list" element with selector "li:has-text('Index.tid')"
-    And I should see a "AutoRefreshTest.tid in uncommitted list" element with selector "li:has-text('AutoRefreshTest.tid')"
+    Then I should see "Index.tid and AutoRefreshTest.tid in uncommitted list" elements with selectors:
+      | element description                 | selector                         |
+      | Index.tid in uncommitted list       | li:has-text('Index.tid')         |
+      | AutoRefreshTest.tid in uncommitted list | li:has-text('AutoRefreshTest.tid') |

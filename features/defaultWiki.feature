@@ -34,11 +34,11 @@ Feature: TidGi Default Wiki
     When I click on an "add workspace button" element with selector "#add-workspace-button"
     And I switch to "addWorkspace" window
     And I wait for the page to load completely
-    # Step 2: Verify we're on "Create New Wiki" tab (should be default)
-    Then I should see a "create new wiki tab" element with selector "button:has-text('创建新知识库')"
-    # Step 3: Since there's already a default "wiki" workspace, the advanced accordion should be expanded
-    # Verify we're in main workspace mode (not sub-workspace)
-    Then I should see a "main/sub workspace switch" element with selector "[data-testid='main-sub-workspace-switch']"
+    # Step 2: Verify we're on "Create New Wiki" tab and main workspace mode
+    Then I should see "create new wiki tab and main/sub workspace switch" elements with selectors:
+      | element description           | selector                                  |
+      | create new wiki tab           | button:has-text('创建新知识库')           |
+      | main/sub workspace switch     | [data-testid='main-sub-workspace-switch'] |
     # Step 4: Enter a different wiki folder name (default "wiki" already exists)
     # First clear any existing value in the input field
     When I clear text in "wiki folder name input" element with selector "label:has-text('即将新建的知识库文件夹名') + div input"
@@ -74,12 +74,13 @@ Feature: TidGi Default Wiki
     # Test the actual move operation - this will trigger a file dialog
     When I prepare to select directory in dialog "wiki-test-moved"
     And I click on a "move workspace button" element with selector "button:has-text('移动工作区')"
-    Then I wait for "workspace moved to wiki-test-moved" log marker "[test-id-WORKSPACE_MOVED:"
-    Then I wait for "workspace restarted after move" log marker "[test-id-WORKSPACE_RESTARTED_AFTER_MOVE:"
-    # Wait for SSE and watch-fs to stabilize after restart
-    And I wait for "watch-fs stabilized after restart" log marker "[test-id-WATCH_FS_STABILIZED]"
-    And I wait for "SSE ready after restart" log marker "[test-id-SSE_READY]"
-    Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
+    Then I wait for log markers:
+      | description                        | marker                                   |
+      | workspace moved to wiki-test-moved | [test-id-WORKSPACE_MOVED:                |
+      | workspace restarted after move     | [test-id-WORKSPACE_RESTARTED_AFTER_MOVE: |
+      | watch-fs stabilized after restart  | [test-id-WATCH_FS_STABILIZED]            |
+      | SSE ready after restart            | [test-id-SSE_READY]                      |
+      | view loaded                        | [test-id-VIEW_LOADED]                    |
     # Verify the workspace was moved to the new location
     Then file "wiki/tiddlywiki.info" should exist in "wiki-test-moved"
     # Switch back to main window to interact with wiki
@@ -89,8 +90,7 @@ Feature: TidGi Default Wiki
     # Verify the wiki is working by modifying a file in the new location
     When I modify file "wiki-test-moved/wiki/tiddlers/Index.tid" to contain "Content after moving workspace"
     Then I wait for tiddler "Index" to be updated by watch-fs
-    # wait for IPC to sync to frontend
-    And I wait for 2 seconds for "IPC to sync"
+    # The content check will automatically wait for IPC to sync
     And I should see "Content after moving workspace" in the browser view content
     # Move it back to original location for cleanup
     # Clear test-id markers to ensure we're waiting for fresh logs from second restart
@@ -98,18 +98,18 @@ Feature: TidGi Default Wiki
     And I switch to "editWorkspace" window
     When I prepare to select directory in dialog "wiki-test"
     And I click on a "move workspace button" element with selector "button:has-text('移动工作区')"
-    Then I wait for "workspace moved back to wiki-test" log marker "[test-id-WORKSPACE_MOVED:"
-    Then I wait for "workspace restarted after move back" log marker "[test-id-WORKSPACE_RESTARTED_AFTER_MOVE:"
-    # Wait for SSE and watch-fs to stabilize after restart back
-    And I wait for "watch-fs stabilized after restart back" log marker "[test-id-WATCH_FS_STABILIZED]"
-    And I wait for "SSE ready after restart back" log marker "[test-id-SSE_READY]"
-    Then I wait for "view loaded after restart back" log marker "[test-id-VIEW_LOADED]"
+    Then I wait for log markers:
+      | description                            | marker                                   |
+      | workspace moved back to wiki-test      | [test-id-WORKSPACE_MOVED:                |
+      | workspace restarted after move back    | [test-id-WORKSPACE_RESTARTED_AFTER_MOVE: |
+      | watch-fs stabilized after restart back | [test-id-WATCH_FS_STABILIZED]            |
+      | SSE ready after restart back           | [test-id-SSE_READY]                      |
+      | view loaded after restart back         | [test-id-VIEW_LOADED]                    |
     Then file "wiki/tiddlywiki.info" should exist in "wiki-test"
     # Switch to main window and wait for view to be ready
     Then I switch to "main" window
-    And I wait for 2 seconds for "view to be ready after move back"
     # Verify the wiki still works after moving back
     When I modify file "wiki-test/wiki/tiddlers/Index.tid" to contain "Content after moving back"
     Then I wait for tiddler "Index" to be updated by watch-fs
-    And I wait for 3 seconds for "IPC to sync after second restart"
+    # The content check will automatically wait for IPC to sync
     And I should see "Content after moving back" in the browser view content

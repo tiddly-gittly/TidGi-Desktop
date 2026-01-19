@@ -28,7 +28,6 @@ Feature: AI-Generated Git Commit Messages
     # Modify a file to create changes
     When I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "AI-generated commit message test content"
     Then I wait for tiddler "Index" to be updated by watch-fs
-    And I wait for 3 seconds for "git to detect file changes"
     # Open Git Log window to commit using the button
     When I click menu "知识库 > 查看历史备份"
     And I switch to "gitHistory" window
@@ -45,12 +44,13 @@ Feature: AI-Generated Git Commit Messages
     Then I should see a "commit now button" element with selector "button[data-testid='commit-now-button']"
     # Click the commit now button - this will trigger AI generation
     When I click on a "commit now button" element with selector "button[data-testid='commit-now-button']"
-    Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
-    # Wait for git log data to be updated and rendered to DOM
-    Then I wait for "git log data rendered to DOM" log marker "[test-id-git-log-data-rendered]"
+    Then I wait for log markers:
+      | description                  | marker                          |
+      | git commit completed         | [test-id-git-commit-complete]   |
+      | git log data rendered to DOM | [test-id-git-log-data-rendered] |
     # After commit, verify AI-generated message and file in git log table
     # Message is in p.MuiTypography-body2, file div has aria-label
     Then I should see "commit with AI message and Index.tid file" elements with selectors:
-      | element description     | selector                                      |
-      | commit with AI message  | p.MuiTypography-body2:has-text('更新 Index 条目') |
-      | Index.tid file          | div.MuiBox-root[aria-label*='Index.tid']     |
+      | element description    | selector                                          |
+      | commit with AI message | p.MuiTypography-body2:has-text('更新 Index 条目') |
+      | Index.tid file         | div.MuiBox-root[aria-label*='Index.tid']          |

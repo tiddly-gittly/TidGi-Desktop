@@ -11,7 +11,8 @@ Feature: Workspace Hibernation
     Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     # Create a second wiki workspace programmatically for hibernation testing
     When I create a new wiki workspace with name "wiki2"
-    And I wait for 1 seconds for "wiki2 workspace icon to appear"
+    Then I wait for "workspace started" log marker "[test-id-WIKI_WORKER_STARTED]"
+    # Element check will automatically wait for the workspace icon to appear
     Then I should see a "wiki2 workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki2')"
 
   Scenario: Hibernate both workspaces and verify switching with wake up
@@ -20,11 +21,11 @@ Feature: Workspace Hibernation
     When I open edit workspace window for workspace with name "wiki"
     And I switch to "editWorkspace" window
     And I wait for the page to load completely
-    When I click on "misc options accordion and hibernation switch" elements with selectors:
-      | element description     | selector                                           |
-      | misc options accordion  | [data-testid='preference-section-miscOptions']     |
-      | hibernation switch      | [data-testid='hibernate-when-unused-switch']       |
-    When I click on a "save button" element with selector "[data-testid='edit-workspace-save-button']"
+    When I click on "misc options accordion and hibernation switch and save button" elements with selectors:
+      | element description    | selector                                       |
+      | misc options accordion | [data-testid='preference-section-miscOptions'] |
+      | hibernation switch     | [data-testid='hibernate-when-unused-switch']   |
+      | save button            | [data-testid='edit-workspace-save-button']     |
     Then I should not see a "save button" element with selector "[data-testid='edit-workspace-save-button']"
     Then I switch to "main" window
     When I close "editWorkspace" window
@@ -32,11 +33,11 @@ Feature: Workspace Hibernation
     When I open edit workspace window for workspace with name "wiki2"
     And I switch to "editWorkspace" window
     And I wait for the page to load completely
-    When I click on "misc options accordion and hibernation switch" elements with selectors:
-      | element description     | selector                                           |
-      | misc options accordion  | [data-testid='preference-section-miscOptions']     |
-      | hibernation switch      | [data-testid='hibernate-when-unused-switch']       |
-    When I click on a "save button" element with selector "[data-testid='edit-workspace-save-button']"
+    When I click on "misc options accordion and hibernation switch and save button" elements with selectors:
+      | element description    | selector                                       |
+      | misc options accordion | [data-testid='preference-section-miscOptions'] |
+      | hibernation switch     | [data-testid='hibernate-when-unused-switch']   |
+      | save button            | [data-testid='edit-workspace-save-button']     |
     Then I should not see a "save button" element with selector "[data-testid='edit-workspace-save-button']"
     Then I switch to "main" window
     When I close "editWorkspace" window
@@ -44,16 +45,15 @@ Feature: Workspace Hibernation
     When I click on a "wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
     # Create a test tiddler in wiki workspace
-    And I click on "add tiddler button" element in browser view with selector "button:has(.tc-image-new-button)"
-    And I click on "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    And I wait for 0.2 seconds
+    And I click on "add tiddler button and title input" elements in browser view with selectors:
+      | element description | selector                                                                 |
+      | add tiddler button  | button:has(.tc-image-new-button)                                         |
+      | title input         | div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor |
     And I press "Control+a" in browser view
-    And I wait for 0.2 seconds
     And I press "Delete" in browser view
     And I type "WikiTestTiddler" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
     # Confirm to save the tiddler
     And I click on "confirm button" element in browser view with selector "button:has(.tc-image-done-button)"
-    And I wait for 0.2 seconds
     Then I should see a "WikiTestTiddler tiddler" element in browser view with selector "div[data-tiddler-title='WikiTestTiddler']"
     # Switch to wiki2 - wiki should hibernate, wiki2 should load
     # Clear previous VIEW_LOADED markers before waiting for a new one
@@ -80,10 +80,10 @@ Feature: Workspace Hibernation
     Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
     # Wait for TiddlyWiki to fully render the page (site title appears)
     Then I wait for "site title" element in browser view with selector "h1.tc-site-title"
-    # Verify wiki2 workspace is now hibernated
-    # UI updates via observable, faster than waiting for log markers
-    Then I should see a "wiki2 workspace hibernated icon" element with selector "div[data-testid^='workspace-']:has-text('wiki2')[data-hibernated='true']"
-    # Verify wiki workspace is no longer hibernated
-    Then I should see a "wiki workspace active icon" element with selector "div[data-testid^='workspace-']:has-text('wiki')[data-hibernated='false'][data-active='true']"
+    # Verify hibernation states
+    Then I should see "wiki2 workspace hibernated icon and wiki workspace active icon" elements with selectors:
+      | element description              | selector                                                                        |
+      | wiki2 workspace hibernated icon  | div[data-testid^='workspace-']:has-text('wiki2')[data-hibernated='true']         |
+      | wiki workspace active icon       | div[data-testid^='workspace-']:has-text('wiki')[data-hibernated='false'][data-active='true'] |
     # Verify WikiTestTiddler is still there after wake up
     Then I should see a "WikiTestTiddler tiddler" element in browser view with selector "div[data-tiddler-title='WikiTestTiddler']"

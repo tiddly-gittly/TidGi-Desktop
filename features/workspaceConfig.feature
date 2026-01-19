@@ -43,12 +43,12 @@ Feature: Workspace Configuration Sync
     When I click on a "select folder button" element with selector "button:has-text('选择')"
     # Click the import button to actually add the workspace
     When I click on a "import wiki button" element with selector "button:has-text('导入知识库')"
-    # Wait for workspace to be created using log marker
-    Then I wait for "workspace created" log marker "[test-id-WORKSPACE_CREATED]"
-    # Switch back to main window first, then wait for view to load
+    # Switch back to main window and wait for workspace to be created and loaded
     When I switch to "main" window
-    # Wait for wiki view to fully load
-    Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
+    Then I wait for log markers:
+      | description           | marker                          |
+      | workspace created     | [test-id-WORKSPACE_CREATED]     |
+      | view loaded           | [test-id-VIEW_LOADED]           |
     # Step 6: Verify workspace is back with the saved name from tidgi.config.json
     Then I should see a "restored wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('WikiRenamed')"
     # Verify wiki is actually loaded and functional

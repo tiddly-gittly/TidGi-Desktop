@@ -28,10 +28,10 @@ Feature: Configuration Error Handling
     And I press "Enter" key
     # Verify error message wrapper, internationalized title, and "Go to Settings" button are present
     Then I should see "error message wrapper and configuration issue title and go to settings button" elements with selectors:
-      | element description           | selector                                           |
-      | error message wrapper         | [data-testid='error-message']                      |
-      | configuration issue title     | [data-testid='error-message']:has-text('配置问题') |
-      | go to settings button         | [data-testid='error-message'] button:has-text('前往设置') |
+      | element description       | selector                                                  |
+      | error message wrapper     | [data-testid='error-message']                             |
+      | configuration issue title | [data-testid='error-message']:has-text('配置问题')        |
+      | go to settings button     | [data-testid='error-message'] button:has-text('前往设置') |
     # Verify we don't see the raw translation key
     Then I should not see a "raw error key text" element with selector "text='Chat.ConfigError.MissingConfigError'"
     # Click the button to open preferences

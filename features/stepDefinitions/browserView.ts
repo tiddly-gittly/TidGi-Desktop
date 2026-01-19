@@ -1,4 +1,4 @@
-import { Then, When } from '@cucumber/cucumber';
+import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import {
   clickElement,
@@ -11,6 +11,7 @@ import {
   pressKey,
   typeText,
 } from '../supports/webContentsViewHelper';
+import { parseDataTableRows } from '../supports/dataTable';
 import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
@@ -112,6 +113,40 @@ When('I click on {string} element in browser view with selector {string}', async
     }
   } catch (error) {
     throw new Error(`Failed to click ${elementComment} element with selector "${selector}" in browser view: ${error as Error}`);
+  }
+});
+
+When('I click on {string} elements in browser view with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+
+  const rows = dataTable.raw();
+  const dataRows = parseDataTableRows(rows, 2);
+  const errors: string[] = [];
+
+  if (dataRows[0]?.length !== 2) {
+    throw new Error('Table must have exactly 2 columns: | element description | selector |');
+  }
+
+  for (const [elementComment, selector] of dataRows) {
+    try {
+      const hasTextMatch = selector.match(/^(.+):has-text\(['"](.+)['"]\)$/);
+
+      if (hasTextMatch) {
+        const baseSelector = hasTextMatch[1];
+        const textContent = hasTextMatch[2];
+        await clickElementWithText(this.app, baseSelector, textContent);
+      } else {
+        await clickElement(this.app, selector);
+      }
+    } catch (error) {
+      errors.push(`Failed to click ${elementComment} element with selector "${selector}" in browser view: ${error as Error}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Failed to click elements in browser view:\n${errors.join('\n')}`);
   }
 });
 
@@ -222,6 +257,44 @@ Then('I should see a(n) {string} element in browser view with selector {string}'
   ).catch(() => {
     throw new Error(`Element "${elementComment}" with selector "${selector}" not found in browser view after multiple attempts`);
   });
+});
+
+Then('I should see {string} elements in browser view with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+
+  if (!this.currentWindow) {
+    throw new Error('No current window available');
+  }
+
+  const rows = dataTable.raw();
+  const dataRows = parseDataTableRows(rows, 2);
+  const errors: string[] = [];
+
+  if (dataRows[0]?.length !== 2) {
+    throw new Error('Table must have exactly 2 columns: | element description | selector |');
+  }
+
+  await Promise.all(dataRows.map(async ([elementComment, selector]) => {
+    try {
+      await backOff(
+        async () => {
+          const exists: boolean = await elementExists(this.app!, selector);
+          if (!exists) {
+            throw new Error('Element does not exist yet');
+          }
+        },
+        BACKOFF_OPTIONS,
+      );
+    } catch (error) {
+      errors.push(`Element "${elementComment}" with selector "${selector}" not found in browser view: ${error as Error}`);
+    }
+  }));
+
+  if (errors.length > 0) {
+    throw new Error(`Failed to find elements in browser view:\n${errors.join('\n')}`);
+  }
 });
 
 When('I open tiddler {string} in browser view', async function(this: ApplicationWorld, tiddlerTitle: string) {
