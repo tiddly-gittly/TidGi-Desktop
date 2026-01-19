@@ -208,18 +208,14 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           isUnpushed: unpushedHashes.has(entry.hash),
         }));
 
-        // Log refresh marker BEFORE RAF to ensure it's recorded in CI
-        // RAF may not execute reliably in headless CI environments
-        try {
-          await window.service.native.log('debug', '[test-id-git-log-refreshed]', {
-            commitCount: entriesWithUnpushedFlag.length,
-            wikiFolderLocation: workspaceInfo.wikiFolderLocation,
-            entriesFingerprint: entriesWithUnpushedFlag.map(entry => entry.hash || 'uncommitted').join(','),
-            source: 'data-loaded',
-          });
-        } catch (error) {
-          console.error('[CRITICAL] Failed to log git-log-refreshed:', error);
-        }
+        // Log refresh marker synchronously - must not be wrapped in Promise or async
+        // to ensure it executes immediately before RAF
+        void window.service.native.log('debug', '[test-id-git-log-refreshed]', {
+          commitCount: entriesWithUnpushedFlag.length,
+          wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+          entriesFingerprint: entriesWithUnpushedFlag.map(entry => entry.hash || 'uncommitted').join(','),
+          source: 'data-loaded',
+        });
 
         // Use requestAnimationFrame to batch the state updates and reduce flicker
         requestAnimationFrame(() => {
