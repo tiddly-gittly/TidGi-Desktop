@@ -66,12 +66,12 @@ Feature: Git Log Window
     When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作')"
     # Verify the commit now button is visible
     Then I should see a "commit now button" element with selector "button[data-testid='commit-now-button']"
+    # Clear old git-log-refreshed markers BEFORE clicking commit button
+    When I clear log lines containing "[test-id-git-log-refreshed]"
     # Click the commit now button
     When I click on a "commit now button" element with selector "button[data-testid='commit-now-button']"
     # Wait for git commit to complete first
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
-    # Clear old git-log-refreshed markers to wait for the new one after commit
-    When I clear log lines containing "[test-id-git-log-refreshed]"
     # Then wait for UI to load the updated data (without uncommitted changes)
     Then I wait for "git log refreshed after commit" log marker "[test-id-git-log-refreshed]"
     # Verify that uncommitted changes row is gone (commit was successful)
@@ -83,12 +83,12 @@ Feature: Git Log Window
       | commit message        | p.MuiTypography-body2:has-text('使用太记桌面版备份')                              |
       | amend button          | button:has-text('修改')                                                           |
       | revert button         | button:has-text('回滚')                                                           |
+    # Clear the git-log-refreshed marker BEFORE clicking revert button
+    When I clear log lines containing "[test-id-git-log-refreshed]"
     # Click revert button
     When I click on a "revert button" element with selector "button:has-text('回滚')"
     # Wait for git revert operation to complete
     Then I wait for "git revert completed" log marker "[test-id-git-revert-complete]"
-    # Clear the git-log-refreshed marker before waiting for the new one after revert
-    When I clear log lines containing "[test-id-git-log-refreshed]"
     # Wait for git log to refresh after revert (this indicates the UI has updated)
     Then I wait for "git log refreshed after revert" log marker "[test-id-git-log-refreshed]"
     # Verify that the new revert commit is auto-selected (should contain "回退提交" in the message)
