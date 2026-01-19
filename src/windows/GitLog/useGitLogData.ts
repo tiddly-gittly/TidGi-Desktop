@@ -20,8 +20,6 @@ export interface IGitLogData {
   loadMore: () => Promise<void>;
   setSearchParams: (parameters: ISearchParameters) => void;
   isSearchMode: boolean;
-  /** Manually trigger a data refresh - useful when observable subscription fails */
-  triggerRefresh: () => void;
 }
 
 export function useGitLogData(workspaceID: string): IGitLogData {
@@ -121,12 +119,6 @@ export function useGitLogData(workspaceID: string): IGitLogData {
       setRefreshTrigger((previous) => previous + 1);
     }
   });
-
-  // Manually trigger a refresh - useful when observable subscription doesn't work (e.g., cross-process IPC issues)
-  const triggerRefresh = useCallback(() => {
-    lastRefreshTime.current = Date.now();
-    setRefreshTrigger((previous) => previous + 1);
-  }, []);
 
   // Load git log data
   useEffect(() => {
@@ -383,6 +375,5 @@ export function useGitLogData(workspaceID: string): IGitLogData {
     loadMore,
     setSearchParams: setSearchParameters,
     isSearchMode,
-    triggerRefresh,
   };
 }
