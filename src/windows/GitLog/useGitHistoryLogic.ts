@@ -107,8 +107,6 @@ interface IUseCommitSelectionProps {
   setSearchParams: (parameters: ISearchParameters) => void;
   setCurrentSearchParameters: (parameters: ISearchParameters) => void;
   setSelectedFile: (value: string | null) => void;
-  /** Manually trigger data refresh - fallback when observable doesn't work */
-  triggerRefresh: () => void;
 }
 
 export function useCommitSelection({
@@ -122,7 +120,6 @@ export function useCommitSelection({
   setSearchParams,
   setCurrentSearchParameters,
   setSelectedFile,
-  triggerRefresh,
 }: IUseCommitSelectionProps): IUseCommitSelectionReturn {
   // Track if we've already processed the current change type
   const lastProcessedChangeReference = useRef<string | null>(null);

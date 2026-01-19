@@ -110,7 +110,6 @@ export default function GitHistory(): React.JSX.Element {
     setSearchParams,
     setCurrentSearchParameters,
     setSelectedFile,
-    triggerRefresh,
   });
 
   const { isRowLoaded, loadMoreRows } = useInfiniteScroll({
