@@ -133,7 +133,7 @@ After(async function(this: ApplicationWorld, { pickle }) {
 AfterAll({ timeout: 5000 }, async function() {
   // Give a short grace period for any final cleanup
   await new Promise((resolve) => setTimeout(resolve, 1000));
-  
+
   // Force exit the process
   // This is necessary because sometimes Electron/Playwright resources don't fully clean up
   process.exit(0);

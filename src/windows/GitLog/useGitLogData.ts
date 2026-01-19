@@ -123,7 +123,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
   // Load git log data
   useEffect(() => {
     if (!workspaceInfo || !('wikiFolderLocation' in workspaceInfo)) return;
-    
+
     // Prevent concurrent loadGitLog calls
     if (loadGitLogInProgress.current) {
       void window.service.native.log('debug', '[DEBUG] loadGitLog skipped - already in progress', { refreshTrigger });
@@ -132,7 +132,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
 
     const loadGitLog = async () => {
       loadGitLogInProgress.current = true;
-      
+
       // Log at the very start to verify this function is called
       void window.service.native.log('debug', '[DEBUG] loadGitLog started', {
         refreshTrigger,

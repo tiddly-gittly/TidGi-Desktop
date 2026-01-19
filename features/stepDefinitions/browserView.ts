@@ -1,5 +1,6 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
+import { parseDataTableRows } from '../supports/dataTable';
 import {
   clickElement,
   clickElementWithText,
@@ -11,7 +12,6 @@ import {
   pressKey,
   typeText,
 } from '../supports/webContentsViewHelper';
-import { parseDataTableRows } from '../supports/dataTable';
 import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
