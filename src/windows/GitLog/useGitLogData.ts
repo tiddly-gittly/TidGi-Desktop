@@ -208,23 +208,33 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           isUnpushed: unpushedHashes.has(entry.hash),
         }));
 
+        // Prepare log data
+        const logData = {
+          commitCount: entriesWithUnpushedFlag.length,
+          wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+          entriesFingerprint: entriesWithUnpushedFlag.map(entry => entry.hash || 'uncommitted').join(','),
+        };
+
+        // Log BEFORE RAF
+        try {
+          void window.service.native.log('debug', '[test-id-git-log-refreshed]', { ...logData, source: 'before-raf' });
+        } catch (error) {
+          console.error('[CRITICAL] Log before RAF failed:', error);
+        }
+
         // Use requestAnimationFrame to batch the state updates and reduce flicker
         requestAnimationFrame(() => {
-          setEntries(entriesWithUnpushedFlag);
-          setCurrentBranch(result.currentBranch);
-          setTotalCount(result.totalCount);
-          setCurrentPage(0);
-          
-          // Log refresh marker right after setting entries in RAF
-          // This ensures the log call happens in the same context as successful state updates
-          const logData = {
-            commitCount: entriesWithUnpushedFlag.length,
-            wikiFolderLocation: workspaceInfo.wikiFolderLocation,
-            entriesFingerprint: entriesWithUnpushedFlag.map(entry => entry.hash || 'uncommitted').join(','),
-            source: 'raf-after-setEntries',
-          };
-          window.service.native.log('debug', '[test-id-git-log-refreshed]', logData);
-          window.service.native.log('debug', '[test-id-git-log-refreshed]', logData);
+          try {
+            setEntries(entriesWithUnpushedFlag);
+            setCurrentBranch(result.currentBranch);
+            setTotalCount(result.totalCount);
+            setCurrentPage(0);
+
+            // Log AFTER setEntries in RAF
+            void window.service.native.log('debug', '[test-id-git-log-refreshed]', { ...logData, source: 'in-raf' });
+          } catch (error) {
+            console.error('[CRITICAL] RAF callback failed:', error);
+          }
         });
       } catch (error_) {
         const error = error_ as Error;
