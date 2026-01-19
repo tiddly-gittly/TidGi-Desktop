@@ -132,6 +132,12 @@ export function useGitLogData(workspaceID: string): IGitLogData {
     if (!workspaceInfo || !('wikiFolderLocation' in workspaceInfo)) return;
 
     const loadGitLog = async () => {
+      // Log at the very start to verify this function is called
+      void window.service.native.log('debug', '[DEBUG] loadGitLog started', {
+        refreshTrigger,
+        wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+      });
+      
       try {
         // Only show global loading on first load
         if (isFirstLoad.current) {
@@ -202,21 +208,25 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           isUnpushed: unpushedHashes.has(entry.hash),
         }));
 
+        // Log refresh marker BEFORE RAF to ensure it's recorded in CI
+        // RAF may not execute reliably in headless CI environments
+        try {
+          await window.service.native.log('debug', '[test-id-git-log-refreshed]', {
+            commitCount: entriesWithUnpushedFlag.length,
+            wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+            entriesFingerprint: entriesWithUnpushedFlag.map(entry => entry.hash || 'uncommitted').join(','),
+            source: 'data-loaded',
+          });
+        } catch (error) {
+          console.error('[CRITICAL] Failed to log git-log-refreshed:', error);
+        }
+
         // Use requestAnimationFrame to batch the state updates and reduce flicker
         requestAnimationFrame(() => {
           setEntries(entriesWithUnpushedFlag);
           setCurrentBranch(result.currentBranch);
           setTotalCount(result.totalCount);
           setCurrentPage(0);
-
-          // Log refresh marker immediately after data is loaded and state is set
-          // This is the most reliable point for E2E test detection
-          void window.service.native.log('debug', '[test-id-git-log-refreshed]', {
-            commitCount: entriesWithUnpushedFlag.length,
-            wikiFolderLocation: workspaceInfo.wikiFolderLocation,
-            entriesFingerprint: entriesWithUnpushedFlag.map(entry => entry.hash || 'uncommitted').join(','),
-            source: 'data-loaded',
-          });
         });
       } catch (error_) {
         const error = error_ as Error;
