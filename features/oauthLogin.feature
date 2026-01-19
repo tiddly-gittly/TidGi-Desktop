@@ -31,7 +31,6 @@ Feature: OAuth Login Flow
     # Note: oauth2-mock-server automatically redirects without showing login UI
     # This tests the token exchange logic which is the most critical part
     When I click on a "login button" element with selector "[data-testid='custom-oauth-login-button']"
-    And I wait for 3 seconds
     
     # Step 6: After OAuth completes, page reloads and defaults to GitHub tab
     # Need to click Custom Server tab again to see the filled token

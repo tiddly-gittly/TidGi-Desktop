@@ -84,8 +84,6 @@ Feature: TidGi Default Wiki
     Then file "wiki/tiddlywiki.info" should exist in "wiki-test-moved"
     # Switch back to main window to interact with wiki
     Then I switch to "main" window
-    # Wait a bit to ensure view is fully ready to receive updates
-    And I wait for 1 seconds for "view to be ready"
     # Verify Index tiddler is displayed (confirms view is loaded)
     Then I should see a "Index tiddler" element in browser view with selector "div[data-tiddler-title='Index']"
     # Verify the wiki is working by modifying a file in the new location
