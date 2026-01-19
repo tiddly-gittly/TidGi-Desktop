@@ -40,6 +40,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
   const lastChangeTimestamp = useRef<number>(0);
   const loadingMoreReference = useRef(false);
   const isFirstLoad = useRef(true);
+  const loadGitLogInProgress = useRef(false); // Guard against concurrent loadGitLog calls
 
   const isSearchMode = searchParameters.mode !== 'none';
   const hasMore = entries.length < totalCount;
@@ -131,7 +132,15 @@ export function useGitLogData(workspaceID: string): IGitLogData {
   useEffect(() => {
     if (!workspaceInfo || !('wikiFolderLocation' in workspaceInfo)) return;
 
+    // Prevent concurrent loadGitLog calls
+    if (loadGitLogInProgress.current) {
+      void window.service.native.log('debug', '[DEBUG] loadGitLog skipped - already in progress', { refreshTrigger });
+      return;
+    }
+
     const loadGitLog = async () => {
+      loadGitLogInProgress.current = true;
+
       // Log at the very start to verify this function is called
       void window.service.native.log('debug', '[DEBUG] loadGitLog started', {
         refreshTrigger,
@@ -176,6 +185,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           workspaceInfo.wikiFolderLocation,
           options,
         );
+        void window.service.native.log('debug', '[DEBUG] getGitLog completed', { entryCount: result.entries.length });
 
         // Get unpushed commit hashes in parallel with loading files
         const unpushedHashesPromise = window.service.git.callGitOp(
@@ -200,6 +210,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
             }
           }),
         );
+        void window.service.native.log('debug', '[DEBUG] entriesWithFiles completed', { count: entriesWithFiles.length });
 
         // Get unpushed hashes and mark entries
         const unpushedHashes = await unpushedHashesPromise;
@@ -207,6 +218,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           ...entry,
           isUnpushed: unpushedHashes.has(entry.hash),
         }));
+        void window.service.native.log('debug', '[DEBUG] entriesWithUnpushedFlag completed', { count: entriesWithUnpushedFlag.length });
 
         // Prepare log data
         const logData = {
@@ -245,6 +257,8 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         if (loading) {
           setLoading(false);
         }
+        // Always clear the in-progress flag
+        loadGitLogInProgress.current = false;
       }
     };
 
