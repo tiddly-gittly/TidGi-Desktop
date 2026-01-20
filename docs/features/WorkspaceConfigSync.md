@@ -10,52 +10,52 @@ This document describes how workspace configurations are stored and synced acros
 
 These fields are device-specific and should NOT be synced:
 
-| Field | Reason |
-|-------|--------|
-| `id` | Unique identifier, different per installation |
-| `order` | User preference for sidebar order, device-specific |
-| `active` | Current active state, runtime only |
-| `hibernated` | Current hibernation state, runtime only |
-| `lastUrl` | Last visited URL, device-specific |
-| `lastNodeJSArgv` | Node.js arguments, may vary by device |
-| `homeUrl` | Generated from workspace id |
-| `authToken` | Security token, should not be synced |
-| `picturePath` | Local file path to workspace icon |
-| `wikiFolderLocation` | Absolute path, different per device |
-| `mainWikiToLink` | Absolute path to main wiki |
-| `mainWikiID` | References local workspace id |
-| `isSubWiki` | Structural relationship, set during creation |
+| Field                | Reason                                             |
+| -------------------- | -------------------------------------------------- |
+| `id`                 | Unique identifier, different per installation      |
+| `order`              | User preference for sidebar order, device-specific |
+| `active`             | Current active state, runtime only                 |
+| `hibernated`         | Current hibernation state, runtime only            |
+| `lastUrl`            | Last visited URL, device-specific                  |
+| `lastNodeJSArgv`     | Node.js arguments, may vary by device              |
+| `homeUrl`            | Generated from workspace id                        |
+| `authToken`          | Security token, should not be synced               |
+| `picturePath`        | Local file path to workspace icon                  |
+| `wikiFolderLocation` | Absolute path, different per device                |
+| `mainWikiToLink`     | Absolute path to main wiki                         |
+| `mainWikiID`         | References local workspace id                      |
+| `isSubWiki`          | Structural relationship, set during creation       |
 
 ### Syncable Fields (stored in tidgi.config.json)
 
 These fields represent user preferences that should follow the wiki across devices:
 
-| Field | Description |
-|-------|-------------|
-| `name` | Display name for the workspace |
-| `port` | Server port number |
-| `gitUrl` | Git repository URL for syncing |
-| `storageService` | Storage service type (github, gitlab, local) |
-| `userName` | Git username for this workspace |
-| `readOnlyMode` | Whether wiki is in readonly mode |
-| `tokenAuth` | Whether token authentication is enabled |
-| `enableHTTPAPI` | Whether HTTP API is enabled |
-| `enableFileSystemWatch` | Whether file system watching is enabled |
-| `ignoreSymlinks` | Whether to ignore symlinks in file watching |
-| `backupOnInterval` | Whether to backup on interval |
-| `syncOnInterval` | Whether to sync on interval |
-| `syncOnStartup` | Whether to sync on startup |
-| `disableAudio` | Whether audio is disabled |
-| `disableNotifications` | Whether notifications are disabled |
-| `hibernateWhenUnused` | Whether to hibernate when unused |
-| `transparentBackground` | Whether background is transparent |
-| `excludedPlugins` | List of plugins to exclude on startup |
-| `tagNames` | Tag names for sub-wiki routing |
-| `includeTagTree` | Whether to include tag tree for routing |
-| `fileSystemPathFilterEnable` | Whether path filter is enabled |
-| `fileSystemPathFilter` | Path filter expressions |
-| `rootTiddler` | Root tiddler for lazy loading |
-| `https` | HTTPS configuration |
+| Field                        | Description                                  |
+| ---------------------------- | -------------------------------------------- |
+| `name`                       | Display name for the workspace               |
+| `port`                       | Server port number                           |
+| `gitUrl`                     | Git repository URL for syncing               |
+| `storageService`             | Storage service type (github, gitlab, local) |
+| `userName`                   | Git username for this workspace              |
+| `readOnlyMode`               | Whether wiki is in readonly mode             |
+| `tokenAuth`                  | Whether token authentication is enabled      |
+| `enableHTTPAPI`              | Whether HTTP API is enabled                  |
+| `enableFileSystemWatch`      | Whether file system watching is enabled      |
+| `ignoreSymlinks`             | Whether to ignore symlinks in file watching  |
+| `backupOnInterval`           | Whether to backup on interval                |
+| `syncOnInterval`             | Whether to sync on interval                  |
+| `syncOnStartup`              | Whether to sync on startup                   |
+| `disableAudio`               | Whether audio is disabled                    |
+| `disableNotifications`       | Whether notifications are disabled           |
+| `hibernateWhenUnused`        | Whether to hibernate when unused             |
+| `transparentBackground`      | Whether background is transparent            |
+| `excludedPlugins`            | List of plugins to exclude on startup        |
+| `tagNames`                   | Tag names for sub-wiki routing               |
+| `includeTagTree`             | Whether to include tag tree for routing      |
+| `fileSystemPathFilterEnable` | Whether path filter is enabled               |
+| `fileSystemPathFilter`       | Path filter expressions                      |
+| `rootTiddler`                | Root tiddler for lazy loading                |
+| `https`                      | HTTPS configuration                          |
 
 ## File Location
 

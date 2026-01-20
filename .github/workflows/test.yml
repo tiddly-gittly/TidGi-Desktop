@@ -57,11 +57,20 @@ jobs:
       # Upload test artifacts (screenshots, logs)
       - name: Upload test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        run: |
+          mv test-artifacts test-artifacts-ci || true
+          # Remove large cache folders to save space, keep only logs and settings
+          find test-artifacts-ci -type d -name "Cache" -o -name "Code Cache" -o -name "GPUCache" -o -name "DawnGraphiteCache" -o -name "DawnWebGPUCache" -o -name "Crashpad" -o -name "cache-database" -o -name "DevToolsActivePort" -o -name "Dictionaries" -o -name "Local Storage" -o -name "Network Persistent State" -o -name "Partitions" -o -name "Session Storage" -o -name "Shared Dictionary" | xargs rm -rf || true
+          echo "Cleaned up test-artifacts-ci cache folders"
+        continue-on-error: true
+      
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: test-artifacts
+          name: test-artifacts-ci
           path: |
-            userData-test/logs/
-            userData-test/settings/
+            test-artifacts-ci/**/logs/
+            test-artifacts-ci/**/settings/
+            test-artifacts-ci/**/screenshots/
           retention-days: 7
         continue-on-error: true

@@ -192,7 +192,32 @@ export class View implements IViewService {
   }
 
   public getView(workspaceID: string, windowName: WindowNames): WebContentsView | undefined {
-    return this.views.get(workspaceID)?.get(windowName);
+    // Try exact match first
+    let view = this.views.get(workspaceID)?.get(windowName);
+    if (view) return view;
+
+    // If not found, try case-insensitive match (for robustness)
+    // This is a fallback that may indicate a bug in workspace ID handling
+    const lowerWorkspaceID = workspaceID.toLowerCase();
+    for (const [id, windowViews] of this.views.entries()) {
+      if (id.toLowerCase() === lowerWorkspaceID) {
+        view = windowViews?.get(windowName);
+        if (view) {
+          // Log as warning in development to catch inconsistent workspace ID casing
+          logger[process.env.NODE_ENV === 'development' ? 'warn' : 'debug'](
+            'getView: Found view with case-insensitive match - this may indicate inconsistent workspace ID casing',
+            {
+              requestedId: workspaceID,
+              actualId: id,
+              windowName,
+            },
+          );
+          return view;
+        }
+      }
+    }
+
+    return undefined;
   }
 
   public setView(workspaceID: string, windowName: WindowNames, newView: WebContentsView): void {
@@ -305,6 +330,17 @@ export class View implements IViewService {
       if (updatedWorkspace === undefined) return;
       // Prevent update non-active (hiding) wiki workspace, so it won't pop up to cover other active agent workspace
       if (windowName === WindowNames.main && !updatedWorkspace.active) return;
+
+      // Check if this view has custom bounds set - if so, don't auto-resize
+      const key = `${workspace.id}-${windowName}`;
+      if (this.customBoundsMap.has(key) && this.customBoundsMap.get(key) !== undefined) {
+        logger.debug('debouncedOnResize: skipping auto-resize for view with custom bounds', {
+          workspaceId: workspace.id,
+          windowName,
+        });
+        return;
+      }
+
       if ([WindowNames.secondary, WindowNames.main, WindowNames.tidgiMiniWindow].includes(windowName)) {
         const contentSize = browserWindow.getContentSize();
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
@@ -522,6 +558,11 @@ export class View implements IViewService {
         const view = views.get(windowName);
         if (view) {
           this.removeView(workspaceID, windowName);
+
+          // Clean up custom bounds map to prevent memory leaks
+          const boundsKey = `${workspaceID}-${windowName}`;
+          this.customBoundsMap.delete(boundsKey);
+
           if (permanent) {
             // Fully destroy the webContents to free resources
             try {
@@ -701,6 +742,56 @@ export class View implements IViewService {
         width: contentSize[0],
         height: contentSize[1],
       });
+    }
+  }
+
+  /**
+   * Store for custom bounds per workspace. When set, the view will use these bounds instead of default.
+   * Key format: `${workspaceID}-${windowName}`
+   */
+  private customBoundsMap = new Map<string, { x: number; y: number; width: number; height: number } | undefined>();
+
+  public async setViewCustomBounds(
+    workspaceID: string,
+    windowName: WindowNames,
+    bounds?: { x: number; y: number; width: number; height: number },
+  ): Promise<void> {
+    const key = `${workspaceID}-${windowName}`;
+    this.customBoundsMap.set(key, bounds);
+
+    const view = this.getView(workspaceID, windowName);
+    const browserWindow = this.windowService.get(windowName);
+    if (view === undefined) {
+      logger.warn('setViewCustomBounds: view not found', { workspaceID, windowName });
+      return;
+    }
+    if (browserWindow === undefined) {
+      logger.warn('setViewCustomBounds: browserWindow not found', { windowName });
+      return;
+    }
+
+    if (bounds) {
+      // First ensure the view is added to the window's content view
+      // This is necessary if the view was previously hidden (removed from content view)
+      try {
+        browserWindow.contentView.addChildView(view);
+      } catch {
+        // View might already be added, which is fine
+      }
+      // Set the bounds to position the view in the specified area
+      view.setBounds(bounds);
+      logger.info('setViewCustomBounds: set custom bounds', { workspaceID, windowName, bounds: JSON.stringify(bounds) });
+    } else {
+      // Clear custom bounds: hide the view by moving it off-screen
+      // The view will be properly restored when switching back to its workspace via setActiveWorkspaceView
+      const contentSize = browserWindow.getContentSize();
+      view.setBounds({
+        x: -contentSize[0],
+        y: -contentSize[1],
+        width: contentSize[0],
+        height: contentSize[1],
+      });
+      logger.info('setViewCustomBounds: cleared custom bounds (hiding view)', { workspaceID, windowName });
     }
   }
 

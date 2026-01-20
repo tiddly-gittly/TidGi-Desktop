@@ -11,7 +11,13 @@ export const streamingActionsMiddleware: StateCreator<AgentChatStoreType, [], []
   get,
 ) => ({
   setMessageStreaming: (messageId: string, isStreaming: boolean) => {
-    const { streamingMessageIds } = get();
+    // If user is cancelling, ignore any attempts to set streaming state
+    const { streamingMessageIds, isCancelling } = get();
+    if (isCancelling && isStreaming) {
+      // Block late streaming updates during cancellation
+      return;
+    }
+
     const newStreamingIds = new Set(streamingMessageIds);
 
     if (isStreaming) {

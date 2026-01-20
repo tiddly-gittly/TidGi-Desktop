@@ -5,12 +5,6 @@ Feature: Vector Search - Embedding Generation and Semantic Search
 
   Background:
     Given I add test ai settings
-    Then I launch the TidGi application
-    And I wait for the page to load completely
-    And I should see a "page body" element with selector "body"
-    # Ensure we are in the agent workspace (not wiki workspace) for agent interaction
-    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
-    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
 
   @vectorSearch @mockOpenAI
   Scenario: Agent workflow - Create notes, update embeddings, then search
@@ -27,6 +21,13 @@ Feature: Vector Search - Embedding Generation and Semantic Search
       | <tool_use name="wiki-search">{"workspaceName":"wiki","searchType":"vector","query":"如何使用AI智能体","limit":5,"threshold":0.7}</tool_use>                                                                     | false  |             |
       |                                                                                                                                                                                                                 | false  | query-note1 |
       | 根据向量搜索结果，在工作区 wiki 中找到以下相关内容：\n\n**Tiddler: AI Agent Guide** (Similarity: 95.0%)\n这篇笔记介绍了AI智能体的基本概念和使用方法。                                                           | false  |             |
+    # Launch application after mock server is ready
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    # Ensure we are in the agent workspace (not wiki workspace) for agent interaction
+    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
+    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Open agent chat interface
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     And I should see a "search interface" element with selector ".aa-Autocomplete"
@@ -55,7 +56,8 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     Then I should see 16 messages in chat history
     # Verify the last message contains vector search results
     And I should see "search result in last message" elements with selectors:
-      | [data-testid='message-bubble']:last-child:has-text('Tiddler: AI Agent Guide') |
+      | element description        | selector                                                               |
+      | search result in last message| [data-testid='message-bubble']:last-child:has-text('Tiddler: AI Agent Guide') |
 
   @vectorSearch @mockOpenAI
   Scenario: UI workflow - Generate embeddings via preferences, then search
@@ -67,19 +69,26 @@ Feature: Vector Search - Embedding Generation and Semantic Search
       | <tool_use name="wiki-search">{"workspaceName":"wiki","searchType":"vector","query":"机器学习","limit":5,"threshold":0.7}</tool_use>                                                                            | false  |             |
       |                                                                                                                                                                                                                | false  | query-note3 |
       | 根据向量搜索结果，在工作区 wiki 中找到以下相关内容：\n\n**Tiddler: Machine Learning Basics** (Similarity: 98.0%)\n这篇笔记介绍了机器学习的基本概念。                                                           | false  |             |
+    # Launch application after mock server is ready
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    # Ensure we are in the agent workspace (not wiki workspace) for agent interaction
+    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
+    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Create a test note via agent
     When I click on "new tab button and create default agent button" elements with selectors:
-      | [data-tab-id='new-tab-button']              |
-      | [data-testid='create-default-agent-button'] |
+      | element description        | selector                                    |
+      | new tab button             | [data-tab-id='new-tab-button']              |
+      | create default agent button| [data-testid='create-default-agent-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 工作区创建一个名为 Machine Learning Basics 的笔记，内容是：机器学习是人工智能的一个分支，通过算法让计算机从数据中学习规律。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 4 messages in chat history
-    # Step 2: Open preferences and manually generate embeddings via UI
+    # Step 2: Open preferences and navigate to Search section to generate embeddings
     When I click on a "settings button" element with selector "#open-preferences-button"
     When I switch to "preferences" window
-    # Navigate to Search section (which contains vector database settings)
     When I click on a "search section" element with selector "[data-testid='preference-section-search']"
     # Wait for workspace list to load
     # The Search.tsx renders workspace cards with name, status, and buttons
@@ -90,12 +99,13 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     # Verify generation completed with detailed status information
     # Should show: workspace name, embedding count, note count, last updated time and action buttons
     Then I should see "workspace name in status and embedding count status and embedding word and last updated label and update button after generation and delete button after generation" elements with selectors:
-      | *:has-text('wiki')          |
-      | *:has-text('个笔记')        |
-      | *:has-text('嵌入')          |
-      | *:has-text('最后更新')      |
-      | button:has-text('更新嵌入') |
-      | button:has-text('删除')     |
+      | element description              | selector                        |
+      | workspace name in status         | *:has-text('wiki')              |
+      | embedding count status           | *:has-text('个笔记')            |
+      | embedding word                   | *:has-text('嵌入')              |
+      | last updated label               | *:has-text('最后更新')          |
+      | update button after generation   | button:has-text('更新嵌入')     |
+      | delete button after generation   | button:has-text('删除')         |
     # Close preferences
     When I close "preferences" window
     And I switch to "main" window
@@ -125,10 +135,18 @@ Feature: Vector Search - Embedding Generation and Semantic Search
       | <tool_use name="wiki-search">{"workspaceName":"wiki","searchType":"vector","query":"天气预报","limit":5,"threshold":0.1}</tool_use>                            | false  |           |
       |                                                                                                                                                                | false  | unrelated |
       | 根据向量搜索结果，在工作区 wiki 中找到以下相关内容：\n\n**Tiddler: AI Technology** (Similarity: 15.0%)\n低相似度结果。                                         | false  |           |
+    # Launch application after mock server is ready
+    Then I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    # Ensure we are in the agent workspace (not wiki workspace) for agent interaction
+    When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
+    And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Open agent chat interface
     When I click on "new tab button and create default agent button" elements with selectors:
-      | [data-tab-id='new-tab-button']              |
-      | [data-testid='create-default-agent-button'] |
+      | element description        | selector                                    |
+      | new tab button             | [data-tab-id='new-tab-button']              |
+      | create default agent button| [data-testid='create-default-agent-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # Step 2: Create first note about AI
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
@@ -152,8 +170,9 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     Then I should see 16 messages in chat history
     # Verify the 16th message contains "no results found" with threshold info
     Then I should see "no results in 16th message and threshold 0.7 in 16th message" elements with selectors:
-      | [data-testid='message-bubble']:nth-child(16):has-text('未找到符合条件') |
-      | [data-testid='message-bubble']:nth-child(16):has-text('0.7')            |
+      | element description          | selector                                                                 |
+      | no results in 16th message   | [data-testid='message-bubble']:nth-child(16):has-text('未找到符合条件') |
+      | threshold 0.7 in 16th message| [data-testid='message-bubble']:nth-child(16):has-text('0.7')            |
     # Step 6: Lower threshold and search again (should find low-similarity results)
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "再次搜索天气预报，但这次把阈值降低到0.1" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -161,5 +180,6 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     Then I should see 20 messages in chat history
     # Verify the 20th message contains low-similarity result
     Then I should see "AI Technology and low similarity in 20th message" elements with selectors:
-      | [data-testid='message-bubble']:nth-child(20):has-text('Tiddler: AI Technology') |
-      | [data-testid='message-bubble']:nth-child(20):has-text('15')                     |
+      | element description                    | selector                                                                 |
+      | AI Technology in 20th message          | [data-testid='message-bubble']:nth-child(20):has-text('Tiddler: AI Technology') |
+      | low similarity in 20th message         | [data-testid='message-bubble']:nth-child(20):has-text('15')             |

@@ -5,14 +5,18 @@ import { DataSource, Equal, Not, Repository } from 'typeorm';
 
 import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
 import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
+import type { IChatTab, ISplitViewTab, IWikiEmbedTab } from '@/pages/Agent/types/tab';
+import type { IAgentInstanceService } from '@services/agentInstance/interface';
+import { container } from '@services/container';
 import { logger } from '@services/libs/log';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject } from 'rxjs';
 import type { ITab, TabItem } from '../../pages/Agent/types/tab';
 import { TabState, TabType } from '../../pages/Agent/types/tab';
 import type { IDatabaseService } from '../database/interface';
 import { AgentBrowserTabEntity } from '../database/schema/agentBrowser';
-import serviceIdentifier from '../serviceIdentifier';
 import type { IAgentBrowserService } from './interface';
 
 const MAX_CLOSED_TABS = 10;
@@ -128,6 +132,12 @@ export class AgentBrowserService implements IAgentBrowserService {
           agentDefId: data.agentDefId as string,
           currentStep: data.currentStep as number || 0,
         };
+      case TabType.WIKI_EMBED:
+        return {
+          ...baseTab,
+          type: TabType.WIKI_EMBED,
+          workspaceId: data.workspaceId as string || '',
+        };
       default:
         return baseTab as TabItem;
     }
@@ -193,6 +203,13 @@ export class AgentBrowserService implements IAgentBrowserService {
         entity.data = {
           agentDefId: editAgentTab.agentDefId,
           currentStep: editAgentTab.currentStep || 0,
+        };
+        break;
+      }
+      case TabType.WIKI_EMBED: {
+        const wikiEmbedTab = tab as { workspaceId: string };
+        entity.data = {
+          workspaceId: wikiEmbedTab.workspaceId,
         };
         break;
       }
@@ -649,6 +666,124 @@ export class AgentBrowserService implements IAgentBrowserService {
         function: 'reindexTabPositions',
         error,
       });
+    }
+  }
+
+  /**
+   * Find existing or create new "Talk with AI" split view tab
+   * Only reuses the currently active tab if it's a split view with matching workspace
+   * Otherwise creates a new tab
+   */
+  public async findOrCreateTalkWithAITab(
+    workspaceId: string | undefined,
+    agentDefinitionId: string | undefined,
+    selectionText: string,
+  ): Promise<string> {
+    this.ensureRepositories();
+
+    try {
+      // Get the currently active tab
+      const activeTabId = await this.getActiveTabId();
+
+      if (activeTabId) {
+        const allTabs = await this.getAllTabs();
+        const activeTab = allTabs.find(tab => tab.id === activeTabId);
+
+        // Check if the active tab is a split view with matching workspace
+        if (activeTab?.type === TabType.SPLIT_VIEW) {
+          const splitTab = activeTab;
+          // Use proper type guard to validate workspace matching
+          const hasMatchingWorkspace = splitTab.childTabs.some((child: TabItem) => {
+            if (child.type !== TabType.WIKI_EMBED) return false;
+            const wikiEmbedChild = child;
+            return !workspaceId || wikiEmbedChild.workspaceId === workspaceId;
+          });
+
+          if (hasMatchingWorkspace) {
+            // Reuse the active tab - find the chat child and send new message
+            const chatChild = splitTab.childTabs.find((child): child is IChatTab => child.type === TabType.CHAT);
+
+            if (chatChild?.agentId) {
+              // Send the new message to existing agent
+              const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+              await agentInstanceService.sendMsgToAgent(chatChild.agentId, { text: selectionText });
+            }
+
+            logger.info('Reusing currently active Talk with AI tab', { tabId: activeTabId });
+            return activeTabId;
+          }
+        }
+      }
+
+      // No matching active tab found, create new one
+      const timestamp = Date.now();
+      const childTabs: TabItem[] = [];
+
+      // Create a Chat tab object with the selected text as initial message (LEFT pane)
+      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+      const agent = await agentInstanceService.createAgent(agentDefinitionId);
+
+      const chatTab: IChatTab = {
+        id: nanoid(),
+        type: TabType.CHAT,
+        title: agent.name || 'AI Chat',
+        agentDefId: agent.agentDefId,
+        agentId: agent.id,
+        initialMessage: selectionText,
+        state: TabState.ACTIVE,
+        isPinned: false,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+      childTabs.push(chatTab);
+
+      // Create a Wiki Embed tab object for the RIGHT pane (if workspaceId is provided)
+      if (workspaceId) {
+        const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+        const workspace = await workspaceService.get(workspaceId);
+
+        if (workspace) {
+          const wikiEmbedTab: IWikiEmbedTab = {
+            id: nanoid(),
+            type: TabType.WIKI_EMBED,
+            title: workspace.name || 'Wiki',
+            workspaceId: workspace.id,
+            state: TabState.ACTIVE,
+            isPinned: false,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          };
+          childTabs.push(wikiEmbedTab);
+        }
+      }
+
+      // Send initial message to the agent
+      // Note: When creating SPLIT_VIEW tabs (not plain CHAT tabs), we need to send the message here
+      // because basicActions.ts only handles direct CHAT tab creation.
+      // The child CHAT tab has initialMessage set, but we must explicitly send it.
+      if (selectionText && agent.id) {
+        await agentInstanceService.sendMsgToAgent(agent.id, { text: selectionText });
+      }
+
+      // Create a split view tab with the child tabs
+      const splitViewTab: ISplitViewTab = {
+        id: nanoid(),
+        type: TabType.SPLIT_VIEW,
+        title: 'Split View', // This will be translated by i18n in the frontend
+        childTabs,
+        splitRatio: 50,
+        state: TabState.ACTIVE,
+        isPinned: false,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+
+      const createdTab = await this.addTab(splitViewTab);
+      logger.info('Created new Talk with AI tab', { tabId: createdTab.id });
+      return createdTab.id;
+    } catch (error) {
+      logger.error('Failed to find or create Talk with AI tab', { error });
+      throw error;
     }
   }
 }

@@ -92,6 +92,8 @@
   "ContextMenu": {
     "About": "情報",
     "AddToDictionary": "辞書に追加",
+    "TalkWithAI": "AIと話す",
+    "TalkWithAIMore": "エージェントと話す…",
     "Back": "戻る←",
     "BackupNow": "ローカルGitバックアップ",
     "Copy": "コピー",

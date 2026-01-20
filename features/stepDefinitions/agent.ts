@@ -1,12 +1,13 @@
-import { After, DataTable, Given, Then } from '@cucumber/cucumber';
+import { After, DataTable, Given, Then, When } from '@cucumber/cucumber';
 import { AIGlobalSettings, AIProviderConfig } from '@services/externalAPI/interface';
+import type { IWorkspace } from '@services/workspaces/interface';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import { isEqual, omit } from 'lodash';
 import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
-import { settingsPath } from '../supports/paths';
+import { getSettingsPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
@@ -60,7 +61,51 @@ function generateSemanticEmbedding(tag: string): number[] {
   return vector;
 }
 
+// Helper function to start mock OpenAI server and update settings
+async function startMockOpenAIServerAndUpdateSettings(
+  world: ApplicationWorld,
+  rules: Array<{ response: string; stream?: boolean; embedding?: number[] }>,
+): Promise<void> {
+  // Use dynamic port (0) to allow parallel test execution
+  world.mockOpenAIServer = new MockOpenAIServer(0, rules);
+  world.providerConfig = createProviderConfig();
+
+  await world.mockOpenAIServer.start();
+
+  // Update provider config with actual mock server URL
+  world.providerConfig.baseURL = `${world.mockOpenAIServer.baseUrl}/v1`;
+
+  // Update AI settings in settings.json with the correct baseURL
+  const settingsPath = getSettingsPath(world);
+  if (fs.existsSync(settingsPath)) {
+    const settings = fs.readJsonSync(settingsPath) as ISettingFile;
+    if (settings.aiSettings?.providers?.[0]) {
+      settings.aiSettings.providers[0].baseURL = world.providerConfig.baseURL;
+      fs.writeJsonSync(settingsPath, settings, { spaces: 2 });
+    }
+  }
+}
+
 // Agent-specific Given steps
+
+/**
+ * Start mock OpenAI server without any rules.
+ * Rules can be added later using "I add mock OpenAI responses" step.
+ */
+Given('I have started the mock OpenAI server without rules', function(this: ApplicationWorld, done: (error?: Error) => void) {
+  startMockOpenAIServerAndUpdateSettings(this, [])
+    .then(() => {
+      done();
+    })
+    .catch((error: unknown) => {
+      done(error as Error);
+    });
+});
+
+/**
+ * Start mock OpenAI server with predefined rules from dataTable.
+ * This is the legacy method used when rules are known upfront.
+ */
 Given('I have started the mock OpenAI server', function(this: ApplicationWorld, dataTable: DataTable | undefined, done: (error?: Error) => void) {
   try {
     const rules: Array<{ response: string; stream?: boolean; embedding?: number[] }> = [];
@@ -83,15 +128,48 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
       }
     }
 
-    this.mockOpenAIServer = new MockOpenAIServer(15121, rules);
-    this.mockOpenAIServer.start().then(() => {
-      done();
-    }).catch((error_: unknown) => {
-      done(error_ as Error);
-    });
+    startMockOpenAIServerAndUpdateSettings(this, rules)
+      .then(() => {
+        done();
+      })
+      .catch((error: unknown) => {
+        done(error as Error);
+      });
   } catch (error) {
     done(error as Error);
   }
+});
+
+/**
+ * Add new responses to an already-running mock OpenAI server.
+ * This allows scenarios to configure server responses after the application has started.
+ */
+Given('I add mock OpenAI responses:', function(this: ApplicationWorld, dataTable: DataTable | undefined) {
+  if (!this.mockOpenAIServer) {
+    throw new Error('Mock OpenAI server is not running. Use "I have started the mock OpenAI server" first.');
+  }
+
+  const rules: Array<{ response: string; stream?: boolean; embedding?: number[] }> = [];
+  if (dataTable && typeof dataTable.raw === 'function') {
+    const rows = dataTable.raw();
+    // Skip header row
+    for (let index = 1; index < rows.length; index++) {
+      const row = rows[index];
+      const response = (row[0] ?? '').trim();
+      const stream = (row[1] ?? '').trim().toLowerCase() === 'true';
+      const embeddingTag = (row[2] ?? '').trim();
+
+      // Generate embedding from semantic tag if provided
+      let embedding: number[] | undefined;
+      if (embeddingTag) {
+        embedding = generateSemanticEmbedding(embeddingTag);
+      }
+
+      if (response) rules.push({ response, stream, embedding });
+    }
+  }
+
+  this.mockOpenAIServer.addRules(rules);
 });
 
 // Mock OpenAI server cleanup - for scenarios using mock OpenAI
@@ -188,28 +266,38 @@ Then('the last AI request should have {int} messages', async function(this: Appl
   }
 });
 
-// Shared provider config used across steps (kept at module scope for reuse)
-const providerConfig: AIProviderConfig = {
-  provider: 'TestProvider',
-  baseURL: 'http://127.0.0.1:15121/v1',
-  models: [
-    { name: 'test-model', features: ['language'] },
-    { name: 'test-embedding-model', features: ['language', 'embedding'] },
-    { name: 'test-speech-model', features: ['speech'] },
-  ],
-  providerClass: 'openAICompatible',
-  isPreset: false,
-  enabled: true,
-};
+// Factory function to create scenario-specific provider config
+// Returns a new object each time to avoid state pollution between scenarios
+function createProviderConfig(): AIProviderConfig {
+  return {
+    provider: 'TestProvider',
+    baseURL: 'http://127.0.0.1:0/v1', // Will be updated with actual port when mock server starts
+    models: [
+      { name: 'test-model', features: ['language'] },
+      { name: 'test-embedding-model', features: ['language', 'embedding'] },
+      { name: 'test-speech-model', features: ['speech'] },
+    ],
+    providerClass: 'openAICompatible',
+    isPreset: false,
+    enabled: true,
+  };
+}
 
 const desiredModelParameters = { temperature: 0.7, systemPrompt: 'You are a helpful assistant.', topP: 0.95 };
 
-Given('I ensure test ai settings exists', function() {
-  // Build expected aiSettings from shared providerConfig and compare with actual
-  const modelsArray = providerConfig.models;
-  const modelName = modelsArray[0]?.name;
-  const providerName = providerConfig.provider;
+// Step to remove AI settings for testing config errors
+Given('I remove test ai settings', function(this: ApplicationWorld) {
+  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
+  if (fs.existsSync(settingsPath)) {
+    const existing = fs.readJsonSync(settingsPath) as ISettingFile;
+    // Remove aiSettings but keep other settings
+    const { aiSettings: _removed, ...rest } = existing;
+    fs.writeJsonSync(settingsPath, rest, { spaces: 2 });
+  }
+});
 
+Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
+  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
   const parsed = fs.readJsonSync(settingsPath) as Record<string, unknown>;
   const actual = (parsed.aiSettings as Record<string, unknown> | undefined) || null;
 
@@ -218,6 +306,27 @@ Given('I ensure test ai settings exists', function() {
   }
 
   const actualProviders = (actual.providers as Array<Record<string, unknown>>) || [];
+
+  // If providerConfig is set (from mock server), use it; otherwise create expected config
+  // and use actual baseURL from settings (for UI-configured scenarios)
+  let providerConfig: AIProviderConfig;
+  const providerName = 'TestProvider';
+  const existingProvider = actualProviders.find(p => p.provider === providerName) as AIProviderConfig | undefined;
+
+  if (this.providerConfig) {
+    // Use the mock server's providerConfig
+    providerConfig = this.providerConfig;
+  } else if (existingProvider) {
+    // For UI-configured scenarios: build expected config using actual baseURL
+    providerConfig = createProviderConfig();
+    providerConfig.baseURL = existingProvider.baseURL ?? providerConfig.baseURL;
+  } else {
+    providerConfig = createProviderConfig();
+  }
+
+  // Build expected aiSettings from providerConfig and compare with actual
+  const modelsArray = providerConfig.models;
+  const modelName = modelsArray[0]?.name;
 
   // Check TestProvider exists
   const testProvider = actualProviders.find(p => p.provider === providerName);
@@ -267,12 +376,20 @@ Given('I ensure test ai settings exists', function() {
 
 // Version without datatable for simple cases
 Given('I add test ai settings', async function(this: ApplicationWorld) {
+  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
   let existing = {} as ISettingFile;
   if (fs.existsSync(settingsPath)) {
     existing = fs.readJsonSync(settingsPath) as ISettingFile;
   } else {
     fs.ensureDirSync(path.dirname(settingsPath));
   }
+
+  // Initialize scenario-specific providerConfig if not set
+  if (!this.providerConfig) {
+    this.providerConfig = createProviderConfig();
+  }
+  const providerConfig = this.providerConfig;
+
   const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
   const embeddingModelName = modelsArray[1]?.name;
@@ -304,12 +421,20 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
 
 // Version with datatable for advanced configuration
 Given('I add test ai settings:', async function(this: ApplicationWorld, dataTable: DataTable) {
+  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
   let existing = {} as ISettingFile;
   if (fs.existsSync(settingsPath)) {
     existing = fs.readJsonSync(settingsPath) as ISettingFile;
   } else {
     fs.ensureDirSync(path.dirname(settingsPath));
   }
+
+  // Initialize scenario-specific providerConfig if not set
+  if (!this.providerConfig) {
+    this.providerConfig = createProviderConfig();
+  }
+  const providerConfig = this.providerConfig;
+
   const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
   const embeddingModelName = modelsArray[1]?.name;
@@ -377,11 +502,68 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
   fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi, preferences: newPreferences } as ISettingFile, { spaces: 2 });
 });
 
-async function clearAISettings() {
+async function clearAISettings(scenarioRoot?: string) {
+  const root = scenarioRoot || process.cwd();
+  const settingsPath = path.resolve(root, 'userData-test', 'settings', 'settings.json');
   if (!(await fs.pathExists(settingsPath))) return;
   const parsed = await fs.readJson(settingsPath) as ISettingFile;
   const cleaned = omit(parsed, ['aiSettings']);
   await fs.writeJson(settingsPath, cleaned, { spaces: 2 });
 }
+
+// Step to send ask AI with selection IPC message
+When('I send ask AI with selection message with text {string} and workspace {string}', async function(this: ApplicationWorld, selectionText: string, workspaceName: string) {
+  const currentWindow = await this.getWindow('main');
+  if (!currentWindow) {
+    throw new Error('Main window not found');
+  }
+
+  // Get workspace ID from workspace name
+  const workspaceId = await currentWindow.evaluate(async (name: string): Promise<string | undefined> => {
+    // Use a narrow type view of window.service to avoid coupling to preload internals.
+    const windowWithService = window as unknown as { service: { workspace: { getWorkspacesAsList: () => Promise<IWorkspace[]> } } };
+    const workspaces = await windowWithService.service.workspace.getWorkspacesAsList();
+    const workspace = workspaces.find((ws) => ws.name === name);
+    return workspace?.id;
+  }, workspaceName);
+
+  if (!workspaceId) {
+    throw new Error(`Workspace with name "${workspaceName}" not found`);
+  }
+
+  // Send IPC message to trigger "Talk with AI" through main process
+  // Use app.evaluate to access Electron main process API
+  if (!this.app) {
+    throw new Error('Electron app not found');
+  }
+
+  const sendResult = await this.app.evaluate(async ({ BrowserWindow }, { text, wsId }: { text: string; wsId: string }) => {
+    // Find main window - the first window is always the main window in TidGi
+    const allWindows = BrowserWindow.getAllWindows();
+    const mainWindow = allWindows[0]; // Main window is always the first window created
+
+    if (!mainWindow) {
+      return { success: false, error: 'No windows found', windowCount: allWindows.length };
+    }
+
+    const data = {
+      selectionText: text,
+      wikiUrl: `tidgi://${wsId}`,
+      workspaceId: wsId,
+    };
+
+    // Send IPC message to renderer
+    mainWindow.webContents.send('ask-ai-with-selection', data);
+
+    return { success: true };
+  }, { text: selectionText, wsId: workspaceId });
+
+  if (!sendResult.success) {
+    throw new Error(`Failed to send IPC message: ${sendResult.error || 'Unknown error'}`);
+  }
+
+  // Small delay to ensure IPC message is processed (cross-process communication needs time)
+  await new Promise(resolve => setTimeout(resolve, 200));
+});
 
 export { clearAISettings };

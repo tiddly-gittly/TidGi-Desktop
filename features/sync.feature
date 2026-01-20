@@ -25,17 +25,18 @@ Feature: Git Sync
     And I switch to "editWorkspace" window
     And I wait for the page to load completely
     When I click on "saveAndSyncOptions accordion and syncToCloud toggle" elements with selectors:
-      | [data-testid='preference-section-saveAndSyncOptions'] |
-      | [data-testid='synced-local-workspace-switch']         |
-    And I wait for 1 seconds
+      | element description         | selector                                              |
+      | saveAndSyncOptions accordion| [data-testid='preference-section-saveAndSyncOptions'] |
+      | syncToCloud toggle          | [data-testid='synced-local-workspace-switch']         |
     When I type in "git url input and github username input and github email input and github token input" elements with selectors:
-      | {tmpDir}/remote-repo-menu.git | label:has-text('Git仓库线上网址') + * input, label:has-text('Git Repo URL') + * input, input[aria-label='Git仓库线上网址'], input[aria-label='Git Repo URL'] |
-      | test-user                     | [data-testid='github-userName-input'] input                                                                                                                  |
-      | test@tidgi.test               | [data-testid='github-email-input'] input                                                                                                                     |
-      | test-token                    | [data-testid='github-token-input'] input                                                                                                                     |
+      | text                              | selector                                                                                                                                                     |
+      | {tmpDir}/remote-repo-menu.git     | label:has-text('Git仓库线上网址') + * input, label:has-text('Git Repo URL') + * input, input[aria-label='Git仓库线上网址'], input[aria-label='Git Repo URL'] |
+      | testuser                          | [data-testid='github-userName-input'] input                                                                                                                  |
+      | testuser@example.com              | [data-testid='github-email-input'] input                                                                                                                     |
+      | test-token-12345                  | [data-testid='github-token-input'] input                                                                                                                     |
     When I click on a "save workspace button" element with selector "[data-testid='edit-workspace-save-button']"
-    # Wait for workspace to be saved (workspace.update triggers a restart which takes time)
-    And I wait for 5 seconds
+    # Workspace update triggers a restart, need to wait for it to complete before continuing
+    Then I should not see a "save workspace button" element with selector "[data-testid='edit-workspace-save-button']"
     When I switch to "main" window
     # Create a new tiddler to trigger sync
     When I create file "{tmpDir}/wiki/tiddlers/SyncMenuTestTiddler.tid" with content:

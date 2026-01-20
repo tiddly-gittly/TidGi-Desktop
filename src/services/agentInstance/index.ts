@@ -1,3 +1,4 @@
+import { backOff } from 'exponential-backoff';
 import { inject, injectable } from 'inversify';
 import { debounce, pick } from 'lodash';
 import { nanoid } from 'nanoid';
@@ -125,13 +126,23 @@ export class AgentInstanceService implements IAgentInstanceService {
     this.ensureRepositories();
 
     try {
-      // Get agent definition
-      const agentDefinition = await this.agentDefinitionService.getAgentDef(agentDefinitionID);
-      if (!agentDefinition) {
-        throw new Error(`Agent definition not found: ${agentDefinitionID}`);
-      }
+      // Get agent definition with exponential backoff to handle initialization race conditions
+      // Uses exponential-backoff library for consistent retry behavior across the codebase
+      const agentDefinition = await backOff(
+        async () => {
+          const definition = await this.agentDefinitionService.getAgentDef(agentDefinitionID);
+          if (!definition) {
+            throw new Error(`Agent definition not found: ${agentDefinitionID}`);
+          }
+          return definition;
+        },
+        {
+          numOfAttempts: 3,
+          startingDelay: 300,
+          timeMultiple: 1.5,
+        },
+      );
 
-      // Create new agent instance using utility function
       // Ensure required fields exist before creating instance
       if (!agentDefinition.name) {
         throw new Error(`Agent definition missing required field 'name': ${agentDefinitionID}`);
@@ -144,9 +155,19 @@ export class AgentInstanceService implements IAgentInstanceService {
         instanceData.volatile = true;
       }
 
-      // Create and save entity
+      // Create and save entity with timeout protection
       const instanceEntity = this.agentInstanceRepository!.create(toDatabaseCompatibleInstance(instanceData));
-      await this.agentInstanceRepository!.save(instanceEntity);
+
+      // Add timeout to database save operation
+      const savePromise = this.agentInstanceRepository!.save(instanceEntity);
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Database save timeout after 5 seconds'));
+        }, 5000);
+      });
+
+      await Promise.race([savePromise, timeoutPromise]);
+
       logger.info('Created agent instance', {
         function: 'createAgent',
         instanceId,

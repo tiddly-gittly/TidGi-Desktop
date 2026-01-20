@@ -37,6 +37,12 @@
     "Cancel": "取消",
     "ConfigError": {
       "GoToSettings": "前往设置",
+      "MissingConfigError": "未配置 AI 提供商或模型。请在设置中进行配置。",
+      "MissingAPIKeyError": "未找到 {{provider}} 的 API 密钥。请在设置中添加。",
+      "MissingBaseURLError": "{{provider}} 提供商需要配置基础 URL。请在设置中进行配置。",
+      "AuthenticationFailed": "{{provider}} 身份验证失败。请在设置中检查您的 API 密钥。",
+      "ProviderNotFound": "未找到提供商 {{provider}}。请在设置中进行配置。",
+      "MissingProviderError": "提供商 {{provider}} 不可用。请在设置中进行配置。",
       "Title": "配置问题"
     },
     "InputPlaceholder": "输入消息，Ctrl+Enter 发送",
@@ -590,8 +596,13 @@
       "EditAgentDefinition": "编辑智能体",
       "NewTab": "新建标签页",
       "NewWeb": "新建网页",
-      "SplitView": "分屏展示"
+      "SplitView": "分屏展示",
+      "WikiEmbed": "Wiki"
     }
+  },
+  "WikiEmbed": {
+    "Error": "嵌入Wiki失败",
+    "Loading": "正在加载Wiki..."
   },
   "Tool": {
     "Git": {

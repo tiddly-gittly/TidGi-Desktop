@@ -104,6 +104,7 @@ useEffect(() => {
 **File**: `src/pages/Agent/store/agentChatStore/PromptPreviewStore.ts`
 
 The store maintains:
+
 - Expansion state for all array fields
 - Navigation path queue
 - Helper functions to expand/collapse items

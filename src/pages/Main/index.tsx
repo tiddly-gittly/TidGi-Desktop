@@ -10,6 +10,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { ContentLoading } from './ContentLoading';
 import FindInPage from './FindInPage';
 import { SideBar } from './Sidebar';
+import { useAskAIWithSelection } from './useAskAIWithSelection';
 import { useInitialPage } from './useInitialPage';
 
 import { subPages } from './subPages';
@@ -65,6 +66,7 @@ const ContentRoot = styled('div')<{ $sidebar: boolean }>(
 export default function Main(): React.JSX.Element {
   const { t } = useTranslation();
   useInitialPage();
+  useAskAIWithSelection();
   const windowName = window.meta().windowName;
   const preferences = usePreferenceObservable();
   const isTidgiMiniWindow = windowName === WindowNames.tidgiMiniWindow;

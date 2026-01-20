@@ -15,8 +15,9 @@ Feature: Sub-Wiki Functionality
     When I launch the TidGi application
     And I wait for the page to load completely
     Then I should see "page body and workspaces" elements with selectors:
-      | div[data-testid^='workspace-']:has-text('wiki')    |
-      | div[data-testid^='workspace-']:has-text('SubWiki') |
+      | element description | selector                                           |
+      | wiki workspace      | div[data-testid^='workspace-']:has-text('wiki')    |
+      | SubWiki workspace   | div[data-testid^='workspace-']:has-text('SubWiki') |
     # Enable file system watch for testing (default is false in production)
     When I update workspace "wiki" settings:
       | property              | value |
@@ -26,8 +27,7 @@ Feature: Sub-Wiki Functionality
     And I wait for SSE and watch-fs to be ready
     # Create tiddler with tag to test routing to sub-wiki folder
     When I create a tiddler "TestTiddlerTitle" with tag "TestTag" in browser view
-    And I wait for 3 seconds for "tiddler to be saved and routed to sub-wiki"
-    # Verify the tiddler file exists in sub-wiki folder after save
+    # File check will automatically wait for the file to exist
     Then file "TestTiddlerTitle.tid" should exist in "{tmpDir}/SubWiki"
     # Verify tiddler is NOT in main wiki tiddlers folder
     Then file "TestTiddlerTitle.tid" should not exist in "{tmpDir}/wiki/tiddlers"
@@ -38,9 +38,9 @@ Feature: Sub-Wiki Functionality
     Then I should see "Main wiki content modified after SubWiki creation" in the browser view content
     # Test modification in sub-wiki folder
     When I modify file "{tmpDir}/SubWiki/TestTiddlerTitle.tid" to contain "Content modified in SubWiki folder"
-    And I wait for 2 seconds for "watch-fs to detect file change in sub-wiki"
+    Then I wait for tiddler "TestTiddlerTitle" to be updated by watch-fs
     When I open tiddler "TestTiddlerTitle" in browser view
-    And I wait for 1 seconds
+    # Content check will automatically wait for the content to appear
     Then I should see "Content modified in SubWiki folder" in the browser view content
 
   @subwiki @subwiki-load
@@ -54,8 +54,9 @@ Feature: Sub-Wiki Functionality
     When I launch the TidGi application
     And I wait for the page to load completely
     Then I should see "page body and workspaces" elements with selectors:
-      | div[data-testid^='workspace-']:has-text('wiki')           |
-      | div[data-testid^='workspace-']:has-text('SubWikiPreload') |
+      | element description      | selector                                                  |
+      | wiki workspace           | div[data-testid^='workspace-']:has-text('wiki')           |
+      | SubWikiPreload workspace | div[data-testid^='workspace-']:has-text('SubWikiPreload') |
     # Enable file system watch for testing (default is false in production)
     When I update workspace "wiki" settings:
       | property              | value |
@@ -65,8 +66,7 @@ Feature: Sub-Wiki Functionality
     And I wait for SSE and watch-fs to be ready
     # Open the tiddler directly using TiddlyWiki API
     When I open tiddler "PreExistingTiddler" in browser view
-    And I wait for 0.5 seconds
-    # Verify the tiddler content is displayed
+    # Content check will automatically wait for the content to appear
     Then I should see "Content from pre-existing sub-wiki tiddler" in the browser view content
     # Verify the tiddler has the correct tag
     Then I should see a "PreloadTag tag" element in browser view with selector "[data-tiddler-title='PreExistingTiddler'] [data-tag-title='PreloadTag']"
@@ -86,8 +86,9 @@ Feature: Sub-Wiki Functionality
     When I launch the TidGi application
     And I wait for the page to load completely
     Then I should see "page body and workspaces" elements with selectors:
-      | div[data-testid^='workspace-']:has-text('wiki')           |
-      | div[data-testid^='workspace-']:has-text('SubWikiTagTree') |
+      | element description       | selector                                                   |
+      | wiki workspace            | div[data-testid^='workspace-']:has-text('wiki')            |
+      | SubWikiTagTree workspace  | div[data-testid^='workspace-']:has-text('SubWikiTagTree')  |
     # Enable file system watch for testing (default is false in production)
     When I update workspace "wiki" settings:
       | property              | value |
@@ -97,15 +98,12 @@ Feature: Sub-Wiki Functionality
     And I wait for SSE and watch-fs to be ready
     # Verify TiddlerA and TiddlerB were loaded from sub-wiki by opening them
     When I open tiddler "TiddlerA" in browser view
-    And I wait for 0.5 seconds
     Then I should see "TiddlerA with TagTreeRoot tag" in the browser view content
     When I open tiddler "TiddlerB" in browser view
-    And I wait for 0.5 seconds
     Then I should see "TiddlerB with TiddlerA tag" in the browser view content
     # Create TiddlerC with tag TiddlerB (testing tag tree routing: TiddlerC -> TiddlerB -> TiddlerA -> TagTreeRoot)
     When I create a tiddler "TiddlerC" with tag "TiddlerB" in browser view
-    And I wait for 3 seconds for "TiddlerC to be saved via tag tree routing"
-    # Verify TiddlerC is saved to sub-wiki via tag tree (TiddlerB -> TiddlerA -> TagTreeRoot)
+    # File check will automatically wait for the file to exist
     Then file "TiddlerC.tid" should exist in "{tmpDir}/SubWikiTagTree"
     Then file "TiddlerC.tid" should not exist in "{tmpDir}/wiki/tiddlers"
 
@@ -119,8 +117,9 @@ Feature: Sub-Wiki Functionality
     When I launch the TidGi application
     And I wait for the page to load completely
     Then I should see "page body and workspaces" elements with selectors:
-      | div[data-testid^='workspace-']:has-text('wiki')          |
-      | div[data-testid^='workspace-']:has-text('SubWikiFilter') |
+      | element description      | selector                                                 |
+      | wiki workspace           | div[data-testid^='workspace-']:has-text('wiki')          |
+      | SubWikiFilter workspace  | div[data-testid^='workspace-']:has-text('SubWikiFilter') |
     # Enable file system watch for testing (default is false in production)
     When I update workspace "wiki" settings:
       | property              | value |
@@ -130,8 +129,7 @@ Feature: Sub-Wiki Functionality
     And I wait for SSE and watch-fs to be ready
     # Create a tiddler with the "filtertest" field to test filter routing
     When I create a tiddler "FilterMatchTiddler" with field "filtertest" set to "yes" in browser view
-    And I wait for 3 seconds for "FilterMatchTiddler to be saved via filter routing"
-    # Verify FilterMatchTiddler is saved to sub-wiki via filter
+    # File check will automatically wait for the file to exist
     Then file "FilterMatchTiddler.tid" should exist in "{tmpDir}/SubWikiFilter"
     Then file "FilterMatchTiddler.tid" should not exist in "{tmpDir}/wiki/tiddlers"
 
@@ -145,24 +143,24 @@ Feature: Sub-Wiki Functionality
     When I launch the TidGi application
     And I wait for the page to load completely
     Then I should see "page body and workspaces" elements with selectors:
-      | div[data-testid^='workspace-']:has-text('wiki')            |
-      | div[data-testid^='workspace-']:has-text('SubWikiSettings') |
+      | element description        | selector                                                   |
+      | wiki workspace             | div[data-testid^='workspace-']:has-text('wiki')            |
+      | SubWikiSettings workspace  | div[data-testid^='workspace-']:has-text('SubWikiSettings') |
     # Open the edit workspace window using existing step
     When I open edit workspace window for workspace with name "SubWikiSettings"
     And I switch to "editWorkspace" window
     And I wait for the page to load completely
-    And I wait for 1 seconds for "page to fully render"
-    # For sub-wikis, the accordion is defaultExpanded, so we should see the switch immediately
-    Then I should see a "sub-workspace options accordion" element with selector "[data-testid='preference-section-subWorkspaceOptions']"
-    # The includeTagTree switch should be visible for sub-wikis (accordion is already expanded)
-    Then I should see a "includeTagTree switch" element with selector "[data-testid='include-tag-tree-switch']"
-    # Enable includeTagTree option
-    When I click on a "includeTagTree switch" element with selector "[data-testid='include-tag-tree-switch']"
-    And I wait for 0.5 seconds
-    # Save the changes by clicking the save button
-    When I click on a "save button" element with selector "[data-testid='edit-workspace-save-button']"
+    # For sub-wikis, the accordion is defaultExpanded
+    Then I should see "sub-workspace options accordion and includeTagTree switch" elements with selectors:
+      | element description            | selector                                           |
+      | sub-workspace options accordion| [data-testid='preference-section-subWorkspaceOptions'] |
+      | includeTagTree switch          | [data-testid='include-tag-tree-switch']            |
+    # Enable includeTagTree option and save
+    When I click on "includeTagTree switch and save button" elements with selectors:
+      | element description     | selector                                           |
+      | includeTagTree switch   | [data-testid='include-tag-tree-switch']            |
+      | save button             | [data-testid='edit-workspace-save-button']         |
     Then I should not see a "save button" element with selector "[data-testid='edit-workspace-save-button']"
-    And I wait for 0.5 seconds for "settings to be written"
     # Verify the setting was saved to settings.json
     Then settings.json should have workspace "SubWikiSettings" with "includeTagTree" set to "true"
 
@@ -183,8 +181,8 @@ Feature: Sub-Wiki Functionality
     # Create sub-workspace via UI
     When I click on an "add workspace button" element with selector "#add-workspace-button"
     And I switch to "addWorkspace" window
-    # Toggle to sub-workspace mode by clicking the switch
-    And I click on a "main/sub workspace switch" element with selector "[data-testid='main-sub-workspace-switch']"
+    # Toggle to sub-workspace mode
+    When I click on a "main/sub workspace switch" element with selector "[data-testid='main-sub-workspace-switch']"
     # Select the first (default) wiki workspace from dropdown
     And I select "wiki" from MUI Select with test id "main-wiki-select"
     # Type folder name
@@ -196,10 +194,12 @@ Feature: Sub-Wiki Functionality
     And I switch to "main" window
     Then I should see a "SubWikiUI workspace" element with selector "div[data-testid^='workspace-']:has-text('SubWikiUI')"
     # Wait for main wiki to restart after sub-wiki creation
-    Then I wait for "main wiki restarted after sub-wiki creation" log marker "[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI]"
-    And I wait for "watch-fs stabilized after restart" log marker "[test-id-WATCH_FS_STABILIZED]"
-    And I wait for "SSE ready after restart" log marker "[test-id-SSE_READY]"
-    Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
+    Then I wait for log markers:
+      | description                                | marker                                        |
+      | main wiki restarted after sub-wiki creation| [test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI]  |
+      | watch-fs stabilized after restart          | [test-id-WATCH_FS_STABILIZED]                 |
+      | SSE ready after restart                    | [test-id-SSE_READY]                           |
+      | view loaded                                | [test-id-VIEW_LOADED]                         |
     # Wait for TiddlyWiki to fully render the page (site title appears)
     Then I wait for "site title" element in browser view with selector "h1.tc-site-title"
     # Click SubWikiUI workspace to see the missing tag tiddler message

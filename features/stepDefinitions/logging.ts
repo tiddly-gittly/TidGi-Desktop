@@ -2,11 +2,14 @@ import { After, DataTable, Then, When } from '@cucumber/cucumber';
 import fs from 'fs';
 import path from 'path';
 import { MockOAuthServer } from '../supports/mockOAuthServer';
-import { logsDirectory } from '../supports/paths';
 import { ApplicationWorld } from './application';
 
 Then('I should find log entries containing', async function(this: ApplicationWorld, dataTable: DataTable | undefined) {
   const expectedRows = dataTable?.raw().map((r: string[]) => r[0]);
+
+  // Use scenario-specific logs directory
+  const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);
+  const logsDirectory = path.resolve(scenarioRoot, 'userData-test', 'logs');
 
   // Consider all log files in logs directory (including wiki logs like wiki-2025-10-25.log)
   const files = fs.readdirSync(logsDirectory).filter((f) => f.endsWith('.log'));

@@ -92,6 +92,8 @@
   "ContextMenu": {
     "About": "О программе",
     "AddToDictionary": "Добавить в словарь",
+    "TalkWithAI": "Поговорить с ИИ",
+    "TalkWithAIMore": "Поговорить с агентом…",
     "Back": "Назад←",
     "BackupNow": "Резервное копирование на локальный Git",
     "Copy": "Копировать",

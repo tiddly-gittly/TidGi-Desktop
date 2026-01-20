@@ -107,8 +107,6 @@ interface IUseCommitSelectionProps {
   setSearchParams: (parameters: ISearchParameters) => void;
   setCurrentSearchParameters: (parameters: ISearchParameters) => void;
   setSelectedFile: (value: string | null) => void;
-  /** Manually trigger data refresh - fallback when observable doesn't work */
-  triggerRefresh: () => void;
 }
 
 export function useCommitSelection({
@@ -122,7 +120,6 @@ export function useCommitSelection({
   setSearchParams,
   setCurrentSearchParameters,
   setSelectedFile,
-  triggerRefresh,
 }: IUseCommitSelectionProps): IUseCommitSelectionReturn {
   // Track if we've already processed the current change type
   const lastProcessedChangeReference = useRef<string | null>(null);
@@ -220,26 +217,26 @@ export function useCommitSelection({
     // Don't set shouldSelectFirst - let the maintain selection logic handle it
     // The uncommitted changes will disappear and it will auto-select the new commit
     void window.service.native.log('debug', '[test-id-commit-success-handler]', {});
-    // Manually trigger refresh as fallback when observable subscription doesn't work
-    triggerRefresh();
-  }, [triggerRefresh]);
+    // No need to manually trigger refresh - gitStateChange$ observable already handles it
+    // triggerRefresh(); // Removed: causes race condition with observable-triggered refresh
+  }, []);
 
   const handleRevertSuccess = useCallback(() => {
     // After revert, select the new revert commit (first non-uncommitted)
     void window.service.native.log('debug', '[test-id-revert-success-handler]', {});
     setLastChangeType('revert');
-    // Manually trigger refresh as fallback when observable subscription doesn't work
-    triggerRefresh();
-  }, [setLastChangeType, triggerRefresh]);
+    // No need to manually trigger refresh - gitStateChange$ observable already handles it
+    // triggerRefresh(); // Removed: causes race condition with observable-triggered refresh
+  }, [setLastChangeType]);
 
   const handleUndoSuccess = useCallback(() => {
     // After undo, we want to select uncommitted changes
     // Set a special flag that will be handled by the effect above
     // Using lastChangeType 'undo' will trigger the selection logic
     setLastChangeType('undo');
-    // Manually trigger refresh as fallback when observable subscription doesn't work
-    triggerRefresh();
-  }, [setLastChangeType, triggerRefresh]);
+    // No need to manually trigger refresh - gitStateChange$ observable already handles it
+    // triggerRefresh(); // Removed: causes race condition with observable-triggered refresh
+  }, [setLastChangeType]);
 
   const handleSearch = useCallback(
     (parameters: ISearchParameters) => {

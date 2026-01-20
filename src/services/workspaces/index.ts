@@ -192,7 +192,7 @@ export class Workspace implements IWorkspaceService {
     return this.workspaces$.pipe(map((workspaces) => workspaces?.[id]));
   }
 
-  public async set(id: string, workspace: IWorkspace, immediate?: boolean): Promise<void> {
+  public async set(id: string, workspace: IWorkspace, immediate?: boolean, skipUiUpdate = false): Promise<void> {
     const workspaces = this.getWorkspacesSync();
     const workspaceToSave = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspaceToSave);
@@ -200,24 +200,43 @@ export class Workspace implements IWorkspaceService {
     // Update memory cache with full workspace data (including syncable fields)
     workspaces[id] = workspaceToSave;
 
-    // Save to settings.json - remove syncable fields from ALL wiki workspaces
+    // Write syncable config to tidgi.config.json ONLY for the workspace being modified
+    // This avoids redundant writes to all workspaces on every single update
+    if (isWikiWorkspace(workspaceToSave)) {
+      try {
+        const syncableConfig = extractSyncableConfig(workspaceToSave);
+        await writeTidgiConfig(workspaceToSave.wikiFolderLocation, syncableConfig);
+      } catch (error) {
+        logger.warn('Failed to write tidgi.config.json', {
+          workspaceId: id,
+          error: (error as Error).message,
+        });
+      }
+    }
+
+    // Save to settings.json - remove syncable fields from wiki workspaces
     // They are stored in tidgi.config.json in the wiki folder
-    // Also ensure tidgi.config.json exists for each wiki workspace before removing fields
+    await this.saveWorkspacesToSettings(immediate);
+
+    // update subject so ui can react to it (can be skipped for batch operations)
+    if (!skipUiUpdate) {
+      this.updateWorkspaceSubject();
+      // menu is mostly invisible, so we don't need to update it immediately
+      void this.updateWorkspaceMenuItems();
+    }
+  }
+
+  /**
+   * Save all workspaces to settings.json, removing syncable fields from wiki workspaces
+   * @param immediate Whether to immediately flush to disk
+   */
+  private async saveWorkspacesToSettings(immediate?: boolean): Promise<void> {
+    const workspaces = this.getWorkspacesSync();
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const workspacesForSettings: Record<string, IWorkspace> = {};
+
     for (const [key, ws] of Object.entries(workspaces)) {
       if (isWikiWorkspace(ws)) {
-        // Write syncable config to tidgi.config.json for ALL wiki workspaces
-        // This ensures config is not lost when removing from settings.json
-        try {
-          const syncableConfig = extractSyncableConfig(ws);
-          await writeTidgiConfig(ws.wikiFolderLocation, syncableConfig);
-        } catch (error) {
-          logger.warn('Failed to write tidgi.config.json', {
-            workspaceId: key,
-            error: (error as Error).message,
-          });
-        }
         // Remove syncable fields from wiki workspaces (they are in tidgi.config.json)
         workspacesForSettings[key] = removeSyncableFields(ws) as IWorkspace;
       } else {
@@ -225,15 +244,11 @@ export class Workspace implements IWorkspaceService {
         workspacesForSettings[key] = ws;
       }
     }
+
     databaseService.setSetting('workspaces', workspacesForSettings);
     if (immediate === true) {
       await databaseService.immediatelyStoreSettingsToFile();
     }
-
-    // update subject so ui can react to it
-    this.updateWorkspaceSubject();
-    // menu is mostly invisible, so we don't need to update it immediately
-    void this.updateWorkspaceMenuItems();
   }
 
   public async update(id: string, workspaceSetting: Partial<IWorkspace>, immediate?: boolean): Promise<void> {
@@ -246,8 +261,13 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void> {
-    for (const id in newWorkspaces) {
-      await this.set(id, newWorkspaces[id]);
+    // Process all workspaces without triggering UI updates for each one
+    const ids = Object.keys(newWorkspaces);
+    for (let index = 0; index < ids.length; index++) {
+      const id = ids[index];
+      const isLast = index === ids.length - 1;
+      // Skip UI update for all but the last workspace
+      await this.set(id, newWorkspaces[id], false, !isLast);
     }
   }
 
@@ -322,16 +342,15 @@ export class Workspace implements IWorkspaceService {
       }
     }
     // Migrate old tagName (string) to tagNames (string[])
-
     const legacyTagName = (workspaceWithSyncedConfig as { tagName?: string | null }).tagName;
     if (legacyTagName && (!workspaceWithSyncedConfig.tagNames || workspaceWithSyncedConfig.tagNames.length === 0)) {
       fixingValues.tagNames = [legacyTagName.replaceAll('\n', '')];
     }
     // before 0.8.0, tidgi was loading http content, so lastUrl will be http protocol, but later we switch to tidgi:// protocol, so old value can't be used.
-    if (!workspaceWithSyncedConfig.lastUrl?.startsWith('tidgi')) {
+    if (workspaceWithSyncedConfig.lastUrl && !workspaceWithSyncedConfig.lastUrl.startsWith('tidgi')) {
       fixingValues.lastUrl = null;
     }
-    if (!workspaceWithSyncedConfig.homeUrl.startsWith('tidgi')) {
+    if (workspaceWithSyncedConfig.homeUrl && !workspaceWithSyncedConfig.homeUrl.startsWith('tidgi')) {
       fixingValues.homeUrl = getDefaultTidGiUrl(workspaceWithSyncedConfig.id);
     }
     if (workspaceWithSyncedConfig.tokenAuth && !workspaceWithSyncedConfig.authToken) {
@@ -510,10 +529,10 @@ export class Workspace implements IWorkspaceService {
     const workspaces = this.getWorkspacesSync();
     if (id in workspaces) {
       delete workspaces[id];
-      const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-      databaseService.setSetting('workspaces', workspaces);
+      // Use saveWorkspacesToSettings to ensure syncable fields are properly removed
+      await this.saveWorkspacesToSettings(false);
     } else {
-      throw new Error(`Try to remote workspace, but id ${id} is not existed`);
+      throw new Error(`Try to remove workspace, but id ${id} does not exist`);
     }
     this.updateWorkspaceSubject();
     void this.updateWorkspaceMenuItems();

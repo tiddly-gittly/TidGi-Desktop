@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 import { nanoid } from 'nanoid';
 import { StateCreator } from 'zustand';
-import { IChatTab, ICreateNewAgentTab, IEditAgentDefinitionTab, INewTab, ISplitViewTab, IWebTab, TabItem, TabState, TabType } from '../../../types/tab';
+import { IChatTab, ICreateNewAgentTab, IEditAgentDefinitionTab, INewTab, ISplitViewTab, IWebTab, IWikiEmbedTab, TabItem, TabState, TabType } from '../../../types/tab';
 import { TabsState } from '../types';
 
 /**
@@ -31,16 +31,38 @@ export const createBasicActions = (): Pick<
 
     // For chat tab type, we need to create an agent instance first
     if (tabType === TabType.CHAT) {
-      const agent = await window.service.agentInstance.createAgent(
-        (dataWithoutPosition as Partial<IChatTab>).agentDefId,
-      );
+      const chatData = dataWithoutPosition as Partial<IChatTab>;
+
+      // Add timeout to agent creation to prevent hanging
+      const createAgentWithTimeout = async () => {
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('Agent creation timeout after 8 seconds'));
+          }, 8000);
+        });
+
+        const createPromise = window.service.agentInstance.createAgent(chatData.agentDefId);
+
+        return Promise.race([createPromise, timeoutPromise]);
+      };
+
+      const agent = await createAgentWithTimeout();
+
       newTab = {
         ...tabBase,
         type: TabType.CHAT,
         title: dataWithoutPosition.title || agent.name,
         agentDefId: agent.agentDefId,
         agentId: agent.id,
+        initialMessage: chatData.initialMessage,
       } as IChatTab;
+      // If there's an initial message, send it to the agent after creation
+      if (chatData.initialMessage && agent.id) {
+        // Use setTimeout to ensure the tab is fully created before sending message
+        setTimeout(() => {
+          void window.service.agentInstance.sendMsgToAgent(agent.id, { text: chatData.initialMessage! });
+        }, 100);
+      }
     } else if (tabType === TabType.CREATE_NEW_AGENT) {
       newTab = {
         ...tabBase,
@@ -75,6 +97,15 @@ export const createBasicActions = (): Pick<
         childTabs: splitViewData.childTabs ? [...splitViewData.childTabs] : [],
         splitRatio: splitViewData.splitRatio ?? 50,
       } as ISplitViewTab;
+    } else if (tabType === TabType.WIKI_EMBED) {
+      // Handle WIKI_EMBED type for embedding wiki BrowserView in split view
+      const wikiEmbedData = dataWithoutPosition as Partial<IWikiEmbedTab>;
+      newTab = {
+        ...tabBase,
+        type: TabType.WIKI_EMBED,
+        title: dataWithoutPosition.title || i18next.t('Tab.Title.WikiEmbed'),
+        workspaceId: wikiEmbedData.workspaceId || '',
+      } as IWikiEmbedTab;
     } else {
       newTab = {
         ...tabBase,

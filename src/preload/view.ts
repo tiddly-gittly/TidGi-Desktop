@@ -3,7 +3,6 @@ import '../services/wiki/wikiOperations/executor/wikiOperationInBrowser';
 import type { IPossibleWindowMeta, WindowMeta } from '@services/windows/WindowProperties';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData, windowName } from './common/browserViewMetaData';
-import { native } from './common/services';
 import { consoleLogToLogFile } from './fixer/consoleLogToLogFile';
 
 let handled = false;
@@ -25,8 +24,8 @@ async function executeJavaScriptInBrowserView(): Promise<void> {
   await consoleLogToLogFile(workspaceName);
   const workspaceID = viewMetaData.workspace?.id;
 
-  // Log when view is fully loaded for E2E tests
-  void native.logFor(workspaceName, 'debug', `[test-id-VIEW_LOADED] Browser view preload script executed and ready for workspace: ${workspaceName}`);
+  // Note: VIEW_LOADED is now logged in main process via did-finish-load event
+  // which is more reliable than IPC calls from preload script
 
   try {
     await webFrame.executeJavaScript(`

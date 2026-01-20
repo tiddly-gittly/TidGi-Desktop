@@ -126,7 +126,7 @@ export const SplitViewTabContent: React.FC<SplitViewTabContentProps> = ({ tab })
 
   return (
     <Container>
-      <SplitViewContainer ref={containerReference} $splitRatio={splitRatio}>
+      <SplitViewContainer ref={containerReference} $splitRatio={splitRatio} data-testid='split-view-container'>
         {childTabs[0] && (
           <SplitViewPane>
             <TabContentView key={childTabs[0].id} tab={childTabs[0]} isSplitView={true} />

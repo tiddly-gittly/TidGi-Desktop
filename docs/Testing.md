@@ -27,7 +27,7 @@ pnpm test:unit -- --coverage
 # Run a single test file to reduce execution time when fixing an issue.
 pnpm test:unit src/services/agentDefinition/__tests__/responsePatternUtility.test.ts
 
-# Start packed e2e electron app manually to see what's going on as a human (AI agent is not allowed to run this)
+# Start packed e2e electron app manually to see what's going on as a human (AI agent is not allowed to run this, can only run commands above)
 cross-env NODE_ENV=test pnpm dlx tsx ./scripts/start-e2e-app.ts
 ```
 
@@ -235,14 +235,14 @@ When('(Dont do this) I click on a specific button and wait for 2 seconds.', asyn
 5. Streaming Support: Special handling for real-time updates in chat interfaces
 6. **Don't think about adding new step definitions** or **change timeout duration**, unless human ask you to do. You should always reuse existing steps, and debug the fundamental reason that causes timeout. Timeout usually because of expected element not percent.
 7. If you forget to run `pnpm run test:prepare-e2e` after modify code in `./src` folder, you may find expected elements missing.
-8. Usually don't need to add wait time, because most check already will wait for a while. Even add wait, can't be more than 0.2s.
+8. Usually don't need to add wait time, because most check already will wait for a while. Should use exact test-id to wait internal steps, and test-id should contribute larger than 2 second waiting, otherwise it is useless.
 
 ## Testing Library Best Practices
 
 **Important Testing Rules:**
 
 - **Do NOT simplify tests** - write comprehensive, professional unit tests
-- **Can add test-ids** when accessibility queries aren't practical  
+- **Can add test-ids** when accessibility queries aren't practical
 - **Do NOT be lazy** - fix ALL tests until `pnpm test:unit` passes completely
 - **Do NOT summarize** until ALL unit tests pass
 - **Focus on professional, fix all seemly complex unit tests** before moving to E2E

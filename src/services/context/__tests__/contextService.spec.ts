@@ -19,9 +19,12 @@ describe('ContextService exposes constants from paths/appPaths', () => {
   it('should expose all keys exported from src/constants/appPaths.ts', async () => {
     const keys = Object.keys(appPaths) as Array<keyof typeof appPaths>;
     for (const k of keys) {
+      // Skip TEST_SCENARIO_SLUG as it's an optional runtime value that can be undefined
+      if (k === 'TEST_SCENARIO_SLUG') continue;
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const value = await svc.get(k as any);
-      expect(value).toBeDefined();
+      expect(value, `Key "${k}" should be defined in ContextService`).toBeDefined();
     }
   });
 });

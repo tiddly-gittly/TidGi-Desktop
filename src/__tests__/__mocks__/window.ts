@@ -26,6 +26,8 @@ Object.defineProperty(window, 'remote', {
     unregisterOpenFindInPage: vi.fn(),
     unregisterCloseFindInPage: vi.fn(),
     unregisterUpdateFindInPageMatches: vi.fn(),
+    registerAskAIWithSelection: vi.fn(),
+    unregisterAskAIWithSelection: vi.fn(),
   },
 });
 

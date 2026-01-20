@@ -92,6 +92,8 @@
   "ContextMenu": {
     "About": "关于",
     "AddToDictionary": "添加到字典",
+    "TalkWithAI": "和 AI 讨论",
+    "TalkWithAIMore": "和智能体讨论…",
     "Back": "后退←",
     "BackupNow": "立即本地Git备份",
     "Copy": "复制",

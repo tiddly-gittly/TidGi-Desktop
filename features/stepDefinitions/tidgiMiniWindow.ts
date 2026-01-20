@@ -3,9 +3,11 @@ import fs from 'fs-extra';
 import { omit } from 'lodash';
 import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
-import { settingsPath } from '../supports/paths';
+import { getSettingsPath } from '../supports/paths';
+import type { ApplicationWorld } from './application';
 
-Given('I configure tidgi mini window with shortcut', async function() {
+Given('I configure tidgi mini window with shortcut', async function(this: ApplicationWorld) {
+  const settingsPath = getSettingsPath(this);
   let existing = {} as ISettingFile;
   if (await fs.pathExists(settingsPath)) {
     existing = await fs.readJson(settingsPath) as ISettingFile;
@@ -37,7 +39,9 @@ Given('I configure tidgi mini window with shortcut', async function() {
 });
 
 // Cleanup function to be called after tidgi mini window tests (after app closes)
-async function clearTidgiMiniWindowSettings() {
+async function clearTidgiMiniWindowSettings(scenarioRoot?: string) {
+  const root = scenarioRoot || process.cwd();
+  const settingsPath = path.resolve(root, 'userData-test', 'settings', 'settings.json');
   if (!(await fs.pathExists(settingsPath))) return;
   const parsed = await fs.readJson(settingsPath) as ISettingFile;
   // Remove tidgi mini window-related preferences to avoid affecting other tests

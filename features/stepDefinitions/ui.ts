@@ -1,5 +1,6 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
-import { wikiTestRootPath } from '../supports/paths';
+import { parseDataTableRows } from '../supports/dataTable';
+import { getWikiTestRootPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
 
 When('I wait for {float} seconds', async function(seconds: number) {
@@ -32,23 +33,22 @@ Then('I should see a(n) {string} element with selector {string}', async function
   }
 });
 
-Then('I should see {string} elements with selectors:', async function(this: ApplicationWorld, elementDescriptions: string, dataTable: DataTable) {
+Then('I should see {string} elements with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
   const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
   }
 
-  const descriptions = elementDescriptions.split(' and ').map(d => d.trim());
   const rows = dataTable.raw();
+  const dataRows = parseDataTableRows(rows, 2);
   const errors: string[] = [];
 
-  if (descriptions.length !== rows.length) {
-    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${rows.length} selectors provided`);
+  if (dataRows[0]?.length !== 2) {
+    throw new Error('Table must have exactly 2 columns: | element description | selector |');
   }
 
   // Check all elements in parallel for better performance
-  await Promise.all(rows.map(async ([selector], index) => {
-    const elementComment = descriptions[index];
+  await Promise.all(dataRows.map(async ([elementComment, selector]) => {
     try {
       await currentWindow.waitForSelector(selector, { timeout: 10000 });
       const isVisible = await currentWindow.isVisible(selector);
@@ -100,24 +100,22 @@ Then('I should not see a(n) {string} element with selector {string}', async func
   }
 });
 
-Then('I should not see {string} elements with selectors:', async function(this: ApplicationWorld, elementDescriptions: string, dataTable: DataTable) {
+Then('I should not see {string} elements with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
   const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
   }
 
-  const descriptions = elementDescriptions.split(' and ').map(d => d.trim());
   const rows = dataTable.raw();
+  const dataRows = parseDataTableRows(rows, 2);
   const errors: string[] = [];
 
-  if (descriptions.length !== rows.length) {
-    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${rows.length} selectors provided`);
+  if (dataRows[0]?.length !== 2) {
+    throw new Error('Table must have exactly 2 columns: | element description | selector |');
   }
 
   // Check all elements
-  for (let index = 0; index < rows.length; index++) {
-    const [selector] = rows[index];
-    const elementComment = descriptions[index];
+  for (const [elementComment, selector] of dataRows) {
     try {
       const element = currentWindow.locator(selector).first();
       const count = await element.count();
@@ -161,25 +159,23 @@ When('I click on a(n) {string} element with selector {string}', async function(t
   }
 });
 
-When('I click on {string} elements with selectors:', async function(this: ApplicationWorld, elementDescriptions: string, dataTable: DataTable) {
+When('I click on {string} elements with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
   const targetWindow = await this.getWindow('current');
 
   if (!targetWindow) {
     throw new Error('Window "current" is not available');
   }
 
-  const descriptions = elementDescriptions.split(' and ').map(d => d.trim());
   const rows = dataTable.raw();
+  const dataRows = parseDataTableRows(rows, 2);
   const errors: string[] = [];
 
-  if (descriptions.length !== rows.length) {
-    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${rows.length} selectors provided`);
+  if (dataRows[0]?.length !== 2) {
+    throw new Error('Table must have exactly 2 columns: | element description | selector |');
   }
 
   // Click elements sequentially (not in parallel) to maintain order and avoid race conditions
-  for (let index = 0; index < rows.length; index++) {
-    const [selector] = rows[index];
-    const elementComment = descriptions[index];
+  for (const [elementComment, selector] of dataRows) {
     try {
       await targetWindow.waitForSelector(selector, { timeout: 10000 });
       const isVisible = await targetWindow.isVisible(selector);
@@ -245,7 +241,7 @@ When('I type {string} in {string} element with selector {string}', async functio
   }
 
   // Replace {tmpDir} placeholder with actual test root path
-  const actualText = text.replace('{tmpDir}', wikiTestRootPath);
+  const actualText = text.replace('{tmpDir}', getWikiTestRootPath(this));
 
   try {
     await currentWindow.waitForSelector(selector, { timeout: 10000 });
@@ -264,19 +260,20 @@ When('I type in {string} elements with selectors:', async function(this: Applica
 
   const descriptions = elementDescriptions.split(' and ').map(d => d.trim());
   const rows = dataTable.raw();
+  const dataRows = parseDataTableRows(rows, 2);
   const errors: string[] = [];
 
-  if (descriptions.length !== rows.length) {
-    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${rows.length} text/selector pairs provided`);
+  if (descriptions.length !== dataRows.length) {
+    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${dataRows.length} text/selector pairs provided`);
   }
 
   // Type in elements sequentially to maintain order
-  for (let index = 0; index < rows.length; index++) {
-    const [text, selector] = rows[index];
+  for (let index = 0; index < dataRows.length; index++) {
+    const [text, selector] = dataRows[index];
     const elementComment = descriptions[index];
 
     // Replace {tmpDir} placeholder with actual test root path
-    const actualText = text.replace('{tmpDir}', wikiTestRootPath);
+    const actualText = text.replace('{tmpDir}', getWikiTestRootPath(this));
 
     try {
       await currentWindow.waitForSelector(selector, { timeout: 10000 });

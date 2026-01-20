@@ -16,6 +16,7 @@ export const useAgentChatStore = create<AgentChatStoreType>()((set, get, api) =>
     messages: new Map(),
     orderedMessageIds: [],
     streamingMessageIds: new Set<string>(),
+    isCancelling: false,
 
     // Preview dialog state
     previewDialogOpen: false,

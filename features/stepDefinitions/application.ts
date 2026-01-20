@@ -1,4 +1,4 @@
-import { AfterStep, setDefaultTimeout, setWorldConstructor, When } from '@cucumber/cucumber';
+import { AfterStep, setWorldConstructor, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
@@ -7,9 +7,37 @@ import type { ElectronApplication, Page } from 'playwright';
 import { windowDimension, WindowNames } from '../../src/services/windows/WindowProperties';
 import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
-import { makeSlugPath, screenshotsDirectory } from '../supports/paths';
-import { getPackedAppPath } from '../supports/paths';
+import { getPackedAppPath, makeSlugPath } from '../supports/paths';
 import { captureScreenshot } from '../supports/webContentsViewHelper';
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ⚠️  CRITICAL WARNING FOR ALL AI AGENTS - READ THIS BEFORE ANY MODIFICATION ⚠️
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * ABSOLUTE RULES - NO EXCEPTIONS:
+ *
+ * 1. NEVER INCREASE TIMEOUT VALUES! TIMEOUT = FAILURE = REAL BUG!
+ *    - Timeout is a SYMPTOM, not the disease
+ *    - Fix the ROOT CAUSE in application code, not the timeout
+ *
+ * 2. MAXIMUM TIMEOUTS (STRICTLY ENFORCED):
+ *    - Local: 5 seconds
+ *    - CI: 10 seconds (exactly 2x local, NO MORE)
+ *
+ * 3. BEFORE MODIFYING ANY TIMEOUT:
+ *    - STOP! Read docs/Testing.md completely
+ *    - Investigate test-artifacts/{scenarioSlug}/userData-test/logs/
+ *    - Find the REAL BUG (SQLite errors, missing elements, failed loads)
+ *    - Fix the APPLICATION CODE, not the test
+ *
+ * 4. THIS HAS BEEN VIOLATED 3 TIMES - DO NOT MAKE IT 4!
+ *
+ * Per docs/Testing.md: "Timeout usually because of expected element not present."
+ * The test is waiting for something that will NEVER happen due to a BUG.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
 
 // Backoff configuration for retries
 const BACKOFF_OPTIONS = {
@@ -43,6 +71,9 @@ export class ApplicationWorld {
   mockOpenAIServer: MockOpenAIServer | undefined;
   mockOAuthServer: MockOAuthServer | undefined;
   savedWorkspaceId: string | undefined; // For storing workspace ID between steps
+  scenarioName: string = 'default'; // Scenario name from Cucumber pickle
+  scenarioSlug: string = 'default'; // Sanitized scenario name for file paths
+  providerConfig: import('@services/externalAPI/interface').AIProviderConfig | undefined; // Scenario-specific AI provider config
 
   // Helper method to check if window is visible
   async isWindowVisible(page: Page): Promise<boolean> {
@@ -192,10 +223,6 @@ export class ApplicationWorld {
 
 setWorldConstructor(ApplicationWorld);
 
-if (process.env.CI) {
-  setDefaultTimeout(50000);
-}
-
 AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result }) {
   // Only take screenshots in CI environment
   // if (!process.env.CI) return;
@@ -205,6 +232,9 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
 
     // Skip screenshots for wait steps to avoid too many screenshots
     if (stepText.match(/^I wait for/i)) {
+      return;
+    }
+    if (stepText.match(/^I clear log/i)) {
       return;
     }
 
@@ -231,9 +261,10 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
     const cleanStepText = makeSlugPath(stepText, 80);
     const stepStatus = result && typeof result.status === 'string' ? result.status : 'unknown-status';
 
-    const featureDirectory = path.resolve(screenshotsDirectory, cleanScenarioName);
+    // Use scenario-specific screenshots directory
+    const scenarioScreenshotsDirectory = path.resolve(process.cwd(), 'test-artifacts', cleanScenarioName, 'userData-test', 'logs', 'screenshots');
     // Create directory asynchronously to avoid blocking the event loop in CI
-    await fs.ensureDir(featureDirectory);
+    await fs.ensureDir(scenarioScreenshotsDirectory);
 
     // Sometimes window close and don't wait for use to take picture, or window haven't open in this step, never mind, just skip.
     /**
@@ -252,19 +283,25 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
     // Try to capture both WebContentsView and Page screenshots
     let webViewCaptured = false;
     if (this.app) {
-      const webViewScreenshotPath = path.resolve(featureDirectory, `${timestamp}-${cleanStepText}-${stepStatus}-webview.png`);
+      const webViewScreenshotPath = path.resolve(scenarioScreenshotsDirectory, `${timestamp}-${cleanStepText}-${stepStatus}-webview.png`);
       webViewCaptured = await captureScreenshot(this.app, webViewScreenshotPath);
     }
 
     // Always capture page screenshot (UI chrome/window)
-    const pageScreenshotPath = path.resolve(featureDirectory, `${timestamp}-${cleanStepText}-${stepStatus}${webViewCaptured ? '-page' : ''}.png`);
+    const pageScreenshotPath = path.resolve(scenarioScreenshotsDirectory, `${timestamp}-${cleanStepText}-${stepStatus}${webViewCaptured ? '-page' : ''}.png`);
     await pageToUse.screenshot({ path: pageScreenshotPath, fullPage: true, type: 'png' });
   } catch (screenshotError) {
     console.warn('Failed to take screenshot:', screenshotError);
   }
 });
 
-When('I launch the TidGi application', async function(this: ApplicationWorld) {
+// CRITICAL WARNING FOR ALL AI AGENTS:
+// DO NOT MODIFY TIMEOUT VALUES! NEVER!
+// If a test times out, it means there is a REAL BUG to fix, not a timeout to increase.
+// Timeout is a symptom, not the disease. Fix the root cause.
+// Read docs/Testing.md section "Key E2E Testing Patterns" point 6 before attempting any changes.
+// Maximum allowed timeouts: Local 5s, CI 10s (exactly 2x local, no more)
+When('I launch the TidGi application', { timeout: process.env.CI ? 10000 : 5000 }, async function(this: ApplicationWorld) {
   // For E2E tests on dev mode, use the packaged test version with NODE_ENV environment variable baked in
   const packedAppPath = getPackedAppPath();
 
@@ -273,6 +310,9 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
       executablePath: packedAppPath,
       // Add debugging options to prevent app from closing and CI-specific args
       args: [
+        // Pass slugified scenario name to application for exact path isolation matching
+        // This ensures consistency with the slug generated in appPaths.ts
+        `--test-scenario=${this.scenarioSlug}`,
         '--no-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
@@ -320,9 +360,10 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
           ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
         }),
       },
-      // Set cwd to repo root so process.cwd() in app returns the correct path for userData-test
+      // Set cwd to repo root; scenario isolation is handled via --test-scenario argument
       cwd: process.cwd(),
-      timeout: 30000, // Increase timeout to 30 seconds for CI
+      // Align Electron launch timeout with step definition (max 10s in CI, 5s locally)
+      timeout: process.env.CI ? 10000 : 5000,
     });
 
     // Wait longer for window in CI environment
@@ -340,7 +381,10 @@ When('I prepare to select directory in dialog {string}', async function(this: Ap
   if (!this.app) {
     throw new Error('Application is not launched');
   }
-  const targetPath = path.resolve(process.cwd(), directoryName);
+  // Use scenario-specific path for isolation
+  const targetPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, directoryName);
+  // Ensure parent directory exists (but do NOT remove target directory - it may be an existing wiki we want to import)
+  await fs.ensureDir(path.dirname(targetPath));
   // Setup one-time dialog handler that restores after use
   await this.app.evaluate(({ dialog }, targetDirectory: string) => {
     // Save original function with proper binding

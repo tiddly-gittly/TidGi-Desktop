@@ -20,8 +20,6 @@ export interface IGitLogData {
   loadMore: () => Promise<void>;
   setSearchParams: (parameters: ISearchParameters) => void;
   isSearchMode: boolean;
-  /** Manually trigger a data refresh - useful when observable subscription fails */
-  triggerRefresh: () => void;
 }
 
 export function useGitLogData(workspaceID: string): IGitLogData {
@@ -40,6 +38,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
   const lastChangeTimestamp = useRef<number>(0);
   const loadingMoreReference = useRef(false);
   const isFirstLoad = useRef(true);
+  const loadGitLogInProgress = useRef(false); // Guard against concurrent loadGitLog calls
 
   const isSearchMode = searchParameters.mode !== 'none';
   const hasMore = entries.length < totalCount;
@@ -121,17 +120,25 @@ export function useGitLogData(workspaceID: string): IGitLogData {
     }
   });
 
-  // Manually trigger a refresh - useful when observable subscription doesn't work (e.g., cross-process IPC issues)
-  const triggerRefresh = useCallback(() => {
-    lastRefreshTime.current = Date.now();
-    setRefreshTrigger((previous) => previous + 1);
-  }, []);
-
   // Load git log data
   useEffect(() => {
     if (!workspaceInfo || !('wikiFolderLocation' in workspaceInfo)) return;
 
+    // Prevent concurrent loadGitLog calls
+    if (loadGitLogInProgress.current) {
+      void window.service.native.log('debug', '[DEBUG] loadGitLog skipped - already in progress', { refreshTrigger });
+      return;
+    }
+
     const loadGitLog = async () => {
+      loadGitLogInProgress.current = true;
+
+      // Log at the very start to verify this function is called
+      void window.service.native.log('debug', '[DEBUG] loadGitLog started', {
+        refreshTrigger,
+        wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+      });
+
       try {
         // Only show global loading on first load
         if (isFirstLoad.current) {
@@ -170,6 +177,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           workspaceInfo.wikiFolderLocation,
           options,
         );
+        void window.service.native.log('debug', '[DEBUG] getGitLog completed', { entryCount: result.entries.length });
 
         // Get unpushed commit hashes in parallel with loading files
         const unpushedHashesPromise = window.service.git.callGitOp(
@@ -194,6 +202,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
             }
           }),
         );
+        void window.service.native.log('debug', '[DEBUG] entriesWithFiles completed', { count: entriesWithFiles.length });
 
         // Get unpushed hashes and mark entries
         const unpushedHashes = await unpushedHashesPromise;
@@ -201,19 +210,35 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           ...entry,
           isUnpushed: unpushedHashes.has(entry.hash),
         }));
+        void window.service.native.log('debug', '[DEBUG] entriesWithUnpushedFlag completed', { count: entriesWithUnpushedFlag.length });
+
+        // Prepare log data
+        const logData = {
+          commitCount: entriesWithUnpushedFlag.length,
+          wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+          entriesFingerprint: entriesWithUnpushedFlag.map(entry => entry.hash || 'uncommitted').join(','),
+        };
+
+        // Log BEFORE RAF
+        try {
+          void window.service.native.log('debug', '[test-id-git-log-refreshed]', { ...logData, source: 'before-raf' });
+        } catch (error) {
+          console.error('[CRITICAL] Log before RAF failed:', error);
+        }
 
         // Use requestAnimationFrame to batch the state updates and reduce flicker
         requestAnimationFrame(() => {
-          setEntries(entriesWithUnpushedFlag);
-          setCurrentBranch(result.currentBranch);
-          setTotalCount(result.totalCount);
-          setCurrentPage(0);
-        });
+          try {
+            setEntries(entriesWithUnpushedFlag);
+            setCurrentBranch(result.currentBranch);
+            setTotalCount(result.totalCount);
+            setCurrentPage(0);
 
-        // Log for E2E test timing - only log once per load, not in requestAnimationFrame
-        void window.service.native.log('debug', '[test-id-git-log-refreshed]', {
-          commitCount: entriesWithFiles.length,
-          wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+            // Log AFTER setEntries in RAF
+            void window.service.native.log('debug', '[test-id-git-log-refreshed]', { ...logData, source: 'in-raf' });
+          } catch (error) {
+            console.error('[CRITICAL] RAF callback failed:', error);
+          }
         });
       } catch (error_) {
         const error = error_ as Error;
@@ -224,6 +249,8 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         if (loading) {
           setLoading(false);
         }
+        // Always clear the in-progress flag
+        loadGitLogInProgress.current = false;
       }
     };
 
@@ -242,14 +269,13 @@ export function useGitLogData(workspaceID: string): IGitLogData {
       // Only log if entries actually changed
       if (entriesFingerprint !== lastLoggedEntriesReference.current) {
         lastLoggedEntriesReference.current = entriesFingerprint;
-        // Use setTimeout to ensure DOM has been updated after state changes
-        setTimeout(() => {
-          void window.service.native.log('debug', '[test-id-git-log-data-rendered]', {
-            commitCount: entries.length,
-            wikiFolderLocation: workspaceInfo.wikiFolderLocation,
-            entriesFingerprint,
-          });
-        }, 100);
+
+        // Log data rendered marker for tracking UI updates
+        void window.service.native.log('debug', '[test-id-git-log-data-rendered]', {
+          commitCount: entries.length,
+          wikiFolderLocation: workspaceInfo.wikiFolderLocation,
+          entriesFingerprint,
+        });
       }
     }
   }, [entries, workspaceInfo]);
@@ -349,6 +375,5 @@ export function useGitLogData(workspaceID: string): IGitLogData {
     loadMore,
     setSearchParams: setSearchParameters,
     isSearchMode,
-    triggerRefresh,
   };
 }
