@@ -87,7 +87,7 @@ export const ErrorMessageRenderer: React.FC<MessageRendererProps> = ({ message }
 
   // Check if this is a provider-related error that could be fixed in settings
   const isSettingsFixableError =
-    ['MissingConfigError', 'MissingProviderError', 'AuthenticationFailed', 'MissingAPIKeyError', 'MissingBaseURLError', 'ProviderNotFound'].includes(errorName) ||
+    ['MissingConfigError', 'MissingProviderError', 'AuthenticationError', 'MissingAPIKeyError', 'MissingBaseURLError'].includes(errorName) ||
     ['NO_DEFAULT_MODEL', 'PROVIDER_NOT_FOUND', 'AUTHENTICATION_FAILED', 'MISSING_API_KEY', 'MISSING_BASE_URL'].includes(errorCode);
 
   return (

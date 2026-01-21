@@ -36,7 +36,14 @@
   "Chat": {
     "Cancel": "Annuler",
     "ConfigError": {
+      "AuthenticationError": "L'authentification {{provider}} a échoué. Veuillez vérifier votre clé API dans les paramètres.",
+      "AuthenticationFailed": "L'authentification {{provider}} a échoué. Veuillez vérifier votre clé API dans les paramètres.",
       "GoToSettings": "Aller aux paramètres",
+      "MissingAPIKeyError": "Clé API pour {{provider}} introuvable. Veuillez l'ajouter dans les paramètres.",
+      "MissingBaseURLError": "Le fournisseur {{provider}} nécessite une URL de base. Veuillez la configurer dans les paramètres.",
+      "MissingConfigError": "Aucun fournisseur AI ou modèle configuré. Veuillez configurer dans les paramètres.",
+      "MissingProviderError": "Le fournisseur {{provider}} n'est pas disponible. Veuillez le configurer dans les paramètres.",
+      "ProviderNotFound": "Fournisseur {{provider}} introuvable. Veuillez le configurer dans les paramètres.",
       "Title": "Problème de configuration"
     },
     "InputPlaceholder": "Tapez un message, Ctrl+Entrée pour envoyer",
@@ -239,6 +246,7 @@
     "AutoRefresh": "L'aperçu se rafraîchit automatiquement en fonction des modifications du texte saisi.",
     "CodeEditor": "Éditeur de code",
     "Edit": "Édition des mots-clés",
+    "Enabled": "activer",
     "EnterEditSideBySide": "Édition en affichage partagé",
     "EnterFullScreen": "entrer en plein écran",
     "EnterPreviewSideBySide": "Aperçu en mode écran partagé",
@@ -501,6 +509,8 @@
       "CaptionTitle": "titre",
       "Content": "Contenu ou description du plugin",
       "ContentTitle": "contenu",
+      "Enabled": "déterminer si ce texte est intégré dans l'invite finale",
+      "EnabledTitle": "activer",
       "ForbidOverrides": "Est-il interdit de remplacer les paramètres de ce plugin pendant l'exécution ?",
       "ForbidOverridesTitle": "Interdiction de couvrir",
       "Id": "ID d'instance du plugin (unique dans le même gestionnaire)",
@@ -622,7 +632,8 @@
       "EditAgentDefinition": "Agent éditorial intelligent",
       "NewTab": "Nouvel onglet",
       "NewWeb": "nouvelle page web",
-      "SplitView": "Affichage divisé"
+      "SplitView": "Affichage divisé",
+      "WikiEmbed": "Wiki"
     }
   },
   "Tool": {
@@ -685,5 +696,9 @@
       }
     }
   },
-  "Unknown": "inconnu"
+  "Unknown": "inconnu",
+  "WikiEmbed": {
+    "Error": "Échec de l'intégration dans le Wiki",
+    "Loading": "Chargement du Wiki en cours..."
+  }
 }

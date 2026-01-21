@@ -92,11 +92,11 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
-      <DialogTitle>{t('Preference.ModelParameters', { defaultValue: 'Model Parameters', ns: 'agent' })}</DialogTitle>
+      <DialogTitle>{t('Preference.ModelParameters', { ns: 'agent' })}</DialogTitle>
       <DialogContent>
         <FormControl fullWidth sx={{ mt: 2 }}>
           <FormHelperText>
-            {t('Preference.Temperature', { defaultValue: 'Temperature', ns: 'agent' })}: {parameters.temperature?.toFixed(2)}
+            {t('Preference.Temperature', { ns: 'agent' })}: {parameters.temperature?.toFixed(2)}
           </FormHelperText>
           <Slider
             value={parameters.temperature}
@@ -108,16 +108,13 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
             valueLabelDisplay='auto'
           />
           <FormHelperText>
-            {t('Preference.TemperatureDescription', {
-              defaultValue: 'Higher values produce more creative and varied results, lower values are more deterministic.',
-              ns: 'agent',
-            })}
+            {t('Preference.TemperatureDescription', { ns: 'agent' })}
           </FormHelperText>
         </FormControl>
 
         <FormControl fullWidth sx={{ mt: 3 }}>
           <FormHelperText>
-            {t('Preference.TopP', { defaultValue: 'Top P', ns: 'agent' })}: {parameters.topP?.toFixed(2)}
+            {t('Preference.TopP', { ns: 'agent' })}: {parameters.topP?.toFixed(2)}
           </FormHelperText>
           <Slider
             value={parameters.topP}
@@ -129,16 +126,13 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
             valueLabelDisplay='auto'
           />
           <FormHelperText>
-            {t('Preference.TopPDescription', {
-              defaultValue: 'Controls diversity. Lower values make text more focused, higher values more diverse.',
-              ns: 'agent',
-            })}
+            {t('Preference.TopPDescription', { ns: 'agent' })}
           </FormHelperText>
         </FormControl>
 
         <FormControl fullWidth sx={{ mt: 3 }}>
           <TextField
-            label={t('Preference.MaxTokens', { defaultValue: 'Max Tokens', ns: 'agent' })}
+            label={t('Preference.MaxTokens', { ns: 'agent' })}
             value={parameters.maxTokens}
             onChange={handleMaxTokensChange}
             type='number'
@@ -147,28 +141,19 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
                 endAdornment: <InputAdornment position='end'>tokens</InputAdornment>,
               },
             }}
-            helperText={t('Preference.MaxTokensDescription', {
-              defaultValue: 'Maximum number of tokens to generate. 1000 tokens is about 750 words.',
-              ns: 'agent',
-            })}
+            helperText={t('Preference.MaxTokensDescription', { ns: 'agent' })}
           />
         </FormControl>
 
         <FormControl fullWidth sx={{ mt: 3 }}>
           <TextField
-            label={t('Preference.SystemPrompt', { defaultValue: 'System Prompt', ns: 'agent' })}
+            label={t('Preference.SystemPrompt', { ns: 'agent' })}
             value={parameters.systemPrompt}
             onChange={handleSystemPromptChange}
             multiline
             rows={4}
-            placeholder={t('Preference.SystemPromptPlaceholder', {
-              defaultValue: 'Optional: Provide system instructions to guide the AI',
-              ns: 'agent',
-            })}
-            helperText={t('Preference.SystemPromptDescription', {
-              defaultValue: 'System instructions that define how the AI should behave (optional)',
-              ns: 'agent',
-            })}
+            placeholder={t('Preference.SystemPromptPlaceholder', { ns: 'agent' })}
+            helperText={t('Preference.SystemPromptDescription', { ns: 'agent' })}
           />
         </FormControl>
       </DialogContent>
