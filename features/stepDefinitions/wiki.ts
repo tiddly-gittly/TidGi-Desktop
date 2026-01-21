@@ -938,6 +938,57 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
 });
 
 /**
+ * Restart a workspace wiki worker
+ */
+When('I restart workspace {string}', { timeout: STEP_TIMEOUT }, async function(this: ApplicationWorld, workspaceName: string) {
+  if (!this.app) throw new Error('Application is not available');
+
+  const settingsPath = getSettingsPath(this);
+  const settings = JSON.parse(await fs.readFile(settingsPath, 'utf-8')) as { workspaces?: Record<string, IWorkspace> };
+  if (!settings.workspaces) throw new Error('No workspaces found');
+
+  let targetWorkspaceId: string | undefined;
+  for (const [id, workspace] of Object.entries(settings.workspaces)) {
+    if ('name' in workspace && workspace.name === workspaceName) {
+      targetWorkspaceId = id;
+      break;
+    }
+    if ('wikiFolderLocation' in workspace && workspace.wikiFolderLocation) {
+      const folderName = path.basename(workspace.wikiFolderLocation);
+      if (folderName === workspaceName) {
+        targetWorkspaceId = id;
+        break;
+      }
+    }
+  }
+
+  if (!targetWorkspaceId) throw new Error(`No workspace found: ${workspaceName}`);
+
+  const result = await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
+    const windows = BrowserWindow.getAllWindows();
+    const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents?.getURL().includes('index.html'));
+    if (!mainWindow) throw new Error('Main window not found');
+
+    return await mainWindow.webContents.executeJavaScript(`
+      (async () => {
+        const workspace = await window.service.workspace.get(${JSON.stringify(workspaceId)});
+        if (!workspace) return { success: false, error: 'Workspace not found' };
+        try {
+          await window.service.wiki.restartWiki(workspace);
+          // Reload view to show fresh content from disk after wiki restart
+          await window.service.view.reloadViewsWebContents(${JSON.stringify(workspaceId)});
+          return { success: true };
+        } catch (error) {
+          return { success: false, error: error.message };
+        }
+      })();
+    `) as Promise<{ success: boolean; error?: string }>;
+  }, targetWorkspaceId);
+
+  if (!result.success) throw new Error(`Failed to restart: ${result.error ?? 'Unknown error'}`);
+});
+
+/**
  * Update workspace settings dynamically after app launch
  * This is useful for enabling features like enableFileSystemWatch in tests
  *

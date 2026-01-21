@@ -61,33 +61,28 @@ Feature: TidGi Default Wiki
     Then I should see "我的 TiddlyWiki" in the browser view content
 
   @wiki @root-tiddler
-  Scenario: Configure root tiddler and verify content loads after restart
-    # First, modify Index tiddler with unique test content before configuring root tiddler
+  Scenario: Configure root tiddler to use lazy-load and verify content still loads
+    # Wait for browser view to be fully loaded first
+    And the browser view should be loaded and visible
+    And I should see "我的 TiddlyWiki" in the browser view content
+    # Now modify Index tiddler with unique test content before configuring root tiddler
     When I modify file "wiki-test/wiki/tiddlers/Index.tid" to contain "Test content for lazy-all verification after restart"
-    # Verify the test content is displayed in browser view (no need to wait for watch-fs since it's disabled by default)
-    And I should see "Test content for lazy-all verification after restart" in the browser view content
-    # Update rootTiddler setting via API to use lazy-all
+    # before restart, should not see the new content from fs yet (watch-fs is off by default)
+    And I should not see "Test content for lazy-all verification after restart" in the browser view content
+    # Update rootTiddler setting via API to use lazy-all, and ensure watch-fs is disabled
     When I update workspace "wiki" settings:
-      | property     | value                      |
-      | rootTiddler  | $:/core/save/lazy-all      |
+      | property              | value                 |
+      | rootTiddler           | $:/core/save/lazy-all |
+      | enableFileSystemWatch | false                 |
     # Wait for config to be written
     Then I wait for "config file written" log marker "[test-id-TIDGI_CONFIG_WRITTEN]"
-    # Clear log markers before restart
-    And I clear test-id markers from logs
-    # Restart the workspace to apply the configuration by toggling enableFileSystemWatch
-    When I update workspace "wiki" settings:
-      | property              | value |
-      | enableFileSystemWatch | true  |
-    # Wait for workspace to fully restart and load
-    Then I wait for log markers:
-      | description                  | marker                        |
-      | watch-fs stabilized          | [test-id-WATCH_FS_STABILIZED] |
-      | view loaded                  | [test-id-VIEW_LOADED]         |
-    # Verify browser view is loaded and visible
+    # Restart the workspace to apply the rootTiddler configuration
+    When I restart workspace "wiki"
+    # Verify browser view is loaded and visible after restart
     And the browser view should be loaded and visible
-    # Verify Index tiddler content is loaded with our test content (not just the title)
-    # This confirms lazy-all is working and loading full tiddler content
+    # Verify Index tiddler element exists (confirms rootTiddler=lazy-all config is applied)
     Then I should see a "Index tiddler" element in browser view with selector "div[data-tiddler-title='Index']"
+    # Verify the actual content is displayed (confirms lazy-all loaded the file content on restart)
     And I should see "Test content for lazy-all verification after restart" in the browser view content
 
   @wiki @move-workspace
