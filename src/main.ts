@@ -148,12 +148,13 @@ const commonInit = async (): Promise<void> => {
   await wikiGitWorkspaceService.initialize();
   // Create default page workspaces before initializing all workspace views
   await workspaceService.initializeDefaultPageWorkspaces();
-  
+
   // Initialize tidgi mini window if enabled (must be done BEFORE initializeAllWorkspaceView)
-  // because initializeAllWorkspaceView will try to create views for tidgi mini window
+  // This only creates the window, views will be created by initializeAllWorkspaceView
   await windowService.initializeTidgiMiniWindow();
-  
+
   // perform wiki startup and git sync for each workspace
+  // This will also create views for tidgi mini window (in addViewForAllBrowserViews)
   await workspaceViewService.initializeAllWorkspaceView();
   logger.info('[test-id-ALL_WORKSPACE_VIEW_INITIALIZED] All workspace views initialized');
 

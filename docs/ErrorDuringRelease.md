@@ -13,5 +13,6 @@ Solution: kill background **esbuild** process
 ```powershell
 Get-Process | Where-Object { $_.ProcessName -match "esbuild|electron" } | Stop-Process -Force
 Remove-Item "$env:TEMP\si-*" -Recurse -Force -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 2
 ```
+
+Also check if there are open explorer folder opened, close may help.
