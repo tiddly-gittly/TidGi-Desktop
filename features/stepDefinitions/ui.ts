@@ -17,7 +17,8 @@ When('I wait for {float} seconds for {string}', async function(seconds: number, 
 
 When('I wait for the page to load completely', async function(this: ApplicationWorld) {
   const currentWindow = this.currentWindow;
-  await currentWindow?.waitForLoadState('networkidle', { timeout: 30000 });
+  // Maximum timeout rule: CI 10s, local 5s
+  await currentWindow?.waitForLoadState('networkidle', { timeout: process.env.CI ? 10000 : 5000 });
 });
 
 Then('I should see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {

@@ -366,8 +366,8 @@ When('I launch the TidGi application', { timeout: process.env.CI ? 10000 : 5000 
       timeout: process.env.CI ? 10000 : 5000,
     });
 
-    // Wait longer for window in CI environment
-    const windowTimeout = process.env.CI ? 45000 : 10000;
+    // Wait for first window - aligned with maximum timeout rules: Local 5s, CI 10s
+    const windowTimeout = process.env.CI ? 10000 : 5000;
     this.mainWindow = await this.app.firstWindow({ timeout: windowTimeout });
     this.currentWindow = this.mainWindow;
   } catch (error) {

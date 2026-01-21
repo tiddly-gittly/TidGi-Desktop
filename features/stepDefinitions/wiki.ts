@@ -301,7 +301,7 @@ Then('file {string} should exist in {string}', async function(this: ApplicationW
   }
 });
 
-Then('file {string} should not exist in {string}', { timeout: 15000 }, async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
+Then('file {string} should not exist in {string}', { timeout: process.env.CI ? 10000 : 5000 }, async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
   // Replace {tmpDir} with wiki test root (not wiki subfolder)
   let directoryPath = simpleDirectoryPath.replace('{tmpDir}', getWikiTestRootPath(this));
 
