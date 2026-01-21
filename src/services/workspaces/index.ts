@@ -228,6 +228,7 @@ export class Workspace implements IWorkspaceService {
 
   /**
    * Save all workspaces to settings.json, removing syncable fields from wiki workspaces
+   * Only removes syncable fields if tidgi.config.json exists (to maintain backward compatibility)
    * @param immediate Whether to immediately flush to disk
    */
   private async saveWorkspacesToSettings(immediate?: boolean): Promise<void> {
@@ -237,8 +238,23 @@ export class Workspace implements IWorkspaceService {
 
     for (const [key, ws] of Object.entries(workspaces)) {
       if (isWikiWorkspace(ws)) {
-        // Remove syncable fields from wiki workspaces (they are in tidgi.config.json)
-        workspacesForSettings[key] = removeSyncableFields(ws) as IWorkspace;
+        // Only remove syncable fields if tidgi.config.json exists
+        // This prevents losing data when tidgi.config.json hasn't been created yet
+        const configExists = await readTidgiConfig(ws.wikiFolderLocation);
+        if (configExists) {
+          workspacesForSettings[key] = removeSyncableFields(ws) as IWorkspace;
+          logger.debug('saveWorkspacesToSettings: Removed syncable fields (tidgi.config.json exists)', {
+            workspaceId: ws.id,
+            wikiFolderLocation: ws.wikiFolderLocation,
+          });
+        } else {
+          // Keep all fields in settings.json if tidgi.config.json doesn't exist
+          workspacesForSettings[key] = ws;
+          logger.debug('saveWorkspacesToSettings: Keeping all fields (no tidgi.config.json)', {
+            workspaceId: ws.id,
+            wikiFolderLocation: ws.wikiFolderLocation,
+          });
+        }
       } else {
         // Keep dedicated workspaces as is
         workspacesForSettings[key] = ws;
@@ -345,6 +361,17 @@ export class Workspace implements IWorkspaceService {
     const legacyTagName = (workspaceWithSyncedConfig as { tagName?: string | null }).tagName;
     if (legacyTagName && (!workspaceWithSyncedConfig.tagNames || workspaceWithSyncedConfig.tagNames.length === 0)) {
       fixingValues.tagNames = [legacyTagName.replaceAll('\n', '')];
+    }
+    // Migrate old workspaces without name: use folder name as default
+    // This ensures backward compatibility when loading workspaces created before tidgi.config.json was used
+    if (applySyncedConfig && (!workspaceWithSyncedConfig.name || workspaceWithSyncedConfig.name.trim() === '')) {
+      const folderName = path.basename(workspaceWithSyncedConfig.wikiFolderLocation);
+      fixingValues.name = folderName;
+      logger.info('sanitizeWorkspace: Migrating old workspace name from folder', {
+        workspaceId: workspaceWithSyncedConfig.id,
+        wikiFolderLocation: workspaceWithSyncedConfig.wikiFolderLocation,
+        migratedName: folderName,
+      });
     }
     // before 0.8.0, tidgi was loading http content, so lastUrl will be http protocol, but later we switch to tidgi:// protocol, so old value can't be used.
     if (workspaceWithSyncedConfig.lastUrl && !workspaceWithSyncedConfig.lastUrl.startsWith('tidgi')) {
