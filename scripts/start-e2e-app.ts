@@ -13,7 +13,7 @@ import { getPackedAppPath } from '../features/supports/paths';
  */
 function getMostRecentScenarioName(): string | undefined {
   const testArtifactsDir = path.resolve(process.cwd(), 'test-artifacts');
-  
+
   if (!fs.existsSync(testArtifactsDir)) {
     return undefined;
   }
@@ -63,4 +63,3 @@ child.on('error', error => {
   console.error('Failed to start TidGi app:', error);
   process.exit(1);
 });
-

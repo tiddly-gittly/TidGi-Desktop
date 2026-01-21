@@ -8,6 +8,7 @@ import { windowDimension, WindowNames } from '../../src/services/windows/WindowP
 import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getPackedAppPath, makeSlugPath } from '../supports/paths';
+import { PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
 import { captureScreenshot } from '../supports/webContentsViewHelper';
 
 /**
@@ -301,7 +302,7 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
 // Timeout is a symptom, not the disease. Fix the root cause.
 // Read docs/Testing.md section "Key E2E Testing Patterns" point 6 before attempting any changes.
 // Maximum allowed timeouts: Local 5s, CI 10s (exactly 2x local, no more)
-When('I launch the TidGi application', { timeout: process.env.CI ? 10000 : 5000 }, async function(this: ApplicationWorld) {
+When('I launch the TidGi application', async function(this: ApplicationWorld) {
   // For E2E tests on dev mode, use the packaged test version with NODE_ENV environment variable baked in
   const packedAppPath = getPackedAppPath();
 
@@ -362,13 +363,10 @@ When('I launch the TidGi application', { timeout: process.env.CI ? 10000 : 5000 
       },
       // Set cwd to repo root; scenario isolation is handled via --test-scenario argument
       cwd: process.cwd(),
-      // Align Electron launch timeout with step definition (max 10s in CI, 5s locally)
-      timeout: process.env.CI ? 10000 : 5000,
+      timeout: PLAYWRIGHT_TIMEOUT,
     });
 
-    // Wait for first window - aligned with maximum timeout rules: Local 5s, CI 10s
-    const windowTimeout = process.env.CI ? 10000 : 5000;
-    this.mainWindow = await this.app.firstWindow({ timeout: windowTimeout });
+    this.mainWindow = await this.app.firstWindow({ timeout: PLAYWRIGHT_TIMEOUT });
     this.currentWindow = this.mainWindow;
   } catch (error) {
     throw new Error(
