@@ -256,8 +256,12 @@ export class View implements IViewService {
       return;
     }
     if (browserWindow === undefined) {
-      logger.warn(`BrowserViewService.addView: ${workspace.id} 's browser window is not ready`);
-      return;
+      logger.error(`BrowserViewService.addView: ${workspace.id} 's browser window is not ready`, {
+        windowName,
+        workspaceId: workspace.id,
+        workspaceName: workspace.name,
+      });
+      throw new Error(`Browser window ${windowName} is not ready for workspace ${workspace.id}`);
     }
     const sharedWebPreferences = await this.getSharedWebPreferences(workspace);
     const view = await this.createViewAddToWindow(workspace, browserWindow, sharedWebPreferences, windowName);

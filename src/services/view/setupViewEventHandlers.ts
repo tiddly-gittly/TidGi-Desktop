@@ -125,7 +125,9 @@ export default function setupViewEventHandlers(
     });
     // focus on initial load
     // https://github.com/atomery/webcatalog/issues/398
-    if (workspace.active && !browserWindow.isDestroyed() && browserWindow.isFocused() && !view.webContents.isFocused()) {
+    // Get current browser window dynamically to handle workspace hibernation/wake-up scenarios
+    const currentBrowserWindow = BrowserWindow.fromWebContents(view.webContents);
+    if (currentBrowserWindow && workspace.active && !currentBrowserWindow.isDestroyed() && currentBrowserWindow.isFocused() && !view.webContents.isFocused()) {
       view.webContents.focus();
     }
     // update isLoading to false when load succeed
