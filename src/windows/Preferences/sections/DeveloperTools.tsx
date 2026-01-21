@@ -103,6 +103,7 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                   onClick={async () => {
                     const localAppData = process.env.LOCALAPPDATA;
                     if (localAppData) {
+                      // %APPDATA%\Local\SquirrelTemp\SquirrelSetup.log
                       const squirrelTemporaryPath = `${localAppData}\\SquirrelTemp`;
                       try {
                         await window.service.native.openPath(squirrelTemporaryPath, true);
