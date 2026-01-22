@@ -89,7 +89,7 @@
     "ipaddr.js": "2.2.0",
     "jimp": "1.6.0",
     "json5": "^2.2.3",
-    "lodash": "4.17.21",
+    "lodash": "4.17.23",
     "material-ui-popup-state": "^5.3.6",
     "menubar": "9.5.2",
     "monaco-editor": "^0.55.1",
