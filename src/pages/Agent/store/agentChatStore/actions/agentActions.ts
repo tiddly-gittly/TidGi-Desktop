@@ -202,6 +202,25 @@ export const agentActions = (
           const { messages: currentMessages, orderedMessageIds: currentOrderedIds } = get();
           const newMessageIds: string[] = [];
 
+          // Check if agent is in a terminal state (no more streaming expected)
+          const isAgentTerminalState = fullAgent.status.state === 'completed' 
+            || fullAgent.status.state === 'failed' 
+            || fullAgent.status.state === 'canceled';
+
+          // If agent just became terminal, clear all streaming for this agent's messages
+          // This is a failsafe in case message-level status updates were missed
+          if (isAgentTerminalState) {
+            fullAgent.messages.forEach(message => {
+              if (get().streamingMessageIds.has(message.id)) {
+                console.log('[AgentChat] Agent terminal state, clearing streaming for message', {
+                  messageId: message.id,
+                  agentState: fullAgent.status.state,
+                });
+                get().setMessageStreaming(message.id, false);
+              }
+            });
+          }
+
           // Process new messages - backend already sorts messages by modified time
           fullAgent.messages.forEach(message => {
             const existingMessage = currentMessages.get(message.id);
@@ -214,8 +233,11 @@ export const agentActions = (
 
               // Subscribe to AI message updates
               if ((message.role === 'agent' || message.role === 'assistant') && !messageSubscriptions.has(message.id)) {
-                // Mark as streaming
-                get().setMessageStreaming(message.id, true);
+                // Only mark as streaming if agent is still working
+                // This prevents marking completed messages as streaming when loading history
+                if (!isAgentTerminalState) {
+                  get().setMessageStreaming(message.id, true);
+                }
                 // Create message-specific subscription
                 messageSubscriptions.set(
                   message.id,
@@ -224,13 +246,11 @@ export const agentActions = (
                       if (status?.message) {
                         // Update the message in our map
                         get().messages.set(status.message.id, status.message);
-                        // If status indicates stream is finished (completed, canceled, failed), clear streaming flag
-                        // But don't unsubscribe here - let the observable complete naturally
-                        if (status.state !== 'working') {
-                          console.log('[AgentChat] Message stream ended', {
+                        // Clear streaming flag when status is completed
+                        if (status.state === 'completed' || status.state === 'failed' || status.state === 'canceled') {
+                          console.log('[AgentChat] Message completed via status update, clearing streaming', {
                             messageId: status.message.id,
                             state: status.state,
-                            streamingIds: Array.from(get().streamingMessageIds),
                           });
                           get().setMessageStreaming(status.message.id, false);
                         }

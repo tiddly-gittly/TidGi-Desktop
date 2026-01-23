@@ -447,20 +447,25 @@ export class AgentInstanceService implements IAgentInstanceService {
         if (lastResult?.message) {
           // Complete the message stream directly using the last message from the generator
           const statusKey = `${agentId}:${lastResult.message.id}`;
-          if (this.statusSubjects.has(statusKey)) {
-            const subject = this.statusSubjects.get(statusKey);
-            if (subject) {
-              logger.debug(`[${agentId}] Completing message stream`, { messageId: lastResult.message.id });
-              // Send final update with completed state
-              subject.next({
-                state: 'completed',
-                message: lastResult.message,
-                modified: new Date(),
-              });
-              // Complete the Observable and remove the subject
-              subject.complete();
-              this.statusSubjects.delete(statusKey);
-            }
+          const subject = this.statusSubjects.get(statusKey);
+          if (subject) {
+            logger.debug(`[${agentId}] Completing message stream`, { messageId: lastResult.message.id });
+            // Send final update with completed state
+            subject.next({
+              state: 'completed',
+              message: lastResult.message,
+              modified: new Date(),
+            });
+            // Complete and clean up the Observable
+            setTimeout(() => {
+              try {
+                subject.complete();
+                this.statusSubjects.delete(statusKey);
+                logger.debug(`[${agentId}] Subject completed and deleted`, { messageId: lastResult.message.id });
+              } catch (error) {
+                logger.error(`[${agentId}] Error completing subject`, { messageId: lastResult.message.id, error });
+              }
+            }, 100); // Small delay to ensure IPC message is delivered
           }
 
           // Trigger agentStatusChanged hook for completion
