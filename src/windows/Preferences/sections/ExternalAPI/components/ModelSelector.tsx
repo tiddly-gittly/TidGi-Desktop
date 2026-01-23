@@ -1,9 +1,10 @@
-import { Autocomplete } from '@mui/material';
+import { Autocomplete, Box, Typography } from '@mui/material';
 import { ModelSelection } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextField } from '../../../PreferenceComponents';
+import { ModelFeatureChip } from './ModelFeatureChip';
 
 interface ModelSelectorProps {
   selectedModel: ModelSelection | undefined;
@@ -24,6 +25,7 @@ export function ModelSelector({ selectedModel, modelOptions, onChange, onClear, 
   const filteredModelOptions = onlyShowEnabled
     ? modelOptions.filter(m => m[0].enabled)
     : modelOptions;
+
   return (
     <Autocomplete
       value={selectedValue}
@@ -36,7 +38,25 @@ export function ModelSelector({ selectedModel, modelOptions, onChange, onClear, 
       }}
       options={filteredModelOptions}
       groupBy={(option) => option[0].provider}
-      getOptionLabel={(option) => option[1].name}
+      getOptionLabel={(option) => option[1].caption || option[1].name}
+      renderOption={(props, option) => {
+        const modelInfo = option[1];
+        return (
+          <li {...props}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+              <Typography variant='body1'>
+                {modelInfo.caption || modelInfo.name}
+              </Typography>
+
+              {modelInfo.features && modelInfo.features.length > 0 && (
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.5 }}>
+                  {modelInfo.features.map(feature => <ModelFeatureChip key={feature} feature={feature} />)}
+                </Box>
+              )}
+            </Box>
+          </li>
+        );
+      }}
       renderInput={(parameters) => (
         <TextField
           {...parameters}

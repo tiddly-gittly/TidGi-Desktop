@@ -19,6 +19,7 @@ import defaultProvidersConfig from '@services/externalAPI/defaultProviders';
 import { ModelFeature, ModelInfo } from '@services/externalAPI/interface';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ModelFeatureChip } from './ModelFeatureChip';
 
 interface ModelDialogProps {
   open: boolean;
@@ -105,11 +106,26 @@ export function NewModelDialog({
                       onSelectDefaultModel(event.target.value);
                     }}
                     label={t('Preference.PresetModels', { ns: 'agent' })}
+                    renderValue={(selected) => {
+                      if (!selected) return t('Preference.NoPresetSelected', { ns: 'agent' });
+                      const model = availableDefaultModels.find(m => m.name === selected);
+                      if (model) return model.caption || model.name;
+                      return selected;
+                    }}
                   >
                     <MenuItem value=''>{t('Preference.NoPresetSelected', { ns: 'agent' })}</MenuItem>
                     {availableDefaultModels.map((model) => (
-                      <MenuItem key={model.name} value={model.name}>
-                        {model.caption || model.name}
+                      <MenuItem key={model.name} value={model.name} sx={{ py: 1 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', gap: 0.5 }}>
+                          <Typography variant='body1'>
+                            {model.caption || model.name}
+                          </Typography>
+                          {model.features && model.features.length > 0 && (
+                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                              {model.features.map(feature => <ModelFeatureChip key={feature} feature={feature} />)}
+                            </Box>
+                          )}
+                        </Box>
                       </MenuItem>
                     ))}
                   </Select>

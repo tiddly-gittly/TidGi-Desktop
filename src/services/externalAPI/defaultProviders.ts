@@ -62,6 +62,16 @@ export default {
           caption: 'TeleSpeechASR',
           features: ['transcriptions'],
         },
+        {
+          name: 'Qwen/Qwen-Image',
+          caption: 'Qwen Image',
+          features: ['imageGeneration'],
+        },
+        {
+          name: 'zai-org/GLM-4.6V',
+          caption: 'GLM-4.6V',
+          features: ['language', 'vision', 'toolCalling'],
+        },
       ],
     },
     {
