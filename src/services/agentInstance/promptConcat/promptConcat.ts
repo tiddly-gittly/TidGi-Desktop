@@ -15,6 +15,7 @@
 
 import { logger } from '@services/libs/log';
 import { ModelMessage } from 'ai';
+import * as fs from 'fs-extra';
 import { cloneDeep } from 'lodash';
 import { AgentFrameworkContext } from '../agentFrameworks/utilities/type';
 import { AgentInstanceMessage } from '../interface';
@@ -313,7 +314,26 @@ export async function* promptConcatStream(
       messageId: userMessage.id,
       contentLength: userMessage.content.length,
     });
-    flatPrompts.push({ role: 'user', content: userMessage.content });
+
+    // Check for file attachment
+    const fileMetadata = userMessage.metadata?.file as { path: string } | undefined;
+    if (fileMetadata?.path) {
+      try {
+        const imageBuffer = await fs.readFile(fileMetadata.path);
+        flatPrompts.push({
+          role: 'user',
+          content: [
+            { type: 'image', image: imageBuffer },
+            { type: 'text', text: userMessage.content },
+          ],
+        });
+      } catch (error) {
+        logger.error('Failed to read attached file', { error, path: fileMetadata.path });
+        flatPrompts.push({ role: 'user', content: userMessage.content });
+      }
+    } else {
+      flatPrompts.push({ role: 'user', content: userMessage.content });
+    }
   }
 
   logger.debug('Streaming prompt concatenation completed', {

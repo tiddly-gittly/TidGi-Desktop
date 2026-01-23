@@ -7,6 +7,22 @@ import type { ExternalAPILogEntity } from '@services/database/schema/externalAPI
 import { ModelMessage } from 'ai';
 
 /**
+ * Shared error detail structure used across all AI responses
+ */
+export interface AIErrorDetail {
+  /** Error type name */
+  name: string;
+  /** Error code */
+  code: string;
+  /** Provider name associated with the error */
+  provider: string;
+  /** Human readable error message (may be an i18n key) */
+  message?: string;
+  /** Parameters for i18n interpolation */
+  params?: Record<string, string>;
+}
+
+/**
  * AI streaming response status interface
  */
 export interface AIStreamResponse {
@@ -16,16 +32,7 @@ export interface AIStreamResponse {
   /**
    * Structured error details, provided when status is 'error'
    */
-  errorDetail?: {
-    /** Error type name */
-    name: string;
-    /** Error code */
-    code: string;
-    /** Provider name associated with the error */
-    provider: string;
-    /** Human readable error message */
-    message?: string;
-  };
+  errorDetail?: AIErrorDetail;
 }
 
 /**
@@ -70,16 +77,7 @@ export interface AISpeechResponse {
   /**
    * Structured error details, provided when status is 'error'
    */
-  errorDetail?: {
-    /** Error type name */
-    name: string;
-    /** Error code */
-    code: string;
-    /** Provider name associated with the error */
-    provider: string;
-    /** Human readable error message */
-    message?: string;
-  };
+  errorDetail?: AIErrorDetail;
 }
 
 /**
@@ -98,16 +96,7 @@ export interface AITranscriptionResponse {
   /**
    * Structured error details, provided when status is 'error'
    */
-  errorDetail?: {
-    /** Error type name */
-    name: string;
-    /** Error code */
-    code: string;
-    /** Provider name associated with the error */
-    provider: string;
-    /** Human readable error message */
-    message?: string;
-  };
+  errorDetail?: AIErrorDetail;
 }
 
 /**
@@ -133,16 +122,7 @@ export interface AIImageGenerationResponse {
   /**
    * Structured error details, provided when status is 'error'
    */
-  errorDetail?: {
-    /** Error type name */
-    name: string;
-    /** Error code */
-    code: string;
-    /** Provider name associated with the error */
-    provider: string;
-    /** Human readable error message */
-    message?: string;
-  };
+  errorDetail?: AIErrorDetail;
 }
 
 /**

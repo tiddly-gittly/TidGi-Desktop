@@ -22,6 +22,8 @@ export interface RequestMetadata {
   messageCount?: number;
   /** Input count for embedding requests */
   inputCount?: number;
+  /** Whether the request contains image content */
+  hasImageContent?: boolean;
   /** Request configuration summary */
   configSummary?: Record<string, unknown>;
 }

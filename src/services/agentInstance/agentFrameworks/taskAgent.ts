@@ -123,8 +123,18 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
         logger.debug('Starting AI generation', {
           method: 'processLLMCall',
           modelName: aiApiConfig.default?.model || 'unknown',
-          flatPrompts,
-          messages: context.agent.messages,
+          // Summarize prompts to avoid logging large binary data
+          flatPromptsCount: flatPrompts.length,
+          flatPromptsSummary: flatPrompts.map(message => ({
+            role: message.role,
+            contentType: Array.isArray(message.content) ? 'multimodal' : 'text',
+            contentLength: Array.isArray(message.content)
+              ? message.content.length
+              : typeof message.content === 'string'
+              ? message.content.length
+              : 0,
+          })),
+          messagesCount: context.agent.messages.length,
         });
 
         // Delegate AI API calls to externalAPIService

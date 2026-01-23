@@ -98,6 +98,9 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     handleMessageChange,
     handleSendMessage,
     handleKeyPress,
+    selectedFile,
+    handleFileSelect,
+    handleClearFile,
   } = useMessageHandling({
     agentId: tab.agentId,
     isUserAtBottom,
@@ -223,6 +226,9 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
         onKeyPress={handleKeyPress}
         disabled={!agent || isWorking}
         isStreaming={isStreaming}
+        selectedFile={selectedFile}
+        onFileSelect={handleFileSelect}
+        onClearFile={handleClearFile}
       />
 
       {/* Model parameter dialog */}

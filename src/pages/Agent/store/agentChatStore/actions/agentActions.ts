@@ -225,22 +225,19 @@ export const agentActions = (
                         // Update the message in our map
                         get().messages.set(status.message.id, status.message);
                         // If status indicates stream is finished (completed, canceled, failed), clear streaming flag
+                        // But don't unsubscribe here - let the observable complete naturally
                         if (status.state !== 'working') {
-                          try {
-                            get().setMessageStreaming(status.message.id, false);
-                            // Unsubscribe and clean up subscription for this message
-                            const sub = messageSubscriptions.get(status.message.id);
-                            if (sub) {
-                              sub.unsubscribe();
-                              messageSubscriptions.delete(status.message.id);
-                            }
-                          } catch {
-                            // Ignore cleanup errors
-                          }
+                          console.log('[AgentChat] Message stream ended', {
+                            messageId: status.message.id,
+                            state: status.state,
+                            streamingIds: Array.from(get().streamingMessageIds),
+                          });
+                          get().setMessageStreaming(status.message.id, false);
                         }
                       }
                     },
-                    error: (error_) => {
+                    error: (error_: unknown) => {
+                      console.error('[AgentChat] Message subscription error', { messageId: message.id, error: error_ });
                       void window.service.native.log(
                         'error',
                         `Error in message subscription for ${message.id}`,
@@ -249,8 +246,15 @@ export const agentActions = (
                           error: error_,
                         },
                       );
+                      // Clean up on error
+                      get().setMessageStreaming(message.id, false);
+                      messageSubscriptions.delete(message.id);
                     },
                     complete: () => {
+                      console.log('[AgentChat] Message subscription completed', {
+                        messageId: message.id,
+                        streamingIds: Array.from(get().streamingMessageIds),
+                      });
                       get().setMessageStreaming(message.id, false);
                       messageSubscriptions.delete(message.id);
                     },

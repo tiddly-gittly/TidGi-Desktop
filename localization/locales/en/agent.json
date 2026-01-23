@@ -43,6 +43,8 @@
       "MissingBaseURLError": "{{provider}} provider requires a base URL. Please configure it in Settings.",
       "MissingConfigError": "No AI provider or model configured. Please configure in Settings.",
       "MissingProviderError": "Provider {{provider}} is not available. Please configure it in Settings.",
+      "ModelNoVisionSupport": "Model {{model}} does not support vision/image input. Please select a vision-capable model (look for models with 'vision' feature tag).",
+      "NoDefaultModel": "No default model configured. Please configure a default model in settings.",
       "ProviderNotFound": "Provider {{provider}} not found. Please configure it in Settings.",
       "Title": "Configuration Issue"
     },

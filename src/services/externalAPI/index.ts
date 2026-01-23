@@ -232,13 +232,17 @@ export class ExternalAPIService implements IExternalAPIService {
       const externalAPIDebug = await this.preferenceService.get('externalAPIDebug');
       if (!externalAPIDebug) return;
 
-      // Ensure API logging is initialized.
-      // For 'update' events we skip writes to avoid expensive DB churn.
+      // Ensure API logging is initialized (lazy initialization)
       if (!this.apiLogRepository) {
-        // If repository isn't initialized, skip all log writes (including start/error/done/cancel).
-        // Tests that require logs should explicitly call `initialize()` before invoking generateFromAI.
-        logger.warn('API log repository not initialized; skipping ExternalAPI log write');
-        return;
+        try {
+          await this.databaseService.initializeDatabase('externalApi');
+          this.dataSource = await this.databaseService.getDatabase('externalApi');
+          this.apiLogRepository = this.dataSource.getRepository(ExternalAPILogEntity);
+          logger.debug('External API logging initialized (lazy)');
+        } catch (error) {
+          logger.warn('Failed to initialize API log repository', error);
+          return;
+        }
       }
 
       // Try save; on UNIQUE race, fetch existing and merge, then save again
@@ -466,18 +470,38 @@ export class ExternalAPIService implements IExternalAPIService {
     if (!modelConfig?.provider || !modelConfig?.model) {
       yield {
         requestId,
-        content: 'No default model configured',
+        content: 'Chat.ConfigError.NoDefaultModel',
         status: 'error',
         errorDetail: {
           name: 'MissingConfigError',
           code: 'NO_DEFAULT_MODEL',
           provider: 'unknown',
+          message: 'Chat.ConfigError.NoDefaultModel',
         },
       };
       return;
     }
 
-    logger.debug(`[${requestId}] Starting generateFromAI with messages`, messages);
+    // Prepare messages for logging - convert Buffer to metadata only for better visibility
+    const messagesForLog = messages.map(message => {
+      if (Array.isArray(message.content)) {
+        return {
+          ...message,
+          content: message.content.map(part => {
+            if (typeof part === 'object' && 'type' in part && part.type === 'image' && 'image' in part) {
+              const imagePart = part as { type: 'image'; image: Buffer | Uint8Array };
+              return {
+                type: 'image',
+                imageSize: imagePart.image.length,
+                imageFormat: 'buffer',
+              };
+            }
+            return part;
+          }),
+        };
+      }
+      return message;
+    });
 
     // Log request start. If caller requested blocking logs (tests), await the DB write so it's visible synchronously.
     if (options?.awaitLogs) {
@@ -487,9 +511,10 @@ export class ExternalAPIService implements IExternalAPIService {
           provider: modelConfig.provider,
           model: modelConfig.model,
           messageCount: messages.length,
+          hasImageContent: messages.some(m => Array.isArray(m.content) && m.content.some((p: { type?: string }) => p.type === 'image')),
         },
         requestPayload: {
-          messages: messages,
+          messages: messagesForLog,
           config: config,
         },
       });
@@ -500,9 +525,10 @@ export class ExternalAPIService implements IExternalAPIService {
           provider: modelConfig.provider,
           model: modelConfig.model,
           messageCount: messages.length,
+          hasImageContent: messages.some(m => Array.isArray(m.content) && m.content.some((p: { type?: string }) => p.type === 'image')),
         },
         requestPayload: {
-          messages: messages,
+          messages: messagesForLog,
           config: config,
         },
       });
@@ -512,18 +538,54 @@ export class ExternalAPIService implements IExternalAPIService {
       // Send start event
       yield { requestId, content: '', status: 'start' };
 
+      // Check if request contains images and verify model supports vision
+      const hasImageContent = messages.some(m => Array.isArray(m.content) && m.content.some((p: { type?: string }) => p.type === 'image'));
+      if (hasImageContent) {
+        // Find the model configuration to check if it supports vision
+        const providers = await this.getAIProviders();
+        const provider = providers.find(p => p.provider === modelConfig.provider);
+        const model = provider?.models?.find(m => m.name === modelConfig.model);
+
+        if (!model?.features?.includes('vision')) {
+          const errorResponse = {
+            requestId,
+            content: 'Chat.ConfigError.ModelNoVisionSupport',
+            status: 'error' as const,
+            errorDetail: {
+              name: 'UnsupportedFeatureError',
+              code: 'MODEL_NO_VISION_SUPPORT',
+              provider: modelConfig.provider,
+              message: 'Chat.ConfigError.ModelNoVisionSupport',
+              params: { model: modelConfig.model },
+            },
+          };
+          if (options?.awaitLogs) {
+            await this.logAPICall(requestId, 'streaming', 'error', {
+              errorDetail: errorResponse.errorDetail,
+            });
+          } else {
+            void this.logAPICall(requestId, 'streaming', 'error', {
+              errorDetail: errorResponse.errorDetail,
+            });
+          }
+          yield errorResponse;
+          return;
+        }
+      }
+
       // Get provider configuration
       const providerConfig = await this.getProviderConfig(modelConfig.provider);
       if (!providerConfig) {
-        const errorMessage = `Provider ${modelConfig.provider} not found or not configured`;
         const errorResponse = {
           requestId,
-          content: errorMessage,
+          content: 'Chat.ConfigError.ProviderNotFound',
           status: 'error' as const,
           errorDetail: {
             name: 'MissingProviderError',
             code: 'PROVIDER_NOT_FOUND',
             provider: modelConfig.provider,
+            message: 'Chat.ConfigError.ProviderNotFound',
+            params: { provider: modelConfig.provider },
           },
         };
         if (options?.awaitLogs) {

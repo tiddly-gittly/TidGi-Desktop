@@ -450,6 +450,7 @@ export class AgentInstanceService implements IAgentInstanceService {
           if (this.statusSubjects.has(statusKey)) {
             const subject = this.statusSubjects.get(statusKey);
             if (subject) {
+              logger.debug(`[${agentId}] Completing message stream`, { messageId: lastResult.message.id });
               // Send final update with completed state
               subject.next({
                 state: 'completed',
@@ -477,6 +478,26 @@ export class AgentInstanceService implements IAgentInstanceService {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error(`Agent handler execution failed: ${errorMessage}`);
+
+        // Clear any pending message subscriptions for this agent
+        for (const key of Array.from(this.statusSubjects.keys())) {
+          if (key.startsWith(`${agentId}:`)) {
+            const subject = this.statusSubjects.get(key);
+            if (subject) {
+              try {
+                subject.next({
+                  state: 'failed',
+                  message: {} as AgentInstanceMessage,
+                  modified: new Date(),
+                });
+                subject.complete();
+              } catch {
+                // ignore
+              }
+              this.statusSubjects.delete(key);
+            }
+          }
+        }
 
         // Trigger agentStatusChanged hook for failure
         await frameworkHooks.agentStatusChanged.promise({

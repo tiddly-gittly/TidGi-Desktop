@@ -9,6 +9,48 @@ import { isMessageExpiredForAI } from '../../../services/agentInstance/utilities
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
 import { MessageRenderer } from './MessageRenderer';
 
+const ImageAttachment = ({ file }: { file: File | { path: string } }) => {
+  const [source, setSource] = React.useState<string | undefined>();
+
+  React.useEffect(() => {
+    // Check for File object (from current session upload)
+    if (file instanceof File) {
+      const url = URL.createObjectURL(file);
+      setSource(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } // Check for persisted file object with path
+    else if (file && typeof file === 'object' && 'path' in file) {
+      setSource(`file://${(file as { path: string }).path}`);
+    }
+  }, [file]);
+
+  if (!source) return null;
+
+  return (
+    <Box
+      component='img'
+      src={source}
+      data-testid='message-image-attachment'
+      sx={{
+        maxWidth: '100%',
+        maxHeight: 300,
+        borderRadius: 1,
+        mb: 1,
+        display: 'block',
+        cursor: 'pointer',
+      }}
+      onClick={() => {
+        const win = window.open();
+        if (win) {
+          win.document.body.innerHTML = `<img src="${src}" style="max-width:100%"/>`;
+        }
+      }}
+    />
+  );
+};
+
 const BubbleContainer = styled(Box, {
   shouldForwardProp: (property) => property !== '$user' && property !== '$centered' && property !== '$expired',
 })<{ $user: boolean; $centered: boolean; $expired?: boolean }>`
@@ -116,6 +158,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
         $expired={isExpired}
         data-testid={!isUser ? (isStreaming ? 'assistant-streaming-text' : 'assistant-message') : undefined}
       >
+        {message.metadata?.file && <ImageAttachment file={message.metadata.file as File | { path: string }} />}
         <MessageRenderer message={message} isUser={isUser} />
       </MessageContent>
 

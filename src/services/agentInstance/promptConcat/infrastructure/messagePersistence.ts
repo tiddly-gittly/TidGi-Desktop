@@ -7,6 +7,9 @@
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { app } from 'electron';
+import * as fs from 'fs-extra';
+import * as path from 'path';
 import type { IAgentInstanceService } from '../../interface';
 import type { AIResponseContext, PromptConcatHooks, ToolExecutionContext, UserMessageContext } from '../../tools/types';
 import { createAgentMessage } from '../../utilities';
@@ -20,12 +23,47 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
     try {
       const { agentFrameworkContext, content, messageId } = context;
 
+      let persistedFileMetadata: Record<string, unknown> | undefined;
+
+      // Handle file attachment persistence
+      if (content.file) {
+        try {
+          // content.file coming from IPC might be a plain object with path and optional buffer
+          const fileObject = content.file as unknown as { path?: string; name?: string; buffer?: ArrayBuffer };
+
+          if ((fileObject.path || fileObject.buffer) && app) {
+            const userDataPath = app.getPath('userData');
+            const storageDirectory = path.join(userDataPath, 'agent_attachments', agentFrameworkContext.agent.id);
+            await fs.ensureDir(storageDirectory);
+
+            const extension = path.extname(fileObject.name || (fileObject.path || '')) || '.bin';
+            const newFileName = `${messageId}${extension}`;
+            const newPath = path.join(storageDirectory, newFileName);
+
+            if (fileObject.path) {
+              await fs.copy(fileObject.path, newPath);
+            } else if (fileObject.buffer) {
+              await fs.writeFile(newPath, Buffer.from(fileObject.buffer));
+            }
+
+            persistedFileMetadata = {
+              path: newPath,
+              originalPath: fileObject.path,
+              name: fileObject.name,
+              savedAt: new Date(),
+            };
+          }
+        } catch (error) {
+          logger.error('Failed to persist attachment', { error, messageId });
+        }
+      }
+
       // Create user message using the helper function
       const userMessage = createAgentMessage(messageId, agentFrameworkContext.agent.id, {
         role: 'user',
         content: content.text,
         contentType: 'text/plain',
-        metadata: content.file ? { file: content.file } : undefined,
+        metadata: persistedFileMetadata ? { file: persistedFileMetadata } : (content.file ? { file: content.file } : undefined),
         duration: undefined, // User messages persist indefinitely by default
       });
 
