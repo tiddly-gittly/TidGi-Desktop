@@ -203,9 +203,9 @@ export const agentActions = (
           const newMessageIds: string[] = [];
 
           // Check if agent is in a terminal state (no more streaming expected)
-          const isAgentTerminalState = fullAgent.status.state === 'completed' 
-            || fullAgent.status.state === 'failed' 
-            || fullAgent.status.state === 'canceled';
+          const isAgentTerminalState = fullAgent.status.state === 'completed' ||
+            fullAgent.status.state === 'failed' ||
+            fullAgent.status.state === 'canceled';
 
           // If agent just became terminal, clear all streaming for this agent's messages
           // This is a failsafe in case message-level status updates were missed

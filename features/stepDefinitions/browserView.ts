@@ -407,3 +407,21 @@ When('I create a tiddler {string} with field {string} set to {string} in browser
   await clickElement(this.app, 'button:has(.tc-image-done-button)');
   await new Promise(resolve => setTimeout(resolve, 500));
 });
+
+/**
+ * Execute TiddlyWiki code in browser view
+ * Useful for programmatic wiki operations
+ */
+When('I execute TiddlyWiki code in browser view: {string}', async function(this: ApplicationWorld, code: string) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+
+  try {
+    // Wrap the code to avoid returning non-serializable objects
+    const wrappedCode = `(function() { ${code}; return true; })()`;
+    await executeTiddlyWikiCode(this.app, wrappedCode);
+  } catch (error) {
+    throw new Error(`Failed to execute TiddlyWiki code in browser view: ${error as Error}`);
+  }
+});

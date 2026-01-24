@@ -1574,3 +1574,63 @@ When('I remove workspace {string} keeping files', async function(this: Applicati
     await new Promise(resolve => setTimeout(resolve, 500));
   });
 });
+
+/**
+ * Open workspace in a new window using TidGi's built-in API
+ */
+When('I open workspace {string} in a new window', async function(this: ApplicationWorld, workspaceName: string) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+
+  // Get workspace by name and open in new window
+  const success = await this.app.evaluate(
+    async ({ BrowserWindow }, name: string) => {
+      const windows = BrowserWindow.getAllWindows();
+      const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+
+      if (!mainWindow) {
+        return { success: false, error: 'Main window not found' };
+      }
+
+      try {
+        // Execute code in renderer to get workspace and open new window
+        const result = await mainWindow.webContents.executeJavaScript(`
+          (async () => {
+            try {
+              console.log('[test] Getting workspaces list...');
+              const workspaces = await window.service.workspace.getWorkspacesAsList();
+              console.log('[test] Found workspaces:', workspaces.length);
+              const workspace = workspaces.find(w => w.name === ${JSON.stringify(name)});
+              if (!workspace) {
+                return { success: false, error: 'Workspace not found: ' + ${JSON.stringify(name)} };
+              }
+              console.log('[test] Found workspace:', workspace.name, workspace.id);
+              const lastUrl = workspace.lastUrl || workspace.homeUrl;
+              console.log('[test] Opening window with URL:', lastUrl);
+              await window.service.workspaceView.openWorkspaceWindowWithView(workspace, { uri: lastUrl });
+              console.log('[test] Window opened successfully');
+              return { success: true };
+            } catch (err) {
+              console.error('[test] Error:', err);
+              return { success: false, error: err instanceof Error ? err.message : String(err) };
+            }
+          })();
+        `) as { error?: string; success: boolean };
+        return result;
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    },
+    workspaceName,
+  );
+
+  if (!success || !success.success) {
+    throw new Error(`Failed to open workspace in new window: ${success?.error || 'unknown error'}`);
+  }
+
+  // Wait for the new window to be created and ready
+  await this.app.evaluate(async () => {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  });
+});
