@@ -23,6 +23,16 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
     try {
       const { agentFrameworkContext, content, messageId } = context;
 
+      logger.debug('userMessageReceived hook called', {
+        messageId,
+        hasFile: !!content.file,
+        fileInfo: content.file ? {
+          hasPath: !!(content.file as any).path,
+          hasName: !!(content.file as any).name,
+          hasBuffer: !!(content.file as any).buffer,
+        } : null,
+      });
+
       let persistedFileMetadata: Record<string, unknown> | undefined;
 
       // Handle file attachment persistence
@@ -52,9 +62,23 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
               name: fileObject.name,
               savedAt: new Date(),
             };
+          } else if (fileObject.path || fileObject.name) {
+            // If app is not available (e.g., in some test scenarios), at least preserve file info without buffer
+            persistedFileMetadata = {
+              path: fileObject.path,
+              name: fileObject.name,
+            };
           }
         } catch (error) {
           logger.error('Failed to persist attachment', { error, messageId });
+          // Even on error, try to preserve basic file info (without buffer which can't be serialized)
+          const fileObject = content.file as unknown as { path?: string; name?: string };
+          if (fileObject.path || fileObject.name) {
+            persistedFileMetadata = {
+              path: fileObject.path,
+              name: fileObject.name,
+            };
+          }
         }
       }
 
@@ -63,9 +87,20 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
         role: 'user',
         content: content.text,
         contentType: 'text/plain',
-        metadata: persistedFileMetadata ? { file: persistedFileMetadata } : (content.file ? { file: content.file } : undefined),
+        metadata: persistedFileMetadata ? { file: persistedFileMetadata } : undefined,
         duration: undefined, // User messages persist indefinitely by default
       });
+
+      // Debug log
+      if (persistedFileMetadata) {
+        logger.debug('User message created with file metadata', {
+          messageId,
+          hasMetadata: !!userMessage.metadata,
+          hasFile: !!userMessage.metadata?.file,
+          filePath: (userMessage.metadata?.file as any)?.path,
+          fileName: (userMessage.metadata?.file as any)?.name,
+        });
+      }
 
       // Add message to the agent's message array for immediate use
       agentFrameworkContext.agent.messages.push(userMessage);

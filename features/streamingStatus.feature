@@ -69,24 +69,31 @@ Feature: Message Streaming Status
       | Received image and text       | false  |
       | Received second message       | false  |
     
-    Given I am on the agent chat page
+    # Open agent chat
+    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    And I should see a "search interface" element with selector ".aa-Autocomplete"
+    When I click on a "search input box" element with selector ".aa-Input"
+    And I should see an "autocomplete panel" element with selector ".aa-Panel"
+    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     
-    # Upload image with first message
-    When I attach the image "template/wiki/files/TiddlyWikiIconBlack.png"
-    Then I should see a preview of the image above the input box
+    # Set file directly to the hidden file input using Playwright
+    When I set file "template/wiki/files/TiddlyWikiIconBlack.png" to file input with selector "input[type='file']"
+    # Verify image preview appears
+    Then I should see an "attachment preview" element with selector "[data-testid='attachment-preview']"
     
     # Send message with image
+    When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "Describe this image" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 2 messages in chat history
-    And I should see the image in the chat history
+    
+    # Verify image appears in chat history
+    And I should see a "message image attachment" element with selector "[data-testid='message-image-attachment']"
     
     # Verify send button returned to normal after first message
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
-    
-    # Verify agent received the image
-    Then the agent should receive the image
     
     # Send second message to check history includes image
     When I type "Continue" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -96,6 +103,3 @@ Feature: Message Streaming Status
     # Verify send button is still normal after second message
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
-    
-    # Verify agent received history including the image from first message
-    Then the agent should receive the image

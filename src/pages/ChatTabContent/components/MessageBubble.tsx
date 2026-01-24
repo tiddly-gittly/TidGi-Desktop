@@ -42,9 +42,10 @@ const ImageAttachment = ({ file }: { file: File | { path: string } }) => {
         cursor: 'pointer',
       }}
       onClick={() => {
+        const imageSource = typeof file === 'object' && 'path' in file ? `file://${file.path}` : URL.createObjectURL(file);
         const win = window.open();
         if (win) {
-          win.document.body.innerHTML = `<img src="${src}" style="max-width:100%"/>`;
+          win.document.body.innerHTML = `<img src="${imageSource}" style="max-width:100%"/>`;
         }
       }}
     />
@@ -158,7 +159,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
         $expired={isExpired}
         data-testid={!isUser ? (isStreaming ? 'assistant-streaming-text' : 'assistant-message') : undefined}
       >
-        {message.metadata?.file && <ImageAttachment file={message.metadata.file as File | { path: string }} />}
+        {message.metadata?.file ? <ImageAttachment file={message.metadata.file as File | { path: string }} /> : null}
         <MessageRenderer message={message} isUser={isUser} />
       </MessageContent>
 

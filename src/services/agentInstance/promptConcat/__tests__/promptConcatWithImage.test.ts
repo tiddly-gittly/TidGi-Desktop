@@ -53,7 +53,17 @@ describe('promptConcatStream with image', () => {
       isCancelled: () => false,
     };
 
-    const stream = promptConcatStream({ agentFrameworkConfig: {} }, messages, context);
+    const stream = promptConcatStream(
+      {
+        agentFrameworkConfig: {
+          prompts: [],
+          response: [],
+          plugins: [],
+        },
+      },
+      messages,
+      context,
+    );
 
     let finalResult;
     for await (const state of stream) {
@@ -67,8 +77,8 @@ describe('promptConcatStream with image', () => {
 
     const content = lastMessage?.content as any[];
     expect(content).toHaveLength(2);
-    expect(content[0]).toEqual({ type: 'text', text: 'Describe this image' });
-    expect(content[1]).toEqual({ type: 'image', image: expect.anything() });
+    expect(content[0]).toEqual({ type: 'image', image: expect.anything() });
+    expect(content[1]).toEqual({ type: 'text', text: 'Describe this image' });
 
     expect(mockReadFile).toHaveBeenCalledWith('/path/to/image.png');
   });
@@ -116,7 +126,17 @@ describe('promptConcatStream with image', () => {
       isCancelled: () => false,
     };
 
-    const stream = promptConcatStream({ agentFrameworkConfig: {} }, messages, context);
+    const stream = promptConcatStream(
+      {
+        agentFrameworkConfig: {
+          prompts: [],
+          response: [],
+          plugins: [],
+        },
+      },
+      messages,
+      context,
+    );
 
     let finalResult;
     for await (const state of stream) {

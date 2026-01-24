@@ -461,9 +461,9 @@ export class AgentInstanceService implements IAgentInstanceService {
               try {
                 subject.complete();
                 this.statusSubjects.delete(statusKey);
-                logger.debug(`[${agentId}] Subject completed and deleted`, { messageId: lastResult.message.id });
+                logger.debug(`[${agentId}] Subject completed and deleted`, { messageId: lastResult.message?.id });
               } catch (error) {
-                logger.error(`[${agentId}] Error completing subject`, { messageId: lastResult.message.id, error });
+                logger.error(`[${agentId}] Error completing subject`, { messageId: lastResult.message?.id, error });
               }
             }, 100); // Small delay to ensure IPC message is delivered
           }
@@ -736,6 +736,9 @@ export class AgentInstanceService implements IAgentInstanceService {
       logger.debug('User message saved to database', {
         when: new Date().toISOString(),
         ...summary,
+        hasMetadata: !!userMessage.metadata,
+        hasFile: !!userMessage.metadata?.file,
+        metadataKeys: userMessage.metadata ? Object.keys(userMessage.metadata) : [],
         source: 'saveUserMessage',
       });
     } catch (error) {

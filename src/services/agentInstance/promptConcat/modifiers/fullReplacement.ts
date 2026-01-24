@@ -95,7 +95,7 @@ const fullReplacementDefinition = registerModifier({
         delete found.prompt.text;
 
         // Check if message has an image attachment
-        const hasImage = Boolean(message.metadata?.file?.path);
+        const hasImage = Boolean((message.metadata as { file?: { path?: string } })?.file?.path);
 
         if (hasImage) {
           // For messages with images, create a child prompt that will be processed by infrastructure
@@ -105,11 +105,11 @@ const fullReplacementDefinition = registerModifier({
             role,
             text: message.content,
             // Preserve file metadata so it can be loaded by messagePersistence
-            metadata: message.metadata?.file
+            ...(message.metadata?.file
               ? {
                 file: message.metadata.file as unknown as Record<string, unknown>,
               }
-              : undefined,
+              : {}),
           });
         } else {
           // For text-only messages, just add the text
