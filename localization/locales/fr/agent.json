@@ -44,6 +44,8 @@
       "MissingConfigError": "Aucun fournisseur AI ou modèle configuré. Veuillez configurer dans les paramètres.",
       "MissingProviderError": "Le fournisseur {{provider}} n'est pas disponible. Veuillez le configurer dans les paramètres.",
       "ProviderNotFound": "Fournisseur {{provider}} introuvable. Veuillez le configurer dans les paramètres.",
+      "NoDefaultModel": "Aucun modèle par défaut configuré. Veuillez sélectionner un modèle dans les paramètres.",
+      "ModelNoVisionSupport": "Le modèle sélectionné ne prend pas en charge la vision. Veuillez choisir un modèle compatible avec la vision dans les paramètres.",
       "Title": "Problème de configuration"
     },
     "InputPlaceholder": "Tapez un message, Ctrl+Entrée pour envoyer",

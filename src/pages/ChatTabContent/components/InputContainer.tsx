@@ -78,8 +78,21 @@ export const InputContainer: React.FC<InputContainerProps> = ({
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && onFileSelect) {
-      onFileSelect(file);
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        console.error('Selected file is not an image:', file.type);
+        return;
+      }
+      // Validate file size (10MB limit)
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        console.error('File size exceeds 10MB limit:', file.size);
+        return;
+      }
+      if (onFileSelect) {
+        onFileSelect(file);
+      }
     }
     // Reset value so same file can be selected again if needed
     if (event.target) {
@@ -110,7 +123,10 @@ export const InputContainer: React.FC<InputContainerProps> = ({
                 // Future: open preview dialog
                 const win = window.open();
                 if (win) {
-                  win.document.body.innerHTML = `<img src="${previewUrl}" style="max-width:100%"/>`;
+                  const img = win.document.createElement('img');
+                  img.src = previewUrl;
+                  img.style.maxWidth = '100%';
+                  win.document.body.append(img);
                 }
               }}
             />

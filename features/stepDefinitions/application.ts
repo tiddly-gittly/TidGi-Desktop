@@ -404,15 +404,15 @@ When('I set file {string} to file input with selector {string}', async function(
   if (!page) {
     throw new Error('No current window available');
   }
-  
+
   // Resolve the file path relative to project root
   const targetPath = path.resolve(process.cwd(), filePath);
-  
+
   // Verify the file exists
   if (!await fs.pathExists(targetPath)) {
     throw new Error(`File does not exist: ${targetPath}`);
   }
-  
+
   // Use Playwright's setInputFiles to directly set file to the input element
   // This works even for hidden inputs
   await page.locator(selector).setInputFiles(targetPath);

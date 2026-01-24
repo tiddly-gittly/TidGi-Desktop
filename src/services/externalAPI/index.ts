@@ -48,6 +48,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   private dataSource: DataSource | null = null;
   private apiLogRepository: Repository<ExternalAPILogEntity> | null = null;
+  private initializationPromise: Promise<void> | null = null; // Prevent race condition in lazy initialization
   private activeRequests: Map<string, AbortController> = new Map();
   private settingsLoaded = false;
 
@@ -234,15 +235,24 @@ export class ExternalAPIService implements IExternalAPIService {
 
       // Ensure API logging is initialized (lazy initialization)
       if (!this.apiLogRepository) {
-        try {
-          await this.databaseService.initializeDatabase('externalApi');
-          this.dataSource = await this.databaseService.getDatabase('externalApi');
-          this.apiLogRepository = this.dataSource.getRepository(ExternalAPILogEntity);
-          logger.debug('External API logging initialized (lazy)');
-        } catch (error) {
-          logger.warn('Failed to initialize API log repository', error);
-          return;
+        // Reuse existing initialization promise to prevent race condition
+        if (!this.initializationPromise) {
+          this.initializationPromise = (async () => {
+            try {
+              await this.databaseService.initializeDatabase('externalApi');
+              this.dataSource = await this.databaseService.getDatabase('externalApi');
+              this.apiLogRepository = this.dataSource.getRepository(ExternalAPILogEntity);
+              logger.debug('External API logging initialized (lazy)');
+            } catch (error) {
+              logger.warn('Failed to initialize API log repository', error);
+              this.initializationPromise = null; // Reset on failure to allow retry
+              throw error;
+            }
+          })();
         }
+        await this.initializationPromise;
+        // If repository is still null after initialization, return early
+        if (!this.apiLogRepository) return;
       }
 
       // Try save; on UNIQUE race, fetch existing and merge, then save again

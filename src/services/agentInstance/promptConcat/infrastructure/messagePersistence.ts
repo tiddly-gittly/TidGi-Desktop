@@ -26,11 +26,13 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
       logger.debug('userMessageReceived hook called', {
         messageId,
         hasFile: !!content.file,
-        fileInfo: content.file ? {
-          hasPath: !!(content.file as any).path,
-          hasName: !!(content.file as any).name,
-          hasBuffer: !!(content.file as any).buffer,
-        } : null,
+        fileInfo: content.file
+          ? {
+            hasPath: !!(content.file as unknown as { path?: string }).path,
+            hasName: !!(content.file as unknown as { name?: string }).name,
+            hasBuffer: !!(content.file as unknown as { buffer?: ArrayBuffer }).buffer,
+          }
+          : null,
       });
 
       let persistedFileMetadata: Record<string, unknown> | undefined;
@@ -97,8 +99,8 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
           messageId,
           hasMetadata: !!userMessage.metadata,
           hasFile: !!userMessage.metadata?.file,
-          filePath: (userMessage.metadata?.file as any)?.path,
-          fileName: (userMessage.metadata?.file as any)?.name,
+          filePath: (userMessage.metadata?.file as Record<string, unknown> | undefined)?.path,
+          fileName: (userMessage.metadata?.file as Record<string, unknown> | undefined)?.name,
         });
       }
 

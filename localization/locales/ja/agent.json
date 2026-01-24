@@ -43,6 +43,8 @@
       "MissingBaseURLError": "{{provider}} プロバイダーにはベーsURLの設定が必要です。設定で構成してください。",
       "MissingConfigError": "AIプロバイダーまたはモデルが設定されていません。設定で構成してください。",
       "MissingProviderError": "プロバイダー {{provider}} は利用できません。設定で構成してください。",
+      "NoDefaultModel": "デフォルトモデルが設定されていません。設定でモデルを選択してください。",
+      "ModelNoVisionSupport": "選択したモデルは画像入力（ビジョン）をサポートしていません。ビジョン機能を持つモデルを選択してください。",
       "ProviderNotFound": "プロバイダー {{provider}} が見つかりません。設定で構成してください。",
       "Title": "設定の問題"
     },

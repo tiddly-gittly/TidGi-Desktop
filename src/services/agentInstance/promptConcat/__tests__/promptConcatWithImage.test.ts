@@ -1,5 +1,6 @@
+import type { AgentDefinition } from '../../../agentDefinition/interface';
 import { AgentFrameworkContext } from '../../agentFrameworks/utilities/type';
-import { AgentInstanceMessage } from '../../interface';
+import type { AgentInstance, AgentInstanceMessage } from '../../interface';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -48,8 +49,8 @@ describe('promptConcatStream with image', () => {
     ];
 
     const context: AgentFrameworkContext = {
-      agent: { id: 'agent1' } as any,
-      agentDef: {} as any,
+      agent: { id: 'agent1' } as Partial<AgentInstance> as AgentInstance,
+      agentDef: {} as Partial<AgentDefinition> as AgentDefinition,
       isCancelled: () => false,
     };
 
@@ -75,7 +76,7 @@ describe('promptConcatStream with image', () => {
     expect(lastMessage).toBeDefined();
     expect(Array.isArray(lastMessage?.content)).toBe(true);
 
-    const content = lastMessage?.content as any[];
+    const content = lastMessage?.content as Array<{ type: string; image?: unknown; text?: string }>;
     expect(content).toHaveLength(2);
     expect(content[0]).toEqual({ type: 'image', image: expect.anything() });
     expect(content[1]).toEqual({ type: 'text', text: 'Describe this image' });
@@ -121,8 +122,8 @@ describe('promptConcatStream with image', () => {
     ];
 
     const context: AgentFrameworkContext = {
-      agent: { id: 'agent1' } as any,
-      agentDef: {} as any,
+      agent: { id: 'agent1' } as Partial<AgentInstance> as AgentInstance,
+      agentDef: {} as Partial<AgentDefinition> as AgentDefinition,
       isCancelled: () => false,
     };
 

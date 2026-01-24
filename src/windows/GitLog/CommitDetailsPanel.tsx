@@ -517,7 +517,7 @@ export function CommitDetailsPanel(
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseEditMessage}>{t('Cancel')}</Button>
+          <Button onClick={handleCloseEditMessage}>{t('Common.Cancel')}</Button>
           <Button onClick={handleConfirmEditMessage} disabled={isAmending || !newCommitMessage.trim()} variant='contained'>
             {isAmending ? t('GitLog.Committing') : t('GitLog.EditCommitMessageConfirm')}
           </Button>
