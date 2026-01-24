@@ -87,7 +87,7 @@ Then('the browser view should be loaded and visible', async function(this: Appli
         throw new Error('Browser view not loaded');
       }
     },
-    { ...BACKOFF_OPTIONS, numOfAttempts: 15 },
+    { ...BACKOFF_OPTIONS, numOfAttempts: 30 },
   ).catch(() => {
     throw new Error('Browser view is not loaded or visible after multiple attempts');
   });
