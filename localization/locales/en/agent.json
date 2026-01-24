@@ -48,6 +48,10 @@
       "ProviderNotFound": "Provider {{provider}} not found. Please configure it in Settings.",
       "Title": "Configuration Issue"
     },
+    "FileValidation": {
+      "NotAnImage": "Selected file is not an image ({{fileType}}). Please select an image file.",
+      "TooLarge": "File size {{size}}MB exceeds the limit ({{maxSize}}MB). Please select a smaller file."
+    },
     "InputPlaceholder": "Type a message, Ctrl+Enter to send",
     "Send": "Send"
   },

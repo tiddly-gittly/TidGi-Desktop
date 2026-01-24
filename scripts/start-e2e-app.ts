@@ -1,5 +1,5 @@
 // pnpm exec cross-env NODE_ENV=test tsx ./scripts/start-e2e-app.ts
-// or: pnpm exec cross-env NODE_ENV=test tsx ./scripts/start-e2e-app.ts "Configure root tiddler and verify content loads after restar"
+// or: pnpm exec cross-env NODE_ENV=test tsx ./scripts/start-e2e-app.ts "Configure root tiddler and verify content loads after restart"
 /* eslint-disable unicorn/prevent-abbreviations */
 import { spawn } from 'child_process';
 import fs from 'fs-extra';

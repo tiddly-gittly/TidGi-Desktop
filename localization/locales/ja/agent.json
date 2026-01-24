@@ -48,6 +48,10 @@
       "ProviderNotFound": "プロバイダー {{provider}} が見つかりません。設定で構成してください。",
       "Title": "設定の問題"
     },
+    "FileValidation": {
+      "NotAnImage": "選択したファイルは画像形式ではありません（{{fileType}}）。画像ファイルを選択してください。",
+      "TooLarge": "ファイルサイズ {{size}}MB が制限（{{maxSize}}MB）を超えています。もっと小さいファイルを選択してください。"
+    },
     "InputPlaceholder": "メッセージを入力、Ctrl+Enterで送信",
     "Send": "送信"
   },

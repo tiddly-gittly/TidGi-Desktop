@@ -43,8 +43,13 @@
       "MissingBaseURLError": "{{provider}} 提供商需要配置基礎 URL。請在設置中進行配置。",
       "MissingConfigError": "未配置 AI 提供商或模型。請在設置中進行配置。",
       "MissingProviderError": "提供商 {{provider}} 不可用。請在設置中進行配置。",
+      "NoDefaultModel": "未配置默認模型。請在設定中配置默認模型。",
       "ProviderNotFound": "未找到提供商 {{provider}}。請在設置中進行配置。",
       "Title": "配置問題"
+    },
+    "FileValidation": {
+      "NotAnImage": "所選檔案不是圖片格式（{{fileType}}）。請選擇圖片檔案。",
+      "TooLarge": "檔案大小 {{size}}MB 超過了限制（{{maxSize}}MB）。請選擇較小的檔案。"
     },
     "InputPlaceholder": "輸入消息，Ctrl+Enter 發送",
     "Send": "發送"

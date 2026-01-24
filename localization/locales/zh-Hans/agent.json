@@ -48,6 +48,10 @@
       "ProviderNotFound": "未找到提供商 {{provider}}。请在设置中进行配置。",
       "Title": "配置问题"
     },
+    "FileValidation": {
+      "NotAnImage": "所选文件不是图片格式（{{fileType}}）。请选择图片文件。",
+      "TooLarge": "文件大小 {{size}}MB 超过了限制（{{maxSize}}MB）。请选择较小的文件。"
+    },
     "InputPlaceholder": "输入消息，Ctrl+Enter 发送",
     "Send": "发送"
   },

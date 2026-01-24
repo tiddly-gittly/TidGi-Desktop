@@ -48,6 +48,10 @@
       "ModelNoVisionSupport": "Le modèle sélectionné ne prend pas en charge la vision. Veuillez choisir un modèle compatible avec la vision dans les paramètres.",
       "Title": "Problème de configuration"
     },
+    "FileValidation": {
+      "NotAnImage": "Le fichier sélectionné n'est pas une image ({{fileType}}). Veuillez sélectionner un fichier image.",
+      "TooLarge": "La taille du fichier {{size}}MB dépasse la limite ({{maxSize}}MB). Veuillez sélectionner un fichier plus petit."
+    },
     "InputPlaceholder": "Tapez un message, Ctrl+Entrée pour envoyer",
     "Send": "Envoyer"
   },

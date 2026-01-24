@@ -81,13 +81,28 @@ export const InputContainer: React.FC<InputContainerProps> = ({
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        console.error('Selected file is not an image:', file.type);
+        void window.service.native.log('error', 'Selected file is not an image', { fileType: file.type });
+        void window.service.native.showElectronMessageBox({
+          type: 'error',
+          title: t('Agent.Error.Title'),
+          message: t('Agent.Error.FileValidation.NotAnImage', { fileType: file.type }),
+          buttons: ['OK'],
+        });
         return;
       }
       // Validate file size (10MB limit)
       const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
-        console.error('File size exceeds 10MB limit:', file.size);
+        void window.service.native.log('error', 'File size exceeds limit', { fileSize: file.size, maxSize });
+        void window.service.native.showElectronMessageBox({
+          type: 'error',
+          title: t('Agent.Error.Title'),
+          message: t('Agent.Error.FileValidation.TooLarge', {
+            size: (file.size / 1024 / 1024).toFixed(2),
+            maxSize: (maxSize / 1024 / 1024).toFixed(0),
+          }),
+          buttons: ['OK'],
+        });
         return;
       }
       if (onFileSelect) {

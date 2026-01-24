@@ -457,7 +457,9 @@ export class AgentInstanceService implements IAgentInstanceService {
               modified: new Date(),
             });
             // Complete and clean up the Observable
-            setTimeout(() => {
+            // Use queueMicrotask to ensure IPC message delivery before completing subject
+            // This schedules the completion after the current synchronous code and pending microtasks
+            queueMicrotask(() => {
               try {
                 subject.complete();
                 this.statusSubjects.delete(statusKey);
@@ -465,7 +467,7 @@ export class AgentInstanceService implements IAgentInstanceService {
               } catch (error) {
                 logger.error(`[${agentId}] Error completing subject`, { messageId: lastResult.message?.id, error });
               }
-            }, 100); // Small delay to ensure IPC message is delivered
+            });
           }
 
           // Trigger agentStatusChanged hook for completion

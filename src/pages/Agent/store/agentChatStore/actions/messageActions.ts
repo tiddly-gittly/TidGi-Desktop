@@ -44,10 +44,18 @@ export const messageActions = (
       set({ loading: true });
       // In Electron Renderer, File object has a 'path' property which is the absolute path.
       // We need to extract it because simple serialization might lose it or fail to transmit the File object correctly via IPC.
-      console.log('Sending message with file:', file);
-      if (file) {
-        console.log('File path:', (file as unknown as { path?: string }).path);
-      }
+      void window.service.native.log(
+        'debug',
+        'Sending message with file',
+        {
+          function: 'messageActions.sendMessage',
+          hasFile: !!file,
+          fileName: file?.name,
+          fileType: file?.type,
+          fileSize: file?.size,
+          filePath: (file as unknown as { path?: string })?.path,
+        },
+      );
 
       let fileBuffer: ArrayBuffer | undefined;
       // If path is missing (e.g. web file, pasted image), read content
@@ -61,7 +69,7 @@ export const messageActions = (
 
       const fileData = file
         ? {
-          path: (file as unknown as { path: string }).path,
+          path: (file as unknown as { path?: string }).path,
           name: file.name,
           type: file.type,
           size: file.size,

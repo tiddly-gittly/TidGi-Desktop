@@ -11,18 +11,22 @@ import { MessageRenderer } from './MessageRenderer';
 
 const ImageAttachment = ({ file }: { file: File | { path: string } }) => {
   const [source, setSource] = React.useState<string | undefined>();
+  const [previewUrl, setPreviewUrl] = React.useState<string | undefined>();
 
   React.useEffect(() => {
     // Check for File object (from current session upload)
     if (file instanceof File) {
       const url = URL.createObjectURL(file);
       setSource(url);
+      setPreviewUrl(url);
       return () => {
         URL.revokeObjectURL(url);
       };
     } // Check for persisted file object with path
     else if (file && typeof file === 'object' && 'path' in file) {
-      setSource(`file://${(file as { path: string }).path}`);
+      const filePath = `file://${(file as { path: string }).path}`;
+      setSource(filePath);
+      setPreviewUrl(filePath);
     }
   }, [file]);
 
@@ -42,10 +46,13 @@ const ImageAttachment = ({ file }: { file: File | { path: string } }) => {
         cursor: 'pointer',
       }}
       onClick={() => {
-        const imageSource = typeof file === 'object' && 'path' in file ? `file://${file.path}` : URL.createObjectURL(file);
+        if (!previewUrl) return;
         const win = window.open();
         if (win) {
-          win.document.body.innerHTML = `<img src="${imageSource}" style="max-width:100%"/>`;
+          const img = win.document.createElement('img');
+          img.src = previewUrl;
+          img.style.maxWidth = '100%';
+          win.document.body.append(img);
         }
       }}
     />

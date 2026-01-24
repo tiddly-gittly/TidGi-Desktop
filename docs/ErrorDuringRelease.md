@@ -15,4 +15,4 @@ Get-Process | Where-Object { $_.ProcessName -match "esbuild|electron" } | Stop-P
 Remove-Item "$env:TEMP\si-*" -Recurse -Force -ErrorAction SilentlyContinue
 ```
 
-Also check if there are open explorer folder opened, close may help.
+Also check if there are any open explorer folders, closing them may help.
