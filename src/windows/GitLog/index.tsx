@@ -40,7 +40,7 @@ export default function GitHistory(): React.JSX.Element {
         <LoadingContainer>
           <CircularProgress />
           <Typography variant='body2' color='textSecondary' sx={{ mt: 2 }}>
-            {t('GitLog.LoadingWorkspace', { defaultValue: '正在加载工作区...' })}
+            {t('GitLog.LoadingWorkspace')}
           </Typography>
         </LoadingContainer>
       </Root>

@@ -501,7 +501,7 @@ export class Window implements IWindowService {
 
   /**
    * Initialize tidgi mini window on app startup.
-   * Creates window, determines target workspace based on preferences, and sets up view.
+   * Only creates the window, views will be created later by initializeAllWorkspaceView.
    */
   public async initializeTidgiMiniWindow(): Promise<void> {
     const tidgiMiniWindowEnabled = await this.preferenceService.get('tidgiMiniWindow');
@@ -510,50 +510,10 @@ export class Window implements IWindowService {
       return;
     }
 
-    // Create the window but don't show it yet
+    // Only create the window but don't create views yet
+    // Views will be created by initializeAllWorkspaceView -> addViewForAllBrowserViews
     await this.openTidgiMiniWindow(true, false);
-
-    // Determine which workspace to show based on preferences (sync vs fixed)
-    const { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace();
-
-    if (!targetWorkspaceId) {
-      logger.info('No target workspace for tidgi mini window (sync disabled and no fixed workspace selected)', { function: 'initializeTidgiMiniWindow' });
-      return;
-    }
-
-    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const targetWorkspace = await workspaceService.get(targetWorkspaceId);
-
-    if (!targetWorkspace || targetWorkspace.pageType) {
-      // Skip page workspaces (like Agent) - they don't have browser views
-      logger.debug('Target workspace is a page type or not found, skipping view creation', {
-        function: 'initializeTidgiMiniWindow',
-        targetWorkspaceId,
-        isPageType: targetWorkspace?.pageType,
-      });
-      return;
-    }
-
-    // Create view for the target workspace
-    const viewService = container.get<IViewService>(serviceIdentifier.View);
-    const existingView = viewService.getView(targetWorkspace.id, WindowNames.tidgiMiniWindow);
-
-    if (!existingView) {
-      logger.info('Creating tidgi mini window view for target workspace', {
-        function: 'initializeTidgiMiniWindow',
-        workspaceId: targetWorkspace.id,
-        shouldSync,
-      });
-      await viewService.addView(targetWorkspace, WindowNames.tidgiMiniWindow);
-    }
-
-    // Realign to ensure view is properly positioned
-    logger.info('Realigning workspace view for tidgi mini window after initialization', {
-      function: 'initializeTidgiMiniWindow',
-      workspaceId: targetWorkspace.id,
-      shouldSync,
-    });
-    await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).realignActiveWorkspace(targetWorkspace.id);
+    logger.debug('TidGi mini window created, views will be initialized by initializeAllWorkspaceView', { function: 'initializeTidgiMiniWindow' });
   }
 
   public async updateWindowProperties(windowName: WindowNames, properties: { alwaysOnTop?: boolean }): Promise<void> {

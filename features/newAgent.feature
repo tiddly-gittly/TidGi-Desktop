@@ -32,7 +32,8 @@ Feature: Create New Agent Workflow
       | agent name input field  | [data-testid='agent-name-input-field'] |
     # Step 3: Select template to advance to step 2
     When I click on a "search input" element with selector ".aa-Input"
-    # Immediately click on the Example Agent template (don't wait or panel will close)
+    # Wait for autocomplete panel to load with templates (async operation in CI)
+    And I should see an "autocomplete panel" element with selector ".aa-Panel"
     # Using description text to select specific agent, more precise than just name
     When I click on a "Example Agent template" element with selector '.aa-Item[role="option"]:has-text("Example agent with prompt processing")'
     # Fill in agent name while still in step 1

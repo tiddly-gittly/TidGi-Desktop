@@ -36,8 +36,20 @@
   "Chat": {
     "Cancel": "取消",
     "ConfigError": {
+      "AuthenticationError": "{{provider}} 身份驗證失敗。請在設置中檢查您的 API 密鑰。",
+      "AuthenticationFailed": "{{provider}} 身份驗證失敗。請在設置中檢查您的 API 密鑰。",
       "GoToSettings": "前往設置",
+      "MissingAPIKeyError": "未找到 {{provider}} 的 API 密鑰。請在設置中添加。",
+      "MissingBaseURLError": "{{provider}} 提供商需要配置基礎 URL。請在設置中進行配置。",
+      "MissingConfigError": "未配置 AI 提供商或模型。請在設置中進行配置。",
+      "MissingProviderError": "提供商 {{provider}} 不可用。請在設置中進行配置。",
+      "NoDefaultModel": "未配置默認模型。請在設定中配置默認模型。",
+      "ProviderNotFound": "未找到提供商 {{provider}}。請在設置中進行配置。",
       "Title": "配置問題"
+    },
+    "FileValidation": {
+      "NotAnImage": "所選檔案不是圖片格式（{{fileType}}）。請選擇圖片檔案。",
+      "TooLarge": "檔案大小 {{size}}MB 超過了限制（{{maxSize}}MB）。請選擇較小的檔案。"
     },
     "InputPlaceholder": "輸入消息，Ctrl+Enter 發送",
     "Send": "發送"
@@ -223,6 +235,7 @@
     "AutoRefresh": "預覽會隨輸入文本的變化自動刷新",
     "CodeEditor": "代碼編輯器",
     "Edit": "提示詞編輯",
+    "Enabled": "啟用",
     "EnterEditSideBySide": "分屏顯示編輯",
     "EnterFullScreen": "進入全螢幕",
     "EnterPreviewSideBySide": "分屏顯示預覽",
@@ -485,6 +498,8 @@
       "CaptionTitle": "標題",
       "Content": "外掛內容或說明",
       "ContentTitle": "內容",
+      "Enabled": "決定這個文本是否被拼入最終的提示詞裡",
+      "EnabledTitle": "啟用",
       "ForbidOverrides": "是否禁止在執行時覆蓋此插件的參數",
       "ForbidOverridesTitle": "禁止覆蓋",
       "Id": "外掛實例 ID（同一 handler 內唯一）",
@@ -606,7 +621,8 @@
       "EditAgentDefinition": "編輯智慧體",
       "NewTab": "新建標籤頁",
       "NewWeb": "新建網頁",
-      "SplitView": "分屏展示"
+      "SplitView": "分屏展示",
+      "WikiEmbed": "維基"
     }
   },
   "Tool": {
@@ -668,5 +684,9 @@
         }
       }
     }
+  },
+  "WikiEmbed": {
+    "Error": "嵌入Wiki失敗",
+    "Loading": "正在載入Wiki..."
   }
 }

@@ -36,8 +36,21 @@
   "Chat": {
     "Cancel": "キャンセル",
     "ConfigError": {
+      "AuthenticationError": "{{provider}} の認証に失敗しました。設定でAPIキーを確認してください。",
+      "AuthenticationFailed": "{{provider}} の認証に失敗しました。設定でAPIキーを確認してください。",
       "GoToSettings": "設定へ移動",
+      "MissingAPIKeyError": "{{provider}} のAPIキーが見つかりません。設定で追加してください。",
+      "MissingBaseURLError": "{{provider}} プロバイダーにはベーsURLの設定が必要です。設定で構成してください。",
+      "MissingConfigError": "AIプロバイダーまたはモデルが設定されていません。設定で構成してください。",
+      "MissingProviderError": "プロバイダー {{provider}} は利用できません。設定で構成してください。",
+      "NoDefaultModel": "デフォルトモデルが設定されていません。設定でモデルを選択してください。",
+      "ModelNoVisionSupport": "選択したモデルは画像入力（ビジョン）をサポートしていません。ビジョン機能を持つモデルを選択してください。",
+      "ProviderNotFound": "プロバイダー {{provider}} が見つかりません。設定で構成してください。",
       "Title": "設定の問題"
+    },
+    "FileValidation": {
+      "NotAnImage": "選択したファイルは画像形式ではありません（{{fileType}}）。画像ファイルを選択してください。",
+      "TooLarge": "ファイルサイズ {{size}}MB が制限（{{maxSize}}MB）を超えています。もっと小さいファイルを選択してください。"
     },
     "InputPlaceholder": "メッセージを入力、Ctrl+Enterで送信",
     "Send": "送信"
@@ -240,6 +253,7 @@
     "AutoRefresh": "プレビューは入力テキストの変更に応じて自動的に更新されます",
     "CodeEditor": "コードエディタ",
     "Edit": "プロンプト編集",
+    "Enabled": "有効化",
     "EnterEditSideBySide": "分割画面表示編集",
     "EnterFullScreen": "全画面表示に入る",
     "EnterPreviewSideBySide": "分割画面表示プレビュー",
@@ -502,6 +516,8 @@
       "CaptionTitle": "タイトル",
       "Content": "プラグインの内容または説明",
       "ContentTitle": "内容",
+      "Enabled": "このテキストが最終的なプロンプトに組み込まれるかどうかを決定する",
+      "EnabledTitle": "有効化",
       "ForbidOverrides": "このプラグインのパラメータを実行時に上書きすることを禁止しますか？",
       "ForbidOverridesTitle": "上書き禁止",
       "Id": "プラグインインスタンスID（同一ハンドラ内で一意）",
@@ -623,7 +639,8 @@
       "EditAgentDefinition": "編集エージェント",
       "NewTab": "新しいタブ",
       "NewWeb": "新しいウェブページを作成",
-      "SplitView": "分割画面表示"
+      "SplitView": "分割画面表示",
+      "WikiEmbed": "ウィキ"
     }
   },
   "Tool": {
@@ -686,5 +703,9 @@
       }
     }
   },
-  "Unknown": "未知"
+  "Unknown": "未知",
+  "WikiEmbed": {
+    "Error": "Wikiへの埋め込みに失敗しました",
+    "Loading": "Wikiを読み込んでいます..."
+  }
 }

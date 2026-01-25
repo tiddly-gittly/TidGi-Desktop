@@ -71,7 +71,7 @@ Then('I should see {string} in the browser view DOM', async function(this: Appli
   });
 });
 
-Then('the browser view should be loaded and visible', { timeout: 15000 }, async function(this: ApplicationWorld) {
+Then('the browser view should be loaded and visible', async function(this: ApplicationWorld) {
   if (!this.app) {
     throw new Error('Application not launched');
   }
@@ -87,7 +87,7 @@ Then('the browser view should be loaded and visible', { timeout: 15000 }, async 
         throw new Error('Browser view not loaded');
       }
     },
-    { ...BACKOFF_OPTIONS, numOfAttempts: 15 },
+    { ...BACKOFF_OPTIONS, numOfAttempts: 30 },
   ).catch(() => {
     throw new Error('Browser view is not loaded or visible after multiple attempts');
   });
@@ -150,7 +150,7 @@ When('I click on {string} elements in browser view with selectors:', async funct
   }
 });
 
-Then('I wait for {string} element in browser view with selector {string}', { timeout: 15000 }, async function(
+Then('I wait for {string} element in browser view with selector {string}', async function(
   this: ApplicationWorld,
   elementComment: string,
   selector: string,
@@ -314,7 +314,7 @@ When('I open tiddler {string} in browser view', async function(this: Application
  * Create a new tiddler with title and optional tags via TiddlyWiki UI.
  * This step handles all the UI interactions: click add button, set title, add tags, and confirm.
  */
-When('I create a tiddler {string} with tag {string} in browser view', { timeout: 20000 }, async function(
+When('I create a tiddler {string} with tag {string} in browser view', async function(
   this: ApplicationWorld,
   tiddlerTitle: string,
   tagName: string,
@@ -361,7 +361,7 @@ When('I create a tiddler {string} with tag {string} in browser view', { timeout:
 /**
  * Create a new tiddler with title and custom field via TiddlyWiki UI.
  */
-When('I create a tiddler {string} with field {string} set to {string} in browser view', { timeout: 20000 }, async function(
+When('I create a tiddler {string} with field {string} set to {string} in browser view', async function(
   this: ApplicationWorld,
   tiddlerTitle: string,
   fieldName: string,
@@ -406,4 +406,22 @@ When('I create a tiddler {string} with field {string} set to {string} in browser
   // Click confirm button to save
   await clickElement(this.app, 'button:has(.tc-image-done-button)');
   await new Promise(resolve => setTimeout(resolve, 500));
+});
+
+/**
+ * Execute TiddlyWiki code in browser view
+ * Useful for programmatic wiki operations
+ */
+When('I execute TiddlyWiki code in browser view: {string}', async function(this: ApplicationWorld, code: string) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+
+  try {
+    // Wrap the code to avoid returning non-serializable objects
+    const wrappedCode = `(function() { ${code}; return true; })()`;
+    await executeTiddlyWikiCode(this.app, wrappedCode);
+  } catch (error) {
+    throw new Error(`Failed to execute TiddlyWiki code in browser view: ${error as Error}`);
+  }
 });

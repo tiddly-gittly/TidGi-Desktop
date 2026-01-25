@@ -6,6 +6,7 @@ import path from 'path';
 import type { IWikiWorkspace, IWorkspace } from '../../src/services/workspaces/interface';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getLogPath, getSettingsPath, getWikiTestRootPath, getWikiTestWikiPath } from '../supports/paths';
+import { LOG_MARKER_WAIT_TIMEOUT } from '../supports/timeouts';
 // Scenario-specific paths are computed via helper functions
 import type { ApplicationWorld } from './application';
 
@@ -301,42 +302,45 @@ Then('file {string} should exist in {string}', async function(this: ApplicationW
   }
 });
 
-Then('file {string} should not exist in {string}', { timeout: 15000 }, async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
-  // Replace {tmpDir} with wiki test root (not wiki subfolder)
-  let directoryPath = simpleDirectoryPath.replace('{tmpDir}', getWikiTestRootPath(this));
+Then(
+  'file {string} should not exist in {string}',
+  async function(this: ApplicationWorld, fileName: string, simpleDirectoryPath: string) {
+    // Replace {tmpDir} with wiki test root (not wiki subfolder)
+    let directoryPath = simpleDirectoryPath.replace('{tmpDir}', getWikiTestRootPath(this));
 
-  // Resolve symlinks on all platforms to handle sub-wikis correctly
-  if (await fs.pathExists(directoryPath)) {
-    try {
-      directoryPath = fs.realpathSync(directoryPath);
-    } catch {
-      // If realpathSync fails, continue with the original path
+    // Resolve symlinks on all platforms to handle sub-wikis correctly
+    if (await fs.pathExists(directoryPath)) {
+      try {
+        directoryPath = fs.realpathSync(directoryPath);
+      } catch {
+        // If realpathSync fails, continue with the original path
+      }
     }
-  }
 
-  const filePath = path.join(directoryPath, fileName);
+    const filePath = path.join(directoryPath, fileName);
 
-  try {
-    await backOff(
-      async () => {
-        if (!(await fs.pathExists(filePath))) {
-          return;
-        }
-        throw new Error('File still exists');
-      },
-      BACKOFF_OPTIONS,
-    );
-  } catch {
-    throw new Error(
-      `File "${fileName}" should not exist but was found in directory: ${directoryPath}`,
-    );
-  }
-});
+    try {
+      await backOff(
+        async () => {
+          if (!(await fs.pathExists(filePath))) {
+            return;
+          }
+          throw new Error('File still exists');
+        },
+        BACKOFF_OPTIONS,
+      );
+    } catch {
+      throw new Error(
+        `File "${fileName}" should not exist but was found in directory: ${directoryPath}`,
+      );
+    }
+  },
+);
 
 /**
  * Verify that a workspace in settings.json has a specific property set to a specific value
  */
-Then('settings.json should have workspace {string} with {string} set to {string}', { timeout: 10000 }, async function(
+Then('settings.json should have workspace {string} with {string} set to {string}', async function(
   this: ApplicationWorld,
   workspaceName: string,
   propertyName: string,
@@ -416,7 +420,7 @@ Then('settings.json should have workspace {string} with {string} set to {string}
 /**
  * Verify that a workspace in settings.json has a property array that contains a specific value
  */
-Then('settings.json should have workspace {string} with {string} containing {string}', { timeout: 10000 }, async function(
+Then('settings.json should have workspace {string} with {string} containing {string}', async function(
   this: ApplicationWorld,
   workspaceName: string,
   propertyName: string,
@@ -559,11 +563,9 @@ async function clearGitTestData(scenarioRoot?: string) {
  * Read docs/Testing.md section "Key E2E Testing Patterns" point 6 before attempting any changes.
  * Maximum allowed timeouts: Local 5s, CI 10s (exactly 2x local, no more)
  */
-Then('I wait for {string} log marker {string}', { timeout: process.env.CI ? 10 * 1000 : 5 * 1000 }, async function(this: ApplicationWorld, description: string, marker: string) {
+Then('I wait for {string} log marker {string}', async function(this: ApplicationWorld, description: string, marker: string) {
   // Search in all log files using '*' pattern (includes TidGi-, wiki-, and workspace-named logs like WikiRenamed-)
-  // Internal wait timeout: Local 3s, CI 6s (to fit within step timeout)
-  const waitTimeout = process.env.CI ? 6000 : 3000;
-  await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, waitTimeout, '*');
+  await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, LOG_MARKER_WAIT_TIMEOUT, '*');
 });
 
 /**
@@ -576,21 +578,19 @@ Then('I wait for {string} log marker {string}', { timeout: process.env.CI ? 10 *
  *     | watch-fs stabilized after restart| [test-id-WATCH_FS_STABILIZED]            |
  *     | SSE ready after restart          | [test-id-SSE_READY]                      |
  */
-Then('I wait for log markers:', { timeout: process.env.CI ? 10 * 1000 : 5 * 1000 }, async function(this: ApplicationWorld, dataTable: DataTable) {
+Then('I wait for log markers:', async function(this: ApplicationWorld, dataTable: DataTable) {
   const rows = dataTable.raw();
   const dataRows = parseDataTableRows(rows, 2);
 
   if (dataRows[0]?.length !== 2) {
     throw new Error('Table must have exactly 2 columns: | description | marker |');
   }
-
-  const waitTimeout = process.env.CI ? 6000 : 3000;
   const errors: string[] = [];
 
   // Wait for markers sequentially to maintain order
   for (const [description, marker] of dataRows) {
     try {
-      await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, waitTimeout, '*');
+      await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, LOG_MARKER_WAIT_TIMEOUT, '*');
     } catch (error) {
       errors.push(`Failed to find log marker "${marker}" (${description}): ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -938,6 +938,57 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
 });
 
 /**
+ * Restart a workspace wiki worker
+ */
+When('I restart workspace {string}', async function(this: ApplicationWorld, workspaceName: string) {
+  if (!this.app) throw new Error('Application is not available');
+
+  const settingsPath = getSettingsPath(this);
+  const settings = JSON.parse(await fs.readFile(settingsPath, 'utf-8')) as { workspaces?: Record<string, IWorkspace> };
+  if (!settings.workspaces) throw new Error('No workspaces found');
+
+  let targetWorkspaceId: string | undefined;
+  for (const [id, workspace] of Object.entries(settings.workspaces)) {
+    if ('name' in workspace && workspace.name === workspaceName) {
+      targetWorkspaceId = id;
+      break;
+    }
+    if ('wikiFolderLocation' in workspace && workspace.wikiFolderLocation) {
+      const folderName = path.basename(workspace.wikiFolderLocation);
+      if (folderName === workspaceName) {
+        targetWorkspaceId = id;
+        break;
+      }
+    }
+  }
+
+  if (!targetWorkspaceId) throw new Error(`No workspace found: ${workspaceName}`);
+
+  const result = await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
+    const windows = BrowserWindow.getAllWindows();
+    const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents?.getURL().includes('index.html'));
+    if (!mainWindow) throw new Error('Main window not found');
+
+    return await mainWindow.webContents.executeJavaScript(`
+      (async () => {
+        const workspace = await window.service.workspace.get(${JSON.stringify(workspaceId)});
+        if (!workspace) return { success: false, error: 'Workspace not found' };
+        try {
+          await window.service.wiki.restartWiki(workspace);
+          // Reload view to show fresh content from disk after wiki restart
+          await window.service.view.reloadViewsWebContents(${JSON.stringify(workspaceId)});
+          return { success: true };
+        } catch (error) {
+          return { success: false, error: error.message };
+        }
+      })();
+    `) as Promise<{ success: boolean; error?: string }>;
+  }, targetWorkspaceId);
+
+  if (!result.success) throw new Error(`Failed to restart: ${result.error ?? 'Unknown error'}`);
+});
+
+/**
  * Update workspace settings dynamically after app launch
  * This is useful for enabling features like enableFileSystemWatch in tests
  *
@@ -947,7 +998,7 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
  *   | enableFileSystemWatch    | true  |
  *   | syncOnInterval           | false |
  */
-When('I update workspace {string} settings:', { timeout: 60000 }, async function(this: ApplicationWorld, workspaceName: string, dataTable: DataTable) {
+When('I update workspace {string} settings:', async function(this: ApplicationWorld, workspaceName: string, dataTable: DataTable) {
   if (!this.app) {
     throw new Error('Application is not available');
   }
@@ -1022,6 +1073,20 @@ When('I update workspace {string} settings:', { timeout: 60000 }, async function
     throw new Error(`No workspace found with name: ${workspaceName}`);
   }
 
+  // If enableFileSystemWatch is being changed, check current state BEFORE updating
+  let watchFsCurrentlyEnabled = false;
+  if ('enableFileSystemWatch' in settingsUpdate) {
+    const currentWorkspace = await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
+      const windows = BrowserWindow.getAllWindows();
+      const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+      if (!mainWindow) return null;
+
+      return await mainWindow.webContents.executeJavaScript(`window.service.workspace.get(${JSON.stringify(workspaceId)})`) as Promise<IWorkspace | null>;
+    }, targetWorkspaceId);
+
+    watchFsCurrentlyEnabled = currentWorkspace !== null && isWikiWorkspace(currentWorkspace) && currentWorkspace.enableFileSystemWatch;
+  }
+
   // Update workspace settings via main window
   await this.app.evaluate(async ({ BrowserWindow }, { workspaceId, updates }: { workspaceId: string; updates: Record<string, unknown> }) => {
     const windows = BrowserWindow.getAllWindows();
@@ -1047,23 +1112,17 @@ When('I update workspace {string} settings:', { timeout: 60000 }, async function
   // If enableFileSystemWatch was changed, we need to restart the wiki for it to take effect
   // The wiki worker reads this config at startup, so changes don't apply until restart
   if ('enableFileSystemWatch' in settingsUpdate) {
-    // First, wait for the wiki to be fully started before attempting restart
-    // This prevents conflicts if the wiki is still initializing
-    // Wait for WATCH_FS since it indicates wiki worker is ready, or SSE_READY if watch is disabled
-    try {
-      await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs not ready before restart', 30000);
-    } catch {
-      // If watch-fs is disabled initially, wait for SSE instead
-      await waitForLogMarker(this, '[test-id-SSE_READY]', 'SSE not ready before restart', 30000);
+    // Only wait for watch-fs if it was enabled before the update
+    // If it was disabled, wiki is ready immediately without watch-fs markers
+    if (watchFsCurrentlyEnabled) {
+      await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs not ready before restart', LOG_MARKER_WAIT_TIMEOUT);
     }
 
-    // Only clear watch-fs related log markers to ensure we wait for fresh ones after restart
-    // Don't clear other markers like git-init-complete that won't appear again
+    // Clear log markers to ensure we wait for fresh ones after restart
     await clearLogLinesContaining(this, '[test-id-WATCH_FS_STABILIZED]');
-    await clearLogLinesContaining(this, '[test-id-SSE_READY]');
 
     // Restart the wiki
-    await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
+    const restartResult = await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
       const windows = BrowserWindow.getAllWindows();
       const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
 
@@ -1071,20 +1130,31 @@ When('I update workspace {string} settings:', { timeout: 60000 }, async function
         throw new Error('Main window not found');
       }
 
-      await mainWindow.webContents.executeJavaScript(`
+      const result = await mainWindow.webContents.executeJavaScript(`
         (async () => {
           const workspace = await window.service.workspace.get(${JSON.stringify(workspaceId)});
-          if (workspace) {
+          if (!workspace) {
+            return { success: false, error: 'Workspace not found' };
+          }
+          try {
             await window.service.wiki.restartWiki(workspace);
+            return { success: true };
+          } catch (error) {
+            return { success: false, error: error.message };
           }
         })();
-      `);
+      `) as Promise<{ success: boolean; error?: string }>;
+      return result;
     }, targetWorkspaceId);
+
+    if (!restartResult.success) {
+      throw new Error(`Failed to restart wiki: ${restartResult.error ?? 'Unknown error'}`);
+    }
 
     // Wait for wiki to restart and watch-fs to stabilize
     // Only wait if enableFileSystemWatch was set to true
     if (settingsUpdate.enableFileSystemWatch === true) {
-      await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not stabilize after restart', 30000);
+      await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not stabilize after restart', LOG_MARKER_WAIT_TIMEOUT);
     }
   }
 });
@@ -1502,5 +1572,65 @@ When('I remove workspace {string} keeping files', async function(this: Applicati
   // Wait for removal to propagate
   await this.app.evaluate(async () => {
     await new Promise(resolve => setTimeout(resolve, 500));
+  });
+});
+
+/**
+ * Open workspace in a new window using TidGi's built-in API
+ */
+When('I open workspace {string} in a new window', async function(this: ApplicationWorld, workspaceName: string) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+
+  // Get workspace by name and open in new window
+  const success = await this.app.evaluate(
+    async ({ BrowserWindow }, name: string) => {
+      const windows = BrowserWindow.getAllWindows();
+      const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+
+      if (!mainWindow) {
+        return { success: false, error: 'Main window not found' };
+      }
+
+      try {
+        // Execute code in renderer to get workspace and open new window
+        const result = await mainWindow.webContents.executeJavaScript(`
+          (async () => {
+            try {
+              console.log('[test] Getting workspaces list...');
+              const workspaces = await window.service.workspace.getWorkspacesAsList();
+              console.log('[test] Found workspaces:', workspaces.length);
+              const workspace = workspaces.find(w => w.name === ${JSON.stringify(name)});
+              if (!workspace) {
+                return { success: false, error: 'Workspace not found: ' + ${JSON.stringify(name)} };
+              }
+              console.log('[test] Found workspace:', workspace.name, workspace.id);
+              const lastUrl = workspace.lastUrl || workspace.homeUrl;
+              console.log('[test] Opening window with URL:', lastUrl);
+              await window.service.workspaceView.openWorkspaceWindowWithView(workspace, { uri: lastUrl });
+              console.log('[test] Window opened successfully');
+              return { success: true };
+            } catch (err) {
+              console.error('[test] Error:', err);
+              return { success: false, error: err instanceof Error ? err.message : String(err) };
+            }
+          })();
+        `) as { error?: string; success: boolean };
+        return result;
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    },
+    workspaceName,
+  );
+
+  if (!success || !success.success) {
+    throw new Error(`Failed to open workspace in new window: ${success?.error || 'unknown error'}`);
+  }
+
+  // Wait for the new window to be created and ready
+  await this.app.evaluate(async () => {
+    await new Promise(resolve => setTimeout(resolve, 2000));
   });
 });

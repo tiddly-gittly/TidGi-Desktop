@@ -1,4 +1,4 @@
-import { After, AfterAll, Before } from '@cucumber/cucumber';
+import { After, Before } from '@cucumber/cucumber';
 import fs from 'fs-extra';
 import path from 'path';
 import { makeSlugPath } from '../supports/paths';
@@ -127,14 +127,4 @@ After(async function(this: ApplicationWorld, { pickle }) {
   }
 
   // Scenario-specific logs are already in the right place, no need to move them
-});
-
-// Force exit after all tests complete to prevent hanging
-AfterAll({ timeout: 5000 }, async function() {
-  // Give a short grace period for any final cleanup
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  // Force exit the process
-  // This is necessary because sometimes Electron/Playwright resources don't fully clean up
-  process.exit(0);
 });

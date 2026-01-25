@@ -20,6 +20,7 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [externalApiInfo, setExternalApiInfo] = useState<{ exists: boolean; size?: number; path?: string }>({ exists: false });
+  const [isWindows, setIsWindows] = useState(false);
 
   useEffect(() => {
     const fetchInfo = async () => {
@@ -39,6 +40,14 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
       }
     };
     void fetchInfo();
+  }, []);
+
+  useEffect(() => {
+    const checkPlatform = async () => {
+      const platform = await window.service.context.get('platform');
+      setIsWindows(platform === 'win32');
+    };
+    void checkPlatform();
   }, []);
 
   return (
@@ -89,6 +98,33 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                 <ListItemText primary={t('Preference.OpenV8CacheFolder')} secondary={t('Preference.OpenV8CacheFolderDetail')} />
                 <ChevronRightIcon color='action' />
               </ListItemButton>
+              {isWindows && (
+                <ListItemButton
+                  onClick={async () => {
+                    const localAppData = process.env.LOCALAPPDATA;
+                    if (localAppData) {
+                      // %APPDATA%\Local\SquirrelTemp\SquirrelSetup.log
+                      const squirrelTemporaryPath = `${localAppData}\\SquirrelTemp`;
+                      try {
+                        await window.service.native.openPath(squirrelTemporaryPath, true);
+                      } catch (error: unknown) {
+                        void window.service.native.log(
+                          'error',
+                          'DeveloperTools: open SquirrelTemp folder failed',
+                          {
+                            function: 'DeveloperTools.openSquirrelTempFolder',
+                            error: error as Error,
+                            path: squirrelTemporaryPath,
+                          },
+                        );
+                      }
+                    }
+                  }}
+                >
+                  <ListItemText primary={t('Preference.OpenInstallerLogFolder')} secondary={t('Preference.OpenInstallerLogFolderDetail')} />
+                  <ChevronRightIcon color='action' />
+                </ListItemButton>
+              )}
               <Divider />
               <ListItemButton
                 onClick={async () => {

@@ -447,19 +447,27 @@ export class AgentInstanceService implements IAgentInstanceService {
         if (lastResult?.message) {
           // Complete the message stream directly using the last message from the generator
           const statusKey = `${agentId}:${lastResult.message.id}`;
-          if (this.statusSubjects.has(statusKey)) {
-            const subject = this.statusSubjects.get(statusKey);
-            if (subject) {
-              // Send final update with completed state
-              subject.next({
-                state: 'completed',
-                message: lastResult.message,
-                modified: new Date(),
-              });
-              // Complete the Observable and remove the subject
-              subject.complete();
-              this.statusSubjects.delete(statusKey);
-            }
+          const subject = this.statusSubjects.get(statusKey);
+          if (subject) {
+            logger.debug(`[${agentId}] Completing message stream`, { messageId: lastResult.message.id });
+            // Send final update with completed state
+            subject.next({
+              state: 'completed',
+              message: lastResult.message,
+              modified: new Date(),
+            });
+            // Complete and clean up the Observable
+            // Use queueMicrotask to ensure IPC message delivery before completing subject
+            // This schedules the completion after the current synchronous code and pending microtasks
+            queueMicrotask(() => {
+              try {
+                subject.complete();
+                this.statusSubjects.delete(statusKey);
+                logger.debug(`[${agentId}] Subject completed and deleted`, { messageId: lastResult.message?.id });
+              } catch (error) {
+                logger.error(`[${agentId}] Error completing subject`, { messageId: lastResult.message?.id, error });
+              }
+            });
           }
 
           // Trigger agentStatusChanged hook for completion
@@ -477,6 +485,26 @@ export class AgentInstanceService implements IAgentInstanceService {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error(`Agent handler execution failed: ${errorMessage}`);
+
+        // Clear any pending message subscriptions for this agent
+        for (const key of Array.from(this.statusSubjects.keys())) {
+          if (key.startsWith(`${agentId}:`)) {
+            const subject = this.statusSubjects.get(key);
+            if (subject) {
+              try {
+                subject.next({
+                  state: 'failed',
+                  message: {} as AgentInstanceMessage,
+                  modified: new Date(),
+                });
+                subject.complete();
+              } catch {
+                // ignore
+              }
+              this.statusSubjects.delete(key);
+            }
+          }
+        }
 
         // Trigger agentStatusChanged hook for failure
         await frameworkHooks.agentStatusChanged.promise({
@@ -710,6 +738,9 @@ export class AgentInstanceService implements IAgentInstanceService {
       logger.debug('User message saved to database', {
         when: new Date().toISOString(),
         ...summary,
+        hasMetadata: !!userMessage.metadata,
+        hasFile: !!userMessage.metadata?.file,
+        metadataKeys: userMessage.metadata ? Object.keys(userMessage.metadata) : [],
         source: 'saveUserMessage',
       });
     } catch (error) {

@@ -36,18 +36,24 @@ const ErrorActions = styled(Box)`
 
 /**
  * Extract error details from message content and metadata
+ *
+ * IMPORTANT: When adding new error types or i18n keys, remember to update:
+ * - i18nPlaceholders.ts: Add the new translation key to prevent i18n-ally from removing it
+ * - localization/locales/……/agent.json: Add the actual translations
  */
 function extractErrorDetails(message: MessageRendererProps['message']): {
   errorName: string;
   errorCode: string;
   provider: string;
   errorMessage: string;
+  params?: Record<string, string>;
 } {
   // Default values
   let errorName = 'Error';
   let errorCode = 'UNKNOWN_ERROR';
   let provider = '';
   let errorMessage = message.content;
+  let parameters: Record<string, string> | undefined;
 
   // Check if metadata exists and contains error details
   if (message.metadata?.errorDetail) {
@@ -56,12 +62,14 @@ function extractErrorDetails(message: MessageRendererProps['message']): {
       code: string;
       provider: string;
       message?: string;
+      params?: Record<string, string>;
     };
 
     errorName = errorDetail.name || errorName;
     errorCode = errorDetail.code || errorCode;
     provider = errorDetail.provider || provider;
     errorMessage = errorDetail.message || message.content;
+    parameters = errorDetail.params;
   }
 
   return {
@@ -69,6 +77,7 @@ function extractErrorDetails(message: MessageRendererProps['message']): {
     errorCode,
     provider,
     errorMessage,
+    params: parameters,
   };
 }
 
@@ -78,7 +87,7 @@ function extractErrorDetails(message: MessageRendererProps['message']): {
  */
 export const ErrorMessageRenderer: React.FC<MessageRendererProps> = ({ message }) => {
   const { t } = useTranslation('agent');
-  const { errorName, errorCode, provider, errorMessage } = extractErrorDetails(message);
+  const { errorName, errorCode, provider, errorMessage, params } = extractErrorDetails(message);
 
   // Handle navigation to settings
   const handleGoToSettings = async () => {
@@ -87,8 +96,26 @@ export const ErrorMessageRenderer: React.FC<MessageRendererProps> = ({ message }
 
   // Check if this is a provider-related error that could be fixed in settings
   const isSettingsFixableError =
-    ['MissingConfigError', 'MissingProviderError', 'AuthenticationFailed', 'MissingAPIKeyError', 'MissingBaseURLError', 'ProviderNotFound'].includes(errorName) ||
-    ['NO_DEFAULT_MODEL', 'PROVIDER_NOT_FOUND', 'AUTHENTICATION_FAILED', 'MISSING_API_KEY', 'MISSING_BASE_URL'].includes(errorCode);
+    ['MissingConfigError', 'MissingProviderError', 'AuthenticationError', 'MissingAPIKeyError', 'MissingBaseURLError', 'UnsupportedFeatureError'].includes(errorName) ||
+    ['NO_DEFAULT_MODEL', 'PROVIDER_NOT_FOUND', 'AUTHENTICATION_FAILED', 'MISSING_API_KEY', 'MISSING_BASE_URL', 'MODEL_NO_VISION_SUPPORT'].includes(errorCode);
+
+  // Determine the display message with proper i18n handling
+  let displayMessage = errorMessage;
+
+  // Check if errorMessage is an i18n key (starts with known prefixes)
+  if (errorMessage.startsWith('Chat.ConfigError.')) {
+    // Try to translate with params if available
+    const translatedMessage = t(errorMessage, params || { provider });
+    // If translation returns the key itself (no translation found), fall back to errorMessage
+    displayMessage = translatedMessage !== errorMessage ? translatedMessage : errorMessage;
+  } else {
+    // Try to find translation based on errorName or errorCode
+    const possibleKey = `Chat.ConfigError.${errorName}`;
+    const translatedByName = t(possibleKey, params || { provider });
+    if (translatedByName !== possibleKey) {
+      displayMessage = translatedByName;
+    }
+  }
 
   return (
     <ErrorWrapper data-testid='error-message'>
@@ -101,9 +128,7 @@ export const ErrorMessageRenderer: React.FC<MessageRendererProps> = ({ message }
         </ErrorHeader>
 
         <Typography variant='body1'>
-          {provider
-            ? t(`Chat.ConfigError.${errorName}`, { provider }) || errorMessage
-            : errorMessage}
+          {displayMessage}
         </Typography>
 
         {isSettingsFixableError && (

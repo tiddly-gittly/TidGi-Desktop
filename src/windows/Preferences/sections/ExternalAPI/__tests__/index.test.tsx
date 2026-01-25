@@ -396,22 +396,28 @@ describe('ExternalAPI Component', () => {
     expect(comboboxes).toHaveLength(6);
 
     // Check that default model is displayed (first combobox)
-    expect(comboboxes[0]).toHaveValue('gpt-4');
+    // Combobox displays the label text, not the value
+    expect(comboboxes[0]).toHaveValue('GPT-4 Language Model');
 
     // Check that embedding model is displayed (second combobox)
-    expect(comboboxes[1]).toHaveValue('text-embedding-3-small');
+    // Combobox displays the label text, not the value
+    expect(comboboxes[1]).toHaveValue('OpenAI Embedding Model');
 
     // Check that speech model is displayed (third combobox)
-    expect(comboboxes[2]).toHaveValue('gpt-speech');
+    // Combobox displays the label text, not the value
+    expect(comboboxes[2]).toHaveValue('GPT Speech');
 
     // Check that image generation model is displayed (fourth combobox)
-    expect(comboboxes[3]).toHaveValue('dall-e');
+    // Combobox displays the label text, not the value
+    expect(comboboxes[3]).toHaveValue('DALL-E');
 
     // Check that transcriptions model is displayed (fifth combobox)
-    expect(comboboxes[4]).toHaveValue('whisper');
+    // Combobox displays the label text, not the value
+    expect(comboboxes[4]).toHaveValue('Whisper');
 
     // Check that free model is displayed (sixth combobox)
-    expect(comboboxes[5]).toHaveValue('gpt-free');
+    // Combobox displays the label text, not the value
+    expect(comboboxes[5]).toHaveValue('GPT Free');
   });
 
   it('should render provider configuration section', async () => {

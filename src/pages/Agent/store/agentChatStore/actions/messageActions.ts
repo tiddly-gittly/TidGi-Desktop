@@ -33,7 +33,7 @@ export const messageActions = (
     });
   },
 
-  sendMessage: async (content: string) => {
+  sendMessage: async (content: string, file?: File) => {
     const storeAgent = get().agent;
     if (!storeAgent?.id) {
       set({ error: new Error('No active agent in store') });
@@ -42,7 +42,46 @@ export const messageActions = (
 
     try {
       set({ loading: true });
-      await window.service.agentInstance.sendMsgToAgent(storeAgent.id, { text: content });
+      // In Electron Renderer, File object has a 'path' property which is the absolute path.
+      // We need to extract it because simple serialization might lose it or fail to transmit the File object correctly via IPC.
+      void window.service.native.log(
+        'debug',
+        'Sending message with file',
+        {
+          function: 'messageActions.sendMessage',
+          hasFile: !!file,
+          fileName: file?.name,
+          fileType: file?.type,
+          fileSize: file?.size,
+          filePath: (file as unknown as { path?: string })?.path,
+        },
+      );
+
+      let fileBuffer: ArrayBuffer | undefined;
+      // If path is missing (e.g. web file, pasted image), read content
+      if (file && !(file as unknown as { path?: string }).path) {
+        try {
+          fileBuffer = await file.arrayBuffer();
+        } catch (error) {
+          console.error('Failed to read file buffer', error);
+        }
+      }
+
+      const fileData = file
+        ? {
+          path: (file as unknown as { path?: string }).path,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          lastModified: file.lastModified,
+          buffer: fileBuffer,
+        }
+        : undefined;
+
+      await window.service.agentInstance.sendMsgToAgent(storeAgent.id, {
+        text: content,
+        file: fileData as unknown as File,
+      });
     } catch (error) {
       set({ error: error as Error });
       void window.service.native.log(

@@ -9,6 +9,56 @@ import { isMessageExpiredForAI } from '../../../services/agentInstance/utilities
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
 import { MessageRenderer } from './MessageRenderer';
 
+const ImageAttachment = ({ file }: { file: File | { path: string } }) => {
+  const [source, setSource] = React.useState<string | undefined>();
+  const [previewUrl, setPreviewUrl] = React.useState<string | undefined>();
+
+  React.useEffect(() => {
+    // Check for File object (from current session upload)
+    if (file instanceof File) {
+      const url = URL.createObjectURL(file);
+      setSource(url);
+      setPreviewUrl(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } // Check for persisted file object with path
+    else if (file && typeof file === 'object' && 'path' in file) {
+      const filePath = `file://${(file as { path: string }).path}`;
+      setSource(filePath);
+      setPreviewUrl(filePath);
+    }
+  }, [file]);
+
+  if (!source) return null;
+
+  return (
+    <Box
+      component='img'
+      src={source}
+      data-testid='message-image-attachment'
+      sx={{
+        maxWidth: '100%',
+        maxHeight: 300,
+        borderRadius: 1,
+        mb: 1,
+        display: 'block',
+        cursor: 'pointer',
+      }}
+      onClick={() => {
+        if (!previewUrl) return;
+        const win = window.open();
+        if (win) {
+          const img = win.document.createElement('img');
+          img.src = previewUrl;
+          img.style.maxWidth = '100%';
+          win.document.body.append(img);
+        }
+      }}
+    />
+  );
+};
+
 const BubbleContainer = styled(Box, {
   shouldForwardProp: (property) => property !== '$user' && property !== '$centered' && property !== '$expired',
 })<{ $user: boolean; $centered: boolean; $expired?: boolean }>`
@@ -116,6 +166,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
         $expired={isExpired}
         data-testid={!isUser ? (isStreaming ? 'assistant-streaming-text' : 'assistant-message') : undefined}
       >
+        {message.metadata?.file ? <ImageAttachment file={message.metadata.file as File | { path: string }} /> : null}
         <MessageRenderer message={message} isUser={isUser} />
       </MessageContent>
 

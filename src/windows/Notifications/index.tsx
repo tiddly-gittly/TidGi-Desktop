@@ -116,7 +116,7 @@ export default function Notifications(): React.JSX.Element {
                             popupState.close();
                           }}
                         >
-                          {t(shortcut.key, { defaultValue: shortcut.name })}
+                          {t(shortcut.key)}
                         </MenuItem>
                       ))}
                       <MenuItem
@@ -126,7 +126,7 @@ export default function Notifications(): React.JSX.Element {
                           popupState.close();
                         }}
                       >
-                        {t('Notification.Custom', { defaultValue: 'Custom...' })}
+                        {t('Notification.Custom')}
                       </MenuItem>
                     </Menu>
                   </>
@@ -138,8 +138,8 @@ export default function Notifications(): React.JSX.Element {
           <ListItemButton>
             <ListItemText
               primary={pauseNotificationsInfo.reason === 'scheduled'
-                ? t('Notification.AdjustSchedule', { defaultValue: 'Adjust schedule...' })
-                : t('Notification.PauseBySchedule', { defaultValue: 'Pause notifications by schedule...' })}
+                ? t('Notification.AdjustSchedule')
+                : t('Notification.PauseBySchedule')}
               onClick={async () => {
                 await window.service.window.open(WindowNames.preferences, { preferenceGotoTab: PreferenceSections.notifications });
                 void window.remote.closeCurrentWindow();
@@ -151,7 +151,7 @@ export default function Notifications(): React.JSX.Element {
     }
 
     return (
-      <List subheader={<ListSubheader component='div'>{t('Notification.PauseNotifications', { defaultValue: 'Pause notifications' })}</ListSubheader>}>
+      <List subheader={<ListSubheader component='div'>{t('Notification.PauseNotifications')}</ListSubheader>}>
         {quickShortcuts.map((shortcut) => (
           <ListItemButton
             key={shortcut.key}
@@ -159,7 +159,7 @@ export default function Notifications(): React.JSX.Element {
               pauseNotification(shortcut.calcDate(), t);
             }}
           >
-            <ListItemText primary={t(shortcut.key, { defaultValue: shortcut.name })} />
+            <ListItemText primary={t(shortcut.key)} />
           </ListItemButton>
         ))}
         <ListItemButton
@@ -167,12 +167,12 @@ export default function Notifications(): React.JSX.Element {
             showDateTimePickerSetter(true);
           }}
         >
-          <ListItemText primary={t('Notification.Custom', { defaultValue: 'Custom...' })} />
+          <ListItemText primary={t('Notification.Custom')} />
         </ListItemButton>
         <Divider />
         <ListItemButton>
           <ListItemText
-            primary={t('Notification.PauseBySchedule', { defaultValue: 'Pause notifications by schedule...' })}
+            primary={t('Notification.PauseBySchedule')}
             onClick={async () => {
               await window.service.window.open(WindowNames.preferences, { preferenceGotoTab: PreferenceSections.notifications });
               void window.remote.closeCurrentWindow();
@@ -195,7 +195,7 @@ export default function Notifications(): React.JSX.Element {
           if (tilDate === null) return;
           pauseNotification(tilDate, t);
         }}
-        label={t('Notification.Custom', { defaultValue: 'Custom' })}
+        label={t('Notification.Custom')}
         open={showDateTimePicker}
         onOpen={() => {
           showDateTimePickerSetter(true);

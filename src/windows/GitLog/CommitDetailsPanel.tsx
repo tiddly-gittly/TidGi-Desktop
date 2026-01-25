@@ -435,7 +435,7 @@ export function CommitDetailsPanel(
                 disabled={isUndoing}
                 startIcon={isUndoing ? <CircularProgress size={16} color='inherit' /> : undefined}
               >
-                {isUndoing ? t('GitLog.Undoing', { defaultValue: 'Undoing...' }) : t('GitLog.UndoCommit', { defaultValue: 'Undo this commit' })}
+                {isUndoing ? t('GitLog.Undoing') : t('GitLog.UndoCommit')}
               </Button>
 
               <Button
@@ -457,7 +457,7 @@ export function CommitDetailsPanel(
                   fullWidth
                   disabled={isAmending}
                 >
-                  {t('GitLog.EditCommitMessage', { defaultValue: '修改提交信息' })}
+                  {t('GitLog.EditCommitMessage')}
                 </Button>
               )}
 
@@ -499,12 +499,12 @@ export function CommitDetailsPanel(
 
       {/* Edit Commit Message Modal */}
       <Dialog open={isEditMessageOpen} onClose={handleCloseEditMessage} fullWidth maxWidth='sm'>
-        <DialogTitle>{t('GitLog.EditCommitMessageTitle', { defaultValue: '修改最近一次提交的信息' })}</DialogTitle>
+        <DialogTitle>{t('GitLog.EditCommitMessageTitle')}</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
             margin='dense'
-            label={t('GitLog.EditCommitMessagePlaceholder', { defaultValue: '新的提交信息' })}
+            label={t('GitLog.EditCommitMessagePlaceholder')}
             type='text'
             fullWidth
             value={newCommitMessage}
@@ -513,13 +513,13 @@ export function CommitDetailsPanel(
             }}
           />
           <Typography variant='caption' color='text.secondary'>
-            {t('GitLog.EditCommitMessageHint', { defaultValue: '仅可修改最近一次提交的提交信息；若暂存区有变更，它们将包含进新的提交。' })}
+            {t('GitLog.EditCommitMessageHint')}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseEditMessage}>{t('Common.Cancel', { defaultValue: '取消' })}</Button>
+          <Button onClick={handleCloseEditMessage}>{t('Common.Cancel')}</Button>
           <Button onClick={handleConfirmEditMessage} disabled={isAmending || !newCommitMessage.trim()} variant='contained'>
-            {isAmending ? t('GitLog.Committing', { defaultValue: '提交中...' }) : t('GitLog.EditCommitMessageConfirm', { defaultValue: '保存' })}
+            {isAmending ? t('GitLog.Committing') : t('GitLog.EditCommitMessageConfirm')}
           </Button>
         </DialogActions>
       </Dialog>

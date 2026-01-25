@@ -93,12 +93,33 @@ const fullReplacementDefinition = registerModifier({
         type PromptRole = NonNullable<IPrompt['role']>;
         const role: PromptRole = normalizeRole(message.role);
         delete found.prompt.text;
-        found.prompt.children!.push({
-          id: `history-${index}`,
-          caption: `History message ${index + 1}`,
-          role,
-          text: message.content,
-        });
+
+        // Check if message has an image attachment
+        const hasImage = Boolean((message.metadata as { file?: { path?: string } })?.file?.path);
+
+        if (hasImage) {
+          // For messages with images, create a child prompt that will be processed by infrastructure
+          found.prompt.children!.push({
+            id: `history-${index}`,
+            caption: `History message ${index + 1}`,
+            role,
+            text: message.content,
+            // Preserve file metadata so it can be loaded by messagePersistence
+            ...(message.metadata?.file
+              ? {
+                file: message.metadata.file as unknown as Record<string, unknown>,
+              }
+              : {}),
+          });
+        } else {
+          // For text-only messages, just add the text
+          found.prompt.children!.push({
+            id: `history-${index}`,
+            caption: `History message ${index + 1}`,
+            role,
+            text: message.content,
+          });
+        }
       });
     } else {
       found.prompt.text = '无聊天历史。';

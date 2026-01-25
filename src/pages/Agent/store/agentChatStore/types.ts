@@ -70,8 +70,9 @@ export interface BasicActions {
   /**
    * Sends a message from the user to the agent.
    * @param content The message content
+   * @param file Optional file attachment
    */
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, file?: File) => Promise<void>;
 
   /**
    * Creates a new agent instance from a definition.

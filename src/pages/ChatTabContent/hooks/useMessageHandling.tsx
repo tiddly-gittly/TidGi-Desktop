@@ -29,6 +29,7 @@ export function useMessageHandling({
     })),
   );
   const [message, setMessage] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | undefined>();
   const [parametersOpen, setParametersOpen] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
 
@@ -47,17 +48,31 @@ export function useMessageHandling({
   }, []);
 
   /**
+   * Handle file selection
+   */
+  const handleFileSelect = useCallback((file: File) => {
+    setSelectedFile(file);
+  }, []);
+
+  /**
+   * Handle clearing selected file
+   */
+  const handleClearFile = useCallback(() => {
+    setSelectedFile(undefined);
+  }, []);
+
+  /**
    * Handle sending a message
    */
   const handleSendMessage = useCallback(async () => {
-    if (!message.trim() || !agent || sendingMessage || !agentId) return;
+    if ((!message.trim() && !selectedFile) || !agent || sendingMessage || !agentId) return;
 
     // Store the current scroll position status before sending message
     const wasAtBottom = isUserAtBottom();
     setSendingMessage(true);
 
     try {
-      await sendMessage(message);
+      await sendMessage(message, selectedFile);
       setMessage('');
       // After sending, update the scroll position reference to ensure proper scrolling
       isUserAtBottomReference.current = wasAtBottom;
@@ -67,9 +82,11 @@ export function useMessageHandling({
         debouncedScrollToBottom();
       }
     } finally {
+      // Always clear file selection, even if send fails
+      setSelectedFile(undefined);
       setSendingMessage(false);
     }
-  }, [message, agent, sendingMessage, agentId, isUserAtBottom, sendMessage, debouncedScrollToBottom, isUserAtBottomReference]);
+  }, [message, selectedFile, agent, sendingMessage, agentId, isUserAtBottom, sendMessage, debouncedScrollToBottom, isUserAtBottomReference]);
 
   /**
    * Handle keyboard events for sending messages
@@ -93,5 +110,8 @@ export function useMessageHandling({
     handleMessageChange,
     handleSendMessage,
     handleKeyPress,
+    selectedFile,
+    handleFileSelect,
+    handleClearFile,
   };
 }

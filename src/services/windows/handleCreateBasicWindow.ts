@@ -22,6 +22,10 @@ export async function handleCreateBasicWindow<N extends WindowNames>(
   const newWindowURL = (windowMeta !== undefined && 'uri' in windowMeta ? windowMeta.uri : undefined) ?? getMainWindowEntry();
   if (config?.multiple !== true) {
     windowService.set(windowName, newWindow);
+    const verifySet = windowService.get(windowName);
+    if (verifySet === undefined) {
+      throw new Error(`Failed to set window ${windowName} in windowService`);
+    }
   }
 
   const unregisterContextMenu = await menuService.initContextMenuForWindowWebContents(newWindow.webContents);

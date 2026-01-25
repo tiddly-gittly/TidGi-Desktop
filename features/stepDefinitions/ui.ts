@@ -1,6 +1,7 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getWikiTestRootPath } from '../supports/paths';
+import { PLAYWRIGHT_SHORT_TIMEOUT, PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
 When('I wait for {float} seconds', async function(seconds: number) {
@@ -17,13 +18,13 @@ When('I wait for {float} seconds for {string}', async function(seconds: number, 
 
 When('I wait for the page to load completely', async function(this: ApplicationWorld) {
   const currentWindow = this.currentWindow;
-  await currentWindow?.waitForLoadState('networkidle', { timeout: 30000 });
+  await currentWindow?.waitForLoadState('networkidle', { timeout: PLAYWRIGHT_TIMEOUT });
 });
 
 Then('I should see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
   const currentWindow = this.currentWindow;
   try {
-    await currentWindow?.waitForSelector(selector, { timeout: 10000 });
+    await currentWindow?.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
     const isVisible = await currentWindow?.isVisible(selector);
     if (!isVisible) {
       throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
@@ -50,7 +51,7 @@ Then('I should see {string} elements with selectors:', async function(this: Appl
   // Check all elements in parallel for better performance
   await Promise.all(dataRows.map(async ([elementComment, selector]) => {
     try {
-      await currentWindow.waitForSelector(selector, { timeout: 10000 });
+      await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
       const isVisible = await currentWindow.isVisible(selector);
       if (!isVisible) {
         errors.push(`Element "${elementComment}" with selector "${selector}" is not visible`);
@@ -148,7 +149,7 @@ When('I click on a(n) {string} element with selector {string}', async function(t
   }
 
   try {
-    await targetWindow.waitForSelector(selector, { timeout: 10000 });
+    await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
     const isVisible = await targetWindow.isVisible(selector);
     if (!isVisible) {
       throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
@@ -177,7 +178,7 @@ When('I click on {string} elements with selectors:', async function(this: Applic
   // Click elements sequentially (not in parallel) to maintain order and avoid race conditions
   for (const [elementComment, selector] of dataRows) {
     try {
-      await targetWindow.waitForSelector(selector, { timeout: 10000 });
+      await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
       const isVisible = await targetWindow.isVisible(selector);
       if (!isVisible) {
         errors.push(`Element "${elementComment}" with selector "${selector}" is not visible`);
@@ -202,7 +203,7 @@ When('I right-click on a(n) {string} element with selector {string}', async func
   }
 
   try {
-    await targetWindow.waitForSelector(selector, { timeout: 10000 });
+    await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
     const isVisible = await targetWindow.isVisible(selector);
     if (!isVisible) {
       throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
@@ -244,7 +245,7 @@ When('I type {string} in {string} element with selector {string}', async functio
   const actualText = text.replace('{tmpDir}', getWikiTestRootPath(this));
 
   try {
-    await currentWindow.waitForSelector(selector, { timeout: 10000 });
+    await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
     const element = currentWindow.locator(selector);
     await element.fill(actualText);
   } catch (error) {
@@ -276,7 +277,7 @@ When('I type in {string} elements with selectors:', async function(this: Applica
     const actualText = text.replace('{tmpDir}', getWikiTestRootPath(this));
 
     try {
-      await currentWindow.waitForSelector(selector, { timeout: 10000 });
+      await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
       const element = currentWindow.locator(selector);
       await element.fill(actualText);
     } catch (error) {
@@ -296,7 +297,7 @@ When('I clear text in {string} element with selector {string}', async function(t
   }
 
   try {
-    await currentWindow.waitForSelector(selector, { timeout: 10000 });
+    await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
     const element = currentWindow.locator(selector);
     await element.clear();
   } catch (error) {
@@ -428,7 +429,7 @@ When('I select {string} from MUI Select with test id {string}', async function(t
   try {
     // Find the hidden input element with the test-id
     const inputSelector = `input[data-testid="${testId}"]`;
-    await currentWindow.waitForSelector(inputSelector, { timeout: 10000 });
+    await currentWindow.waitForSelector(inputSelector, { timeout: PLAYWRIGHT_TIMEOUT });
 
     // Try to click using Playwright's click on the div with role="combobox"
     // According to your HTML structure, the combobox is a sibling of the input
@@ -464,7 +465,7 @@ When('I select {string} from MUI Select with test id {string}', async function(t
     await currentWindow.waitForTimeout(500);
 
     // Wait for the menu to appear
-    await currentWindow.waitForSelector('[role="listbox"]', { timeout: 5000 });
+    await currentWindow.waitForSelector('[role="listbox"]', { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
 
     // Try to click on the option with the specified value (data-value attribute)
     // If not found, try to find by text content
@@ -505,7 +506,7 @@ When('I select {string} from MUI Select with test id {string}', async function(t
     }
 
     // Wait for the menu to close
-    await currentWindow.waitForSelector('[role="listbox"]', { state: 'hidden', timeout: 5000 });
+    await currentWindow.waitForSelector('[role="listbox"]', { state: 'hidden', timeout: PLAYWRIGHT_SHORT_TIMEOUT });
   } catch (error) {
     throw new Error(`Failed to select option "${optionValue}" from MUI Select with test id "${testId}": ${String(error)}`);
   }
@@ -535,7 +536,7 @@ When('I print DOM structure of element with selector {string}', async function(t
   }
 
   try {
-    await currentWindow.waitForSelector(selector, { timeout: 5000 });
+    await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
 
     const elementInfo = await currentWindow.evaluate((sel) => {
       const element = document.querySelector(sel);

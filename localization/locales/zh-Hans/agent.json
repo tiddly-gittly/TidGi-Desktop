@@ -36,14 +36,21 @@
   "Chat": {
     "Cancel": "取消",
     "ConfigError": {
+      "AuthenticationError": "{{provider}} 身份验证失败。请在设置中检查您的 API 密钥。",
+      "AuthenticationFailed": "{{provider}} 身份验证失败。请在设置中检查您的 API 密钥。",
       "GoToSettings": "前往设置",
-      "MissingConfigError": "未配置 AI 提供商或模型。请在设置中进行配置。",
       "MissingAPIKeyError": "未找到 {{provider}} 的 API 密钥。请在设置中添加。",
       "MissingBaseURLError": "{{provider}} 提供商需要配置基础 URL。请在设置中进行配置。",
-      "AuthenticationFailed": "{{provider}} 身份验证失败。请在设置中检查您的 API 密钥。",
-      "ProviderNotFound": "未找到提供商 {{provider}}。请在设置中进行配置。",
+      "MissingConfigError": "未配置 AI 提供商或模型。请在设置中进行配置。",
       "MissingProviderError": "提供商 {{provider}} 不可用。请在设置中进行配置。",
+      "ModelNoVisionSupport": "模型 {{model}} 不支持视觉/图片输入。请选择具有“视觉”功能标签的模型。",
+      "NoDefaultModel": "未配置默认模型。请在设置中配置默认模型。",
+      "ProviderNotFound": "未找到提供商 {{provider}}。请在设置中进行配置。",
       "Title": "配置问题"
+    },
+    "FileValidation": {
+      "NotAnImage": "所选文件不是图片格式（{{fileType}}）。请选择图片文件。",
+      "TooLarge": "文件大小 {{size}}MB 超过了限制（{{maxSize}}MB）。请选择较小的文件。"
     },
     "InputPlaceholder": "输入消息，Ctrl+Enter 发送",
     "Send": "发送"
@@ -229,6 +236,7 @@
     "AutoRefresh": "预览会随输入文本的变化自动刷新",
     "CodeEditor": "代码编辑器",
     "Edit": "提示词编辑",
+    "Enabled": "启用",
     "EnterEditSideBySide": "分屏显示编辑",
     "EnterFullScreen": "进入全屏",
     "EnterPreviewSideBySide": "分屏显示预览",
@@ -475,6 +483,8 @@
       "CaptionTitle": "标题",
       "Content": "插件内容或说明",
       "ContentTitle": "内容",
+      "Enabled": "决定这个文本是否被拼入最终的提示词里",
+      "EnabledTitle": "启用",
       "ForbidOverrides": "是否禁止在运行时覆盖此插件的参数",
       "ForbidOverridesTitle": "禁止覆盖",
       "Id": "插件实例 ID（同一 handler 内唯一）",
@@ -600,10 +610,6 @@
       "WikiEmbed": "Wiki"
     }
   },
-  "WikiEmbed": {
-    "Error": "嵌入Wiki失败",
-    "Loading": "正在加载Wiki..."
-  },
   "Tool": {
     "Git": {
       "Error": {
@@ -663,5 +669,9 @@
         }
       }
     }
+  },
+  "WikiEmbed": {
+    "Error": "嵌入Wiki失败",
+    "Loading": "正在加载Wiki..."
   }
 }
