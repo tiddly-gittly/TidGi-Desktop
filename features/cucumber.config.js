@@ -9,6 +9,7 @@ module.exports = {
   default: {
     require: [
       'ts-node/register',
+      'features/supports/timeout-config.ts', // Must be loaded first to set global timeout
       'features/stepDefinitions/**/*.ts',
     ],
     requireModule: ['ts-node/register'],
@@ -17,10 +18,8 @@ module.exports = {
       snippetInterface: 'async-await',
     },
     paths: ['features/*.feature'],
-    // Global timeout for all steps
-    // Local: 5s, CI: 25s (5x local)
-    // Individual steps should NOT specify custom timeouts unless they have special needs
-    timeout: isCI ? 25000 : 5000,
+    // Note: Global timeout is set via setDefaultTimeout() in features/supports/timeout-config.ts
+    // NOT via the 'timeout' config option here (which is for Cucumber's own operations)
     // Parallel execution disabled due to OOM issues on Windows
     // Each scenario still gets isolated test-artifacts/{scenarioSlug}/ directory
     // parallel: 2,
