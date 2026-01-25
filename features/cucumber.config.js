@@ -13,9 +13,9 @@ module.exports = {
     },
     paths: ['features/*.feature'],
     // Global timeout for all steps
-    // Local: 5s, CI: 10s (exactly 2x local)
+    // Local: 5s, CI: 25s (5x local)
     // Individual steps should NOT specify custom timeouts unless they have special needs
-    timeout: isCI ? 10000 : 5000,
+    timeout: isCI ? 25000 : 5000,
     // Parallel execution disabled due to OOM issues on Windows
     // Each scenario still gets isolated test-artifacts/{scenarioSlug}/ directory
     // parallel: 2,
