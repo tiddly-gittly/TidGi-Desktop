@@ -7,7 +7,7 @@ import type { AgentDefinition } from '@services/agentDefinition/interface';
 import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { nanoid } from 'nanoid';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TemplateSearch } from '../../components/Search/TemplateSearch';
 import { useTabStore } from '../../store/tabStore';
@@ -219,7 +219,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
     }
   };
 
-  const handleTemplateSelect = async (template: AgentDefinition) => {
+  const handleTemplateSelect = useCallback(async (template: AgentDefinition) => {
     try {
       setIsLoading(true);
       setSelectedTemplate(template);
@@ -250,7 +250,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [agentName, tab.id, updateTabData]);
 
   const handleAgentDefinitionChange = async (updatedDefinition: AgentDefinition) => {
     // Immediately update React state
