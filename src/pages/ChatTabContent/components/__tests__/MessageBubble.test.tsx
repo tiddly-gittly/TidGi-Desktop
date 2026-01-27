@@ -421,4 +421,53 @@ describe('MessageBubble - Duration-based Graying', () => {
     // Both should have the same background color
     expect(assistantBackgroundColor).toBe(toolBackgroundColor);
   });
-});
+
+  it('should display wiki tiddler attachments as chips in message bubble', () => {
+    // Setup a message with wiki tiddler attachments
+    const messageWithTiddlers: AgentInstanceMessage = {
+      id: 'msg-with-tiddlers',
+      role: 'user',
+      content: 'Here is some information from the wiki',
+      agentId: 'test-agent',
+      contentType: 'text/plain',
+      modified: new Date(),
+      duration: undefined,
+      metadata: {
+        wikiTiddlers: [
+          {
+            workspaceId: 'workspace-1',
+            workspaceName: 'My Workspace',
+            tiddlerTitle: 'My Tiddler',
+            renderedContent: 'This is the content of my tiddler',
+          },
+          {
+            workspaceId: 'workspace-2',
+            workspaceName: 'Another Workspace',
+            tiddlerTitle: 'Another Tiddler',
+            renderedContent: 'This is the content of another tiddler',
+          },
+        ],
+      },
+    };
+
+    mockMessages.set('msg-with-tiddlers', messageWithTiddlers);
+    mockOrderedMessageIds.push('msg-with-tiddlers');
+
+    render(
+      <TestWrapper>
+        <MessageBubble messageId='msg-with-tiddlers' />
+      </TestWrapper>,
+    );
+
+    // Check that both tiddler chips are displayed
+    expect(screen.getByText('My Workspace: My Tiddler')).toBeInTheDocument();
+    expect(screen.getByText('Another Workspace: Another Tiddler')).toBeInTheDocument();
+
+    // Check for the library books icons (tiddler indicators)
+    const chips = screen.getAllByTestId(/wiki-tiddler-chip-message-/);
+    expect(chips).toHaveLength(2);
+
+    // Check that the original message content is also displayed
+    expect(screen.getByText('Here is some information from the wiki')).toBeInTheDocument();
+  });
+})

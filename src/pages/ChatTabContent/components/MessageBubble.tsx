@@ -2,7 +2,8 @@
 
 import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
-import { Avatar, Box } from '@mui/material';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import { Avatar, Box, Chip } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';
 import { isMessageExpiredForAI } from '../../../services/agentInstance/utilities/messageDurationFilter';
@@ -56,6 +57,61 @@ const ImageAttachment = ({ file }: { file: File | { path: string } }) => {
         }
       }}
     />
+  );
+};
+
+interface WikiTiddlerMetadata {
+  workspaceId: string;
+  workspaceName: string;
+  tiddlerTitle: string;
+  renderedContent?: string;
+}
+
+const WikiTiddlersAttachment = ({ tiddlers }: { tiddlers: WikiTiddlerMetadata[] }) => {
+  if (!tiddlers || tiddlers.length === 0) return null;
+
+  const handleTiddlerClick = (tiddler: WikiTiddlerMetadata) => {
+    void (async () => {
+      try {
+        // Activate the wiki workspace
+        await window.service.workspaceView.setActiveWorkspaceView(tiddler.workspaceId);
+        
+        // Navigate to the tiddler
+        await window.service.wiki.callWikiIpcServerRoute(
+          tiddler.workspaceId,
+          'navigateToTiddler',
+          tiddler.tiddlerTitle,
+        );
+        
+        void window.service.native.log('debug', 'Navigated to wiki tiddler', {
+          workspaceId: tiddler.workspaceId,
+          workspaceName: tiddler.workspaceName,
+          tiddlerTitle: tiddler.tiddlerTitle,
+        });
+      } catch (error) {
+        void window.service.native.log('error', 'Failed to navigate to wiki tiddler', {
+          error,
+          workspaceId: tiddler.workspaceId,
+          tiddlerTitle: tiddler.tiddlerTitle,
+        });
+      }
+    })();
+  };
+
+  return (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+      {tiddlers.map((tiddler, index) => (
+        <Chip
+          key={index}
+          icon={<LibraryBooksIcon />}
+          label={`${tiddler.workspaceName}: ${tiddler.tiddlerTitle}`}
+          data-testid={`wiki-tiddler-chip-message-${index}`}
+          sx={{ maxWidth: 300, cursor: 'pointer' }}
+          title={tiddler.renderedContent ? tiddler.renderedContent.substring(0, 100) + '...' : tiddler.tiddlerTitle}
+          onClick={() => handleTiddlerClick(tiddler)}
+        />
+      ))}
+    </Box>
   );
 };
 
@@ -167,6 +223,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
         data-testid={!isUser ? (isStreaming ? 'assistant-streaming-text' : 'assistant-message') : undefined}
       >
         {message.metadata?.file ? <ImageAttachment file={message.metadata.file as File | { path: string }} /> : null}
+        {message.metadata?.wikiTiddlers ? <WikiTiddlersAttachment tiddlers={message.metadata.wikiTiddlers as WikiTiddlerMetadata[]} /> : null}
         <MessageRenderer message={message} isUser={isUser} />
       </MessageContent>
 

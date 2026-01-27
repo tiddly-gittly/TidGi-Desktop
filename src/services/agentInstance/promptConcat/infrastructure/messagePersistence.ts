@@ -39,11 +39,11 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
       });
 
       let persistedFileMetadata: Record<string, unknown> | undefined;
-      let wikiTiddlersMetadata: Array<{ workspaceName: string; tiddlerTitle: string; renderedContent: string }> | undefined;
+      let wikiTiddlersMetadata: Array<{ workspaceId: string; workspaceName: string; tiddlerTitle: string; renderedContent: string }> | undefined;
 
       // Check if wikiTiddlers are already in the message (from a previous hook call)
       const existingMessage = agentFrameworkContext.agent.messages.find(m => m.id === messageId);
-      const existingWikiTiddlers = existingMessage?.metadata?.wikiTiddlers as Array<{ workspaceName: string; tiddlerTitle: string; renderedContent: string }> | undefined;
+      const existingWikiTiddlers = existingMessage?.metadata?.wikiTiddlers as Array<{ workspaceId: string; workspaceName: string; tiddlerTitle: string; renderedContent: string }> | undefined;
       
       if (existingWikiTiddlers && existingWikiTiddlers.length > 0) {
         // Reuse existing wiki tiddlers metadata
@@ -139,12 +139,14 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
               // If getTiddlerHtml returns empty or fails, fallback to getTiddler for raw text
               if (response.statusCode === 200 && typeof response.data === 'string' && response.data.length > 0) {
                 wikiTiddlersMetadata.push({
+                  workspaceId: workspace.id,
                   workspaceName: tiddler.workspaceName,
                   tiddlerTitle: tiddler.tiddlerTitle,
                   renderedContent: response.data,
                 });
                 
                 logger.debug('Wiki tiddler rendered HTML content fetched', {
+                  workspaceId: workspace.id,
                   workspaceName: tiddler.workspaceName,
                   tiddlerTitle: tiddler.tiddlerTitle,
                   contentLength: response.data.length,
@@ -153,6 +155,7 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
               } else {
                 // Fallback to getTiddler for raw text
                 logger.debug('getTiddlerHtml returned empty, falling back to getTiddler', {
+                  workspaceId: workspace.id,
                   workspaceName: tiddler.workspaceName,
                   tiddlerTitle: tiddler.tiddlerTitle,
                   messageId,
@@ -165,12 +168,14 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
                   const tiddlerText = tiddlerFields.text || '';
                   
                   wikiTiddlersMetadata.push({
+                    workspaceId: workspace.id,
                     workspaceName: tiddler.workspaceName,
                     tiddlerTitle: tiddler.tiddlerTitle,
                     renderedContent: tiddlerText,
                   });
                   
                   logger.debug('Wiki tiddler raw text content fetched (fallback)', {
+                    workspaceId: workspace.id,
                     workspaceName: tiddler.workspaceName,
                     tiddlerTitle: tiddler.tiddlerTitle,
                     contentLength: tiddlerText.length,
@@ -178,6 +183,7 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
                   });
                 } else {
                   logger.warn('Failed to get wiki tiddler content (both HTML and raw text)', {
+                    workspaceId: workspace.id,
                     workspaceName: tiddler.workspaceName,
                     tiddlerTitle: tiddler.tiddlerTitle,
                     statusCode: response.statusCode,
