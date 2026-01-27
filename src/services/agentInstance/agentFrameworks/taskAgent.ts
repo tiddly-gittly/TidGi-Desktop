@@ -49,7 +49,7 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
   if (isNewUserMessage) {
     // Trigger user message received hook
     // Pass wikiTiddlers from metadata if they exist (already processed in first hook call)
-    const wikiTiddlersFromMetadata = lastUserMessage.metadata?.wikiTiddlers as Array<{ workspaceName: string; tiddlerTitle: string; renderedContent: string }> | undefined;
+    const wikiTiddlersFromMetadata = lastUserMessage.metadata?.wikiTiddlers as Array<{ workspaceName: string; tiddlerTitle: string }> | undefined;
     await agentFrameworkHooks.userMessageReceived.promise({
       agentFrameworkContext: context,
       content: {

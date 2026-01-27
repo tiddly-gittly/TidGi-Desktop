@@ -470,4 +470,50 @@ describe('MessageBubble - Duration-based Graying', () => {
     // Check that the original message content is also displayed
     expect(screen.getByText('Here is some information from the wiki')).toBeInTheDocument();
   });
+
+  it('should use different navigation strategies for split view vs normal tab', () => {
+    // Setup a message with wiki tiddlers
+    const messageWithTiddlers: AgentInstanceMessage = {
+      id: 'msg-with-tiddlers-split',
+      role: 'user',
+      content: 'Check the wiki tiddler',
+      agentId: 'test-agent',
+      contentType: 'text/plain',
+      modified: new Date(),
+      duration: undefined,
+      metadata: {
+        wikiTiddlers: [
+          {
+            workspaceId: 'workspace-1',
+            workspaceName: 'My Workspace',
+            tiddlerTitle: 'Test Tiddler',
+            renderedContent: 'Test content',
+          },
+        ],
+      },
+    };
+
+    mockMessages.set('msg-with-tiddlers-split', messageWithTiddlers);
+    mockOrderedMessageIds.push('msg-with-tiddlers-split');
+
+    // Test in split view mode
+    const { rerender } = render(
+      <TestWrapper>
+        <MessageBubble messageId='msg-with-tiddlers-split' isSplitView={true} />
+      </TestWrapper>,
+    );
+
+    // The chip should be present
+    expect(screen.getByText('My Workspace: Test Tiddler')).toBeInTheDocument();
+
+    // Test in normal tab mode
+    rerender(
+      <TestWrapper>
+        <MessageBubble messageId='msg-with-tiddlers-split' isSplitView={false} />
+      </TestWrapper>,
+    );
+
+    // The chip should still be present
+    expect(screen.getByText('My Workspace: Test Tiddler')).toBeInTheDocument();
+  });
 })

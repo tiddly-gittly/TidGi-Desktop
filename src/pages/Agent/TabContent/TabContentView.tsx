@@ -55,7 +55,7 @@ export const TabContentView: React.FC<TabContentViewProps> = ({ tab, isSplitView
       case TabType.WEB:
         return <WebTabContent tab={tab} />;
       case TabType.CHAT:
-        return <ChatTabContent tab={tab} />;
+        return <ChatTabContent tab={tab} isSplitView={isSplitView} />;
       case TabType.NEW_TAB:
         return <NewTabContent tab={tab} />;
       case TabType.SPLIT_VIEW:

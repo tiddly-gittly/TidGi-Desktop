@@ -5,6 +5,7 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import { Avatar, Box, Chip } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { WikiChannel } from '@/constants/channels';
 import React from 'react';
 import { isMessageExpiredForAI } from '../../../services/agentInstance/utilities/messageDurationFilter';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
@@ -67,32 +68,35 @@ interface WikiTiddlerMetadata {
   renderedContent?: string;
 }
 
-const WikiTiddlersAttachment = ({ tiddlers }: { tiddlers: WikiTiddlerMetadata[] }) => {
+const WikiTiddlersAttachment = ({ tiddlers, isSplitView }: { tiddlers: WikiTiddlerMetadata[]; isSplitView?: boolean }) => {
   if (!tiddlers || tiddlers.length === 0) return null;
 
   const handleTiddlerClick = (tiddler: WikiTiddlerMetadata) => {
     void (async () => {
       try {
-        // Activate the wiki workspace
-        await window.service.workspaceView.setActiveWorkspaceView(tiddler.workspaceId);
-        
-        // Navigate to the tiddler
-        await window.service.wiki.callWikiIpcServerRoute(
-          tiddler.workspaceId,
-          'navigateToTiddler',
-          tiddler.tiddlerTitle,
-        );
-        
+        if (isSplitView) {
+          // In split view: directly open the tiddler in the wiki view that's already displayed
+          // The wiki webview should be on the right side of the split view
+          await window.service.wiki.wikiOperationInBrowser(WikiChannel.openTiddler, tiddler.workspaceId, [
+            tiddler.tiddlerTitle,
+          ]);
+        } else {
+          // In normal tab: activate the wiki workspace
+          await window.service.workspaceView.setActiveWorkspaceView(tiddler.workspaceId);
+        }
+
         void window.service.native.log('debug', 'Navigated to wiki tiddler', {
           workspaceId: tiddler.workspaceId,
           workspaceName: tiddler.workspaceName,
           tiddlerTitle: tiddler.tiddlerTitle,
+          isSplitView,
         });
       } catch (error) {
         void window.service.native.log('error', 'Failed to navigate to wiki tiddler', {
           error,
           workspaceId: tiddler.workspaceId,
           tiddlerTitle: tiddler.tiddlerTitle,
+          isSplitView,
         });
       }
     })();
@@ -187,12 +191,13 @@ const MessageContent = styled(Box, {
 
 interface MessageBubbleProps {
   messageId: string; // 只接收消息ID
+  isSplitView?: boolean; // Whether this message bubble is in a split view
 }
 
 /**
  * Message bubble component with avatar and content
  */
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId, isSplitView }) => {
   const message = useAgentChatStore(state => state.getMessageById(messageId));
   const isStreaming = useAgentChatStore(state => state.isMessageStreaming(messageId));
   const orderedMessageIds = useAgentChatStore(state => state.orderedMessageIds);
@@ -223,7 +228,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
         data-testid={!isUser ? (isStreaming ? 'assistant-streaming-text' : 'assistant-message') : undefined}
       >
         {message.metadata?.file ? <ImageAttachment file={message.metadata.file as File | { path: string }} /> : null}
-        {message.metadata?.wikiTiddlers ? <WikiTiddlersAttachment tiddlers={message.metadata.wikiTiddlers as WikiTiddlerMetadata[]} /> : null}
+        {message.metadata?.wikiTiddlers ? <WikiTiddlersAttachment tiddlers={message.metadata.wikiTiddlers as WikiTiddlerMetadata[]} isSplitView={isSplitView} /> : null}
         <MessageRenderer message={message} isUser={isUser} />
       </MessageContent>
 

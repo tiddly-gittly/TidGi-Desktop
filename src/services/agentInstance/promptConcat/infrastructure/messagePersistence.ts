@@ -130,14 +130,14 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
               logger.debug('getTiddlerHtml response received', {
                 workspaceName: tiddler.workspaceName,
                 tiddlerTitle: tiddler.tiddlerTitle,
-                statusCode: response.statusCode,
-                dataType: typeof response.data,
-                dataLength: typeof response.data === 'string' ? response.data.length : 'N/A',
+                statusCode: response?.statusCode,
+                dataType: typeof response?.data,
+                dataLength: typeof response?.data === 'string' ? response.data.length : 'N/A',
                 messageId,
               });
               
               // If getTiddlerHtml returns empty or fails, fallback to getTiddler for raw text
-              if (response.statusCode === 200 && typeof response.data === 'string' && response.data.length > 0) {
+              if (response?.statusCode === 200 && typeof response?.data === 'string' && response.data.length > 0) {
                 wikiTiddlersMetadata.push({
                   workspaceId: workspace.id,
                   workspaceName: tiddler.workspaceName,
@@ -163,7 +163,7 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
                 
                 response = await wikiService.callWikiIpcServerRoute(workspace.id, 'getTiddler', tiddler.tiddlerTitle);
                 
-                if (response.statusCode === 200 && response.data !== undefined && typeof response.data === 'object') {
+                if (response?.statusCode === 200 && response?.data !== undefined && typeof response.data === 'object') {
                   const tiddlerFields = response.data as { text?: string; [key: string]: unknown };
                   const tiddlerText = tiddlerFields.text || '';
                   
@@ -186,7 +186,7 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
                     workspaceId: workspace.id,
                     workspaceName: tiddler.workspaceName,
                     tiddlerTitle: tiddler.tiddlerTitle,
-                    statusCode: response.statusCode,
+                    statusCode: response?.statusCode,
                     messageId,
                   });
                 }

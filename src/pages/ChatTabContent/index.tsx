@@ -34,6 +34,7 @@ import { TabItem } from '../Agent/types/tab';
  */
 interface ChatTabContentProps {
   tab: TabItem; // Tab will be checked if it's a chat tab
+  isSplitView?: boolean; // Whether this chat tab is in a split view
 }
 
 /**
@@ -41,7 +42,7 @@ interface ChatTabContentProps {
  * Displays a chat interface for interacting with an AI agent
  * Only works with IChatTab objects
  */
-export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
+export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView }) => {
   const { t } = useTranslation('agent');
 
   // Type checking
@@ -192,7 +193,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
 
       {/* Messages container with all chat bubbles */}
       <Box sx={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
-        <MessagesContainer messageIds={orderedMessageIds}>
+        <MessagesContainer messageIds={orderedMessageIds} isSplitView={isSplitView}>
           {/* Error state */}
           {error && (
             <Box sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>

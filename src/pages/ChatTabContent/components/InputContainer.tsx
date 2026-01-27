@@ -170,7 +170,7 @@ export const InputContainer: React.FC<InputContainerProps> = ({
               ['text'], // Exclude text field for performance
             );
             
-            if (response.statusCode === 200 && Array.isArray(response.data)) {
+            if (response?.statusCode === 200 && Array.isArray(response?.data)) {
               const tiddlers = response.data.map((t: any) => ({
                 type: 'tiddler' as const,
                 title: t.title || '',
@@ -363,9 +363,6 @@ export const InputContainer: React.FC<InputContainerProps> = ({
                 );
               }}
               noOptionsText={t('Agent.Attachment.NoOptions', 'No options available')}
-              ListboxProps={{
-                'data-testid': 'attachment-listbox',
-              }}
             />
           </Paper>
         </ClickAwayListener>
