@@ -48,11 +48,15 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
 
   if (isNewUserMessage) {
     // Trigger user message received hook
+    // Pass wikiTiddlers from metadata if they exist (already processed in first hook call)
+    const wikiTiddlersFromMetadata = lastUserMessage.metadata?.wikiTiddlers as Array<{ workspaceName: string; tiddlerTitle: string; renderedContent: string }> | undefined;
     await agentFrameworkHooks.userMessageReceived.promise({
       agentFrameworkContext: context,
       content: {
         text: lastUserMessage.content,
         file: lastUserMessage.metadata?.file as File | undefined,
+        // Pass wikiTiddlers back for consistency, though they're already in metadata
+        wikiTiddlers: wikiTiddlersFromMetadata?.map(t => ({ workspaceName: t.workspaceName, tiddlerTitle: t.tiddlerTitle })),
       },
       messageId: lastUserMessage.id,
       timestamp: lastUserMessage.modified || new Date(),

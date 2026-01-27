@@ -71,8 +71,9 @@ export interface BasicActions {
    * Sends a message from the user to the agent.
    * @param content The message content
    * @param file Optional file attachment
+   * @param wikiTiddlers Optional wiki tiddler attachments
    */
-  sendMessage: (content: string, file?: File) => Promise<void>;
+  sendMessage: (content: string, file?: File, wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }>) => Promise<void>;
 
   /**
    * Creates a new agent instance from a definition.

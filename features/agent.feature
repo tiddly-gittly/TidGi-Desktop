@@ -126,3 +126,42 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | send icon           | [data-testid='send-icon']        |
       | send button         | [data-testid='agent-send-button']|
     And I should not see a "partial chunk 4 text" element with selector "text='partial_chunk_4'"
+
+  @agent @mockOpenAI
+  Scenario: Wiki tiddler attachment with rendered content
+    # Add scenario-specific responses to the mock server  
+    Given I add mock OpenAI responses:
+      | response                                                                                                    | stream |
+      | 我收到了你发送的 wiki 条目内容。                                                                            | false  |
+    # First, navigate to wiki workspace and create a test tiddler with wikitext content
+    When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    Then the browser view should be loaded and visible
+    And I wait for "SSE backend ready" log marker "[test-id-SSE_READY]"
+    # Create a new tiddler with wikitext syntax
+    When I execute TiddlyWiki code in browser view: "$tw.wiki.addTiddler(new $tw.Tiddler({title: 'TestAttachmentTiddler', text: '!!WikiTestHeader\\n\\nThis is a test with WikiTestContentMarker123', type: 'text/vnd.tiddlywiki'}))"
+    # Navigate to agent workspace and create agent
+    When I click on "agent workspace button and create default agent button" elements with selectors:
+      | element description         | selector                                    |
+      | agent workspace button      | [data-testid='workspace-agent']             |
+      | create default agent button | [data-testid='create-default-agent-button'] |
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
+    # Click attachment button to open autocomplete
+    When I click on a "attach button" element with selector "[data-testid='agent-attach-button']"
+    # Autocomplete should open showing image option + tiddler options
+    And I should see a "attachment autocomplete input" element with selector "[data-testid='attachment-autocomplete-input']"
+    And I should see a "attachment listbox" element with selector "[data-testid='attachment-listbox']"
+    # Click on our test tiddler option
+    When I click on a "test tiddler option" element with selector "[data-testid='attachment-option-tiddler-TestAttachmentTiddler']"
+    # Verify the chip is displayed
+    Then I should see a "wiki tiddler chip" element with selector "[data-testid='wiki-tiddler-chip-0']"
+    # Type message and send
+    When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
+    When I type "请分析这个条目" in "chat input" element with selector "[data-testid='agent-message-input']"
+    And I press "Enter" key
+    # Verify the mock server received the rendered content (wikitext converted to plain text)
+    Then the last AI request user message should contain "WikiTestContentMarker123"
+    And the last AI request user message should contain "Wiki Entry from"
+    And the last AI request user message should contain "TestAttachmentTiddler"
+    # Verify wikitext was converted to plain text (!! becomes "Header", not raw !!)
+    And the last AI request user message should contain "WikiTestHeader"
+    And the last AI request user message should not contain "!!"

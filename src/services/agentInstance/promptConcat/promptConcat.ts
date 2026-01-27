@@ -315,6 +315,22 @@ export async function* promptConcatStream(
       contentLength: userMessage.content.length,
     });
 
+    // Build user message content
+    let userContent = userMessage.content;
+    
+    // Append wiki tiddler contents if present
+    const wikiTiddlersMetadata = userMessage.metadata?.wikiTiddlers as Array<{ workspaceName: string; tiddlerTitle: string; renderedContent: string }> | undefined;
+    if (wikiTiddlersMetadata && wikiTiddlersMetadata.length > 0) {
+      logger.debug('Adding wiki tiddler attachments to prompt', {
+        messageId: userMessage.id,
+        tiddlerCount: wikiTiddlersMetadata.length,
+      });
+      
+      for (const tiddler of wikiTiddlersMetadata) {
+        userContent += `\n\n---\n**Wiki Entry from "${tiddler.workspaceName}" - "${tiddler.tiddlerTitle}":**\n${tiddler.renderedContent}`;
+      }
+    }
+
     // Check for file attachment
     const fileMetadata = userMessage.metadata?.file as { path: string } | undefined;
     if (fileMetadata?.path) {
@@ -324,15 +340,15 @@ export async function* promptConcatStream(
           role: 'user',
           content: [
             { type: 'image', image: imageBuffer },
-            { type: 'text', text: userMessage.content },
+            { type: 'text', text: userContent },
           ],
         });
       } catch (error) {
         logger.error('Failed to read attached file', { error, path: fileMetadata.path });
-        flatPrompts.push({ role: 'user', content: userMessage.content });
+        flatPrompts.push({ role: 'user', content: userContent });
       }
     } else {
-      flatPrompts.push({ role: 'user', content: userMessage.content });
+      flatPrompts.push({ role: 'user', content: userContent });
     }
   }
 

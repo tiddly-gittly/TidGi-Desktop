@@ -39,3 +39,8 @@ export const useAgentChatStore = create<AgentChatStoreType>()((set, get, api) =>
     ...previewActionsMiddleware(set, get, api),
   } as AgentChatStoreType;
 });
+
+// Expose store to window object for e2e testing
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'test') {
+  (window as any).useAgentChatStore = useAgentChatStore;
+}

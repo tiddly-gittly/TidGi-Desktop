@@ -4,6 +4,7 @@ import { pick } from 'lodash';
 import { DataSource, Equal, Not, Repository } from 'typeorm';
 
 import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
+import { getTiddlerTitleFromUrl } from '@/constants/urls';
 import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
 import type { IChatTab, ISplitViewTab, IWikiEmbedTab } from '@/pages/Agent/types/tab';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
@@ -678,10 +679,34 @@ export class AgentBrowserService implements IAgentBrowserService {
     workspaceId: string | undefined,
     agentDefinitionId: string | undefined,
     selectionText: string,
+    wikiUrl?: string,
   ): Promise<string> {
     this.ensureRepositories();
 
     try {
+      // Extract tiddler title from wiki URL if provided
+      const tiddlerTitle = wikiUrl ? getTiddlerTitleFromUrl(wikiUrl) : undefined;
+      
+      // Get workspace name for attachment
+      let workspaceName: string | undefined;
+      if (workspaceId && tiddlerTitle) {
+        const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+        const workspace = await workspaceService.get(workspaceId);
+        workspaceName = workspace?.name;
+      }
+      
+      // Build wiki tiddlers attachment array
+      const wikiTiddlers = (tiddlerTitle && workspaceName) 
+        ? [{ workspaceName, tiddlerTitle }]
+        : undefined;
+      
+      logger.debug('findOrCreateTalkWithAITab called with wiki attachment', {
+        workspaceId,
+        tiddlerTitle,
+        workspaceName,
+        hasWikiTiddlers: !!wikiTiddlers,
+      });
+
       // Get the currently active tab
       const activeTabId = await this.getActiveTabId();
 
@@ -704,9 +729,12 @@ export class AgentBrowserService implements IAgentBrowserService {
             const chatChild = splitTab.childTabs.find((child): child is IChatTab => child.type === TabType.CHAT);
 
             if (chatChild?.agentId) {
-              // Send the new message to existing agent
+              // Send the new message with wiki tiddler attachment to existing agent
               const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-              await agentInstanceService.sendMsgToAgent(chatChild.agentId, { text: selectionText });
+              await agentInstanceService.sendMsgToAgent(chatChild.agentId, { 
+                text: selectionText, 
+                wikiTiddlers,
+              });
             }
 
             logger.info('Reusing currently active Talk with AI tab', { tabId: activeTabId });
@@ -757,12 +785,15 @@ export class AgentBrowserService implements IAgentBrowserService {
         }
       }
 
-      // Send initial message to the agent
+      // Send initial message to the agent with wiki tiddler attachment
       // Note: When creating SPLIT_VIEW tabs (not plain CHAT tabs), we need to send the message here
       // because basicActions.ts only handles direct CHAT tab creation.
       // The child CHAT tab has initialMessage set, but we must explicitly send it.
       if (selectionText && agent.id) {
-        await agentInstanceService.sendMsgToAgent(agent.id, { text: selectionText });
+        await agentInstanceService.sendMsgToAgent(agent.id, { 
+          text: selectionText,
+          wikiTiddlers,
+        });
       }
 
       // Create a split view tab with the child tabs

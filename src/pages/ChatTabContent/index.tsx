@@ -101,6 +101,9 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     selectedFile,
     handleFileSelect,
     handleClearFile,
+    selectedWikiTiddlers,
+    handleWikiTiddlerSelect,
+    handleRemoveWikiTiddler,
   } = useMessageHandling({
     agentId: tab.agentId,
     isUserAtBottom,
@@ -229,6 +232,9 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
         selectedFile={selectedFile}
         onFileSelect={handleFileSelect}
         onClearFile={handleClearFile}
+        selectedWikiTiddlers={selectedWikiTiddlers}
+        onWikiTiddlerSelect={handleWikiTiddlerSelect}
+        onRemoveWikiTiddler={handleRemoveWikiTiddler}
       />
 
       {/* Model parameter dialog */}

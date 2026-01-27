@@ -33,7 +33,7 @@ export const messageActions = (
     });
   },
 
-  sendMessage: async (content: string, file?: File) => {
+  sendMessage: async (content: string, file?: File, wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }>) => {
     const storeAgent = get().agent;
     if (!storeAgent?.id) {
       set({ error: new Error('No active agent in store') });
@@ -46,7 +46,7 @@ export const messageActions = (
       // We need to extract it because simple serialization might lose it or fail to transmit the File object correctly via IPC.
       void window.service.native.log(
         'debug',
-        'Sending message with file',
+        'Sending message with attachments',
         {
           function: 'messageActions.sendMessage',
           hasFile: !!file,
@@ -54,6 +54,8 @@ export const messageActions = (
           fileType: file?.type,
           fileSize: file?.size,
           filePath: (file as unknown as { path?: string })?.path,
+          hasWikiTiddlers: !!(wikiTiddlers && wikiTiddlers.length > 0),
+          wikiTiddlersCount: wikiTiddlers?.length || 0,
         },
       );
 
@@ -81,6 +83,7 @@ export const messageActions = (
       await window.service.agentInstance.sendMsgToAgent(storeAgent.id, {
         text: content,
         file: fileData as unknown as File,
+        wikiTiddlers,
       });
     } catch (error) {
       set({ error: error as Error });

@@ -7,6 +7,8 @@
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import { app } from 'electron';
 import * as fs from 'fs-extra';
 import * as path from 'path';
@@ -26,6 +28,7 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
       logger.debug('userMessageReceived hook called', {
         messageId,
         hasFile: !!content.file,
+        hasWikiTiddlers: !!(content.wikiTiddlers && content.wikiTiddlers.length > 0),
         fileInfo: content.file
           ? {
             hasPath: !!(content.file as unknown as { path?: string }).path,
@@ -36,6 +39,20 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
       });
 
       let persistedFileMetadata: Record<string, unknown> | undefined;
+      let wikiTiddlersMetadata: Array<{ workspaceName: string; tiddlerTitle: string; renderedContent: string }> | undefined;
+
+      // Check if wikiTiddlers are already in the message (from a previous hook call)
+      const existingMessage = agentFrameworkContext.agent.messages.find(m => m.id === messageId);
+      const existingWikiTiddlers = existingMessage?.metadata?.wikiTiddlers as Array<{ workspaceName: string; tiddlerTitle: string; renderedContent: string }> | undefined;
+      
+      if (existingWikiTiddlers && existingWikiTiddlers.length > 0) {
+        // Reuse existing wiki tiddlers metadata
+        wikiTiddlersMetadata = existingWikiTiddlers;
+        logger.debug('Reusing existing wiki tiddlers metadata from previous hook call', {
+          messageId,
+          tiddlerCount: existingWikiTiddlers.length,
+        });
+      }
 
       // Handle file attachment persistence
       if (content.file) {
@@ -84,12 +101,118 @@ export function registerMessagePersistence(hooks: PromptConcatHooks): void {
         }
       }
 
+      // Handle wiki tiddler attachments (only if not already processed)
+      if (content.wikiTiddlers && content.wikiTiddlers.length > 0 && !wikiTiddlersMetadata) {
+        try {
+          const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+          const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+          
+          wikiTiddlersMetadata = [];
+          
+          for (const tiddler of content.wikiTiddlers) {
+            try {
+              // Find workspace by name
+              const workspacesList = await workspaceService.getWorkspacesAsList();
+              const workspace = workspacesList.find(w => w.name === tiddler.workspaceName);
+              
+              if (!workspace) {
+                logger.warn('Workspace not found for wiki tiddler attachment', {
+                  workspaceName: tiddler.workspaceName,
+                  messageId,
+                });
+                continue;
+              }
+              
+              // Get rendered HTML content of the tiddler
+              // First try getTiddlerHtml for rendered content
+              let response = await wikiService.callWikiIpcServerRoute(workspace.id, 'getTiddlerHtml', tiddler.tiddlerTitle);
+              
+              logger.debug('getTiddlerHtml response received', {
+                workspaceName: tiddler.workspaceName,
+                tiddlerTitle: tiddler.tiddlerTitle,
+                statusCode: response.statusCode,
+                dataType: typeof response.data,
+                dataLength: typeof response.data === 'string' ? response.data.length : 'N/A',
+                messageId,
+              });
+              
+              // If getTiddlerHtml returns empty or fails, fallback to getTiddler for raw text
+              if (response.statusCode === 200 && typeof response.data === 'string' && response.data.length > 0) {
+                wikiTiddlersMetadata.push({
+                  workspaceName: tiddler.workspaceName,
+                  tiddlerTitle: tiddler.tiddlerTitle,
+                  renderedContent: response.data,
+                });
+                
+                logger.debug('Wiki tiddler rendered HTML content fetched', {
+                  workspaceName: tiddler.workspaceName,
+                  tiddlerTitle: tiddler.tiddlerTitle,
+                  contentLength: response.data.length,
+                  messageId,
+                });
+              } else {
+                // Fallback to getTiddler for raw text
+                logger.debug('getTiddlerHtml returned empty, falling back to getTiddler', {
+                  workspaceName: tiddler.workspaceName,
+                  tiddlerTitle: tiddler.tiddlerTitle,
+                  messageId,
+                });
+                
+                response = await wikiService.callWikiIpcServerRoute(workspace.id, 'getTiddler', tiddler.tiddlerTitle);
+                
+                if (response.statusCode === 200 && response.data !== undefined && typeof response.data === 'object') {
+                  const tiddlerFields = response.data as { text?: string; [key: string]: unknown };
+                  const tiddlerText = tiddlerFields.text || '';
+                  
+                  wikiTiddlersMetadata.push({
+                    workspaceName: tiddler.workspaceName,
+                    tiddlerTitle: tiddler.tiddlerTitle,
+                    renderedContent: tiddlerText,
+                  });
+                  
+                  logger.debug('Wiki tiddler raw text content fetched (fallback)', {
+                    workspaceName: tiddler.workspaceName,
+                    tiddlerTitle: tiddler.tiddlerTitle,
+                    contentLength: tiddlerText.length,
+                    messageId,
+                  });
+                } else {
+                  logger.warn('Failed to get wiki tiddler content (both HTML and raw text)', {
+                    workspaceName: tiddler.workspaceName,
+                    tiddlerTitle: tiddler.tiddlerTitle,
+                    statusCode: response.statusCode,
+                    messageId,
+                  });
+                }
+              }
+            } catch (error) {
+              logger.error('Error fetching wiki tiddler content', {
+                error,
+                workspaceName: tiddler.workspaceName,
+                tiddlerTitle: tiddler.tiddlerTitle,
+                messageId,
+              });
+            }
+          }
+        } catch (error) {
+          logger.error('Failed to process wiki tiddler attachments', { error, messageId });
+        }
+      }
+
       // Create user message using the helper function
+      const metadata: Record<string, unknown> = {};
+      if (persistedFileMetadata) {
+        metadata.file = persistedFileMetadata;
+      }
+      if (wikiTiddlersMetadata && wikiTiddlersMetadata.length > 0) {
+        metadata.wikiTiddlers = wikiTiddlersMetadata;
+      }
+      
       const userMessage = createAgentMessage(messageId, agentFrameworkContext.agent.id, {
         role: 'user',
         content: content.text,
         contentType: 'text/plain',
-        metadata: persistedFileMetadata ? { file: persistedFileMetadata } : undefined,
+        metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         duration: undefined, // User messages persist indefinitely by default
       });
 

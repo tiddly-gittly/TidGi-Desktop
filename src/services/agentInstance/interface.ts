@@ -131,10 +131,17 @@ export interface IAgentInstanceService {
   /**
    * Send a message or file to an agent instance, and put response to observables. Persistence and tool calling is handled by the plugins.
    * @param agentId Agent ID
-   * @param messageText Message text
-   * @param file File to upload
+   * @param content Message content including text, optional file, and optional wiki tiddlers
    */
-  sendMsgToAgent(agentId: string, content: { text: string; file?: File }): Promise<void>;
+  sendMsgToAgent(agentId: string, content: { 
+    text: string; 
+    file?: File;
+    /**
+     * Wiki tiddlers to attach. Each entry contains workspace name and tiddler title.
+     * The rendered HTML content of these tiddlers will be fetched and included in the prompt.
+     */
+    wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }>;
+  }): Promise<void>;
 
   /**
    * Subscribe to agent instance updates

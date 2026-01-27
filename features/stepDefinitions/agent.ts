@@ -267,6 +267,50 @@ Then('the last AI request should have {int} messages', async function(this: Appl
   }
 });
 
+Then('the last AI request user message should contain {string}', async function(this: ApplicationWorld, expectedText: string) {
+  if (!this.mockOpenAIServer) {
+    throw new Error('Mock OpenAI server is not running');
+  }
+
+  const lastRequest = this.mockOpenAIServer.getLastRequest();
+  if (!lastRequest) {
+    throw new Error('No AI request has been made yet');
+  }
+
+  // Find the last user message in the request
+  const userMessages = lastRequest.messages.filter(message => message.role === 'user');
+  if (userMessages.length === 0) {
+    throw new Error('No user message found in the AI request');
+  }
+
+  const lastUserMessage = userMessages[userMessages.length - 1];
+  if (!lastUserMessage.content || !lastUserMessage.content.includes(expectedText)) {
+    throw new Error(`Expected user message to contain "${expectedText}", but got: "${lastUserMessage.content}"`);
+  }
+});
+
+Then('the last AI request user message should not contain {string}', async function(this: ApplicationWorld, unexpectedText: string) {
+  if (!this.mockOpenAIServer) {
+    throw new Error('Mock OpenAI server is not running');
+  }
+
+  const lastRequest = this.mockOpenAIServer.getLastRequest();
+  if (!lastRequest) {
+    throw new Error('No AI request has been made yet');
+  }
+
+  // Find the last user message in the request
+  const userMessages = lastRequest.messages.filter(message => message.role === 'user');
+  if (userMessages.length === 0) {
+    throw new Error('No user message found in the AI request');
+  }
+
+  const lastUserMessage = userMessages[userMessages.length - 1];
+  if (lastUserMessage.content && lastUserMessage.content.includes(unexpectedText)) {
+    throw new Error(`Expected user message NOT to contain "${unexpectedText}", but it was found in: "${lastUserMessage.content.substring(0, 200)}..."`);
+  }
+});
+
 // Factory function to create scenario-specific provider config
 // Returns a new object each time to avoid state pollution between scenarios
 function createProviderConfig(): AIProviderConfig {

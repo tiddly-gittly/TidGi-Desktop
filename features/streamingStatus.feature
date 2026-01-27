@@ -77,7 +77,13 @@ Feature: Message Streaming Status
     When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     
-    # Set file directly to the hidden file input using Playwright
+    # Click attachment button to open autocomplete
+    When I click on a "attach button" element with selector "[data-testid='agent-attach-button']"
+    # Wait for autocomplete to open
+    And I should see a "attachment autocomplete input" element with selector "[data-testid='attachment-autocomplete-input']"
+    # Click on "Add Image" option (first option with type=image)
+    When I click on a "add image option" element with selector "[data-testid='attachment-option-image-AddImage']"
+    # Now the file input dialog should open - set file directly to the hidden file input
     When I set file "template/wiki/files/TiddlyWikiIconBlack.png" to file input with selector "input[type='file']"
     # Verify image preview appears
     Then I should see an "attachment preview" element with selector "[data-testid='attachment-preview']"

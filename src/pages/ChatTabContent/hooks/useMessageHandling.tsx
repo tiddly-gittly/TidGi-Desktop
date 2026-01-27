@@ -10,6 +10,11 @@ interface UseMessageHandlingProps {
   debouncedScrollToBottom: () => void;
 }
 
+export interface WikiTiddlerAttachment {
+  workspaceName: string;
+  tiddlerTitle: string;
+}
+
 /**
  * Custom hook for handling message operations in chat interfaces
  * Directly uses the agent store to reduce prop drilling and potential bugs
@@ -30,6 +35,7 @@ export function useMessageHandling({
   );
   const [message, setMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | undefined>();
+  const [selectedWikiTiddlers, setSelectedWikiTiddlers] = useState<WikiTiddlerAttachment[]>([]);
   const [parametersOpen, setParametersOpen] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
 
@@ -62,17 +68,31 @@ export function useMessageHandling({
   }, []);
 
   /**
+   * Handle wiki tiddler selection
+   */
+  const handleWikiTiddlerSelect = useCallback((tiddler: WikiTiddlerAttachment) => {
+    setSelectedWikiTiddlers(prev => [...prev, tiddler]);
+  }, []);
+
+  /**
+   * Handle removing a wiki tiddler attachment
+   */
+  const handleRemoveWikiTiddler = useCallback((index: number) => {
+    setSelectedWikiTiddlers(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  /**
    * Handle sending a message
    */
   const handleSendMessage = useCallback(async () => {
-    if ((!message.trim() && !selectedFile) || !agent || sendingMessage || !agentId) return;
+    if ((!message.trim() && !selectedFile && selectedWikiTiddlers.length === 0) || !agent || sendingMessage || !agentId) return;
 
     // Store the current scroll position status before sending message
     const wasAtBottom = isUserAtBottom();
     setSendingMessage(true);
 
     try {
-      await sendMessage(message, selectedFile);
+      await sendMessage(message, selectedFile, selectedWikiTiddlers);
       setMessage('');
       // After sending, update the scroll position reference to ensure proper scrolling
       isUserAtBottomReference.current = wasAtBottom;
@@ -82,11 +102,12 @@ export function useMessageHandling({
         debouncedScrollToBottom();
       }
     } finally {
-      // Always clear file selection, even if send fails
+      // Always clear selections, even if send fails
       setSelectedFile(undefined);
+      setSelectedWikiTiddlers([]);
       setSendingMessage(false);
     }
-  }, [message, selectedFile, agent, sendingMessage, agentId, isUserAtBottom, sendMessage, debouncedScrollToBottom, isUserAtBottomReference]);
+  }, [message, selectedFile, selectedWikiTiddlers, agent, sendingMessage, agentId, isUserAtBottom, sendMessage, debouncedScrollToBottom, isUserAtBottomReference]);
 
   /**
    * Handle keyboard events for sending messages
@@ -113,5 +134,8 @@ export function useMessageHandling({
     selectedFile,
     handleFileSelect,
     handleClearFile,
+    selectedWikiTiddlers,
+    handleWikiTiddlerSelect,
+    handleRemoveWikiTiddler,
   };
 }

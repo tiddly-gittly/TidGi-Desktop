@@ -56,6 +56,7 @@ export function useAskAIWithSelection(): void {
           data.workspaceId,
           data.agentDefId,
           data.selectionText,
+          data.wikiUrl,
         );
 
         // Activate the tab

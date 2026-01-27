@@ -356,7 +356,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async sendMsgToAgent(agentId: string, content: { text: string; file?: File }): Promise<void> {
+  public async sendMsgToAgent(agentId: string, content: { text: string; file?: File; wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }> }): Promise<void> {
     try {
       // Get agent instance
       const agentInstance = await this.getAgent(agentId);

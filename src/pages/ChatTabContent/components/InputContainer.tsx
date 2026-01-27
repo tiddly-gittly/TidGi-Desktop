@@ -4,10 +4,12 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
 import CancelIcon from '@mui/icons-material/StopCircle';
-import { Box, IconButton, TextField } from '@mui/material';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import { Box, IconButton, TextField, Chip, Autocomplete, Popper, Paper, ClickAwayListener } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import type { WikiTiddlerAttachment } from '../hooks/useMessageHandling';
 
 const Wrapper = styled(Box)`
   display: flex;
@@ -20,7 +22,7 @@ const Container = styled(Box)`
   display: flex;
   padding: 12px 16px;
   gap: 12px;
-  align-items: flex-end;
+  align-items: center;
 `;
 
 const InputField = styled(TextField)`
@@ -42,6 +44,9 @@ interface InputContainerProps {
   selectedFile?: File;
   onFileSelect?: (file: File) => void;
   onClearFile?: () => void;
+  selectedWikiTiddlers?: WikiTiddlerAttachment[];
+  onWikiTiddlerSelect?: (tiddler: WikiTiddlerAttachment) => void;
+  onRemoveWikiTiddler?: (index: number) => void;
 }
 
 /**
@@ -59,10 +64,21 @@ export const InputContainer: React.FC<InputContainerProps> = ({
   selectedFile,
   onFileSelect,
   onClearFile,
+  selectedWikiTiddlers = [],
+  onWikiTiddlerSelect,
+  onRemoveWikiTiddler,
 }) => {
   const { t } = useTranslation('agent');
   const fileInputReference = React.useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = React.useState<string | undefined>();
+  const [attachmentAnchorEl, setAttachmentAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [attachmentOptions, setAttachmentOptions] = React.useState<Array<{ 
+    type: 'image' | 'tiddler'; 
+    title: string; 
+    workspaceName?: string;
+    testId?: string;
+  }>>([]);
+  const [loadingOptions, setLoadingOptions] = React.useState(false);
 
   React.useEffect(() => {
     if (selectedFile) {
@@ -115,51 +131,154 @@ export const InputContainer: React.FC<InputContainerProps> = ({
     }
   };
 
+  const handleAttachmentClick = (event: React.MouseEvent<HTMLElement>) => {
+    // Immediately show Popper with loading state
+    setAttachmentAnchorEl(event.currentTarget);
+    setLoadingOptions(true);
+    
+    // Log for debugging
+    void window.service.native.log('debug', 'Attachment button clicked, loading options...', {});
+    
+    // Load options asynchronously
+    void (async () => {
+      try {
+        // Build options: first is "Add Image", then wiki tiddlers from all non-hibernated workspaces
+        const options: Array<{ type: 'image' | 'tiddler'; title: string; workspaceName?: string; testId?: string }> = [
+          { type: 'image', title: t('Agent.Attachment.AddImage', '📷 Add Image'), workspaceName: '', testId: 'AddImage' },
+        ];
+        
+        // Get all workspaces
+        const allWorkspaces = await window.service.workspace.getWorkspacesAsList();
+        
+        // Filter to wiki workspaces that are not hibernated
+        const activeWikiWorkspaces = allWorkspaces.filter(w => 
+          'wikiFolderLocation' in w && !w.hibernated
+        );
+        
+        void window.service.native.log('debug', 'Found active wiki workspaces', { 
+          count: activeWikiWorkspaces.length,
+          workspaces: activeWikiWorkspaces.map(w => w.name),
+        });
+        
+        // Get tiddlers from each active wiki workspace
+        for (const workspace of activeWikiWorkspaces) {
+          try {
+            const response = await window.service.wiki.callWikiIpcServerRoute(
+              workspace.id,
+              'getTiddlersJSON',
+              '[!is[system]sort[title]]',
+              ['text'], // Exclude text field for performance
+            );
+            
+            if (response.statusCode === 200 && Array.isArray(response.data)) {
+              const tiddlers = response.data.map((t: any) => ({
+                type: 'tiddler' as const,
+                title: t.title || '',
+                workspaceName: workspace.name,
+              }));
+              options.push(...tiddlers);
+              
+              void window.service.native.log('debug', `Loaded ${tiddlers.length} tiddlers from workspace`, {
+                workspaceName: workspace.name,
+              });
+            }
+          } catch (error) {
+            console.error(`Failed to load tiddlers from workspace ${workspace.name}`, error);
+          }
+        }
+        
+        void window.service.native.log('debug', 'Attachment options loaded', { totalOptions: options.length });
+        setAttachmentOptions(options);
+        setLoadingOptions(false);
+      } catch (error) {
+        console.error('Failed to load attachment options', error);
+        void window.service.native.log('error', 'Failed to load attachment options', { error });
+        setLoadingOptions(false);
+      }
+    })();
+  };
+
+  const handleCloseAttachmentSelector = () => {
+    setAttachmentAnchorEl(null);
+  };
+
+  const handleSelectAttachment = (_event: React.SyntheticEvent, value: { type: 'image' | 'tiddler'; title: string; workspaceName?: string; testId?: string } | null) => {
+    if (!value) {
+      handleCloseAttachmentSelector();
+      return;
+    }
+    
+    if (value.type === 'image') {
+      // Trigger file input click
+      fileInputReference.current?.click();
+    } else if (value.type === 'tiddler' && value.workspaceName && onWikiTiddlerSelect) {
+      // Add wiki tiddler attachment
+      onWikiTiddlerSelect({
+        workspaceName: value.workspaceName,
+        tiddlerTitle: value.title,
+      });
+    }
+    
+    handleCloseAttachmentSelector();
+  };
+
   return (
     <Wrapper>
-      {selectedFile && previewUrl && (
-        <Box sx={{ p: 1, px: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box
-            sx={{ position: 'relative', display: 'inline-block' }}
-          >
+      {(selectedFile || selectedWikiTiddlers.length > 0) && (
+        <Box sx={{ p: 1, px: 2, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          {selectedFile && previewUrl && (
             <Box
-              component='img'
-              src={previewUrl}
-              data-testid='attachment-preview'
-              sx={{
-                height: 80,
-                width: 'auto',
-                borderRadius: 1,
-                cursor: 'pointer',
-                border: '1px solid',
-                borderColor: 'divider',
-              }}
-              onClick={() => {
-                // Future: open preview dialog
-                const win = window.open();
-                if (win) {
-                  const img = win.document.createElement('img');
-                  img.src = previewUrl;
-                  img.style.maxWidth = '100%';
-                  win.document.body.append(img);
-                }
-              }}
-            />
-            <IconButton
-              size='small'
-              onClick={onClearFile}
-              sx={{
-                position: 'absolute',
-                top: -8,
-                right: -8,
-                bgcolor: 'background.paper',
-                boxShadow: 1,
-                '&:hover': { bgcolor: 'background.default' },
-              }}
+              sx={{ position: 'relative', display: 'inline-block' }}
             >
-              <CloseIcon fontSize='small' />
-            </IconButton>
-          </Box>
+              <Box
+                component='img'
+                src={previewUrl}
+                data-testid='attachment-preview'
+                sx={{
+                  height: 80,
+                  width: 'auto',
+                  borderRadius: 1,
+                  cursor: 'pointer',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
+                onClick={() => {
+                  // Future: open preview dialog
+                  const win = window.open();
+                  if (win) {
+                    const img = win.document.createElement('img');
+                    img.src = previewUrl;
+                    img.style.maxWidth = '100%';
+                    win.document.body.append(img);
+                  }
+                }}
+              />
+              <IconButton
+                size='small'
+                onClick={onClearFile}
+                sx={{
+                  position: 'absolute',
+                  top: -8,
+                  right: -8,
+                  bgcolor: 'background.paper',
+                  boxShadow: 1,
+                  '&:hover': { bgcolor: 'background.default' },
+                }}
+              >
+                <CloseIcon fontSize='small' />
+              </IconButton>
+            </Box>
+          )}
+          {selectedWikiTiddlers.map((tiddler, index) => (
+            <Chip
+              key={index}
+              icon={<LibraryBooksIcon />}
+              label={`${tiddler.workspaceName}: ${tiddler.tiddlerTitle}`}
+              onDelete={() => onRemoveWikiTiddler?.(index)}
+              data-testid={`wiki-tiddler-chip-${index}`}
+              sx={{ maxWidth: 300 }}
+            />
+          ))}
         </Box>
       )}
       <Container>
@@ -171,10 +290,11 @@ export const InputContainer: React.FC<InputContainerProps> = ({
           onChange={handleFileChange}
         />
         <IconButton
-          onClick={() => fileInputReference.current?.click()}
+          onClick={handleAttachmentClick}
           disabled={disabled || isStreaming}
-          color={selectedFile ? 'primary' : 'default'}
+          color={(selectedFile || selectedWikiTiddlers.length > 0) ? 'primary' : 'default'}
           data-testid='agent-attach-button'
+          title={t('Agent.Attachment.AddAttachment', 'Add attachment')}
         >
           <AttachFileIcon />
         </IconButton>
@@ -196,8 +316,8 @@ export const InputContainer: React.FC<InputContainerProps> = ({
                   data-testid='agent-send-button'
                   onClick={isStreaming ? onCancel : onSend}
                   // During streaming, cancel button should always be enabled
-                  // Only disable the button when not streaming and the input is empty AND no file selected
-                  disabled={isStreaming ? false : (disabled || (!value.trim() && !selectedFile))}
+                  // Only disable the button when not streaming and the input is empty AND no file/tiddler selected
+                  disabled={isStreaming ? false : (disabled || (!value.trim() && !selectedFile && selectedWikiTiddlers.length === 0))}
                   color={isStreaming ? 'error' : 'primary'}
                   title={isStreaming ? t('Chat.Cancel') : t('Chat.Send')}
                 >
@@ -208,6 +328,48 @@ export const InputContainer: React.FC<InputContainerProps> = ({
           }}
         />
       </Container>
+
+      {/* Attachment Selector Popper */}
+      <Popper
+        open={Boolean(attachmentAnchorEl)}
+        anchorEl={attachmentAnchorEl}
+        placement='top-start'
+        style={{ zIndex: 1500 }}
+      >
+        <ClickAwayListener onClickAway={handleCloseAttachmentSelector}>
+          <Paper sx={{ p: 2, minWidth: 400, maxWidth: 600 }}>
+            <Autocomplete
+              open
+              loading={loadingOptions}
+              options={attachmentOptions}
+              groupBy={(option) => option.workspaceName || ''}
+              getOptionLabel={(option) => option.title}
+              onChange={handleSelectAttachment}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label={t('Agent.Attachment.SelectAttachment', 'Select attachment')}
+                  placeholder={t('Agent.Attachment.SearchPlaceholder', 'Search...')}
+                  autoFocus
+                  data-testid='attachment-autocomplete-input'
+                />
+              )}
+              renderOption={(props, option) => {
+                const testId = option.testId || option.title.replace(/[^a-zA-Z0-9]/g, '_');
+                return (
+                  <li {...props} data-testid={`attachment-option-${option.type}-${testId}`}>
+                    {option.title}
+                  </li>
+                );
+              }}
+              noOptionsText={t('Agent.Attachment.NoOptions', 'No options available')}
+              ListboxProps={{
+                'data-testid': 'attachment-listbox',
+              }}
+            />
+          </Paper>
+        </ClickAwayListener>
+      </Popper>
     </Wrapper>
   );
 };

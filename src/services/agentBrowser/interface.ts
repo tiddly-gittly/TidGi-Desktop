@@ -87,9 +87,10 @@ export interface IAgentBrowserService {
    * @param workspaceId Wiki workspace ID to embed
    * @param agentDefinitionId Agent definition ID to use
    * @param selectionText Selected text to send to agent
+   * @param wikiUrl Optional wiki URL to extract tiddler title from
    * @returns The tab ID to activate
    */
-  findOrCreateTalkWithAITab(workspaceId: string | undefined, agentDefinitionId: string | undefined, selectionText: string): Promise<string>;
+  findOrCreateTalkWithAITab(workspaceId: string | undefined, agentDefinitionId: string | undefined, selectionText: string, wikiUrl?: string): Promise<string>;
 }
 
 /**

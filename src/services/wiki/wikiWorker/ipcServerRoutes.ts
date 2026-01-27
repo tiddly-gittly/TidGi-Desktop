@@ -248,18 +248,9 @@ export class IpcServerRoutes {
     if (tiddler === undefined) {
       return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `Tiddler "${title}" not exist` };
     } else {
-      let renderType: OutputMimeTypes = tiddler.getFieldString('_render_type') as OutputMimeTypes;
-      let renderTemplate: string = tiddler.getFieldString('_render_template');
-      // Tiddler fields '_render_type' and '_render_template' overwrite
-      // system wide settings for render type and template
-      if (this.wikiInstance.wiki.isSystemTiddler(title)) {
-        renderType = renderType ?? /* this.wikiInstance.server.get('system-tiddler-render-type') ?? */ 'text/plain';
-        renderTemplate = renderTemplate ?? /* this.wikiInstance.server.get('system-tiddler-render-template') ?? */ '$:/core/templates/wikified-tiddler';
-      } else {
-        renderType = renderType ?? /* this.wikiInstance.server.get('tiddler-render-type') ?? */ 'text/html';
-        renderTemplate = renderTemplate ?? /* this.wikiInstance.server.get('tiddler-render-template') ?? */ '$:/core/templates/server/static.tiddler.html';
-      }
-      const text = this.wikiInstance.wiki.renderTiddler(renderType, renderTemplate, { parseAsInline: true, variables: { currentTiddler: title } });
+      // Render tiddler content to plain text (wikitext will be converted to readable text)
+      // This is simpler and more reliable than using HTML templates
+      const text = this.wikiInstance.wiki.renderTiddler('text/plain', title, { parseAsInline: false });
 
       // Naughty not to set a content-type, but it's the easiest way to ensure the browser will see HTML pages as HTML, and accept plain text tiddlers as CSS or JS
       return { statusCode: 200, headers: { 'Content-Type': '; charset=utf8' }, data: text };
