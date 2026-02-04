@@ -1,3 +1,17 @@
+import { setDefaultTimeout } from '@cucumber/cucumber';
+
+const isCI = Boolean(process.env.CI);
+const isMac = process.platform === 'darwin';
+
+// Set global timeout for all steps and hooks
+// Local: 5s (10s on macOS), CI: 25s
+// macOS needs longer timeout for browser view loading
+const globalTimeout = isCI ? 25000 : (isMac ? 10000 : 5000);
+
+console.log('[Timeout Config] Setting global timeout to:', globalTimeout, 'ms (CI:', isCI, ', macOS:', isMac, ')');
+
+setDefaultTimeout(globalTimeout);
+
 /**
  * Centralized timeout configuration for E2E tests
  *
@@ -13,14 +27,11 @@
  * not a timeout that should be increased.
  */
 
-const isCI = Boolean(process.env.CI);
-
 /**
  * Timeout for Playwright waitForSelector and similar operations
  * These are internal timeouts for finding elements, not Cucumber step timeouts
- * Local: 5s, CI: 25s
  */
-export const PLAYWRIGHT_TIMEOUT = isCI ? 25000 : 5000;
+export const PLAYWRIGHT_TIMEOUT = globalTimeout;
 
 /**
  * Shorter timeout for operations that should be very fast

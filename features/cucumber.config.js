@@ -1,15 +1,7 @@
-const isCI = Boolean(process.env.CI);
-
-// Debug: Log CI detection for troubleshooting timeout issues
-console.log('[Cucumber Config] CI environment variable:', process.env.CI);
-console.log('[Cucumber Config] isCI:', isCI);
-console.log('[Cucumber Config] Timeout will be:', isCI ? 25000 : 5000, 'ms');
-
 module.exports = {
   default: {
     require: [
       'ts-node/register',
-      'features/supports/timeout-config.ts', // Must be loaded first to set global timeout
       'features/stepDefinitions/**/*.ts',
     ],
     requireModule: ['ts-node/register'],

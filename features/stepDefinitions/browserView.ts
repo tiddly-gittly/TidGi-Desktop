@@ -18,7 +18,7 @@ import type { ApplicationWorld } from './application';
 const BACKOFF_OPTIONS = {
   numOfAttempts: 10,
   startingDelay: 100,
-  timeMultiple: 2,
+  timeMultiple: 1.5,
 };
 
 Then('I should see {string} in the browser view content', async function(this: ApplicationWorld, expectedText: string) {
@@ -87,7 +87,7 @@ Then('the browser view should be loaded and visible', async function(this: Appli
         throw new Error('Browser view not loaded');
       }
     },
-    { ...BACKOFF_OPTIONS, numOfAttempts: 30 },
+    { numOfAttempts: 10, startingDelay: 1000, timeMultiple: 1.1 },
   ).catch(() => {
     throw new Error('Browser view is not loaded or visible after multiple attempts');
   });
