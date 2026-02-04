@@ -5,22 +5,24 @@ Feature: Talk with AI from Wiki Selection
 
   Background:
     Given I add test ai settings
-
-  @talkWithAI @mockOpenAI
-  Scenario: Talk with AI - complete workflow
-    Given I have started the mock OpenAI server
+    # Start mock server before launching app so baseURL is correct
+    And I have started the mock OpenAI server
       | response                                                                       | stream |
       | 这段文字说明了如何编辑卡片，点击右上角的按钮可以开始编辑当前卡片。 | false  |
       | 第一条消息：这是关于编辑的说明。                                        | false  |
       | 第二条消息：这是关于访问教程的补充说明。                            | false  |
       | 第三条消息：这是第一个对话的回复。                                      | false  |
-    # Launch application after mock server is ready
-    Then I launch the TidGi application
+    When I launch the TidGi application
     And I wait for the page to load completely
-    And I should see a "page body" element with selector "body"
+    # Verify wiki is loaded in Background like other tests
+    When I click on a "wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    And the browser view should be loaded and visible
+    And I should see "我的 TiddlyWiki" in the browser view content
+
+  @talkWithAI @mockOpenAI
+  Scenario: Talk with AI - complete workflow
     
     # Part 1: Create new split view from wiki selection
-    When I click on a "wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     # Wait for agent workspace to be created and activate it to ensure React components are mounted
     Then I should see a "agent workspace button" element with selector "[data-testid='workspace-agent']"
     When I click on "agent workspace button and wiki workspace button" elements with selectors:
@@ -36,6 +38,8 @@ Feature: Talk with AI from Wiki Selection
       | chat input              | [data-testid='agent-message-input']     |
     And I confirm the "main" window browser view is positioned within visible window bounds
     And I should see 2 messages in chat history
+    # Verify sidebar is closed - the show-sidebar button only appears when sidebar is hidden
+    Then I should see a "show sidebar button" element in browser view with selector ".tc-show-sidebar-btn"
     
     # Part 2: Reuse active split view - messages should accumulate (not reset)
     When I send ask AI with selection message with text "How to edit?" and workspace "wiki"
@@ -46,7 +50,6 @@ Feature: Talk with AI from Wiki Selection
     And I should see 4 messages in chat history
     
     # Part 3: Create new tab when starting from regular chat
-    When I click on a "agent workspace button" element with selector "[data-testid='workspace-agent']"
     When I click on "new tab button and search input and agent suggestion" elements with selectors:
       | element description | selector                                                      |
       | new tab button      | [data-tab-id='new-tab-button']                                |

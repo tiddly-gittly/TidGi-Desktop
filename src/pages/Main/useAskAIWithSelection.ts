@@ -1,6 +1,5 @@
-import { IAskAIWithSelectionData, WikiChannel } from '@/constants/channels';
+import { IAskAIWithSelectionData } from '@/constants/channels';
 import { PageType } from '@/constants/pageTypes';
-import { WikiStateKey } from '@/constants/wiki';
 import { useTabStore } from '@/pages/Agent/store/tabStore';
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
@@ -63,21 +62,6 @@ export function useAskAIWithSelection(): void {
         // Activate the tab
         const { setActiveTab } = tabStoreReference.current;
         setActiveTab(tabId);
-
-        // Close TiddlyWiki sidebar for better focus on chat
-        // Use setTimeout to ensure the wiki view is active before closing sidebar
-        if (data.workspaceId) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          try {
-            await window.service.wiki.wikiOperationInBrowser(WikiChannel.setState, data.workspaceId, [
-              WikiStateKey.sideBarOpened,
-              'no',
-            ]);
-          } catch (error) {
-            void window.service.native.log('debug', 'Failed to close sidebar', { error: String(error) });
-            // Non-critical error, don't throw
-          }
-        }
       } catch (error) {
         void window.service.native.log('error', 'Failed to handle askAIWithSelection', { error: String(error) });
       } finally {

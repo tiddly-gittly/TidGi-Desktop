@@ -1,3 +1,5 @@
+import { WikiChannel } from '@/constants/channels';
+import { WikiStateKey } from '@/constants/wiki';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -68,6 +70,34 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
           });
           // Set custom bounds for the wiki BrowserView
           await window.service.view.setViewCustomBounds(tab.workspaceId, WindowNames.main, bounds);
+
+          // Close TiddlyWiki sidebar when wiki embed is ready in split view
+          // This provides better focus on the chat interface
+          if (mounted && isSplitView) {
+            try {
+              // Check if TiddlyWiki is ready by testing if we can access tiddlers
+              const canAccessWiki = await window.service.wiki.wikiOperationInBrowser(WikiChannel.getTiddler, tab.workspaceId, [
+                'Index',
+              ]);
+              
+              if (canAccessWiki) {
+                // Only set state if wiki is accessible - use addTiddler for immediate effect
+                await window.service.wiki.wikiOperationInBrowser(WikiChannel.addTiddler, tab.workspaceId, [
+                  '$:/state/sidebar',
+                  'no',
+                  '{}',
+                  '{}',
+                ]);
+              }
+            } catch (sideBarError) {
+              void window.service.native.log('warn', 'WikiEmbedTabContent: failed to close sidebar', {
+                workspaceId: tab.workspaceId,
+                error: String(sideBarError),
+              });
+              // Non-critical error, don't throw
+            }
+          }
+
           if (mounted) {
             setIsLoading(false);
           }

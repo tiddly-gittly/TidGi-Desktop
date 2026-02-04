@@ -3,8 +3,8 @@ import { pick } from 'lodash';
 
 import { DataSource, Equal, Not, Repository } from 'typeorm';
 
-import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
 import { getTiddlerTitleFromUrl } from '@/constants/urls';
+import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
 import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
 import type { IChatTab, ISplitViewTab, IWikiEmbedTab } from '@/pages/Agent/types/tab';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
@@ -686,7 +686,7 @@ export class AgentBrowserService implements IAgentBrowserService {
     try {
       // Extract tiddler title from wiki URL if provided
       const tiddlerTitle = wikiUrl ? getTiddlerTitleFromUrl(wikiUrl) : undefined;
-      
+
       // Get workspace name for attachment
       let workspaceName: string | undefined;
       if (workspaceId && tiddlerTitle) {
@@ -694,12 +694,12 @@ export class AgentBrowserService implements IAgentBrowserService {
         const workspace = await workspaceService.get(workspaceId);
         workspaceName = workspace?.name;
       }
-      
+
       // Build wiki tiddlers attachment array
-      const wikiTiddlers = (tiddlerTitle && workspaceName) 
+      const wikiTiddlers = (tiddlerTitle && workspaceName)
         ? [{ workspaceName, tiddlerTitle }]
         : undefined;
-      
+
       logger.debug('findOrCreateTalkWithAITab called with wiki attachment', {
         workspaceId,
         tiddlerTitle,
@@ -731,8 +731,8 @@ export class AgentBrowserService implements IAgentBrowserService {
             if (chatChild?.agentId) {
               // Send the new message with wiki tiddler attachment to existing agent
               const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-              await agentInstanceService.sendMsgToAgent(chatChild.agentId, { 
-                text: selectionText, 
+              await agentInstanceService.sendMsgToAgent(chatChild.agentId, {
+                text: selectionText,
                 wikiTiddlers,
               });
             }
@@ -790,7 +790,7 @@ export class AgentBrowserService implements IAgentBrowserService {
       // because basicActions.ts only handles direct CHAT tab creation.
       // The child CHAT tab has initialMessage set, but we must explicitly send it.
       if (selectionText && agent.id) {
-        await agentInstanceService.sendMsgToAgent(agent.id, { 
+        await agentInstanceService.sendMsgToAgent(agent.id, {
           text: selectionText,
           wikiTiddlers,
         });
