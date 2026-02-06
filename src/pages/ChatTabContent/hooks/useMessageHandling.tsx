@@ -71,14 +71,14 @@ export function useMessageHandling({
    * Handle wiki tiddler selection
    */
   const handleWikiTiddlerSelect = useCallback((tiddler: WikiTiddlerAttachment) => {
-    setSelectedWikiTiddlers(prev => [...prev, tiddler]);
+    setSelectedWikiTiddlers(previous => [...previous, tiddler]);
   }, []);
 
   /**
    * Handle removing a wiki tiddler attachment
    */
   const handleRemoveWikiTiddler = useCallback((index: number) => {
-    setSelectedWikiTiddlers(prev => prev.filter((_, i) => i !== index));
+    setSelectedWikiTiddlers(previous => previous.filter((_, index_) => index_ !== index));
   }, []);
 
   /**

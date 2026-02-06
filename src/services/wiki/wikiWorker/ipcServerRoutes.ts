@@ -6,7 +6,7 @@ import fs from 'fs-extra';
 import omit from 'lodash/omit';
 import path from 'path';
 import { Observable } from 'rxjs';
-import type { IChangedTiddlers, ITiddlerFields, ITiddlyWiki, OutputMimeTypes } from 'tiddlywiki';
+import type { IChangedTiddlers, ITiddlerFields, ITiddlyWiki } from 'tiddlywiki';
 
 export interface IWikiServerStatusObject {
   anonymous: boolean;

@@ -516,4 +516,4 @@ describe('MessageBubble - Duration-based Graying', () => {
     // The chip should still be present
     expect(screen.getByText('My Workspace: Test Tiddler')).toBeInTheDocument();
   });
-})
+});

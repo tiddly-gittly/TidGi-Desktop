@@ -317,7 +317,7 @@ export async function* promptConcatStream(
 
     // Build user message content
     let userContent = userMessage.content;
-    
+
     // Append wiki tiddler contents if present
     const wikiTiddlersMetadata = userMessage.metadata?.wikiTiddlers as Array<{ workspaceName: string; tiddlerTitle: string; renderedContent: string }> | undefined;
     if (wikiTiddlersMetadata && wikiTiddlersMetadata.length > 0) {
@@ -325,7 +325,7 @@ export async function* promptConcatStream(
         messageId: userMessage.id,
         tiddlerCount: wikiTiddlersMetadata.length,
       });
-      
+
       for (const tiddler of wikiTiddlersMetadata) {
         userContent += `\n\n---\n**Wiki Entry from "${tiddler.workspaceName}" - "${tiddler.tiddlerTitle}":**\n${tiddler.renderedContent}`;
       }

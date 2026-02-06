@@ -1,11 +1,11 @@
 // Message bubble component with avatar and content
 
+import { WikiChannel } from '@/constants/channels';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
-import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import { Avatar, Box, Chip } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { WikiChannel } from '@/constants/channels';
 import React from 'react';
 import { isMessageExpiredForAI } from '../../../services/agentInstance/utilities/messageDurationFilter';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
@@ -112,7 +112,9 @@ const WikiTiddlersAttachment = ({ tiddlers, isSplitView }: { tiddlers: WikiTiddl
           data-testid={`wiki-tiddler-chip-message-${index}`}
           sx={{ maxWidth: 300, cursor: 'pointer' }}
           title={tiddler.renderedContent ? tiddler.renderedContent.substring(0, 100) + '...' : tiddler.tiddlerTitle}
-          onClick={() => handleTiddlerClick(tiddler)}
+          onClick={() => {
+            handleTiddlerClick(tiddler);
+          }}
         />
       ))}
     </Box>

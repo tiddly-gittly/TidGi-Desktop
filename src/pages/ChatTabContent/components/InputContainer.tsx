@@ -2,10 +2,10 @@
 
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CloseIcon from '@mui/icons-material/Close';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import SendIcon from '@mui/icons-material/Send';
 import CancelIcon from '@mui/icons-material/StopCircle';
-import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
-import { Box, IconButton, TextField, Chip, Autocomplete, Popper, Paper, ClickAwayListener } from '@mui/material';
+import { Autocomplete, Box, Chip, ClickAwayListener, IconButton, Paper, Popper, TextField } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -71,13 +71,15 @@ export const InputContainer: React.FC<InputContainerProps> = ({
   const { t } = useTranslation('agent');
   const fileInputReference = React.useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = React.useState<string | undefined>();
-  const [attachmentAnchorEl, setAttachmentAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [attachmentOptions, setAttachmentOptions] = React.useState<Array<{ 
-    type: 'image' | 'tiddler'; 
-    title: string; 
-    workspaceName?: string;
-    testId?: string;
-  }>>([]);
+  const [attachmentAnchorElement, setAttachmentAnchorElement] = React.useState<null | HTMLElement>(null);
+  const [attachmentOptions, setAttachmentOptions] = React.useState<
+    Array<{
+      type: 'image' | 'tiddler';
+      title: string;
+      workspaceName?: string;
+      testId?: string;
+    }>
+  >([]);
   const [loadingOptions, setLoadingOptions] = React.useState(false);
 
   React.useEffect(() => {
@@ -133,12 +135,12 @@ export const InputContainer: React.FC<InputContainerProps> = ({
 
   const handleAttachmentClick = (event: React.MouseEvent<HTMLElement>) => {
     // Immediately show Popper with loading state
-    setAttachmentAnchorEl(event.currentTarget);
+    setAttachmentAnchorElement(event.currentTarget);
     setLoadingOptions(true);
-    
+
     // Log for debugging
     void window.service.native.log('debug', 'Attachment button clicked, loading options...', {});
-    
+
     // Load options asynchronously
     void (async () => {
       try {
@@ -146,20 +148,18 @@ export const InputContainer: React.FC<InputContainerProps> = ({
         const options: Array<{ type: 'image' | 'tiddler'; title: string; workspaceName?: string; testId?: string }> = [
           { type: 'image', title: t('Agent.Attachment.AddImage', '📷 Add Image'), workspaceName: '', testId: 'AddImage' },
         ];
-        
+
         // Get all workspaces
         const allWorkspaces = await window.service.workspace.getWorkspacesAsList();
-        
+
         // Filter to wiki workspaces that are not hibernated
-        const activeWikiWorkspaces = allWorkspaces.filter(w => 
-          'wikiFolderLocation' in w && !w.hibernated
-        );
-        
-        void window.service.native.log('debug', 'Found active wiki workspaces', { 
+        const activeWikiWorkspaces = allWorkspaces.filter(w => 'wikiFolderLocation' in w && !w.hibernated);
+
+        void window.service.native.log('debug', 'Found active wiki workspaces', {
           count: activeWikiWorkspaces.length,
           workspaces: activeWikiWorkspaces.map(w => w.name),
         });
-        
+
         // Get tiddlers from each active wiki workspace
         for (const workspace of activeWikiWorkspaces) {
           try {
@@ -169,15 +169,15 @@ export const InputContainer: React.FC<InputContainerProps> = ({
               '[!is[system]sort[title]]',
               ['text'], // Exclude text field for performance
             );
-            
+
             if (response?.statusCode === 200 && Array.isArray(response?.data)) {
-              const tiddlers = response.data.map((t: any) => ({
+              const tiddlers = response.data.map((t: { title?: string }) => ({
                 type: 'tiddler' as const,
-                title: t.title || '',
+                title: t.title ?? '',
                 workspaceName: workspace.name,
               }));
               options.push(...tiddlers);
-              
+
               void window.service.native.log('debug', `Loaded ${tiddlers.length} tiddlers from workspace`, {
                 workspaceName: workspace.name,
               });
@@ -186,7 +186,7 @@ export const InputContainer: React.FC<InputContainerProps> = ({
             console.error(`Failed to load tiddlers from workspace ${workspace.name}`, error);
           }
         }
-        
+
         void window.service.native.log('debug', 'Attachment options loaded', { totalOptions: options.length });
         setAttachmentOptions(options);
         setLoadingOptions(false);
@@ -199,7 +199,7 @@ export const InputContainer: React.FC<InputContainerProps> = ({
   };
 
   const handleCloseAttachmentSelector = () => {
-    setAttachmentAnchorEl(null);
+    setAttachmentAnchorElement(null);
   };
 
   const handleSelectAttachment = (_event: React.SyntheticEvent, value: { type: 'image' | 'tiddler'; title: string; workspaceName?: string; testId?: string } | null) => {
@@ -207,7 +207,7 @@ export const InputContainer: React.FC<InputContainerProps> = ({
       handleCloseAttachmentSelector();
       return;
     }
-    
+
     if (value.type === 'image') {
       // Trigger file input click
       fileInputReference.current?.click();
@@ -218,7 +218,7 @@ export const InputContainer: React.FC<InputContainerProps> = ({
         tiddlerTitle: value.title,
       });
     }
-    
+
     handleCloseAttachmentSelector();
   };
 
@@ -331,8 +331,8 @@ export const InputContainer: React.FC<InputContainerProps> = ({
 
       {/* Attachment Selector Popper */}
       <Popper
-        open={Boolean(attachmentAnchorEl)}
-        anchorEl={attachmentAnchorEl}
+        open={Boolean(attachmentAnchorElement)}
+        anchorEl={attachmentAnchorElement}
         placement='top-start'
         style={{ zIndex: 1500 }}
       >
@@ -345,9 +345,9 @@ export const InputContainer: React.FC<InputContainerProps> = ({
               groupBy={(option) => option.workspaceName || ''}
               getOptionLabel={(option) => option.title}
               onChange={handleSelectAttachment}
-              renderInput={(params) => (
+              renderInput={(parameters) => (
                 <TextField
-                  {...params}
+                  {...parameters}
                   label={t('Agent.Attachment.SelectAttachment', 'Select attachment')}
                   placeholder={t('Agent.Attachment.SearchPlaceholder', 'Search...')}
                   autoFocus

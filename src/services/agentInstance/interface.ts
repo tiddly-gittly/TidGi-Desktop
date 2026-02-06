@@ -133,8 +133,8 @@ export interface IAgentInstanceService {
    * @param agentId Agent ID
    * @param content Message content including text, optional file, and optional wiki tiddlers
    */
-  sendMsgToAgent(agentId: string, content: { 
-    text: string; 
+  sendMsgToAgent(agentId: string, content: {
+    text: string;
     file?: File;
     /**
      * Wiki tiddlers to attach. Each entry contains workspace name and tiddler title.

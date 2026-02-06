@@ -1,5 +1,4 @@
 import { WikiChannel } from '@/constants/channels';
-import { WikiStateKey } from '@/constants/wiki';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -79,14 +78,12 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
               const canAccessWiki = await window.service.wiki.wikiOperationInBrowser(WikiChannel.getTiddler, tab.workspaceId, [
                 'Index',
               ]);
-              
+
               if (canAccessWiki) {
                 // Only set state if wiki is accessible - use addTiddler for immediate effect
                 await window.service.wiki.wikiOperationInBrowser(WikiChannel.addTiddler, tab.workspaceId, [
                   '$:/state/sidebar',
                   'no',
-                  '{}',
-                  '{}',
                 ]);
               }
             } catch (sideBarError) {
