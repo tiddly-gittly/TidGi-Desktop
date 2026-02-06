@@ -68,7 +68,7 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
             bounds: JSON.stringify(bounds),
           });
           // Set custom bounds for the wiki BrowserView
-          await window.service.view.setViewCustomBounds(tab.workspaceId, WindowNames.main, bounds);
+          await window.service.view.setViewBounds(tab.workspaceId, WindowNames.main, bounds);
 
           // Close TiddlyWiki sidebar when wiki embed is ready in split view
           // This provides better focus on the chat interface
@@ -146,7 +146,7 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
           const activeWorkspace = await window.service.workspace.getActiveWorkspace();
           if (activeWorkspace?.id !== tab.workspaceId) {
             // Only clear bounds if switching to a different workspace
-            await window.service.view.setViewCustomBounds(tab.workspaceId, WindowNames.main, undefined);
+            await window.service.view.setViewBounds(tab.workspaceId, WindowNames.main, undefined);
           } else {
             // Switching to this wiki workspace, don't clear bounds
             void window.service.native.log('debug', 'WikiEmbedTabContent: not clearing bounds, switching to wiki workspace', {

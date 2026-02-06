@@ -48,7 +48,8 @@ export async function registerMenu(): Promise<void> {
             mainWindow.webContents.focus();
             mainWindow.webContents.send(WindowChannel.openFindInPage);
             const contentSize = mainWindow.getContentSize();
-            const view = await viewService.getActiveBrowserView();
+            const activeWs = await workspaceService.getActiveWorkspace();
+            const view = activeWs ? viewService.getView(activeWs.id, WindowNames.main) : undefined;
             view?.setBounds(await getViewBounds(contentSize as [number, number], { findInPage: true }));
           }
         },

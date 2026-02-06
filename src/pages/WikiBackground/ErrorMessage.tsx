@@ -86,7 +86,7 @@ export function ViewLoadErrorMessages(props: IViewLoadErrorMessagesProps): React
   const requestReload = useCallback(async (): Promise<void> => {
     await window.service.workspace.updateMetaData(props.activeWorkspace.id, { didFailLoadErrorMessage: null, isLoading: false });
     await window.service.window.reload(window.meta().windowName);
-    await window.service.view.removeAllViewOfWorkspace(props.activeWorkspace.id);
+    void window.service.view.destroyAllViewsOfWorkspace(props.activeWorkspace.id);
     await window.service.wiki.stopWiki(props.activeWorkspace.id);
     await window.service.workspaceView.initializeWorkspaceView(props.activeWorkspace);
   }, [props.activeWorkspace]);

@@ -57,7 +57,7 @@ export async function registerMenu(): Promise<void> {
       click: async () => {
         const currentActiveWorkspace = await workspaceService.getActiveWorkspace();
         if (currentActiveWorkspace === undefined) return;
-        await viewService.reloadActiveBrowserView();
+        void viewService.reloadViewsWebContents(currentActiveWorkspace.id);
       },
       enabled: async () => (await workspaceService.countWorkspaces()) > 0,
     },

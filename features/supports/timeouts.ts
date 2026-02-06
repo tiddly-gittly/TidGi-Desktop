@@ -6,7 +6,7 @@ const isMac = process.platform === 'darwin';
 // Set global timeout for all steps and hooks
 // Local: 5s (10s on macOS), CI: 25s
 // macOS needs longer timeout for browser view loading
-const globalTimeout = isCI ? 25000 : (isMac ? 10000 : 5000);
+const globalTimeout = (isCI || isMac) ? 25000 : 5000;
 
 console.log('[Timeout Config] Setting global timeout to:', globalTimeout, 'ms (CI:', isCI, ', macOS:', isMac, ')');
 
@@ -37,11 +37,11 @@ export const PLAYWRIGHT_TIMEOUT = globalTimeout;
  * Shorter timeout for operations that should be very fast
  * Local: 3s, CI: 15s
  */
-export const PLAYWRIGHT_SHORT_TIMEOUT = isCI ? 15000 : 3000;
+export const PLAYWRIGHT_SHORT_TIMEOUT = (isCI || isMac) ? 15000 : 3000;
 
 /**
  * Timeout for waiting log markers
  * Internal wait should be shorter than step timeout to allow proper error reporting
  * Local: 3s, CI: 15s
  */
-export const LOG_MARKER_WAIT_TIMEOUT = isCI ? 15000 : 3000;
+export const LOG_MARKER_WAIT_TIMEOUT = (isCI || isMac) ? 15000 : 3000;

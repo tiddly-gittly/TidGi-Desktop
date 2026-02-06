@@ -39,7 +39,10 @@ export async function registerMenu(): Promise<void> {
     {
       label: () => i18n.t('Menu.DeveloperToolsActiveWorkspace'),
       accelerator: 'CmdOrCtrl+Option+I',
-      click: async () => (await viewService.getActiveBrowserView())?.webContents.openDevTools({ mode: 'detach' }),
+      click: async () => {
+        const ws = await workspaceService.getActiveWorkspace();
+        if (ws) viewService.getView(ws.id, WindowNames.main)?.webContents.openDevTools({ mode: 'detach' });
+      },
       enabled: hasActiveWorkspaces,
     },
   ]);
@@ -51,7 +54,8 @@ export async function registerMenu(): Promise<void> {
       visible: hasActiveWikiWorkspace,
       click: async () => {
         try {
-          const browserView = await viewService.getActiveBrowserView();
+          const activeWs = await workspaceService.getActiveWorkspace();
+          const browserView = activeWs ? viewService.getView(activeWs.id, WindowNames.main) : undefined;
           const win = windowService.get(WindowNames.main);
           logger.info(
             `print page, browserView printToPDF method is ${browserView?.webContents.printToPDF === undefined ? 'undefined' : 'define'}, win is ${
@@ -160,7 +164,8 @@ export async function registerMenu(): Promise<void> {
             return;
           }
         }
-        const view = await viewService.getActiveBrowserView();
+        const activeWs = await workspaceService.getActiveWorkspace();
+        const view = activeWs ? viewService.getView(activeWs.id, WindowNames.main) : undefined;
         const url = view?.webContents.getURL();
         if (typeof url === 'string') {
           clipboard.writeText(url);

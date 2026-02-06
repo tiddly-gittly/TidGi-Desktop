@@ -2,6 +2,7 @@ import { container } from '@services/container';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IViewService } from '@services/view/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { BrowserWindow } from 'electron';
 import type { IWindowService } from './interface';
@@ -18,7 +19,8 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
     if (swipeToNavigate) {
       if (newWindow === undefined) return;
       newWindow.on('swipe', async (_event, direction) => {
-        const view = await viewService.getActiveBrowserView();
+        const activeWs = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();
+        const view = activeWs ? viewService.getView(activeWs.id, WindowNames.main) : undefined;
 
         if (view) {
           if (direction === 'left') {
@@ -46,7 +48,8 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
 
   newWindow.on('focus', async () => {
     if (windowName !== WindowNames.main || newWindow === undefined) return;
-    const view = await viewService.getActiveBrowserView();
+    const activeWs = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();
+    const view = activeWs ? viewService.getView(activeWs.id, WindowNames.main) : undefined;
 
     view?.webContents.focus();
   });
