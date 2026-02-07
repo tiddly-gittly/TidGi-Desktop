@@ -345,6 +345,11 @@ export const InputContainer: React.FC<InputContainerProps> = ({
               groupBy={(option) => option.workspaceName || ''}
               getOptionLabel={(option) => option.title}
               onChange={handleSelectAttachment}
+              slotProps={{
+                listbox: {
+                  'data-testid': 'attachment-listbox',
+                },
+              }}
               renderInput={(parameters) => (
                 <TextField
                   {...parameters}
