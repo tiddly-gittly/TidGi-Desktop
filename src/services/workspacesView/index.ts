@@ -483,6 +483,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       return;
     }
     logger.info(`Restarting workspace ${workspaceToRestart.id}`);
+    logger.info(`[test-id-WIKI_WORKER_RESTARTING] Workspace ${workspaceToRestart.id} restart initiated`);
     await this.updateLastUrl(workspaceToRestart.id);
     // start restarting. Set isLoading to false, and it will be set by some callback elsewhere to true.
     await container.get<IWorkspaceService>(serviceIdentifier.Workspace).updateMetaData(workspaceToRestart.id, {

@@ -7,8 +7,9 @@ import { SetOptional } from 'type-fest';
 
 /**
  * Fields that not part of config that user can edit. Change of these field won't show "save" button on edit page.
+ * These fields are updated during runtime and should not trigger the save button.
  */
-export const nonConfigFields = ['metadata', 'lastNodeJSArgv'];
+export const nonConfigFields = ['metadata', 'lastNodeJSArgv', 'lastUrl', 'homeUrl', 'hibernated', 'active'];
 
 /**
  * Fields that should be synced to wiki folder's tidgi.config.json.
@@ -20,7 +21,6 @@ export const nonConfigFields = ['metadata', 'lastNodeJSArgv'];
  */
 export const syncableConfigFields = [
   'name',
-  'port',
   'gitUrl',
   'storageService',
   'userName',
@@ -68,6 +68,7 @@ export const localOnlyFields = [
   'mainWikiID',
   'isSubWiki',
   'pageType',
+  'port',
 ] as const;
 
 /**

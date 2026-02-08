@@ -227,16 +227,31 @@ app.on(MainChannel.windowAllClosed, async () => {
 app.on(
   'before-quit',
   async (): Promise<void> => {
-    logger.info('App before-quit');
-    // Clean up tidgi mini window before quit to ensure tray is destroyed
-    await windowService.closeTidgiMiniWindow(true);
-    destroyLogger();
-    await Promise.all([
-      databaseService.immediatelyStoreSettingsToFile(),
-      wikiService.stopAllWiki(),
-      windowService.clearWindowsReference(),
-    ]);
-    uninstall?.uninstall();
+    logger.info('App before-quit - starting cleanup');
+    try {
+      // Clean up tidgi mini window before quit to ensure tray is destroyed
+      await windowService.closeTidgiMiniWindow(true);
+      logger.info('App before-quit - tidgi mini window closed');
+
+      // Close all database connections FIRST before other cleanup
+      // This is critical to prevent better-sqlite3 crashes
+      await databaseService.closeAllDatabases();
+      logger.info('App before-quit - all databases closed');
+
+      // Then do other cleanup
+      await Promise.all([
+        databaseService.immediatelyStoreSettingsToFile(),
+        wikiService.stopAllWiki(),
+        windowService.clearWindowsReference(),
+      ]);
+      logger.info('App before-quit - all cleanup completed');
+    } catch (error) {
+      logger.error('Error during before-quit cleanup', { error });
+    } finally {
+      // Always destroy logger and uninstall at the end
+      destroyLogger();
+      uninstall?.uninstall();
+    }
   },
 );
 

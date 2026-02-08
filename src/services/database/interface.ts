@@ -63,6 +63,12 @@ export interface IDatabaseService {
   closeAppDatabase(key: string, drop?: boolean): void;
 
   /**
+   * Close all database connections
+   * Should be called before app quit to prevent crashes
+   */
+  closeAllDatabases(): Promise<void>;
+
+  /**
    * Get database file information like whether it exists and its size in bytes.
    */
   getDatabaseInfo(key: string): Promise<{ exists: boolean; size?: number }>;
@@ -85,6 +91,7 @@ export const DatabaseServiceIPCDescriptor = {
     initializeForApp: ProxyPropertyType.Function,
     getDatabase: ProxyPropertyType.Function,
     closeAppDatabase: ProxyPropertyType.Function,
+    closeAllDatabases: ProxyPropertyType.Function,
     getDatabaseInfo: ProxyPropertyType.Function,
     getDatabasePath: ProxyPropertyType.Function,
     deleteDatabase: ProxyPropertyType.Function,

@@ -22,11 +22,15 @@ export function useForm(
   useEffect(() => {
     if (originalWorkspace !== undefined && workspace !== undefined && previous !== undefined) {
       // If originalWorkspace changed after a save operation, update workspace state to match it
-      if (!isEqual(originalWorkspace, previous) && isEqual(omit(workspace, ['metadata', 'lastNodeJSArgv']), omit(originalWorkspace, ['metadata', 'lastNodeJSArgv']))) {
-        workspaceSetter(originalWorkspace);
+      // Only check if originalWorkspace changed (not workspace), to avoid triggering on every user edit
+      if (!isEqual(originalWorkspace, previous)) {
+        // Check if the current form state matches the new originalWorkspace (excluding non-config fields)
+        if (isEqual(omit(workspace, ['metadata', 'lastNodeJSArgv']), omit(originalWorkspace, ['metadata', 'lastNodeJSArgv']))) {
+          workspaceSetter(originalWorkspace);
+        }
       }
     }
-  }, [originalWorkspace, workspace, previous]);
+  }, [originalWorkspace, previous]);
 
   const onSave = useCallback(async () => {
     if (workspace === undefined) {
