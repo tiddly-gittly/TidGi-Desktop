@@ -417,6 +417,19 @@ export interface IWorkspaceService {
   getWorkspacesAsList(): Promise<IWorkspace[]>;
   getWorkspacesWithMetadata(): IWorkspacesWithMetadata;
   /**
+   * Get workspace token for Git Smart HTTP authentication
+   * @param workspaceId workspace ID
+   * @returns token string or undefined if workspace not found or has no token
+   */
+  getWorkspaceToken(workspaceId: string): Promise<string | undefined>;
+  /**
+   * Validate workspace token for Git Smart HTTP authentication
+   * @param workspaceId workspace ID
+   * @param token token to validate
+   * @returns true if token matches, false otherwise
+   */
+  validateWorkspaceToken(workspaceId: string, token: string): Promise<boolean>;
+  /**
    * Initialize default page workspaces on first startup
    */
   initializeDefaultPageWorkspaces(): Promise<void>;
@@ -463,6 +476,8 @@ export const WorkspaceServiceIPCDescriptor = {
     getWorkspaces: ProxyPropertyType.Function,
     getWorkspacesAsList: ProxyPropertyType.Function,
     getWorkspacesWithMetadata: ProxyPropertyType.Function,
+    getWorkspaceToken: ProxyPropertyType.Function,
+    validateWorkspaceToken: ProxyPropertyType.Function,
     initializeDefaultPageWorkspaces: ProxyPropertyType.Function,
     openWorkspaceTiddler: ProxyPropertyType.Function,
     remove: ProxyPropertyType.Function,

@@ -718,4 +718,26 @@ export class Workspace implements IWorkspaceService {
   public async exists(id: string): Promise<boolean> {
     return Boolean(await this.get(id));
   }
+
+  /**
+   * Get workspace token for Git Smart HTTP authentication
+   */
+  public async getWorkspaceToken(workspaceId: string): Promise<string | undefined> {
+    const workspace = this.getSync(workspaceId);
+    if (!workspace || !isWikiWorkspace(workspace)) {
+      return undefined;
+    }
+    return workspace.authToken;
+  }
+
+  /**
+   * Validate workspace token for Git Smart HTTP authentication
+   */
+  public async validateWorkspaceToken(workspaceId: string, token: string): Promise<boolean> {
+    const workspaceToken = await this.getWorkspaceToken(workspaceId);
+    if (!workspaceToken) {
+      return false;
+    }
+    return workspaceToken === token;
+  }
 }
