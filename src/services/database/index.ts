@@ -145,11 +145,11 @@ export class DatabaseService implements IDatabaseService {
         logging: false,
         nativeBinding: SQLITE_BINARY_PATH,
         // Add safer options to prevent crashes on cleanup
-        prepareDatabase: (db: Database) => {
+        prepareDatabase: (database: Database) => {
           // Set a busy timeout to handle concurrent access
-          db.pragma('busy_timeout = 5000');
+          database.pragma('busy_timeout = 5000');
           // Optimize for safety over performance
-          db.pragma('synchronous = NORMAL');
+          database.pragma('synchronous = NORMAL');
         },
       });
 
@@ -198,11 +198,11 @@ export class DatabaseService implements IDatabaseService {
           logging: false,
           nativeBinding: SQLITE_BINARY_PATH,
           // Add safer options to prevent crashes on cleanup
-          prepareDatabase: (db: Database) => {
+          prepareDatabase: (database: Database) => {
             // Set a busy timeout to handle concurrent access
-            db.pragma('busy_timeout = 5000');
+            database.pragma('busy_timeout = 5000');
             // Optimize for safety over performance
-            db.pragma('synchronous = NORMAL');
+            database.pragma('synchronous = NORMAL');
           },
         });
 
