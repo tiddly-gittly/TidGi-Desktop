@@ -1,3 +1,4 @@
+import { findAvailablePort } from '@services/libs/port';
 import { createWorkerProxy, terminateWorker } from '@services/libs/workerAdapter';
 import { dialog, shell } from 'electron';
 import { attachWorker } from 'electron-ipc-cat/server';
@@ -6,7 +7,8 @@ import { copy, exists, mkdir, mkdirs, pathExists, readdir, readFile } from 'fs-e
 import { inject, injectable } from 'inversify';
 import path from 'path';
 import { Worker } from 'worker_threads';
-// @ts-expect-error - Vite worker import with ?nodeWorker query
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - Vite worker import with ?nodeWorker query
 import WikiWorkerFactory from './wikiWorker/index?nodeWorker';
 
 import { container } from '@services/container';
@@ -118,7 +120,8 @@ export class Wiki implements IWikiService {
       logger.error('Try to start wiki, but workspace is not a wiki workspace', { workspace, workspaceID });
       return;
     }
-    const { port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI, authToken } = workspace;
+    const { rootTiddler, readOnlyMode, tokenAuth, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI, authToken } = workspace;
+    let { port, homeUrl, lastUrl } = workspace;
     logger.debug('startWiki: Got workspace from workspaceService', {
       workspaceID,
       name,
@@ -130,6 +133,39 @@ export class Wiki implements IWikiService {
     if (isSubWiki) {
       logger.error('Try to start wiki, but workspace is sub wiki', { workspace, workspaceID });
       return;
+    }
+
+    // Check if port is available before starting wiki
+    const availablePort = await findAvailablePort(port);
+    if (availablePort === null) {
+      logger.error('Could not find available port for wiki', { workspaceID, requestedPort: port });
+      await workspaceService.updateMetaData(workspaceID, {
+        isLoading: false,
+        didFailLoadErrorMessage: `Could not find available port starting from ${port}`,
+      });
+      return;
+    }
+
+    // Update workspace settings if port changed
+    if (availablePort !== port) {
+      logger.info('Port conflict detected, using alternative port', {
+        workspaceID,
+        originalPort: port,
+        newPort: availablePort,
+      });
+
+      const portChange = {
+        port: availablePort,
+        homeUrl: homeUrl.replace(`:${port}`, `:${availablePort}`),
+        lastUrl: lastUrl?.replace(`:${port}`, `:${availablePort}`) ?? null,
+      };
+
+      await workspaceService.update(workspaceID, portChange, true);
+
+      // Update local variables with new port
+      port = availablePort;
+      homeUrl = portChange.homeUrl;
+      lastUrl = portChange.lastUrl;
     }
     // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
     await workspaceService.updateMetaData(workspaceID, { isLoading: true });
@@ -287,16 +323,26 @@ export class Wiki implements IWikiService {
                 logger.info('Realigned view after plugin error', { workspaceID, function: 'startWiki' });
               }
 
-              // fix "message":"listen EADDRINUSE: address already in use 0.0.0.0:5212"
+              // Port availability check should have prevented EADDRINUSE, but handle as fallback
               if (errorMessage.includes('EADDRINUSE')) {
-                const portChange = {
-                  port: port + 1,
-                  homeUrl: homeUrl.replace(`:${port}`, `:${port + 1}`),
-
-                  lastUrl: lastUrl?.replace(`:${port}`, `:${port + 1}`) ?? null,
-                };
-                await workspaceService.update(workspaceID, portChange, true);
-                reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
+                logger.warn('EADDRINUSE error despite pre-flight port check', {
+                  workspaceID,
+                  port,
+                  errorMessage,
+                });
+                // Try to find another available port as emergency fallback
+                const emergencyPort = await findAvailablePort(port + 1);
+                if (emergencyPort !== null) {
+                  const portChange = {
+                    port: emergencyPort,
+                    homeUrl: homeUrl.replace(`:${port}`, `:${emergencyPort}`),
+                    lastUrl: lastUrl?.replace(`:${port}`, `:${emergencyPort}`) ?? null,
+                  };
+                  await workspaceService.update(workspaceID, portChange, true);
+                  reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
+                } else {
+                  reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, false, { ...workspace }));
+                }
                 return;
               }
 
