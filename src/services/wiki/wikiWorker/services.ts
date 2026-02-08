@@ -15,6 +15,7 @@ import { DatabaseServiceIPCDescriptor, type IDatabaseService } from '@services/d
 import { DeepLinkServiceIPCDescriptor, type IDeepLinkService } from '@services/deepLink/interface';
 import { ExternalAPIServiceIPCDescriptor, type IExternalAPIService } from '@services/externalAPI/interface';
 import { GitServiceIPCDescriptor, type IGitService } from '@services/git/interface';
+import { GitServerServiceIPCDescriptor, type IGitServerService } from '@services/gitServer/interface';
 import { type IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
 import { type INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';
 import { type INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
@@ -41,6 +42,7 @@ export const database = createWorkerProxy<WorkerProxy<IDatabaseService>>(Databas
 export const deepLink = createWorkerProxy<WorkerProxy<IDeepLinkService>>(DeepLinkServiceIPCDescriptor, Observable);
 export const externalAPI = createWorkerProxy<WorkerProxy<IExternalAPIService>>(ExternalAPIServiceIPCDescriptor, Observable);
 export const git = createWorkerProxy<WorkerProxy<IGitService>>(GitServiceIPCDescriptor, Observable);
+export const gitServer = createWorkerProxy<WorkerProxy<IGitServerService>>(GitServerServiceIPCDescriptor, Observable);
 export const menu = createWorkerProxy<WorkerProxy<IMenuService>>(MenuServiceIPCDescriptor, Observable);
 export const native = createWorkerProxy<WorkerProxy<INativeService>>(NativeServiceIPCDescriptor, Observable);
 export const notification = createWorkerProxy<WorkerProxy<INotificationService>>(NotificationServiceIPCDescriptor, Observable);
@@ -71,6 +73,7 @@ export const service = {
   deepLink,
   externalAPI,
   git,
+  gitServer,
   menu,
   native,
   notification,

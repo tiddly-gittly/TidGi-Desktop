@@ -1,9 +1,7 @@
 import { createWorkerProxy } from '@services/libs/workerAdapter';
 import { dialog, net } from 'electron';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
-import type { IncomingMessage, ServerResponse } from 'http';
 import { inject, injectable } from 'inversify';
-import path from 'path';
 import { BehaviorSubject, Observer } from 'rxjs';
 import { Worker } from 'worker_threads';
 // @ts-expect-error - Vite worker import with ?nodeWorker query
@@ -24,7 +22,6 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
-import type { IWorkspaceService } from '@services/workspaces/interface';
 import * as gitOperations from './gitOperations';
 import type { GitWorker } from './gitWorker';
 import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitStateChange, IGitUserInfos } from './interface';
@@ -463,96 +460,6 @@ export class Git implements IGitService {
       return await externalAPIService.isAIAvailable();
     } catch {
       return false;
-    }
-  }
-
-  /**
-   * Get workspace repository path for Git Smart HTTP
-   */
-  public async getWorkspaceRepoPath(workspaceId: string): Promise<string | undefined> {
-    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const workspace = await workspaceService.get(workspaceId);
-    if (!workspace || !isWikiWorkspace(workspace)) {
-      return undefined;
-    }
-    return workspace.wikiFolderLocation;
-  }
-
-  /**
-   * Get git executable path (dugite bundled git)
-   */
-  public async getGitExecutablePath(): Promise<string> {
-    const platform = process.platform;
-    if (platform === 'win32') {
-      return path.join(LOCAL_GIT_DIRECTORY, 'cmd', 'git.exe');
-    }
-    return path.join(LOCAL_GIT_DIRECTORY, 'bin', 'git');
-  }
-
-  /**
-   * Handle Git Smart HTTP info/refs endpoint
-   */
-  public async handleInfoRefs(workspaceId: string, service: string, _request: IncomingMessage, response: ServerResponse): Promise<void> {
-    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
-    if (!repoPath) {
-      response.writeHead(404, { 'Content-Type': 'text/plain' });
-      response.end('Workspace not found');
-      return;
-    }
-
-    try {
-      await gitOperations.handleGitInfoReferences(repoPath, service, response);
-    } catch (error) {
-      logger.error('Git info/refs error:', { error, workspaceId, service });
-      if (!response.headersSent) {
-        response.writeHead(500, { 'Content-Type': 'text/plain' });
-        response.end('Git info/refs failed');
-      }
-    }
-  }
-
-  /**
-   * Handle Git Smart HTTP upload-pack endpoint (git fetch/pull)
-   */
-  public async handleUploadPack(workspaceId: string, request: IncomingMessage, response: ServerResponse): Promise<void> {
-    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
-    if (!repoPath) {
-      response.writeHead(404, { 'Content-Type': 'text/plain' });
-      response.end('Workspace not found');
-      return;
-    }
-
-    try {
-      await gitOperations.handleGitUploadPack(repoPath, request, response);
-    } catch (error) {
-      logger.error('Git upload-pack error:', { error, workspaceId });
-      if (!response.headersSent) {
-        response.writeHead(500, { 'Content-Type': 'text/plain' });
-        response.end('Git upload-pack failed');
-      }
-    }
-  }
-
-  /**
-   * Handle Git Smart HTTP receive-pack endpoint (git push)
-   */
-  public async handleReceivePack(workspaceId: string, request: IncomingMessage, response: ServerResponse): Promise<void> {
-    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
-    if (!repoPath) {
-      response.writeHead(404, { 'Content-Type': 'text/plain' });
-      response.end('Workspace not found');
-      return;
-    }
-
-    try {
-      await gitOperations.handleGitReceivePack(repoPath, request, response);
-      this.notifyGitStateChange(repoPath, 'sync');
-    } catch (error) {
-      logger.error('Git receive-pack error:', { error, workspaceId });
-      if (!response.headersSent) {
-        response.writeHead(500, { 'Content-Type': 'text/plain' });
-        response.end('Git receive-pack failed');
-      }
     }
   }
 }

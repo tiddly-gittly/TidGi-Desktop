@@ -8,6 +8,7 @@ export default {
   DeepLink: Symbol.for('DeepLinkService'),
   ExternalAPI: Symbol.for('ExternalAPI'),
   Git: Symbol.for('Git'),
+  GitServer: Symbol.for('GitServer'),
   MenuService: Symbol.for('MenuService'),
   NativeService: Symbol.for('NativeService'),
   NotificationService: Symbol.for('NotificationService'),

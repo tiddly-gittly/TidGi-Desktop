@@ -2,7 +2,6 @@ import { GitChannel } from '@/constants/channels';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { ICommitAndSyncOptions, ModifiedFileList } from 'git-sync-js';
-import type { IncomingMessage, ServerResponse } from 'http';
 import type { BehaviorSubject } from 'rxjs';
 
 export interface IGitUserInfos extends IGitUserInfosWithoutToken {
@@ -174,39 +173,6 @@ export interface IGitService {
    * @param options.onlyWhenGitLogOpened - Only notify if git log window is open (default: true)
    */
   notifyFileChange(wikiFolderLocation: string, options?: { onlyWhenGitLogOpened?: boolean }): void;
-  /**
-   * Get workspace repository path for Git Smart HTTP
-   * @param workspaceId workspace ID
-   * @returns wikiFolderLocation (git repo path) or undefined if not found
-   */
-  getWorkspaceRepoPath(workspaceId: string): Promise<string | undefined>;
-  /**
-   * Get git executable path (dugite bundled git)
-   * @returns path to git executable
-   */
-  getGitExecutablePath(): Promise<string>;
-  /**
-   * Handle Git Smart HTTP info/refs endpoint
-   * @param workspaceId workspace ID
-   * @param service 'git-upload-pack' | 'git-receive-pack'
-   * @param request Node.js HTTP request
-   * @param response Node.js HTTP response
-   */
-  handleInfoRefs(workspaceId: string, service: string, request: IncomingMessage, response: ServerResponse): Promise<void>;
-  /**
-   * Handle Git Smart HTTP upload-pack endpoint (git fetch/pull)
-   * @param workspaceId workspace ID
-   * @param request Node.js HTTP request (stream)
-   * @param response Node.js HTTP response (stream)
-   */
-  handleUploadPack(workspaceId: string, request: IncomingMessage, response: ServerResponse): Promise<void>;
-  /**
-   * Handle Git Smart HTTP receive-pack endpoint (git push)
-   * @param workspaceId workspace ID
-   * @param request Node.js HTTP request (stream)
-   * @param response Node.js HTTP response (stream)
-   */
-  handleReceivePack(workspaceId: string, request: IncomingMessage, response: ServerResponse): Promise<void>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,
@@ -228,10 +194,5 @@ export const GitServiceIPCDescriptor = {
     undoCommit: ProxyPropertyType.Function,
     syncOrForcePull: ProxyPropertyType.Function,
     isAIGenerateBackupTitleEnabled: ProxyPropertyType.Function,
-    getWorkspaceRepoPath: ProxyPropertyType.Function,
-    getGitExecutablePath: ProxyPropertyType.Function,
-    handleInfoRefs: ProxyPropertyType.Function,
-    handleUploadPack: ProxyPropertyType.Function,
-    handleReceivePack: ProxyPropertyType.Function,
   },
 };
