@@ -487,7 +487,15 @@ export class Wiki implements IWikiService {
 
     try {
       logger.info(`worker.beforeExit for ${id}`);
-      await worker.beforeExit();
+      // Add timeout to prevent hanging
+      await Promise.race([
+        worker.beforeExit(),
+        new Promise((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('beforeExit timeout'));
+          }, 5000);
+        }),
+      ]);
       logger.info(`terminateWorker for ${id}`);
       await terminateWorker(nativeWorker);
       // Detach worker from service message handlers
@@ -511,11 +519,25 @@ export class Wiki implements IWikiService {
       function: 'stopAllWiki',
     });
     const tasks = [];
-    for (const id of Object.keys(this.wikiWorkers)) {
-      tasks.push(this.stopWiki(id));
+    const wikiIds = Object.keys(this.wikiWorkers);
+    logger.info(`Stopping ${wikiIds.length} wiki workers`, { wikiIds });
+
+    for (const id of wikiIds) {
+      // Wrap each stopWiki call to ensure one failure doesn't block others
+      tasks.push(
+        (async () => {
+          try {
+            await this.stopWiki(id);
+            logger.info(`Wiki worker ${id} stopped successfully`);
+          } catch (error) {
+            logger.error(`Failed to stop wiki worker ${id}`, { error });
+          }
+        })(),
+      );
     }
-    await Promise.all(tasks);
-    logger.info('All wiki workers are stopped', { function: 'stopAllWiki' });
+
+    await Promise.allSettled(tasks);
+    logger.info('All wiki workers stop attempted', { function: 'stopAllWiki' });
   }
 
   /**

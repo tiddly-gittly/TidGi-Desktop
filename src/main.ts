@@ -229,19 +229,17 @@ app.on(
   async (): Promise<void> => {
     logger.info('App before-quit - starting cleanup');
     try {
-      // Clean up tidgi mini window before quit to ensure tray is destroyed
-      await windowService.closeTidgiMiniWindow(true);
       logger.info('App before-quit - tidgi mini window closed');
-
-      // Close all database connections FIRST before other cleanup
-      // This is critical to prevent better-sqlite3 crashes
-      await databaseService.closeAllDatabases();
-      logger.info('App before-quit - all databases closed');
-
-      // Then do other cleanup
+      // Stop all wiki workers FIRST - must be sequential
+      // Wiki workers might be using SQLite databases
+      await wikiService.stopAllWiki();
+      logger.info('App before-quit - all wiki workers stopped');
+      // Then do remaining cleanup in parallel
       await Promise.all([
+        databaseService.closeAllDatabases(),
         databaseService.immediatelyStoreSettingsToFile(),
-        wikiService.stopAllWiki(),
+        // Clean up tidgi mini window before quit to ensure tray is destroyed
+        windowService.closeTidgiMiniWindow(true),
         windowService.clearWindowsReference(),
       ]);
       logger.info('App before-quit - all cleanup completed');

@@ -321,6 +321,12 @@ export class DatabaseService implements IDatabaseService {
           // This is important for better-sqlite3 to avoid crashes
           if (dataSource.isInitialized) {
             try {
+              // Get the underlying driver to check for any pending operations
+              const driver = dataSource.driver as { databaseConnection?: { inTransaction?: boolean } };
+              if (driver.databaseConnection?.inTransaction) {
+                logger.warn(`Database ${key} has pending transaction, this may cause issues`);
+              }
+
               // Close connection gracefully with TypeORM
               await dataSource.destroy();
               logger.info(`Database connection closed for key: ${key}`);
@@ -328,12 +334,16 @@ export class DatabaseService implements IDatabaseService {
               logger.error(`Error during dataSource.destroy() for key: ${key}`, { error: destroyError });
               throw destroyError;
             }
+          } else {
+            logger.warn(`Database ${key} was not initialized, skipping destroy`);
           }
         }
       } catch (error) {
         logger.error(`Failed to close database for key: ${key}`, { error });
         throw error;
       }
+    } else {
+      logger.debug(`Database ${key} not found in dataSources, already closed or never opened`);
     }
   }
 
@@ -347,12 +357,23 @@ export class DatabaseService implements IDatabaseService {
 
     // Collect all keys first to avoid modification during iteration
     const keys = Array.from(this.dataSources.keys());
+    logger.info(`Database keys to close: ${keys.join(', ')}`);
 
     for (const key of keys) {
       closePromises.push(
         (async () => {
           try {
-            await this.closeAppDatabase(key);
+            logger.debug(`Starting to close database: ${key}`);
+            // Add timeout protection for each database close
+            await Promise.race([
+              this.closeAppDatabase(key),
+              new Promise((_, reject) =>
+                setTimeout(() => {
+                  reject(new Error(`Timeout closing database: ${key}`));
+                }, 10000)
+              ),
+            ]);
+            logger.debug(`Successfully closed database: ${key}`);
           } catch (error) {
             logger.error(`Failed to close database during shutdown: ${key}`, { error });
           }
