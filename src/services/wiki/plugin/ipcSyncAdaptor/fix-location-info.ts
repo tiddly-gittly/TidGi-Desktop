@@ -32,6 +32,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
         tokenAuth,
         authToken,
         userName,
+        name: workspaceName,
       } = workspace;
       const asyncInfoTiddlerFields: Array<{ text: string; title: string }> = [];
       const setLocationProperty = function(name: string, value: string) {
@@ -49,6 +50,17 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
       setLocationProperty('origin', urlObject.origin);
 
       asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/tokenAuth', text: mapBoolean(tokenAuth) }, { title: '$:/info/tidgi/enableHTTPAPI', text: mapBoolean(enableHTTPAPI) });
+
+      // Add workspace name for QR code
+      if (workspaceName) {
+        asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/workspaceName', text: workspaceName });
+      }
+
+      // Add workspace token for QR code (if available)
+      if (authToken) {
+        asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/workspaceToken', text: authToken });
+      }
+
       if (tokenAuth) {
         const fallbackUserName = await window.service.auth.get('userName');
         const tokenAuthHeader = `"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`;
