@@ -1,6 +1,7 @@
 import { createWorkerProxy } from '@services/libs/workerAdapter';
 import { dialog, net } from 'electron';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
+import type { IncomingMessage, ServerResponse } from 'http';
 import { inject, injectable } from 'inversify';
 import path from 'path';
 import { BehaviorSubject, Observer } from 'rxjs';
@@ -489,162 +490,59 @@ export class Git implements IGitService {
   /**
    * Handle Git Smart HTTP info/refs endpoint
    */
-  public async handleInfoRefs(workspaceId: string, service: string, req: any, res: any): Promise<void> {
+  public async handleInfoRefs(workspaceId: string, service: string, _request: IncomingMessage, response: ServerResponse): Promise<void> {
     const repoPath = await this.getWorkspaceRepoPath(workspaceId);
     if (!repoPath) {
-      res.statusCode = 404;
-      res.end('Workspace not found');
+      response.statusCode = 404;
+      response.end('Workspace not found');
       return;
     }
 
-    const gitPath = await this.getGitExecutablePath();
-    const { spawn } = await import('child_process');
-
-    // Spawn git process for info/refs
-    const git = spawn(gitPath, [service.replace('git-', ''), '--stateless-rpc', '--advertise-refs', repoPath], {
-      env: {
-        ...process.env,
-        GIT_PROJECT_ROOT: repoPath,
-        GIT_HTTP_EXPORT_ALL: '1',
-      },
-    });
-
-    // Set response headers
-    res.setHeader('Content-Type', `application/x-${service}-advertisement`);
-    res.setHeader('Cache-Control', 'no-cache');
-
-    // Write service announcement
-    const serviceAnnouncement = `# service=${service}\n`;
-    const announcementLength = (serviceAnnouncement.length + 4).toString(16).padStart(4, '0');
-    res.write(`${announcementLength}${serviceAnnouncement}0000`);
-
-    // Pipe git output to response
-    git.stdout.pipe(res);
-    git.stderr.on('data', (data) => {
-      logger.error('Git info/refs stderr:', { data: data.toString(), workspaceId, service });
-    });
-
-    git.on('error', (error) => {
-      logger.error('Git info/refs process error:', { error, workspaceId, service });
-      if (!res.headersSent) {
-        res.statusCode = 500;
-      }
-      res.end();
-    });
-
-    git.on('close', (code) => {
-      if (code !== 0) {
-        logger.error('Git info/refs process exited with error:', { code, workspaceId, service });
-      }
-      if (!res.finished) {
-        res.end();
-      }
-    });
+    try {
+      await gitOperations.handleGitInfoReferences(repoPath, service, response);
+    } catch (error) {
+      logger.error('Git info/refs error:', { error, workspaceId, service });
+      throw error;
+    }
   }
 
   /**
    * Handle Git Smart HTTP upload-pack endpoint (git fetch/pull)
    */
-  public async handleUploadPack(workspaceId: string, req: any, res: any): Promise<void> {
+  public async handleUploadPack(workspaceId: string, request: IncomingMessage, response: ServerResponse): Promise<void> {
     const repoPath = await this.getWorkspaceRepoPath(workspaceId);
     if (!repoPath) {
-      res.statusCode = 404;
-      res.end('Workspace not found');
+      response.statusCode = 404;
+      response.end('Workspace not found');
       return;
     }
 
-    const gitPath = await this.getGitExecutablePath();
-    const { spawn } = await import('child_process');
-
-    // Spawn git-upload-pack process
-    const git = spawn(gitPath, ['upload-pack', '--stateless-rpc', repoPath], {
-      env: {
-        ...process.env,
-        GIT_PROJECT_ROOT: repoPath,
-      },
-    });
-
-    // Set response headers
-    res.setHeader('Content-Type', 'application/x-git-upload-pack-result');
-    res.setHeader('Cache-Control', 'no-cache');
-
-    // Pipe request to git stdin and git stdout to response
-    req.pipe(git.stdin);
-    git.stdout.pipe(res);
-
-    git.stderr.on('data', (data) => {
-      logger.debug('Git upload-pack stderr:', { data: data.toString(), workspaceId });
-    });
-
-    git.on('error', (error) => {
-      logger.error('Git upload-pack process error:', { error, workspaceId });
-      if (!res.headersSent) {
-        res.statusCode = 500;
-      }
-      res.end();
-    });
-
-    git.on('close', (code) => {
-      if (code !== 0) {
-        logger.error('Git upload-pack process exited with error:', { code, workspaceId });
-      }
-      if (!res.finished) {
-        res.end();
-      }
-    });
+    try {
+      await gitOperations.handleGitUploadPack(repoPath, request, response);
+    } catch (error) {
+      logger.error('Git upload-pack error:', { error, workspaceId });
+      throw error;
+    }
   }
 
   /**
    * Handle Git Smart HTTP receive-pack endpoint (git push)
    */
-  public async handleReceivePack(workspaceId: string, req: any, res: any): Promise<void> {
+  public async handleReceivePack(workspaceId: string, request: IncomingMessage, response: ServerResponse): Promise<void> {
     const repoPath = await this.getWorkspaceRepoPath(workspaceId);
     if (!repoPath) {
-      res.statusCode = 404;
-      res.end('Workspace not found');
+      response.statusCode = 404;
+      response.end('Workspace not found');
       return;
     }
 
-    const gitPath = await this.getGitExecutablePath();
-    const { spawn } = await import('child_process');
-
-    // Spawn git-receive-pack process
-    const git = spawn(gitPath, ['receive-pack', '--stateless-rpc', repoPath], {
-      env: {
-        ...process.env,
-        GIT_PROJECT_ROOT: repoPath,
-      },
-    });
-
-    // Set response headers
-    res.setHeader('Content-Type', 'application/x-git-receive-pack-result');
-    res.setHeader('Cache-Control', 'no-cache');
-
-    // Pipe request to git stdin and git stdout to response
-    req.pipe(git.stdin);
-    git.stdout.pipe(res);
-
-    git.stderr.on('data', (data) => {
-      logger.debug('Git receive-pack stderr:', { data: data.toString(), workspaceId });
-    });
-
-    git.on('error', (error) => {
-      logger.error('Git receive-pack process error:', { error, workspaceId });
-      if (!res.headersSent) {
-        res.statusCode = 500;
-      }
-      res.end();
-    });
-
-    git.on('close', (code) => {
-      if (code !== 0) {
-        logger.error('Git receive-pack process exited with error:', { code, workspaceId });
-      }
-      if (!res.finished) {
-        res.end();
-      }
+    try {
+      await gitOperations.handleGitReceivePack(repoPath, request, response);
       // Notify git state change after successful push
       this.notifyGitStateChange(repoPath, 'sync');
-    });
+    } catch (error) {
+      logger.error('Git receive-pack error:', { error, workspaceId });
+      throw error;
+    }
   }
 }

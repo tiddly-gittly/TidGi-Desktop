@@ -2,6 +2,7 @@ import { GitChannel } from '@/constants/channels';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { ICommitAndSyncOptions, ModifiedFileList } from 'git-sync-js';
+import type { IncomingMessage, ServerResponse } from 'http';
 import type { BehaviorSubject } from 'rxjs';
 
 export interface IGitUserInfos extends IGitUserInfosWithoutToken {
@@ -188,24 +189,24 @@ export interface IGitService {
    * Handle Git Smart HTTP info/refs endpoint
    * @param workspaceId workspace ID
    * @param service 'git-upload-pack' | 'git-receive-pack'
-   * @param req Node.js HTTP request
-   * @param res Node.js HTTP response
+   * @param request Node.js HTTP request
+   * @param response Node.js HTTP response
    */
-  handleInfoRefs(workspaceId: string, service: string, req: any, res: any): Promise<void>;
+  handleInfoRefs(workspaceId: string, service: string, request: IncomingMessage, response: ServerResponse): Promise<void>;
   /**
    * Handle Git Smart HTTP upload-pack endpoint (git fetch/pull)
    * @param workspaceId workspace ID
-   * @param req Node.js HTTP request (stream)
-   * @param res Node.js HTTP response (stream)
+   * @param request Node.js HTTP request (stream)
+   * @param response Node.js HTTP response (stream)
    */
-  handleUploadPack(workspaceId: string, req: any, res: any): Promise<void>;
+  handleUploadPack(workspaceId: string, request: IncomingMessage, response: ServerResponse): Promise<void>;
   /**
    * Handle Git Smart HTTP receive-pack endpoint (git push)
    * @param workspaceId workspace ID
-   * @param req Node.js HTTP request (stream)
-   * @param res Node.js HTTP response (stream)
+   * @param request Node.js HTTP request (stream)
+   * @param response Node.js HTTP response (stream)
    */
-  handleReceivePack(workspaceId: string, req: any, res: any): Promise<void>;
+  handleReceivePack(workspaceId: string, request: IncomingMessage, response: ServerResponse): Promise<void>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,

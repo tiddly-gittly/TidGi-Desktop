@@ -3,7 +3,8 @@
  * This module provides git log, checkout, revert functionality
  */
 import { i18n } from '@services/libs/i18n';
-import { exec as gitExec } from 'dugite';
+import { exec as gitExec, spawn as gitSpawn } from 'dugite';
+import type { IncomingMessage, ServerResponse } from 'http';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -996,4 +997,155 @@ export async function getUnpushedCommitHashes(repoPath: string): Promise<Set<str
     console.debug('Failed to get unpushed commits:', error);
     return new Set();
   }
+}
+
+/**
+ * Handle Git Smart HTTP info/refs endpoint
+ * Must use spawn for streaming
+ */
+export async function handleGitInfoReferences(
+  repoPath: string,
+  service: string,
+  response: ServerResponse,
+): Promise<void> {
+  // Spawn git process for info/refs using dugite
+  const git = gitSpawn([service.replace('git-', ''), '--stateless-rpc', '--advertise-refs', repoPath], repoPath, {
+    env: {
+      GIT_PROJECT_ROOT: repoPath,
+      GIT_HTTP_EXPORT_ALL: '1',
+    },
+  });
+
+  // Set response headers
+  response.setHeader('Content-Type', `application/x-${service}-advertisement`);
+  response.setHeader('Cache-Control', 'no-cache');
+
+  // Write service announcement
+  const serviceAnnouncement = `# service=${service}\n`;
+  const announcementLength = (serviceAnnouncement.length + 4).toString(16).padStart(4, '0');
+  response.write(`${announcementLength}${serviceAnnouncement}0000`);
+
+  // Pipe git output to response
+  git.stdout.pipe(response);
+  git.stderr.on('data', (data: Buffer) => {
+    console.error('Git info/refs stderr:', data.toString());
+  });
+
+  return new Promise((resolve, reject) => {
+    git.on('error', (error: Error) => {
+      if (!response.headersSent) {
+        response.statusCode = 500;
+      }
+      response.end();
+      reject(error);
+    });
+
+    git.on('close', (code: number | null) => {
+      if (code !== 0 && code !== null) {
+        console.error(`Git info/refs exited with code ${code}`);
+      }
+      if (!response.writableEnded) {
+        response.end();
+      }
+      resolve();
+    });
+  });
+}
+
+/**
+ * Handle Git Smart HTTP upload-pack endpoint (git fetch/pull)
+ * Must use spawn for streaming
+ */
+export async function handleGitUploadPack(
+  repoPath: string,
+  request: IncomingMessage,
+  response: ServerResponse,
+): Promise<void> {
+  // Spawn git-upload-pack process using dugite
+  const git = gitSpawn(['upload-pack', '--stateless-rpc', repoPath], repoPath, {
+    env: {
+      GIT_PROJECT_ROOT: repoPath,
+    },
+  });
+
+  // Set response headers
+  response.setHeader('Content-Type', 'application/x-git-upload-pack-result');
+  response.setHeader('Cache-Control', 'no-cache');
+
+  // Pipe request to git stdin and git stdout to response
+  request.pipe(git.stdin);
+  git.stdout.pipe(response);
+
+  git.stderr.on('data', (data: Buffer) => {
+    console.debug('Git upload-pack stderr:', data.toString());
+  });
+
+  return new Promise((resolve, reject) => {
+    git.on('error', (error: Error) => {
+      if (!response.headersSent) {
+        response.statusCode = 500;
+      }
+      response.end();
+      reject(error);
+    });
+
+    git.on('close', (code: number | null) => {
+      if (code !== 0 && code !== null) {
+        console.error(`Git upload-pack exited with code ${code}`);
+      }
+      if (!response.writableEnded) {
+        response.end();
+      }
+      resolve();
+    });
+  });
+}
+
+/**
+ * Handle Git Smart HTTP receive-pack endpoint (git push)
+ * Must use spawn for streaming
+ */
+export async function handleGitReceivePack(
+  repoPath: string,
+  request: IncomingMessage,
+  response: ServerResponse,
+): Promise<void> {
+  // Spawn git-receive-pack process using dugite
+  const git = gitSpawn(['receive-pack', '--stateless-rpc', repoPath], repoPath, {
+    env: {
+      GIT_PROJECT_ROOT: repoPath,
+    },
+  });
+
+  // Set response headers
+  response.setHeader('Content-Type', 'application/x-git-receive-pack-result');
+  response.setHeader('Cache-Control', 'no-cache');
+
+  // Pipe request to git stdin and git stdout to response
+  request.pipe(git.stdin);
+  git.stdout.pipe(response);
+
+  git.stderr.on('data', (data: Buffer) => {
+    console.debug('Git receive-pack stderr:', data.toString());
+  });
+
+  return new Promise((resolve, reject) => {
+    git.on('error', (error: Error) => {
+      if (!response.headersSent) {
+        response.statusCode = 500;
+      }
+      response.end();
+      reject(error);
+    });
+
+    git.on('close', (code: number | null) => {
+      if (code !== 0 && code !== null) {
+        console.error(`Git receive-pack exited with code ${code}`);
+      }
+      if (!response.writableEnded) {
+        response.end();
+      }
+      resolve();
+    });
+  });
 }
