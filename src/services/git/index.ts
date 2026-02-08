@@ -483,8 +483,10 @@ export class Git implements IGitService {
    */
   public async getGitExecutablePath(): Promise<string> {
     const platform = process.platform;
-    const gitExecutable = platform === 'win32' ? 'git.exe' : 'git';
-    return path.join(LOCAL_GIT_DIRECTORY, 'cmd', gitExecutable);
+    if (platform === 'win32') {
+      return path.join(LOCAL_GIT_DIRECTORY, 'cmd', 'git.exe');
+    }
+    return path.join(LOCAL_GIT_DIRECTORY, 'bin', 'git');
   }
 
   /**
@@ -493,7 +495,7 @@ export class Git implements IGitService {
   public async handleInfoRefs(workspaceId: string, service: string, _request: IncomingMessage, response: ServerResponse): Promise<void> {
     const repoPath = await this.getWorkspaceRepoPath(workspaceId);
     if (!repoPath) {
-      response.statusCode = 404;
+      response.writeHead(404, { 'Content-Type': 'text/plain' });
       response.end('Workspace not found');
       return;
     }
@@ -502,7 +504,10 @@ export class Git implements IGitService {
       await gitOperations.handleGitInfoReferences(repoPath, service, response);
     } catch (error) {
       logger.error('Git info/refs error:', { error, workspaceId, service });
-      throw error;
+      if (!response.headersSent) {
+        response.writeHead(500, { 'Content-Type': 'text/plain' });
+        response.end('Git info/refs failed');
+      }
     }
   }
 
@@ -512,7 +517,7 @@ export class Git implements IGitService {
   public async handleUploadPack(workspaceId: string, request: IncomingMessage, response: ServerResponse): Promise<void> {
     const repoPath = await this.getWorkspaceRepoPath(workspaceId);
     if (!repoPath) {
-      response.statusCode = 404;
+      response.writeHead(404, { 'Content-Type': 'text/plain' });
       response.end('Workspace not found');
       return;
     }
@@ -521,7 +526,10 @@ export class Git implements IGitService {
       await gitOperations.handleGitUploadPack(repoPath, request, response);
     } catch (error) {
       logger.error('Git upload-pack error:', { error, workspaceId });
-      throw error;
+      if (!response.headersSent) {
+        response.writeHead(500, { 'Content-Type': 'text/plain' });
+        response.end('Git upload-pack failed');
+      }
     }
   }
 
@@ -531,18 +539,20 @@ export class Git implements IGitService {
   public async handleReceivePack(workspaceId: string, request: IncomingMessage, response: ServerResponse): Promise<void> {
     const repoPath = await this.getWorkspaceRepoPath(workspaceId);
     if (!repoPath) {
-      response.statusCode = 404;
+      response.writeHead(404, { 'Content-Type': 'text/plain' });
       response.end('Workspace not found');
       return;
     }
 
     try {
       await gitOperations.handleGitReceivePack(repoPath, request, response);
-      // Notify git state change after successful push
       this.notifyGitStateChange(repoPath, 'sync');
     } catch (error) {
       logger.error('Git receive-pack error:', { error, workspaceId });
-      throw error;
+      if (!response.headersSent) {
+        response.writeHead(500, { 'Content-Type': 'text/plain' });
+        response.end('Git receive-pack failed');
+      }
     }
   }
 }

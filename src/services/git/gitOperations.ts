@@ -1076,6 +1076,11 @@ export async function handleGitUploadPack(
   request.pipe(git.stdin);
   git.stdout.pipe(response);
 
+  // Handle stdin errors to prevent process from hanging
+  git.stdin.on('error', (error: Error) => {
+    console.error('Git upload-pack stdin error:', error.message);
+  });
+
   git.stderr.on('data', (data: Buffer) => {
     console.debug('Git upload-pack stderr:', data.toString());
   });
@@ -1124,6 +1129,11 @@ export async function handleGitReceivePack(
   // Pipe request to git stdin and git stdout to response
   request.pipe(git.stdin);
   git.stdout.pipe(response);
+
+  // Handle stdin errors to prevent process from hanging
+  git.stdin.on('error', (error: Error) => {
+    console.error('Git receive-pack stdin error:', error.message);
+  });
 
   git.stderr.on('data', (data: Buffer) => {
     console.debug('Git receive-pack stderr:', data.toString());
