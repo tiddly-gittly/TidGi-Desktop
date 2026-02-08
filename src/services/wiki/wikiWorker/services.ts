@@ -91,9 +91,9 @@ export const service = {
   workspaceView,
 } as const;
 
-// Auto-attach to global when imported (worker thread only)
-if (typeof global !== 'undefined') {
+// Auto-attach to globalThis when imported (worker thread only)
+if (typeof globalThis !== 'undefined') {
   // Use type assertion to avoid circular reference
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-  (global as any).service = service;
+  (globalThis as any).service = service;
 }
