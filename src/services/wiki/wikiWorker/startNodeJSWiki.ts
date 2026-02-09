@@ -1,6 +1,6 @@
 // Auto-attach services to global.service - MUST import before using services
 import './services';
-import { native } from './services';
+import { native, service } from './services';
 import { onWorkerServicesReady } from './servicesReady';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
@@ -221,6 +221,19 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
         ]
         : [homePath, '--version'];
       wikiInstance.boot.argv = [...fullBootArgv];
+
+      /**
+       * Attach service proxies to `$tw.tidgi.service` so that TiddlyWiki route modules
+       * (which run in vm.runInContext sandbox) can access them.
+       * The sandbox injects `$tw` but NOT `globalThis` or `global`,
+       * so `$tw.tidgi.service` is the only way for plugins to reach IPC service proxies.
+       */
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+      if (!(wikiInstance as any).tidgi) {
+        (wikiInstance as any).tidgi = {};
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+      (wikiInstance as any).tidgi.service = service;
 
       wikiInstance.hooks.addHook('th-server-command-post-start', function(_server: unknown, nodeServer: Server) {
         nodeServer.on('error', function(error: Error) {
