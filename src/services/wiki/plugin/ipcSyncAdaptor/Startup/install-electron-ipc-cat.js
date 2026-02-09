@@ -5,7 +5,7 @@ exports.platforms = ['browser'];
 exports.after = ['startup'];
 exports.synchronous = true;
 exports.startup = function() {
-  if ('service' in window && 'descriptors' in window.service && window.service.descriptors !== undefined) {
+  if ($tw.tidgi.service.descriptors !== undefined) {
     require('$:/plugins/linonetwo/tidgi-ipc-syncadaptor/Startup/electron-ipc-cat.js');
     // call setupSSE in `src/services/wiki/plugin/ipcSyncAdaptor/ipc-syncadaptor.ts` of TidGi-Desktop
     if (typeof $tw !== 'undefined') {

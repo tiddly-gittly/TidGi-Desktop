@@ -228,12 +228,10 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
        * The sandbox injects `$tw` but NOT `globalThis` or `global`,
        * so `$tw.tidgi.service` is the only way for plugins to reach IPC service proxies.
        */
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      if (!(wikiInstance as any).tidgi) {
-        (wikiInstance as any).tidgi = {};
-      }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      (wikiInstance as any).tidgi.service = service;
+      type TidgiContainer = { tidgi?: { service?: typeof service } };
+      const wikiInstanceWithTidgi = wikiInstance as typeof wikiInstance & TidgiContainer;
+      wikiInstanceWithTidgi.tidgi = wikiInstanceWithTidgi.tidgi ?? {};
+      wikiInstanceWithTidgi.tidgi.service = service;
 
       wikiInstance.hooks.addHook('th-server-command-post-start', function(_server: unknown, nodeServer: Server) {
         nodeServer.on('error', function(error: Error) {

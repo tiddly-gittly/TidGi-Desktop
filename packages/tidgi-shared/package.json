@@ -1,6 +1,6 @@
 {
   "name": "tidgi-shared",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Shared service interfaces and IPC descriptors for TidGi plugins",
   "license": "MPL-2.0",
   "author": "linonetwo <linonetwo012@gmail.com>",

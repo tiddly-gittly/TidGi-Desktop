@@ -1,6 +1,6 @@
 /**
  * Worker-side service proxies, similar to preload/common/services.ts
- * Auto-creates proxies for all registered services and attaches to global.service
+ * Exposed to the wiki worker and attached to $tw.tidgi.service in startNodeJSWiki
  */
 
 import { createWorkerProxy, type WorkerProxy } from 'electron-ipc-cat/worker';
@@ -61,7 +61,7 @@ export const workspaceView = createWorkerProxy<WorkerProxy<IWorkspaceViewService
 
 /**
  * All service proxies collected in one object
- * Auto-attached to global.service when this module is imported
+ * Attached to $tw.tidgi.service by the wiki worker bootstrap
  */
 export const service = {
   agentBrowser,
@@ -90,10 +90,3 @@ export const service = {
   workspace,
   workspaceView,
 } as const;
-
-// Auto-attach to globalThis when imported (worker thread only)
-if (typeof globalThis !== 'undefined') {
-  // Use type assertion to avoid circular reference
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-  (globalThis as any).service = service;
-}

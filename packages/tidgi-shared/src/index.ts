@@ -15,6 +15,7 @@ export * from '@/constants/auth';
 // ── Shared Service Types ───────────────────────────────────────────────────────
 export * from '@services/types';
 export { default as serviceIdentifier } from '@services/serviceIdentifier';
+export * from './tidgiGlobal';
 
 // ── Service Interfaces ─────────────────────────────────────────────────────────
 // Each re-export includes the interface, IPC descriptor, and associated types.

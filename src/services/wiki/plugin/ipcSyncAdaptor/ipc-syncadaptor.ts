@@ -22,17 +22,17 @@ class TidGiIPCSyncAdaptor {
   isAnonymous: boolean;
   isReadOnly: boolean;
   logoutIsAvailable: boolean;
-  wikiService: typeof window.service.wiki;
-  workspaceService: typeof window.service.workspace;
-  authService: typeof window.service.auth;
+  wikiService: typeof $tw.tidgi.service.wiki;
+  workspaceService: typeof $tw.tidgi.service.workspace;
+  authService: typeof $tw.tidgi.service.auth;
   workspaceID: string;
   recipe?: string;
 
   constructor(options: { wiki: Wiki }) {
     this.wiki = options.wiki;
-    this.wikiService = window.service.wiki;
-    this.workspaceService = window.service.workspace;
-    this.authService = window.service.auth;
+    this.wikiService = $tw.tidgi.service.wiki;
+    this.workspaceService = $tw.tidgi.service.workspace;
+    this.authService = $tw.tidgi.service.auth;
     this.hasStatus = false;
     this.isAnonymous = false;
     this.logger = new $tw.utils.Logger('TidGiIPCSyncAdaptor');

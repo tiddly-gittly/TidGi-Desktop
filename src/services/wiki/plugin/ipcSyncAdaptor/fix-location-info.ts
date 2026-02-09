@@ -19,7 +19,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
     /**
      * Push to asyncInfoTiddlerFields in this async function
      */
-    void window.service.workspace.get(workspaceID).then(async (workspace) => {
+    void $tw.tidgi.service.workspace.get(workspaceID).then(async (workspace) => {
       if (workspace === undefined) return;
 
       // Only wiki workspaces have these properties
@@ -38,7 +38,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
       const setLocationProperty = function(name: string, value: string) {
         asyncInfoTiddlerFields.push({ title: '$:/info/url/' + name, text: value });
       };
-      const localHostUrl = await window.service.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(port), workspaceID);
+      const localHostUrl = await $tw.tidgi.service.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(port), workspaceID);
       const urlObject = new URL(localHostUrl);
       setLocationProperty('full', (localHostUrl).split('#')[0]);
       setLocationProperty('host', urlObject.host);
@@ -62,7 +62,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
       }
 
       if (tokenAuth) {
-        const fallbackUserName = await window.service.auth.get('userName');
+        const fallbackUserName = await $tw.tidgi.service.auth.get('userName');
         const tokenAuthHeader = `"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`;
         asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/tokenAuthHeader', text: tokenAuthHeader });
       }
