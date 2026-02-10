@@ -96,6 +96,12 @@ export class GitServerService implements IGitServerService {
           const repoPath = await this.resolveRepoPathOrError(workspaceId, subscriber);
           if (!repoPath) return;
 
+          logger.debug('Git upload-pack start', {
+            workspaceId,
+            repoPath,
+            requestBodySize: requestBody.length,
+          });
+
           subscriber.next({
             type: 'headers',
             statusCode: 200,
@@ -108,6 +114,7 @@ export class GitServerService implements IGitServerService {
           const git = gitSpawn(['upload-pack', '--stateless-rpc', repoPath], repoPath, {
             env: {
               GIT_PROJECT_ROOT: repoPath,
+              GIT_HTTP_EXPORT_ALL: '1',
             },
           });
 
