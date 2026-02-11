@@ -5,6 +5,7 @@ import { onWorkerServicesReady } from './servicesReady';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
+import type { TidgiService } from '@/types/tidgi-tw';
 import { DARK_LIGHT_CHANGE_ACTIONS_TAG } from '@services/theme/interface';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
@@ -228,10 +229,10 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
        * The sandbox injects `$tw` but NOT `globalThis` or `global`,
        * so `$tw.tidgi.service` is the only way for plugins to reach IPC service proxies.
        */
-      type TidgiContainer = { tidgi?: { service?: typeof service } };
-      const wikiInstanceWithTidgi = wikiInstance as typeof wikiInstance & TidgiContainer;
+      type TidgiContainer = { tidgi?: { service?: TidgiService } };
+      const wikiInstanceWithTidgi = wikiInstance as unknown as (typeof wikiInstance & TidgiContainer);
       wikiInstanceWithTidgi.tidgi = wikiInstanceWithTidgi.tidgi ?? {};
-      wikiInstanceWithTidgi.tidgi.service = service;
+      wikiInstanceWithTidgi.tidgi.service = service as unknown as TidgiService;
 
       wikiInstance.hooks.addHook('th-server-command-post-start', function(_server: unknown, nodeServer: Server) {
         nodeServer.on('error', function(error: Error) {

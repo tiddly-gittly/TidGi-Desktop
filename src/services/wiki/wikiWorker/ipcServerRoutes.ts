@@ -309,7 +309,22 @@ export class IpcServerRoutes {
 }
 
 export const ipcServerRoutes: IpcServerRoutes = new IpcServerRoutes();
-export const ipcServerRoutesMethods = {
+
+// Explicit method signature to preserve types
+type IpcServerRoutesMethodsType = {
+  deleteTiddler: IpcServerRoutes['deleteTiddler'];
+  getFavicon: IpcServerRoutes['getFavicon'];
+  getIndex: IpcServerRoutes['getIndex'];
+  getStatus: IpcServerRoutes['getStatus'];
+  getTiddler: IpcServerRoutes['getTiddler'];
+  getTiddlerHtml: IpcServerRoutes['getTiddlerHtml'];
+  getTiddlersJSON: IpcServerRoutes['getTiddlersJSON'];
+  putTiddler: IpcServerRoutes['putTiddler'];
+  getFile: IpcServerRoutes['getFile'];
+  getWikiChangeObserver: IpcServerRoutes['getWikiChangeObserver'];
+};
+
+export const ipcServerRoutesMethods: IpcServerRoutesMethodsType = {
   deleteTiddler: ipcServerRoutes.deleteTiddler.bind(ipcServerRoutes),
   getFavicon: ipcServerRoutes.getFavicon.bind(ipcServerRoutes),
   getIndex: ipcServerRoutes.getIndex.bind(ipcServerRoutes),
@@ -325,5 +340,5 @@ export const ipcServerRoutesMethods = {
 /**
  * Available methods for ipcServerRoutes exposed from wiki worker
  */
-export type IpcServerRouteMethods = Omit<typeof ipcServerRoutesMethods, 'getWikiChangeObserver'>;
+export type IpcServerRouteMethods = Omit<IpcServerRoutesMethodsType, 'getWikiChangeObserver'>;
 export type IpcServerRouteNames = keyof IpcServerRouteMethods;

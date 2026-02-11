@@ -36,7 +36,7 @@ import { type IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@
 export const agentBrowser = createWorkerProxy<WorkerProxy<IAgentBrowserService>>(AgentBrowserServiceIPCDescriptor, Observable);
 export const agentDefinition = createWorkerProxy<WorkerProxy<IAgentDefinitionService>>(AgentDefinitionServiceIPCDescriptor, Observable);
 export const agentInstance = createWorkerProxy<WorkerProxy<IAgentInstanceService>>(AgentInstanceServiceIPCDescriptor, Observable);
-export const authentication = createWorkerProxy<WorkerProxy<IAuthenticationService>>(AuthenticationServiceIPCDescriptor, Observable);
+export const auth = createWorkerProxy<WorkerProxy<IAuthenticationService>>(AuthenticationServiceIPCDescriptor, Observable);
 export const context = createWorkerProxy<WorkerProxy<IContextService>>(ContextServiceIPCDescriptor, Observable);
 export const database = createWorkerProxy<WorkerProxy<IDatabaseService>>(DatabaseServiceIPCDescriptor, Observable);
 export const deepLink = createWorkerProxy<WorkerProxy<IDeepLinkService>>(DeepLinkServiceIPCDescriptor, Observable);
@@ -67,7 +67,7 @@ export const service = {
   agentBrowser,
   agentDefinition,
   agentInstance,
-  authentication,
+  auth,
   context,
   database,
   deepLink,

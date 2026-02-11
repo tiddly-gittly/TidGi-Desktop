@@ -55,30 +55,3 @@ export const wikiGitWorkspace = createProxy<IWikiGitWorkspaceService>(WikiGitWor
 export const window = createProxy<IWindowService>(WindowServiceIPCDescriptor);
 export const workspace = createProxy<AsyncifyProxy<IWorkspaceService>>(WorkspaceServiceIPCDescriptor);
 export const workspaceView = createProxy<IWorkspaceViewService>(WorkspaceViewServiceIPCDescriptor);
-
-export const descriptors = {
-  agentBrowser: AgentBrowserServiceIPCDescriptor,
-  agentDefinition: AgentDefinitionServiceIPCDescriptor,
-  agentInstance: AgentInstanceServiceIPCDescriptor,
-  auth: AuthenticationServiceIPCDescriptor,
-  context: ContextServiceIPCDescriptor,
-  deepLink: DeepLinkServiceIPCDescriptor,
-  git: GitServiceIPCDescriptor,
-  menu: MenuServiceIPCDescriptor,
-  native: NativeServiceIPCDescriptor,
-  notification: NotificationServiceIPCDescriptor,
-  preference: PreferenceServiceIPCDescriptor,
-  sync: SyncServiceIPCDescriptor,
-  systemPreference: SystemPreferenceServiceIPCDescriptor,
-  theme: ThemeServiceIPCDescriptor,
-  updater: UpdaterServiceIPCDescriptor,
-  view: ViewServiceIPCDescriptor,
-  wiki: WikiServiceIPCDescriptor,
-  wikiEmbedding: WikiEmbeddingServiceIPCDescriptor,
-  wikiGitWorkspace: WikiGitWorkspaceServiceIPCDescriptor,
-  window: WindowServiceIPCDescriptor,
-  workspace: WorkspaceServiceIPCDescriptor,
-  workspaceView: WorkspaceViewServiceIPCDescriptor,
-  externalAPI: ExternalAPIServiceIPCDescriptor,
-  database: DatabaseServiceIPCDescriptor,
-};
