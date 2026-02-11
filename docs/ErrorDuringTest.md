@@ -49,10 +49,10 @@ it('should test feature', async () => {
 // For tests that trigger state updates, wait for UI to stabilize
 it('should update when data changes', async () => {
   render(<Component />);
-  
+
   // Trigger update
   someObservable.next(newData);
-  
+
   // Wait for UI to reflect the change
   await waitFor(() => {
     expect(screen.getByText('Updated Content')).toBeInTheDocument();
