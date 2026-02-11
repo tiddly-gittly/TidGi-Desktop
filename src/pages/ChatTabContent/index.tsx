@@ -50,7 +50,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
     return (
       <Box sx={{ p: 2, textAlign: 'center' }}>
         <Typography color='error'>
-          {t('Agent.InvalidTabType', 'Invalid tab type. Expected chat tab.')}
+          {t('Agent.InvalidTabType')}
         </Typography>
       </Box>
     );

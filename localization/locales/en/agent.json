@@ -16,6 +16,13 @@
     "Title": "API Debug Logs"
   },
   "Agent": {
+    "Attachment": {
+      "AddAttachment": "Add attachment",
+      "AddImage": "📷 Add Image",
+      "NoOptions": "No options available",
+      "SearchPlaceholder": "Search...",
+      "SelectAttachment": "Select attachment"
+    },
     "EditTitle": "Edit agent name",
     "InvalidTabType": "Invalid tab type. A chat tab is required.",
     "LoadingChat": "Loading conversation...",
@@ -95,6 +102,10 @@
     "SetupAgent": "Setup Agent",
     "SetupAgentDescription": "Configure your new agent by choosing a name and template",
     "Title": "Create New Agent"
+  },
+  "WikiEmbed": {
+    "Error": "Failed to embed wiki",
+    "Loading": "Loading wiki..."
   },
   "EditAgent": {
     "AgentDescription": "Agent Description",

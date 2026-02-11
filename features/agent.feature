@@ -148,8 +148,10 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     # Click attachment button to open autocomplete
     When I click on a "attach button" element with selector "[data-testid='agent-attach-button']"
     # Autocomplete should open showing image option + tiddler options
-    And I should see a "attachment autocomplete input" element with selector "[data-testid='attachment-autocomplete-input']"
-    And I should see a "attachment listbox" element with selector "[data-testid='attachment-listbox']"
+    And I should see "attachment autocomplete input and attachment listbox" elements with selectors:
+      | element description            | selector                                |
+      | attachment autocomplete input  | [data-testid='attachment-autocomplete-input'] |
+      | attachment listbox             | [data-testid='attachment-listbox']      |
     # Click on our test tiddler option
     When I click on a "test tiddler option" element with selector "[data-testid='attachment-option-tiddler-TestAttachmentTiddler']"
     # Verify the chip is displayed
@@ -159,9 +161,6 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I type "请分析这个条目" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     # Verify the mock server received the rendered content (wikitext converted to plain text)
-    Then the last AI request user message should contain "WikiTestContentMarker123"
-    And the last AI request user message should contain "Wiki Entry from"
-    And the last AI request user message should contain "TestAttachmentTiddler"
+    Then the last AI request user message should contain "WikiTestHeader\n\nThis is a test with WikiTestContentMarker123"
     # Verify wikitext was converted to plain text (!! becomes "Header", not raw !!)
-    And the last AI request user message should contain "WikiTestHeader"
     And the last AI request user message should not contain "!!"

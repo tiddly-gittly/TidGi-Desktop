@@ -16,6 +16,13 @@
     "Title": "Journal de débogage API"
   },
   "Agent": {
+    "Attachment": {
+      "AddAttachment": "Ajouter une pièce jointe",
+      "AddImage": "📷 Ajouter une image",
+      "NoOptions": "Aucune option disponible",
+      "SearchPlaceholder": "Rechercher...",
+      "SelectAttachment": "Sélectionner une pièce jointe"
+    },
     "EditTitle": "Modifier le nom de l'agent intelligent",
     "InvalidTabType": "Type d'onglet non valide. Un onglet de chat est requis.",
     "LoadingChat": "Chargement de la conversation en cours...",
@@ -95,6 +102,10 @@
     "SetupAgent": "configurer l'agent intelligent",
     "SetupAgentDescription": "Nommez votre agent et choisissez un modèle comme point de départ",
     "Title": "Créer un nouvel agent intelligent"
+  },
+  "WikiEmbed": {
+    "Error": "Échec de l’intégration du wiki",
+    "Loading": "Chargement du wiki..."
   },
   "EditAgent": {
     "AgentDescription": "Description de l'agent intelligent",

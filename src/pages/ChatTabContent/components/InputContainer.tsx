@@ -48,6 +48,9 @@ interface InputContainerProps {
   onWikiTiddlerSelect?: (tiddler: WikiTiddlerAttachment) => void;
   onRemoveWikiTiddler?: (index: number) => void;
 }
+const attachmentListboxSlotProps: React.HTMLAttributes<HTMLUListElement> & { 'data-testid': string } = {
+  'data-testid': 'attachment-listbox',
+};
 
 /**
  * Input container component for message entry
@@ -146,7 +149,7 @@ export const InputContainer: React.FC<InputContainerProps> = ({
       try {
         // Build options: first is "Add Image", then wiki tiddlers from all non-hibernated workspaces
         const options: Array<{ type: 'image' | 'tiddler'; title: string; workspaceName?: string; testId?: string }> = [
-          { type: 'image', title: t('Agent.Attachment.AddImage', '📷 Add Image'), workspaceName: '', testId: 'AddImage' },
+          { type: 'image', title: t('Agent.Attachment.AddImage'), workspaceName: '', testId: 'AddImage' },
         ];
 
         // Get all workspaces
@@ -294,7 +297,7 @@ export const InputContainer: React.FC<InputContainerProps> = ({
           disabled={disabled || isStreaming}
           color={(selectedFile || selectedWikiTiddlers.length > 0) ? 'primary' : 'default'}
           data-testid='agent-attach-button'
-          title={t('Agent.Attachment.AddAttachment', 'Add attachment')}
+          title={t('Agent.Attachment.AddAttachment')}
         >
           <AttachFileIcon />
         </IconButton>
@@ -346,15 +349,13 @@ export const InputContainer: React.FC<InputContainerProps> = ({
               getOptionLabel={(option) => option.title}
               onChange={handleSelectAttachment}
               slotProps={{
-                listbox: {
-                  'data-testid': 'attachment-listbox',
-                },
+                listbox: attachmentListboxSlotProps,
               }}
               renderInput={(parameters) => (
                 <TextField
                   {...parameters}
-                  label={t('Agent.Attachment.SelectAttachment', 'Select attachment')}
-                  placeholder={t('Agent.Attachment.SearchPlaceholder', 'Search...')}
+                  label={t('Agent.Attachment.SelectAttachment')}
+                  placeholder={t('Agent.Attachment.SearchPlaceholder')}
                   autoFocus
                   data-testid='attachment-autocomplete-input'
                 />
@@ -367,7 +368,7 @@ export const InputContainer: React.FC<InputContainerProps> = ({
                   </li>
                 );
               }}
-              noOptionsText={t('Agent.Attachment.NoOptions', 'No options available')}
+              noOptionsText={t('Agent.Attachment.NoOptions')}
             />
           </Paper>
         </ClickAwayListener>

@@ -1,10 +1,12 @@
 import { WikiChannel } from '@/constants/channels';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IContextService } from '@services/context/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { createBackupMenuItems, createSyncMenuItems } from '@services/git/menuItems';
+import { createTalkWithAIMenuItems } from '@services/menu/createTalkWithAIMenuItems';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { ISyncService } from '@services/sync/interface';
@@ -22,6 +24,7 @@ import type { IWorkspace, IWorkspaceService } from './interface';
 import { isWikiWorkspace } from './interface';
 
 interface IWorkspaceMenuRequiredServices {
+  agentDefinition: Pick<IAgentDefinitionService, 'getAgentDef' | 'getAgentDefs'>;
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
   context: Pick<IContextService, 'isOnline'>;
   externalAPI: Pick<IExternalAPIService, 'getAIConfig'>;
@@ -32,7 +35,7 @@ interface IWorkspaceMenuRequiredServices {
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
   wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
-  window: Pick<IWindowService, 'open'>;
+  window: Pick<IWindowService, 'open' | 'get'>;
   workspace: Pick<IWorkspaceService, 'getActiveWorkspace' | 'getSubWorkspacesAsList' | 'openWorkspaceTiddler'>;
   workspaceView: Pick<
     IWorkspaceViewService,
@@ -61,6 +64,19 @@ export async function getSimplifiedWorkspaceMenuTemplate(
 
   const { id, storageService, isSubWiki } = workspace;
   const template: MenuItemConstructorOptions[] = [];
+
+  const lastUrl = await service.view.getViewCurrentUrl(id, WindowNames.main);
+  const talkWithAIMenuItems = await createTalkWithAIMenuItems({
+    agentDefinitionService: service.agentDefinition,
+    selectionText: '',
+    t,
+    wikiUrl: lastUrl,
+    windowService: service.window,
+    workspaceId: id,
+  });
+
+  template.push(...talkWithAIMenuItems);
+  template.push({ type: 'separator' });
 
   // Add "Current Workspace" submenu with full menu
   const fullMenuTemplate = await getWorkspaceMenuTemplate(workspace, t, service);

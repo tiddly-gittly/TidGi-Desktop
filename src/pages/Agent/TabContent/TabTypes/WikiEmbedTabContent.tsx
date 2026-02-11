@@ -165,7 +165,7 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
     return (
       <Container>
         <LoadingContainer>
-          <Typography color='error'>{t('WikiEmbed.Error', 'Failed to embed wiki')}</Typography>
+          <Typography color='error'>{t('WikiEmbed.Error')}</Typography>
           <Typography variant='body2' color='textSecondary'>{error}</Typography>
         </LoadingContainer>
       </Container>
@@ -178,7 +178,7 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
         <LoadingContainer>
           <CircularProgress size={32} />
           <Typography variant='body2' color='textSecondary'>
-            {t('WikiEmbed.Loading', 'Loading wiki...')}
+            {t('WikiEmbed.Loading')}
           </Typography>
         </LoadingContainer>
       )}

@@ -16,6 +16,13 @@
     "Title": "外部接口调试日志"
   },
   "Agent": {
+    "Attachment": {
+      "AddAttachment": "添加附件",
+      "AddImage": "📷 添加图片",
+      "NoOptions": "暂无可选项",
+      "SearchPlaceholder": "搜索...",
+      "SelectAttachment": "选择附件"
+    },
     "EditTitle": "编辑智能体名字",
     "InvalidTabType": "无效的标签页类型。需要聊天标签页。",
     "LoadingChat": "正在加载对话...",
@@ -95,6 +102,10 @@
     "SetupAgent": "设置智能体",
     "SetupAgentDescription": "为您的智能体命名并选择一个模板作为起点",
     "Title": "创建新智能体"
+  },
+  "WikiEmbed": {
+    "Error": "嵌入 Wiki 失败",
+    "Loading": "正在加载 Wiki..."
   },
   "EditAgent": {
     "AgentDescription": "智能体描述",

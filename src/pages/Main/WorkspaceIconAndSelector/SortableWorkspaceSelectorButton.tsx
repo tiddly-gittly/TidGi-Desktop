@@ -109,7 +109,7 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
         editFlags: { canCopy: false },
       });
     },
-    [t, workspace],
+    [t, workspace, id],
   );
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} onContextMenu={onWorkspaceContextMenu}>

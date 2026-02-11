@@ -284,8 +284,12 @@ Then('the last AI request user message should contain {string}', async function(
   }
 
   const lastUserMessage = userMessages[userMessages.length - 1];
-  if (!lastUserMessage.content || !lastUserMessage.content.includes(expectedText)) {
-    throw new Error(`Expected user message to contain "${expectedText}", but got: "${lastUserMessage.content}"`);
+  const content = lastUserMessage.content ?? '';
+
+  const normalizedExpectedText = expectedText.replaceAll('\\n', '\n');
+  const contentHasExpectedText = content.includes(expectedText) || content.includes(normalizedExpectedText);
+  if (!contentHasExpectedText) {
+    throw new Error(`Expected user message to contain "${expectedText}", but got: "${content}"`);
   }
 });
 

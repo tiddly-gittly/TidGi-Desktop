@@ -16,6 +16,13 @@
     "Title": "API デバッグログ"
   },
   "Agent": {
+    "Attachment": {
+      "AddAttachment": "添付を追加",
+      "AddImage": "📷 画像を追加",
+      "NoOptions": "利用可能な項目がありません",
+      "SearchPlaceholder": "検索...",
+      "SelectAttachment": "添付を選択"
+    },
     "EditTitle": "編集エージェント名",
     "InvalidTabType": "無効なタブタイプです。チャットタブが必要です。",
     "LoadingChat": "会話を読み込んでいます...",
@@ -95,6 +102,10 @@
     "SetupAgent": "エージェントを設定する",
     "SetupAgentDescription": "あなたのエージェントに名前を付け、テンプレートを出発点として選択してください",
     "Title": "新しいインテリジェントエージェントを作成する"
+  },
+  "WikiEmbed": {
+    "Error": "Wiki の埋め込みに失敗しました",
+    "Loading": "Wiki を読み込んでいます..."
   },
   "EditAgent": {
     "AgentDescription": "エージェントの説明",
