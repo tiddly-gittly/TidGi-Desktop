@@ -9,9 +9,9 @@ TidGi exposes the same service proxies in two places:
 - Plugin runtime (TW sandbox): `$tw.tidgi.service`
 - Frontend runtime (renderer): `window.service`
 
-## Usage in plugins (TiddlyWiki route modules)
+## Usage in plugins (TiddlyWiki modules)
 
-Route modules run inside TiddlyWiki’s VM sandbox, so `globalThis` is not the worker’s real global. Use `$tw.tidgi.service`.
+TiddlyWiki modules should use `$tw.tidgi.service`. In the BrowserView (renderer) build, it is mounted during boot by a startup module. In the wiki worker build, it is attached before boot.
 
 Example:
 
@@ -32,8 +32,9 @@ await window.service.workspace.getActiveWorkspace();
 ## How the API is wired
 
 - Service proxies are created in the wiki worker and preload using `electron-ipc-cat`.
-- Renderer (WebView): `src/preload/common/exportServices.ts` exposes proxies via `contextBridge`, assigns `window.service`, and attaches `$tw.tidgi.service` after `$tw` is ready.
-- Wiki worker: `startNodeJSWiki.ts` attaches the same proxies to `$tw.tidgi.service` before TiddlyWiki boot, so route modules can access them inside the sandbox.
+- Renderer (BrowserView): `src/preload/common/exportServices.ts` exposes proxies via `contextBridge` and assigns `window.service`.
+- Renderer (BrowserView): `src/services/wiki/plugin/ipcSyncAdaptor/Startup/mount-tidgi-service.ts` (published as a startup module) mounts `window.service` to `$tw.tidgi.service` during TiddlyWiki boot.
+- Wiki worker: `src/services/wiki/wikiWorker/startNodeJSWiki.ts` attaches the same proxies to `$tw.tidgi.service` before TiddlyWiki boot, so modules can access them inside the worker.
 
 ## Types for plugins
 
