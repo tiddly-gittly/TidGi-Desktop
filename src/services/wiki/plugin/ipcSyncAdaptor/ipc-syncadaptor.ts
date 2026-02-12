@@ -12,6 +12,24 @@ type ISyncAdaptorPutTiddlersCallback = (error: Error | null | string, etag?: {
 type ISyncAdaptorLoadTiddlerCallback = (error: Error | null, tiddler?: ITiddlerFields) => void;
 type ISyncAdaptorDeleteTiddlerCallback = (error: Error | null, adaptorInfo?: { bag?: string } | null) => void;
 
+type TidGiServiceCandidate = (typeof $tw.tidgi.service) | (typeof window.service) | undefined;
+
+function getTidGiService(): typeof $tw.tidgi.service {
+  const twWithExtensions = $tw as typeof $tw & {
+    tidgi?: { service?: TidGiServiceCandidate };
+  };
+
+  const serviceFromTw = twWithExtensions.tidgi?.service ?? window.service;
+
+  if (serviceFromTw === undefined) {
+    throw new Error('TidGi service is unavailable from $tw.tidgi, $tw.utils.tidgi and window.service');
+  }
+
+  twWithExtensions.tidgi = twWithExtensions.tidgi ?? {};
+  twWithExtensions.tidgi.service = twWithExtensions.tidgi.service ?? serviceFromTw;
+  return serviceFromTw as typeof $tw.tidgi.service;
+}
+
 class TidGiIPCSyncAdaptor {
   name = 'tidgi-ipc';
   supportsLazyLoading = true;
@@ -29,10 +47,11 @@ class TidGiIPCSyncAdaptor {
   recipe?: string;
 
   constructor(options: { wiki: Wiki }) {
+    const tidgiService = getTidGiService();
     this.wiki = options.wiki;
-    this.wikiService = $tw.tidgi.service.wiki;
-    this.workspaceService = $tw.tidgi.service.workspace;
-    this.authService = $tw.tidgi.service.auth;
+    this.wikiService = tidgiService.wiki;
+    this.workspaceService = tidgiService.workspace;
+    this.authService = tidgiService.auth;
     this.hasStatus = false;
     this.isAnonymous = false;
     this.logger = new $tw.utils.Logger('TidGiIPCSyncAdaptor');
@@ -318,7 +337,7 @@ class TidGiIPCSyncAdaptor {
 
 if ($tw.browser && typeof window !== 'undefined') {
   const isInTidGi = typeof document !== 'undefined' && document.location.protocol.startsWith('tidgi');
-  const servicesExposed = Boolean(window.service.wiki);
+  const servicesExposed = Boolean(window.service?.wiki);
   const hasWorkspaceIDinMeta = Boolean((typeof window.meta === 'function' ? window.meta() as WindowMeta[WindowNames.view] : undefined)?.workspace?.id);
   if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

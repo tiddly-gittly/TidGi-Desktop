@@ -92,26 +92,28 @@ async function executeTWJavaScriptWhenIdle<T>(script: string, options?: { onlyWh
   // requestIdleCallback won't execute when wiki browser view is invisible https://eric-schaefer.com/til/2023/03/11/the-dark-side-of-requestidlecallback/
   const idleCallbackOptions = options?.onlyWhenVisible === true ? '' : `{ timeout: 500 }`;
   const finalScriptToRun = `
-    (async () => await new Promise((resolve, reject) => {
-      const handler = () => {
-        requestIdleCallback(async () => {
-          if (typeof $tw?.rootWidget !== 'undefined' && typeof $tw?.wiki !== 'undefined') {
-            try {
-              const result = await (async () => {
-                ${script}
-              })();
-              resolve(result);
-            } catch (error) {
-              reject(error);
+    (async function wikiOperationInBrowser_executeTWJavaScriptWhenIdle() {
+      return await new Promise((resolve, reject) => {
+        const handler = () => {
+          requestIdleCallback(async () => {
+            if (typeof $tw !== 'undefined' && typeof $tw.rootWidget !== 'undefined' && typeof $tw.wiki !== 'undefined') {
+              try {
+                const result = await (async () => {
+                  ${script}
+                })();
+                resolve(result);
+              } catch (error) {
+                reject(error);
+              }
+            } else {
+              // wait till $tw is not undefined.
+              setTimeout(handler, 250);
             }
-          } else {
-            // wait till $tw is not undefined.
-            setTimeout(handler, 500);
-          }
-        }, ${idleCallbackOptions});
-      };
-      ${executeHandlerCode}
-    }))()
+          }, ${idleCallbackOptions});
+        };
+        ${executeHandlerCode}
+      });
+    })()
 `;
   try {
     const result = await (webFrame.executeJavaScript(finalScriptToRun) as Promise<T>);

@@ -3,6 +3,23 @@ import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 
+type TidGiServiceCandidate = (typeof window.service) | undefined;
+
+function getTidGiService(): Exclude<TidGiServiceCandidate, undefined> | undefined {
+  const twWithExtensions = $tw as typeof $tw & {
+    tidgi?: { service?: TidGiServiceCandidate };
+  };
+  const service = twWithExtensions.tidgi?.service ?? window.service;
+  if (service === undefined) {
+    return undefined;
+  }
+
+  twWithExtensions.tidgi = twWithExtensions.tidgi ?? {};
+  twWithExtensions.tidgi.service = twWithExtensions.tidgi.service ?? service;
+
+  return service;
+}
+
 function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: string; title: string }>) => void) {
   const mapBoolean = function(value: boolean) {
     return value ? 'yes' : 'no';
@@ -16,10 +33,16 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
   infoTiddlerFields.push({ title: '$:/info/tidgi', text: mapBoolean(isInTidGi) });
   if (isInTidGi && workspaceID) {
     infoTiddlerFields.push({ title: '$:/info/tidgi/workspaceID', text: workspaceID });
+    const tidgiService = getTidGiService();
+
+    if (tidgiService === undefined) {
+      console.warn('TidGi service is not available yet when getting location info tiddler fields.', { function: 'getInfoTiddlerFields' });
+      return infoTiddlerFields;
+    }
     /**
      * Push to asyncInfoTiddlerFields in this async function
      */
-    void $tw.tidgi.service.workspace.get(workspaceID).then(async (workspace) => {
+    void tidgiService.workspace.get(workspaceID).then(async (workspace) => {
       if (workspace === undefined) return;
 
       // Only wiki workspaces have these properties
@@ -38,7 +61,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
       const setLocationProperty = function(name: string, value: string) {
         asyncInfoTiddlerFields.push({ title: '$:/info/url/' + name, text: value });
       };
-      const localHostUrl = await $tw.tidgi.service.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(port), workspaceID);
+      const localHostUrl = await tidgiService.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(port), workspaceID);
       const urlObject = new URL(localHostUrl);
       setLocationProperty('full', (localHostUrl).split('#')[0]);
       setLocationProperty('host', urlObject.host);
@@ -62,7 +85,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
       }
 
       if (tokenAuth) {
-        const fallbackUserName = await $tw.tidgi.service.auth.get('userName');
+        const fallbackUserName = await tidgiService.auth.get('userName');
         const tokenAuthHeader = `"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`;
         asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/tokenAuthHeader', text: tokenAuthHeader });
       }
