@@ -33,6 +33,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
   infoTiddlerFields.push({ title: '$:/info/tidgi', text: mapBoolean(isInTidGi) });
   if (isInTidGi && workspaceID) {
     infoTiddlerFields.push({ title: '$:/info/tidgi/workspaceID', text: workspaceID });
+    infoTiddlerFields.push({ title: '$:/info/tidgi/subWorkspaces', text: '[]' });
     const tidgiService = getTidGiService();
 
     if (tidgiService === undefined) {
@@ -89,6 +90,31 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
         const tokenAuthHeader = `"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`;
         asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/tokenAuthHeader', text: tokenAuthHeader });
       }
+
+      // Add sub-workspaces info for mobile sync
+      try {
+        const subWorkspaces = await tidgiService.workspace.getSubWorkspacesAsList(workspaceID);
+        const subWorkspacesInfo = subWorkspaces
+          .map(ws => ({
+            id: ws.id,
+            name: ws.name,
+            // We pass mainWikiID to help mobile identify relationship
+            mainWikiID: ws.mainWikiID,
+          }));
+
+        if (subWorkspacesInfo.length > 0) {
+          asyncInfoTiddlerFields.push({
+            title: '$:/info/tidgi/subWorkspaces',
+            text: JSON.stringify(subWorkspacesInfo),
+          });
+        } else {
+          asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/subWorkspaces', text: '[]' });
+        }
+      } catch (error) {
+        console.error('Failed to get subWorkspaces info for QR code:', error);
+        asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/subWorkspaces', text: '[]' });
+      }
+
       updateInfoTiddlersCallback(asyncInfoTiddlerFields);
     });
   }
