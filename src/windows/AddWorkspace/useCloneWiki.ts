@@ -57,6 +57,7 @@ export function useValidateCloneWiki(
 export function useCloneWiki(
   isCreateMainWorkspace: boolean,
   form: IWikiWorkspaceForm,
+  useTidgiConfig: boolean,
   wikiCreationMessageSetter: (m: string) => void,
   hasErrorSetter: (m: boolean) => void,
   errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void,
@@ -66,7 +67,7 @@ export function useCloneWiki(
   const onSubmit = useCallback(async () => {
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     try {
-      const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, true);
+      const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, true, { useTidgiConfig });
       if (isCreateMainWorkspace) {
         await window.service.wiki.cloneWiki(form.parentFolderLocation, form.wikiFolderName, form.gitRepoUrl, form.gitUserInfo!);
       } else {
@@ -83,7 +84,7 @@ export function useCloneWiki(
       updateErrorInWhichComponentSetterByErrorMessage(t, (error as Error).message, errorInWhichComponentSetter);
       hasErrorSetter(true);
     }
-  }, [wikiCreationMessageSetter, t, form, isCreateMainWorkspace, errorInWhichComponentSetter, hasErrorSetter]);
+  }, [wikiCreationMessageSetter, t, form, isCreateMainWorkspace, useTidgiConfig, errorInWhichComponentSetter, hasErrorSetter]);
 
   return onSubmit;
 }

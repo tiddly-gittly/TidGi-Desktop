@@ -351,24 +351,28 @@ export type IWorkspacesWithMetadata = Record<string, IWorkspaceWithMetadata>;
 /**
  * Ignore some field that will assign default value in workspaceService.create, these field don't require to be filled in AddWorkspace form
  */
-export type INewWikiWorkspaceConfig = SetOptional<
-  Omit<IWikiWorkspace, 'active' | 'hibernated' | 'id' | 'lastUrl' | 'syncOnInterval' | 'syncOnStartup'>,
-  | 'homeUrl'
-  | 'transparentBackground'
-  | 'picturePath'
-  | 'disableNotifications'
-  | 'disableAudio'
-  | 'hibernateWhenUnused'
-  | 'userName'
-  | 'order'
-  | 'ignoreSymlinks'
-  | 'backupOnInterval'
-  | 'enableHTTPAPI'
-  | 'excludedPlugins'
-  | 'includeTagTree'
-  | 'fileSystemPathFilterEnable'
-  | 'fileSystemPathFilter'
->;
+export type INewWikiWorkspaceConfig =
+  & SetOptional<
+    Omit<IWikiWorkspace, 'active' | 'hibernated' | 'id' | 'lastUrl' | 'syncOnInterval' | 'syncOnStartup'>,
+    | 'homeUrl'
+    | 'transparentBackground'
+    | 'picturePath'
+    | 'disableNotifications'
+    | 'disableAudio'
+    | 'hibernateWhenUnused'
+    | 'userName'
+    | 'order'
+    | 'ignoreSymlinks'
+    | 'backupOnInterval'
+    | 'enableHTTPAPI'
+    | 'excludedPlugins'
+    | 'includeTagTree'
+    | 'fileSystemPathFilterEnable'
+    | 'fileSystemPathFilter'
+  >
+  & {
+    useTidgiConfig?: boolean;
+  };
 
 /**
  * Manage workspace level preferences and workspace metadata.

@@ -112,17 +112,42 @@ export class Workspace implements IWorkspaceService {
       workspaceIds: typeof workspacesFromDisk === 'object' ? Object.keys(workspacesFromDisk) : 'invalid',
     });
     if (typeof workspacesFromDisk === 'object' && !Array.isArray(workspacesFromDisk)) {
-      const result = mapValues(pickBy(workspacesFromDisk, (value) => !!value), (workspace) => {
+      const sanitizedWorkspaces: Record<string, IWorkspace> = {};
+      const oldToNewIdMap = new Map<string, string>();
+      const workspaceEntries = Object.entries(pickBy(workspacesFromDisk, (value) => !!value));
+      for (const [storedID, workspace] of workspaceEntries) {
         const sanitized = this.sanitizeWorkspace(workspace, true);
+        const normalizedID = sanitized.id;
+        oldToNewIdMap.set(storedID, normalizedID);
+        if (normalizedID in sanitizedWorkspaces) {
+          logger.error('getInitWorkspacesForCache: Duplicate workspace id after config migration', {
+            storedID,
+            normalizedID,
+          });
+          continue;
+        }
+        sanitizedWorkspaces[normalizedID] = sanitized;
         logger.debug('getInitWorkspacesForCache: Sanitized workspace', {
-          workspaceId: workspace.id,
+          storedID,
+          normalizedID,
           hasName: 'name' in sanitized,
           name: sanitized.name,
           hasPort: 'port' in sanitized,
           port: (sanitized as { port?: number }).port,
         });
-        return sanitized;
+      }
+
+      Object.values(sanitizedWorkspaces).forEach((workspace) => {
+        if (!isWikiWorkspace(workspace) || !workspace.isSubWiki || !workspace.mainWikiID) {
+          return;
+        }
+        const remappedMainWikiID = oldToNewIdMap.get(workspace.mainWikiID);
+        if (remappedMainWikiID && remappedMainWikiID !== workspace.mainWikiID) {
+          workspace.mainWikiID = remappedMainWikiID;
+        }
       });
+
+      const result = sanitizedWorkspaces;
       return result;
     }
     return {};
@@ -332,7 +357,6 @@ export class Workspace implements IWorkspaceService {
             workspaceId: workspaceToSanitize.id,
             fields: Object.keys(syncedConfig),
             syncedName: syncedConfig.name,
-            syncedPort: syncedConfig.port,
           });
           workspaceWithSyncedConfig = mergeWithSyncedConfig(workspaceToSanitize, syncedConfig);
         } else {
@@ -377,6 +401,11 @@ export class Workspace implements IWorkspaceService {
     if (workspaceWithSyncedConfig.lastUrl && !workspaceWithSyncedConfig.lastUrl.startsWith('tidgi')) {
       fixingValues.lastUrl = null;
     }
+    if (typeof workspaceWithSyncedConfig.id === 'string' && workspaceWithSyncedConfig.id.trim() !== '' && workspaceWithSyncedConfig.id !== workspaceToSanitize.id) {
+      fixingValues.id = workspaceWithSyncedConfig.id;
+      fixingValues.homeUrl = getDefaultTidGiUrl(workspaceWithSyncedConfig.id);
+      fixingValues.lastUrl = null;
+    }
     if (workspaceWithSyncedConfig.homeUrl && !workspaceWithSyncedConfig.homeUrl.startsWith('tidgi')) {
       fixingValues.homeUrl = getDefaultTidGiUrl(workspaceWithSyncedConfig.id);
     }
@@ -384,7 +413,6 @@ export class Workspace implements IWorkspaceService {
       const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
       fixingValues.authToken = authService.generateOneTimeAdminAuthTokenForWorkspaceSync(workspaceWithSyncedConfig.id);
     }
-
     // Apply defaults, then workspace data, then fixing values
     // This ensures all required fields exist even if missing from settings.json/tidgi.config.json
     const result = { ...wikiWorkspaceDefaultValues, ...workspaceWithSyncedConfig, ...fixingValues };
@@ -566,32 +594,42 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async create(newWorkspaceConfig: INewWikiWorkspaceConfig): Promise<IWorkspace> {
-    const newID = nanoid();
+    const { useTidgiConfig = true, ...workspaceConfig } = newWorkspaceConfig;
+    const generatedID = nanoid();
+    let newID = generatedID;
 
     // Read existing config from tidgi.config.json if it exists (for re-adding an existing wiki)
     // Synced config should take priority over the passed config for syncable fields
     // This allows users to restore their previous settings when re-adding a wiki
     let existingConfig: Partial<INewWikiWorkspaceConfig> = {};
-    if (newWorkspaceConfig.wikiFolderLocation) {
-      const syncedConfig = await readTidgiConfig(newWorkspaceConfig.wikiFolderLocation);
+    if (useTidgiConfig && workspaceConfig.wikiFolderLocation) {
+      const syncedConfig = await readTidgiConfig(workspaceConfig.wikiFolderLocation);
       if (syncedConfig) {
         existingConfig = syncedConfig as Partial<INewWikiWorkspaceConfig>;
+        const syncedWorkspaceID = (syncedConfig as { id?: unknown }).id;
+        if (typeof syncedWorkspaceID === 'string' && syncedWorkspaceID.length > 0) {
+          newID = syncedWorkspaceID;
+        }
         logger.info('Applied synced config from tidgi.config.json during workspace creation', {
-          wikiFolderLocation: newWorkspaceConfig.wikiFolderLocation,
+          wikiFolderLocation: workspaceConfig.wikiFolderLocation,
           syncedConfigFields: Object.keys(syncedConfig),
         });
       }
     }
 
+    if (await this.exists(newID)) {
+      throw new Error(`Workspace id already exists: ${newID}`);
+    }
+
     const newWorkspace: IWorkspace = {
       ...wikiWorkspaceDefaultValues,
-      ...newWorkspaceConfig, // Apply config from UI/form first
+      ...workspaceConfig, // Apply config from UI/form first
       ...existingConfig, // Then override with synced config (user's saved settings take priority)
       homeUrl: getDefaultTidGiUrl(newID),
       id: newID,
       lastUrl: null,
       lastNodeJSArgv: [],
-      order: typeof newWorkspaceConfig.order === 'number' ? newWorkspaceConfig.order : ((await this.getWorkspacesAsList()).length + 1),
+      order: typeof workspaceConfig.order === 'number' ? workspaceConfig.order : ((await this.getWorkspacesAsList()).length + 1),
       picturePath: null,
     };
 

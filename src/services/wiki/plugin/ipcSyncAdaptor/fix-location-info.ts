@@ -58,7 +58,9 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
         userName,
         name: workspaceName,
       } = workspace;
+      const workspaceIDForSync = workspace.id;
       const asyncInfoTiddlerFields: Array<{ text: string; title: string }> = [];
+      asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/workspaceID', text: workspaceIDForSync });
       const setLocationProperty = function(name: string, value: string) {
         asyncInfoTiddlerFields.push({ title: '$:/info/url/' + name, text: value });
       };
@@ -99,7 +101,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
             id: ws.id,
             name: ws.name,
             // We pass mainWikiID to help mobile identify relationship
-            mainWikiID: ws.mainWikiID,
+            mainWikiID: workspaceIDForSync,
           }));
 
         if (subWorkspacesInfo.length > 0) {

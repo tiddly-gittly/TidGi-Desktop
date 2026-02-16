@@ -6,14 +6,16 @@ import { useCloneWiki, useValidateCloneWiki } from './useCloneWiki';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useWikiCreationProgress } from './useIndicator';
 
-export function CloneWikiDoneButton({ form, isCreateMainWorkspace, errorInWhichComponentSetter }: IWikiWorkspaceFormProps): React.JSX.Element {
+export function CloneWikiDoneButton(
+  { form, isCreateMainWorkspace, errorInWhichComponentSetter, useTidgiConfig }: IWikiWorkspaceFormProps & { useTidgiConfig: boolean },
+): React.JSX.Element {
   const { t } = useTranslation();
   const [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateCloneWiki(
     isCreateMainWorkspace,
     form,
     errorInWhichComponentSetter,
   );
-  const onSubmit = useCloneWiki(isCreateMainWorkspace, form, wikiCreationMessageSetter, hasErrorSetter, errorInWhichComponentSetter);
+  const onSubmit = useCloneWiki(isCreateMainWorkspace, form, useTidgiConfig, wikiCreationMessageSetter, hasErrorSetter, errorInWhichComponentSetter);
   const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {
     return (

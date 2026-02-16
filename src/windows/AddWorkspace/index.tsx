@@ -1,6 +1,18 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Accordion as AccordionRaw, AccordionDetails, AccordionSummary, AppBar, Box, Paper as PaperRaw, Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
+import {
+  Accordion as AccordionRaw,
+  AccordionDetails,
+  AccordionSummary,
+  AppBar,
+  Box,
+  Checkbox,
+  FormControlLabel,
+  Paper as PaperRaw,
+  Tab as TabRaw,
+  Tabs as TabsRaw,
+  Typography,
+} from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -64,6 +76,10 @@ const TabPanel = styled((props: React.ComponentProps<typeof Box>) => <Box {...pr
 const AdvancedSettingsAccordionSummary = styled((props: React.ComponentProps<typeof AccordionSummary>) => <AccordionSummary {...props} />)`
   margin-top: 10px;
 `;
+const TidgiConfigImportOptions = styled((props: React.ComponentProps<typeof Box>) => <Box {...props} />)`
+  padding: 10px;
+  margin-top: 10px;
+`;
 
 export default function AddWorkspace(): React.JSX.Element {
   const { t } = useTranslation();
@@ -72,6 +88,7 @@ export default function AddWorkspace(): React.JSX.Element {
   );
   const isCreateSyncedWorkspace = currentTab === CreateWorkspaceTabs.CloneOnlineWiki;
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(true);
+  const [useTidgiConfig, useTidgiConfigSetter] = useState(true);
   const form = useWikiWorkspaceForm();
   const [errorInWhichComponent, errorInWhichComponentSetter] = useState<IErrorInWhichComponent>({});
   const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList());
@@ -139,6 +156,23 @@ export default function AddWorkspace(): React.JSX.Element {
       )}
       {storageProvider !== SupportedStorageServices.local && <GitRepoUrlForm error={errorInWhichComponent.gitRepoUrl} {...formProps} {...formProps.form} />}
 
+      {(currentTab === CreateWorkspaceTabs.CloneOnlineWiki || currentTab === CreateWorkspaceTabs.OpenLocalWiki) && (
+        <TidgiConfigImportOptions>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={useTidgiConfig}
+                onChange={(event) => {
+                  useTidgiConfigSetter(event.target.checked);
+                }}
+              />
+            }
+            label={t('AddWorkspace.UseTidgiConfigWhenImport')}
+          />
+          <Typography variant='body2'>{t('AddWorkspace.UseTidgiConfigWhenImportDescription')}</Typography>
+        </TidgiConfigImportOptions>
+      )}
+
       {currentTab === CreateWorkspaceTabs.CreateNewWiki && (
         <TabPanel>
           <Container>
@@ -151,7 +185,7 @@ export default function AddWorkspace(): React.JSX.Element {
         <TabPanel>
           <Container>
             <CloneWikiForm {...formProps} />
-            <CloneWikiDoneButton {...formProps} />
+            <CloneWikiDoneButton {...formProps} useTidgiConfig={useTidgiConfig} />
           </Container>
         </TabPanel>
       )}
@@ -159,7 +193,7 @@ export default function AddWorkspace(): React.JSX.Element {
         <TabPanel>
           <Container>
             <ExistedWikiForm {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
-            <ExistedWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+            <ExistedWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} useTidgiConfig={useTidgiConfig} />
           </Container>
         </TabPanel>
       )}

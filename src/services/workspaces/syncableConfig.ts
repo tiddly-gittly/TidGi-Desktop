@@ -37,7 +37,6 @@ export enum SupportedStorageServicesForSync {
  */
 export const syncableConfigFields = [
   'name',
-  'port',
   'gitUrl',
   'storageService',
   'userName',
@@ -76,7 +75,6 @@ export type SyncableConfigField = typeof syncableConfigFields[number];
  */
 export const syncableConfigDefaultValues = {
   name: '',
-  port: 5212,
   gitUrl: null as string | null,
   storageService: SupportedStorageServicesForSync.local as string,
   userName: '',
@@ -105,8 +103,8 @@ export const syncableConfigDefaultValues = {
  * Type for syncable config - used by tidgiConfig.ts
  */
 export type ISyncableWikiConfig = {
+  id?: string;
   name: string;
-  port: number;
   gitUrl: string | null;
   storageService: string;
   userName: string;

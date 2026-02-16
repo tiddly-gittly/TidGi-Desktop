@@ -132,7 +132,6 @@ class TidGiIPCSyncAdaptor {
   }
 
   getUpdatedTiddlers(_syncer: Syncer, callback: (error: Error | null | undefined, changes: { deletions: string[]; modifications: string[] }) => void): void {
-    this.logger.log('getUpdatedTiddlers');
     callback(null, this.updatedTiddlers);
   }
 
