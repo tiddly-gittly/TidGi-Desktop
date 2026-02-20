@@ -1,25 +1,23 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import { parseDataTableRows } from '../supports/dataTable';
-import {
-  clickElement,
-  clickElementWithText,
-  elementExists,
-  executeTiddlyWikiCode,
-  getDOMContent,
-  getTextContent,
-  isLoaded,
-  pressKey,
-  typeText,
-} from '../supports/webContentsViewHelper';
+import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
+import { clickElement, clickElementWithText, elementExists, executeTiddlyWikiCode, getDOMContent, getTextContent, pressKey, typeText } from '../supports/webContentsViewHelper';
 import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
 const BACKOFF_OPTIONS = {
-  numOfAttempts: 10,
-  startingDelay: 100,
-  timeMultiple: 2,
+  numOfAttempts: 8,
+  startingDelay: 200,
+  timeMultiple: 1,
+  maxDelay: 200,
 };
+
+const BROWSER_VIEW_RETRY_DELAY_MS = 200;
+const BROWSER_VIEW_RETRY_ATTEMPTS = Math.max(
+  8,
+  Math.floor((CUCUMBER_GLOBAL_TIMEOUT - 1000) / BROWSER_VIEW_RETRY_DELAY_MS),
+);
 
 Then('I should see {string} in the browser view content', async function(this: ApplicationWorld, expectedText: string) {
   if (!this.app) {
@@ -82,14 +80,22 @@ Then('the browser view should be loaded and visible', async function(this: Appli
 
   await backOff(
     async () => {
-      const isLoadedResult = await isLoaded(this.app!);
-      if (!isLoadedResult) {
-        throw new Error('Browser view not loaded');
+      const content = await getTextContent(this.app!);
+      if (!content || content.trim().length === 0) {
+        throw new Error('Browser view content not available yet');
       }
     },
-    { ...BACKOFF_OPTIONS, numOfAttempts: 30 },
+    {
+      ...BACKOFF_OPTIONS,
+      numOfAttempts: BROWSER_VIEW_RETRY_ATTEMPTS,
+      startingDelay: BROWSER_VIEW_RETRY_DELAY_MS,
+      maxDelay: BROWSER_VIEW_RETRY_DELAY_MS,
+    },
   ).catch(() => {
-    throw new Error('Browser view is not loaded or visible after multiple attempts');
+    throw new Error(
+      `Browser view is not loaded or visible after ${BROWSER_VIEW_RETRY_ATTEMPTS} attempts ` +
+        `(~${Math.round((BROWSER_VIEW_RETRY_ATTEMPTS * BROWSER_VIEW_RETRY_DELAY_MS) / 1000)}s / ${Math.round(CUCUMBER_GLOBAL_TIMEOUT / 1000)}s budget)`,
+    );
   });
 });
 
@@ -302,12 +308,29 @@ When('I open tiddler {string} in browser view', async function(this: Application
     throw new Error('Application not launched');
   }
 
-  try {
-    // Use TiddlyWiki's addToStory API to open the tiddler
-    await executeTiddlyWikiCode(this.app, `$tw.wiki.addToStory("${tiddlerTitle.replace(/"/g, '\\"')}")`);
-  } catch (error) {
+  /**
+   * Use flat 200 ms retries instead of exponential back-off.
+   * During a wiki restart, executeTiddlyWikiCode hangs for ~200 ms per attempt
+   * (webContents navigating), then needs a delay before the next try.
+   * Flat 200 ms gives ~12 attempts in the 5 s Cucumber step budget, which is
+   * enough to bridge the gap when the wiki becomes ready late into the step.
+   */
+  await backOff(
+    async () => {
+      await executeTiddlyWikiCode(
+        this.app!,
+        `(function() {
+          const title = "${tiddlerTitle.replace(/"/g, '\\"')}";
+          try { if ($tw?.wiki?.removeFromStory) $tw.wiki.removeFromStory(title); } catch {}
+          $tw.wiki.addToStory(title);
+          return true;
+        })()`,
+      );
+    },
+    { ...BACKOFF_OPTIONS, numOfAttempts: 8, startingDelay: 200, timeMultiple: 1, maxDelay: 200 },
+  ).catch((error: unknown) => {
     throw new Error(`Failed to open tiddler "${tiddlerTitle}" in browser view: ${error as Error}`);
-  }
+  });
 });
 
 /**
@@ -424,4 +447,84 @@ When('I execute TiddlyWiki code in browser view: {string}', async function(this:
   } catch (error) {
     throw new Error(`Failed to execute TiddlyWiki code in browser view: ${error as Error}`);
   }
+});
+
+Then('image {string} should be loaded in browser view', async function(this: ApplicationWorld, imageName: string) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+
+  const tiddlerTitle = imageName;
+  let lastDiagnostic = '';
+  await backOff(
+    async () => {
+      let isImageLoaded = false;
+      try {
+        const diagnostic = await executeTiddlyWikiCode<{
+          loaded: boolean;
+          hasContainer: boolean;
+          hasImage: boolean;
+          src: string;
+          complete: boolean;
+          naturalWidth: number;
+          naturalHeight: number;
+          canonicalUri: string;
+        }>(
+          this.app!,
+          `(function() {
+              const title = ${JSON.stringify(tiddlerTitle)};
+              const container = document.querySelector("[data-tiddler-title='" + title.replace(/'/g, "\\'") + "']");
+              if (!container) {
+                try { if (typeof $tw !== 'undefined' && $tw.wiki) $tw.wiki.addToStory(title); } catch {}
+                return {
+                  loaded: false,
+                  hasContainer: false,
+                  hasImage: false,
+                  src: '',
+                  complete: false,
+                  naturalWidth: 0,
+                  naturalHeight: 0,
+                  canonicalUri: (typeof $tw !== 'undefined' && $tw.wiki && $tw.wiki.getTiddler(title)?.fields?._canonical_uri) || '',
+                };
+              }
+              const image = container.querySelector('img');
+              if (!image) {
+                return {
+                  loaded: false,
+                  hasContainer: true,
+                  hasImage: false,
+                  src: '',
+                  complete: false,
+                  naturalWidth: 0,
+                  naturalHeight: 0,
+                  canonicalUri: (typeof $tw !== 'undefined' && $tw.wiki && $tw.wiki.getTiddler(title)?.fields?._canonical_uri) || '',
+                };
+              }
+              return {
+                loaded: Boolean(image.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
+                hasContainer: true,
+                hasImage: true,
+                src: image.currentSrc || image.src || '',
+                complete: Boolean(image.complete),
+                naturalWidth: Number(image.naturalWidth || 0),
+                naturalHeight: Number(image.naturalHeight || 0),
+                canonicalUri: (typeof $tw !== 'undefined' && $tw.wiki && $tw.wiki.getTiddler(title)?.fields?._canonical_uri) || '',
+              };
+            })()`,
+          200,
+        );
+        lastDiagnostic = JSON.stringify(diagnostic);
+        isImageLoaded = Boolean(diagnostic?.loaded);
+      } catch {
+        isImageLoaded = false;
+      }
+
+      if (!isImageLoaded) {
+        throw new Error(`Image ${imageName} is not loaded yet`);
+      }
+    },
+    { numOfAttempts: 10, startingDelay: 150, timeMultiple: 1, maxDelay: 150 },
+  ).catch(() => {
+    throw new Error(`Image ${imageName} is not loaded correctly in browser view. Last diagnostic: ${lastDiagnostic}`);
+  });
 });

@@ -38,6 +38,10 @@ export interface IStartNodeJSWikiConfigs {
   openDebugger?: boolean;
   readOnlyMode?: boolean;
   rootTiddler?: string;
+  /**
+   * When true, treat workspace root as tiddler storage path (no tiddlywiki.info /tiddlers layout).
+   */
+  useWikiFolderAsTiddlersPath?: boolean;
   shouldUseDarkColors: boolean;
   /**
    * Sub-wikis to load their tiddlers into the main wiki.

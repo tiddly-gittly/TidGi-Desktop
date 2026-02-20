@@ -34,6 +34,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
     openDebugger,
     readOnlyMode,
     rootTiddler = '$:/core/save/all',
+    useWikiFolderAsTiddlersPath = false,
     shouldUseDarkColors,
     subWikis = [],
     tiddlyWikiHost = defaultServerIP,
@@ -125,6 +126,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
           wikiInstance,
           homePath,
           subWikis,
+          { allowLoadingWithoutWikiInfo: useWikiFolderAsTiddlersPath },
           workspace.name,
           native,
         );
@@ -162,6 +164,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
       const infoTiddlerText = `exports.getInfoTiddlerFields = () => [
         {title: "$:/info/tidgi/readOnlyMode", text: "${readOnlyMode === true ? 'yes' : 'no'}"},
         {title: "$:/info/tidgi/workspaceID", text: ${JSON.stringify(workspace.id)}},
+        {title: "$:/info/tidgi/useWikiFolderAsTiddlersPath", text: "${useWikiFolderAsTiddlersPath ? 'yes' : 'no'}"},
       ]`;
       wikiInstance.preloadTiddler({
         title: '$:/core/modules/info/tidgi-server.js',
@@ -258,6 +261,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
       wikiInstance.boot.startup({ bootPath: TIDDLY_WIKI_BOOT_PATH });
       // after setWikiInstance, ipc server routes will start serving content
       ipcServerRoutes.setConfig({ readOnlyMode });
+      ipcServerRoutes.setHomePath(homePath);
       ipcServerRoutes.setWikiInstance(wikiInstance);
       ipcServerRoutes.setSubWikiPaths(subWikis.map(subWiki => subWiki.wikiFolderLocation));
       wikiOperationsInWikiWorker.setWikiInstance(wikiInstance);

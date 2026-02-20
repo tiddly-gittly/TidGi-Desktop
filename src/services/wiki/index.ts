@@ -178,8 +178,12 @@ export class Wiki implements IWikiService {
     }
     const shouldUseDarkColors = await this.themeService.shouldUseDarkColors();
 
+    const wikiInfoPath = path.resolve(wikiFolderLocation, 'tiddlywiki.info');
+    const useWikiFolderAsTiddlersPath = !(await pathExists(wikiInfoPath));
+
     // Get sub-wikis for this main wiki to load their tiddlers
-    const subWikis = await workspaceService.getSubWorkspacesAsList(workspaceID);
+    const configuredSubWikis = await workspaceService.getSubWorkspacesAsList(workspaceID);
+    const subWikis = useWikiFolderAsTiddlersPath ? [workspace, ...configuredSubWikis] : configuredSubWikis;
 
     const workerData: IStartNodeJSWikiConfigs = {
       authToken,
@@ -192,6 +196,7 @@ export class Wiki implements IWikiService {
       openDebugger: process.env.DEBUG_WORKER === 'true',
       readOnlyMode,
       rootTiddler,
+      useWikiFolderAsTiddlersPath,
       shouldUseDarkColors,
       subWikis,
       tiddlyWikiHost: defaultServerIP,
@@ -207,6 +212,7 @@ export class Wiki implements IWikiService {
       enableHTTPAPI,
       readOnlyMode,
       tokenAuth,
+      useWikiFolderAsTiddlersPath,
       wikiFolderLocation,
       workspaceName: workspace.name,
       function: 'Wiki.startWiki',
@@ -626,15 +632,15 @@ export class Wiki implements IWikiService {
       wikiInfoPath,
       exists: wikiInfoExists,
     });
+    // Main workspace without tiddlywiki.info is treated as a simplified wiki folder.
+    // In this mode, tiddlers are read and written directly under the workspace root.
     if (shouldBeMainWiki && !wikiInfoExists) {
-      const entries = await readdir(wikiPath);
-      logger.error('tiddlywiki.info missing', {
+      logger.info('tiddlywiki.info missing, treating as simplified wiki folder', {
         wikiPath,
         wikiInfoPath,
         function: 'ensureWikiExist',
-        entries,
       });
-      throw new Error(i18n.t('AddWorkspace.ThisPathIsNotAWikiFolder', { wikiPath, wikiInfoPath }));
+      return;
     }
     const tiddlersPath = path.join(wikiPath, TIDDLERS_PATH);
     const tiddlersExists = await pathExists(tiddlersPath);

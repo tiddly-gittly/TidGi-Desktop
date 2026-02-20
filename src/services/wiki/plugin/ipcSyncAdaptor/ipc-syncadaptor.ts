@@ -339,7 +339,6 @@ if ($tw.browser && typeof window !== 'undefined') {
   const servicesExposed = Boolean(window.service?.wiki);
   const hasWorkspaceIDinMeta = Boolean((typeof window.meta === 'function' ? window.meta() as WindowMeta[WindowNames.view] : undefined)?.workspace?.id);
   if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     exports.adaptorClass = TidGiIPCSyncAdaptor;
   }
 }

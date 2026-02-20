@@ -16,6 +16,14 @@ export function getWikiRootFromTiddlerPath(
   wikisWithRouting: IWikiWorkspace[],
 ): string | undefined {
   const wikiTiddlersPath = $tw.boot.wikiTiddlersPath;
+  const useWikiFolderAsTiddlersPath = $tw.wiki.getTiddlerText('$:/info/tidgi/useWikiFolderAsTiddlersPath', 'no') === 'yes';
+  const wikiRootPath = $tw.boot.wikiPath === undefined ? undefined : path.resolve($tw.boot.wikiPath);
+
+  if (useWikiFolderAsTiddlersPath) {
+    if (wikiRootPath !== undefined && path.normalize(tiddlerDirectory).startsWith(path.normalize(wikiRootPath))) {
+      return wikiRootPath;
+    }
+  }
 
   // Check if this is the main wiki's tiddlers folder
   if (wikiTiddlersPath && path.normalize(tiddlerDirectory).startsWith(path.normalize(wikiTiddlersPath))) {

@@ -16,7 +16,31 @@ async function getFirstWebContentsView(app: ElectronApplication) {
     if (mainWindow?.contentView && 'children' in mainWindow.contentView) {
       const children = (mainWindow.contentView as WebContentsView).children as WebContentsView[];
       if (Array.isArray(children) && children.length > 0) {
-        const webContentsId = children[0]?.webContents?.id;
+        const candidateInfos = children
+          .map((child) => {
+            const wc = child?.webContents;
+            if (!wc) return undefined;
+            return {
+              id: wc.id,
+              url: wc.getURL(),
+              isLoading: wc.isLoading(),
+            };
+          })
+          .filter((info): info is { id: number; url: string; isLoading: boolean } => Boolean(info));
+
+        // Prefer an already-loaded wiki view (tidgi://...) for deterministic test behavior.
+        const readyWiki = candidateInfos.find(info => info.url.startsWith('tidgi://') && !info.isLoading);
+        if (readyWiki) return readyWiki.id;
+
+        // Then prefer any wiki view even if still loading.
+        const anyWiki = candidateInfos.find(info => info.url.startsWith('tidgi://'));
+        if (anyWiki) return anyWiki.id;
+
+        // Fallback to first non-empty URL.
+        const nonBlank = candidateInfos.find(info => info.url && info.url !== 'about:blank');
+        if (nonBlank) return nonBlank.id;
+
+        const webContentsId = candidateInfos[0]?.id;
         if (webContentsId) return webContentsId;
       }
     }
@@ -42,6 +66,7 @@ async function getFirstWebContentsView(app: ElectronApplication) {
 async function executeInBrowserView<T>(
   app: ElectronApplication,
   script: string,
+  timeoutMs = 200,
 ): Promise<T> {
   const webContentsId = await getFirstWebContentsView(app);
 
@@ -50,15 +75,22 @@ async function executeInBrowserView<T>(
   }
 
   return await app.evaluate(
-    async ({ webContents }, [id, scriptContent]) => {
+    async ({ webContents }, [id, scriptContent, timeoutInMs]) => {
       const targetWebContents = webContents.fromId(id as number);
       if (!targetWebContents) {
         throw new Error('WebContents not found');
       }
-      const result: T = await targetWebContents.executeJavaScript(scriptContent as string, true) as T;
+      const result: T = await Promise.race([
+        targetWebContents.executeJavaScript(scriptContent as string, true),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => {
+            reject(new Error('executeInBrowserView timed out (page navigating?)'));
+          }, timeoutInMs as number)
+        ),
+      ]) as T;
       return result;
     },
-    [webContentsId, script],
+    [webContentsId, script, timeoutMs],
   );
 }
 
@@ -106,8 +138,16 @@ export async function isLoaded(app: ElectronApplication): Promise<boolean> {
       if (!targetWebContents) {
         return false;
       }
-      // Check if the page has finished loading
-      return !targetWebContents.isLoading() && targetWebContents.getURL() !== '' && targetWebContents.getURL() !== 'about:blank';
+      const url = targetWebContents.getURL();
+      if (!url || url === 'about:blank') {
+        return false;
+      }
+
+      if (url.startsWith('tidgi://')) {
+        return true;
+      }
+
+      return !targetWebContents.isLoading();
     },
     webContentsId,
   );
@@ -354,22 +394,47 @@ export async function captureScreenshot(app: ElectronApplication, screenshotPath
 export async function executeTiddlyWikiCode<T>(
   app: ElectronApplication,
   code: string,
+  timeoutMs = 200,
 ): Promise<T | null> {
-  const webContentsId = await getFirstWebContentsView(app);
+  let webContentsId = await getFirstWebContentsView(app);
+
+  if (!webContentsId) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      webContentsId = await getFirstWebContentsView(app);
+      if (webContentsId) {
+        break;
+      }
+    }
+  }
 
   if (!webContentsId) {
     throw new Error('No WebContentsView found');
   }
 
   return await app.evaluate(
-    async ({ webContents }, [id, codeContent]) => {
+    async ({ webContents }, [id, codeContent, timeoutInMs]) => {
       const targetWebContents = webContents.fromId(id as number);
       if (!targetWebContents) {
         throw new Error('WebContents not found');
       }
-      const result: T = await targetWebContents.executeJavaScript(codeContent as string, true) as T;
+      /**
+       * executeJavaScript can hang indefinitely when the webContents is navigating
+       * (e.g. during a wiki restart retry loop). Race against a 200 ms timeout so
+       * backOff callers get fast failures and can retry until the page is ready.
+       * 200ms gives ~6 retries within the 5s Cucumber step budget even during a
+       * ~12s simplified-wiki restart (8s pre-wait + 3.5s for wiki to become ready).
+       */
+      const result: T = await Promise.race([
+        targetWebContents.executeJavaScript(codeContent as string, true),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => {
+            reject(new Error('executeJavaScript timed out (page navigating?)'));
+          }, timeoutInMs as number)
+        ),
+      ]) as T;
       return result;
     },
-    [webContentsId, code],
+    [webContentsId, code, timeoutMs],
   );
 }

@@ -104,6 +104,7 @@ export class FileSystemWatcher {
 
   /** Whether to ignore symlinks */
   private ignoreSymlinks: boolean = true;
+  private readonly useWikiFolderAsTiddlersPath: boolean;
 
   /**
    * Collected file changes waiting to be processed by syncer.
@@ -132,9 +133,11 @@ export class FileSystemWatcher {
     this.logger = options.logger;
     this.workspaceID = options.workspaceID;
     this.workspaceConfig = options.workspaceConfig;
+    this.useWikiFolderAsTiddlersPath = this.wiki.getTiddlerText('$:/info/tidgi/useWikiFolderAsTiddlersPath', 'no') === 'yes';
 
-    if (this.boot.wikiTiddlersPath) {
-      this.watchPathBase = path.resolve(this.boot.wikiTiddlersPath);
+    const preferredWatchPath = this.useWikiFolderAsTiddlersPath ? this.boot.wikiPath : this.boot.wikiTiddlersPath;
+    if (preferredWatchPath) {
+      this.watchPathBase = path.resolve(preferredWatchPath);
     } else {
       this.watchPathBase = '';
     }
@@ -699,7 +702,7 @@ export class FileSystemWatcher {
     }
 
     this.gitNotificationTimer = setTimeout(() => {
-      const wikiFolderLocation = path.dirname(this.watchPathBase);
+      const wikiFolderLocation = this.useWikiFolderAsTiddlersPath ? this.watchPathBase : path.dirname(this.watchPathBase);
       try {
         void git.notifyFileChange(wikiFolderLocation, { onlyWhenGitLogOpened: true });
       } catch (error) {

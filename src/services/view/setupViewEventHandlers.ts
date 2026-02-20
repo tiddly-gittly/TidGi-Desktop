@@ -205,6 +205,15 @@ export default function setupViewEventHandlers(
       await windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.navigationHistory.canGoForward());
     }
   });
+  view.webContents.on('did-stop-loading', async () => {
+    const workspaceObject = await workspaceService.get(workspace.id);
+    if (workspaceObject === undefined) {
+      return;
+    }
+    if (isWikiWorkspace(workspaceObject)) {
+      logger.info('[test-id-VIEW_LOADED] wiki webview did-stop-loading', { workspaceId: workspace.id, url: view.webContents.getURL() });
+    }
+  });
   view.webContents.on('did-navigate-in-page', async (_event, url) => {
     logger.debug(`did-navigate-in-page called ${url}`);
     await workspaceViewService.updateLastUrl(workspace.id, view);

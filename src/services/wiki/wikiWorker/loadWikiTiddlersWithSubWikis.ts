@@ -27,11 +27,15 @@ export function createLoadWikiTiddlersWithSubWikis(
   wikiInstance: ReturnType<typeof TiddlyWiki>,
   homePath: string,
   subWikis: IWikiWorkspace[],
+  options: {
+    allowLoadingWithoutWikiInfo?: boolean;
+  } = {},
   workspaceName: string,
   nativeLogger: {
     logFor: (name: string, level: 'info' | 'error', message: string) => Promise<void>;
   },
 ) {
+  const { allowLoadingWithoutWikiInfo = false } = options;
   const originalLoadWikiTiddlers = wikiInstance.loadWikiTiddlers.bind(wikiInstance);
 
   return function loadWikiTiddlersWithSubWikis(
@@ -42,7 +46,7 @@ export function createLoadWikiTiddlersWithSubWikis(
     const wikiInfo = originalLoadWikiTiddlers(wikiPath, options);
 
     // Only inject sub-wikis when loading the main wiki (not when loading included wikis)
-    if (wikiPath !== homePath || !wikiInfo || subWikis.length === 0) {
+    if (wikiPath !== homePath || subWikis.length === 0 || (!wikiInfo && !allowLoadingWithoutWikiInfo)) {
       return wikiInfo;
     }
     for (const subWiki of subWikis) {

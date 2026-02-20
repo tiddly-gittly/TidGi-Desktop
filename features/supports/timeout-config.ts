@@ -1,11 +1,6 @@
 import { setDefaultTimeout } from '@cucumber/cucumber';
+import { CUCUMBER_GLOBAL_TIMEOUT } from './timeouts';
 
-const isCI = Boolean(process.env.CI);
+console.log('[Timeout Config] Setting global timeout to:', CUCUMBER_GLOBAL_TIMEOUT, 'ms (CI:', Boolean(process.env.CI), 'platform:', process.platform, ')');
 
-// Set global timeout for all steps and hooks
-// Local: 5s, CI: 25s
-const globalTimeout = isCI ? 25000 : 5000;
-
-console.log('[Timeout Config] Setting global timeout to:', globalTimeout, 'ms (CI:', isCI, ')');
-
-setDefaultTimeout(globalTimeout);
+setDefaultTimeout(CUCUMBER_GLOBAL_TIMEOUT);
