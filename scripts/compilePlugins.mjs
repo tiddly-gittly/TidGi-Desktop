@@ -160,6 +160,8 @@ async function buildEntryPoints(plugin, outDirs) {
           ...ESBUILD_CONFIG,
           entryPoints: [path.join(sourcePath, entryPoint)],
           outdir: outDir,
+          // Preserve subdirectory structure (e.g., Startup/) in output
+          outbase: sourcePath,
         })
       )
     ),

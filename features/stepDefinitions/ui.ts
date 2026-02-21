@@ -6,7 +6,7 @@ import { PLAYWRIGHT_SHORT_TIMEOUT, PLAYWRIGHT_TIMEOUT } from '../supports/timeou
 import type { ApplicationWorld } from './application';
 
 const UI_BACKOFF_OPTIONS = {
-  numOfAttempts: 8,
+  numOfAttempts: 15,
   startingDelay: 200,
   timeMultiple: 1,
   maxDelay: 200,

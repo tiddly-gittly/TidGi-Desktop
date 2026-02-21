@@ -45,6 +45,7 @@ class TidGiIPCSyncAdaptor {
   authService: typeof $tw.tidgi.service.auth;
   workspaceID: string;
   recipe?: string;
+  private sseSubscribed = false;
 
   constructor(options: { wiki: Wiki }) {
     const tidgiService = getTidGiService();
@@ -70,9 +71,13 @@ class TidGiIPCSyncAdaptor {
   }
 
   /**
-   * This should be called after install-electron-ipc-cat, so this is called in `$:/plugins/linonetwo/tidgi-ipc-syncadaptor/Startup/install-electron-ipc-cat.js`
+   * This should be called after mount-tidgi-service startup module, which calls `$tw.syncadaptor.setupSSE()`.
+   * Also called from the constructor if window.observables is already available at that point.
    */
   setupSSE() {
+    if (this.sseSubscribed) {
+      return;
+    }
     console.log('setupSSE called in TidGiIPCSyncAdaptor');
     if (window.observables?.wiki?.getWikiChangeObserver$ === undefined) {
       console.error("getWikiChangeObserver$ is undefined in window.observables.wiki, can't subscribe to server changes.");
@@ -86,6 +91,7 @@ class TidGiIPCSyncAdaptor {
       $tw.syncer.syncFromServer();
       this.clearUpdatedTiddlers();
     }, 500);
+    this.sseSubscribed = true;
     this.logger.log('setupSSE');
 
     // After SSE is enabled, we can disable polling and else things that related to syncer. (build up complexer behavior with syncer.)

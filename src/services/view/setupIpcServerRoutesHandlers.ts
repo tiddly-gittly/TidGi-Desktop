@@ -147,7 +147,8 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
             parameters,
           });
           // Call the handler of the route to process the request and return the result
-          const responseData = await route.handler(request, workspaceIDFromHost, parameters);
+          // Use original workspaceID (correct casing) not workspaceIDFromHost (lowercased by standard protocol scheme)
+          const responseData = await route.handler(request, workspaceID, parameters);
           if (responseData === undefined) {
             const statusText = `setupIpcServerRoutesHandlers.handlerCallback: responseData is undefined ${request.url}`;
             logger.warn(statusText);

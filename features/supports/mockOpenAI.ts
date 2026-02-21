@@ -408,15 +408,20 @@ export class MockOpenAIServer {
         response.write(contentLine);
       };
 
-      // Stream each chunk with a small delay to simulate streaming
-      // Chunks separator: '###' is used to denote chunk boundaries in the rule string
+      // Stream each chunk with a delay to simulate streaming.
+      // When the rule has stream=false, the client still sends stream=true (Vercel AI SDK always streams),
+      // so we must reply in SSE format but skip the long delay to simulate an instant non-streaming response.
+      const chunkDelay = responseRule.stream === false ? 0 : 5000;
       void (async () => {
         for (let index = 0; index < chunks.length; index++) {
           // If client closed connection, stop streaming
           if (response.writableEnded) return;
           writeChunkLine(chunks[index]);
-          // Short delay between chunks (simulate pacing).
-          await new Promise(resolve => setTimeout(resolve, 200));
+          // Delay between chunks must be long enough for cancel-stream tests to click cancel before streaming finishes.
+          // 5 seconds keeps 4-chunk streams alive ~15s, well within PLAYWRIGHT_TIMEOUT (25s).
+          if (chunkDelay > 0) {
+            await new Promise(resolve => setTimeout(resolve, chunkDelay));
+          }
         }
 
         // Send final empty chunk with finish_reason

@@ -2,7 +2,7 @@ import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import { parseDataTableRows } from '../supports/dataTable';
 import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
-import { clickElement, clickElementWithText, elementExists, executeTiddlyWikiCode, getDOMContent, getTextContent, pressKey, typeText } from '../supports/webContentsViewHelper';
+import { clickElement, clickElementWithText, elementExists, executeTiddlyWikiCode, getDOMContent, getTextContent, isLoaded, pressKey, typeText } from '../supports/webContentsViewHelper';
 import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
@@ -13,10 +13,17 @@ const BACKOFF_OPTIONS = {
   maxDelay: 200,
 };
 
-const BROWSER_VIEW_RETRY_DELAY_MS = 200;
+const BROWSER_VIEW_RETRY_DELAY_MS = 100;
+/**
+ * Each retry iteration takes roughly BROWSER_VIEW_RETRY_DELAY_MS (backoff delay)
+ * PLUS the executeInBrowserView timeout (~2000ms worst case for heavy TiddlyWiki pages).
+ * Account for both when calculating how many attempts fit within the Cucumber step
+ * timeout budget, leaving 4s margin for catch-block diagnostics and Cucumber overhead.
+ */
+const ESTIMATED_PER_ATTEMPT_MS = BROWSER_VIEW_RETRY_DELAY_MS + 2000; // delay + executeJavaScript timeout
 const BROWSER_VIEW_RETRY_ATTEMPTS = Math.max(
   8,
-  Math.floor((CUCUMBER_GLOBAL_TIMEOUT - 1000) / BROWSER_VIEW_RETRY_DELAY_MS),
+  Math.floor((CUCUMBER_GLOBAL_TIMEOUT - 4000) / ESTIMATED_PER_ATTEMPT_MS),
 );
 
 Then('I should see {string} in the browser view content', async function(this: ApplicationWorld, expectedText: string) {
@@ -91,10 +98,19 @@ Then('the browser view should be loaded and visible', async function(this: Appli
       startingDelay: BROWSER_VIEW_RETRY_DELAY_MS,
       maxDelay: BROWSER_VIEW_RETRY_DELAY_MS,
     },
-  ).catch(() => {
+  ).catch(async () => {
+    // Gather diagnostics for failure analysis
+    let diagnostics = '';
+    try {
+      const loaded = await isLoaded(this.app!);
+      const content = await getTextContent(this.app!);
+      diagnostics = `isLoaded=${loaded}, textContent=${content ? `"${content.substring(0, 100)}..."` : 'null'}`;
+    } catch (diagError) {
+      diagnostics = `diagnostics failed: ${String(diagError)}`;
+    }
     throw new Error(
       `Browser view is not loaded or visible after ${BROWSER_VIEW_RETRY_ATTEMPTS} attempts ` +
-        `(~${Math.round((BROWSER_VIEW_RETRY_ATTEMPTS * BROWSER_VIEW_RETRY_DELAY_MS) / 1000)}s / ${Math.round(CUCUMBER_GLOBAL_TIMEOUT / 1000)}s budget)`,
+        `(~${Math.round((BROWSER_VIEW_RETRY_ATTEMPTS * ESTIMATED_PER_ATTEMPT_MS) / 1000)}s / ${Math.round(CUCUMBER_GLOBAL_TIMEOUT / 1000)}s budget). ${diagnostics}`,
     );
   });
 });
