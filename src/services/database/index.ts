@@ -353,35 +353,19 @@ export class DatabaseService implements IDatabaseService {
    */
   public async closeAllDatabases(): Promise<void> {
     logger.info(`Closing all database connections, total: ${this.dataSources.size}`);
-    const closePromises: Array<Promise<void>> = [];
-
     // Collect all keys first to avoid modification during iteration
     const keys = Array.from(this.dataSources.keys());
     logger.info(`Database keys to close: ${keys.join(', ')}`);
 
     for (const key of keys) {
-      closePromises.push(
-        (async () => {
-          try {
-            logger.debug(`Starting to close database: ${key}`);
-            // Add timeout protection for each database close
-            await Promise.race([
-              this.closeAppDatabase(key),
-              new Promise((_, reject) =>
-                setTimeout(() => {
-                  reject(new Error(`Timeout closing database: ${key}`));
-                }, 10000)
-              ),
-            ]);
-            logger.debug(`Successfully closed database: ${key}`);
-          } catch (error) {
-            logger.error(`Failed to close database during shutdown: ${key}`, { error });
-          }
-        })(),
-      );
+      try {
+        logger.debug(`Starting to close database: ${key}`);
+        await this.closeAppDatabase(key);
+        logger.debug(`Successfully closed database: ${key}`);
+      } catch (error) {
+        logger.error(`Failed to close database during shutdown: ${key}`, { error });
+      }
     }
-
-    await Promise.allSettled(closePromises);
 
     // Close backup stream
     if (this.settingBackupStream) {
