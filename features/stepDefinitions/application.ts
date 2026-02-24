@@ -338,6 +338,10 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
     if (stepText.match(/^I clear log/i)) {
       return;
     }
+    // Skip file operation steps — they don't interact with the UI, nothing visual to capture
+    if (stepText.match(/^I create file |^I sync |^I clone |^file "/i)) {
+      return;
+    }
 
     // Prefer an existing currentWindow if it's still open
     let pageToUse: Page | undefined;

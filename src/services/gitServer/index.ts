@@ -8,6 +8,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { GitHTTPResponseChunk, IGitServerService } from './interface';
+import { DESKTOP_GIT_IDENTITY, mergeMobileIncomingIfExists, runGitCollectStdout } from './mergeUtilities';
 
 /**
  * Git Smart HTTP Server Service
@@ -20,22 +21,8 @@ export class GitServerService implements IGitServerService {
     return await workspaceService.get(workspaceId);
   }
 
-  private async runGitAndCollectStdout(arguments_: string[], cwd: string, options?: { env?: NodeJS.ProcessEnv }): Promise<string> {
-    const process = gitSpawn(arguments_, cwd, options);
-    let stdout = '';
-    process.stdout.on('data', (chunk: Buffer) => {
-      stdout += chunk.toString('utf8');
-    });
-    await new Promise<void>((resolve) => {
-      process.on('close', () => {
-        resolve();
-      });
-    });
-    return stdout;
-  }
-
   private async ensureCommittedBeforeServe(repoPath: string): Promise<void> {
-    const statusOutput = await this.runGitAndCollectStdout(['status', '--porcelain'], repoPath);
+    const statusOutput = await runGitCollectStdout(['status', '--porcelain'], repoPath);
     if (statusOutput.trim().length === 0) return;
 
     const addAll = gitSpawn(['add', '-A'], repoPath);
@@ -46,13 +33,7 @@ export class GitServerService implements IGitServerService {
     });
 
     const commit = gitSpawn(['commit', '-m', `Auto commit before mobile sync ${new Date().toISOString()}`], repoPath, {
-      env: {
-        ...process.env,
-        GIT_AUTHOR_NAME: 'TidGi Desktop',
-        GIT_AUTHOR_EMAIL: 'desktop@tidgi.fun',
-        GIT_COMMITTER_NAME: 'TidGi Desktop',
-        GIT_COMMITTER_EMAIL: 'desktop@tidgi.fun',
-      },
+      env: { ...process.env, ...DESKTOP_GIT_IDENTITY },
     });
     await new Promise<void>((resolve) => {
       commit.on('close', () => {
@@ -62,7 +43,7 @@ export class GitServerService implements IGitServerService {
   }
 
   private async ensureReceivePackConfig(repoPath: string): Promise<void> {
-    await this.runGitAndCollectStdout(['config', 'receive.denyCurrentBranch', 'updateInstead'], repoPath);
+    await runGitCollectStdout(['config', 'receive.denyCurrentBranch', 'updateInstead'], repoPath);
   }
 
   public async getWorkspaceRepoPath(workspaceId: string): Promise<string | undefined> {
@@ -73,10 +54,6 @@ export class GitServerService implements IGitServerService {
     return workspace.wikiFolderLocation;
   }
 
-  /**
-   * Resolve repoPath from workspaceId, emit 404 headers and complete if not found.
-   * Returns repoPath or undefined (already completed subscriber).
-   */
   private async resolveRepoPathOrError(workspaceId: string, subscriber: import('rxjs').Subscriber<GitHTTPResponseChunk>): Promise<string | undefined> {
     const repoPath = await this.getWorkspaceRepoPath(workspaceId);
     if (!repoPath) {
@@ -116,10 +93,7 @@ export class GitServerService implements IGitServerService {
           subscriber.next({ type: 'data', data: new Uint8Array(Buffer.from(`${pktLength}${announcement}0000`)) });
 
           const git = gitSpawn([service.replace('git-', ''), '--stateless-rpc', '--advertise-refs', repoPath], repoPath, {
-            env: {
-              GIT_PROJECT_ROOT: repoPath,
-              GIT_HTTP_EXPORT_ALL: '1',
-            },
+            env: { GIT_PROJECT_ROOT: repoPath, GIT_HTTP_EXPORT_ALL: '1' },
           });
 
           git.stdout.on('data', (data: Buffer) => {
@@ -152,11 +126,7 @@ export class GitServerService implements IGitServerService {
           if (!repoPath) return;
           await this.ensureCommittedBeforeServe(repoPath);
 
-          logger.debug('Git upload-pack start', {
-            workspaceId,
-            repoPath,
-            requestBodySize: requestBody.length,
-          });
+          logger.debug('Git upload-pack start', { workspaceId, repoPath, requestBodySize: requestBody.length });
 
           subscriber.next({
             type: 'headers',
@@ -168,10 +138,7 @@ export class GitServerService implements IGitServerService {
           });
 
           const git = gitSpawn(['upload-pack', '--stateless-rpc', repoPath], repoPath, {
-            env: {
-              GIT_PROJECT_ROOT: repoPath,
-              GIT_HTTP_EXPORT_ALL: '1',
-            },
+            env: { GIT_PROJECT_ROOT: repoPath, GIT_HTTP_EXPORT_ALL: '1' },
           });
 
           git.stdin.on('error', (error: Error) => {
@@ -214,10 +181,7 @@ export class GitServerService implements IGitServerService {
             subscriber.next({
               type: 'headers',
               statusCode: 403,
-              headers: {
-                'Content-Type': 'text/plain',
-                'Cache-Control': 'no-cache',
-              },
+              headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-cache' },
             });
             subscriber.next({ type: 'data', data: new Uint8Array(Buffer.from('Workspace is read-only')) });
             subscriber.complete();
@@ -234,9 +198,7 @@ export class GitServerService implements IGitServerService {
           });
 
           const git = gitSpawn(['-c', 'receive.denyCurrentBranch=updateInstead', 'receive-pack', '--stateless-rpc', repoPath], repoPath, {
-            env: {
-              GIT_PROJECT_ROOT: repoPath,
-            },
+            env: { GIT_PROJECT_ROOT: repoPath },
           });
 
           git.stdin.on('error', (error: Error) => {
@@ -264,5 +226,15 @@ export class GitServerService implements IGitServerService {
         }
       })();
     });
+  }
+
+  /**
+   * Called by the merge-incoming HTTP endpoint AFTER receive-pack completes.
+   * Runs on desktop main process where dugite is available.
+   */
+  public async mergeAfterPush(workspaceId: string): Promise<void> {
+    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
+    if (!repoPath) return;
+    await mergeMobileIncomingIfExists(repoPath);
   }
 }

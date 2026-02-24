@@ -176,7 +176,9 @@ export function TemplateSearch({ placeholder, onTemplateSelect, testId }: Templa
       },
       plugins: [
         createAgentsPlugin({
-          onSelect: (agent) => onTemplateSelectReference.current(agent),
+          onSelect: (agent) => {
+            onTemplateSelectReference.current(agent);
+          },
           sourceTitle: tReference.current('CreateAgent.SelectTemplate'),
           searchTemplates: true,
         }),

@@ -53,12 +53,12 @@ export const repoRoot = path.resolve(process.cwd());
  * This is a re-export of the shared slugify function with E2E-appropriate default maxLength.
  *
  * Rules:
- * - allow Unicode letters/numbers (\p{L}\p{N}) and spaces, hyphen, underscore and parentheses
+ * - allow Unicode letters/numbers (\p{L}\p{N}) and spaces, hyphen, underscore
  * - remove dots completely (to avoid trailing-dot issues on Windows)
- * - replace any other char with '-' (this includes brackets, quotes, punctuation)
+ * - replace any other char with '-' (this includes brackets, quotes, parentheses, punctuation)
  * - collapse multiple '-' into one, collapse multiple spaces into one, trim, and limit length
  */
-const unsafeChars = /[^\p{L}\p{N}\s\-_()]/gu;
+const unsafeChars = /[^\p{L}\p{N}\s\-_]/gu;
 const collapseDashes = /-+/g;
 const collapseSpaces = /\s+/g;
 export const makeSlugPath = (input: string | undefined, maxLength = 120) => {

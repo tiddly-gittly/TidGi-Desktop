@@ -2,7 +2,17 @@ import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import { parseDataTableRows } from '../supports/dataTable';
 import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
-import { clickElement, clickElementWithText, elementExists, executeTiddlyWikiCode, getDOMContent, getTextContent, isLoaded, pressKey, typeText } from '../supports/webContentsViewHelper';
+import {
+  clickElement,
+  clickElementWithText,
+  elementExists,
+  executeTiddlyWikiCode,
+  getDOMContent,
+  getTextContent,
+  isLoaded,
+  pressKey,
+  typeText,
+} from '../supports/webContentsViewHelper';
 import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries

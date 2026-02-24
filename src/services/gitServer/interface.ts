@@ -39,6 +39,12 @@ export interface IGitServerService {
    * @param requestBody collected POST body from client
    */
   gitSmartHTTPReceivePack$(workspaceId: string, requestBody: Uint8Array): Observable<GitHTTPResponseChunk>;
+
+  /**
+   * After receive-pack completes, merge mobile-incoming branch into main.
+   * Resolves .tid conflicts (metadata from mobile, body merged).
+   */
+  mergeAfterPush(workspaceId: string): Promise<void>;
 }
 
 export const GitServerServiceIPCDescriptor = {
@@ -48,5 +54,6 @@ export const GitServerServiceIPCDescriptor = {
     gitSmartHTTPInfoRefs$: ProxyPropertyType.Function$,
     gitSmartHTTPUploadPack$: ProxyPropertyType.Function$,
     gitSmartHTTPReceivePack$: ProxyPropertyType.Function$,
+    mergeAfterPush: ProxyPropertyType.Function,
   },
 };
