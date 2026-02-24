@@ -101,15 +101,21 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     async (event: MouseEvent<HTMLDivElement>) => {
       event.preventDefault();
       event.stopPropagation();
-      // Build workspace context menu template - simplified menu now includes everything
-      const workspaceContextMenuTemplate = await getSimplifiedWorkspaceMenuTemplate(workspace, t, window.service);
+      // Build workspace context menu template - simplified menu now includes everything.
+      // Pass onTriggerTalkWithAI so that the renderer-side click handler can emit the event
+      // locally instead of trying to obtain a non-serialisable BrowserWindow via IPC.
+      const workspaceContextMenuTemplate = await getSimplifiedWorkspaceMenuTemplate(workspace, t, window.service, {
+        onTriggerTalkWithAI: (data) => {
+          window.remote.triggerAskAIWithSelection(data);
+        },
+      });
       void window.remote.buildContextMenuAndPopup(workspaceContextMenuTemplate, {
         x: event.clientX,
         y: event.clientY,
         editFlags: { canCopy: false },
       });
     },
-    [t, workspace, id],
+    [t, workspace],
   );
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} onContextMenu={onWorkspaceContextMenu}>

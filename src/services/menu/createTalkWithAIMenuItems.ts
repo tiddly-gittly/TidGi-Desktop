@@ -14,10 +14,15 @@ interface ICreateTalkWithAIMenuItemsOptions {
   t: TFunction;
   /** Wiki URL for context */
   wikiUrl?: string;
-  /** Window service to get main window */
+  /** Window service to get main window. Only used when onTrigger is not provided (main-process path). */
   windowService: Pick<IWindowService, 'get'>;
   /** Workspace ID for context */
   workspaceId?: string;
+  /**
+   * Optional callback invoked instead of the default IPC-send when the click handler runs in the renderer process.
+   * When provided, windowService.get() is never called, which avoids the non-serialisable BrowserWindow issue.
+   */
+  onTrigger?: (data: IAskAIWithSelectionData) => void;
 }
 
 /**
@@ -27,7 +32,7 @@ interface ICreateTalkWithAIMenuItemsOptions {
 export async function createTalkWithAIMenuItems(
   options: ICreateTalkWithAIMenuItemsOptions,
 ): Promise<MenuItemConstructorOptions[]> {
-  const { agentDefinitionService, selectionText, t, wikiUrl, windowService, workspaceId } = options;
+  const { agentDefinitionService, selectionText, t, wikiUrl, windowService, workspaceId, onTrigger } = options;
 
   // Get all agent definitions
   const defaultAgentDefinition = await agentDefinitionService.getAgentDef(); // No parameter = default agent
@@ -36,22 +41,31 @@ export async function createTalkWithAIMenuItems(
 
   const menuItems: MenuItemConstructorOptions[] = [];
 
+  const sendData = (data: IAskAIWithSelectionData): void => {
+    if (onTrigger) {
+      // Renderer-side path: delegate to the provided callback (avoids non-serialisable BrowserWindow via IPC).
+      onTrigger(data);
+    } else {
+      // Main-process path: send to the main window renderer via webContents.
+      const mainWindow = windowService.get(WindowNames.main);
+      if (mainWindow !== undefined) {
+        mainWindow.webContents.send(WindowChannel.askAIWithSelection, data);
+      }
+    }
+  };
+
   // Add menu item for default agent
   menuItems.push({
     id: 'talk-with-ai',
     label: t('ContextMenu.TalkWithAI'),
-    click: async () => {
+    click: () => {
       const data: IAskAIWithSelectionData = {
         selectionText,
         wikiUrl,
         workspaceId,
         agentDefId: undefined, // Use default agent
       };
-      // Send to main window
-      const mainWindow = windowService.get(WindowNames.main);
-      if (mainWindow !== undefined) {
-        mainWindow.webContents.send(WindowChannel.askAIWithSelection, data);
-      }
+      sendData(data);
     },
   });
 
@@ -62,17 +76,14 @@ export async function createTalkWithAIMenuItems(
       label: t('ContextMenu.TalkWithAIMore'),
       submenu: otherAgentDefinitions.map((agentDefinition: AgentDefinition) => ({
         label: agentDefinition.name,
-        click: async () => {
+        click: () => {
           const data: IAskAIWithSelectionData = {
             selectionText,
             wikiUrl,
             workspaceId,
             agentDefId: agentDefinition.id,
           };
-          const mainWindow = windowService.get(WindowNames.main);
-          if (mainWindow !== undefined) {
-            mainWindow.webContents.send(WindowChannel.askAIWithSelection, data);
-          }
+          sendData(data);
         },
       })),
     });

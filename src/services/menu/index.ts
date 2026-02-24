@@ -165,7 +165,9 @@ export class MenuService implements IMenuService {
           };
 
           // Get simplified menu items (includes command palette, simplified actions, and "Current Workspace")
-          const simplifiedMenuItems = await getSimplifiedWorkspaceMenuTemplate(workspace, i18n.t.bind(i18n), services);
+          const simplifiedMenuItems = await getSimplifiedWorkspaceMenuTemplate(workspace, i18n.t.bind(i18n), services, {
+            selectionText: parameters.selectionText,
+          });
           template.push(...simplifiedMenuItems);
         }
       }
