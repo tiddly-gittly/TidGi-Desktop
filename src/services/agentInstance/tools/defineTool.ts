@@ -11,7 +11,7 @@
  * This replaces the verbose tapAsync pattern with a cleaner functional approach.
  */
 import { type ToolCallingMatch } from '@services/agentDefinition/interface';
-import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
+import { matchAllToolCallings } from '@services/agentDefinition/responsePatternUtility';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -110,17 +110,35 @@ export interface ResponseHandlerContext<
   /** AI response content */
   response: AIResponseContext['response'];
 
-  /** Parsed tool call from response (if any) */
+  /** Parsed tool call from response (first match, backward compatible) */
   toolCall: ToolCallingMatch | null;
+
+  /** All parsed tool calls from response (for parallel tool call support) */
+  allToolCalls: Array<ToolCallingMatch & { found: true }>;
+
+  /** Whether the response contains <parallel_tool_calls> wrapper */
+  isParallel: boolean;
 
   /** Full agent framework config for accessing other tool configs */
   agentFrameworkConfig: AIResponseContext['agentFrameworkConfig'];
 
-  /** Utility: Execute a tool call and handle the result */
+  /** Utility: Execute a tool call and handle the result (first matching call, backward compatible) */
   executeToolCall: <TToolName extends keyof TLLMToolSchemas>(
     toolName: TToolName,
     executor: (parameters: z.infer<TLLMToolSchemas[TToolName]>) => Promise<ToolExecutionResult>,
   ) => Promise<boolean>;
+
+  /**
+   * Utility: Execute ALL matching tool calls for this tool.
+   * When parallel mode is active, uses concurrent execution with per-tool timeout.
+   * Collects both success and failure results (NOT Promise.all semantics).
+   * Returns the number of calls executed.
+   */
+  executeAllMatchingToolCalls: <TToolName extends keyof TLLMToolSchemas>(
+    toolName: TToolName,
+    executor: (parameters: z.infer<TLLMToolSchemas[TToolName]>) => Promise<ToolExecutionResult>,
+    options?: { timeoutMs?: number },
+  ) => Promise<number>;
 
   /** Utility: Add a tool result message */
   addToolResult: (options: AddToolResultOptions) => void;
@@ -396,9 +414,9 @@ export function defineTool<
             return;
           }
 
-          // Parse tool call from response
-          const toolMatch = matchToolCalling(response.content);
-          const toolCall = toolMatch.found ? toolMatch : null;
+          // Parse ALL tool calls from response (supports <parallel_tool_calls>)
+          const { calls: allCalls, parallel: isParallel } = matchAllToolCallings(response.content);
+          const toolCall = allCalls.length > 0 ? allCalls[0] : null;
 
           // Try to parse config (may be empty for tools that only handle LLM tool calls)
           const rawConfig: unknown = ourToolConfig[parameterKey];
@@ -419,6 +437,8 @@ export function defineTool<
             agentFrameworkContext,
             response,
             toolCall,
+            allToolCalls: allCalls,
+            isParallel,
             agentFrameworkConfig,
             hooks,
             requestId,
@@ -595,6 +615,95 @@ ${options.isError ? 'Error' : 'Result'}: ${options.result}
                   })();
                 }
               }
+            },
+
+            executeAllMatchingToolCalls: async <TToolName extends keyof TLLMToolSchemas>(
+              toolName: TToolName,
+              executor: (parameters: z.infer<TLLMToolSchemas[TToolName]>) => Promise<ToolExecutionResult>,
+              options?: { timeoutMs?: number },
+            ): Promise<number> => {
+              // Find all calls matching this tool name
+              const matchingCalls = allCalls.filter(call => call.toolId === toolName);
+              if (matchingCalls.length === 0) return 0;
+
+              const toolSchema = llmToolSchemas?.[toolName];
+              if (!toolSchema) {
+                logger.error(`No schema found for tool: ${String(toolName)}`);
+                return 0;
+              }
+
+              const toolResultDuration = (config as { toolResultDuration?: number } | undefined)?.toolResultDuration ?? 1;
+
+              // Build entries for parallel execution
+              const entries: Array<{ call: ToolCallingMatch & { found: true }; executor: (params: Record<string, unknown>) => Promise<ToolExecutionResult>; timeoutMs?: number }> = [];
+              for (const call of matchingCalls) {
+                try {
+                  const validatedParameters = toolSchema.parse(call.parameters);
+                  entries.push({
+                    call,
+                    executor: async () => executor(validatedParameters),
+                    timeoutMs: options?.timeoutMs,
+                  });
+                } catch (validationError) {
+                  // Add validation error as result immediately
+                  handlerContext.addToolResult({
+                    toolName: String(toolName),
+                    parameters: call.parameters,
+                    result: `Parameter validation failed: ${validationError instanceof Error ? validationError.message : String(validationError)}`,
+                    isError: true,
+                    duration: toolResultDuration,
+                  });
+                }
+              }
+
+              if (entries.length === 0) return matchingCalls.length;
+
+              // Execute: parallel if <parallel_tool_calls> mode, sequential otherwise
+              let results: Array<{ call: ToolCallingMatch & { found: true }; status: string; result?: ToolExecutionResult; error?: string }>;
+              if (isParallel) {
+                // Import and use parallel execution — NOT Promise.all, collects success+failure+timeout
+                const { executeToolCallsParallel } = await import('./parallelExecution');
+                results = await executeToolCallsParallel(entries);
+              } else {
+                // Sequential execution
+                const { executeToolCallsSequential } = await import('./parallelExecution');
+                results = await executeToolCallsSequential(entries);
+              }
+
+              // Process all results
+              for (const result of results) {
+                const isError = result.status !== 'fulfilled' || (result.result !== undefined && !result.result.success);
+                const resultText = result.status === 'timeout'
+                  ? (result.error ?? 'Tool execution timed out')
+                  : result.status === 'rejected'
+                    ? (result.error ?? 'Tool execution failed')
+                    : result.result?.success
+                      ? (result.result.data ?? 'Success')
+                      : (result.result?.error ?? 'Unknown error');
+
+                handlerContext.addToolResult({
+                  toolName: String(toolName),
+                  parameters: result.call.parameters,
+                  result: resultText,
+                  isError,
+                  duration: toolResultDuration,
+                });
+
+                // Signal tool execution to other plugins
+                await hooks.toolExecuted.promise({
+                  agentFrameworkContext,
+                  toolResult: result.result ?? { success: false, error: resultText },
+                  toolInfo: {
+                    toolId: String(toolName),
+                    parameters: (result.call.parameters ?? {}) as Record<string, unknown>,
+                    originalText: result.call.originalText,
+                  },
+                  requestId,
+                });
+              }
+
+              handlerContext.yieldToSelf();
+              return matchingCalls.length;
             },
           };
 

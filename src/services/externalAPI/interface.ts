@@ -147,6 +147,10 @@ export interface ModelInfo {
   features?: ModelFeature[];
   /** Model-specific parameters (e.g., ComfyUI workflow path) */
   parameters?: Record<string, unknown>;
+  /** Input context window size in tokens (e.g. 128000 for GPT-4o, 200000 for Claude) */
+  contextWindowSize?: number;
+  /** Max output tokens (e.g. 4096, 16384) */
+  maxOutputTokens?: number;
   /** Additional metadata */
   metadata?: Record<string, unknown>;
 }

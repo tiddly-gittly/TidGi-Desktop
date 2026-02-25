@@ -8,6 +8,7 @@ import type { TiddlyWikiPluginParameter } from '@services/agentInstance/tools/ti
 import type { WikiOperationParameter } from '@services/agentInstance/tools/wikiOperation';
 import type { WikiSearchParameter } from '@services/agentInstance/tools/wikiSearch';
 import type { WorkspacesListParameter } from '@services/agentInstance/tools/workspacesList';
+import type { ToolApprovalConfig } from '@services/agentInstance/tools/types';
 
 /**
  * Type definition for prompt concat plugin (both modifiers and LLM tools)
@@ -21,6 +22,11 @@ export type IPromptConcatTool = {
   enabled?: boolean;
   forbidOverrides?: boolean;
   toolId: string;
+
+  /** Per-tool approval configuration */
+  approval?: ToolApprovalConfig;
+  /** Per-tool execution timeout in ms (overrides global default) */
+  timeoutMs?: number;
 
   // Modifier parameters
   fullReplacementParam?: FullReplacementParameter;

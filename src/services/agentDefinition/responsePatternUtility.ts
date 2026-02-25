@@ -87,11 +87,11 @@ const toolPatterns: ToolPattern[] = [
 /**
  * Match tool calling patterns in AI response text
  * Supports various formats: <tool_use>, <function_call>, etc.
+ * Returns only the FIRST match.
  */
 export function matchToolCalling(responseText: string): ToolCallingMatch {
   try {
     for (const toolPattern of toolPatterns) {
-      // Reset regex lastIndex to ensure proper matching
       toolPattern.pattern.lastIndex = 0;
 
       const match = toolPattern.pattern.exec(responseText);
@@ -114,6 +114,35 @@ export function matchToolCalling(responseText: string): ToolCallingMatch {
     logger.error(`Failed to match tool calling: ${error as Error}`);
     return { found: false };
   }
+}
+
+/**
+ * Match ALL tool calling patterns in AI response text.
+ * Returns an array of all matches found (empty array if none).
+ * Also detects <parallel_tool_calls> wrapper — when present, the caller should execute tools concurrently.
+ */
+export function matchAllToolCallings(responseText: string): { calls: Array<ToolCallingMatch & { found: true }>; parallel: boolean } {
+  const calls: Array<ToolCallingMatch & { found: true }> = [];
+  const parallel = /<parallel_tool_calls>/i.test(responseText);
+
+  try {
+    for (const toolPattern of toolPatterns) {
+      toolPattern.pattern.lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = toolPattern.pattern.exec(responseText)) !== null) {
+        calls.push({
+          found: true,
+          toolId: toolPattern.extractToolId(match),
+          parameters: parseToolParameters(toolPattern.extractParams(match)),
+          originalText: toolPattern.extractOriginalText(match),
+        });
+      }
+    }
+  } catch (error) {
+    logger.error(`Failed to match all tool callings: ${error as Error}`);
+  }
+
+  return { calls, parallel };
 }
 
 /**

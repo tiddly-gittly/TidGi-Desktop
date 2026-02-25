@@ -1,4 +1,5 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import SecurityIcon from '@mui/icons-material/Security';
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, List, ListItemButton } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,10 +7,12 @@ import { useTranslation } from 'react-i18next';
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
+import { ToolApprovalSettingsDialog } from './ExternalAPI/components/ToolApprovalSettingsDialog';
 
 export function AIAgent(props: ISectionProps): React.JSX.Element {
   const { t } = useTranslation('agent');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [toolApprovalDialogOpen, setToolApprovalDialogOpen] = useState(false);
   const [agentInfo, setAgentInfo] = useState<{ exists: boolean; size?: number; path?: string }>({ exists: false });
 
   useEffect(() => {
@@ -80,8 +83,23 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
               })}
             />
           </ListItemButton>
+          <ListItemButton
+            onClick={() => { setToolApprovalDialogOpen(true); }}
+          >
+            <SecurityIcon sx={{ mr: 1 }} color='action' />
+            <ListItemText
+              primary='Tool Approval & Timeout Settings'
+              secondary='Configure per-tool approval rules, timeout limits, regex patterns, and API retry settings'
+            />
+            <ChevronRightIcon color='action' />
+          </ListItemButton>
         </List>
       </Paper>
+
+      <ToolApprovalSettingsDialog
+        open={toolApprovalDialogOpen}
+        onClose={() => { setToolApprovalDialogOpen(false); }}
+      />
 
       <Dialog
         open={deleteDialogOpen}

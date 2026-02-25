@@ -60,10 +60,12 @@ export default defineConfig({
   },
 
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@services': path.resolve(__dirname, './src/services'),
-    },
+    alias: [
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+      { find: '@services', replacement: path.resolve(__dirname, './src/services') },
+      // Stub optional MCP SDK so tests don't fail on import-resolution when SDK is not installed
+      { find: /^@modelcontextprotocol\/sdk\/.*$/, replacement: path.resolve(__dirname, './src/__tests__/__stubs__/mcpSdkStub.ts') },
+    ],
   },
 
   // Handle CSS and static assets

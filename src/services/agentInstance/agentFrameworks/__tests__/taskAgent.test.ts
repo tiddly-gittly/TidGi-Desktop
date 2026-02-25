@@ -338,17 +338,25 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       // Mock LLM service to return different responses for this test
       testStreamResponses = responses.map(r => ({ status: r.status, content: r.content, requestId: r.requestId }));
 
-      // Create generator to track all yielded responses
+      // Create generator to track all yielded responses.
+      // IMPORTANT: Use mockReturnValueOnce per round so each call to generateFromAI gets a
+      // fresh independent generator — matching real production behaviour where each API call
+      // returns a new stream.  The iterative loop in basicPromptConcatHandler calls
+      // generateFromAI once per round; sharing the same generator instance across rounds
+      // would cause the second round to receive an already-exhausted iterator.
       const { container } = await import('@services/container');
       const externalAPILocal = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
-      externalAPILocal.generateFromAI = vi.fn().mockReturnValue((function*() {
-        let idx = 0;
-        while (idx < testStreamResponses.length) {
-          const r = testStreamResponses[idx++];
+      externalAPILocal.generateFromAI = vi.fn()
+        .mockReturnValueOnce((function*() {
+          const r = testStreamResponses[0];
           yield { status: 'update', content: r.content, requestId: r.requestId };
           yield r;
-        }
-      })());
+        })())
+        .mockReturnValueOnce((function*() {
+          const r = testStreamResponses[1];
+          yield { status: 'update', content: r.content, requestId: r.requestId };
+          yield r;
+        })());
 
       const results: Array<{ state: string; contentLength?: number }> = [];
       const generator = basicPromptConcatHandler(context);

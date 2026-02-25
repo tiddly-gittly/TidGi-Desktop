@@ -6,7 +6,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { Avatar, Box, Chip } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import React from 'react';
+import React, { memo } from 'react';
 import { isMessageExpiredForAI } from '../../../services/agentInstance/utilities/messageDurationFilter';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
 import { MessageRenderer } from './MessageRenderer';
@@ -197,9 +197,11 @@ interface MessageBubbleProps {
 }
 
 /**
- * Message bubble component with avatar and content
+ * Message bubble component with avatar and content.
+ * Wrapped with React.memo — only re-renders when its messageId prop changes
+ * (actual content changes are picked up via zustand store selectors inside).
  */
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId, isSplitView }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = memo(({ messageId, isSplitView }) => {
   const message = useAgentChatStore(state => state.getMessageById(messageId));
   const isStreaming = useAgentChatStore(state => state.isMessageStreaming(messageId));
   const orderedMessageIds = useAgentChatStore(state => state.orderedMessageIds);
@@ -241,4 +243,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId, isSplit
       )}
     </BubbleContainer>
   );
-};
+});
+
+MessageBubble.displayName = 'MessageBubble';

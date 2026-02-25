@@ -41,6 +41,13 @@ export interface AgentInstance extends Omit<AgentDefinition, 'name' | 'agentFram
    * Preview instances are excluded from normal agent instance lists and should be cleaned up automatically.
    */
   volatile?: boolean;
+  /**
+   * Indicates this instance was spawned by another agent (sub-agent).
+   * Sub-agent instances are hidden from the default user-facing list.
+   */
+  isSubAgent?: boolean;
+  /** Parent agent instance ID if this is a sub-agent */
+  parentAgentId?: string;
 }
 
 /**

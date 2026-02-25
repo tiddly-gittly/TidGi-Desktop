@@ -114,20 +114,19 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
     };
 
     const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-    // Generate AI response
-    // Function to process a single LLM call with retry support
-    async function* processLLMCall(): AsyncGenerator<AgentInstanceLatestStatus> {
+    // Iterative loop replaces recursive generator to avoid O(N) stack frames and memory leak in long tool-calling chains
+    let shouldContinueLoop = true;
+    while (shouldContinueLoop) {
+      shouldContinueLoop = false;
+
       try {
         // Delegate prompt concatenation to plugin system
-        // Re-generate prompts to trigger middleware (including retrievalAugmentedGenerationHandler)
-        // Get the final result from the stream using utility function
         const concatStream = agentInstanceService.concatPrompt(agentPromptDescription, context.agent.messages);
         const { flatPrompts } = await getFinalPromptResult(concatStream);
 
         logger.debug('Starting AI generation', {
           method: 'processLLMCall',
           modelName: aiApiConfig.default?.model || 'unknown',
-          // Summarize prompts to avoid logging large binary data
           flatPromptsCount: flatPrompts.length,
           flatPromptsSummary: flatPrompts.map(message => ({
             role: message.role,
@@ -163,16 +162,13 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
           if (response.status === 'update' || response.status === 'done') {
             const state = response.status === 'done' ? 'completed' : 'working';
 
-            // Delegate response processing to handler hooks
             if (response.status === 'update') {
-              // For responseUpdate, we'll skip plugin-specific config for now
-              // since it's called frequently during streaming
               await agentFrameworkHooks.responseUpdate.promise({
                 agentFrameworkContext: context,
                 response,
                 requestId: currentRequestId,
                 isFinal: false,
-                toolConfig: {} as IPromptConcatTool, // Empty config for streaming updates
+                toolConfig: {} as IPromptConcatTool,
               });
             }
 
@@ -183,20 +179,18 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
                 contentLength: response.content.length || 0,
               });
 
-              // Delegate final response processing to handler hooks
               const responseCompleteContext = {
                 agentFrameworkContext: context,
                 response,
                 requestId: currentRequestId,
                 isFinal: true,
-                toolConfig: (pluginConfigs.length > 0 ? pluginConfigs[0] : {}) as IPromptConcatTool, // First config for compatibility
-                agentFrameworkConfig: context.agentDef.agentFrameworkConfig, // Pass complete config for tool access
+                toolConfig: (pluginConfigs.length > 0 ? pluginConfigs[0] : {}) as IPromptConcatTool,
+                agentFrameworkConfig: context.agentDef.agentFrameworkConfig,
                 actions: undefined as { yieldNextRoundTo?: 'self' | 'human'; newUserMessage?: string } | undefined,
               };
 
               await agentFrameworkHooks.responseComplete.promise(responseCompleteContext);
 
-              // Check if responseComplete hooks set yieldNextRoundTo
               let yieldNextRoundFromHooks: YieldNextRoundTarget | undefined;
               if (responseCompleteContext.actions?.yieldNextRoundTo) {
                 yieldNextRoundFromHooks = responseCompleteContext.actions.yieldNextRoundTo;
@@ -206,44 +200,35 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
                 });
               }
 
-              // Delegate response processing to plugin system
-              // Plugins can set yieldNextRoundTo actions to control conversation flow
               const processedResult = await responseConcat(agentPromptDescription, response.content, context, context.agent.messages);
 
-              // Handle control flow based on plugin decisions or responseComplete hooks
               const shouldContinue = processedResult.yieldNextRoundTo === 'self' || yieldNextRoundFromHooks === 'self';
               if (shouldContinue) {
-                // Control transfer: Continue with AI (yieldNextRoundTo: 'self')
                 logger.debug('Response processing triggered new LLM call', {
                   method: 'processLLMCall',
                   fromResponseConcat: processedResult.yieldNextRoundTo,
                   fromResponseCompleteHooks: yieldNextRoundFromHooks,
                 });
 
-                // Reset request ID for new call
                 currentRequestId = undefined;
-                // Yield current response as working state
                 yield working(processedResult.processedResponse, context, currentRequestId);
 
-                // Continue with new round
-                // The necessary messages should already be added by plugins
-                logger.debug('Continuing with next round', {
+                logger.debug('Continuing with next round (iterative)', {
                   method: 'basicPromptConcatHandler',
                   agentId: context.agent.id,
                   messageCount: context.agent.messages.length,
                 });
 
-                yield* processLLMCall();
-                return;
+                // Continue loop instead of recursive call — previous round's locals are released
+                shouldContinueLoop = true;
+                break;
               }
 
-              // Control transfer: Return to human (yieldNextRoundTo: 'human' or default)
               yield completed(processedResult.processedResponse, context, currentRequestId);
             } else {
               yield working(response.content, context, currentRequestId);
             }
           } else if (response.status === 'error') {
-            // Create message with error details and emit as role='error'
             const errorText = response.errorDetail?.message || 'Unknown error';
             const errorMessage = `Error: ${errorText}`;
             logger.error('Error in AI response', {
@@ -252,9 +237,8 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
               requestId: currentRequestId,
             });
 
-            // Before persisting the error, ensure any pending tool result messages are persisted
+            // Flush pending tool result messages before persisting the error
             try {
-              const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
               const pendingToolMessages = context.agent.messages.filter(m => m.metadata?.isToolResult && !m.metadata?.isPersisted);
               for (const tm of pendingToolMessages) {
                 try {
@@ -271,7 +255,6 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
               logger.warn('Failed to flush pending tool messages before persisting error', { error: error2 });
             }
 
-            // Push an explicit error message into history for UI rendering
             const errorMessageForHistory: AgentInstanceMessage = {
               id: `ai-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
               agentId: context.agent.id,
@@ -280,13 +263,10 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
               metadata: { errorDetail: response.errorDetail },
               created: new Date(),
               modified: new Date(),
-              // Expire after one round in AI context
               duration: 1,
             };
             context.agent.messages.push(errorMessageForHistory);
-            // Persist error message to database so it appears in history like others
             try {
-              const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
               await agentInstanceService.saveUserMessage(errorMessageForHistory);
             } catch (persistError) {
               logger.warn('Failed to persist error message to database', {
@@ -296,19 +276,21 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
               });
             }
 
-            // Also yield completed with error state for status panel
             yield error(errorMessage, response.errorDetail, context, currentRequestId);
             return;
           }
         }
-        // Reset request ID after processing
-        logger.debug('AI generation stream completed', {
-          requestId: currentRequestId,
-        });
-        currentRequestId = undefined;
+        // Reset request ID after stream completes (only if not continuing loop)
+        if (!shouldContinueLoop) {
+          logger.debug('AI generation stream completed', {
+            requestId: currentRequestId,
+          });
+          currentRequestId = undefined;
+        }
       } catch (error) {
         logger.error('Unexpected error during AI generation', { error });
         yield completed(`Unexpected error: ${(error as Error).message}`, context);
+        return;
       } finally {
         if (context.isCancelled() && currentRequestId) {
           logger.debug('Cancelling AI request in finally block', {
@@ -318,9 +300,6 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
         }
       }
     }
-
-    // Start processing with the initial user message
-    yield* processLLMCall();
   } catch (error) {
     logger.error('Error processing prompt', {
       method: 'basicPromptConcatHandler',

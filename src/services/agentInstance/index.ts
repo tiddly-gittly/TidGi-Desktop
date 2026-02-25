@@ -329,6 +329,10 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Always exclude preview instances from normal listing
       whereCondition.preview = false;
 
+      // Always exclude sub-agent instances from normal listing
+      // (sub-agents are spawned by other agents and should not appear in user-facing lists)
+      whereCondition.isSubAgent = false;
+
       // Add closed filter if provided
       if (options && options.closed !== undefined) {
         whereCondition.closed = options.closed;
