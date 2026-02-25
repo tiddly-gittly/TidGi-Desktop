@@ -114,10 +114,23 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
     };
 
     const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+
+    // Safety guard: maximum number of iterative rounds (0 = unlimited)
+    const maxIterations = (agentFrameworkConfig as { maxIterations?: number }).maxIterations ?? 0;
+    let iterationCount = 0;
+
     // Iterative loop replaces recursive generator to avoid O(N) stack frames and memory leak in long tool-calling chains
     let shouldContinueLoop = true;
     while (shouldContinueLoop) {
       shouldContinueLoop = false;
+      iterationCount++;
+
+      // Guard against infinite loops when maxIterations is configured
+      if (maxIterations > 0 && iterationCount > maxIterations) {
+        logger.warn('Max iterations reached, stopping agent loop', { maxIterations, iterationCount });
+        yield completed(`Maximum iteration limit reached (${maxIterations}). Stopping to prevent infinite loop.`, context);
+        return;
+      }
 
       try {
         // Delegate prompt concatenation to plugin system

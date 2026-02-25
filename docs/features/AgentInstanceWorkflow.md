@@ -18,7 +18,7 @@ This document explains how an agentInstance invokes a handler and how logic is c
 Related code:
 
 - [index.ts](../../src/services/agentInstance/index.ts): `initialize()`, `registerBuiltinHandlers()`, `sendMsgToAgent()`
-- [basicPromptConcatHandler.ts](../../src/services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler.ts)
+- [taskAgent.ts](../../src/services/agentInstance/agentFrameworks/taskAgent.ts): main handler (iterative while-loop)
 
 ## Sequence
 
@@ -153,10 +153,15 @@ flowchart TD
 
 ## Related code
 
-- [basicPromptConcatHandler.ts](../../src/services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler.ts)
-- [messageManagementPlugin.ts](../../src/services/agentInstance/plugins/messageManagementPlugin.ts)
-- [wikiSearchPlugin.ts](../../src/services/agentInstance/plugins/wikiSearchPlugin.ts)
+- [taskAgent.ts](../../src/services/agentInstance/agentFrameworks/taskAgent.ts)
+- [messagePersistence.ts](../../src/services/agentInstance/promptConcat/infrastructure/messagePersistence.ts)
+- [wikiSearch.ts](../../src/services/agentInstance/tools/wikiSearch.ts)
 - [interface.ts](../../src/services/agentInstance/interface.ts)
+- [agentRepository.ts](../../src/services/agentInstance/agentRepository.ts)
+- [agentMessagePersistence.ts](../../src/services/agentInstance/agentMessagePersistence.ts)
+- [defineTool.ts](../../src/services/agentInstance/tools/defineTool.ts)
+- [defineToolTypes.ts](../../src/services/agentInstance/tools/defineToolTypes.ts)
+- [toolRegistry.ts](../../src/services/agentInstance/tools/toolRegistry.ts)
 
 ## New architecture additions (2025-02)
 

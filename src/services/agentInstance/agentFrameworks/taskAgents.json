@@ -250,6 +250,16 @@
           }
         },
         {
+          "id": "t6s7r8q9-0r1s-2t3u-4v5w-y6z7a8b9c0d1",
+          "caption": "闹钟 / 定时唤醒",
+          "description": "设定Agent在指定时间后自动唤醒",
+          "toolId": "alarmClock",
+          "approval": { "mode": "confirm" },
+          "alarmClockParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
           "id": "a0f1b2c3-4d5e-6f7g-8h9i-j0k1l2m3n4o5",
           "toolId": "fullReplacement",
           "fullReplacementParam": {

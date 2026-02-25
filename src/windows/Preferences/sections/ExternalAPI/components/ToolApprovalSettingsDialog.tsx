@@ -93,9 +93,11 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
     if (!open) return;
     const loadSettings = async () => {
       try {
-        // TODO: Load from preference service once the key is registered
-        // const saved = await window.service.preference.get('toolApprovalSettings');
-        // if (saved) setSettings(saved);
+        const saved = localStorage.getItem('tidgi-toolApprovalSettings');
+        if (saved) {
+          const parsed = JSON.parse(saved) as Partial<ToolApprovalSettings>;
+          setSettings({ ...DEFAULT_SETTINGS, ...parsed });
+        }
       } catch {
         // Use defaults
       }
@@ -105,8 +107,7 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
 
   const handleSave = useCallback(async () => {
     try {
-      // TODO: Save to preference service once the key is registered
-      // await window.service.preference.set('toolApprovalSettings', settings);
+      localStorage.setItem('tidgi-toolApprovalSettings', JSON.stringify(settings));
       onClose();
     } catch (error) {
       void window.service.native.log('error', 'ToolApprovalSettings: save failed', { error });
