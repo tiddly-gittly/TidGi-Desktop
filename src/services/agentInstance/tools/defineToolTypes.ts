@@ -133,6 +133,9 @@ export interface ResponseHandlerContext<
   /** Utility: Signal that the agent should continue with another round */
   yieldToSelf: () => void;
 
+  /** Utility: Signal that the agent should stop and wait for user input (sets status to 'input-required') */
+  yieldToHuman: () => void;
+
   /** Raw hooks for advanced usage */
   hooks: PromptConcatHooks;
 

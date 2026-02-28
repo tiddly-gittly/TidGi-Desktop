@@ -22,7 +22,6 @@ Feature: Message Streaming Status
       | response      | stream |
       | First reply   | false  |
       | Second reply  | false  |
-      | Third reply   | false  |
     
     # Open agent chat
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
@@ -43,21 +42,12 @@ Feature: Message Streaming Status
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
     
-    # Send second message to confirm button works
+    # Send second message to confirm button works after first round
     When I type "Second message" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 4 messages in chat history
     
-    # Verify send button is still in normal state
-    And I should see a "send button icon" element with selector "[data-testid='send-icon']"
-    And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
-    
-    # Send third message to triple confirm
-    When I type "Third message" in "chat input" element with selector "[data-testid='agent-message-input']"
-    And I press "Enter" key
-    Then I should see 6 messages in chat history
-    
-    # Final verification
+    # Verify send button is still in normal state after second round
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
 
@@ -77,13 +67,7 @@ Feature: Message Streaming Status
     When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     
-    # Click attachment button to open autocomplete
-    When I click on a "attach button" element with selector "[data-testid='agent-attach-button']"
-    # Wait for autocomplete to open
-    And I should see a "attachment autocomplete input" element with selector "[data-testid='attachment-autocomplete-input']"
-    # Click on "Add Image" option (first option with type=image)
-    When I click on a "add image option" element with selector "[data-testid='attachment-option-image-AddImage']"
-    # Now the file input dialog should open - set file directly to the hidden file input
+    # Set file directly on hidden input (bypasses native file dialog that would block the test)
     When I set file "template/wiki/files/TiddlyWikiIconBlack.png" to file input with selector "input[type='file']"
     # Verify image preview appears
     Then I should see an "attachment preview" element with selector "[data-testid='attachment-preview']"

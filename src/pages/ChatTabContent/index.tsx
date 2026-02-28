@@ -24,6 +24,7 @@ import { isChatTab } from './utils/tabTypeGuards';
 
 // Import store hooks to fetch agent data
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
+import { useTabStore } from '@/pages/Agent/store/tabStore';
 import { useShallow } from 'zustand/react/shallow';
 import { AgentWithoutMessages } from '../Agent/store/agentChatStore/types';
 import { TabItem } from '../Agent/types/tab';
@@ -92,6 +93,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
   // Initialize message handling
   const {
     message,
+    setMessage,
     parametersOpen,
     setParametersOpen,
     // Only use the variables that are needed
@@ -174,6 +176,24 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
    */
 
   const isStreaming = streamingMessageIds.size > 0;
+
+  // Agent switching: create new agent instance with different definition, update tab
+  const updateTabData = useTabStore(useShallow((state) => state.updateTabData));
+  const handleSwitchAgent = React.useCallback(async (newAgentDefId: string) => {
+    if (newAgentDefId === tab.agentDefId) return;
+    try {
+      const newAgent = await window.service.agentInstance.createAgent(newAgentDefId);
+      // Update tab with new agent
+      updateTabData(tab.id, { agentId: newAgent.id, agentDefId: newAgentDefId, title: newAgent.name } as Partial<TabItem>);
+      // Load the new agent into the store
+      await fetchAgent(newAgent.id);
+      // Setup subscription for the new agent
+      subscribeToUpdates(newAgent.id);
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to switch agent', { error });
+    }
+  }, [tab.agentDefId, tab.id, updateTabData, fetchAgent, subscribeToUpdates]);
+
   return (
     <Box
       sx={{
@@ -193,7 +213,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
 
       {/* Messages container with all chat bubbles */}
       <Box sx={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
-        <MessagesContainer messageIds={orderedMessageIds} isSplitView={isSplitView}>
+        <MessagesContainer messageIds={orderedMessageIds} isSplitView={isSplitView} onDeleteTurn={setMessage}>
           {/* Error state */}
           {error && (
             <Box sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
@@ -236,6 +256,8 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
         selectedWikiTiddlers={selectedWikiTiddlers}
         onWikiTiddlerSelect={handleWikiTiddlerSelect}
         onRemoveWikiTiddler={handleRemoveWikiTiddler}
+        currentAgentDefId={tab.agentDefId}
+        onSwitchAgent={handleSwitchAgent}
       />
 
       {/* Model parameter dialog */}

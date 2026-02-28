@@ -1,3 +1,4 @@
+import { isTest } from '@/constants/environment';
 import { getOAuthConfig } from '@/constants/oauthConfig';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
@@ -198,7 +199,7 @@ export class Authentication implements IAuthenticationService {
 
       // Show window when ready
       oauthWindow.once('ready-to-show', () => {
-        oauthWindow.show();
+        if (!isTest) oauthWindow.show();
         logger.debug('OAuth window shown', { function: 'openOAuthWindow' });
       });
 

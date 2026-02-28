@@ -10,7 +10,7 @@ import { responseConcat } from '../promptConcat/responseConcat';
 import { getFinalPromptResult } from '../promptConcat/utilities';
 import { createHooksWithPlugins } from '../tools';
 import { YieldNextRoundTarget } from '../tools/types';
-import { canceled, completed, error, working } from './utilities/statusUtilities';
+import { canceled, completed, error, inputRequired, working } from './utilities/statusUtilities';
 import { AgentFrameworkContext } from './utilities/type';
 
 /**
@@ -81,7 +81,8 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
     return;
   }
 
-  // Ensure AI configuration exists
+  // Ensure AI configuration exists — merge global → agentDef → agent-instance overrides
+  // Store back onto context.agent so tool handlers (e.g. wikiSearch) can read the merged config
   const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
   const aiApiConfig: AiAPIConfig = merge(
     {},
@@ -89,6 +90,7 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
     context.agentDef.aiApiConfig,
     context.agent.aiApiConfig,
   );
+  context.agent.aiApiConfig = aiApiConfig;
 
   // Check if cancelled by user
   if (context.isCancelled()) {
@@ -216,6 +218,8 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
               const processedResult = await responseConcat(agentPromptDescription, response.content, context, context.agent.messages);
 
               const shouldContinue = processedResult.yieldNextRoundTo === 'self' || yieldNextRoundFromHooks === 'self';
+              // 'human' means agent paused for user input (e.g. ask-question tool)
+              const isInputRequired = processedResult.yieldNextRoundTo === 'human' || yieldNextRoundFromHooks === 'human';
               if (shouldContinue) {
                 logger.debug('Response processing triggered new LLM call', {
                   method: 'processLLMCall',
@@ -237,7 +241,11 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
                 break;
               }
 
-              yield completed(processedResult.processedResponse, context, currentRequestId);
+              if (isInputRequired) {
+                yield inputRequired(processedResult.processedResponse, context, currentRequestId);
+              } else {
+                yield completed(processedResult.processedResponse, context, currentRequestId);
+              }
             } else {
               yield working(response.content, context, currentRequestId);
             }

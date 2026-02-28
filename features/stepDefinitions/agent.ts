@@ -251,6 +251,27 @@ Then('the last AI request should contain system prompt {string}', async function
   }
 });
 
+Then('the last AI request system prompt should not contain {string}', async function(this: ApplicationWorld, unexpectedText: string) {
+  if (!this.mockOpenAIServer) {
+    throw new Error('Mock OpenAI server is not running');
+  }
+
+  const lastRequest = this.mockOpenAIServer.getLastRequest();
+  if (!lastRequest) {
+    throw new Error('No AI request has been made yet');
+  }
+
+  const systemMessage = lastRequest.messages.find(message => message.role === 'system');
+  if (!systemMessage) {
+    // No system message means it definitely doesn't contain the text
+    return;
+  }
+
+  if (systemMessage.content && systemMessage.content.includes(unexpectedText)) {
+    throw new Error(`Expected system prompt NOT to contain "${unexpectedText}", but it was found in: "${systemMessage.content.substring(0, 300)}..."`);
+  }
+});
+
 Then('the last AI request should have {int} messages', async function(this: ApplicationWorld, expectedCount: number) {
   if (!this.mockOpenAIServer) {
     throw new Error('Mock OpenAI server is not running');

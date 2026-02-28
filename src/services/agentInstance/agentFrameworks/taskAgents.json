@@ -271,5 +271,250 @@
         }
       ]
     }
+  },
+  {
+    "id": "plan-agent",
+    "name": "Plan Agent",
+    "description": "Read-only planning assistant — searches and analyzes wiki content without making changes",
+    "avatarUrl": "",
+    "agentFrameworkID": "basicPromptConcatHandler",
+    "agentFrameworkConfig": {
+      "prompts": [
+        {
+          "id": "system",
+          "caption": "Main Prompt",
+          "enabled": true,
+          "role": "system",
+          "children": [
+            {
+              "id": "default-main",
+              "tags": ["SystemPrompt"],
+              "text": "You are an expert AI assistant for TidGi, a desktop knowledge management application built on TiddlyWiki.\n\nYour role:\n- Help users plan, search, and analyze their TiddlyWiki knowledge base.\n- Answer questions about TiddlyWiki syntax (wikitext), macros, filters, widgets, and plugins.\n- Provide step-by-step plans for complex tasks.\n\nIMPORTANT: You are in PLAN mode. You can search and read wiki content, but you CANNOT create, update, or delete any tiddlers. If the user asks you to make changes, outline the steps they should take or suggest switching to Task Agent mode.\n\nCapabilities:\n- Search wiki content using TiddlyWiki filter expressions or semantic vector search.\n- Browse tag trees, recent changes, and backlinks.\n- Read git history for version tracking.\n- Fetch external web content for reference.\n\nOutput format:\n- Always respond in **wikitext** format (TiddlyWiki markup), not Markdown.\n- Use wikitext headings (! !! !!!), lists (* #), bold ('' ''), italic (// //), links ([[title]]), and other TW5 syntax.\n- Separate logical blocks with blank lines for optimal rendering.\n- When showing code, use ``` code blocks or <$codeblock> widget.\n\nTool usage rules:\n- When you need information from the wiki, ALWAYS use the appropriate search tool first — do not guess content.\n- You may call multiple tools in a single response.\n- After receiving tool results, analyze and explain them to the user.\n- If a tool call fails, read the error message carefully and retry with corrected parameters.\n- When your task is fully complete, call the summary tool to present your final answer.\n\nBehavior:\n- Be concise and precise. Avoid unnecessary preamble.\n- If a task requires multiple steps, plan ahead and explain your reasoning.\n- If you need clarification from the user, use the ask-question tool."
+            },
+            {
+              "id": "default-tools",
+              "caption": "Tools",
+              "children": [
+                {
+                  "id": "default-before-tool",
+                  "text": "<tools>\nBelow are the available tools. Follow these rules when using tools:\n1. Tool calls MUST use this exact format:\n<tool_use name=\"tool-id\">{\"param\": \"value\"}</tool_use>\nwhere tool-id is the English ID listed below and parameters must be a JSON object.\n2. To call multiple tools concurrently, wrap them in:\n<parallel_tool_calls>\n<tool_use name=\"tool-a\">{...}</tool_use>\n<tool_use name=\"tool-b\">{...}</tool_use>\n</parallel_tool_calls>\n3. A tool call must be the LAST content in your message. You will receive the result in the next message inside <functions_result>...</functions_result> tags.\n4. After receiving results, you MUST analyze and explain them — never return blank content.\n5. Some tools require user approval before execution. The user will be prompted automatically."
+                },
+                {
+                  "id": "default-post-tool",
+                  "text": "</tools>"
+                }
+              ]
+            },
+            {
+              "id": "default-auto-continue",
+              "caption": "Auto-continue instructions",
+              "text": "Continue working until you are confident the task is fully complete. If you just used a tool and received results, explain them. If more steps are needed, proceed with the next tool call. When done, use the summary tool to present your final answer to the user."
+            }
+          ]
+        },
+        {
+          "id": "comment-111",
+          "caption": "A comment",
+          "tags": ["comment"],
+          "text": "一个注释"
+        },
+        {
+          "id": "history",
+          "caption": "聊天历史",
+          "tags": ["DynamicModification"],
+          "children": [
+            {
+              "id": "default-history",
+              "text": "无聊天历史。"
+            }
+          ]
+        }
+      ],
+      "response": [
+        {
+          "id": "default-response",
+          "caption": "LLM response"
+        }
+      ],
+      "plugins": [
+        {
+          "id": "plan-history",
+          "toolId": "fullReplacement",
+          "fullReplacementParam": {
+            "targetId": "default-history",
+            "sourceType": "historyOfSession"
+          },
+          "caption": "聊天历史",
+          "forbidOverrides": true
+        },
+        {
+          "id": "plan-workspaces",
+          "caption": "Wiki工作空间列表",
+          "toolId": "workspacesList",
+          "workspacesListParam": {
+            "targetId": "default-before-tool",
+            "position": "after"
+          }
+        },
+        {
+          "id": "plan-wiki-search",
+          "caption": "Wiki搜索和向量索引工具",
+          "toolId": "wikiSearch",
+          "wikiSearchParam": {
+            "sourceType": "wiki",
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-wiki-operation",
+          "caption": "Wiki操作工具",
+          "toolId": "wikiOperation",
+          "enabled": false,
+          "wikiOperationParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-tiddlywiki-plugin",
+          "caption": "TiddlyWiki AI标签工具",
+          "toolId": "tiddlywikiPlugin",
+          "tiddlyWikiPluginParam": {
+            "workspaceNameOrID": "wiki",
+            "dataSourceTag": "$:/tags/AI/Prompt/DataSource",
+            "describeTag": "$:/tags/AI/Prompt/Describe",
+            "actionsTag": "$:/tags/AI/Prompt/Actions",
+            "enableCache": true,
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-git",
+          "caption": "Git版本历史工具",
+          "toolId": "git",
+          "gitParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-summary",
+          "caption": "Summary (完成任务)",
+          "toolId": "summary",
+          "summaryParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-ask-question",
+          "caption": "Ask Question (向用户提问)",
+          "toolId": "askQuestion",
+          "askQuestionParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-backlinks",
+          "caption": "Wiki反向链接",
+          "toolId": "backlinks",
+          "backlinksParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-toc",
+          "caption": "Wiki标签树/目录",
+          "toolId": "toc",
+          "tocParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-recent",
+          "caption": "Wiki最近修改",
+          "toolId": "recent",
+          "recentParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-list-tiddlers",
+          "caption": "Wiki条目列表",
+          "toolId": "listTiddlers",
+          "listTiddlersParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-get-errors",
+          "caption": "Wiki渲染错误检查",
+          "toolId": "getErrors",
+          "getErrorsParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-edit-tiddler",
+          "caption": "编辑条目 (范围替换)",
+          "toolId": "editTiddler",
+          "enabled": false,
+          "editTiddlerParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-zx-script",
+          "caption": "ZX脚本执行",
+          "toolId": "zxScript",
+          "enabled": false,
+          "zxScriptParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-web-fetch",
+          "caption": "网页抓取",
+          "toolId": "webFetch",
+          "webFetchParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-spawn-agent",
+          "caption": "Sub-Agent (子任务委派)",
+          "toolId": "spawnAgent",
+          "enabled": false,
+          "spawnAgentParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-todo",
+          "caption": "Todo / 计划列表",
+          "toolId": "todo",
+          "todoParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" },
+            "todoInjectionTargetId": "default-auto-continue"
+          }
+        },
+        {
+          "id": "plan-alarm-clock",
+          "caption": "闹钟 / 定时唤醒",
+          "toolId": "alarmClock",
+          "enabled": false,
+          "alarmClockParam": {
+            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+          }
+        },
+        {
+          "id": "plan-response",
+          "toolId": "fullReplacement",
+          "fullReplacementParam": {
+            "targetId": "default-response",
+            "sourceType": "llmResponse"
+          },
+          "caption": "语言模型最新回复",
+          "forbidOverrides": true
+        }
+      ]
+    }
   }
 ]

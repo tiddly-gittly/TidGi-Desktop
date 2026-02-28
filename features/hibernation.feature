@@ -59,9 +59,9 @@ Feature: Workspace Hibernation
     # Clear previous VIEW_LOADED markers before waiting for a new one
     And I clear log lines containing "[test-id-VIEW_LOADED]"
     When I click on a "wiki2 workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki2')"
-    Then the browser view should be loaded and visible
-    # Wait for view to be fully loaded
+    # Wait for wiki2 worker to start and view to load (hibernated workspace needs full boot)
     Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
+    Then the browser view should be loaded and visible
     # Wait for TiddlyWiki to fully render the page (site title appears)
     Then I wait for "site title" element in browser view with selector "h1.tc-site-title"
     # Verify wiki workspace is now hibernated (icon should be grayed out)
@@ -75,9 +75,9 @@ Feature: Workspace Hibernation
     # Clear previous VIEW_LOADED markers before waiting for a new one
     And I clear log lines containing "[test-id-VIEW_LOADED]"
     When I click on a "wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
-    Then the browser view should be loaded and visible
-    # Wait for view to be fully loaded
+    # Wait for wiki to wake from hibernation and view to fully load
     Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
+    Then the browser view should be loaded and visible
     # Wait for TiddlyWiki to fully render the page (site title appears)
     Then I wait for "site title" element in browser view with selector "h1.tc-site-title"
     # Verify hibernation states

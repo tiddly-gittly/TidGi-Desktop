@@ -10,10 +10,14 @@ import { promptConcatStream, PromptConcatStreamState } from '@services/agentInst
 import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { getPromptConcatAgentFrameworkConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
 import { createHooksWithPlugins, initializePluginSystem } from '@services/agentInstance/tools';
+import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
+import type { IGitService } from '@services/git/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { createDebouncedMessageUpdater, saveUserMessage as saveUserMessageHelper } from './agentMessagePersistence';
 import * as repo from './agentRepository';
@@ -225,6 +229,28 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Create fresh hooks for this framework execution and register plugins based on frameworkConfig
       const { hooks: frameworkHooks } = await createHooksWithPlugins(agentDefinition.agentFrameworkConfig || {});
 
+      // Record HEAD commit hashes for all wiki workspaces before the agent turn starts.
+      // This allows rollback by comparing with commits made during the turn.
+      const beforeCommitMap: Record<string, { wikiFolderLocation: string; commitHash: string }> = {};
+      try {
+        const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+        const gitService = container.get<IGitService>(serviceIdentifier.Git);
+        const workspaces = await workspaceService.getWorkspacesAsList();
+        for (const ws of workspaces) {
+          if (isWikiWorkspace(ws)) {
+            try {
+              const hash = await gitService.callGitOp('getHeadCommitHash', ws.wikiFolderLocation);
+              beforeCommitMap[ws.id] = { wikiFolderLocation: ws.wikiFolderLocation, commitHash: hash };
+            } catch {
+              // Workspace may not have git initialized — skip silently
+            }
+          }
+        }
+        logger.debug('Recorded before-turn commit hashes', { agentId, workspaceCount: Object.keys(beforeCommitMap).length });
+      } catch (error) {
+        logger.warn('Failed to record before-turn commit hashes', { error });
+      }
+
       // Trigger userMessageReceived hook with the configured tools
       await frameworkHooks.userMessageReceived.promise({
         agentFrameworkContext: frameworkContext,
@@ -232,6 +258,19 @@ export class AgentInstanceService implements IAgentInstanceService {
         messageId,
         timestamp: now,
       });
+
+      // Attach beforeCommitMap to the user message metadata after it's created by the messagePersistence hook.
+      // This allows the frontend to know which commit hash to rollback to for this turn.
+      if (Object.keys(beforeCommitMap).length > 0) {
+        const userMessage = frameworkContext.agent.messages.find(m => m.id === messageId);
+        if (userMessage) {
+          userMessage.metadata = { ...userMessage.metadata, beforeCommitMap };
+          // Persist the updated metadata
+          void this.saveUserMessage(userMessage).catch(error => {
+            logger.warn('Failed to persist beforeCommitMap metadata', { error, messageId });
+          });
+        }
+      }
 
       // Notify agent update after user message is added
       this.notifyAgentUpdate(agentId, frameworkContext.agent);
@@ -245,7 +284,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
         for await (const result of generator) {
           // Update status subscribers for specific message
-          if (result.message?.content) {
+          if (result.message) {
             // Ensure message has correct modification timestamp
             if (!result.message.modified) {
               result.message.modified = new Date();
@@ -258,6 +297,7 @@ export class AgentInstanceService implements IAgentInstanceService {
             }
 
             // Notify agent update with latest messages for real-time UI updates
+            // (even if content is empty — tool results and state changes need broadcasting)
             this.notifyAgentUpdate(agentId, frameworkContext.agent);
           }
 
@@ -271,10 +311,11 @@ export class AgentInstanceService implements IAgentInstanceService {
           const statusKey = `${agentId}:${lastResult.message.id}`;
           const subject = this.statusSubjects.get(statusKey);
           if (subject) {
-            logger.debug(`[${agentId}] Completing message stream`, { messageId: lastResult.message.id });
-            // Send final update with completed state
+            const finalState = lastResult.state ?? 'completed';
+            logger.debug(`[${agentId}] Completing message stream`, { messageId: lastResult.message.id, finalState });
+            // Send final update with the actual terminal state from the generator
             subject.next({
-              state: 'completed',
+              state: finalState,
               message: lastResult.message,
               modified: new Date(),
             });
@@ -292,11 +333,11 @@ export class AgentInstanceService implements IAgentInstanceService {
             });
           }
 
-          // Trigger agentStatusChanged hook for completion
+          // Trigger agentStatusChanged hook with actual terminal state (completed, input-required, etc.)
           await frameworkHooks.agentStatusChanged.promise({
             agentFrameworkContext: frameworkContext,
             status: {
-              state: 'completed',
+              state: lastResult.state ?? 'completed',
               modified: new Date(),
             },
           });
@@ -351,6 +392,14 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   public async cancelAgent(agentId: string): Promise<void> {
+    // Cancel any pending ask-question promises so the agent loop can exit
+    try {
+      const { cancelPendingQuestions } = require('./tools/askQuestionPending') as typeof import('./tools/askQuestionPending');
+      cancelPendingQuestions(agentId);
+    } catch {
+      // ignore if module not loaded
+    }
+
     // Try to get cancel token
     const cancelToken = this.cancelTokenMap.get(agentId);
 
@@ -467,6 +516,137 @@ export class AgentInstanceService implements IAgentInstanceService {
       });
       throw error;
     }
+  }
+
+  public resolveToolApproval(approvalId: string, decision: 'allow' | 'deny'): void {
+    const { resolveApproval } = require('./tools/approval') as typeof import('./tools/approval');
+    resolveApproval(approvalId, decision);
+  }
+
+  public resolveAskQuestion(agentId: string, questionId: string, answer: string): void {
+    // Resolve ask-question by injecting the answer as a tool result and resuming the agent loop.
+    // This keeps the answer in the same turn (no new user message).
+    void this.resolveAskQuestionAsync(agentId, questionId, answer);
+  }
+
+  private async resolveAskQuestionAsync(agentId: string, questionId: string, answer: string): Promise<void> {
+    try {
+      // Reuse sendMsgToAgent with the answer text.
+      // The answer goes in as a user message so the framework can process it normally.
+      // The UI will display it as a regular message (not a tool result).
+      // This is the simplest approach that works with the existing framework architecture.
+      await this.sendMsgToAgent(agentId, { text: answer });
+      logger.debug('Ask-question resolved via sendMsgToAgent', { questionId, agentId });
+    } catch (error) {
+      logger.error('Failed to resolve ask-question', { questionId, error });
+    }
+  }
+
+  public async deleteMessages(agentId: string, messageIds: string[]): Promise<void> {
+    if (!this.agentMessageRepository || !this.agentInstanceRepository) {
+      throw new Error('Database not initialized');
+    }
+    if (messageIds.length === 0) return;
+
+    await this.agentMessageRepository.delete(messageIds);
+
+    // Also update the in-memory agent messages list
+    const agent = await this.agentInstanceRepository.findOne({
+      where: { id: agentId },
+      relations: ['messages'],
+    });
+    if (agent) {
+      const deletedSet = new Set(messageIds);
+      agent.messages = agent.messages.filter(m => !deletedSet.has(m.id));
+      await this.agentInstanceRepository.save(agent);
+    }
+  }
+
+  public async getTurnChangedFiles(agentId: string, userMessageId: string): Promise<Array<{ path: string; status: string }>> {
+    const agent = await this.getAgent(agentId);
+    if (!agent) {
+      throw new Error(`Agent instance not found: ${agentId}`);
+    }
+
+    const userMessage = agent.messages.find(m => m.id === userMessageId);
+    if (!userMessage) {
+      throw new Error(`User message not found: ${userMessageId}`);
+    }
+
+    const beforeCommitMap = userMessage.metadata?.beforeCommitMap as Record<string, { wikiFolderLocation: string; commitHash: string }> | undefined;
+    if (!beforeCommitMap || Object.keys(beforeCommitMap).length === 0) {
+      return [];
+    }
+
+    const allChangedFiles: Array<{ path: string; status: string }> = [];
+    const gitService = container.get<IGitService>(serviceIdentifier.Git);
+
+    for (const [_workspaceId, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
+      try {
+        const changedFiles = await gitService.callGitOp('getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
+        for (const file of changedFiles) {
+          allChangedFiles.push({ path: file.path, status: file.status });
+        }
+      } catch (error) {
+        logger.warn('Failed to get changed files for workspace', { wikiFolderLocation, error });
+      }
+    }
+
+    return allChangedFiles;
+  }
+
+  public async rollbackTurn(agentId: string, userMessageId: string): Promise<{ rolledBack: number; errors: string[] }> {
+    const agent = await this.getAgent(agentId);
+    if (!agent) {
+      throw new Error(`Agent instance not found: ${agentId}`);
+    }
+
+    const userMessage = agent.messages.find(m => m.id === userMessageId);
+    if (!userMessage) {
+      throw new Error(`User message not found: ${userMessageId}`);
+    }
+
+    const beforeCommitMap = userMessage.metadata?.beforeCommitMap as Record<string, { wikiFolderLocation: string; commitHash: string }> | undefined;
+    if (!beforeCommitMap || Object.keys(beforeCommitMap).length === 0) {
+      return { rolledBack: 0, errors: ['No commit snapshot recorded for this turn'] };
+    }
+
+    let rolledBack = 0;
+    const errors: string[] = [];
+    const gitService = container.get<IGitService>(serviceIdentifier.Git);
+
+    for (const [_workspaceId, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
+      try {
+        // Get the list of files that changed since the beforeCommitHash
+        const changedFiles = await gitService.callGitOp('getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
+
+        if (changedFiles.length === 0) continue;
+
+        // Restore each file to its state at the beforeCommitHash
+        for (const file of changedFiles) {
+          try {
+            await gitService.callGitOp('restoreFileFromCommit', wikiFolderLocation, commitHash, file.path);
+            rolledBack++;
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            errors.push(`Failed to restore ${file.path}: ${errorMessage}`);
+          }
+        }
+
+        logger.info('Rolled back files for workspace', { wikiFolderLocation, fileCount: changedFiles.length, rolledBack });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        errors.push(`Failed to get changed files for ${wikiFolderLocation}: ${errorMessage}`);
+      }
+    }
+
+    // Mark the turn as rolled back in user message metadata.
+    // Note: rollback restores files to working tree + staging area but does NOT create a new commit.
+    // The next scheduled commitAndSync will commit the restored state as a new change.
+    userMessage.metadata = { ...userMessage.metadata, rolledBack: true, rollbackTimestamp: new Date().toISOString() };
+    await this.saveUserMessage(userMessage);
+
+    return { rolledBack, errors };
   }
 
   public subscribeToAgentUpdates(agentId: string): Observable<AgentInstance | undefined>;

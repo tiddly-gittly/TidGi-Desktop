@@ -375,14 +375,41 @@ ${options.isError ? 'Error' : 'Result'}: ${options.result}
               toolResultMessage.metadata = { ...toolResultMessage.metadata, isPersisted: true };
               agentFrameworkContext.agent.messages.push(toolResultMessage);
 
-              // Persist asynchronously
+              // Mark the assistant message that triggered this tool call as short-lived
+              // so it fades out in the UI (the tool result message replaces it visually)
+              const aiMessages = agentFrameworkContext.agent.messages.filter((m) => m.role === 'assistant');
+              if (aiMessages.length > 0) {
+                const latestAiMessage = aiMessages[aiMessages.length - 1];
+                if (latestAiMessage.content === response.content && !latestAiMessage.metadata?.containsToolCall) {
+                  latestAiMessage.duration = 1;
+                  latestAiMessage.metadata = {
+                    ...latestAiMessage.metadata,
+                    containsToolCall: true,
+                    toolId: options.toolName,
+                    isPersisted: true,
+                  };
+
+                  void (async () => {
+                    try {
+                      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+                      if (!latestAiMessage.created) latestAiMessage.created = new Date();
+                      await agentInstanceService.saveUserMessage(latestAiMessage);
+                      agentInstanceService.debounceUpdateMessage(latestAiMessage, agentFrameworkContext.agent.id, 0);
+                    } catch (error) {
+                      logger.warn('Failed to persist AI message with tool call', { error, messageId: latestAiMessage.id });
+                      latestAiMessage.metadata = { ...latestAiMessage.metadata, isPersisted: false };
+                    }
+                  })();
+                }
+              }
+
+              // Persist tool result asynchronously
               void (async () => {
                 try {
                   const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
                   await agentInstanceService.saveUserMessage(toolResultMessage);
                 } catch (error) {
                   logger.warn('Failed to persist tool result', { error, messageId: toolResultMessage.id });
-                  // Reset isPersisted flag on failure so it can be retried
                   toolResultMessage.metadata = { ...toolResultMessage.metadata, isPersisted: false };
                 }
               })();
@@ -399,37 +426,14 @@ ${options.isError ? 'Error' : 'Result'}: ${options.result}
                 context.actions = {};
               }
               context.actions.yieldNextRoundTo = 'self';
+              // Assistant message is now marked in addToolResult() — no duplicate logic needed here
+            },
 
-              // Also set duration on the AI message containing the tool call and update UI immediately
-              const aiMessages = agentFrameworkContext.agent.messages.filter((m) => m.role === 'assistant');
-              if (aiMessages.length > 0) {
-                const latestAiMessage = aiMessages[aiMessages.length - 1];
-                // Only update if this message matches the current response (contains the tool call)
-                if (latestAiMessage.content === response.content) {
-                  latestAiMessage.duration = 1;
-                  latestAiMessage.metadata = {
-                    ...latestAiMessage.metadata,
-                    containsToolCall: true,
-                    toolId: toolCall?.toolId,
-                    isPersisted: true, // Mark immediately to prevent duplicate saves
-                  };
-
-                  // Persist and update UI immediately (no debounce delay)
-                  void (async () => {
-                    try {
-                      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-                      if (!latestAiMessage.created) latestAiMessage.created = new Date();
-                      await agentInstanceService.saveUserMessage(latestAiMessage);
-                      // Update UI with no delay
-                      agentInstanceService.debounceUpdateMessage(latestAiMessage, agentFrameworkContext.agent.id, 0);
-                    } catch (error) {
-                      logger.warn('Failed to persist AI message with tool call', { error, messageId: latestAiMessage.id });
-                      // Reset isPersisted flag on failure so it can be retried
-                      latestAiMessage.metadata = { ...latestAiMessage.metadata, isPersisted: false };
-                    }
-                  })();
-                }
+            yieldToHuman: () => {
+              if (!context.actions) {
+                context.actions = {};
               }
+              context.actions.yieldNextRoundTo = 'human';
             },
 
             executeAllMatchingToolCalls: async <TToolName extends keyof TLLMToolSchemas>(
@@ -450,7 +454,8 @@ ${options.isError ? 'Error' : 'Result'}: ${options.result}
               const toolResultDuration = (config as { toolResultDuration?: number } | undefined)?.toolResultDuration ?? 1;
 
               // Build entries for parallel execution
-              const entries: Array<{ call: ToolCallingMatch & { found: true }; executor: (params: Record<string, unknown>) => Promise<ToolExecutionResult>; timeoutMs?: number }> = [];
+              const entries: Array<{ call: ToolCallingMatch & { found: true }; executor: (params: Record<string, unknown>) => Promise<ToolExecutionResult>; timeoutMs?: number }> =
+                [];
               for (const call of matchingCalls) {
                 try {
                   const validatedParameters = toolSchema.parse(call.parameters);
@@ -491,10 +496,10 @@ ${options.isError ? 'Error' : 'Result'}: ${options.result}
                 const resultText = result.status === 'timeout'
                   ? (result.error ?? 'Tool execution timed out')
                   : result.status === 'rejected'
-                    ? (result.error ?? 'Tool execution failed')
-                    : result.result?.success
-                      ? (result.result.data ?? 'Success')
-                      : (result.result?.error ?? 'Unknown error');
+                  ? (result.error ?? 'Tool execution failed')
+                  : result.result?.success
+                  ? (result.result.data ?? 'Success')
+                  : (result.result?.error ?? 'Unknown error');
 
                 handlerContext.addToolResult({
                   toolName: String(toolName),

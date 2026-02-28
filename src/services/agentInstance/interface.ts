@@ -235,6 +235,49 @@ export interface IAgentInstanceService {
    * @param debounceMs Debounce delay in milliseconds
    */
   debounceUpdateMessage(message: AgentInstanceMessage, agentId?: string, debounceMs?: number): void;
+
+  /**
+   * Resolve a pending tool approval request from the UI
+   * @param approvalId The approval request ID
+   * @param decision 'allow' or 'deny'
+   */
+  resolveToolApproval(approvalId: string, decision: 'allow' | 'deny'): void;
+
+  /**
+   * Resolve a pending ask-question request from the UI.
+   * The user's answer is sent as a tool result (same turn), not as a new user message.
+   * @param agentId The agent instance ID
+   * @param questionId The question ID embedded in the ask-question tool result
+   * @param answer The user's answer text
+   */
+  resolveAskQuestion(agentId: string, questionId: string, answer: string): void;
+
+  /**
+   * Delete specific messages from an agent instance.
+   * Used for turn deletion / retry — removes messages from DB and the agent's message list.
+   * @param agentId Agent instance ID
+   * @param messageIds Array of message IDs to delete
+   */
+  deleteMessages(agentId: string, messageIds: string[]): Promise<void>;
+
+  /**
+   * Rollback file changes made during an agent turn.
+   * Uses the beforeCommitHash stored in the user message metadata to restore files
+   * to their state before the agent turn started.
+   * @param agentId Agent instance ID
+   * @param userMessageId The user message that started the turn
+   * @returns Object with rollback results
+   */
+  rollbackTurn(agentId: string, userMessageId: string): Promise<{ rolledBack: number; errors: string[] }>;
+
+  /**
+   * Get the list of files changed during an agent turn by comparing
+   * the beforeCommitHash (stored in user message metadata) with current HEAD.
+   * @param agentId Agent instance ID
+   * @param userMessageId The user message that started the turn
+   * @returns Array of changed files with their status
+   */
+  getTurnChangedFiles(agentId: string, userMessageId: string): Promise<Array<{ path: string; status: string }>>;
 }
 
 export const AgentInstanceServiceIPCDescriptor = {
@@ -244,13 +287,19 @@ export const AgentInstanceServiceIPCDescriptor = {
     closeAgent: ProxyPropertyType.Function,
     concatPrompt: ProxyPropertyType.Function$,
     createAgent: ProxyPropertyType.Function,
+    debounceUpdateMessage: ProxyPropertyType.Function,
     deleteAgent: ProxyPropertyType.Function,
+    deleteMessages: ProxyPropertyType.Function,
     getAgent: ProxyPropertyType.Function,
     getAgents: ProxyPropertyType.Function,
     getFrameworkConfigSchema: ProxyPropertyType.Function,
+    resolveToolApproval: ProxyPropertyType.Function,
+    resolveAskQuestion: ProxyPropertyType.Function,
     saveUserMessage: ProxyPropertyType.Function,
+    rollbackTurn: ProxyPropertyType.Function,
     sendMsgToAgent: ProxyPropertyType.Function,
     subscribeToAgentUpdates: ProxyPropertyType.Function$,
+    getTurnChangedFiles: ProxyPropertyType.Function,
     updateAgent: ProxyPropertyType.Function,
   },
 };

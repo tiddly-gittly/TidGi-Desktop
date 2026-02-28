@@ -8,6 +8,7 @@ import SecurityIcon from '@mui/icons-material/Security';
 import { Box, Button, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React, { memo, useCallback, useState } from 'react';
+import { stripToolXml } from './BaseMessageRenderer';
 import { MessageRendererProps } from './types';
 
 const ApprovalContainer = styled(Box)`
@@ -51,7 +52,7 @@ interface ApprovalData {
 }
 
 function parseApprovalData(content: string): ApprovalData | null {
-  const resultMatch = /Result:\s*(.+)/s.exec(content);
+  const resultMatch = /Result:\s*(.+?)\s*(?:<\/functions_result>|$)/s.exec(content);
   if (!resultMatch) return null;
   try {
     const data = JSON.parse(resultMatch[1]) as ApprovalData;
@@ -69,9 +70,9 @@ export const ToolApprovalRenderer: React.FC<MessageRendererProps> = memo(({ mess
     if (!data || decision) return;
     setDecision('allow');
     try {
-      // Call the backend to resolve the approval
       if (window.service?.agentInstance) {
-        // TODO: expose resolveApproval via IPC
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        void window.service.agentInstance.resolveToolApproval(data.approvalId, 'allow');
       }
     } catch {
       // Handle error
@@ -83,7 +84,8 @@ export const ToolApprovalRenderer: React.FC<MessageRendererProps> = memo(({ mess
     setDecision('deny');
     try {
       if (window.service?.agentInstance) {
-        // TODO: expose resolveApproval via IPC
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        void window.service.agentInstance.resolveToolApproval(data.approvalId, 'deny');
       }
     } catch {
       // Handle error
@@ -91,7 +93,8 @@ export const ToolApprovalRenderer: React.FC<MessageRendererProps> = memo(({ mess
   }, [data, decision]);
 
   if (!data) {
-    return <Typography variant='body2' sx={{ whiteSpace: 'pre-wrap' }}>{message.content}</Typography>;
+    const cleaned = stripToolXml(message.content);
+    return cleaned ? <Typography variant='body2' sx={{ whiteSpace: 'pre-wrap' }}>{cleaned}</Typography> : null;
   }
 
   return (

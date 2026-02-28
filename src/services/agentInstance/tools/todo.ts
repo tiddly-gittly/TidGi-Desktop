@@ -181,7 +181,7 @@ const todoDefinition = registerToolDefinition({
       const message = messages[index];
       if (message.role === 'tool' && message.content.includes('"type":"todo-update"')) {
         try {
-          const match = /Result:\s*(.+)/s.exec(message.content);
+          const match = /Result:\s*(.+?)\s*(?:<\/functions_result>|$)/s.exec(message.content);
           if (match) {
             const parsed = JSON.parse(match[1]) as { type: string; text?: string };
             if (parsed.type === 'todo-update' && parsed.text) {

@@ -607,7 +607,27 @@ Then('I wait for log markers:', async function(this: ApplicationWorld, dataTable
  */
 Then('I wait for SSE and watch-fs to be ready', async function(this: ApplicationWorld) {
   await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', 20000);
-  await waitForLogMarker(this, '[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 20000);
+  try {
+    await waitForLogMarker(this, '[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 15000);
+  } catch (error) {
+    // Gather SSE diagnostics from the BrowserView to aid debugging
+    let diagnostics = 'no diagnostics';
+    if (this.app) {
+      try {
+        const { executeTiddlyWikiCode } = await import('../supports/webContentsViewHelper');
+        diagnostics = await executeTiddlyWikiCode(this.app, `JSON.stringify({
+          hasSyncadaptor: !!$tw.syncadaptor,
+          sseSubscribed: !!$tw.syncadaptor?.sseSubscribed,
+          hasObservables: !!window.observables,
+          hasWikiObservables: !!window.observables?.wiki,
+          hasGetWikiChangeObserver: typeof window.observables?.wiki?.getWikiChangeObserver$ === 'function',
+        })`) ?? 'executeTiddlyWikiCode returned null';
+      } catch (diagError) {
+        diagnostics = `diagnostics failed: ${String(diagError)}`;
+      }
+    }
+    throw new Error(`${(error as Error).message}. SSE diagnostics: ${diagnostics}`);
+  }
 });
 
 /**

@@ -10,6 +10,7 @@ import { styled } from '@mui/material/styles';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { WikiTiddlerAttachment } from '../hooks/useMessageHandling';
+import { AgentSwitcher } from './AgentSwitcher';
 
 const Wrapper = styled(Box)`
   display: flex;
@@ -47,6 +48,8 @@ interface InputContainerProps {
   selectedWikiTiddlers?: WikiTiddlerAttachment[];
   onWikiTiddlerSelect?: (tiddler: WikiTiddlerAttachment) => void;
   onRemoveWikiTiddler?: (index: number) => void;
+  currentAgentDefId?: string;
+  onSwitchAgent?: (agentDefId: string) => void;
 }
 const attachmentListboxSlotProps: React.HTMLAttributes<HTMLUListElement> & { 'data-testid': string } = {
   'data-testid': 'attachment-listbox',
@@ -70,6 +73,8 @@ export const InputContainer: React.FC<InputContainerProps> = ({
   selectedWikiTiddlers = [],
   onWikiTiddlerSelect,
   onRemoveWikiTiddler,
+  currentAgentDefId,
+  onSwitchAgent,
 }) => {
   const { t } = useTranslation('agent');
   const fileInputReference = React.useRef<HTMLInputElement>(null);
@@ -292,6 +297,13 @@ export const InputContainer: React.FC<InputContainerProps> = ({
           accept='image/*'
           onChange={handleFileChange}
         />
+        {onSwitchAgent && (
+          <AgentSwitcher
+            currentAgentDefId={currentAgentDefId}
+            onSwitch={onSwitchAgent}
+            disabled={disabled || isStreaming}
+          />
+        )}
         <IconButton
           onClick={handleAttachmentClick}
           disabled={disabled || isStreaming}

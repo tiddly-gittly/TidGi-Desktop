@@ -114,6 +114,19 @@ export interface BasicActions {
 
   /** Subscribe to agent updates */
   subscribeToUpdates: (agentId: string) => (() => void) | undefined;
+
+  /**
+   * Delete an agent turn — removes the user message and all subsequent agent responses.
+   * Returns the deleted user message content so it can be restored to the input.
+   * @param userMessageId The user message that starts the turn
+   */
+  deleteTurn: (userMessageId: string) => Promise<string | undefined>;
+
+  /**
+   * Retry an agent turn — delete agent responses and re-send the user message.
+   * @param userMessageId The user message that starts the turn
+   */
+  retryTurn: (userMessageId: string) => Promise<void>;
 }
 
 // Streaming related actions interface

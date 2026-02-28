@@ -2,6 +2,23 @@ import type { AgentInstanceMessage } from '@services/agentInstance/interface';
 import type { StoreApi } from 'zustand';
 import type { AgentChatStoreType } from '../types';
 
+/** Get IDs belonging to a turn started by the given user message. Includes the user message itself. */
+function getTurnMessageIds(
+  userMessageId: string,
+  orderedMessageIds: string[],
+  messages: Map<string, AgentInstanceMessage>,
+): string[] {
+  const startIndex = orderedMessageIds.indexOf(userMessageId);
+  if (startIndex === -1) return [];
+  const ids: string[] = [userMessageId];
+  for (let index = startIndex + 1; index < orderedMessageIds.length; index++) {
+    const message = messages.get(orderedMessageIds[index]);
+    if (message?.role === 'user') break; // Next turn
+    ids.push(orderedMessageIds[index]);
+  }
+  return ids;
+}
+
 export const messageActions = (
   set: StoreApi<AgentChatStoreType>['setState'],
   get: StoreApi<AgentChatStoreType>['getState'],
@@ -95,5 +112,65 @@ export const messageActions = (
     } finally {
       set({ loading: false });
     }
+  },
+
+  deleteTurn: async (userMessageId: string): Promise<string | undefined> => {
+    const state = get();
+    const agentId = state.agent?.id;
+    if (!agentId) return undefined;
+
+    const turnIds = getTurnMessageIds(userMessageId, state.orderedMessageIds, state.messages);
+    if (turnIds.length === 0) return undefined;
+
+    const userMessage = state.messages.get(userMessageId);
+    const userContent = userMessage?.content;
+
+    // Remove from backend DB
+    try {
+      await window.service.agentInstance.deleteMessages(agentId, turnIds);
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to delete turn messages', { error });
+    }
+
+    // Remove from frontend store
+    const deletedSet = new Set(turnIds);
+    set(prev => {
+      const newMessages = new Map(prev.messages);
+      for (const id of turnIds) newMessages.delete(id);
+      const newOrderedIds = prev.orderedMessageIds.filter(id => !deletedSet.has(id));
+      return { messages: newMessages, orderedMessageIds: newOrderedIds };
+    });
+
+    return userContent;
+  },
+
+  retryTurn: async (userMessageId: string): Promise<void> => {
+    const state = get();
+    const agentId = state.agent?.id;
+    if (!agentId) return;
+
+    const userMessage = state.messages.get(userMessageId);
+    if (!userMessage || userMessage.role !== 'user') return;
+    const userContent = userMessage.content;
+
+    // Delete entire turn (user msg + all agent responses) from backend and store
+    const turnIds = getTurnMessageIds(userMessageId, state.orderedMessageIds, state.messages);
+    if (turnIds.length > 0) {
+      try {
+        await window.service.agentInstance.deleteMessages(agentId, turnIds);
+      } catch (error) {
+        void window.service.native.log('error', 'Failed to delete turn for retry', { error });
+      }
+      const deletedSet = new Set(turnIds);
+      set(previous => {
+        const newMessages = new Map(previous.messages);
+        for (const id of turnIds) newMessages.delete(id);
+        const newOrderedIds = previous.orderedMessageIds.filter(id => !deletedSet.has(id));
+        return { messages: newMessages, orderedMessageIds: newOrderedIds };
+      });
+    }
+
+    // Re-send — sendMessage creates a fresh user message + triggers agent
+    await get().sendMessage(userContent);
   },
 });

@@ -8,7 +8,8 @@
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
 import { Box, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import React, { memo, useEffect, useRef, useState } from 'react';
+import { useRenderWikiText } from '@services/wiki/hooks';
+import React, { memo, useMemo } from 'react';
 import { MessageRendererProps } from './types';
 
 const WikitextWrapper = styled(Box)<{ $isStreaming?: boolean }>`
@@ -73,63 +74,40 @@ const FallbackText = styled(Typography)`
 /**
  * WikiText renderer — renders agent output as wikitext via TiddlyWiki server.
  * Uses dangerouslySetInnerHTML for rendered HTML (content comes from trusted local TW server).
+ * During streaming, shows raw text with reduced opacity; renders on completion.
  */
 export const WikitextMessageRenderer: React.FC<MessageRendererProps> = memo(({ message }) => {
   const isStreaming = useAgentChatStore(state => state.isMessageStreaming(message.id));
-  const [renderedHtml, setRenderedHtml] = useState<string | null>(null);
-  const [error, setError] = useState(false);
-  const lastContentReference = useRef('');
+  const content = message.content || '';
 
-  useEffect(() => {
-    const content = message.content || '';
+  // During streaming, only render content up to the last double-newline boundary (complete blocks)
+  // This avoids sending half-formed wikitext to the renderer
+  const contentToRender = useMemo(() => {
+    if (!isStreaming) return content;
+    const lastBoundary = content.lastIndexOf('\n\n');
+    return lastBoundary > 0 ? content.slice(0, lastBoundary) : '';
+  }, [content, isStreaming]);
 
-    // Don't re-render if content hasn't changed
-    if (content === lastContentReference.current && renderedHtml !== null) return;
-    lastContentReference.current = content;
+  // Remaining unrendered text during streaming (shown as plain text with lower opacity)
+  const trailingText = useMemo(() => {
+    if (!isStreaming) return '';
+    const lastBoundary = content.lastIndexOf('\n\n');
+    return lastBoundary > 0 ? content.slice(lastBoundary) : content;
+  }, [content, isStreaming]);
 
-    // Skip rendering empty content
-    if (!content.trim()) {
-      setRenderedHtml('');
-      return;
-    }
+  // Use the existing wikitext rendering hook which handles workspace resolution
+  const renderedHtml = useRenderWikiText(contentToRender);
 
-    // During streaming, only render every ~500 chars change to avoid thrashing
-    if (isStreaming && renderedHtml !== null) {
-      const diff = Math.abs(content.length - (lastContentReference.current?.length ?? 0));
-      if (diff < 500) return;
-    }
-
-    // Call TiddlyWiki server to render wikitext
-    // Using the wiki service proxy (exposed via preload)
-    const renderWikitext = async () => {
-      try {
-        // Use wikiOperationInServer with WikiChannel.renderWikiText
-        // For now, we use a simplified approach — the full version would need workspace ID
-        // TODO: get active workspace ID from context and call wikiOperationInServer
-        setRenderedHtml(null);
-        setError(true);
-      } catch {
-        setRenderedHtml(null);
-        setError(true);
-      }
-    };
-
-    void renderWikitext();
-  }, [message.content, isStreaming, renderedHtml]);
-
-  if (error || renderedHtml === null) {
-    return (
-      <WikitextWrapper $isStreaming={isStreaming}>
-        <FallbackText variant='body1'>{message.content}</FallbackText>
-      </WikitextWrapper>
-    );
-  }
+  // If we have rendered HTML, show it; otherwise fall back to plain text
+  const hasRenderedContent = renderedHtml.length > 0;
 
   return (
-    <WikitextWrapper
-      $isStreaming={isStreaming}
-      dangerouslySetInnerHTML={{ __html: renderedHtml }}
-    />
+    <WikitextWrapper $isStreaming={isStreaming}>
+      {hasRenderedContent
+        ? <Box dangerouslySetInnerHTML={{ __html: renderedHtml }} />
+        : <FallbackText variant='body1'>{contentToRender}</FallbackText>}
+      {trailingText && <FallbackText variant='body1' sx={{ opacity: 0.6 }}>{trailingText}</FallbackText>}
+    </WikitextWrapper>
   );
 });
 

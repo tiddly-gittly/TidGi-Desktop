@@ -11,6 +11,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React, { memo } from 'react';
+import { stripToolXml } from './BaseMessageRenderer';
 import { MessageRendererProps } from './types';
 
 const DiffContainer = styled(Box)`
@@ -60,7 +61,7 @@ interface EditTiddlerDiffData {
 }
 
 function parseEditDiffData(content: string): EditTiddlerDiffData | null {
-  const resultMatch = /Result:\s*(.+)/s.exec(content);
+  const resultMatch = /Result:\s*(.+?)\s*(?:<\/functions_result>|$)/s.exec(content);
   if (!resultMatch) return null;
   try {
     const data = JSON.parse(resultMatch[1]) as EditTiddlerDiffData;
@@ -91,7 +92,8 @@ export const EditDiffRenderer: React.FC<MessageRendererProps> = memo(({ message 
   const data = parseEditDiffData(message.content);
 
   if (!data) {
-    return <Typography variant='body2' sx={{ whiteSpace: 'pre-wrap' }}>{message.content}</Typography>;
+    const cleaned = stripToolXml(message.content);
+    return cleaned ? <Typography variant='body2' sx={{ whiteSpace: 'pre-wrap' }}>{cleaned}</Typography> : null;
   }
 
   const diffLines = data.diffSummary.split('\n');

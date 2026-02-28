@@ -217,6 +217,9 @@ export class Window implements IWindowService {
       fullscreenable: true,
       autoHideMenuBar,
       titleBarStyle: hideTitleBar ? 'hidden' : 'default',
+      // Keep the window hidden during E2E tests so it won't steal focus from the developer.
+      // paintWhenInitiallyHidden defaults to true, so the renderer still paints.
+      ...(isTest ? { show: false } : {}),
       // https://www.electronjs.org/docs/latest/tutorial/custom-title-bar#add-native-window-controls-windows-linux
       ...(hideTitleBar && process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
       alwaysOnTop: windowName === WindowNames.tidgiMiniWindow ? tidgiMiniWindowAlwaysOnTop : alwaysOnTop,
@@ -226,6 +229,8 @@ export class Window implements IWindowService {
         webSecurity: false,
         allowRunningInsecureContent: true,
         contextIsolation: true,
+        // Prevent JS from being throttled while the window is hidden during E2E tests
+        ...(isTest ? { backgroundThrottling: false } : {}),
         preload: getPreloadPath(),
         additionalArguments: [
           `${MetaDataChannel.browserViewMetaData}${windowName}`,

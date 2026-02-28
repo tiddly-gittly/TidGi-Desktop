@@ -1,8 +1,16 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
+import { backOff } from 'exponential-backoff';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getWikiTestRootPath } from '../supports/paths';
 import { PLAYWRIGHT_SHORT_TIMEOUT, PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
+
+const UI_BACKOFF_OPTIONS = {
+  numOfAttempts: 15,
+  startingDelay: 200,
+  timeMultiple: 1,
+  maxDelay: 200,
+};
 
 When('I wait for {float} seconds', async function(seconds: number) {
   await new Promise(resolve => setTimeout(resolve, seconds * 1000));
@@ -17,21 +25,47 @@ When('I wait for {float} seconds for {string}', async function(seconds: number, 
 });
 
 When('I wait for the page to load completely', async function(this: ApplicationWorld) {
-  const currentWindow = this.currentWindow;
-  await currentWindow?.waitForLoadState('networkidle', { timeout: PLAYWRIGHT_TIMEOUT });
+  let currentWindow = this.currentWindow;
+  if ((!currentWindow || currentWindow.isClosed()) && this.app) {
+    currentWindow = await this.app.firstWindow({ timeout: PLAYWRIGHT_TIMEOUT });
+    this.mainWindow = this.mainWindow ?? currentWindow;
+    this.currentWindow = currentWindow;
+  }
+  await currentWindow?.waitForLoadState('domcontentloaded', { timeout: PLAYWRIGHT_TIMEOUT });
+  // Some startup pages keep background activity and never reach networkidle quickly.
+  try {
+    await currentWindow?.waitForLoadState('networkidle', { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+  } catch {
+    // Ignore networkidle timeout when DOM is already ready.
+  }
 });
 
 Then('I should see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  const currentWindow = this.currentWindow;
-  try {
-    await currentWindow?.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
-    const isVisible = await currentWindow?.isVisible(selector);
-    if (!isVisible) {
-      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
-    }
-  } catch (error) {
+  await backOff(
+    async () => {
+      let currentWindow = this.currentWindow;
+      if ((!currentWindow || currentWindow.isClosed()) && this.app) {
+        currentWindow = await this.app.firstWindow({ timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+        this.mainWindow = this.mainWindow ?? currentWindow;
+        this.currentWindow = currentWindow;
+      }
+      if (!currentWindow) {
+        throw new Error('No current window is available');
+      }
+
+      const element = await currentWindow.$(selector);
+      if (!element) {
+        throw new Error('Element not found yet');
+      }
+      const isVisible = await element.isVisible();
+      if (!isVisible) {
+        throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
+      }
+    },
+    UI_BACKOFF_OPTIONS,
+  ).catch((error: unknown) => {
     throw new Error(`Failed to find ${elementComment} with selector "${selector}": ${error as Error}`);
-  }
+  });
 });
 
 Then('I should see {string} elements with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {

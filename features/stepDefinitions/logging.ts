@@ -11,24 +11,39 @@ Then('I should find log entries containing', async function(this: ApplicationWor
   const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);
   const logsDirectory = path.resolve(scenarioRoot, 'userData-test', 'logs');
 
-  // Consider all log files in logs directory (including wiki logs like wiki-2025-10-25.log)
-  const files = fs.readdirSync(logsDirectory).filter((f) => f.endsWith('.log'));
+  // Poll for expected log entries with retries.
+  // Wiki worker logs (written via logFor → IPC → winston DailyRotateFile) may arrive
+  // after a short delay due to the main→worker→main IPC round-trip and async file I/O.
+  const maxAttempts = 20;
+  const pollIntervalMs = 500;
+  let lastMissing: string[] = [];
+  let lastFileCount = 0;
 
-  const missing = expectedRows?.filter((expectedRow: string) => {
-    // Check if any log file contains this expected content
-    return !files.some((file) => {
-      try {
-        const content = fs.readFileSync(path.join(logsDirectory, file), 'utf8');
-        return content.includes(expectedRow);
-      } catch {
-        return false;
-      }
-    });
-  });
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const files = fs.readdirSync(logsDirectory).filter((f) => f.endsWith('.log'));
+    lastFileCount = files.length;
 
-  if (missing?.length) {
-    throw new Error(`Missing expected log messages in ${files.length} log file(s)`);
+    lastMissing = expectedRows?.filter((expectedRow: string) => {
+      return !files.some((file) => {
+        try {
+          const content = fs.readFileSync(path.join(logsDirectory, file), 'utf8');
+          return content.includes(expectedRow);
+        } catch {
+          return false;
+        }
+      });
+    }) ?? [];
+
+    if (lastMissing.length === 0) {
+      return; // All expected entries found
+    }
+
+    await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
   }
+
+  throw new Error(
+    `Missing expected log messages after ${maxAttempts} attempts (${lastFileCount} log file(s)). Missing: ${lastMissing.join(', ')}`,
+  );
 });
 
 // OAuth Server Steps

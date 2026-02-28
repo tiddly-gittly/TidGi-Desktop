@@ -124,6 +124,7 @@ export function useMessageHandling({
 
   return {
     message,
+    setMessage,
     parametersOpen,
     sendingMessage,
     setParametersOpen,

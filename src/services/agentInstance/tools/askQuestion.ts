@@ -21,23 +21,29 @@ const AskQuestionToolSchema = z.object({
     title: 'Question',
     description: 'The question to ask the user.',
   }),
+  inputType: z.enum(['single-select', 'multi-select', 'text']).optional().default('single-select').meta({
+    title: 'Input type',
+    description: 'How the user answers: "single-select" shows option buttons (pick one), "multi-select" shows checkboxes (pick many), "text" shows only a text box.',
+  }),
   options: z.array(z.object({
     label: z.string().meta({ title: 'Label', description: 'Display text for this option' }),
     description: z.string().optional().meta({ title: 'Description', description: 'Optional longer description' }),
   })).optional().meta({
     title: 'Options',
-    description: 'Optional list of predefined options for the user to choose from. If omitted, user can type a free-form response.',
+    description: 'Predefined options for the user. Required for single-select and multi-select, ignored for text input type.',
   }),
   allowFreeform: z.boolean().optional().default(true).meta({
     title: 'Allow free-form input',
-    description: 'Whether the user can type a custom response in addition to predefined options.',
+    description: 'Whether the user can type a custom response in addition to predefined options. Always true for text input type.',
   }),
 }).meta({
   title: 'ask-question',
-  description: 'Pause and ask the user a clarifying question. The user will see the question with optional clickable choices. Their answer will be sent as the next message.',
+  description:
+    "Pause and ask the user a clarifying question. Supports single-select (radio buttons), multi-select (checkboxes), or text-only input. The user's answer is sent as the next message.",
   examples: [
-    { question: 'Which wiki workspace should I create the note in?', options: [{ label: 'My Wiki' }, { label: 'Work Wiki' }], allowFreeform: true },
-    { question: 'What format do you prefer for the output?', options: [{ label: 'Wikitext' }, { label: 'Plain text' }, { label: 'JSON' }] },
+    { question: 'Which wiki workspace?', inputType: 'single-select', options: [{ label: 'My Wiki' }, { label: 'Work Wiki' }], allowFreeform: true },
+    { question: 'Which tags to apply?', inputType: 'multi-select', options: [{ label: 'journal' }, { label: 'important' }, { label: 'todo' }] },
+    { question: 'Describe the changes you want:', inputType: 'text' },
   ],
 });
 
@@ -54,28 +60,34 @@ const askQuestionDefinition = registerToolDefinition({
     injectToolList({ targetId: pos.targetId, position: pos.position || 'after' });
   },
 
-  async onResponseComplete({ toolCall, addToolResult, agentFrameworkContext: _agentFrameworkContext }) {
+  async onResponseComplete({ toolCall, addToolResult, yieldToHuman }) {
     if (!toolCall || toolCall.toolId !== 'ask-question') return;
 
     const parameters = toolCall.parameters as z.infer<typeof AskQuestionToolSchema>;
-    logger.debug('Ask question tool called', { question: parameters.question, optionCount: parameters.options?.length });
+    const questionId = `ask-q-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    logger.debug('Ask question tool called', { questionId, question: parameters.question, optionCount: parameters.options?.length });
 
-    // Add the question as a tool result with special metadata for the frontend renderer
+    // Add the question as a tool result with special metadata for the frontend renderer.
+    // Include questionId so the UI can resolve it via IPC (resolveAskQuestion).
     addToolResult({
       toolName: 'ask-question',
       parameters,
       result: JSON.stringify({
         type: 'ask-question',
+        questionId,
         question: parameters.question,
+        inputType: parameters.inputType ?? 'single-select',
         options: parameters.options,
         allowFreeform: parameters.allowFreeform ?? true,
       }),
-      duration: 0, // Visible in UI but excluded from future AI context once answered
+      duration: 3,
     });
 
-    // Do NOT yieldToSelf — return control to human so they can answer
-    // The agent status will be set to 'input-required' by the framework
-    logger.debug('Ask question: returning control to user for answer');
+    // Signal the framework to set status to 'input-required' so the UI can render the question.
+    // When the user answers, resolveAskQuestion() will inject the answer as a tool result
+    // and resume the agent loop in the same turn (no new user message).
+    yieldToHuman();
+    logger.debug('Ask question: yielding to user for answer', { questionId });
   },
 });
 

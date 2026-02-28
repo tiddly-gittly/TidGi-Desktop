@@ -1,6 +1,6 @@
-// Message rendering hooks
+// Message rendering registration — runs at module load time so renderers
+// are available BEFORE the first React render cycle (no useEffect delay).
 
-import { useEffect } from 'react';
 import { AskQuestionRenderer } from '../components/MessageRenderer/AskQuestionRenderer';
 import { BaseMessageRenderer } from '../components/MessageRenderer/BaseMessageRenderer';
 import { EditDiffRenderer } from '../components/MessageRenderer/EditDiffRenderer';
@@ -9,76 +9,74 @@ import { registerMessageRenderer } from '../components/MessageRenderer/index';
 import { ThinkingMessageRenderer } from '../components/MessageRenderer/ThinkingMessageRenderer';
 import { TodoListRenderer } from '../components/MessageRenderer/TodoListRenderer';
 import { ToolApprovalRenderer } from '../components/MessageRenderer/ToolApprovalRenderer';
+import { ToolResultRenderer } from '../components/MessageRenderer/ToolResultRenderer';
 import { WikitextMessageRenderer } from '../components/MessageRenderer/WikitextMessageRenderer';
 
+// Register all renderers eagerly at import time
+registerMessageRenderer('thinking', {
+  pattern: /<(thinking|think|reasoning|reflection|reflect|internal-monologue|thought-process)>[\s\S]*?<\/\1>|<\|思考\|>[\s\S]*?<\/\|思考\|>|<(理性思考)>[\s\S]*?<\/\2>/i,
+  renderer: ThinkingMessageRenderer,
+  priority: 100,
+});
+
+registerMessageRenderer('error', {
+  renderer: ErrorMessageRenderer,
+  pattern: /^Error:/,
+  priority: 200,
+});
+
+registerMessageRenderer('ask-question', {
+  pattern: /"type"\s*:\s*"ask-question"/,
+  renderer: AskQuestionRenderer,
+  priority: 150,
+});
+
+registerMessageRenderer('tool-approval', {
+  pattern: /"type"\s*:\s*"tool-approval"/,
+  renderer: ToolApprovalRenderer,
+  priority: 150,
+});
+
+registerMessageRenderer('edit-diff', {
+  pattern: /"type"\s*:\s*"edit-tiddler-diff"/,
+  renderer: EditDiffRenderer,
+  priority: 150,
+});
+
+registerMessageRenderer('todo-list', {
+  pattern: /"type"\s*:\s*"todo-update"/,
+  renderer: TodoListRenderer,
+  priority: 150,
+});
+
+registerMessageRenderer('wikitext', {
+  contentType: 'text/vnd.tiddlywiki',
+  renderer: WikitextMessageRenderer,
+  priority: 50,
+});
+
+registerMessageRenderer('markdown', {
+  contentType: 'text/markdown',
+  renderer: BaseMessageRenderer,
+  priority: 50,
+});
+
+registerMessageRenderer('html', {
+  contentType: 'text/html',
+  renderer: BaseMessageRenderer,
+  priority: 50,
+});
+
+registerMessageRenderer('tool-result', {
+  pattern: /<functions_result>/,
+  renderer: ToolResultRenderer,
+  priority: 10,
+});
+
 /**
- * Hook to register all message renderers
+ * No-op hook kept for backward compatibility.
+ * Registration now happens at module load time above.
  */
 export const useRegisterMessageRenderers = (): void => {
-  useEffect(() => {
-    // Register thinking content renderer for various thinking tag formats
-    registerMessageRenderer('thinking', {
-      // High priority pattern to match all thinking tag formats
-      pattern: /<(thinking|think|reasoning|reflection|reflect|internal-monologue|thought-process)>[\s\S]*?<\/\1>|<\|思考\|>[\s\S]*?<\/\|思考\|>|<(理性思考)>[\s\S]*?<\/\2>/i,
-      renderer: ThinkingMessageRenderer,
-      priority: 100, // Very high priority
-    });
-
-    // Register error message renderer with higher priority than other renderers
-    registerMessageRenderer('error', {
-      renderer: ErrorMessageRenderer,
-      pattern: /^Error:/,
-      priority: 200,
-    });
-
-    // Register ask-question tool result renderer
-    registerMessageRenderer('ask-question', {
-      pattern: /"type"\s*:\s*"ask-question"/,
-      renderer: AskQuestionRenderer,
-      priority: 150,
-    });
-
-    // Register tool-approval renderer
-    registerMessageRenderer('tool-approval', {
-      pattern: /"type"\s*:\s*"tool-approval"/,
-      renderer: ToolApprovalRenderer,
-      priority: 150,
-    });
-
-    // Register edit-tiddler diff renderer
-    registerMessageRenderer('edit-diff', {
-      pattern: /"type"\s*:\s*"edit-tiddler-diff"/,
-      renderer: EditDiffRenderer,
-      priority: 150,
-    });
-
-    // Register todo list renderer
-    registerMessageRenderer('todo-list', {
-      pattern: /"type"\s*:\s*"todo-update"/,
-      renderer: TodoListRenderer,
-      priority: 150,
-    });
-
-    // Register wikitext content type renderer
-    registerMessageRenderer('wikitext', {
-      contentType: 'text/vnd.tiddlywiki',
-      renderer: WikitextMessageRenderer,
-      priority: 50,
-    });
-
-    // Register content type specific renderers
-    registerMessageRenderer('markdown', {
-      contentType: 'text/markdown',
-      renderer: BaseMessageRenderer, // Replace with MarkdownRenderer when implemented
-      priority: 50,
-    });
-
-    registerMessageRenderer('html', {
-      contentType: 'text/html',
-      renderer: BaseMessageRenderer, // Replace with HTMLRenderer when implemented
-      priority: 50,
-    });
-
-    // No cleanup needed - registration is global
-  }, []);
+  // Intentionally empty — registration moved to module scope
 };

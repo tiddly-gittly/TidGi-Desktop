@@ -195,6 +195,7 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
           onClick={(event) => {
             event.stopPropagation();
           }}
+          data-testid={`array-item-enabled-${index}`}
           slotProps={{ input: { 'aria-label': t('Prompt.Enabled') } }}
           sx={{ p: 0.5, mr: 0.5 }}
         />

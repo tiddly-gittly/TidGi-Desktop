@@ -107,12 +107,9 @@ describe('MessageBubble - Duration-based Graying', () => {
       </TestWrapper>,
     );
 
-    // Check that the message is rendered
-    expect(screen.getByText(/wiki-search/)).toBeInTheDocument();
-
-    // Get the bubble container and check if it has the grayed out styling
-    const bubbleContainer = screen.getByText(/wiki-search/).closest('[data-testid="message-bubble"]') ||
-      screen.getByText(/wiki-search/).parentElement?.parentElement;
+    // After XML stripping, the tool call content is hidden. Check bubble exists via data-testid.
+    const bubbleContainer = screen.getByTestId('message-bubble');
+    expect(bubbleContainer).toBeInTheDocument();
 
     expect(bubbleContainer).toHaveStyle({ opacity: '0.5' }); // Should be grayed out due to duration=1
   });
@@ -166,12 +163,9 @@ describe('MessageBubble - Duration-based Graying', () => {
       </TestWrapper>,
     );
 
-    // Check that the message is rendered
-    expect(screen.getByText(/functions_result/)).toBeInTheDocument();
-
-    // Get the bubble container and check if it has the grayed out styling
-    const bubbleContainer = screen.getByText(/functions_result/).closest('[data-testid="message-bubble"]') ||
-      screen.getByText(/functions_result/).parentElement?.parentElement;
+    // Check that the message bubble is rendered (content is stripped of XML tags by BaseMessageRenderer)
+    const bubbleContainer = screen.getByTestId('message-bubble');
+    expect(bubbleContainer).toBeInTheDocument();
 
     expect(bubbleContainer).toHaveStyle({ opacity: '0.5' }); // Should be grayed out due to duration=1
   });
@@ -360,8 +354,9 @@ describe('MessageBubble - Duration-based Graying', () => {
       </TestWrapper>,
     );
 
-    // Check that the message content is rendered
-    expect(screen.getByText(/functions_result/)).toBeInTheDocument();
+    // Check that the message bubble is rendered (XML content is stripped but bubble exists)
+    const bubbleContainer = screen.getByTestId('message-bubble');
+    expect(bubbleContainer).toBeInTheDocument();
 
     // Check that no avatar is displayed for tool messages
     const avatars = screen.queryAllByRole('img'); // Avatars are typically rendered as img elements
@@ -382,7 +377,7 @@ describe('MessageBubble - Duration-based Graying', () => {
     const toolMessage: AgentInstanceMessage = {
       id: 'tool-msg',
       role: 'tool',
-      content: '<functions_result>Tool result</functions_result>',
+      content: 'Tool result plain text',
       agentId: 'test-agent',
       contentType: 'text/plain',
       modified: new Date(),
@@ -415,8 +410,8 @@ describe('MessageBubble - Duration-based Graying', () => {
       </TestWrapper>,
     );
 
-    const toolContent = screen.getByText(/Tool result/);
-    const toolBackgroundColor = window.getComputedStyle(toolContent.parentElement!).backgroundColor;
+    const toolBubble = screen.getByTestId('message-bubble');
+    const toolBackgroundColor = window.getComputedStyle(toolBubble).backgroundColor;
 
     // Both should have the same background color
     expect(assistantBackgroundColor).toBe(toolBackgroundColor);

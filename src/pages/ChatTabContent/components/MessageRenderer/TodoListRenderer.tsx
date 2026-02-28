@@ -11,6 +11,7 @@ import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import { Box, LinearProgress, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React, { memo, useMemo } from 'react';
+import { stripToolXml } from './BaseMessageRenderer';
 import { MessageRendererProps } from './types';
 
 /* ------------------------------------------------------------------ */
@@ -66,7 +67,7 @@ interface TodoUpdateData {
 }
 
 function parseTodoUpdateData(content: string): TodoUpdateData | null {
-  const match = /Result:\s*(.+)/s.exec(content);
+  const match = /Result:\s*(.+?)\s*(?:<\/functions_result>|$)/s.exec(content);
   if (!match) return null;
   try {
     const data = JSON.parse(match[1]) as TodoUpdateData;
@@ -112,7 +113,8 @@ export const TodoListRenderer: React.FC<MessageRendererProps> = memo(({ message 
   }, [data]);
 
   if (!data || nodes.length === 0) {
-    return <Typography variant='body2' sx={{ whiteSpace: 'pre-wrap' }}>{message.content}</Typography>;
+    const cleaned = stripToolXml(message.content);
+    return cleaned ? <Typography variant='body2' sx={{ whiteSpace: 'pre-wrap' }}>{cleaned}</Typography> : null;
   }
 
   const total = nodes.length;

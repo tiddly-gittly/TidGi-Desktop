@@ -40,13 +40,20 @@ const summaryDefinition = registerToolDefinition({
     injectToolList({ targetId: pos.targetId, position: pos.position || 'after' });
   },
 
-  async onResponseComplete({ toolCall, executeToolCall }) {
+  async onResponseComplete({ toolCall, addToolResult }) {
     if (!toolCall || toolCall.toolId !== 'summary') return;
-    await executeToolCall('summary', async (parameters) => {
-      logger.debug('Summary tool called — agent loop will terminate', { textLength: parameters.text.length });
-      // yieldToSelf is NOT called — the loop naturally ends by returning to human
-      return { success: true, data: parameters.text };
+
+    const parameters = toolCall.parameters as z.infer<typeof SummaryToolSchema>;
+    logger.debug('Summary tool called — agent loop will terminate', { textLength: parameters.text.length });
+
+    // Use addToolResult directly instead of executeToolCall, because executeToolCall auto-calls yieldToSelf which would cause one more unwanted round
+    addToolResult({
+      toolName: 'summary',
+      parameters,
+      result: parameters.text,
+      duration: 0,
     });
+    // Do NOT yieldToSelf — let the loop end naturally, yielding 'completed' status
   },
 });
 
