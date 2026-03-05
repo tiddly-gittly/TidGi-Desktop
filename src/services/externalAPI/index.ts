@@ -18,7 +18,6 @@ import { streamFromProvider } from './callProviderAPI';
 import { generateSpeechFromProvider } from './callSpeechAPI';
 import { generateTranscriptionFromProvider } from './callTranscriptionsAPI';
 import { extractErrorDetails } from './errorHandlers';
-import { DEFAULT_RETRY_CONFIG, withRetry } from './retryUtility';
 import type {
   AIEmbeddingResponse,
   AIGlobalSettings,
@@ -30,6 +29,7 @@ import type {
   IExternalAPIService,
   ModelInfo,
 } from './interface';
+import { DEFAULT_RETRY_CONFIG, withRetry } from './retryUtility';
 
 /**
  * Simplified request context
@@ -62,7 +62,6 @@ export class ExternalAPIService implements IExternalAPIService {
       },
       modelParameters: {
         temperature: 0.7,
-        systemPrompt: 'You are a helpful assistant.',
         topP: 0.95,
       },
     },
@@ -616,12 +615,13 @@ export class ExternalAPIService implements IExternalAPIService {
       let result: ReturnType<typeof streamFromProvider>;
       try {
         result = await withRetry(
-          async () => streamFromProvider(
-            config,
-            messages,
-            controller.signal,
-            providerConfig,
-          ),
+          async () =>
+            streamFromProvider(
+              config,
+              messages,
+              controller.signal,
+              providerConfig,
+            ),
           DEFAULT_RETRY_CONFIG,
           (attempt, maxAttempts, delayMs, error) => {
             logger.info('Retrying AI stream creation', {

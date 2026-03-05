@@ -82,6 +82,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
             agentFrameworkConfig: defaultAgent.agentFrameworkConfig,
             aiApiConfig: defaultAgent.aiApiConfig,
             agentTools: defaultAgent.agentTools,
+            heartbeat: (defaultAgent as AgentDefinition).heartbeat,
           })
         );
         // Save all default agents to database
@@ -143,7 +144,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         throw new Error(`Agent definition not found: ${agent.id}`);
       }
 
-      const pickedProperties = pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'aiApiConfig']);
+      const pickedProperties = pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'aiApiConfig', 'heartbeat']);
       Object.assign(existingAgent, pickedProperties);
 
       await this.agentDefRepository!.save(existingAgent);
@@ -175,6 +176,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         agentFrameworkConfig: entity.agentFrameworkConfig || {},
         aiApiConfig: entity.aiApiConfig || undefined,
         agentTools: entity.agentTools || undefined,
+        heartbeat: entity.heartbeat || undefined,
       }));
 
       return agentDefs;
@@ -216,6 +218,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         agentFrameworkConfig: entity.agentFrameworkConfig || {},
         aiApiConfig: entity.aiApiConfig || undefined,
         agentTools: entity.agentTools || undefined,
+        heartbeat: entity.heartbeat || undefined,
       };
 
       return agentDefinition;

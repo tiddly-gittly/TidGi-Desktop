@@ -209,6 +209,9 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
         onOpenParameters={handleOpenParameters}
         loading={isWorking}
         inputText={message}
+        currentAgentDefId={tab.agentDefId}
+        onSwitchAgent={handleSwitchAgent}
+        isStreaming={isStreaming}
       />
 
       {/* Messages container with all chat bubbles */}
@@ -256,8 +259,6 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
         selectedWikiTiddlers={selectedWikiTiddlers}
         onWikiTiddlerSelect={handleWikiTiddlerSelect}
         onRemoveWikiTiddler={handleRemoveWikiTiddler}
-        currentAgentDefId={tab.agentDefId}
-        onSwitchAgent={handleSwitchAgent}
       />
 
       {/* Model parameter dialog */}
@@ -273,7 +274,6 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
               temperature: 0.7,
               maxTokens: 1000,
               topP: 0.95,
-              systemPrompt: '',
             },
           }}
           onSave={async (newConfig) => {

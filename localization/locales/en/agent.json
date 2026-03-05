@@ -218,6 +218,12 @@
     "NoPresetSelected": "No preset model selected",
     "NoProvidersAvailable": "No providers available",
     "OpenDatabaseFolder": "Open Database Folder",
+    "BackgroundTasks": "Background Tasks",
+    "BackgroundTasksDescription": "Active scheduled agent tasks (heartbeats and alarms). These wake agents automatically on a timer.",
+    "NoBackgroundTasks": "No active background tasks.",
+    "CancelTask": "Cancel this background task",
+    "SaveToDefinition": "Save to Definition",
+    "SaveToDefinitionDescription": "Apply current prompt configuration to the agent definition so new instances also use it",
     "PresetModels": "Preset Models",
     "PresetProvider": "Preset Provider",
     "ProviderAddedSuccessfully": "Provider added successfully",
@@ -631,6 +637,7 @@
     "NoTabs": "No tabs in split-screen view"
   },
   "Tab": {
+    "TabList": "Tabs",
     "Title": {
       "CreateNewAgent": "Create New Agent",
       "EditAgentDefinition": "Edit Agent",

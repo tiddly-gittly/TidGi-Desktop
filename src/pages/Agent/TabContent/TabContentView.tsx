@@ -1,9 +1,10 @@
 import CloseIcon from '@mui/icons-material/Close';
-import { Box, IconButton } from '@mui/material';
+import { Box, IconButton, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';
 
 import { ChatTabContent } from '../../ChatTabContent';
+import { TabListDropdown } from '../components/TabBar/TabListDropdown';
 import { useTabStore } from '../store/tabStore';
 import { TabItem, TabType } from '../types/tab';
 import { CreateNewAgentContent } from './TabTypes/CreateNewAgentContent';
@@ -40,6 +41,16 @@ const SplitViewHeader = styled(Box)`
   padding: 4px;
   background-color: ${props => props.theme.palette.background.paper};
   border-bottom: 1px solid ${props => props.theme.palette.divider};
+`;
+
+/** Minimal header with TabListDropdown for non-chat tab types */
+const GenericTabHeader = styled(Box)`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid ${props => props.theme.palette.divider};
+  background-color: ${props => props.theme.palette.background.paper};
 `;
 
 /**
@@ -84,6 +95,15 @@ export const TabContentView: React.FC<TabContentViewProps> = ({ tab, isSplitView
             <CloseIcon fontSize='small' />
           </IconButton>
         </SplitViewHeader>
+      )}
+      {/* Non-chat tabs get a minimal header with tab list; Chat tabs have their own ChatHeader */}
+      {tab.type !== TabType.CHAT && !isSplitView && (
+        <GenericTabHeader>
+          <TabListDropdown />
+          <Typography variant='body2' noWrap sx={{ flex: 1, fontWeight: 500 }}>
+            {tab.title}
+          </Typography>
+        </GenericTabHeader>
       )}
       {renderContent()}
     </ContentContainer>

@@ -17,6 +17,22 @@ export interface AgentToolConfig {
 }
 
 /**
+ * Heartbeat configuration for automatic periodic agent wake-up
+ */
+export interface AgentHeartbeatConfig {
+  /** Whether heartbeat is enabled */
+  enabled: boolean;
+  /** Interval in seconds between automatic wake-ups. Min 60s. */
+  intervalSeconds: number;
+  /** Message sent to the agent on each heartbeat tick */
+  message: string;
+  /** Optional: only run heartbeat between these hours (24h format, e.g. "09:00"-"18:00") */
+  activeHoursStart?: string;
+  /** Optional: end of active hours */
+  activeHoursEnd?: string;
+}
+
+/**
  * Tool calling match result
  */
 export interface ToolCallingMatch {
@@ -55,6 +71,11 @@ export interface AgentDefinition {
    * Tools available to this agent
    */
   agentTools?: AgentToolConfig[];
+  /**
+   * Heartbeat configuration — periodically wake the agent with an automated message.
+   * Like OpenClaw-style autonomous agents that check in regularly.
+   */
+  heartbeat?: AgentHeartbeatConfig;
 }
 
 /**

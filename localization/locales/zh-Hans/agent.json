@@ -216,6 +216,12 @@
     "NoPresetSelected": "不使用预设模型",
     "NoProvidersAvailable": "没有可用的提供商",
     "OpenDatabaseFolder": "打开数据库文件夹",
+    "BackgroundTasks": "后台任务",
+    "BackgroundTasksDescription": "活跃的智能体自动唤醒定时任务（心跳和闹钟）。这些任务会按计划自动唤醒智能体。",
+    "NoBackgroundTasks": "没有活跃的后台任务。",
+    "CancelTask": "取消此后台任务",
+    "SaveToDefinition": "保存到定义",
+    "SaveToDefinitionDescription": "将当前提示词配置保存到智能体定义，使新实例也使用此配置",
     "PresetModels": "预设模型",
     "PresetProvider": "预置提供商",
     "ProviderAddedSuccessfully": "提供商添加成功",
@@ -612,6 +618,7 @@
     "NoTabs": "分屏视图中没有标签"
   },
   "Tab": {
+    "TabList": "标签页",
     "Title": {
       "CreateNewAgent": "创建新智能体",
       "EditAgentDefinition": "编辑智能体",

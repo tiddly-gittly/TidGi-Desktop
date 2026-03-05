@@ -84,9 +84,10 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   @agent
   Scenario: Close all tabs then create default agent from fallback page
     # Ensure starting from black/fallback page with no open tabs
+    # Open tab list dropdown and close tabs from there
     Given I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    When I click all "tab" elements matching selector "[data-testid='tab']"
-    When I click all "close tab button" elements matching selector "[data-testid='tab-close-button']"
+    When I click on a "tab list dropdown" element with selector "[data-testid='tab-list-button']"
+    When I click all "close tab button" elements matching selector "[data-testid^='tab-close-']"
     # When there is no active tab, this is "fallback new tab", it has same thing as new tab.
     And I should see "new tab button and Create Default Agent" elements with selectors:
       | element description     | selector                                    |
@@ -96,7 +97,9 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
     When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
-    Then I click all "close tab button" elements matching selector "[data-testid='tab-close-button']"
+    # Close remaining tabs via dropdown
+    Then I click on a "tab list dropdown" element with selector "[data-testid='tab-list-button']"
+    Then I click all "close tab button" elements matching selector "[data-testid^='tab-close-']"
 
   @agent @mockOpenAI
   Scenario: Streamed assistant response can be cancelled mid-stream and send button returns

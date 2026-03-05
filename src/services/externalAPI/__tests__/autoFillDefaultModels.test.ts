@@ -34,7 +34,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
     it('should expose defaultConfig$ observable to frontend', () => {
       const mockConfig: AiAPIConfig = {
         default: { provider: 'openai', model: 'gpt-4' },
-        modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 },
+        modelParameters: { temperature: 0.7, topP: 0.95 },
       };
 
       const configSubject = new BehaviorSubject(mockConfig);
@@ -86,7 +86,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
     it('should emit updated config when auto-fill happens', () => {
       const initialConfig: AiAPIConfig = {
         default: undefined,
-        modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 },
+        modelParameters: { temperature: 0.7, topP: 0.95 },
       };
 
       const configSubject = new BehaviorSubject(initialConfig);
@@ -122,7 +122,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
       const configWithExisting: AiAPIConfig = {
         default: { provider: 'anthropic', model: 'claude-3' },
         embedding: { provider: 'openai', model: 'existing-embedding-model' },
-        modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 },
+        modelParameters: { temperature: 0.7, topP: 0.95 },
       };
 
       const configSubject = new BehaviorSubject(configWithExisting);
@@ -150,7 +150,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
     it('should only auto-fill when default is empty', () => {
       const configWithoutEmbedding: AiAPIConfig = {
         default: { provider: 'openai', model: 'gpt-4' },
-        modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 },
+        modelParameters: { temperature: 0.7, topP: 0.95 },
       };
 
       const configSubject = new BehaviorSubject(configWithoutEmbedding);
@@ -179,7 +179,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
     it('should support multiple subscribers to observable', () => {
       const mockConfig: AiAPIConfig = {
         default: { provider: 'openai', model: 'gpt-4' },
-        modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 },
+        modelParameters: { temperature: 0.7, topP: 0.95 },
       };
 
       const configSubject = new BehaviorSubject(mockConfig);

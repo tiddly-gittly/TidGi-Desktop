@@ -69,7 +69,8 @@
           "toolId": "fullReplacement",
           "fullReplacementParam": {
             "targetId": "default-history",
-            "sourceType": "historyOfSession"
+            "sourceType": "historyOfSession",
+            "contextWindowSize": 120000
           },
           "caption": "聊天历史",
           "forbidOverrides": true
@@ -342,7 +343,8 @@
           "toolId": "fullReplacement",
           "fullReplacementParam": {
             "targetId": "default-history",
-            "sourceType": "historyOfSession"
+            "sourceType": "historyOfSession",
+            "contextWindowSize": 120000
           },
           "caption": "聊天历史",
           "forbidOverrides": true

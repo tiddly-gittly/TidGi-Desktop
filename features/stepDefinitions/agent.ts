@@ -125,7 +125,8 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
           embedding = generateSemanticEmbedding(embeddingTag);
         }
 
-        if (response) rules.push({ response, stream, embedding });
+        // Include rules with a response OR an embedding — MockOpenAIServer separates them into chatRules vs embeddingRules internally
+        if (response || embedding) rules.push({ response, stream, embedding });
       }
     }
 
@@ -166,7 +167,8 @@ Given('I add mock OpenAI responses:', function(this: ApplicationWorld, dataTable
         embedding = generateSemanticEmbedding(embeddingTag);
       }
 
-      if (response) rules.push({ response, stream, embedding });
+      // Include rules with a response OR an embedding — MockOpenAIServer separates them into chatRules vs embeddingRules internally
+      if (response || embedding) rules.push({ response, stream, embedding });
     }
   }
 

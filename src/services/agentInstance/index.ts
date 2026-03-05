@@ -21,7 +21,9 @@ import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { createDebouncedMessageUpdater, saveUserMessage as saveUserMessageHelper } from './agentMessagePersistence';
 import * as repo from './agentRepository';
+import { getActiveHeartbeats, startHeartbeat, stopHeartbeat } from './heartbeatManager';
 import type { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from './interface';
+import { cancelAlarm, getActiveAlarmAgentIds, scheduleAlarmTimer } from './tools/alarmClock';
 
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {
@@ -47,6 +49,8 @@ export class AgentInstanceService implements IAgentInstanceService {
     try {
       await this.initializeDatabase();
       await this.initializeFrameworks();
+      // Restore heartbeat timers and alarms for active agents after DB + frameworks are ready
+      await this.restoreBackgroundTasks();
     } catch (error) {
       logger.error('Failed to initialize agent instance service', { error });
       throw error;
@@ -85,6 +89,57 @@ export class AgentInstanceService implements IAgentInstanceService {
     // Tools are already registered in initialize(), so we only register frameworks here
     // Register basic prompt concatenation framework with its schema
     this.registerFramework('basicPromptConcatHandler', basicPromptConcatHandler, getPromptConcatAgentFrameworkConfigJsonSchema());
+  }
+
+  /**
+   * Restore heartbeat timers and alarm timers for active agents after app restart.
+   * Heartbeats: read from AgentDefinition.heartbeat for all non-closed instances.
+   * Alarms: read from AgentInstance.scheduledAlarm for all non-closed instances.
+   */
+  private async restoreBackgroundTasks(): Promise<void> {
+    if (!this.agentInstanceRepository) return;
+    try {
+      // Find all non-closed, non-volatile agent instances with their definitions
+      const activeInstances = await this.agentInstanceRepository.find({
+        where: { closed: false, volatile: false },
+        relations: ['agentDefinition'],
+      });
+
+      let heartbeatsRestored = 0;
+      let alarmsRestored = 0;
+
+      for (const instance of activeInstances) {
+        // Restore heartbeat from definition
+        const heartbeatConfig = instance.agentDefinition?.heartbeat;
+        if (heartbeatConfig?.enabled) {
+          startHeartbeat(instance.id, heartbeatConfig, this);
+          heartbeatsRestored++;
+        }
+
+        // Restore persisted alarm
+        const alarm = instance.scheduledAlarm;
+        if (alarm?.wakeAtISO) {
+          const wakeAt = new Date(alarm.wakeAtISO);
+          const now = new Date();
+          // For one-shot alarms in the past, fire immediately
+          // For recurring alarms, always restore
+          if (alarm.repeatIntervalMinutes || wakeAt.getTime() > now.getTime()) {
+            scheduleAlarmTimer(instance.id, alarm.wakeAtISO, alarm.reminderMessage, alarm.repeatIntervalMinutes);
+            alarmsRestored++;
+          } else {
+            // Past one-shot alarm — fire it now and clear
+            scheduleAlarmTimer(instance.id, new Date().toISOString(), alarm.reminderMessage);
+            alarmsRestored++;
+          }
+        }
+      }
+
+      if (heartbeatsRestored > 0 || alarmsRestored > 0) {
+        logger.info('Background tasks restored', { heartbeatsRestored, alarmsRestored, totalInstances: activeInstances.length });
+      }
+    } catch (error) {
+      logger.error('Failed to restore background tasks', { error });
+    }
   }
 
   /**
@@ -160,6 +215,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   public async deleteAgent(agentId: string): Promise<void> {
     this.ensureRepositories();
     try {
+      stopHeartbeat(agentId);
       await repo.deleteAgent(this.agentInstanceRepository!, this.agentMessageRepository!, agentId);
       this.cleanupAgentSubscriptions(agentId);
     } catch (error) {
@@ -334,13 +390,19 @@ export class AgentInstanceService implements IAgentInstanceService {
           }
 
           // Trigger agentStatusChanged hook with actual terminal state (completed, input-required, etc.)
+          const terminalState = (lastResult.state ?? 'completed') as 'working' | 'completed' | 'failed' | 'canceled';
           await frameworkHooks.agentStatusChanged.promise({
             agentFrameworkContext: frameworkContext,
             status: {
-              state: lastResult.state ?? 'completed',
+              state: terminalState,
               modified: new Date(),
             },
           });
+
+          // Start heartbeat timer if the agent definition has heartbeat config
+          if (agentDefinition.heartbeat?.enabled) {
+            startHeartbeat(agentId, agentDefinition.heartbeat, this);
+          }
         }
 
         // Remove cancel token after generator completes
@@ -392,6 +454,9 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   public async cancelAgent(agentId: string): Promise<void> {
+    // Stop heartbeat on cancel
+    stopHeartbeat(agentId);
+
     // Cancel any pending ask-question promises so the agent loop can exit
     try {
       const { cancelPendingQuestions } = require('./tools/askQuestionPending') as typeof import('./tools/askQuestionPending');
@@ -479,6 +544,8 @@ export class AgentInstanceService implements IAgentInstanceService {
     this.ensureRepositories();
 
     try {
+      stopHeartbeat(agentId);
+
       // Get agent instance
       const instanceEntity = await this.agentInstanceRepository!.findOne({
         where: { id: agentId },
@@ -557,7 +624,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     });
     if (agent) {
       const deletedSet = new Set(messageIds);
-      agent.messages = agent.messages.filter(m => !deletedSet.has(m.id));
+      agent.messages = (agent.messages ?? []).filter(m => !deletedSet.has(m.id));
       await this.agentInstanceRepository.save(agent);
     }
   }
@@ -647,6 +714,72 @@ export class AgentInstanceService implements IAgentInstanceService {
     await this.saveUserMessage(userMessage);
 
     return { rolledBack, errors };
+  }
+
+  public async getBackgroundTasks(): Promise<
+    Array<{
+      agentId: string;
+      agentName?: string;
+      type: 'heartbeat' | 'alarm';
+      intervalSeconds?: number;
+      wakeAtISO?: string;
+      message?: string;
+      repeatIntervalMinutes?: number;
+    }>
+  > {
+    const tasks: Array<{
+      agentId: string;
+      agentName?: string;
+      type: 'heartbeat' | 'alarm';
+      intervalSeconds?: number;
+      wakeAtISO?: string;
+      message?: string;
+      repeatIntervalMinutes?: number;
+    }> = [];
+
+    // Collect heartbeats from in-memory registry
+    const heartbeatAgentIds = getActiveHeartbeats();
+    for (const agentId of heartbeatAgentIds) {
+      const agent = await this.getAgent(agentId);
+      const agentDefinition = agent?.agentDefId ? await this.agentDefinitionService.getAgentDef(agent.agentDefId) : undefined;
+      const heartbeatConfig = agentDefinition?.heartbeat;
+      tasks.push({
+        agentId,
+        agentName: agent?.name ?? agentDefinition?.name,
+        type: 'heartbeat',
+        intervalSeconds: heartbeatConfig?.intervalSeconds,
+        message: heartbeatConfig?.message,
+      });
+    }
+
+    // Collect alarms from in-memory registry
+    const alarmAgentIds = getActiveAlarmAgentIds();
+    for (const agentId of alarmAgentIds) {
+      const agent = await this.getAgent(agentId);
+      // Read persisted alarm for details
+      if (this.agentInstanceRepository) {
+        const entity = await this.agentInstanceRepository.findOne({ where: { id: agentId } });
+        tasks.push({
+          agentId,
+          agentName: agent?.name,
+          type: 'alarm',
+          wakeAtISO: entity?.scheduledAlarm?.wakeAtISO,
+          message: entity?.scheduledAlarm?.reminderMessage,
+          repeatIntervalMinutes: entity?.scheduledAlarm?.repeatIntervalMinutes,
+        });
+      }
+    }
+
+    return tasks;
+  }
+
+  public async cancelBackgroundTask(agentId: string, type: 'heartbeat' | 'alarm'): Promise<void> {
+    if (type === 'heartbeat') {
+      stopHeartbeat(agentId);
+    } else if (type === 'alarm') {
+      cancelAlarm(agentId);
+    }
+    logger.info('Background task cancelled from UI', { agentId, type });
   }
 
   public subscribeToAgentUpdates(agentId: string): Observable<AgentInstance | undefined>;

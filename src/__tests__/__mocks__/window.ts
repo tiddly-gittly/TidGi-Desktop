@@ -50,7 +50,7 @@ Object.defineProperty(window, 'observables', {
     externalAPI: {
       defaultConfig$: new BehaviorSubject({
         default: { provider: 'openai', model: 'gpt-4' },
-        modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 },
+        modelParameters: { temperature: 0.7, topP: 0.95 },
       }).asObservable(),
       providers$: new BehaviorSubject([]).asObservable(),
     },

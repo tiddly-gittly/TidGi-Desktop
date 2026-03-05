@@ -4,12 +4,14 @@ import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import SaveIcon from '@mui/icons-material/Save';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
 import MuiDialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
+import Snackbar from '@mui/material/Snackbar';
 import Tooltip from '@mui/material/Tooltip';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -39,6 +41,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   const [baseMode, setBaseMode] = useState<'preview' | 'edit'>(initialBaseMode);
   const [showSideBySide, setShowSideBySide] = useState(false);
   const [baseModeBeforeSideBySide, setBaseModeBeforeSideBySide] = useState<'preview' | 'edit'>(initialBaseMode);
+  const [savedSnackbarOpen, setSavedSnackbarOpen] = useState(false);
 
   const {
     loading: agentFrameworkConfigLoading,
@@ -47,6 +50,23 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
     agentDefId: agent?.agentDefId,
     agentId: agent?.id,
   });
+
+  /** Copy current instance prompt config to the agent definition */
+  const handleSaveToDefinition = useCallback(async () => {
+    if (!agent?.agentDefId || !agentFrameworkConfig) return;
+    try {
+      const agentDefinition = await window.service.agentDefinition.getAgentDef(agent.agentDefId);
+      if (agentDefinition) {
+        await window.service.agentDefinition.updateAgentDef({
+          ...agentDefinition,
+          agentFrameworkConfig,
+        });
+        setSavedSnackbarOpen(true);
+      }
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to save config to definition', { error });
+    }
+  }, [agent?.agentDefId, agentFrameworkConfig]);
 
   const {
     getPreviewPromptResult,
@@ -146,6 +166,21 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <Box>{t('Prompt.Preview')}</Box>
           <Box sx={{ display: 'flex' }}>
+            {/* Save to definition button — only in edit mode */}
+            {(showEdit || showSideBySide) && agent?.agentDefId && (
+              <Tooltip title={t('Preference.SaveToDefinition')}>
+                <IconButton
+                  aria-label='save-to-definition'
+                  onClick={() => {
+                    void handleSaveToDefinition();
+                  }}
+                  sx={{ mr: 1 }}
+                  data-testid='save-to-definition-button'
+                >
+                  <SaveIcon />
+                </IconButton>
+              </Tooltip>
+            )}
             <Tooltip title={sideBySideTooltip}>
               <IconButton
                 aria-label={sideBySideTooltip}
@@ -231,6 +266,14 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
           </Box>
         )}
       </MuiDialogContent>
+      <Snackbar
+        open={savedSnackbarOpen}
+        autoHideDuration={2000}
+        onClose={() => {
+          setSavedSnackbarOpen(false);
+        }}
+        message={t('Preference.SaveToDefinitionDescription')}
+      />
     </Dialog>
   );
 };

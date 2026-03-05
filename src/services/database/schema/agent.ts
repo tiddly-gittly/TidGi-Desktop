@@ -1,4 +1,4 @@
-import type { AgentDefinition, AgentToolConfig } from '@services/agentDefinition/interface';
+import type { AgentDefinition, AgentHeartbeatConfig, AgentToolConfig } from '@services/agentDefinition/interface';
 import type { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage } from '@services/agentInstance/interface';
 import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
@@ -42,6 +42,10 @@ export class AgentDefinitionEntity implements Partial<AgentDefinition> {
   /** Tools available to this agent */
   @Column({ type: 'simple-json', nullable: true })
   agentTools?: AgentToolConfig[];
+
+  /** Heartbeat configuration for periodic auto-wake */
+  @Column({ type: 'simple-json', nullable: true })
+  heartbeat?: AgentHeartbeatConfig;
 
   /** Creation timestamp */
   @CreateDateColumn()
@@ -96,6 +100,14 @@ export class AgentInstanceEntity implements Partial<AgentInstance> {
   /** Indicate this agent instance is temporary, like forked instance to do sub-jobs, or for preview when editing agent definitions. */
   @Column({ default: false })
   volatile: boolean = false;
+
+  /** Persisted alarm data — survives app restart. Null when no alarm is active. */
+  @Column({ type: 'simple-json', nullable: true })
+  scheduledAlarm?: {
+    wakeAtISO: string;
+    reminderMessage?: string;
+    repeatIntervalMinutes?: number;
+  } | null;
 
   // Relation to AgentDefinition
   @ManyToOne(() => AgentDefinitionEntity, definition => definition.instances)

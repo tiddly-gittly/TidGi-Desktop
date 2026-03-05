@@ -278,6 +278,26 @@ export interface IAgentInstanceService {
    * @returns Array of changed files with their status
    */
   getTurnChangedFiles(agentId: string, userMessageId: string): Promise<Array<{ path: string; status: string }>>;
+
+  /**
+   * Get all active background tasks (heartbeats + alarms) for display in settings UI.
+   */
+  getBackgroundTasks(): Promise<
+    Array<{
+      agentId: string;
+      agentName?: string;
+      type: 'heartbeat' | 'alarm';
+      intervalSeconds?: number;
+      wakeAtISO?: string;
+      message?: string;
+      repeatIntervalMinutes?: number;
+    }>
+  >;
+
+  /**
+   * Cancel a background task by agent ID and type.
+   */
+  cancelBackgroundTask(agentId: string, type: 'heartbeat' | 'alarm'): Promise<void>;
 }
 
 export const AgentInstanceServiceIPCDescriptor = {
@@ -300,6 +320,8 @@ export const AgentInstanceServiceIPCDescriptor = {
     sendMsgToAgent: ProxyPropertyType.Function,
     subscribeToAgentUpdates: ProxyPropertyType.Function$,
     getTurnChangedFiles: ProxyPropertyType.Function,
+    getBackgroundTasks: ProxyPropertyType.Function,
+    cancelBackgroundTask: ProxyPropertyType.Function,
     updateAgent: ProxyPropertyType.Function,
   },
 };

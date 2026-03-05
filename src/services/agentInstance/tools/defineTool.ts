@@ -20,6 +20,15 @@ import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { findPromptById } from '../promptConcat/promptConcat';
 import type { IPrompt } from '../promptConcat/promptConcatSchema';
 import { schemaToToolContent } from '../utilities/schemaToToolContent';
+import { evaluateApproval, requestApproval } from './approval';
+import type { ToolApprovalConfig } from './types';
+
+/**
+ * Maximum characters for a single tool result before truncation.
+ * ~8000 tokens at ~4 chars/token = 32000 chars.
+ * Prevents a single search result from consuming the entire context window.
+ */
+const MAX_TOOL_RESULT_CHARS = 32_000;
 import type {
   AddToolResultOptions,
   InjectContentOptions,
@@ -286,6 +295,43 @@ export function defineTool<
                 // Validate parameters
                 const validatedParameters = toolSchema.parse(toolCall.parameters);
 
+                // Check approval before execution
+                const approvalConfig = ourToolConfig.approval as ToolApprovalConfig | undefined;
+                const decision = evaluateApproval(approvalConfig, String(toolName), validatedParameters as Record<string, unknown>);
+                if (decision === 'deny') {
+                  handlerContext.addToolResult({
+                    toolName: String(toolName),
+                    parameters: validatedParameters,
+                    result: 'Tool execution denied by approval policy.',
+                    isError: true,
+                    duration: 2,
+                  });
+                  handlerContext.yieldToSelf();
+                  return true;
+                }
+                if (decision === 'pending') {
+                  const approvalId = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                  const userDecision = await requestApproval({
+                    approvalId,
+                    agentId: agentFrameworkContext.agent.id,
+                    toolName: String(toolName),
+                    parameters: validatedParameters as Record<string, unknown>,
+                    originalText: toolCall.originalText,
+                    created: new Date(),
+                  });
+                  if (userDecision === 'deny') {
+                    handlerContext.addToolResult({
+                      toolName: String(toolName),
+                      parameters: validatedParameters,
+                      result: 'Tool execution denied by user.',
+                      isError: true,
+                      duration: 2,
+                    });
+                    handlerContext.yieldToSelf();
+                    return true;
+                  }
+                }
+
                 // Execute the tool
                 const result = await executor(validatedParameters);
 
@@ -347,10 +393,19 @@ export function defineTool<
 
             addToolResult: (options: AddToolResultOptions) => {
               const now = new Date();
+
+              // Truncate excessively long results to prevent context window overflow
+              let resultContent = options.result;
+              if (resultContent.length > MAX_TOOL_RESULT_CHARS) {
+                const truncated = resultContent.slice(0, MAX_TOOL_RESULT_CHARS);
+                resultContent = `${truncated}\n\n[... truncated — result was ${resultContent.length} chars, showing first ${MAX_TOOL_RESULT_CHARS}]`;
+                logger.debug('Tool result truncated', { toolName: options.toolName, originalLength: options.result.length, truncatedTo: MAX_TOOL_RESULT_CHARS });
+              }
+
               const toolResultText = `<functions_result>
 Tool: ${options.toolName}
 Parameters: ${JSON.stringify(options.parameters)}
-${options.isError ? 'Error' : 'Result'}: ${options.result}
+${options.isError ? 'Error' : 'Result'}: ${resultContent}
 </functions_result>`;
 
               const toolResultMessage: AgentInstanceMessage = {
@@ -456,6 +511,47 @@ ${options.isError ? 'Error' : 'Result'}: ${options.result}
               // Build entries for parallel execution
               const entries: Array<{ call: ToolCallingMatch & { found: true }; executor: (params: Record<string, unknown>) => Promise<ToolExecutionResult>; timeoutMs?: number }> =
                 [];
+
+              // Check approval once for the batch — use the first call's parameters as representative
+              const approvalConfig = ourToolConfig.approval as ToolApprovalConfig | undefined;
+              const batchDecision = evaluateApproval(approvalConfig, String(toolName), matchingCalls[0]?.parameters ?? {});
+              if (batchDecision === 'deny') {
+                for (const call of matchingCalls) {
+                  handlerContext.addToolResult({
+                    toolName: String(toolName),
+                    parameters: call.parameters,
+                    result: 'Tool execution denied by approval policy.',
+                    isError: true,
+                    duration: toolResultDuration,
+                  });
+                }
+                handlerContext.yieldToSelf();
+                return matchingCalls.length;
+              }
+              if (batchDecision === 'pending') {
+                const approvalId = `approval-batch-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                const userDecision = await requestApproval({
+                  approvalId,
+                  agentId: agentFrameworkContext.agent.id,
+                  toolName: String(toolName),
+                  parameters: { _batchSize: matchingCalls.length, _firstCallParams: matchingCalls[0]?.parameters },
+                  created: new Date(),
+                });
+                if (userDecision === 'deny') {
+                  for (const call of matchingCalls) {
+                    handlerContext.addToolResult({
+                      toolName: String(toolName),
+                      parameters: call.parameters,
+                      result: 'Tool execution denied by user.',
+                      isError: true,
+                      duration: toolResultDuration,
+                    });
+                  }
+                  handlerContext.yieldToSelf();
+                  return matchingCalls.length;
+                }
+              }
+
               for (const call of matchingCalls) {
                 try {
                   const validatedParameters = toolSchema.parse(call.parameters);
