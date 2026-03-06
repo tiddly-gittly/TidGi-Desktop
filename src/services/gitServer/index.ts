@@ -38,6 +38,14 @@ export class GitServerService implements IGitServerService {
     );
     if (commitCode !== 0) {
       logger.warn('Auto commit before mobile sync failed (ignored)', { repoPath, commitCode, commitStderr });
+      return;
+    }
+
+    // Pack loose objects so subsequent clones don't have to compress on-the-fly.
+    // --auto only runs when git decides the repo has enough loose objects to warrant it.
+    const { exitCode: gcCode } = await runGit(['gc', '--auto', '--quiet'], repoPath);
+    if (gcCode !== 0) {
+      logger.debug('git gc --auto returned non-zero (non-fatal)', { repoPath, gcCode });
     }
   }
 
