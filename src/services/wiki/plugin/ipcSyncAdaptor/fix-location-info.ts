@@ -69,7 +69,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
       setLocationProperty('full', (localHostUrl).split('#')[0]);
       setLocationProperty('host', urlObject.host);
       setLocationProperty('hostname', urlObject.hostname);
-      setLocationProperty('protocol', https ? 'https' : 'http');
+      setLocationProperty('protocol', https.enabled ? 'https' : 'http');
       setLocationProperty('port', urlObject.port);
       setLocationProperty('pathname', urlObject.pathname);
       setLocationProperty('search', urlObject.search);
@@ -89,8 +89,14 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
 
       if (tokenAuth) {
         const fallbackUserName = await tidgiService.auth.get('userName');
-        const tokenAuthHeader = `"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`;
-        asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/tokenAuthHeader', text: tokenAuthHeader });
+        const tokenAuthHeaderName = getTidGiAuthHeaderWithToken(authToken ?? '');
+        const tokenAuthHeaderValue = userName || fallbackUserName || '';
+        const tokenAuthHeader = `"${tokenAuthHeaderName}": "${tokenAuthHeaderValue}"`;
+        asyncInfoTiddlerFields.push(
+          { title: '$:/info/tidgi/tokenAuthHeader', text: tokenAuthHeader },
+          { title: '$:/info/tidgi/tokenAuthHeaderName', text: tokenAuthHeaderName },
+          { title: '$:/info/tidgi/tokenAuthHeaderValue', text: tokenAuthHeaderValue },
+        );
       }
 
       // Add sub-workspaces info for mobile sync
