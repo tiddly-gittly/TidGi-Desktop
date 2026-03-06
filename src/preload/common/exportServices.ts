@@ -4,7 +4,8 @@ import * as service from './services';
 
 const attachServiceToTw = () => {
   if (typeof $tw === 'undefined') return false;
-  $tw.tidgi = { service: service as unknown as TidgiService };
+  $tw.tidgi ??= Object.create(null);
+  $tw.tidgi.service ??= service as unknown as TidgiService;
   return true;
 };
 
@@ -19,8 +20,11 @@ const tryAttach = () => {
   if (attachServiceToTw()) {
     return;
   }
+  let attempts = 0;
+  const maxAttempts = 100;
   const interval = setInterval(() => {
-    if (attachServiceToTw()) {
+    attempts += 1;
+    if (attachServiceToTw() || attempts >= maxAttempts) {
       clearInterval(interval);
     }
   }, 50);

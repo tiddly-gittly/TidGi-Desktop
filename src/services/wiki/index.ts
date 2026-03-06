@@ -121,7 +121,7 @@ export class Wiki implements IWikiService {
       return;
     }
     const { rootTiddler, readOnlyMode, tokenAuth, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI, authToken } = workspace;
-    let { port, homeUrl, lastUrl } = workspace;
+    let { port } = workspace;
     logger.debug('startWiki: Got workspace from workspaceService', {
       workspaceID,
       name,
@@ -154,18 +154,12 @@ export class Wiki implements IWikiService {
         newPort: availablePort,
       });
 
-      const portChange = {
-        port: availablePort,
-        homeUrl: homeUrl.replace(`:${port}`, `:${availablePort}`),
-        lastUrl: lastUrl?.replace(`:${port}`, `:${availablePort}`) ?? null,
-      };
+      const portChange = { port: availablePort };
 
       await workspaceService.update(workspaceID, portChange, true);
 
       // Update local variables with new port
       port = availablePort;
-      homeUrl = portChange.homeUrl;
-      lastUrl = portChange.lastUrl;
     }
     // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
     await workspaceService.updateMetaData(workspaceID, { isLoading: true });
@@ -339,11 +333,7 @@ export class Wiki implements IWikiService {
                 // Try to find another available port as emergency fallback
                 const emergencyPort = await findAvailablePort(port + 1);
                 if (emergencyPort !== null) {
-                  const portChange = {
-                    port: emergencyPort,
-                    homeUrl: homeUrl.replace(`:${port}`, `:${emergencyPort}`),
-                    lastUrl: lastUrl?.replace(`:${port}`, `:${emergencyPort}`) ?? null,
-                  };
+                  const portChange = { port: emergencyPort };
                   await workspaceService.update(workspaceID, portChange, true);
                   reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
                 } else {

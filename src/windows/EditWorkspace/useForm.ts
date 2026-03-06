@@ -2,7 +2,7 @@ import usePreviousValue from 'beautiful-react-hooks/usePreviousValue';
 import { isEqual, omit } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 
-import type { IWorkspace } from '@services/workspaces/interface';
+import { type IWorkspace, nonConfigFields } from '@services/workspaces/interface';
 
 export function useForm(
   originalWorkspace?: IWorkspace,
@@ -25,7 +25,7 @@ export function useForm(
       // Only check if originalWorkspace changed (not workspace), to avoid triggering on every user edit
       if (!isEqual(originalWorkspace, previous)) {
         // Check if the current form state matches the new originalWorkspace (excluding non-config fields)
-        if (isEqual(omit(workspace, ['metadata', 'lastNodeJSArgv']), omit(originalWorkspace, ['metadata', 'lastNodeJSArgv']))) {
+        if (isEqual(omit(workspace, nonConfigFields), omit(originalWorkspace, nonConfigFields))) {
           workspaceSetter(originalWorkspace);
         }
       }

@@ -22,7 +22,7 @@ function getTidGiService(): typeof $tw.tidgi.service {
   const serviceFromTw = twWithExtensions.tidgi?.service ?? window.service;
 
   if (serviceFromTw === undefined) {
-    throw new Error('TidGi service is unavailable from $tw.tidgi, $tw.utils.tidgi and window.service');
+    throw new Error('TidGi service is unavailable from $tw.tidgi.service or window.service');
   }
 
   twWithExtensions.tidgi = twWithExtensions.tidgi ?? {};

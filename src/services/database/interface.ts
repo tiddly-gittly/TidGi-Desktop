@@ -60,7 +60,7 @@ export interface IDatabaseService {
   /**
    * Close database connection
    */
-  closeAppDatabase(key: string, drop?: boolean): void;
+  closeAppDatabase(key: string, drop?: boolean): Promise<void>;
 
   /**
    * Close all database connections

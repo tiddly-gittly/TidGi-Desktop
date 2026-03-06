@@ -1,4 +1,4 @@
-// Auto-attach services to global.service - MUST import before using services
+// Initialize worker-side service proxies before starting the wiki.
 import './services';
 import { native, service } from './services';
 import { onWorkerServicesReady } from './servicesReady';

@@ -123,7 +123,7 @@ export class IpcServerRoutes {
     // fall back to the homePath we received at startup.
     const wikiPath = this.wikiInstance.boot.wikiPath ?? this.homePath;
     if (wikiPath === undefined) {
-      return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `$tw.wiki.boot.wikiPath and homePath are both undefined.` };
+      return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `$tw.boot.wikiPath and homePath are both undefined.` };
     }
 
     // Get external attachments folder name from config (default to 'files')
