@@ -5,6 +5,7 @@ import { AgentChannel } from '@/constants/channels';
 import { AgentDefinition } from '@services/agentDefinition/interface';
 import { PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskManager';
 
 /**
  * Content of a session instance that user chat with an agent.
@@ -115,6 +116,36 @@ export interface AgentInstanceMessage {
   duration?: number | null;
 }
 
+export interface AgentBackgroundTask {
+  agentId: string;
+  agentName?: string;
+  type: 'heartbeat' | 'alarm';
+  intervalSeconds?: number;
+  activeHoursStart?: string;
+  activeHoursEnd?: string;
+  wakeAtISO?: string;
+  nextWakeAtISO?: string;
+  message?: string;
+  repeatIntervalMinutes?: number;
+  createdBy?: string;
+  lastRunAtISO?: string;
+  runCount?: number;
+}
+
+export interface SetBackgroundAlarmInput {
+  wakeAtISO: string;
+  message?: string;
+  repeatIntervalMinutes?: number;
+}
+
+export interface SetBackgroundHeartbeatInput {
+  enabled: boolean;
+  intervalSeconds: number;
+  message?: string;
+  activeHoursStart?: string;
+  activeHoursEnd?: string;
+}
+
 /**
  * Agent instance service to manage chat instances and messages
  */
@@ -133,7 +164,7 @@ export interface IAgentInstanceService {
    * @param agentDefinitionID Agent definition ID, if not provided, will use the default agent
    * @param options Additional options for creating the agent instance
    */
-  createAgent(agentDefinitionID?: string, options?: { preview?: boolean }): Promise<AgentInstance>;
+  createAgent(agentDefinitionID?: string, options?: { preview?: boolean; volatile?: boolean }): Promise<AgentInstance>;
 
   /**
    * Send a message or file to an agent instance, and put response to observables. Persistence and tool calling is handled by the plugins.
@@ -282,22 +313,55 @@ export interface IAgentInstanceService {
   /**
    * Get all active background tasks (heartbeats + alarms) for display in settings UI.
    */
-  getBackgroundTasks(): Promise<
-    Array<{
-      agentId: string;
-      agentName?: string;
-      type: 'heartbeat' | 'alarm';
-      intervalSeconds?: number;
-      wakeAtISO?: string;
-      message?: string;
-      repeatIntervalMinutes?: number;
-    }>
-  >;
+  getBackgroundTasks(): Promise<AgentBackgroundTask[]>;
 
   /**
    * Cancel a background task by agent ID and type.
    */
   cancelBackgroundTask(agentId: string, type: 'heartbeat' | 'alarm'): Promise<void>;
+
+  /**
+   * Create or update an alarm task from settings UI.
+   */
+  setBackgroundAlarm(agentId: string, alarm: SetBackgroundAlarmInput): Promise<void>;
+
+  /**
+   * Create or update heartbeat configuration from settings UI.
+   */
+  setBackgroundHeartbeat(agentId: string, heartbeat: SetBackgroundHeartbeatInput): Promise<void>;
+
+  // ── ScheduledTask CRUD (Phase 2) ──────────────────────────────────────────
+
+  /**
+   * Create a new scheduled task and start its timer.
+   */
+  createScheduledTask(input: CreateScheduledTaskInput): Promise<ScheduledTask>;
+
+  /**
+   * Update an existing scheduled task (restarts timer with new config).
+   */
+  updateScheduledTask(input: UpdateScheduledTaskInput): Promise<ScheduledTask>;
+
+  /**
+   * Delete a scheduled task and stop its timer.
+   */
+  deleteScheduledTask(taskId: string): Promise<void>;
+
+  /**
+   * List all active scheduled tasks (from in-memory registry).
+   */
+  listScheduledTasks(): Promise<ScheduledTask[]>;
+
+  /**
+   * List active scheduled tasks for a specific agent instance.
+   * Used by TabItem to show the clock indicator.
+   */
+  listScheduledTasksForAgent(agentInstanceId: string): Promise<ScheduledTask[]>;
+
+  /**
+   * Return next N run times for a cron expression (for UI preview).
+   */
+  getCronPreviewDates(expression: string, timezone?: string, count?: number): Promise<string[]>;
 }
 
 export const AgentInstanceServiceIPCDescriptor = {
@@ -322,6 +386,14 @@ export const AgentInstanceServiceIPCDescriptor = {
     getTurnChangedFiles: ProxyPropertyType.Function,
     getBackgroundTasks: ProxyPropertyType.Function,
     cancelBackgroundTask: ProxyPropertyType.Function,
+    setBackgroundAlarm: ProxyPropertyType.Function,
+    setBackgroundHeartbeat: ProxyPropertyType.Function,
+    createScheduledTask: ProxyPropertyType.Function,
+    updateScheduledTask: ProxyPropertyType.Function,
+    deleteScheduledTask: ProxyPropertyType.Function,
+    listScheduledTasks: ProxyPropertyType.Function,
+    listScheduledTasksForAgent: ProxyPropertyType.Function,
+    getCronPreviewDates: ProxyPropertyType.Function,
     updateAgent: ProxyPropertyType.Function,
   },
 };

@@ -16,7 +16,7 @@ import { logger } from '@services/libs/log';
 import { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions.js';
 import { ensureSettingFolderExist, fixSettingFileWhenError } from './configSetting';
 import type { DatabaseInitOptions, IDatabaseService, ISettingFile } from './interface';
-import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from './schema/agent';
+import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from './schema/agent';
 import { AgentBrowserTabEntity } from './schema/agentBrowser';
 import { ExternalAPILogEntity } from './schema/externalAPILog';
 import { WikiTiddler } from './schema/wiki';
@@ -86,6 +86,7 @@ export class DatabaseService implements IDatabaseService {
         AgentInstanceEntity,
         AgentInstanceMessageEntity,
         AgentBrowserTabEntity,
+        ScheduledTaskEntity,
       ],
       synchronize: true,
       migrationsRun: false,

@@ -96,6 +96,7 @@ export async function initializePluginSystem(): Promise<void> {
     // New tools
     import('./summary'),
     import('./alarmClock'),
+    import('./editAgentDefinition'),
     import('./askQuestion'),
     import('./backlinks'),
     import('./toc'),

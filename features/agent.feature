@@ -102,6 +102,25 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     Then I click all "close tab button" elements matching selector "[data-testid^='tab-close-']"
 
   @agent @mockOpenAI
+  Scenario: Tab shows scheduled indicator and close warning for background wake tasks
+    Given I add mock OpenAI responses:
+      | response                                                                                                                                        | stream |
+      | <tool_use name="alarm-clock">{"wakeAtISO":"2020-01-01T00:00:00Z","reminderMessage":"Background check task","repeatIntervalMinutes":60}</tool_use> | false  |
+      | 已设置后台唤醒任务。                                                                                                                             | false  |
+    And I click on "new tab button and create default agent button" elements with selectors:
+      | element description         | selector                                    |
+      | new tab button              | [data-tab-id='new-tab-button']              |
+      | create default agent button | [data-testid='create-default-agent-button'] |
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
+    When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
+    When I type "请设置一个后台唤醒" in "chat input" element with selector "[data-testid='agent-message-input']"
+    And I press "Enter" key
+    Then I should see an "alarm confirmation response" element with selector "[data-testid='message-bubble']:has-text('已设置后台唤醒任务')"
+    And I should see a "active tab scheduled indicator" element with selector "[data-testid='active-tab-scheduled-task-indicator'][aria-label*='Next wake:']"
+    When I click on a "tab list dropdown" element with selector "[data-testid='tab-list-button']"
+    Then I should see a "close button warning" element with selector "[data-testid^='tab-close-'][aria-label*='background wake-ups']"
+
+  @agent @mockOpenAI
   Scenario: Streamed assistant response can be cancelled mid-stream and send button returns
     # Add scenario-specific responses to the mock server
     Given I add mock OpenAI responses:

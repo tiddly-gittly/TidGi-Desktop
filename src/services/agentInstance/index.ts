@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
+import type { AgentHeartbeatConfig } from '@services/agentDefinition/interface';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { basicPromptConcatHandler } from '@services/agentInstance/agentFrameworks/taskAgent';
 import type { AgentFramework, AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
@@ -21,9 +22,30 @@ import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { createDebouncedMessageUpdater, saveUserMessage as saveUserMessageHelper } from './agentMessagePersistence';
 import * as repo from './agentRepository';
-import { getActiveHeartbeats, startHeartbeat, stopHeartbeat } from './heartbeatManager';
-import type { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from './interface';
-import { cancelAlarm, getActiveAlarmAgentIds, scheduleAlarmTimer } from './tools/alarmClock';
+import { getActiveHeartbeatEntries, startHeartbeat, stopHeartbeat } from './heartbeatManager';
+import type {
+  AgentBackgroundTask,
+  AgentInstance,
+  AgentInstanceLatestStatus,
+  AgentInstanceMessage,
+  IAgentInstanceService,
+  SetBackgroundAlarmInput,
+  SetBackgroundHeartbeatInput,
+} from './interface';
+import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskManager';
+import {
+  addTask as stmAddTask,
+  cancelTasksForAgent,
+  getCronPreviewDates as stmGetCronPreviewDates,
+  getActiveTasks as stmGetActiveTasks,
+  getActiveTasksForAgent as stmGetActiveTasksForAgent,
+  initScheduledTaskManager,
+  removeTask as stmRemoveTask,
+  restoreScheduledTasks,
+  stopAllScheduledTasks,
+  updateTask as stmUpdateTask,
+} from './scheduledTaskManager';
+import { cancelAlarm, getActiveAlarmEntries, scheduleAlarmTimer } from './tools/alarmClock';
 
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {
@@ -36,6 +58,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   private dataSource: DataSource | null = null;
   private agentInstanceRepository: Repository<AgentInstanceEntity> | null = null;
   private agentMessageRepository: Repository<AgentInstanceMessageEntity> | null = null;
+  private scheduledTaskRepositoryReady = false;
 
   private agentInstanceSubjects: Map<string, BehaviorSubject<AgentInstance | undefined>> = new Map();
   private statusSubjects: Map<string, BehaviorSubject<AgentInstanceLatestStatus | undefined>> = new Map();
@@ -49,8 +72,10 @@ export class AgentInstanceService implements IAgentInstanceService {
     try {
       await this.initializeDatabase();
       await this.initializeFrameworks();
-      // Restore heartbeat timers and alarms for active agents after DB + frameworks are ready
+      // Restore legacy heartbeat timers and alarms for active agents after DB + frameworks are ready
       await this.restoreBackgroundTasks();
+      // Restore unified ScheduledTaskManager tasks
+      await this.restoreScheduledTaskManagerTasks();
     } catch (error) {
       logger.error('Failed to initialize agent instance service', { error });
       throw error;
@@ -63,6 +88,13 @@ export class AgentInstanceService implements IAgentInstanceService {
       this.dataSource = await this.databaseService.getDatabase('agent');
       this.agentInstanceRepository = this.dataSource.getRepository(AgentInstanceEntity);
       this.agentMessageRepository = this.dataSource.getRepository(AgentInstanceMessageEntity);
+
+      // Initialize the unified ScheduledTaskManager
+      const { ScheduledTaskEntity } = await import('@services/database/schema/agent');
+      const stmRepo = this.dataSource.getRepository(ScheduledTaskEntity);
+      initScheduledTaskManager(stmRepo, this);
+      this.scheduledTaskRepositoryReady = true;
+
       logger.debug('AgentInstance repositories initialized');
     } catch (error) {
       logger.error('Failed to initialize agent instance database', { error });
@@ -112,7 +144,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         // Restore heartbeat from definition
         const heartbeatConfig = instance.agentDefinition?.heartbeat;
         if (heartbeatConfig?.enabled) {
-          startHeartbeat(instance.id, heartbeatConfig, this);
+          startHeartbeat(instance.id, heartbeatConfig, this, { createdBy: 'agent-definition' });
           heartbeatsRestored++;
         }
 
@@ -124,11 +156,19 @@ export class AgentInstanceService implements IAgentInstanceService {
           // For one-shot alarms in the past, fire immediately
           // For recurring alarms, always restore
           if (alarm.repeatIntervalMinutes || wakeAt.getTime() > now.getTime()) {
-            scheduleAlarmTimer(instance.id, alarm.wakeAtISO, alarm.reminderMessage, alarm.repeatIntervalMinutes);
+            scheduleAlarmTimer(instance.id, alarm.wakeAtISO, alarm.reminderMessage, alarm.repeatIntervalMinutes, {
+              createdBy: alarm.createdBy ?? 'restore',
+              runCount: alarm.runCount,
+              lastRunAtISO: alarm.lastRunAtISO,
+            });
             alarmsRestored++;
           } else {
             // Past one-shot alarm — fire it now and clear
-            scheduleAlarmTimer(instance.id, new Date().toISOString(), alarm.reminderMessage);
+            scheduleAlarmTimer(instance.id, new Date().toISOString(), alarm.reminderMessage, undefined, {
+              createdBy: alarm.createdBy ?? 'restore',
+              runCount: alarm.runCount,
+              lastRunAtISO: alarm.lastRunAtISO,
+            });
             alarmsRestored++;
           }
         }
@@ -139,6 +179,26 @@ export class AgentInstanceService implements IAgentInstanceService {
       }
     } catch (error) {
       logger.error('Failed to restore background tasks', { error });
+    }
+  }
+
+  /**
+   * Restore unified ScheduledTaskManager tasks from DB after app restart.
+   */
+  private async restoreScheduledTaskManagerTasks(): Promise<void> {
+    if (!this.scheduledTaskRepositoryReady || !this.agentInstanceRepository) return;
+    try {
+      const { ScheduledTaskEntity } = await import('@services/database/schema/agent');
+      const stmRepo = this.dataSource!.getRepository(ScheduledTaskEntity);
+
+      const isVolatile = async (agentInstanceId: string): Promise<boolean> => {
+        const entity = await this.agentInstanceRepository!.findOne({ where: { id: agentInstanceId } });
+        return entity?.volatile ?? true;
+      };
+
+      await restoreScheduledTasks(stmRepo, isVolatile);
+    } catch (error) {
+      logger.error('Failed to restore ScheduledTaskManager tasks', { error });
     }
   }
 
@@ -180,7 +240,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async createAgent(agentDefinitionID?: string, options?: { preview?: boolean }): Promise<AgentInstance> {
+  public async createAgent(agentDefinitionID?: string, options?: { preview?: boolean; volatile?: boolean }): Promise<AgentInstance> {
     this.ensureRepositories();
     try {
       return await repo.createAgent(this.agentInstanceRepository!, this.agentDefinitionService, agentDefinitionID, options);
@@ -216,6 +276,8 @@ export class AgentInstanceService implements IAgentInstanceService {
     this.ensureRepositories();
     try {
       stopHeartbeat(agentId);
+      cancelAlarm(agentId);
+      cancelTasksForAgent(agentId);
       await repo.deleteAgent(this.agentInstanceRepository!, this.agentMessageRepository!, agentId);
       this.cleanupAgentSubscriptions(agentId);
     } catch (error) {
@@ -400,8 +462,8 @@ export class AgentInstanceService implements IAgentInstanceService {
           });
 
           // Start heartbeat timer if the agent definition has heartbeat config
-          if (agentDefinition.heartbeat?.enabled) {
-            startHeartbeat(agentId, agentDefinition.heartbeat, this);
+          if (agentDefinition.heartbeat?.enabled && !agentInstance.volatile) {
+            startHeartbeat(agentId, agentDefinition.heartbeat, this, { createdBy: 'agent-definition' });
           }
         }
 
@@ -545,6 +607,8 @@ export class AgentInstanceService implements IAgentInstanceService {
 
     try {
       stopHeartbeat(agentId);
+      cancelAlarm(agentId);
+      cancelTasksForAgent(agentId);
 
       // Get agent instance
       const instanceEntity = await this.agentInstanceRepository!.findOne({
@@ -716,30 +780,13 @@ export class AgentInstanceService implements IAgentInstanceService {
     return { rolledBack, errors };
   }
 
-  public async getBackgroundTasks(): Promise<
-    Array<{
-      agentId: string;
-      agentName?: string;
-      type: 'heartbeat' | 'alarm';
-      intervalSeconds?: number;
-      wakeAtISO?: string;
-      message?: string;
-      repeatIntervalMinutes?: number;
-    }>
-  > {
-    const tasks: Array<{
-      agentId: string;
-      agentName?: string;
-      type: 'heartbeat' | 'alarm';
-      intervalSeconds?: number;
-      wakeAtISO?: string;
-      message?: string;
-      repeatIntervalMinutes?: number;
-    }> = [];
+  public async getBackgroundTasks(): Promise<AgentBackgroundTask[]> {
+    const tasks: AgentBackgroundTask[] = [];
 
     // Collect heartbeats from in-memory registry
-    const heartbeatAgentIds = getActiveHeartbeats();
-    for (const agentId of heartbeatAgentIds) {
+    const heartbeatEntries = getActiveHeartbeatEntries();
+    for (const heartbeatEntry of heartbeatEntries) {
+      const agentId = heartbeatEntry.agentId;
       const agent = await this.getAgent(agentId);
       const agentDefinition = agent?.agentDefId ? await this.agentDefinitionService.getAgentDef(agent.agentDefId) : undefined;
       const heartbeatConfig = agentDefinition?.heartbeat;
@@ -748,26 +795,33 @@ export class AgentInstanceService implements IAgentInstanceService {
         agentName: agent?.name ?? agentDefinition?.name,
         type: 'heartbeat',
         intervalSeconds: heartbeatConfig?.intervalSeconds,
+        activeHoursStart: heartbeatConfig?.activeHoursStart,
+        activeHoursEnd: heartbeatConfig?.activeHoursEnd,
+        nextWakeAtISO: heartbeatEntry.nextWakeAtISO,
         message: heartbeatConfig?.message,
+        createdBy: heartbeatEntry.createdBy,
+        lastRunAtISO: heartbeatEntry.lastRunAtISO,
+        runCount: heartbeatEntry.runCount,
       });
     }
 
     // Collect alarms from in-memory registry
-    const alarmAgentIds = getActiveAlarmAgentIds();
-    for (const agentId of alarmAgentIds) {
+    const alarmEntries = getActiveAlarmEntries();
+    for (const alarmEntry of alarmEntries) {
+      const agentId = alarmEntry.agentId;
       const agent = await this.getAgent(agentId);
-      // Read persisted alarm for details
-      if (this.agentInstanceRepository) {
-        const entity = await this.agentInstanceRepository.findOne({ where: { id: agentId } });
-        tasks.push({
-          agentId,
-          agentName: agent?.name,
-          type: 'alarm',
-          wakeAtISO: entity?.scheduledAlarm?.wakeAtISO,
-          message: entity?.scheduledAlarm?.reminderMessage,
-          repeatIntervalMinutes: entity?.scheduledAlarm?.repeatIntervalMinutes,
-        });
-      }
+      tasks.push({
+        agentId,
+        agentName: agent?.name,
+        type: 'alarm',
+        wakeAtISO: alarmEntry.wakeAtISO,
+        nextWakeAtISO: alarmEntry.nextWakeAtISO,
+        message: alarmEntry.reminderMessage,
+        repeatIntervalMinutes: alarmEntry.repeatIntervalMinutes,
+        createdBy: alarmEntry.createdBy,
+        lastRunAtISO: alarmEntry.lastRunAtISO,
+        runCount: alarmEntry.runCount,
+      });
     }
 
     return tasks;
@@ -780,6 +834,116 @@ export class AgentInstanceService implements IAgentInstanceService {
       cancelAlarm(agentId);
     }
     logger.info('Background task cancelled from UI', { agentId, type });
+  }
+
+  public async setBackgroundAlarm(agentId: string, alarm: SetBackgroundAlarmInput): Promise<void> {
+    this.ensureRepositories();
+
+    const entity = await this.agentInstanceRepository!.findOne({ where: { id: agentId } });
+    if (!entity) {
+      throw new Error(`Agent instance not found: ${agentId}`);
+    }
+
+    const parsedWakeAt = new Date(alarm.wakeAtISO);
+    if (Number.isNaN(parsedWakeAt.getTime())) {
+      throw new Error(`Invalid wakeAtISO: ${alarm.wakeAtISO}`);
+    }
+
+    const repeatIntervalMinutes = alarm.repeatIntervalMinutes && alarm.repeatIntervalMinutes > 0
+      ? alarm.repeatIntervalMinutes
+      : undefined;
+    const wakeAtISO = parsedWakeAt.toISOString();
+
+    scheduleAlarmTimer(agentId, wakeAtISO, alarm.message, repeatIntervalMinutes, {
+      createdBy: 'settings-ui',
+      runCount: 0,
+    });
+
+    await this.agentInstanceRepository!.update(agentId, {
+      scheduledAlarm: {
+        wakeAtISO,
+        reminderMessage: alarm.message,
+        repeatIntervalMinutes,
+        createdBy: 'settings-ui',
+        runCount: 0,
+      },
+    });
+
+    logger.info('Background alarm upserted from UI', {
+      agentId,
+      wakeAtISO,
+      repeatIntervalMinutes,
+    });
+  }
+
+  public async setBackgroundHeartbeat(agentId: string, heartbeat: SetBackgroundHeartbeatInput): Promise<void> {
+    this.ensureRepositories();
+
+    const entity = await this.agentInstanceRepository!.findOne({ where: { id: agentId } });
+    if (!entity) {
+      throw new Error(`Agent instance not found: ${agentId}`);
+    }
+    if (!entity.agentDefId) {
+      throw new Error(`Agent definition not found for instance: ${agentId}`);
+    }
+
+    const agentDefinition = await this.agentDefinitionService.getAgentDef(entity.agentDefId);
+    if (!agentDefinition) {
+      throw new Error(`Agent definition not found: ${entity.agentDefId}`);
+    }
+
+    const normalizedHeartbeat: AgentHeartbeatConfig = {
+      enabled: heartbeat.enabled,
+      intervalSeconds: Math.max(60, Math.round(heartbeat.intervalSeconds || 60)),
+      message: heartbeat.message?.trim() || '[Heartbeat] Periodic check-in. Review your tasks and take any pending actions.',
+      activeHoursStart: heartbeat.activeHoursStart || undefined,
+      activeHoursEnd: heartbeat.activeHoursEnd || undefined,
+    };
+
+    await this.agentDefinitionService.updateAgentDef({
+      id: agentDefinition.id,
+      heartbeat: normalizedHeartbeat,
+    });
+
+    if (normalizedHeartbeat.enabled && !entity.volatile) {
+      startHeartbeat(agentId, normalizedHeartbeat, this, { createdBy: 'settings-ui' });
+    } else {
+      stopHeartbeat(agentId);
+    }
+
+    logger.info('Background heartbeat upserted from UI', {
+      agentId,
+      enabled: normalizedHeartbeat.enabled,
+      intervalSeconds: normalizedHeartbeat.intervalSeconds,
+      activeHoursStart: normalizedHeartbeat.activeHoursStart,
+      activeHoursEnd: normalizedHeartbeat.activeHoursEnd,
+    });
+  }
+
+  // ── ScheduledTask CRUD ────────────────────────────────────────────────────
+
+  public async createScheduledTask(input: CreateScheduledTaskInput): Promise<ScheduledTask> {
+    return stmAddTask(input);
+  }
+
+  public async updateScheduledTask(input: UpdateScheduledTaskInput): Promise<ScheduledTask> {
+    return stmUpdateTask(input);
+  }
+
+  public async deleteScheduledTask(taskId: string): Promise<void> {
+    return stmRemoveTask(taskId);
+  }
+
+  public async listScheduledTasks(): Promise<ScheduledTask[]> {
+    return stmGetActiveTasks();
+  }
+
+  public async listScheduledTasksForAgent(agentInstanceId: string): Promise<ScheduledTask[]> {
+    return stmGetActiveTasksForAgent(agentInstanceId);
+  }
+
+  public async getCronPreviewDates(expression: string, timezone?: string, count = 3): Promise<string[]> {
+    return stmGetCronPreviewDates(expression, timezone, count);
   }
 
   public subscribeToAgentUpdates(agentId: string): Observable<AgentInstance | undefined>;

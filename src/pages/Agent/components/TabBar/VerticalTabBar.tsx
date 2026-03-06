@@ -1,8 +1,9 @@
 import { Box, Divider } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { AgentBackgroundTask } from '@services/agentInstance/interface';
 import { useTabStore } from '../../store/tabStore';
 import { TabType } from '../../types/tab';
 import { TabContextMenu } from './TabContextMenu';
@@ -39,6 +40,43 @@ const StyledDivider = styled(Divider)`
 export const VerticalTabBar = () => {
   const { t } = useTranslation('agent');
   const { tabs, activeTabId, setActiveTab } = useTabStore();
+  const [backgroundTasks, setBackgroundTasks] = useState<AgentBackgroundTask[]>([]);
+
+  const refreshBackgroundTasks = useCallback(async () => {
+    try {
+      const tasks = await window.service.agentInstance.getBackgroundTasks();
+      setBackgroundTasks(tasks);
+    } catch {
+      // Ignore transient IPC failures while the app is booting.
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshBackgroundTasks();
+    const timer = window.setInterval(() => {
+      void refreshBackgroundTasks();
+    }, 1_500);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [refreshBackgroundTasks]);
+
+  const backgroundTasksByAgent = useMemo(() => {
+    const map = new Map<string, AgentBackgroundTask[]>();
+    for (const task of backgroundTasks) {
+      const existing = map.get(task.agentId) ?? [];
+      existing.push(task);
+      map.set(task.agentId, existing);
+    }
+    return map;
+  }, [backgroundTasks]);
+
+  const getTabBackgroundTasks = (tab: typeof tabs[number]): AgentBackgroundTask[] => {
+    if (tab.type !== TabType.CHAT) return [];
+    const chatTab = tab;
+    if (!chatTab.agentId) return [];
+    return backgroundTasksByAgent.get(chatTab.agentId) ?? [];
+  };
 
   // Divide tabs into pinned and unpinned groups
   const pinnedTabs = tabs.filter(tab => tab.isPinned);
@@ -58,6 +96,7 @@ export const VerticalTabBar = () => {
                   <TabItem
                     tab={tab}
                     isActive={tab.id === activeTabId}
+                    backgroundTasks={getTabBackgroundTasks(tab)}
                     onClick={() => {
                       setActiveTab(tab.id);
                     }}
@@ -86,6 +125,7 @@ export const VerticalTabBar = () => {
               <TabItem
                 tab={tab}
                 isActive={tab.id === activeTabId}
+                backgroundTasks={getTabBackgroundTasks(tab)}
                 onClick={() => {
                   setActiveTab(tab.id);
                 }}

@@ -255,7 +255,7 @@
           "caption": "闹钟 / 定时唤醒",
           "description": "设定Agent在指定时间后自动唤醒",
           "toolId": "alarmClock",
-          "approval": { "mode": "confirm" },
+          "approval": { "mode": "auto" },
           "alarmClockParam": {
             "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
           }

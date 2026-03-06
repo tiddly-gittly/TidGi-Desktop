@@ -13,6 +13,10 @@ interface HeartbeatEntry {
   timerId: ReturnType<typeof setInterval>;
   config: AgentHeartbeatConfig;
   agentId: string;
+  nextWakeAtISO?: string;
+  createdBy?: string;
+  lastRunAtISO?: string;
+  runCount: number;
 }
 
 const activeHeartbeats = new Map<string, HeartbeatEntry>();
@@ -45,6 +49,7 @@ export function startHeartbeat(
   agentId: string,
   config: AgentHeartbeatConfig,
   agentInstanceService: IAgentInstanceService,
+  options?: { createdBy?: string },
 ): void {
   // Clean up existing heartbeat for this agent
   stopHeartbeat(agentId);
@@ -54,7 +59,23 @@ export function startHeartbeat(
   const intervalMs = Math.max(config.intervalSeconds, 60) * 1000;
   const message = config.message || '[Heartbeat] Periodic check-in. Review your tasks and take any pending actions.';
 
+  const updateNextWake = () => {
+    const entry = activeHeartbeats.get(agentId);
+    if (!entry) return;
+    entry.nextWakeAtISO = new Date(Date.now() + intervalMs).toISOString();
+  };
+
+  const initialNextWakeAtISO = new Date(Date.now() + intervalMs).toISOString();
+
   const timerId = setInterval(async () => {
+    updateNextWake();
+
+    const currentEntry = activeHeartbeats.get(agentId);
+    if (currentEntry) {
+      currentEntry.lastRunAtISO = new Date().toISOString();
+      currentEntry.runCount += 1;
+    }
+
     if (!isWithinActiveHours(config)) {
       logger.debug('Heartbeat skipped — outside active hours', { agentId });
       return;
@@ -70,7 +91,16 @@ export function startHeartbeat(
     }
   }, intervalMs);
 
-  activeHeartbeats.set(agentId, { timerId, config, agentId });
+  timerId.unref?.();
+
+  activeHeartbeats.set(agentId, {
+    timerId,
+    config,
+    agentId,
+    nextWakeAtISO: initialNextWakeAtISO,
+    createdBy: options?.createdBy ?? 'agent-definition',
+    runCount: 0,
+  });
   logger.info('Heartbeat started', { agentId, intervalMs, activeHoursStart: config.activeHoursStart, activeHoursEnd: config.activeHoursEnd });
 }
 
@@ -102,4 +132,8 @@ export function stopAllHeartbeats(): void {
  */
 export function getActiveHeartbeats(): string[] {
   return [...activeHeartbeats.keys()];
+}
+
+export function getActiveHeartbeatEntries(): Array<HeartbeatEntry> {
+  return [...activeHeartbeats.values()];
 }

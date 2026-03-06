@@ -57,13 +57,11 @@ async function executeSpawnAgent(
   logger.info('Spawning sub-agent', { parentAgentId, definitionId, taskLength: task.length });
 
   try {
-    // Create child instance marked as sub-agent
-    const childAgent = await agentInstanceService.createAgent(definitionId);
+    // Sub-agents are volatile by design to avoid inheriting long-lived background scheduling across restarts.
+    const childAgent = await agentInstanceService.createAgent(definitionId, { volatile: true });
 
-    // Mark as sub-agent in the database
+    // Keep only user-facing naming metadata here.
     await agentInstanceService.updateAgent(childAgent.id, {
-      isSubAgent: true,
-      parentAgentId,
       name: `Sub-task: ${task.substring(0, 50)}...`,
     });
 

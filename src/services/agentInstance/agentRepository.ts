@@ -19,7 +19,7 @@ export async function createAgent(
   agentInstanceRepo: Repository<AgentInstanceEntity>,
   agentDefinitionService: IAgentDefinitionService,
   agentDefinitionID?: string,
-  options?: { preview?: boolean },
+  options?: { preview?: boolean; volatile?: boolean },
 ): Promise<AgentInstance> {
   // Get agent definition with exponential backoff to handle initialization race conditions
   const agentDefinition = await backOff(
@@ -43,7 +43,7 @@ export async function createAgent(
 
   const { instanceData, instanceId, now } = createAgentInstanceData(agentDefinition as Required<Pick<typeof agentDefinition, 'name'>> & typeof agentDefinition);
 
-  if (options?.preview) {
+  if (options?.preview || options?.volatile) {
     instanceData.volatile = true;
   }
 
@@ -58,7 +58,12 @@ export async function createAgent(
   });
   await Promise.race([savePromise, timeoutPromise]);
 
-  logger.info('Created agent instance', { function: 'createAgent', instanceId, preview: !!options?.preview });
+  logger.info('Created agent instance', {
+    function: 'createAgent',
+    instanceId,
+    preview: !!options?.preview,
+    volatile: !!options?.volatile || !!options?.preview,
+  });
 
   return { ...instanceData, created: now, modified: now };
 }
@@ -145,8 +150,7 @@ export async function getAgents(
   const take = pageSize;
 
   const whereCondition: Record<string, unknown> = {};
-  whereCondition.preview = false;
-  whereCondition.isSubAgent = false;
+  whereCondition.volatile = false;
 
   if (options?.closed !== undefined) {
     whereCondition.closed = options.closed;
