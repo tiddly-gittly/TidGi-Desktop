@@ -8,7 +8,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { GitHTTPResponseChunk, IGitServerService } from './interface';
-import { DESKTOP_GIT_IDENTITY, mergeMobileIncomingIfExists, runGitCollectStdout } from './mergeUtilities';
+import { DESKTOP_GIT_IDENTITY, mergeMobileIncomingIfExists, runGit, runGitCollectStdout } from './mergeUtilities';
 
 /**
  * Git Smart HTTP Server Service
@@ -25,21 +25,20 @@ export class GitServerService implements IGitServerService {
     const statusOutput = await runGitCollectStdout(['status', '--porcelain'], repoPath);
     if (statusOutput.trim().length === 0) return;
 
-    const addAll = gitSpawn(['add', '-A'], repoPath);
-    await new Promise<void>((resolve) => {
-      addAll.on('close', () => {
-        resolve();
-      });
-    });
+    const { exitCode: addCode, stderr: addStderr } = await runGit(['add', '-A'], repoPath);
+    if (addCode !== 0) {
+      logger.warn('git add -A failed before mobile sync', { repoPath, addCode, addStderr });
+      return;
+    }
 
-    const commit = gitSpawn(['commit', '-m', `Auto commit before mobile sync ${new Date().toISOString()}`], repoPath, {
-      env: { ...process.env, ...DESKTOP_GIT_IDENTITY },
-    });
-    await new Promise<void>((resolve) => {
-      commit.on('close', () => {
-        resolve();
-      });
-    });
+    const { exitCode: commitCode, stderr: commitStderr } = await runGit(
+      ['commit', '-m', `Auto commit before mobile sync ${new Date().toISOString()}`],
+      repoPath,
+      { env: { ...process.env, ...DESKTOP_GIT_IDENTITY } },
+    );
+    if (commitCode !== 0) {
+      logger.warn('Auto commit before mobile sync failed (ignored)', { repoPath, commitCode, commitStderr });
+    }
   }
 
   private async ensureReceivePackConfig(repoPath: string): Promise<void> {

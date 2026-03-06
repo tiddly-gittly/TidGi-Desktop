@@ -13,16 +13,20 @@ export const DESKTOP_GIT_IDENTITY = {
   GIT_COMMITTER_EMAIL: 'desktop@tidgi.fun',
 } as const;
 
-export async function runGit(arguments_: string[], cwd: string, options?: { env?: NodeJS.ProcessEnv }): Promise<{ exitCode: number | null; stdout: string }> {
+export async function runGit(arguments_: string[], cwd: string, options?: { env?: NodeJS.ProcessEnv }): Promise<{ exitCode: number | null; stderr: string; stdout: string }> {
   const child = gitSpawn(arguments_, cwd, options);
   let stdout = '';
+  let stderr = '';
   child.stdout.on('data', (chunk: Buffer) => {
     stdout += chunk.toString('utf8');
+  });
+  child.stderr.on('data', (chunk: Buffer) => {
+    stderr += chunk.toString('utf8');
   });
   const exitCode = await new Promise<number | null>((resolve) => {
     child.on('close', resolve);
   });
-  return { exitCode, stdout };
+  return { exitCode, stderr, stdout };
 }
 
 export async function runGitCollectStdout(arguments_: string[], cwd: string, options?: { env?: NodeJS.ProcessEnv }): Promise<string> {
@@ -145,11 +149,11 @@ export async function resolveAllConflicts(repoPath: string): Promise<void> {
     await runGitCollectStdout(['add', file], repoPath);
   }
 
-  const { exitCode } = await runGit(['commit', '--no-edit'], repoPath, {
+  const { exitCode, stderr } = await runGit(['commit', '--no-edit'], repoPath, {
     env: { ...process.env, ...DESKTOP_GIT_IDENTITY },
   });
   if (exitCode !== 0) {
-    logger.warn('Conflict-resolution commit returned non-zero', { repoPath, exitCode });
+    logger.warn('Conflict-resolution commit returned non-zero', { repoPath, exitCode, stderr });
   }
 }
 

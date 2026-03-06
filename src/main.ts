@@ -262,7 +262,7 @@ app.on('before-quit', (event): void => {
 
   if (beforeQuitCleanupPromise === undefined) {
     beforeQuitCleanupPromise = runBeforeQuitCleanup()
-      .catch((error) => {
+      .catch((error: unknown) => {
         logger.error('before-quit cleanup failed unexpectedly', { error });
       })
       .finally(() => {
