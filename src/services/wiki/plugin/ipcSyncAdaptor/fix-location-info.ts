@@ -83,7 +83,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
       }
 
       // Add workspace token for QR code (if available)
-      if (authToken) {
+      if (tokenAuth && authToken) {
         asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/workspaceToken', text: authToken });
       }
 

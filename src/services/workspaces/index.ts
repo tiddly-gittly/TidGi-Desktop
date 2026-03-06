@@ -762,7 +762,7 @@ export class Workspace implements IWorkspaceService {
    */
   public async getWorkspaceToken(workspaceId: string): Promise<string | undefined> {
     const workspace = this.getSync(workspaceId);
-    if (!workspace || !isWikiWorkspace(workspace)) {
+    if (!workspace || !isWikiWorkspace(workspace) || !workspace.tokenAuth) {
       return undefined;
     }
     return workspace.authToken;
