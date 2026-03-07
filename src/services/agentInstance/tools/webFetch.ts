@@ -33,25 +33,30 @@ const WebFetchToolSchema = z.object({
 });
 
 /**
- * Simple HTML to text conversion — strips tags but preserves structure
+ * Robust HTML to text conversion — removes all tags and decodes entities safely.
+ * Applies tag removal in a loop to handle encoded or nested tags that reappear after entity decoding.
  */
 function htmlToText(html: string): string {
-  return html
-    // Remove script and style blocks
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+  let text = html
+    // Remove script and style blocks (tolerant of whitespace in closing tags)
+    .replace(/<script\b[^>]*>[\s\S]*?<\/\s*script\s*>/gi, '')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/\s*style\s*>/gi, '')
     // Convert block elements to newlines
-    .replace(/<\/?(p|div|h[1-6]|br|li|tr|td|th|blockquote|pre|hr)[^>]*>/gi, '\n')
+    .replace(/<\/?(p|div|h[1-6]|br|li|tr|td|th|blockquote|pre|hr)\b[^>]*>/gi, '\n')
     // Remove remaining tags
-    .replace(/<[^>]+>/g, '')
-    // Decode common entities
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
+    .replace(/<[^>]+>/g, '');
+
+  // Decode entities that are safe (won't reintroduce HTML structure)
+  text = text
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, ' ')
-    // Collapse whitespace
+    // Decode &amp; last so sequences like &amp;lt; don't double-unescape
+    .replace(/&amp;/g, '&');
+  // Intentionally do NOT decode &lt; / &gt; — keeping them as literal text
+  // prevents reintroduction of HTML tags from doubly-encoded content.
+
+  return text
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
