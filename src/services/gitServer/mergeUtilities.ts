@@ -23,7 +23,8 @@ export async function runGit(arguments_: string[], cwd: string, options?: { env?
   child.stderr.on('data', (chunk: Buffer) => {
     stderr += chunk.toString('utf8');
   });
-  const exitCode = await new Promise<number | null>((resolve) => {
+  const exitCode = await new Promise<number | null>((resolve, reject) => {
+    child.on('error', reject);
     child.on('close', resolve);
   });
   return { exitCode, stderr, stdout };
@@ -176,7 +177,8 @@ export async function mergeMobileIncomingIfExists(repoPath: string): Promise<voi
   mergeChild.stderr.on('data', (data: Buffer) => {
     mergeStderr += data.toString();
   });
-  const mergeExitCode = await new Promise<number | null>((resolve) => {
+  const mergeExitCode = await new Promise<number | null>((resolve, reject) => {
+    mergeChild.on('error', reject);
     mergeChild.on('close', resolve);
   });
 
@@ -187,6 +189,9 @@ export async function mergeMobileIncomingIfExists(repoPath: string): Promise<voi
 
   const deleteChild = gitSpawn(['branch', '-D', MOBILE_BRANCH], repoPath);
   await new Promise<void>((resolve) => {
+    deleteChild.on('error', () => {
+      resolve();
+    });
     deleteChild.on('close', () => {
       resolve();
     });

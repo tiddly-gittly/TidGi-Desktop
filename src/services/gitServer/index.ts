@@ -1,5 +1,6 @@
 import { spawn as gitSpawn } from 'dugite';
 import { injectable } from 'inversify';
+import type { ChildProcess } from 'node:child_process';
 import { Observable } from 'rxjs';
 
 import { container } from '@services/container';
@@ -9,6 +10,8 @@ import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { GitHTTPResponseChunk, IGitServerService } from './interface';
 import { DESKTOP_GIT_IDENTITY, mergeMobileIncomingIfExists, runGit, runGitCollectStdout } from './mergeUtilities';
+
+const ALLOWED_GIT_SERVICES = new Set(['git-upload-pack', 'git-receive-pack']);
 
 /**
  * Git Smart HTTP Server Service
@@ -74,8 +77,15 @@ export class GitServerService implements IGitServerService {
 
   public gitSmartHTTPInfoRefs$(workspaceId: string, service: string): Observable<GitHTTPResponseChunk> {
     return new Observable<GitHTTPResponseChunk>((subscriber) => {
+      let git: ChildProcess | undefined;
       void (async () => {
         try {
+          if (!ALLOWED_GIT_SERVICES.has(service)) {
+            subscriber.next({ type: 'headers', statusCode: 400, headers: { 'Content-Type': 'text/plain' } });
+            subscriber.next({ type: 'data', data: new Uint8Array(Buffer.from('Invalid service')) });
+            subscriber.complete();
+            return;
+          }
           const repoPath = await this.resolveRepoPathOrError(workspaceId, subscriber);
           if (!repoPath) return;
           if (service === 'git-receive-pack') {
@@ -99,7 +109,7 @@ export class GitServerService implements IGitServerService {
           const pktLength = (announcement.length + 4).toString(16).padStart(4, '0');
           subscriber.next({ type: 'data', data: new Uint8Array(Buffer.from(`${pktLength}${announcement}0000`)) });
 
-          const git = gitSpawn([service.replace('git-', ''), '--stateless-rpc', '--advertise-refs', repoPath], repoPath, {
+          git = gitSpawn([service.replace('git-', ''), '--stateless-rpc', '--advertise-refs', repoPath], repoPath, {
             env: { GIT_PROJECT_ROOT: repoPath, GIT_HTTP_EXPORT_ALL: '1' },
           });
 
@@ -122,11 +132,15 @@ export class GitServerService implements IGitServerService {
           subscriber.error(error);
         }
       })();
+      return () => {
+        git?.kill();
+      };
     });
   }
 
   public gitSmartHTTPUploadPack$(workspaceId: string, requestBody: Uint8Array): Observable<GitHTTPResponseChunk> {
     return new Observable<GitHTTPResponseChunk>((subscriber) => {
+      let git: ChildProcess | undefined;
       void (async () => {
         try {
           const repoPath = await this.resolveRepoPathOrError(workspaceId, subscriber);
@@ -144,12 +158,14 @@ export class GitServerService implements IGitServerService {
             },
           });
 
-          const git = gitSpawn(['upload-pack', '--stateless-rpc', repoPath], repoPath, {
+          git = gitSpawn(['upload-pack', '--stateless-rpc', repoPath], repoPath, {
             env: { GIT_PROJECT_ROOT: repoPath, GIT_HTTP_EXPORT_ALL: '1' },
           });
 
           git.stdin.on('error', (error: Error) => {
             logger.debug('Git upload-pack stdin error:', { error: error.message, workspaceId });
+            git?.kill();
+            subscriber.error(error);
           });
           git.stdout.on('data', (data: Buffer) => {
             subscriber.next({ type: 'data', data: new Uint8Array(data) });
@@ -172,17 +188,20 @@ export class GitServerService implements IGitServerService {
           subscriber.error(error);
         }
       })();
+      return () => {
+        git?.kill();
+      };
     });
   }
 
   public gitSmartHTTPReceivePack$(workspaceId: string, requestBody: Uint8Array): Observable<GitHTTPResponseChunk> {
     return new Observable<GitHTTPResponseChunk>((subscriber) => {
+      let git: ChildProcess | undefined;
       void (async () => {
         try {
           const repoPath = await this.resolveRepoPathOrError(workspaceId, subscriber);
           if (!repoPath) return;
-          await this.ensureCommittedBeforeServe(repoPath);
-          await this.ensureReceivePackConfig(repoPath);
+          // Check readOnly before expensive git operations
           const workspace = await this.getWorkspaceById(workspaceId);
           if (workspace && isWikiWorkspace(workspace) && workspace.readOnlyMode) {
             subscriber.next({
@@ -194,6 +213,8 @@ export class GitServerService implements IGitServerService {
             subscriber.complete();
             return;
           }
+          await this.ensureCommittedBeforeServe(repoPath);
+          await this.ensureReceivePackConfig(repoPath);
 
           subscriber.next({
             type: 'headers',
@@ -204,12 +225,14 @@ export class GitServerService implements IGitServerService {
             },
           });
 
-          const git = gitSpawn(['-c', 'receive.denyCurrentBranch=updateInstead', 'receive-pack', '--stateless-rpc', repoPath], repoPath, {
+          git = gitSpawn(['-c', 'receive.denyCurrentBranch=updateInstead', 'receive-pack', '--stateless-rpc', repoPath], repoPath, {
             env: { GIT_PROJECT_ROOT: repoPath },
           });
 
           git.stdin.on('error', (error: Error) => {
             logger.debug('Git receive-pack stdin error:', { error: error.message, workspaceId });
+            git?.kill();
+            subscriber.error(error);
           });
           git.stdout.on('data', (data: Buffer) => {
             subscriber.next({ type: 'data', data: new Uint8Array(data) });
@@ -232,6 +255,9 @@ export class GitServerService implements IGitServerService {
           subscriber.error(error);
         }
       })();
+      return () => {
+        git?.kill();
+      };
     });
   }
 

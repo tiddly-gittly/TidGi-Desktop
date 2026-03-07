@@ -52,7 +52,7 @@ jobs:
           # Set Chinese locale for i18n testing
           LANG: zh_CN.UTF-8
           LC_ALL: zh_CN.UTF-8
-        timeout-minutes: 25
+        timeout-minutes: 15
 
       # Upload test artifacts (screenshots, logs)
       - name: Upload test artifacts

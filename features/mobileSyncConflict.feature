@@ -17,7 +17,8 @@ Feature: Mobile Sync via HTTP Git Endpoints
     And I wait for "git initialization" log marker "[test-id-git-init-complete]"
 
   @git @mobilesync
-  Scenario: Mobile clones desktop wiki via HTTP and pushes a new tiddler - fast-forward
+  Scenario: Mobile HTTP git sync covers fast-forward, non-overlapping merge, same-name conflict, and body-merge conflict
+    # ═══ Part 1: Fast-forward push ═══
     # Simplest case: mobile clones the wiki, adds a brand-new tiddler, and syncs.
     # No desktop-side changes between clone and sync → guaranteed fast-forward.
     When I clone workspace "wiki" via HTTP to "{tmpDir}/mobile-clone"
@@ -36,19 +37,18 @@ Feature: Mobile Sync via HTTP Git Endpoints
     # receive.denyCurrentBranch=updateInstead updates the desktop working tree on push
     Then file "{tmpDir}/wiki/tiddlers/MobileNote.tid" should contain text "Written on mobile phone."
 
-  @git @mobilesync
-  Scenario: Mobile syncs while desktop has uncommitted changes - non-overlapping files
+    # ═══ Part 2: Non-overlapping merge with uncommitted desktop changes ═══
     # Desktop creates a tiddler through the browser UI
     When I create a tiddler "DesktopOnly" with tag "Desktop" in browser view
 
-    # Mobile clones current state (ensureCommittedBeforeServe auto-commits DesktopOnly)
-    When I clone workspace "wiki" via HTTP to "{tmpDir}/mobile-clone"
+    # Mobile re-clones current state (ensureCommittedBeforeServe auto-commits DesktopOnly)
+    When I clone workspace "wiki" via HTTP to "{tmpDir}/mobile-clone2"
 
     # Desktop creates another tiddler (uncommitted to git) after mobile cloned
     When I create a tiddler "DesktopNew" with tag "Desktop" in browser view
 
     # Mobile adds a non-overlapping tiddler
-    When I create file "{tmpDir}/mobile-clone/tiddlers/MobileNew.tid" with content:
+    When I create file "{tmpDir}/mobile-clone2/tiddlers/MobileNew.tid" with content:
       """
       created: 20250226120000000
       modified: 20250226120000000
@@ -60,14 +60,13 @@ Feature: Mobile Sync via HTTP Git Endpoints
     # Mobile syncs: commit → push to mobile-incoming → desktop merges → mobile pulls.
     # The push triggers ensureCommittedBeforeServe which auto-commits DesktopNew on desktop.
     # Desktop merges mobile-incoming into main (non-overlapping → auto-merge). Mobile pulls result.
-    When I sync "{tmpDir}/mobile-clone" via HTTP to workspace "wiki"
+    When I sync "{tmpDir}/mobile-clone2" via HTTP to workspace "wiki"
     Then file "{tmpDir}/wiki/tiddlers/MobileNew.tid" should contain text "Mobile created this tiddler."
     And file "{tmpDir}/wiki/tiddlers/DesktopNew.tid" should contain text "Desktop"
 
-  @git @mobilesync
-  Scenario: Both sides create same-named tiddler - conflict resolved by mobile strategy
+    # ═══ Part 3: Same-name tiddler conflict — mobile metadata wins ═══
     # Mobile clones the wiki
-    When I clone workspace "wiki" via HTTP to "{tmpDir}/mobile-clone"
+    When I clone workspace "wiki" via HTTP to "{tmpDir}/mobile-clone3"
 
     # Desktop creates a tiddler directly on disk (will be auto-committed by ensureCommittedBeforeServe)
     When I create file "{tmpDir}/wiki/tiddlers/SharedNote.tid" with content:
@@ -81,7 +80,7 @@ Feature: Mobile Sync via HTTP Git Endpoints
       """
 
     # Mobile creates the same-titled tiddler with different content
-    When I create file "{tmpDir}/mobile-clone/tiddlers/SharedNote.tid" with content:
+    When I create file "{tmpDir}/mobile-clone3/tiddlers/SharedNote.tid" with content:
       """
       created: 20250226100000000
       modified: 20250226110000000
@@ -97,7 +96,7 @@ Feature: Mobile Sync via HTTP Git Endpoints
     #   When the entire conflict block is in the header section (before first blank line),
     #   mobile's version ("theirs" from desktop's perspective) wins completely.
     #   Desktop's version is preserved in the git merge commit history for rollback.
-    When I sync "{tmpDir}/mobile-clone" via HTTP to workspace "wiki"
+    When I sync "{tmpDir}/mobile-clone3" via HTTP to workspace "wiki"
 
     # Verify: mobile metadata wins
     Then file "{tmpDir}/wiki/tiddlers/SharedNote.tid" should contain text "tags: Mobile"
@@ -108,9 +107,8 @@ Feature: Mobile Sync via HTTP Git Endpoints
     And file "{tmpDir}/wiki/tiddlers/SharedNote.tid" should not contain text "<<<<<<<"
     And file "{tmpDir}/wiki/tiddlers/SharedNote.tid" should not contain text "======="
 
-  @git @mobilesync
-  Scenario: Both sides edit existing tiddler - body text merged, metadata from mobile
-    # First create a tiddler that exists before mobile clones, so both sides share a common base
+    # ═══ Part 4: Both sides edit existing tiddler — body merged, metadata from mobile ═══
+    # Create a tiddler that exists before mobile clones, so both sides share a common base
     When I create file "{tmpDir}/wiki/tiddlers/Journal.tid" with content:
       """
       created: 20250226090000000
@@ -122,7 +120,7 @@ Feature: Mobile Sync via HTTP Git Endpoints
       Line two from original.
       """
     # Clone – ensureCommittedBeforeServe auto-commits Journal.tid
-    When I clone workspace "wiki" via HTTP to "{tmpDir}/mobile-clone"
+    When I clone workspace "wiki" via HTTP to "{tmpDir}/mobile-clone4"
 
     # Desktop appends a line to the body (and TiddlyWiki bumps modified)
     When I create file "{tmpDir}/wiki/tiddlers/Journal.tid" with content:
@@ -138,7 +136,7 @@ Feature: Mobile Sync via HTTP Git Endpoints
       """
 
     # Mobile also appends a different line to the body
-    When I create file "{tmpDir}/mobile-clone/tiddlers/Journal.tid" with content:
+    When I create file "{tmpDir}/mobile-clone4/tiddlers/Journal.tid" with content:
       """
       created: 20250226090000000
       modified: 20250226110000000
@@ -153,7 +151,7 @@ Feature: Mobile Sync via HTTP Git Endpoints
     # Mobile syncs. Desktop merges mobile-incoming into main and sees two conflict blocks:
     #   1. modified: field (header) → mobile wins (desktop prefers "theirs" = mobile for metadata)
     #   2. appended lines (body) → merge: keep desktop's + append mobile's unique lines
-    When I sync "{tmpDir}/mobile-clone" via HTTP to workspace "wiki"
+    When I sync "{tmpDir}/mobile-clone4" via HTTP to workspace "wiki"
 
     # Verify: mobile's modified timestamp wins
     Then file "{tmpDir}/wiki/tiddlers/Journal.tid" should contain text "modified: 20250226110000000"
