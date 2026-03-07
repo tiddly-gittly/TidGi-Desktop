@@ -1175,67 +1175,75 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
     watchFsCurrentlyEnabled = currentWorkspace !== null && isWikiWorkspace(currentWorkspace) && currentWorkspace.enableFileSystemWatch;
   }
 
-  // Determine if a wiki restart is needed (enableFileSystemWatch or enableHTTPAPI changed)
-  const needsRestart = 'enableFileSystemWatch' in settingsUpdate || 'enableHTTPAPI' in settingsUpdate;
+  // Update workspace settings via main window
+  await this.app.evaluate(async ({ BrowserWindow }, { workspaceId, updates }: { workspaceId: string; updates: Record<string, unknown> }) => {
+    const windows = BrowserWindow.getAllWindows();
+    const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
 
+    if (!mainWindow) {
+      throw new Error('Main window not found');
+    }
+
+    // Call workspace service to update workspace settings
+    await mainWindow.webContents.executeJavaScript(`
+      (async () => {
+        await window.service.workspace.update(${JSON.stringify(workspaceId)}, ${JSON.stringify(updates)});
+      })();
+    `);
+  }, { workspaceId: targetWorkspaceId, updates: settingsUpdate });
+
+  // Wait for settings to propagate
+  await this.app.evaluate(async () => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+  });
+
+  // If enableFileSystemWatch or enableHTTPAPI was changed, we need to restart the wiki
+  const needsRestart = 'enableFileSystemWatch' in settingsUpdate || 'enableHTTPAPI' in settingsUpdate;
   if (needsRestart) {
-    // If watch-fs is currently running, wait for it to be stable before stopping
+    // Only wait for watch-fs if it was enabled before the update
+    // If it was disabled, wiki is ready immediately without watch-fs markers
     if (watchFsCurrentlyEnabled) {
       await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs not ready before restart', LOG_MARKER_WAIT_TIMEOUT);
     }
+
+    // Clear log markers to ensure we wait for fresh ones after restart
     await clearLogLinesContaining(this, '[test-id-WATCH_FS_STABILIZED]');
 
-    // Use stop→update→start instead of update→restartWiki to avoid the reactive system
-    // firing a concurrent startWiki that races with restartWiki for the same port.
-    const restartResult = await this.app.evaluate(
-      async ({ BrowserWindow }, { workspaceId, updates }: { workspaceId: string; updates: Record<string, unknown> }) => {
-        const windows = BrowserWindow.getAllWindows();
-        const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
-        if (!mainWindow) return { success: false, error: 'Main window not found' };
+    // Restart the wiki
+    const restartResult = await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
+      const windows = BrowserWindow.getAllWindows();
+      const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
 
-        return await mainWindow.webContents.executeJavaScript(`
-          (async () => {
-            try {
-              await window.service.wiki.stopWiki(${JSON.stringify(workspaceId)});
-              await window.service.workspace.update(${JSON.stringify(workspaceId)}, ${JSON.stringify(updates)});
-              await new Promise(resolve => setTimeout(resolve, 500));
-              const workspace = await window.service.workspace.get(${JSON.stringify(workspaceId)});
-              if (!workspace) return { success: false, error: 'Workspace not found after update' };
-              const userName = await window.service.auth.getUserName(workspace);
-              await window.service.wiki.startWiki(${JSON.stringify(workspaceId)}, userName);
-              return { success: true };
-            } catch (error) {
-              return { success: false, error: error.message };
-            }
-          })();
-        `) as Promise<{ success: boolean; error?: string }>;
-      },
-      { workspaceId: targetWorkspaceId, updates: settingsUpdate },
-    );
+      if (!mainWindow) {
+        throw new Error('Main window not found');
+      }
+
+      const result = await mainWindow.webContents.executeJavaScript(`
+        (async () => {
+          const workspace = await window.service.workspace.get(${JSON.stringify(workspaceId)});
+          if (!workspace) {
+            return { success: false, error: 'Workspace not found' };
+          }
+          try {
+            await window.service.wiki.restartWiki(workspace);
+            return { success: true };
+          } catch (error) {
+            return { success: false, error: error.message };
+          }
+        })();
+      `) as Promise<{ success: boolean; error?: string }>;
+      return result;
+    }, targetWorkspaceId);
 
     if (!restartResult.success) {
-      throw new Error(`Failed to restart wiki after settings update: ${restartResult.error ?? 'Unknown error'}`);
+      throw new Error(`Failed to restart wiki: ${restartResult.error ?? 'Unknown error'}`);
     }
 
+    // Wait for wiki to restart and watch-fs to stabilize
+    // Only wait if enableFileSystemWatch was set to true
     if (settingsUpdate.enableFileSystemWatch === true) {
       await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not stabilize after restart', LOG_MARKER_WAIT_TIMEOUT);
     }
-  } else {
-    // No restart needed, just update settings
-    await this.app.evaluate(async ({ BrowserWindow }, { workspaceId, updates }: { workspaceId: string; updates: Record<string, unknown> }) => {
-      const windows = BrowserWindow.getAllWindows();
-      const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
-      if (!mainWindow) throw new Error('Main window not found');
-      await mainWindow.webContents.executeJavaScript(`
-        (async () => {
-          await window.service.workspace.update(${JSON.stringify(workspaceId)}, ${JSON.stringify(updates)});
-        })();
-      `);
-    }, { workspaceId: targetWorkspaceId, updates: settingsUpdate });
-
-    await this.app.evaluate(async () => {
-      await new Promise(resolve => setTimeout(resolve, 500));
-    });
   }
 });
 
