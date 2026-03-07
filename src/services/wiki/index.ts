@@ -566,6 +566,11 @@ export class Wiki implements IWikiService {
           if (source.endsWith('.git')) {
             return false;
           }
+          // Skip template's tidgi.config.json so new wikis start with a clean config
+          // (the template file contains the template repo's name, not the user's wiki name)
+          if (path.basename(source) === 'tidgi.config.json') {
+            return false;
+          }
           // it will be copied if return true
           return true;
         },
