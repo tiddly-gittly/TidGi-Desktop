@@ -55,7 +55,7 @@ const BACKOFF_OPTIONS = {
  *
  * You can add test-id for debugging, And remove unused test-id before you finish the work. Also remove test-id that interval is smaller than 2s.
  */
-export async function waitForLogMarker(world: ApplicationWorld, searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = 'wiki-'): Promise<void> {
+export async function waitForLogMarker(world: ApplicationWorld, searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = '*'): Promise<void> {
   const logPath = getLogPath(world);
   // Support multiple patterns separated by '|', and '*' for all log files
   const patterns = logFilePattern.split('|');
