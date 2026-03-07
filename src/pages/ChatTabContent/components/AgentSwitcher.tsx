@@ -21,8 +21,8 @@ const SwitcherButton = styled(Box)<{ disabled?: boolean }>(({ theme, disabled })
   '&:hover': disabled
     ? {}
     : {
-        backgroundColor: theme.palette.action.selected,
-      },
+      backgroundColor: theme.palette.action.selected,
+    },
 }));
 
 const DropdownPaper = styled(Paper)(({ theme }) => ({
@@ -87,7 +87,9 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
       const timer = setTimeout(() => {
         searchInputReference.current?.focus();
       }, 50);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+      };
     }
   }, [open]);
 
@@ -124,18 +126,20 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
               options={agentDefs}
               getOptionLabel={(option) => option.name ?? option.id}
               value={currentDefinition ?? (agentDefs[0] as AgentDefinition | undefined) ?? { id: '', agentFrameworkConfig: {} } as AgentDefinition}
-              onChange={(_event, value) => handleSelect(value)}
+              onChange={(_event, value) => {
+                handleSelect(value);
+              }}
               filterOptions={(options, state) => {
                 const query = state.inputValue.toLowerCase();
                 if (!query) return options;
                 return options.filter((o) =>
-                  (o.name ?? o.id).toLowerCase().includes(query)
-                  || (o.description ?? '').toLowerCase().includes(query),
+                  (o.name ?? o.id).toLowerCase().includes(query) ||
+                  (o.description ?? '').toLowerCase().includes(query)
                 );
               }}
-              renderInput={(params) => (
+              renderInput={(parameters) => (
                 <TextField
-                  {...params}
+                  {...parameters}
                   inputRef={searchInputReference}
                   placeholder='Search agents...'
                   autoFocus

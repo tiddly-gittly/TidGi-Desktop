@@ -71,7 +71,6 @@ export const ToolApprovalRenderer: React.FC<MessageRendererProps> = memo(({ mess
     setDecision('allow');
     try {
       if (window.service?.agentInstance) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         void window.service.agentInstance.resolveToolApproval(data.approvalId, 'allow');
       }
     } catch {
@@ -84,7 +83,6 @@ export const ToolApprovalRenderer: React.FC<MessageRendererProps> = memo(({ mess
     setDecision('deny');
     try {
       if (window.service?.agentInstance) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         void window.service.agentInstance.resolveToolApproval(data.approvalId, 'deny');
       }
     } catch {

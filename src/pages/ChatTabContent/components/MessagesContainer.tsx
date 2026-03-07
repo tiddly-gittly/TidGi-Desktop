@@ -6,16 +6,16 @@
  * For short conversations (<= VIRTUALIZATION_THRESHOLD), renders simple DOM.
  * For long conversations, uses react-window v2 List for virtualization.
  */
-import { Box, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
-import { styled } from '@mui/material/styles';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CopyAllIcon from '@mui/icons-material/CopyAll';
+import { Box, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import type { AgentInstanceMessage } from '@services/agentInstance/interface';
 import React, { CSSProperties, ReactElement, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { List, useListRef } from 'react-window';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
-import { stripToolXml } from './MessageRenderer/BaseMessageRenderer';
 import { MessageBubble } from './MessageBubble';
+import { stripToolXml } from './MessageRenderer/BaseMessageRenderer';
 import { TurnActionBar } from './TurnActionBar';
 
 /** Threshold: virtualize when message count exceeds this */
@@ -91,7 +91,9 @@ interface RowProps {
 }
 
 /** Single turn renderer for the simple (non-virtualized) path */
-const TurnGroup: React.FC<{ turn: Turn; isSplitView?: boolean; onDeleteTurn?: (userText: string) => void; onContextMenu?: (event: React.MouseEvent, turnMessageIds: string[]) => void }> = ({
+const TurnGroup: React.FC<
+  { turn: Turn; isSplitView?: boolean; onDeleteTurn?: (userText: string) => void; onContextMenu?: (event: React.MouseEvent, turnMessageIds: string[]) => void }
+> = ({
   turn,
   isSplitView,
   onDeleteTurn,
@@ -143,7 +145,7 @@ function VirtualizedRow({ index, style, turns, isSplitView, onDeleteTurn }: {
  * Container component for all chat messages grouped by turn.
  */
 export const MessagesContainer: React.FC<MessagesContainerProps> = ({ messageIds, children, isSplitView, onDeleteTurn }) => {
-  const listRef = useListRef(null);
+  const listReference = useListRef(null);
   const messages = useAgentChatStore(state => state.messages);
 
   const turns = useMemo(() => buildTurns(messageIds, messages), [messageIds, messages]);
@@ -198,10 +200,10 @@ export const MessagesContainer: React.FC<MessagesContainerProps> = ({ messageIds
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
-    if (listRef.current && turns.length > VIRTUALIZATION_THRESHOLD) {
-      listRef.current.scrollToRow({ index: turns.length - 1, align: 'end' });
+    if (listReference.current && turns.length > VIRTUALIZATION_THRESHOLD) {
+      listReference.current.scrollToRow({ index: turns.length - 1, align: 'end' });
     }
-  }, [turns.length, listRef]);
+  }, [turns.length, listReference]);
 
   const contextMenuElement = (
     <Menu
@@ -211,11 +213,15 @@ export const MessagesContainer: React.FC<MessagesContainerProps> = ({ messageIds
       anchorPosition={contextMenu ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined}
     >
       <MenuItem onClick={handleCopy}>
-        <ListItemIcon><ContentCopyIcon fontSize='small' /></ListItemIcon>
+        <ListItemIcon>
+          <ContentCopyIcon fontSize='small' />
+        </ListItemIcon>
         <ListItemText>Copy</ListItemText>
       </MenuItem>
       <MenuItem onClick={handleCopyAll}>
-        <ListItemIcon><CopyAllIcon fontSize='small' /></ListItemIcon>
+        <ListItemIcon>
+          <CopyAllIcon fontSize='small' />
+        </ListItemIcon>
         <ListItemText>Copy All</ListItemText>
       </MenuItem>
     </Menu>
@@ -244,7 +250,7 @@ export const MessagesContainer: React.FC<MessagesContainerProps> = ({ messageIds
   return (
     <Container id='messages-container'>
       <List<RowProps>
-        listRef={listRef}
+        listRef={listReference}
         defaultHeight={600}
         rowComponent={VirtualizedRow}
         rowCount={turns.length}

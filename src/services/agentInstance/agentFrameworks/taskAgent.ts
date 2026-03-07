@@ -3,7 +3,7 @@ import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { merge } from 'lodash';
-import type { AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from '../interface';
+import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { AgentFrameworkConfig, AgentPromptDescription, AiAPIConfig } from '../promptConcat/promptConcatSchema';
 import type { IPromptConcatTool } from '../promptConcat/promptConcatSchema/tools';
 import { responseConcat } from '../promptConcat/responseConcat';

@@ -2,9 +2,9 @@
  * Unit tests for ScheduledTaskManager — cron parsing, restore, active hours, volatile exemption.
  */
 
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import type { Repository } from 'typeorm';
 import type { ScheduledTaskEntity } from '@services/database/schema/agent';
+import type { Repository } from 'typeorm';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IAgentInstanceService } from '../interface';
 
 // ─── We test the module-level exported functions directly ────────────────────
@@ -54,14 +54,14 @@ function makeRepo(entities: ScheduledTaskEntity[] = []): Repository<ScheduledTas
       const id = options?.where?.id;
       return id ? (store.get(id) ?? null) : null;
     }),
-    create: vi.fn((data: Partial<ScheduledTaskEntity>) => ({ ...makeEntity(), ...data }) as ScheduledTaskEntity),
+    create: vi.fn((data: Partial<ScheduledTaskEntity>) => (Object.assign(makeEntity(), data) as ScheduledTaskEntity)),
     save: vi.fn(async (entity: ScheduledTaskEntity) => {
       store.set(entity.id, entity);
       return entity;
     }),
     update: vi.fn(async (id: string, data: Partial<ScheduledTaskEntity>) => {
       const existing = store.get(id);
-      if (existing) store.set(id, { ...existing, ...data });
+      if (existing) store.set(id, Object.assign({}, existing, data) as ScheduledTaskEntity);
     }),
     delete: vi.fn(async (id: string) => {
       store.delete(id);
@@ -94,7 +94,9 @@ describe('ScheduledTaskManager', () => {
     it('initialises without error', () => {
       const repo = makeRepo();
       const service = makeAgentService();
-      expect(() => manager.initScheduledTaskManager(repo, service)).not.toThrow();
+      expect(() => {
+        manager.initScheduledTaskManager(repo, service);
+      }).not.toThrow();
     });
   });
 

@@ -21,7 +21,6 @@ import { findPromptById } from '../promptConcat/promptConcat';
 import type { IPrompt } from '../promptConcat/promptConcatSchema';
 import { schemaToToolContent } from '../utilities/schemaToToolContent';
 import { evaluateApproval, requestApproval } from './approval';
-import type { ToolApprovalConfig } from './types';
 
 /**
  * Maximum characters for a single tool result before truncation.
@@ -39,7 +38,7 @@ import type {
   ToolExecutionResult,
   ToolHandlerContext,
 } from './defineToolTypes';
-import type { AIResponseContext, PostProcessContext, PromptConcatHookContext, PromptConcatHooks, PromptConcatTool } from './types';
+import type { AIResponseContext, PromptConcatHookContext, PromptConcatTool } from './types';
 
 // Re-export all types and the registry for backward compatibility
 export type {
@@ -296,7 +295,7 @@ export function defineTool<
                 const validatedParameters = toolSchema.parse(toolCall.parameters);
 
                 // Check approval before execution
-                const approvalConfig = ourToolConfig.approval as ToolApprovalConfig | undefined;
+                const approvalConfig = ourToolConfig.approval;
                 const decision = evaluateApproval(approvalConfig, String(toolName), validatedParameters as Record<string, unknown>);
                 if (decision === 'deny') {
                   handlerContext.addToolResult({
@@ -509,11 +508,12 @@ ${options.isError ? 'Error' : 'Result'}: ${resultContent}
               const toolResultDuration = (config as { toolResultDuration?: number } | undefined)?.toolResultDuration ?? 1;
 
               // Build entries for parallel execution
-              const entries: Array<{ call: ToolCallingMatch & { found: true }; executor: (params: Record<string, unknown>) => Promise<ToolExecutionResult>; timeoutMs?: number }> =
-                [];
+              const entries: Array<
+                { call: ToolCallingMatch & { found: true }; executor: (parameters: Record<string, unknown>) => Promise<ToolExecutionResult>; timeoutMs?: number }
+              > = [];
 
               // Check approval once for the batch — use the first call's parameters as representative
-              const approvalConfig = ourToolConfig.approval as ToolApprovalConfig | undefined;
+              const approvalConfig = ourToolConfig.approval;
               const batchDecision = evaluateApproval(approvalConfig, String(toolName), matchingCalls[0]?.parameters ?? {});
               if (batchDecision === 'deny') {
                 for (const call of matchingCalls) {
@@ -611,7 +611,7 @@ ${options.isError ? 'Error' : 'Result'}: ${resultContent}
                   toolResult: result.result ?? { success: false, error: resultText },
                   toolInfo: {
                     toolId: String(toolName),
-                    parameters: (result.call.parameters ?? {}) as Record<string, unknown>,
+                    parameters: (result.call.parameters ?? {}),
                     originalText: result.call.originalText,
                   },
                   requestId,

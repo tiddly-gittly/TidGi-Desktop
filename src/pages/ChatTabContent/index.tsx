@@ -179,12 +179,12 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
 
   // Agent switching: create new agent instance with different definition, update tab
   const updateTabData = useTabStore(useShallow((state) => state.updateTabData));
-  const handleSwitchAgent = React.useCallback(async (newAgentDefId: string) => {
-    if (newAgentDefId === tab.agentDefId) return;
+  const handleSwitchAgent = React.useCallback(async (newAgentDefinitionId: string) => {
+    if (newAgentDefinitionId === tab.agentDefId) return;
     try {
-      const newAgent = await window.service.agentInstance.createAgent(newAgentDefId);
+      const newAgent = await window.service.agentInstance.createAgent(newAgentDefinitionId);
       // Update tab with new agent
-      updateTabData(tab.id, { agentId: newAgent.id, agentDefId: newAgentDefId, title: newAgent.name } as Partial<TabItem>);
+      updateTabData(tab.id, { agentId: newAgent.id, agentDefId: newAgentDefinitionId, title: newAgent.name } as Partial<TabItem>);
       // Load the new agent into the store
       await fetchAgent(newAgent.id);
       // Setup subscription for the new agent

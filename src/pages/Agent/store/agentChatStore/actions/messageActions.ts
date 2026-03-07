@@ -134,10 +134,10 @@ export const messageActions = (
 
     // Remove from frontend store
     const deletedSet = new Set(turnIds);
-    set(prev => {
-      const newMessages = new Map(prev.messages);
+    set(previous => {
+      const newMessages = new Map(previous.messages);
       for (const id of turnIds) newMessages.delete(id);
-      const newOrderedIds = prev.orderedMessageIds.filter(id => !deletedSet.has(id));
+      const newOrderedIds = previous.orderedMessageIds.filter(id => !deletedSet.has(id));
       return { messages: newMessages, orderedMessageIds: newOrderedIds };
     });
 

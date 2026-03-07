@@ -78,32 +78,27 @@ async function connectAndListTools(config: ModelContextProtocolParameter, agentI
   try {
     // Dynamic import to handle cases where SDK isn't installed.
     // Use /* @vite-ignore */ so Vite/Vitest don't try to resolve the path at build time.
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, import/no-unresolved */
     const { Client } = await import(/* @vite-ignore */ '@modelcontextprotocol/sdk/client/index.js');
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const client = new Client({ name: 'TidGi-Agent', version: '1.0.0' }, { capabilities: {} });
 
     let transport: unknown;
 
     if (config.command) {
       // Stdio transport
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const { StdioClientTransport } = await import(/* @vite-ignore */ '@modelcontextprotocol/sdk/client/stdio.js');
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       transport = new StdioClientTransport({ command: config.command, args: config.args ?? [] });
     } else if (config.serverUrl) {
       // SSE transport
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const { SSEClientTransport } = await import(/* @vite-ignore */ '@modelcontextprotocol/sdk/client/sse.js');
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       transport = new SSEClientTransport(new URL(config.serverUrl));
     } else {
       logger.warn('MCP: No command or serverUrl configured', { agentId });
       return [];
     }
 
-    await client.connect(transport as Parameters<typeof client.connect>[0]);
+    await client.connect(transport);
 
     // List available tools
     const toolsResult = await client.listTools();
@@ -117,6 +112,7 @@ async function connectAndListTools(config: ModelContextProtocolParameter, agentI
 
     logger.info('MCP connected', { agentId, toolCount: tools.length, tools: tools.map((t: { name: string }) => t.name) });
     return tools;
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, import/no-unresolved */
   } catch (error) {
     logger.error('MCP connection failed', { error, agentId });
     return [];
@@ -133,7 +129,7 @@ async function callMCPTool(agentId: string, toolName: string, arguments_: Record
   }
 
   try {
-    const client = state.client as { callTool: (params: { name: string; arguments: Record<string, unknown> }) => Promise<{ content: unknown[] }> };
+    const client = state.client as { callTool: (parameters: { name: string; arguments: Record<string, unknown> }) => Promise<{ content: unknown[] }> };
     const result = await client.callTool({ name: toolName, arguments: arguments_ });
     const contentParts = (result.content ?? []) as Array<{ type: string; text?: string }>;
     const textContent = contentParts
@@ -189,8 +185,8 @@ const mcpDefinition = registerToolDefinition({
 
     // Build tool descriptions for prompt injection
     const toolDescriptions = state.tools.map((tool) => {
-      const schemaStr = tool.inputSchema ? JSON.stringify(tool.inputSchema, null, 2) : '{}';
-      return `Tool: mcp-${tool.name}\nDescription: ${tool.description ?? 'No description'}\nParameters schema:\n${schemaStr}`;
+      const schemaString = tool.inputSchema ? JSON.stringify(tool.inputSchema, null, 2) : '{}';
+      return `Tool: mcp-${tool.name}\nDescription: ${tool.description ?? 'No description'}\nParameters schema:\n${schemaString}`;
     }).join('\n\n');
 
     const content = `MCP Server Tools (use <tool_use name="mcp-TOOLNAME">{params}</tool_use> to call):\n\n${toolDescriptions}`;

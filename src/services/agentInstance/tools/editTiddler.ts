@@ -8,7 +8,6 @@
  */
 import { WikiChannel } from '@/constants/channels';
 import { container } from '@services/container';
-import { i18n } from '@services/libs/i18n';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -60,7 +59,7 @@ type EditTiddlerParameters = z.infer<typeof EditTiddlerToolSchema>;
  * Compute a minimal unified-diff-like summary between old and new text.
  * Returns { linesAdded, linesRemoved, diffSummary }.
  */
-function computeDiffSummary(oldText: string, newText: string, oldString: string, newString: string): {
+function computeDiffSummary(oldText: string, _newText: string, oldString: string, newString: string): {
   linesAdded: number;
   linesRemoved: number;
   diffSummary: string;

@@ -615,13 +615,16 @@ Then('I wait for SSE and watch-fs to be ready', async function(this: Application
     if (this.app) {
       try {
         const { executeTiddlyWikiCode } = await import('../supports/webContentsViewHelper');
-        diagnostics = await executeTiddlyWikiCode(this.app, `JSON.stringify({
+        diagnostics = await executeTiddlyWikiCode(
+          this.app,
+          `JSON.stringify({
           hasSyncadaptor: !!$tw.syncadaptor,
           sseSubscribed: !!$tw.syncadaptor?.sseSubscribed,
           hasObservables: !!window.observables,
           hasWikiObservables: !!window.observables?.wiki,
           hasGetWikiChangeObserver: typeof window.observables?.wiki?.getWikiChangeObserver$ === 'function',
-        })`) ?? 'executeTiddlyWikiCode returned null';
+        })`,
+        ) ?? 'executeTiddlyWikiCode returned null';
       } catch (diagError) {
         diagnostics = `diagnostics failed: ${String(diagError)}`;
       }

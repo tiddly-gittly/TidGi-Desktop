@@ -36,7 +36,7 @@ interface ChatHeaderProps {
   onOpenParameters: () => void;
   inputText?: string;
   currentAgentDefId?: string;
-  onSwitchAgent?: (agentDefId: string) => void;
+  onSwitchAgent?: (agentDefinitionId: string) => void;
   isStreaming?: boolean;
 }
 

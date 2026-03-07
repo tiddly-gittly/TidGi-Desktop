@@ -272,7 +272,7 @@ export interface IAgentInstanceService {
    * @param approvalId The approval request ID
    * @param decision 'allow' or 'deny'
    */
-  resolveToolApproval(approvalId: string, decision: 'allow' | 'deny'): void;
+  resolveToolApproval(approvalId: string, decision: 'allow' | 'deny'): Promise<void>;
 
   /**
    * Resolve a pending ask-question request from the UI.

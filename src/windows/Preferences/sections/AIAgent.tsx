@@ -1,6 +1,6 @@
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import AlarmIcon from '@mui/icons-material/Alarm';
 import AddIcon from '@mui/icons-material/Add';
+import AlarmIcon from '@mui/icons-material/Alarm';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -216,8 +216,12 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
       getCronPreviewDates: (expr: string, tz?: string, count?: number) => Promise<string[]>;
     };
     void service.getCronPreviewDates(stEditor.cronExpression, stEditor.timezone, 3)
-      .then(dates => { setCronPreviewDates(dates); })
-      .catch(() => { setCronPreviewDates([]); });
+      .then(dates => {
+        setCronPreviewDates(dates);
+      })
+      .catch(() => {
+        setCronPreviewDates([]);
+      });
   }, [stEditor.cronExpression, stEditor.timezone, stEditor.mode]);
 
   const fetchAgentOptions = useCallback(async () => {
@@ -486,7 +490,9 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
             </Button>
             <Button
               size='small'
-              onClick={() => { void fetchScheduledTasks(); }}
+              onClick={() => {
+                void fetchScheduledTasks();
+              }}
             >
               {t('Refresh')}
             </Button>
@@ -520,8 +526,8 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
                   const scheduleDesc = task.scheduleKind === 'interval'
                     ? `Every ${(task.schedule as { intervalSeconds: number }).intervalSeconds}s`
                     : task.scheduleKind === 'cron'
-                      ? `Cron: ${(task.schedule as { expression: string }).expression}`
-                      : `At: ${(task.schedule as { wakeAtISO: string }).wakeAtISO}`;
+                    ? `Cron: ${(task.schedule as { expression: string }).expression}`
+                    : `At: ${(task.schedule as { wakeAtISO: string }).wakeAtISO}`;
                   const nextRun = task.nextRunAt ? new Date(task.nextRunAt).toLocaleString() : '—';
                   const agentOption = agentOptions.find(a => a.id === task.agentInstanceId);
                   const typeIcon = task.scheduleKind === 'interval' ? <FavoriteIcon fontSize='inherit' color='success' /> : <AlarmIcon fontSize='inherit' color='warning' />;
@@ -547,7 +553,9 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
                         <Switch
                           size='small'
                           checked={task.enabled}
-                          onChange={() => { void handleToggleScheduledTask(task); }}
+                          onChange={() => {
+                            void handleToggleScheduledTask(task);
+                          }}
                           data-testid={`scheduled-task-enable-${task.id}`}
                         />
                       </TableCell>
@@ -581,7 +589,9 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
                         <Tooltip title='Delete'>
                           <IconButton
                             size='small'
-                            onClick={() => { void handleDeleteScheduledTask(task.id); }}
+                            onClick={() => {
+                              void handleDeleteScheduledTask(task.id);
+                            }}
                             data-testid={`scheduled-task-delete-${task.id}`}
                           >
                             <DeleteIcon fontSize='small' />
@@ -707,7 +717,9 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
       {/* ── ScheduledTask create/edit dialog ──────────────────────────────── */}
       <Dialog
         open={scheduledTaskDialogOpen}
-        onClose={() => { setScheduledTaskDialogOpen(false); }}
+        onClose={() => {
+          setScheduledTaskDialogOpen(false);
+        }}
         maxWidth='sm'
         fullWidth
         data-testid='scheduled-task-dialog'
@@ -720,7 +732,9 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
             label='Agent'
             margin='dense'
             value={stEditor.agentId}
-            onChange={(event) => { setStEditor(p => ({ ...p, agentId: event.target.value })); }}
+            onChange={(event) => {
+              setStEditor(p => ({ ...p, agentId: event.target.value }));
+            }}
             data-testid='scheduled-task-agent-select'
           >
             {agentOptions.map(o => <MenuItem key={o.id} value={o.id}>{o.label}</MenuItem>)}
@@ -731,7 +745,9 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
             label='Task name (optional)'
             margin='dense'
             value={stEditor.name}
-            onChange={(event) => { setStEditor(p => ({ ...p, name: event.target.value })); }}
+            onChange={(event) => {
+              setStEditor(p => ({ ...p, name: event.target.value }));
+            }}
             data-testid='scheduled-task-name-input'
           />
 
@@ -741,7 +757,9 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
             label='Schedule mode'
             margin='dense'
             value={stEditor.mode}
-            onChange={(event) => { setStEditor(p => ({ ...p, mode: event.target.value as StMode })); }}
+            onChange={(event) => {
+              setStEditor(p => ({ ...p, mode: event.target.value as StMode }));
+            }}
             data-testid='scheduled-task-mode-select'
           >
             <MenuItem value='interval'>Interval (every N seconds)</MenuItem>
@@ -755,7 +773,9 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
               label='Interval (seconds)'
               margin='dense'
               value={stEditor.intervalSeconds}
-              onChange={(event) => { setStEditor(p => ({ ...p, intervalSeconds: Number.parseInt(event.target.value || '300', 10) })); }}
+              onChange={(event) => {
+                setStEditor(p => ({ ...p, intervalSeconds: Number.parseInt(event.target.value || '300', 10) }));
+              }}
               slotProps={{ htmlInput: { min: 60 } }}
               data-testid='scheduled-task-interval-input'
             />
@@ -768,7 +788,9 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
                   label='Cron expression'
                   margin='dense'
                   value={stEditor.cronExpression}
-                  onChange={(event) => { setStEditor(p => ({ ...p, cronExpression: event.target.value })); }}
+                  onChange={(event) => {
+                    setStEditor(p => ({ ...p, cronExpression: event.target.value }));
+                  }}
                   helperText='min hour day month weekday'
                   sx={{ flex: 2 }}
                   data-testid='scheduled-task-cron-input'
@@ -777,7 +799,9 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
                   label='Timezone'
                   margin='dense'
                   value={stEditor.timezone}
-                  onChange={(event) => { setStEditor(p => ({ ...p, timezone: event.target.value })); }}
+                  onChange={(event) => {
+                    setStEditor(p => ({ ...p, timezone: event.target.value }));
+                  }}
                   sx={{ flex: 1 }}
                   data-testid='scheduled-task-timezone-input'
                 />
@@ -798,7 +822,9 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
             label='Wake-up message (optional)'
             margin='dense'
             value={stEditor.message}
-            onChange={(event) => { setStEditor(p => ({ ...p, message: event.target.value })); }}
+            onChange={(event) => {
+              setStEditor(p => ({ ...p, message: event.target.value }));
+            }}
             data-testid='scheduled-task-message-input'
           />
 
@@ -808,7 +834,9 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
               label='Active hours start (optional)'
               margin='dense'
               value={stEditor.activeHoursStart}
-              onChange={(event) => { setStEditor(p => ({ ...p, activeHoursStart: event.target.value })); }}
+              onChange={(event) => {
+                setStEditor(p => ({ ...p, activeHoursStart: event.target.value }));
+              }}
               sx={{ flex: 1 }}
               data-testid='scheduled-task-active-start-input'
             />
@@ -817,17 +845,29 @@ export function AIAgent(props: ISectionProps): React.JSX.Element {
               label='Active hours end (optional)'
               margin='dense'
               value={stEditor.activeHoursEnd}
-              onChange={(event) => { setStEditor(p => ({ ...p, activeHoursEnd: event.target.value })); }}
+              onChange={(event) => {
+                setStEditor(p => ({ ...p, activeHoursEnd: event.target.value }));
+              }}
               sx={{ flex: 1 }}
               data-testid='scheduled-task-active-end-input'
             />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => { setScheduledTaskDialogOpen(false); }} data-testid='scheduled-task-cancel-button'>
+          <Button
+            onClick={() => {
+              setScheduledTaskDialogOpen(false);
+            }}
+            data-testid='scheduled-task-cancel-button'
+          >
             Cancel
           </Button>
-          <Button onClick={() => { void handleSaveScheduledTask(); }} data-testid='scheduled-task-save-button'>
+          <Button
+            onClick={() => {
+              void handleSaveScheduledTask();
+            }}
+            data-testid='scheduled-task-save-button'
+          >
             Save
           </Button>
         </DialogActions>

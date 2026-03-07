@@ -99,12 +99,24 @@ export async function getChangedFilesBetweenCommits(
     const statusCode = parts[0];
     let status: GitFileStatus;
     switch (statusCode?.charAt(0)) {
-      case 'A': status = 'added'; break;
-      case 'M': status = 'modified'; break;
-      case 'D': status = 'deleted'; break;
-      case 'R': status = 'renamed'; break;
-      case 'C': status = 'copied'; break;
-      default: status = 'unknown'; break;
+      case 'A':
+        status = 'added';
+        break;
+      case 'M':
+        status = 'modified';
+        break;
+      case 'D':
+        status = 'deleted';
+        break;
+      case 'R':
+        status = 'renamed';
+        break;
+      case 'C':
+        status = 'copied';
+        break;
+      default:
+        status = 'unknown';
+        break;
     }
     // For renamed/copied files, git outputs "R100\told/path\tnew/path".
     // Use the new path (last element) for file operations.

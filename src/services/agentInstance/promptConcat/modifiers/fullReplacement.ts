@@ -107,9 +107,9 @@ const fullReplacementDefinition = registerModifier({
         trimmedHistory = [];
         let runningTokens = 0;
         for (let index = filteredHistory.length - 1; index >= 0; index--) {
-          const msgTokens = estimateTokens(filteredHistory[index].content);
-          if (runningTokens + msgTokens > historyBudget) break;
-          runningTokens += msgTokens;
+          const messageTokens = estimateTokens(filteredHistory[index].content);
+          if (runningTokens + messageTokens > historyBudget) break;
+          runningTokens += messageTokens;
           trimmedHistory.unshift(filteredHistory[index]);
         }
         logger.debug('Trimmed history to fit context window', {

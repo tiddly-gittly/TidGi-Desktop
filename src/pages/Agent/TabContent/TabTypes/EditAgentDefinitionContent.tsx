@@ -196,8 +196,12 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
       getCronPreviewDates: (expr: string, tz?: string, count?: number) => Promise<string[]>;
     };
     void service.getCronPreviewDates(scheduleEditor.cronExpression, scheduleEditor.timezone, 3)
-      .then(dates => { setCronPreviewDates(dates); })
-      .catch(() => { setCronPreviewDates([]); });
+      .then(dates => {
+        setCronPreviewDates(dates);
+      })
+      .catch(() => {
+        setCronPreviewDates([]);
+      });
   }, [scheduleEditor.cronExpression, scheduleEditor.timezone, scheduleEditor.mode]);
 
   const handleSaveSchedule = useCallback(async () => {
@@ -669,9 +673,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
               {cronPreviewDates.length > 0 && (
                 <Box sx={{ mt: 1 }}>
                   <Typography variant='caption' color='text.secondary'>
-                    {t('EditAgent.ScheduleCronPreview', 'Next runs:')}
-                    {' '}
-                    {cronPreviewDates.map(d => new Date(d).toLocaleString()).join(' → ')}
+                    {t('EditAgent.ScheduleCronPreview', 'Next runs:')} {cronPreviewDates.map(d => new Date(d).toLocaleString()).join(' → ')}
                   </Typography>
                 </Box>
               )}
@@ -716,16 +718,16 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
                 />
               </Box>
 
-              {scheduleError && (
-                <Alert severity='error' sx={{ mt: 1 }}>{scheduleError}</Alert>
-              )}
+              {scheduleError && <Alert severity='error' sx={{ mt: 1 }}>{scheduleError}</Alert>}
 
               <Tooltip title={!previewAgentId ? t('EditAgent.ScheduleSaveWait', 'Preview agent loading...') : ''} placement='right'>
                 <span>
                   <Button
                     variant='outlined'
                     size='small'
-                    onClick={() => { void handleSaveSchedule(); }}
+                    onClick={() => {
+                      void handleSaveSchedule();
+                    }}
                     disabled={isScheduleSaving || !previewAgentId}
                     sx={{ mt: 1 }}
                     data-testid='edit-agent-schedule-save-button'
@@ -734,8 +736,8 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
                     {isScheduleSaving
                       ? t('EditAgent.ScheduleSaving', 'Saving...')
                       : scheduleEditor.existingTaskId
-                        ? t('EditAgent.ScheduleUpdate', 'Update schedule')
-                        : t('EditAgent.ScheduleSave', 'Save schedule')}
+                      ? t('EditAgent.ScheduleUpdate', 'Update schedule')
+                      : t('EditAgent.ScheduleSave', 'Save schedule')}
                   </Button>
                 </span>
               </Tooltip>

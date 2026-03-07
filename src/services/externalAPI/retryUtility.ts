@@ -4,8 +4,8 @@
  * Uses the `exponential-backoff` npm package for retry logic with configurable
  * backoff strategy. Designed for AI API calls that may fail transiently.
  */
-import { backOff } from 'exponential-backoff';
 import { logger } from '@services/libs/log';
+import { backOff } from 'exponential-backoff';
 
 /**
  * Retry configuration (stored in agent settings / global preferences)
@@ -39,8 +39,8 @@ function isRetryableError(error: unknown, config: RetryConfig): boolean {
   if (!error) return false;
 
   // Check for HTTP status code in error
-  const statusCode = (error as { status?: number; statusCode?: number }).status
-    ?? (error as { status?: number; statusCode?: number }).statusCode;
+  const statusCode = (error as { status?: number; statusCode?: number }).status ??
+    (error as { status?: number; statusCode?: number }).statusCode;
   if (statusCode && config.retryableStatusCodes.includes(statusCode)) {
     return true;
   }
@@ -92,7 +92,7 @@ function getRetryAfterMs(error: unknown): number | undefined {
  * @returns The result of fn()
  */
 export async function withRetry<T>(
-  fn: () => Promise<T>,
+  function_: () => Promise<T>,
   config: Partial<RetryConfig> = {},
   onRetry?: (attempt: number, maxAttempts: number, delayMs: number, error: Error) => void,
 ): Promise<T> {
@@ -100,10 +100,10 @@ export async function withRetry<T>(
 
   if (fullConfig.maxAttempts <= 0) {
     // No retry — just execute
-    return fn();
+    return function_();
   }
 
-  return backOff(fn, {
+  return backOff(function_, {
     numOfAttempts: fullConfig.maxAttempts + 1, // backOff counts the initial attempt
     startingDelay: fullConfig.initialDelayMs,
     maxDelay: fullConfig.maxDelayMs,

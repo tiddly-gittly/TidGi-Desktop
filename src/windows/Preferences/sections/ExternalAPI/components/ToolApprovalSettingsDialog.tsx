@@ -82,7 +82,7 @@ interface ToolApprovalSettingsDialogProps {
 }
 
 export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettingsDialogProps): React.JSX.Element {
-  const { t } = useTranslation('agent');
+  const { t: _t } = useTranslation('agent');
   const [settings, setSettings] = useState<ToolApprovalSettings>(DEFAULT_SETTINGS);
   const [newPatternText, setNewPatternText] = useState('');
   const [editingToolIndex, setEditingToolIndex] = useState<number | null>(null);
@@ -115,9 +115,9 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
   }, [settings, onClose]);
 
   const addToolRule = useCallback(() => {
-    setSettings(prev => ({
-      ...prev,
-      toolRules: [...prev.toolRules, {
+    setSettings(previous => ({
+      ...previous,
+      toolRules: [...previous.toolRules, {
         toolId: KNOWN_TOOL_IDS[0],
         mode: 'auto',
         timeoutMs: 0,
@@ -129,17 +129,17 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
   }, [settings.toolRules.length]);
 
   const removeToolRule = useCallback((index: number) => {
-    setSettings(prev => ({
-      ...prev,
-      toolRules: prev.toolRules.filter((_, i) => i !== index),
+    setSettings(previous => ({
+      ...previous,
+      toolRules: previous.toolRules.filter((_, index_) => index_ !== index),
     }));
     if (editingToolIndex === index) setEditingToolIndex(null);
   }, [editingToolIndex]);
 
   const updateToolRule = useCallback((index: number, partial: Partial<ToolRuleConfig>) => {
-    setSettings(prev => ({
-      ...prev,
-      toolRules: prev.toolRules.map((rule, i) => i === index ? { ...rule, ...partial } : rule),
+    setSettings(previous => ({
+      ...previous,
+      toolRules: previous.toolRules.map((rule, index_) => index_ === index ? { ...rule, ...partial } : rule),
     }));
   }, []);
 
@@ -155,7 +155,7 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
   const removePattern = useCallback((toolIndex: number, type: 'allow' | 'deny', patternIndex: number) => {
     const field = type === 'allow' ? 'allowPatterns' : 'denyPatterns';
     updateToolRule(toolIndex, {
-      [field]: settings.toolRules[toolIndex][field].filter((_, i) => i !== patternIndex),
+      [field]: settings.toolRules[toolIndex][field].filter((_, index) => index !== patternIndex),
     });
   }, [settings.toolRules, updateToolRule]);
 
@@ -171,7 +171,9 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
             type='number'
             size='small'
             value={settings.globalTimeoutMs}
-            onChange={(e) => setSettings(prev => ({ ...prev, globalTimeoutMs: Number(e.target.value) }))}
+            onChange={(event) => {
+              setSettings(previous => ({ ...previous, globalTimeoutMs: Number(event.target.value) }));
+            }}
             helperText='Default timeout for all tool executions. 0 = no timeout.'
             sx={{ flex: 1 }}
           />
@@ -185,7 +187,9 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
             type='number'
             size='small'
             value={settings.retryMaxAttempts}
-            onChange={(e) => setSettings(prev => ({ ...prev, retryMaxAttempts: Number(e.target.value) }))}
+            onChange={(event) => {
+              setSettings(previous => ({ ...previous, retryMaxAttempts: Number(event.target.value) }));
+            }}
             helperText='0 = no retry'
             sx={{ flex: 1 }}
           />
@@ -194,7 +198,9 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
             type='number'
             size='small'
             value={settings.retryInitialDelayMs}
-            onChange={(e) => setSettings(prev => ({ ...prev, retryInitialDelayMs: Number(e.target.value) }))}
+            onChange={(event) => {
+              setSettings(previous => ({ ...previous, retryInitialDelayMs: Number(event.target.value) }));
+            }}
             helperText='First retry delay, doubled each attempt'
             sx={{ flex: 1 }}
           />
@@ -225,7 +231,9 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
               mb: 1,
               cursor: 'pointer',
             }}
-            onClick={() => setEditingToolIndex(index)}
+            onClick={() => {
+              setEditingToolIndex(index);
+            }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <FormControl size='small' sx={{ minWidth: 200 }}>
@@ -233,7 +241,9 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
                 <Select
                   value={rule.toolId}
                   label='Tool'
-                  onChange={(e) => updateToolRule(index, { toolId: e.target.value })}
+                  onChange={(event) => {
+                    updateToolRule(index, { toolId: event.target.value });
+                  }}
                 >
                   {KNOWN_TOOL_IDS.map(id => <MenuItem key={id} value={id}>{id}</MenuItem>)}
                 </Select>
@@ -243,7 +253,9 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
                 control={
                   <Switch
                     checked={rule.mode === 'confirm'}
-                    onChange={(e) => updateToolRule(index, { mode: e.target.checked ? 'confirm' : 'auto' })}
+                    onChange={(event) => {
+                      updateToolRule(index, { mode: event.target.checked ? 'confirm' : 'auto' });
+                    }}
                   />
                 }
                 label='Require approval'
@@ -254,15 +266,17 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
                 type='number'
                 size='small'
                 value={rule.timeoutMs}
-                onChange={(e) => updateToolRule(index, { timeoutMs: Number(e.target.value) })}
+                onChange={(event) => {
+                  updateToolRule(index, { timeoutMs: Number(event.target.value) });
+                }}
                 sx={{ width: 130 }}
               />
 
               <IconButton
                 size='small'
                 color='error'
-                onClick={(e) => {
-                  e.stopPropagation();
+                onClick={(event) => {
+                  event.stopPropagation();
                   removeToolRule(index);
                 }}
               >
@@ -286,7 +300,9 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
                       color='error'
                       size='small'
                       variant='outlined'
-                      onDelete={() => removePattern(index, 'deny', pi)}
+                      onDelete={() => {
+                        removePattern(index, 'deny', pi);
+                      }}
                     />
                   ))}
                   {rule.allowPatterns.map((p, pi) => (
@@ -296,7 +312,9 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
                       color='success'
                       size='small'
                       variant='outlined'
-                      onDelete={() => removePattern(index, 'allow', pi)}
+                      onDelete={() => {
+                        removePattern(index, 'allow', pi);
+                      }}
                     />
                   ))}
                 </Box>
@@ -304,7 +322,12 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
                 {/* Add pattern */}
                 <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
                   <FormControl size='small' sx={{ minWidth: 100 }}>
-                    <Select value={patternType} onChange={(e) => setPatternType(e.target.value as 'allow' | 'deny')}>
+                    <Select
+                      value={patternType}
+                      onChange={(event) => {
+                        setPatternType(event.target.value);
+                      }}
+                    >
                       <MenuItem value='allow'>Allow</MenuItem>
                       <MenuItem value='deny'>Deny</MenuItem>
                     </Select>
@@ -313,9 +336,11 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
                     size='small'
                     placeholder='Regex pattern...'
                     value={newPatternText}
-                    onChange={(e) => setNewPatternText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') addPattern();
+                    onChange={(event) => {
+                      setNewPatternText(event.target.value);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') addPattern();
                     }}
                     sx={{ flex: 1 }}
                   />

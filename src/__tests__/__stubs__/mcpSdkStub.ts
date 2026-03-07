@@ -5,17 +5,34 @@
  * tests because no agent instance actually calls connectAndListTools().
  */
 export class Client {
-  constructor(_info: unknown, _options: unknown) {}
+  constructor(_info: unknown, _options: unknown) {
+    void _info;
+    void _options;
+  }
+
   async connect(_transport: unknown) {}
-  async listTools() { return { tools: [] }; }
-  async callTool(_params: unknown) { return { content: [] }; }
+
+  async listTools() {
+    return { tools: [] };
+  }
+
+  async callTool(_parameters: unknown) {
+    return { content: [] };
+  }
+
   async close() {}
 }
 
 export class StdioClientTransport {
-  constructor(_options: unknown) {}
+  readonly command: unknown;
+  constructor(_options: unknown) {
+    this.command = _options;
+  }
 }
 
 export class SSEClientTransport {
-  constructor(_url: unknown) {}
+  readonly url: unknown;
+  constructor(_url: unknown) {
+    this.url = _url;
+  }
 }

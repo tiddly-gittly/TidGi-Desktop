@@ -36,13 +36,12 @@ import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput 
 import {
   addTask as stmAddTask,
   cancelTasksForAgent,
-  getCronPreviewDates as stmGetCronPreviewDates,
   getActiveTasks as stmGetActiveTasks,
   getActiveTasksForAgent as stmGetActiveTasksForAgent,
+  getCronPreviewDates as stmGetCronPreviewDates,
   initScheduledTaskManager,
   removeTask as stmRemoveTask,
   restoreScheduledTasks,
-  stopAllScheduledTasks,
   updateTask as stmUpdateTask,
 } from './scheduledTaskManager';
 import { cancelAlarm, getActiveAlarmEntries, scheduleAlarmTimer } from './tools/alarmClock';
@@ -384,7 +383,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         if (userMessage) {
           userMessage.metadata = { ...userMessage.metadata, beforeCommitMap };
           // Persist the updated metadata
-          void this.saveUserMessage(userMessage).catch(error => {
+          void this.saveUserMessage(userMessage).catch((error: unknown) => {
             logger.warn('Failed to persist beforeCommitMap metadata', { error, messageId });
           });
         }
@@ -521,7 +520,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
     // Cancel any pending ask-question promises so the agent loop can exit
     try {
-      const { cancelPendingQuestions } = require('./tools/askQuestionPending') as typeof import('./tools/askQuestionPending');
+      const { cancelPendingQuestions } = await import('./tools/askQuestionPending');
       cancelPendingQuestions(agentId);
     } catch {
       // ignore if module not loaded
@@ -649,8 +648,8 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public resolveToolApproval(approvalId: string, decision: 'allow' | 'deny'): void {
-    const { resolveApproval } = require('./tools/approval') as typeof import('./tools/approval');
+  public async resolveToolApproval(approvalId: string, decision: 'allow' | 'deny'): Promise<void> {
+    const { resolveApproval } = await import('./tools/approval');
     resolveApproval(approvalId, decision);
   }
 

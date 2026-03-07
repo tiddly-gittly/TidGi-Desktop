@@ -340,12 +340,11 @@ const alarmClockDefinition = registerToolDefinition({
           schedule = { kind: 'cron', expression: parameters.cronExpression, timezone: parameters.timezone };
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const task = await addTask({
           agentInstanceId: agentId,
           name: parameters.name,
           scheduleKind: parameters.kind,
-          schedule: schedule as any,
+          schedule: schedule,
           payload: parameters.message ? { message: parameters.message } : undefined,
           activeHoursStart: parameters.activeHoursStart,
           activeHoursEnd: parameters.activeHoursEnd,

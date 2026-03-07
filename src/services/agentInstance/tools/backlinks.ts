@@ -4,7 +4,6 @@
  */
 import { WikiChannel } from '@/constants/channels';
 import { container } from '@services/container';
-import { i18n } from '@services/libs/i18n';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -45,7 +44,7 @@ async function executeBacklinks(parameters: z.infer<typeof BacklinksToolSchema>)
   }
 
   const filter = `[all[]] +[backlinks[${title}]] +[limit[${limit}]]`;
-  const results = await wikiService.wikiOperationInServer(WikiChannel.runFilter, target.id, [filter]) as string[];
+  const results = await wikiService.wikiOperationInServer(WikiChannel.runFilter, target.id, [filter]);
   logger.debug('Backlinks executed', { title, count: results.length });
 
   if (results.length === 0) {

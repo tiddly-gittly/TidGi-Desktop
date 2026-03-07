@@ -56,6 +56,12 @@ function htmlToText(html: string): string {
   // Intentionally do NOT decode &lt; / &gt; — keeping them as literal text
   // prevents reintroduction of HTML tags from doubly-encoded content.
 
+  // Defense-in-depth: strip any tags that may have been reintroduced by entity decoding
+  text = text
+    .replace(/<script\b[^>]*>[\s\S]*?<\/\s*script\s*>/gi, '')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/\s*style\s*>/gi, '')
+    .replace(/<[^>]+>/g, '');
+
   return text
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')

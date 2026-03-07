@@ -15,7 +15,7 @@ import { Cron } from 'croner';
 import { nanoid } from 'nanoid';
 import { Repository } from 'typeorm';
 
-import { type AtSchedule, type CronSchedule, type IntervalSchedule, type ScheduleConfig, ScheduledTaskEntity, type ScheduleKind } from '@services/database/schema/agent';
+import { type ScheduleConfig, ScheduledTaskEntity, type ScheduleKind } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import type { IAgentInstanceService } from './interface';
 
@@ -182,7 +182,7 @@ function scheduleEntry(task: ScheduledTaskEntity): void {
   const schedule = task.schedule;
 
   if (schedule.kind === 'interval') {
-    const intervalMs = Math.max(60, (schedule as IntervalSchedule).intervalSeconds) * 1000;
+    const intervalMs = Math.max(60, (schedule).intervalSeconds) * 1000;
     const handle = setInterval(() => {
       void fireTask(task);
       // Update nextRunAt in task object
@@ -193,7 +193,7 @@ function scheduleEntry(task: ScheduledTaskEntity): void {
     task.nextRunAt = new Date(Date.now() + intervalMs);
     activeEntries.set(task.id, { task, intervalHandle: handle });
   } else if (schedule.kind === 'at') {
-    const atSchedule = schedule as AtSchedule;
+    const atSchedule = schedule;
     const wakeAt = new Date(atSchedule.wakeAtISO);
     const delayMs = Math.max(0, wakeAt.getTime() - Date.now());
     task.nextRunAt = wakeAt;
@@ -223,7 +223,7 @@ function scheduleEntry(task: ScheduledTaskEntity): void {
     handle.unref?.();
     activeEntries.set(task.id, { task, timeoutHandle: handle });
   } else if (schedule.kind === 'cron') {
-    const cronSchedule = schedule as CronSchedule;
+    const cronSchedule = schedule;
     try {
       const cronJob = new Cron(cronSchedule.expression, {
         timezone: cronSchedule.timezone,
@@ -275,10 +275,10 @@ export async function restoreScheduledTasks(
 
     // For 'at' tasks that are in the past and not repeating, fire immediately
     if (task.schedule.kind === 'at') {
-      const atSchedule = task.schedule as AtSchedule;
+      const atSchedule = task.schedule;
       const wakeAt = new Date(atSchedule.wakeAtISO);
       if (wakeAt.getTime() <= Date.now() && !atSchedule.repeatIntervalMinutes) {
-        scheduleEntry({ ...task, schedule: { ...atSchedule, wakeAtISO: new Date().toISOString() } });
+        scheduleEntry(Object.assign(new ScheduledTaskEntity(), task, { schedule: { ...atSchedule, wakeAtISO: new Date().toISOString() } }));
       } else {
         scheduleEntry(task);
       }
@@ -364,14 +364,14 @@ export async function removeTask(taskId: string): Promise<void> {
 
 /** List all active in-memory tasks. */
 export function getActiveTasks(): ScheduledTask[] {
-  return [...activeEntries.values()].map(e => entityToDto(e.task));
+  return [...activeEntries.values()].map(entry => entityToDto(entry.task));
 }
 
 /** List tasks for a specific agent instance. */
 export function getActiveTasksForAgent(agentInstanceId: string): ScheduledTask[] {
   return [...activeEntries.values()]
-    .filter(e => e.task.agentInstanceId === agentInstanceId)
-    .map(e => entityToDto(e.task));
+    .filter(entry => entry.task.agentInstanceId === agentInstanceId)
+    .map(entry => entityToDto(entry.task));
 }
 
 /** Stop all timers (for app shutdown). */

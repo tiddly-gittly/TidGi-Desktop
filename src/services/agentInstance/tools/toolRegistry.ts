@@ -4,9 +4,9 @@
  * Extracted from defineTool.ts to reduce file size.
  */
 import type { z } from 'zod/v4';
-import { registerToolParameterSchema } from './schemaRegistry';
-import type { DefinedTool, ToolDefinition } from './defineToolTypes';
 import { defineTool } from './defineTool';
+import type { DefinedTool, ToolDefinition } from './defineToolTypes';
+import { registerToolParameterSchema } from './schemaRegistry';
 
 /**
  * Global registry for tools created with defineTool

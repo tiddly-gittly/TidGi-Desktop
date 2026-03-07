@@ -56,20 +56,20 @@ export function computeTokenBreakdown(flatPrompts: ModelMessage[], contextWindow
   let assistantMessages = 0;
   let toolResults = 0;
 
-  for (const msg of flatPrompts) {
-    const tokens = estimateModelMessageTokens(msg);
-    const content = typeof msg.content === 'string' ? msg.content : '';
+  for (const message of flatPrompts) {
+    const tokens = estimateModelMessageTokens(message);
+    const content = typeof message.content === 'string' ? message.content : '';
 
-    if (msg.role === 'system') {
+    if (message.role === 'system') {
       // Heuristic: if system message contains tool schema markers, it's a tool definition
       if (content.includes('<tool_use') || content.includes('Tool:') || content.includes('"title":')) {
         toolDefinitions += tokens;
       } else {
         systemInstructions += tokens;
       }
-    } else if (msg.role === 'assistant') {
+    } else if (message.role === 'assistant') {
       assistantMessages += tokens;
-    } else if (msg.role === 'user') {
+    } else if (message.role === 'user') {
       if (content.includes('<functions_result>')) {
         toolResults += tokens;
       } else {
@@ -119,11 +119,11 @@ export function getMessagesToTrim(
   const needed = currentTokens - targetTokens;
 
   // Iterate from oldest to newest, skip system-ish messages
-  for (const msg of messages) {
+  for (const message of messages) {
     if (removed >= needed) break;
-    if (msg.role === 'user' || msg.role === 'assistant' || msg.role === 'tool') {
-      const tokens = estimateTokens(msg.content);
-      toRemove.push(msg.id);
+    if (message.role === 'user' || message.role === 'assistant' || message.role === 'tool') {
+      const tokens = estimateTokens(message.content);
+      toRemove.push(message.id);
       removed += tokens;
     }
   }

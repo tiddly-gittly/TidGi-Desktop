@@ -6,12 +6,12 @@
  * - BaseMessageRenderer: XML stripping
  * - MessageRenderer index: pattern matching & routing
  */
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import type { AgentInstanceMessage } from '@/services/agentInstance/interface';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
-import type { AgentInstanceMessage } from '@/services/agentInstance/interface';
 
 // ── mocks ──────────────────────────────────────────────────────────────
 
@@ -47,9 +47,7 @@ Object.defineProperty(window, 'service', {
   writable: true,
 });
 
-const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ThemeProvider theme={lightTheme}>{children}</ThemeProvider>
-);
+const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => <ThemeProvider theme={lightTheme}>{children}</ThemeProvider>;
 
 function makeMessage(overrides: Partial<AgentInstanceMessage>): AgentInstanceMessage {
   return {
@@ -65,7 +63,6 @@ function makeMessage(overrides: Partial<AgentInstanceMessage>): AgentInstanceMes
 // ── BaseMessageRenderer ────────────────────────────────────────────────
 
 describe('BaseMessageRenderer', () => {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   let BaseMessageRenderer: typeof import('../BaseMessageRenderer').BaseMessageRenderer;
 
   beforeEach(async () => {
@@ -74,58 +71,94 @@ describe('BaseMessageRenderer', () => {
   });
 
   it('should render plain text content', () => {
-    render(<Wrapper><BaseMessageRenderer message={makeMessage({ content: 'Hello world' })} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <BaseMessageRenderer message={makeMessage({ content: 'Hello world' })} isUser={false} />
+      </Wrapper>,
+    );
     expect(screen.getByText('Hello world')).toBeInTheDocument();
   });
 
   it('should strip <tool_use> XML from content', () => {
     const content = 'Let me search for that. <tool_use name="wiki-search">{"query":"test"}</tool_use>';
-    render(<Wrapper><BaseMessageRenderer message={makeMessage({ content })} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <BaseMessageRenderer message={makeMessage({ content })} isUser={false} />
+      </Wrapper>,
+    );
     expect(screen.getByText('Let me search for that.')).toBeInTheDocument();
     expect(screen.queryByText(/tool_use/)).not.toBeInTheDocument();
   });
 
   it('should strip <function_call> XML from content', () => {
     const content = '<function_call name="foo">{"x":1}</function_call>';
-    render(<Wrapper><BaseMessageRenderer message={makeMessage({ content })} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <BaseMessageRenderer message={makeMessage({ content })} isUser={false} />
+      </Wrapper>,
+    );
     expect(screen.queryByText(/function_call/)).not.toBeInTheDocument();
   });
 
   it('should strip <parallel_tool_calls> wrapper', () => {
     const content = 'Searching... <parallel_tool_calls><tool_use name="a">{}</tool_use><tool_use name="b">{}</tool_use></parallel_tool_calls>';
-    render(<Wrapper><BaseMessageRenderer message={makeMessage({ content })} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <BaseMessageRenderer message={makeMessage({ content })} isUser={false} />
+      </Wrapper>,
+    );
     expect(screen.getByText('Searching...')).toBeInTheDocument();
     expect(screen.queryByText(/parallel_tool_calls/)).not.toBeInTheDocument();
   });
 
   it('should strip <functions_result> blocks', () => {
     const content = '<functions_result>\nTool: wiki-search\nResult: found 3 results\n</functions_result>';
-    render(<Wrapper><BaseMessageRenderer message={makeMessage({ content })} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <BaseMessageRenderer message={makeMessage({ content })} isUser={false} />
+      </Wrapper>,
+    );
     expect(screen.queryByText(/functions_result/)).not.toBeInTheDocument();
   });
 
   it('should return null for content that is entirely tool XML', () => {
     const content = '<tool_use name="ask-question">{"question":"test?"}</tool_use>';
-    const { container } = render(<Wrapper><BaseMessageRenderer message={makeMessage({ content })} isUser={false} /></Wrapper>);
+    const { container } = render(
+      <Wrapper>
+        <BaseMessageRenderer message={makeMessage({ content })} isUser={false} />
+      </Wrapper>,
+    );
     expect(container.firstChild).toBeNull();
   });
 
   it('should strip partial/unclosed <tool_use> during streaming', () => {
     const content = 'Searching now. <tool_use name="wiki-search">{"filter":"[title';
-    render(<Wrapper><BaseMessageRenderer message={makeMessage({ content })} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <BaseMessageRenderer message={makeMessage({ content })} isUser={false} />
+      </Wrapper>,
+    );
     expect(screen.getByText('Searching now.')).toBeInTheDocument();
     expect(screen.queryByText(/tool_use/)).not.toBeInTheDocument();
   });
 
   it('should strip partial/unclosed <functions_result> during streaming', () => {
     const content = '<functions_result>\nTool: wiki-search\nResult: partial';
-    render(<Wrapper><BaseMessageRenderer message={makeMessage({ content })} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <BaseMessageRenderer message={makeMessage({ content })} isUser={false} />
+      </Wrapper>,
+    );
     expect(screen.queryByText(/functions_result/)).not.toBeInTheDocument();
   });
 
   it('should strip incomplete opening tag at end of content', () => {
     const content = 'Let me do this. <tool_use name="wiki';
-    render(<Wrapper><BaseMessageRenderer message={makeMessage({ content })} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <BaseMessageRenderer message={makeMessage({ content })} isUser={false} />
+      </Wrapper>,
+    );
     expect(screen.getByText('Let me do this.')).toBeInTheDocument();
     expect(screen.queryByText(/tool_use/)).not.toBeInTheDocument();
   });
@@ -134,7 +167,6 @@ describe('BaseMessageRenderer', () => {
 // ── AskQuestionRenderer ────────────────────────────────────────────────
 
 describe('AskQuestionRenderer', () => {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   let AskQuestionRenderer: typeof import('../AskQuestionRenderer').AskQuestionRenderer;
 
   beforeEach(async () => {
@@ -155,7 +187,11 @@ describe('AskQuestionRenderer', () => {
         question: 'Which workspace?',
         options: [{ label: 'Wiki A' }, { label: 'Wiki B' }],
       });
-      render(<Wrapper><AskQuestionRenderer message={msg} isUser={false} /></Wrapper>);
+      render(
+        <Wrapper>
+          <AskQuestionRenderer message={msg} isUser={false} />
+        </Wrapper>,
+      );
       expect(screen.getByText('Which workspace?')).toBeInTheDocument();
       expect(screen.getByText('Wiki A')).toBeInTheDocument();
       expect(screen.getByText('Wiki B')).toBeInTheDocument();
@@ -167,7 +203,11 @@ describe('AskQuestionRenderer', () => {
         question: 'Pick one',
         options: [{ label: 'Option 1' }],
       });
-      render(<Wrapper><AskQuestionRenderer message={msg} isUser={false} /></Wrapper>);
+      render(
+        <Wrapper>
+          <AskQuestionRenderer message={msg} isUser={false} />
+        </Wrapper>,
+      );
       fireEvent.click(screen.getByText('Option 1'));
       expect(mockSendMessage).toHaveBeenCalledWith('Option 1');
     });
@@ -178,7 +218,11 @@ describe('AskQuestionRenderer', () => {
         question: 'Pick one',
         options: [{ label: 'A' }, { label: 'B' }],
       });
-      render(<Wrapper><AskQuestionRenderer message={msg} isUser={false} /></Wrapper>);
+      render(
+        <Wrapper>
+          <AskQuestionRenderer message={msg} isUser={false} />
+        </Wrapper>,
+      );
       fireEvent.click(screen.getByText('A'));
       // After clicking, "Answer submitted" text appears
       expect(screen.getByText(/Answer submitted/)).toBeInTheDocument();
@@ -194,7 +238,11 @@ describe('AskQuestionRenderer', () => {
         options: [{ label: 'X' }],
         allowFreeform: true,
       });
-      render(<Wrapper><AskQuestionRenderer message={msg} isUser={false} /></Wrapper>);
+      render(
+        <Wrapper>
+          <AskQuestionRenderer message={msg} isUser={false} />
+        </Wrapper>,
+      );
       expect(screen.getByTestId('ask-question-freeform')).toBeInTheDocument();
     });
 
@@ -205,7 +253,11 @@ describe('AskQuestionRenderer', () => {
         options: [{ label: 'X' }],
         allowFreeform: false,
       });
-      render(<Wrapper><AskQuestionRenderer message={msg} isUser={false} /></Wrapper>);
+      render(
+        <Wrapper>
+          <AskQuestionRenderer message={msg} isUser={false} />
+        </Wrapper>,
+      );
       expect(screen.queryByTestId('ask-question-freeform')).not.toBeInTheDocument();
     });
   });
@@ -218,7 +270,11 @@ describe('AskQuestionRenderer', () => {
         inputType: 'multi-select',
         options: [{ label: 'journal' }, { label: 'important' }],
       });
-      render(<Wrapper><AskQuestionRenderer message={msg} isUser={false} /></Wrapper>);
+      render(
+        <Wrapper>
+          <AskQuestionRenderer message={msg} isUser={false} />
+        </Wrapper>,
+      );
       expect(screen.getByTestId('ask-question-multiselect')).toBeInTheDocument();
       expect(screen.getByText('journal')).toBeInTheDocument();
       expect(screen.getByText('important')).toBeInTheDocument();
@@ -232,7 +288,11 @@ describe('AskQuestionRenderer', () => {
         options: [{ label: 'journal' }, { label: 'important' }, { label: 'todo' }],
         allowFreeform: true,
       });
-      render(<Wrapper><AskQuestionRenderer message={msg} isUser={false} /></Wrapper>);
+      render(
+        <Wrapper>
+          <AskQuestionRenderer message={msg} isUser={false} />
+        </Wrapper>,
+      );
       // Check two checkboxes
       fireEvent.click(screen.getByTestId('ask-question-checkbox-0'));
       fireEvent.click(screen.getByTestId('ask-question-checkbox-2'));
@@ -249,7 +309,11 @@ describe('AskQuestionRenderer', () => {
         question: 'Describe changes',
         inputType: 'text',
       });
-      render(<Wrapper><AskQuestionRenderer message={msg} isUser={false} /></Wrapper>);
+      render(
+        <Wrapper>
+          <AskQuestionRenderer message={msg} isUser={false} />
+        </Wrapper>,
+      );
       expect(screen.getByTestId('ask-question-text-input')).toBeInTheDocument();
       expect(screen.queryByTestId('ask-question-options')).not.toBeInTheDocument();
       expect(screen.queryByTestId('ask-question-multiselect')).not.toBeInTheDocument();
@@ -264,7 +328,11 @@ describe('AskQuestionRenderer', () => {
         options: [{ label: 'A' }],
       });
       msg.metadata = { askQuestionAnswered: true };
-      render(<Wrapper><AskQuestionRenderer message={msg} isUser={false} /></Wrapper>);
+      render(
+        <Wrapper>
+          <AskQuestionRenderer message={msg} isUser={false} />
+        </Wrapper>,
+      );
       expect(screen.getByText(/Answer submitted/)).toBeInTheDocument();
     });
   });
@@ -272,7 +340,11 @@ describe('AskQuestionRenderer', () => {
   describe('fallback', () => {
     it('should render raw content when JSON is unparseable', () => {
       const msg = makeMessage({ content: 'not json content' });
-      render(<Wrapper><AskQuestionRenderer message={msg} isUser={false} /></Wrapper>);
+      render(
+        <Wrapper>
+          <AskQuestionRenderer message={msg} isUser={false} />
+        </Wrapper>,
+      );
       expect(screen.getByText('not json content')).toBeInTheDocument();
     });
   });
@@ -281,7 +353,6 @@ describe('AskQuestionRenderer', () => {
 // ── ToolResultRenderer ─────────────────────────────────────────────────
 
 describe('ToolResultRenderer', () => {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   let ToolResultRenderer: typeof import('../ToolResultRenderer').ToolResultRenderer;
 
   beforeEach(async () => {
@@ -293,7 +364,11 @@ describe('ToolResultRenderer', () => {
     const msg = makeMessage({
       content: '<functions_result>\nTool: wiki-search\nParameters: {"query":"test"}\nResult: Found 5 tiddlers matching "test"\n</functions_result>',
     });
-    render(<Wrapper><ToolResultRenderer message={msg} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <ToolResultRenderer message={msg} isUser={false} />
+      </Wrapper>,
+    );
     expect(screen.getByText('wiki-search')).toBeInTheDocument();
     expect(screen.getAllByText(/Found 5 tiddlers/).length).toBeGreaterThan(0);
   });
@@ -302,7 +377,11 @@ describe('ToolResultRenderer', () => {
     const msg = makeMessage({
       content: '<functions_result>\nTool: wiki-search\nParameters: {}\nError: Workspace not found\n</functions_result>',
     });
-    render(<Wrapper><ToolResultRenderer message={msg} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <ToolResultRenderer message={msg} isUser={false} />
+      </Wrapper>,
+    );
     expect(screen.getByText('wiki-search')).toBeInTheDocument();
     expect(screen.getAllByText(/Workspace not found/).length).toBeGreaterThan(0);
   });
@@ -312,7 +391,11 @@ describe('ToolResultRenderer', () => {
     const msg = makeMessage({
       content: `<functions_result>\nTool: test-tool\nParameters: {}\nResult: ${longResult}\n</functions_result>`,
     });
-    render(<Wrapper><ToolResultRenderer message={msg} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <ToolResultRenderer message={msg} isUser={false} />
+      </Wrapper>,
+    );
     // Collapsed view should show truncated result
     expect(screen.getByText(/A{50,}…/)).toBeInTheDocument();
   });
@@ -321,7 +404,11 @@ describe('ToolResultRenderer', () => {
     const msg = makeMessage({
       content: '<functions_result>\nTool: test-tool\nParameters: {"foo":"bar"}\nResult: Full result text here\n</functions_result>',
     });
-    render(<Wrapper><ToolResultRenderer message={msg} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <ToolResultRenderer message={msg} isUser={false} />
+      </Wrapper>,
+    );
     // Click header to expand
     fireEvent.click(screen.getByText('test-tool'));
     // Parameters should now be visible
@@ -332,7 +419,6 @@ describe('ToolResultRenderer', () => {
 // ── ToolApprovalRenderer ───────────────────────────────────────────────
 
 describe('ToolApprovalRenderer', () => {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   let ToolApprovalRenderer: typeof import('../ToolApprovalRenderer').ToolApprovalRenderer;
 
   beforeEach(async () => {
@@ -343,30 +429,44 @@ describe('ToolApprovalRenderer', () => {
 
   const makeApprovalMessage = (): AgentInstanceMessage =>
     makeMessage({
-      content: `<functions_result>\nTool: tool-approval\nParameters: {}\nResult: ${JSON.stringify({
-        type: 'tool-approval',
-        approvalId: 'approval-123',
-        toolName: 'zx-script',
-        description: 'Execute shell command: ls -la',
-        parameters: { command: 'ls -la' },
-      })}\n</functions_result>`,
+      content: `<functions_result>\nTool: tool-approval\nParameters: {}\nResult: ${
+        JSON.stringify({
+          type: 'tool-approval',
+          approvalId: 'approval-123',
+          toolName: 'zx-script',
+          description: 'Execute shell command: ls -la',
+          parameters: { command: 'ls -la' },
+        })
+      }\n</functions_result>`,
     });
 
   it('should render approval request with tool name and parameters', () => {
-    render(<Wrapper><ToolApprovalRenderer message={makeApprovalMessage()} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <ToolApprovalRenderer message={makeApprovalMessage()} isUser={false} />
+      </Wrapper>,
+    );
     expect(screen.getByText(/zx-script/)).toBeInTheDocument();
     expect(screen.getByText(/ls -la/)).toBeInTheDocument();
   });
 
   it('should call resolveToolApproval with allow when approved', () => {
-    render(<Wrapper><ToolApprovalRenderer message={makeApprovalMessage()} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <ToolApprovalRenderer message={makeApprovalMessage()} isUser={false} />
+      </Wrapper>,
+    );
     const allowButton = screen.getByText(/Allow/i);
     fireEvent.click(allowButton);
     expect(window.service.agentInstance.resolveToolApproval).toHaveBeenCalledWith('approval-123', 'allow');
   });
 
   it('should call resolveToolApproval with deny when denied', () => {
-    render(<Wrapper><ToolApprovalRenderer message={makeApprovalMessage()} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <ToolApprovalRenderer message={makeApprovalMessage()} isUser={false} />
+      </Wrapper>,
+    );
     const denyButton = screen.getByText(/Deny/i);
     fireEvent.click(denyButton);
     expect(window.service.agentInstance.resolveToolApproval).toHaveBeenCalledWith('approval-123', 'deny');
@@ -376,7 +476,6 @@ describe('ToolApprovalRenderer', () => {
 // ── MessageRenderer pattern routing ────────────────────────────────────
 
 describe('MessageRenderer - Pattern Routing', () => {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   let MessageRenderer: typeof import('../index').MessageRenderer;
 
   beforeEach(async () => {
@@ -403,7 +502,11 @@ describe('MessageRenderer - Pattern Routing', () => {
       role: 'tool',
       content: `<functions_result>\nTool: ask-question\nResult: ${JSON.stringify({ type: 'ask-question', question: 'Test?' })}\n</functions_result>`,
     });
-    render(<Wrapper><MessageRenderer message={msg} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <MessageRenderer message={msg} isUser={false} />
+      </Wrapper>,
+    );
     expect(screen.getByText('Test?')).toBeInTheDocument();
   });
 
@@ -412,13 +515,21 @@ describe('MessageRenderer - Pattern Routing', () => {
       role: 'tool',
       content: '<functions_result>\nTool: wiki-search\nParameters: {}\nResult: Found stuff\n</functions_result>',
     });
-    render(<Wrapper><MessageRenderer message={msg} isUser={false} /></Wrapper>);
+    render(
+      <Wrapper>
+        <MessageRenderer message={msg} isUser={false} />
+      </Wrapper>,
+    );
     expect(screen.getByText('wiki-search')).toBeInTheDocument();
   });
 
   it('should use BaseMessageRenderer for user messages', () => {
     const msg = makeMessage({ role: 'user', content: 'Hello agent' });
-    render(<Wrapper><MessageRenderer message={msg} isUser={true} /></Wrapper>);
+    render(
+      <Wrapper>
+        <MessageRenderer message={msg} isUser={true} />
+      </Wrapper>,
+    );
     expect(screen.getByText('Hello agent')).toBeInTheDocument();
   });
 });
