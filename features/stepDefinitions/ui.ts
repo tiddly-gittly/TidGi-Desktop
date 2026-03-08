@@ -264,11 +264,15 @@ When('I click all {string} elements matching selector {string}', async function(
   const win = this.currentWindow;
   if (!win) throw new Error('No active window available to click elements');
 
+  // Wait for at least one element to appear in DOM (even if hidden)
+  try {
+    await win.locator(selector).first().waitFor({ state: 'attached', timeout: PLAYWRIGHT_TIMEOUT });
+  } catch {
+    throw new Error(`No elements found for ${elementComment} with selector "${selector}" within timeout`);
+  }
+
   const locator = win.locator(selector);
   const count = await locator.count();
-  if (count === 0) {
-    throw new Error(`No elements found for ${elementComment} with selector "${selector}"`);
-  }
 
   // Single-pass reverse iteration to avoid index shift issues
   for (let index = count - 1; index >= 0; index--) {

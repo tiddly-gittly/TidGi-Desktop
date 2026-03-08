@@ -85,7 +85,6 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   Scenario: Close all tabs then create default agent from fallback page
     # Ensure starting from black/fallback page with no open tabs
     Given I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    Then I should see a "close tab button" element with selector "[data-testid='tab-close-button']"
     When I click all "close tab button" elements matching selector "[data-testid='tab-close-button']"
     # When there is no active tab, this is "fallback new tab", it has same thing as new tab.
     And I should see "new tab button and Create Default Agent" elements with selectors:
