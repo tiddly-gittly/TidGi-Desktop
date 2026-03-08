@@ -5,6 +5,7 @@ import type { DynamicPositionParameter, FullReplacementParameter } from '../modi
 import type { GitToolParameter } from '@services/agentInstance/tools/git';
 import type { ModelContextProtocolParameter } from '@services/agentInstance/tools/modelContextProtocol';
 import type { TiddlyWikiPluginParameter } from '@services/agentInstance/tools/tiddlywikiPlugin';
+import type { ToolApprovalConfig } from '@services/agentInstance/tools/types';
 import type { WikiOperationParameter } from '@services/agentInstance/tools/wikiOperation';
 import type { WikiSearchParameter } from '@services/agentInstance/tools/wikiSearch';
 import type { WorkspacesListParameter } from '@services/agentInstance/tools/workspacesList';
@@ -21,6 +22,11 @@ export type IPromptConcatTool = {
   enabled?: boolean;
   forbidOverrides?: boolean;
   toolId: string;
+
+  /** Per-tool approval configuration */
+  approval?: ToolApprovalConfig;
+  /** Per-tool execution timeout in ms (overrides global default) */
+  timeoutMs?: number;
 
   // Modifier parameters
   fullReplacementParam?: FullReplacementParameter;

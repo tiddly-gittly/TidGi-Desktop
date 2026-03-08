@@ -119,31 +119,25 @@ Then('I should not see a(n) {string} element with selector {string}', async func
   }
   try {
     const element = currentWindow.locator(selector).first();
-    const count = await element.count();
-    if (count > 0) {
-      const isVisible = await element.isVisible();
-      if (isVisible) {
-        // Get parent element HTML for debugging
-        let parentHtml = '';
-        try {
-          const parent = element.locator('xpath=..');
-          parentHtml = await parent.evaluate((node) => node.outerHTML);
-        } catch {
-          parentHtml = 'Failed to get parent HTML';
-        }
-        throw new Error(
-          `Element "${elementComment}" with selector "${selector}" should not be visible but was found\n` +
-            `Parent element HTML:\n${parentHtml}`,
-        );
-      }
-    }
-    // Element not found or not visible - this is expected
+    // Wait for element to be hidden/detached (handles race conditions after state changes)
+    await element.waitFor({ state: 'hidden', timeout: PLAYWRIGHT_TIMEOUT });
   } catch (error) {
-    // If the error is our custom error, rethrow it
-    if (error instanceof Error && error.message.includes('should not be visible')) {
-      throw error;
+    if (error instanceof Error && error.message.includes('timeout')) {
+      // Element still visible after timeout — get parent HTML for debugging
+      let parentHtml = '';
+      try {
+        const element = currentWindow.locator(selector).first();
+        const parent = element.locator('xpath=..');
+        parentHtml = await parent.evaluate((node) => node.outerHTML);
+      } catch {
+        parentHtml = 'Failed to get parent HTML';
+      }
+      throw new Error(
+        `Element "${elementComment}" with selector "${selector}" should not be visible but was found\n` +
+          `Parent element HTML:\n${parentHtml}`,
+      );
     }
-    // Otherwise, element not found is expected - pass the test
+    // Other errors (element not in DOM at all) are expected — pass
   }
 });
 
@@ -264,11 +258,15 @@ When('I click all {string} elements matching selector {string}', async function(
   const win = this.currentWindow;
   if (!win) throw new Error('No active window available to click elements');
 
+  // Wait for at least one element to appear in DOM (even if hidden)
+  try {
+    await win.locator(selector).first().waitFor({ state: 'attached', timeout: PLAYWRIGHT_TIMEOUT });
+  } catch {
+    throw new Error(`No elements found for ${elementComment} with selector "${selector}" within timeout`);
+  }
+
   const locator = win.locator(selector);
   const count = await locator.count();
-  if (count === 0) {
-    throw new Error(`No elements found for ${elementComment} with selector "${selector}"`);
-  }
 
   // Single-pass reverse iteration to avoid index shift issues
   for (let index = count - 1; index >= 0; index--) {
@@ -473,29 +471,37 @@ When('I select {string} from MUI Select with test id {string}', async function(t
   }
 
   try {
-    // Find the hidden input element with the test-id
-    const inputSelector = `input[data-testid="${testId}"]`;
-    await currentWindow.waitForSelector(inputSelector, { timeout: PLAYWRIGHT_TIMEOUT });
+    // Find the element with the test-id (could be input directly, or a wrapper div for MUI TextField)
+    const directInputSelector = `input[data-testid="${testId}"]`;
+    const wrapperSelector = `[data-testid="${testId}"]`;
 
-    // Try to click using Playwright's click on the div with role="combobox"
-    // According to your HTML structure, the combobox is a sibling of the input
+    // Try input first, then fall back to wrapper
+    const hasDirectInput = await currentWindow.locator(directInputSelector).count() > 0;
+    const containerSelector = hasDirectInput ? directInputSelector : wrapperSelector;
+    await currentWindow.waitForSelector(containerSelector, { timeout: PLAYWRIGHT_TIMEOUT });
+
+    // Click the combobox to open the dropdown
     const clicked = await currentWindow.evaluate((testId) => {
-      const input = document.querySelector(`input[data-testid="${testId}"]`);
-      if (!input) return { success: false, error: 'Input not found' };
-      const parent = input.parentElement;
-      if (!parent) return { success: false, error: 'Parent not found' };
+      // Try direct input match first
+      const element: Element | null = document.querySelector(`input[data-testid="${testId}"]`);
+      let searchRoot: Element | null = element?.parentElement ?? null;
 
-      // Find all elements in parent
-      const combobox = parent.querySelector('[role="combobox"]');
+      // If not found, try wrapper element (MUI TextField with select prop)
+      if (!element) {
+        searchRoot = document.querySelector(`[data-testid="${testId}"]`);
+      }
+
+      if (!searchRoot) return { success: false, error: 'Element not found' };
+
+      const combobox = searchRoot.querySelector('[role="combobox"]');
       if (!combobox) {
         return {
           success: false,
           error: 'Combobox not found',
-          parentHTML: parent.outerHTML.substring(0, 500),
+          parentHTML: searchRoot.outerHTML.substring(0, 500),
         };
       }
 
-      // Trigger both mousedown and click events
       combobox.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
       combobox.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       (combobox as HTMLElement).click();

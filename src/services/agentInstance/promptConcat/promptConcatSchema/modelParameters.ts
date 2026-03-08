@@ -37,10 +37,6 @@ export const ModelParametersSchema = z.object({
     title: t('Schema.ModelParameters.TopPTitle'),
     description: t('Schema.ModelParameters.TopP'),
   }),
-  systemPrompt: z.string().optional().meta({
-    title: t('Schema.ModelParameters.SystemPromptTitle'),
-    description: t('Schema.ModelParameters.SystemPrompt'),
-  }),
 })
   .catchall(z.unknown())
   .meta({

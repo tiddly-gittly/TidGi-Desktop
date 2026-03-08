@@ -1,7 +1,110 @@
-import type { AgentDefinition, AgentToolConfig } from '@services/agentDefinition/interface';
+import type { AgentDefinition, AgentHeartbeatConfig, AgentToolConfig } from '@services/agentDefinition/interface';
 import type { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage } from '@services/agentInstance/interface';
 import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+
+/**
+ * Persisted scheduled task — unified replacement for AgentDefinition.heartbeat and AgentInstanceEntity.scheduledAlarm.
+ * Supports interval, one-shot ("at"), and cron expression ("cron") scheduling.
+ */
+export type ScheduleKind = 'interval' | 'at' | 'cron';
+
+export interface IntervalSchedule {
+  kind: 'interval';
+  /** Seconds between runs */
+  intervalSeconds: number;
+}
+
+export interface AtSchedule {
+  kind: 'at';
+  /** ISO 8601 datetime */
+  wakeAtISO: string;
+  /** Optional: repeat every N minutes after first fire */
+  repeatIntervalMinutes?: number;
+}
+
+export interface CronSchedule {
+  kind: 'cron';
+  /** Cron expression (croner-compatible, 5 or 6 fields) */
+  expression: string;
+  /** IANA timezone, e.g. "Asia/Shanghai". Defaults to local. */
+  timezone?: string;
+}
+
+export type ScheduleConfig = IntervalSchedule | AtSchedule | CronSchedule;
+
+@Entity('scheduled_tasks')
+export class ScheduledTaskEntity {
+  @PrimaryColumn()
+  id!: string;
+
+  /** FK to agent instance — required */
+  @Column()
+  @Index()
+  agentInstanceId!: string;
+
+  /** FK to agent definition — optional, filled for definition-level heartbeats */
+  @Column({ nullable: true })
+  agentDefinitionId?: string;
+
+  /** Human-readable task name */
+  @Column({ nullable: true })
+  name?: string;
+
+  /** Schedule kind discriminator */
+  @Column({ type: 'varchar' })
+  scheduleKind!: ScheduleKind;
+
+  /** Full schedule config stored as JSON */
+  @Column({ type: 'simple-json' })
+  schedule!: ScheduleConfig;
+
+  /** Payload: message sent to agent on trigger */
+  @Column({ type: 'simple-json', nullable: true })
+  payload?: { message: string };
+
+  /** Whether the task is active */
+  @Column({ default: true })
+  enabled: boolean = true;
+
+  /** Delete after first successful run (one-shot alarm) */
+  @Column({ default: false })
+  deleteAfterRun: boolean = false;
+
+  /** Active hours start in "HH:MM" format — skip runs outside this window */
+  @Column({ nullable: true })
+  activeHoursStart?: string;
+
+  /** Active hours end in "HH:MM" format */
+  @Column({ nullable: true })
+  activeHoursEnd?: string;
+
+  /** Timestamp of last successful execution */
+  @Column({ type: 'datetime', nullable: true })
+  lastRunAt?: Date;
+
+  /** Pre-computed next run time (updated after each schedule calculation) */
+  @Column({ type: 'datetime', nullable: true })
+  nextRunAt?: Date;
+
+  /** Total number of times this task has fired */
+  @Column({ default: 0 })
+  runCount: number = 0;
+
+  /** Stop firing after this many runs (null = unlimited) */
+  @Column({ type: 'integer', nullable: true })
+  maxRuns?: number;
+
+  /** Who created this task: "agent-tool", "settings-ui", "agent-definition", "restore" */
+  @Column({ default: 'settings-ui' })
+  createdBy: string = 'settings-ui';
+
+  @CreateDateColumn()
+  created!: Date;
+
+  @UpdateDateColumn()
+  updated!: Date;
+}
 
 /**
  * Database entity: Stores user modifications to predefined Agents
@@ -42,6 +145,10 @@ export class AgentDefinitionEntity implements Partial<AgentDefinition> {
   /** Tools available to this agent */
   @Column({ type: 'simple-json', nullable: true })
   agentTools?: AgentToolConfig[];
+
+  /** Heartbeat configuration for periodic auto-wake */
+  @Column({ type: 'simple-json', nullable: true })
+  heartbeat?: AgentHeartbeatConfig;
 
   /** Creation timestamp */
   @CreateDateColumn()
@@ -96,6 +203,17 @@ export class AgentInstanceEntity implements Partial<AgentInstance> {
   /** Indicate this agent instance is temporary, like forked instance to do sub-jobs, or for preview when editing agent definitions. */
   @Column({ default: false })
   volatile: boolean = false;
+
+  /** Persisted alarm data — survives app restart. Null when no alarm is active. */
+  @Column({ type: 'simple-json', nullable: true })
+  scheduledAlarm?: {
+    wakeAtISO: string;
+    reminderMessage?: string;
+    repeatIntervalMinutes?: number;
+    createdBy?: string;
+    lastRunAtISO?: string;
+    runCount?: number;
+  } | null;
 
   // Relation to AgentDefinition
   @ManyToOne(() => AgentDefinitionEntity, definition => definition.instances)

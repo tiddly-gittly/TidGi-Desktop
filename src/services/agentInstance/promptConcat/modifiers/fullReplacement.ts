@@ -10,6 +10,7 @@ import { z } from 'zod/v4';
 import type { AgentResponse } from '../../tools/types';
 import { filterMessagesByDuration } from '../../utilities/messageDurationFilter';
 import { normalizeRole } from '../../utilities/normalizeRole';
+import { estimateTokens } from '../../utilities/tokenEstimator';
 import type { IPrompt } from '../promptConcatSchema';
 import { registerModifier } from './defineModifier';
 
@@ -26,6 +27,10 @@ export const FullReplacementParameterSchema = z.object({
   sourceType: z.enum(['historyOfSession', 'llmResponse']).meta({
     title: t('Schema.FullReplacement.SourceTypeTitle'),
     description: t('Schema.FullReplacement.SourceType'),
+  }),
+  contextWindowSize: z.number().optional().meta({
+    title: 'Context Window Size',
+    description: 'Max tokens for message history. Oldest messages are trimmed when exceeded. 0 or empty = no limit.',
   }),
 }).meta({
   title: t('Schema.FullReplacement.Title'),
@@ -87,9 +92,39 @@ const fullReplacementDefinition = registerModifier({
     // Apply duration filtering to exclude expired messages
     const filteredHistory = filterMessagesByDuration(messagesCopy);
 
-    if (filteredHistory.length > 0) {
+    // Apply context window token trimming — remove oldest messages when total exceeds limit
+    const contextWindowSize = config.contextWindowSize;
+    let trimmedHistory = filteredHistory;
+    if (contextWindowSize && contextWindowSize > 0 && filteredHistory.length > 0) {
+      let totalTokens = 0;
+      for (const message of filteredHistory) {
+        totalTokens += estimateTokens(message.content);
+      }
+      // Reserve ~30% of context window for system prompts + tool definitions + current user message
+      const historyBudget = Math.floor(contextWindowSize * 0.7);
+      if (totalTokens > historyBudget) {
+        // Remove from the front (oldest) until we fit
+        trimmedHistory = [];
+        let runningTokens = 0;
+        for (let index = filteredHistory.length - 1; index >= 0; index--) {
+          const messageTokens = estimateTokens(filteredHistory[index].content);
+          if (runningTokens + messageTokens > historyBudget) break;
+          runningTokens += messageTokens;
+          trimmedHistory.unshift(filteredHistory[index]);
+        }
+        logger.debug('Trimmed history to fit context window', {
+          originalMessages: filteredHistory.length,
+          trimmedMessages: trimmedHistory.length,
+          totalTokensBefore: totalTokens,
+          totalTokensAfter: runningTokens,
+          historyBudget,
+        });
+      }
+    }
+
+    if (trimmedHistory.length > 0) {
       found.prompt.children = [];
-      filteredHistory.forEach((message, index: number) => {
+      trimmedHistory.forEach((message, index: number) => {
         type PromptRole = NonNullable<IPrompt['role']>;
         const role: PromptRole = normalizeRole(message.role);
         delete found.prompt.text;

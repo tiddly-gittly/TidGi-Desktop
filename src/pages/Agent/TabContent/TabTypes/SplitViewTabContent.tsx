@@ -54,6 +54,18 @@ const Divider = styled(Box)<{ $left: number }>`
   }
 `;
 
+// Full-screen overlay during drag to prevent webviews from blocking mouse events
+const DragOverlay = styled(Box)`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9;
+  cursor: col-resize;
+  background: transparent;
+`;
+
 /**
  * Split View Tab Content Component
  * Displays multiple tabs side by side in a split view
@@ -61,12 +73,25 @@ const Divider = styled(Box)<{ $left: number }>`
 export const SplitViewTabContent: React.FC<SplitViewTabContentProps> = ({ tab }) => {
   const { updateSplitRatio } = useTabStore();
   const [isDragging, setIsDragging] = useState(false);
+  const [temporarySplitRatio, setTemporarySplitRatio] = useState(tab.splitRatio);
   const dividerReference = useRef<HTMLDivElement>(null);
   const containerReference = useRef<HTMLDivElement>(null);
+  const dragStateReference = useRef({ isDragging: false, startX: 0, startRatio: 0 });
+  const temporarySplitRatioReference = useRef(temporarySplitRatio);
 
   // Get the tabs to be displayed in split view
   const childTabs = tab.childTabs;
   const splitRatio = tab.splitRatio;
+
+  // Keep ref in sync with state
+  React.useEffect(() => {
+    temporarySplitRatioReference.current = temporarySplitRatio;
+  }, [temporarySplitRatio]);
+
+  // Sync temp ratio when tab changes
+  React.useEffect(() => {
+    setTemporarySplitRatio(splitRatio);
+  }, [splitRatio]);
 
   // Handle divider drag
   useEffect(() => {
@@ -74,42 +99,61 @@ export const SplitViewTabContent: React.FC<SplitViewTabContentProps> = ({ tab })
     const containerElement = containerReference.current;
     if (!dividerElement || !containerElement) return;
 
-    let startX = 0;
-    let startRatio = splitRatio;
-
     const handleMouseDown = (event: MouseEvent) => {
-      startX = event.clientX;
-      startRatio = splitRatio;
+      event.preventDefault(); // Prevent text selection during drag
+      dragStateReference.current.isDragging = true;
+      dragStateReference.current.startX = event.clientX;
+      dragStateReference.current.startRatio = temporarySplitRatioReference.current;
       setIsDragging(true);
       document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none'; // Prevent text selection
+
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     };
 
     const handleMouseMove = (event: MouseEvent) => {
-      if (!isDragging) return;
-      const containerWidth = containerElement.offsetWidth;
-      const deltaX = event.clientX - startX;
-      const deltaRatio = (deltaX / containerWidth) * 100;
-      const newRatio = Math.max(20, Math.min(80, startRatio + deltaRatio));
+      if (!dragStateReference.current.isDragging) return;
+      event.preventDefault(); // Prevent text selection during drag
 
-      // Use the updateSplitRatio function which now handles UI and debounced database updates
-      void updateSplitRatio(newRatio);
+      const containerWidth = containerElement.offsetWidth;
+      const deltaX = event.clientX - dragStateReference.current.startX;
+      const deltaRatio = (deltaX / containerWidth) * 100;
+      const newRatio = Math.max(20, Math.min(80, dragStateReference.current.startRatio + deltaRatio));
+
+      // Only update local UI state during drag, don't trigger any store updates
+      setTemporarySplitRatio(newRatio);
     };
 
     const handleMouseUp = () => {
+      dragStateReference.current.isDragging = false;
       setIsDragging(false);
       document.body.style.cursor = '';
+      document.body.style.userSelect = '';
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+
+      // Save the final position to store after drag is complete
+      void (async () => {
+        await updateSplitRatio(temporarySplitRatioReference.current);
+        // Re-align views after a short delay to ensure the UI has updated
+        setTimeout(() => {
+          void window.service.workspaceView.realignActiveWorkspace();
+        }, 100);
+      })();
     };
 
     dividerElement.addEventListener('mousedown', handleMouseDown);
 
     return () => {
       dividerElement.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      // Clean up styles
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
     };
-  }, [isDragging, splitRatio, updateSplitRatio]);
+  }, [updateSplitRatio]); // 移除 tempSplitRatio 从依赖项
 
   const { t } = useTranslation('agent');
 
@@ -126,7 +170,7 @@ export const SplitViewTabContent: React.FC<SplitViewTabContentProps> = ({ tab })
 
   return (
     <Container>
-      <SplitViewContainer ref={containerReference} $splitRatio={splitRatio} data-testid='split-view-container'>
+      <SplitViewContainer ref={containerReference} $splitRatio={temporarySplitRatio} data-testid='split-view-container'>
         {childTabs[0] && (
           <SplitViewPane>
             <TabContentView key={childTabs[0].id} tab={childTabs[0]} isSplitView={true} />
@@ -140,11 +184,14 @@ export const SplitViewTabContent: React.FC<SplitViewTabContentProps> = ({ tab })
         )}
 
         {childTabs.length > 1 && (
-          <Divider
-            ref={dividerReference}
-            className={isDragging ? 'dragging' : ''}
-            $left={splitRatio}
-          />
+          <>
+            <Divider
+              ref={dividerReference}
+              className={isDragging ? 'dragging' : ''}
+              $left={temporarySplitRatio}
+            />
+            {isDragging && <DragOverlay />}
+          </>
         )}
       </SplitViewContainer>
     </Container>

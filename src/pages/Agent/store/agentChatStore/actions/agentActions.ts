@@ -205,7 +205,8 @@ export const agentActions = (
           // Check if agent is in a terminal state (no more streaming expected)
           const isAgentTerminalState = fullAgent.status.state === 'completed' ||
             fullAgent.status.state === 'failed' ||
-            fullAgent.status.state === 'canceled';
+            fullAgent.status.state === 'canceled' ||
+            fullAgent.status.state === 'input-required';
 
           // If agent just became terminal, clear all streaming for this agent's messages
           // This is a failsafe in case message-level status updates were missed
@@ -221,14 +222,14 @@ export const agentActions = (
             });
           }
 
-          // Process new messages - backend already sorts messages by modified time
+          // Build a new Map with new messages added immutably
+          const newMessagesMap = new Map(currentMessages);
           fullAgent.messages.forEach(message => {
             const existingMessage = currentMessages.get(message.id);
 
             // If this is a new message
             if (!existingMessage) {
-              // Add new message to the map
-              currentMessages.set(message.id, message);
+              newMessagesMap.set(message.id, message);
               newMessageIds.push(message.id);
 
               // Subscribe to AI message updates
@@ -244,10 +245,14 @@ export const agentActions = (
                   window.observables.agentInstance.subscribeToAgentUpdates(agentId, message.id).subscribe({
                     next: (status) => {
                       if (status?.message) {
-                        // Update the message in our map
-                        get().messages.set(status.message.id, status.message);
+                        // Immutably update the message so zustand notifies subscribers
+                        set(state => {
+                          const newMessages = new Map(state.messages);
+                          newMessages.set(status.message!.id, status.message!);
+                          return { messages: newMessages };
+                        });
                         // Clear streaming flag when status is completed
-                        if (status.state === 'completed' || status.state === 'failed' || status.state === 'canceled') {
+                        if (status.state === 'completed' || status.state === 'failed' || status.state === 'canceled' || status.state === 'input-required') {
                           console.log('[AgentChat] Message completed via status update, clearing streaming', {
                             messageId: status.message.id,
                             state: status.state,
@@ -289,9 +294,10 @@ export const agentActions = (
 
           // Update state based on whether we have new messages
           if (newMessageIds.length > 0) {
-            // Update agent and append new message IDs to maintain order
+            // Update agent and append new message IDs (new Map for immutability)
             set({
               agent: agentWithoutMessages,
+              messages: newMessagesMap,
               orderedMessageIds: [...currentOrderedIds, ...newMessageIds],
             });
           } else {

@@ -57,6 +57,25 @@ export function canceled(): AgentInstanceLatestStatus {
 }
 
 /**
+ * Creates an input-required status — the agent is paused waiting for user input (e.g. ask-question tool)
+ */
+export function inputRequired(
+  content: string,
+  context: AgentFrameworkContext,
+  messageId?: string,
+): AgentInstanceLatestStatus {
+  return {
+    state: 'input-required',
+    message: {
+      id: messageId || nanoid(),
+      agentId: context.agent.id,
+      role: 'agent',
+      content,
+    },
+  };
+}
+
+/**
  * Creates a completed status with error information
  * @param content Error message content
  * @param errorDetail Error detail object

@@ -25,7 +25,6 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
     temperature: 0.7,
     maxTokens: 1000,
     topP: 0.95,
-    systemPrompt: '',
   });
 
   // Update local state when config changes
@@ -35,7 +34,6 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
         temperature: config.modelParameters.temperature ?? 0.7,
         maxTokens: config.modelParameters.maxTokens ?? 1000,
         topP: config.modelParameters.topP ?? 0.95,
-        systemPrompt: config.modelParameters.systemPrompt ?? '',
       });
     }
   }, [config]);
@@ -80,14 +78,6 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
         maxTokens: value,
       }));
     }
-  };
-
-  // System prompt handler
-  const handleSystemPromptChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setParameters((previous) => ({
-      ...previous,
-      systemPrompt: event.target.value,
-    }));
   };
 
   return (
@@ -142,18 +132,6 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
               },
             }}
             helperText={t('Preference.MaxTokensDescription', { ns: 'agent' })}
-          />
-        </FormControl>
-
-        <FormControl fullWidth sx={{ mt: 3 }}>
-          <TextField
-            label={t('Preference.SystemPrompt', { ns: 'agent' })}
-            value={parameters.systemPrompt}
-            onChange={handleSystemPromptChange}
-            multiline
-            rows={4}
-            placeholder={t('Preference.SystemPromptPlaceholder', { ns: 'agent' })}
-            helperText={t('Preference.SystemPromptDescription', { ns: 'agent' })}
           />
         </FormControl>
       </DialogContent>

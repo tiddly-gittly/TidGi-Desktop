@@ -38,3 +38,28 @@ export function getWorkspaceIdFromUrl(url: string): string | undefined {
   const match = url.match(/^tidgi:\/\/([^/]+)/);
   return match?.[1];
 }
+
+/**
+ * Extract tiddler title from tidgi:// protocol URL with hash
+ * @param url The URL to extract tiddler title from
+ * @returns The tiddler title or undefined if not present
+ * @example
+ * ```ts
+ * getTiddlerTitleFromUrl('tidgi://workspace-123#:Index') // 'Index'
+ * getTiddlerTitleFromUrl('tidgi://workspace-123#:Some%20Title') // 'Some Title' (decoded)
+ * getTiddlerTitleFromUrl('tidgi://workspace-123') // undefined
+ * ```
+ */
+export function getTiddlerTitleFromUrl(url: string): string | undefined {
+  // Match tidgi://workspace-id#:tiddler-title
+  const match = url.match(/^tidgi:\/\/[^#]+#:(.+)$/);
+  if (match?.[1]) {
+    // Decode URI component in case the title contains special characters
+    try {
+      return decodeURIComponent(match[1]);
+    } catch {
+      return match[1];
+    }
+  }
+  return undefined;
+}

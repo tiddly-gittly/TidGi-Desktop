@@ -24,6 +24,7 @@ import { isChatTab } from './utils/tabTypeGuards';
 
 // Import store hooks to fetch agent data
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
+import { useTabStore } from '@/pages/Agent/store/tabStore';
 import { useShallow } from 'zustand/react/shallow';
 import { AgentWithoutMessages } from '../Agent/store/agentChatStore/types';
 import { TabItem } from '../Agent/types/tab';
@@ -34,6 +35,7 @@ import { TabItem } from '../Agent/types/tab';
  */
 interface ChatTabContentProps {
   tab: TabItem; // Tab will be checked if it's a chat tab
+  isSplitView?: boolean; // Whether this chat tab is in a split view
 }
 
 /**
@@ -41,7 +43,7 @@ interface ChatTabContentProps {
  * Displays a chat interface for interacting with an AI agent
  * Only works with IChatTab objects
  */
-export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
+export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView }) => {
   const { t } = useTranslation('agent');
 
   // Type checking
@@ -49,7 +51,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     return (
       <Box sx={{ p: 2, textAlign: 'center' }}>
         <Typography color='error'>
-          {t('Agent.InvalidTabType', 'Invalid tab type. Expected chat tab.')}
+          {t('Agent.InvalidTabType')}
         </Typography>
       </Box>
     );
@@ -91,6 +93,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
   // Initialize message handling
   const {
     message,
+    setMessage,
     parametersOpen,
     setParametersOpen,
     // Only use the variables that are needed
@@ -101,6 +104,9 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     selectedFile,
     handleFileSelect,
     handleClearFile,
+    selectedWikiTiddlers,
+    handleWikiTiddlerSelect,
+    handleRemoveWikiTiddler,
   } = useMessageHandling({
     agentId: tab.agentId,
     isUserAtBottom,
@@ -170,6 +176,22 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
    */
 
   const isStreaming = streamingMessageIds.size > 0;
+
+  // Agent switching: create new agent instance with different definition, update tab
+  const updateTabData = useTabStore(useShallow((state) => state.updateTabData));
+  const handleSwitchAgent = React.useCallback(async (newAgentDefinitionId: string) => {
+    if (newAgentDefinitionId === tab.agentDefId) return;
+    try {
+      const newAgent = await window.service.agentInstance.createAgent(newAgentDefinitionId);
+      // Update tab with new agent - this triggers useEffect[tab.agentId] which handles subscription cleanup/setup
+      updateTabData(tab.id, { agentId: newAgent.id, agentDefId: newAgentDefinitionId, title: newAgent.name } as Partial<TabItem>);
+      // Load the new agent into the store
+      await fetchAgent(newAgent.id);
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to switch agent', { error });
+    }
+  }, [tab.agentDefId, tab.id, updateTabData, fetchAgent]);
+
   return (
     <Box
       sx={{
@@ -185,11 +207,14 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
         onOpenParameters={handleOpenParameters}
         loading={isWorking}
         inputText={message}
+        currentAgentDefId={tab.agentDefId}
+        onSwitchAgent={handleSwitchAgent}
+        isStreaming={isStreaming}
       />
 
       {/* Messages container with all chat bubbles */}
       <Box sx={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
-        <MessagesContainer messageIds={orderedMessageIds}>
+        <MessagesContainer messageIds={orderedMessageIds} isSplitView={isSplitView} onDeleteTurn={setMessage}>
           {/* Error state */}
           {error && (
             <Box sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
@@ -229,6 +254,9 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
         selectedFile={selectedFile}
         onFileSelect={handleFileSelect}
         onClearFile={handleClearFile}
+        selectedWikiTiddlers={selectedWikiTiddlers}
+        onWikiTiddlerSelect={handleWikiTiddlerSelect}
+        onRemoveWikiTiddler={handleRemoveWikiTiddler}
       />
 
       {/* Model parameter dialog */}
@@ -244,7 +272,6 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
               temperature: 0.7,
               maxTokens: 1000,
               topP: 0.95,
-              systemPrompt: '',
             },
           }}
           onSave={async (newConfig) => {

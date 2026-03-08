@@ -6,6 +6,62 @@ import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
 import type { IPrompt, IPromptConcatTool } from '../promptConcat/promptConcatSchema';
 
 /**
+ * Tool approval mode: 'auto' executes immediately, 'confirm' pauses for user approval
+ */
+export type ToolApprovalMode = 'auto' | 'confirm';
+
+/**
+ * Per-tool approval configuration.
+ * Rules are evaluated in order: denyPatterns → allowPatterns → mode.
+ */
+export interface ToolApprovalConfig {
+  /** Default mode for this tool */
+  mode: ToolApprovalMode;
+  /** Regex patterns — matching tool call content is auto-allowed (skip confirm) */
+  allowPatterns?: string[];
+  /** Regex patterns — matching tool call content is auto-denied */
+  denyPatterns?: string[];
+  /** Timeout in ms for this specific tool execution (0 = no timeout) */
+  timeoutMs?: number;
+}
+
+/**
+ * Result of an approval check before tool execution
+ */
+export type ApprovalDecision = 'allow' | 'deny' | 'pending';
+
+/**
+ * Pending approval request sent to frontend
+ */
+export interface ToolApprovalRequest {
+  /** Unique ID for this approval request */
+  approvalId: string;
+  /** Agent instance ID */
+  agentId: string;
+  /** Tool name being called */
+  toolName: string;
+  /** Stringified parameters */
+  parameters: Record<string, unknown>;
+  /** Original XML text from LLM */
+  originalText?: string;
+  /** Timestamp */
+  created: Date;
+}
+
+/**
+ * Context window token breakdown for UI pie chart
+ */
+export interface TokenBreakdown {
+  systemInstructions: number;
+  toolDefinitions: number;
+  userMessages: number;
+  assistantMessages: number;
+  toolResults: number;
+  total: number;
+  limit: number;
+}
+
+/**
  * Next round target options
  */
 export type YieldNextRoundTarget = 'human' | 'self' | `agent:${string}`; // allows for future agent IDs like "agent:agent-id"
@@ -79,7 +135,7 @@ export interface AIResponseContext extends BaseToolContext {
  */
 export interface UserMessageContext extends BaseToolContext {
   /** User message content */
-  content: { text: string; file?: File };
+  content: { text: string; file?: File; wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }> };
   /** Generated message ID */
   messageId: string;
   /** Timestamp for the message */

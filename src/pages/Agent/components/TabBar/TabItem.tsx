@@ -1,3 +1,4 @@
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import AddIcon from '@mui/icons-material/Add';
 import AppsIcon from '@mui/icons-material/Apps';
 import ChatIcon from '@mui/icons-material/Chat';
@@ -9,6 +10,7 @@ import { ButtonBase, Tooltip, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';
 
+import type { AgentBackgroundTask } from '@services/agentInstance/interface';
 import { useTabStore } from '../../store/tabStore';
 import { INewTabButton, TabItem as TabItemType, TabType } from '../../types/tab';
 
@@ -21,6 +23,7 @@ interface TabItemProps {
   onClick: () => void;
   /** Whether this is the new tab button */
   isNewTabButton?: boolean;
+  backgroundTasks?: AgentBackgroundTask[];
 }
 
 interface StyledTabProps {
@@ -109,8 +112,40 @@ const PinIndicator = styled('div')`
   color: ${props => props.theme.palette.text.secondary};
 `;
 
-export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewTabButton = false }) => {
+const formatWakeTime = (iso?: string): string => {
+  if (!iso) return 'Unknown';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return new Intl.DateTimeFormat(undefined, {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
+
+export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewTabButton = false, backgroundTasks = [] }) => {
   const { closeTab, addTab } = useTabStore();
+  const isChatTab = !isNewTabButton && tab.type === TabType.CHAT;
+  const hasBackgroundTasks = isChatTab && backgroundTasks.length > 0;
+
+  const sortedTasks = [...backgroundTasks].sort((a, b) => {
+    const aWake = a.nextWakeAtISO ?? a.wakeAtISO;
+    const bWake = b.nextWakeAtISO ?? b.wakeAtISO;
+    const aTime = aWake ? new Date(aWake).getTime() : Number.MAX_SAFE_INTEGER;
+    const bTime = bWake ? new Date(bWake).getTime() : Number.MAX_SAFE_INTEGER;
+    return aTime - bTime;
+  });
+
+  const nearestTask = sortedTasks[0];
+  const nearestWakeAt = nearestTask?.nextWakeAtISO ?? nearestTask?.wakeAtISO;
+  const scheduleIndicatorTooltip = hasBackgroundTasks
+    ? `Next wake: ${formatWakeTime(nearestWakeAt)}${backgroundTasks.length > 1 ? ` (+${backgroundTasks.length - 1} more)` : ''}`
+    : '';
+
+  const closeTooltip = hasBackgroundTasks
+    ? `This agent has active scheduled tasks. Next wake: ${formatWakeTime(nearestWakeAt)}. Closing this tab will not stop background wake-ups.`
+    : 'Close tab';
 
   /** Handle tab close click event */
   const handleClose = (event: React.MouseEvent) => {
@@ -163,11 +198,27 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewT
           {tab.title}
         </TabLabel>
 
+        {hasBackgroundTasks && (
+          <Tooltip title={scheduleIndicatorTooltip} placement='top'>
+            <ActionIcon
+              data-testid='tab-scheduled-task-indicator'
+              aria-label={scheduleIndicatorTooltip}
+              onClick={(event) => {
+                event.stopPropagation();
+              }}
+            >
+              <AccessTimeIcon fontSize='inherit' />
+            </ActionIcon>
+          </Tooltip>
+        )}
+
         {!isNewTabButton && (
           <TabActions className='tab-actions'>
-            <ActionIcon data-testid='tab-close-button' onClick={handleClose}>
-              <CloseIcon fontSize='inherit' />
-            </ActionIcon>
+            <Tooltip title={closeTooltip} placement='top'>
+              <ActionIcon data-testid='tab-close-button' aria-label={closeTooltip} onClick={handleClose}>
+                <CloseIcon fontSize='inherit' />
+              </ActionIcon>
+            </Tooltip>
           </TabActions>
         )}
 

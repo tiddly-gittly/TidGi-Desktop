@@ -60,7 +60,7 @@ export function streamFromProvider(
   const provider = modelConfig.provider;
   const model = modelConfig.model;
   const modelParameters = config.modelParameters || {};
-  const { temperature = 0.7, systemPrompt: fallbackSystemPrompt = 'You are a helpful assistant.' } = modelParameters;
+  const { temperature = 0.7 } = modelParameters;
 
   logger.info(`Using AI provider: ${provider}, model: ${model}`);
 
@@ -81,9 +81,9 @@ export function streamFromProvider(
       providerConfig.apiKey,
     );
 
-    // Extract system message from messages if present, otherwise use fallback
+    // Extract system message from messages if present
     const systemMessage = messages.find(message => message.role === 'system');
-    const systemPrompt = (systemMessage ? getFormattedContent(systemMessage.content) : undefined) || fallbackSystemPrompt;
+    const systemPrompt = (systemMessage ? getFormattedContent(systemMessage.content) : undefined) || 'You are a helpful assistant.';
 
     // Filter out system messages from the messages array since we're handling them separately
     const nonSystemMessages = messages.filter(message => message.role !== 'system');

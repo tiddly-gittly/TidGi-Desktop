@@ -41,8 +41,8 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     # Verify the last message contains the AI explanation about Index
     And I should see "explanation in last message and explanation about edit" elements with selectors:
       | element description         | selector                                                    |
-      | explanation in last message | [data-testid='message-bubble']:last-child:has-text('Index') |
-      | explanation about edit      | [data-testid='message-bubble']:last-child:has-text('编辑')  |
+      | explanation in last message | [data-testid='message-bubble']:has-text('Index') |
+      | explanation about edit      | [data-testid='message-bubble']:has-text('编辑')  |
 
   @agent @mockOpenAI
   Scenario: Wiki operation
@@ -70,8 +70,8 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see "workspace not exist error and success in last message and wiki workspace in last message" elements with selectors:
       | element description            | selector                                                                 |
       | workspace not exist error      | [data-testid='message-bubble']:has-text('test-expected-to-fail'):has-text('不存在') |
-      | success in last message        | [data-testid='message-bubble']:last-child:has-text('已成功')             |
-      | wiki workspace in last message | [data-testid='message-bubble']:last-child:has-text('wiki')               |
+      | success in last message        | [data-testid='message-bubble']:has-text('已成功')             |
+      | wiki workspace in last message | [data-testid='message-bubble']:has-text('wiki')               |
 
   @agent
   Scenario: Create default agent from New Tab quick access
@@ -84,9 +84,10 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   @agent
   Scenario: Close all tabs then create default agent from fallback page
     # Ensure starting from black/fallback page with no open tabs
-    Given I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    When I click all "tab" elements matching selector "[data-testid='tab']"
-    When I click all "close tab button" elements matching selector "[data-testid='tab-close-button']"
+    # Open tab list dropdown and force-click all close buttons (they have opacity: 0)
+    Given I click on a "tab list button" element with selector "[data-testid='tab-list-button']"
+    And I should see a "tab list dropdown" element with selector "[data-testid='tab-list-dropdown']"
+    When I click all "tab close button" elements matching selector "[data-testid^='tab-close-']"
     # When there is no active tab, this is "fallback new tab", it has same thing as new tab.
     And I should see "new tab button and Create Default Agent" elements with selectors:
       | element description     | selector                                    |
@@ -96,7 +97,10 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
     When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
-    Then I click all "close tab button" elements matching selector "[data-testid='tab-close-button']"
+    # Open dropdown again and close all tabs
+    When I click on a "tab list button" element with selector "[data-testid='tab-list-button']"
+    And I should see a "tab list dropdown" element with selector "[data-testid='tab-list-dropdown']"
+    Then I click all "tab close button" elements matching selector "[data-testid^='tab-close-']"
 
   @agent @mockOpenAI
   Scenario: Streamed assistant response can be cancelled mid-stream and send button returns

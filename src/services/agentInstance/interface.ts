@@ -5,6 +5,7 @@ import { AgentChannel } from '@/constants/channels';
 import { AgentDefinition } from '@services/agentDefinition/interface';
 import { PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
 import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskManager';
 
 /**
  * Content of a session instance that user chat with an agent.
@@ -41,6 +42,13 @@ export interface AgentInstance extends Omit<AgentDefinition, 'name' | 'agentFram
    * Preview instances are excluded from normal agent instance lists and should be cleaned up automatically.
    */
   volatile?: boolean;
+  /**
+   * Indicates this instance was spawned by another agent (sub-agent).
+   * Sub-agent instances are hidden from the default user-facing list.
+   */
+  isSubAgent?: boolean;
+  /** Parent agent instance ID if this is a sub-agent */
+  parentAgentId?: string;
 }
 
 /**
@@ -108,6 +116,36 @@ export interface AgentInstanceMessage {
   duration?: number | null;
 }
 
+export interface AgentBackgroundTask {
+  agentId: string;
+  agentName?: string;
+  type: 'heartbeat' | 'alarm';
+  intervalSeconds?: number;
+  activeHoursStart?: string;
+  activeHoursEnd?: string;
+  wakeAtISO?: string;
+  nextWakeAtISO?: string;
+  message?: string;
+  repeatIntervalMinutes?: number;
+  createdBy?: string;
+  lastRunAtISO?: string;
+  runCount?: number;
+}
+
+export interface SetBackgroundAlarmInput {
+  wakeAtISO: string;
+  message?: string;
+  repeatIntervalMinutes?: number;
+}
+
+export interface SetBackgroundHeartbeatInput {
+  enabled: boolean;
+  intervalSeconds: number;
+  message?: string;
+  activeHoursStart?: string;
+  activeHoursEnd?: string;
+}
+
 /**
  * Agent instance service to manage chat instances and messages
  */
@@ -126,15 +164,22 @@ export interface IAgentInstanceService {
    * @param agentDefinitionID Agent definition ID, if not provided, will use the default agent
    * @param options Additional options for creating the agent instance
    */
-  createAgent(agentDefinitionID?: string, options?: { preview?: boolean }): Promise<AgentInstance>;
+  createAgent(agentDefinitionID?: string, options?: { preview?: boolean; volatile?: boolean }): Promise<AgentInstance>;
 
   /**
    * Send a message or file to an agent instance, and put response to observables. Persistence and tool calling is handled by the plugins.
    * @param agentId Agent ID
-   * @param messageText Message text
-   * @param file File to upload
+   * @param content Message content including text, optional file, and optional wiki tiddlers
    */
-  sendMsgToAgent(agentId: string, content: { text: string; file?: File }): Promise<void>;
+  sendMsgToAgent(agentId: string, content: {
+    text: string;
+    file?: File;
+    /**
+     * Wiki tiddlers to attach. Each entry contains workspace name and tiddler title.
+     * The rendered HTML content of these tiddlers will be fetched and included in the prompt.
+     */
+    wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }>;
+  }): Promise<void>;
 
   /**
    * Subscribe to agent instance updates
@@ -221,6 +266,102 @@ export interface IAgentInstanceService {
    * @param debounceMs Debounce delay in milliseconds
    */
   debounceUpdateMessage(message: AgentInstanceMessage, agentId?: string, debounceMs?: number): void;
+
+  /**
+   * Resolve a pending tool approval request from the UI
+   * @param approvalId The approval request ID
+   * @param decision 'allow' or 'deny'
+   */
+  resolveToolApproval(approvalId: string, decision: 'allow' | 'deny'): Promise<void>;
+
+  /**
+   * Resolve a pending ask-question request from the UI.
+   * The user's answer is sent as a tool result (same turn), not as a new user message.
+   * @param agentId The agent instance ID
+   * @param questionId The question ID embedded in the ask-question tool result
+   * @param answer The user's answer text
+   */
+  resolveAskQuestion(agentId: string, questionId: string, answer: string): void;
+
+  /**
+   * Delete specific messages from an agent instance.
+   * Used for turn deletion / retry — removes messages from DB and the agent's message list.
+   * @param agentId Agent instance ID
+   * @param messageIds Array of message IDs to delete
+   */
+  deleteMessages(agentId: string, messageIds: string[]): Promise<void>;
+
+  /**
+   * Rollback file changes made during an agent turn.
+   * Uses the beforeCommitHash stored in the user message metadata to restore files
+   * to their state before the agent turn started.
+   * @param agentId Agent instance ID
+   * @param userMessageId The user message that started the turn
+   * @returns Object with rollback results
+   */
+  rollbackTurn(agentId: string, userMessageId: string): Promise<{ rolledBack: number; errors: string[] }>;
+
+  /**
+   * Get the list of files changed during an agent turn by comparing
+   * the beforeCommitHash (stored in user message metadata) with current HEAD.
+   * @param agentId Agent instance ID
+   * @param userMessageId The user message that started the turn
+   * @returns Array of changed files with their status
+   */
+  getTurnChangedFiles(agentId: string, userMessageId: string): Promise<Array<{ path: string; status: string }>>;
+
+  /**
+   * Get all active background tasks (heartbeats + alarms) for display in settings UI.
+   */
+  getBackgroundTasks(): Promise<AgentBackgroundTask[]>;
+
+  /**
+   * Cancel a background task by agent ID and type.
+   */
+  cancelBackgroundTask(agentId: string, type: 'heartbeat' | 'alarm'): Promise<void>;
+
+  /**
+   * Create or update an alarm task from settings UI.
+   */
+  setBackgroundAlarm(agentId: string, alarm: SetBackgroundAlarmInput): Promise<void>;
+
+  /**
+   * Create or update heartbeat configuration from settings UI.
+   */
+  setBackgroundHeartbeat(agentId: string, heartbeat: SetBackgroundHeartbeatInput): Promise<void>;
+
+  // ── ScheduledTask CRUD (Phase 2) ──────────────────────────────────────────
+
+  /**
+   * Create a new scheduled task and start its timer.
+   */
+  createScheduledTask(input: CreateScheduledTaskInput): Promise<ScheduledTask>;
+
+  /**
+   * Update an existing scheduled task (restarts timer with new config).
+   */
+  updateScheduledTask(input: UpdateScheduledTaskInput): Promise<ScheduledTask>;
+
+  /**
+   * Delete a scheduled task and stop its timer.
+   */
+  deleteScheduledTask(taskId: string): Promise<void>;
+
+  /**
+   * List all active scheduled tasks (from in-memory registry).
+   */
+  listScheduledTasks(): Promise<ScheduledTask[]>;
+
+  /**
+   * List active scheduled tasks for a specific agent instance.
+   * Used by TabItem to show the clock indicator.
+   */
+  listScheduledTasksForAgent(agentInstanceId: string): Promise<ScheduledTask[]>;
+
+  /**
+   * Return next N run times for a cron expression (for UI preview).
+   */
+  getCronPreviewDates(expression: string, timezone?: string, count?: number): Promise<string[]>;
 }
 
 export const AgentInstanceServiceIPCDescriptor = {
@@ -230,13 +371,29 @@ export const AgentInstanceServiceIPCDescriptor = {
     closeAgent: ProxyPropertyType.Function,
     concatPrompt: ProxyPropertyType.Function$,
     createAgent: ProxyPropertyType.Function,
+    debounceUpdateMessage: ProxyPropertyType.Function,
     deleteAgent: ProxyPropertyType.Function,
+    deleteMessages: ProxyPropertyType.Function,
     getAgent: ProxyPropertyType.Function,
     getAgents: ProxyPropertyType.Function,
     getFrameworkConfigSchema: ProxyPropertyType.Function,
+    resolveToolApproval: ProxyPropertyType.Function,
+    resolveAskQuestion: ProxyPropertyType.Function,
     saveUserMessage: ProxyPropertyType.Function,
+    rollbackTurn: ProxyPropertyType.Function,
     sendMsgToAgent: ProxyPropertyType.Function,
     subscribeToAgentUpdates: ProxyPropertyType.Function$,
+    getTurnChangedFiles: ProxyPropertyType.Function,
+    getBackgroundTasks: ProxyPropertyType.Function,
+    cancelBackgroundTask: ProxyPropertyType.Function,
+    setBackgroundAlarm: ProxyPropertyType.Function,
+    setBackgroundHeartbeat: ProxyPropertyType.Function,
+    createScheduledTask: ProxyPropertyType.Function,
+    updateScheduledTask: ProxyPropertyType.Function,
+    deleteScheduledTask: ProxyPropertyType.Function,
+    listScheduledTasks: ProxyPropertyType.Function,
+    listScheduledTasksForAgent: ProxyPropertyType.Function,
+    getCronPreviewDates: ProxyPropertyType.Function,
     updateAgent: ProxyPropertyType.Function,
   },
 };

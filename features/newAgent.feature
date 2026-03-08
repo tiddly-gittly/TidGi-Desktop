@@ -35,7 +35,7 @@ Feature: Create New Agent Workflow
     # Wait for autocomplete panel to load with templates (async operation in CI)
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
     # Using description text to select specific agent, more precise than just name
-    When I click on a "Example Agent template" element with selector '.aa-Item[role="option"]:has-text("Example agent with prompt processing")'
+    When I click on a "Example Agent template" element with selector '.aa-Item[role="option"]:has-text("General-purpose TiddlyWiki AI assistant")'
     # Fill in agent name while still in step 1
     When I clear text in "agent name input" element with selector "[data-testid='agent-name-input-field']"
     When I type "我的代码助手" in "agent name input" element with selector "[data-testid='agent-name-input-field']"

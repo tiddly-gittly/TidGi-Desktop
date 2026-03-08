@@ -108,10 +108,11 @@ export function registerStreamingResponse(hooks: PromptConcatHooks): void {
           agentFrameworkContext.agent.messages.push(aiMessage);
         }
 
-        // Final UI update
+        // Persist immediately so the message exists in DB before agentStatusChanged triggers updateAgent
         try {
           const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-          agentInstanceService.debounceUpdateMessage(aiMessage, agentFrameworkContext.agent.id);
+          await agentInstanceService.saveUserMessage(aiMessage);
+          agentInstanceService.debounceUpdateMessage(aiMessage, agentFrameworkContext.agent.id, 0);
         } catch (serviceError) {
           logger.warn('Failed to update UI for completed message', {
             error: serviceError,

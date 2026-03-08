@@ -28,6 +28,104 @@ function getGitCommitEnvironment(username: string = defaultGitInfo.gitUserName, 
 }
 
 /**
+ * Get the current HEAD commit hash for a repository
+ */
+export async function getHeadCommitHash(repoPath: string): Promise<string> {
+  const result = await gitExec(['rev-parse', 'HEAD'], repoPath);
+  if (result.exitCode !== 0) {
+    throw new Error(`Failed to get HEAD commit hash: ${result.stderr}`);
+  }
+  return result.stdout.trim();
+}
+
+/**
+ * Restore a file to its content at a specific commit.
+ * If the file did not exist at that commit, delete it from the working tree.
+ * Note: This restores to the working tree and staging area but does NOT create a new commit.
+ * @param repoPath - The git repository path
+ * @param commitHash - The commit hash to restore from
+ * @param filePath - The file path relative to the repo root
+ */
+export async function restoreFileFromCommit(repoPath: string, commitHash: string, filePath: string): Promise<{ action: 'restored' | 'deleted' | 'unchanged' }> {
+  // First verify the commit hash is valid to avoid accidentally deleting files
+  const verifyResult = await gitExec(['cat-file', '-e', commitHash], repoPath);
+  if (verifyResult.exitCode !== 0) {
+    throw new Error(`Invalid commit hash: ${commitHash}`);
+  }
+
+  // Check if the file existed at the target commit
+  const showResult = await gitExec(['show', `${commitHash}:${filePath}`], repoPath);
+
+  if (showResult.exitCode !== 0) {
+    // File didn't exist at that commit — delete from working tree if it exists now
+    const absolutePath = path.join(repoPath, filePath);
+    try {
+      await fs.unlink(absolutePath);
+      return { action: 'deleted' };
+    } catch {
+      // File doesn't exist in working tree either
+      return { action: 'unchanged' };
+    }
+  }
+
+  // File existed at the commit — restore it using git checkout
+  const checkoutResult = await gitExec(['checkout', commitHash, '--', filePath], repoPath);
+  if (checkoutResult.exitCode !== 0) {
+    throw new Error(`Failed to restore file ${filePath}: ${checkoutResult.stderr}`);
+  }
+  return { action: 'restored' };
+}
+
+/**
+ * Get list of files changed between two commits
+ */
+export async function getChangedFilesBetweenCommits(
+  repoPath: string,
+  fromCommit: string,
+  toCommit: string = 'HEAD',
+): Promise<Array<{ path: string; status: GitFileStatus }>> {
+  const result = await gitExec(
+    ['-c', 'core.quotePath=false', 'diff', '--name-status', fromCommit, toCommit],
+    repoPath,
+  );
+
+  if (result.exitCode !== 0) {
+    throw new Error(`Failed to get changed files: ${result.stderr}`);
+  }
+
+  const lines = result.stdout.trim().split('\n').filter(Boolean);
+  return lines.map(line => {
+    const parts = line.split('\t');
+    const statusCode = parts[0];
+    let status: GitFileStatus;
+    switch (statusCode?.charAt(0)) {
+      case 'A':
+        status = 'added';
+        break;
+      case 'M':
+        status = 'modified';
+        break;
+      case 'D':
+        status = 'deleted';
+        break;
+      case 'R':
+        status = 'renamed';
+        break;
+      case 'C':
+        status = 'copied';
+        break;
+      default:
+        status = 'unknown';
+        break;
+    }
+    // For renamed/copied files, git outputs "R100\told/path\tnew/path".
+    // Use the new path (last element) for file operations.
+    const filePath = parts.length >= 3 ? parts[parts.length - 1] : (parts[1] ?? '');
+    return { path: filePath, status };
+  });
+}
+
+/**
  * Get git log with pagination
  */
 export async function getGitLog(repoPath: string, options: IGitLogOptions = {}): Promise<IGitLogResult> {

@@ -15,103 +15,95 @@ export type INewWindowAction =
   };
 
 /**
- * WebContentsView related things, the WebContentsView is the webview like frame that renders our wiki website.
+ * Minimal mechanism-layer API for managing WebContentsView instances.
+ * All policy decisions (which workspace to show, when to hide/restore, mini-window routing)
+ * belong in WorkspaceViewService or other orchestrator services.
  */
 export interface IViewService {
   initialize(): Promise<void>;
-  /**
-   * Add a new browserView and load the url
-   */
-  addView: (workspace: IWorkspace, windowName: WindowNames) => Promise<void>;
-  /**
-   * Check if we can skip the addView() for a workspace
-   */
-  alreadyHaveView(workspace: IWorkspace): Promise<boolean>;
-  createViewAddToWindow(workspace: IWorkspace, browserWindow: BrowserWindow, sharedWebPreferences: WebPreferences, windowName: WindowNames): Promise<WebContentsView>;
-  forEachView: (functionToRun: (view: WebContentsView, workspaceID: string, windowName: WindowNames) => void) => void;
-  /**
-   * If tidgi mini window is open, we get tidgi mini window browser view, else we get main window browser view
-   */
-  getActiveBrowserView: () => Promise<WebContentsView | undefined>;
-  /**
-   * Get active workspace's main window and tidgi mini window browser view.
-   */
-  getActiveBrowserViews: () => Promise<Array<WebContentsView | undefined>>;
-  getLoadedViewEnsure(workspaceID: string, windowName: WindowNames): Promise<WebContentsView>;
-  getSharedWebPreferences(workspace: IWorkspace): Promise<WebPreferences>;
-  getView: (workspaceID: string, windowName: WindowNames) => WebContentsView | undefined;
+
+  // ── Registry ──────────────────────────────────────────────
+  getView(workspaceID: string, windowName: WindowNames): WebContentsView | undefined;
   getViewCount(): Promise<number>;
-  getViewCurrentUrl(workspaceID?: string): Promise<string | undefined>;
-  /**
-   * Move the view to the side to hide it.
-   * This won't destroy view or remove it from the window, but if you add another view to the window now, this will be replaced safely. To completely remove the view, use `removeView`.
-   */
-  hideView(browserWindow: BrowserWindow, windowName: WindowNames, idToDeactivate: string): Promise<void>;
-  initializeWorkspaceViewHandlersAndLoad(
+  forEachView(function_: (view: WebContentsView, workspaceID: string, windowName: WindowNames) => void): void;
+  /** Wait until a view for the given (workspace, window) pair exists and return it. */
+  getLoadedViewEnsure(workspaceID: string, windowName: WindowNames): Promise<WebContentsView>;
+
+  // ── Lifecycle ─────────────────────────────────────────────
+  /** Create a WebContentsView, add it to the target BrowserWindow, and load its URL. */
+  addView(workspace: IWorkspace, windowName: WindowNames): Promise<void>;
+  /** True if the workspace already has views for all required windows. */
+  alreadyHaveView(workspace: IWorkspace): Promise<boolean>;
+  /** Low-level: build WebPreferences for a workspace (session, preload, metadata). */
+  getSharedWebPreferences(workspace: IWorkspace): Promise<WebPreferences>;
+  /** Low-level: create the WebContentsView, attach it to the window, wire resize listener. */
+  createViewAndAttach(workspace: IWorkspace, browserWindow: BrowserWindow, sharedWebPreferences: WebPreferences, windowName: WindowNames): Promise<WebContentsView>;
+  /** Low-level: setup event handlers + load initial URL. */
+  initializeViewHandlersAndLoad(
     browserWindow: BrowserWindow,
     view: WebContentsView,
     configs: { sharedWebPreferences: WebPreferences; uri?: string; windowName: WindowNames; workspace: IWorkspace },
   ): Promise<void>;
-  /**
-   * Try catch loadUrl, other wise it will throw unhandled promise rejection Error: ERR_CONNECTION_REFUSED (-102) loading 'http://localhost:5212/
-   * We will set `didFailLoadErrorMessage`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
-   */
-  loadUrlForView(workspace: IWorkspace, view: WebContentsView): Promise<void>;
-  realignActiveView(browserWindow: BrowserWindow, activeId: string, windowName: WindowNames, isRetry?: boolean): Promise<void>;
-  reloadActiveBrowserView: () => Promise<void>;
+  /** Load (or reload) a URL into an existing view. */
+  loadUrlForView(workspace: IWorkspace, view: WebContentsView, uri?: string): Promise<void>;
+  /** Reload a specific workspace's views, or all views if no id given. */
   reloadViewsWebContents(workspaceID?: string): Promise<void>;
-  reloadViewsWebContentsIfDidFailLoad: () => Promise<void>;
+  /** Reload views that previously failed to load. */
+  reloadViewsWebContentsIfDidFailLoad(): Promise<void>;
+
+  // ── Visibility (offscreen-bounds only) ────────────────────
   /**
-   * @param workspaceID
-   * @param permanent Do you still need views later? If this is true, view will be destroyed. If this is false, view will be hidden by remove them from the window, but can still be fast add back later..
+   * Show a view at default layout bounds (respecting sidebar/findInPage prefs).
+   * Ensures the view is a child of the window, sets proper bounds, and focuses it.
    */
-  removeAllViewOfWorkspace(workspaceID: string, permanent?: boolean): void;
+  showView(workspaceID: string, windowName: WindowNames): Promise<void>;
   /**
-   * Each window can only have one browser view, we remove current one, and add another one later. But don't need to destroy current one, we can add it back when user switch back.
-   * This won't destroy view or remove it from `views` array, just hide it, but this is more complete than `hideView`.
+   * Hide a view by moving it offscreen. Does NOT detach or destroy — fast restore guaranteed.
    */
-  removeView(workspaceID: string, windowName: WindowNames): void;
+  hideView(workspaceID: string, windowName: WindowNames): Promise<void>;
   /**
-   * Bring an already created view to the front. If it happened to not created, will call `addView()` to create one.
-   * @param workspaceID id, can only be main workspace id, because only main workspace will have view created.
-   * @param windowName you can control main window or tidgi mini window to have this view.
-   * @returns
+   * Set arbitrary bounds on a view (used by Agent split-view embed).
+   * Pass `undefined` to hide (offscreen).
    */
-  setActiveView: (workspaceID: string, windowName: WindowNames) => Promise<void>;
-  setActiveViewForAllBrowserViews(workspaceID: string): Promise<void>;
-  setViewsAudioPref: (_shouldMuteAudio?: boolean) => void;
-  setViewsNotificationsPref: (_shouldPauseNotifications?: boolean) => void;
+  setViewBounds(workspaceID: string, windowName: WindowNames, bounds?: { x: number; y: number; width: number; height: number }): Promise<void>;
   /**
-   * Set custom bounds for a workspace's BrowserView.
-   * Used by Agent page split view to embed Wiki BrowserView in a specific area.
-   * @param workspaceID Workspace ID
-   * @param windowName Window name
-   * @param bounds Custom bounds { x, y, width, height }, or undefined to reset to default
+   * Recalculate and apply default bounds for a view (e.g. after sidebar toggle or window resize).
    */
-  setViewCustomBounds(workspaceID: string, windowName: WindowNames, bounds?: { x: number; y: number; width: number; height: number }): Promise<void>;
+  realignView(workspaceID: string, windowName: WindowNames): Promise<void>;
+
+  // ── Destruction ───────────────────────────────────────────
+  /**
+   * Hide all views of a workspace (offscreen). Registry entries and webContents stay alive for fast restore.
+   */
+  hideAllViewsOfWorkspace(workspaceID: string): void;
+  /**
+   * Permanently destroy all views of a workspace: close webContents, unbind listeners, remove from registry.
+   */
+  destroyAllViewsOfWorkspace(workspaceID: string): void;
+
+  // ── Convenience / Query ───────────────────────────────────
+  getViewCurrentUrl(workspaceID: string, windowName: WindowNames): Promise<string | undefined>;
+  setViewsAudioPref(shouldMuteAudio?: boolean): void;
+  setViewsNotificationsPref(shouldPauseNotifications?: boolean): void;
 }
+
 export const ViewServiceIPCDescriptor = {
   channel: ViewChannel.name,
   properties: {
     addView: ProxyPropertyType.Function,
     alreadyHaveView: ProxyPropertyType.Function,
     forEachView: ProxyPropertyType.Function,
-    getActiveBrowserView: ProxyPropertyType.Function,
-    getSharedWebPreferences: ProxyPropertyType.Function,
     getView: ProxyPropertyType.Function,
     getViewCount: ProxyPropertyType.Function,
     getViewCurrentUrl: ProxyPropertyType.Function,
+    showView: ProxyPropertyType.Function,
     hideView: ProxyPropertyType.Function,
-    initializeWorkspaceViewHandlersAndLoad: ProxyPropertyType.Function,
-    realignActiveView: ProxyPropertyType.Function,
-    reloadActiveBrowserView: ProxyPropertyType.Function,
+    setViewBounds: ProxyPropertyType.Function,
+    realignView: ProxyPropertyType.Function,
+    hideAllViewsOfWorkspace: ProxyPropertyType.Function,
+    destroyAllViewsOfWorkspace: ProxyPropertyType.Function,
     reloadViewsWebContents: ProxyPropertyType.Function,
     reloadViewsWebContentsIfDidFailLoad: ProxyPropertyType.Function,
-    removeAllViewOfWorkspace: ProxyPropertyType.Function,
-    removeView: ProxyPropertyType.Function,
-    setActiveView: ProxyPropertyType.Function,
-    setActiveViewForAllBrowserViews: ProxyPropertyType.Function,
-    setViewCustomBounds: ProxyPropertyType.Function,
     setViewsAudioPref: ProxyPropertyType.Function,
     setViewsNotificationsPref: ProxyPropertyType.Function,
   },

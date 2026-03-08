@@ -1,10 +1,11 @@
-// Message bubble component with avatar and content
+// Message bubble component — user messages retain bubble styling; agent/tool messages are chrome-less
 
+import { WikiChannel } from '@/constants/channels';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import PersonIcon from '@mui/icons-material/Person';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
-import { Avatar, Box } from '@mui/material';
+import { Avatar, Box, Chip } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import React from 'react';
+import React, { memo } from 'react';
 import { isMessageExpiredForAI } from '../../../services/agentInstance/utilities/messageDurationFilter';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
 import { MessageRenderer } from './MessageRenderer';
@@ -59,57 +60,107 @@ const ImageAttachment = ({ file }: { file: File | { path: string } }) => {
   );
 };
 
+interface WikiTiddlerMetadata {
+  workspaceId: string;
+  workspaceName: string;
+  tiddlerTitle: string;
+  renderedContent?: string;
+}
+
+const WikiTiddlersAttachment = ({ tiddlers, isSplitView }: { tiddlers: WikiTiddlerMetadata[]; isSplitView?: boolean }) => {
+  if (!tiddlers || tiddlers.length === 0) return null;
+
+  const handleTiddlerClick = (tiddler: WikiTiddlerMetadata) => {
+    void (async () => {
+      try {
+        if (isSplitView) {
+          // In split view: directly open the tiddler in the wiki view that's already displayed
+          // The wiki webview should be on the right side of the split view
+          await window.service.wiki.wikiOperationInBrowser(WikiChannel.openTiddler, tiddler.workspaceId, [
+            tiddler.tiddlerTitle,
+          ]);
+        } else {
+          // In normal tab: activate the wiki workspace
+          await window.service.workspaceView.setActiveWorkspaceView(tiddler.workspaceId);
+        }
+
+        void window.service.native.log('debug', 'Navigated to wiki tiddler', {
+          workspaceId: tiddler.workspaceId,
+          workspaceName: tiddler.workspaceName,
+          tiddlerTitle: tiddler.tiddlerTitle,
+          isSplitView,
+        });
+      } catch (error) {
+        void window.service.native.log('error', 'Failed to navigate to wiki tiddler', {
+          error,
+          workspaceId: tiddler.workspaceId,
+          tiddlerTitle: tiddler.tiddlerTitle,
+          isSplitView,
+        });
+      }
+    })();
+  };
+
+  return (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+      {tiddlers.map((tiddler, index) => (
+        <Chip
+          key={index}
+          icon={<LibraryBooksIcon />}
+          label={`${tiddler.workspaceName}: ${tiddler.tiddlerTitle}`}
+          data-testid={`wiki-tiddler-chip-message-${index}`}
+          sx={{ maxWidth: 300, cursor: 'pointer' }}
+          title={tiddler.renderedContent ? tiddler.renderedContent.substring(0, 100) + '...' : tiddler.tiddlerTitle}
+          onClick={() => {
+            handleTiddlerClick(tiddler);
+          }}
+        />
+      ))}
+    </Box>
+  );
+};
+
 const BubbleContainer = styled(Box, {
-  shouldForwardProp: (property) => property !== '$user' && property !== '$centered' && property !== '$expired',
-})<{ $user: boolean; $centered: boolean; $expired?: boolean }>`
+  shouldForwardProp: (property) => property !== '$user' && property !== '$expired',
+})<{ $user: boolean; $expired?: boolean }>`
   display: flex;
   gap: 12px;
-  max-width: 80%;
-  align-self: ${props => props.$centered ? 'center' : props.$user ? 'flex-end' : 'flex-start'};
+  max-width: ${props => props.$user ? '80%' : '100%'};
+  align-self: ${props => props.$user ? 'flex-end' : 'flex-start'};
   opacity: ${props => props.$expired ? 0.5 : 1};
   transition: opacity 0.3s ease-in-out;
 `;
 
-const MessageAvatar = styled(Avatar, {
-  shouldForwardProp: (property) => property !== '$user' && property !== '$centered' && property !== '$expired',
-})<{ $user: boolean; $centered: boolean; $expired?: boolean }>`
-  background-color: ${props => props.$centered ? props.theme.palette.info.main : props.$user ? props.theme.palette.primary.main : props.theme.palette.secondary.main};
-  color: ${props => props.$centered ? props.theme.palette.info.contrastText : props.$user ? props.theme.palette.primary.contrastText : props.theme.palette.secondary.contrastText};
-  opacity: ${props => props.$expired ? 0.7 : 1};
-  transition: opacity 0.3s ease-in-out;
+const MessageAvatar = styled(Avatar)`
+  background-color: ${props => props.theme.palette.primary.main};
+  color: ${props => props.theme.palette.primary.contrastText};
 `;
 
-const MessageContent = styled(Box, {
-  shouldForwardProp: (property) => property !== '$user' && property !== '$centered' && property !== '$streaming' && property !== '$expired',
-})<{ $user: boolean; $centered: boolean; $streaming?: boolean; $expired?: boolean }>`
-  background-color: ${props => props.$user ? props.theme.palette.primary.light : props.theme.palette.background.paper};
-  color: ${props => props.$user ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
+/** User bubble keeps card-like styling */
+const UserMessageContent = styled(Box)`
+  background-color: ${props => props.theme.palette.primary.light};
+  color: ${props => props.theme.palette.primary.contrastText};
   padding: 12px 16px;
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+`;
+
+/** Agent messages have no bubble chrome — content renders directly */
+const AgentMessageContent = styled(Box, {
+  shouldForwardProp: (property) => property !== '$streaming' && property !== '$expired',
+})<{ $streaming?: boolean; $expired?: boolean }>`
+  width: 100%;
   position: relative;
   transition: all 0.3s ease-in-out;
   opacity: ${props => props.$expired ? 0.6 : 1};
-  
-  /* Add visual indicators for expired messages */
+
   ${props =>
   props.$expired && `
-    border: 1px dashed ${props.theme.palette.divider};
     filter: grayscale(0.3);
   `}
-  
-  /* Add a subtle highlight for completed assistant messages */
-  ${props =>
-  !props.$user && !props.$streaming && !props.$expired && `
-    border-left: 2px solid ${props.theme.palette.divider};
-  `}
-  
-  /* Enhanced animation for streaming messages with eventual fade out */
+
   ${props =>
   props.$streaming && `
-    box-shadow: 0 1px 5px rgba(0,100,255,0.3);
-    border-left: 2px solid ${props.theme.palette.primary.main};
-    
     &:after {
       content: '';
       position: absolute;
@@ -130,13 +181,17 @@ const MessageContent = styled(Box, {
 `;
 
 interface MessageBubbleProps {
-  messageId: string; // 只接收消息ID
+  messageId: string;
+  isSplitView?: boolean;
 }
 
 /**
- * Message bubble component with avatar and content
+ * Message bubble component.
+ * User messages: right-aligned with avatar + card bubble.
+ * Agent/tool/error messages: full-width, no avatar, no card — renders content directly so
+ * multiple outputs in one turn feel cohesive.
  */
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = memo(({ messageId, isSplitView }) => {
   const message = useAgentChatStore(state => state.getMessageById(messageId));
   const isStreaming = useAgentChatStore(state => state.isMessageStreaming(messageId));
   const orderedMessageIds = useAgentChatStore(state => state.orderedMessageIds);
@@ -144,37 +199,40 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ messageId }) => {
   if (!message) return null;
 
   const isUser = message.role === 'user';
-  // Treat 'error' and tool centered, no avatar, differenciate it from normal chat bubbles
-  const isCentered = message.role === 'tool' || message.role === 'error';
-  // Calculate if message is expired for AI context
   const messageIndex = orderedMessageIds.indexOf(messageId);
   const totalMessages = orderedMessageIds.length;
   const isExpired = isMessageExpiredForAI(message, messageIndex, totalMessages);
 
-  return (
-    <BubbleContainer $user={isUser} $centered={isCentered} $expired={isExpired} data-testid='message-bubble'>
-      {!isUser && !isCentered && (
-        <MessageAvatar $user={isUser} $centered={isCentered} $expired={isExpired}>
-          <SmartToyIcon />
-        </MessageAvatar>
-      )}
-
-      <MessageContent
-        $user={isUser}
-        $centered={isCentered}
-        $streaming={isStreaming}
-        $expired={isExpired}
-        data-testid={!isUser ? (isStreaming ? 'assistant-streaming-text' : 'assistant-message') : undefined}
-      >
-        {message.metadata?.file ? <ImageAttachment file={message.metadata.file as File | { path: string }} /> : null}
-        <MessageRenderer message={message} isUser={isUser} />
-      </MessageContent>
-
-      {isUser && (
-        <MessageAvatar $user={isUser} $centered={isCentered} $expired={isExpired}>
+  // User message: keep the classic bubble
+  if (isUser) {
+    return (
+      <BubbleContainer $user $expired={isExpired} data-testid='message-bubble'>
+        <UserMessageContent>
+          {message.metadata?.file ? <ImageAttachment file={message.metadata.file as File | { path: string }} /> : null}
+          {message.metadata?.wikiTiddlers ? <WikiTiddlersAttachment tiddlers={message.metadata.wikiTiddlers as WikiTiddlerMetadata[]} isSplitView={isSplitView} /> : null}
+          <MessageRenderer message={message} isUser />
+        </UserMessageContent>
+        <MessageAvatar>
           <PersonIcon />
         </MessageAvatar>
-      )}
+      </BubbleContainer>
+    );
+  }
+
+  // Agent / tool / error: no avatar, no bubble chrome
+  return (
+    <BubbleContainer $user={false} $expired={isExpired} data-testid='message-bubble'>
+      <AgentMessageContent
+        $streaming={isStreaming}
+        $expired={isExpired}
+        data-testid={isStreaming ? 'assistant-streaming-text' : 'assistant-message'}
+      >
+        {message.metadata?.file ? <ImageAttachment file={message.metadata.file as File | { path: string }} /> : null}
+        {message.metadata?.wikiTiddlers ? <WikiTiddlersAttachment tiddlers={message.metadata.wikiTiddlers as WikiTiddlerMetadata[]} isSplitView={isSplitView} /> : null}
+        <MessageRenderer message={message} isUser={false} />
+      </AgentMessageContent>
     </BubbleContainer>
   );
-};
+});
+
+MessageBubble.displayName = 'MessageBubble';

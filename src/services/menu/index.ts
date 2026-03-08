@@ -1,6 +1,5 @@
-import { IAskAIWithSelectionData, WindowChannel } from '@/constants/channels';
 import { getWorkspaceIdFromUrl } from '@/constants/urls';
-import type { AgentDefinition, IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
@@ -149,6 +148,7 @@ export class MenuService implements IMenuService {
         // Add workspace-specific menu items if workspace exists and is a wiki
         if (workspace !== undefined && isWikiWorkspace(workspace)) {
           const services = {
+            agentDefinition: container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition),
             auth: container.get<IAuthenticationService>(serviceIdentifier.Authentication),
             context: container.get<IContextService>(serviceIdentifier.Context),
             externalAPI: this.externalAPIService,
@@ -165,7 +165,9 @@ export class MenuService implements IMenuService {
           };
 
           // Get simplified menu items (includes command palette, simplified actions, and "Current Workspace")
-          const simplifiedMenuItems = await getSimplifiedWorkspaceMenuTemplate(workspace, i18n.t.bind(i18n), services);
+          const simplifiedMenuItems = await getSimplifiedWorkspaceMenuTemplate(workspace, i18n.t.bind(i18n), services, {
+            selectionText: parameters.selectionText,
+          });
           template.push(...simplifiedMenuItems);
         }
       }
@@ -318,6 +320,7 @@ export class MenuService implements IMenuService {
     const menu = contextMenuBuilder.buildMenuForElement(info);
     const workspaces = await workspaceService.getWorkspacesAsList();
     const services = {
+      agentDefinition: container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition),
       auth: authService,
       context: contextService,
       externalAPI: this.externalAPIService,
@@ -335,64 +338,6 @@ export class MenuService implements IMenuService {
 
     // workspace menus (template items are added at the end via insert(0) in reverse order)
     menu.append(new MenuItem({ type: 'separator' }));
-
-    // Add "Talk with AI" menu items when there's selected text
-    if (info.selectionText && info.selectionText.trim().length > 0) {
-      const wikiUrl = webContents.getURL();
-      const workspaceId = getWorkspaceIdFromUrl(wikiUrl);
-
-      // Get all agent definitions
-      const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
-      const defaultAgentDefinition = await agentDefinitionService.getAgentDef(); // No parameter = default agent
-      const allAgentDefinitions = await agentDefinitionService.getAgentDefs();
-      const otherAgentDefinitions = allAgentDefinitions.filter((definition: AgentDefinition) => definition.id !== defaultAgentDefinition?.id);
-
-      // Add menu item for default agent
-      menu.append(
-        new MenuItem({
-          label: i18n.t('ContextMenu.TalkWithAI'),
-          click: async () => {
-            const data: IAskAIWithSelectionData = {
-              selectionText: info.selectionText!,
-              wikiUrl,
-              workspaceId: workspaceId ?? undefined,
-              agentDefId: undefined, // Use default agent
-            };
-            // Only send to main window to avoid duplicate processing
-            const mainWindow = windowService.get(WindowNames.main);
-            if (mainWindow !== undefined) {
-              mainWindow.webContents.send(WindowChannel.askAIWithSelection, data);
-            }
-          },
-        }),
-      );
-
-      // Add submenu for other agents if there are any
-      if (otherAgentDefinitions.length > 0) {
-        menu.append(
-          new MenuItem({
-            label: i18n.t('ContextMenu.TalkWithAIMore'),
-            submenu: otherAgentDefinitions.map((agentDefinition: AgentDefinition) => ({
-              label: agentDefinition.name,
-              click: async () => {
-                const data: IAskAIWithSelectionData = {
-                  selectionText: info.selectionText!,
-                  wikiUrl,
-                  workspaceId: workspaceId ?? undefined,
-                  agentDefId: agentDefinition.id,
-                };
-                const mainWindow = windowService.get(WindowNames.main);
-                if (mainWindow !== undefined) {
-                  mainWindow.webContents.send(WindowChannel.askAIWithSelection, data);
-                }
-              },
-            })),
-          }),
-        );
-      }
-
-      menu.append(new MenuItem({ type: 'separator' }));
-    }
 
     // Note: Simplified menu and "Current Workspace" are now provided by the frontend template
     // (from SortableWorkspaceSelectorButton or content view), so we don't add them here

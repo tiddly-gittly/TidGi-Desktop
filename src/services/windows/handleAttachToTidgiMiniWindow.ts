@@ -8,6 +8,7 @@ import type { IMenuService } from '@services/menu/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IViewService } from '@services/view/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import { BrowserWindowConstructorOptions, Menu, nativeImage, Tray } from 'electron';
 import windowStateKeeper from 'electron-window-state';
 import { debounce } from 'lodash';
@@ -107,8 +108,9 @@ export async function handleAttachToTidgiMiniWindow(
         }
 
         try {
-          const view = await viewService.getActiveBrowserView();
-          // Check again after async call
+          const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+          const activeWs = await workspaceService.getActiveWorkspace();
+          const view = activeWs ? viewService.getView(activeWs.id, WindowNames.tidgiMiniWindow) : undefined;
           if (view && !view.webContents.isDestroyed()) {
             view.webContents.focus();
           }

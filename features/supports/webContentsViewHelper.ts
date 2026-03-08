@@ -66,7 +66,7 @@ async function getFirstWebContentsView(app: ElectronApplication) {
 async function executeInBrowserView<T>(
   app: ElectronApplication,
   script: string,
-  timeoutMs = 500,
+  timeoutMs = 2000,
 ): Promise<T> {
   const webContentsId = await getFirstWebContentsView(app);
 

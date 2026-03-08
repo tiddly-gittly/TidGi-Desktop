@@ -29,6 +29,7 @@ import type {
   IExternalAPIService,
   ModelInfo,
 } from './interface';
+import { DEFAULT_RETRY_CONFIG, withRetry } from './retryUtility';
 
 /**
  * Simplified request context
@@ -61,7 +62,6 @@ export class ExternalAPIService implements IExternalAPIService {
       },
       modelParameters: {
         temperature: 0.7,
-        systemPrompt: 'You are a helpful assistant.',
         topP: 0.95,
       },
     },
@@ -611,14 +611,27 @@ export class ExternalAPIService implements IExternalAPIService {
         return;
       }
 
-      // Create the stream
+      // Create the stream with retry for transient failures (429, 5xx, network errors)
       let result: ReturnType<typeof streamFromProvider>;
       try {
-        result = streamFromProvider(
-          config,
-          messages,
-          controller.signal,
-          providerConfig,
+        result = await withRetry(
+          async () =>
+            streamFromProvider(
+              config,
+              messages,
+              controller.signal,
+              providerConfig,
+            ),
+          DEFAULT_RETRY_CONFIG,
+          (attempt, maxAttempts, delayMs, error) => {
+            logger.info('Retrying AI stream creation', {
+              requestId,
+              attempt,
+              maxAttempts,
+              delayMs,
+              error: error.message,
+            });
+          },
         );
       } catch (providerError) {
         // Handle provider creation errors directly

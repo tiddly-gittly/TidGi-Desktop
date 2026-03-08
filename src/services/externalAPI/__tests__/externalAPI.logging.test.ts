@@ -36,7 +36,7 @@ describe('ExternalAPIService logging', () => {
     // Set up provider config BEFORE initialization
     const aiSettings: AIGlobalSettings = {
       providers: [{ provider: 'test-provider', apiKey: 'fake', models: [{ name: 'test-model' }] }],
-      defaultConfig: { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
+      defaultConfig: { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, topP: 0.95 } },
     };
     db.setSetting('aiSettings', aiSettings);
 
@@ -79,7 +79,7 @@ describe('ExternalAPIService logging', () => {
     // Set up provider config WITHOUT apiKey BEFORE initialization to trigger error
     const aiSettings: AIGlobalSettings = {
       providers: [{ provider: 'test-provider', models: [{ name: 'test-model' }] }], // No apiKey
-      defaultConfig: { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, systemPrompt: '', topP: 0.95 } },
+      defaultConfig: { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: { temperature: 0.7, topP: 0.95 } },
     };
     db.setSetting('aiSettings', aiSettings);
 

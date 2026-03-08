@@ -93,6 +93,21 @@ export async function initializePluginSystem(): Promise<void> {
     import('./git'),
     import('./tiddlywikiPlugin'),
     import('./modelContextProtocol'),
+    // New tools
+    import('./summary'),
+    import('./alarmClock'),
+    import('./editAgentDefinition'),
+    import('./askQuestion'),
+    import('./backlinks'),
+    import('./toc'),
+    import('./recent'),
+    import('./listTiddlers'),
+    import('./getErrors'),
+    import('./zxScript'),
+    import('./webFetch'),
+    import('./spawnAgent'),
+    import('./editTiddler'),
+    import('./todo'),
     // Modifiers (imported via modifiers/index.ts)
     import('../promptConcat/modifiers'),
   ]);

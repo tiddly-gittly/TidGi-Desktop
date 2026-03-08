@@ -110,6 +110,9 @@ importers:
       bluebird:
         specifier: 3.7.2
         version: 3.7.2
+      croner:
+        specifier: ^10.0.1
+        version: 10.0.1
       date-fns:
         specifier: 3.6.0
         version: 3.6.0
@@ -3653,6 +3656,10 @@ packages:
 
   create-require@1.1.1:
     resolution: {integrity: sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==}
+
+  croner@10.0.1:
+    resolution: {integrity: sha512-ixNtAJndqh173VQ4KodSdJEI6nuioBWI0V1ITNKhZZsO0pEMoDxz539T4FTTbSZ/xIOSuDnzxLVRqBVSvPNE2g==}
+    engines: {node: '>=18.0'}
 
   cross-dirname@0.1.0:
     resolution: {integrity: sha512-+R08/oI0nl3vfPcqftZRpytksBXDzOUveBq/NBVx0sUp1axwzPQrKinNx5yd5sxPu8j1wIy8AfnVQ+5eFdha6Q==}
@@ -11559,6 +11566,8 @@ snapshots:
       yaml: 1.10.2
 
   create-require@1.1.1: {}
+
+  croner@10.0.1: {}
 
   cross-dirname@0.1.0: {}
 

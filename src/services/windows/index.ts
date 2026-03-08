@@ -48,7 +48,8 @@ export class Window implements IWindowService {
   }
 
   public async findInPage(text: string, forward?: boolean): Promise<void> {
-    const contents = (await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView())?.webContents;
+    const activeWs = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();
+    const contents = activeWs ? container.get<IViewService>(serviceIdentifier.View).getView(activeWs.id, WindowNames.main)?.webContents : undefined;
     if (contents !== undefined) {
       contents.findInPage(text, {
         forward,
@@ -58,7 +59,8 @@ export class Window implements IWindowService {
 
   public async stopFindInPage(close?: boolean, windowName: WindowNames = WindowNames.main): Promise<void> {
     const mainWindow = this.get(windowName);
-    const view = await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView();
+    const activeWs = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();
+    const view = activeWs ? container.get<IViewService>(serviceIdentifier.View).getView(activeWs.id, WindowNames.main) : undefined;
 
     if (view) {
       const contents = view.webContents;
@@ -215,6 +217,9 @@ export class Window implements IWindowService {
       fullscreenable: true,
       autoHideMenuBar,
       titleBarStyle: hideTitleBar ? 'hidden' : 'default',
+      // Keep the window hidden during E2E tests so it won't steal focus from the developer.
+      // paintWhenInitiallyHidden defaults to true, so the renderer still paints.
+      ...(isTest ? { show: false } : {}),
       // https://www.electronjs.org/docs/latest/tutorial/custom-title-bar#add-native-window-controls-windows-linux
       ...(hideTitleBar && process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
       alwaysOnTop: windowName === WindowNames.tidgiMiniWindow ? tidgiMiniWindowAlwaysOnTop : alwaysOnTop,
@@ -224,6 +229,8 @@ export class Window implements IWindowService {
         webSecurity: false,
         allowRunningInsecureContent: true,
         contextIsolation: true,
+        // Prevent JS from being throttled while the window is hidden during E2E tests
+        ...(isTest ? { backgroundThrottling: false } : {}),
         preload: getPreloadPath(),
         additionalArguments: [
           `${MetaDataChannel.browserViewMetaData}${windowName}`,
@@ -295,8 +302,8 @@ export class Window implements IWindowService {
   };
 
   public async goHome(): Promise<void> {
-    const contents = (await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView())?.webContents;
     const activeWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();
+    const contents = activeWorkspace ? container.get<IViewService>(serviceIdentifier.View).getView(activeWorkspace.id, WindowNames.main)?.webContents : undefined;
     if (contents !== undefined && activeWorkspace !== undefined) {
       await contents.loadURL(getDefaultTidGiUrl(activeWorkspace.id));
       contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
@@ -305,7 +312,8 @@ export class Window implements IWindowService {
   }
 
   public async goBack(): Promise<void> {
-    const contents = (await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView())?.webContents;
+    const activeWs = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();
+    const contents = activeWs ? container.get<IViewService>(serviceIdentifier.View).getView(activeWs.id, WindowNames.main)?.webContents : undefined;
     if (contents?.navigationHistory.canGoBack() === true) {
       contents.navigationHistory.goBack();
       contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
@@ -314,7 +322,8 @@ export class Window implements IWindowService {
   }
 
   public async goForward(): Promise<void> {
-    const contents = (await container.get<IViewService>(serviceIdentifier.View).getActiveBrowserView())?.webContents;
+    const activeWs = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();
+    const contents = activeWs ? container.get<IViewService>(serviceIdentifier.View).getView(activeWs.id, WindowNames.main)?.webContents : undefined;
     if (contents?.navigationHistory.canGoForward() === true) {
       contents.navigationHistory.goForward();
       contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
@@ -583,12 +592,12 @@ export class Window implements IWindowService {
 
           logger.debug(`Updating tidgi mini window workspace (${allWorkspaces.length} total workspaces)`, { function: 'reactWhenPreferencesChanged', key });
 
-          // Hide all current views (use allSettled to ensure all operations complete even if some fail)
+          // Hide all current views for tidgi mini window
           const hideResults = await Promise.allSettled(
             allWorkspaces.map(async (workspace) => {
               const view = viewService.getView(workspace.id, WindowNames.tidgiMiniWindow);
               if (view) {
-                await viewService.hideView(tidgiMiniWindow, WindowNames.tidgiMiniWindow, workspace.id);
+                await viewService.hideView(workspace.id, WindowNames.tidgiMiniWindow);
               }
             }),
           );

@@ -37,12 +37,12 @@ When a user clicks a tree node:
 ```typescript
 const handleNodeClick = useCallback((event: React.MouseEvent) => {
   event.stopPropagation();
-  
+
   // Use source path if available, otherwise construct from fieldPath
-  const targetFieldPath = (node.source && node.source.length > 0) 
-    ? node.source 
+  const targetFieldPath = (node.source && node.source.length > 0)
+    ? node.source
     : [...fieldPath, node.id];
-  
+
   setFormFieldsToScrollTo(targetFieldPath);
 }, [node.source, node.id, fieldPath, setFormFieldsToScrollTo]);
 ```
@@ -75,16 +75,16 @@ The EditView component handles the expansion of nested items:
 useEffect(() => {
   if (formFieldsToScrollTo.length > 0 && editorMode === 'form') {
     const savedPath = [...formFieldsToScrollTo];
-    
+
     // Wait for RootObjectFieldTemplate to switch tabs
     setTimeout(() => {
       setFormFieldsToScrollTo([]); // Clear after tab switches
-      
+
       // Step 1: Expand top-level item
       const topLevelKey = savedPath[0];
       const firstItemId = savedPath[1];
       expandItemsByPath(topLevelKey, [firstItemId]);
-      
+
       // Step 2: Expand nested children if present
       if (savedPath.length > 2) {
         setTimeout(() => {
@@ -113,7 +113,7 @@ The store maintains:
 interface PromptPreviewStore {
   arrayExpansionStore: Record<string, Record<number, boolean>>;
   formFieldsToScrollTo: string[];
-  
+
   setItemExpanded: (fieldPath: string, index: number, expanded: boolean) => void;
   setFormFieldsToScrollTo: (path: string[]) => void;
 }

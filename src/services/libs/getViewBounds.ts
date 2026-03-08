@@ -6,8 +6,6 @@ import { WindowNames } from '@services/windows/WindowProperties';
 export default async function getViewBounds(
   contentSize: [number, number],
   config: { findInPage?: boolean; windowName?: WindowNames },
-  height?: number,
-  width?: number,
 ): Promise<{ height: number; width: number; x: number; y: number }> {
   const { findInPage = false, windowName } = config;
   const preferencesService = container.get<IPreferenceService>(serviceIdentifier.Preference);
@@ -23,15 +21,15 @@ export default async function getViewBounds(
     return {
       x,
       y: y + FIND_IN_PAGE_HEIGHT,
-      height: height === undefined ? contentSize[1] - FIND_IN_PAGE_HEIGHT : height,
-      width: width === undefined ? contentSize[0] - x : width,
+      height: contentSize[1] - FIND_IN_PAGE_HEIGHT,
+      width: contentSize[0] - x,
     };
   }
 
   return {
     x,
     y,
-    height: height === undefined ? contentSize[1] : height,
-    width: width === undefined ? contentSize[0] - x : width,
+    height: contentSize[1],
+    width: contentSize[0] - x,
   };
 }

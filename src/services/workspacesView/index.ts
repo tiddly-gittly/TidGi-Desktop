@@ -232,16 +232,16 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async openWorkspaceWindowWithView(workspace: IWorkspace, configs?: { uri?: string }): Promise<void> {
     const uriToOpen = configs?.uri ?? (isWikiWorkspace(workspace) ? workspace.lastUrl : undefined) ?? (isWikiWorkspace(workspace) ? workspace.homeUrl : undefined);
-    logger.debug('Open workspace in new window. uriToOpen here will overwrite the decision in initializeWorkspaceViewHandlersAndLoad.', {
+    logger.debug('Open workspace in new window. uriToOpen here will overwrite the decision in initializeViewHandlersAndLoad.', {
       id: workspace.id,
       uriToOpen,
       function: 'openWorkspaceWindowWithView',
     });
     const browserWindow = await container.get<IWindowService>(serviceIdentifier.Window).open(WindowNames.secondary, undefined, { multiple: true }, true);
     const sharedWebPreferences = await container.get<IViewService>(serviceIdentifier.View).getSharedWebPreferences(workspace);
-    const view = await container.get<IViewService>(serviceIdentifier.View).createViewAddToWindow(workspace, browserWindow, sharedWebPreferences, WindowNames.secondary);
+    const view = await container.get<IViewService>(serviceIdentifier.View).createViewAndAttach(workspace, browserWindow, sharedWebPreferences, WindowNames.secondary);
     logger.debug('View created in new window.', { id: workspace.id, uriToOpen, function: 'openWorkspaceWindowWithView' });
-    await container.get<IViewService>(serviceIdentifier.View).initializeWorkspaceViewHandlersAndLoad(browserWindow, view, {
+    await container.get<IViewService>(serviceIdentifier.View).initializeViewHandlersAndLoad(browserWindow, view, {
       workspace,
       sharedWebPreferences,
       windowName: WindowNames.secondary,
@@ -323,7 +323,7 @@ export class WorkspaceView implements IWorkspaceViewService {
           hibernated: true,
         }),
       ]);
-      container.get<IViewService>(serviceIdentifier.View).removeAllViewOfWorkspace(workspaceID, true);
+      container.get<IViewService>(serviceIdentifier.View).destroyAllViewsOfWorkspace(workspaceID);
     }
   }
 
@@ -380,7 +380,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       await this.wakeUpWorkspaceView(nextWorkspaceID);
     }
 
-    // fix #556 and #593: Ensure wiki worker is started before setting active view. When switching to a wiki workspace that doesn't have a view yet, the view service will create one and immediately try to loadURL. If the wiki worker hasn't started, loadURL will hang forever waiting for the IPC server that never comes online. This must happen before `setActiveViewForAllBrowserViews` to ensure the worker is ready when view is created.
+    // fix #556 and #593: Ensure wiki worker is started before showing the view. This must happen before `showWorkspaceView` to ensure the worker is ready when view is created.
     if (isWikiWorkspace(newWorkspace) && !newWorkspace.hibernated) {
       const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
       const worker = wikiService.getWorker(nextWorkspaceID);
@@ -397,7 +397,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         void this.hibernateWorkspace(oldActiveWorkspace.id);
       }
 
-      await container.get<IViewService>(serviceIdentifier.View).setActiveViewForAllBrowserViews(nextWorkspaceID);
+      await this.showWorkspaceView(nextWorkspaceID);
       await this.realignActiveWorkspace(nextWorkspaceID);
     } catch (error) {
       logger.error('setActiveWorkspaceView error', {
@@ -449,7 +449,7 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async removeWorkspaceView(workspaceID: string): Promise<void> {
-    container.get<IViewService>(serviceIdentifier.View).removeAllViewOfWorkspace(workspaceID, true);
+    container.get<IViewService>(serviceIdentifier.View).destroyAllViewsOfWorkspace(workspaceID);
     const mainWindow = container.get<IWindowService>(serviceIdentifier.Window).get(WindowNames.main);
     // if there's only one workspace left, clear all
     if ((await container.get<IWorkspaceService>(serviceIdentifier.Workspace).countWorkspaces()) === 1) {
@@ -619,7 +619,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (mainWindow === undefined) {
       logger.warn(`realignActiveWorkspaceView: no mainBrowserViewWebContent, skip main window for ${workspaceToRealign.id}.`);
     } else {
-      tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(mainWindow, workspaceToRealign.id, WindowNames.main));
+      tasks.push(container.get<IViewService>(serviceIdentifier.View).realignView(workspaceToRealign.id, WindowNames.main));
       logger.debug(`realignActiveWorkspaceView: realign main window for ${workspaceToRealign.id}.`);
     }
     if (tidgiMiniWindow === undefined) {
@@ -629,49 +629,77 @@ export class WorkspaceView implements IWorkspaceViewService {
       const { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(workspaceToRealign.id);
 
       if (shouldSync) {
-        // Sync mode - realign with the same workspace as main window
-        tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(tidgiMiniWindow, workspaceToRealign.id, WindowNames.tidgiMiniWindow));
+        tasks.push(container.get<IViewService>(serviceIdentifier.View).realignView(workspaceToRealign.id, WindowNames.tidgiMiniWindow));
       } else if (targetWorkspaceId) {
-        // Fixed workspace mode - only realign if the workspace being realigned is the fixed workspace
-        if (workspaceToRealign.id === targetWorkspaceId) {
-          tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(tidgiMiniWindow, targetWorkspaceId, WindowNames.tidgiMiniWindow));
-        } else {
-          // Main window is realigning a different workspace, but tidgi mini window stays on fixed workspace
-          // Still need to realign the fixed workspace to ensure it's displayed correctly
-          tasks.push(container.get<IViewService>(serviceIdentifier.View).realignActiveView(tidgiMiniWindow, targetWorkspaceId, WindowNames.tidgiMiniWindow));
-        }
+        // Fixed workspace mode — always realign the fixed workspace regardless of which one main window is realigning
+        tasks.push(container.get<IViewService>(serviceIdentifier.View).realignView(targetWorkspaceId, WindowNames.tidgiMiniWindow));
       }
-      // If not syncing and no fixed workspace, don't realign tidgi mini window
     }
     await Promise.all(tasks);
   }
 
   private async hideWorkspaceView(idToDeactivate: string): Promise<void> {
-    const mainWindow = container.get<IWindowService>(serviceIdentifier.Window).get(WindowNames.main);
+    const viewService = container.get<IViewService>(serviceIdentifier.View);
+    const tasks: Promise<void>[] = [];
+
+    // Always hide main window view
+    tasks.push(viewService.hideView(idToDeactivate, WindowNames.main));
+
+    // For tidgi mini window, only hide if syncing with main window OR if this is the fixed workspace
     const tidgiMiniWindow = container.get<IWindowService>(serviceIdentifier.Window).get(WindowNames.tidgiMiniWindow);
-    const tasks = [];
-    if (mainWindow === undefined) {
-      logger.warn(`hideWorkspaceView: no mainBrowserWindow, skip main window browserView.`);
-    } else {
-      logger.info(`hideWorkspaceView: hide main window browserView.`);
-      tasks.push(container.get<IViewService>(serviceIdentifier.View).hideView(mainWindow, WindowNames.main, idToDeactivate));
-    }
-    if (tidgiMiniWindow === undefined) {
-      logger.debug(`hideWorkspaceView: no tidgiMiniWindowBrowserWindow, skip tidgi mini window browserView.`);
-    } else {
-      // For tidgi mini window, only hide if syncing with main window OR if this is the fixed workspace being deactivated
+    if (tidgiMiniWindow !== undefined) {
       const { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(idToDeactivate);
-      // Only hide tidgi mini window view if:
-      // 1. Syncing with main window (should hide when main window hides)
-      // 2. OR the workspace being hidden is the fixed workspace (rare case, but should be handled)
       if (shouldSync || idToDeactivate === targetWorkspaceId) {
-        logger.info(`hideWorkspaceView: hide tidgi mini window browserView.`);
-        tasks.push(container.get<IViewService>(serviceIdentifier.View).hideView(tidgiMiniWindow, WindowNames.tidgiMiniWindow, idToDeactivate));
-      } else {
-        logger.debug(`hideWorkspaceView: skip hiding tidgi mini window browserView (fixed workspace: ${targetWorkspaceId || 'none'}).`);
+        tasks.push(viewService.hideView(idToDeactivate, WindowNames.tidgiMiniWindow));
       }
     }
     await Promise.all(tasks);
-    logger.info(`hideWorkspaceView: done.`);
+  }
+
+  /**
+   * Show a workspace's views in the appropriate windows.
+   * Handles mini-window policy (sync / fixed / none) so ViewService doesn't need to.
+   */
+  private async showWorkspaceView(workspaceID: string): Promise<void> {
+    const viewService = container.get<IViewService>(serviceIdentifier.View);
+    const workspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(workspaceID);
+    if (workspace === undefined) {
+      logger.error('showWorkspaceView: workspace not found', { workspaceID });
+      return;
+    }
+
+    // If view doesn't exist yet, create it; otherwise just show it
+    const existingMainView = viewService.getView(workspaceID, WindowNames.main);
+    if (existingMainView === undefined) {
+      await viewService.addView(workspace, WindowNames.main);
+    } else {
+      await viewService.showView(workspaceID, WindowNames.main);
+    }
+
+    // Handle tidgi mini window
+    const tidgiMiniWindowEnabled = await this.preferenceService.get('tidgiMiniWindow');
+    if (!tidgiMiniWindowEnabled) return;
+
+    const { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(workspaceID);
+    if (shouldSync) {
+      const existingMiniView = viewService.getView(workspaceID, WindowNames.tidgiMiniWindow);
+      if (existingMiniView === undefined) {
+        await viewService.addView(workspace, WindowNames.tidgiMiniWindow);
+      } else {
+        await viewService.showView(workspaceID, WindowNames.tidgiMiniWindow);
+      }
+    } else if (targetWorkspaceId) {
+      // Fixed workspace — show it if this IS the fixed workspace
+      if (workspaceID === targetWorkspaceId) {
+        const existingMiniView = viewService.getView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
+        if (existingMiniView === undefined) {
+          const targetWs = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(targetWorkspaceId);
+          if (targetWs) await viewService.addView(targetWs, WindowNames.tidgiMiniWindow);
+        } else {
+          await viewService.showView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
+        }
+      }
+      // Otherwise mini window keeps showing the fixed workspace — no change needed
+    }
   }
 }

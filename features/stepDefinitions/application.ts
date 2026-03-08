@@ -324,79 +324,30 @@ async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
   }
 }
 
-AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result }) {
-  // Only take screenshots in CI environment
-  // if (!process.env.CI) return;
+AfterStep({ timeout: 3000 }, async function(this: ApplicationWorld, { pickle, pickleStep, result }) {
+  if (!this.app) return;
 
   try {
     const stepText = pickleStep.text;
 
-    // Skip screenshots for wait steps to avoid too many screenshots
-    if (stepText.match(/^I wait for/i)) {
+    // Skip screenshots for steps that don't interact with the UI
+    if (stepText.match(/^I wait for|^I clear log|^I create file |^I sync |^I clone |^file "/i)) {
       return;
-    }
-    if (stepText.match(/^I clear log/i)) {
-      return;
-    }
-    // Skip file operation steps — they don't interact with the UI, nothing visual to capture
-    if (stepText.match(/^I create file |^I sync |^I clone |^file "/i)) {
-      return;
-    }
-
-    // Prefer an existing currentWindow if it's still open
-    let pageToUse: Page | undefined;
-
-    if (this.currentWindow && !this.currentWindow.isClosed()) {
-      pageToUse = this.currentWindow;
-    }
-
-    // If currentWindow is not available, try to re-acquire any open window from the app
-    if ((!pageToUse || pageToUse.isClosed()) && this.app) {
-      const openPages = this.app.windows().filter(p => !p.isClosed());
-      if (openPages.length > 0) {
-        pageToUse = openPages[0];
-      }
     }
 
     const scenarioName = pickle.name;
-    // Limit scenario slug to avoid extremely long directory names
     const cleanScenarioName = makeSlugPath(scenarioName, 60);
-
-    // Limit step text slug to avoid excessively long filenames which can trigger ENAMETOOLONG
     const cleanStepText = makeSlugPath(stepText, 80);
     const stepStatus = result && typeof result.status === 'string' ? result.status : 'unknown-status';
 
-    // Use scenario-specific screenshots directory
     const scenarioScreenshotsDirectory = path.resolve(process.cwd(), 'test-artifacts', cleanScenarioName, 'userData-test', 'logs', 'screenshots');
-    // Create directory asynchronously to avoid blocking the event loop in CI
     await fs.ensureDir(scenarioScreenshotsDirectory);
 
-    // Sometimes window close and don't wait for use to take picture, or window haven't open in this step, never mind, just skip.
-    /**
-     * Typical steps like:
-     * - I add test ai settings
-     * - I cleanup test wiki so it could create a new one on start
-     * - I clear test ai settings
-     */
-    if (!pageToUse || pageToUse.isClosed()) {
-      // console.warn(`Skipping screenshot: ${cleanStepText}`);
-      return;
-    }
-
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-
-    // Try to capture both WebContentsView and Page screenshots
-    let webViewCaptured = false;
-    if (this.app) {
-      const webViewScreenshotPath = path.resolve(scenarioScreenshotsDirectory, `${timestamp}-${cleanStepText}-${stepStatus}-webview.png`);
-      webViewCaptured = await captureScreenshot(this.app, webViewScreenshotPath);
-    }
-
-    // Always capture page screenshot (UI chrome/window)
-    const pageScreenshotPath = path.resolve(scenarioScreenshotsDirectory, `${timestamp}-${cleanStepText}-${stepStatus}${webViewCaptured ? '-page' : ''}.png`);
-    await pageToUse.screenshot({ path: pageScreenshotPath, fullPage: true, type: 'png' });
-  } catch (screenshotError) {
-    console.warn('Failed to take screenshot:', screenshotError);
+    const screenshotPath = path.resolve(scenarioScreenshotsDirectory, `${timestamp}-${cleanStepText}-${stepStatus}.png`);
+    await captureScreenshot(this.app, screenshotPath);
+  } catch {
+    // Screenshot is best-effort diagnostics, never fail a step for it
   }
 });
 

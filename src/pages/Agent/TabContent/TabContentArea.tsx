@@ -1,5 +1,6 @@
 import { Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { TabListDropdown } from '../components/TabBar/TabListDropdown';
 import { TEMP_TAB_ID_PREFIX } from '../constants/tab';
 import { useTabStore } from '../store/tabStore';
 import { TabState, TabType } from '../types/tab';
@@ -10,10 +11,19 @@ import { NewTabContent } from './TabTypes/NewTabContent';
 const ContentContainer = styled(Box)`
   flex: 1;
   display: flex;
+  flex-direction: column;
   height: 100%;
   position: relative;
   overflow: hidden;
   background-color: ${props => props.theme.palette.background.paper};
+`;
+
+const FallbackHeader = styled(Box)`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid ${props => props.theme.palette.divider};
 `;
 
 export const TabContentArea: React.FC = () => {
@@ -34,6 +44,9 @@ export const TabContentArea: React.FC = () => {
   // Render new tab page when no active tab
   return (
     <ContentContainer>
+      <FallbackHeader>
+        <TabListDropdown />
+      </FallbackHeader>
       <NewTabContent
         tab={{
           id: `${TEMP_TAB_ID_PREFIX}new-tab`,

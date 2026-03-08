@@ -16,6 +16,13 @@
     "Title": "外部介面除錯日誌"
   },
   "Agent": {
+    "Attachment": {
+      "AddAttachment": "新增附件",
+      "AddImage": "📷 新增圖片",
+      "NoOptions": "沒有可用選項",
+      "SearchPlaceholder": "搜尋...",
+      "SelectAttachment": "選擇附件"
+    },
     "EditTitle": "編輯智慧體名字",
     "InvalidTabType": "無效的標籤頁類型。需要聊天標籤頁。",
     "LoadingChat": "正在載入對話...",
@@ -94,6 +101,10 @@
     "SetupAgent": "設置智慧體",
     "SetupAgentDescription": "為您的智慧體命名並選擇一個模板作為起點",
     "Title": "創建新智慧體"
+  },
+  "WikiEmbed": {
+    "Error": "嵌入 Wiki 失敗",
+    "Loading": "正在載入 Wiki..."
   },
   "EditAgent": {
     "AgentDescription": "智能體描述",

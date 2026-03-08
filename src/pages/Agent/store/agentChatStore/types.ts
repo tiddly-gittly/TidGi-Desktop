@@ -71,8 +71,9 @@ export interface BasicActions {
    * Sends a message from the user to the agent.
    * @param content The message content
    * @param file Optional file attachment
+   * @param wikiTiddlers Optional wiki tiddler attachments
    */
-  sendMessage: (content: string, file?: File) => Promise<void>;
+  sendMessage: (content: string, file?: File, wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }>) => Promise<void>;
 
   /**
    * Creates a new agent instance from a definition.
@@ -113,6 +114,19 @@ export interface BasicActions {
 
   /** Subscribe to agent updates */
   subscribeToUpdates: (agentId: string) => (() => void) | undefined;
+
+  /**
+   * Delete an agent turn — removes the user message and all subsequent agent responses.
+   * Returns the deleted user message content so it can be restored to the input.
+   * @param userMessageId The user message that starts the turn
+   */
+  deleteTurn: (userMessageId: string) => Promise<string | undefined>;
+
+  /**
+   * Retry an agent turn — delete agent responses and re-send the user message.
+   * @param userMessageId The user message that starts the turn
+   */
+  retryTurn: (userMessageId: string) => Promise<void>;
 }
 
 // Streaming related actions interface

@@ -18,7 +18,7 @@ This document explains how an agentInstance invokes a handler and how logic is c
 Related code:
 
 - [index.ts](../../src/services/agentInstance/index.ts): `initialize()`, `registerBuiltinHandlers()`, `sendMsgToAgent()`
-- [basicPromptConcatHandler.ts](../../src/services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler.ts)
+- [taskAgent.ts](../../src/services/agentInstance/agentFrameworks/taskAgent.ts): main handler (iterative while-loop)
 
 ## Sequence
 
@@ -153,10 +153,108 @@ flowchart TD
 
 ## Related code
 
-- [basicPromptConcatHandler.ts](../../src/services/agentInstance/buildInAgentHandlers/basicPromptConcatHandler.ts)
-- [messageManagementPlugin.ts](../../src/services/agentInstance/plugins/messageManagementPlugin.ts)
-- [wikiSearchPlugin.ts](../../src/services/agentInstance/plugins/wikiSearchPlugin.ts)
+- [taskAgent.ts](../../src/services/agentInstance/agentFrameworks/taskAgent.ts)
+- [messagePersistence.ts](../../src/services/agentInstance/promptConcat/infrastructure/messagePersistence.ts)
+- [wikiSearch.ts](../../src/services/agentInstance/tools/wikiSearch.ts)
 - [interface.ts](../../src/services/agentInstance/interface.ts)
+- [agentRepository.ts](../../src/services/agentInstance/agentRepository.ts)
+- [agentMessagePersistence.ts](../../src/services/agentInstance/agentMessagePersistence.ts)
+- [defineTool.ts](../../src/services/agentInstance/tools/defineTool.ts)
+- [defineToolTypes.ts](../../src/services/agentInstance/tools/defineToolTypes.ts)
+- [toolRegistry.ts](../../src/services/agentInstance/tools/toolRegistry.ts)
+
+## New architecture additions (2025-02)
+
+### Iterative while-loop (replacing recursion)
+
+The handler uses a `while` loop instead of recursive generator calls. This prevents stack overflow for long agentic loops and makes the control flow easier to follow.
+
+### Parallel tool execution
+
+When the LLM wraps multiple `<tool_use>` calls inside `<parallel_tool_calls>`, the framework executes them concurrently using a custom `executeToolCallsParallel()` utility:
+
+- Does NOT use `Promise.all` (which would reject on first failure).
+- Each tool gets its own timeout (configurable per-tool or using the global default).
+- Results are collected for all tools (success, failure, and timeout), similar to `Promise.allSettled`.
+
+Related code:
+
+- [parallelExecution.ts](../../src/services/agentInstance/tools/parallelExecution.ts)
+- [matchAllToolCallings](../../src/services/agentDefinition/responsePatternUtility.ts)
+
+### Tool approval mechanism
+
+Tools can be configured with approval rules:
+
+- **auto**: execute immediately without user confirmation
+- **confirm**: pause and show an inline approval UI; the user must allow or deny
+- **Regex patterns**: `allowPatterns` auto-approve matching calls, `denyPatterns` auto-deny
+- Evaluation order: denyPatterns → allowPatterns → mode
+
+Settings are configurable via the "Tool Approval & Timeout Settings" modal in Preferences → AI Agent.
+
+Related code:
+
+- [approval.ts](../../src/services/agentInstance/tools/approval.ts)
+- [ToolApprovalSettingsDialog.tsx](../../src/windows/Preferences/sections/ExternalAPI/components/ToolApprovalSettingsDialog.tsx)
+
+### Sub-agent support
+
+The `spawn-agent` tool creates child AgentInstance instances:
+
+- Marked with `isSubAgent: true` and `parentAgentId` in the database
+- Hidden from the default user-facing agent list
+- Run independently with their own conversation and tools
+- Return their final result to the parent agent as a tool result
+
+### Token estimation and context window
+
+- Approximate token counting via character heuristics (4 chars/token for Latin, 1 char/token for CJK)
+- TokenBreakdown splits context into: system, tools, user, assistant, tool results
+- Pie chart UI component shows usage ratio with warning/danger thresholds
+- Future: API-based precise token counting
+
+### API retry with exponential backoff
+
+Uses the `exponential-backoff` npm package with:
+
+- Configurable max attempts, initial delay, max delay, backoff multiplier
+- Full jitter to prevent thundering herd
+- Retryable error detection (429, 5xx, network errors)
+- Retry-After header support
+
+### MCP integration
+
+Each agent instance creates its own MCP client connection(s):
+
+- Supports both stdio and SSE transports
+- Client connections are managed per-instance and cleaned up on agent close
+- MCP tools are dynamically discovered and injected into the prompt
+
+### New tools
+
+| Tool ID              | Description                                           |
+| -------------------- | ----------------------------------------------------- |
+| `summary`            | Terminates agent loop with a final answer             |
+| `alarm-clock`        | Schedules a future self-wake                          |
+| `ask-question`       | Pauses to ask user a clarifying question with options |
+| `wiki-backlinks`     | Find tiddlers linking to a given tiddler              |
+| `wiki-toc`           | Get tag tree hierarchy                                |
+| `wiki-recent`        | Recently modified tiddlers                            |
+| `wiki-list-tiddlers` | Paginated tiddler list (skinny data)                  |
+| `wiki-get-errors`    | Render tiddler and check for errors                   |
+| `zx-script`          | Execute zx scripts in wiki context                    |
+| `web-fetch`          | Fetch external web content                            |
+| `spawn-agent`        | Delegate sub-task to a new agent instance             |
+
+### Frontend improvements
+
+- **Virtualization**: MessagesContainer uses `react-window` `VariableSizeList` for conversations with 50+ messages
+- **Lazy loading**: Messages load by ID; content fetched from store only when rendered
+- **React.memo**: MessageBubble wrapped with memo to reduce re-renders during streaming
+- **WikitextMessageRenderer**: Renders wikitext via TiddlyWiki server with streaming opacity
+- **AskQuestionRenderer**: Interactive inline UI for agent questions with clickable options
+- **ToolApprovalRenderer**: Inline allow/deny buttons for tool approval requests
 
 ## Benefits
 

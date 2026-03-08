@@ -4,7 +4,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Collapse, IconButton, Paper, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageRendererProps } from './types';
 
@@ -26,6 +26,25 @@ const ThinkingContent = styled(Paper)`
   border-radius: 8px;
   font-family: monospace;
 `;
+
+/**
+ * Strip tool-call XML from content so the main text is clean.
+ * Handles both complete and partial/unclosed tags (during streaming).
+ */
+function stripToolXml(content: string): string {
+  let cleaned = content;
+  cleaned = cleaned.replace(/<\/?parallel_tool_calls>/gi, '');
+  cleaned = cleaned.replace(/<tool_use\s+name="[^"]*"[^>]*>[\s\S]*?<\/tool_use>/gi, '');
+  cleaned = cleaned.replace(/<function_call\s+name="[^"]*"[^>]*>[\s\S]*?<\/function_call>/gi, '');
+  cleaned = cleaned.replace(/<functions_result>[\s\S]*?<\/functions_result>/gi, '');
+  // Partial/unclosed tags (streaming)
+  cleaned = cleaned.replace(/<tool_use\s[^>]*>[\s\S]*$/gi, '');
+  cleaned = cleaned.replace(/<function_call\s[^>]*>[\s\S]*$/gi, '');
+  cleaned = cleaned.replace(/<functions_result>[\s\S]*$/gi, '');
+  cleaned = cleaned.replace(/<(?:tool_use|function_call|functions_result|parallel_tool_calls)\b[^>]*$/gi, '');
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  return cleaned.trim();
+}
 
 /**
  * Extract thinking content from a message with various thinking tags
@@ -79,15 +98,16 @@ export const ThinkingMessageRenderer: React.FC<MessageRendererProps> = ({ messag
   let thinkingContent: string;
 
   if (message.reasoning_content) {
-    // If reasoning_content is available (DeepSeek format), use it directly
     mainContent = message.content;
     thinkingContent = message.reasoning_content;
   } else {
-    // Otherwise extract thinking content from XML tags in content (Claude, OpenAI format)
     const extracted = extractThinkingContent(message.content);
     mainContent = extracted.mainContent;
     thinkingContent = extracted.thinkingContent;
   }
+
+  // Strip tool-call XML so users never see raw <tool_use> tags in the main content
+  const cleanMainContent = useMemo(() => stripToolXml(mainContent), [mainContent]);
 
   const toggleExpanded = () => {
     setExpanded(previous => !previous);
@@ -95,9 +115,9 @@ export const ThinkingMessageRenderer: React.FC<MessageRendererProps> = ({ messag
 
   return (
     <ThinkingWrapper>
-      {mainContent && (
+      {cleanMainContent && (
         <Typography variant='body1' sx={{ mb: 1 }}>
-          {mainContent}
+          {cleanMainContent}
         </Typography>
       )}
 

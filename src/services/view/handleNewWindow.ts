@@ -3,6 +3,7 @@ import windowStateKeeper from 'electron-window-state';
 
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { MetaDataChannel } from '@/constants/channels';
+import { isTest } from '@/constants/environment';
 import { extractDomain, isInternalUrl } from '@/helpers/url';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
@@ -135,7 +136,7 @@ export function handleNewWindow(
           throw new Error(`Workspace ${workspace.id} not existed, or don't have homeUrl setting`);
         }
         if (isInternalUrl(url, [appUrl, currentUrl])) {
-          childWindow.show();
+          if (!isTest) childWindow.show();
         } else {
           // if not, open in browser
           _event.preventDefault();

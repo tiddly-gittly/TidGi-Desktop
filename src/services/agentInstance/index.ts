@@ -1,10 +1,9 @@
-import { backOff } from 'exponential-backoff';
 import { inject, injectable } from 'inversify';
-import { debounce, pick } from 'lodash';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
+import type { AgentHeartbeatConfig } from '@services/agentDefinition/interface';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { basicPromptConcatHandler } from '@services/agentInstance/agentFrameworks/taskAgent';
 import type { AgentFramework, AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
@@ -12,13 +11,41 @@ import { promptConcatStream, PromptConcatStreamState } from '@services/agentInst
 import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { getPromptConcatAgentFrameworkConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
 import { createHooksWithPlugins, initializePluginSystem } from '@services/agentInstance/tools';
+import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
+import type { IGitService } from '@services/git/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 
-import type { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage, IAgentInstanceService } from './interface';
-import { AGENT_INSTANCE_FIELDS, createAgentInstanceData, createAgentMessage, MESSAGE_FIELDS, toDatabaseCompatibleInstance, toDatabaseCompatibleMessage } from './utilities';
+import { createDebouncedMessageUpdater, saveUserMessage as saveUserMessageHelper } from './agentMessagePersistence';
+import * as repo from './agentRepository';
+import { getActiveHeartbeatEntries, startHeartbeat, stopHeartbeat } from './heartbeatManager';
+import type {
+  AgentBackgroundTask,
+  AgentInstance,
+  AgentInstanceLatestStatus,
+  AgentInstanceMessage,
+  IAgentInstanceService,
+  SetBackgroundAlarmInput,
+  SetBackgroundHeartbeatInput,
+} from './interface';
+import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskManager';
+import {
+  addTask as stmAddTask,
+  cancelTasksForAgent,
+  getActiveTasks as stmGetActiveTasks,
+  getActiveTasksForAgent as stmGetActiveTasksForAgent,
+  getCronPreviewDates as stmGetCronPreviewDates,
+  initScheduledTaskManager,
+  removeTask as stmRemoveTask,
+  restoreScheduledTasks,
+  updateTask as stmUpdateTask,
+} from './scheduledTaskManager';
+import { cancelAlarm, getActiveAlarmEntries, scheduleAlarmTimer } from './tools/alarmClock';
+import { cleanupMCPClient } from './tools/modelContextProtocol';
 
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {
@@ -31,6 +58,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   private dataSource: DataSource | null = null;
   private agentInstanceRepository: Repository<AgentInstanceEntity> | null = null;
   private agentMessageRepository: Repository<AgentInstanceMessageEntity> | null = null;
+  private scheduledTaskRepositoryReady = false;
 
   private agentInstanceSubjects: Map<string, BehaviorSubject<AgentInstance | undefined>> = new Map();
   private statusSubjects: Map<string, BehaviorSubject<AgentInstanceLatestStatus | undefined>> = new Map();
@@ -44,6 +72,10 @@ export class AgentInstanceService implements IAgentInstanceService {
     try {
       await this.initializeDatabase();
       await this.initializeFrameworks();
+      // Restore legacy heartbeat timers and alarms for active agents after DB + frameworks are ready
+      await this.restoreBackgroundTasks();
+      // Restore unified ScheduledTaskManager tasks
+      await this.restoreScheduledTaskManagerTasks();
     } catch (error) {
       logger.error('Failed to initialize agent instance service', { error });
       throw error;
@@ -56,6 +88,13 @@ export class AgentInstanceService implements IAgentInstanceService {
       this.dataSource = await this.databaseService.getDatabase('agent');
       this.agentInstanceRepository = this.dataSource.getRepository(AgentInstanceEntity);
       this.agentMessageRepository = this.dataSource.getRepository(AgentInstanceMessageEntity);
+
+      // Initialize the unified ScheduledTaskManager
+      const { ScheduledTaskEntity } = await import('@services/database/schema/agent');
+      const stmRepo = this.dataSource.getRepository(ScheduledTaskEntity);
+      initScheduledTaskManager(stmRepo, this);
+      this.scheduledTaskRepositoryReady = true;
+
       logger.debug('AgentInstance repositories initialized');
     } catch (error) {
       logger.error('Failed to initialize agent instance database', { error });
@@ -82,6 +121,85 @@ export class AgentInstanceService implements IAgentInstanceService {
     // Tools are already registered in initialize(), so we only register frameworks here
     // Register basic prompt concatenation framework with its schema
     this.registerFramework('basicPromptConcatHandler', basicPromptConcatHandler, getPromptConcatAgentFrameworkConfigJsonSchema());
+  }
+
+  /**
+   * Restore heartbeat timers and alarm timers for active agents after app restart.
+   * Heartbeats: read from AgentDefinition.heartbeat for all non-closed instances.
+   * Alarms: read from AgentInstance.scheduledAlarm for all non-closed instances.
+   */
+  private async restoreBackgroundTasks(): Promise<void> {
+    if (!this.agentInstanceRepository) return;
+    try {
+      // Find all non-closed, non-volatile agent instances with their definitions
+      const activeInstances = await this.agentInstanceRepository.find({
+        where: { closed: false, volatile: false },
+        relations: ['agentDefinition'],
+      });
+
+      let heartbeatsRestored = 0;
+      let alarmsRestored = 0;
+
+      for (const instance of activeInstances) {
+        // Restore heartbeat from definition
+        const heartbeatConfig = instance.agentDefinition?.heartbeat;
+        if (heartbeatConfig?.enabled) {
+          startHeartbeat(instance.id, heartbeatConfig, this, { createdBy: 'agent-definition' });
+          heartbeatsRestored++;
+        }
+
+        // Restore persisted alarm
+        const alarm = instance.scheduledAlarm;
+        if (alarm?.wakeAtISO) {
+          const wakeAt = new Date(alarm.wakeAtISO);
+          const now = new Date();
+          // For one-shot alarms in the past, fire immediately
+          // For recurring alarms, always restore
+          if (alarm.repeatIntervalMinutes || wakeAt.getTime() > now.getTime()) {
+            scheduleAlarmTimer(instance.id, alarm.wakeAtISO, alarm.reminderMessage, alarm.repeatIntervalMinutes, {
+              createdBy: alarm.createdBy ?? 'restore',
+              runCount: alarm.runCount,
+              lastRunAtISO: alarm.lastRunAtISO,
+            });
+            alarmsRestored++;
+          } else {
+            // Past one-shot alarm — fire it now and clear
+            scheduleAlarmTimer(instance.id, new Date().toISOString(), alarm.reminderMessage, undefined, {
+              createdBy: alarm.createdBy ?? 'restore',
+              runCount: alarm.runCount,
+              lastRunAtISO: alarm.lastRunAtISO,
+            });
+            alarmsRestored++;
+          }
+        }
+      }
+
+      if (heartbeatsRestored > 0 || alarmsRestored > 0) {
+        logger.info('Background tasks restored', { heartbeatsRestored, alarmsRestored, totalInstances: activeInstances.length });
+      }
+    } catch (error) {
+      logger.error('Failed to restore background tasks', { error });
+    }
+  }
+
+  /**
+   * Restore unified ScheduledTaskManager tasks from DB after app restart.
+   */
+  private async restoreScheduledTaskManagerTasks(): Promise<void> {
+    if (!this.scheduledTaskRepositoryReady || !this.agentInstanceRepository) return;
+    try {
+      const { ScheduledTaskEntity } = await import('@services/database/schema/agent');
+      const stmRepo = this.dataSource!.getRepository(ScheduledTaskEntity);
+
+      const isVolatile = async (agentInstanceId: string): Promise<boolean> => {
+        const entity = await this.agentInstanceRepository!.findOne({ where: { id: agentInstanceId } });
+        return entity?.volatile ?? true;
+      };
+
+      await restoreScheduledTasks(stmRepo, isVolatile);
+    } catch (error) {
+      logger.error('Failed to restore ScheduledTaskManager tasks', { error });
+    }
   }
 
   /**
@@ -120,66 +238,21 @@ export class AgentInstanceService implements IAgentInstanceService {
         this.statusSubjects.delete(key);
       }
     }
+
+    // Cancel and remove all debounced update functions for this agent
+    for (const [key, debouncedFunction] of this.debouncedUpdateFunctions.entries()) {
+      if (key.startsWith(`${agentId}:`)) {
+        // Cancel pending writes — agent is being deleted/closed so data would be stale
+        (debouncedFunction as unknown as { cancel?: () => void }).cancel?.();
+        this.debouncedUpdateFunctions.delete(key);
+      }
+    }
   }
 
-  public async createAgent(agentDefinitionID?: string, options?: { preview?: boolean }): Promise<AgentInstance> {
+  public async createAgent(agentDefinitionID?: string, options?: { preview?: boolean; volatile?: boolean }): Promise<AgentInstance> {
     this.ensureRepositories();
-
     try {
-      // Get agent definition with exponential backoff to handle initialization race conditions
-      // Uses exponential-backoff library for consistent retry behavior across the codebase
-      const agentDefinition = await backOff(
-        async () => {
-          const definition = await this.agentDefinitionService.getAgentDef(agentDefinitionID);
-          if (!definition) {
-            throw new Error(`Agent definition not found: ${agentDefinitionID}`);
-          }
-          return definition;
-        },
-        {
-          numOfAttempts: 3,
-          startingDelay: 300,
-          timeMultiple: 1.5,
-        },
-      );
-
-      // Ensure required fields exist before creating instance
-      if (!agentDefinition.name) {
-        throw new Error(`Agent definition missing required field 'name': ${agentDefinitionID}`);
-      }
-
-      const { instanceData, instanceId, now } = createAgentInstanceData(agentDefinition as Required<Pick<typeof agentDefinition, 'name'>> & typeof agentDefinition);
-
-      // Mark as preview if specified
-      if (options?.preview) {
-        instanceData.volatile = true;
-      }
-
-      // Create and save entity with timeout protection
-      const instanceEntity = this.agentInstanceRepository!.create(toDatabaseCompatibleInstance(instanceData));
-
-      // Add timeout to database save operation
-      const savePromise = this.agentInstanceRepository!.save(instanceEntity);
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Database save timeout after 5 seconds'));
-        }, 5000);
-      });
-
-      await Promise.race([savePromise, timeoutPromise]);
-
-      logger.info('Created agent instance', {
-        function: 'createAgent',
-        instanceId,
-        preview: !!options?.preview,
-      });
-
-      // Return complete instance object
-      return {
-        ...instanceData,
-        created: now,
-        modified: now,
-      };
+      return await repo.createAgent(this.agentInstanceRepository!, this.agentDefinitionService, agentDefinitionID, options);
     } catch (error) {
       logger.error('Failed to create agent instance', { error });
       throw error;
@@ -189,28 +262,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   public async getAgent(agentId: string): Promise<AgentInstance | undefined> {
     this.ensureRepositories();
     try {
-      // Query agent instance with messages in chronological order (oldest first)
-      const instanceEntity = await this.agentInstanceRepository!.findOne({
-        where: { id: agentId },
-        relations: ['messages'],
-        order: {
-          messages: {
-            modified: 'ASC', // Ensure messages are sorted in ascending order by creation time, otherwise streaming will update it and cause wrong order
-          },
-        },
-      });
-      if (!instanceEntity) {
-        return undefined;
-      }
-      const messages = (instanceEntity.messages || []).slice().sort((a, b) => {
-        const aTime = a.created ? new Date(a.created).getTime() : (a.modified ? new Date(a.modified).getTime() : 0);
-        const bTime = b.created ? new Date(b.created).getTime() : (b.modified ? new Date(b.modified).getTime() : 0);
-        return aTime - bTime;
-      });
-      return {
-        ...pick(instanceEntity, AGENT_INSTANCE_FIELDS),
-        messages,
-      };
+      return await repo.getAgent(this.agentInstanceRepository!, agentId);
     } catch (error) {
       logger.error('Failed to get agent instance', { error });
       throw error;
@@ -219,72 +271,9 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   public async updateAgent(agentId: string, data: Partial<AgentInstance>): Promise<AgentInstance> {
     this.ensureRepositories();
-
     try {
-      // Get existing instance with messages
-      const instanceEntity = await this.agentInstanceRepository!.findOne({
-        where: { id: agentId },
-        relations: ['messages'],
-        order: {
-          messages: {
-            modified: 'ASC', // Ensure messages are sorted in ascending order by creation time, otherwise streaming will update it and cause wrong order
-          },
-        },
-      });
-
-      if (!instanceEntity) {
-        throw new Error(`Agent instance not found: ${agentId}`);
-      }
-
-      // Update fields using pick + Object.assign for consistency with updateAgentDef
-      const pickedProperties = pick(data, ['name', 'status', 'avatarUrl', 'aiApiConfig', 'closed', 'agentFrameworkConfig']);
-      Object.assign(instanceEntity, pickedProperties);
-
-      // Save instance updates
-      await this.agentInstanceRepository!.save(instanceEntity);
-
-      // Handle message updates if provided
-      if (data.messages && data.messages.length > 0) {
-        // Create entities for new messages and update existing ones
-        for (const message of data.messages) {
-          // Check if message already exists
-          const existingMessage = instanceEntity.messages?.find(m => m.id === message.id);
-
-          if (existingMessage) {
-            // Update existing message
-            existingMessage.content = message.content;
-            existingMessage.modified = message.modified || new Date();
-            if (message.metadata) existingMessage.metadata = message.metadata;
-            if (message.contentType) existingMessage.contentType = message.contentType;
-
-            await this.agentMessageRepository!.save(existingMessage);
-          } else {
-            // Create new message
-            const messageData = pick(message, MESSAGE_FIELDS) as AgentInstanceMessage;
-            const messageEntity = this.agentMessageRepository!.create(toDatabaseCompatibleMessage(messageData));
-
-            await this.agentMessageRepository!.save(messageEntity);
-
-            // Add new message to the instance entity
-            if (!instanceEntity.messages) {
-              instanceEntity.messages = [];
-            }
-            instanceEntity.messages.push(messageEntity);
-          }
-        }
-      }
-
-      // Construct the response object directly from the entity
-      // This avoids an additional database query with getAgent()
-      const updatedAgent: AgentInstance = {
-        ...pick(instanceEntity, AGENT_INSTANCE_FIELDS),
-        messages: instanceEntity.messages || [],
-      };
-
-      // Notify subscribers about the updates with the already available data
-      // This avoids another database query within notifyAgentUpdate
+      const updatedAgent = await repo.updateAgent(this.agentInstanceRepository!, this.agentMessageRepository!, agentId, data);
       this.notifyAgentUpdate(agentId, updatedAgent);
-
       return updatedAgent;
     } catch (error) {
       logger.error('Failed to update agent instance', { error });
@@ -294,18 +283,13 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   public async deleteAgent(agentId: string): Promise<void> {
     this.ensureRepositories();
-
     try {
-      // First delete all messages for this agent
-      await this.agentMessageRepository!.delete({ agentId });
-
-      // Then delete the agent instance
-      await this.agentInstanceRepository!.delete(agentId);
-
-      // Clean up subscriptions related to this agent
+      stopHeartbeat(agentId);
+      cancelAlarm(agentId);
+      cancelTasksForAgent(agentId);
+      await cleanupMCPClient(agentId);
+      await repo.deleteAgent(this.agentInstanceRepository!, this.agentMessageRepository!, agentId);
       this.cleanupAgentSubscriptions(agentId);
-
-      logger.info(`Deleted agent instance: ${agentId}`);
     } catch (error) {
       logger.error('Failed to delete agent instance', { error });
       throw error;
@@ -318,45 +302,15 @@ export class AgentInstanceService implements IAgentInstanceService {
     options?: { closed?: boolean; searchName?: string },
   ): Promise<Omit<AgentInstance, 'messages'>[]> {
     this.ensureRepositories();
-
     try {
-      const skip = (page - 1) * pageSize;
-      const take = pageSize;
-
-      // Build query conditions
-      const whereCondition: Record<string, unknown> = {};
-
-      // Always exclude preview instances from normal listing
-      whereCondition.preview = false;
-
-      // Add closed filter if provided
-      if (options && options.closed !== undefined) {
-        whereCondition.closed = options.closed;
-      }
-
-      // Add name search filter if provided
-      if (options && options.searchName) {
-        whereCondition.name = { like: `%${options.searchName}%` };
-      }
-
-      const [instances, _] = await this.agentInstanceRepository!.findAndCount({
-        where: Object.keys(whereCondition).length > 0 ? whereCondition : undefined,
-        skip,
-        take,
-        order: {
-          // Sort by creation time descending
-          created: 'DESC',
-        },
-      });
-
-      return instances.map(entity => pick(entity, AGENT_INSTANCE_FIELDS));
+      return await repo.getAgents(this.agentInstanceRepository!, page, pageSize, options);
     } catch (error) {
       logger.error('Failed to get agent instances', { error });
       throw error;
     }
   }
 
-  public async sendMsgToAgent(agentId: string, content: { text: string; file?: File }): Promise<void> {
+  public async sendMsgToAgent(agentId: string, content: { text: string; file?: File; wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }> }): Promise<void> {
     try {
       // Get agent instance
       const agentInstance = await this.getAgent(agentId);
@@ -403,6 +357,28 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Create fresh hooks for this framework execution and register plugins based on frameworkConfig
       const { hooks: frameworkHooks } = await createHooksWithPlugins(agentDefinition.agentFrameworkConfig || {});
 
+      // Record HEAD commit hashes for all wiki workspaces before the agent turn starts.
+      // This allows rollback by comparing with commits made during the turn.
+      const beforeCommitMap: Record<string, { wikiFolderLocation: string; commitHash: string }> = {};
+      try {
+        const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+        const gitService = container.get<IGitService>(serviceIdentifier.Git);
+        const workspaces = await workspaceService.getWorkspacesAsList();
+        for (const ws of workspaces) {
+          if (isWikiWorkspace(ws)) {
+            try {
+              const hash = await gitService.callGitOp('getHeadCommitHash', ws.wikiFolderLocation);
+              beforeCommitMap[ws.id] = { wikiFolderLocation: ws.wikiFolderLocation, commitHash: hash };
+            } catch {
+              // Workspace may not have git initialized — skip silently
+            }
+          }
+        }
+        logger.debug('Recorded before-turn commit hashes', { agentId, workspaceCount: Object.keys(beforeCommitMap).length });
+      } catch (error) {
+        logger.warn('Failed to record before-turn commit hashes', { error });
+      }
+
       // Trigger userMessageReceived hook with the configured tools
       await frameworkHooks.userMessageReceived.promise({
         agentFrameworkContext: frameworkContext,
@@ -410,6 +386,19 @@ export class AgentInstanceService implements IAgentInstanceService {
         messageId,
         timestamp: now,
       });
+
+      // Attach beforeCommitMap to the user message metadata after it's created by the messagePersistence hook.
+      // This allows the frontend to know which commit hash to rollback to for this turn.
+      if (Object.keys(beforeCommitMap).length > 0) {
+        const userMessage = frameworkContext.agent.messages.find(m => m.id === messageId);
+        if (userMessage) {
+          userMessage.metadata = { ...userMessage.metadata, beforeCommitMap };
+          // Persist the updated metadata
+          void this.saveUserMessage(userMessage).catch((error: unknown) => {
+            logger.warn('Failed to persist beforeCommitMap metadata', { error, messageId });
+          });
+        }
+      }
 
       // Notify agent update after user message is added
       this.notifyAgentUpdate(agentId, frameworkContext.agent);
@@ -423,7 +412,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
         for await (const result of generator) {
           // Update status subscribers for specific message
-          if (result.message?.content) {
+          if (result.message) {
             // Ensure message has correct modification timestamp
             if (!result.message.modified) {
               result.message.modified = new Date();
@@ -436,6 +425,7 @@ export class AgentInstanceService implements IAgentInstanceService {
             }
 
             // Notify agent update with latest messages for real-time UI updates
+            // (even if content is empty — tool results and state changes need broadcasting)
             this.notifyAgentUpdate(agentId, frameworkContext.agent);
           }
 
@@ -449,10 +439,11 @@ export class AgentInstanceService implements IAgentInstanceService {
           const statusKey = `${agentId}:${lastResult.message.id}`;
           const subject = this.statusSubjects.get(statusKey);
           if (subject) {
-            logger.debug(`[${agentId}] Completing message stream`, { messageId: lastResult.message.id });
-            // Send final update with completed state
+            const finalState = lastResult.state ?? 'completed';
+            logger.debug(`[${agentId}] Completing message stream`, { messageId: lastResult.message.id, finalState });
+            // Send final update with the actual terminal state from the generator
             subject.next({
-              state: 'completed',
+              state: finalState,
               message: lastResult.message,
               modified: new Date(),
             });
@@ -470,14 +461,20 @@ export class AgentInstanceService implements IAgentInstanceService {
             });
           }
 
-          // Trigger agentStatusChanged hook for completion
+          // Trigger agentStatusChanged hook with actual terminal state (completed, input-required, etc.)
+          const terminalState = (lastResult.state ?? 'completed') as 'working' | 'completed' | 'failed' | 'canceled';
           await frameworkHooks.agentStatusChanged.promise({
             agentFrameworkContext: frameworkContext,
             status: {
-              state: 'completed',
+              state: terminalState,
               modified: new Date(),
             },
           });
+
+          // Start heartbeat timer if the agent definition has heartbeat config
+          if (agentDefinition.heartbeat?.enabled && !agentInstance.volatile) {
+            startHeartbeat(agentId, agentDefinition.heartbeat, this, { createdBy: 'agent-definition' });
+          }
         }
 
         // Remove cancel token after generator completes
@@ -529,6 +526,17 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   public async cancelAgent(agentId: string): Promise<void> {
+    // Stop heartbeat on cancel
+    stopHeartbeat(agentId);
+
+    // Cancel any pending ask-question promises so the agent loop can exit
+    try {
+      const { cancelPendingQuestions } = await import('./tools/askQuestionPending');
+      cancelPendingQuestions(agentId);
+    } catch {
+      // ignore if module not loaded
+    }
+
     // Try to get cancel token
     const cancelToken = this.cancelTokenMap.get(agentId);
 
@@ -608,6 +616,11 @@ export class AgentInstanceService implements IAgentInstanceService {
     this.ensureRepositories();
 
     try {
+      stopHeartbeat(agentId);
+      cancelAlarm(agentId);
+      cancelTasksForAgent(agentId);
+      await cleanupMCPClient(agentId);
+
       // Get agent instance
       const instanceEntity = await this.agentInstanceRepository!.findOne({
         where: { id: agentId },
@@ -645,6 +658,303 @@ export class AgentInstanceService implements IAgentInstanceService {
       });
       throw error;
     }
+  }
+
+  public async resolveToolApproval(approvalId: string, decision: 'allow' | 'deny'): Promise<void> {
+    const { resolveApproval } = await import('./tools/approval');
+    resolveApproval(approvalId, decision);
+  }
+
+  public resolveAskQuestion(agentId: string, questionId: string, answer: string): void {
+    // Resolve ask-question by injecting the answer as a tool result and resuming the agent loop.
+    // This keeps the answer in the same turn (no new user message).
+    void this.resolveAskQuestionAsync(agentId, questionId, answer);
+  }
+
+  private async resolveAskQuestionAsync(agentId: string, questionId: string, answer: string): Promise<void> {
+    try {
+      // Reuse sendMsgToAgent with the answer text.
+      // The answer goes in as a user message so the framework can process it normally.
+      // The UI will display it as a regular message (not a tool result).
+      // This is the simplest approach that works with the existing framework architecture.
+      await this.sendMsgToAgent(agentId, { text: answer });
+      logger.debug('Ask-question resolved via sendMsgToAgent', { questionId, agentId });
+    } catch (error) {
+      logger.error('Failed to resolve ask-question', { questionId, error });
+    }
+  }
+
+  public async deleteMessages(agentId: string, messageIds: string[]): Promise<void> {
+    if (!this.agentMessageRepository || !this.agentInstanceRepository) {
+      throw new Error('Database not initialized');
+    }
+    if (messageIds.length === 0) return;
+
+    await this.agentMessageRepository.delete(messageIds);
+
+    // Also update the in-memory agent messages list
+    const agent = await this.agentInstanceRepository.findOne({
+      where: { id: agentId },
+      relations: ['messages'],
+    });
+    if (agent) {
+      const deletedSet = new Set(messageIds);
+      agent.messages = (agent.messages ?? []).filter(m => !deletedSet.has(m.id));
+      await this.agentInstanceRepository.save(agent);
+    }
+  }
+
+  public async getTurnChangedFiles(agentId: string, userMessageId: string): Promise<Array<{ path: string; status: string }>> {
+    const agent = await this.getAgent(agentId);
+    if (!agent) {
+      throw new Error(`Agent instance not found: ${agentId}`);
+    }
+
+    const userMessage = agent.messages.find(m => m.id === userMessageId);
+    if (!userMessage) {
+      throw new Error(`User message not found: ${userMessageId}`);
+    }
+
+    const beforeCommitMap = userMessage.metadata?.beforeCommitMap as Record<string, { wikiFolderLocation: string; commitHash: string }> | undefined;
+    if (!beforeCommitMap || Object.keys(beforeCommitMap).length === 0) {
+      return [];
+    }
+
+    const allChangedFiles: Array<{ path: string; status: string }> = [];
+    const gitService = container.get<IGitService>(serviceIdentifier.Git);
+
+    for (const [_workspaceId, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
+      try {
+        const changedFiles = await gitService.callGitOp('getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
+        for (const file of changedFiles) {
+          allChangedFiles.push({ path: file.path, status: file.status });
+        }
+      } catch (error) {
+        logger.warn('Failed to get changed files for workspace', { wikiFolderLocation, error });
+      }
+    }
+
+    return allChangedFiles;
+  }
+
+  public async rollbackTurn(agentId: string, userMessageId: string): Promise<{ rolledBack: number; errors: string[] }> {
+    const agent = await this.getAgent(agentId);
+    if (!agent) {
+      throw new Error(`Agent instance not found: ${agentId}`);
+    }
+
+    const userMessage = agent.messages.find(m => m.id === userMessageId);
+    if (!userMessage) {
+      throw new Error(`User message not found: ${userMessageId}`);
+    }
+
+    const beforeCommitMap = userMessage.metadata?.beforeCommitMap as Record<string, { wikiFolderLocation: string; commitHash: string }> | undefined;
+    if (!beforeCommitMap || Object.keys(beforeCommitMap).length === 0) {
+      return { rolledBack: 0, errors: ['No commit snapshot recorded for this turn'] };
+    }
+
+    let rolledBack = 0;
+    const errors: string[] = [];
+    const gitService = container.get<IGitService>(serviceIdentifier.Git);
+
+    for (const [_workspaceId, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
+      try {
+        // Get the list of files that changed since the beforeCommitHash
+        const changedFiles = await gitService.callGitOp('getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
+
+        if (changedFiles.length === 0) continue;
+
+        // Restore each file to its state at the beforeCommitHash
+        for (const file of changedFiles) {
+          try {
+            await gitService.callGitOp('restoreFileFromCommit', wikiFolderLocation, commitHash, file.path);
+            rolledBack++;
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            errors.push(`Failed to restore ${file.path}: ${errorMessage}`);
+          }
+        }
+
+        logger.info('Rolled back files for workspace', { wikiFolderLocation, fileCount: changedFiles.length, rolledBack });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        errors.push(`Failed to get changed files for ${wikiFolderLocation}: ${errorMessage}`);
+      }
+    }
+
+    // Mark the turn as rolled back in user message metadata.
+    // Note: rollback restores files to working tree + staging area but does NOT create a new commit.
+    // The next scheduled commitAndSync will commit the restored state as a new change.
+    userMessage.metadata = { ...userMessage.metadata, rolledBack: true, rollbackTimestamp: new Date().toISOString() };
+    await this.saveUserMessage(userMessage);
+
+    return { rolledBack, errors };
+  }
+
+  public async getBackgroundTasks(): Promise<AgentBackgroundTask[]> {
+    const tasks: AgentBackgroundTask[] = [];
+
+    // Collect heartbeats from in-memory registry
+    const heartbeatEntries = getActiveHeartbeatEntries();
+    for (const heartbeatEntry of heartbeatEntries) {
+      const agentId = heartbeatEntry.agentId;
+      const agent = await this.getAgent(agentId);
+      const agentDefinition = agent?.agentDefId ? await this.agentDefinitionService.getAgentDef(agent.agentDefId) : undefined;
+      const heartbeatConfig = agentDefinition?.heartbeat;
+      tasks.push({
+        agentId,
+        agentName: agent?.name ?? agentDefinition?.name,
+        type: 'heartbeat',
+        intervalSeconds: heartbeatConfig?.intervalSeconds,
+        activeHoursStart: heartbeatConfig?.activeHoursStart,
+        activeHoursEnd: heartbeatConfig?.activeHoursEnd,
+        nextWakeAtISO: heartbeatEntry.nextWakeAtISO,
+        message: heartbeatConfig?.message,
+        createdBy: heartbeatEntry.createdBy,
+        lastRunAtISO: heartbeatEntry.lastRunAtISO,
+        runCount: heartbeatEntry.runCount,
+      });
+    }
+
+    // Collect alarms from in-memory registry
+    const alarmEntries = getActiveAlarmEntries();
+    for (const alarmEntry of alarmEntries) {
+      const agentId = alarmEntry.agentId;
+      const agent = await this.getAgent(agentId);
+      tasks.push({
+        agentId,
+        agentName: agent?.name,
+        type: 'alarm',
+        wakeAtISO: alarmEntry.wakeAtISO,
+        nextWakeAtISO: alarmEntry.nextWakeAtISO,
+        message: alarmEntry.reminderMessage,
+        repeatIntervalMinutes: alarmEntry.repeatIntervalMinutes,
+        createdBy: alarmEntry.createdBy,
+        lastRunAtISO: alarmEntry.lastRunAtISO,
+        runCount: alarmEntry.runCount,
+      });
+    }
+
+    return tasks;
+  }
+
+  public async cancelBackgroundTask(agentId: string, type: 'heartbeat' | 'alarm'): Promise<void> {
+    if (type === 'heartbeat') {
+      stopHeartbeat(agentId);
+    } else if (type === 'alarm') {
+      cancelAlarm(agentId);
+    }
+    logger.info('Background task cancelled from UI', { agentId, type });
+  }
+
+  public async setBackgroundAlarm(agentId: string, alarm: SetBackgroundAlarmInput): Promise<void> {
+    this.ensureRepositories();
+
+    const entity = await this.agentInstanceRepository!.findOne({ where: { id: agentId } });
+    if (!entity) {
+      throw new Error(`Agent instance not found: ${agentId}`);
+    }
+
+    const parsedWakeAt = new Date(alarm.wakeAtISO);
+    if (Number.isNaN(parsedWakeAt.getTime())) {
+      throw new Error(`Invalid wakeAtISO: ${alarm.wakeAtISO}`);
+    }
+
+    const repeatIntervalMinutes = alarm.repeatIntervalMinutes && alarm.repeatIntervalMinutes > 0
+      ? alarm.repeatIntervalMinutes
+      : undefined;
+    const wakeAtISO = parsedWakeAt.toISOString();
+
+    scheduleAlarmTimer(agentId, wakeAtISO, alarm.message, repeatIntervalMinutes, {
+      createdBy: 'settings-ui',
+      runCount: 0,
+    });
+
+    await this.agentInstanceRepository!.update(agentId, {
+      scheduledAlarm: {
+        wakeAtISO,
+        reminderMessage: alarm.message,
+        repeatIntervalMinutes,
+        createdBy: 'settings-ui',
+        runCount: 0,
+      },
+    });
+
+    logger.info('Background alarm upserted from UI', {
+      agentId,
+      wakeAtISO,
+      repeatIntervalMinutes,
+    });
+  }
+
+  public async setBackgroundHeartbeat(agentId: string, heartbeat: SetBackgroundHeartbeatInput): Promise<void> {
+    this.ensureRepositories();
+
+    const entity = await this.agentInstanceRepository!.findOne({ where: { id: agentId } });
+    if (!entity) {
+      throw new Error(`Agent instance not found: ${agentId}`);
+    }
+    if (!entity.agentDefId) {
+      throw new Error(`Agent definition not found for instance: ${agentId}`);
+    }
+
+    const agentDefinition = await this.agentDefinitionService.getAgentDef(entity.agentDefId);
+    if (!agentDefinition) {
+      throw new Error(`Agent definition not found: ${entity.agentDefId}`);
+    }
+
+    const normalizedHeartbeat: AgentHeartbeatConfig = {
+      enabled: heartbeat.enabled,
+      intervalSeconds: Math.max(60, Math.round(heartbeat.intervalSeconds || 60)),
+      message: heartbeat.message?.trim() || '[Heartbeat] Periodic check-in. Review your tasks and take any pending actions.',
+      activeHoursStart: heartbeat.activeHoursStart || undefined,
+      activeHoursEnd: heartbeat.activeHoursEnd || undefined,
+    };
+
+    await this.agentDefinitionService.updateAgentDef({
+      id: agentDefinition.id,
+      heartbeat: normalizedHeartbeat,
+    });
+
+    if (normalizedHeartbeat.enabled && !entity.volatile) {
+      startHeartbeat(agentId, normalizedHeartbeat, this, { createdBy: 'settings-ui' });
+    } else {
+      stopHeartbeat(agentId);
+    }
+
+    logger.info('Background heartbeat upserted from UI', {
+      agentId,
+      enabled: normalizedHeartbeat.enabled,
+      intervalSeconds: normalizedHeartbeat.intervalSeconds,
+      activeHoursStart: normalizedHeartbeat.activeHoursStart,
+      activeHoursEnd: normalizedHeartbeat.activeHoursEnd,
+    });
+  }
+
+  // ── ScheduledTask CRUD ────────────────────────────────────────────────────
+
+  public async createScheduledTask(input: CreateScheduledTaskInput): Promise<ScheduledTask> {
+    return stmAddTask(input);
+  }
+
+  public async updateScheduledTask(input: UpdateScheduledTaskInput): Promise<ScheduledTask> {
+    return stmUpdateTask(input);
+  }
+
+  public async deleteScheduledTask(taskId: string): Promise<void> {
+    return stmRemoveTask(taskId);
+  }
+
+  public async listScheduledTasks(): Promise<ScheduledTask[]> {
+    return stmGetActiveTasks();
+  }
+
+  public async listScheduledTasksForAgent(agentInstanceId: string): Promise<ScheduledTask[]> {
+    return stmGetActiveTasksForAgent(agentInstanceId);
+  }
+
+  public async getCronPreviewDates(expression: string, timezone?: string, count = 3): Promise<string[]> {
+    return stmGetCronPreviewDates(expression, timezone, count);
   }
 
   public subscribeToAgentUpdates(agentId: string): Observable<AgentInstance | undefined>;
@@ -718,31 +1028,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   public async saveUserMessage(userMessage: AgentInstanceMessage): Promise<void> {
     this.ensureRepositories();
     try {
-      const now = new Date();
-      const summary = {
-        id: userMessage.id,
-        role: userMessage.role,
-        agentId: userMessage.agentId,
-        isToolResult: !!userMessage.metadata?.isToolResult,
-        isPersisted: !!userMessage.metadata?.isPersisted,
-      };
-      logger.debug('Saving user message to DB (start)', {
-        when: now.toISOString(),
-        ...summary,
-        source: 'saveUserMessage',
-        stack: new Error().stack?.split('\n').slice(0, 4).join('\n'),
-      });
-
-      await this.agentMessageRepository!.save(this.agentMessageRepository!.create(toDatabaseCompatibleMessage(userMessage)));
-
-      logger.debug('User message saved to database', {
-        when: new Date().toISOString(),
-        ...summary,
-        hasMetadata: !!userMessage.metadata,
-        hasFile: !!userMessage.metadata?.file,
-        metadataKeys: userMessage.metadata ? Object.keys(userMessage.metadata) : [],
-        source: 'saveUserMessage',
-      });
+      await saveUserMessageHelper(this.agentMessageRepository!, userMessage);
     } catch (error) {
       logger.error('Failed to save user message', {
         error,
@@ -759,6 +1045,8 @@ export class AgentInstanceService implements IAgentInstanceService {
     debounceMs = 300,
   ): void {
     const messageId = message.id;
+    // Use agentId:messageId as key so we can clean up by agentId prefix
+    const debounceKey = agentId ? `${agentId}:${messageId}` : messageId;
 
     // Update status subscribers for specific message if available
     if (agentId) {
@@ -772,129 +1060,27 @@ export class AgentInstanceService implements IAgentInstanceService {
       }
     }
 
-    // Lazy load or get existing debounced function
-    if (!this.debouncedUpdateFunctions.has(messageId)) {
-      // Create debounced function for each message ID
-      const debouncedUpdate = debounce(
-        async (messageData_: AgentInstanceMessage, aid?: string) => {
-          try {
-            this.ensureRepositories();
-            // ensureRepositories guarantees dataSource is available
-            await this.dataSource!.transaction(async transaction => {
-              const messageRepo = transaction.getRepository(AgentInstanceMessageEntity);
-              const messageEntity = await messageRepo.findOne({
-                where: { id: messageId },
-              });
-
-              if (messageEntity) {
-                // Update message content
-                messageEntity.content = messageData_.content;
-                if (messageData_.contentType) messageEntity.contentType = messageData_.contentType;
-                if (messageData_.metadata) messageEntity.metadata = messageData_.metadata;
-                if (messageData_.duration !== undefined) messageEntity.duration = messageData_.duration ?? undefined; // Fix: Update duration field
-                // Preserve provided modified; if not provided, keep existing DB value to avoid late overwrites
-                // Only adjust modified if the incoming timestamp is earlier; otherwise leave DB value unchanged
-                if (messageData_.modified instanceof Date) {
-                  if (!messageEntity.modified || messageData_.modified.getTime() < new Date(messageEntity.modified).getTime()) {
-                    messageEntity.modified = messageData_.modified;
-                  }
-                }
-
-                const startSave = new Date();
-                logger.debug('Updating existing message (start save)', {
-                  when: startSave.toISOString(),
-                  messageId,
-                  agentId: aid,
-                  source: 'debounceUpdateMessage:update',
-                  stack: new Error().stack?.split('\n').slice(0, 4).join('\n'),
-                });
-                await messageRepo.save(messageEntity);
-                logger.debug('Updating existing message (saved)', {
-                  when: new Date().toISOString(),
-                  messageId,
-                  agentId: aid,
-                  source: 'debounceUpdateMessage:update',
-                });
-              } else if (aid) {
-                // Create new message if it doesn't exist and agentId provided
-                // Create message using utility function
-                const messageData = createAgentMessage(messageId, aid, {
-                  role: messageData_.role,
-                  content: messageData_.content,
-                  contentType: messageData_.contentType,
-                  metadata: messageData_.metadata,
-                  duration: messageData_.duration, // Include duration for new messages
-                });
-                const newMessage = messageRepo.create(toDatabaseCompatibleMessage(messageData));
-
-                const startSaveNew = new Date();
-                logger.debug('Creating new message (start save)', {
-                  when: startSaveNew.toISOString(),
-                  messageId,
-                  agentId: aid,
-                  source: 'debounceUpdateMessage:create',
-                  stack: new Error().stack?.split('\n').slice(0, 4).join('\n'),
-                });
-                await messageRepo.save(newMessage);
-                logger.debug('Creating new message (saved)', {
-                  when: new Date().toISOString(),
-                  messageId,
-                  agentId: aid,
-                  source: 'debounceUpdateMessage:create',
-                });
-
-                // Get agent instance repository for transaction
-                const agentRepo = transaction.getRepository(AgentInstanceEntity);
-
-                // Get agent instance within the current transaction
-                const agentEntity = await agentRepo.findOne({
-                  where: { id: aid },
-                  relations: ['messages'],
-                });
-
-                if (agentEntity) {
-                  // Add the new message to the agent entity
-                  if (!agentEntity.messages) {
-                    agentEntity.messages = [];
-                  }
-                  agentEntity.messages.push(newMessage);
-
-                  // Save the updated agent entity
-                  await agentRepo.save(agentEntity);
-
-                  // Construct agent data from entity directly without additional query
-                  const updatedAgent: AgentInstance = {
-                    ...pick(agentEntity, AGENT_INSTANCE_FIELDS),
-                    messages: agentEntity.messages,
-                  };
-
-                  // Notify subscribers directly without additional queries
-                  if (this.agentInstanceSubjects.has(aid)) {
-                    this.agentInstanceSubjects.get(aid)?.next(updatedAgent);
-                    logger.debug(`Notified agent subscribers of new message: ${messageId}`, {
-                      method: 'debounceUpdateMessage',
-                      agentId: aid,
-                    });
-                  }
-                } else {
-                  logger.warn(`Agent instance not found for message: ${messageId}`);
-                }
-              } else {
-                logger.warn(`Cannot create message: missing agent ID for message ID: ${messageId}`);
-              }
+    // Lazy-create debounced function for each message ID
+    if (!this.debouncedUpdateFunctions.has(debounceKey)) {
+      this.ensureRepositories();
+      const debouncedUpdate = createDebouncedMessageUpdater(
+        this.dataSource!,
+        messageId,
+        debounceMs,
+        (aid, updatedAgent) => {
+          if (this.agentInstanceSubjects.has(aid)) {
+            this.agentInstanceSubjects.get(aid)?.next(updatedAgent);
+            logger.debug(`Notified agent subscribers of new message: ${messageId}`, {
+              method: 'debounceUpdateMessage',
+              agentId: aid,
             });
-          } catch (error) {
-            logger.error('Failed to update/create message content', { error });
           }
         },
-        debounceMs,
       );
-
-      this.debouncedUpdateFunctions.set(messageId, debouncedUpdate);
+      this.debouncedUpdateFunctions.set(debounceKey, debouncedUpdate);
     }
 
-    // Call debounced function
-    const debouncedFunction = this.debouncedUpdateFunctions.get(messageId);
+    const debouncedFunction = this.debouncedUpdateFunctions.get(debounceKey);
     if (debouncedFunction) {
       debouncedFunction(message, agentId);
     }

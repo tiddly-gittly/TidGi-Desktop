@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-type-conversion */
 /**
- * Tool Definition Framework
+ * Tool Definition Framework — Core `defineTool` function.
+ *
+ * Types are in ./defineToolTypes.ts, registry is in ./toolRegistry.ts.
  *
  * Provides a declarative API for defining LLM agent tools with minimal boilerplate.
  * Tools are defined using a configuration object that specifies:
  * - Schema for configuration parameters (shown in UI for users to configure)
  * - Schema for LLM-callable tool parameters (injected into prompts)
  * - Hook handlers for different lifecycle events
- *
- * This replaces the verbose tapAsync pattern with a cleaner functional approach.
  */
 import { type ToolCallingMatch } from '@services/agentDefinition/interface';
-import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
+import { matchAllToolCallings } from '@services/agentDefinition/responsePatternUtility';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -20,198 +20,39 @@ import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { findPromptById } from '../promptConcat/promptConcat';
 import type { IPrompt } from '../promptConcat/promptConcatSchema';
 import { schemaToToolContent } from '../utilities/schemaToToolContent';
-import { registerToolParameterSchema } from './schemaRegistry';
-import type { AIResponseContext, PostProcessContext, PromptConcatHookContext, PromptConcatHooks, PromptConcatTool } from './types';
+import { evaluateApproval, requestApproval } from './approval';
 
 /**
- * Tool definition configuration
+ * Maximum characters for a single tool result before truncation.
+ * ~8000 tokens at ~4 chars/token = 32000 chars.
+ * Prevents a single search result from consuming the entire context window.
  */
-export interface ToolDefinition<
-  TConfigSchema extends z.ZodType = z.ZodType,
-  TLLMToolSchemas extends Record<string, z.ZodType> = Record<string, z.ZodType>,
-> {
-  /** Unique tool identifier - must match the toolId used in agent configuration */
-  toolId: string;
+const MAX_TOOL_RESULT_CHARS = 32_000;
+import type {
+  AddToolResultOptions,
+  InjectContentOptions,
+  InjectToolListOptions,
+  PostProcessHandlerContext,
+  ResponseHandlerContext,
+  ToolDefinition,
+  ToolExecutionResult,
+  ToolHandlerContext,
+} from './defineToolTypes';
+import type { AIResponseContext, PromptConcatHookContext, PromptConcatTool } from './types';
 
-  /** Display name for UI */
-  displayName: string;
-
-  /** Description of what this tool does */
-  description: string;
-
-  /** Schema for tool configuration parameters (user-configurable in UI) */
-  configSchema: TConfigSchema;
-
-  /**
-   * Optional schemas for LLM-callable tools.
-   * Each key is the tool name (e.g., 'wiki-search'), value is the parameter schema.
-   * The schema's title meta will be used as the tool name in prompts.
-   */
-  llmToolSchemas?: TLLMToolSchemas;
-
-  /**
-   * Called during prompt processing phase.
-   * Use this to inject tool descriptions, modify prompts, etc.
-   */
-  onProcessPrompts?: (context: ToolHandlerContext<TConfigSchema>) => Promise<void> | void;
-
-  /**
-   * Called after LLM generates a response.
-   * Use this to parse tool calls, execute tools, etc.
-   */
-  onResponseComplete?: (context: ResponseHandlerContext<TConfigSchema, TLLMToolSchemas>) => Promise<void> | void;
-
-  /**
-   * Called during post-processing phase.
-   * Use this to transform LLM responses, etc.
-   */
-  onPostProcess?: (context: PostProcessHandlerContext<TConfigSchema>) => Promise<void> | void;
-}
-
-/**
- * Context passed to prompt processing handlers
- */
-export interface ToolHandlerContext<TConfigSchema extends z.ZodType> {
-  /** The parsed configuration for this tool instance */
-  config: z.infer<TConfigSchema>;
-
-  /** Full tool configuration object */
-  toolConfig: PromptConcatHookContext['toolConfig'];
-
-  /** Current prompt tree (mutable) */
-  prompts: IPrompt[];
-
-  /** Message history */
-  messages: AgentInstanceMessage[];
-
-  /** Agent framework context */
-  agentFrameworkContext: PromptConcatHookContext['agentFrameworkContext'];
-
-  /** Utility: Find a prompt by ID */
-  findPrompt: (id: string) => ReturnType<typeof findPromptById>;
-
-  /** Utility: Inject a tool list at a target position */
-  injectToolList: (options: InjectToolListOptions) => void;
-
-  /** Utility: Inject content at a target position */
-  injectContent: (options: InjectContentOptions) => void;
-}
-
-/**
- * Context passed to response handlers
- */
-export interface ResponseHandlerContext<
-  TConfigSchema extends z.ZodType,
-  TLLMToolSchemas extends Record<string, z.ZodType>,
-> extends Omit<ToolHandlerContext<TConfigSchema>, 'prompts' | 'config'> {
-  /** The parsed configuration for this tool instance (may be undefined if no config provided) */
-  config: z.infer<TConfigSchema> | undefined;
-
-  /** AI response content */
-  response: AIResponseContext['response'];
-
-  /** Parsed tool call from response (if any) */
-  toolCall: ToolCallingMatch | null;
-
-  /** Full agent framework config for accessing other tool configs */
-  agentFrameworkConfig: AIResponseContext['agentFrameworkConfig'];
-
-  /** Utility: Execute a tool call and handle the result */
-  executeToolCall: <TToolName extends keyof TLLMToolSchemas>(
-    toolName: TToolName,
-    executor: (parameters: z.infer<TLLMToolSchemas[TToolName]>) => Promise<ToolExecutionResult>,
-  ) => Promise<boolean>;
-
-  /** Utility: Add a tool result message */
-  addToolResult: (options: AddToolResultOptions) => void;
-
-  /** Utility: Signal that the agent should continue with another round */
-  yieldToSelf: () => void;
-
-  /** Raw hooks for advanced usage */
-  hooks: PromptConcatHooks;
-
-  /** Request ID for tracking */
-  requestId?: string;
-}
-
-/**
- * Context passed to post-process handlers
- */
-export interface PostProcessHandlerContext<TConfigSchema extends z.ZodType> extends Omit<ToolHandlerContext<TConfigSchema>, never> {
-  /** LLM response text */
-  llmResponse: string;
-
-  /** Processed responses array (mutable) */
-  responses: PostProcessContext['responses'];
-}
-
-/**
- * Options for injecting tool list into prompts
- */
-export interface InjectToolListOptions {
-  /** Target prompt ID to inject relative to */
-  targetId: string;
-
-  /** Position relative to target: 'before'/'after' inserts as sibling, 'child' adds to children */
-  position: 'before' | 'after' | 'child';
-
-  /** Tool schemas to inject (will use all llmToolSchemas if not specified) */
-  toolSchemas?: z.ZodType[];
-
-  /** Optional caption for the injected prompt */
-  caption?: string;
-}
-
-/**
- * Options for injecting content into prompts
- */
-export interface InjectContentOptions {
-  /** Target prompt ID to inject relative to */
-  targetId: string;
-
-  /** Position relative to target */
-  position: 'before' | 'after' | 'child';
-
-  /** Content to inject */
-  content: string;
-
-  /** Caption for the injected prompt */
-  caption?: string;
-
-  /** Optional ID for the injected prompt */
-  id?: string;
-}
-
-/**
- * Options for adding tool result messages
- */
-export interface AddToolResultOptions {
-  /** Tool name */
-  toolName: string;
-
-  /** Tool parameters */
-  parameters: unknown;
-
-  /** Result content */
-  result: string;
-
-  /** Whether this is an error result */
-  isError?: boolean;
-
-  /** How many rounds this result should be visible */
-  duration?: number;
-}
-
-/**
- * Result from tool execution
- */
-export interface ToolExecutionResult {
-  success: boolean;
-  data?: string;
-  error?: string;
-  metadata?: Record<string, unknown>;
-}
+// Re-export all types and the registry for backward compatibility
+export type {
+  AddToolResultOptions,
+  DefinedTool,
+  InjectContentOptions,
+  InjectToolListOptions,
+  PostProcessHandlerContext,
+  ResponseHandlerContext,
+  ToolDefinition,
+  ToolExecutionResult,
+  ToolHandlerContext,
+} from './defineToolTypes';
+export { getAllToolDefinitions, getToolDefinition, registerToolDefinition } from './toolRegistry';
 
 /**
  * Create a tool from a definition.
@@ -396,9 +237,9 @@ export function defineTool<
             return;
           }
 
-          // Parse tool call from response
-          const toolMatch = matchToolCalling(response.content);
-          const toolCall = toolMatch.found ? toolMatch : null;
+          // Parse ALL tool calls from response (supports <parallel_tool_calls>)
+          const { calls: allCalls, parallel: isParallel } = matchAllToolCallings(response.content);
+          const toolCall = allCalls.length > 0 ? allCalls[0] : null;
 
           // Try to parse config (may be empty for tools that only handle LLM tool calls)
           const rawConfig: unknown = ourToolConfig[parameterKey];
@@ -419,6 +260,8 @@ export function defineTool<
             agentFrameworkContext,
             response,
             toolCall,
+            allToolCalls: allCalls,
+            isParallel,
             agentFrameworkConfig,
             hooks,
             requestId,
@@ -450,6 +293,43 @@ export function defineTool<
               try {
                 // Validate parameters
                 const validatedParameters = toolSchema.parse(toolCall.parameters);
+
+                // Check approval before execution
+                const approvalConfig = ourToolConfig.approval;
+                const decision = evaluateApproval(approvalConfig, String(toolName), validatedParameters as Record<string, unknown>);
+                if (decision === 'deny') {
+                  handlerContext.addToolResult({
+                    toolName: String(toolName),
+                    parameters: validatedParameters,
+                    result: 'Tool execution denied by approval policy.',
+                    isError: true,
+                    duration: 2,
+                  });
+                  handlerContext.yieldToSelf();
+                  return true;
+                }
+                if (decision === 'pending') {
+                  const approvalId = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                  const userDecision = await requestApproval({
+                    approvalId,
+                    agentId: agentFrameworkContext.agent.id,
+                    toolName: String(toolName),
+                    parameters: validatedParameters as Record<string, unknown>,
+                    originalText: toolCall.originalText,
+                    created: new Date(),
+                  });
+                  if (userDecision === 'deny') {
+                    handlerContext.addToolResult({
+                      toolName: String(toolName),
+                      parameters: validatedParameters,
+                      result: 'Tool execution denied by user.',
+                      isError: true,
+                      duration: 2,
+                    });
+                    handlerContext.yieldToSelf();
+                    return true;
+                  }
+                }
 
                 // Execute the tool
                 const result = await executor(validatedParameters);
@@ -512,10 +392,19 @@ export function defineTool<
 
             addToolResult: (options: AddToolResultOptions) => {
               const now = new Date();
+
+              // Truncate excessively long results to prevent context window overflow
+              let resultContent = options.result;
+              if (resultContent.length > MAX_TOOL_RESULT_CHARS) {
+                const truncated = resultContent.slice(0, MAX_TOOL_RESULT_CHARS);
+                resultContent = `${truncated}\n\n[... truncated — result was ${resultContent.length} chars, showing first ${MAX_TOOL_RESULT_CHARS}]`;
+                logger.debug('Tool result truncated', { toolName: options.toolName, originalLength: options.result.length, truncatedTo: MAX_TOOL_RESULT_CHARS });
+              }
+
               const toolResultText = `<functions_result>
 Tool: ${options.toolName}
 Parameters: ${JSON.stringify(options.parameters)}
-${options.isError ? 'Error' : 'Result'}: ${options.result}
+${options.isError ? 'Error' : 'Result'}: ${resultContent}
 </functions_result>`;
 
               const toolResultMessage: AgentInstanceMessage = {
@@ -540,14 +429,41 @@ ${options.isError ? 'Error' : 'Result'}: ${options.result}
               toolResultMessage.metadata = { ...toolResultMessage.metadata, isPersisted: true };
               agentFrameworkContext.agent.messages.push(toolResultMessage);
 
-              // Persist asynchronously
+              // Mark the assistant message that triggered this tool call as short-lived
+              // so it fades out in the UI (the tool result message replaces it visually)
+              const aiMessages = agentFrameworkContext.agent.messages.filter((m) => m.role === 'assistant');
+              if (aiMessages.length > 0) {
+                const latestAiMessage = aiMessages[aiMessages.length - 1];
+                if (latestAiMessage.content === response.content && !latestAiMessage.metadata?.containsToolCall) {
+                  latestAiMessage.duration = 1;
+                  latestAiMessage.metadata = {
+                    ...latestAiMessage.metadata,
+                    containsToolCall: true,
+                    toolId: options.toolName,
+                    isPersisted: true,
+                  };
+
+                  void (async () => {
+                    try {
+                      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+                      if (!latestAiMessage.created) latestAiMessage.created = new Date();
+                      await agentInstanceService.saveUserMessage(latestAiMessage);
+                      agentInstanceService.debounceUpdateMessage(latestAiMessage, agentFrameworkContext.agent.id, 0);
+                    } catch (error) {
+                      logger.warn('Failed to persist AI message with tool call', { error, messageId: latestAiMessage.id });
+                      latestAiMessage.metadata = { ...latestAiMessage.metadata, isPersisted: false };
+                    }
+                  })();
+                }
+              }
+
+              // Persist tool result asynchronously
               void (async () => {
                 try {
                   const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
                   await agentInstanceService.saveUserMessage(toolResultMessage);
                 } catch (error) {
                   logger.warn('Failed to persist tool result', { error, messageId: toolResultMessage.id });
-                  // Reset isPersisted flag on failure so it can be retried
                   toolResultMessage.metadata = { ...toolResultMessage.metadata, isPersisted: false };
                 }
               })();
@@ -564,37 +480,146 @@ ${options.isError ? 'Error' : 'Result'}: ${options.result}
                 context.actions = {};
               }
               context.actions.yieldNextRoundTo = 'self';
+              // Assistant message is now marked in addToolResult() — no duplicate logic needed here
+            },
 
-              // Also set duration on the AI message containing the tool call and update UI immediately
-              const aiMessages = agentFrameworkContext.agent.messages.filter((m) => m.role === 'assistant');
-              if (aiMessages.length > 0) {
-                const latestAiMessage = aiMessages[aiMessages.length - 1];
-                // Only update if this message matches the current response (contains the tool call)
-                if (latestAiMessage.content === response.content) {
-                  latestAiMessage.duration = 1;
-                  latestAiMessage.metadata = {
-                    ...latestAiMessage.metadata,
-                    containsToolCall: true,
-                    toolId: toolCall?.toolId,
-                    isPersisted: true, // Mark immediately to prevent duplicate saves
-                  };
+            yieldToHuman: () => {
+              if (!context.actions) {
+                context.actions = {};
+              }
+              context.actions.yieldNextRoundTo = 'human';
+            },
 
-                  // Persist and update UI immediately (no debounce delay)
-                  void (async () => {
-                    try {
-                      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-                      if (!latestAiMessage.created) latestAiMessage.created = new Date();
-                      await agentInstanceService.saveUserMessage(latestAiMessage);
-                      // Update UI with no delay
-                      agentInstanceService.debounceUpdateMessage(latestAiMessage, agentFrameworkContext.agent.id, 0);
-                    } catch (error) {
-                      logger.warn('Failed to persist AI message with tool call', { error, messageId: latestAiMessage.id });
-                      // Reset isPersisted flag on failure so it can be retried
-                      latestAiMessage.metadata = { ...latestAiMessage.metadata, isPersisted: false };
-                    }
-                  })();
+            executeAllMatchingToolCalls: async <TToolName extends keyof TLLMToolSchemas>(
+              toolName: TToolName,
+              executor: (parameters: z.infer<TLLMToolSchemas[TToolName]>) => Promise<ToolExecutionResult>,
+              options?: { timeoutMs?: number },
+            ): Promise<number> => {
+              // Find all calls matching this tool name
+              const matchingCalls = allCalls.filter(call => call.toolId === toolName);
+              if (matchingCalls.length === 0) return 0;
+
+              const toolSchema = llmToolSchemas?.[toolName];
+              if (!toolSchema) {
+                logger.error(`No schema found for tool: ${String(toolName)}`);
+                return 0;
+              }
+
+              const toolResultDuration = (config as { toolResultDuration?: number } | undefined)?.toolResultDuration ?? 1;
+
+              // Build entries for parallel execution
+              const entries: Array<
+                { call: ToolCallingMatch & { found: true }; executor: (parameters: Record<string, unknown>) => Promise<ToolExecutionResult>; timeoutMs?: number }
+              > = [];
+
+              // Check approval once for the batch — use the first call's parameters as representative
+              const approvalConfig = ourToolConfig.approval;
+              const batchDecision = evaluateApproval(approvalConfig, String(toolName), matchingCalls[0]?.parameters ?? {});
+              if (batchDecision === 'deny') {
+                for (const call of matchingCalls) {
+                  handlerContext.addToolResult({
+                    toolName: String(toolName),
+                    parameters: call.parameters,
+                    result: 'Tool execution denied by approval policy.',
+                    isError: true,
+                    duration: toolResultDuration,
+                  });
+                }
+                handlerContext.yieldToSelf();
+                return matchingCalls.length;
+              }
+              if (batchDecision === 'pending') {
+                const approvalId = `approval-batch-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                const userDecision = await requestApproval({
+                  approvalId,
+                  agentId: agentFrameworkContext.agent.id,
+                  toolName: String(toolName),
+                  parameters: { _batchSize: matchingCalls.length, _firstCallParams: matchingCalls[0]?.parameters },
+                  created: new Date(),
+                });
+                if (userDecision === 'deny') {
+                  for (const call of matchingCalls) {
+                    handlerContext.addToolResult({
+                      toolName: String(toolName),
+                      parameters: call.parameters,
+                      result: 'Tool execution denied by user.',
+                      isError: true,
+                      duration: toolResultDuration,
+                    });
+                  }
+                  handlerContext.yieldToSelf();
+                  return matchingCalls.length;
                 }
               }
+
+              for (const call of matchingCalls) {
+                try {
+                  const validatedParameters = toolSchema.parse(call.parameters);
+                  entries.push({
+                    call,
+                    executor: async () => executor(validatedParameters),
+                    timeoutMs: options?.timeoutMs,
+                  });
+                } catch (validationError) {
+                  // Add validation error as result immediately
+                  handlerContext.addToolResult({
+                    toolName: String(toolName),
+                    parameters: call.parameters,
+                    result: `Parameter validation failed: ${validationError instanceof Error ? validationError.message : String(validationError)}`,
+                    isError: true,
+                    duration: toolResultDuration,
+                  });
+                }
+              }
+
+              if (entries.length === 0) return matchingCalls.length;
+
+              // Execute: parallel if <parallel_tool_calls> mode, sequential otherwise
+              let results: Array<{ call: ToolCallingMatch & { found: true }; status: string; result?: ToolExecutionResult; error?: string }>;
+              if (isParallel) {
+                // Import and use parallel execution — NOT Promise.all, collects success+failure+timeout
+                const { executeToolCallsParallel } = await import('./parallelExecution');
+                results = await executeToolCallsParallel(entries);
+              } else {
+                // Sequential execution
+                const { executeToolCallsSequential } = await import('./parallelExecution');
+                results = await executeToolCallsSequential(entries);
+              }
+
+              // Process all results
+              for (const result of results) {
+                const isError = result.status !== 'fulfilled' || (result.result !== undefined && !result.result.success);
+                const resultText = result.status === 'timeout'
+                  ? (result.error ?? 'Tool execution timed out')
+                  : result.status === 'rejected'
+                  ? (result.error ?? 'Tool execution failed')
+                  : result.result?.success
+                  ? (result.result.data ?? 'Success')
+                  : (result.result?.error ?? 'Unknown error');
+
+                handlerContext.addToolResult({
+                  toolName: String(toolName),
+                  parameters: result.call.parameters,
+                  result: resultText,
+                  isError,
+                  duration: toolResultDuration,
+                });
+
+                // Signal tool execution to other plugins
+                await hooks.toolExecuted.promise({
+                  agentFrameworkContext,
+                  toolResult: result.result ?? { success: false, error: resultText },
+                  toolInfo: {
+                    toolId: String(toolName),
+                    parameters: (result.call.parameters ?? {}),
+                    originalText: result.call.originalText,
+                  },
+                  requestId,
+                });
+              }
+
+              handlerContext.yieldToSelf();
+              return matchingCalls.length;
             },
           };
 
@@ -669,42 +694,4 @@ ${options.isError ? 'Error' : 'Result'}: ${options.result}
     displayName: definition.displayName,
     description: definition.description,
   };
-}
-
-/**
- * Registry for tools created with defineTool
- */
-const toolRegistry = new Map<string, ReturnType<typeof defineTool>>();
-
-/**
- * Register a tool definition
- */
-export function registerToolDefinition<
-  TConfigSchema extends z.ZodType,
-  TLLMToolSchemas extends Record<string, z.ZodType>,
->(definition: ToolDefinition<TConfigSchema, TLLMToolSchemas>): ReturnType<typeof defineTool<TConfigSchema, TLLMToolSchemas>> {
-  const toolDefinition = defineTool(definition);
-
-  // Register tool parameter schema and metadata for dynamic schema generation
-  registerToolParameterSchema(toolDefinition.toolId, toolDefinition.configSchema, {
-    displayName: toolDefinition.displayName,
-    description: toolDefinition.description,
-  });
-
-  toolRegistry.set(toolDefinition.toolId, toolDefinition as ReturnType<typeof defineTool>);
-  return toolDefinition;
-}
-
-/**
- * Get all registered tool definitions
- */
-export function getAllToolDefinitions(): Map<string, ReturnType<typeof defineTool>> {
-  return toolRegistry;
-}
-
-/**
- * Get a tool definition by ID
- */
-export function getToolDefinition(toolId: string): ReturnType<typeof defineTool> | undefined {
-  return toolRegistry.get(toolId);
 }

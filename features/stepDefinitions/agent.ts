@@ -125,7 +125,8 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
           embedding = generateSemanticEmbedding(embeddingTag);
         }
 
-        if (response) rules.push({ response, stream, embedding });
+        // Include rules with a response OR an embedding — MockOpenAIServer separates them into chatRules vs embeddingRules internally
+        if (response || embedding) rules.push({ response, stream, embedding });
       }
     }
 
@@ -166,7 +167,8 @@ Given('I add mock OpenAI responses:', function(this: ApplicationWorld, dataTable
         embedding = generateSemanticEmbedding(embeddingTag);
       }
 
-      if (response) rules.push({ response, stream, embedding });
+      // Include rules with a response OR an embedding — MockOpenAIServer separates them into chatRules vs embeddingRules internally
+      if (response || embedding) rules.push({ response, stream, embedding });
     }
   }
 
@@ -251,6 +253,27 @@ Then('the last AI request should contain system prompt {string}', async function
   }
 });
 
+Then('the last AI request system prompt should not contain {string}', async function(this: ApplicationWorld, unexpectedText: string) {
+  if (!this.mockOpenAIServer) {
+    throw new Error('Mock OpenAI server is not running');
+  }
+
+  const lastRequest = this.mockOpenAIServer.getLastRequest();
+  if (!lastRequest) {
+    throw new Error('No AI request has been made yet');
+  }
+
+  const systemMessage = lastRequest.messages.find(message => message.role === 'system');
+  if (!systemMessage) {
+    // No system message means it definitely doesn't contain the text
+    return;
+  }
+
+  if (systemMessage.content && systemMessage.content.includes(unexpectedText)) {
+    throw new Error(`Expected system prompt NOT to contain "${unexpectedText}", but it was found in: "${systemMessage.content.substring(0, 300)}..."`);
+  }
+});
+
 Then('the last AI request should have {int} messages', async function(this: ApplicationWorld, expectedCount: number) {
   if (!this.mockOpenAIServer) {
     throw new Error('Mock OpenAI server is not running');
@@ -264,6 +287,54 @@ Then('the last AI request should have {int} messages', async function(this: Appl
   const actualCount = lastRequest.messages.length;
   if (actualCount !== expectedCount) {
     throw new Error(`Expected ${expectedCount} messages in the AI request, but got ${actualCount}`);
+  }
+});
+
+Then('the last AI request user message should contain {string}', async function(this: ApplicationWorld, expectedText: string) {
+  if (!this.mockOpenAIServer) {
+    throw new Error('Mock OpenAI server is not running');
+  }
+
+  const lastRequest = this.mockOpenAIServer.getLastRequest();
+  if (!lastRequest) {
+    throw new Error('No AI request has been made yet');
+  }
+
+  // Find the last user message in the request
+  const userMessages = lastRequest.messages.filter(message => message.role === 'user');
+  if (userMessages.length === 0) {
+    throw new Error('No user message found in the AI request');
+  }
+
+  const lastUserMessage = userMessages[userMessages.length - 1];
+  const content = lastUserMessage.content ?? '';
+
+  const normalizedExpectedText = expectedText.replaceAll('\\n', '\n');
+  const contentHasExpectedText = content.includes(expectedText) || content.includes(normalizedExpectedText);
+  if (!contentHasExpectedText) {
+    throw new Error(`Expected user message to contain "${expectedText}", but got: "${content}"`);
+  }
+});
+
+Then('the last AI request user message should not contain {string}', async function(this: ApplicationWorld, unexpectedText: string) {
+  if (!this.mockOpenAIServer) {
+    throw new Error('Mock OpenAI server is not running');
+  }
+
+  const lastRequest = this.mockOpenAIServer.getLastRequest();
+  if (!lastRequest) {
+    throw new Error('No AI request has been made yet');
+  }
+
+  // Find the last user message in the request
+  const userMessages = lastRequest.messages.filter(message => message.role === 'user');
+  if (userMessages.length === 0) {
+    throw new Error('No user message found in the AI request');
+  }
+
+  const lastUserMessage = userMessages[userMessages.length - 1];
+  if (lastUserMessage.content && lastUserMessage.content.includes(unexpectedText)) {
+    throw new Error(`Expected user message NOT to contain "${unexpectedText}", but it was found in: "${lastUserMessage.content.substring(0, 200)}..."`);
   }
 });
 

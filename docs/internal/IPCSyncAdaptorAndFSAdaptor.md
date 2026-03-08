@@ -245,10 +245,10 @@ Benefits:
 
 ```typescript
 // FileSystemWatcher.ts
-FILE_DELETION_DELAY_MS = 100    // Delay before processing DELETE events
-FILE_INCLUSION_DELAY_MS = 150   // Delay before re-including file after save
-GIT_NOTIFICATION_DELAY_MS = 1000 // Debounce for git status notification
-SYNCER_TRIGGER_DELAY_MS = 200   // Debounce for syncer trigger
+FILE_DELETION_DELAY_MS = 100; // Delay before processing DELETE events
+FILE_INCLUSION_DELAY_MS = 150; // Delay before re-including file after save
+GIT_NOTIFICATION_DELAY_MS = 1000; // Debounce for git status notification
+SYNCER_TRIGGER_DELAY_MS = 200; // Debounce for syncer trigger
 ```
 
 ### Syncer Configuration

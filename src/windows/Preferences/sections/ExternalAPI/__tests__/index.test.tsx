@@ -91,7 +91,6 @@ const mockAIConfig = {
   },
   modelParameters: {
     temperature: 0.7,
-    systemPrompt: 'You are a helpful assistant.',
     topP: 0.95,
   },
 };
@@ -212,7 +211,6 @@ describe('ExternalAPI Component', () => {
         // No embedding
         modelParameters: {
           temperature: 0.7,
-          systemPrompt: 'You are a helpful assistant.',
           topP: 0.95,
         },
       }),
@@ -272,7 +270,6 @@ describe('ExternalAPI Component', () => {
         },
         modelParameters: {
           temperature: 0.7,
-          systemPrompt: 'You are a helpful assistant.',
           topP: 0.95,
         },
       }),

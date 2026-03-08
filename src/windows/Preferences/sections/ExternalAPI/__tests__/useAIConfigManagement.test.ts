@@ -13,7 +13,6 @@ describe('useAIConfigManagement', () => {
     },
     modelParameters: {
       temperature: 0.7,
-      systemPrompt: 'You are a helpful assistant.',
       topP: 0.95,
     },
   };

@@ -51,7 +51,7 @@ const MyLLMToolSchema = z.object({
   query: z.string(),
   limit: z.number().optional().default(10),
 }).meta({
-  title: 'my-tool',  // Tool name for LLM
+  title: 'my-tool', // Tool name for LLM
   description: 'Search for something',
   examples: [{ query: 'example', limit: 5 }],
 });

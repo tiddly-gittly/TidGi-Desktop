@@ -121,4 +121,5 @@ export const AGENT_INSTANCE_FIELDS = [
   'aiApiConfig',
   'agentFrameworkConfig',
   'closed',
+  'volatile',
 ] as const;

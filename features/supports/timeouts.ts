@@ -1,3 +1,18 @@
+import { setDefaultTimeout } from '@cucumber/cucumber';
+
+const isCI = Boolean(process.env.CI);
+const isMac = process.platform === 'darwin';
+
+/**
+ * Cucumber global timeout budget per step/hook.
+ * Keep macOS equal to CI for local parity on slower Electron startup.
+ */
+export const CUCUMBER_GLOBAL_TIMEOUT = (isCI || isMac) ? 25000 : 5000;
+
+console.log('[Timeout Config] Setting global timeout to:', CUCUMBER_GLOBAL_TIMEOUT, 'ms (CI:', isCI, ', macOS:', isMac, ')');
+
+setDefaultTimeout(CUCUMBER_GLOBAL_TIMEOUT);
+
 /**
  * Centralized timeout configuration for E2E tests
  *
@@ -13,21 +28,11 @@
  * not a timeout that should be increased.
  */
 
-const isCI = Boolean(process.env.CI);
-const isMac = process.platform === 'darwin';
-
-/**
- * Cucumber global timeout budget per step/hook.
- * Keep macOS equal to CI for local parity on slower Electron startup.
- */
-export const CUCUMBER_GLOBAL_TIMEOUT = (isCI || isMac) ? 25000 : 5000;
-
 /**
  * Timeout for Playwright waitForSelector and similar operations
  * These are internal timeouts for finding elements, not Cucumber step timeouts
- * Local: 5s, CI: 25s
  */
-export const PLAYWRIGHT_TIMEOUT = (isCI || isMac) ? 25000 : 5000;
+export const PLAYWRIGHT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
 
 /**
  * Shorter timeout for operations that should be very fast

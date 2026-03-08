@@ -66,24 +66,27 @@ describe('AgentInstanceService Wiki Operation', () => {
       content: '<tool_use name="wiki-operation">{"workspaceName":"test-wiki-1","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"}</tool_use>',
     };
 
-    // Mock generateFromAI to yield AIStreamResponse-like objects (status + content)
-    const mockAIResponseGenerator = function*() {
-      // First round: assistant suggests default workspace (will cause plugin to post an error and request another round)
-      yield {
-        status: 'done' as const,
-        content: firstAssistant.content,
-        requestId: 'r1',
-      } as unknown;
-
-      // Second round: assistant suggests the correct workspace that exists in fixtures
-      yield {
-        status: 'done' as const,
-        content: assistantSecond.content,
-        requestId: 'r2',
-      } as unknown;
-    };
-
-    mockExternalAPIService.generateFromAI = vi.fn().mockReturnValue(mockAIResponseGenerator());
+    // Mock generateFromAI to yield AIStreamResponse-like objects.
+    // Use mockReturnValueOnce per round: the iterative basicPromptConcatHandler calls
+    // generateFromAI once per round and breaks the stream with `break` when a tool result
+    // triggers a new round.  A shared generator instance would be terminated by that break.
+    mockExternalAPIService.generateFromAI = vi.fn()
+      // First round: assistant suggests default workspace → error → request another round
+      .mockReturnValueOnce((function*() {
+        yield {
+          status: 'done' as const,
+          content: firstAssistant.content,
+          requestId: 'r1',
+        } as unknown;
+      })())
+      // Second round: assistant suggests the correct workspace
+      .mockReturnValueOnce((function*() {
+        yield {
+          status: 'done' as const,
+          content: assistantSecond.content,
+          requestId: 'r2',
+        } as unknown;
+      })());
 
     // Spy on sendMsgToAgent to call the internal flow
     const sendPromise = agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: '在 wiki 里创建一个新笔记，内容为 test' });

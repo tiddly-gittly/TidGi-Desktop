@@ -8,7 +8,9 @@ import { usePreferenceObservable } from '@services/preferences/hooks';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
+import { TabListDropdown } from '../../Agent/components/TabBar/TabListDropdown';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
+import { AgentSwitcher } from './AgentSwitcher';
 import { APILogsDialog } from './APILogsDialog';
 import ChatTitle from './ChatTitle';
 import { CompactModelSelector } from './CompactModelSelector';
@@ -33,6 +35,9 @@ interface ChatHeaderProps {
   loading: boolean;
   onOpenParameters: () => void;
   inputText?: string;
+  currentAgentDefId?: string;
+  onSwitchAgent?: (agentDefinitionId: string) => void;
+  isStreaming?: boolean;
 }
 
 /**
@@ -43,6 +48,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   loading,
   onOpenParameters,
   inputText,
+  currentAgentDefId,
+  onSwitchAgent,
+  isStreaming,
 }) => {
   const { t } = useTranslation('agent');
   const preference = usePreferenceObservable();
@@ -72,7 +80,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
   return (
     <Header>
-      <ChatTitle title={title} agent={agent} updateAgent={updateAgent} />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1 }}>
+        <TabListDropdown />
+        <ChatTitle title={title} agent={agent} updateAgent={updateAgent} />
+        {onSwitchAgent && (
+          <AgentSwitcher
+            currentAgentDefId={currentAgentDefId}
+            onSwitch={onSwitchAgent}
+            disabled={loading || isStreaming}
+          />
+        )}
+      </Box>
       <ControlsContainer>
         <IconButton
           size='small'

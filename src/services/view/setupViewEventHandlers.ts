@@ -180,9 +180,9 @@ export default function setupViewEventHandlers(
         didFailLoadErrorMessage: `${errorCode} ${errorDesc}`,
       });
       if (workspaceObject.active && browserWindow !== undefined && !browserWindow.isDestroyed()) {
-        // fix https://github.com/atomery/singlebox/issues/228
+        // Hide view offscreen to let error message UI show through
         const contentSize = browserWindow.getContentSize();
-        view.setBounds(await getViewBounds(contentSize as [number, number], { findInPage: false }, 0, 0)); // hide browserView to show error message
+        view.setBounds({ x: -contentSize[0], y: -contentSize[1], width: contentSize[0], height: contentSize[1] });
       }
     }
     // edge case to handle failed auth, use setTimeout to prevent infinite loop

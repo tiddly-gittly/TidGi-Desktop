@@ -1,3 +1,4 @@
+import { isTest } from '@/constants/environment';
 import { container } from '@services/container';
 import { getPreloadPath } from '@services/windows/viteEntry';
 import { BrowserWindow, WebContentsView, WebPreferences } from 'electron';
@@ -9,25 +10,18 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IThemeService } from '@services/theme/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { MetaDataChannel, WindowChannel } from '@/constants/channels';
 import { getDefaultTidGiUrl } from '@/constants/urls';
-import { isMac } from '@/helpers/system';
-import type { IAuthenticationService } from '@services/auth/interface';
-import getFromRenderer from '@services/libs/getFromRenderer';
 import getViewBounds from '@services/libs/getViewBounds';
-import { i18n } from '@services/libs/i18n';
-import { isBrowserWindow } from '@services/libs/isBrowserWindow';
 import { logger } from '@services/libs/log';
-import type { INativeService } from '@services/native/interface';
 import { type IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
-import { getTidgiMiniWindowTargetWorkspace } from '@services/workspacesView/utilities';
 import debounce from 'lodash/debounce';
 import { setViewEventName } from './constants';
 import { ViewLoadUrlError } from './error';
 import type { IViewService } from './interface';
+import { registerViewMenu } from './registerMenu';
 import { setupIpcServerRoutesHandlers } from './setupIpcServerRoutesHandlers';
 import setupViewEventHandlers from './setupViewEventHandlers';
 import { setupViewSession } from './setupViewSession';
@@ -36,13 +30,9 @@ import { setupViewSession } from './setupViewSession';
 export class View implements IViewService {
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
-    @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
-    @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
     @inject(serviceIdentifier.MenuService) private readonly menuService: IMenuService,
-  ) {
-  }
+  ) {}
 
-  // Circular dependency services - use container.get() when needed
   private get windowService(): IWindowService {
     return container.get<IWindowService>(serviceIdentifier.Window);
   }
@@ -52,240 +42,133 @@ export class View implements IViewService {
   }
 
   public async initialize(): Promise<void> {
-    await this.registerMenu();
+    await registerViewMenu();
   }
 
-  private async registerMenu(): Promise<void> {
-    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-    const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
-
-    const hasWorkspaces = async () => (await workspaceService.countWorkspaces()) > 0;
-    const sidebar = await preferenceService.get('sidebar');
-    const titleBar = await preferenceService.get('titleBar');
-    const keyboardShortcuts = await preferenceService.get('keyboardShortcuts');
-    const tidgiMiniWindowShortcut = keyboardShortcuts?.['Window.toggleTidgiMiniWindow'] || '';
-    // electron type forget that click can be async function
-
-    await menuService.insertMenu('View', [
-      {
-        label: () => (sidebar ? i18n.t('Preference.HideSideBar') : i18n.t('Preference.ShowSideBar')),
-        accelerator: 'CmdOrCtrl+Alt+S',
-        click: async () => {
-          const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-          const sidebarLatest = await preferenceService.get('sidebar');
-          void preferenceService.set('sidebar', !sidebarLatest);
-          void workspaceViewService.realignActiveWorkspace();
-        },
-      },
-      {
-        label: () => (titleBar ? i18n.t('Preference.HideTitleBar') : i18n.t('Preference.ShowTitleBar')),
-        accelerator: 'CmdOrCtrl+Alt+T',
-        enabled: isMac,
-        visible: isMac,
-        click: async () => {
-          const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-          const titleBarLatest = await preferenceService.get('titleBar');
-          void preferenceService.set('titleBar', !titleBarLatest);
-          void workspaceViewService.realignActiveWorkspace();
-        },
-      },
-      {
-        label: () => i18n.t('Preference.TidgiMiniWindowShortcutKey'),
-        accelerator: tidgiMiniWindowShortcut,
-        click: async () => {
-          const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-          await windowService.toggleTidgiMiniWindow();
-        },
-      },
-      { type: 'separator' },
-      {
-        label: () => i18n.t('Menu.ActualSize'),
-        accelerator: 'CmdOrCtrl+0',
-        click: async (_menuItem, browserWindow) => {
-          // if item is called in popup window
-          // modify menu bar in the popup window instead
-          if (!isBrowserWindow(browserWindow)) return;
-          const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-          if (isPopup === true) {
-            const contents = browserWindow.webContents;
-            contents.zoomFactor = 1;
-            return;
-          }
-          // browserWindow above is for the main window's react UI
-          // modify browser view in the main window
-          const view = await this.getActiveBrowserView();
-          view?.webContents.setZoomFactor(1);
-        },
-        enabled: hasWorkspaces,
-      },
-      {
-        label: () => i18n.t('Menu.ZoomIn'),
-        accelerator: 'CmdOrCtrl+=',
-        click: async (_menuItem, browserWindow) => {
-          // if item is called in popup window
-          // modify menu bar in the popup window instead
-          if (!isBrowserWindow(browserWindow)) return;
-          // TODO: on popup (secondary) window, browserWindow here seems can't get the correct webContent, so this never returns. And can't set zoom of popup.
-          const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-          if (isPopup === true) {
-            const contents = browserWindow.webContents;
-            contents.zoomFactor += 0.05;
-            return;
-          }
-          // modify browser view in the main window
-          const view = await this.getActiveBrowserView();
-          view?.webContents.setZoomFactor(view.webContents.getZoomFactor() + 0.05);
-        },
-        enabled: hasWorkspaces,
-      },
-      {
-        label: () => i18n.t('Menu.ZoomOut'),
-        accelerator: 'CmdOrCtrl+-',
-        click: async (_menuItem, browserWindow) => {
-          // if item is called in popup window
-          // modify menu bar in the popup window instead
-          if (!isBrowserWindow(browserWindow)) return;
-          const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-          if (isPopup === true) {
-            const contents = browserWindow.webContents;
-            contents.zoomFactor -= 0.05;
-            return;
-          }
-          // modify browser view in the main window
-          const view = await this.getActiveBrowserView();
-          view?.webContents.setZoomFactor(view.webContents.getZoomFactor() - 0.05);
-        },
-        enabled: hasWorkspaces,
-      },
-      { type: 'separator' },
-      {
-        label: () => i18n.t('ContextMenu.Reload'),
-        accelerator: 'CmdOrCtrl+R',
-        click: async (_menuItem, browserWindow) => {
-          // if item is called in popup window
-          // modify menu bar in the popup window instead
-          if (!isBrowserWindow(browserWindow)) return;
-          const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-          if (isPopup === true) {
-            browserWindow.webContents.reload();
-            return;
-          }
-          // refresh the main window browser view's wiki content, instead of sidebar's react content
-          await this.reloadActiveBrowserView();
-        },
-        enabled: hasWorkspaces,
-      },
-    ]);
-  }
+  // ── Registry ──────────────────────────────────────────────
 
   /**
-   * Record<workspaceID, Record<windowName, WebContentsView>>
-   *
-   * Each workspace can have several windows to render its view (main window and menu bar)
+   * workspaceID → (windowName → WebContentsView)
+   * Views stay in this map even when hidden (offscreen). Only `destroyAllViewsOfWorkspace` removes them.
    */
-  private readonly views = new Map<string, Map<WindowNames, WebContentsView> | undefined>();
+  private readonly views = new Map<string, Map<WindowNames, WebContentsView>>();
+
+  /**
+   * Track resize-listener cleanup functions so we can unbind them on destroy.
+   * Key: `${workspaceID}-${windowName}`
+   */
+  private readonly resizeCleanups = new Map<string, () => void>();
+
+  /**
+   * Track custom bounds overrides (e.g. Agent split-view embed).
+   * When set, the debounced window-resize handler skips auto-resizing this view.
+   */
+  private readonly customBoundsMap = new Map<string, { x: number; y: number; width: number; height: number }>();
+
+  private readonly setViewEventTarget = new EventTarget();
+
   public async getViewCount(): Promise<number> {
-    return await Promise.resolve(Object.keys(this.views).length);
+    return this.views.size;
   }
 
   public getView(workspaceID: string, windowName: WindowNames): WebContentsView | undefined {
-    // Try exact match first
     let view = this.views.get(workspaceID)?.get(windowName);
     if (view) return view;
 
-    // If not found, try case-insensitive match (for robustness)
-    // This is a fallback that may indicate a bug in workspace ID handling
-    const lowerWorkspaceID = workspaceID.toLowerCase();
+    // Case-insensitive fallback — indicates a casing bug elsewhere, but keeps things working
+    const lower = workspaceID.toLowerCase();
     for (const [id, windowViews] of this.views.entries()) {
-      if (id.toLowerCase() === lowerWorkspaceID) {
-        view = windowViews?.get(windowName);
+      if (id.toLowerCase() === lower) {
+        view = windowViews.get(windowName);
         if (view) {
-          // Log as warning in development to catch inconsistent workspace ID casing
           logger[process.env.NODE_ENV === 'development' ? 'warn' : 'debug'](
-            'getView: Found view with case-insensitive match - this may indicate inconsistent workspace ID casing',
-            {
-              requestedId: workspaceID,
-              actualId: id,
-              windowName,
-            },
+            'getView: case-insensitive match — workspace ID casing inconsistency',
+            { requestedId: workspaceID, actualId: id, windowName },
           );
           return view;
         }
       }
     }
-
     return undefined;
   }
 
-  public setView(workspaceID: string, windowName: WindowNames, newView: WebContentsView): void {
-    const workspaceOwnedViews = this.views.get(workspaceID);
-    if (workspaceOwnedViews === undefined) {
-      this.views.set(workspaceID, new Map([[windowName, newView]]));
-      this.setViewEventTarget.dispatchEvent(new Event(setViewEventName(workspaceID, windowName)));
-    } else {
-      workspaceOwnedViews.set(windowName, newView);
+  private setView(workspaceID: string, windowName: WindowNames, newView: WebContentsView): void {
+    let windowViews = this.views.get(workspaceID);
+    if (windowViews === undefined) {
+      windowViews = new Map();
+      this.views.set(workspaceID, windowViews);
+    }
+    windowViews.set(windowName, newView);
+    this.setViewEventTarget.dispatchEvent(new Event(setViewEventName(workspaceID, windowName)));
+  }
+
+  public forEachView(function_: (view: WebContentsView, workspaceID: string, windowName: WindowNames) => void): void {
+    for (const [workspaceID, windowViews] of this.views.entries()) {
+      for (const [windowName, view] of windowViews.entries()) {
+        function_(view, workspaceID, windowName);
+      }
     }
   }
 
-  private readonly setViewEventTarget = new EventTarget();
+  public async getLoadedViewEnsure(workspaceID: string, windowName: WindowNames): Promise<WebContentsView> {
+    let view = this.getView(workspaceID, windowName);
+    if (view !== undefined) return view;
+    // Wait for view to appear
+    await new Promise<void>((resolve) => {
+      this.setViewEventTarget.addEventListener(setViewEventName(workspaceID, windowName), () => {
+        resolve();
+      }, { once: true });
+    });
+    view = this.getView(workspaceID, windowName);
+    if (view === undefined) {
+      const message = `Still no view for ${workspaceID} in window ${windowName} after waiting.`;
+      logger.error(message, { function: 'getLoadedViewEnsure' });
+      throw new Error(message);
+    }
+    return view;
+  }
+
+  // ── Lifecycle ─────────────────────────────────────────────
 
   private shouldMuteAudio = false;
   private shouldPauseNotifications = false;
 
   public async alreadyHaveView(workspace: IWorkspace): Promise<boolean> {
-    const checkNotExist = (workspaceToCheck: IWorkspace, windowName: WindowNames): boolean => {
-      const existedView = this.getView(workspaceToCheck.id, windowName);
-      return existedView === undefined;
-    };
-    const checkNotExistResult = await Promise.all([
-      Promise.resolve(checkNotExist(workspace, WindowNames.main)),
-      this.preferenceService.get('tidgiMiniWindow').then((tidgiMiniWindow) => (tidgiMiniWindow && checkNotExist(workspace, WindowNames.tidgiMiniWindow)) ? true : false),
-    ]);
-    return checkNotExistResult.every((result) => !result);
+    const hasMain = this.getView(workspace.id, WindowNames.main) !== undefined;
+    const needsMini = await this.preferenceService.get('tidgiMiniWindow');
+    if (!needsMini) return hasMain;
+    const hasMini = this.getView(workspace.id, WindowNames.tidgiMiniWindow) !== undefined;
+    return hasMain && hasMini;
   }
 
   public async addView(workspace: IWorkspace, windowName: WindowNames): Promise<void> {
-    // we assume each window will only have one view, so get view by window name + workspace
-    const existedView = this.getView(workspace.id, windowName);
-    const browserWindow = this.windowService.get(windowName);
-    if (existedView !== undefined) {
-      logger.warn(`BrowserViewService.addView: ${workspace.id} 's view already exists`);
+    if (this.getView(workspace.id, windowName) !== undefined) {
+      logger.warn(`addView: ${workspace.id}/${windowName} already exists, skipping`);
       return;
     }
+    const browserWindow = this.windowService.get(windowName);
     if (browserWindow === undefined) {
-      logger.error(`BrowserViewService.addView: ${workspace.id} 's browser window is not ready`, {
-        windowName,
-        workspaceId: workspace.id,
-        workspaceName: workspace.name,
-      });
       throw new Error(`Browser window ${windowName} is not ready for workspace ${workspace.id}`);
     }
     const sharedWebPreferences = await this.getSharedWebPreferences(workspace);
-    const view = await this.createViewAddToWindow(workspace, browserWindow, sharedWebPreferences, windowName);
+    const view = await this.createViewAndAttach(workspace, browserWindow, sharedWebPreferences, windowName);
     this.setView(workspace.id, windowName, view);
-    await this.initializeWorkspaceViewHandlersAndLoad(browserWindow, view, { workspace, sharedWebPreferences, windowName });
+    await this.initializeViewHandlersAndLoad(browserWindow, view, { workspace, sharedWebPreferences, windowName });
   }
 
-  public async getSharedWebPreferences(workspace: IWorkspace) {
-    const preferences = this.preferenceService.getPreferences();
-    const { spellcheck } = preferences;
-
-    const sessionOfView = setupViewSession(workspace, preferences, () => this.preferenceService.getPreferences());
-    const browserViewMetaData: IBrowserViewMetaData = {
-      workspace,
-    };
+  public async getSharedWebPreferences(workspace: IWorkspace): Promise<WebPreferences> {
+    const { spellcheck } = this.preferenceService.getPreferences();
+    const sessionOfView = setupViewSession(workspace, this.preferenceService.getPreferences(), () => this.preferenceService.getPreferences());
+    const browserViewMetaData: IBrowserViewMetaData = { workspace };
     return {
       devTools: true,
       spellcheck,
       nodeIntegration: false,
       contextIsolation: true,
-      // allow loading pictures from the localhost network, you may want to setup img host services in your local network, set this to true will cause CORS
-      // TODO: make this a setting in security preference
       webSecurity: false,
       allowRunningInsecureContent: true,
+      // Prevent JS from being throttled while the window is hidden during E2E tests
+      ...(isTest ? { backgroundThrottling: false } : {}),
       session: sessionOfView,
       preload: getPreloadPath(),
       additionalArguments: [
@@ -296,70 +179,61 @@ export class View implements IViewService {
     } satisfies WebPreferences;
   }
 
-  public async createViewAddToWindow(workspace: IWorkspace, browserWindow: BrowserWindow, sharedWebPreferences: WebPreferences, windowName: WindowNames): Promise<WebContentsView> {
-    // create a new WebContentsView
-    const view = new WebContentsView({
-      webPreferences: sharedWebPreferences,
-    });
-    // background needs to explicitly set
-    // if not, by default, the background of WebContentsView is transparent
-    // which would break the CSS of certain websites
-    // even with dark mode, all major browsers
-    // always use #FFF as default page background
-    // https://github.com/atomery/webcatalog/issues/723
-    // https://github.com/electron/electron/issues/16212
+  public async createViewAndAttach(
+    workspace: IWorkspace,
+    browserWindow: BrowserWindow,
+    sharedWebPreferences: WebPreferences,
+    windowName: WindowNames,
+  ): Promise<WebContentsView> {
+    const view = new WebContentsView({ webPreferences: sharedWebPreferences });
+
     const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
     const shouldUseDarkColors = await themeService.shouldUseDarkColors();
     view.setBackgroundColor(shouldUseDarkColors ? '#212121' : '#ffffff');
 
-    // Handle audio & notification preferences
-    if (this.shouldMuteAudio !== undefined) {
-      view.webContents.audioMuted = this.shouldMuteAudio;
+    if (this.shouldMuteAudio) {
+      view.webContents.audioMuted = true;
     }
-    // Add view to window if:
-    // 1. workspace is active (main window)
-    // 2. windowName is secondary (always add)
-    // 3. windowName is tidgiMiniWindow (tidgi mini window can have fixed workspace independent of main window's active workspace)
-    if (workspace.active || windowName === WindowNames.secondary || windowName === WindowNames.tidgiMiniWindow) {
-      browserWindow.contentView.addChildView(view);
+
+    // Always add as child — visibility is controlled purely by bounds
+    browserWindow.contentView.addChildView(view);
+
+    // Set initial bounds: active or secondary/mini → visible; inactive main → offscreen
+    if (workspace.active || windowName !== WindowNames.main) {
       const contentSize = browserWindow.getContentSize();
-      const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
-      view.setBounds(newViewBounds);
+      view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
+    } else {
+      this.moveOffscreen(view, browserWindow);
     }
-    // handle autoResize on user drag the window's edge https://github.com/electron/electron/issues/22174#issuecomment-2628884143
-    const debouncedOnResize = debounce(async () => {
-      logger.debug('debouncedOnResize');
-      if (browserWindow === undefined) return;
-      const updatedWorkspace = await this.workspaceService.get(workspace.id);
-      if (updatedWorkspace === undefined) return;
-      // Prevent update non-active (hiding) wiki workspace, so it won't pop up to cover other active agent workspace
-      if (windowName === WindowNames.main && !updatedWorkspace.active) return;
 
-      // Check if this view has custom bounds set - if so, don't auto-resize
-      const key = `${workspace.id}-${windowName}`;
-      if (this.customBoundsMap.has(key) && this.customBoundsMap.get(key) !== undefined) {
-        logger.debug('debouncedOnResize: skipping auto-resize for view with custom bounds', {
-          workspaceId: workspace.id,
-          windowName,
-        });
-        return;
-      }
+    // Wire debounced resize handler, store cleanup function
+    const key = `${workspace.id}-${windowName}`;
+    const debouncedResize = debounce(async () => {
+      if (browserWindow.isDestroyed()) return;
+      const ws = await this.workspaceService.get(workspace.id);
+      if (ws === undefined) return;
+      // Skip resize for hidden (non-active) main-window views
+      if (windowName === WindowNames.main && !ws.active) return;
+      // Skip resize for views with custom bounds (Agent split-view)
+      if (this.customBoundsMap.has(key)) return;
 
-      if ([WindowNames.secondary, WindowNames.main, WindowNames.tidgiMiniWindow].includes(windowName)) {
-        const contentSize = browserWindow.getContentSize();
-        const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
-        view.setBounds(newViewBounds);
-      }
+      const contentSize = browserWindow.getContentSize();
+      view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
     }, 200);
-    browserWindow.on('resize', debouncedOnResize);
+
+    browserWindow.on('resize', debouncedResize);
+    this.resizeCleanups.set(key, () => {
+      browserWindow.removeListener('resize', debouncedResize);
+    });
+
     return view;
   }
 
-  public async initializeWorkspaceViewHandlersAndLoad(
+  public async initializeViewHandlersAndLoad(
     browserWindow: BrowserWindow,
     view: WebContentsView,
     configs: { sharedWebPreferences: WebPreferences; uri?: string; windowName: WindowNames; workspace: IWorkspace },
-  ) {
+  ): Promise<void> {
     const { sharedWebPreferences, uri, workspace, windowName } = configs;
     setupViewEventHandlers(view, browserWindow, {
       shouldPauseNotifications: this.shouldPauseNotifications,
@@ -376,31 +250,13 @@ export class View implements IViewService {
 
   public async loadUrlForView(workspace: IWorkspace, view: WebContentsView, uri?: string): Promise<void> {
     const { rememberLastPageVisited } = this.preferenceService.getPreferences();
-
     const lastUrl = isWikiWorkspace(workspace) ? workspace.lastUrl : null;
     const homeUrl = isWikiWorkspace(workspace) ? workspace.homeUrl : null;
     const urlToLoad = uri || (rememberLastPageVisited ? lastUrl : homeUrl) || homeUrl || getDefaultTidGiUrl(workspace.id);
     try {
-      logger.debug('view load url', {
-        stack: new Error('stack').stack?.replace('Error:', ''),
-        urlToLoad,
-        viewDefined: Boolean(view.webContents),
-        workspaceName: workspace.name,
-        function: 'loadUrlForView',
-      });
-      // if workspace failed to load, means nodejs server may have plugin error or something. Stop retrying, and show the error message in src/pages/Main/ErrorMessage.tsx
-      if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
-        return;
-      }
-      // will set again in view.webContents.on('did-start-loading'), but that one sometimes is too late to block services that wait for `isLoading`
-      await this.workspaceService.updateMetaData(workspace.id, {
-        didFailLoadErrorMessage: null,
-        isLoading: true,
-      });
+      if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) return;
+      await this.workspaceService.updateMetaData(workspace.id, { didFailLoadErrorMessage: null, isLoading: true });
       await view.webContents.loadURL(urlToLoad);
-      logger.debug('await loadURL done', {
-        function: 'loadUrlForView',
-      });
       const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
       view.webContents.on('destroyed', () => {
         unregisterContextMenu();
@@ -410,413 +266,158 @@ export class View implements IViewService {
     }
   }
 
-  public forEachView(functionToRun: (view: WebContentsView, workspaceID: string, windowName: WindowNames) => unknown): void {
-    [...this.views.keys()].forEach((workspaceID) => {
-      const workspaceOwnedViews = this.views.get(workspaceID);
-      if (workspaceOwnedViews !== undefined) {
-        [...workspaceOwnedViews.keys()].forEach((windowName) => {
-          const view = workspaceOwnedViews.get(windowName);
-          if (view !== undefined) {
-            functionToRun(view, workspaceID, windowName);
-          }
-        });
-      }
-    });
-  }
-
-  public async setActiveViewForAllBrowserViews(workspaceID: string): Promise<void> {
-    // Set main window workspace
-    const mainWindowTask = this.setActiveView(workspaceID, WindowNames.main);
-    const tidgiMiniWindow = await this.preferenceService.get('tidgiMiniWindow');
-
-    // For tidgi mini window, decide which workspace to show based on preferences
-    let tidgiMiniWindowTask = Promise.resolve();
-    if (tidgiMiniWindow) {
-      // Get preference settings to determine behavior
-      const { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(workspaceID);
-
-      if (shouldSync) {
-        // Sync with main window - use the same workspace as main window
-        logger.debug('setActiveViewForAllBrowserViews tidgi mini window syncing with main window', {
-          function: 'setActiveViewForAllBrowserViews',
-          workspaceID,
-        });
-        tidgiMiniWindowTask = this.setActiveView(workspaceID, WindowNames.tidgiMiniWindow);
-      } else if (targetWorkspaceId) {
-        // Fixed workspace mode - only update if the main window is switching TO the fixed workspace
-        // Otherwise, keep showing the fixed workspace (don't update)
-        if (workspaceID === targetWorkspaceId) {
-          logger.debug('setActiveViewForAllBrowserViews main window switching to fixed workspace', {
-            function: 'setActiveViewForAllBrowserViews',
-            targetWorkspaceId,
-          });
-          tidgiMiniWindowTask = this.setActiveView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
-        } else {
-          // Main window is switching to a different workspace, but tidgi mini window stays on fixed workspace
-          logger.debug('setActiveViewForAllBrowserViews tidgi mini window staying on fixed workspace', {
-            function: 'setActiveViewForAllBrowserViews',
-            targetWorkspaceId,
-            mainWindowWorkspaceId: workspaceID,
-          });
-          // Don't change tidgi mini window view - it should keep showing the fixed workspace
-        }
-      } else {
-        // Not syncing but no fixed workspace selected - do nothing for tidgi mini window
-        logger.debug('setActiveViewForAllBrowserViews no fixed workspace selected', {
-          function: 'setActiveViewForAllBrowserViews',
-        });
-      }
-    } else {
-      logger.info('setActiveViewForAllBrowserViews tidgi mini window not enabled', {
-        function: 'setActiveViewForAllBrowserViews',
-      });
-    }
-
-    await Promise.all([mainWindowTask, tidgiMiniWindowTask]);
-  }
-
-  public async setActiveView(workspaceID: string, windowName: WindowNames): Promise<void> {
-    const browserWindow = this.windowService.get(windowName);
-    logger.debug('set active view check', {
-      workspaceID,
-      windowName,
-      browserWindowDefined: String(browserWindow !== undefined),
-      function: 'setActiveView',
-    });
-    if (browserWindow === undefined) {
-      return;
-    }
-    const workspace = await this.workspaceService.get(workspaceID);
-    const view = this.getView(workspaceID, windowName);
-    logger.debug('view/workspace check', {
-      viewDefined: String(view !== undefined && view !== null),
-      workspaceDefined: String(workspace !== undefined),
-      function: 'setActiveView',
-    });
-    if (view === undefined || view === null) {
-      if (workspace === undefined) {
-        logger.error('workspace undefined in setActiveView', {
-          function: 'setActiveView',
-          windowName,
-          workspaceID,
-        });
-      } else {
-        await this.addView(workspace, windowName);
-      }
-    } else {
-      browserWindow.contentView.addChildView(view);
-      logger.debug('contentView.addChildView', {
-        function: 'setActiveView',
-      });
-      const contentSize = browserWindow.getContentSize();
-      if (workspace !== undefined && (await this.workspaceService.workspaceDidFailLoad(workspace.id))) {
-        view.setBounds(await getViewBounds(contentSize as [number, number], { findInPage: false, windowName }, 0, 0)); // hide browserView to show error message
-      } else {
-        const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
-        logger.debug('content size updated', {
-          newViewBounds: JSON.stringify(newViewBounds),
-          function: 'setActiveView',
-        });
-        view.setBounds(newViewBounds);
-      }
-      // focus on webview
-      // https://github.com/quanglam2807/webcatalog/issues/398
-      view.webContents.focus();
-      browserWindow.setTitle(view.webContents.getTitle());
-    }
-  }
-
-  public removeView(workspaceID: string, windowName: WindowNames): void {
-    logger.debug('removeView called', {
-      function: 'removeView',
-      workspaceID,
-      stack: new Error('stack').stack ?? 'no stack',
-    });
-    const view = this.getView(workspaceID, windowName);
-    const browserWindow = this.windowService.get(windowName);
-    if (view !== undefined && browserWindow !== undefined) {
-      // stop find in page when switching workspaces
-      view.webContents.stopFindInPage('clearSelection');
-      view.webContents.send(WindowChannel.closeFindInPage);
-
-      // don't clear contentView here `browserWindow.contentView.children = [];`, the "current contentView" may point to other workspace's view now, it will close other workspace's view when switching workspaces.
-      browserWindow.contentView.removeChildView(view);
-    } else {
-      logger.error('view or browserWindow is undefined, not destroying view properly', {
-        workspaceID,
-        windowName,
-        function: 'removeView',
-      });
-    }
-  }
-
-  /**
-   * Remove all views for a workspace.
-   * @param workspaceID The workspace ID
-   * @param permanent If true, views will be fully destroyed. If false, views are just removed from window but kept in memory for quick restore.
-   */
-  public removeAllViewOfWorkspace(workspaceID: string, permanent = false): void {
-    const views = this.views.get(workspaceID);
-    if (views !== undefined) {
-      [...views.keys()].forEach((windowName) => {
-        const view = views.get(windowName);
-        if (view) {
-          this.removeView(workspaceID, windowName);
-
-          // Clean up custom bounds map to prevent memory leaks
-          const boundsKey = `${workspaceID}-${windowName}`;
-          this.customBoundsMap.delete(boundsKey);
-
-          if (permanent) {
-            // Fully destroy the webContents to free resources
-            try {
-              if (!view.webContents.isDestroyed()) {
-                view.webContents.close();
-              }
-            } catch (error) {
-              logger.warn('Failed to close webContents during permanent removal', {
-                workspaceID,
-                windowName,
-                error,
-                function: 'removeAllViewOfWorkspace',
-              });
-            }
-          }
-        }
-      });
-      if (permanent) {
-        this.views.delete(workspaceID);
-      } else {
-        views.clear();
-      }
-    }
-  }
-
-  public setViewsAudioPref = (_shouldMuteAudio?: boolean): void => {
-    if (_shouldMuteAudio !== undefined) {
-      this.shouldMuteAudio = _shouldMuteAudio;
-    }
-
-    this.forEachView(async (view, id) => {
-      const workspace = await this.workspaceService.get(id);
-      if (view !== undefined && workspace !== undefined) {
-        view.webContents.audioMuted = (isWikiWorkspace(workspace) ? workspace.disableAudio : false) || this.shouldMuteAudio;
-      }
-    });
-  };
-
-  public setViewsNotificationsPref = (_shouldPauseNotifications?: boolean): void => {
-    if (_shouldPauseNotifications !== undefined) {
-      this.shouldPauseNotifications = _shouldPauseNotifications;
-    }
-  };
-
-  public async reloadViewsWebContentsIfDidFailLoad(): Promise<void> {
-    this.forEachView(async (view, id, _name) => {
-      if (await this.workspaceService.workspaceDidFailLoad(id)) {
-        if (view.webContents === null) {
-          logger.error('webContents null in reloadViewsWebContentsIfDidFailLoad', {
-            function: 'reloadViewsWebContentsIfDidFailLoad',
-            workspaceID: id,
-            webContents: String(view.webContents),
-          });
-          return;
-        }
-        view.webContents.reload();
-      }
-    });
-  }
-
   public async reloadViewsWebContents(workspaceID?: string): Promise<void> {
     const rememberLastPageVisited = await this.preferenceService.get('rememberLastPageVisited');
-    this.forEachView(async (view, id, _name) => {
-      /** if workspaceID not passed means reload all views. */
-      if (workspaceID === undefined || id === workspaceID) {
-        if (!view.webContents) {
-          logger.error('webContents missing in reloadViewsWebContents', {
-            function: 'reloadViewsWebContents',
-            workspaceID: id,
-            webContents: String(view.webContents),
-          });
-          return;
-        }
-        // if we can get lastUrl, use it
-        if (workspaceID !== undefined) {
-          const workspace = await this.workspaceService.get(workspaceID);
-
-          if (rememberLastPageVisited && workspace && isWikiWorkspace(workspace) && workspace.lastUrl) {
-            try {
-              await view.webContents.loadURL(workspace.lastUrl);
-            } catch (error) {
-              logger.warn(new ViewLoadUrlError(workspace.lastUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
-            }
+    this.forEachView(async (view, id) => {
+      if (workspaceID !== undefined && id !== workspaceID) return;
+      if (!view.webContents) return;
+      if (workspaceID !== undefined) {
+        const workspace = await this.workspaceService.get(workspaceID);
+        if (rememberLastPageVisited && workspace && isWikiWorkspace(workspace) && workspace.lastUrl) {
+          try {
+            await view.webContents.loadURL(workspace.lastUrl);
+          } catch (error) {
+            logger.warn(new ViewLoadUrlError(workspace.lastUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
           }
         }
-        // Always trigger a reload
-        view.webContents.reload();
+      }
+      view.webContents.reload();
+    });
+  }
+
+  public async reloadViewsWebContentsIfDidFailLoad(): Promise<void> {
+    this.forEachView(async (view, id) => {
+      if (await this.workspaceService.workspaceDidFailLoad(id)) {
+        view.webContents?.reload();
       }
     });
   }
 
-  public async getViewCurrentUrl(workspaceID?: string): Promise<string | undefined> {
-    if (!workspaceID) {
+  // ── Visibility (offscreen-bounds only) ────────────────────
+
+  private moveOffscreen(view: WebContentsView, browserWindow: BrowserWindow): void {
+    const [w, h] = browserWindow.getContentSize();
+    view.setBounds({ x: -w, y: -h, width: w, height: h });
+  }
+
+  public async showView(workspaceID: string, windowName: WindowNames): Promise<void> {
+    const view = this.getView(workspaceID, windowName);
+    const browserWindow = this.windowService.get(windowName);
+    if (view === undefined || browserWindow === undefined) {
+      logger.warn('showView: view or window not found', { workspaceID, windowName });
       return;
     }
-    const view = this.getView(workspaceID, WindowNames.main);
-    if (view === undefined) {
-      return;
-    }
-    return view.webContents.getURL();
+    // Ensure it's a child (idempotent in Electron)
+    try {
+      browserWindow.contentView.addChildView(view);
+    } catch { /* already added */ }
+    const contentSize = browserWindow.getContentSize();
+    view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
+    view.webContents.focus();
+    browserWindow.setTitle(view.webContents.getTitle());
   }
 
-  public async getActiveBrowserView(): Promise<WebContentsView | undefined> {
-    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const workspace = await workspaceService.getActiveWorkspace();
-    if (workspace !== undefined) {
-      const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-      const isTidgiMiniWindowOpen = await windowService.isTidgiMiniWindowOpen();
-      if (isTidgiMiniWindowOpen) {
-        return this.getView(workspace.id, WindowNames.tidgiMiniWindow);
-      } else {
-        return this.getView(workspace.id, WindowNames.main);
-      }
-    }
+  public async hideView(workspaceID: string, windowName: WindowNames): Promise<void> {
+    const view = this.getView(workspaceID, windowName);
+    const browserWindow = this.windowService.get(windowName);
+    if (view === undefined || browserWindow === undefined) return;
+    view.webContents.stopFindInPage('clearSelection');
+    view.webContents.send(WindowChannel.closeFindInPage);
+    this.moveOffscreen(view, browserWindow);
   }
 
-  public async getActiveBrowserViews(): Promise<Array<WebContentsView | undefined>> {
-    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const workspace = await workspaceService.getActiveWorkspace();
-    if (workspace !== undefined) {
-      return [this.getView(workspace.id, WindowNames.main), this.getView(workspace.id, WindowNames.tidgiMiniWindow)];
-    }
-    logger.error(`getActiveBrowserViews workspace !== undefined`, { stack: new Error('stack').stack?.replace('Error:', '') });
-    return [];
-  }
-
-  public async reloadActiveBrowserView(): Promise<void> {
-    const views = await this.getActiveBrowserViews();
-    if (views.length === 0) {
-      logger.error(`reloadActiveBrowserView views.length === 0`, { stack: new Error('stack').stack?.replace('Error:', '') });
-    }
-    views.forEach((view) => {
-      if (view?.webContents) {
-        view.webContents.reload();
-      }
-    });
-  }
-
-  public async realignActiveView(browserWindow: BrowserWindow, activeId: string, windowName: WindowNames, isRetry?: boolean): Promise<void> {
-    const view = this.getView(activeId, windowName);
-    if (view?.webContents) {
-      const contentSize = browserWindow.getContentSize();
-      if (await this.workspaceService.workspaceDidFailLoad(activeId)) {
-        logger.warn('hide because didFailLoad', { function: 'realignActiveView' });
-        await this.hideView(browserWindow, windowName, activeId);
-      } else {
-        const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
-        logger.debug('contentSize set', { newViewBounds: JSON.stringify(newViewBounds), function: 'realignActiveView' });
-        view.setBounds(newViewBounds);
-      }
-    } else if (isRetry === true) {
-      logger.error(
-        `realignActiveView() ${activeId} failed view?.webContents is ${view?.webContents ? '[WebContents]' : 'undefined'} and isRetry is ${String(isRetry)} stack: ${
-          new Error('stack').stack?.replace('Error:', '') ?? 'no stack'
-        }`,
-      );
-    } else {
-      // retry one time later if webContent is not ready yet
-      logger.debug('retry one time later', { function: 'realignActiveView' });
-      setTimeout(() => void this.realignActiveView(browserWindow, activeId, windowName, true), 1000);
-    }
-  }
-
-  public async hideView(browserWindow: BrowserWindow, windowName: WindowNames, idToDeactivate: string): Promise<void> {
-    logger.debug('Hide view', { idToDeactivate, windowName });
-    if (!idToDeactivate) return;
-    const view = this.getView(idToDeactivate, windowName);
-    if (view) {
-      const contentSize = browserWindow.getContentSize();
-      // disable view features
-      view.webContents.stopFindInPage('clearSelection');
-      view.webContents.send(WindowChannel.closeFindInPage);
-      // make view small, hide browserView to show error message or other pages
-      view.setBounds({
-        x: -contentSize[0],
-        y: -contentSize[1],
-        width: contentSize[0],
-        height: contentSize[1],
-      });
-    }
-  }
-
-  /**
-   * Store for custom bounds per workspace. When set, the view will use these bounds instead of default.
-   * Key format: `${workspaceID}-${windowName}`
-   */
-  private customBoundsMap = new Map<string, { x: number; y: number; width: number; height: number } | undefined>();
-
-  public async setViewCustomBounds(
+  public async setViewBounds(
     workspaceID: string,
     windowName: WindowNames,
     bounds?: { x: number; y: number; width: number; height: number },
   ): Promise<void> {
     const key = `${workspaceID}-${windowName}`;
-    this.customBoundsMap.set(key, bounds);
-
     const view = this.getView(workspaceID, windowName);
     const browserWindow = this.windowService.get(windowName);
-    if (view === undefined) {
-      logger.warn('setViewCustomBounds: view not found', { workspaceID, windowName });
+    if (view === undefined || browserWindow === undefined) {
+      logger.warn('setViewBounds: view or window not found', { workspaceID, windowName });
       return;
     }
-    if (browserWindow === undefined) {
-      logger.warn('setViewCustomBounds: browserWindow not found', { windowName });
-      return;
-    }
-
     if (bounds) {
-      // First ensure the view is added to the window's content view
-      // This is necessary if the view was previously hidden (removed from content view)
+      this.customBoundsMap.set(key, bounds);
       try {
         browserWindow.contentView.addChildView(view);
-      } catch {
-        // View might already be added, which is fine
-      }
-      // Set the bounds to position the view in the specified area
+      } catch { /* already added */ }
       view.setBounds(bounds);
-      logger.info('setViewCustomBounds: set custom bounds', { workspaceID, windowName, bounds: JSON.stringify(bounds) });
     } else {
-      // Clear custom bounds: hide the view by moving it off-screen
-      // The view will be properly restored when switching back to its workspace via setActiveWorkspaceView
-      const contentSize = browserWindow.getContentSize();
-      view.setBounds({
-        x: -contentSize[0],
-        y: -contentSize[1],
-        width: contentSize[0],
-        height: contentSize[1],
-      });
-      logger.info('setViewCustomBounds: cleared custom bounds (hiding view)', { workspaceID, windowName });
+      this.customBoundsMap.delete(key);
+      this.moveOffscreen(view, browserWindow);
     }
   }
 
-  public async getLoadedViewEnsure(workspaceID: string, windowName: WindowNames): Promise<WebContentsView> {
-    let view = this.getView(workspaceID, windowName);
-    if (view === undefined) {
-      // wait for view to be set
-      await new Promise<void>(resolve => {
-        this.setViewEventTarget.addEventListener(setViewEventName(workspaceID, windowName), () => {
-          resolve();
-        });
-      });
-    } else {
-      return view;
+  public async realignView(workspaceID: string, windowName: WindowNames): Promise<void> {
+    const view = this.getView(workspaceID, windowName);
+    const browserWindow = this.windowService.get(windowName);
+    if (view?.webContents === undefined || browserWindow === undefined) return;
+    const key = `${workspaceID}-${windowName}`;
+    if (this.customBoundsMap.has(key)) {
+      // Custom bounds set — don't override
+      view.setBounds(this.customBoundsMap.get(key)!);
+      return;
     }
-    view = this.getView(workspaceID, windowName);
-    if (view === undefined) {
-      const errorMessage = `Still no view for ${workspaceID} in window ${windowName} after waiting.`;
-      logger.error(errorMessage, { function: 'getLoadedViewEnsure' });
-      throw new Error(errorMessage);
-    }
-    return view;
+    const contentSize = browserWindow.getContentSize();
+    view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
   }
+
+  // ── Destruction ───────────────────────────────────────────
+
+  public hideAllViewsOfWorkspace(workspaceID: string): void {
+    const windowViews = this.views.get(workspaceID);
+    if (windowViews === undefined) return;
+    for (const [windowName] of windowViews) {
+      // Fire-and-forget hide (offscreen bounds)
+      void this.hideView(workspaceID, windowName);
+    }
+  }
+
+  public destroyAllViewsOfWorkspace(workspaceID: string): void {
+    const windowViews = this.views.get(workspaceID);
+    if (windowViews === undefined) return;
+    for (const [windowName, view] of windowViews) {
+      const key = `${workspaceID}-${windowName}`;
+      // Unbind resize listener
+      this.resizeCleanups.get(key)?.();
+      this.resizeCleanups.delete(key);
+      this.customBoundsMap.delete(key);
+      // Remove from window tree
+      const browserWindow = this.windowService.get(windowName);
+      if (browserWindow && !browserWindow.isDestroyed()) {
+        try {
+          browserWindow.contentView.removeChildView(view);
+        } catch { /* ok */ }
+      }
+      // Destroy webContents
+      try {
+        if (!view.webContents.isDestroyed()) view.webContents.close();
+      } catch (error) {
+        logger.warn('Failed to close webContents during destroy', { workspaceID, windowName, error });
+      }
+    }
+    this.views.delete(workspaceID);
+  }
+
+  // ── Convenience / Query ───────────────────────────────────
+
+  public async getViewCurrentUrl(workspaceID: string, windowName: WindowNames): Promise<string | undefined> {
+    return this.getView(workspaceID, windowName)?.webContents.getURL();
+  }
+
+  public setViewsAudioPref = (shouldMuteAudio?: boolean): void => {
+    if (shouldMuteAudio !== undefined) this.shouldMuteAudio = shouldMuteAudio;
+    this.forEachView(async (view, id) => {
+      const workspace = await this.workspaceService.get(id);
+      if (view && workspace) {
+        view.webContents.audioMuted = (isWikiWorkspace(workspace) ? workspace.disableAudio : false) || this.shouldMuteAudio;
+      }
+    });
+  };
+
+  public setViewsNotificationsPref = (shouldPauseNotifications?: boolean): void => {
+    if (shouldPauseNotifications !== undefined) this.shouldPauseNotifications = shouldPauseNotifications;
+  };
 }

@@ -7,7 +7,7 @@ This document tracks all entry points for AI-generated commit messages in TidGi.
 The core AI commit message generation is implemented in `src/services/git/aiCommitMessage.ts`:
 
 ```typescript
-export async function generateAICommitMessage(wikiFolderPath: string, source: string): Promise<string | undefined>
+export async function generateAICommitMessage(wikiFolderPath: string, source: string): Promise<string | undefined>;
 ```
 
 This function is called from `src/services/git/index.ts` in the `commitAndSync` method when no commit message is provided.

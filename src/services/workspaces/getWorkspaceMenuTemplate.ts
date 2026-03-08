@@ -1,10 +1,12 @@
-import { WikiChannel } from '@/constants/channels';
+import { IAskAIWithSelectionData, WikiChannel } from '@/constants/channels';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IContextService } from '@services/context/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { createBackupMenuItems, createSyncMenuItems } from '@services/git/menuItems';
+import { createTalkWithAIMenuItems } from '@services/menu/createTalkWithAIMenuItems';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { ISyncService } from '@services/sync/interface';
@@ -22,6 +24,7 @@ import type { IWorkspace, IWorkspaceService } from './interface';
 import { isWikiWorkspace } from './interface';
 
 interface IWorkspaceMenuRequiredServices {
+  agentDefinition: Pick<IAgentDefinitionService, 'getAgentDef' | 'getAgentDefs'>;
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
   context: Pick<IContextService, 'isOnline'>;
   externalAPI: Pick<IExternalAPIService, 'getAIConfig'>;
@@ -32,7 +35,7 @@ interface IWorkspaceMenuRequiredServices {
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
   wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
-  window: Pick<IWindowService, 'open'>;
+  window: Pick<IWindowService, 'open' | 'get'>;
   workspace: Pick<IWorkspaceService, 'getActiveWorkspace' | 'getSubWorkspacesAsList' | 'openWorkspaceTiddler'>;
   workspaceView: Pick<
     IWorkspaceViewService,
@@ -54,6 +57,15 @@ export async function getSimplifiedWorkspaceMenuTemplate(
   workspace: IWorkspace,
   t: TFunction<[_DefaultNamespace, ...Array<Exclude<FlatNamespace, _DefaultNamespace>>]>,
   service: IWorkspaceMenuRequiredServices,
+  options?: {
+    /** Selected text from the context menu event (empty if none). Passed as initial message to AI. */
+    selectionText?: string;
+    /**
+     * When called from the renderer process, provide this callback to trigger the AI action locally
+     * instead of going through a main-process BrowserWindow reference (which is not IPC-serialisable).
+     */
+    onTriggerTalkWithAI?: (data: IAskAIWithSelectionData) => void;
+  },
 ): Promise<MenuItemConstructorOptions[]> {
   if (!isWikiWorkspace(workspace)) {
     return [];
@@ -61,6 +73,20 @@ export async function getSimplifiedWorkspaceMenuTemplate(
 
   const { id, storageService, isSubWiki } = workspace;
   const template: MenuItemConstructorOptions[] = [];
+
+  const lastUrl = await service.view.getViewCurrentUrl(id, WindowNames.main);
+  const talkWithAIMenuItems = await createTalkWithAIMenuItems({
+    agentDefinitionService: service.agentDefinition,
+    selectionText: options?.selectionText ?? '',
+    t,
+    wikiUrl: lastUrl,
+    windowService: service.window,
+    workspaceId: id,
+    onTrigger: options?.onTriggerTalkWithAI,
+  });
+
+  template.push(...talkWithAIMenuItems);
+  template.push({ type: 'separator' });
 
   // Add "Current Workspace" submenu with full menu
   const fullMenuTemplate = await getWorkspaceMenuTemplate(workspace, t, service);
