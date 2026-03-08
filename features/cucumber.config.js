@@ -1,5 +1,3 @@
-const isCI = Boolean(process.env.CI);
-
 module.exports = {
   default: {
     require: [
@@ -14,8 +12,6 @@ module.exports = {
     paths: ['features/*.feature'],
     // Note: Global timeout is set via setDefaultTimeout() in features/supports/timeouts.ts
     // NOT via the 'timeout' config option here (which is for Cucumber's own operations)
-    // Parallel on CI (7 GB RAM, enough for 2 Electron instances);
-    // disabled locally where Windows OOM is more likely.
-    ...(isCI ? { parallel: 2 } : {}),
+    // Parallel disabled: Electron instances compete for CPU, making steps slower not faster.
   },
 };
