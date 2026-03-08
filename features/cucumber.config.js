@@ -1,3 +1,5 @@
+const isCI = Boolean(process.env.CI);
+
 module.exports = {
   default: {
     require: [
@@ -10,10 +12,10 @@ module.exports = {
       snippetInterface: 'async-await',
     },
     paths: ['features/*.feature'],
-    // Note: Global timeout is set via setDefaultTimeout() in features/supports/timeout-config.ts
+    // Note: Global timeout is set via setDefaultTimeout() in features/supports/timeouts.ts
     // NOT via the 'timeout' config option here (which is for Cucumber's own operations)
-    // Parallel execution disabled due to OOM issues on Windows
-    // Each scenario still gets isolated test-artifacts/{scenarioSlug}/ directory
-    // parallel: 2,
+    // Parallel on CI (7 GB RAM, enough for 2 Electron instances);
+    // disabled locally where Windows OOM is more likely.
+    ...(isCI ? { parallel: 2 } : {}),
   },
 };
