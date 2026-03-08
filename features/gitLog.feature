@@ -78,6 +78,7 @@ Feature: Git Log Window
       | description                    | marker                        |
       | git commit completed           | [test-id-git-commit-complete] |
       | git log refreshed after commit | [test-id-git-log-refreshed]   |
+    And I wait for 0.5 seconds for "UI to re-render after git log refresh"
     # Verify that uncommitted changes row is gone (commit was successful)
     Then I should not see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
     # Verify the correct commit is selected and we're on the latest commit (should show amend button)

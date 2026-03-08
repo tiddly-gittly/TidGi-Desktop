@@ -69,6 +69,7 @@ Feature: Talk with AI from Wiki Selection
     And I confirm the "main" window browser view is not positioned within visible window bounds
     # Switch to wiki workspace - browser view should exist for wiki
     When I click on a "wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    And I wait for 1 seconds for "browser view repositioning after workspace switch"
     Then I confirm the "main" window browser view is positioned within visible window bounds
 
 
