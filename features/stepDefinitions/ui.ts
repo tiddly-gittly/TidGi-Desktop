@@ -485,7 +485,7 @@ When('I select {string} from MUI Select with test id {string}', async function(t
     // Click the combobox to open the dropdown
     const clicked = await currentWindow.evaluate((testId) => {
       // Try direct input match first
-      let element: Element | null = document.querySelector(`input[data-testid="${testId}"]`);
+      const element: Element | null = document.querySelector(`input[data-testid="${testId}"]`);
       let searchRoot: Element | null = element?.parentElement ?? null;
 
       // If not found, try wrapper element (MUI TextField with select prop)
