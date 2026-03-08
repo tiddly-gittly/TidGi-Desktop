@@ -473,29 +473,37 @@ When('I select {string} from MUI Select with test id {string}', async function(t
   }
 
   try {
-    // Find the hidden input element with the test-id
-    const inputSelector = `input[data-testid="${testId}"]`;
-    await currentWindow.waitForSelector(inputSelector, { timeout: PLAYWRIGHT_TIMEOUT });
+    // Find the element with the test-id (could be input directly, or a wrapper div for MUI TextField)
+    const directInputSelector = `input[data-testid="${testId}"]`;
+    const wrapperSelector = `[data-testid="${testId}"]`;
 
-    // Try to click using Playwright's click on the div with role="combobox"
-    // According to your HTML structure, the combobox is a sibling of the input
+    // Try input first, then fall back to wrapper
+    const hasDirectInput = await currentWindow.locator(directInputSelector).count() > 0;
+    const containerSelector = hasDirectInput ? directInputSelector : wrapperSelector;
+    await currentWindow.waitForSelector(containerSelector, { timeout: PLAYWRIGHT_TIMEOUT });
+
+    // Click the combobox to open the dropdown
     const clicked = await currentWindow.evaluate((testId) => {
-      const input = document.querySelector(`input[data-testid="${testId}"]`);
-      if (!input) return { success: false, error: 'Input not found' };
-      const parent = input.parentElement;
-      if (!parent) return { success: false, error: 'Parent not found' };
+      // Try direct input match first
+      let element: Element | null = document.querySelector(`input[data-testid="${testId}"]`);
+      let searchRoot: Element | null = element?.parentElement ?? null;
 
-      // Find all elements in parent
-      const combobox = parent.querySelector('[role="combobox"]');
+      // If not found, try wrapper element (MUI TextField with select prop)
+      if (!element) {
+        searchRoot = document.querySelector(`[data-testid="${testId}"]`);
+      }
+
+      if (!searchRoot) return { success: false, error: 'Element not found' };
+
+      const combobox = searchRoot.querySelector('[role="combobox"]');
       if (!combobox) {
         return {
           success: false,
           error: 'Combobox not found',
-          parentHTML: parent.outerHTML.substring(0, 500),
+          parentHTML: searchRoot.outerHTML.substring(0, 500),
         };
       }
 
-      // Trigger both mousedown and click events
       combobox.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
       combobox.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       (combobox as HTMLElement).click();
