@@ -119,31 +119,25 @@ Then('I should not see a(n) {string} element with selector {string}', async func
   }
   try {
     const element = currentWindow.locator(selector).first();
-    const count = await element.count();
-    if (count > 0) {
-      const isVisible = await element.isVisible();
-      if (isVisible) {
-        // Get parent element HTML for debugging
-        let parentHtml = '';
-        try {
-          const parent = element.locator('xpath=..');
-          parentHtml = await parent.evaluate((node) => node.outerHTML);
-        } catch {
-          parentHtml = 'Failed to get parent HTML';
-        }
-        throw new Error(
-          `Element "${elementComment}" with selector "${selector}" should not be visible but was found\n` +
-            `Parent element HTML:\n${parentHtml}`,
-        );
-      }
-    }
-    // Element not found or not visible - this is expected
+    // Wait for element to be hidden/detached (handles race conditions after state changes)
+    await element.waitFor({ state: 'hidden', timeout: PLAYWRIGHT_TIMEOUT });
   } catch (error) {
-    // If the error is our custom error, rethrow it
-    if (error instanceof Error && error.message.includes('should not be visible')) {
-      throw error;
+    if (error instanceof Error && error.message.includes('timeout')) {
+      // Element still visible after timeout — get parent HTML for debugging
+      let parentHtml = '';
+      try {
+        const element = currentWindow.locator(selector).first();
+        const parent = element.locator('xpath=..');
+        parentHtml = await parent.evaluate((node) => node.outerHTML);
+      } catch {
+        parentHtml = 'Failed to get parent HTML';
+      }
+      throw new Error(
+        `Element "${elementComment}" with selector "${selector}" should not be visible but was found\n` +
+          `Parent element HTML:\n${parentHtml}`,
+      );
     }
-    // Otherwise, element not found is expected - pass the test
+    // Other errors (element not in DOM at all) are expected — pass
   }
 });
 

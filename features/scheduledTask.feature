@@ -16,7 +16,6 @@ Feature: Scheduled Tasks Management
     When I click on a "add task button" element with selector "[data-testid='scheduled-task-add-button']"
     Then I should see a "scheduled task dialog" element with selector "[data-testid='scheduled-task-dialog']"
     When I click on a "cancel button" element with selector "[data-testid='scheduled-task-cancel-button']"
-    When I wait for 0.5 seconds
     Then I should not see a "dialog" element with selector "[data-testid='scheduled-task-dialog']"
 
     # Part B: Create an interval scheduled task
