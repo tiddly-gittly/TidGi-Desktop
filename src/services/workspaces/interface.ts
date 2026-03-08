@@ -7,8 +7,9 @@ import { SetOptional } from 'type-fest';
 
 /**
  * Fields that not part of config that user can edit. Change of these field won't show "save" button on edit page.
+ * These fields are updated during runtime and should not trigger the save button.
  */
-export const nonConfigFields = ['metadata', 'lastNodeJSArgv'];
+export const nonConfigFields = ['metadata', 'lastNodeJSArgv', 'lastUrl', 'homeUrl', 'hibernated', 'active'];
 
 /**
  * Fields that should be synced to wiki folder's tidgi.config.json.
@@ -20,7 +21,6 @@ export const nonConfigFields = ['metadata', 'lastNodeJSArgv'];
  */
 export const syncableConfigFields = [
   'name',
-  'port',
   'gitUrl',
   'storageService',
   'userName',
@@ -68,6 +68,7 @@ export const localOnlyFields = [
   'mainWikiID',
   'isSubWiki',
   'pageType',
+  'port',
 ] as const;
 
 /**
@@ -350,24 +351,28 @@ export type IWorkspacesWithMetadata = Record<string, IWorkspaceWithMetadata>;
 /**
  * Ignore some field that will assign default value in workspaceService.create, these field don't require to be filled in AddWorkspace form
  */
-export type INewWikiWorkspaceConfig = SetOptional<
-  Omit<IWikiWorkspace, 'active' | 'hibernated' | 'id' | 'lastUrl' | 'syncOnInterval' | 'syncOnStartup'>,
-  | 'homeUrl'
-  | 'transparentBackground'
-  | 'picturePath'
-  | 'disableNotifications'
-  | 'disableAudio'
-  | 'hibernateWhenUnused'
-  | 'userName'
-  | 'order'
-  | 'ignoreSymlinks'
-  | 'backupOnInterval'
-  | 'enableHTTPAPI'
-  | 'excludedPlugins'
-  | 'includeTagTree'
-  | 'fileSystemPathFilterEnable'
-  | 'fileSystemPathFilter'
->;
+export type INewWikiWorkspaceConfig =
+  & SetOptional<
+    Omit<IWikiWorkspace, 'active' | 'hibernated' | 'id' | 'lastUrl' | 'syncOnInterval' | 'syncOnStartup'>,
+    | 'homeUrl'
+    | 'transparentBackground'
+    | 'picturePath'
+    | 'disableNotifications'
+    | 'disableAudio'
+    | 'hibernateWhenUnused'
+    | 'userName'
+    | 'order'
+    | 'ignoreSymlinks'
+    | 'backupOnInterval'
+    | 'enableHTTPAPI'
+    | 'excludedPlugins'
+    | 'includeTagTree'
+    | 'fileSystemPathFilterEnable'
+    | 'fileSystemPathFilter'
+  >
+  & {
+    useTidgiConfig?: boolean;
+  };
 
 /**
  * Manage workspace level preferences and workspace metadata.
@@ -417,6 +422,19 @@ export interface IWorkspaceService {
   getWorkspacesAsList(): Promise<IWorkspace[]>;
   getWorkspacesWithMetadata(): IWorkspacesWithMetadata;
   /**
+   * Get workspace token for Git Smart HTTP authentication
+   * @param workspaceId workspace ID
+   * @returns token string or undefined if workspace not found or has no token
+   */
+  getWorkspaceToken(workspaceId: string): Promise<string | undefined>;
+  /**
+   * Validate workspace token for Git Smart HTTP authentication
+   * @param workspaceId workspace ID
+   * @param token token to validate
+   * @returns true if token matches, false otherwise
+   */
+  validateWorkspaceToken(workspaceId: string, token: string): Promise<boolean>;
+  /**
    * Initialize default page workspaces on first startup
    */
   initializeDefaultPageWorkspaces(): Promise<void>;
@@ -463,6 +481,8 @@ export const WorkspaceServiceIPCDescriptor = {
     getWorkspaces: ProxyPropertyType.Function,
     getWorkspacesAsList: ProxyPropertyType.Function,
     getWorkspacesWithMetadata: ProxyPropertyType.Function,
+    getWorkspaceToken: ProxyPropertyType.Function,
+    validateWorkspaceToken: ProxyPropertyType.Function,
     initializeDefaultPageWorkspaces: ProxyPropertyType.Function,
     openWorkspaceTiddler: ProxyPropertyType.Function,
     remove: ProxyPropertyType.Function,

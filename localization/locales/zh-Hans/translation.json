@@ -81,6 +81,8 @@
     "WikiTemplateCopyCompleted": "模板知识库复制完毕",
     "WikiTemplateMissing": "知识库模板缺失 \"{{TIDDLYWIKI_TEMPLATE_FOLDER_PATH}}\"",
     "WorkspaceFolder": "工作区文件夹的位置",
+    "UseTidgiConfigWhenImport": "导入时使用 tidgi.config.json 工作区配置",
+    "UseTidgiConfigWhenImportDescription": "启用后会使用 tidgi.config.json 中的 id 与工作区设置导入；若该 id 已在本地存在，则拒绝导入。",
     "WorkspaceFolderNameToCreate": "即将新建的知识库文件夹名",
     "WorkspaceParentFolder": "文件夹所在的父文件夹",
     "WorkspaceUserName": "工作区编辑者名",

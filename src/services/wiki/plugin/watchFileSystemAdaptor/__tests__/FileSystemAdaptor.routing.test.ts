@@ -1,8 +1,12 @@
 import { workspace } from '@services/wiki/wikiWorker/services';
 import type { IWikiWorkspace } from '@services/workspaces/interface';
+import path from 'path';
 import type { IFileInfo, Tiddler, Wiki } from 'tiddlywiki';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemAdaptor } from '../FileSystemAdaptor';
+
+// path.resolve makes paths absolute; on Windows '/test/wiki/tiddlers' becomes 'C:\test\wiki\tiddlers'
+const RESOLVED_TIDDLERS_PATH = path.resolve('/test/wiki/tiddlers');
 // @ts-expect-error TS2459: Module declares 'matchTiddlerToWorkspace' locally, but it is not exported. Ignore: TiddlyWiki uses exports.xxx style.
 import { isWikiWorkspaceWithRouting, matchTiddlerToWorkspace } from '../routingUtilities';
 
@@ -104,7 +108,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
         tiddler,
         expect.objectContaining({
-          directory: '/test/wiki/tiddlers',
+          directory: RESOLVED_TIDDLERS_PATH,
           pathFilters: undefined,
           wiki: mockWiki,
         }),
@@ -180,7 +184,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
 
     it('should return existing fileInfo with overwrite flag when file is in correct directory', async () => {
       const existingFileInfo: IFileInfo = {
-        filepath: '/test/wiki/tiddlers/old.tid', // Already in the correct tiddlers directory
+        filepath: path.join(RESOLVED_TIDDLERS_PATH, 'old.tid'), // Already in the correct tiddlers directory
         type: 'application/x-tiddler',
         hasMetaFile: false,
       };
@@ -395,7 +399,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
         tiddler,
         expect.objectContaining({
-          directory: '/test/wiki/tiddlers',
+          directory: RESOLVED_TIDDLERS_PATH,
         }),
       );
     });
@@ -615,7 +619,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
         tiddler,
         expect.objectContaining({
-          directory: '/test/wiki/tiddlers',
+          directory: RESOLVED_TIDDLERS_PATH,
         }),
       );
     });
@@ -719,7 +723,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
         tiddler,
         expect.objectContaining({
-          directory: '/test/wiki/tiddlers',
+          directory: RESOLVED_TIDDLERS_PATH,
         }),
       );
     });

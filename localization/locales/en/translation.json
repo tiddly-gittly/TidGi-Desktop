@@ -81,6 +81,8 @@
     "WikiTemplateCopyCompleted": "Copied the template Wiki",
     "WikiTemplateMissing": "Wiki template is missing \"{{TIDDLYWIKI_TEMPLATE_FOLDER_PATH}}\"",
     "WorkspaceFolder": "Location of workspace's folder",
+    "UseTidgiConfigWhenImport": "Apply workspace config from tidgi.config.json",
+    "UseTidgiConfigWhenImportDescription": "When enabled, import uses the id and synced workspace settings from tidgi.config.json. If the id already exists locally, import is rejected.",
     "WorkspaceFolderNameToCreate": "The name of the new workspace folder",
     "WorkspaceParentFolder": "Parent Folder of workspace's folder",
     "WorkspaceUserName": "Workspace User Name",

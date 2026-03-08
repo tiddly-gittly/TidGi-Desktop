@@ -12,6 +12,24 @@ type ISyncAdaptorPutTiddlersCallback = (error: Error | null | string, etag?: {
 type ISyncAdaptorLoadTiddlerCallback = (error: Error | null, tiddler?: ITiddlerFields) => void;
 type ISyncAdaptorDeleteTiddlerCallback = (error: Error | null, adaptorInfo?: { bag?: string } | null) => void;
 
+type TidGiServiceCandidate = (typeof $tw.tidgi.service) | (typeof window.service) | undefined;
+
+function getTidGiService(): typeof $tw.tidgi.service {
+  const twWithExtensions = $tw as typeof $tw & {
+    tidgi?: { service?: TidGiServiceCandidate };
+  };
+
+  const serviceFromTw = twWithExtensions.tidgi?.service ?? window.service;
+
+  if (serviceFromTw === undefined) {
+    throw new Error('TidGi service is unavailable from $tw.tidgi.service or window.service');
+  }
+
+  twWithExtensions.tidgi = twWithExtensions.tidgi ?? {};
+  twWithExtensions.tidgi.service = twWithExtensions.tidgi.service ?? serviceFromTw;
+  return serviceFromTw as typeof $tw.tidgi.service;
+}
+
 class TidGiIPCSyncAdaptor {
   name = 'tidgi-ipc';
   supportsLazyLoading = true;
@@ -22,17 +40,19 @@ class TidGiIPCSyncAdaptor {
   isAnonymous: boolean;
   isReadOnly: boolean;
   logoutIsAvailable: boolean;
-  wikiService: typeof window.service.wiki;
-  workspaceService: typeof window.service.workspace;
-  authService: typeof window.service.auth;
+  wikiService: typeof $tw.tidgi.service.wiki;
+  workspaceService: typeof $tw.tidgi.service.workspace;
+  authService: typeof $tw.tidgi.service.auth;
   workspaceID: string;
   recipe?: string;
+  private sseSubscribed = false;
 
   constructor(options: { wiki: Wiki }) {
+    const tidgiService = getTidGiService();
     this.wiki = options.wiki;
-    this.wikiService = window.service.wiki;
-    this.workspaceService = window.service.workspace;
-    this.authService = window.service.auth;
+    this.wikiService = tidgiService.wiki;
+    this.workspaceService = tidgiService.workspace;
+    this.authService = tidgiService.auth;
     this.hasStatus = false;
     this.isAnonymous = false;
     this.logger = new $tw.utils.Logger('TidGiIPCSyncAdaptor');
@@ -51,9 +71,13 @@ class TidGiIPCSyncAdaptor {
   }
 
   /**
-   * This should be called after install-electron-ipc-cat, so this is called in `$:/plugins/linonetwo/tidgi-ipc-syncadaptor/Startup/install-electron-ipc-cat.js`
+   * This should be called after mount-tidgi-service startup module, which calls `$tw.syncadaptor.setupSSE()`.
+   * Also called from the constructor if window.observables is already available at that point.
    */
   setupSSE() {
+    if (this.sseSubscribed) {
+      return;
+    }
     console.log('setupSSE called in TidGiIPCSyncAdaptor');
     if (window.observables?.wiki?.getWikiChangeObserver$ === undefined) {
       console.error("getWikiChangeObserver$ is undefined in window.observables.wiki, can't subscribe to server changes.");
@@ -67,6 +91,7 @@ class TidGiIPCSyncAdaptor {
       $tw.syncer.syncFromServer();
       this.clearUpdatedTiddlers();
     }, 500);
+    this.sseSubscribed = true;
     this.logger.log('setupSSE');
 
     // After SSE is enabled, we can disable polling and else things that related to syncer. (build up complexer behavior with syncer.)
@@ -113,7 +138,6 @@ class TidGiIPCSyncAdaptor {
   }
 
   getUpdatedTiddlers(_syncer: Syncer, callback: (error: Error | null | undefined, changes: { deletions: string[]; modifications: string[] }) => void): void {
-    this.logger.log('getUpdatedTiddlers');
     callback(null, this.updatedTiddlers);
   }
 
@@ -318,10 +342,9 @@ class TidGiIPCSyncAdaptor {
 
 if ($tw.browser && typeof window !== 'undefined') {
   const isInTidGi = typeof document !== 'undefined' && document.location.protocol.startsWith('tidgi');
-  const servicesExposed = Boolean(window.service.wiki);
+  const servicesExposed = Boolean(window.service?.wiki);
   const hasWorkspaceIDinMeta = Boolean((typeof window.meta === 'function' ? window.meta() as WindowMeta[WindowNames.view] : undefined)?.workspace?.id);
   if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     exports.adaptorClass = TidGiIPCSyncAdaptor;
   }
 }

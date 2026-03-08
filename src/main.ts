@@ -89,6 +89,35 @@ const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService
 const viewService = container.get<IViewService>(serviceIdentifier.View);
 const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 
+let beforeQuitCleanupPromise: Promise<void> | undefined;
+let shouldSkipBeforeQuitInterception = false;
+
+const runBeforeQuitCleanup = async (): Promise<void> => {
+  logger.info('App before-quit - starting cleanup');
+  try {
+    logger.info('App before-quit - tidgi mini window closed');
+    // Stop all wiki workers FIRST - must be sequential
+    // Wiki workers might be using SQLite databases
+    await wikiService.stopAllWiki();
+    logger.info('App before-quit - all wiki workers stopped');
+    // Then do remaining cleanup in parallel
+    await Promise.all([
+      databaseService.closeAllDatabases(),
+      databaseService.immediatelyStoreSettingsToFile(),
+      // Clean up tidgi mini window before quit to ensure tray is destroyed
+      windowService.closeTidgiMiniWindow(true),
+      windowService.clearWindowsReference(),
+    ]);
+    logger.info('App before-quit - all cleanup completed');
+  } catch (error) {
+    logger.error('Error during before-quit cleanup', { error });
+  } finally {
+    // Always destroy logger and uninstall at the end
+    destroyLogger();
+    uninstall?.uninstall();
+  }
+};
+
 app.on('second-instance', async () => {
   // see also src/helpers/singleInstance.ts
   // Someone tried to run a second instance, for example, when `runOnBackground` is true, we should focus our window.
@@ -224,21 +253,24 @@ app.on(MainChannel.windowAllClosed, async () => {
     app.quit();
   }
 });
-app.on(
-  'before-quit',
-  async (): Promise<void> => {
-    logger.info('App before-quit');
-    // Clean up tidgi mini window before quit to ensure tray is destroyed
-    await windowService.closeTidgiMiniWindow(true);
-    destroyLogger();
-    await Promise.all([
-      databaseService.immediatelyStoreSettingsToFile(),
-      wikiService.stopAllWiki(),
-      windowService.clearWindowsReference(),
-    ]);
-    uninstall?.uninstall();
-  },
-);
+app.on('before-quit', (event): void => {
+  if (shouldSkipBeforeQuitInterception) {
+    return;
+  }
+
+  event.preventDefault();
+
+  if (beforeQuitCleanupPromise === undefined) {
+    beforeQuitCleanupPromise = runBeforeQuitCleanup()
+      .catch((error: unknown) => {
+        logger.error('before-quit cleanup failed unexpectedly', { error });
+      })
+      .finally(() => {
+        shouldSkipBeforeQuitInterception = true;
+        app.exit(0);
+      });
+  }
+});
 
 unhandled({
   showDialog: !isDevelopmentOrTest,

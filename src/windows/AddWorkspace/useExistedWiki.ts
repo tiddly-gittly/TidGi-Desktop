@@ -55,6 +55,7 @@ export function useExistedWiki(
   isCreateMainWorkspace: boolean,
   isCreateSyncedWorkspace: boolean,
   form: IWikiWorkspaceForm,
+  useTidgiConfig: boolean,
   wikiCreationMessageSetter: (m: string) => void,
   hasErrorSetter: (m: boolean) => void,
   errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void,
@@ -63,7 +64,7 @@ export function useExistedWiki(
 
   const onSubmit = useCallback(async () => {
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
-    const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, isCreateSyncedWorkspace);
+    const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, isCreateSyncedWorkspace, { useTidgiConfig });
     if (!form.wikiFolderLocation) {
       throw new Error(t('AddWorkspace.MainWorkspaceLocation') + t('AddWorkspace.NotFilled'));
     }
@@ -89,7 +90,7 @@ export function useExistedWiki(
       updateErrorInWhichComponentSetterByErrorMessage(t, (error as Error).message, errorInWhichComponentSetter);
       hasErrorSetter(true);
     }
-  }, [wikiCreationMessageSetter, t, form, isCreateMainWorkspace, isCreateSyncedWorkspace, errorInWhichComponentSetter, hasErrorSetter]);
+  }, [wikiCreationMessageSetter, t, form, isCreateMainWorkspace, isCreateSyncedWorkspace, useTidgiConfig, errorInWhichComponentSetter, hasErrorSetter]);
 
   return onSubmit;
 }

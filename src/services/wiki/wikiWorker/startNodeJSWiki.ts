@@ -1,10 +1,11 @@
-// Auto-attach services to global.service - MUST import before using services
+// Initialize worker-side service proxies before starting the wiki.
 import './services';
-import { native } from './services';
+import { native, service } from './services';
 import { onWorkerServicesReady } from './servicesReady';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
+import type { TidgiService } from '@/types/tidgi-tw';
 import { DARK_LIGHT_CHANGE_ACTIONS_TAG } from '@services/theme/interface';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
@@ -33,6 +34,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
     openDebugger,
     readOnlyMode,
     rootTiddler = '$:/core/save/all',
+    useWikiFolderAsTiddlersPath = false,
     shouldUseDarkColors,
     subWikis = [],
     tiddlyWikiHost = defaultServerIP,
@@ -124,6 +126,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
           wikiInstance,
           homePath,
           subWikis,
+          { allowLoadingWithoutWikiInfo: useWikiFolderAsTiddlersPath },
           workspace.name,
           native,
         );
@@ -161,6 +164,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
       const infoTiddlerText = `exports.getInfoTiddlerFields = () => [
         {title: "$:/info/tidgi/readOnlyMode", text: "${readOnlyMode === true ? 'yes' : 'no'}"},
         {title: "$:/info/tidgi/workspaceID", text: ${JSON.stringify(workspace.id)}},
+        {title: "$:/info/tidgi/useWikiFolderAsTiddlersPath", text: "${useWikiFolderAsTiddlersPath ? 'yes' : 'no'}"},
       ]`;
       wikiInstance.preloadTiddler({
         title: '$:/core/modules/info/tidgi-server.js',
@@ -222,6 +226,17 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
         : [homePath, '--version'];
       wikiInstance.boot.argv = [...fullBootArgv];
 
+      /**
+       * Attach service proxies to `$tw.tidgi.service` so that TiddlyWiki route modules
+       * (which run in vm.runInContext sandbox) can access them.
+       * The sandbox injects `$tw` but NOT `globalThis` or `global`,
+       * so `$tw.tidgi.service` is the only way for plugins to reach IPC service proxies.
+       */
+      type TidgiContainer = { tidgi?: { service?: TidgiService } };
+      const wikiInstanceWithTidgi = wikiInstance as unknown as (typeof wikiInstance & TidgiContainer);
+      wikiInstanceWithTidgi.tidgi = wikiInstanceWithTidgi.tidgi ?? {};
+      wikiInstanceWithTidgi.tidgi.service = service as unknown as TidgiService;
+
       wikiInstance.hooks.addHook('th-server-command-post-start', function(_server: unknown, nodeServer: Server) {
         nodeServer.on('error', function(error: Error) {
           observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message, argv: fullBootArgv });
@@ -246,6 +261,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
       wikiInstance.boot.startup({ bootPath: TIDDLY_WIKI_BOOT_PATH });
       // after setWikiInstance, ipc server routes will start serving content
       ipcServerRoutes.setConfig({ readOnlyMode });
+      ipcServerRoutes.setHomePath(homePath);
       ipcServerRoutes.setWikiInstance(wikiInstance);
       ipcServerRoutes.setSubWikiPaths(subWikis.map(subWiki => subWiki.wikiFolderLocation));
       wikiOperationsInWikiWorker.setWikiInstance(wikiInstance);

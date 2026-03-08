@@ -3,6 +3,23 @@ import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 
+type TidGiServiceCandidate = (typeof window.service) | undefined;
+
+function getTidGiService(): Exclude<TidGiServiceCandidate, undefined> | undefined {
+  const twWithExtensions = $tw as typeof $tw & {
+    tidgi?: { service?: TidGiServiceCandidate };
+  };
+  const service = twWithExtensions.tidgi?.service ?? window.service;
+  if (service === undefined) {
+    return undefined;
+  }
+
+  twWithExtensions.tidgi = twWithExtensions.tidgi ?? {};
+  twWithExtensions.tidgi.service = twWithExtensions.tidgi.service ?? service;
+
+  return service;
+}
+
 function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: string; title: string }>) => void) {
   const mapBoolean = function(value: boolean) {
     return value ? 'yes' : 'no';
@@ -16,10 +33,17 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
   infoTiddlerFields.push({ title: '$:/info/tidgi', text: mapBoolean(isInTidGi) });
   if (isInTidGi && workspaceID) {
     infoTiddlerFields.push({ title: '$:/info/tidgi/workspaceID', text: workspaceID });
+    infoTiddlerFields.push({ title: '$:/info/tidgi/subWorkspaces', text: '[]' });
+    const tidgiService = getTidGiService();
+
+    if (tidgiService === undefined) {
+      console.warn('TidGi service is not available yet when getting location info tiddler fields.', { function: 'getInfoTiddlerFields' });
+      return infoTiddlerFields;
+    }
     /**
      * Push to asyncInfoTiddlerFields in this async function
      */
-    void window.service.workspace.get(workspaceID).then(async (workspace) => {
+    void tidgiService.workspace.get(workspaceID).then(async (workspace) => {
       if (workspace === undefined) return;
 
       // Only wiki workspaces have these properties
@@ -32,28 +56,73 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
         tokenAuth,
         authToken,
         userName,
+        name: workspaceName,
       } = workspace;
+      const workspaceIDForSync = workspace.id;
       const asyncInfoTiddlerFields: Array<{ text: string; title: string }> = [];
+      asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/workspaceID', text: workspaceIDForSync });
       const setLocationProperty = function(name: string, value: string) {
         asyncInfoTiddlerFields.push({ title: '$:/info/url/' + name, text: value });
       };
-      const localHostUrl = await window.service.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(port), workspaceID);
+      const localHostUrl = await tidgiService.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(port), workspaceID);
       const urlObject = new URL(localHostUrl);
       setLocationProperty('full', (localHostUrl).split('#')[0]);
       setLocationProperty('host', urlObject.host);
       setLocationProperty('hostname', urlObject.hostname);
-      setLocationProperty('protocol', https ? 'https' : 'http');
+      setLocationProperty('protocol', https.enabled ? 'https' : 'http');
       setLocationProperty('port', urlObject.port);
       setLocationProperty('pathname', urlObject.pathname);
       setLocationProperty('search', urlObject.search);
       setLocationProperty('origin', urlObject.origin);
 
       asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/tokenAuth', text: mapBoolean(tokenAuth) }, { title: '$:/info/tidgi/enableHTTPAPI', text: mapBoolean(enableHTTPAPI) });
-      if (tokenAuth) {
-        const fallbackUserName = await window.service.auth.get('userName');
-        const tokenAuthHeader = `"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`;
-        asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/tokenAuthHeader', text: tokenAuthHeader });
+
+      // Add workspace name for QR code
+      if (workspaceName) {
+        asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/workspaceName', text: workspaceName });
       }
+
+      // Add workspace token for QR code (if available)
+      if (tokenAuth && authToken) {
+        asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/workspaceToken', text: authToken });
+      }
+
+      if (tokenAuth) {
+        const fallbackUserName = await tidgiService.auth.get('userName');
+        const tokenAuthHeaderName = getTidGiAuthHeaderWithToken(authToken ?? '');
+        const tokenAuthHeaderValue = userName || fallbackUserName || '';
+        const tokenAuthHeader = `"${tokenAuthHeaderName}": "${tokenAuthHeaderValue}"`;
+        asyncInfoTiddlerFields.push(
+          { title: '$:/info/tidgi/tokenAuthHeader', text: tokenAuthHeader },
+          { title: '$:/info/tidgi/tokenAuthHeaderName', text: tokenAuthHeaderName },
+          { title: '$:/info/tidgi/tokenAuthHeaderValue', text: tokenAuthHeaderValue },
+        );
+      }
+
+      // Add sub-workspaces info for mobile sync
+      try {
+        const subWorkspaces = await tidgiService.workspace.getSubWorkspacesAsList(workspaceID);
+        const subWorkspacesInfo = subWorkspaces
+          .map(ws => ({
+            id: ws.id,
+            name: ws.name,
+            // We pass mainWikiID to help mobile identify relationship
+            mainWikiID: workspaceIDForSync,
+          }));
+
+        if (subWorkspacesInfo.length > 0) {
+          asyncInfoTiddlerFields.push({
+            title: '$:/info/tidgi/subWorkspaces',
+            text: JSON.stringify(subWorkspacesInfo),
+          });
+        } else {
+          asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/subWorkspaces', text: '[]' });
+        }
+      } catch (error) {
+        console.error('Failed to get subWorkspaces info for QR code:', error);
+        asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/subWorkspaces', text: '[]' });
+      }
+
       updateInfoTiddlersCallback(asyncInfoTiddlerFields);
     });
   }

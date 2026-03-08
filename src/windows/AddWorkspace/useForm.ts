@@ -151,7 +151,12 @@ export interface IWikiWorkspaceFormProps {
  * Fill in default value for newly created wiki.
  * @param form New wiki form value
  */
-export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreateMainWorkspace: boolean, isCreateSyncedWorkspace: boolean): INewWikiWorkspaceConfig {
+export function workspaceConfigFromForm(
+  form: INewWikiRequiredFormData,
+  isCreateMainWorkspace: boolean,
+  isCreateSyncedWorkspace: boolean,
+  options?: { useTidgiConfig?: boolean },
+): INewWikiWorkspaceConfig {
   return {
     gitUrl: isCreateSyncedWorkspace ? form.gitRepoUrl : null,
     isSubWiki: !isCreateMainWorkspace,
@@ -165,6 +170,7 @@ export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreate
     readOnlyMode: false,
     tokenAuth: false,
     enableFileSystemWatch: false,
+    useTidgiConfig: options?.useTidgiConfig,
     // Additional fields will be set with default values in `sanitizeWorkspace`, see also `INewWikiWorkspaceConfig`
   };
 }

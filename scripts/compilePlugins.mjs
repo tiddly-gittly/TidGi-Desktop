@@ -59,8 +59,9 @@ const PLUGINS = [
     name: 'tidgi-ipc-syncadaptor',
     sourceFolder: '../src/services/wiki/plugin/ipcSyncAdaptor',
     entryPoints: [
+      'Startup/electron-ipc-cat.ts',
+      'Startup/mount-tidgi-service.ts',
       'ipc-syncadaptor.ts',
-      'electron-ipc-cat.ts',
       'fix-location-info.ts',
     ],
   },
@@ -159,6 +160,8 @@ async function buildEntryPoints(plugin, outDirs) {
           ...ESBUILD_CONFIG,
           entryPoints: [path.join(sourcePath, entryPoint)],
           outdir: outDir,
+          // Preserve subdirectory structure (e.g., Startup/) in output
+          outbase: sourcePath,
         })
       )
     ),

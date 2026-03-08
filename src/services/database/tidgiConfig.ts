@@ -94,7 +94,7 @@ export function getTidgiConfigPath(wikiFolderLocation: string): string {
  * Extract syncable config fields from a workspace
  */
 export function extractSyncableConfig(workspace: IWikiWorkspaceMinimal): Partial<ISyncableWikiConfig> {
-  const syncableConfig: Partial<ISyncableWikiConfig> = {};
+  const syncableConfig: Partial<ISyncableWikiConfig> = { id: workspace.id };
   for (const field of syncableConfigFields) {
     if (field in workspace) {
       // Only include non-default values to keep the file minimal
@@ -134,6 +134,9 @@ function extractKnownFields(parsed: ITidgiConfigFile): Partial<ISyncableWikiConf
   }
 
   const result: Partial<ISyncableWikiConfig> = {};
+  if (typeof parsed.id === 'string' && parsed.id.length > 0) {
+    result.id = parsed.id;
+  }
   for (const field of syncableConfigFields) {
     if (field in parsed && parsed[field] !== undefined) {
       (result as Record<string, unknown>)[field] = parsed[field];
@@ -195,14 +198,43 @@ export function readTidgiConfigSync(wikiFolderLocation: string): Partial<ISyncab
 export async function writeTidgiConfig(wikiFolderLocation: string, config: Partial<ISyncableWikiConfig>): Promise<void> {
   const configPath = getTidgiConfigPath(wikiFolderLocation);
   try {
+    let existingConfig: ITidgiConfigFile = { version: TIDGI_CONFIG_VERSION };
+    if (await fs.pathExists(configPath)) {
+      const existingContent = await fs.readFile(configPath, 'utf-8');
+      const parsedExisting = parseJsonWithRepair<ITidgiConfigFile>(existingContent, configPath, { logPrefix: 'tidgi.config.json' });
+      if (parsedExisting) {
+        existingConfig = parsedExisting;
+      }
+    }
+
     // Filter out default values
     const nonDefaultConfig = pickBy(config, (value, key) => {
+      if (key === 'id') {
+        return typeof value === 'string' && value.length > 0;
+      }
       const defaultValue = syncableConfigDefaultValues[key as SyncableConfigField];
       return !isEqual(value, defaultValue);
     });
 
-    // If no non-default config, remove the file if it exists
-    if (Object.keys(nonDefaultConfig).length === 0) {
+    const mergedConfig: ITidgiConfigFile = {
+      ...existingConfig,
+      $schema: 'https://raw.githubusercontent.com/tiddly-gittly/TidGi-Desktop/master/src/services/workspaces/tidgi.config.schema.json',
+      version: TIDGI_CONFIG_VERSION,
+      ...nonDefaultConfig,
+    };
+
+    for (const field of syncableConfigFields) {
+      if (!(field in nonDefaultConfig)) {
+        delete (mergedConfig as Record<string, unknown>)[field];
+      }
+    }
+    delete (mergedConfig as Record<string, unknown>).port;
+    if (!('id' in nonDefaultConfig)) {
+      delete (mergedConfig as Record<string, unknown>).id;
+    }
+
+    const remainingFields = Object.keys(mergedConfig).filter((key) => key !== '$schema' && key !== 'version');
+    if (remainingFields.length === 0) {
       if (await fs.pathExists(configPath)) {
         await fs.remove(configPath);
         getLogger().debug(`Removed tidgi.config.json (all values are default)`, { configPath });
@@ -210,13 +242,7 @@ export async function writeTidgiConfig(wikiFolderLocation: string, config: Parti
       return;
     }
 
-    const fileContent: ITidgiConfigFile = {
-      $schema: 'https://raw.githubusercontent.com/tiddly-gittly/TidGi-Desktop/master/src/services/workspaces/tidgi.config.schema.json',
-      version: TIDGI_CONFIG_VERSION,
-      ...nonDefaultConfig,
-    };
-
-    await fs.writeFile(configPath, JSON.stringify(fileContent, null, 2), 'utf-8');
+    await fs.writeFile(configPath, JSON.stringify(mergedConfig, null, 2), 'utf-8');
     getLogger().debug(`[test-id-TIDGI_CONFIG_WRITTEN] Written tidgi.config.json`, { configPath, fields: Object.keys(nonDefaultConfig) });
   } catch (error) {
     getLogger().error('Failed to write tidgi.config.json', { configPath, error: (error as Error).message });
@@ -238,6 +264,9 @@ export function mergeWithSyncedConfig<T extends IWikiWorkspaceMinimal>(
 
   // Apply synced config over local, with defaults for missing fields
   const merged = { ...localWorkspace };
+  if (typeof syncedConfig.id === 'string' && syncedConfig.id.length > 0) {
+    (merged as Record<string, unknown>).id = syncedConfig.id;
+  }
   for (const field of syncableConfigFields) {
     if (field in syncedConfig) {
       (merged as Record<string, unknown>)[field] = syncedConfig[field];

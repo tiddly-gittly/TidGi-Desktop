@@ -1,3 +1,4 @@
+import { findAvailablePort } from '@services/libs/port';
 import { createWorkerProxy, terminateWorker } from '@services/libs/workerAdapter';
 import { dialog, shell } from 'electron';
 import { attachWorker } from 'electron-ipc-cat/server';
@@ -6,7 +7,8 @@ import { copy, exists, mkdir, mkdirs, pathExists, readdir, readFile } from 'fs-e
 import { inject, injectable } from 'inversify';
 import path from 'path';
 import { Worker } from 'worker_threads';
-// @ts-expect-error - Vite worker import with ?nodeWorker query
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - Vite worker import with ?nodeWorker query
 import WikiWorkerFactory from './wikiWorker/index?nodeWorker';
 
 import { container } from '@services/container';
@@ -118,7 +120,8 @@ export class Wiki implements IWikiService {
       logger.error('Try to start wiki, but workspace is not a wiki workspace', { workspace, workspaceID });
       return;
     }
-    const { port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI, authToken } = workspace;
+    const { rootTiddler, readOnlyMode, tokenAuth, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI, authToken } = workspace;
+    let { port } = workspace;
     logger.debug('startWiki: Got workspace from workspaceService', {
       workspaceID,
       name,
@@ -131,6 +134,33 @@ export class Wiki implements IWikiService {
       logger.error('Try to start wiki, but workspace is sub wiki', { workspace, workspaceID });
       return;
     }
+
+    // Check if port is available before starting wiki
+    const availablePort = await findAvailablePort(port);
+    if (availablePort === null) {
+      logger.error('Could not find available port for wiki', { workspaceID, requestedPort: port });
+      await workspaceService.updateMetaData(workspaceID, {
+        isLoading: false,
+        didFailLoadErrorMessage: `Could not find available port starting from ${port}`,
+      });
+      return;
+    }
+
+    // Update workspace settings if port changed
+    if (availablePort !== port) {
+      logger.info('Port conflict detected, using alternative port', {
+        workspaceID,
+        originalPort: port,
+        newPort: availablePort,
+      });
+
+      const portChange = { port: availablePort };
+
+      await workspaceService.update(workspaceID, portChange, true);
+
+      // Update local variables with new port
+      port = availablePort;
+    }
     // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
     await workspaceService.updateMetaData(workspaceID, { isLoading: true });
     if (tokenAuth && authToken) {
@@ -142,8 +172,12 @@ export class Wiki implements IWikiService {
     }
     const shouldUseDarkColors = await this.themeService.shouldUseDarkColors();
 
+    const wikiInfoPath = path.resolve(wikiFolderLocation, 'tiddlywiki.info');
+    const useWikiFolderAsTiddlersPath = !(await pathExists(wikiInfoPath));
+
     // Get sub-wikis for this main wiki to load their tiddlers
-    const subWikis = await workspaceService.getSubWorkspacesAsList(workspaceID);
+    const configuredSubWikis = await workspaceService.getSubWorkspacesAsList(workspaceID);
+    const subWikis = useWikiFolderAsTiddlersPath ? [workspace, ...configuredSubWikis] : configuredSubWikis;
 
     const workerData: IStartNodeJSWikiConfigs = {
       authToken,
@@ -156,6 +190,7 @@ export class Wiki implements IWikiService {
       openDebugger: process.env.DEBUG_WORKER === 'true',
       readOnlyMode,
       rootTiddler,
+      useWikiFolderAsTiddlersPath,
       shouldUseDarkColors,
       subWikis,
       tiddlyWikiHost: defaultServerIP,
@@ -171,6 +206,7 @@ export class Wiki implements IWikiService {
       enableHTTPAPI,
       readOnlyMode,
       tokenAuth,
+      useWikiFolderAsTiddlersPath,
       wikiFolderLocation,
       workspaceName: workspace.name,
       function: 'Wiki.startWiki',
@@ -287,16 +323,22 @@ export class Wiki implements IWikiService {
                 logger.info('Realigned view after plugin error', { workspaceID, function: 'startWiki' });
               }
 
-              // fix "message":"listen EADDRINUSE: address already in use 0.0.0.0:5212"
+              // Port availability check should have prevented EADDRINUSE, but handle as fallback
               if (errorMessage.includes('EADDRINUSE')) {
-                const portChange = {
-                  port: port + 1,
-                  homeUrl: homeUrl.replace(`:${port}`, `:${port + 1}`),
-
-                  lastUrl: lastUrl?.replace(`:${port}`, `:${port + 1}`) ?? null,
-                };
-                await workspaceService.update(workspaceID, portChange, true);
-                reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
+                logger.warn('EADDRINUSE error despite pre-flight port check', {
+                  workspaceID,
+                  port,
+                  errorMessage,
+                });
+                // Try to find another available port as emergency fallback
+                const emergencyPort = await findAvailablePort(port + 1);
+                if (emergencyPort !== null) {
+                  const portChange = { port: emergencyPort };
+                  await workspaceService.update(workspaceID, portChange, true);
+                  reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
+                } else {
+                  reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, false, { ...workspace }));
+                }
                 return;
               }
 
@@ -441,7 +483,15 @@ export class Wiki implements IWikiService {
 
     try {
       logger.info(`worker.beforeExit for ${id}`);
-      await worker.beforeExit();
+      // Add timeout to prevent hanging
+      await Promise.race([
+        worker.beforeExit(),
+        new Promise((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('beforeExit timeout'));
+          }, 5000);
+        }),
+      ]);
       logger.info(`terminateWorker for ${id}`);
       await terminateWorker(nativeWorker);
       // Detach worker from service message handlers
@@ -465,11 +515,25 @@ export class Wiki implements IWikiService {
       function: 'stopAllWiki',
     });
     const tasks = [];
-    for (const id of Object.keys(this.wikiWorkers)) {
-      tasks.push(this.stopWiki(id));
+    const wikiIds = Object.keys(this.wikiWorkers);
+    logger.info(`Stopping ${wikiIds.length} wiki workers`, { wikiIds });
+
+    for (const id of wikiIds) {
+      // Wrap each stopWiki call to ensure one failure doesn't block others
+      tasks.push(
+        (async () => {
+          try {
+            await this.stopWiki(id);
+            logger.info(`Wiki worker ${id} stopped successfully`);
+          } catch (error) {
+            logger.error(`Failed to stop wiki worker ${id}`, { error });
+          }
+        })(),
+      );
     }
-    await Promise.all(tasks);
-    logger.info('All wiki workers are stopped', { function: 'stopAllWiki' });
+
+    await Promise.allSettled(tasks);
+    logger.info('All wiki workers stop attempted', { function: 'stopAllWiki' });
   }
 
   /**
@@ -563,15 +627,15 @@ export class Wiki implements IWikiService {
       wikiInfoPath,
       exists: wikiInfoExists,
     });
+    // Main workspace without tiddlywiki.info is treated as a simplified wiki folder.
+    // In this mode, tiddlers are read and written directly under the workspace root.
     if (shouldBeMainWiki && !wikiInfoExists) {
-      const entries = await readdir(wikiPath);
-      logger.error('tiddlywiki.info missing', {
+      logger.info('tiddlywiki.info missing, treating as simplified wiki folder', {
         wikiPath,
         wikiInfoPath,
         function: 'ensureWikiExist',
-        entries,
       });
-      throw new Error(i18n.t('AddWorkspace.ThisPathIsNotAWikiFolder', { wikiPath, wikiInfoPath }));
+      return;
     }
     const tiddlersPath = path.join(wikiPath, TIDDLERS_PATH);
     const tiddlersExists = await pathExists(tiddlersPath);

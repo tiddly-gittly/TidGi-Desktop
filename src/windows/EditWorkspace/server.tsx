@@ -92,7 +92,7 @@ export function ServerOptions(props: IServerOptionsProps) {
   return (
     <AServerOptionsAccordion defaultExpanded={alreadyEnableSomeServerOptions}>
       <Tooltip title={t('EditWorkspace.ClickToExpand')}>
-        <AServerOptionsAccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <AServerOptionsAccordionSummary expandIcon={<ExpandMoreIcon />} data-testid='preference-section-serverOptions'>
           {t('EditWorkspace.ServerOptions')} ({t('EditWorkspace.EnableHTTPAPI')})
         </AServerOptionsAccordionSummary>
       </Tooltip>
@@ -105,6 +105,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                 edge='end'
                 color='primary'
                 checked={enableHTTPAPI}
+                data-testid='enable-http-api-switch'
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                   workspaceSetter({ ...workspace, enableHTTPAPI: event.target.checked }, true);
                 }}

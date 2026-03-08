@@ -27,6 +27,7 @@ export class FileSystemAdaptor {
   /** Cached extension filters from $:/config/FileSystemExtensions. Requires restart to reflect changes. */
   protected extensionFilters: string[] | undefined;
   protected watchPathBase!: string;
+  protected readonly useWikiFolderAsTiddlersPath: boolean;
 
   constructor(options: { boot?: typeof $tw.boot; wiki: Wiki }) {
     this.wiki = options.wiki;
@@ -39,12 +40,14 @@ export class FileSystemAdaptor {
 
     // Get workspace ID from preloaded tiddler
     this.workspaceID = this.wiki.getTiddlerText('$:/info/tidgi/workspaceID', '');
+    this.useWikiFolderAsTiddlersPath = this.wiki.getTiddlerText('$:/info/tidgi/useWikiFolderAsTiddlersPath', 'no') === 'yes';
 
-    if (this.boot.wikiTiddlersPath) {
-      $tw.utils.createDirectory(this.boot.wikiTiddlersPath);
-      this.watchPathBase = path.resolve(this.boot.wikiTiddlersPath);
+    const preferredWatchPath = this.useWikiFolderAsTiddlersPath ? this.boot.wikiPath : this.boot.wikiTiddlersPath;
+    if (preferredWatchPath) {
+      $tw.utils.createDirectory(preferredWatchPath);
+      this.watchPathBase = path.resolve(preferredWatchPath);
     } else {
-      this.logger.alert('filesystem: wikiTiddlersPath is not set!');
+      this.logger.alert('filesystem: watch path is not set!');
       this.watchPathBase = '';
     }
 
@@ -120,7 +123,7 @@ export class FileSystemAdaptor {
    * filenames trigger constant saves.
    */
   getTiddlerFileInfo(tiddler: Tiddler): IFileInfo | null {
-    if (!this.boot.wikiTiddlersPath) {
+    if (!this.watchPathBase) {
       throw new Error('filesystem adaptor requires a valid wiki folder');
     }
 
@@ -158,7 +161,7 @@ export class FileSystemAdaptor {
           // If realpath fails, use original
         }
       } else {
-        targetDirectory = this.boot.wikiTiddlersPath;
+        targetDirectory = this.watchPathBase;
       }
 
       // Check if existing file is already in the correct directory
@@ -285,7 +288,7 @@ export class FileSystemAdaptor {
       const extensionFilters = hasCanonicalUri ? ['.tid'] : this.extensionFilters;
 
       return $tw.utils.generateTiddlerFileInfo(tiddler, {
-        directory: this.boot.wikiTiddlersPath ?? '',
+        directory: this.watchPathBase,
         pathFilters,
         extFilters: extensionFilters,
         wiki: this.wiki,

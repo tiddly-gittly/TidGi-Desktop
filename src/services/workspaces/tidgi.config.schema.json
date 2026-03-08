@@ -14,17 +14,15 @@
       "description": "Configuration file format version",
       "const": 1
     },
+    "id": {
+      "type": "string",
+      "description": "Canonical workspace ID shared across devices",
+      "default": ""
+    },
     "name": {
       "type": "string",
       "description": "Custom display name for the workspace",
       "default": ""
-    },
-    "port": {
-      "type": "number",
-      "description": "Port number for TiddlyWiki server",
-      "minimum": 1024,
-      "maximum": 65535,
-      "default": 5212
     },
     "gitUrl": {
       "type": ["string", "null"],

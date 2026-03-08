@@ -136,6 +136,12 @@ export function TemplateSearch({ placeholder, onTemplateSelect, testId }: Templa
   const { t } = useTranslation('agent');
   const containerReference = useRef<HTMLDivElement | null>(null);
   const panelRootReference = useRef<ReturnType<typeof createRoot> | null>(null);
+  // Keep callback and t in refs so the autocomplete instance is not destroyed/recreated
+  // when the parent re-renders with a new function reference.
+  const onTemplateSelectReference = useRef(onTemplateSelect);
+  onTemplateSelectReference.current = onTemplateSelect;
+  const tReference = useRef(t);
+  tReference.current = t;
 
   useEffect(() => {
     if (!containerReference.current) {
@@ -170,8 +176,10 @@ export function TemplateSearch({ placeholder, onTemplateSelect, testId }: Templa
       },
       plugins: [
         createAgentsPlugin({
-          onSelect: onTemplateSelect,
-          sourceTitle: t('CreateAgent.SelectTemplate'),
+          onSelect: (agent) => {
+            onTemplateSelectReference.current(agent);
+          },
+          sourceTitle: tReference.current('CreateAgent.SelectTemplate'),
           searchTemplates: true,
         }),
       ],
@@ -180,7 +188,7 @@ export function TemplateSearch({ placeholder, onTemplateSelect, testId }: Templa
     return () => {
       search.destroy();
     };
-  }, [onTemplateSelect, placeholder]);
+  }, [placeholder]);
 
   return <SearchContainer ref={containerReference} data-testid={testId} />;
 }

@@ -67,6 +67,7 @@ export function checkWindowDimension(windowName: WindowNames): { width: number; 
 
 export class ApplicationWorld {
   app: ElectronApplication | undefined;
+  appLaunchPromise: Promise<void> | undefined;
   mainWindow: Page | undefined; // Keep for compatibility during transition
   currentWindow: Page | undefined; // New state-managed current window
   mockOpenAIServer: MockOpenAIServer | undefined;
@@ -224,6 +225,105 @@ export class ApplicationWorld {
 
 setWorldConstructor(ApplicationWorld);
 
+async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
+  const packedAppPath = getPackedAppPath();
+
+  world.app = await electron.launch({
+    executablePath: packedAppPath,
+    args: [
+      `--test-scenario=${world.scenarioSlug}`,
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--disable-software-rasterizer',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-features=TranslateUI',
+      '--disable-ipc-flooding-protection',
+      '--force-device-scale-factor=1',
+      '--high-dpi-support=1',
+      '--force-color-profile=srgb',
+      '--disable-extensions',
+      '--disable-plugins',
+      '--disable-default-apps',
+      '--virtual-time-budget=1000',
+      '--run-all-compositor-stages-before-draw',
+      '--disable-checker-imaging',
+      ...(process.env.CI && process.platform === 'linux'
+        ? [
+          '--disable-background-mode',
+          '--disable-features=VizDisplayCompositor',
+          '--use-gl=swiftshader',
+          '--disable-accelerated-2d-canvas',
+          '--disable-accelerated-jpeg-decoding',
+          '--disable-accelerated-mjpeg-decode',
+          '--disable-accelerated-video-decode',
+        ]
+        : []),
+    ],
+    env: {
+      ...process.env,
+      NODE_ENV: 'test',
+      E2E_TEST: 'true',
+      LANG: process.env.LANG || 'zh-Hans.UTF-8',
+      LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
+      LC_ALL: process.env.LC_ALL || 'zh-Hans.UTF-8',
+      ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
+      ...(process.env.CI && {
+        ELECTRON_ENABLE_LOGGING: 'true',
+        ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
+      }),
+    },
+    cwd: process.cwd(),
+    timeout: PLAYWRIGHT_TIMEOUT,
+  });
+
+  // Do not block launch step on firstWindow; this can exceed Cucumber's 5s step timeout.
+  // Window acquisition is handled in "I wait for the page to load completely".
+  const openedWindows = world.app.windows().filter(page => !page.isClosed());
+  world.mainWindow = openedWindows[0];
+  world.currentWindow = world.mainWindow;
+}
+
+async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
+  // If launch is still in progress, wait it settle before closing.
+  if (world.appLaunchPromise) {
+    try {
+      await world.appLaunchPromise;
+    } catch {
+      // Ignore launch failure here; close path will clear world state.
+    }
+  }
+
+  if (!world.app) return;
+
+  try {
+    await Promise.race([
+      world.app.close(),
+      new Promise((_, reject) =>
+        setTimeout(() => {
+          reject(new Error('close timeout'));
+        }, 4000)
+      ),
+    ]);
+  } catch {
+    try {
+      await Promise.race([
+        world.app.context().close({ reason: 'Relaunch application in scenario' }),
+        new Promise(resolve => setTimeout(resolve, 500)),
+      ]);
+    } catch {
+      // ignore
+    }
+  } finally {
+    world.appLaunchPromise = undefined;
+    world.app = undefined;
+    world.mainWindow = undefined;
+    world.currentWindow = undefined;
+  }
+}
+
 AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result }) {
   // Only take screenshots in CI environment
   // if (!process.env.CI) return;
@@ -236,6 +336,10 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
       return;
     }
     if (stepText.match(/^I clear log/i)) {
+      return;
+    }
+    // Skip file operation steps — they don't interact with the UI, nothing visual to capture
+    if (stepText.match(/^I create file |^I sync |^I clone |^file "/i)) {
       return;
     }
 
@@ -303,75 +407,16 @@ AfterStep(async function(this: ApplicationWorld, { pickle, pickleStep, result })
 // Read docs/Testing.md section "Key E2E Testing Patterns" point 6 before attempting any changes.
 // Maximum allowed timeouts: Local 5s, CI 10s (exactly 2x local, no more)
 When('I launch the TidGi application', async function(this: ApplicationWorld) {
-  // For E2E tests on dev mode, use the packaged test version with NODE_ENV environment variable baked in
-  const packedAppPath = getPackedAppPath();
+  this.appLaunchPromise = launchTidGiApplication(this).catch((error: unknown) => {
+    throw error;
+  });
+});
 
+When('I close the TidGi application', async function(this: ApplicationWorld) {
   try {
-    this.app = await electron.launch({
-      executablePath: packedAppPath,
-      // Add debugging options to prevent app from closing and CI-specific args
-      args: [
-        // Pass slugified scenario name to application for exact path isolation matching
-        // This ensures consistency with the slug generated in appPaths.ts
-        `--test-scenario=${this.scenarioSlug}`,
-        '--no-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--disable-software-rasterizer',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection',
-        '--force-device-scale-factor=1',
-        '--high-dpi-support=1',
-        '--force-color-profile=srgb',
-        '--disable-extensions',
-        '--disable-plugins',
-        '--disable-default-apps',
-        '--virtual-time-budget=1000',
-        '--run-all-compositor-stages-before-draw',
-        '--disable-checker-imaging',
-        // Linux CI specific arguments
-        ...(process.env.CI && process.platform === 'linux'
-          ? [
-            '--disable-background-mode',
-            '--disable-features=VizDisplayCompositor',
-            '--use-gl=swiftshader',
-            '--disable-accelerated-2d-canvas',
-            '--disable-accelerated-jpeg-decoding',
-            '--disable-accelerated-mjpeg-decode',
-            '--disable-accelerated-video-decode',
-          ]
-          : []),
-      ],
-      env: {
-        ...process.env,
-        NODE_ENV: 'test',
-        E2E_TEST: 'true',
-        // Ensure tests run in Chinese locale so i18n UI strings match expectations
-        // set multiple variables for cross-platform coverage
-        LANG: process.env.LANG || 'zh-Hans.UTF-8',
-        LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
-        LC_ALL: process.env.LC_ALL || 'zh-Hans.UTF-8',
-        // Force display settings for CI
-        ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
-        ...(process.env.CI && {
-          ELECTRON_ENABLE_LOGGING: 'true',
-          ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
-        }),
-      },
-      // Set cwd to repo root; scenario isolation is handled via --test-scenario argument
-      cwd: process.cwd(),
-      timeout: PLAYWRIGHT_TIMEOUT,
-    });
-
-    this.mainWindow = await this.app.firstWindow({ timeout: PLAYWRIGHT_TIMEOUT });
-    this.currentWindow = this.mainWindow;
+    await closeTidGiApplication(this);
   } catch (error) {
-    throw new Error(
-      `Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run test:prepare-e2e\` before running the tests to ensure the app is built, and build with binaries like "dugite" and "tiddlywiki", see scripts/afterPack.js for more details.`,
-    );
+    throw new Error(`Failed to close TidGi application: ${error as Error}`);
   }
 });
 

@@ -32,9 +32,9 @@ function isWikiWorkspace(workspace: IWorkspace): workspace is IWikiWorkspace {
 
 // Backoff configuration for retries
 const BACKOFF_OPTIONS = {
-  numOfAttempts: 10,
+  numOfAttempts: 24,
   startingDelay: 200,
-  timeMultiple: 1.5,
+  timeMultiple: 1,
 };
 
 /**
@@ -196,6 +196,87 @@ When('I cleanup test wiki so it could create a new one on start', async function
     );
   } catch (error) {
     console.error('Failed to write settings.json after 3 attempts, continuing anyway', error);
+  }
+});
+
+/** Files in the wiki root that are non-TiddlyWiki project artefacts and should be removed. */
+const NON_TW_ROOT_FILES_TO_REMOVE = new Set([
+  'README.md',
+  'README_zh-CN.md',
+  'package.json',
+  'pnpm-lock.yaml',
+  'pnpm-workspace.yaml',
+  'renovate.json',
+  'vercel.json',
+  'workbox-config.js',
+  '.editorconfig',
+  '.prettierrc.js',
+  'tiddlywiki.info',
+]);
+
+/** Directories in the wiki root that are non-TiddlyWiki project artefacts and should be removed. */
+const NON_TW_ROOT_DIRS_TO_REMOVE = new Set(['.github', 'public', 'scripts', 'node_modules']);
+
+When('I flatten default wiki to simplified root structure', async function(this: ApplicationWorld) {
+  const wikiPath = getWikiTestWikiPath(this);
+  const tiddlersPath = path.join(wikiPath, 'tiddlers');
+
+  if (!await fs.pathExists(wikiPath)) {
+    throw new Error(`Wiki path does not exist: ${wikiPath}`);
+  }
+
+  const tiddlersExists = await fs.pathExists(tiddlersPath);
+  if (!tiddlersExists) {
+    const rootEntriesWhenMissing = await fs.readdir(wikiPath);
+    const hasTidFilesInRoot = rootEntriesWhenMissing.some(entry => entry.endsWith('.tid') || entry.endsWith('.meta'));
+    if (!hasTidFilesInRoot) {
+      throw new Error(`tiddlers folder does not exist: ${tiddlersPath}`);
+    }
+  }
+
+  // Move every entry inside tiddlers/ (including the system/ subfolder) up to wiki root.
+  if (tiddlersExists) {
+    const tiddlerEntries = await fs.readdir(tiddlersPath, { withFileTypes: true });
+    for (const entry of tiddlerEntries) {
+      const sourcePath = path.join(tiddlersPath, entry.name);
+      const targetPath = path.join(wikiPath, entry.name);
+      await fs.move(sourcePath, targetPath, { overwrite: true });
+    }
+    await fs.remove(tiddlersPath);
+  }
+
+  // Remove non-TiddlyWiki project files from the wiki root.
+  const rootEntries = await fs.readdir(wikiPath, { withFileTypes: true });
+  for (const entry of rootEntries) {
+    const entryPath = path.join(wikiPath, entry.name);
+    if (entry.isDirectory()) {
+      if (NON_TW_ROOT_DIRS_TO_REMOVE.has(entry.name)) {
+        try {
+          await fs.remove(entryPath);
+        } catch { /* non-critical */ }
+      }
+      // .github etc. are also caught by name-based check, everything else kept.
+    } else {
+      if (NON_TW_ROOT_FILES_TO_REMOVE.has(entry.name)) {
+        await fs.remove(entryPath);
+      }
+    }
+  }
+
+  // Normalize external attachment canonical URIs so they resolve from wiki root.
+  // In simplified format, relative `files/...` may be resolved against hash routes,
+  // producing broken URLs like `tidgi://<id>#:.../files/...`.
+  const rootFiles = await fs.readdir(wikiPath);
+  for (const fileName of rootFiles) {
+    if (!fileName.endsWith('.tid')) {
+      continue;
+    }
+    const tidPath = path.join(wikiPath, fileName);
+    const tidText = await fs.readFile(tidPath, 'utf8');
+    const normalized = tidText.replace(/^_canonical_uri:\s+files\//m, '_canonical_uri: /files/');
+    if (normalized !== tidText) {
+      await fs.writeFile(tidPath, normalized, 'utf8');
+    }
   }
 });
 
@@ -529,22 +610,6 @@ async function clearSubWikiRoutingTestData(scenarioRoot?: string) {
     if (await fs.pathExists(wikiPath)) {
       await fs.remove(wikiPath);
     }
-  }
-}
-
-/**
- * Clear git test data to prevent state pollution between git tests
- * Removes the entire wiki folder - it will be recreated on next test start
- */
-async function clearGitTestData(scenarioRoot?: string) {
-  const root = scenarioRoot || process.cwd();
-  const wikiPath = path.join(root, 'wiki-test', 'wiki');
-  if (!(await fs.pathExists(wikiPath))) return;
-
-  try {
-    await fs.remove(wikiPath);
-  } catch (error) {
-    console.warn('Failed to remove wiki folder in git cleanup:', error);
   }
 }
 
@@ -1134,9 +1199,9 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
     await new Promise(resolve => setTimeout(resolve, 500));
   });
 
-  // If enableFileSystemWatch was changed, we need to restart the wiki for it to take effect
-  // The wiki worker reads this config at startup, so changes don't apply until restart
-  if ('enableFileSystemWatch' in settingsUpdate) {
+  // If enableFileSystemWatch or enableHTTPAPI was changed, we need to restart the wiki
+  const needsRestart = 'enableFileSystemWatch' in settingsUpdate || 'enableHTTPAPI' in settingsUpdate;
+  if (needsRestart) {
     // Only wait for watch-fs if it was enabled before the update
     // If it was disabled, wiki is ready immediately without watch-fs markers
     if (watchFsCurrentlyEnabled) {
@@ -1421,7 +1486,7 @@ Given('I setup a sub-wiki {string} with tag {string} and filter {string} and tid
   await setupSubWiki(this.scenarioSlug, subWikiName, tagName, { fileSystemPathFilter: filter }, rows);
 });
 
-export { clearGitTestData, clearHibernationTestData, clearSubWikiRoutingTestData, clearTestIdLogs };
+export { clearHibernationTestData, clearSubWikiRoutingTestData, clearTestIdLogs };
 
 /**
  * Clear all test-id markers from log files to ensure fresh logs for next test phase

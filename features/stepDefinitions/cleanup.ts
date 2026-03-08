@@ -5,7 +5,7 @@ import { makeSlugPath } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { ApplicationWorld } from './application';
 import { clearTidgiMiniWindowSettings } from './tidgiMiniWindow';
-import { clearGitTestData, clearHibernationTestData, clearSubWikiRoutingTestData } from './wiki';
+import { clearHibernationTestData, clearSubWikiRoutingTestData } from './wiki';
 
 Before(async function(this: ApplicationWorld, { pickle }) {
   // Initialize scenario-specific paths
@@ -108,11 +108,6 @@ After(async function(this: ApplicationWorld, { pickle }) {
   }
   if (pickle.tags.some((tag) => tag.name === '@subwiki')) {
     await clearSubWikiRoutingTestData(scenarioRoot);
-  }
-  // Clean up git test data to prevent state pollution between git tests
-  // Removes entire wiki folder - it will be recreated on next test start
-  if (pickle.tags.some((tag) => tag.name === '@git')) {
-    await clearGitTestData(scenarioRoot);
   }
   // Clean up hibernation test data - remove wiki2 folder created during tests
   if (pickle.tags.some((tag) => tag.name === '@hibernation')) {

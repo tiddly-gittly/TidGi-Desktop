@@ -145,6 +145,13 @@ export class DatabaseService implements IDatabaseService {
         migrationsRun: schemaConfig.migrationsRun,
         logging: false,
         nativeBinding: SQLITE_BINARY_PATH,
+        // Add safer options to prevent crashes on cleanup
+        prepareDatabase: (database: Database) => {
+          // Set a busy timeout to handle concurrent access
+          database.pragma('busy_timeout = 5000');
+          // Optimize for safety over performance
+          database.pragma('synchronous = NORMAL');
+        },
       });
 
       await dataSource.initialize();
@@ -191,6 +198,13 @@ export class DatabaseService implements IDatabaseService {
           migrationsRun: false, // Do not run migrations on connect
           logging: false,
           nativeBinding: SQLITE_BINARY_PATH,
+          // Add safer options to prevent crashes on cleanup
+          prepareDatabase: (database: Database) => {
+            // Set a busy timeout to handle concurrent access
+            database.pragma('busy_timeout = 5000');
+            // Optimize for safety over performance
+            database.pragma('synchronous = NORMAL');
+          },
         });
 
         await dataSource.initialize();
@@ -304,14 +318,67 @@ export class DatabaseService implements IDatabaseService {
           await fs.unlink(this.getDatabasePathSync(key));
           logger.info(`Database dropped and file deleted for key: ${key}`);
         } else {
-          await dataSource.destroy();
-          logger.info(`Database connection closed for key: ${key}`);
+          // Before destroying, ensure all prepared statements are finalized
+          // This is important for better-sqlite3 to avoid crashes
+          if (dataSource.isInitialized) {
+            try {
+              // Get the underlying driver to check for any pending operations
+              const driver = dataSource.driver as { databaseConnection?: { inTransaction?: boolean } };
+              if (driver.databaseConnection?.inTransaction) {
+                logger.warn(`Database ${key} has pending transaction, this may cause issues`);
+              }
+
+              // Close connection gracefully with TypeORM
+              await dataSource.destroy();
+              logger.info(`Database connection closed for key: ${key}`);
+            } catch (destroyError) {
+              logger.error(`Error during dataSource.destroy() for key: ${key}`, { error: destroyError });
+              throw destroyError;
+            }
+          } else {
+            logger.warn(`Database ${key} was not initialized, skipping destroy`);
+          }
         }
       } catch (error) {
         logger.error(`Failed to close database for key: ${key}`, { error });
         throw error;
       }
+    } else {
+      logger.debug(`Database ${key} not found in dataSources, already closed or never opened`);
     }
+  }
+
+  /**
+   * Close all database connections
+   * This should be called before app quit to prevent crashes in better-sqlite3 cleanup
+   */
+  public async closeAllDatabases(): Promise<void> {
+    logger.info(`Closing all database connections, total: ${this.dataSources.size}`);
+    // Collect all keys first to avoid modification during iteration
+    const keys = Array.from(this.dataSources.keys());
+    logger.info(`Database keys to close: ${keys.join(', ')}`);
+
+    for (const key of keys) {
+      try {
+        logger.debug(`Starting to close database: ${key}`);
+        await this.closeAppDatabase(key);
+        logger.debug(`Successfully closed database: ${key}`);
+      } catch (error) {
+        logger.error(`Failed to close database during shutdown: ${key}`, { error });
+      }
+    }
+
+    // Close backup stream
+    if (this.settingBackupStream) {
+      try {
+        this.settingBackupStream.end();
+        this.settingBackupStream = undefined;
+      } catch (error) {
+        logger.error('Failed to close settings backup stream', { error });
+      }
+    }
+
+    logger.info('All database connections closed');
   }
 
   /**

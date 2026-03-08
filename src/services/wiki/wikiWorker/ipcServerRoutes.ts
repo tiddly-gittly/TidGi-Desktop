@@ -40,6 +40,16 @@ export class IpcServerRoutes {
     this.subWikiPaths = subWikiPaths;
   }
 
+  /**
+   * Fallback wiki home path used when `$tw.boot.wikiPath` is undefined.
+   * This happens for simplified wikis that have no `tiddlywiki.info`.
+   */
+  private homePath: string | undefined;
+
+  setHomePath(homePath: string) {
+    this.homePath = homePath;
+  }
+
   setWikiInstance(wikiInstance: ITiddlyWiki) {
     this.wikiInstance = wikiInstance;
     this.pendingIpcServerRoutesRequests.forEach((resolve) => {
@@ -109,15 +119,18 @@ export class IpcServerRoutes {
    */
   async getFile(suppliedFilename: string): Promise<IWikiServerRouteResponse> {
     await this.waitForIpcServerRoutesAvailable();
-    if (this.wikiInstance.boot.wikiPath === undefined) {
-      return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `$tw.wiki.boot.wikiPath === undefined.` };
+    // When no tiddlywiki.info exists (simplified wiki), $tw.boot.wikiPath is undefined;
+    // fall back to the homePath we received at startup.
+    const wikiPath = this.wikiInstance.boot.wikiPath ?? this.homePath;
+    if (wikiPath === undefined) {
+      return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `$tw.boot.wikiPath and homePath are both undefined.` };
     }
 
     // Get external attachments folder name from config (default to 'files')
     const externalAttachmentsFolder = this.wikiInstance.wiki.getTiddlerText('$:/config/ExternalAttachments/WikiFolderToMove', 'files');
 
     // Try main wiki first
-    const mainResult = await this.tryReadFile(this.wikiInstance.boot.wikiPath, externalAttachmentsFolder, suppliedFilename);
+    const mainResult = await this.tryReadFile(wikiPath, externalAttachmentsFolder, suppliedFilename);
     if (mainResult !== null) {
       return { statusCode: 200, headers: { 'Content-Type': mainResult.type }, data: mainResult.data };
     }
@@ -300,7 +313,22 @@ export class IpcServerRoutes {
 }
 
 export const ipcServerRoutes: IpcServerRoutes = new IpcServerRoutes();
-export const ipcServerRoutesMethods = {
+
+// Explicit method signature to preserve types
+type IpcServerRoutesMethodsType = {
+  deleteTiddler: IpcServerRoutes['deleteTiddler'];
+  getFavicon: IpcServerRoutes['getFavicon'];
+  getIndex: IpcServerRoutes['getIndex'];
+  getStatus: IpcServerRoutes['getStatus'];
+  getTiddler: IpcServerRoutes['getTiddler'];
+  getTiddlerHtml: IpcServerRoutes['getTiddlerHtml'];
+  getTiddlersJSON: IpcServerRoutes['getTiddlersJSON'];
+  putTiddler: IpcServerRoutes['putTiddler'];
+  getFile: IpcServerRoutes['getFile'];
+  getWikiChangeObserver: IpcServerRoutes['getWikiChangeObserver'];
+};
+
+export const ipcServerRoutesMethods: IpcServerRoutesMethodsType = {
   deleteTiddler: ipcServerRoutes.deleteTiddler.bind(ipcServerRoutes),
   getFavicon: ipcServerRoutes.getFavicon.bind(ipcServerRoutes),
   getIndex: ipcServerRoutes.getIndex.bind(ipcServerRoutes),
@@ -316,5 +344,5 @@ export const ipcServerRoutesMethods = {
 /**
  * Available methods for ipcServerRoutes exposed from wiki worker
  */
-export type IpcServerRouteMethods = Omit<typeof ipcServerRoutesMethods, 'getWikiChangeObserver'>;
+export type IpcServerRouteMethods = Omit<IpcServerRoutesMethodsType, 'getWikiChangeObserver'>;
 export type IpcServerRouteNames = keyof IpcServerRouteMethods;

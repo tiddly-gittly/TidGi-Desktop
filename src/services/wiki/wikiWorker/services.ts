@@ -1,6 +1,6 @@
 /**
  * Worker-side service proxies, similar to preload/common/services.ts
- * Auto-creates proxies for all registered services and attaches to global.service
+ * Exposed to the wiki worker and attached to $tw.tidgi.service in startNodeJSWiki
  */
 
 import { createWorkerProxy, type WorkerProxy } from 'electron-ipc-cat/worker';
@@ -15,6 +15,7 @@ import { DatabaseServiceIPCDescriptor, type IDatabaseService } from '@services/d
 import { DeepLinkServiceIPCDescriptor, type IDeepLinkService } from '@services/deepLink/interface';
 import { ExternalAPIServiceIPCDescriptor, type IExternalAPIService } from '@services/externalAPI/interface';
 import { GitServiceIPCDescriptor, type IGitService } from '@services/git/interface';
+import { GitServerServiceIPCDescriptor, type IGitServerService } from '@services/gitServer/interface';
 import { type IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
 import { type INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';
 import { type INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
@@ -35,12 +36,13 @@ import { type IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@
 export const agentBrowser = createWorkerProxy<WorkerProxy<IAgentBrowserService>>(AgentBrowserServiceIPCDescriptor, Observable);
 export const agentDefinition = createWorkerProxy<WorkerProxy<IAgentDefinitionService>>(AgentDefinitionServiceIPCDescriptor, Observable);
 export const agentInstance = createWorkerProxy<WorkerProxy<IAgentInstanceService>>(AgentInstanceServiceIPCDescriptor, Observable);
-export const authentication = createWorkerProxy<WorkerProxy<IAuthenticationService>>(AuthenticationServiceIPCDescriptor, Observable);
+export const auth = createWorkerProxy<WorkerProxy<IAuthenticationService>>(AuthenticationServiceIPCDescriptor, Observable);
 export const context = createWorkerProxy<WorkerProxy<IContextService>>(ContextServiceIPCDescriptor, Observable);
 export const database = createWorkerProxy<WorkerProxy<IDatabaseService>>(DatabaseServiceIPCDescriptor, Observable);
 export const deepLink = createWorkerProxy<WorkerProxy<IDeepLinkService>>(DeepLinkServiceIPCDescriptor, Observable);
 export const externalAPI = createWorkerProxy<WorkerProxy<IExternalAPIService>>(ExternalAPIServiceIPCDescriptor, Observable);
 export const git = createWorkerProxy<WorkerProxy<IGitService>>(GitServiceIPCDescriptor, Observable);
+export const gitServer = createWorkerProxy<WorkerProxy<IGitServerService>>(GitServerServiceIPCDescriptor, Observable);
 export const menu = createWorkerProxy<WorkerProxy<IMenuService>>(MenuServiceIPCDescriptor, Observable);
 export const native = createWorkerProxy<WorkerProxy<INativeService>>(NativeServiceIPCDescriptor, Observable);
 export const notification = createWorkerProxy<WorkerProxy<INotificationService>>(NotificationServiceIPCDescriptor, Observable);
@@ -59,18 +61,19 @@ export const workspaceView = createWorkerProxy<WorkerProxy<IWorkspaceViewService
 
 /**
  * All service proxies collected in one object
- * Auto-attached to global.service when this module is imported
+ * Attached to $tw.tidgi.service by the wiki worker bootstrap
  */
 export const service = {
   agentBrowser,
   agentDefinition,
   agentInstance,
-  authentication,
+  auth,
   context,
   database,
   deepLink,
   externalAPI,
   git,
+  gitServer,
   menu,
   native,
   notification,
@@ -87,10 +90,3 @@ export const service = {
   workspace,
   workspaceView,
 } as const;
-
-// Auto-attach to global when imported (worker thread only)
-if (typeof global !== 'undefined') {
-  // Use type assertion to avoid circular reference
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-  (global as any).service = service;
-}

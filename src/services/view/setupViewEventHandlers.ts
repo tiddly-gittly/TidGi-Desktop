@@ -137,12 +137,13 @@ export default function setupViewEventHandlers(
   }, 2000);
   view.webContents.on('did-finish-load', () => {
     logger.debug('did-finish-load called');
-    // Log for E2E tests - this is more reliable than preload script IPC
-    logger.debug(`[test-id-VIEW_LOADED] Browser view finished loading for workspace: ${workspace.name} (id: ${workspace.id})`);
     void throttledDidFinishedLoad('did-finish-load');
   });
   view.webContents.on('did-stop-loading', () => {
     logger.debug(`did-stop-loading called ${workspace.id}`);
+    if (isWikiWorkspace(workspace)) {
+      logger.info(`[test-id-VIEW_LOADED] Browser view loaded for workspace: ${workspace.name} (id: ${workspace.id})`);
+    }
     void throttledDidFinishedLoad('did-stop-loading');
   });
   view.webContents.on('dom-ready', () => {

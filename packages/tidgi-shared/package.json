@@ -1,0 +1,62 @@
+{
+  "name": "tidgi-shared",
+  "version": "0.1.2",
+  "description": "Shared service interfaces and IPC descriptors for TidGi plugins",
+  "license": "MPL-2.0",
+  "author": "linonetwo <linonetwo012@gmail.com>",
+  "homepage": "https://github.com/tiddly-gittly/TidGi-Desktop#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tiddly-gittly/TidGi-Desktop.git",
+    "directory": "packages/tidgi-shared"
+  },
+  "bugs": {
+    "url": "https://github.com/tiddly-gittly/TidGi-Desktop/issues"
+  },
+  "keywords": [
+    "tidgi",
+    "tiddlywiki",
+    "plugin",
+    "ipc",
+    "service",
+    "interface",
+    "types",
+    "typescript"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "check": "tsc --noEmit",
+    "prepublishOnly": "pnpm run check && pnpm run build"
+  },
+  "dependencies": {
+    "electron-ipc-cat": "^2.1.0"
+  },
+  "peerDependencies": {
+    "rxjs": ">=7"
+  },
+  "peerDependenciesMeta": {
+    "rxjs": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "rxjs": "^7.8.1",
+    "tsup": "^8.0.0",
+    "tw5-typed": "^1.1.1",
+    "type-fest": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}

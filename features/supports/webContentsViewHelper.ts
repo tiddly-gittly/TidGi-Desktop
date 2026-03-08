@@ -419,6 +419,13 @@ export async function executeTiddlyWikiCode<T>(
       if (!targetWebContents) {
         throw new Error('WebContents not found');
       }
+      /**
+       * executeJavaScript can hang indefinitely when the webContents is navigating
+       * (e.g. during a wiki restart retry loop). Race against a 200 ms timeout so
+       * backOff callers get fast failures and can retry until the page is ready.
+       * 200ms gives ~6 retries within the 5s Cucumber step budget even during a
+       * ~12s simplified-wiki restart (8s pre-wait + 3.5s for wiki to become ready).
+       */
       const result: T = await Promise.race([
         targetWebContents.executeJavaScript(codeContent as string, true),
         new Promise<never>((_, reject) =>

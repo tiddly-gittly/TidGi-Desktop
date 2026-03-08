@@ -30,7 +30,7 @@ const BROWSER_VIEW_RETRY_DELAY_MS = 100;
  * Account for both when calculating how many attempts fit within the Cucumber step
  * timeout budget, leaving 4s margin for catch-block diagnostics and Cucumber overhead.
  */
-const ESTIMATED_PER_ATTEMPT_MS = BROWSER_VIEW_RETRY_DELAY_MS + 2000;
+const ESTIMATED_PER_ATTEMPT_MS = BROWSER_VIEW_RETRY_DELAY_MS + 2000; // delay + executeJavaScript timeout
 const BROWSER_VIEW_RETRY_ATTEMPTS = Math.max(
   8,
   Math.floor((CUCUMBER_GLOBAL_TIMEOUT - 4000) / ESTIMATED_PER_ATTEMPT_MS),
@@ -334,6 +334,13 @@ When('I open tiddler {string} in browser view', async function(this: Application
     throw new Error('Application not launched');
   }
 
+  /**
+   * Use flat 200 ms retries instead of exponential back-off.
+   * During a wiki restart, executeTiddlyWikiCode hangs for ~200 ms per attempt
+   * (webContents navigating), then needs a delay before the next try.
+   * Flat 200 ms gives ~12 attempts in the 5 s Cucumber step budget, which is
+   * enough to bridge the gap when the wiki becomes ready late into the step.
+   */
   await backOff(
     async () => {
       await executeTiddlyWikiCode(
@@ -466,4 +473,84 @@ When('I execute TiddlyWiki code in browser view: {string}', async function(this:
   } catch (error) {
     throw new Error(`Failed to execute TiddlyWiki code in browser view: ${error as Error}`);
   }
+});
+
+Then('image {string} should be loaded in browser view', async function(this: ApplicationWorld, imageName: string) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+
+  const tiddlerTitle = imageName;
+  let lastDiagnostic = '';
+  await backOff(
+    async () => {
+      let isImageLoaded = false;
+      try {
+        const diagnostic = await executeTiddlyWikiCode<{
+          loaded: boolean;
+          hasContainer: boolean;
+          hasImage: boolean;
+          src: string;
+          complete: boolean;
+          naturalWidth: number;
+          naturalHeight: number;
+          canonicalUri: string;
+        }>(
+          this.app!,
+          `(function() {
+              const title = ${JSON.stringify(tiddlerTitle)};
+              const container = document.querySelector("[data-tiddler-title='" + title.replace(/'/g, "\\'") + "']");
+              if (!container) {
+                try { if (typeof $tw !== 'undefined' && $tw.wiki) $tw.wiki.addToStory(title); } catch {}
+                return {
+                  loaded: false,
+                  hasContainer: false,
+                  hasImage: false,
+                  src: '',
+                  complete: false,
+                  naturalWidth: 0,
+                  naturalHeight: 0,
+                  canonicalUri: (typeof $tw !== 'undefined' && $tw.wiki && $tw.wiki.getTiddler(title)?.fields?._canonical_uri) || '',
+                };
+              }
+              const image = container.querySelector('img');
+              if (!image) {
+                return {
+                  loaded: false,
+                  hasContainer: true,
+                  hasImage: false,
+                  src: '',
+                  complete: false,
+                  naturalWidth: 0,
+                  naturalHeight: 0,
+                  canonicalUri: (typeof $tw !== 'undefined' && $tw.wiki && $tw.wiki.getTiddler(title)?.fields?._canonical_uri) || '',
+                };
+              }
+              return {
+                loaded: Boolean(image.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
+                hasContainer: true,
+                hasImage: true,
+                src: image.currentSrc || image.src || '',
+                complete: Boolean(image.complete),
+                naturalWidth: Number(image.naturalWidth || 0),
+                naturalHeight: Number(image.naturalHeight || 0),
+                canonicalUri: (typeof $tw !== 'undefined' && $tw.wiki && $tw.wiki.getTiddler(title)?.fields?._canonical_uri) || '',
+              };
+            })()`,
+          200,
+        );
+        lastDiagnostic = JSON.stringify(diagnostic);
+        isImageLoaded = Boolean(diagnostic?.loaded);
+      } catch {
+        isImageLoaded = false;
+      }
+
+      if (!isImageLoaded) {
+        throw new Error(`Image ${imageName} is not loaded yet`);
+      }
+    },
+    { numOfAttempts: 10, startingDelay: 150, timeMultiple: 1, maxDelay: 150 },
+  ).catch(() => {
+    throw new Error(`Image ${imageName} is not loaded correctly in browser view. Last diagnostic: ${lastDiagnostic}`);
+  });
 });

@@ -25,6 +25,18 @@ When('I wait for {float} seconds for {string}', async function(seconds: number, 
 });
 
 When('I wait for the page to load completely', async function(this: ApplicationWorld) {
+  if (this.appLaunchPromise) {
+    try {
+      await this.appLaunchPromise;
+    } catch (error) {
+      throw new Error(
+        `Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run test:prepare-e2e\` before running the tests to ensure the app is built, and build with binaries like "dugite" and "tiddlywiki", see scripts/afterPack.js for more details.`,
+      );
+    } finally {
+      this.appLaunchPromise = undefined;
+    }
+  }
+
   let currentWindow = this.currentWindow;
   if ((!currentWindow || currentWindow.isClosed()) && this.app) {
     currentWindow = await this.app.firstWindow({ timeout: PLAYWRIGHT_TIMEOUT });

@@ -78,7 +78,7 @@
     "espree": "^11.0.0",
     "exponential-backoff": "^3.1.3",
     "fs-extra": "11.3.2",
-    "git-sync-js": "^2.3.1",
+    "git-sync-js": "^2.3.2",
     "graphql-hooks": "8.2.0",
     "html-minifier-terser": "^7.2.0",
     "i18next": "25.6.3",
@@ -209,8 +209,7 @@
       "nsfw",
       "registry-js",
       "unrs-resolver"
-    ],
-    "patchedDependencies": {}
+    ]
   },
   "private": false
 }

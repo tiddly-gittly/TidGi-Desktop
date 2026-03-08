@@ -11,8 +11,9 @@ export function ExistedWikiDoneButton({
   form,
   isCreateMainWorkspace,
   isCreateSyncedWorkspace,
+  useTidgiConfig,
   errorInWhichComponentSetter,
-}: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean; isCreateSyncedWorkspace: boolean }): React.JSX.Element {
+}: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean; isCreateSyncedWorkspace: boolean; useTidgiConfig: boolean }): React.JSX.Element {
   const { t } = useTranslation();
   const [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateExistedWiki(
     isCreateMainWorkspace,
@@ -20,7 +21,7 @@ export function ExistedWikiDoneButton({
     form,
     errorInWhichComponentSetter,
   );
-  const onSubmit = useExistedWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, wikiCreationMessageSetter, hasErrorSetter, errorInWhichComponentSetter);
+  const onSubmit = useExistedWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, useTidgiConfig, wikiCreationMessageSetter, hasErrorSetter, errorInWhichComponentSetter);
   const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {
     return (
