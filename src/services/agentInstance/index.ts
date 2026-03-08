@@ -45,6 +45,7 @@ import {
   updateTask as stmUpdateTask,
 } from './scheduledTaskManager';
 import { cancelAlarm, getActiveAlarmEntries, scheduleAlarmTimer } from './tools/alarmClock';
+import { cleanupMCPClient } from './tools/modelContextProtocol';
 
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {
@@ -277,6 +278,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       stopHeartbeat(agentId);
       cancelAlarm(agentId);
       cancelTasksForAgent(agentId);
+      await cleanupMCPClient(agentId);
       await repo.deleteAgent(this.agentInstanceRepository!, this.agentMessageRepository!, agentId);
       this.cleanupAgentSubscriptions(agentId);
     } catch (error) {
@@ -608,6 +610,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       stopHeartbeat(agentId);
       cancelAlarm(agentId);
       cancelTasksForAgent(agentId);
+      await cleanupMCPClient(agentId);
 
       // Get agent instance
       const instanceEntity = await this.agentInstanceRepository!.findOne({
