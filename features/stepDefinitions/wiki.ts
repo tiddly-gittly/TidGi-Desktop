@@ -969,14 +969,16 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
   // Construct the full wiki path
   const wikiPath = path.join(getWikiTestRootPath(this), workspaceName);
 
-  // Create the wiki folder using the template
+  // Create the wiki folder using the template (same filter as createWiki in wiki/index.ts)
   const templatePath = path.join(process.cwd(), 'template', 'wiki');
-  await fs.copy(templatePath, wikiPath);
-
-  // Remove the copied .git directory from the template to start fresh
-  const gitPath = path.join(wikiPath, '.git');
-  await fs.remove(gitPath).catch(() => {
-    // Ignore if .git doesn't exist
+  await fs.copy(templatePath, wikiPath, {
+    filter: (source: string) => {
+      // Skip .git folder
+      if (source.endsWith('.git')) return false;
+      // Skip template's tidgi.config.json so new wiki gets a clean name
+      if (path.basename(source) === 'tidgi.config.json') return false;
+      return true;
+    },
   });
 
   // Initialize fresh git repository for the new wiki using dugite
