@@ -16,13 +16,15 @@ Feature: Message Streaming Status
       | new tab button      | [data-tab-id='new-tab-button']  |
 
   @agent @mockOpenAI @streamingStatus
-  Scenario: Send button returns to normal state after AI response completes
-    # Add mock response
+  Scenario: Send button returns to normal after each AI round, including image upload
+    # Add all mock responses for the combined test
     Given I add mock OpenAI responses:
-      | response      | stream |
-      | First reply   | false  |
-      | Second reply  | false  |
-    
+      | response                      | stream |
+      | First reply                   | false  |
+      | Second reply                  | false  |
+      | Received image and text       | false  |
+      | Received second message       | false  |
+
     # Open agent chat
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     And I should see a "search interface" element with selector ".aa-Autocomplete"
@@ -30,66 +32,32 @@ Feature: Message Streaming Status
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
     When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
-    
-    # Send first message
+
+    # Part A: Send button returns to normal state after text messages
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "First message" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 2 messages in chat history
-    
-    # Verify send button is in normal state (not streaming)
-    # The send icon should be visible and cancel icon should not be visible
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
-    
-    # Send second message to confirm button works after first round
     When I type "Second message" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 4 messages in chat history
-    
-    # Verify send button is still in normal state after second round
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
 
-  @agent @mockOpenAI @streamingStatus @imageUpload
-  Scenario: Image upload streaming status and history verification
-    # Add mock responses
-    Given I add mock OpenAI responses:
-      | response                      | stream |
-      | Received image and text       | false  |
-      | Received second message       | false  |
-    
-    # Open agent chat
-    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    And I should see a "search interface" element with selector ".aa-Autocomplete"
-    When I click on a "search input box" element with selector ".aa-Input"
-    And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
-    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
-    
-    # Set file directly on hidden input (bypasses native file dialog that would block the test)
+    # Part B: Image upload streaming status and history verification
     When I set file "template/wiki/files/TiddlyWikiIconBlack.png" to file input with selector "input[type='file']"
-    # Verify image preview appears
     Then I should see an "attachment preview" element with selector "[data-testid='attachment-preview']"
-    
-    # Send message with image
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "Describe this image" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 2 messages in chat history
-    
-    # Verify image appears in chat history
+    Then I should see 6 messages in chat history
     And I should see a "message image attachment" element with selector "[data-testid='message-image-attachment']"
-    
-    # Verify send button returned to normal after first message
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
-    
-    # Send second message to check history includes image
     When I type "Continue" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 4 messages in chat history
-    
-    # Verify send button is still normal after second message
+    Then I should see 8 messages in chat history
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
