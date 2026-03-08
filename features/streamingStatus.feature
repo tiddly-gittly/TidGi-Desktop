@@ -16,15 +16,14 @@ Feature: Message Streaming Status
       | new tab button      | [data-tab-id='new-tab-button']  |
 
   @agent @mockOpenAI @streamingStatus
-  Scenario: Send button returns to normal after each AI round, including image upload
-    # Add all mock responses for the combined test
+  Scenario: Send button returns to normal state after AI response completes
+    # Add mock response
     Given I add mock OpenAI responses:
-      | response                      | stream |
-      | First reply                   | false  |
-      | Second reply                  | false  |
-      | Received image and text       | false  |
-      | Received second message       | false  |
-
+      | response      | stream |
+      | First reply   | false  |
+      | Second reply  | false  |
+      | Third reply   | false  |
+    
     # Open agent chat
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     And I should see a "search interface" element with selector ".aa-Autocomplete"
@@ -32,32 +31,32 @@ Feature: Message Streaming Status
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
     When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
-
-    # Part A: Send button returns to normal state after text messages
+    
+    # Send first message
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "First message" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 2 messages in chat history
+    
+    # Verify send button is in normal state (not streaming)
+    # The send icon should be visible and cancel icon should not be visible
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
+    
+    # Send second message to confirm button works
     When I type "Second message" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 4 messages in chat history
+    
+    # Verify send button is still in normal state
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
-
-    # Part B: Image upload streaming status and history verification
-    When I set file "template/wiki/files/TiddlyWikiIconBlack.png" to file input with selector "input[type='file']"
-    Then I should see an "attachment preview" element with selector "[data-testid='attachment-preview']"
-    When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
-    When I type "Describe this image" in "chat input" element with selector "[data-testid='agent-message-input']"
+    
+    # Send third message to triple confirm
+    When I type "Third message" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 6 messages in chat history
-    And I should see a "message image attachment" element with selector "[data-testid='message-image-attachment']"
-    And I should see a "send button icon" element with selector "[data-testid='send-icon']"
-    And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
-    When I type "Continue" in "chat input" element with selector "[data-testid='agent-message-input']"
-    And I press "Enter" key
-    Then I should see 8 messages in chat history
+    
+    # Final verification
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"

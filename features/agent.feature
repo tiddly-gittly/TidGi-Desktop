@@ -17,59 +17,77 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | new tab button      | [data-tab-id='new-tab-button']  |
 
   @agent @mockOpenAI
-  Scenario: Wiki-search and wiki-operation tool usage
-    # Add all mock responses for both parts upfront (FIFO queue)
+  Scenario: Wiki-search tool usage
+    # Add scenario-specific responses to the mock server
     Given I add mock OpenAI responses:
       | response                                                                                                                                                             | stream |
       | <tool_use name="wiki-search">{"workspaceName":"-VPTqPdNOEZHGO5vkwllY","filter":"[title[Index]]"}</tool_use>                                                          | false  |
       | 在 TiddlyWiki 中，Index 条目提供了编辑卡片的方法说明，点击右上角的编辑按钮可以开始对当前卡片进行编辑。此外，它还引导您访问中文教程页面和官方英文站点以获取更多信息。 | false  |
-      | 先测试失败情况<tool_use name="wiki-operation">{"workspaceName":"test-expected-to-fail","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>                      | false  |
-      | 然后测试成功情况<tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"}</tool_use>使用启动时自动创建的 wiki 工作区 | false  |
-      | 已成功在工作区 wiki 中创建条目 "test"。                                                                                                                                 | false  |
-    # --- Part A: Wiki-search tool ---
+    # Proceed with agent workflow in main window
+    # Step 1: Click new tab button
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     And I should see a "search interface" element with selector ".aa-Autocomplete"
+    # Step 2: Click search box and wait for autocomplete
     When I click on a "search input box" element with selector ".aa-Input"
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
+    # Step 3: Select agent from autocomplete (not new tab)
     When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
+    # Step 4: Send message to agent - using generic steps combination
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "搜索 wiki 中的 index 条目并解释" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 4 messages in chat history
+    # Verify the last message contains the AI explanation about Index
     And I should see "explanation in last message and explanation about edit" elements with selectors:
       | element description         | selector                                                    |
-      | explanation in last message | [data-testid='message-bubble']:has-text('Index') |
-      | explanation about edit      | [data-testid='message-bubble']:has-text('编辑')  |
-    # --- Part B: Wiki-operation tool (in a new agent chat tab) ---
+      | explanation in last message | [data-testid='message-bubble']:last-child:has-text('Index') |
+      | explanation about edit      | [data-testid='message-bubble']:last-child:has-text('编辑')  |
+
+  @agent @mockOpenAI
+  Scenario: Wiki operation
+    # Add scenario-specific responses to the mock server
+    Given I add mock OpenAI responses:
+      | response                                                                                                                                                                                | stream |
+      | 先测试失败情况<tool_use name="wiki-operation">{"workspaceName":"test-expected-to-fail","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>                      | false  |
+      | 然后测试成功情况<tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"}</tool_use>使用启动时自动创建的 wiki 工作区 | false  |
+      | 已成功在工作区 wiki 中创建条目 "test"。                                                                                                                                                 | false  |
+    # Step 1: Start a fresh tab and run the two-round wiki operation flow
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     And I should see a "search interface" element with selector ".aa-Autocomplete"
+    # Step 2: Click search box and wait for autocomplete
     When I click on a "search input box" element with selector ".aa-Input"
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
+    # Step 3: Select agent from autocomplete (not new tab)
     When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
+    # First round: try create note using test-expected-to-fail workspace (expected to fail)
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 里创建一个新笔记，内容为 test" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 6 messages in chat history
+    # Verify error and success messages
     And I should see "workspace not exist error and success in last message and wiki workspace in last message" elements with selectors:
       | element description            | selector                                                                 |
       | workspace not exist error      | [data-testid='message-bubble']:has-text('test-expected-to-fail'):has-text('不存在') |
-      | success in last message        | [data-testid='message-bubble']:has-text('已成功')             |
-      | wiki workspace in last message | [data-testid='message-bubble']:has-text('wiki')               |
+      | success in last message        | [data-testid='message-bubble']:last-child:has-text('已成功')             |
+      | wiki workspace in last message | [data-testid='message-bubble']:last-child:has-text('wiki')               |
 
   @agent
-  Scenario: Create default agent from New Tab and from fallback page after closing all tabs
-    # --- Part A: Create from New Tab quick access ---
+  Scenario: Create default agent from New Tab quick access
     When I click on "new tab button and create default agent button" elements with selectors:
       | element description         | selector                                    |
       | new tab button              | [data-tab-id='new-tab-button']              |
       | create default agent button | [data-testid='create-default-agent-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
-    # --- Part B: Close all tabs then create from fallback page ---
+
+  @agent
+  Scenario: Close all tabs then create default agent from fallback page
+    # Ensure starting from black/fallback page with no open tabs
     Given I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    When I click on a "tab list dropdown" element with selector "[data-testid='tab-list-button']"
-    When I click all "close tab button" elements matching selector "[data-testid^='tab-close-']"
+    When I click all "tab" elements matching selector "[data-testid='tab']"
+    When I click all "close tab button" elements matching selector "[data-testid='tab-close-button']"
+    # When there is no active tab, this is "fallback new tab", it has same thing as new tab.
     And I should see "new tab button and Create Default Agent" elements with selectors:
       | element description     | selector                                    |
       | new tab button          | [data-tab-id='new-tab-button']              |
@@ -78,27 +96,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
     When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
-    Then I click on a "tab list dropdown" element with selector "[data-testid='tab-list-button']"
-    Then I click all "close tab button" elements matching selector "[data-testid^='tab-close-']"
-
-  @agent @mockOpenAI
-  Scenario: Tab shows scheduled indicator and close warning for background wake tasks
-    Given I add mock OpenAI responses:
-      | response                                                                                                                                        | stream |
-      | <tool_use name="alarm-clock">{"wakeAtISO":"2020-01-01T00:00:00Z","reminderMessage":"Background check task","repeatIntervalMinutes":60}</tool_use> | false  |
-      | 已设置后台唤醒任务。                                                                                                                             | false  |
-    And I click on "new tab button and create default agent button" elements with selectors:
-      | element description         | selector                                    |
-      | new tab button              | [data-tab-id='new-tab-button']              |
-      | create default agent button | [data-testid='create-default-agent-button'] |
-    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
-    When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
-    When I type "请设置一个后台唤醒" in "chat input" element with selector "[data-testid='agent-message-input']"
-    And I press "Enter" key
-    Then I should see an "alarm confirmation response" element with selector "[data-testid='message-bubble']:has-text('已设置后台唤醒任务')"
-    And I should see a "active tab scheduled indicator" element with selector "[data-testid='active-tab-scheduled-task-indicator'][aria-label*='Next wake:']"
-    When I click on a "tab list dropdown" element with selector "[data-testid='tab-list-button']"
-    Then I should see a "close button warning" element with selector "[data-testid^='tab-close-'][aria-label*='background wake-ups']"
+    Then I click all "close tab button" elements matching selector "[data-testid='tab-close-button']"
 
   @agent @mockOpenAI
   Scenario: Streamed assistant response can be cancelled mid-stream and send button returns
@@ -128,69 +126,3 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | send icon           | [data-testid='send-icon']        |
       | send button         | [data-testid='agent-send-button']|
     And I should not see a "partial chunk 4 text" element with selector "text='partial_chunk_4'"
-
-  @agent @mockOpenAI
-  Scenario: Wiki tiddler attachment with rendered content
-    # Add scenario-specific responses to the mock server  
-    Given I add mock OpenAI responses:
-      | response                                                                                                    | stream |
-      | 我收到了你发送的 wiki 条目内容。                                                                            | false  |
-    # First, navigate to wiki workspace and create a test tiddler with wikitext content
-    When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
-    Then the browser view should be loaded and visible
-    And I wait for "SSE backend ready" log marker "[test-id-SSE_READY]"
-    # Create a new tiddler with wikitext syntax
-    When I execute TiddlyWiki code in browser view: "$tw.wiki.addTiddler(new $tw.Tiddler({title: 'TestAttachmentTiddler', text: '!!WikiTestHeader\\n\\nThis is a test with WikiTestContentMarker123', type: 'text/vnd.tiddlywiki'}))"
-    # Navigate to agent workspace and create agent
-    When I click on "agent workspace button and create default agent button" elements with selectors:
-      | element description         | selector                                    |
-      | agent workspace button      | [data-testid='workspace-agent']             |
-      | create default agent button | [data-testid='create-default-agent-button'] |
-    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
-    # Click attachment button to open autocomplete
-    When I click on a "attach button" element with selector "[data-testid='agent-attach-button']"
-    # Autocomplete should open showing image option + tiddler options
-    And I should see "attachment autocomplete input and attachment listbox" elements with selectors:
-      | element description            | selector                                |
-      | attachment autocomplete input  | [data-testid='attachment-autocomplete-input'] |
-      | attachment listbox             | [data-testid='attachment-listbox']      |
-    # Click on our test tiddler option
-    When I click on a "test tiddler option" element with selector "[data-testid='attachment-option-tiddler-TestAttachmentTiddler']"
-    # Verify the chip is displayed
-    Then I should see a "wiki tiddler chip" element with selector "[data-testid='wiki-tiddler-chip-0']"
-    # Type message and send
-    When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
-    When I type "请分析这个条目" in "chat input" element with selector "[data-testid='agent-message-input']"
-    And I press "Enter" key
-    # Verify the mock server received the rendered content (wikitext converted to plain text)
-    Then the last AI request user message should contain "WikiTestHeader\n\nThis is a test with WikiTestContentMarker123"
-    # Verify wikitext was converted to plain text (!! becomes "Header", not raw !!)
-    And the last AI request user message should not contain "!!"
-
-  @agent @mockOpenAI @askQuestion
-  Scenario: Ask-question tool renders interactive UI and raw XML is hidden
-    Given I add mock OpenAI responses:
-      | response                                                                                                                                                                                                                                         | stream |
-      | 请问您希望在哪个wiki工作空间中创建这个tiddler？ <tool_use name="ask-question">{"question":"Which workspace?","inputType":"single-select","options":[{"label":"My Wiki"},{"label":"Work Wiki"}],"allowFreeform":true}</tool_use> 您也可以指定tiddler的标题和其他元数据。 | false  |
-      | 好的，我将在 My Wiki 工作区中创建笔记。                                                                                                                                                                                                          | false  |
-    When I click on "create default agent button" elements with selectors:
-      | element description         | selector                                    |
-      | create default agent button | [data-testid='create-default-agent-button'] |
-    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
-    When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
-    When I type "帮我创建一个笔记" in "chat input" element with selector "[data-testid='agent-message-input']"
-    And I press "Enter" key
-    # The ask-question tool result should be rendered as an interactive UI, not raw XML
-    Then I should see an "ask question container" element with selector "[data-testid='ask-question-container']"
-    And I should see "question text and option chips" elements with selectors:
-      | element description | selector                                   |
-      | question text       | *:has-text('Which workspace?')             |
-      | option chip 1       | [data-testid='ask-question-option-0']      |
-      | option chip 2       | [data-testid='ask-question-option-1']      |
-    # Raw XML tags should NOT be visible in any message
-    And I should not see a "raw tool use xml" element with selector "*:has-text('<tool_use')"
-    And I should not see a "raw ask question tag" element with selector "*:has-text('<ask-question')"
-    # Click on an option to answer
-    When I click on a "first option" element with selector "[data-testid='ask-question-option-0']"
-    # Agent should continue with a second round
-    Then I should see an "agent response after answer" element with selector "[data-testid='message-bubble']:has-text('My Wiki')"

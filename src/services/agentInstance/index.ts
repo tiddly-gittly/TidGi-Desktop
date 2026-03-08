@@ -238,6 +238,15 @@ export class AgentInstanceService implements IAgentInstanceService {
         this.statusSubjects.delete(key);
       }
     }
+
+    // Cancel and remove all debounced update functions for this agent
+    for (const [key, debouncedFunction] of this.debouncedUpdateFunctions.entries()) {
+      if (key.startsWith(`${agentId}:`)) {
+        // Cancel pending writes — agent is being deleted/closed so data would be stale
+        (debouncedFunction as unknown as { cancel?: () => void }).cancel?.();
+        this.debouncedUpdateFunctions.delete(key);
+      }
+    }
   }
 
   public async createAgent(agentDefinitionID?: string, options?: { preview?: boolean; volatile?: boolean }): Promise<AgentInstance> {
@@ -1036,6 +1045,8 @@ export class AgentInstanceService implements IAgentInstanceService {
     debounceMs = 300,
   ): void {
     const messageId = message.id;
+    // Use agentId:messageId as key so we can clean up by agentId prefix
+    const debounceKey = agentId ? `${agentId}:${messageId}` : messageId;
 
     // Update status subscribers for specific message if available
     if (agentId) {
@@ -1050,7 +1061,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
 
     // Lazy-create debounced function for each message ID
-    if (!this.debouncedUpdateFunctions.has(messageId)) {
+    if (!this.debouncedUpdateFunctions.has(debounceKey)) {
       this.ensureRepositories();
       const debouncedUpdate = createDebouncedMessageUpdater(
         this.dataSource!,
@@ -1066,10 +1077,10 @@ export class AgentInstanceService implements IAgentInstanceService {
           }
         },
       );
-      this.debouncedUpdateFunctions.set(messageId, debouncedUpdate);
+      this.debouncedUpdateFunctions.set(debounceKey, debouncedUpdate);
     }
 
-    const debouncedFunction = this.debouncedUpdateFunctions.get(messageId);
+    const debouncedFunction = this.debouncedUpdateFunctions.get(debounceKey);
     if (debouncedFunction) {
       debouncedFunction(message, agentId);
     }

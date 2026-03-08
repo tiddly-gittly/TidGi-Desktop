@@ -183,16 +183,14 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
     if (newAgentDefinitionId === tab.agentDefId) return;
     try {
       const newAgent = await window.service.agentInstance.createAgent(newAgentDefinitionId);
-      // Update tab with new agent
+      // Update tab with new agent - this triggers useEffect[tab.agentId] which handles subscription cleanup/setup
       updateTabData(tab.id, { agentId: newAgent.id, agentDefId: newAgentDefinitionId, title: newAgent.name } as Partial<TabItem>);
       // Load the new agent into the store
       await fetchAgent(newAgent.id);
-      // Setup subscription for the new agent
-      subscribeToUpdates(newAgent.id);
     } catch (error) {
       void window.service.native.log('error', 'Failed to switch agent', { error });
     }
-  }, [tab.agentDefId, tab.id, updateTabData, fetchAgent, subscribeToUpdates]);
+  }, [tab.agentDefId, tab.id, updateTabData, fetchAgent]);
 
   return (
     <Box
