@@ -1,6 +1,6 @@
 import { WebContentsView } from 'electron';
 import fs from 'fs-extra';
-import type { ElectronApplication } from 'playwright';
+import type { ElectronApplication, Page } from 'playwright';
 
 /**
  * Get the first WebContentsView from any window
@@ -382,6 +382,52 @@ export async function captureScreenshot(app: ElectronApplication, screenshotPath
       return true;
     }
 
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Capture screenshot of a Playwright Page's underlying Electron window.
+ * Uses Electron's native webContents.capturePage() which works even when
+ * the window is hidden (unlike Playwright's page.screenshot()).
+ */
+export async function captureWindowScreenshot(app: ElectronApplication, page: Page, screenshotPath: string): Promise<boolean> {
+  try {
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => {
+        resolve(null);
+      }, 500);
+    });
+
+    const capturePromise = (async () => {
+      // Evaluate inside Electron to find the BrowserWindow matching this page's webContents
+      const pngBufferData = await app.evaluate(
+        async ({ BrowserWindow }, pageUrl: string) => {
+          for (const win of BrowserWindow.getAllWindows()) {
+            if (win.isDestroyed()) continue;
+            if (win.webContents.getURL() === pageUrl) {
+              try {
+                const image = await win.webContents.capturePage();
+                return Array.from(image.toPNG());
+              } catch {
+                return null;
+              }
+            }
+          }
+          return null;
+        },
+        page.url(),
+      );
+      return pngBufferData;
+    })();
+
+    const result = await Promise.race([capturePromise, timeoutPromise]);
+    if (result && Array.isArray(result)) {
+      fs.writeFile(screenshotPath, Buffer.from(result)).catch(() => {});
+      return true;
+    }
     return false;
   } catch {
     return false;

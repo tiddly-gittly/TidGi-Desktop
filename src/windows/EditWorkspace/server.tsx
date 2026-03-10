@@ -91,10 +91,10 @@ export function ServerOptions(props: IServerOptionsProps) {
   const userNameIsEmpty = !(userName || fallbackUserName);
   const alreadyEnableSomeServerOptions = readOnlyMode;
 
-  // Port needs local string state because the user may type intermediate values
-  // (e.g. "8" on the way to "80") that should display as-is in the text field.
-  // We also update workspace immediately on every keystroke so the save button appears.
+  // Local string state for port: avoids re-rendering the entire form on every keystroke.
+  // Workspace is only updated on blur.
   const [portInput, setPortInput] = useState(() => String(port ?? ''));
+  // Sync from external port changes (e.g., observable update after save)
   const portReference = useRef(port);
   if (portReference.current !== port) {
     portReference.current = port;
@@ -149,13 +149,7 @@ export function ServerOptions(props: IServerOptionsProps) {
               placeholder='Optional'
               value={portInput}
               onChange={(event) => {
-                const raw = event.target.value;
-                setPortInput(raw);
-                // Parse immediately so workspace.port changes → save button appears
-                const number_ = raw.trim() === '' ? 0 : Number.parseInt(raw.trim(), 10);
-                if (!Number.isNaN(number_) && number_ >= 0) {
-                  workspaceSetter({ ...workspace, port: number_ }, true);
-                }
+                setPortInput(event.target.value);
               }}
               onBlur={() => {
                 // On blur: validate, normalize display, and async-resolve homeUrl

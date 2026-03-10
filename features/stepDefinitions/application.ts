@@ -9,7 +9,7 @@ import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getPackedAppPath, makeSlugPath } from '../supports/paths';
 import { PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
-import { captureScreenshot } from '../supports/webContentsViewHelper';
+import { captureScreenshot, captureWindowScreenshot } from '../supports/webContentsViewHelper';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -345,9 +345,18 @@ AfterStep({ timeout: 3000 }, async function(this: ApplicationWorld, { pickle, pi
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const screenshotPath = path.resolve(scenarioScreenshotsDirectory, `${timestamp}-${cleanStepText}-${stepStatus}.png`);
-    await captureScreenshot(this.app, screenshotPath);
-  } catch {
+
+    // Steps operating on BrowserView (WebContentsView) → capture the embedded wiki view
+    // Other steps (main window UI, editWorkspace, preferences, etc.) → capture the current window page
+    const isBrowserViewStep = /browser view|TiddlyWiki code/i.test(stepText);
+    if (isBrowserViewStep) {
+      await captureScreenshot(this.app, screenshotPath);
+    } else if (this.currentWindow && !this.currentWindow.isClosed()) {
+      await captureWindowScreenshot(this.app, this.currentWindow, screenshotPath);
+    }
+  } catch (error) {
     // Screenshot is best-effort diagnostics, never fail a step for it
+    console.warn('[AfterStep screenshot]', error instanceof Error ? error.message : String(error));
   }
 });
 

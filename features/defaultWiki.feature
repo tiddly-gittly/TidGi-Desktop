@@ -121,6 +121,8 @@ Feature: TidGi Default Wiki
     # Clear test-id markers to ensure we're waiting for fresh logs from second restart
     When I clear test-id markers from logs
     And I switch to "editWorkspace" window
+    And I wait for the page to load completely
+    # Accordion is still expanded from the first move — do NOT click it again (that would collapse it)
     When I prepare to select directory in dialog "wiki-test"
     And I click on a "move workspace button" element with selector "button:has-text('移动工作区')"
     Then I wait for log markers:
