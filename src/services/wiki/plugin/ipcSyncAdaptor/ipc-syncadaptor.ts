@@ -1,8 +1,8 @@
 import type { Logger } from '$:/core/modules/utils/logger.js';
-import type { IWikiServerStatusObject } from '@services/wiki/wikiWorker/ipcServerRoutes';
+import type { ITidGiChangedTiddlers, IWikiServerStatusObject } from '@services/wiki/wikiWorker/ipcServerRoutes';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import debounce from 'lodash/debounce';
-import type { IChangedTiddlers, ITiddlerFields, Syncer, Tiddler, Wiki } from 'tiddlywiki';
+import type { ITiddlerFields, Syncer, Tiddler, Wiki } from 'tiddlywiki';
 
 type ISyncAdaptorGetStatusCallback = (error: Error | null, isLoggedIn?: boolean, username?: string, isReadOnly?: boolean, isAnonymous?: boolean) => void;
 type ISyncAdaptorGetTiddlersJSONCallback = (error: Error | null, tiddler?: Array<Omit<ITiddlerFields, 'text'>>) => void;
@@ -46,6 +46,12 @@ class TidGiIPCSyncAdaptor {
   workspaceID: string;
   recipe?: string;
   private sseSubscribed = false;
+  /**
+   * Revision (changeCount) returned by the server after we saved each tiddler.
+   * When a change notification arrives with the same revision for a title,
+   * we know it's an echo of our own save and skip it.
+   */
+  private readonly lastSavedRevisions = new Map<string, string>();
 
   constructor(options: { wiki: Wiki }) {
     const tidgiService = getTidGiService();
@@ -88,8 +94,17 @@ class TidGiIPCSyncAdaptor {
         console.error('Syncer is undefined in TidGiIPCSyncAdaptor. Abort the `syncFromServer` in `setupSSE debouncedSync`.');
         return;
       }
-      $tw.syncer.syncFromServer();
-      this.clearUpdatedTiddlers();
+      const totalPending = this.updatedTiddlers.modifications.length + this.updatedTiddlers.deletions.length;
+      if (totalPending > 50 && typeof requestIdleCallback === 'function') {
+        // Large batch (e.g. git checkout): defer to idle callback to avoid blocking UI
+        requestIdleCallback(() => {
+          $tw.syncer.syncFromServer();
+          this.clearUpdatedTiddlers();
+        }, { timeout: 2000 });
+      } else {
+        $tw.syncer.syncFromServer();
+        this.clearUpdatedTiddlers();
+      }
     }, 500);
     this.sseSubscribed = true;
     this.logger.log('setupSSE');
@@ -97,18 +112,25 @@ class TidGiIPCSyncAdaptor {
     // After SSE is enabled, we can disable polling and else things that related to syncer. (build up complexer behavior with syncer.)
     this.configSyncer();
 
-    window.observables.wiki.getWikiChangeObserver$(this.workspaceID).subscribe((change: IChangedTiddlers) => {
+    window.observables.wiki.getWikiChangeObserver$(this.workspaceID).subscribe((change: ITidGiChangedTiddlers) => {
       // `$tw.syncer.syncFromServer` calling `this.getUpdatedTiddlers`, so we need to update `this.updatedTiddlers` before it do so. See `core/modules/syncer.js` in the core
       Object.keys(change).forEach(title => {
         if (!change[title]) {
           return;
         }
 
+        // Deterministic echo prevention: if the incoming revision matches
+        // what we last saved for this title, this change is an echo of our
+        // own save (e.g. file-watcher picked up the file we just wrote).
+        const savedRev = this.lastSavedRevisions.get(title);
+        if (savedRev !== undefined && String(change[title].revision) === savedRev) {
+          this.lastSavedRevisions.delete(title);
+          return;
+        }
+
         if (change[title].deleted) {
-          // For deletions, we don't need to check modified time
           this.updatedTiddlers.deletions.push(title);
         } else if (change[title].modified) {
-          // Add to modifications - watch-fs already filtered out echoes via file exclusion
           this.updatedTiddlers.modifications.push(title);
         }
       });
@@ -251,7 +273,9 @@ class TidGiIPCSyncAdaptor {
       } else {
         const etagInfo = this.parseEtag(etag);
         if (etagInfo !== undefined) {
-          // Invoke the callback
+          // Record revision for echo prevention: any change notification with
+          // this same revision is our own save echoing back through the file watcher.
+          this.lastSavedRevisions.set(title, etagInfo.revision);
           callback(null, {
             bag: etagInfo.bag,
           }, etagInfo.revision);
@@ -294,7 +318,8 @@ class TidGiIPCSyncAdaptor {
       return;
     }
     this.logger.log('deleteTiddler');
-    // For deletions, we don't track modified time since the tiddler is being removed
+    // No lastSavedRevisions entry needed: deletion echoes are already filtered
+    // by ipcPendingTitles in the change handler (synchronous echo).
     const getTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
       this.workspaceID,
       'deleteTiddler',

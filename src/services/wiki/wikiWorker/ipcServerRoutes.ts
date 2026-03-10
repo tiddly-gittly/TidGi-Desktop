@@ -6,7 +6,19 @@ import fs from 'fs-extra';
 import omit from 'lodash/omit';
 import path from 'path';
 import { Observable } from 'rxjs';
-import type { IChangedTiddlers, ITiddlerFields, ITiddlyWiki } from 'tiddlywiki';
+import type { ITiddlerFields, ITiddlyWiki } from 'tiddlywiki';
+
+/**
+ * Change info emitted by TidGi's change Observable.
+ * Includes a revision (changeCount) for echo prevention.
+ */
+export interface ITidGiChangedTiddlerMeta {
+  deleted?: boolean;
+  modified?: boolean;
+  /** The tiddler's changeCount at the time this change was emitted */
+  revision: number;
+}
+export type ITidGiChangedTiddlers = Record<string, ITidGiChangedTiddlerMeta>;
 
 export interface IWikiServerStatusObject {
   anonymous: boolean;
@@ -27,8 +39,12 @@ export class IpcServerRoutes {
   private wikiInstance!: ITiddlyWiki;
   private readonly pendingIpcServerRoutesRequests: Array<(value: void | PromiseLike<void>) => void> = [];
   #readonlyMode = false;
-  /** Track tiddlers that were just saved via IPC to prevent echo */
-  private readonly recentlySavedTiddlers = new Set<string>();
+  /**
+   * Titles currently being saved via IPC (putTiddler/deleteTiddler).
+   * addTiddler fires the `change` event synchronously, so a simple Set suffices —
+   * the change handler consumes the entry before putTiddler returns.
+   */
+  private readonly ipcPendingTitles = new Set<string>();
   /** List of sub-wiki paths for file searching */
   private subWikiPaths: string[] = [];
 
@@ -74,7 +90,9 @@ export class IpcServerRoutes {
 
   async deleteTiddler(title: string): Promise<IWikiServerRouteResponse> {
     await this.waitForIpcServerRoutesAvailable();
+    this.ipcPendingTitles.add(title);
     this.wikiInstance.wiki.deleteTiddler(title);
+    // ipcPendingTitles entry is consumed synchronously in the change handler
     return { headers: { 'Content-Type': 'text/plain' }, data: 'OK', statusCode: 204 };
   }
 
@@ -242,14 +260,13 @@ export class IpcServerRoutes {
     }
     tiddlerFieldsToPut.title = title;
 
-    // Mark this tiddler as recently saved to prevent echo
-    this.recentlySavedTiddlers.add(title);
+    // Mark before addTiddler; the synchronous change handler will consume this
+    this.ipcPendingTitles.add(title);
 
     this.wikiInstance.wiki.addTiddler(new this.wikiInstance.Tiddler(tiddlerFieldsToPut));
 
-    // Note: The change event is triggered synchronously by addTiddler
-    // The event handler in getWikiChangeObserver$ will check recentlySavedTiddlers
-    // and remove the mark after filtering
+    // addTiddler fires the change event synchronously.
+    // The change handler has already filtered this title out of the Observable.
 
     const changeCount = this.wikiInstance.wiki.getChangeCount(title).toString();
     return { statusCode: 204, headers: { 'Content-Type': 'text/plain', Etag: `"default/${encodeURIComponent(title)}/${changeCount}:"` }, data: 'OK' };
@@ -276,28 +293,30 @@ export class IpcServerRoutes {
   //    ██    ██ ███ ██            ██      ██ ██
   //    ██     ███ ███        ███████ ███████ ███████
   getWikiChangeObserver() {
-    return new Observable<IChangedTiddlers>((observer) => {
+    return new Observable<ITidGiChangedTiddlers>((observer) => {
       const getWikiChangeObserverInWorkerIIFE = async () => {
         await this.waitForIpcServerRoutesAvailable();
         if (this.wikiInstance === undefined) {
           observer.error(new Error(`this.wikiInstance is undefined, maybe something went wrong between waitForIpcServerRoutesAvailable and return new Observable.`));
         }
         this.wikiInstance.wiki.addEventListener('change', (changes) => {
-          // Filter out tiddlers that were just saved via IPC to prevent echo
-          const filteredChanges: IChangedTiddlers = {};
+          const filteredChanges: ITidGiChangedTiddlers = {};
           let hasChanges = false;
 
           for (const title in changes) {
-            if (this.recentlySavedTiddlers.has(title)) {
-              // This change was caused by our own putTiddler, skip it to prevent echo
-              this.recentlySavedTiddlers.delete(title);
+            if (this.ipcPendingTitles.has(title)) {
+              // Synchronous echo from our own putTiddler/deleteTiddler — consume and skip
+              this.ipcPendingTitles.delete(title);
               continue;
             }
-            filteredChanges[title] = changes[title];
+            // Attach revision so the frontend can do deterministic echo comparison
+            filteredChanges[title] = {
+              ...changes[title],
+              revision: this.wikiInstance.wiki.getChangeCount(title),
+            };
             hasChanges = true;
           }
 
-          // Only notify if there are actual changes after filtering
           if (hasChanges) {
             observer.next(filteredChanges);
           }

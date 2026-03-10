@@ -38,7 +38,7 @@ export function AppearanceOptions(props: AppearanceOptionsProps): React.JSX.Elem
           label={t('EditWorkspace.Name')}
           helperText={t('EditWorkspace.NameDescription')}
           placeholder='Optional'
-          value={name}
+          value={name ?? ''}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             workspaceSetter({ ...workspace, name: event.target.value });
           }}

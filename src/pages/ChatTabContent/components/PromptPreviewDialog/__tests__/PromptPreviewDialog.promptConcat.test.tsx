@@ -19,6 +19,8 @@ vi.mock('@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManag
   useAgentFrameworkConfigManagement: vi.fn(() => ({
     loading: false,
     config: defaultAgents[0].agentFrameworkConfig,
+    setConfig: vi.fn(),
+    persistConfig: vi.fn(),
     handleConfigChange: vi.fn(),
   })),
 }));

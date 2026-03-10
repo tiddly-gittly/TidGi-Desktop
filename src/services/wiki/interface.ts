@@ -3,7 +3,7 @@ import type { IGitUserInfos } from '@services/git/interface';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { Observable } from 'rxjs';
-import type { IChangedTiddlers } from 'tiddlywiki';
+import type { ITidGiChangedTiddlers } from './wikiWorker/ipcServerRoutes';
 import type { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
 import type { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 import type { WikiWorker } from './wikiWorker';
@@ -46,7 +46,7 @@ export interface IWikiService {
    * @param title tiddler title to open
    */
   getTiddlerFilePath(title: string, workspaceID?: string): Promise<string | undefined>;
-  getWikiChangeObserver$(workspaceID: string): Observable<IChangedTiddlers>;
+  getWikiChangeObserver$(workspaceID: string): Observable<ITidGiChangedTiddlers>;
   getWikiErrorLogs(workspaceID: string, wikiName: string): Promise<{ content: string; filePath: string }>;
   /**
    * Get wiki worker, and you can call its methods. Only meant to be used in TidGi's services internally.

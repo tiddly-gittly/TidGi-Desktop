@@ -42,6 +42,7 @@ export default function EditWorkspace(): React.JSX.Element {
   const showSubWorkspaceRouting = isSubWiki || hasSubWorkspaces;
 
   const rememberLastPageVisited = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
+
   if (workspaceID === undefined) {
     return <Root>Error {workspaceID ?? '-'} not exists</Root>;
   }
@@ -77,7 +78,7 @@ export default function EditWorkspace(): React.JSX.Element {
       </FlexGrow>
       {!isEqual(omit(workspace, nonConfigFields), omit(originalWorkspace, nonConfigFields)) && (
         <SaveCancelButtonsContainer>
-          <Button color='primary' variant='contained' disableElevation onClick={onSave} data-testid='edit-workspace-save-button'>
+          <Button color='primary' variant='contained' disableElevation onClick={() => void onSave()} data-testid='edit-workspace-save-button'>
             {t('EditWorkspace.Save')}
           </Button>
           <Button variant='contained' disableElevation onClick={() => void window.remote.closeCurrentWindow()}>

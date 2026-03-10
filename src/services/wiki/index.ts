@@ -27,12 +27,11 @@ import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interfa
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { Observable } from 'rxjs';
-import type { IChangedTiddlers } from 'tiddlywiki';
 import { AlreadyExistError, CopyWikiTemplateError, DoubleWikiInstanceError, HTMLCanNotLoadError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
 import type { IWikiService } from './interface';
 import { WikiControlActions } from './interface';
 import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
-import type { IpcServerRouteMethods, IpcServerRouteNames } from './wikiWorker/ipcServerRoutes';
+import type { IpcServerRouteMethods, IpcServerRouteNames, ITidGiChangedTiddlers } from './wikiWorker/ipcServerRoutes';
 
 import { LOG_FOLDER } from '@/constants/appPaths';
 import { isDevelopmentOrTest } from '@/constants/environment';
@@ -417,7 +416,7 @@ export class Wiki implements IWikiService {
     return response;
   }
 
-  public getWikiChangeObserver$(workspaceID: string): Observable<IChangedTiddlers> {
+  public getWikiChangeObserver$(workspaceID: string): Observable<ITidGiChangedTiddlers> {
     return new Observable((observer) => {
       const getWikiChangeObserverIIFE = async () => {
         const worker = await this.getWorkerEnsure(workspaceID);

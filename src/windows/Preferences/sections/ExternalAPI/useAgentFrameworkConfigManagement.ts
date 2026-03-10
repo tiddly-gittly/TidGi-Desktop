@@ -1,5 +1,5 @@
 import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 interface useAgentFrameworkConfigManagementProps {
   agentDefId?: string;
@@ -9,7 +9,12 @@ interface useAgentFrameworkConfigManagementProps {
 interface UseAgentFrameworkConfigManagementResult {
   loading: boolean;
   config: AgentFrameworkConfig | undefined;
+  /** 立即更新本地 config（用于输入时保持 formData 与输入一致，避免光标跳动） */
+  setConfig: React.Dispatch<React.SetStateAction<AgentFrameworkConfig | undefined>>;
   schema?: Record<string, unknown>;
+  /** 仅持久化到后端。表单输入时应先 setConfig 再在防抖中调用此方法。 */
+  persistConfig: (newConfig: AgentFrameworkConfig) => Promise<void>;
+  /** 同时更新本地并持久化（用于保存按钮等单次提交场景） */
   handleConfigChange: (newConfig: AgentFrameworkConfig) => Promise<void>;
 }
 
@@ -67,10 +72,8 @@ export const useAgentFrameworkConfigManagement = ({ agentDefId, agentId }: useAg
     void fetchConfig();
   }, [agentDefId, agentId]);
 
-  const handleConfigChange = useCallback(async (newConfig: AgentFrameworkConfig) => {
+  const persistConfig = useCallback(async (newConfig: AgentFrameworkConfig) => {
     try {
-      setConfig(newConfig);
-
       if (agentId) {
         await window.service.agentInstance.updateAgent(agentId, {
           agentFrameworkConfig: newConfig,
@@ -85,18 +88,25 @@ export const useAgentFrameworkConfigManagement = ({ agentDefId, agentId }: useAg
         }
       } else {
         void window.service.native.log('error', 'No agent ID or definition ID provided for updating handler config', {
-          function: 'useAgentFrameworkConfigManagement.handleConfigChange',
+          function: 'useAgentFrameworkConfigManagement.persistConfig',
         });
       }
     } catch (error) {
-      void window.service.native.log('error', 'Failed to update framework configuration', { function: 'useAgentFrameworkConfigManagement.handleConfigChange', error });
+      void window.service.native.log('error', 'Failed to update framework configuration', { function: 'useAgentFrameworkConfigManagement.persistConfig', error });
     }
   }, [agentId, agentDefId]);
+
+  const handleConfigChange = useCallback(async (newConfig: AgentFrameworkConfig) => {
+    setConfig(newConfig);
+    await persistConfig(newConfig);
+  }, [persistConfig]);
 
   return {
     loading,
     config,
+    setConfig,
     schema,
+    persistConfig,
     handleConfigChange,
   };
 };

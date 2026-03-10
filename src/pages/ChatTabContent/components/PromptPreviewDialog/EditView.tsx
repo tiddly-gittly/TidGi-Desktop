@@ -48,8 +48,9 @@ export const EditView: FC<EditViewProps> = ({
   const {
     loading: agentFrameworkConfigLoading,
     config: agentFrameworkConfig,
+    setConfig: setAgentFrameworkConfig,
     schema: handlerSchema,
-    handleConfigChange,
+    persistConfig: persistAgentFrameworkConfig,
   } = useAgentFrameworkConfigManagement({
     agentDefId: agent?.agentDefId,
     agentId: agent?.id,
@@ -150,10 +151,7 @@ export const EditView: FC<EditViewProps> = ({
   const handleFormChange = useDebouncedCallback(
     async (updatedConfig: AgentFrameworkConfig) => {
       try {
-        // Always persist the config change to backend
-        await handleConfigChange(updatedConfig);
-
-        // Only update preview if user is actually editing (not just drag-reordering)
+        await persistAgentFrameworkConfig(updatedConfig);
         if (isUserEditingReference.current && agent?.agentDefId) {
           void getPreviewPromptResult(inputText, updatedConfig);
         }
@@ -161,16 +159,17 @@ export const EditView: FC<EditViewProps> = ({
         await window.service.native.log('error', 'EditView: Error auto-saving config:', { error });
       }
     },
-    [handleConfigChange, agent?.agentDefId, getPreviewPromptResult, inputText],
+    [persistAgentFrameworkConfig, agent?.agentDefId, getPreviewPromptResult, inputText],
     500,
     { leading: false, maxWait: 2000 },
   );
 
+  // 输入时立即更新本地 config，避免 formData 滞后导致 RJSF 输入框光标跳动；持久化由 handleFormChange 防抖执行
   const handleInputChange = useCallback((changedFormData: AgentFrameworkConfig) => {
-    // Mark as user editing when form data changes
     isUserEditingReference.current = true;
+    setAgentFrameworkConfig(changedFormData);
     void handleFormChange(changedFormData);
-  }, [handleFormChange]);
+  }, [setAgentFrameworkConfig, handleFormChange]);
 
   const handleEditorModeChange = useCallback(async (_event: SyntheticEvent, newValue: 'form' | 'code') => {
     setEditorMode(newValue);
