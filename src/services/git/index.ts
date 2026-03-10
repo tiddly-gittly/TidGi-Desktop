@@ -228,7 +228,7 @@ export class Git implements IGitService {
         .subscribe(this.getWorkerMessageObserver(wikiFolderPath, resolve, reject));
     });
     // Log for e2e test detection - indicates initial git setup and commits are complete
-    logger.debug(`[test-id-git-init-complete]`, { wikiFolderPath });
+    logger.info(`[test-id-git-init-complete]`, { wikiFolderPath });
   }
 
   public async commitAndSync(workspace: IWorkspace, configs: ICommitAndSyncConfigs): Promise<boolean> {
@@ -276,7 +276,7 @@ export class Git implements IGitService {
       const changeType = configs.commitOnly ? 'commit' : 'sync';
       this.notifyGitStateChange(workspace.wikiFolderLocation, changeType);
       // Log for e2e test detection
-      logger.debug(`[test-id-git-${changeType}-complete]`, { wikiFolderLocation: workspace.wikiFolderLocation });
+      logger.info(`[test-id-git-${changeType}-complete]`, { wikiFolderLocation: workspace.wikiFolderLocation });
       return hasChanges;
     } catch (error: unknown) {
       const error_ = error as Error;
@@ -398,7 +398,7 @@ export class Git implements IGitService {
     // Notify git state change
     this.notifyGitStateChange(wikiFolderPath, 'checkout');
     // Log for e2e test detection
-    logger.debug(`[test-id-git-checkout-complete]`, { wikiFolderPath, commitHash });
+    logger.info(`[test-id-git-checkout-complete]`, { wikiFolderPath, commitHash });
   }
 
   public async revertCommit(wikiFolderPath: string, commitHash: string, commitMessage?: string): Promise<void> {
@@ -408,7 +408,7 @@ export class Git implements IGitService {
       // This ensures the notification is sent before tests start waiting for UI refresh
       this.notifyGitStateChange(wikiFolderPath, 'revert');
       // Log for e2e test detection - only log after notification is sent
-      logger.debug(`[test-id-git-revert-complete]`, { wikiFolderPath, commitHash });
+      logger.info(`[test-id-git-revert-complete]`, { wikiFolderPath, commitHash });
     } catch (error) {
       logger.error('revertCommit failed', { error, wikiFolderPath, commitHash, commitMessage });
       throw error;

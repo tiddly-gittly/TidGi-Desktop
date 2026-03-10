@@ -1202,6 +1202,13 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
   // If enableFileSystemWatch or enableHTTPAPI was changed, we need to restart the wiki
   const needsRestart = 'enableFileSystemWatch' in settingsUpdate || 'enableHTTPAPI' in settingsUpdate;
   if (needsRestart) {
+    // Ensure the wiki worker has fully started before attempting restart,
+    // otherwise stopWiki() may miss the worker (not yet registered) and startWiki()
+    // will race with the in-progress boot, causing DoubleWikiInstanceError (E-4).
+    // Use default 10s timeout (not LOG_MARKER_WAIT_TIMEOUT which is 3s) because
+    // wiki worker initialization can take several seconds.
+    await waitForLogMarker(this, '[test-id-WIKI_WORKER_STARTED]', 'wiki worker not started before restart attempt');
+
     // Only wait for watch-fs if it was enabled before the update
     // If it was disabled, wiki is ready immediately without watch-fs markers
     if (watchFsCurrentlyEnabled) {

@@ -221,7 +221,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
 
         // Log BEFORE RAF
         try {
-          void window.service.native.log('debug', '[test-id-git-log-refreshed]', { ...logData, source: 'before-raf' });
+          void window.service.native.log('info', '[test-id-git-log-refreshed]', { ...logData, source: 'before-raf' });
         } catch (error) {
           console.error('[CRITICAL] Log before RAF failed:', error);
         }
@@ -235,7 +235,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
             setCurrentPage(0);
 
             // Log AFTER setEntries in RAF
-            void window.service.native.log('debug', '[test-id-git-log-refreshed]', { ...logData, source: 'in-raf' });
+            void window.service.native.log('info', '[test-id-git-log-refreshed]', { ...logData, source: 'in-raf' });
           } catch (error) {
             console.error('[CRITICAL] RAF callback failed:', error);
           }
@@ -271,7 +271,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         lastLoggedEntriesReference.current = entriesFingerprint;
 
         // Log data rendered marker for tracking UI updates
-        void window.service.native.log('debug', '[test-id-git-log-data-rendered]', {
+        void window.service.native.log('info', '[test-id-git-log-data-rendered]', {
           commitCount: entries.length,
           wikiFolderLocation: workspaceInfo.wikiFolderLocation,
           entriesFingerprint,
