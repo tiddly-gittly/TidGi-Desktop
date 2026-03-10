@@ -18,7 +18,7 @@ import {
   Tooltip,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import React, { useRef, useState } from 'react';
+import React, { startTransition, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
@@ -149,10 +149,16 @@ export function ServerOptions(props: IServerOptionsProps) {
               placeholder='Optional'
               value={portInput}
               onChange={(event) => {
-                setPortInput(event.target.value);
+                const raw = event.target.value;
+                setPortInput(raw);
+                startTransition(() => {
+                  const parsed = raw.trim() === '' ? 0 : Number.parseInt(raw.trim(), 10);
+                  if (!Number.isNaN(parsed) && parsed >= 0) {
+                    workspaceSetter({ ...workspace, port: parsed }, true);
+                  }
+                });
               }}
               onBlur={() => {
-                // On blur: validate, normalize display, and async-resolve homeUrl
                 const trimmed = portInput.trim();
                 const number_ = trimmed === '' ? 0 : Number.parseInt(trimmed, 10);
                 if (!Number.isNaN(number_) && number_ >= 0) {
