@@ -218,8 +218,9 @@ export class Window implements IWindowService {
       autoHideMenuBar,
       titleBarStyle: hideTitleBar ? 'hidden' : 'default',
       // Keep the window hidden during E2E tests so it won't steal focus from the developer.
+      // Set SHOW_E2E_WINDOW=1 to override and show windows during manual E2E observation.
       // paintWhenInitiallyHidden defaults to true, so the renderer still paints.
-      ...(isTest ? { show: false } : {}),
+      ...(isTest && !process.env.SHOW_E2E_WINDOW ? { show: false } : {}),
       // https://www.electronjs.org/docs/latest/tutorial/custom-title-bar#add-native-window-controls-windows-linux
       ...(hideTitleBar && process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
       alwaysOnTop: windowName === WindowNames.tidgiMiniWindow ? tidgiMiniWindowAlwaysOnTop : alwaysOnTop,

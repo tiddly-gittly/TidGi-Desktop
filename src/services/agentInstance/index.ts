@@ -328,8 +328,8 @@ export class AgentInstanceService implements IAgentInstanceService {
         throw new Error(`Agent definition not found: ${agentInstance.agentDefId}`);
       }
 
-      // Get appropriate framework
-      const agentFrameworkId = agentDefinition.agentFrameworkID;
+      // Get appropriate framework, fall back to the default when older agent definitions lack this field
+      const agentFrameworkId = agentDefinition.agentFrameworkID ?? 'basicPromptConcatHandler';
       if (!agentFrameworkId) {
         throw new Error(`Agent framework ID not found in agent definition: ${agentDefinition.id}`);
       }

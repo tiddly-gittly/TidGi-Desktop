@@ -123,15 +123,29 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
         normalizedPathname = parsedUrl.hash.slice(filesIndex);
       }
     }
-    // parsedUrl.host is the actual workspaceID, sometimes we get workspaceID1 here, but in the handler callback we found `workspaceID` from the `setupIpcServerRoutesHandlers` param is workspaceID2, seems `view.webContents.session.protocol.handle` will mistakenly handle request from other views.
+    // parsedUrl.host is the actual workspaceID from the URL. Due to Electron's `session.protocol.handle` sometimes routing
+    // requests to the wrong session's handler, workspaceIDFromHost may differ from the closure's workspaceID.
+    // Always prefer the URL-based ID since it reflects the actual workspace being loaded.
     const workspaceIDFromHost = parsedUrl.host;
-    // When using `standard: true` in `registerSchemesAsPrivileged`, workspaceIDFromHost is lower cased, and cause this
+    // When using `standard: true` in `registerSchemesAsPrivileged`, workspaceIDFromHost is lowercased.
+    // Find the real workspace ID with correct casing via the workspace service.
+    let effectiveWorkspaceID = workspaceID;
     if (workspaceIDFromHost.toLowerCase() !== workspaceID.toLowerCase()) {
-      logger.warn('workspaceID mismatch in setupIpcServerRoutesHandlers.handlerCallback', {
+      logger.warn('workspaceID mismatch in setupIpcServerRoutesHandlers.handlerCallback, using URL-based ID', {
         function: 'setupIpcServerRoutesHandlers.handlerCallback',
         workspaceIDFromHost,
         workspaceID,
       });
+      // Look up the correct-cased workspace ID from the workspace service
+      const workspaceFromHost = await workspaceService.get(workspaceIDFromHost);
+      if (workspaceFromHost) {
+        effectiveWorkspaceID = workspaceFromHost.id;
+      } else {
+        // Try case-insensitive search through all workspaces
+        const allWorkspaces = await workspaceService.getWorkspacesAsList();
+        const matched = allWorkspaces.find(ws => ws.id.toLowerCase() === workspaceIDFromHost.toLowerCase());
+        effectiveWorkspaceID = matched?.id ?? workspaceIDFromHost;
+      }
     }
     // Iterate through methods to find matching routes
     try {
@@ -147,8 +161,8 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
             parameters,
           });
           // Call the handler of the route to process the request and return the result
-          // Use original workspaceID (correct casing) not workspaceIDFromHost (lowercased by standard protocol scheme)
-          const responseData = await route.handler(request, workspaceID, parameters);
+          // Use effectiveWorkspaceID which resolves the correct workspace even on cross-session routing
+          const responseData = await route.handler(request, effectiveWorkspaceID, parameters);
           if (responseData === undefined) {
             const statusText = `setupIpcServerRoutesHandlers.handlerCallback: responseData is undefined ${request.url}`;
             logger.warn(statusText);

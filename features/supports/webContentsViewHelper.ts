@@ -4,7 +4,9 @@ import type { ElectronApplication, Page } from 'playwright';
 
 /**
  * Get the first WebContentsView from any window
- * Prioritizes main window, but will check all windows if needed
+ * Prioritizes the currently active workspace's view in the main window.
+ * When multiple wiki views exist, the LAST child is preferred because
+ * showView() / addView() calls addChildView() which moves the view to the top.
  */
 async function getFirstWebContentsView(app: ElectronApplication) {
   return await app.evaluate(async ({ BrowserWindow }) => {
@@ -28,13 +30,13 @@ async function getFirstWebContentsView(app: ElectronApplication) {
           })
           .filter((info): info is { id: number; url: string; isLoading: boolean } => Boolean(info));
 
-        // Prefer an already-loaded wiki view (tidgi://...) for deterministic test behavior.
-        const readyWiki = candidateInfos.find(info => info.url.startsWith('tidgi://') && !info.isLoading);
-        if (readyWiki) return readyWiki.id;
-
-        // Then prefer any wiki view even if still loading.
-        const anyWiki = candidateInfos.find(info => info.url.startsWith('tidgi://'));
-        if (anyWiki) return anyWiki.id;
+        // The last wiki view in the children list is the active one (addChildView moves to end).
+        // Prefer it even if it's still loading.
+        for (let i = candidateInfos.length - 1; i >= 0; i--) {
+          if (candidateInfos[i].url.startsWith('tidgi://')) {
+            return candidateInfos[i].id;
+          }
+        }
 
         // Fallback to first non-empty URL.
         const nonBlank = candidateInfos.find(info => info.url && info.url !== 'about:blank');

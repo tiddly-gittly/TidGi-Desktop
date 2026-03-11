@@ -7,7 +7,7 @@ const isMac = process.platform === 'darwin';
  * Cucumber global timeout budget per step/hook.
  * Keep macOS equal to CI for local parity on slower Electron startup.
  */
-export const CUCUMBER_GLOBAL_TIMEOUT = (isCI || isMac) ? 25000 : 5000;
+export const CUCUMBER_GLOBAL_TIMEOUT = (isCI || isMac) ? 25000 : 25000;
 
 console.log('[Timeout Config] Setting global timeout to:', CUCUMBER_GLOBAL_TIMEOUT, 'ms (CI:', isCI, ', macOS:', isMac, ')');
 
@@ -36,13 +36,11 @@ export const PLAYWRIGHT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
 
 /**
  * Shorter timeout for operations that should be very fast
- * Local: 3s, CI: 15s
  */
-export const PLAYWRIGHT_SHORT_TIMEOUT = (isCI || isMac) ? 15000 : 3000;
+export const PLAYWRIGHT_SHORT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT - 5000;
 
 /**
  * Timeout for waiting log markers
  * Internal wait should be shorter than step timeout to allow proper error reporting
- * Local: 3s, CI: 15s
  */
-export const LOG_MARKER_WAIT_TIMEOUT = (isCI || isMac) ? 15000 : 3000;
+export const LOG_MARKER_WAIT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT - 5000;

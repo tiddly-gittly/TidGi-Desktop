@@ -231,6 +231,28 @@ export class Wiki implements IWikiService {
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation, workspaceID };
 
     await new Promise<void>((resolve, reject) => {
+      // Add a safety timeout to prevent startWiki from hanging indefinitely.
+      // The worker may boot TiddlyWiki successfully but the 'booted' message might
+      // not arrive via the workerAdapter Observable due to thread communication issues.
+      const startWikiTimeout = setTimeout(() => {
+        logger.error('startWiki timed out waiting for booted message', {
+          ...loggerMeta,
+          function: 'startWiki.timeout',
+        });
+        reject(new Error(`startWiki timed out for workspace ${workspaceID} (worker may have booted but message was lost)`));
+      }, 60_000);
+
+      const originalResolve = resolve;
+      const originalReject = reject;
+      resolve = (...args) => {
+        clearTimeout(startWikiTimeout);
+        originalResolve(...args);
+      };
+      reject = (...args) => {
+        clearTimeout(startWikiTimeout);
+        originalReject(...args);
+      };
+
       // Handle worker errors
       wikiWorker.on('error', (error: Error) => {
         logger.error(error.message, { function: 'Worker.error', ...loggerMeta });

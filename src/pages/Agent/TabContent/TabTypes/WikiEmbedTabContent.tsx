@@ -45,6 +45,11 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Wake up the workspace if it was hibernated when navigation to the agent page triggered hibernation
+  useEffect(() => {
+    void window.service.workspaceView.wakeUpWorkspaceView(tab.workspaceId);
+  }, [tab.workspaceId]);
+
   useEffect(() => {
     let mounted = true;
 
@@ -135,29 +140,16 @@ export const WikiEmbedTabContent: React.FC<WikiEmbedTabContentProps> = ({ tab, i
       resizeObserver.observe(containerReference.current);
     }
 
-    // Cleanup: only clear custom bounds if not switching to this wiki workspace
+    // Always clear custom bounds on unmount so the wiki view returns to normal
+    // full-window layout.  showView() also clears them, but doing it here
+    // handles the case where the component unmounts without a workspace switch
+    // (e.g. tab closed while staying on the Agent page).
     return () => {
       mounted = false;
       resizeObserver.disconnect();
-
-      // Properly handle cleanup async operation to avoid race conditions
-      const cleanup = async () => {
-        try {
-          const activeWorkspace = await window.service.workspace.getActiveWorkspace();
-          if (activeWorkspace?.id !== tab.workspaceId) {
-            // Only clear bounds if switching to a different workspace
-            await window.service.view.setViewBounds(tab.workspaceId, WindowNames.main, undefined);
-          } else {
-            // Switching to this wiki workspace, don't clear bounds
-            void window.service.native.log('debug', 'WikiEmbedTabContent: not clearing bounds, switching to wiki workspace', {
-              workspaceId: tab.workspaceId,
-            });
-          }
-        } catch (error) {
-          console.error('Failed to cleanup WikiEmbedTabContent bounds', error);
-        }
-      };
-      void cleanup();
+      void window.service.view.setViewBounds(tab.workspaceId, WindowNames.main, undefined).catch((error: unknown) => {
+        console.error('Failed to cleanup WikiEmbedTabContent bounds', error);
+      });
     };
   }, [tab.workspaceId, isSplitView]);
 

@@ -47,11 +47,19 @@ class TidGiIPCSyncAdaptor {
   recipe?: string;
   private sseSubscribed = false;
   /**
-   * Revision (changeCount) returned by the server after we saved each tiddler.
-   * When a change notification arrives with the same revision for a title,
-   * we know it's an echo of our own save and skip it.
+   * Titles currently being saved via IPC (putTiddler).
+   * Populated BEFORE the IPC call, cleared after response.
+   * SSE events arriving during the save for these titles are skipped.
    */
-  private readonly lastSavedRevisions = new Map<string, string>();
+  private readonly titlesBeingSaved = new Set<string>();
+  /**
+   * Titles currently being loaded from the server (loadTiddler).
+   * TW5's syncer.storeTiddler updates tiddlerInfo AFTER wiki.addTiddler,
+   * so the synchronous change handler thinks the server-loaded content is
+   * a local edit and immediately queues a save-back via saveTiddler.
+   * We suppress that save-back by checking this set in saveTiddler.
+   */
+  private readonly titlesBeingLoaded = new Set<string>();
 
   constructor(options: { wiki: Wiki }) {
     const tidgiService = getTidGiService();
@@ -119,12 +127,10 @@ class TidGiIPCSyncAdaptor {
           return;
         }
 
-        // Deterministic echo prevention: if the incoming revision matches
-        // what we last saved for this title, this change is an echo of our
-        // own save (e.g. file-watcher picked up the file we just wrote).
-        const savedRev = this.lastSavedRevisions.get(title);
-        if (savedRev !== undefined && String(change[title].revision) === savedRev) {
-          this.lastSavedRevisions.delete(title);
+        // Skip SSE events for titles we're currently saving via IPC.
+        // This prevents echo: our putTiddler fires a change event in the worker
+        // which is broadcast back to us via SSE.
+        if (this.titlesBeingSaved.has(title)) {
           return;
         }
 
@@ -257,29 +263,41 @@ class TidGiIPCSyncAdaptor {
         return;
       }
       this.logger.log(`saveTiddler ${title}`);
-      const putTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
-        this.workspaceID,
-        'putTiddler',
-        title,
-        tiddler.fields,
-      );
-      if (putTiddlerResponse === undefined) {
-        throw new Error('saveTiddler returned undefined from callWikiIpcServerRoute putTiddler in saveTiddler');
+      // If this title is currently being loaded from the server via loadTiddler,
+      // this saveTiddler call is the spurious save-back triggered by TW5's
+      // syncer.storeTiddler (it updates tiddlerInfo AFTER addTiddler).  Skip it.
+      if (this.titlesBeingLoaded.has(title)) {
+        this.logger.log(`saveTiddler ${title} suppressed — storeTiddler save-back`);
+        callback(null);
+        return;
       }
-      // Save the details of the new revision of the tiddler
-      const etag = putTiddlerResponse.headers?.Etag;
-      if (etag === undefined) {
-        callback(new Error('Response from server is missing required `etag` header'));
-      } else {
-        const etagInfo = this.parseEtag(etag);
-        if (etagInfo !== undefined) {
-          // Record revision for echo prevention: any change notification with
-          // this same revision is our own save echoing back through the file watcher.
-          this.lastSavedRevisions.set(title, etagInfo.revision);
-          callback(null, {
-            bag: etagInfo.bag,
-          }, etagInfo.revision);
+      // Mark as saving BEFORE the IPC call so that any SSE echo arriving
+      // during the call is ignored by our change handler.
+      this.titlesBeingSaved.add(title);
+      try {
+        const putTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
+          this.workspaceID,
+          'putTiddler',
+          title,
+          tiddler.fields,
+        );
+        if (putTiddlerResponse === undefined) {
+          throw new Error('saveTiddler returned undefined from callWikiIpcServerRoute putTiddler in saveTiddler');
         }
+        // Save the details of the new revision of the tiddler
+        const etag = putTiddlerResponse.headers?.Etag;
+        if (etag === undefined) {
+          callback(new Error('Response from server is missing required `etag` header'));
+        } else {
+          const etagInfo = this.parseEtag(etag);
+          if (etagInfo !== undefined) {
+            callback(null, {
+              bag: etagInfo.bag,
+            }, etagInfo.revision);
+          }
+        }
+      } finally {
+        this.titlesBeingSaved.delete(title);
       }
     } catch (error) {
       console.error(error);
@@ -301,7 +319,17 @@ class TidGiIPCSyncAdaptor {
       if (getTiddlerResponse?.data === undefined) {
         throw new Error('getTiddler returned undefined from callWikiIpcServerRoute getTiddler in loadTiddler');
       }
+      // Suppress the save-back that TW5's syncer.storeTiddler will trigger.
+      // storeTiddler calls wiki.addTiddler (fires change event synchronously)
+      // BEFORE updating tiddlerInfo, so the syncer's change handler thinks it's
+      // a local edit and immediately calls our saveTiddler.
+      this.titlesBeingLoaded.add(title);
       callback?.(null, getTiddlerResponse.data as ITiddlerFields);
+      // storeTiddler's addTiddler + change handler + tiddlerInfo update all run
+      // synchronously before this next line.  Use queueMicrotask so the flag
+      // survives the entire synchronous chain but is cleared before the next
+      // event-loop tick.
+      queueMicrotask(() => { this.titlesBeingLoaded.delete(title); });
     } catch (error) {
       callback?.(error as Error);
     }
@@ -318,21 +346,21 @@ class TidGiIPCSyncAdaptor {
       return;
     }
     this.logger.log('deleteTiddler');
-    // No lastSavedRevisions entry needed: deletion echoes are already filtered
-    // by ipcPendingTitles in the change handler (synchronous echo).
-    const getTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
-      this.workspaceID,
-      'deleteTiddler',
-      title,
-    );
+    this.titlesBeingSaved.add(title);
     try {
+      const getTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
+        this.workspaceID,
+        'deleteTiddler',
+        title,
+      );
       if (getTiddlerResponse?.data === undefined) {
         throw new Error('getTiddler returned undefined from callWikiIpcServerRoute getTiddler in loadTiddler');
       }
-      // Invoke the callback & return null adaptorInfo
       callback(null, null);
     } catch (error) {
       callback(error as Error);
+    } finally {
+      this.titlesBeingSaved.delete(title);
     }
   }
 

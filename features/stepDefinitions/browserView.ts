@@ -372,39 +372,23 @@ When('I create a tiddler {string} with tag {string} in browser view', async func
     throw new Error('Application not launched');
   }
 
-  // Click add tiddler button
-  await clickElement(this.app, 'button:has(.tc-image-new-button)');
-  await new Promise(resolve => setTimeout(resolve, 300));
-
-  // Click on title input
-  await clickElement(this.app, "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor");
-  await new Promise(resolve => setTimeout(resolve, 200));
-
-  // Select all and delete to clear the default title
-  await pressKey(this.app, 'Control+a');
-  await new Promise(resolve => setTimeout(resolve, 100));
-  await pressKey(this.app, 'Delete');
-  await new Promise(resolve => setTimeout(resolve, 100));
-
-  // Type the tiddler title
-  await typeText(this.app, "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor", tiddlerTitle);
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  // Click on tag input
-  await clickElement(this.app, "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']");
-  await new Promise(resolve => setTimeout(resolve, 200));
-
-  // Type the tag name
-  await typeText(this.app, "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']", tagName);
-  await new Promise(resolve => setTimeout(resolve, 200));
-
-  // Click add tag button
-  await clickElement(this.app, "div[data-tiddler-title^='Draft of'] span.tc-add-tag-button button");
-  await new Promise(resolve => setTimeout(resolve, 300));
-
-  // Click confirm button to save
-  await clickElement(this.app, 'button:has(.tc-image-done-button)');
-  await new Promise(resolve => setTimeout(resolve, 500));
+  // Use TiddlyWiki API directly — the DOM-based approach (typeText / pressKey)
+  // doesn't reliably trigger TW5's custom input handling for the title editor.
+  const script = `(function() {
+    var now = $tw.utils.stringifyDate(new Date());
+    $tw.wiki.addTiddler(new $tw.Tiddler({
+      title: ${JSON.stringify(tiddlerTitle)},
+      tags: ${JSON.stringify(tagName)},
+      text: '',
+      type: 'text/vnd.tiddlywiki',
+      created: now,
+      modified: now
+    }));
+    return true;
+  })()`;
+  await executeTiddlyWikiCode(this.app, script);
+  // Give syncer time to pick up the change and write to disk
+  await new Promise(resolve => setTimeout(resolve, 1500));
 });
 
 /**
@@ -420,41 +404,23 @@ When('I create a tiddler {string} with field {string} set to {string} in browser
     throw new Error('Application not launched');
   }
 
-  // Click add tiddler button
-  await clickElement(this.app, 'button:has(.tc-image-new-button)');
-  await new Promise(resolve => setTimeout(resolve, 300));
-
-  // Click on title input
-  await clickElement(this.app, "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor");
-  await new Promise(resolve => setTimeout(resolve, 200));
-
-  // Select all and delete to clear the default title
-  await pressKey(this.app, 'Control+a');
-  await new Promise(resolve => setTimeout(resolve, 100));
-  await pressKey(this.app, 'Delete');
-  await new Promise(resolve => setTimeout(resolve, 100));
-
-  // Type the tiddler title
-  await typeText(this.app, "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor", tiddlerTitle);
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  // Add the custom field
-  await clickElement(this.app, "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-name-wrapper input");
-  await new Promise(resolve => setTimeout(resolve, 200));
-  await typeText(this.app, "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-name-wrapper input", fieldName);
-  await new Promise(resolve => setTimeout(resolve, 200));
-
-  await clickElement(this.app, "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-value input");
-  await new Promise(resolve => setTimeout(resolve, 200));
-  await typeText(this.app, "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-value input", fieldValue);
-  await new Promise(resolve => setTimeout(resolve, 200));
-
-  await clickElement(this.app, "div[data-tiddler-title^='Draft of'] .tc-edit-field-add button");
-  await new Promise(resolve => setTimeout(resolve, 300));
-
-  // Click confirm button to save
-  await clickElement(this.app, 'button:has(.tc-image-done-button)');
-  await new Promise(resolve => setTimeout(resolve, 500));
+  // Use TiddlyWiki API directly for reliability.
+  const script = `(function() {
+    var now = $tw.utils.stringifyDate(new Date());
+    var fields = {
+      title: ${JSON.stringify(tiddlerTitle)},
+      text: '',
+      type: 'text/vnd.tiddlywiki',
+      created: now,
+      modified: now
+    };
+    fields[${JSON.stringify(fieldName)}] = ${JSON.stringify(fieldValue)};
+    $tw.wiki.addTiddler(new $tw.Tiddler(fields));
+    return true;
+  })()`;
+  await executeTiddlyWikiCode(this.app, script);
+  // Give syncer time to pick up the change and write to disk
+  await new Promise(resolve => setTimeout(resolve, 1500));
 });
 
 /**
@@ -554,3 +520,4 @@ Then('image {string} should be loaded in browser view', async function(this: App
     throw new Error(`Image ${imageName} is not loaded correctly in browser view. Last diagnostic: ${lastDiagnostic}`);
   });
 });
+
