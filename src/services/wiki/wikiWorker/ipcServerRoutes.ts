@@ -5,7 +5,7 @@
 import fs from 'fs-extra';
 import omit from 'lodash/omit';
 import path from 'path';
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, type Subscription } from 'rxjs';
 import type { ITiddlerFields, ITiddlyWiki } from 'tiddlywiki';
 
 /**
@@ -320,6 +320,9 @@ export class IpcServerRoutes {
     }
     const subject = this.changeSubject;
     return new Observable<ITidGiChangedTiddlers>((observer) => {
+      // Subscription is assigned asynchronously; teardown uses optional chaining
+      // so it is safe to call before the async IIFE resolves.
+      let subscription: Subscription | undefined;
       const getWikiChangeObserverInWorkerIIFE = async () => {
         await this.waitForIpcServerRoutesAvailable();
         if (this.wikiInstance === undefined) {
@@ -328,16 +331,17 @@ export class IpcServerRoutes {
         }
         this.installChangeListener();
         // Forward subject events to this subscriber
-        const subscription = subject.subscribe(observer);
+        subscription = subject.subscribe(observer);
         // Log SSE ready every time a new observer subscribes (including after worker restart)
         const timestamp = new Date().toISOString();
         console.debug(`[test-id-SSE_READY] Wiki change observer registered and ready at ${timestamp}`);
-        // Return cleanup (rxjs Observable teardown)
-        return () => {
-          subscription.unsubscribe();
-        };
       };
       void getWikiChangeObserverInWorkerIIFE();
+      // Synchronous teardown returned from Observable constructor; unsubscribes
+      // when the subscriber disposes (window close / worker restart).
+      return () => {
+        subscription?.unsubscribe();
+      };
     });
   }
 }

@@ -32,9 +32,9 @@ async function getFirstWebContentsView(app: ElectronApplication) {
 
         // The last wiki view in the children list is the active one (addChildView moves to end).
         // Prefer it even if it's still loading.
-        for (let i = candidateInfos.length - 1; i >= 0; i--) {
-          if (candidateInfos[i].url.startsWith('tidgi://')) {
-            return candidateInfos[i].id;
+        for (let index = candidateInfos.length - 1; index >= 0; index--) {
+          if (candidateInfos[index].url.startsWith('tidgi://')) {
+            return candidateInfos[index].id;
           }
         }
 

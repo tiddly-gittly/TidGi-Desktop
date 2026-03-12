@@ -291,13 +291,15 @@ export class FileSystemWatcher {
   /** Called after a file write completes. Records mtime+size and clears the saving flag. */
   markSaveComplete(title: string, absoluteFilePath: string): void {
     this.titlesBeingSaved.delete(title);
-    try {
-      const stat = fs.statSync(absoluteFilePath);
-      this.lastWriteStats.set(absoluteFilePath, { mtime: stat.mtimeMs, size: stat.size });
-    } catch {
-      // File may not exist (e.g. after delete) — that's fine
+    if (absoluteFilePath) {
+      try {
+        const stat = fs.statSync(absoluteFilePath);
+        this.lastWriteStats.set(absoluteFilePath, { mtime: stat.mtimeMs, size: stat.size });
+      } catch {
+        // File may not exist (e.g. after delete) — that's fine
+      }
+      this.scheduleGitNotification();
     }
-    this.scheduleGitNotification();
   }
 
   /**
@@ -601,10 +603,10 @@ export class FileSystemWatcher {
       // Content identity check: skip if file content matches wiki (fallback for race conditions)
       const existingTiddler = this.wiki.getTiddler(tiddlerTitle);
       if (existingTiddler !== undefined) {
-        const fileModified = String((tiddler as Record<string, unknown>).modified ?? '');
-        const wikiModified = String(existingTiddler.fields.modified ?? '');
-        const fileText = String((tiddler as Record<string, unknown>).text ?? '');
-        const wikiText = String(existingTiddler.fields.text ?? '');
+        const fileModified = (tiddler as { modified?: string }).modified ?? '';
+        const wikiModified = (existingTiddler.fields.modified as string | undefined) ?? '';
+        const fileText = (tiddler as { text?: string }).text ?? '';
+        const wikiText = (existingTiddler.fields.text as string | undefined) ?? '';
         if (fileModified !== '' && fileModified === wikiModified && fileText === wikiText) {
           this.logger.log(`FileSystemWatcher Skipping self-echo for ${tiddlerTitle} (content identical)`);
           continue;

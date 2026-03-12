@@ -29,35 +29,43 @@ export function useOptimisticField<T>(
   onCommit: (value: T) => void,
   options?: UseOptimisticFieldOptions<T>,
 ): UseOptimisticFieldReturn<T> {
-  const isEqualFn = options?.isEqual ?? Object.is;
+  const isEqualFunction = options?.isEqual ?? Object.is;
   const [localValue, setLocalValue] = useState<T>(serverValue);
-  const isEditingRef = useRef(false);
+  const isEditingReference = useRef(false);
 
   // Keep latest references so callbacks don't need to re-create
-  const onCommitRef = useRef(onCommit);
-  onCommitRef.current = onCommit;
-  const isEqualRef = useRef(isEqualFn);
-  isEqualRef.current = isEqualFn;
-  const localValueRef = useRef(localValue);
-  localValueRef.current = localValue;
-  const serverValueRef = useRef(serverValue);
-  serverValueRef.current = serverValue;
+  const onCommitReference = useRef(onCommit);
+  onCommitReference.current = onCommit;
+  const isEqualReference = useRef(isEqualFunction);
+  isEqualReference.current = isEqualFunction;
+  const localValueReference = useRef(localValue);
+  localValueReference.current = localValue;
+  const serverValueReference = useRef(serverValue);
+  serverValueReference.current = serverValue;
+  // Captures localValue at the moment the user focused the field;
+  // used on blur to detect whether the user actually made a change.
+  const valueAtFocusReference = useRef<T>(serverValue);
 
   // Sync serverValue → localValue when not editing
   useEffect(() => {
-    if (!isEditingRef.current) {
+    if (!isEditingReference.current) {
       setLocalValue(serverValue);
     }
   }, [serverValue]);
 
   const onFocus = useCallback(() => {
-    isEditingRef.current = true;
+    isEditingReference.current = true;
+    valueAtFocusReference.current = localValueReference.current;
   }, []);
 
   const onBlur = useCallback(() => {
-    isEditingRef.current = false;
-    if (!isEqualRef.current(localValueRef.current, serverValueRef.current)) {
-      onCommitRef.current(localValueRef.current);
+    isEditingReference.current = false;
+    if (!isEqualReference.current(localValueReference.current, valueAtFocusReference.current)) {
+      // User changed the value — persist it
+      onCommitReference.current(localValueReference.current);
+    } else {
+      // User did not change — sync to latest server value
+      setLocalValue(serverValueReference.current);
     }
   }, []);
 
@@ -65,6 +73,6 @@ export function useOptimisticField<T>(
     localValue,
     setLocalValue,
     inputProps: { onFocus, onBlur },
-    isDirty: !isEqualFn(localValue, serverValue),
+    isDirty: !isEqualFunction(localValue, serverValue),
   };
 }

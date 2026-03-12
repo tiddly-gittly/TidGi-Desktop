@@ -329,7 +329,9 @@ class TidGiIPCSyncAdaptor {
       // synchronously before this next line.  Use queueMicrotask so the flag
       // survives the entire synchronous chain but is cleared before the next
       // event-loop tick.
-      queueMicrotask(() => { this.titlesBeingLoaded.delete(title); });
+      queueMicrotask(() => {
+        this.titlesBeingLoaded.delete(title);
+      });
     } catch (error) {
       callback?.(error as Error);
     }

@@ -244,13 +244,13 @@ export class Wiki implements IWikiService {
 
       const originalResolve = resolve;
       const originalReject = reject;
-      resolve = (...args) => {
+      resolve = (...arguments_) => {
         clearTimeout(startWikiTimeout);
-        originalResolve(...args);
+        originalResolve(...arguments_);
       };
-      reject = (...args) => {
+      reject = (...arguments_) => {
         clearTimeout(startWikiTimeout);
-        originalReject(...args);
+        originalReject(...arguments_);
       };
 
       // Handle worker errors

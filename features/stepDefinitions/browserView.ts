@@ -520,4 +520,3 @@ Then('image {string} should be loaded in browser view', async function(this: App
     throw new Error(`Image ${imageName} is not loaded correctly in browser view. Last diagnostic: ${lastDiagnostic}`);
   });
 });
-
