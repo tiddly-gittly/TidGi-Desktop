@@ -404,6 +404,23 @@ When('I prepare to select directory in dialog {string}', async function(this: Ap
   }, targetPath);
 });
 
+When('I prepare to select file {string} for file chooser', async function(this: ApplicationWorld, filePath: string) {
+  const page = this.currentWindow;
+  if (!page) {
+    throw new Error('No current window available');
+  }
+  const targetPath = path.resolve(process.cwd(), filePath);
+  if (!await fs.pathExists(targetPath)) {
+    throw new Error(`File does not exist: ${targetPath}`);
+  }
+  // Register a one-shot Playwright filechooser intercept BEFORE the click that
+  // triggers the file input. This prevents the native OS dialog from appearing
+  // and directly resolves the chooser with the supplied file.
+  page.once('filechooser', async (fileChooser) => {
+    await fileChooser.setFiles(targetPath);
+  });
+});
+
 When('I set file {string} to file input with selector {string}', async function(this: ApplicationWorld, filePath: string, selector: string) {
   const page = this.currentWindow;
   if (!page) {

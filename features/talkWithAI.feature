@@ -139,10 +139,11 @@ Feature: Talk with AI from Wiki Selection
     When I click on a "attach button" element with selector "[data-testid='agent-attach-button']"
     # Wait for autocomplete to open
     And I should see a "attachment autocomplete input" element with selector "[data-testid='attachment-autocomplete-input']"
-    # Click on "Add Image" option (first option with type=image)
+    # Register Playwright filechooser intercept BEFORE clicking Add Image so the
+    # native OS dialog never appears; the chooser is resolved directly with the file.
+    When I prepare to select file "template/wiki/files/TiddlyWikiIconBlack.png" for file chooser
+    # Click on "Add Image" option — triggers fileInput.click() which fires filechooser
     When I click on a "add image option" element with selector "[data-testid='attachment-option-image-AddImage']"
-    # Now the file input dialog should open - set file directly to the hidden file input
-    When I set file "template/wiki/files/TiddlyWikiIconBlack.png" to file input with selector "input[type='file']"
     # Verify image preview appears
     Then I should see an "attachment preview" element with selector "[data-testid='attachment-preview']"
     

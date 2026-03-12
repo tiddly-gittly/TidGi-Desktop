@@ -43,7 +43,14 @@ async function clearTidgiMiniWindowSettings(scenarioRoot?: string) {
   const root = scenarioRoot || process.cwd();
   const settingsPath = path.resolve(root, 'userData-test', 'settings', 'settings.json');
   if (!(await fs.pathExists(settingsPath))) return;
-  const parsed = await fs.readJson(settingsPath) as ISettingFile;
+  let parsed: ISettingFile;
+  try {
+    parsed = await fs.readJson(settingsPath) as ISettingFile;
+  } catch {
+    // File may be empty or truncated due to an in-progress write when the app
+    // was shut down — nothing meaningful to clean up, so skip.
+    return;
+  }
   // Remove tidgi mini window-related preferences to avoid affecting other tests
   const cleanedPreferences = omit(parsed.preferences || {}, [
     'tidgiMiniWindow',
