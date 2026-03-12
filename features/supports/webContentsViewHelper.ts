@@ -1,10 +1,12 @@
 import { WebContentsView } from 'electron';
 import fs from 'fs-extra';
-import type { ElectronApplication } from 'playwright';
+import type { ElectronApplication, Page } from 'playwright';
 
 /**
  * Get the first WebContentsView from any window
- * Prioritizes main window, but will check all windows if needed
+ * Prioritizes the currently active workspace's view in the main window.
+ * When multiple wiki views exist, the LAST child is preferred because
+ * showView() / addView() calls addChildView() which moves the view to the top.
  */
 async function getFirstWebContentsView(app: ElectronApplication) {
   return await app.evaluate(async ({ BrowserWindow }) => {
@@ -28,13 +30,13 @@ async function getFirstWebContentsView(app: ElectronApplication) {
           })
           .filter((info): info is { id: number; url: string; isLoading: boolean } => Boolean(info));
 
-        // Prefer an already-loaded wiki view (tidgi://...) for deterministic test behavior.
-        const readyWiki = candidateInfos.find(info => info.url.startsWith('tidgi://') && !info.isLoading);
-        if (readyWiki) return readyWiki.id;
-
-        // Then prefer any wiki view even if still loading.
-        const anyWiki = candidateInfos.find(info => info.url.startsWith('tidgi://'));
-        if (anyWiki) return anyWiki.id;
+        // The last wiki view in the children list is the active one (addChildView moves to end).
+        // Prefer it even if it's still loading.
+        for (let index = candidateInfos.length - 1; index >= 0; index--) {
+          if (candidateInfos[index].url.startsWith('tidgi://')) {
+            return candidateInfos[index].id;
+          }
+        }
 
         // Fallback to first non-empty URL.
         const nonBlank = candidateInfos.find(info => info.url && info.url !== 'about:blank');
@@ -382,6 +384,52 @@ export async function captureScreenshot(app: ElectronApplication, screenshotPath
       return true;
     }
 
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Capture screenshot of a Playwright Page's underlying Electron window.
+ * Uses Electron's native webContents.capturePage() which works even when
+ * the window is hidden (unlike Playwright's page.screenshot()).
+ */
+export async function captureWindowScreenshot(app: ElectronApplication, page: Page, screenshotPath: string): Promise<boolean> {
+  try {
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => {
+        resolve(null);
+      }, 500);
+    });
+
+    const capturePromise = (async () => {
+      // Evaluate inside Electron to find the BrowserWindow matching this page's webContents
+      const pngBufferData = await app.evaluate(
+        async ({ BrowserWindow }, pageUrl: string) => {
+          for (const win of BrowserWindow.getAllWindows()) {
+            if (win.isDestroyed()) continue;
+            if (win.webContents.getURL() === pageUrl) {
+              try {
+                const image = await win.webContents.capturePage();
+                return Array.from(image.toPNG());
+              } catch {
+                return null;
+              }
+            }
+          }
+          return null;
+        },
+        page.url(),
+      );
+      return pngBufferData;
+    })();
+
+    const result = await Promise.race([capturePromise, timeoutPromise]);
+    if (result && Array.isArray(result)) {
+      fs.writeFile(screenshotPath, Buffer.from(result)).catch(() => {});
+      return true;
+    }
     return false;
   } catch {
     return false;

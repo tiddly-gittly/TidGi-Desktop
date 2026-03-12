@@ -18,6 +18,7 @@ import {
   Tooltip,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import React, { startTransition, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
@@ -89,6 +90,17 @@ export function ServerOptions(props: IServerOptionsProps) {
   const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName'))!, '');
   const userNameIsEmpty = !(userName || fallbackUserName);
   const alreadyEnableSomeServerOptions = readOnlyMode;
+
+  // Local string state for port: avoids re-rendering the entire form on every keystroke.
+  // Workspace is only updated on blur.
+  const [portInput, setPortInput] = useState(() => String(port ?? ''));
+  // Sync from external port changes (e.g., observable update after save)
+  const portReference = useRef(port);
+  if (portReference.current !== port) {
+    portReference.current = port;
+    setPortInput(String(port ?? ''));
+  }
+
   return (
     <AServerOptionsAccordion defaultExpanded={alreadyEnableSomeServerOptions}>
       <Tooltip title={t('EditWorkspace.ClickToExpand')}>
@@ -135,14 +147,28 @@ export function ServerOptions(props: IServerOptionsProps) {
                 </span>
               }
               placeholder='Optional'
-              value={port}
-              onChange={async (event) => {
-                if (!Number.isNaN(Number.parseInt(event.target.value))) {
-                  workspaceSetter({
-                    ...workspace,
-                    port: Number(event.target.value),
-                    homeUrl: await window.service.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(Number(event.target.value)), id),
-                  }, true);
+              value={portInput}
+              onChange={(event) => {
+                const raw = event.target.value;
+                setPortInput(raw);
+                startTransition(() => {
+                  const parsed = raw.trim() === '' ? 0 : Number.parseInt(raw.trim(), 10);
+                  if (!Number.isNaN(parsed) && parsed >= 0) {
+                    workspaceSetter({ ...workspace, port: parsed }, true);
+                  }
+                });
+              }}
+              onBlur={() => {
+                const trimmed = portInput.trim();
+                const number_ = trimmed === '' ? 0 : Number.parseInt(trimmed, 10);
+                if (!Number.isNaN(number_) && number_ >= 0) {
+                  setPortInput(String(number_));
+                  void (async () => {
+                    const homeUrl = await window.service.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(number_), id);
+                    workspaceSetter({ ...workspace, port: number_, homeUrl }, true);
+                  })();
+                } else {
+                  setPortInput(String(port ?? ''));
                 }
               }}
             />
@@ -301,7 +327,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                   fullWidth
                   value={https.tlsCert ?? ''}
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    workspaceSetter({ ...workspace, https: { ...https, tlsCert: event.target.value } });
+                    workspaceSetter({ ...workspace, https: { ...https, tlsCert: event.target.value || undefined } });
                   }}
                 />
               </HttpsCertKeyListItem>
@@ -345,7 +371,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                   fullWidth
                   value={https.tlsKey ?? ''}
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    workspaceSetter({ ...workspace, https: { ...https, tlsKey: event.target.value } });
+                    workspaceSetter({ ...workspace, https: { ...https, tlsKey: event.target.value || undefined } });
                   }}
                 />
               </HttpsCertKeyListItem>

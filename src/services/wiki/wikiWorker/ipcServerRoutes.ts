@@ -5,8 +5,20 @@
 import fs from 'fs-extra';
 import omit from 'lodash/omit';
 import path from 'path';
-import { Observable } from 'rxjs';
-import type { IChangedTiddlers, ITiddlerFields, ITiddlyWiki } from 'tiddlywiki';
+import { Observable, Subject, type Subscription } from 'rxjs';
+import type { ITiddlerFields, ITiddlyWiki } from 'tiddlywiki';
+
+/**
+ * Change info emitted by TidGi's change Observable.
+ * Includes a revision (changeCount) for echo prevention.
+ */
+export interface ITidGiChangedTiddlerMeta {
+  deleted?: boolean;
+  modified?: boolean;
+  /** The tiddler's changeCount at the time this change was emitted */
+  revision: number;
+}
+export type ITidGiChangedTiddlers = Record<string, ITidGiChangedTiddlerMeta>;
 
 export interface IWikiServerStatusObject {
   anonymous: boolean;
@@ -27,10 +39,17 @@ export class IpcServerRoutes {
   private wikiInstance!: ITiddlyWiki;
   private readonly pendingIpcServerRoutesRequests: Array<(value: void | PromiseLike<void>) => void> = [];
   #readonlyMode = false;
-  /** Track tiddlers that were just saved via IPC to prevent echo */
-  private readonly recentlySavedTiddlers = new Set<string>();
   /** List of sub-wiki paths for file searching */
   private subWikiPaths: string[] = [];
+
+  /**
+   * Single shared Subject that all getWikiChangeObserver subscribers connect to.
+   * This avoids registering multiple addEventListener('change') listeners, which
+   * caused ipcPendingTitles to be consumed by one listener and missed by others
+   * (cross-window sync bug).
+   */
+  private changeSubject: Subject<ITidGiChangedTiddlers> | undefined;
+  private changeListenerInstalled = false;
 
   setConfig({ readOnlyMode }: { readOnlyMode?: boolean }) {
     this.#readonlyMode = Boolean(readOnlyMode);
@@ -242,14 +261,7 @@ export class IpcServerRoutes {
     }
     tiddlerFieldsToPut.title = title;
 
-    // Mark this tiddler as recently saved to prevent echo
-    this.recentlySavedTiddlers.add(title);
-
     this.wikiInstance.wiki.addTiddler(new this.wikiInstance.Tiddler(tiddlerFieldsToPut));
-
-    // Note: The change event is triggered synchronously by addTiddler
-    // The event handler in getWikiChangeObserver$ will check recentlySavedTiddlers
-    // and remove the mark after filtering
 
     const changeCount = this.wikiInstance.wiki.getChangeCount(title).toString();
     return { statusCode: 204, headers: { 'Content-Type': 'text/plain', Etag: `"default/${encodeURIComponent(title)}/${changeCount}:"` }, data: 'OK' };
@@ -275,39 +287,61 @@ export class IpcServerRoutes {
   //    ██    ██  █  ██ █████ ███████ ███████ █████
   //    ██    ██ ███ ██            ██      ██ ██
   //    ██     ███ ███        ███████ ███████ ███████
+  /**
+   * Install a single change listener on the wiki instance if not done yet.
+   * Broadcasts ALL changes to the shared Subject (no ipcPendingTitles filtering).
+   * Echo prevention is handled by each frontend subscriber via lastSavedRevisions.
+   */
+  private installChangeListener(): void {
+    if (this.changeListenerInstalled || this.wikiInstance === undefined) return;
+    this.changeListenerInstalled = true;
+
+    this.wikiInstance.wiki.addEventListener('change', (changes) => {
+      const enrichedChanges: ITidGiChangedTiddlers = {};
+      let hasChanges = false;
+
+      for (const title in changes) {
+        enrichedChanges[title] = {
+          ...changes[title],
+          revision: this.wikiInstance.wiki.getChangeCount(title),
+        };
+        hasChanges = true;
+      }
+
+      if (hasChanges) {
+        this.changeSubject!.next(enrichedChanges);
+      }
+    });
+  }
+
   getWikiChangeObserver() {
-    return new Observable<IChangedTiddlers>((observer) => {
+    if (this.changeSubject === undefined) {
+      this.changeSubject = new Subject<ITidGiChangedTiddlers>();
+    }
+    const subject = this.changeSubject;
+    return new Observable<ITidGiChangedTiddlers>((observer) => {
+      // Subscription is assigned asynchronously; teardown uses optional chaining
+      // so it is safe to call before the async IIFE resolves.
+      let subscription: Subscription | undefined;
       const getWikiChangeObserverInWorkerIIFE = async () => {
         await this.waitForIpcServerRoutesAvailable();
         if (this.wikiInstance === undefined) {
           observer.error(new Error(`this.wikiInstance is undefined, maybe something went wrong between waitForIpcServerRoutesAvailable and return new Observable.`));
+          return;
         }
-        this.wikiInstance.wiki.addEventListener('change', (changes) => {
-          // Filter out tiddlers that were just saved via IPC to prevent echo
-          const filteredChanges: IChangedTiddlers = {};
-          let hasChanges = false;
-
-          for (const title in changes) {
-            if (this.recentlySavedTiddlers.has(title)) {
-              // This change was caused by our own putTiddler, skip it to prevent echo
-              this.recentlySavedTiddlers.delete(title);
-              continue;
-            }
-            filteredChanges[title] = changes[title];
-            hasChanges = true;
-          }
-
-          // Only notify if there are actual changes after filtering
-          if (hasChanges) {
-            observer.next(filteredChanges);
-          }
-        });
+        this.installChangeListener();
+        // Forward subject events to this subscriber
+        subscription = subject.subscribe(observer);
         // Log SSE ready every time a new observer subscribes (including after worker restart)
-        // Include timestamp to make each log entry unique for test detection
         const timestamp = new Date().toISOString();
         console.debug(`[test-id-SSE_READY] Wiki change observer registered and ready at ${timestamp}`);
       };
       void getWikiChangeObserverInWorkerIIFE();
+      // Synchronous teardown returned from Observable constructor; unsubscribes
+      // when the subscriber disposes (window close / worker restart).
+      return () => {
+        subscription?.unsubscribe();
+      };
     });
   }
 }

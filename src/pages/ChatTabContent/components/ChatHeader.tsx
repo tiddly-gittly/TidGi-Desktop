@@ -38,6 +38,7 @@ interface ChatHeaderProps {
   currentAgentDefId?: string;
   onSwitchAgent?: (agentDefinitionId: string) => void;
   isStreaming?: boolean;
+  isSplitView?: boolean;
 }
 
 /**
@@ -51,6 +52,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   currentAgentDefId,
   onSwitchAgent,
   isStreaming,
+  isSplitView,
 }) => {
   const { t } = useTranslation('agent');
   const preference = usePreferenceObservable();
@@ -81,7 +83,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   return (
     <Header>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1 }}>
-        <TabListDropdown />
+        {!isSplitView && <TabListDropdown />}
         <ChatTitle title={title} agent={agent} updateAgent={updateAgent} />
         {onSwitchAgent && (
           <AgentSwitcher

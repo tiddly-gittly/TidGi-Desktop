@@ -210,6 +210,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
         currentAgentDefId={tab.agentDefId}
         onSwitchAgent={handleSwitchAgent}
         isStreaming={isStreaming}
+        isSplitView={isSplitView}
       />
 
       {/* Messages container with all chat bubbles */}

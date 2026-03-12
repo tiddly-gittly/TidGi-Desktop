@@ -272,7 +272,9 @@ When('I click all {string} elements matching selector {string}', async function(
   for (let index = count - 1; index >= 0; index--) {
     try {
       await locator.nth(index).scrollIntoViewIfNeeded().catch(() => {});
-      await locator.nth(index).click({ force: true, timeout: 500 });
+      await locator.nth(index).click({ force: true, timeout: 3000 });
+      // Brief pause for the UI to settle after each close
+      await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {
       throw new Error(`Failed to click ${elementComment} at index ${index} with selector "${selector}": ${error as Error}`);
     }

@@ -15,11 +15,13 @@ import { type IBootFilesIndexItemWithTitle, InverseFilesIndex } from './InverseF
 const FILE_DELETION_DELAY_MS = 100;
 
 /**
- * Delay before re-including file after save/delete operations.
- * Must be longer than nsfw's debounceMS (100ms) to ensure all file system events
- * from our own operations are in the debounce queue before we re-include the file.
+ * Recorded mtime+size of a file after we wrote it.
+ * Used to detect and skip our own write echoes in the file watcher.
  */
-const FILE_INCLUSION_DELAY_MS = 150;
+interface ILastWriteStat {
+  mtime: number;
+  size: number;
+}
 
 /**
  * Delay before notifying git service about file changes.
@@ -93,8 +95,11 @@ export class FileSystemWatcher {
   /** Pending file deletions (for git revert/checkout handling) */
   private readonly pendingDeletions: Map<string, NodeJS.Timeout> = new Map();
 
-  /** Pending file inclusions (to prevent memory leaks) */
-  private readonly pendingInclusions: Map<string, NodeJS.Timeout> = new Map();
+  /** Recorded mtime+size after our own writes, keyed by absolute file path. */
+  private readonly lastWriteStats: Map<string, ILastWriteStat> = new Map();
+
+  /** Titles currently being saved. Watcher skips events for these. */
+  private readonly titlesBeingSaved: Set<string> = new Set();
 
   /** Timer for debouncing git notifications */
   private gitNotificationTimer: NodeJS.Timeout | undefined;
@@ -278,29 +283,23 @@ export class FileSystemWatcher {
     return this.pendingFileLoads.get(title);
   }
 
-  /**
-   * Temporarily exclude a file from watching (during save/delete operations)
-   */
-  excludeFile(absoluteFilePath: string): void {
-    this.inverseFilesIndex.excludeFile(absoluteFilePath);
+  /** Mark a tiddler as currently being saved. Watcher will skip events for it. */
+  markSaving(title: string): void {
+    this.titlesBeingSaved.add(title);
   }
 
-  /**
-   * Schedule a file to be re-included after a delay
-   */
-  scheduleFileInclusion(absoluteFilePath: string): void {
-    const existingTimer = this.pendingInclusions.get(absoluteFilePath);
-    if (existingTimer) {
-      clearTimeout(existingTimer);
-    }
-
-    const timer = setTimeout(() => {
-      this.inverseFilesIndex.includeFile(absoluteFilePath);
-      this.pendingInclusions.delete(absoluteFilePath);
+  /** Called after a file write completes. Records mtime+size and clears the saving flag. */
+  markSaveComplete(title: string, absoluteFilePath: string): void {
+    this.titlesBeingSaved.delete(title);
+    if (absoluteFilePath) {
+      try {
+        const stat = fs.statSync(absoluteFilePath);
+        this.lastWriteStats.set(absoluteFilePath, { mtime: stat.mtimeMs, size: stat.size });
+      } catch {
+        // File may not exist (e.g. after delete) — that's fine
+      }
       this.scheduleGitNotification();
-    }, FILE_INCLUSION_DELAY_MS);
-
-    this.pendingInclusions.set(absoluteFilePath, timer);
+    }
   }
 
   /**
@@ -367,10 +366,8 @@ export class FileSystemWatcher {
     }
     this.pendingDeletions.clear();
 
-    for (const timer of this.pendingInclusions.values()) {
-      clearTimeout(timer);
-    }
-    this.pendingInclusions.clear();
+    this.lastWriteStats.clear();
+    this.titlesBeingSaved.clear();
 
     // Stop main watcher
     if (this.watcher) {
@@ -505,20 +502,20 @@ export class FileSystemWatcher {
           if (this.ignoreSymlinks && stats.isSymbolicLink()) {
             continue;
           }
+          // Skip our own write echoes: compare mtime+size recorded by markSaveComplete()
+          const lastWrite = this.lastWriteStats.get(fileAbsolutePath);
+          if (lastWrite !== undefined) {
+            if (stats.mtimeMs === lastWrite.mtime && stats.size === lastWrite.size) {
+              this.logger.log(`FileSystemWatcher mtime+size match, skipping own-write echo: ${fileAbsolutePath}`);
+              this.lastWriteStats.delete(fileAbsolutePath);
+              continue;
+            }
+            // mtime/size changed → external modification, clear stale entry
+            this.lastWriteStats.delete(fileAbsolutePath);
+          }
         } catch {
           continue;
         }
-      }
-
-      // Check exclusion list
-      const subWikiForExclusion = this.inverseFilesIndex.getSubWikiForFile(fileAbsolutePath);
-      const isExcluded = subWikiForExclusion
-        ? this.inverseFilesIndex.isSubWikiFileExcluded(subWikiForExclusion.id, fileAbsolutePath)
-        : this.inverseFilesIndex.isMainFileExcluded(fileAbsolutePath);
-
-      if (isExcluded) {
-        this.logger.log(`FileSystemWatcher Skipping excluded file: ${fileAbsolutePath}`);
-        continue;
       }
 
       hasFileChanges = true;
@@ -595,6 +592,25 @@ export class FileSystemWatcher {
       if (!tiddlerTitle) {
         this.logger.alert(`FileSystemWatcher Tiddler has no title. File: ${actualFileAbsPath}`);
         continue;
+      }
+
+      // Skip events for tiddlers currently being written to disk
+      if (this.titlesBeingSaved.has(tiddlerTitle)) {
+        this.logger.log(`FileSystemWatcher Skipping file change during active save: ${tiddlerTitle}`);
+        continue;
+      }
+
+      // Content identity check: skip if file content matches wiki (fallback for race conditions)
+      const existingTiddler = this.wiki.getTiddler(tiddlerTitle);
+      if (existingTiddler !== undefined) {
+        const fileModified = (tiddler as { modified?: string }).modified ?? '';
+        const wikiModified = (existingTiddler.fields.modified as string | undefined) ?? '';
+        const fileText = (tiddler as { text?: string }).text ?? '';
+        const wikiText = (existingTiddler.fields.text as string | undefined) ?? '';
+        if (fileModified !== '' && fileModified === wikiModified && fileText === wikiText) {
+          this.logger.log(`FileSystemWatcher Skipping self-echo for ${tiddlerTitle} (content identical)`);
+          continue;
+        }
       }
 
       // Store the file change info for later loading by syncer

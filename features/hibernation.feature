@@ -42,7 +42,7 @@ Feature: Workspace Hibernation
     Then I switch to "main" window
     When I close "editWorkspace" window
     # Start with wiki, create a test tiddler to verify workspace content
-    When I click on a "wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    When I click on a "wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki'):not(:has-text('wiki2'))"
     Then the browser view should be loaded and visible
     # Create a test tiddler in wiki workspace
     And I click on "add tiddler button and title input" elements in browser view with selectors:
@@ -66,7 +66,7 @@ Feature: Workspace Hibernation
     Then I wait for "site title" element in browser view with selector "h1.tc-site-title"
     # Verify wiki workspace is now hibernated (icon should be grayed out)
     # UI updates via observable, faster than waiting for log markers
-    Then I should see a "wiki workspace hibernated icon" element with selector "div[data-testid^='workspace-']:has-text('wiki')[data-hibernated='true']"
+    Then I should see a "wiki workspace hibernated icon" element with selector "div[data-testid^='workspace-']:has-text('wiki'):not(:has-text('wiki2'))[data-hibernated='true']"
     # Verify we're in wiki2 by checking Index tiddler (default open) - not WikiTestTiddler
     Then I should see a "Index tiddler" element in browser view with selector "div[data-tiddler-title='Index']"
     Then I should not see a "WikiTestTiddler tiddler" element in browser view with selector "div[data-tiddler-title='WikiTestTiddler']"
@@ -74,7 +74,7 @@ Feature: Workspace Hibernation
     # This also tests issue #593 - browser view should persist after wake up
     # Clear previous VIEW_LOADED markers before waiting for a new one
     And I clear log lines containing "[test-id-VIEW_LOADED]"
-    When I click on a "wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    When I click on a "wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki'):not(:has-text('wiki2'))"
     # Wait for wiki to wake from hibernation and view to fully load
     Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
     Then the browser view should be loaded and visible
@@ -84,6 +84,6 @@ Feature: Workspace Hibernation
     Then I should see "wiki2 workspace hibernated icon and wiki workspace active icon" elements with selectors:
       | element description              | selector                                                                        |
       | wiki2 workspace hibernated icon  | div[data-testid^='workspace-']:has-text('wiki2')[data-hibernated='true']         |
-      | wiki workspace active icon       | div[data-testid^='workspace-']:has-text('wiki')[data-hibernated='false'][data-active='true'] |
+      | wiki workspace active icon       | div[data-testid^='workspace-']:has-text('wiki'):not(:has-text('wiki2'))[data-hibernated='false'][data-active='true'] |
     # Verify WikiTestTiddler is still there after wake up
     Then I should see a "WikiTestTiddler tiddler" element in browser view with selector "div[data-tiddler-title='WikiTestTiddler']"

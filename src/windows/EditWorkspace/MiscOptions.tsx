@@ -119,12 +119,9 @@ export function MiscOptions(props: MiscOptionsProps): React.JSX.Element {
             label={t('EditWorkspace.LastVisitState')}
             helperText={t('Preference.RememberLastVisitState')}
             placeholder={homeUrl}
-            value={lastUrl}
+            value={lastUrl ?? ''}
             onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              workspaceSetter({
-                ...workspace,
-                lastUrl: (event.target.value || homeUrl) ?? '',
-              });
+              workspaceSetter({ ...workspace, lastUrl: (event.target.value || homeUrl) ?? '' });
             }}
           />
         )}

@@ -9,7 +9,7 @@ import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getPackedAppPath, makeSlugPath } from '../supports/paths';
 import { PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
-import { captureScreenshot } from '../supports/webContentsViewHelper';
+import { captureScreenshot, captureWindowScreenshot } from '../supports/webContentsViewHelper';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -345,9 +345,18 @@ AfterStep({ timeout: 3000 }, async function(this: ApplicationWorld, { pickle, pi
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const screenshotPath = path.resolve(scenarioScreenshotsDirectory, `${timestamp}-${cleanStepText}-${stepStatus}.png`);
-    await captureScreenshot(this.app, screenshotPath);
-  } catch {
+
+    // Steps operating on BrowserView (WebContentsView) → capture the embedded wiki view
+    // Other steps (main window UI, editWorkspace, preferences, etc.) → capture the current window page
+    const isBrowserViewStep = /browser view|TiddlyWiki code/i.test(stepText);
+    if (isBrowserViewStep) {
+      await captureScreenshot(this.app, screenshotPath);
+    } else if (this.currentWindow && !this.currentWindow.isClosed()) {
+      await captureWindowScreenshot(this.app, this.currentWindow, screenshotPath);
+    }
+  } catch (error) {
     // Screenshot is best-effort diagnostics, never fail a step for it
+    console.warn('[AfterStep screenshot]', error instanceof Error ? error.message : String(error));
   }
 });
 
@@ -393,6 +402,23 @@ When('I prepare to select directory in dialog {string}', async function(this: Ap
       };
     };
   }, targetPath);
+});
+
+When('I prepare to select file {string} for file chooser', async function(this: ApplicationWorld, filePath: string) {
+  const page = this.currentWindow;
+  if (!page) {
+    throw new Error('No current window available');
+  }
+  const targetPath = path.resolve(process.cwd(), filePath);
+  if (!await fs.pathExists(targetPath)) {
+    throw new Error(`File does not exist: ${targetPath}`);
+  }
+  // Register a one-shot Playwright filechooser intercept BEFORE the click that
+  // triggers the file input. This prevents the native OS dialog from appearing
+  // and directly resolves the chooser with the supplied file.
+  page.once('filechooser', async (fileChooser) => {
+    await fileChooser.setFiles(targetPath);
+  });
 });
 
 When('I set file {string} to file input with selector {string}', async function(this: ApplicationWorld, filePath: string, selector: string) {

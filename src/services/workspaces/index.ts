@@ -593,6 +593,25 @@ export class Workspace implements IWorkspaceService {
     void this.updateWorkspaceMenuItems();
   }
 
+  /**
+   * Compute the order for a newly created wiki workspace so it appears at
+   * the TOP of the regular-workspace section (before page workspaces).
+   * Shifts all existing non-page workspaces down by 1 to make room.
+   */
+  private async getNextInsertOrder(): Promise<number> {
+    const all = await this.getWorkspacesAsList();
+    const regularWorkspaces = all.filter(w => !w.pageType);
+    if (regularWorkspaces.length === 0) return 0;
+    const minOrder = Math.min(...regularWorkspaces.map(w => w.order));
+    // Shift every existing workspace's order up by 1
+    for (const ws of all) {
+      if (ws.order >= minOrder) {
+        await this.set(ws.id, { ...ws, order: ws.order + 1 });
+      }
+    }
+    return minOrder;
+  }
+
   public async create(newWorkspaceConfig: INewWikiWorkspaceConfig): Promise<IWorkspace> {
     const { useTidgiConfig = true, ...workspaceConfig } = newWorkspaceConfig;
     const generatedID = nanoid();
@@ -629,7 +648,7 @@ export class Workspace implements IWorkspaceService {
       id: newID,
       lastUrl: null,
       lastNodeJSArgv: [],
-      order: typeof workspaceConfig.order === 'number' ? workspaceConfig.order : ((await this.getWorkspacesAsList()).length + 1),
+      order: typeof workspaceConfig.order === 'number' ? workspaceConfig.order : await this.getNextInsertOrder(),
       picturePath: null,
     };
 

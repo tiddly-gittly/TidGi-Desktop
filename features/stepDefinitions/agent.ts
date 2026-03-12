@@ -295,10 +295,16 @@ Then('the last AI request user message should contain {string}', async function(
     throw new Error('Mock OpenAI server is not running');
   }
 
-  const lastRequest = this.mockOpenAIServer.getLastRequest();
-  if (!lastRequest) {
-    throw new Error('No AI request has been made yet');
-  }
+  // Poll for the request to arrive — there can be a delay between pressing Enter
+  // and the mock server actually receiving the HTTP request.
+  const lastRequest = await backOff(
+    async () => {
+      const request = this.mockOpenAIServer!.getLastRequest();
+      if (!request) throw new Error('No AI request has been made yet');
+      return request;
+    },
+    { numOfAttempts: 40, startingDelay: 250, timeMultiple: 1, maxDelay: 250, delayFirstAttempt: true },
+  );
 
   // Find the last user message in the request
   const userMessages = lastRequest.messages.filter(message => message.role === 'user');

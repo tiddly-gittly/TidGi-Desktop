@@ -106,12 +106,12 @@ export function SaveAndSyncOptions(props: SaveAndSyncOptionsProps): React.JSX.El
           <TextField
             helperText={t('AddWorkspace.WorkspaceUserNameDetail')}
             fullWidth
+            value={userName ?? ''}
             onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
               workspaceSetter({ ...workspace, userName: event.target.value }, true);
             }}
             label={t('AddWorkspace.WorkspaceUserName')}
             placeholder={fallbackUserName}
-            value={userName}
           />
         )}
         <Divider />

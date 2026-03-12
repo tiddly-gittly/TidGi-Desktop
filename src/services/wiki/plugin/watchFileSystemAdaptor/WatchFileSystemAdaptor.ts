@@ -98,60 +98,38 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
   }
 
   /**
-   * Save a tiddler to the filesystem (with file watching support)
+   * Save a tiddler to the filesystem (with file watching support).
    */
   override async saveTiddler(
     tiddler: Tiddler,
     callback?: (error: Error | null | string, adaptorInfo?: IFileInfo | null, revision?: string) => void,
     options?: { tiddlerInfo?: Record<string, unknown> },
   ): Promise<void> {
+    const title = tiddler.fields.title;
     try {
-      const oldFileInfo = this.boot.files[tiddler.fields.title];
+      // Mark as saving so watcher ignores events for this title
+      this.watcher?.markSaving(title);
 
-      // Pre-calculate file path for new tiddlers and exclude it
-      let excludedNewFilePath: string | undefined;
-      if (!oldFileInfo) {
-        try {
-          const newFileInfo = this.getTiddlerFileInfo(tiddler);
-          if (newFileInfo?.filepath) {
-            this.watcher?.excludeFile(newFileInfo.filepath);
-            this.watcher?.excludeFile(`${newFileInfo.filepath}.meta`);
-            excludedNewFilePath = newFileInfo.filepath;
-          }
-        } catch (error) {
-          this.logger.alert(`WatchFileSystemAdaptor Failed to pre-calculate file path for new tiddler: ${tiddler.fields.title}`, error);
-        }
-      }
-
-      // Exclude old file path before save
-      if (oldFileInfo) {
-        this.watcher?.excludeFile(oldFileInfo.filepath);
-        this.watcher?.excludeFile(`${oldFileInfo.filepath}.meta`);
-      }
-
-      // Call parent's saveTiddler
+      // Call parent's saveTiddler (writes to disk)
       await super.saveTiddler(tiddler, undefined, options);
 
       // Update inverse index after successful save
-      const finalFileInfo = this.boot.files[tiddler.fields.title];
+      const finalFileInfo = this.boot.files[title];
       if (finalFileInfo && this.watcher) {
-        this.watcher.updateIndexAfterSave(tiddler.fields.title, finalFileInfo);
+        this.watcher.updateIndexAfterSave(title, finalFileInfo);
+        // Record mtime+size so the watcher can skip the echo from this write
+        this.watcher.markSaveComplete(title, finalFileInfo.filepath);
+        // Also record for .meta companion file
+        this.watcher.markSaveComplete(title, `${finalFileInfo.filepath}.meta`);
+      } else {
+        // No fileInfo → clear saving flag anyway
+        this.watcher?.markSaveComplete(title, '');
       }
 
       callback?.(null, finalFileInfo);
-
-      // Schedule re-inclusion after delay
-      if (finalFileInfo) {
-        this.watcher?.scheduleFileInclusion(finalFileInfo.filepath);
-        this.watcher?.scheduleFileInclusion(`${finalFileInfo.filepath}.meta`);
-      }
-
-      // Re-include wrongly pre-excluded path
-      if (excludedNewFilePath && excludedNewFilePath !== finalFileInfo?.filepath) {
-        this.watcher?.scheduleFileInclusion(excludedNewFilePath);
-        this.watcher?.scheduleFileInclusion(`${excludedNewFilePath}.meta`);
-      }
     } catch (error) {
+      // Clear saving flag on error so watcher isn't stuck
+      this.watcher?.markSaveComplete(title, '');
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
       callback?.(errorObject);
       throw errorObject;
@@ -174,23 +152,19 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
     }
 
     try {
-      // Exclude file before deletion
-      this.watcher?.excludeFile(fileInfo.filepath);
+      // Mark as saving so watcher ignores events for this title
+      this.watcher?.markSaving(title);
 
       // Call parent's deleteTiddler
       await super.deleteTiddler(title, undefined, _options);
 
       // Update inverse index
-      if (this.watcher) {
-        this.watcher.removeFromIndex(fileInfo.filepath);
-      }
+      this.watcher?.removeFromIndex(fileInfo.filepath);
+      this.watcher?.markSaveComplete(title, fileInfo.filepath);
 
       callback?.(null, null);
-
-      // Schedule re-inclusion
-      this.watcher?.scheduleFileInclusion(fileInfo.filepath);
     } catch (error) {
-      this.watcher?.scheduleFileInclusion(fileInfo.filepath);
+      this.watcher?.markSaveComplete(title, fileInfo.filepath);
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
       callback?.(errorObject);
       throw errorObject;

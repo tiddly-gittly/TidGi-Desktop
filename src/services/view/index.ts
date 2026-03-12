@@ -300,6 +300,14 @@ export class View implements IViewService {
     view.setBounds({ x: -w, y: -h, width: w, height: h });
   }
 
+  /**
+   * Views that are currently "shown" via showView().
+   * setViewBounds(undefined) will NOT move these offscreen, because showView
+   * may have already placed them at full-window bounds and a late-arriving
+   * cleanup call from WikiEmbedTabContent would hide them.
+   */
+  private readonly activelyShownViews = new Set<string>();
+
   public async showView(workspaceID: string, windowName: WindowNames): Promise<void> {
     const view = this.getView(workspaceID, windowName);
     const browserWindow = this.windowService.get(windowName);
@@ -307,6 +315,11 @@ export class View implements IViewService {
       logger.warn('showView: view or window not found', { workspaceID, windowName });
       return;
     }
+    // Clear any stale custom bounds (e.g. left over from WikiEmbed split-view)
+    // so that realignView / window-resize handlers use normal full-window bounds.
+    const key = `${workspaceID}-${windowName}`;
+    this.customBoundsMap.delete(key);
+    this.activelyShownViews.add(key);
     // Ensure it's a child (idempotent in Electron)
     try {
       browserWindow.contentView.addChildView(view);
@@ -321,6 +334,8 @@ export class View implements IViewService {
     const view = this.getView(workspaceID, windowName);
     const browserWindow = this.windowService.get(windowName);
     if (view === undefined || browserWindow === undefined) return;
+    const key = `${workspaceID}-${windowName}`;
+    this.activelyShownViews.delete(key);
     view.webContents.stopFindInPage('clearSelection');
     view.webContents.send(WindowChannel.closeFindInPage);
     this.moveOffscreen(view, browserWindow);
@@ -346,7 +361,12 @@ export class View implements IViewService {
       view.setBounds(bounds);
     } else {
       this.customBoundsMap.delete(key);
-      this.moveOffscreen(view, browserWindow);
+      // Only move offscreen if the view is NOT currently shown via showView().
+      // This prevents a late-arriving WikiEmbedTabContent cleanup from hiding
+      // a view that showView() has already placed at full-window bounds.
+      if (!this.activelyShownViews.has(key)) {
+        this.moveOffscreen(view, browserWindow);
+      }
     }
   }
 
@@ -384,6 +404,7 @@ export class View implements IViewService {
       this.resizeCleanups.get(key)?.();
       this.resizeCleanups.delete(key);
       this.customBoundsMap.delete(key);
+      this.activelyShownViews.delete(key);
       // Remove from window tree
       const browserWindow = this.windowService.get(windowName);
       if (browserWindow && !browserWindow.isDestroyed()) {
