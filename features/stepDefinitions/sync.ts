@@ -281,8 +281,9 @@ When('I clone workspace {string} via HTTP to {string}', async function(this: App
 
   // TiddlyWiki CSRF requires X-Requested-With header on POST requests;
   // TidGi Mobile sends it via isomorphic-git, tests use git's http.extraHeader.
+  // http.proxy= disables system proxy so localhost requests go direct.
   const cloneResult = await gitExec(
-    ['-c', 'http.extraHeader=X-Requested-With: TiddlyWiki', 'clone', httpUrl, actualPath],
+    ['-c', 'http.proxy=', '-c', 'http.extraHeader=X-Requested-With: TiddlyWiki', 'clone', '--verbose', httpUrl, actualPath],
     getWikiTestRootPath(this),
   );
   if (cloneResult.exitCode !== 0) {
@@ -319,7 +320,7 @@ When('I sync {string} via HTTP to workspace {string}', async function(this: Appl
   // Step 2: Force-push local main to remote mobile-incoming branch.
   // Force is needed because the remote branch may have stale refs from a previous sync cycle.
   const pushResult = await gitExec(
-    ['-c', 'http.extraHeader=X-Requested-With: TiddlyWiki', 'push', '--force', 'origin', 'main:refs/heads/mobile-incoming'],
+    ['-c', 'http.proxy=', '-c', 'http.extraHeader=X-Requested-With: TiddlyWiki', 'push', '--force', 'origin', 'main:refs/heads/mobile-incoming'],
     actualClonePath,
   );
   if (pushResult.exitCode !== 0) {
@@ -350,7 +351,7 @@ When('I sync {string} via HTTP to workspace {string}', async function(this: Appl
   // After desktop merges mobile-incoming, remote main contains a merge commit
   // that is NOT a descendant of our local main (it's a sibling merged with desktop changes).
   const fetchResult = await gitExec(
-    ['-c', 'http.extraHeader=X-Requested-With: TiddlyWiki', 'fetch', 'origin', 'main'],
+    ['-c', 'http.proxy=', '-c', 'http.extraHeader=X-Requested-With: TiddlyWiki', 'fetch', 'origin', 'main'],
     actualClonePath,
   );
   if (fetchResult.exitCode !== 0) {
