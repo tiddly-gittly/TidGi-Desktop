@@ -219,27 +219,19 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           entriesFingerprint: entriesWithUnpushedFlag.map(entry => entry.hash || 'uncommitted').join(','),
         };
 
-        // Log BEFORE RAF
+        // Update state directly — RAF is unreliable in headless CI environments
+        // and would delay entries update, preventing auto-selection effects from running.
+        setEntries(entriesWithUnpushedFlag);
+        setCurrentBranch(result.currentBranch);
+        setTotalCount(result.totalCount);
+        setCurrentPage(0);
+
+        // Log AFTER setEntries so the test marker is written only once entries are queued for React update
         try {
-          void window.service.native.log('info', '[test-id-git-log-refreshed]', { ...logData, source: 'before-raf' });
+          void window.service.native.log('info', '[test-id-git-log-refreshed]', logData);
         } catch (error) {
-          console.error('[CRITICAL] Log before RAF failed:', error);
+          console.error('[CRITICAL] Log after setEntries failed:', error);
         }
-
-        // Use requestAnimationFrame to batch the state updates and reduce flicker
-        requestAnimationFrame(() => {
-          try {
-            setEntries(entriesWithUnpushedFlag);
-            setCurrentBranch(result.currentBranch);
-            setTotalCount(result.totalCount);
-            setCurrentPage(0);
-
-            // Log AFTER setEntries in RAF
-            void window.service.native.log('info', '[test-id-git-log-refreshed]', { ...logData, source: 'in-raf' });
-          } catch (error) {
-            console.error('[CRITICAL] RAF callback failed:', error);
-          }
-        });
       } catch (error_) {
         const error = error_ as Error;
         console.error('Failed to load git log:', error);

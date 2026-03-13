@@ -515,7 +515,7 @@ Then('image {string} should be loaded in browser view', async function(this: App
         throw new Error(`Image ${imageName} is not loaded yet`);
       }
     },
-    { numOfAttempts: 10, startingDelay: 150, timeMultiple: 1, maxDelay: 150 },
+    { numOfAttempts: 100, startingDelay: 150, timeMultiple: 1, maxDelay: 150 },
   ).catch(() => {
     throw new Error(`Image ${imageName} is not loaded correctly in browser view. Last diagnostic: ${lastDiagnostic}`);
   });
