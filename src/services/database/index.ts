@@ -48,7 +48,13 @@ export class DatabaseService implements IDatabaseService {
     });
     // Initialize settings folder and load settings
     ensureSettingFolderExist();
-    this.settingFileContent = settings.getSync() as unknown as ISettingFile;
+    const rawSettings = settings.getSync();
+    // Guard against corrupted settings files that contain a non-object root value (e.g. a JSON string).
+    // Such files pass JSON.parse without error but cause "Cannot create property 'x' on string" when
+    // setSetting() tries to write into them.
+    this.settingFileContent = (rawSettings !== null && typeof rawSettings === 'object' && !Array.isArray(rawSettings))
+      ? rawSettings as unknown as ISettingFile
+      : {} as ISettingFile;
     // Initialize settings backup stream
     try {
       this.settingBackupStream = rotateFs.createStream(`settings.json.bak`, {
