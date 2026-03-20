@@ -155,6 +155,16 @@
       },
       "required": ["enabled"],
       "additionalProperties": false
+    },
+    "isSubWiki": {
+      "type": "boolean",
+      "description": "Whether this wiki is a sub-wiki attached to a main wiki",
+      "default": false
+    },
+    "mainWikiToLink": {
+      "type": ["string", "null"],
+      "description": "Absolute path of the main wiki this sub-wiki is linked to (device-specific, used as import hint)",
+      "default": null
     }
   },
   "required": ["version"],

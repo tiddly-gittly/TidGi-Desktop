@@ -348,12 +348,10 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (newWorkspace.pageType) {
       logger.debug(`${nextWorkspaceID} is a page workspace, only updating workspace state.`);
       await container.get<IWorkspaceService>(serviceIdentifier.Workspace).setActiveWorkspace(nextWorkspaceID, oldActiveWorkspace?.id);
-      // Hide old workspace view if switching from a regular workspace
+      // Only hide the view of the previous workspace; do NOT hibernate its wiki server.
+      // Page workspaces (agents) embed the wiki via webview and need the server to stay alive.
       if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID && !oldActiveWorkspace.pageType) {
         await this.hideWorkspaceView(oldActiveWorkspace.id);
-        if (isWikiWorkspace(oldActiveWorkspace) && oldActiveWorkspace.hibernateWhenUnused) {
-          await this.hibernateWorkspaceView(oldActiveWorkspace.id);
-        }
       }
       return;
     }
@@ -391,12 +389,6 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
 
     try {
-      // Schedule hibernation of old workspace before loading new workspace
-      // This prevents blocking on loadURL and allows faster UI updates
-      if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID) {
-        void this.hibernateWorkspace(oldActiveWorkspace.id);
-      }
-
       await this.showWorkspaceView(nextWorkspaceID);
       await this.realignActiveWorkspace(nextWorkspaceID);
     } catch (error) {
@@ -408,16 +400,28 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
   }
 
+  // Tracks workspace IDs currently undergoing background hibernation to prevent concurrent double-stop.
+  private readonly hibernatingWorkspaces = new Set<string>();
+
   /**
    * This promise could be `void` to let go, not blocking other logic like switch to new workspace, and hibernate workspace on background.
    */
   private async hibernateWorkspace(workspaceID: string): Promise<void> {
-    const workspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(workspaceID);
-    if (workspace === undefined) return;
+    if (this.hibernatingWorkspaces.has(workspaceID)) {
+      logger.debug('hibernateWorkspace: already in progress, skipping duplicate call', { workspaceID });
+      return;
+    }
+    this.hibernatingWorkspaces.add(workspaceID);
+    try {
+      const workspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(workspaceID);
+      if (workspace === undefined) return;
 
-    await this.hideWorkspaceView(workspaceID);
-    if (isWikiWorkspace(workspace) && workspace.hibernateWhenUnused) {
-      await this.hibernateWorkspaceView(workspaceID);
+      await this.hideWorkspaceView(workspaceID);
+      if (isWikiWorkspace(workspace) && workspace.hibernateWhenUnused) {
+        await this.hibernateWorkspaceView(workspaceID);
+      }
+    } finally {
+      this.hibernatingWorkspaces.delete(workspaceID);
     }
   }
 

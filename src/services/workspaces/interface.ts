@@ -43,6 +43,8 @@ export const syncableConfigFields = [
   'fileSystemPathFilter',
   'rootTiddler',
   'https',
+  'isSubWiki',
+  'mainWikiToLink',
 ] as const;
 
 /**
@@ -64,9 +66,7 @@ export const localOnlyFields = [
   'authToken',
   'picturePath',
   'wikiFolderLocation',
-  'mainWikiToLink',
   'mainWikiID',
-  'isSubWiki',
   'pageType',
   'port',
 ] as const;
@@ -103,6 +103,8 @@ export const syncableConfigDefaultValues = {
   fileSystemPathFilter: null as string | null,
   rootTiddler: undefined as string | undefined,
   https: undefined as { enabled: boolean; tlsCert?: string; tlsKey?: string } | undefined,
+  isSubWiki: false,
+  mainWikiToLink: null as string | null,
 } as const;
 
 /**
@@ -129,7 +131,6 @@ export const localConfigDefaultValues = {
   homeUrl: '',
   authToken: undefined as string | undefined,
   picturePath: null as string | null,
-  mainWikiToLink: null as string | null,
   mainWikiID: null as string | null,
   pageType: null as PageType.wiki | null,
 } as const;
@@ -143,7 +144,7 @@ export const localConfigDefaultValues = {
 export const wikiWorkspaceDefaultValues = {
   ...localConfigDefaultValues,
   ...syncableConfigDefaultValues,
-} satisfies Omit<IWikiWorkspace, 'wikiFolderLocation' | 'isSubWiki'>;
+} satisfies Omit<IWikiWorkspace, 'wikiFolderLocation'>;
 
 export interface IDedicatedWorkspace {
   /**

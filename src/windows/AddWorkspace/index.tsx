@@ -192,7 +192,7 @@ export default function AddWorkspace(): React.JSX.Element {
       {currentTab === CreateWorkspaceTabs.OpenLocalWiki && (
         <TabPanel>
           <Container>
-            <ExistedWikiForm {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+            <ExistedWikiForm {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} useTidgiConfig={useTidgiConfig} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
             <ExistedWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} useTidgiConfig={useTidgiConfig} />
           </Container>
         </TabPanel>

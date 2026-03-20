@@ -14,7 +14,7 @@ import { DEBOUNCE_SAVE_SETTING_BACKUP_FILE, DEBOUNCE_SAVE_SETTING_FILE } from '@
 import { SQLITE_BINARY_PATH } from '@/constants/paths';
 import { logger } from '@services/libs/log';
 import { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions.js';
-import { ensureSettingFolderExist, fixSettingFileWhenError } from './configSetting';
+import { ensureSettingFolderExist, fixSettingFileWhenError, readTidgiConfig } from './configSetting';
 import type { DatabaseInitOptions, IDatabaseService, ISettingFile } from './interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from './schema/agent';
 import { AgentBrowserTabEntity } from './schema/agentBrowser';
@@ -308,6 +308,10 @@ export class DatabaseService implements IDatabaseService {
       logger.error(`deleteDatabase failed for key: ${key}`, { error });
       throw error;
     }
+  }
+
+  public async readWikiConfig(wikiFolderLocation: string) {
+    return readTidgiConfig(wikiFolderLocation);
   }
 
   /**

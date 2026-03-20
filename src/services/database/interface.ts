@@ -2,7 +2,7 @@ import { DatabaseChannel } from '@/constants/channels';
 import type { IUserInfos } from '@services/auth/interface';
 import { AIGlobalSettings } from '@services/externalAPI/interface';
 import type { IPreferences } from '@services/preferences/interface';
-import type { IWorkspace } from '@services/workspaces/interface';
+import type { ISyncableWikiConfig, IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { DataSource } from 'typeorm';
 
@@ -82,6 +82,13 @@ export interface IDatabaseService {
    * Delete the database file for a given key and close any active connection.
    */
   deleteDatabase(key: string): Promise<void>;
+
+  /**
+   * Read tidgi.config.json from a wiki folder and return the syncable config.
+   * Exposed over IPC so the renderer can pre-fill the Add Workspace form when
+   * importing an existing wiki with "use tidgi.config" enabled.
+   */
+  readWikiConfig(wikiFolderLocation: string): Promise<Partial<ISyncableWikiConfig> | undefined>;
 }
 
 export const DatabaseServiceIPCDescriptor = {
@@ -95,5 +102,6 @@ export const DatabaseServiceIPCDescriptor = {
     getDatabaseInfo: ProxyPropertyType.Function,
     getDatabasePath: ProxyPropertyType.Function,
     deleteDatabase: ProxyPropertyType.Function,
+    readWikiConfig: ProxyPropertyType.Function,
   },
 };

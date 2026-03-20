@@ -13,12 +13,15 @@ import type { IWikiWorkspaceFormProps } from './useForm';
 export function ExistedWikiForm({
   form,
   isCreateMainWorkspace,
+  isCreateMainWorkspaceSetter,
+  useTidgiConfig,
   isCreateSyncedWorkspace,
   errorInWhichComponent,
   errorInWhichComponentSetter,
-}: IWikiWorkspaceFormProps & { isCreateSyncedWorkspace: boolean }): React.JSX.Element {
+}: IWikiWorkspaceFormProps & { isCreateMainWorkspaceSetter: (value: boolean) => void; isCreateSyncedWorkspace: boolean; useTidgiConfig: boolean }): React.JSX.Element {
   const { t } = useTranslation();
   const [tagInputValue, setTagInputValue] = useState<string>('');
+  const [autoFillNote, setAutoFillNote] = useState<string | undefined>();
 
   // Fetch all tags from main wiki for autocomplete suggestions
   const availableTags = useAvailableTags(form.mainWikiToLink.id, !isCreateMainWorkspace);
@@ -64,8 +67,34 @@ export function ExistedWikiForm({
         // Update local state
         setFullPath(newLocation);
       }
+      // When useTidgiConfig is on, eagerly read tidgi.config.json and pre-fill form fields so the
+      // user can see what will be applied (isSubWiki, tag associations, etc.) before confirming.
+      if (useTidgiConfig && newLocation) {
+        const config = await window.service.database.readWikiConfig(newLocation);
+        if (config) {
+          if (typeof config.isSubWiki === 'boolean') {
+            isCreateMainWorkspaceSetter(!config.isSubWiki);
+          }
+          if (Array.isArray(config.tagNames) && config.tagNames.length > 0) {
+            tagNamesSetter(config.tagNames);
+          }
+          if (config.mainWikiToLink) {
+            const match = mainWorkspaceList.find(
+              ws => isWikiWorkspace(ws) && ws.wikiFolderLocation === config.mainWikiToLink,
+            );
+            if (match !== undefined && isWikiWorkspace(match)) {
+              mainWikiToLinkSetter({ wikiFolderLocation: match.wikiFolderLocation, port: match.port, id: match.id });
+            }
+          }
+          setAutoFillNote(t('AddWorkspace.FilledFromTidgiConfig'));
+        } else {
+          setAutoFillNote(undefined);
+        }
+      } else {
+        setAutoFillNote(undefined);
+      }
     },
-    [wikiFolderNameSetter, parentFolderLocationSetter],
+    [useTidgiConfig, wikiFolderNameSetter, parentFolderLocationSetter, isCreateMainWorkspaceSetter, tagNamesSetter, mainWikiToLinkSetter, mainWorkspaceList, t],
   );
   return (
     <CreateContainer elevation={2} square>
@@ -92,7 +121,7 @@ export function ExistedWikiForm({
             }
           }}
           label={t('AddWorkspace.WorkspaceFolder')}
-          helperText={`${t('AddWorkspace.ImportWiki')}${wikiFolderLocation ?? ''}`}
+          helperText={autoFillNote ?? `${t('AddWorkspace.ImportWiki')}${wikiFolderLocation ?? ''}`}
           value={fullPath}
         />
         <LocationPickerButton

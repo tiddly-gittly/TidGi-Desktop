@@ -222,20 +222,30 @@ export class Workspace implements IWorkspaceService {
     const workspaceToSave = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspaceToSave);
 
+    // Capture existing workspace before updating the cache so we can diff syncable fields
+    const existingWorkspace = workspaces[id];
+
     // Update memory cache with full workspace data (including syncable fields)
     workspaces[id] = workspaceToSave;
 
-    // Write syncable config to tidgi.config.json ONLY for the workspace being modified
-    // This avoids redundant writes to all workspaces on every single update
+    // Write tidgi.config.json only when syncable fields actually changed.
+    // Skipping the write when only non-syncable fields (active, hibernated, lastUrl, etc.) changed
+    // avoids the O(n) disk writes that previously occurred on every workspace state transition at startup.
     if (isWikiWorkspace(workspaceToSave)) {
-      try {
-        const syncableConfig = extractSyncableConfig(workspaceToSave);
-        await writeTidgiConfig(workspaceToSave.wikiFolderLocation, syncableConfig);
-      } catch (error) {
-        logger.warn('Failed to write tidgi.config.json', {
-          workspaceId: id,
-          error: (error as Error).message,
-        });
+      const newSyncableConfig = extractSyncableConfig(workspaceToSave);
+      const oldSyncableConfig = existingWorkspace !== undefined && isWikiWorkspace(existingWorkspace)
+        ? extractSyncableConfig(existingWorkspace)
+        : null;
+      const syncableChanged = oldSyncableConfig === null || JSON.stringify(newSyncableConfig) !== JSON.stringify(oldSyncableConfig);
+      if (syncableChanged) {
+        try {
+          await writeTidgiConfig(workspaceToSave.wikiFolderLocation, newSyncableConfig);
+        } catch (error) {
+          logger.warn('Failed to write tidgi.config.json', {
+            workspaceId: id,
+            error: (error as Error).message,
+          });
+        }
       }
     }
 

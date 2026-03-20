@@ -83,6 +83,7 @@
     "WorkspaceFolder": "Location of workspace's folder",
     "UseTidgiConfigWhenImport": "Apply workspace config from tidgi.config.json",
     "UseTidgiConfigWhenImportDescription": "When enabled, import uses the id and synced workspace settings from tidgi.config.json. If the id already exists locally, import is rejected.",
+    "FilledFromTidgiConfig": "Form fields pre-filled from tidgi.config.json (isSubWiki, tags, main wiki link)",
     "WorkspaceFolderNameToCreate": "The name of the new workspace folder",
     "WorkspaceParentFolder": "Parent Folder of workspace's folder",
     "WorkspaceUserName": "Workspace User Name",
