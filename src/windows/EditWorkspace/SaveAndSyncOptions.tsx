@@ -92,16 +92,6 @@ export function SaveAndSyncOptions(props: SaveAndSyncOptionsProps): React.JSX.El
             {t('EditWorkspace.MoveWorkspace')}
           </Button>
         </Tooltip>
-        {isSubWiki && workspace && isWikiWorkspace(workspace) && workspace.mainWikiToLink && (
-          <TextField
-            fullWidth
-            id='outlined-full-width'
-            label={t('EditWorkspace.MainWorkspacePath')}
-            helperText={t('EditWorkspace.PathDescription')}
-            value={workspace.mainWikiToLink}
-            disabled
-          />
-        )}
         {!isSubWiki && (
           <TextField
             helperText={t('AddWorkspace.WorkspaceUserNameDetail')}

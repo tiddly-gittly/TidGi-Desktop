@@ -1,9 +1,12 @@
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { AccordionDetails, Autocomplete, AutocompleteRenderInputParams, List, ListItem, ListItemText, Switch, Tooltip, Typography } from '@mui/material';
+import { AccordionDetails, Autocomplete, AutocompleteRenderInputParams, Button, List, ListItem, ListItemText, MenuItem, Switch, Tooltip, Typography } from '@mui/material';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { usePromiseValue } from '@/helpers/useServiceValue';
+import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import { useAvailableTags } from '../AddWorkspace/useAvailableTags';
 import { OptionsAccordion, OptionsAccordionSummary, TextField } from './styles';
 
@@ -30,6 +33,30 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
   const tagHelperText = tagInputValue.trim().length > 0
     ? t('AddWorkspace.TagNameInputWarning')
     : (isSubWiki ? t('AddWorkspace.TagNameHelp') : t('AddWorkspace.TagNameHelpForMain'));
+
+  const mainWorkspaceList = usePromiseValue(
+    async () => {
+      const workspaces = await window.service.workspace.getWorkspacesAsList();
+      return workspaces.filter(
+        (candidate): candidate is IWikiWorkspace => isWikiWorkspace(candidate) && !candidate.isSubWiki && candidate.id !== workspace.id,
+      );
+    },
+    [],
+    [workspace.id],
+  ) ?? [];
+  const boundSubWorkspaces = usePromiseValue(
+    async () => {
+      if (isSubWiki) {
+        return [];
+      }
+      return await window.service.workspace.getSubWorkspacesAsList(workspace.id);
+    },
+    [],
+    [workspace.id, isSubWiki],
+  ) ?? [];
+  const selectedMainWorkspace = mainWorkspaceList.find(
+    (candidate) => candidate.id === workspace.mainWikiID || candidate.wikiFolderLocation === workspace.mainWikiToLink,
+  );
 
   const availableTags = useAvailableTags(workspace.mainWikiID ?? undefined, true);
   return (
@@ -66,6 +93,67 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
             <Typography variant='body2' color='textSecondary' sx={{ mt: 1, mb: 2 }}>
               {isSubWiki ? t('AddWorkspace.SubWorkspaceOptionsDescriptionForSub') : t('AddWorkspace.SubWorkspaceOptionsDescriptionForMain')}
             </Typography>
+            {isSubWiki && (
+              <TextField
+                select
+                data-testid='main-wiki-select'
+                fullWidth
+                label={t('AddWorkspace.MainWorkspaceLocation')}
+                helperText={selectedMainWorkspace?.wikiFolderLocation
+                  ? `${t('AddWorkspace.SubWorkspaceWillLinkTo')} ${selectedMainWorkspace.wikiFolderLocation}`
+                  : undefined}
+                value={selectedMainWorkspace?.id ?? ''}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  const nextMainWorkspace = mainWorkspaceList.find((candidate) => candidate.id === event.target.value) ?? null;
+                  workspaceSetter({
+                    ...workspace,
+                    mainWikiID: nextMainWorkspace?.id ?? null,
+                    mainWikiToLink: nextMainWorkspace?.wikiFolderLocation ?? null,
+                  }, true);
+                }}
+                sx={{ mb: 2 }}
+                slotProps={{ formHelperText: { 'data-testid': 'main-wiki-select-helper' } }}
+              >
+                {mainWorkspaceList.map((candidate) => (
+                  <MenuItem key={candidate.id} value={candidate.id}>
+                    {candidate.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+            {!isSubWiki && boundSubWorkspaces.length > 0 && (
+              <List sx={{ mb: 2 }}>
+                {boundSubWorkspaces.map((subWorkspace) => (
+                  <ListItem
+                    key={subWorkspace.id}
+                    disableGutters
+                    data-testid='bound-sub-workspace-row'
+                    secondaryAction={
+                      <Button
+                        data-testid='open-sub-workspace-settings-button'
+                        size='small'
+                        variant='outlined'
+                        onClick={() => {
+                          void (async () => {
+                            await window.service.window.updateWindowMeta(WindowNames.editWorkspace, { workspaceID: subWorkspace.id });
+                            window.location.reload();
+                          })();
+                        }}
+                      >
+                        {t('EditWorkspace.OpenSubWorkspaceSettings')}
+                      </Button>
+                    }
+                  >
+                    <ListItemText
+                      primary={subWorkspace.name}
+                      secondary={subWorkspace.tagNames.length > 0
+                        ? `${t('EditWorkspace.SubWorkspaceTagBindings')}: ${subWorkspace.tagNames.join(', ')}`
+                        : t('EditWorkspace.SubWorkspaceNoTagBindings')}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
             <Autocomplete
               multiple
               freeSolo

@@ -18,9 +18,8 @@ import { ServerOptions } from './server';
 import { Button, FlexGrow, Root, SaveCancelButtonsContainer } from './styles';
 import { SubWorkspaceRouting } from './SubWorkspaceRouting';
 
-const workspaceID = (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID!;
-
 export default function EditWorkspace(): React.JSX.Element {
+  const workspaceID = (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID!;
   const { t } = useTranslation();
   const originalWorkspace = useWorkspaceObservable(workspaceID);
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar({ waitBeforeCountDown: 0, workspace: originalWorkspace, restartType: RestartSnackbarType.Wiki });
@@ -35,14 +34,14 @@ export default function EditWorkspace(): React.JSX.Element {
       if (!isWiki) {
         return false;
       }
-      if (isSubWiki || typeof workspace.mainWikiID === 'string') {
+      if (isSubWiki) {
         return true;
       }
       const subWorkspaces = await window.service.workspace.getSubWorkspacesAsList(workspaceID);
       return subWorkspaces.length > 0;
     },
     false,
-    [isWiki, isSubWiki, isWiki ? workspace.mainWikiID : undefined],
+    [isWiki, isSubWiki, workspaceID],
   );
 
   const rememberLastPageVisited = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
@@ -85,7 +84,7 @@ export default function EditWorkspace(): React.JSX.Element {
           <Button color='primary' variant='contained' disableElevation onClick={() => void onSave()} data-testid='edit-workspace-save-button'>
             {t('EditWorkspace.Save')}
           </Button>
-          <Button variant='contained' disableElevation onClick={() => void window.remote.closeCurrentWindow()}>
+          <Button variant='contained' disableElevation onClick={() => void window.remote.closeCurrentWindow()} data-testid='edit-workspace-cancel-button'>
             {t('EditWorkspace.Cancel')}
           </Button>
         </SaveCancelButtonsContainer>

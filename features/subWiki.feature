@@ -146,15 +146,23 @@ Feature: Sub-Wiki Functionality
       | element description        | selector                                                   |
       | wiki workspace             | div[data-testid^='workspace-']:has-text('wiki')            |
       | SubWikiSettings workspace  | div[data-testid^='workspace-']:has-text('SubWikiSettings') |
-    # Open the edit workspace window using existing step
+    # Main workspace should list its bound sub-workspaces and provide direct edit entry
+    When I open edit workspace window for workspace with name "wiki"
+    And I switch to "editWorkspace" window
+    And I wait for the page to load completely
+    Then I should see "main workspace sub-workspace bindings" elements with selectors:
+      | element description               | selector                                                                 |
+      | sub-workspace options accordion   | [data-testid='preference-section-subWorkspaceOptions']                  |
+      | bound sub-workspace row           | [data-testid='bound-sub-workspace-row']:has-text('SubWikiSettings'):has-text('SettingsTag') |
+      | open sub-workspace settings button| [data-testid='open-sub-workspace-settings-button']                      |
     When I open edit workspace window for workspace with name "SubWikiSettings"
     And I switch to "editWorkspace" window
     And I wait for the page to load completely
-    # For sub-wikis, the accordion is defaultExpanded
-    Then I should see "sub-workspace options accordion and includeTagTree switch" elements with selectors:
-      | element description            | selector                                           |
-      | sub-workspace options accordion| [data-testid='preference-section-subWorkspaceOptions'] |
-      | includeTagTree switch          | [data-testid='include-tag-tree-switch']            |
+    Then I should see "sub-workspace options accordion and bindings" elements with selectors:
+      | element description             | selector                                           |
+      | sub-workspace options accordion | [data-testid='preference-section-subWorkspaceOptions'] |
+      | main workspace select           | [data-testid='main-wiki-select']                   |
+      | includeTagTree switch           | [data-testid='include-tag-tree-switch']            |
     # Enable includeTagTree option and save
     When I click on "includeTagTree switch and save button" elements with selectors:
       | element description     | selector                                           |

@@ -92,6 +92,10 @@ export interface IViewService {
 
   // ── Convenience / Query ───────────────────────────────────
   getViewCurrentUrl(workspaceID: string, windowName: WindowNames): Promise<string | undefined>;
+  canGoBackInView(workspaceID: string, windowName: WindowNames): Promise<boolean>;
+  canGoForwardInView(workspaceID: string, windowName: WindowNames): Promise<boolean>;
+  goBackInView(workspaceID: string, windowName: WindowNames): Promise<void>;
+  goForwardInView(workspaceID: string, windowName: WindowNames): Promise<void>;
   /** Return debug information about every registered view (bounds, URL, memory, etc). */
   getViewsInfo(): Promise<IViewInfo[]>;
   /** Open Electron DevTools for a specific view's webContents. */
@@ -109,6 +113,10 @@ export const ViewServiceIPCDescriptor = {
     getView: ProxyPropertyType.Function,
     getViewCount: ProxyPropertyType.Function,
     getViewCurrentUrl: ProxyPropertyType.Function,
+    canGoBackInView: ProxyPropertyType.Function,
+    canGoForwardInView: ProxyPropertyType.Function,
+    goBackInView: ProxyPropertyType.Function,
+    goForwardInView: ProxyPropertyType.Function,
     getViewsInfo: ProxyPropertyType.Function,
     openDevToolsForView: ProxyPropertyType.Function,
     showView: ProxyPropertyType.Function,

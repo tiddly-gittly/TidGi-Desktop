@@ -428,6 +428,22 @@ export class View implements IViewService {
     return this.getView(workspaceID, windowName)?.webContents.getURL();
   }
 
+  public async canGoBackInView(workspaceID: string, windowName: WindowNames): Promise<boolean> {
+    return this.getView(workspaceID, windowName)?.webContents.navigationHistory.canGoBack() ?? false;
+  }
+
+  public async canGoForwardInView(workspaceID: string, windowName: WindowNames): Promise<boolean> {
+    return this.getView(workspaceID, windowName)?.webContents.navigationHistory.canGoForward() ?? false;
+  }
+
+  public async goBackInView(workspaceID: string, windowName: WindowNames): Promise<void> {
+    this.getView(workspaceID, windowName)?.webContents.navigationHistory.goBack();
+  }
+
+  public async goForwardInView(workspaceID: string, windowName: WindowNames): Promise<void> {
+    this.getView(workspaceID, windowName)?.webContents.navigationHistory.goForward();
+  }
+
   public async getViewsInfo(): Promise<import('./interface').IViewInfo[]> {
     const results = [];
     for (const [workspaceID, windowViews] of this.views.entries()) {

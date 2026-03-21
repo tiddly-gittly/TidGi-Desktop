@@ -4,6 +4,7 @@ import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
 import type { IWikiWorkspace, IWorkspace } from '../../src/services/workspaces/interface';
+import { WindowNames } from '../../src/services/windows/WindowProperties';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getLogPath, getSettingsPath, getWikiTestRootPath, getWikiTestWikiPath } from '../supports/paths';
 import { LOG_MARKER_WAIT_TIMEOUT } from '../supports/timeouts';
@@ -907,6 +908,11 @@ When('I open edit workspace window for workspace with name {string}', async func
 
         // Try to read name from tidgi.config.json
         if (isWikiWorkspace(workspace)) {
+          if (path.basename(workspace.wikiFolderLocation) === workspaceName) {
+            targetWorkspaceId = id;
+            return;
+          }
+
           try {
             const tidgiConfigPath = path.join(workspace.wikiFolderLocation, 'tidgi.config.json');
             if (await fs.pathExists(tidgiConfigPath)) {
@@ -932,23 +938,15 @@ When('I open edit workspace window for workspace with name {string}', async func
     throw new Error(`No workspace found with name: ${workspaceName}`);
   }
 
-  // Call window service through main window's webContents to open edit workspace window
-  await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
-    const windows = BrowserWindow.getAllWindows();
-    const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+  const mainWindow = await this.getWindow('main');
+  if (!mainWindow) {
+    throw new Error('Main window not found');
+  }
 
-    if (!mainWindow) {
-      throw new Error('Main window not found');
-    }
-
-    // Call the window service to open edit workspace window
-    // Safely pass workspaceId using JSON serialization to avoid string interpolation vulnerability
-    await mainWindow.webContents.executeJavaScript(`
-      (async () => {
-        await window.service.window.open('editWorkspace', { workspaceID: ${JSON.stringify(workspaceId)} });
-      })();
-    `);
-  }, targetWorkspaceId);
+  await mainWindow.evaluate(async ({ workspaceId, windowName }: { workspaceId: string; windowName: string }) => {
+    const openWindow = window.service.window.open as unknown as (windowName: string, meta: { workspaceID: string }, config: { recreate: boolean }) => Promise<void>;
+    await openWindow(windowName, { workspaceID: workspaceId }, { recreate: true });
+  }, { workspaceId: targetWorkspaceId, windowName: WindowNames.editWorkspace });
 
   // Wait for the edit workspace window to appear
   const success = await this.waitForWindowCondition(

@@ -115,3 +115,26 @@ declare module 'default-gateway/sunos' {
 declare module 'default-gateway/win32' {
   export function v4(): Promise<IDefaultGatewayInfo>;
 }
+
+declare module '@modelcontextprotocol/sdk/client/index.js' {
+  export const Client: {
+    new(info: { name: string; version: string }, options: { capabilities: Record<string, unknown> }): {
+      connect(transport: unknown): Promise<void>;
+      listTools(): Promise<{ tools?: Array<{ name: string; description?: string; inputSchema?: Record<string, unknown> }> }>;
+      callTool(request: { name: string; arguments?: Record<string, unknown> }): Promise<unknown>;
+      close?(): Promise<void>;
+    };
+  };
+}
+
+declare module '@modelcontextprotocol/sdk/client/stdio.js' {
+  export const StdioClientTransport: {
+    new(options: { command: string; args?: string[] }): unknown;
+  };
+}
+
+declare module '@modelcontextprotocol/sdk/client/sse.js' {
+  export const SSEClientTransport: {
+    new(url: URL): unknown;
+  };
+}
