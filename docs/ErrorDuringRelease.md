@@ -6,6 +6,20 @@
 Error: EBUSY: resource busy or locked, unlink 'i:\Temp\...\tidgi.0.13.0-prerelease18.nupkg'
 ```
 
+### Out?
+
+Try
+
+```sh
+pnpm clean
+```
+
+### Temp?
+
+Try use FileLockSmith unlock `'i:\Temp\...\tidgi.0.13.0-prerelease18.nupkg'`
+
+### ESBuild?
+
 esbuild process doesn't exit properly after packaging, holding file handles to temp files.
 
 Solution: kill background **esbuild** process
