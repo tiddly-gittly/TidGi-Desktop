@@ -1,4 +1,4 @@
-import { app, dialog, globalShortcut, ipcMain, MessageBoxOptions, shell } from 'electron';
+import { app, dialog, globalShortcut, ipcMain, MessageBoxOptions, shell, webContents } from 'electron';
 import fs from 'fs-extra';
 import { inject, injectable } from 'inversify';
 import path from 'path';
@@ -23,6 +23,7 @@ import i18next from 'i18next';
 import { ZxNotInitializedError } from './error';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
 import type { INativeService, IPickDirectoryOptions } from './interface';
+import type { IProcessInfo } from './processInfo';
 import { getShortcutCallback, registerShortcutByKey } from './keyboardShortcutHelpers';
 import { reportErrorToGithubWithTemplates } from './reportError';
 
@@ -494,5 +495,49 @@ ${message.message}
   public async logFor(label: string, level: 'error' | 'warn' | 'info' | 'debug', message: string, meta?: Record<string, unknown>): Promise<void> {
     const labeledLogger = getLoggerForLabel(label);
     labeledLogger.log(level, message, meta);
+  }
+
+  public async getProcessInfo(): Promise<IProcessInfo> {
+    const mem = process.memoryUsage();
+    const toMB = (bytes: number): number => Math.round(bytes / 1024 / 1024);
+    return {
+      mainNode: {
+        pid: process.pid,
+        title: process.title,
+        rss_MB: toMB(mem.rss),
+        heapUsed_MB: toMB(mem.heapUsed),
+        heapTotal_MB: toMB(mem.heapTotal),
+        external_MB: toMB(mem.external),
+      },
+      renderers: webContents.getAllWebContents()
+        .filter((c: Electron.WebContents) => !c.isDestroyed())
+        .map((c: Electron.WebContents) => ({
+          pid: c.getOSProcessId(),
+          title: c.getTitle().slice(0, 80),
+          type: c.getType(),
+          url: c.getURL().slice(0, 120),
+          isDestroyed: c.isDestroyed(),
+        })),
+    };
+  }
+
+  public startProcessMonitoring(): void {
+    logger.info('Process map (match PID in task manager Details tab)', {
+      mainNodePID: process.pid,
+      processTitle: process.title,
+    });
+    setInterval(async () => {
+      const info = await this.getProcessInfo();
+      logger.debug('Memory snapshot - main Node process', {
+        pid: info.mainNode.pid,
+        rss_MB: info.mainNode.rss_MB,
+        heapUsed_MB: info.mainNode.heapUsed_MB,
+        heapTotal_MB: info.mainNode.heapTotal_MB,
+        external_MB: info.mainNode.external_MB,
+      });
+      for (const renderer of info.renderers) {
+        logger.debug('Memory snapshot - renderer', renderer);
+      }
+    }, 30_000);
   }
 }

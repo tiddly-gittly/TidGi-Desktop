@@ -10,6 +10,7 @@ import {
   Divider,
   List,
   ListItemButton,
+  Snackbar,
   Switch,
   Table,
   TableBody,
@@ -17,6 +18,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
@@ -24,8 +26,10 @@ import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import type { IProcessInfo } from '@services/native/processInfo';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import type { IViewInfo } from '@services/view/interface';
+import type { IWorkerInfo } from '@services/wiki/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
@@ -40,8 +44,9 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
   )!;
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [viewDebugOpen, setViewDebugOpen] = useState(false);
-  const [viewsInfo, setViewsInfo] = useState<IViewInfo[]>([]);
+  const [diagOpen, setDiagOpen] = useState(false);
+  const [diagData, setDiagData] = useState<{ processInfo: IProcessInfo; viewsInfo: IViewInfo[]; workersInfo: IWorkerInfo[] } | undefined>(undefined);
+  const [copiedSnackbarOpen, setCopiedSnackbarOpen] = useState(false);
   const [externalApiInfo, setExternalApiInfo] = useState<{ exists: boolean; size?: number; path?: string }>({ exists: false });
   const [isWindows, setIsWindows] = useState(false);
 
@@ -151,12 +156,20 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
               <Divider />
               <ListItemButton
                 onClick={async () => {
-                  const info = await window.service.view.getViewsInfo() as unknown as IViewInfo[];
-                  setViewsInfo(info);
-                  setViewDebugOpen(true);
+                  const [processInfoResult, workersInfoResult, viewsInfoResult] = await Promise.all([
+                    window.service.native.getProcessInfo(),
+                    window.service.wiki.getWorkersInfo(),
+                    window.service.view.getViewsInfo(),
+                  ]);
+                  setDiagData({
+                    processInfo: processInfoResult as unknown as IProcessInfo,
+                    workersInfo: workersInfoResult as unknown as IWorkerInfo[],
+                    viewsInfo: viewsInfoResult as unknown as IViewInfo[],
+                  });
+                  setDiagOpen(true);
                 }}
               >
-                <ListItemText primary={t('Preference.ViewDebugPanel')} secondary={t('Preference.ViewDebugPanelDetail')} />
+                <ListItemText primary={t('Preference.DiagPanel')} secondary={t('Preference.DiagPanelDetail')} />
                 <ChevronRightIcon color='action' />
               </ListItemButton>
               <Divider />
@@ -284,95 +297,260 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
         </DialogActions>
       </Dialog>
 
-      {/* View Debug Panel dialog */}
+      {/* Unified Process & Debug Panel dialog */}
       <Dialog
-        open={viewDebugOpen}
+        open={diagOpen}
         onClose={() => {
-          setViewDebugOpen(false);
+          setDiagOpen(false);
         }}
-        maxWidth='lg'
+        maxWidth='xl'
         fullWidth
       >
         <DialogTitle>
-          {t('Preference.ViewDebugPanel')}
+          {t('Preference.DiagPanel')}
           <Button
             size='small'
             sx={{ ml: 2 }}
             onClick={async () => {
-              const info = await window.service.view.getViewsInfo() as unknown as IViewInfo[];
-              setViewsInfo(info);
+              const [processInfoResult, workersInfoResult, viewsInfoResult] = await Promise.all([
+                window.service.native.getProcessInfo(),
+                window.service.wiki.getWorkersInfo(),
+                window.service.view.getViewsInfo(),
+              ]);
+              setDiagData({
+                processInfo: processInfoResult as unknown as IProcessInfo,
+                workersInfo: workersInfoResult as unknown as IWorkerInfo[],
+                viewsInfo: viewsInfoResult as unknown as IViewInfo[],
+              });
             }}
           >
-            {t('Preference.ViewDebugRefresh')}
+            {t('Preference.WorkerDebugRefresh')}
           </Button>
         </DialogTitle>
         <DialogContent>
-          <TableContainer>
-            <Table size='small'>
-              <TableHead>
-                <TableRow>
-                  <TableCell>{t('Preference.ViewDebugWorkspace')}</TableCell>
-                  <TableCell>{t('Preference.ViewDebugWindow')}</TableCell>
-                  <TableCell>{t('Preference.ViewDebugBounds')}</TableCell>
-                  <TableCell>{t('Preference.ViewDebugURL')}</TableCell>
-                  <TableCell>{t('Preference.ViewDebugActions')}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {viewsInfo.map((info, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <Typography variant='body2' fontWeight='bold'>{info.workspaceName}</Typography>
-                      <Typography variant='caption' color='text.secondary'>{info.workspaceID.slice(0, 8)}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip label={info.windowName} size='small' color={info.windowName === WindowNames.main ? 'primary' : 'default'} />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant='caption'>
-                        {`x:${info.bounds.x} y:${info.bounds.y}`}
-                        <br />
-                        {`${info.bounds.width}×${info.bounds.height}`}
-                      </Typography>
-                    </TableCell>
-                    <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      <Typography variant='caption' title={info.url}>{info.url || '-'}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size='small'
-                        variant='outlined'
-                        disabled={info.isDestroyed}
-                        onClick={() => {
-                          void window.service.view.openDevToolsForView(info.workspaceID, info.windowName);
-                        }}
-                      >
-                        DevTools
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {viewsInfo.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} align='center'>
-                      <Typography color='text.secondary'>{t('Preference.ViewDebugEmpty')}</Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          {diagData === undefined
+            ? <Typography>{t('Loading')}</Typography>
+            : (
+              <>
+                {/* Section 1: Node.js main process memory */}
+                <Typography variant='subtitle1' fontWeight='bold' gutterBottom sx={{ mt: 1 }}>
+                  {`${t('Preference.ProcessInfoMainNode')} — PID ${diagData.processInfo.mainNode.pid}`}
+                </Typography>
+                <TableContainer sx={{ mb: 3 }}>
+                  <Table size='small'>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>{t('Preference.ProcessInfoTitle')}</TableCell>
+                        <TableCell>
+                          <Tooltip title={t('Preference.ProcessInfoRSSTooltip')} placement='top'>
+                            <span>{t('Preference.ProcessInfoRSS')}</span>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title={t('Preference.ProcessInfoHeapUsedTooltip')} placement='top'>
+                            <span>{t('Preference.ProcessInfoHeapUsed')}</span>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title={t('Preference.ProcessInfoHeapTotalTooltip')} placement='top'>
+                            <span>{t('Preference.ProcessInfoHeapTotal')}</span>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title={t('Preference.ProcessInfoExternalTooltip')} placement='top'>
+                            <span>{t('Preference.ProcessInfoExternal')}</span>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>
+                          <Typography variant='caption'>{diagData.processInfo.mainNode.title}</Typography>
+                        </TableCell>
+                        <TableCell>{diagData.processInfo.mainNode.rss_MB}</TableCell>
+                        <TableCell>{diagData.processInfo.mainNode.heapUsed_MB}</TableCell>
+                        <TableCell>{diagData.processInfo.mainNode.heapTotal_MB}</TableCell>
+                        <TableCell>{diagData.processInfo.mainNode.external_MB}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
+                {/* Section 2: Wiki worker_threads (share main process PID, listed separately) */}
+                <Typography variant='subtitle1' fontWeight='bold' gutterBottom>
+                  {t('Preference.WorkerDebugPanel')}
+                </Typography>
+                <TableContainer sx={{ mb: 3 }}>
+                  <Table size='small'>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>{t('Preference.WorkerDebugWorkspace')}</TableCell>
+                        <TableCell>
+                          <Tooltip title={t('Preference.WorkerDebugThreadIdTooltip')} placement='top'>
+                            <span>{t('Preference.WorkerDebugThreadId')}</span>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>{t('Preference.WorkerDebugPort')}</TableCell>
+                        <TableCell>{t('Preference.WorkerDebugStatus')}</TableCell>
+                        <TableCell>{t('Preference.WorkerDebugActions')}</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {diagData.workersInfo.map((info) => (
+                        <TableRow key={info.workspaceID}>
+                          <TableCell>
+                            <Typography variant='body2' fontWeight='bold'>{info.workspaceName}</Typography>
+                            <Typography variant='caption' color='text.secondary'>{info.workspaceID.slice(0, 8)}</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant='body2'>{info.isRunning && info.threadId > 0 ? info.threadId : '-'}</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant='body2'>{info.isRunning ? info.port : '-'}</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={info.isRunning ? t('Preference.WorkerDebugRunning') : t('Preference.WorkerDebugStopped')}
+                              size='small'
+                              color={info.isRunning ? 'success' : 'default'}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size='small'
+                              variant='outlined'
+                              disabled={!info.isRunning}
+                              onClick={() => {
+                                void window.service.native.openURI(`http://127.0.0.1:${info.port}`);
+                              }}
+                            >
+                              {t('Preference.WorkerDebugOpenBrowser')}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {diagData.workersInfo.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} align='center'>
+                            <Typography color='text.secondary'>{t('Preference.WorkerDebugEmpty')}</Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
+                {/* Section 3: Renderer processes — correlate OS renderer PID with WebContentsView registry */}
+                <Typography variant='subtitle1' fontWeight='bold' gutterBottom>
+                  {t('Preference.ProcessInfoRenderers')}
+                </Typography>
+                <TableContainer>
+                  <Table size='small'>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>PID</TableCell>
+                        <TableCell>{t('Preference.ViewDebugWorkspace')}</TableCell>
+                        <TableCell>{t('Preference.ProcessInfoType')}</TableCell>
+                        <TableCell>{t('Preference.ViewDebugBounds')}</TableCell>
+                        <TableCell>{t('Preference.ViewDebugURL')}</TableCell>
+                        <TableCell>{t('Preference.ViewDebugActions')}</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {diagData.processInfo.renderers.map((renderer, index) => {
+                        const matchingView = diagData.viewsInfo.find((v) => v.pid === renderer.pid);
+                        return (
+                          <TableRow key={index}>
+                            <TableCell>{renderer.pid}</TableCell>
+                            <TableCell>
+                              {matchingView !== undefined
+                                ? (
+                                  <>
+                                    <Typography variant='body2' fontWeight='bold'>{matchingView.workspaceName}</Typography>
+                                    <Chip label={matchingView.windowName} size='small' sx={{ mt: 0.5 }} />
+                                  </>
+                                )
+                                : <Typography variant='caption' color='text.secondary'>{renderer.title || '-'}</Typography>}
+                            </TableCell>
+                            <TableCell>
+                              <Chip label={renderer.type} size='small' />
+                            </TableCell>
+                            <TableCell>
+                              {matchingView !== undefined
+                                ? (
+                                  <Typography variant='caption'>
+                                    {`x:${matchingView.bounds.x} y:${matchingView.bounds.y}`}
+                                    <br />
+                                    {`${matchingView.bounds.width}×${matchingView.bounds.height}`}
+                                  </Typography>
+                                )
+                                : '-'}
+                            </TableCell>
+                            <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <Typography
+                                variant='caption'
+                                title={(matchingView?.url ?? renderer.url)}
+                                onClick={() => {
+                                  const url = (matchingView?.url ?? renderer.url) || '';
+                                  if (url) {
+                                    void navigator.clipboard.writeText(url);
+                                    setCopiedSnackbarOpen(true);
+                                  }
+                                }}
+                                sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                              >
+                                {(matchingView?.url ?? renderer.url) || '-'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              {matchingView !== undefined && !matchingView.isDestroyed && (
+                                <Button
+                                  size='small'
+                                  variant='outlined'
+                                  onClick={() => {
+                                    void window.service.view.openDevToolsForView(matchingView.workspaceID, matchingView.windowName);
+                                  }}
+                                >
+                                  DevTools
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      {diagData.processInfo.renderers.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} align='center'>
+                            <Typography color='text.secondary'>{t('Preference.ProcessInfoRenderersEmpty')}</Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </>
+            )}
         </DialogContent>
         <DialogActions>
           <Button
             onClick={() => {
-              setViewDebugOpen(false);
+              setDiagOpen(false);
             }}
           >
             {t('Cancel')}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={copiedSnackbarOpen}
+        autoHideDuration={2000}
+        onClose={() => {
+          setCopiedSnackbarOpen(false);
+        }}
+        message={t('Preference.CopiedToClipboard')}
+      />
     </>
   );
 }

@@ -10,8 +10,19 @@ export interface IWindowOpenConfig<N extends WindowNames> {
   multiple?: boolean;
   /**
    * If recreate is true, we will close the window if it is already opened, and create a new one.
+   * Can be a function that receives the current window meta and returns true to recreate.
+   * NOTE: function form only works when called from main process. When calling via IPC from renderer,
+   * use `recreateUnlessWorkspaceID` instead (it is serializable).
    */
   recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean);
+  /**
+   * IPC-serializable alternative to the function form of `recreate`.
+   * When provided, the window is closed and recreated unless the stored meta's
+   * `workspaceID` already matches this value.
+   * Use this from renderer code (window.service.window.open) so the comparison
+   * survives IPC serialization.
+   */
+  recreateUnlessWorkspaceID?: string;
 }
 
 /**

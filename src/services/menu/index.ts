@@ -16,7 +16,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { getSimplifiedWorkspaceMenuTemplate, getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
+import { getSimplifiedWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
@@ -291,19 +291,8 @@ export class MenuService implements IMenuService {
     webContentsOrWindowName: WindowNames | WebContents = WindowNames.main,
   ): Promise<void> {
     let webContents: WebContents;
-    // Get services via container to avoid lazyInject issues
     const windowService = container.get<IWindowService>(serviceIdentifier.Window);
     const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
-    const contextService = container.get<IContextService>(serviceIdentifier.Context);
-    const gitService = container.get<IGitService>(serviceIdentifier.Git);
-    const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
-    const viewService = container.get<IViewService>(serviceIdentifier.View);
-    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-    const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);
-    const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-    const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
 
     if (typeof webContentsOrWindowName === 'string') {
       const windowToPopMenu = windowService.get(webContentsOrWindowName);
@@ -318,67 +307,7 @@ export class MenuService implements IMenuService {
     const sidebar = await preferenceService.get('sidebar');
     const contextMenuBuilder = new ContextMenuBuilder(webContents);
     const menu = contextMenuBuilder.buildMenuForElement(info);
-    const workspaces = await workspaceService.getWorkspacesAsList();
-    const services = {
-      agentDefinition: container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition),
-      auth: authService,
-      context: contextService,
-      externalAPI: this.externalAPIService,
-      git: gitService,
-      native: nativeService,
-      preference: this.preferenceService,
-      view: viewService,
-      wiki: wikiService,
-      wikiGitWorkspace: wikiGitWorkspaceService,
-      window: windowService,
-      workspace: workspaceService,
-      workspaceView: workspaceViewService,
-      sync: syncService,
-    };
 
-    // workspace menus (template items are added at the end via insert(0) in reverse order)
-    menu.append(new MenuItem({ type: 'separator' }));
-
-    // Note: Simplified menu and "Current Workspace" are now provided by the frontend template
-    // (from SortableWorkspaceSelectorButton or content view), so we don't add them here
-    menu.append(
-      new MenuItem({
-        label: i18n.t('Menu.Workspaces'),
-        submenu: [
-          ...(await Promise.all(
-            workspaces.map(async (workspace) => {
-              const workspaceContextMenuTemplate = await getWorkspaceMenuTemplate(workspace, i18n.t.bind(i18n), services);
-              return {
-                label: workspace.name,
-                submenu: workspaceContextMenuTemplate,
-              };
-            }),
-          )),
-          {
-            label: i18n.t('WorkspaceSelector.Add'),
-            click: async () => {
-              await container.get<IWindowService>(serviceIdentifier.Window).open(WindowNames.addWorkspace);
-            },
-          },
-        ],
-      }),
-    );
-    menu.append(
-      new MenuItem({
-        label: i18n.t('WorkspaceSelector.OpenWorkspaceMenuName'),
-        submenu: workspaces.map((workspace) => ({
-          label: i18n.t('WorkspaceSelector.OpenWorkspaceTagTiddler', {
-            tagName: isWikiWorkspace(workspace)
-              ? (workspace.tagNames[0] ?? (workspace.isSubWiki ? workspace.name : `${workspace.name} ${i18n.t('WorkspaceSelector.DefaultTiddlers')}`))
-              : workspace.name,
-          }),
-          click: async () => {
-            await container.get<IWorkspaceService>(serviceIdentifier.Workspace).openWorkspaceTiddler(workspace);
-          },
-        })),
-      }),
-    );
-    // Note: "OpenCommandPalette" is now provided by the frontend template
     menu.append(new MenuItem({ type: 'separator' }));
     menu.append(
       new MenuItem({

@@ -48,7 +48,8 @@ export async function registerMenu(): Promise<void> {
       click: async () => {
         const currentActiveWorkspace = await workspaceService.getActiveWorkspace();
         if (currentActiveWorkspace === undefined) return;
-        await windowService.open(WindowNames.editWorkspace, { workspaceID: currentActiveWorkspace.id });
+        const id = currentActiveWorkspace.id;
+        await windowService.open(WindowNames.editWorkspace, { workspaceID: id }, { recreateUnlessWorkspaceID: id });
       },
       enabled: async () => (await workspaceService.countWorkspaces()) > 0,
     },

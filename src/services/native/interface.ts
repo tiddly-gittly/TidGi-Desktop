@@ -6,6 +6,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IZxFileInput } from '@services/wiki/wikiWorker';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import type { IProcessInfo } from './processInfo';
+export type { IProcessInfo, IRendererProcessInfo } from './processInfo';
 
 export interface IPickDirectoryOptions {
   /**
@@ -137,6 +139,10 @@ export interface INativeService {
    * @returns the index of the clicked button.
    */
   showElectronMessageBoxSync(options: Electron.MessageBoxSyncOptions, windowName?: WindowNames): number | undefined;
+  /** Collect a point-in-time snapshot of all OS-level process memory usage. Safe to call from renderer via IPC. */
+  getProcessInfo(): Promise<IProcessInfo>;
+  /** Start a periodic (30 s) background loop that writes memory snapshots to the log file. Only called from main process, not exposed via IPC. */
+  startProcessMonitoring(): void;
 }
 export const NativeServiceIPCDescriptor = {
   channel: NativeChannel.name,
@@ -168,5 +174,6 @@ export const NativeServiceIPCDescriptor = {
     pickFile: ProxyPropertyType.Function,
     quit: ProxyPropertyType.Function,
     showElectronMessageBox: ProxyPropertyType.Function,
+    getProcessInfo: ProxyPropertyType.Function,
   },
 };

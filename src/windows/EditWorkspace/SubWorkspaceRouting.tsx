@@ -60,7 +60,7 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
 
   const availableTags = useAvailableTags(workspace.mainWikiID ?? undefined, true);
   return (
-    <OptionsAccordion defaultExpanded>
+    <OptionsAccordion>
       <Tooltip title={t('EditWorkspace.ClickToExpand')}>
         <OptionsAccordionSummary expandIcon={<ExpandMoreIcon />} data-testid='preference-section-subWorkspaceOptions'>
           {t('AddWorkspace.SubWorkspaceOptions')}
@@ -90,9 +90,45 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
         </List>
         {showDetails && (
           <>
-            <Typography variant='body2' color='textSecondary' sx={{ mt: 1, mb: 2 }}>
-              {isSubWiki ? t('AddWorkspace.SubWorkspaceOptionsDescriptionForSub') : t('AddWorkspace.SubWorkspaceOptionsDescriptionForMain')}
-            </Typography>
+            {!isSubWiki && boundSubWorkspaces.length > 0 && (
+              <>
+                <Typography variant='subtitle2' sx={{ mt: 1, mb: 0.5 }}>
+                  {t('EditWorkspace.BoundSubWorkspacesTitle')}
+                </Typography>
+                <Typography variant='body2' color='textSecondary' sx={{ mb: 1 }}>
+                  {t('EditWorkspace.BoundSubWorkspacesDescription')}
+                </Typography>
+                <List sx={{ mb: 2 }}>
+                  {boundSubWorkspaces.map((subWorkspace) => (
+                    <ListItem
+                      key={subWorkspace.id}
+                      disableGutters
+                      data-testid='bound-sub-workspace-row'
+                      secondaryAction={
+                        <Button
+                          data-testid='open-sub-workspace-settings-button'
+                          size='small'
+                          variant='outlined'
+                          onClick={() => {
+                            void window.service.window.open(WindowNames.editWorkspace, { workspaceID: subWorkspace.id }, { multiple: true });
+                          }}
+                        >
+                          {t('EditWorkspace.OpenSubWorkspaceSettings')}
+                        </Button>
+                      }
+                    >
+                      <ListItemText
+                        sx={{ pr: 14 }}
+                        primary={subWorkspace.name}
+                        secondary={subWorkspace.tagNames.length > 0
+                          ? `${t('EditWorkspace.SubWorkspaceTagBindings')}: ${subWorkspace.tagNames.join(', ')}`
+                          : t('EditWorkspace.SubWorkspaceNoTagBindings')}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </>
+            )}
             {isSubWiki && (
               <TextField
                 select
@@ -120,39 +156,9 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
                 ))}
               </TextField>
             )}
-            {!isSubWiki && boundSubWorkspaces.length > 0 && (
-              <List sx={{ mb: 2 }}>
-                {boundSubWorkspaces.map((subWorkspace) => (
-                  <ListItem
-                    key={subWorkspace.id}
-                    disableGutters
-                    data-testid='bound-sub-workspace-row'
-                    secondaryAction={
-                      <Button
-                        data-testid='open-sub-workspace-settings-button'
-                        size='small'
-                        variant='outlined'
-                        onClick={() => {
-                          void (async () => {
-                            await window.service.window.updateWindowMeta(WindowNames.editWorkspace, { workspaceID: subWorkspace.id });
-                            window.location.reload();
-                          })();
-                        }}
-                      >
-                        {t('EditWorkspace.OpenSubWorkspaceSettings')}
-                      </Button>
-                    }
-                  >
-                    <ListItemText
-                      primary={subWorkspace.name}
-                      secondary={subWorkspace.tagNames.length > 0
-                        ? `${t('EditWorkspace.SubWorkspaceTagBindings')}: ${subWorkspace.tagNames.join(', ')}`
-                        : t('EditWorkspace.SubWorkspaceNoTagBindings')}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            )}
+            <Typography variant='body2' color='textSecondary' sx={{ mt: 1, mb: 2 }}>
+              {isSubWiki ? t('AddWorkspace.SubWorkspaceOptionsDescriptionForSub') : t('AddWorkspace.SubWorkspaceOptionsDescriptionForMain')}
+            </Typography>
             <Autocomplete
               multiple
               freeSolo

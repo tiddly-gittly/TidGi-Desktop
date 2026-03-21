@@ -21,6 +21,8 @@ export interface IViewInfo {
   bounds: { x: number; y: number; width: number; height: number };
   url: string;
   isDestroyed: boolean;
+  /** Chromium renderer process ID, used to correlate with OS process list and memory info. */
+  pid: number;
 }
 
 /**

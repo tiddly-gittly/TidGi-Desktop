@@ -51,6 +51,10 @@ export interface IWikiService {
    * @param workspaceID You can get this from active workspace
    */
   getWorker(workspaceID: string): WikiWorker | undefined;
+  /**
+   * Get info about all wiki workers for the debug panel.
+   */
+  getWorkersInfo(): Promise<IWorkerInfo[]>;
   packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   restartWiki(workspace: IWorkspace): Promise<void>;
@@ -88,6 +92,15 @@ export interface IWikiService {
   /** handle start/restart of wiki/subwiki, will handle wiki sync too */
   wikiStartup(workspace: IWorkspace): Promise<void>;
 }
+export interface IWorkerInfo {
+  isRunning: boolean;
+  port: number;
+  /** Node.js worker_threads thread ID. -1 if the worker is not running. */
+  threadId: number;
+  workspaceID: string;
+  workspaceName: string;
+}
+
 export const WikiServiceIPCDescriptor = {
   channel: WikiChannel.name,
   properties: {
@@ -100,6 +113,7 @@ export const WikiServiceIPCDescriptor = {
     ensureWikiExist: ProxyPropertyType.Function,
     extractWikiHTML: ProxyPropertyType.Function,
     getWikiErrorLogs: ProxyPropertyType.Function,
+    getWorkersInfo: ProxyPropertyType.Function,
     getTiddlerFilePath: ProxyPropertyType.Function,
     packetHTMLFromWikiFolder: ProxyPropertyType.Function,
     removeWiki: ProxyPropertyType.Function,

@@ -15,13 +15,10 @@ import { getDefaultTidGiUrl } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
-import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { extractSyncableConfig, mergeWithSyncedConfig, readTidgiConfig, readTidgiConfigSync, removeSyncableFields, writeTidgiConfig } from '../database/configSetting';
 import type {
@@ -85,17 +82,6 @@ export class Workspace implements IWorkspaceService {
           await menuService.buildMenu();
         },
         accelerator: `CmdOrCtrl+${index + 1}`,
-      },
-      {
-        label: () => `${workspace.name || `Workspace ${index + 1}`} ${i18n.t('Menu.DeveloperToolsActiveWorkspace')}`,
-        id: `${workspace.id}-devtool`,
-        click: async () => {
-          const viewService = container.get<IViewService>(serviceIdentifier.View);
-          const view = viewService.getView(workspace.id, WindowNames.main);
-          if (view !== undefined) {
-            view.webContents.toggleDevTools();
-          }
-        },
       },
     ]);
 

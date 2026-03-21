@@ -100,13 +100,6 @@ export async function getSimplifiedWorkspaceMenuTemplate(
   if (!isSubWiki) {
     template.push(
       {
-        label: t('ContextMenu.RestartService'),
-        click: async () => {
-          await service.workspaceView.restartWorkspaceViewService(id);
-          await service.workspaceView.realignActiveWorkspace(id);
-        },
-      },
-      {
         label: t('ContextMenu.OpenCommandPalette'),
         click: async () => {
           await service.wiki.wikiOperationInBrowser(WikiChannel.dispatchEvent, id, ['open-command-palette']);
@@ -135,7 +128,7 @@ export async function getSimplifiedWorkspaceMenuTemplate(
 
   // Backup/Sync options (based on storage service)
   if (storageService === SupportedStorageServices.local) {
-    const backupItems = createBackupMenuItems(workspace, t, service.window, service.sync, aiGenerateBackupTitleEnabled, false);
+    const backupItems = createBackupMenuItems(workspace, t, service.sync, aiGenerateBackupTitleEnabled, false);
     template.push(...backupItems);
   }
 
@@ -238,7 +231,7 @@ export async function getWorkspaceMenuTemplate(
   }
 
   if (storageService === SupportedStorageServices.local) {
-    const backupItems = createBackupMenuItems(workspace, t, service.window, service.sync, aiGenerateBackupTitleEnabled, false);
+    const backupItems = createBackupMenuItems(workspace, t, service.sync, aiGenerateBackupTitleEnabled, false);
     template.push(...backupItems);
   }
 

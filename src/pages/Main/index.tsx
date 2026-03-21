@@ -74,7 +74,7 @@ export default function Main(): React.JSX.Element {
   return (
     <OuterRoot>
       <Helmet>
-        <title>{t('Menu.TidGi')}{isTidgiMiniWindow ? ` - ${t('Menu.TidGiMiniWindow')}` : ''}</title>
+        <title>{t('Menu.TidGi')}{isTidgiMiniWindow ? ` [${t('Menu.TidGiMiniWindow')}]` : ' [App]'}</title>
       </Helmet>
       <Root data-windowname={windowName} data-showsidebar={showSidebar}>
         {showSidebar && <SideBar />}

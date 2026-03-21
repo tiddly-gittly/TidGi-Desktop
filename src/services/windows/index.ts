@@ -154,14 +154,18 @@ export class Window implements IWindowService {
     config?: IWindowOpenConfig<N>,
     returnWindow?: boolean,
   ): Promise<undefined | BrowserWindow> {
-    const { recreate = false, multiple = false } = config ?? {};
+    const { recreate = false, multiple = false, recreateUnlessWorkspaceID } = config ?? {};
     const existedWindow = this.get(windowName);
-    // update window meta
-    await this.setWindowMeta(windowName, meta);
+    // Read the OLD meta before overwriting — recreate() must compare old vs new to decide whether to close.
     const existedWindowMeta = await this.getWindowMeta(windowName);
+    await this.setWindowMeta(windowName, meta);
 
     if (existedWindow !== undefined && !multiple) {
-      if (recreate === true || (typeof recreate === 'function' && existedWindowMeta !== undefined && recreate(existedWindowMeta))) {
+      const existedWorkspaceID = (existedWindowMeta as { workspaceID?: string } | undefined)?.workspaceID;
+      const isRecreateNeeded = recreate === true ||
+        (typeof recreate === 'function' && existedWindowMeta !== undefined && recreate(existedWindowMeta)) ||
+        (recreateUnlessWorkspaceID !== undefined && existedWorkspaceID !== recreateUnlessWorkspaceID);
+      if (isRecreateNeeded) {
         existedWindow.close();
       } else {
         if (existedWindow.isMinimized()) {
@@ -208,9 +212,25 @@ export class Window implements IWindowService {
     }
     // hide titleBar should not take effect on setting window
     const hideTitleBar = [WindowNames.main, WindowNames.tidgiMiniWindow].includes(windowName) && !showTitleBar;
+    // Descriptive initial titles help identify renderer processes in the OS task manager before the page sets its own title
+    const windowTitleByName: Partial<Record<WindowNames, string>> = {
+      [WindowNames.main]: 'TidGi [App Shell]',
+      [WindowNames.tidgiMiniWindow]: 'TidGi [Mini Window]',
+      [WindowNames.secondary]: 'TidGi [Secondary Window]',
+      [WindowNames.preferences]: 'TidGi [Preferences]',
+      [WindowNames.addWorkspace]: 'TidGi [Add Workspace]',
+      [WindowNames.editWorkspace]: 'TidGi [Edit Workspace]',
+      [WindowNames.about]: 'TidGi [About]',
+      [WindowNames.gitHistory]: 'TidGi [Git History]',
+      [WindowNames.notifications]: 'TidGi [Notifications]',
+      [WindowNames.spellcheck]: 'TidGi [Spellcheck]',
+      [WindowNames.auth]: 'TidGi [Auth]',
+      [WindowNames.any]: 'TidGi [Browser]',
+    };
     const windowConfig: BrowserWindowConstructorOptions = {
       ...windowDimension[windowName],
       ...windowWithBrowserViewConfig,
+      title: windowTitleByName[windowName] ?? `TidGi [${windowName}]`,
       resizable: true,
       maximizable: true,
       minimizable: true,

@@ -30,7 +30,12 @@ export async function handleCreateBasicWindow<N extends WindowNames>(
 
   const unregisterContextMenu = await menuService.initContextMenuForWindowWebContents(newWindow.webContents);
   newWindow.on('closed', () => {
-    windowService.set(windowName, undefined);
+    // Only clear the service slot if this window is still the registered one.
+    // If recreate replaced us (new window already registered) or if we were a multiple=true
+    // window (never registered), skip the clear to avoid orphaning the new/existing window.
+    if (windowService.get(windowName) === newWindow) {
+      windowService.set(windowName, undefined);
+    }
     unregisterContextMenu();
   });
 

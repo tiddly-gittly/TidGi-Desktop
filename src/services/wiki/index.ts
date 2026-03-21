@@ -23,12 +23,12 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import type { IWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { Observable } from 'rxjs';
 import { AlreadyExistError, CopyWikiTemplateError, DoubleWikiInstanceError, HTMLCanNotLoadError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
-import type { IWikiService } from './interface';
+import type { IWikiService, IWorkerInfo } from './interface';
 import { WikiControlActions } from './interface';
 import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
 import type { IpcServerRouteMethods, IpcServerRouteNames, ITidGiChangedTiddlers } from './wikiWorker/ipcServerRoutes';
@@ -89,6 +89,20 @@ export class Wiki implements IWikiService {
 
   public getWorker(id: string): WikiWorker | undefined {
     return this.wikiWorkers[id]?.proxy;
+  }
+
+  public async getWorkersInfo(): Promise<IWorkerInfo[]> {
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspaces = await workspaceService.getWorkspacesAsList();
+    return workspaces
+      .filter((w): w is IWikiWorkspace => isWikiWorkspace(w) && !w.isSubWiki)
+      .map((workspace) => ({
+        workspaceID: workspace.id,
+        workspaceName: workspace.name,
+        port: workspace.port,
+        isRunning: this.wikiWorkers[workspace.id] !== undefined,
+        threadId: this.wikiWorkers[workspace.id]?.nativeWorker.threadId ?? -1,
+      }));
   }
 
   private getNativeWorker(id: string): Worker | undefined {

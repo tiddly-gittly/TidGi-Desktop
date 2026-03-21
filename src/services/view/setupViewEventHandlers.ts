@@ -54,6 +54,12 @@ export default function setupViewEventHandlers(
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 
   handleViewFileContentLoading(view);
+  logger.info('Wiki view created', {
+    workspaceID: workspace.id,
+    workspaceName: workspace.name,
+    windowName,
+    rendererPID: view.webContents.getOSProcessId(),
+  });
   view.webContents.on('did-start-loading', async () => {
     const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered

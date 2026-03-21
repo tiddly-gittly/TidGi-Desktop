@@ -51,8 +51,6 @@ export function loadDefaultMenuTemplate(): DeferredMenuItemConstructorOptions[] 
           accelerator: 'CmdOrCtrl+Shift+N',
         },
         { type: 'separator' },
-        { role: 'services', submenu: [] },
-        { type: 'separator' },
         { role: 'hide' },
         { role: 'hideOthers' },
         { role: 'unhide' },
@@ -89,6 +87,16 @@ export function loadDefaultMenuTemplate(): DeferredMenuItemConstructorOptions[] 
         const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         // Only show Wiki menu when there's an active wiki workspace
+        return activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace);
+      },
+    },
+    {
+      label: () => i18n.t('Menu.Sync'),
+      id: 'Sync',
+      submenu: [],
+      visible: async () => {
+        const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+        const activeWorkspace = await workspaceService.getActiveWorkspace();
         return activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace);
       },
     },

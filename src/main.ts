@@ -47,7 +47,9 @@ import type { IWindowService } from './services/windows/interface';
 import type { IWorkspaceService } from './services/workspaces/interface';
 import type { IWorkspaceViewService } from './services/workspacesView/interface';
 
-logger.info('App booting');
+logger.info('App booting', { pid: process.pid });
+// Label the Node.js main process so it stands out in the OS process list
+process.title = 'TidGi [Node-Main]';
 if (process.env.DEBUG_MAIN === 'true') {
   inspector.open();
   inspector.waitForDebugger();
@@ -216,6 +218,7 @@ const commonInit = async (): Promise<void> => {
       mainWindow.on('unmaximize', handleMaximize);
     }
   }
+  nativeService.startProcessMonitoring();
   // trigger whenTrulyReady
   ipcMain.emit(MainChannel.commonInitFinished);
 };

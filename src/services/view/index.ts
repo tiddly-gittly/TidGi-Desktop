@@ -453,7 +453,8 @@ export class View implements IViewService {
         const destroyed = view.webContents.isDestroyed();
         const bounds = view.getBounds();
         const url = destroyed ? '' : view.webContents.getURL();
-        results.push({ workspaceID, workspaceName, windowName, bounds, url, isDestroyed: destroyed });
+        const pid = destroyed ? -1 : view.webContents.getOSProcessId();
+        results.push({ workspaceID, workspaceName, windowName, bounds, url, isDestroyed: destroyed, pid });
       }
     }
     return results;

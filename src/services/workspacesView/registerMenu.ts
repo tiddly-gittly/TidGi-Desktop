@@ -35,18 +35,6 @@ export async function registerMenu(): Promise<void> {
     return activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace);
   };
 
-  await menuService.insertMenu('Workspaces', [
-    {
-      label: () => i18n.t('Menu.DeveloperToolsActiveWorkspace'),
-      accelerator: 'CmdOrCtrl+Option+I',
-      click: async () => {
-        const ws = await workspaceService.getActiveWorkspace();
-        if (ws) viewService.getView(ws.id, WindowNames.main)?.webContents.openDevTools({ mode: 'detach' });
-      },
-      enabled: hasActiveWorkspaces,
-    },
-  ]);
-
   // Insert Wiki menu items (each item checks for active wiki workspace)
   await menuService.insertMenu('Wiki', [
     {

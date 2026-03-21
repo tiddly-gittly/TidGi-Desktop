@@ -141,11 +141,10 @@ export async function registerMenu(): Promise<void> {
     });
   }
 
-  // Add to Wiki menu - basic items (each item checks for active wiki workspace)
+  // Add to Sync menu - git history, backup, and sync items
   await menuService.insertMenu(
-    'Wiki',
+    'Sync',
     [
-      { type: 'separator', visible: hasActiveWikiWorkspace },
       {
         label: () => i18n.t('WorkspaceSelector.ViewGitHistory'),
         id: 'git-history',

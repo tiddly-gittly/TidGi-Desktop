@@ -118,6 +118,11 @@ export class WorkspaceView implements IWorkspaceViewService {
         }
         return;
       }
+      // Workspace is NOT being hibernated - clear any stale hibernated flag from a previous session
+      // to avoid a state mismatch where views run but the sidebar still shows the workspace as sleeping.
+      if (isWikiWorkspace(workspace) && workspace.hibernated) {
+        await workspaceService.update(workspace.id, { hibernated: false });
+      }
     }
     const syncGitWhenInitializeWorkspaceView = async () => {
       if (!isWikiWorkspace(workspace)) return;

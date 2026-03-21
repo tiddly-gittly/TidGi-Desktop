@@ -243,11 +243,14 @@ export class FileSystemAdaptor {
       const hasCanonicalUri = typeof tiddler.fields._canonical_uri === 'string' && tiddler.fields._canonical_uri.length > 0;
       const extensionFilters = hasCanonicalUri ? ['.tid'] : this.extensionFilters;
 
+      // Pass oldFileInfo so generateTiddlerFilepath's uniquifier loop sees the existing
+      // filepath as `oldPath` and breaks early instead of appending a numeric suffix.
       return $tw.utils.generateTiddlerFileInfo(tiddler, {
         directory: targetDirectory,
         pathFilters: undefined,
         extFilters: extensionFilters,
         wiki: this.wiki,
+        fileInfo: oldFileInfo,
       });
     } finally {
       // Restore old fileInfo for potential cleanup in saveTiddler
@@ -263,6 +266,10 @@ export class FileSystemAdaptor {
    * CRITICAL: We must temporarily remove the tiddler from boot.files before calling
    * generateTiddlerFileInfo, otherwise TiddlyWiki will use the old path as a base
    * and FileSystemPaths filters will apply repeatedly, causing path accumulation.
+   *
+   * We also pass the oldFileInfo as `fileInfo` so generateTiddlerFilepath knows the
+   * existing filepath. The uniquifier loop then breaks when the generated path matches
+   * oldPath, preventing numeric suffixes (_1, _2 …) on re-saves of the same tiddler.
    */
   protected generateDefaultFileInfo(tiddler: Tiddler): IFileInfo {
     let pathFilters: string[] | undefined;
@@ -292,6 +299,7 @@ export class FileSystemAdaptor {
         pathFilters,
         extFilters: extensionFilters,
         wiki: this.wiki,
+        fileInfo: oldFileInfo,
       });
     } finally {
       // Restore old fileInfo for potential cleanup in saveTiddler
