@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWikiWorkspace } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
 import { useAvailableTags } from '../AddWorkspace/useAvailableTags';
 import { OptionsAccordion, OptionsAccordionSummary, TextField } from './styles';
 
@@ -112,7 +112,6 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
                   }, true);
                 }}
                 sx={{ mb: 2 }}
-                slotProps={{ formHelperText: { 'data-testid': 'main-wiki-select-helper' } }}
               >
                 {mainWorkspaceList.map((candidate) => (
                   <MenuItem key={candidate.id} value={candidate.id}>

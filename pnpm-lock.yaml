@@ -83,12 +83,6 @@ importers:
       '@tomplum/react-git-log':
         specifier: ^3.5.0
         version: 3.5.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@types/react-window':
-        specifier: ^2.0.0
-        version: 2.0.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@types/react-window-infinite-loader':
-        specifier: ^2.0.0
-        version: 2.0.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       ai:
         specifier: ^5.0.98
         version: 5.0.98(zod@4.1.12)
@@ -378,6 +372,9 @@ importers:
       '@vitest/ui':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4)
+      baseline-browser-mapping:
+        specifier: ^2.10.9
+        version: 2.10.9
       chai:
         specifier: 6.2.0
         version: 6.2.0
@@ -2608,14 +2605,6 @@ packages:
     peerDependencies:
       '@types/react': '*'
 
-  '@types/react-window-infinite-loader@2.0.0':
-    resolution: {integrity: sha512-2YYQRI77fduB8sQJ9h43FR5qIC7C8qodN6waHcWZQmkc+PFw9vKjAs5WUeJHZZk9EGQDy95umYegK4CgZ1CYOw==}
-    deprecated: This is a stub types definition. react-window-infinite-loader provides its own type definitions, so you do not need this installed.
-
-  '@types/react-window@2.0.0':
-    resolution: {integrity: sha512-E8hMDtImEpMk1SjswSvqoSmYvk7GEtyVaTa/GJV++FdDNuMVVEzpAClyJ0nqeKYBrMkGiyH6M1+rPLM0Nu1exQ==}
-    deprecated: This is a stub types definition. react-window provides its own type definitions, so you do not need this installed.
-
   '@types/react@19.2.6':
     resolution: {integrity: sha512-p/jUvulfgU7oKtj6Xpk8cA2Y1xKTtICGpJYeJXz2YVO2UcvjQgeRMLDGfDeqeRW2Ta+0QNFwcc8X3GH8SxZz6w==}
 
@@ -3295,8 +3284,9 @@ packages:
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
 
-  baseline-browser-mapping@2.8.30:
-    resolution: {integrity: sha512-aTUKW4ptQhS64+v2d6IkPzymEzzhw+G0bA1g3uBRV3+ntkH+svttKseW5IOR4Ed6NUVKqnY7qT3dKvzQ7io4AA==}
+  baseline-browser-mapping@2.10.9:
+    resolution: {integrity: sha512-OZd0e2mU11ClX8+IdXe3r0dbqMEznRiT4TfbhYIbcRPZkqJ7Qwer8ij3GZAmLsRKa+II9V1v5czCkvmHH3XZBg==}
+    engines: {node: '>=6.0.0'}
     hasBin: true
 
   basic-auth@2.0.1:
@@ -10378,20 +10368,6 @@ snapshots:
     dependencies:
       '@types/react': 19.2.6
 
-  '@types/react-window-infinite-loader@2.0.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
-    dependencies:
-      react-window-infinite-loader: 2.0.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    transitivePeerDependencies:
-      - react
-      - react-dom
-
-  '@types/react-window@2.0.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
-    dependencies:
-      react-window: 2.2.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    transitivePeerDependencies:
-      - react
-      - react-dom
-
   '@types/react@19.2.6':
     dependencies:
       csstype: 3.2.3
@@ -11197,7 +11173,7 @@ snapshots:
 
   base64-js@1.5.1: {}
 
-  baseline-browser-mapping@2.8.30: {}
+  baseline-browser-mapping@2.10.9: {}
 
   basic-auth@2.0.1:
     dependencies:
@@ -11271,7 +11247,7 @@ snapshots:
 
   browserslist@4.28.0:
     dependencies:
-      baseline-browser-mapping: 2.8.30
+      baseline-browser-mapping: 2.10.9
       caniuse-lite: 1.0.30001756
       electron-to-chromium: 1.5.259
       node-releases: 2.0.27

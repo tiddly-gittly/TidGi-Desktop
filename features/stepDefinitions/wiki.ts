@@ -944,7 +944,14 @@ When('I open edit workspace window for workspace with name {string}', async func
   }
 
   await mainWindow.evaluate(async ({ workspaceId, windowName }: { workspaceId: string; windowName: string }) => {
-    const openWindow = window.service.window.open as unknown as (windowName: string, meta: { workspaceID: string }, config: { recreate: boolean }) => Promise<void>;
+    const serviceWindow = (window as Window & {
+      service: {
+        window: {
+          open: (windowName: string, meta: { workspaceID: string }, config: { recreate: boolean }) => Promise<void>;
+        };
+      };
+    }).service.window;
+    const openWindow = serviceWindow.open;
     await openWindow(windowName, { workspaceID: workspaceId }, { recreate: true });
   }, { workspaceId: targetWorkspaceId, windowName: WindowNames.editWorkspace });
 
