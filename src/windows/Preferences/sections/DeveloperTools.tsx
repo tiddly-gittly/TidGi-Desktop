@@ -1,11 +1,32 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, List, ListItemButton, Switch } from '@mui/material';
+import {
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Divider,
+  List,
+  ListItemButton,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { usePreferenceObservable } from '@services/preferences/hooks';
+import type { IViewInfo } from '@services/view/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
@@ -19,6 +40,8 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
   )!;
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [viewDebugOpen, setViewDebugOpen] = useState(false);
+  const [viewsInfo, setViewsInfo] = useState<IViewInfo[]>([]);
   const [externalApiInfo, setExternalApiInfo] = useState<{ exists: boolean; size?: number; path?: string }>({ exists: false });
   const [isWindows, setIsWindows] = useState(false);
 
@@ -125,6 +148,17 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                   <ChevronRightIcon color='action' />
                 </ListItemButton>
               )}
+              <Divider />
+              <ListItemButton
+                onClick={async () => {
+                  const info = await window.service.view.getViewsInfo() as unknown as IViewInfo[];
+                  setViewsInfo(info);
+                  setViewDebugOpen(true);
+                }}
+              >
+                <ListItemText primary={t('Preference.ViewDebugPanel')} secondary={t('Preference.ViewDebugPanelDetail')} />
+                <ChevronRightIcon color='action' />
+              </ListItemButton>
               <Divider />
               <ListItemButton
                 onClick={async () => {
@@ -246,6 +280,96 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
             color='error'
           >
             {t('Delete')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* View Debug Panel dialog */}
+      <Dialog
+        open={viewDebugOpen}
+        onClose={() => {
+          setViewDebugOpen(false);
+        }}
+        maxWidth='lg'
+        fullWidth
+      >
+        <DialogTitle>
+          {t('Preference.ViewDebugPanel')}
+          <Button
+            size='small'
+            sx={{ ml: 2 }}
+            onClick={async () => {
+              const info = await window.service.view.getViewsInfo() as unknown as IViewInfo[];
+              setViewsInfo(info);
+            }}
+          >
+            {t('Preference.ViewDebugRefresh')}
+          </Button>
+        </DialogTitle>
+        <DialogContent>
+          <TableContainer>
+            <Table size='small'>
+              <TableHead>
+                <TableRow>
+                  <TableCell>{t('Preference.ViewDebugWorkspace')}</TableCell>
+                  <TableCell>{t('Preference.ViewDebugWindow')}</TableCell>
+                  <TableCell>{t('Preference.ViewDebugBounds')}</TableCell>
+                  <TableCell>{t('Preference.ViewDebugURL')}</TableCell>
+                  <TableCell>{t('Preference.ViewDebugActions')}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {viewsInfo.map((info, index) => (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <Typography variant='body2' fontWeight='bold'>{info.workspaceName}</Typography>
+                      <Typography variant='caption' color='text.secondary'>{info.workspaceID.slice(0, 8)}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={info.windowName} size='small' color={info.windowName === WindowNames.main ? 'primary' : 'default'} />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant='caption'>
+                        {`x:${info.bounds.x} y:${info.bounds.y}`}
+                        <br />
+                        {`${info.bounds.width}×${info.bounds.height}`}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <Typography variant='caption' title={info.url}>{info.url || '-'}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size='small'
+                        variant='outlined'
+                        disabled={info.isDestroyed}
+                        onClick={() => {
+                          void window.service.view.openDevToolsForView(info.workspaceID, info.windowName);
+                        }}
+                      >
+                        DevTools
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {viewsInfo.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} align='center'>
+                      <Typography color='text.secondary'>{t('Preference.ViewDebugEmpty')}</Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setViewDebugOpen(false);
+            }}
+          >
+            {t('Cancel')}
           </Button>
         </DialogActions>
       </Dialog>

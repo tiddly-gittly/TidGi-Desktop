@@ -11,46 +11,10 @@ import { SetOptional } from 'type-fest';
  */
 export const nonConfigFields = ['metadata', 'lastNodeJSArgv', 'lastUrl', 'homeUrl', 'hibernated', 'active'];
 
-/**
- * Fields that should be synced to wiki folder's tidgi.config.json.
- * These are user preferences that should follow the wiki across devices.
- *
- * ⚠️ IMPORTANT: When modifying this list, remember to also update:
- * - src/services/workspaces/tidgi.config.schema.json (JSON Schema definition)
- * - syncableConfigDefaultValues (default values)
- */
-export const syncableConfigFields = [
-  'name',
-  'gitUrl',
-  'storageService',
-  'userName',
-  'readOnlyMode',
-  'tokenAuth',
-  'enableHTTPAPI',
-  'enableFileSystemWatch',
-  'ignoreSymlinks',
-  'backupOnInterval',
-  'syncOnInterval',
-  'syncOnStartup',
-  'disableAudio',
-  'disableNotifications',
-  'hibernateWhenUnused',
-  'transparentBackground',
-  'excludedPlugins',
-  'tagNames',
-  'includeTagTree',
-  'fileSystemPathFilterEnable',
-  'fileSystemPathFilter',
-  'rootTiddler',
-  'https',
-  'isSubWiki',
-  'mainWikiToLink',
-] as const;
-
-/**
- * Type for syncable config fields
- */
-export type SyncableConfigField = typeof syncableConfigFields[number];
+// These are the canonical definitions used by both main-process and worker code.
+// interface.ts re-exports them so consumers have a single import path.
+export { syncableConfigFields } from './syncableConfig';
+export type { ISyncableWikiConfig, SyncableConfigField } from './syncableConfig';
 
 /**
  * Fields that are device-specific and should only be stored locally.
@@ -66,21 +30,16 @@ export const localOnlyFields = [
   'authToken',
   'picturePath',
   'wikiFolderLocation',
-  'mainWikiID',
   'pageType',
   'port',
 ] as const;
 
 /**
- * Default values for syncable config fields (stored in tidgi.config.json)
- *
- * ⚠️ IMPORTANT: When modifying this object, remember to also update:
- * - src/services/workspaces/tidgi.config.schema.json (JSON Schema definition)
- * - syncableConfigFields (field list)
+ * Default values for syncable config fields (stored in tidgi.config.json).
+ * See syncableConfig.ts for the canonical definition used by worker code.
  */
 export const syncableConfigDefaultValues = {
   name: '',
-  port: 5212,
   gitUrl: null,
   storageService: SupportedStorageServices.local,
   userName: '',
@@ -104,23 +63,10 @@ export const syncableConfigDefaultValues = {
   rootTiddler: undefined as string | undefined,
   https: undefined as { enabled: boolean; tlsCert?: string; tlsKey?: string } | undefined,
   isSubWiki: false,
+  mainWikiID: null as string | null,
   mainWikiToLink: null as string | null,
 } as const;
 
-/**
- * Type for syncable config
- *
- * ⚠️ IMPORTANT: This type is derived from syncableConfigDefaultValues.
- * When modifying types here, remember to also update:
- * - src/services/workspaces/tidgi.config.schema.json (JSON Schema definition)
- */
-export type ISyncableWikiConfig = {
-  -readonly [K in keyof typeof syncableConfigDefaultValues]: (typeof syncableConfigDefaultValues)[K];
-};
-
-/**
- * Default values for local-only fields (stored in database)
- */
 export const localConfigDefaultValues = {
   id: '',
   order: 0,
@@ -131,8 +77,8 @@ export const localConfigDefaultValues = {
   homeUrl: '',
   authToken: undefined as string | undefined,
   picturePath: null as string | null,
-  mainWikiID: null as string | null,
   pageType: null as PageType.wiki | null,
+  port: 5212,
 } as const;
 
 /**

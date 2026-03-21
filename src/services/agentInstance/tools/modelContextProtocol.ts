@@ -78,7 +78,7 @@ async function connectAndListTools(config: ModelContextProtocolParameter, agentI
   try {
     // Dynamic import to handle cases where SDK isn't installed.
     // Use /* @vite-ignore */ so Vite/Vitest don't try to resolve the path at build time.
-    /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, import/no-unresolved */
+    /* eslint-disable-next-line import/no-unresolved */
     const { Client } = await import(/* @vite-ignore */ '@modelcontextprotocol/sdk/client/index.js');
 
     const client = new Client({ name: 'TidGi-Agent', version: '1.0.0' }, { capabilities: {} });
@@ -87,10 +87,12 @@ async function connectAndListTools(config: ModelContextProtocolParameter, agentI
 
     if (config.command) {
       // Stdio transport
+      /* eslint-disable-next-line import/no-unresolved */
       const { StdioClientTransport } = await import(/* @vite-ignore */ '@modelcontextprotocol/sdk/client/stdio.js');
       transport = new StdioClientTransport({ command: config.command, args: config.args ?? [] });
     } else if (config.serverUrl) {
       // SSE transport
+      /* eslint-disable-next-line import/no-unresolved */
       const { SSEClientTransport } = await import(/* @vite-ignore */ '@modelcontextprotocol/sdk/client/sse.js');
       transport = new SSEClientTransport(new URL(config.serverUrl));
     } else {
@@ -112,7 +114,6 @@ async function connectAndListTools(config: ModelContextProtocolParameter, agentI
 
     logger.info('MCP connected', { agentId, toolCount: tools.length, tools: tools.map((t: { name: string }) => t.name) });
     return tools;
-    /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, import/no-unresolved */
   } catch (error) {
     logger.error('MCP connection failed', { error, agentId });
     return [];

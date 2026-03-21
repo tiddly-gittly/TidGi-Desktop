@@ -348,11 +348,13 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (newWorkspace.pageType) {
       logger.debug(`${nextWorkspaceID} is a page workspace, only updating workspace state.`);
       await container.get<IWorkspaceService>(serviceIdentifier.Workspace).setActiveWorkspace(nextWorkspaceID, oldActiveWorkspace?.id);
-      // Only hide the view of the previous workspace; do NOT hibernate its wiki server.
-      // Page workspaces (agents) embed the wiki via webview and need the server to stay alive.
-      if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID && !oldActiveWorkspace.pageType) {
+      // Hide the previous real wiki's view (it must stay alive because the agent's webview needs the server).
+      // Record its ID so we can hibernate it when the user eventually switches to a different real wiki.
+      if (oldActiveWorkspace !== undefined && !oldActiveWorkspace.pageType && oldActiveWorkspace.id !== nextWorkspaceID) {
         await this.hideWorkspaceView(oldActiveWorkspace.id);
+        this.lastNonPageWorkspaceID = oldActiveWorkspace.id;
       }
+      // If we're chaining page→page, leave lastNonPageWorkspaceID unchanged (the deferred wiki is still pending).
       return;
     }
 
@@ -368,10 +370,13 @@ export class WorkspaceView implements IWorkspaceViewService {
     // later process will use the current active workspace
     await container.get<IWorkspaceService>(serviceIdentifier.Workspace).setActiveWorkspace(nextWorkspaceID, oldActiveWorkspace?.id);
 
-    // Schedule hibernation of old workspace before waking up new workspace
-    // This prevents blocking when wakeUp calls loadURL
-    if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID) {
-      void this.hibernateWorkspace(oldActiveWorkspace.id);
+    // When coming from a page workspace (agent), the wiki that was active *before* the agent was
+    // deferred and kept alive. Hibernate it now that we have a real wiki destination.
+    // When coming from a real wiki directly, hibernate that wiki.
+    const wikiToHibernate = oldActiveWorkspace?.pageType ? this.lastNonPageWorkspaceID : oldActiveWorkspace?.id;
+    this.lastNonPageWorkspaceID = undefined;
+    if (wikiToHibernate !== undefined && wikiToHibernate !== nextWorkspaceID) {
+      void this.hibernateWorkspace(wikiToHibernate);
     }
 
     if (isWikiWorkspace(newWorkspace) && newWorkspace.hibernated) {
@@ -404,6 +409,13 @@ export class WorkspaceView implements IWorkspaceViewService {
   private readonly hibernatingWorkspaces = new Set<string>();
 
   /**
+   * When we switch from a wiki workspace to a page workspace (agent), the wiki's server must stay
+   * alive (the agent's embedded webview still needs it). We defer hibernation of that wiki until
+   * the user switches to a different real wiki. This field stores that deferred wiki ID.
+   */
+  private lastNonPageWorkspaceID: string | undefined;
+
+  /**
    * This promise could be `void` to let go, not blocking other logic like switch to new workspace, and hibernate workspace on background.
    */
   private async hibernateWorkspace(workspaceID: string): Promise<void> {
@@ -416,7 +428,13 @@ export class WorkspaceView implements IWorkspaceViewService {
       const workspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(workspaceID);
       if (workspace === undefined) return;
 
-      await this.hideWorkspaceView(workspaceID);
+      // Hide the view first, but don't let a failure here prevent the wiki server from stopping.
+      try {
+        await this.hideWorkspaceView(workspaceID);
+      } catch (error) {
+        logger.warn('hibernateWorkspace: hideWorkspaceView failed, continuing to stop wiki', { workspaceID, error });
+      }
+
       if (isWikiWorkspace(workspace) && workspace.hibernateWhenUnused) {
         await this.hibernateWorkspaceView(workspaceID);
       }

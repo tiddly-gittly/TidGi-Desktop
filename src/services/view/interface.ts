@@ -14,6 +14,15 @@ export type INewWindowAction =
     overrideBrowserWindowOptions?: Electron.BrowserWindowConstructorOptions | undefined;
   };
 
+export interface IViewInfo {
+  workspaceID: string;
+  workspaceName: string;
+  windowName: WindowNames;
+  bounds: { x: number; y: number; width: number; height: number };
+  url: string;
+  isDestroyed: boolean;
+}
+
 /**
  * Minimal mechanism-layer API for managing WebContentsView instances.
  * All policy decisions (which workspace to show, when to hide/restore, mini-window routing)
@@ -83,6 +92,10 @@ export interface IViewService {
 
   // ── Convenience / Query ───────────────────────────────────
   getViewCurrentUrl(workspaceID: string, windowName: WindowNames): Promise<string | undefined>;
+  /** Return debug information about every registered view (bounds, URL, memory, etc). */
+  getViewsInfo(): Promise<IViewInfo[]>;
+  /** Open Electron DevTools for a specific view's webContents. */
+  openDevToolsForView(workspaceID: string, windowName: WindowNames): void;
   setViewsAudioPref(shouldMuteAudio?: boolean): void;
   setViewsNotificationsPref(shouldPauseNotifications?: boolean): void;
 }
@@ -96,6 +109,8 @@ export const ViewServiceIPCDescriptor = {
     getView: ProxyPropertyType.Function,
     getViewCount: ProxyPropertyType.Function,
     getViewCurrentUrl: ProxyPropertyType.Function,
+    getViewsInfo: ProxyPropertyType.Function,
+    openDevToolsForView: ProxyPropertyType.Function,
     showView: ProxyPropertyType.Function,
     hideView: ProxyPropertyType.Function,
     setViewBounds: ProxyPropertyType.Function,

@@ -228,7 +228,6 @@ export async function writeTidgiConfig(wikiFolderLocation: string, config: Parti
         delete (mergedConfig as Record<string, unknown>)[field];
       }
     }
-    delete (mergedConfig as Record<string, unknown>).port;
     if (!('id' in nonDefaultConfig)) {
       delete (mergedConfig as Record<string, unknown>).id;
     }

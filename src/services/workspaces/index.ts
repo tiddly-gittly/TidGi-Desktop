@@ -2,7 +2,7 @@ import { app } from 'electron';
 import fsExtra from 'fs-extra';
 import { injectable } from 'inversify';
 import { Jimp } from 'jimp';
-import { mapValues, pickBy } from 'lodash';
+import { isEqual, mapValues, pickBy } from 'lodash';
 import { nanoid } from 'nanoid';
 import path from 'path';
 import { BehaviorSubject, Observable } from 'rxjs';
@@ -36,6 +36,7 @@ import type {
 } from './interface';
 import { isWikiWorkspace, wikiWorkspaceDefaultValues } from './interface';
 import { registerMenu } from './registerMenu';
+import { syncableConfigDefaultValues, syncableConfigFields } from './syncableConfig';
 import { workspaceSorter } from './utilities';
 
 @injectable()
@@ -222,21 +223,26 @@ export class Workspace implements IWorkspaceService {
     const workspaceToSave = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspaceToSave);
 
-    // Capture existing workspace before updating the cache so we can diff syncable fields
-    const existingWorkspace = workspaces[id];
-
     // Update memory cache with full workspace data (including syncable fields)
     workspaces[id] = workspaceToSave;
 
     // Write tidgi.config.json only when syncable fields actually changed.
-    // Skipping the write when only non-syncable fields (active, hibernated, lastUrl, etc.) changed
-    // avoids the O(n) disk writes that previously occurred on every workspace state transition at startup.
+    // Compare against the ACTUAL FILE content (not just in-memory), so that when a field is newly
+    // added to syncableConfigFields (e.g. isSubWiki, mainWikiToLink) but the existing file predates
+    // that addition, the file gets updated on the next save rather than only on an explicit change.
     if (isWikiWorkspace(workspaceToSave)) {
       const newSyncableConfig = extractSyncableConfig(workspaceToSave);
-      const oldSyncableConfig = existingWorkspace !== undefined && isWikiWorkspace(existingWorkspace)
-        ? extractSyncableConfig(existingWorkspace)
-        : null;
-      const syncableChanged = oldSyncableConfig === null || JSON.stringify(newSyncableConfig) !== JSON.stringify(oldSyncableConfig);
+      const existingFileConfig = readTidgiConfigSync(workspaceToSave.wikiFolderLocation);
+      // existingFileConfig is undefined when the file doesn't exist → always write on first save.
+      // When the file exists, compare its content against what we'd write to detect migration gaps.
+      const fileConfigForComparison = existingFileConfig ?? {};
+      const syncableChanged = existingFileConfig === undefined ||
+        syncableConfigFields.some((field) =>
+          !isEqual(
+            (newSyncableConfig as Record<string, unknown>)[field],
+            (fileConfigForComparison as Record<string, unknown>)[field] ?? syncableConfigDefaultValues[field],
+          )
+        );
       if (syncableChanged) {
         try {
           await writeTidgiConfig(workspaceToSave.wikiFolderLocation, newSyncableConfig);

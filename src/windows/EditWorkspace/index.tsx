@@ -30,16 +30,20 @@ export default function EditWorkspace(): React.JSX.Element {
   const { name } = workspace ?? {};
 
   const isSubWiki = isWiki ? workspace.isSubWiki : false;
-
-  // Check if there are sub-workspaces for this main workspace
-  const hasSubWorkspaces = usePromiseValue(async () => {
-    if (isSubWiki) return false;
-    const subWorkspaces = await window.service.workspace.getSubWorkspacesAsList(workspaceID);
-    return subWorkspaces.length > 0;
-  }, false);
-
-  // Show sub-workspace routing options for sub-wikis, or for main wikis that have sub-workspaces
-  const showSubWorkspaceRouting = isSubWiki || hasSubWorkspaces;
+  const shouldShowSubWorkspaceDetails = usePromiseValue(
+    async () => {
+      if (!isWiki) {
+        return false;
+      }
+      if (isSubWiki || typeof workspace.mainWikiID === 'string') {
+        return true;
+      }
+      const subWorkspaces = await window.service.workspace.getSubWorkspacesAsList(workspaceID);
+      return subWorkspaces.length > 0;
+    },
+    false,
+    [isWiki, isSubWiki, isWiki ? workspace.mainWikiID : undefined],
+  );
 
   const rememberLastPageVisited = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
 
@@ -67,11 +71,11 @@ export default function EditWorkspace(): React.JSX.Element {
         )}
         <AppearanceOptions workspace={workspace} workspaceSetter={workspaceSetter} />
         <SaveAndSyncOptions workspace={workspace} workspaceSetter={workspaceSetter} rememberLastPageVisited={rememberLastPageVisited} />
-        {showSubWorkspaceRouting && isWiki && (
+        {isWiki && (
           <SubWorkspaceRouting
             workspace={workspace}
             workspaceSetter={workspaceSetter}
-            isSubWiki={isSubWiki}
+            showDetails={shouldShowSubWorkspaceDetails ?? false}
           />
         )}
         <MiscOptions workspace={workspace} workspaceSetter={workspaceSetter} rememberLastPageVisited={rememberLastPageVisited} />

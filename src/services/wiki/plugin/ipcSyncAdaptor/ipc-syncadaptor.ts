@@ -98,7 +98,8 @@ class TidGiIPCSyncAdaptor {
       return;
     }
     const debouncedSync = debounce(() => {
-      if ($tw.syncer === undefined) {
+      const syncer = $tw.syncer;
+      if (syncer === undefined) {
         console.error('Syncer is undefined in TidGiIPCSyncAdaptor. Abort the `syncFromServer` in `setupSSE debouncedSync`.');
         return;
       }
@@ -106,11 +107,11 @@ class TidGiIPCSyncAdaptor {
       if (totalPending > 50 && typeof requestIdleCallback === 'function') {
         // Large batch (e.g. git checkout): defer to idle callback to avoid blocking UI
         requestIdleCallback(() => {
-          $tw.syncer.syncFromServer();
+          syncer.syncFromServer();
           this.clearUpdatedTiddlers();
         }, { timeout: 2000 });
       } else {
-        $tw.syncer.syncFromServer();
+        syncer.syncFromServer();
         this.clearUpdatedTiddlers();
       }
     }, 500);

@@ -428,6 +428,28 @@ export class View implements IViewService {
     return this.getView(workspaceID, windowName)?.webContents.getURL();
   }
 
+  public async getViewsInfo(): Promise<import('./interface').IViewInfo[]> {
+    const results = [];
+    for (const [workspaceID, windowViews] of this.views.entries()) {
+      const workspace = await this.workspaceService.get(workspaceID);
+      const workspaceName = workspace?.name ?? workspaceID;
+      for (const [windowName, view] of windowViews.entries()) {
+        const destroyed = view.webContents.isDestroyed();
+        const bounds = view.getBounds();
+        const url = destroyed ? '' : view.webContents.getURL();
+        results.push({ workspaceID, workspaceName, windowName, bounds, url, isDestroyed: destroyed });
+      }
+    }
+    return results;
+  }
+
+  public openDevToolsForView(workspaceID: string, windowName: WindowNames): void {
+    const view = this.getView(workspaceID, windowName);
+    if (view !== undefined && !view.webContents.isDestroyed()) {
+      view.webContents.openDevTools();
+    }
+  }
+
   public setViewsAudioPref = (shouldMuteAudio?: boolean): void => {
     if (shouldMuteAudio !== undefined) this.shouldMuteAudio = shouldMuteAudio;
     this.forEachView(async (view, id) => {

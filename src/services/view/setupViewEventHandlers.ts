@@ -118,6 +118,10 @@ export default function setupViewEventHandlers(
     if (view.webContents === null) {
       return;
     }
+    // webContents.close() is called during hibernation, so events can still arrive after destruction.
+    if (view.webContents.isDestroyed()) {
+      return;
+    }
     logger.debug('set isLoading to false', {
       reason,
       id: workspace.id,

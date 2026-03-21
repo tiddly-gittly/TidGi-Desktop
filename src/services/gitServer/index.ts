@@ -112,6 +112,9 @@ export class GitServerService implements IGitServerService {
           git = gitSpawn([service.replace('git-', ''), '--stateless-rpc', '--advertise-refs', repoPath], repoPath, {
             env: { GIT_PROJECT_ROOT: repoPath, GIT_HTTP_EXPORT_ALL: '1' },
           });
+          if (!git.stdout || !git.stderr) {
+            throw new Error('Git stdio streams are unavailable for info/refs');
+          }
 
           git.stdout.on('data', (data: Buffer) => {
             subscriber.next({ type: 'data', data: new Uint8Array(data) });
@@ -161,6 +164,9 @@ export class GitServerService implements IGitServerService {
           git = gitSpawn(['upload-pack', '--stateless-rpc', repoPath], repoPath, {
             env: { GIT_PROJECT_ROOT: repoPath, GIT_HTTP_EXPORT_ALL: '1' },
           });
+          if (!git.stdin || !git.stdout || !git.stderr) {
+            throw new Error('Git stdio streams are unavailable for upload-pack');
+          }
 
           git.stdin.on('error', (error: Error) => {
             logger.debug('Git upload-pack stdin error:', { error: error.message, workspaceId });
@@ -228,6 +234,9 @@ export class GitServerService implements IGitServerService {
           git = gitSpawn(['-c', 'receive.denyCurrentBranch=updateInstead', 'receive-pack', '--stateless-rpc', repoPath], repoPath, {
             env: { GIT_PROJECT_ROOT: repoPath },
           });
+          if (!git.stdin || !git.stdout || !git.stderr) {
+            throw new Error('Git stdio streams are unavailable for receive-pack');
+          }
 
           git.stdin.on('error', (error: Error) => {
             logger.debug('Git receive-pack stdin error:', { error: error.message, workspaceId });

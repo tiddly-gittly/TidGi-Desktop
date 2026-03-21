@@ -28,8 +28,10 @@ function createWorkspace(overrides: Partial<IWikiWorkspace>): IWikiWorkspace {
 }
 
 function createWorkspaceService(workspace: IWikiWorkspace): Workspace {
-  const service = new Workspace() as Workspace & { workspaces?: Record<string, IWikiWorkspace> };
-  service.workspaces = { [workspace.id]: workspace };
+  const service = new Workspace();
+  // workspaces is private; bypass in tests via any cast
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (service as any).workspaces = { [workspace.id]: workspace };
   return service;
 }
 
