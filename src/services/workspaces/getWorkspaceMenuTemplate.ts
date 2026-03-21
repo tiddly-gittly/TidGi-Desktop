@@ -32,7 +32,7 @@ interface IWorkspaceMenuRequiredServices {
   native: Pick<INativeService, 'log' | 'openURI' | 'openPath' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualInfo'>;
   preference: Pick<IPreferenceService, 'getPreferences'>;
   sync: Pick<ISyncService, 'syncWikiIfNeeded'>;
-  view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
+  view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl' | 'canGoBackInView' | 'canGoForwardInView' | 'goBackInView' | 'goForwardInView'>;
   wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open' | 'get'>;
@@ -107,12 +107,6 @@ export async function getSimplifiedWorkspaceMenuTemplate(
         },
       },
       {
-        label: t('ContextMenu.Reload'),
-        click: async () => {
-          await service.view.reloadViewsWebContents(id);
-        },
-      },
-      {
         label: t('ContextMenu.OpenCommandPalette'),
         click: async () => {
           await service.wiki.wikiOperationInBrowser(WikiChannel.dispatchEvent, id, ['open-command-palette']);
@@ -125,6 +119,14 @@ export async function getSimplifiedWorkspaceMenuTemplate(
     label: t('WorkspaceSelector.EditWorkspace'),
     click: async () => {
       await service.window.open(WindowNames.editWorkspace, { workspaceID: id });
+    },
+  });
+
+  // View git history (always visible for wiki workspaces)
+  template.push({
+    label: t('WorkspaceSelector.ViewGitHistory'),
+    click: async () => {
+      await service.window.open(WindowNames.gitHistory, { workspaceID: id }, { recreate: true });
     },
   });
 
@@ -271,6 +273,28 @@ export async function getWorkspaceMenuTemplate(
       },
     });
   }
+
+  const [canGoBack, canGoForward] = await Promise.all([
+    service.view.canGoBackInView(id, WindowNames.main),
+    service.view.canGoForwardInView(id, WindowNames.main),
+  ]);
+  template.push(
+    { type: 'separator' },
+    {
+      label: t('ContextMenu.Back'),
+      enabled: canGoBack,
+      click: () => {
+        void service.view.goBackInView(id, WindowNames.main);
+      },
+    },
+    {
+      label: t('ContextMenu.Forward'),
+      enabled: canGoForward,
+      click: () => {
+        void service.view.goForwardInView(id, WindowNames.main);
+      },
+    },
+  );
 
   return template;
 }

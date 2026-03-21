@@ -382,24 +382,6 @@ export class MenuService implements IMenuService {
     menu.append(new MenuItem({ type: 'separator' }));
     menu.append(
       new MenuItem({
-        label: i18n.t('ContextMenu.Back'),
-        enabled: webContents.navigationHistory.canGoBack(),
-        click: () => {
-          webContents.navigationHistory.goBack();
-        },
-      }),
-    );
-    menu.append(
-      new MenuItem({
-        label: i18n.t('ContextMenu.Forward'),
-        enabled: webContents.navigationHistory.canGoForward(),
-        click: () => {
-          webContents.navigationHistory.goForward();
-        },
-      }),
-    );
-    menu.append(
-      new MenuItem({
         label: sidebar ? i18n.t('Preference.HideSideBar') : i18n.t('Preference.ShowSideBar'),
         click: async () => {
           await this.preferenceService.set('sidebar', !sidebar);
