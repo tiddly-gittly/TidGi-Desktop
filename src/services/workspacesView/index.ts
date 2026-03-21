@@ -384,16 +384,30 @@ export class WorkspaceView implements IWorkspaceViewService {
       void this.hibernateWorkspace(wikiToHibernate);
     }
 
-    if (isWikiWorkspace(newWorkspace) && newWorkspace.hibernated) {
+    // If a previous switch fired a background hibernation for the workspace we are NOW switching TO,
+    // wait for it to finish so we don't race between destroy-views and create-views.
+    const pendingHibernation = this.hibernatingWorkspaces.get(nextWorkspaceID);
+    if (pendingHibernation !== undefined) {
+      logger.debug('setActiveWorkspaceView: waiting for in-flight hibernation to finish', { nextWorkspaceID });
+      await pendingHibernation;
+    }
+
+    // Re-fetch workspace state after any hibernation completed above, since hibernated flag may have changed.
+    const freshWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(nextWorkspaceID);
+    if (freshWorkspace === undefined) {
+      throw new Error(`Workspace id ${nextWorkspaceID} disappeared while switching. In setActiveWorkspaceView().`);
+    }
+
+    if (isWikiWorkspace(freshWorkspace) && freshWorkspace.hibernated) {
       await this.wakeUpWorkspaceView(nextWorkspaceID);
     }
 
     // fix #556 and #593: Ensure wiki worker is started before showing the view. This must happen before `showWorkspaceView` to ensure the worker is ready when view is created.
-    if (isWikiWorkspace(newWorkspace) && !newWorkspace.hibernated) {
+    if (isWikiWorkspace(freshWorkspace) && !freshWorkspace.hibernated) {
       const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
       const worker = wikiService.getWorker(nextWorkspaceID);
       if (worker === undefined) {
-        const userName = await this.authService.getUserName(newWorkspace);
+        const userName = await this.authService.getUserName(freshWorkspace);
         await wikiService.startWiki(nextWorkspaceID, userName);
       }
     }
@@ -410,8 +424,9 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
   }
 
-  // Tracks workspace IDs currently undergoing background hibernation to prevent concurrent double-stop.
-  private readonly hibernatingWorkspaces = new Set<string>();
+  // Tracks workspace IDs currently undergoing background hibernation.
+  // Stored as a Map so callers can await the in-flight promise when switching back to the same workspace.
+  private readonly hibernatingWorkspaces = new Map<string, Promise<void>>();
 
   /**
    * When we switch from a wiki workspace to a page workspace (agent), the wiki's server must stay
@@ -426,26 +441,29 @@ export class WorkspaceView implements IWorkspaceViewService {
   private async hibernateWorkspace(workspaceID: string): Promise<void> {
     if (this.hibernatingWorkspaces.has(workspaceID)) {
       logger.debug('hibernateWorkspace: already in progress, skipping duplicate call', { workspaceID });
-      return;
+      return this.hibernatingWorkspaces.get(workspaceID)!;
     }
-    this.hibernatingWorkspaces.add(workspaceID);
-    try {
-      const workspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(workspaceID);
-      if (workspace === undefined) return;
-
-      // Hide the view first, but don't let a failure here prevent the wiki server from stopping.
+    const promise = (async () => {
       try {
-        await this.hideWorkspaceView(workspaceID);
-      } catch (error) {
-        logger.warn('hibernateWorkspace: hideWorkspaceView failed, continuing to stop wiki', { workspaceID, error });
-      }
+        const workspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(workspaceID);
+        if (workspace === undefined) return;
 
-      if (isWikiWorkspace(workspace) && workspace.hibernateWhenUnused) {
-        await this.hibernateWorkspaceView(workspaceID);
+        // Hide the view first, but don't let a failure here prevent the wiki server from stopping.
+        try {
+          await this.hideWorkspaceView(workspaceID);
+        } catch (error) {
+          logger.warn('hibernateWorkspace: hideWorkspaceView failed, continuing to stop wiki', { workspaceID, error });
+        }
+
+        if (isWikiWorkspace(workspace) && workspace.hibernateWhenUnused) {
+          await this.hibernateWorkspaceView(workspaceID);
+        }
+      } finally {
+        this.hibernatingWorkspaces.delete(workspaceID);
       }
-    } finally {
-      this.hibernatingWorkspaces.delete(workspaceID);
-    }
+    })();
+    this.hibernatingWorkspaces.set(workspaceID, promise);
+    return promise;
   }
 
   public async clearActiveWorkspaceView(idToDeactivate?: string): Promise<void> {

@@ -111,7 +111,7 @@ export async function handleAttachToTidgiMiniWindow(
           const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
           const activeWs = await workspaceService.getActiveWorkspace();
           const view = activeWs ? viewService.getView(activeWs.id, WindowNames.tidgiMiniWindow) : undefined;
-          if (view && !view.webContents.isDestroyed()) {
+          if (view && view.webContents != null && !view.webContents.isDestroyed()) {
             view.webContents.focus();
           }
         } catch (error) {

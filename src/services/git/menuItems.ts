@@ -47,25 +47,18 @@ export function createBackupMenuItems(
     return [];
   }
 
-  const baseItems = [
-    {
-      label: t('ContextMenu.BackupNow'),
-      click: async () => {
-        await syncService.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage') });
-      },
-    },
-  ];
-
-  if (aiEnabled) {
-    baseItems.push({
-      label: t('ContextMenu.BackupNow') + t('ContextMenu.WithAI'),
-      click: async () => {
+  const baseItem = {
+    label: aiEnabled ? t('ContextMenu.BackupNow') + t('ContextMenu.WithAI') : t('ContextMenu.BackupNow'),
+    click: async () => {
+      if (aiEnabled) {
         await syncService.syncWikiIfNeeded(workspace, { useAICommitMessage: true });
-      },
-    });
-  }
+      } else {
+        await syncService.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage') });
+      }
+    },
+  };
 
-  return baseItems;
+  return [baseItem];
 }
 
 /**
@@ -117,32 +110,20 @@ export function createSyncMenuItems(
   }
 
   const offlineText = isOnline ? '' : ` (${t('ContextMenu.NoNetworkConnection')})`;
-
-  if (aiEnabled) {
-    return [
-      {
-        label: t('ContextMenu.SyncNow') + offlineText,
-        enabled: isOnline,
-        click: async () => {
-          await syncService.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage') });
-        },
-      },
-      {
-        label: t('ContextMenu.SyncNow') + t('ContextMenu.WithAI') + offlineText,
-        enabled: isOnline,
-        click: async () => {
-          await syncService.syncWikiIfNeeded(workspace, { useAICommitMessage: true });
-        },
-      },
-    ];
-  }
+  const label = aiEnabled
+    ? t('ContextMenu.SyncNow') + t('ContextMenu.WithAI') + offlineText
+    : t('ContextMenu.SyncNow') + offlineText;
 
   return [
     {
-      label: t('ContextMenu.SyncNow') + offlineText,
+      label,
       enabled: isOnline,
       click: async () => {
-        await syncService.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage') });
+        if (aiEnabled) {
+          await syncService.syncWikiIfNeeded(workspace, { useAICommitMessage: true });
+        } else {
+          await syncService.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage') });
+        }
       },
     },
   ];

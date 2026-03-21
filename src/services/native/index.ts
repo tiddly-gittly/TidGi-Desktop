@@ -178,7 +178,10 @@ export class NativeService implements INativeService {
       if (showItemInFolder) {
         shell.showItemInFolder(filePath);
       } else {
-        await shell.openPath(filePath);
+        const error = await shell.openPath(filePath);
+        if (error) {
+          throw new Error(error);
+        }
       }
     } else {
       const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
@@ -188,7 +191,10 @@ export class NativeService implements INativeService {
         if (showItemInFolder) {
           shell.showItemInFolder(absolutePath);
         } else {
-          await shell.openPath(absolutePath);
+          const error = await shell.openPath(absolutePath);
+          if (error) {
+            throw new Error(error);
+          }
         }
       }
     }
@@ -500,6 +506,27 @@ ${message.message}
   public async getProcessInfo(): Promise<IProcessInfo> {
     const mem = process.memoryUsage();
     const toMB = (bytes: number): number => Math.round(bytes / 1024 / 1024);
+    // app.getAppMetrics() is synchronous and covers ALL Electron processes keyed by PID
+    const metricsMap = new Map<number, Electron.ProcessMetric>();
+    for (const metric of app.getAppMetrics()) {
+      metricsMap.set(metric.pid, metric);
+    }
+    const renderers = webContents.getAllWebContents()
+      .filter((c: Electron.WebContents) => !c.isDestroyed())
+      .map((c: Electron.WebContents) => {
+        const pid = c.getOSProcessId();
+        const metric = metricsMap.get(pid);
+        return {
+          pid,
+          title: c.getTitle().slice(0, 80),
+          type: c.getType(),
+          url: c.getURL().slice(0, 120),
+          isDestroyed: c.isDestroyed(),
+          private_KB: metric?.memory.privateBytes ?? -1,
+          workingSet_KB: metric?.memory.workingSetSize ?? -1,
+          cpu_percent: metric?.cpu.percentCPUUsage ?? -1,
+        };
+      });
     return {
       mainNode: {
         pid: process.pid,
@@ -509,15 +536,7 @@ ${message.message}
         heapTotal_MB: toMB(mem.heapTotal),
         external_MB: toMB(mem.external),
       },
-      renderers: webContents.getAllWebContents()
-        .filter((c: Electron.WebContents) => !c.isDestroyed())
-        .map((c: Electron.WebContents) => ({
-          pid: c.getOSProcessId(),
-          title: c.getTitle().slice(0, 80),
-          type: c.getType(),
-          url: c.getURL().slice(0, 120),
-          isDestroyed: c.isDestroyed(),
-        })),
+      renderers,
     };
   }
 
@@ -536,7 +555,14 @@ ${message.message}
         external_MB: info.mainNode.external_MB,
       });
       for (const renderer of info.renderers) {
-        logger.debug('Memory snapshot - renderer', renderer);
+        logger.debug('Memory snapshot - renderer', {
+          pid: renderer.pid,
+          title: renderer.title,
+          type: renderer.type,
+          private_MB: renderer.private_KB > 0 ? Math.round(renderer.private_KB / 1024) : -1,
+          workingSet_MB: renderer.workingSet_KB > 0 ? Math.round(renderer.workingSet_KB / 1024) : -1,
+          cpu_percent: renderer.cpu_percent,
+        });
       }
     }, 30_000);
   }

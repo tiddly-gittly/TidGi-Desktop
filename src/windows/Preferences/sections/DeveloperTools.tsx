@@ -131,10 +131,10 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                   onClick={async () => {
                     const localAppData = process.env.LOCALAPPDATA;
                     if (localAppData) {
-                      // %APPDATA%\Local\SquirrelTemp\SquirrelSetup.log
+                      // %LOCALAPPDATA%\SquirrelTemp\SquirrelSetup.log
                       const squirrelTemporaryPath = `${localAppData}\\SquirrelTemp`;
                       try {
-                        await window.service.native.openPath(squirrelTemporaryPath, true);
+                        await window.service.native.openPath(squirrelTemporaryPath, false);
                       } catch (error: unknown) {
                         void window.service.native.log(
                           'error',
@@ -449,79 +449,147 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                   <Table size='small'>
                     <TableHead>
                       <TableRow>
-                        <TableCell>PID</TableCell>
+                        <TableCell>
+                          <Tooltip title={t('Preference.RendererPIDTooltip')} placement='top'>
+                            <span>PID</span>
+                          </Tooltip>
+                        </TableCell>
                         <TableCell>{t('Preference.ViewDebugWorkspace')}</TableCell>
                         <TableCell>{t('Preference.ProcessInfoType')}</TableCell>
+                        <TableCell>
+                          <Tooltip title={t('Preference.RendererPrivateMemTooltip')} placement='top'>
+                            <span>{t('Preference.RendererPrivateMem')}</span>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title={t('Preference.RendererCPUTooltip')} placement='top'>
+                            <span>{t('Preference.RendererCPU')}</span>
+                          </Tooltip>
+                        </TableCell>
                         <TableCell>{t('Preference.ViewDebugBounds')}</TableCell>
                         <TableCell>{t('Preference.ViewDebugURL')}</TableCell>
                         <TableCell>{t('Preference.ViewDebugActions')}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {diagData.processInfo.renderers.map((renderer, index) => {
-                        const matchingView = diagData.viewsInfo.find((v) => v.pid === renderer.pid);
-                        return (
-                          <TableRow key={index}>
-                            <TableCell>{renderer.pid}</TableCell>
-                            <TableCell>
-                              {matchingView !== undefined
-                                ? (
-                                  <>
-                                    <Typography variant='body2' fontWeight='bold'>{matchingView.workspaceName}</Typography>
-                                    <Chip label={matchingView.windowName} size='small' sx={{ mt: 0.5 }} />
-                                  </>
-                                )
-                                : <Typography variant='caption' color='text.secondary'>{renderer.title || '-'}</Typography>}
-                            </TableCell>
-                            <TableCell>
-                              <Chip label={renderer.type} size='small' />
-                            </TableCell>
-                            <TableCell>
-                              {matchingView !== undefined
-                                ? (
-                                  <Typography variant='caption'>
-                                    {`x:${matchingView.bounds.x} y:${matchingView.bounds.y}`}
-                                    <br />
-                                    {`${matchingView.bounds.width}×${matchingView.bounds.height}`}
-                                  </Typography>
-                                )
-                                : '-'}
-                            </TableCell>
-                            <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              <Typography
-                                variant='caption'
-                                title={(matchingView?.url ?? renderer.url)}
-                                onClick={() => {
-                                  const url = (matchingView?.url ?? renderer.url) || '';
-                                  if (url) {
-                                    void navigator.clipboard.writeText(url);
-                                    setCopiedSnackbarOpen(true);
-                                  }
-                                }}
-                                sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                              >
-                                {(matchingView?.url ?? renderer.url) || '-'}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              {matchingView !== undefined && !matchingView.isDestroyed && (
-                                <Button
-                                  size='small'
-                                  variant='outlined'
+                      {[...diagData.processInfo.renderers]
+                        .sort((a, b) => {
+                          const memA = a.private_KB > 0 ? a.private_KB : a.workingSet_KB;
+                          const memB = b.private_KB > 0 ? b.private_KB : b.workingSet_KB;
+                          return memB - memA;
+                        })
+                        .map((renderer, index) => {
+                          const matchingView = diagData.viewsInfo.find((v) => v.pid === renderer.pid);
+                          return (
+                            <TableRow key={index}>
+                              <TableCell>{renderer.pid}</TableCell>
+                              <TableCell>
+                                {matchingView !== undefined
+                                  ? (
+                                    <>
+                                      <Typography variant='body2' fontWeight='bold'>{matchingView.workspaceName}</Typography>
+                                      <Chip label={matchingView.windowName} size='small' sx={{ mt: 0.5 }} />
+                                    </>
+                                  )
+                                  : <Typography variant='caption' color='text.secondary'>{renderer.title || '-'}</Typography>}
+                              </TableCell>
+                              <TableCell>
+                                <Chip label={renderer.type} size='small' />
+                              </TableCell>
+                              <TableCell>
+                                {renderer.private_KB > 0
+                                  ? (
+                                    <Typography
+                                      variant='body2'
+                                      fontWeight='bold'
+                                      color={renderer.private_KB > 500_000
+                                        ? 'error'
+                                        : renderer.private_KB > 200_000
+                                          ? 'warning.main'
+                                          : 'success.main'}
+                                    >
+                                      {`${Math.round(renderer.private_KB / 1024)} MB`}
+                                    </Typography>
+                                  )
+                                  : renderer.workingSet_KB > 0
+                                    ? (
+                                      <Typography
+                                        variant='body2'
+                                        fontWeight='bold'
+                                        color={renderer.workingSet_KB > 500_000
+                                          ? 'error'
+                                          : renderer.workingSet_KB > 200_000
+                                            ? 'warning.main'
+                                            : 'success.main'}
+                                      >
+                                        {`~${Math.round(renderer.workingSet_KB / 1024)} MB`}
+                                      </Typography>
+                                    )
+                                    : <Typography variant='caption' color='text.secondary'>-</Typography>}
+                              </TableCell>
+                              <TableCell>
+                                {renderer.cpu_percent >= 0
+                                  ? (
+                                    <Typography
+                                      variant='body2'
+                                      fontWeight='bold'
+                                      color={renderer.cpu_percent > 20
+                                        ? 'error'
+                                        : renderer.cpu_percent > 5
+                                          ? 'warning.main'
+                                          : 'text.primary'}
+                                    >
+                                      {`${renderer.cpu_percent.toFixed(1)} %`}
+                                    </Typography>
+                                  )
+                                  : <Typography variant='caption' color='text.secondary'>-</Typography>}
+                              </TableCell>
+                              <TableCell>
+                                {matchingView !== undefined
+                                  ? (
+                                    <Typography variant='caption'>
+                                      {`x:${matchingView.bounds.x} y:${matchingView.bounds.y}`}
+                                      <br />
+                                      {`${matchingView.bounds.width}×${matchingView.bounds.height}`}
+                                    </Typography>
+                                  )
+                                  : '-'}
+                              </TableCell>
+                              <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <Typography
+                                  variant='caption'
+                                  title={(matchingView?.url ?? renderer.url)}
                                   onClick={() => {
-                                    void window.service.view.openDevToolsForView(matchingView.workspaceID, matchingView.windowName);
+                                    const url = (matchingView?.url ?? renderer.url) || '';
+                                    if (url) {
+                                      void navigator.clipboard.writeText(url);
+                                      setCopiedSnackbarOpen(true);
+                                    }
                                   }}
+                                  sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
                                 >
-                                  DevTools
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      {diagData.processInfo.renderers.length === 0 && (
+                                  {(matchingView?.url ?? renderer.url) || '-'}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                {matchingView !== undefined && !matchingView.isDestroyed && (
+                                  <Button
+                                    size='small'
+                                    variant='outlined'
+                                    onClick={() => {
+                                      void window.service.view.openDevToolsForView(matchingView.workspaceID, matchingView.windowName);
+                                    }}
+                                  >
+                                    DevTools
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                        {diagData.processInfo.renderers.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={6} align='center'>
+                          <TableCell colSpan={8} align='center'>
                             <Typography color='text.secondary'>{t('Preference.ProcessInfoRenderersEmpty')}</Typography>
                           </TableCell>
                         </TableRow>

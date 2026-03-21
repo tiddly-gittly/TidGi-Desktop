@@ -1,4 +1,4 @@
-import { IAskAIWithSelectionData, WikiChannel } from '@/constants/channels';
+import { IAskAIWithSelectionData } from '@/constants/channels';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
@@ -71,7 +71,7 @@ export async function getSimplifiedWorkspaceMenuTemplate(
     return [];
   }
 
-  const { id, storageService, isSubWiki } = workspace;
+  const { id, storageService, gitUrl } = workspace;
   const template: MenuItemConstructorOptions[] = [];
 
   const lastUrl = await service.view.getViewCurrentUrl(id, WindowNames.main);
@@ -96,17 +96,6 @@ export async function getSimplifiedWorkspaceMenuTemplate(
       submenu: fullMenuTemplate,
     });
   }
-  // Restart and Reload (only for non-sub wikis)
-  if (!isSubWiki) {
-    template.push(
-      {
-        label: t('ContextMenu.OpenCommandPalette'),
-        click: async () => {
-          await service.wiki.wikiOperationInBrowser(WikiChannel.dispatchEvent, id, ['open-command-palette']);
-        },
-      },
-    );
-  }
   // Edit workspace
   template.push({
     label: t('WorkspaceSelector.EditWorkspace'),
@@ -123,14 +112,21 @@ export async function getSimplifiedWorkspaceMenuTemplate(
     },
   });
 
-  // Check if AI-generated backup title is enabled
   const aiGenerateBackupTitleEnabled = await service.git.isAIGenerateBackupTitleEnabled();
 
-  // Backup/Sync options (based on storage service)
-  if (storageService === SupportedStorageServices.local) {
-    const backupItems = createBackupMenuItems(workspace, t, service.sync, aiGenerateBackupTitleEnabled, false);
-    template.push(...backupItems);
+  // Sync items for cloud workspaces
+  if (storageService !== SupportedStorageServices.local && gitUrl) {
+    const userInfo = await service.auth.getStorageServiceUserInfo(storageService);
+    if (userInfo !== undefined) {
+      const isOnline = await service.context.isOnline();
+      const syncItems = createSyncMenuItems(workspace, t, service.sync, aiGenerateBackupTitleEnabled, isOnline, false);
+      template.push(...syncItems);
+    }
   }
+
+  // Local backup option (always shown for all wiki workspaces)
+  const backupItems = createBackupMenuItems(workspace, t, service.sync, aiGenerateBackupTitleEnabled, false);
+  template.push(...backupItems);
 
   return template;
 }
@@ -220,20 +216,19 @@ export async function getWorkspaceMenuTemplate(
   // Check if AI-generated backup title is enabled
   const aiGenerateBackupTitleEnabled = await service.git.isAIGenerateBackupTitleEnabled();
 
+  // For cloud workspaces with a configured git remote: add sync items
   if (gitUrl !== null && gitUrl.length > 0 && storageService !== SupportedStorageServices.local) {
     const userInfo = await service.auth.getStorageServiceUserInfo(storageService);
     if (userInfo !== undefined) {
       const isOnline = await service.context.isOnline();
-
       const syncItems = createSyncMenuItems(workspace, t, service.sync, aiGenerateBackupTitleEnabled, isOnline, false);
       template.push(...syncItems);
     }
   }
 
-  if (storageService === SupportedStorageServices.local) {
-    const backupItems = createBackupMenuItems(workspace, t, service.sync, aiGenerateBackupTitleEnabled, false);
-    template.push(...backupItems);
-  }
+  // Local backup is always shown for all wiki workspaces
+  const backupItems = createBackupMenuItems(workspace, t, service.sync, aiGenerateBackupTitleEnabled, false);
+  template.push(...backupItems);
 
   if (!isSubWiki) {
     template.push(

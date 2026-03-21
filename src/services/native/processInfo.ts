@@ -6,6 +6,12 @@ export interface IRendererProcessInfo {
   type: string;
   url: string;
   isDestroyed: boolean;
+  /** Private (non-shared) memory in KB. Windows only; -1 on other platforms. */
+  private_KB: number;
+  /** Working set size (physical RAM pages) in KB. */
+  workingSet_KB: number;
+  /** CPU usage percentage at the time of the snapshot (0–100+). */
+  cpu_percent: number;
 }
 
 export interface IProcessInfo {
