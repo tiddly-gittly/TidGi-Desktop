@@ -30,7 +30,6 @@ import type { IProcessInfo } from '@services/native/processInfo';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import type { IViewInfo } from '@services/view/interface';
 import type { IWorkerInfo } from '@services/wiki/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
@@ -505,27 +504,27 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                                       color={renderer.private_KB > 500_000
                                         ? 'error'
                                         : renderer.private_KB > 200_000
-                                          ? 'warning.main'
-                                          : 'success.main'}
+                                        ? 'warning.main'
+                                        : 'success.main'}
                                     >
                                       {`${Math.round(renderer.private_KB / 1024)} MB`}
                                     </Typography>
                                   )
                                   : renderer.workingSet_KB > 0
-                                    ? (
-                                      <Typography
-                                        variant='body2'
-                                        fontWeight='bold'
-                                        color={renderer.workingSet_KB > 500_000
-                                          ? 'error'
-                                          : renderer.workingSet_KB > 200_000
-                                            ? 'warning.main'
-                                            : 'success.main'}
-                                      >
-                                        {`~${Math.round(renderer.workingSet_KB / 1024)} MB`}
-                                      </Typography>
-                                    )
-                                    : <Typography variant='caption' color='text.secondary'>-</Typography>}
+                                  ? (
+                                    <Typography
+                                      variant='body2'
+                                      fontWeight='bold'
+                                      color={renderer.workingSet_KB > 500_000
+                                        ? 'error'
+                                        : renderer.workingSet_KB > 200_000
+                                        ? 'warning.main'
+                                        : 'success.main'}
+                                    >
+                                      {`~${Math.round(renderer.workingSet_KB / 1024)} MB`}
+                                    </Typography>
+                                  )
+                                  : <Typography variant='caption' color='text.secondary'>-</Typography>}
                               </TableCell>
                               <TableCell>
                                 {renderer.cpu_percent >= 0
@@ -536,8 +535,8 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                                       color={renderer.cpu_percent > 20
                                         ? 'error'
                                         : renderer.cpu_percent > 5
-                                          ? 'warning.main'
-                                          : 'text.primary'}
+                                        ? 'warning.main'
+                                        : 'text.primary'}
                                     >
                                       {`${renderer.cpu_percent.toFixed(1)} %`}
                                     </Typography>
@@ -558,7 +557,7 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                               <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 <Typography
                                   variant='caption'
-                                  title={(matchingView?.url ?? renderer.url)}
+                                  title={matchingView?.url ?? renderer.url}
                                   onClick={() => {
                                     const url = (matchingView?.url ?? renderer.url) || '';
                                     if (url) {
@@ -587,7 +586,7 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                             </TableRow>
                           );
                         })}
-                        {diagData.processInfo.renderers.length === 0 && (
+                      {diagData.processInfo.renderers.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={8} align='center'>
                             <Typography color='text.secondary'>{t('Preference.ProcessInfoRenderersEmpty')}</Typography>

@@ -23,8 +23,8 @@ import i18next from 'i18next';
 import { ZxNotInitializedError } from './error';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
 import type { INativeService, IPickDirectoryOptions } from './interface';
-import type { IProcessInfo } from './processInfo';
 import { getShortcutCallback, registerShortcutByKey } from './keyboardShortcutHelpers';
+import type { IProcessInfo } from './processInfo';
 import { reportErrorToGithubWithTemplates } from './reportError';
 
 @injectable()
