@@ -31,11 +31,11 @@ Feature: Git Log Window
       """
     Then I wait for tiddler "GitLogTestTiddler" to be added by watch-fs
     # Use menu to commit the file - this will use default message (no AI configured)
-    When I click menu "知识库 > 立即本地Git备份"
+    When I click menu "同步和备份 > 立即本地Git备份"
     # wait for git operation to complete
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
     # Open Git Log through menu
-    When I click menu "知识库 > 查看历史备份"
+    When I click menu "同步和备份 > 查看历史备份"
     And I switch to "gitHistory" window
     And I wait for the page to load completely
     # Wait for git log to query history and render UI
@@ -56,7 +56,7 @@ Feature: Git Log Window
     And I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Modified Index content - testing realtime update!"
     Then I wait for tiddler "Index" to be updated by watch-fs
     # Open Git Log window
-    When I click menu "知识库 > 查看历史备份"
+    When I click menu "同步和备份 > 查看历史备份"
     And I should see "Modified Index content" in the browser view content
     And I switch to "gitHistory" window
     And I wait for the page to load completely
@@ -115,7 +115,7 @@ Feature: Git Log Window
     And I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Discard test content - should be reverted!"
     Then I wait for tiddler "Index" to be updated by watch-fs
     # Open Git Log window
-    When I click menu "知识库 > 查看历史备份"
+    When I click menu "同步和备份 > 查看历史备份"
     And I should see "Discard test content" in the browser view content
     And I switch to "gitHistory" window
     And I wait for the page to load completely
@@ -144,7 +144,7 @@ Feature: Git Log Window
   @git
   Scenario: Git Log window auto-refreshes when files change (only when window is open)
     # Open Git Log window FIRST
-    When I click menu "知识库 > 查看历史备份"
+    When I click menu "同步和备份 > 查看历史备份"
     And I switch to "gitHistory" window
     And I wait for the page to load completely
     # Should see initial commits

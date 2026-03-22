@@ -51,7 +51,7 @@ Feature: Git Sync
       """
     Then I wait for tiddler "SyncMenuTestTiddler" to be added by watch-fs
     When I clear test-id markers from logs
-    When I click menu "知识库 > 立即同步云端"
+    When I click menu "同步和备份 > 立即同步云端"
     Then I wait for "git sync completed" log marker "[test-id-git-sync-complete]"
     Then the remote repository "{tmpDir}/remote-repo-menu.git" should contain commit with message "使用太记桌面版备份"
     And the remote repository "{tmpDir}/remote-repo-menu.git" should contain file "tiddlers/SyncMenuTestTiddler.tid"
@@ -86,7 +86,7 @@ Feature: Git Sync
       """
     Then I wait for tiddler "AppendDoc" to be added by watch-fs
     When I clear test-id markers from logs
-    When I click menu "知识库 > 立即同步云端"
+    When I click menu "同步和备份 > 立即同步云端"
     Then I wait for "git sync completed" log marker "[test-id-git-sync-complete]"
 
     When I push a commit to bare repository "{tmpDir}/remote-diverge.git" adding file "tiddlers/AppendDoc.tid" with content:
@@ -118,7 +118,7 @@ Feature: Git Sync
     Then I wait for tiddler "AppendDoc" to be updated by watch-fs
 
     When I clear test-id markers from logs
-    When I click menu "知识库 > 立即同步云端"
+    When I click menu "同步和备份 > 立即同步云端"
     Then I wait for "git sync completed" log marker "[test-id-git-sync-complete]"
     Then file "{tmpDir}/wiki/tiddlers/AppendDoc.tid" should contain text "Appended from external."
     And file "{tmpDir}/wiki/tiddlers/AppendDoc.tid" should contain text "Inserted from desktop."
@@ -136,7 +136,7 @@ Feature: Git Sync
       """
     Then I wait for tiddler "ConflictDoc" to be added by watch-fs
     When I clear test-id markers from logs
-    When I click menu "知识库 > 立即同步云端"
+    When I click menu "同步和备份 > 立即同步云端"
     Then I wait for "git sync completed" log marker "[test-id-git-sync-complete]"
 
     When I push a commit to bare repository "{tmpDir}/remote-diverge.git" adding file "tiddlers/ConflictDoc.tid" with content:
@@ -161,7 +161,7 @@ Feature: Git Sync
     Then I wait for tiddler "ConflictDoc" to be updated by watch-fs
 
     When I clear test-id markers from logs
-    When I click menu "知识库 > 立即同步云端"
+    When I click menu "同步和备份 > 立即同步云端"
     Then I wait for "git sync completed" log marker "[test-id-git-sync-complete]"
     Then file "{tmpDir}/wiki/tiddlers/ConflictDoc.tid" should contain text "External edited this line."
     And file "{tmpDir}/wiki/tiddlers/ConflictDoc.tid" should contain text "Desktop edited this line."

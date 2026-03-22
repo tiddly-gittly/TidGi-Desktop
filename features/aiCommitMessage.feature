@@ -29,7 +29,7 @@ Feature: AI-Generated Git Commit Messages
     When I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "AI-generated commit message test content"
     Then I wait for tiddler "Index" to be updated by watch-fs
     # Open Git Log window to commit using the button
-    When I click menu "知识库 > 查看历史备份"
+    When I click menu "同步和备份 > 查看历史备份"
     And I switch to "gitHistory" window
     And I wait for the page to load completely
     # Should see uncommitted changes row
