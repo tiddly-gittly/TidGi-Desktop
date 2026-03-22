@@ -1,6 +1,6 @@
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { AccordionDetails, Autocomplete, AutocompleteRenderInputParams, Button, List, ListItem, ListItemText, MenuItem, Switch, Tooltip, Typography } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
@@ -20,6 +20,7 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
   const { t } = useTranslation();
   const { workspace, workspaceSetter, showDetails } = props;
   const [tagInputValue, setTagInputValue] = useState<string>('');
+  const [accordionExpanded, setAccordionExpanded] = useState(false);
 
   const {
     isSubWiki,
@@ -58,9 +59,21 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
     (candidate) => candidate.id === workspace.mainWikiID || candidate.wikiFolderLocation === workspace.mainWikiToLink,
   );
 
+  // Auto-expand when there's relevant content to show (bound sub-wikis or sub-wiki is editing its own settings)
+  useEffect(() => {
+    if (showDetails && (isSubWiki || boundSubWorkspaces.length > 0)) {
+      setAccordionExpanded(true);
+    }
+  }, [showDetails, isSubWiki, boundSubWorkspaces.length]);
+
   const availableTags = useAvailableTags(workspace.mainWikiID ?? undefined, true);
   return (
-    <OptionsAccordion>
+    <OptionsAccordion
+      expanded={accordionExpanded}
+      onChange={(_, expanded) => {
+        setAccordionExpanded(expanded);
+      }}
+    >
       <Tooltip title={t('EditWorkspace.ClickToExpand')}>
         <OptionsAccordionSummary expandIcon={<ExpandMoreIcon />} data-testid='preference-section-subWorkspaceOptions'>
           {t('AddWorkspace.SubWorkspaceOptions')}
