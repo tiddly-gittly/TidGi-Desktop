@@ -69,7 +69,7 @@ export default function EditWorkspace(): React.JSX.Element {
           </>
         )}
         <AppearanceOptions workspace={workspace} workspaceSetter={workspaceSetter} />
-        <SaveAndSyncOptions workspace={workspace} workspaceSetter={workspaceSetter} rememberLastPageVisited={rememberLastPageVisited} />
+        <SaveAndSyncOptions workspace={workspace} workspaceSetter={workspaceSetter} />
         {isWiki && (
           <SubWorkspaceRouting
             workspace={workspace}

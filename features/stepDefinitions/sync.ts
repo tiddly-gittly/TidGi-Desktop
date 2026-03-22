@@ -7,6 +7,11 @@ import type { IWorkspace } from '../../src/services/workspaces/interface';
 import { getSettingsPath, getWikiTestRootPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
 
+function cleanupPathBestEffort(targetPath: string): void {
+  // Git child processes can keep short-lived handles on Windows after a successful push.
+  void fs.remove(targetPath).catch(() => {});
+}
+
 /**
  * Read settings.json and find workspace by name, returning its id and port.
  */
@@ -119,7 +124,7 @@ Then('the remote repository {string} should contain commit with message {string}
   } finally {
     // Clean up temporary clone
     if (await fs.pathExists(temporaryClonePath)) {
-      await fs.remove(temporaryClonePath);
+      cleanupPathBestEffort(temporaryClonePath);
     }
   }
 });
@@ -171,7 +176,7 @@ Then('the remote repository {string} should contain file {string}', async functi
   } finally {
     // Clean up temporary clone
     if (await fs.pathExists(temporaryClonePath)) {
-      await fs.remove(temporaryClonePath);
+      cleanupPathBestEffort(temporaryClonePath);
     }
   }
 });
@@ -215,7 +220,7 @@ When(
       }
     } finally {
       if (await fs.pathExists(temporaryClonePath)) {
-        await fs.remove(temporaryClonePath);
+        cleanupPathBestEffort(temporaryClonePath);
       }
     }
   },
