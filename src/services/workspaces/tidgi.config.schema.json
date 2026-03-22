@@ -165,11 +165,6 @@
       "type": ["string", "null"],
       "description": "Canonical workspace ID of the main wiki this sub-wiki is attached to",
       "default": null
-    },
-    "mainWikiToLink": {
-      "type": ["string", "null"],
-      "description": "Absolute path of the main wiki this sub-wiki is linked to (device-specific, used as import hint)",
-      "default": null
     }
   },
   "required": ["version"],

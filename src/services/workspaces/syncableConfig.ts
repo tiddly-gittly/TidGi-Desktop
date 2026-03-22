@@ -61,7 +61,6 @@ export const syncableConfigFields = [
   'https',
   'isSubWiki',
   'mainWikiID',
-  'mainWikiToLink',
 ] as const;
 
 /**
@@ -102,7 +101,6 @@ export const syncableConfigDefaultValues = {
   https: undefined as { enabled: boolean; tlsCert?: string; tlsKey?: string } | undefined,
   isSubWiki: false,
   mainWikiID: null as string | null,
-  mainWikiToLink: null as string | null,
 } as const;
 
 /**
@@ -135,7 +133,6 @@ export type ISyncableWikiConfig = {
   https?: { enabled: boolean; tlsCert?: string; tlsKey?: string };
   isSubWiki: boolean;
   mainWikiID: string | null;
-  mainWikiToLink: string | null;
 };
 
 /**

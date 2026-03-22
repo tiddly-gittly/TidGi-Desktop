@@ -33,7 +33,7 @@ import type {
 } from './interface';
 import { isWikiWorkspace, wikiWorkspaceDefaultValues } from './interface';
 import { registerMenu } from './registerMenu';
-import { syncableConfigDefaultValues, syncableConfigFields } from './syncableConfig';
+import { syncableConfigFields } from './syncableConfig';
 import { workspaceSorter } from './utilities';
 
 @injectable()
@@ -224,9 +224,11 @@ export class Workspace implements IWorkspaceService {
       const fileConfigForComparison = existingFileConfig ?? {};
       const syncableChanged = existingFileConfig === undefined ||
         syncableConfigFields.some((field) =>
+          // treat a missing key (e.g. newly added field) as changed so the file gets updated
+          !Object.prototype.hasOwnProperty.call(fileConfigForComparison, field) ||
           !isEqual(
             (newSyncableConfig as Record<string, unknown>)[field],
-            (fileConfigForComparison as Record<string, unknown>)[field] ?? syncableConfigDefaultValues[field],
+            (fileConfigForComparison as Record<string, unknown>)[field],
           )
         );
       if (syncableChanged) {

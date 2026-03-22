@@ -78,9 +78,9 @@ export function ExistedWikiForm({
           if (Array.isArray(config.tagNames) && config.tagNames.length > 0) {
             tagNamesSetter(config.tagNames);
           }
-          if (config.mainWikiToLink) {
+          if (config.mainWikiID) {
             const match = mainWorkspaceList.find(
-              ws => isWikiWorkspace(ws) && ws.wikiFolderLocation === config.mainWikiToLink,
+              ws => isWikiWorkspace(ws) && ws.id === config.mainWikiID,
             );
             if (match !== undefined && isWikiWorkspace(match)) {
               mainWikiToLinkSetter({ wikiFolderLocation: match.wikiFolderLocation, port: match.port, id: match.id });
