@@ -36,3 +36,24 @@ Feature: TidGi Mini Window
     And I confirm the "tidgiMiniWindow" window exists
     And I confirm the "tidgiMiniWindow" window not visible
 
+  Scenario: Hidden tidgi mini window catches up with main window changes when shown again
+    Given I configure tidgi mini window with shortcut
+    And I cleanup test wiki so it could create a new one on start
+    And I launch the TidGi application
+    And I wait for the page to load completely
+    Then I switch to "main" window
+    When I press the key combination "CommandOrControl+Shift+M"
+    And I confirm the "tidgiMiniWindow" window exists
+    And I confirm the "tidgiMiniWindow" window visible
+    Then I switch to "tidgiMiniWindow" window
+    And the browser view should be loaded and visible
+    Then I switch to "main" window
+    When I press the key combination "CommandOrControl+Shift+M"
+    And I confirm the "tidgiMiniWindow" window not visible
+    When I execute TiddlyWiki code in browser view: "$tw.wiki.addTiddler(new $tw.Tiddler({title: 'Index', text: 'TidgiMiniWindowHiddenSync123'}))"
+    And I press the key combination "CommandOrControl+Shift+M"
+    And I confirm the "tidgiMiniWindow" window visible
+    Then I switch to "tidgiMiniWindow" window
+    And the browser view should be loaded and visible
+    And I should see "TidgiMiniWindowHiddenSync123" in the browser view content
+

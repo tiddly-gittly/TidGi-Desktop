@@ -47,14 +47,14 @@ Then('I should see {string} in the browser view content', async function(this: A
 
   await backOff(
     async () => {
-      const content = await getTextContent(this.app!);
+      const content = await getTextContent(this.app!, this.currentWindow);
       if (!content || !content.includes(expectedText)) {
         throw new Error(`Expected text "${expectedText}" not found`);
       }
     },
     BACKOFF_OPTIONS,
   ).catch(async () => {
-    const finalContent = await getTextContent(this.app!);
+    const finalContent = await getTextContent(this.app!, this.currentWindow);
     throw new Error(
       `Expected text "${expectedText}" not found in browser view content. Actual content: ${finalContent ? finalContent.substring(0, 200) + '...' : 'null'}`,
     );
@@ -72,14 +72,14 @@ Then('I should see {string} in the browser view DOM', async function(this: Appli
 
   await backOff(
     async () => {
-      const domContent = await getDOMContent(this.app!);
+      const domContent = await getDOMContent(this.app!, this.currentWindow);
       if (!domContent || !domContent.includes(expectedText)) {
         throw new Error(`Expected text "${expectedText}" not found in DOM`);
       }
     },
     BACKOFF_OPTIONS,
   ).catch(async () => {
-    const finalDomContent = await getDOMContent(this.app!);
+    const finalDomContent = await getDOMContent(this.app!, this.currentWindow);
     throw new Error(
       `Expected text "${expectedText}" not found in browser view DOM. Actual DOM: ${finalDomContent ? finalDomContent.substring(0, 200) + '...' : 'null'}`,
     );
@@ -97,7 +97,7 @@ Then('the browser view should be loaded and visible', async function(this: Appli
 
   await backOff(
     async () => {
-      const content = await getTextContent(this.app!);
+      const content = await getTextContent(this.app!, this.currentWindow);
       if (!content || content.trim().length === 0) {
         throw new Error('Browser view content not available yet');
       }
@@ -112,8 +112,8 @@ Then('the browser view should be loaded and visible', async function(this: Appli
     // Gather diagnostics for failure analysis
     let diagnostics = '';
     try {
-      const loaded = await isLoaded(this.app!);
-      const content = await getTextContent(this.app!);
+      const loaded = await isLoaded(this.app!, this.currentWindow);
+      const content = await getTextContent(this.app!, this.currentWindow);
       diagnostics = `isLoaded=${loaded}, textContent=${content ? `"${content.substring(0, 100)}..."` : 'null'}`;
     } catch (diagError) {
       diagnostics = `diagnostics failed: ${String(diagError)}`;
@@ -138,10 +138,10 @@ When('I click on {string} element in browser view with selector {string}', async
       // Extract base selector and text content
       const baseSelector = hasTextMatch[1];
       const textContent = hasTextMatch[2];
-      await clickElementWithText(this.app, baseSelector, textContent);
+      await clickElementWithText(this.app, baseSelector, textContent, this.currentWindow);
     } else {
       // Use regular selector
-      await clickElement(this.app, selector);
+      await clickElement(this.app, selector, this.currentWindow);
     }
   } catch (error) {
     throw new Error(`Failed to click ${elementComment} element with selector "${selector}" in browser view: ${error as Error}`);
@@ -168,9 +168,9 @@ When('I click on {string} elements in browser view with selectors:', async funct
       if (hasTextMatch) {
         const baseSelector = hasTextMatch[1];
         const textContent = hasTextMatch[2];
-        await clickElementWithText(this.app, baseSelector, textContent);
+        await clickElementWithText(this.app, baseSelector, textContent, this.currentWindow);
       } else {
-        await clickElement(this.app, selector);
+        await clickElement(this.app, selector, this.currentWindow);
       }
     } catch (error) {
       errors.push(`Failed to click ${elementComment} element with selector "${selector}" in browser view: ${error as Error}`);
@@ -193,7 +193,7 @@ Then('I wait for {string} element in browser view with selector {string}', async
 
   await backOff(
     async () => {
-      const exists = await elementExists(this.app!, selector);
+      const exists = await elementExists(this.app!, selector, this.currentWindow);
       if (!exists) {
         throw new Error(`Element "${elementComment}" with selector "${selector}" not found yet`);
       }
@@ -210,7 +210,7 @@ When('I type {string} in {string} element in browser view with selector {string}
   }
 
   try {
-    await typeText(this.app, selector, text);
+    await typeText(this.app, selector, text, this.currentWindow);
   } catch (error) {
     throw new Error(`Failed to type in ${elementComment} element with selector "${selector}" in browser view: ${error as Error}`);
   }
@@ -222,7 +222,7 @@ When('I press {string} in browser view', async function(this: ApplicationWorld, 
   }
 
   try {
-    await pressKey(this.app, key);
+    await pressKey(this.app, key, this.currentWindow);
   } catch (error) {
     throw new Error(`Failed to press key "${key}" in browser view: ${error as Error}`);
   }
@@ -241,7 +241,7 @@ Then('I should not see {string} in the browser view content', async function(thi
   await new Promise(resolve => setTimeout(resolve, 500));
 
   // Check that text does not exist in content
-  const content = await getTextContent(this.app);
+  const content = await getTextContent(this.app, this.currentWindow);
   if (content && content.includes(unexpectedText)) {
     throw new Error(`Unexpected text "${unexpectedText}" found in browser view content`);
   }
@@ -258,7 +258,7 @@ Then('I should not see a(n) {string} element in browser view with selector {stri
 
   await backOff(
     async () => {
-      const exists: boolean = await elementExists(this.app!, selector);
+      const exists: boolean = await elementExists(this.app!, selector, this.currentWindow);
       if (exists) {
         throw new Error('Element still exists');
       }
@@ -280,7 +280,7 @@ Then('I should see a(n) {string} element in browser view with selector {string}'
 
   await backOff(
     async () => {
-      const exists: boolean = await elementExists(this.app!, selector);
+      const exists: boolean = await elementExists(this.app!, selector, this.currentWindow);
       if (!exists) {
         throw new Error('Element does not exist yet');
       }
@@ -312,7 +312,7 @@ Then('I should see {string} elements in browser view with selectors:', async fun
     try {
       await backOff(
         async () => {
-          const exists: boolean = await elementExists(this.app!, selector);
+          const exists: boolean = await elementExists(this.app!, selector, this.currentWindow);
           if (!exists) {
             throw new Error('Element does not exist yet');
           }
@@ -351,6 +351,7 @@ When('I open tiddler {string} in browser view', async function(this: Application
           $tw.wiki.addToStory(title);
           return true;
         })()`,
+        this.currentWindow,
       );
     },
     { ...BACKOFF_OPTIONS, numOfAttempts: 8, startingDelay: 200, timeMultiple: 1, maxDelay: 200 },
@@ -386,7 +387,7 @@ When('I create a tiddler {string} with tag {string} in browser view', async func
     }));
     return true;
   })()`;
-  await executeTiddlyWikiCode(this.app, script);
+  await executeTiddlyWikiCode(this.app, script, this.currentWindow);
   // Give syncer time to pick up the change and write to disk
   await new Promise(resolve => setTimeout(resolve, 1500));
 });
@@ -418,7 +419,7 @@ When('I create a tiddler {string} with field {string} set to {string} in browser
     $tw.wiki.addTiddler(new $tw.Tiddler(fields));
     return true;
   })()`;
-  await executeTiddlyWikiCode(this.app, script);
+  await executeTiddlyWikiCode(this.app, script, this.currentWindow);
   // Give syncer time to pick up the change and write to disk
   await new Promise(resolve => setTimeout(resolve, 1500));
 });
@@ -435,7 +436,7 @@ When('I execute TiddlyWiki code in browser view: {string}', async function(this:
   try {
     // Wrap the code to avoid returning non-serializable objects
     const wrappedCode = `(function() { ${code}; return true; })()`;
-    await executeTiddlyWikiCode(this.app, wrappedCode);
+    await executeTiddlyWikiCode(this.app, wrappedCode, this.currentWindow);
   } catch (error) {
     throw new Error(`Failed to execute TiddlyWiki code in browser view: ${error as Error}`);
   }
@@ -503,6 +504,7 @@ Then('image {string} should be loaded in browser view', async function(this: App
                 canonicalUri: (typeof $tw !== 'undefined' && $tw.wiki && $tw.wiki.getTiddler(title)?.fields?._canonical_uri) || '',
               };
             })()`,
+          this.currentWindow,
           200,
         );
         lastDiagnostic = JSON.stringify(diagnostic);

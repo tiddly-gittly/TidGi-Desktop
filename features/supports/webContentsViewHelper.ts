@@ -2,64 +2,94 @@ import { WebContentsView } from 'electron';
 import fs from 'fs-extra';
 import type { ElectronApplication, Page } from 'playwright';
 
+async function getWindowUrl(page: Page | undefined): Promise<string | undefined> {
+  if (!page || page.isClosed()) {
+    return undefined;
+  }
+  try {
+    const url = page.url();
+    return url || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
- * Get the first WebContentsView from any window
- * Prioritizes the currently active workspace's view in the main window.
+ * Get the active WebContentsView from the target window.
  * When multiple wiki views exist, the LAST child is preferred because
  * showView() / addView() calls addChildView() which moves the view to the top.
  */
-async function getFirstWebContentsView(app: ElectronApplication) {
-  return await app.evaluate(async ({ BrowserWindow }) => {
+async function getFirstWebContentsView(app: ElectronApplication, page?: Page) {
+  const pageUrl = await getWindowUrl(page);
+  return await app.evaluate(async ({ BrowserWindow }, targetPageUrl?: string) => {
     const allWindows = BrowserWindow.getAllWindows();
 
-    // First try to find main window
-    const mainWindow = allWindows.find(w => !w.isDestroyed() && w.webContents?.getType() === 'window');
+    const getViewIdFromWindow = (window: Electron.BrowserWindow) => {
+      if (!window.contentView || !('children' in window.contentView)) {
+        return null;
+      }
 
-    if (mainWindow?.contentView && 'children' in mainWindow.contentView) {
-      const children = (mainWindow.contentView as WebContentsView).children as WebContentsView[];
-      if (Array.isArray(children) && children.length > 0) {
-        const candidateInfos = children
-          .map((child) => {
-            const wc = child?.webContents;
-            if (!wc) return undefined;
-            return {
-              id: wc.id,
-              url: wc.getURL(),
-              isLoading: wc.isLoading(),
-            };
-          })
-          .filter((info): info is { id: number; url: string; isLoading: boolean } => Boolean(info));
+      const children = (window.contentView as WebContentsView).children as WebContentsView[];
+      if (!Array.isArray(children) || children.length === 0) {
+        return null;
+      }
 
-        // The last wiki view in the children list is the active one (addChildView moves to end).
-        // Prefer it even if it's still loading.
-        for (let index = candidateInfos.length - 1; index >= 0; index--) {
-          if (candidateInfos[index].url.startsWith('tidgi://')) {
-            return candidateInfos[index].id;
-          }
+      const candidateInfos = children
+        .map((child) => {
+          const wc = child?.webContents;
+          if (!wc) return undefined;
+          return {
+            id: wc.id,
+            url: wc.getURL(),
+          };
+        })
+        .filter((info): info is { id: number; url: string } => Boolean(info));
+
+      for (let index = candidateInfos.length - 1; index >= 0; index--) {
+        if (candidateInfos[index].url.startsWith('tidgi://')) {
+          return candidateInfos[index].id;
         }
+      }
 
-        // Fallback to first non-empty URL.
-        const nonBlank = candidateInfos.find(info => info.url && info.url !== 'about:blank');
-        if (nonBlank) return nonBlank.id;
+      const nonBlank = candidateInfos.find(info => info.url && info.url !== 'about:blank');
+      if (nonBlank) {
+        return nonBlank.id;
+      }
 
-        const webContentsId = candidateInfos[0]?.id;
-        if (webContentsId) return webContentsId;
+      return candidateInfos[0]?.id ?? null;
+    };
+
+    if (targetPageUrl) {
+      const targetWindow = allWindows.find(w => !w.isDestroyed() && w.webContents?.getURL() === targetPageUrl);
+      if (targetWindow) {
+        const targetViewId = getViewIdFromWindow(targetWindow);
+        if (targetViewId) {
+          return targetViewId;
+        }
       }
     }
 
-    // If main window doesn't have a WebContentsView, check all windows
+    const mainWindow = allWindows.find(w => !w.isDestroyed() && w.webContents?.getType() === 'window');
+
+    if (mainWindow) {
+      const mainViewId = getViewIdFromWindow(mainWindow);
+      if (mainViewId) {
+        return mainViewId;
+      }
+    }
+
     for (const window of allWindows) {
-      if (!window.isDestroyed() && window.contentView && 'children' in window.contentView) {
-        const children = (window.contentView as WebContentsView).children as WebContentsView[];
-        if (Array.isArray(children) && children.length > 0) {
-          const webContentsId = children[0]?.webContents?.id;
-          if (webContentsId) return webContentsId;
-        }
+      if (window.isDestroyed()) {
+        continue;
+      }
+      const fallbackViewId = getViewIdFromWindow(window);
+      if (fallbackViewId) {
+        return fallbackViewId;
       }
     }
 
     return null;
-  });
+  }, pageUrl);
 }
 
 /**
@@ -68,9 +98,10 @@ async function getFirstWebContentsView(app: ElectronApplication) {
 async function executeInBrowserView<T>(
   app: ElectronApplication,
   script: string,
+  page?: Page,
   timeoutMs = 2000,
 ): Promise<T> {
-  const webContentsId = await getFirstWebContentsView(app);
+  const webContentsId = await getFirstWebContentsView(app, page);
 
   if (!webContentsId) {
     throw new Error('No WebContentsView found in main window');
@@ -99,11 +130,12 @@ async function executeInBrowserView<T>(
 /**
  * Get text content from WebContentsView
  */
-export async function getTextContent(app: ElectronApplication): Promise<string | null> {
+export async function getTextContent(app: ElectronApplication, page?: Page): Promise<string | null> {
   try {
     return await executeInBrowserView<string>(
       app,
       'document.body.textContent || document.body.innerText || ""',
+      page,
       2000,
     );
   } catch {
@@ -114,11 +146,12 @@ export async function getTextContent(app: ElectronApplication): Promise<string |
 /**
  * Get DOM content from WebContentsView
  */
-export async function getDOMContent(app: ElectronApplication): Promise<string | null> {
+export async function getDOMContent(app: ElectronApplication, page?: Page): Promise<string | null> {
   try {
     return await executeInBrowserView<string>(
       app,
       'document.documentElement.outerHTML || ""',
+      page,
     );
   } catch {
     return null;
@@ -128,8 +161,8 @@ export async function getDOMContent(app: ElectronApplication): Promise<string | 
 /**
  * Check if WebContentsView exists and is loaded
  */
-export async function isLoaded(app: ElectronApplication): Promise<boolean> {
-  const webContentsId = await getFirstWebContentsView(app);
+export async function isLoaded(app: ElectronApplication, page?: Page): Promise<boolean> {
+  const webContentsId = await getFirstWebContentsView(app, page);
   if (webContentsId === null) {
     return false;
   }
@@ -163,6 +196,7 @@ export async function clickElementWithText(
   app: ElectronApplication,
   selector: string,
   text: string,
+  page?: Page,
 ): Promise<void> {
   const script = `
     (function() {
@@ -193,7 +227,7 @@ export async function clickElementWithText(
     })()
   `;
 
-  const result = await executeInBrowserView(app, script);
+  const result = await executeInBrowserView(app, script, page);
   if (result && typeof result === 'object' && 'error' in result) {
     throw new Error(String(result.error));
   }
@@ -202,7 +236,7 @@ export async function clickElementWithText(
 /**
  * Click element in browser view
  */
-export async function clickElement(app: ElectronApplication, selector: string): Promise<void> {
+export async function clickElement(app: ElectronApplication, selector: string, page?: Page): Promise<void> {
   const script = `
     (function() {
       try {
@@ -221,7 +255,7 @@ export async function clickElement(app: ElectronApplication, selector: string): 
     })()
   `;
 
-  const result = await executeInBrowserView(app, script);
+  const result = await executeInBrowserView(app, script, page);
   if (result && typeof result === 'object' && 'error' in result) {
     throw new Error(String(result.error));
   }
@@ -230,7 +264,7 @@ export async function clickElement(app: ElectronApplication, selector: string): 
 /**
  * Type text in element in browser view
  */
-export async function typeText(app: ElectronApplication, selector: string, text: string): Promise<void> {
+export async function typeText(app: ElectronApplication, selector: string, text: string, page?: Page): Promise<void> {
   const escapedSelector = selector.replace(/'/g, "\\'");
   const escapedText = text.replace(/'/g, "\\'").replace(/\n/g, '\\n');
 
@@ -261,7 +295,7 @@ export async function typeText(app: ElectronApplication, selector: string, text:
     })()
   `;
 
-  const result = await executeInBrowserView(app, script);
+  const result = await executeInBrowserView(app, script, page);
   if (result && typeof result === 'object' && 'error' in result) {
     throw new Error(String(result.error));
   }
@@ -270,7 +304,7 @@ export async function typeText(app: ElectronApplication, selector: string, text:
 /**
  * Press key in browser view
  */
-export async function pressKey(app: ElectronApplication, key: string): Promise<void> {
+export async function pressKey(app: ElectronApplication, key: string, page?: Page): Promise<void> {
   const escapedKey = key.replace(/'/g, "\\'");
 
   const script = `
@@ -296,13 +330,13 @@ export async function pressKey(app: ElectronApplication, key: string): Promise<v
     })()
   `;
 
-  await executeInBrowserView(app, script);
+  await executeInBrowserView(app, script, page);
 }
 
 /**
  * Check if element exists in browser view
  */
-export async function elementExists(app: ElectronApplication, selector: string): Promise<boolean> {
+export async function elementExists(app: ElectronApplication, selector: string, page?: Page): Promise<boolean> {
   try {
     // Check if selector contains :has-text() pseudo-selector
     const hasTextMatch = selector.match(/^(.+):has-text\(['"](.+)['"]\)$/);
@@ -323,10 +357,10 @@ export async function elementExists(app: ElectronApplication, selector: string):
         })()
       `;
 
-      return await executeInBrowserView<boolean>(app, script);
+      return await executeInBrowserView<boolean>(app, script, page);
     } else {
       const script = `document.querySelector('${selector.replace(/'/g, "\\'")}') !== null`;
-      return await executeInBrowserView<boolean>(app, script);
+      return await executeInBrowserView<boolean>(app, script, page);
     }
   } catch {
     return false;
@@ -443,14 +477,15 @@ export async function captureWindowScreenshot(app: ElectronApplication, page: Pa
 export async function executeTiddlyWikiCode<T>(
   app: ElectronApplication,
   code: string,
+  page?: Page,
   timeoutMs = 200,
 ): Promise<T | null> {
-  let webContentsId = await getFirstWebContentsView(app);
+  let webContentsId = await getFirstWebContentsView(app, page);
 
   if (!webContentsId) {
     for (let attempt = 0; attempt < 4; attempt++) {
       await new Promise(resolve => setTimeout(resolve, 50));
-      webContentsId = await getFirstWebContentsView(app);
+      webContentsId = await getFirstWebContentsView(app, page);
       if (webContentsId) {
         break;
       }

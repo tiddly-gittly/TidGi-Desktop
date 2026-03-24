@@ -19,12 +19,8 @@ Feature: Cross-Window Synchronization
     
     # Open workspace in a new window (window B)
     When I open workspace "wiki" in a new window
-    
-    # TODO: Switch to window B and verify content
-    # This requires additional step definitions to:
-    # 1. Get the new window handle
-    # 2. Switch context to the new window
-    # 3. Verify content in window B
-    
-    # For now, verify content in window A (proves tiddler was saved)
+
+    # Switch to the newly opened secondary window and verify it sees the same wiki content
+    When I switch to the newest window
+    Then the browser view should be loaded and visible
     Then I should see "CrossWindowSyncTestContent123" in the browser view content

@@ -1,4 +1,3 @@
-import { isTest } from '@/constants/environment';
 import { container } from '@services/container';
 import { getPreloadPath } from '@services/windows/viteEntry';
 import { BrowserWindow, WebContentsView, WebPreferences } from 'electron';
@@ -167,8 +166,8 @@ export class View implements IViewService {
       contextIsolation: true,
       webSecurity: false,
       allowRunningInsecureContent: true,
-      // Prevent JS from being throttled while the window is hidden during E2E tests
-      ...(isTest ? { backgroundThrottling: false } : {}),
+      // Real-time wiki sync relies on renderer callbacks continuing while views are hidden.
+      backgroundThrottling: false,
       session: sessionOfView,
       preload: getPreloadPath(),
       additionalArguments: [

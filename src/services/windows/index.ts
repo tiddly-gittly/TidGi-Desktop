@@ -250,8 +250,8 @@ export class Window implements IWindowService {
         webSecurity: false,
         allowRunningInsecureContent: true,
         contextIsolation: true,
-        // Prevent JS from being throttled while the window is hidden during E2E tests
-        ...(isTest ? { backgroundThrottling: false } : {}),
+        // Real-time wiki sync relies on renderer callbacks continuing while windows are hidden.
+        backgroundThrottling: false,
         preload: getPreloadPath(),
         additionalArguments: [
           `${MetaDataChannel.browserViewMetaData}${windowName}`,

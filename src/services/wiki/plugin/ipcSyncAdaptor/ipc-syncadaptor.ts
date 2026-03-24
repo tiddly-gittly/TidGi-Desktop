@@ -53,6 +53,17 @@ class TidGiIPCSyncAdaptor {
    */
   private readonly titlesBeingSaved = new Set<string>();
   /**
+   * Last revision confirmed from the worker for each title.
+   * Used to ignore stale SSE echoes after an IPC save has already succeeded.
+   */
+  private readonly lastSavedRevisions = new Map<string, number>();
+  /**
+   * Serializes save/delete requests per title so older IPC operations cannot
+   * clear save state while a newer request for the same tiddler is still active.
+   */
+  private readonly pendingSaveOperations = new Map<string, Promise<void>>();
+  private readonly activeSaveCounts = new Map<string, number>();
+  /**
    * Titles currently being loaded from the server (loadTiddler).
    * TW5's syncer.storeTiddler updates tiddlerInfo AFTER wiki.addTiddler,
    * so the synchronous change handler thinks the server-loaded content is
@@ -124,7 +135,8 @@ class TidGiIPCSyncAdaptor {
     window.observables.wiki.getWikiChangeObserver$(this.workspaceID).subscribe((change: ITidGiChangedTiddlers) => {
       // `$tw.syncer.syncFromServer` calling `this.getUpdatedTiddlers`, so we need to update `this.updatedTiddlers` before it do so. See `core/modules/syncer.js` in the core
       Object.keys(change).forEach(title => {
-        if (!change[title]) {
+        const titleChange = change[title];
+        if (!titleChange) {
           return;
         }
 
@@ -135,10 +147,17 @@ class TidGiIPCSyncAdaptor {
           return;
         }
 
-        if (change[title].deleted) {
+        const lastSavedRevision = this.lastSavedRevisions.get(title);
+        if (lastSavedRevision !== undefined && titleChange.revision <= lastSavedRevision) {
+          return;
+        }
+
+        if (titleChange.deleted) {
           this.updatedTiddlers.deletions.push(title);
-        } else if (change[title].modified) {
+          this.lastSavedRevisions.set(title, titleChange.revision);
+        } else if (titleChange.modified) {
           this.updatedTiddlers.modifications.push(title);
+          this.lastSavedRevisions.set(title, titleChange.revision);
         }
       });
       debouncedSync();
@@ -156,6 +175,46 @@ class TidGiIPCSyncAdaptor {
       modifications: [],
       deletions: [],
     };
+  }
+
+  private markSaveStart(title: string) {
+    this.titlesBeingSaved.add(title);
+    this.activeSaveCounts.set(title, (this.activeSaveCounts.get(title) ?? 0) + 1);
+  }
+
+  private markSaveFinish(title: string) {
+    const nextActiveSaveCount = (this.activeSaveCounts.get(title) ?? 0) - 1;
+    if (nextActiveSaveCount > 0) {
+      this.activeSaveCounts.set(title, nextActiveSaveCount);
+      return;
+    }
+    this.activeSaveCounts.delete(title);
+    this.titlesBeingSaved.delete(title);
+  }
+
+  private queueSaveOperation(title: string, operation: () => Promise<void>) {
+    const previousOperation = this.pendingSaveOperations.get(title) ?? Promise.resolve();
+    const queuedOperation = previousOperation
+      .catch(() => undefined)
+      .then(operation);
+    const trackedOperation = queuedOperation.finally(() => {
+      if (this.pendingSaveOperations.get(title) === trackedOperation) {
+        this.pendingSaveOperations.delete(title);
+      }
+    });
+    this.pendingSaveOperations.set(title, trackedOperation);
+    return trackedOperation;
+  }
+
+  private rememberRevision(title: string, revision: string | number | undefined) {
+    if (revision === undefined) {
+      return;
+    }
+    const numericRevision = typeof revision === 'number' ? revision : Number.parseInt(revision, 10);
+    if (Number.isNaN(numericRevision)) {
+      return;
+    }
+    this.lastSavedRevisions.set(title, numericRevision);
   }
 
   private configSyncer() {
@@ -272,34 +331,37 @@ class TidGiIPCSyncAdaptor {
         callback(null);
         return;
       }
-      // Mark as saving BEFORE the IPC call so that any SSE echo arriving
-      // during the call is ignored by our change handler.
-      this.titlesBeingSaved.add(title);
-      try {
-        const putTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
-          this.workspaceID,
-          'putTiddler',
-          title,
-          tiddler.fields,
-        );
-        if (putTiddlerResponse === undefined) {
-          throw new Error('saveTiddler returned undefined from callWikiIpcServerRoute putTiddler in saveTiddler');
-        }
-        // Save the details of the new revision of the tiddler
-        const etag = putTiddlerResponse.headers?.Etag;
-        if (etag === undefined) {
-          callback(new Error('Response from server is missing required `etag` header'));
-        } else {
+      await this.queueSaveOperation(title, async () => {
+        // Mark as saving BEFORE the IPC call so that any SSE echo arriving
+        // during the call is ignored by our change handler.
+        this.markSaveStart(title);
+        try {
+          const putTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
+            this.workspaceID,
+            'putTiddler',
+            title,
+            tiddler.fields,
+          );
+          if (putTiddlerResponse === undefined) {
+            throw new Error('saveTiddler returned undefined from callWikiIpcServerRoute putTiddler in saveTiddler');
+          }
+          // Save the details of the new revision of the tiddler
+          const etag = putTiddlerResponse.headers?.Etag;
+          if (etag === undefined) {
+            callback(new Error('Response from server is missing required `etag` header'));
+            return;
+          }
           const etagInfo = this.parseEtag(etag);
           if (etagInfo !== undefined) {
+            this.rememberRevision(title, etagInfo.revision);
             callback(null, {
               bag: etagInfo.bag,
             }, etagInfo.revision);
           }
+        } finally {
+          this.markSaveFinish(title);
         }
-      } finally {
-        this.titlesBeingSaved.delete(title);
-      }
+      });
     } catch (error) {
       console.error(error);
       callback(error as Error);
@@ -325,7 +387,9 @@ class TidGiIPCSyncAdaptor {
       // BEFORE updating tiddlerInfo, so the syncer's change handler thinks it's
       // a local edit and immediately calls our saveTiddler.
       this.titlesBeingLoaded.add(title);
-      callback?.(null, getTiddlerResponse.data as ITiddlerFields);
+      const tiddlerFields = getTiddlerResponse.data as ITiddlerFields;
+      this.rememberRevision(title, tiddlerFields.revision);
+      callback?.(null, tiddlerFields);
       // storeTiddler's addTiddler + change handler + tiddlerInfo update all run
       // synchronously before this next line.  Use queueMicrotask so the flag
       // survives the entire synchronous chain but is cleared before the next
@@ -349,21 +413,26 @@ class TidGiIPCSyncAdaptor {
       return;
     }
     this.logger.log('deleteTiddler');
-    this.titlesBeingSaved.add(title);
     try {
-      const getTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
-        this.workspaceID,
-        'deleteTiddler',
-        title,
-      );
-      if (getTiddlerResponse?.data === undefined) {
-        throw new Error('getTiddler returned undefined from callWikiIpcServerRoute getTiddler in loadTiddler');
-      }
-      callback(null, null);
+      await this.queueSaveOperation(title, async () => {
+        this.markSaveStart(title);
+        try {
+          const getTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
+            this.workspaceID,
+            'deleteTiddler',
+            title,
+          );
+          if (getTiddlerResponse?.data === undefined) {
+            throw new Error('getTiddler returned undefined from callWikiIpcServerRoute getTiddler in loadTiddler');
+          }
+          this.lastSavedRevisions.delete(title);
+          callback(null, null);
+        } finally {
+          this.markSaveFinish(title);
+        }
+      });
     } catch (error) {
       callback(error as Error);
-    } finally {
-      this.titlesBeingSaved.delete(title);
     }
   }
 

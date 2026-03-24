@@ -4,7 +4,7 @@ This document describes how the `tidgi-ipc-syncadaptor` (frontend) and `watch-fi
 
 ## Architecture Overview
 
-```
+```text
 Frontend (Browser)                    Backend (Node.js Worker)
 ┌─────────────────────────────┐      ┌─────────────────────────────────────┐
 │ TiddlyWiki                  │      │ TiddlyWiki (Server)                 │
@@ -63,9 +63,9 @@ Benefits:
 
 **IPC Layer (First Defense)**:
 
-- `ipcServerRoutes.ts` tracks recently saved tiddlers in `recentlySavedTiddlers` Set
-- When `wiki.addTiddler()` triggers change event, filter out tiddlers in the Set
-- Prevents frontend from receiving its own save operations as change notifications
+- `ipcServerRoutes.ts` emits every change with the current `changeCount` as `revision`
+- `TidGiIPCSyncAdaptor` tracks titles currently being saved and skips SSE events during the active IPC round-trip
+- `TidGiIPCSyncAdaptor` also stores the last confirmed revision per title and ignores stale SSE echoes that are not newer than the revision already confirmed by IPC
 
 **Watch-FS Layer (Second Defense)**:
 
@@ -73,7 +73,12 @@ Benefits:
 - Prevents watcher from detecting the file write operation
 - Re-includes file after operation completes (with delay for nsfw debounce)
 
-### 4. IPC Observable for Change Notification
+### 4. Hidden Window Execution
+
+- Renderer-side real-time sync must continue while secondary windows or TidGi mini windows are hidden
+- Electron `backgroundThrottling` is disabled for both BrowserWindow and WebContentsView so Chromium does not delay SSE / Observable callbacks in hidden windows
+
+### 5. IPC Observable for Change Notification
 
 - Backend sends change events to frontend via IPC Observable pattern (via `ipc-cat`)
 - Frontend subscribes to `getWikiChangeObserver$` observable from `window.observables.wiki`
@@ -145,17 +150,17 @@ Benefits:
 
 ### Example 1: User Edits in Frontend
 
-```
+```text
 1. User clicks save in browser
    ├─► Frontend syncer calls saveTiddler()
    │
 2. TidGiIPCSyncAdaptor.saveTiddler()
+   ├─► Serializes save operations per title (prevents overlapping IPC saves)
    ├─► IPC call to putTiddler in ipcServerRoutes.ts
    │
 3. ipcServerRoutes.putTiddler()
-   ├─► Marks tiddler in recentlySavedTiddlers (IPC echo prevention)
    ├─► Calls wiki.addTiddler() (triggers change event)
-   ├─► Change event filtered by recentlySavedTiddlers
+   ├─► Emits change with latest revision via IPC Observable
    │
 4. Backend syncer detects change
    ├─► Calls WatchFileSystemAdaptor.saveTiddler()
@@ -173,7 +178,7 @@ Benefits:
 
 ### Example 2: External Editor Modifies File
 
-```
+```text
 1. User edits file in VSCode/Vim
    ├─► File content changes on disk
    │
@@ -212,7 +217,7 @@ Benefits:
 
 ### Example 3: Git Checkout (Batch Changes)
 
-```
+```text
 1. User runs git checkout
    ├─► Many files deleted/created/modified
    │
@@ -266,7 +271,7 @@ SYNCER_TRIGGER_DELAY_MS = 200; // Debounce for syncer trigger
 
 ### Echo/Duplicate Updates
 
-1. Check `recentlySavedTiddlers` filtering in ipcServerRoutes.ts
+1. Check revision filtering and `titlesBeingSaved` handling in `ipc-syncadaptor.ts`
 2. Verify file exclusion during save/delete operations
 3. Check syncer's changeCount tracking
 

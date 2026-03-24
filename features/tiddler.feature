@@ -43,3 +43,24 @@ Feature: Tiddler Creation and Editing
       | MyTestTag tag         | [data-tiddler-title='MyTestTiddler'] [data-tag-title='MyTestTag'] |
     # Verify the tiddler file was created
     Then file "MyTestTiddler.tid" should exist in "{tmpDir}/wiki/tiddlers"
+
+  @tiddler @tiddler-draft-rapid-save
+  Scenario: Rapid typing and immediate save should not lose characters
+    # Test case for: user types quickly, then immediately saves (Ctrl/Cmd+S) without waiting.
+    # This scenario verifies that the revision tracking and save serialization prevent
+    # earlier echo revisions from overwriting the latest typed content.
+    # Click add tiddler button to create a draft
+    When I click on "add tiddler button" element in browser view with selector "button:has(.tc-image-new-button)"
+    And I wait for 0.2 seconds for "draft created"
+    # Get into title field and clear any default text
+    And I click on "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
+    # Type quickly without pauses - this tests the rapid input scenario
+    # The title field should be pre-selected, so we can type directly
+    And I type "RapidSaveTiddler" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
+    # Click the done button immediately without waiting for auto-save
+    And I click on "confirm button" element in browser view with selector "button:has(.tc-image-done-button)"
+    # Verify the tiddler was created with the full title (no lost characters)
+    And I wait for 1 seconds for "file to stabilize"
+    Then I should see a "RapidSaveTiddler tiddler" element in browser view with selector "div[data-tiddler-title='RapidSaveTiddler']"
+    # Verify the file was created with correct content
+    Then file "RapidSaveTiddler.tid" should exist in "{tmpDir}/wiki/tiddlers"
