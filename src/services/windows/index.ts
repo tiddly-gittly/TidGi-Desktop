@@ -250,8 +250,10 @@ export class Window implements IWindowService {
         webSecurity: false,
         allowRunningInsecureContent: true,
         contextIsolation: true,
-        // Real-time wiki sync relies on renderer callbacks continuing while windows are hidden.
-        backgroundThrottling: false,
+        // Keep callbacks active only for windows that host wiki BrowserViews.
+        ...([WindowNames.main, WindowNames.secondary, WindowNames.tidgiMiniWindow].includes(windowName)
+          ? { backgroundThrottling: false }
+          : {}),
         preload: getPreloadPath(),
         additionalArguments: [
           `${MetaDataChannel.browserViewMetaData}${windowName}`,

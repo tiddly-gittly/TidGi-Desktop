@@ -352,12 +352,16 @@ class TidGiIPCSyncAdaptor {
             return;
           }
           const etagInfo = this.parseEtag(etag);
-          if (etagInfo !== undefined) {
-            this.rememberRevision(title, etagInfo.revision);
-            callback(null, {
-              bag: etagInfo.bag,
-            }, etagInfo.revision);
+          if (etagInfo === undefined) {
+            const error = new Error('Failed to parse `etag` header from server response');
+            this.logger.log(error);
+            callback(error);
+            return;
           }
+          this.rememberRevision(title, etagInfo.revision);
+          callback(null, {
+            bag: etagInfo.bag,
+          }, etagInfo.revision);
         } finally {
           this.markSaveFinish(title);
         }
@@ -423,7 +427,7 @@ class TidGiIPCSyncAdaptor {
             title,
           );
           if (getTiddlerResponse?.data === undefined) {
-            throw new Error('getTiddler returned undefined from callWikiIpcServerRoute getTiddler in loadTiddler');
+            throw new Error('deleteTiddler returned undefined from callWikiIpcServerRoute in deleteTiddler');
           }
           this.lastSavedRevisions.delete(title);
           callback(null, null);

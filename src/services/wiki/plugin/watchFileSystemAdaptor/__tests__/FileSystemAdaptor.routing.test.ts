@@ -65,6 +65,8 @@ describe('FileSystemAdaptor - Routing Logic', () => {
     global.$tw.boot.files = {};
     // @ts-expect-error - TiddlyWiki global
     global.$tw.boot.wikiTiddlersPath = '/test/wiki/tiddlers';
+    // @ts-expect-error - TiddlyWiki global
+    global.$tw.boot.wikiPath = undefined;
 
     mockWiki = {
       getTiddlerText: vi.fn(() => ''),

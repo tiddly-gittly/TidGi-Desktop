@@ -166,7 +166,9 @@ export class View implements IViewService {
       contextIsolation: true,
       webSecurity: false,
       allowRunningInsecureContent: true,
-      // Real-time wiki sync relies on renderer callbacks continuing while views are hidden.
+      // Intentional: this service only creates wiki WebContentsView instances.
+      // Keeping callbacks active while a view is offscreen avoids delayed sync events
+      // when users switch between workspaces/sub-wikis.
       backgroundThrottling: false,
       session: sessionOfView,
       preload: getPreloadPath(),
