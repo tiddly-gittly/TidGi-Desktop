@@ -147,13 +147,14 @@ export class FileSystemAdaptor {
 
       // Find matching workspace using the routing logic
       const matchingWiki = ($tw.utils as unknown as ExtendedUtilities).matchTiddlerToWorkspace(title, tags, this.wikisWithRouting, $tw.wiki, $tw.rootWidget);
+      const isMainWorkspaceMatch = matchingWiki?.id === this.workspaceID;
 
       // Determine the target directory based on routing
       // Sub-wikis store tiddlers directly in their root folder (not in /tiddlers subfolder)
       // Only the main wiki uses /tiddlers because it has other meta files like .github
       let targetDirectory: string;
       if (matchingWiki) {
-        targetDirectory = matchingWiki.wikiFolderLocation;
+        targetDirectory = isMainWorkspaceMatch ? this.watchPathBase : matchingWiki.wikiFolderLocation;
         // Resolve symlinks
         try {
           targetDirectory = fs.realpathSync(targetDirectory);
@@ -191,7 +192,7 @@ export class FileSystemAdaptor {
       }
 
       // Directory has changed (or no existing file), generate new file info
-      if (matchingWiki) {
+      if (matchingWiki && !isMainWorkspaceMatch) {
         return this.generateSubWikiFileInfo(tiddler, matchingWiki);
       } else {
         return this.generateDefaultFileInfo(tiddler);

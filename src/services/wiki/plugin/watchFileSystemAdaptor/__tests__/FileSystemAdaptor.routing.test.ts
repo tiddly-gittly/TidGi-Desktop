@@ -403,6 +403,87 @@ describe('FileSystemAdaptor - Routing Logic', () => {
         }),
       );
     });
+
+    it('should route to main wiki tiddlers folder when main wiki matches routing rules', async () => {
+      const mainWiki = {
+        id: 'test-workspace',
+        name: 'Main Wiki',
+        isSubWiki: false,
+        mainWikiID: '',
+        tagNames: ['MainTag'],
+        wikiFolderLocation: '/test/wiki',
+      };
+
+      vi.mocked(workspace.getWorkspacesAsList).mockResolvedValue([mainWiki] as unknown as IWikiWorkspace[]);
+
+      adaptor = new FileSystemAdaptor({
+        wiki: mockWiki,
+        // @ts-expect-error - TiddlyWiki global
+        boot: global.$tw.boot,
+      });
+
+      await adaptor['updateSubWikisCache']();
+
+      const tiddler: Tiddler = {
+        fields: { title: 'MainRoutedTiddler', tags: ['MainTag'] },
+      } as unknown as Tiddler;
+
+      adaptor.getTiddlerFileInfo(tiddler);
+
+      expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
+        tiddler,
+        expect.objectContaining({
+          directory: RESOLVED_TIDDLERS_PATH,
+        }),
+      );
+    });
+
+    it('should route to main wiki root when useWikiFolderAsTiddlersPath is enabled', async () => {
+      // @ts-expect-error - TiddlyWiki global
+      global.$tw.boot.wikiPath = '/test/wiki';
+
+      const mainWiki = {
+        id: 'test-workspace',
+        name: 'Main Wiki',
+        isSubWiki: false,
+        mainWikiID: '',
+        tagNames: ['MainTag'],
+        wikiFolderLocation: '/test/wiki',
+      };
+
+      vi.mocked(workspace.getWorkspacesAsList).mockResolvedValue([mainWiki] as unknown as IWikiWorkspace[]);
+
+      const wikiUsingRootAsTiddlers = {
+        getTiddlerText: vi.fn((title) => {
+          if (title === '$:/info/tidgi/workspaceID') return 'test-workspace';
+          if (title === '$:/info/tidgi/useWikiFolderAsTiddlersPath') return 'yes';
+          return '';
+        }),
+        tiddlerExists: vi.fn(() => false),
+        addTiddler: vi.fn(),
+      } as unknown as Wiki;
+
+      adaptor = new FileSystemAdaptor({
+        wiki: wikiUsingRootAsTiddlers,
+        // @ts-expect-error - TiddlyWiki global
+        boot: global.$tw.boot,
+      });
+
+      await adaptor['updateSubWikisCache']();
+
+      const tiddler: Tiddler = {
+        fields: { title: 'MainRootRoutedTiddler', tags: ['MainTag'] },
+      } as unknown as Tiddler;
+
+      adaptor.getTiddlerFileInfo(tiddler);
+
+      expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
+        tiddler,
+        expect.objectContaining({
+          directory: path.resolve('/test/wiki'),
+        }),
+      );
+    });
   });
 
   describe('getTiddlerFileInfo - Error Handling', () => {

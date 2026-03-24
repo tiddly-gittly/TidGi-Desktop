@@ -42,6 +42,17 @@ Feature: Sub-Wiki Functionality
     When I open tiddler "TestTiddlerTitle" in browser view
     # Content check will automatically wait for the content to appear
     Then I should see "Content modified in SubWiki folder" in the browser view content
+    # Also verify routing to main workspace path when main workspace has routing tag config
+    When I update workspace "wiki" settings:
+      | property | value         |
+      | tagNames | ["MainTag"] |
+    And I restart workspace "wiki"
+    And I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    Then the browser view should be loaded and visible
+    And I wait for SSE and watch-fs to be ready
+    When I create a tiddler "MainTaggedTiddler" with tag "MainTag" in browser view
+    Then file "MainTaggedTiddler.tid" should exist in "{tmpDir}/wiki/tiddlers"
+    Then file "MainTaggedTiddler.tid" should not exist in "{tmpDir}/SubWiki"
 
   @subwiki @subwiki-load
   Scenario: Sub-wiki tiddlers are loaded on initial wiki startup
