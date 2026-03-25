@@ -76,8 +76,8 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import { WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
-import { ExternalAPIService } from '../externalAPI';
-import { ExternalAPIServiceIPCDescriptor, type IExternalAPIService } from '../externalAPI/interface';
+import { ProviderRegistryService } from '../providerRegistry';
+import { ProviderRegistryServiceIPCDescriptor, type IProviderRegistryService } from '../providerRegistry/interface';
 
 export function bindServiceAndProxy(): void {
   container.bind<IAgentBrowserService>(serviceIdentifier.AgentBrowser).to(AgentBrowserService).inSingletonScope();
@@ -87,7 +87,7 @@ export function bindServiceAndProxy(): void {
   container.bind<IContextService>(serviceIdentifier.Context).to(ContextService).inSingletonScope();
   container.bind<IDatabaseService>(serviceIdentifier.Database).to(DatabaseService).inSingletonScope();
   container.bind<IDeepLinkService>(serviceIdentifier.DeepLink).to(DeepLinkService).inSingletonScope();
-  container.bind<IExternalAPIService>(serviceIdentifier.ExternalAPI).to(ExternalAPIService).inSingletonScope();
+  container.bind<IProviderRegistryService>(serviceIdentifier.ProviderRegistry).to(ProviderRegistryService).inSingletonScope();
   container.bind<IGitService>(serviceIdentifier.Git).to(Git).inSingletonScope();
   container.bind<IGitServerService>(serviceIdentifier.GitServer).to(GitServerService).inSingletonScope();
   container.bind<IMenuService>(serviceIdentifier.MenuService).to(MenuService).inSingletonScope();
@@ -113,7 +113,7 @@ export function bindServiceAndProxy(): void {
   const contextService = container.get<IContextService>(serviceIdentifier.Context);
   const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
   const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
-  const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+  const providerRegistryService = container.get<IProviderRegistryService>(serviceIdentifier.ProviderRegistry);
   const gitService = container.get<IGitService>(serviceIdentifier.Git);
   const gitServerService = container.get<IGitServerService>(serviceIdentifier.GitServer);
   const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
@@ -139,7 +139,7 @@ export function bindServiceAndProxy(): void {
   registerProxy(contextService, ContextServiceIPCDescriptor);
   registerProxy(databaseService, DatabaseServiceIPCDescriptor);
   registerProxy(deepLinkService, DeepLinkServiceIPCDescriptor);
-  registerProxy(externalAPIService, ExternalAPIServiceIPCDescriptor);
+  registerProxy(providerRegistryService, ProviderRegistryServiceIPCDescriptor);
   registerProxy(gitService, GitServiceIPCDescriptor);
   registerProxy(gitServerService, GitServerServiceIPCDescriptor);
   registerProxy(menuService, MenuServiceIPCDescriptor);

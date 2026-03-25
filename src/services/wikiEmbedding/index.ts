@@ -6,8 +6,8 @@ import { WikiChannel } from '@/constants/channels';
 import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import type { IDatabaseService } from '@services/database/interface';
 import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from '@services/database/schema/wikiEmbedding';
-import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
+import type { IProviderRegistryService } from '@services/providerRegistry/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
@@ -34,8 +34,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
   @inject(serviceIdentifier.Database)
   private readonly databaseService!: IDatabaseService;
 
-  @inject(serviceIdentifier.ExternalAPI)
-  private readonly externalAPIService!: IExternalAPIService;
+  @inject(serviceIdentifier.ProviderRegistry)
+  private readonly providerRegistryService!: IProviderRegistryService;
 
   @inject(serviceIdentifier.Wiki)
   private readonly wikiService!: IWikiService;
@@ -422,7 +422,7 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
 
           try {
             // Use embedding config for generation
-            const embeddingResponse = await this.externalAPIService.generateEmbeddings([chunk], config);
+            const embeddingResponse = await this.providerRegistryService.generateEmbeddings([chunk], config);
 
             if (embeddingResponse.status === 'error') {
               throw new Error(`Embedding generation failed: ${embeddingResponse.errorDetail?.message}`);
@@ -610,7 +610,7 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
 
     try {
       // Generate embedding for the query
-      const queryEmbeddingResponse = await this.externalAPIService.generateEmbeddings([query], config);
+      const queryEmbeddingResponse = await this.providerRegistryService.generateEmbeddings([query], config);
 
       if (queryEmbeddingResponse.status === 'error') {
         throw new Error(`Query embedding generation failed: ${queryEmbeddingResponse.errorDetail?.message}`);

@@ -2,7 +2,7 @@ import { Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon } from
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Box, Button, Chip, FormControlLabel, IconButton, InputAdornment, Switch, Typography } from '@mui/material';
-import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/providerRegistry/interface';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextField } from '../../../PreferenceComponents';

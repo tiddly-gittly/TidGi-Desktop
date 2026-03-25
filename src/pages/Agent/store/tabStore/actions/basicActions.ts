@@ -284,15 +284,25 @@ export const basicActionsMiddleware: StateCreator<
       try {
         // Save to the backend service
         void window.service.native.log('debug', 'Saving tab to backend...');
-        await window.service.agentBrowser.addTab(newTab, insertPosition);
+        const createdTab = await window.service.agentBrowser.addTab(newTab, insertPosition);
 
         // Update the local state by fetching all tabs from backend
         const tabs = await window.service.agentBrowser.getAllTabs();
-        const activeTabId = await window.service.agentBrowser.getActiveTabId();
+        // Ensure activeTabId can always resolve to a tab item in local store.
+        // If the backend returns stale tabs list, UI would fallback to NewTabContent
+        // and hide the chat input.
+        const createdTabId = createdTab?.id;
+        const nextTabs = (createdTabId && !tabs.some(t => t.id === createdTabId))
+          ? [...tabs, createdTab as TabItem]
+          : tabs;
+        // Prefer the created tab id (the new tab is created with ACTIVE state).
+        // In some timing/race cases getActiveTabId() can temporarily return null,
+        // which makes UI fall back to NewTabContent and hides the chat input.
+        const activeTabId = createdTab?.id ?? await window.service.agentBrowser.getActiveTabId();
         void window.service.native.log('debug', 'Tab added successfully. Active tab:', { activeTabId });
 
         set({
-          tabs,
+          tabs: nextTabs,
           activeTabId,
         });
       } catch (error) {

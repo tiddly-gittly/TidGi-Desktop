@@ -26,7 +26,7 @@ import type {
   AISpeechResponse,
   AIStreamResponse,
   AITranscriptionResponse,
-  IExternalAPIService,
+  IProviderRegistryService,
   ModelInfo,
 } from './interface';
 import { DEFAULT_RETRY_CONFIG, withRetry } from './retryUtility';
@@ -40,7 +40,7 @@ interface AIRequestContext {
 }
 
 @injectable()
-export class ExternalAPIService implements IExternalAPIService {
+export class ProviderRegistryService implements IProviderRegistryService {
   @inject(serviceIdentifier.Preference)
   private readonly preferenceService!: IPreferenceService;
 
@@ -84,6 +84,7 @@ export class ExternalAPIService implements IExternalAPIService {
     // Only initialize if debug logging is enabled
     const externalAPIDebug = await this.preferenceService.get('externalAPIDebug');
     if (!externalAPIDebug) return;
+
     // Get or initialize the external API database
     await this.databaseService.initializeDatabase('externalApi');
     this.dataSource = await this.databaseService.getDatabase('externalApi');

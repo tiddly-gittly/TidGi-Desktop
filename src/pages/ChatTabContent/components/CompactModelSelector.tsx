@@ -1,6 +1,6 @@
 import SwitchCameraIcon from '@mui/icons-material/SwitchCamera';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from '@mui/material';
-import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, ModelInfo } from '@services/providerRegistry/interface';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAIConfigManagement } from '../../../windows/Preferences/sections/ExternalAPI/useAIConfigManagement';

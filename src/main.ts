@@ -28,10 +28,10 @@ import type { IAgentDefinitionService } from '@services/agentDefinition/interfac
 import type { IContextService } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IDeepLinkService } from '@services/deepLink/interface';
-import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
 import type { INativeService } from '@services/native/interface';
+import type { IProviderRegistryService } from '@services/providerRegistry/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IThemeService } from '@services/theme/interface';
 import type { IUpdaterService } from '@services/updater/interface';
@@ -85,7 +85,7 @@ const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Work
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
 const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
-const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+const providerRegistryService = container.get<IProviderRegistryService>(serviceIdentifier.ProviderRegistry);
 const gitService = container.get<IGitService>(serviceIdentifier.Git);
 const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
 const viewService = container.get<IViewService>(serviceIdentifier.View);
@@ -159,7 +159,7 @@ const commonInit = async (): Promise<void> => {
   await Promise.all([
     agentDefinitionService.initialize(),
     wikiEmbeddingService.initialize(),
-    externalAPIService.initialize(),
+    providerRegistryService.initialize(),
   ]);
 
   // if user want a tidgi mini window, we create a new window for that

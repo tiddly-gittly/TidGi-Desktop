@@ -3,7 +3,7 @@ import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.js
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
-import type { AIGlobalSettings, AIStreamResponse } from '@services/externalAPI/interface';
+import type { AIGlobalSettings, AIStreamResponse } from '@services/providerRegistry/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { ModelMessage } from 'ai';
@@ -30,7 +30,7 @@ describe('ExternalAPIService logging', () => {
   });
 
   it('records streaming logs when provider has apiKey (API success)', async () => {
-    const externalAPI = container.get<import('../interface').IExternalAPIService>(serviceIdentifier.ExternalAPI);
+    const externalAPI = container.get<import('../interface').IProviderRegistryService>(serviceIdentifier.ProviderRegistry);
     const db = container.get<IDatabaseService>(serviceIdentifier.Database);
 
     // Set up provider config BEFORE initialization
@@ -73,7 +73,7 @@ describe('ExternalAPIService logging', () => {
   });
 
   it('records streaming error when apiKey missing (error path)', async () => {
-    const svc = container.get<import('../interface').IExternalAPIService>(serviceIdentifier.ExternalAPI);
+    const svc = container.get<import('../interface').IProviderRegistryService>(serviceIdentifier.ProviderRegistry);
     const db = container.get<IDatabaseService>(serviceIdentifier.Database);
 
     // Set up provider config WITHOUT apiKey BEFORE initialization to trigger error

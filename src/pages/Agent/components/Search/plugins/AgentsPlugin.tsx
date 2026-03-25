@@ -144,7 +144,10 @@ export const createAgentsPlugin = (options: AgentsPluginOptions = {}): Autocompl
               if (activeTabId) {
                 const activeTab = tabs.find(tab => tab.id === activeTabId);
                 if (activeTab && (activeTab.id.startsWith(TEMP_TAB_ID_PREFIX) || activeTab.type === TabType.NEW_TAB)) {
-                  closeTab(activeTabId);
+                  // Important: avoid race with the subsequent `addTab(...)`.
+                  // If we close in parallel, `TabContentArea` can temporarily lose `activeTabId`
+                  // and render `NewTabContent`, causing E2E selectors to fail.
+                  await closeTab(activeTabId);
                 }
               }
 

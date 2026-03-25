@@ -1,8 +1,8 @@
 import { container } from '@services/container';
-import type { IExternalAPIService } from '@services/externalAPI/interface';
-import { waitForAIStreamResult } from '@services/externalAPI/waitForAIStreamResult';
+import { waitForAIStreamResult } from '@services/providerRegistry/waitForAIStreamResult';
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
+import type { IProviderRegistryService } from '@services/providerRegistry/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { exec as gitExec } from 'dugite';
 import * as fs from 'node:fs/promises';
@@ -122,7 +122,7 @@ export async function generateAICommitMessage(wikiFolderPath: string, source: st
       return undefined;
     }
 
-    const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+    const externalAPIService = container.get<IProviderRegistryService>(serviceIdentifier.ProviderRegistry);
     const aiConfig = await externalAPIService.getAIConfig();
 
     if (!aiConfig?.free?.model || !aiConfig?.free?.provider) {

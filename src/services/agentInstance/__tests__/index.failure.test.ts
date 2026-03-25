@@ -1,8 +1,8 @@
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
-import * as callProvider from '@services/externalAPI/callProviderAPI';
-import type { IExternalAPIService } from '@services/externalAPI/interface';
+import * as callProvider from '@services/providerRegistry/callProviderAPI';
+import type { IProviderRegistryService } from '@services/providerRegistry/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentInstanceService } from '..';
@@ -58,7 +58,7 @@ describe('AgentInstance failure path - external API logs on error', () => {
     // Initialize services
     const agentSvc = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance) as AgentInstanceService;
     await agentSvc.initialize();
-    const extSvc = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+    const extSvc = container.get<IProviderRegistryService>(serviceIdentifier.ProviderRegistry);
     await extSvc.initialize();
   });
 
@@ -95,7 +95,7 @@ describe('AgentInstance failure path - external API logs on error', () => {
     expect(errorMsg?.duration).toBe(1);
 
     // Verify external API logs contain error
-    const extSvc = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+    const extSvc = container.get<IProviderRegistryService>(serviceIdentifier.ProviderRegistry);
     let logs = await extSvc.getAPILogs();
     for (let i = 0; i < 10 && !logs.some((l) => l.status === 'error'); i++) {
       await new Promise((r) => setTimeout(r, 100));

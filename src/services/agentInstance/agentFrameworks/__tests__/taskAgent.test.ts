@@ -6,7 +6,7 @@
 import serviceIdentifier from '@/services/serviceIdentifier';
 // shared mocks will be retrieved from the test container in beforeEach (no top-level vars)
 import { AgentDefinition } from '@services/agentDefinition/interface';
-import type { IExternalAPIService } from '@services/externalAPI/interface';
+import type { IProviderRegistryService } from '@services/providerRegistry/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 // removed Observable import to use real AgentInstanceService
@@ -345,7 +345,7 @@ describe('WikiSearch Plugin Integration & YieldNextRound Mechanism', () => {
       // generateFromAI once per round; sharing the same generator instance across rounds
       // would cause the second round to receive an already-exhausted iterator.
       const { container } = await import('@services/container');
-      const externalAPILocal = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+      const externalAPILocal = container.get<IProviderRegistryService>(serviceIdentifier.ProviderRegistry);
       externalAPILocal.generateFromAI = vi.fn()
         .mockReturnValueOnce((function*() {
           const r = testStreamResponses[0];

@@ -11,11 +11,11 @@ import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
 import { container } from '@services/container';
-import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
+import type { IProviderRegistryService } from '@services/providerRegistry/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
@@ -482,7 +482,7 @@ export class Git implements IGitService {
         return false;
       }
 
-      const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+      const externalAPIService = container.get<IProviderRegistryService>(serviceIdentifier.ProviderRegistry);
       return await externalAPIService.isAIAvailable();
     } catch {
       return false;

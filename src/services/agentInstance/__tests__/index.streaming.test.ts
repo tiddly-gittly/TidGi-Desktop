@@ -10,7 +10,7 @@ import type { AgentInstance } from '@services/agentInstance/interface';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
-import type { IExternalAPIService } from '@services/externalAPI/interface';
+import type { IProviderRegistryService } from '@services/providerRegistry/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import defaultAgents from '../agentFrameworks/taskAgents.json';
 
@@ -18,7 +18,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
   let agentInstanceService: IAgentInstanceService;
   let testAgentInstance: AgentInstance;
   let mockAgentDefinitionService: Partial<IAgentDefinitionService>;
-  let mockExternalAPIService: Partial<IExternalAPIService>;
+  let mockProviderRegistryService: Partial<IProviderRegistryService>;
   let mockDatabaseService: Partial<IDatabaseService>;
 
   beforeEach(async () => {
@@ -26,7 +26,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
     // Retrieve shared mocks from the test container
     mockAgentDefinitionService = container.get(serviceIdentifier.AgentDefinition);
     mockDatabaseService = container.get(serviceIdentifier.Database);
-    mockExternalAPIService = container.get(serviceIdentifier.ExternalAPI);
+    mockProviderRegistryService = container.get(serviceIdentifier.ProviderRegistry);
 
     // Setup mock database service with in-memory SQLite
     const mockRepo = {
@@ -107,7 +107,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
       };
     };
 
-    mockExternalAPIService.generateFromAI = vi.fn().mockReturnValue(mockAIResponseGenerator());
+    mockProviderRegistryService.generateFromAI = vi.fn().mockReturnValue(mockAIResponseGenerator());
 
     // Subscribe to agent updates before sending message
     const agentUpdatesObservable = agentInstanceService.subscribeToAgentUpdates(testAgentInstance.id);
@@ -178,7 +178,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
       };
     };
 
-    mockExternalAPIService.generateFromAI = vi.fn().mockReturnValue(mockAIResponseGenerator());
+    mockProviderRegistryService.generateFromAI = vi.fn().mockReturnValue(mockAIResponseGenerator());
 
     // Track agent updates to capture the AI message ID
     let aiMessageId: string | undefined;
@@ -230,7 +230,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
       expect(finalUpdate?.message?.content).toBe(expectedStreamingFinal);
 
       // Verify external API was called
-      expect(mockExternalAPIService.generateFromAI).toHaveBeenCalled();
+      expect(mockProviderRegistryService.generateFromAI).toHaveBeenCalled();
     } finally {
       agentSubscription.unsubscribe();
       if (messageSubscription) {
@@ -260,7 +260,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
       };
     };
 
-    mockExternalAPIService.generateFromAI = vi.fn().mockReturnValue(mockAIResponseGenerator());
+    mockProviderRegistryService.generateFromAI = vi.fn().mockReturnValue(mockAIResponseGenerator());
 
     // This test demonstrates message-level Observable behavior
     // Since we can't easily test completion timing in our current setup,
@@ -304,7 +304,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
         expect(subscriptionWorked).toBeTruthy();
       }
 
-      expect(mockExternalAPIService.generateFromAI).toHaveBeenCalled();
+      expect(mockProviderRegistryService.generateFromAI).toHaveBeenCalled();
     } finally {
       agentSubscription.unsubscribe();
     }
@@ -330,7 +330,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
       };
     };
 
-    mockExternalAPIService.generateFromAI = vi.fn().mockReturnValue(mockAIResponseGenerator());
+    mockProviderRegistryService.generateFromAI = vi.fn().mockReturnValue(mockAIResponseGenerator());
 
     // Track AI message creation
     let aiMessageId: string | undefined;
@@ -372,7 +372,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
       }
 
       // Verify external API was called and error was handled gracefully
-      expect(mockExternalAPIService.generateFromAI).toHaveBeenCalled();
+      expect(mockProviderRegistryService.generateFromAI).toHaveBeenCalled();
     } finally {
       agentSubscription.unsubscribe();
     }

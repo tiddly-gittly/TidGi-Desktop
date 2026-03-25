@@ -15,8 +15,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import defaultProvidersConfig from '@services/externalAPI/defaultProviders';
-import { ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import defaultProvidersConfig from '@services/providerRegistry/defaultProviders';
+import { ModelFeature, ModelInfo } from '@services/providerRegistry/interface';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ModelFeatureChip } from './ModelFeatureChip';

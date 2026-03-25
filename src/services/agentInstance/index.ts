@@ -2,6 +2,12 @@ import { inject, injectable } from 'inversify';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
+import { Worker } from 'worker_threads';
+import type { AgentDefinition, AttachmentRef, ChatMessage, ConversationMeta } from '@memeloop/protocol';
+import { createMemeLoopRuntime, createTaskAgent, type AgentFrameworkContext as MemeLoopAgentFrameworkContext, type IAgentStorage, type ILLMProvider, type IToolRegistry, type MemeLoopRuntime } from 'memeloop';
+import MemeLoopWorkerFactory from './memeloopWorkerFactory';
+import { createWorkerProxy } from '@services/libs/workerAdapter';
+import type { MemeLoopWorker } from './memeloopWorker';
 
 import type { AgentHeartbeatConfig } from '@services/agentDefinition/interface';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
@@ -68,6 +74,11 @@ export class AgentInstanceService implements IAgentInstanceService {
   private frameworkSchemas: Map<string, Record<string, unknown>> = new Map();
   private cancelTokenMap: Map<string, { value: boolean }> = new Map();
   private debouncedUpdateFunctions: Map<string, (message: AgentInstanceLatestStatus['message'] & { id: string }, agentId?: string) => void> = new Map();
+  private memeLoopRuntime: MemeLoopRuntime | null = null;
+  private memeLoopNativeWorker?: Worker;
+  private memeLoopWorker?: MemeLoopWorker;
+  private workerConversationByAgentId: Map<string, string> = new Map();
+  private workerConversationCleanupByAgentId: Map<string, () => void> = new Map();
 
   public async initialize(): Promise<void> {
     try {
@@ -111,6 +122,8 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       // Register built-in frameworks
       this.registerBuiltinFrameworks();
+      this.initializeMemeLoopRuntimeBridge();
+      await this.initializeMemeLoopWorker();
       logger.debug('AgentInstance frameworks registered');
     } catch (error) {
       logger.error('Failed to initialize agent instance frameworks', { error });
@@ -122,6 +135,248 @@ export class AgentInstanceService implements IAgentInstanceService {
     // Tools are already registered in initialize(), so we only register frameworks here
     // Register basic prompt concatenation framework with its schema
     this.registerFramework('basicPromptConcatHandler', basicPromptConcatHandler, getPromptConcatAgentFrameworkConfigJsonSchema());
+    // MemeLoop worker framework: run the agent loop in `memeloopWorker.ts` and wait for ask/approval events.
+    this.registerFramework('memeloopTaskAgentWorker', this.memeloopTaskAgentWorkerHandler.bind(this), getPromptConcatAgentFrameworkConfigJsonSchema());
+  }
+
+  /**
+   * MemeLoop worker framework handler.
+   * - Sends the last user message to worker conversation.
+   * - Waits until the agent reaches a terminal state or pauses for ask-question/tool-approval.
+   * - Streaming step updates are handled by `bindWorkerConversation`.
+   */
+  private async *memeloopTaskAgentWorkerHandler(frameworkContext: AgentFrameworkContext): AsyncGenerator<
+    AgentInstanceLatestStatus,
+    AgentInstance | undefined | void,
+    unknown
+  > {
+    const worker = this.memeLoopWorker;
+    if (!worker) {
+      yield { state: 'failed' };
+      return;
+    }
+
+    const agentId = frameworkContext.agent.id;
+    const definitionId = frameworkContext.agentDef.id;
+
+    const lastUserMessage = frameworkContext.agent.messages[frameworkContext.agent.messages.length - 1];
+    if (!lastUserMessage || lastUserMessage.role !== 'user') {
+      yield { state: 'failed' };
+      return;
+    }
+
+    const workerConversationId = await this.ensureWorkerConversation(agentId, definitionId);
+    if (!workerConversationId) {
+      yield { state: 'failed' };
+      return;
+    }
+
+    const terminalStatePromise = new Promise<AgentInstanceLatestStatus['state']>((resolve) => {
+      const subscription = worker.subscribeToUpdates(workerConversationId).subscribe({
+        next: (payload: unknown) => {
+          const raw = payload as { update?: { type?: string; error?: string } };
+          const updateType = raw?.update?.type;
+          if (!updateType) return;
+
+          if (updateType === 'agent-done') {
+            subscription.unsubscribe();
+            resolve('completed');
+            return;
+          }
+          if (updateType === 'agent-error') {
+            subscription.unsubscribe();
+            resolve('failed');
+            return;
+          }
+          if (updateType === 'cancelled') {
+            subscription.unsubscribe();
+            resolve('canceled');
+            return;
+          }
+          if (updateType === 'ask-question' || updateType === 'tool-approval') {
+            subscription.unsubscribe();
+            resolve('input-required');
+            return;
+          }
+        },
+      });
+
+      void subscription;
+    });
+
+    await worker.sendMessage(workerConversationId, lastUserMessage.content);
+    const terminalState = await terminalStatePromise;
+
+    // Do not attach message artifacts here: worker-side `bindWorkerConversation` already updates messages/status.
+    yield { state: terminalState };
+  }
+
+  /**
+   * Phase 1 bridge: instantiate MemeLoopRuntime with Desktop-backed adapters.
+   * This keeps current execution pipeline unchanged while preparing runtime migration.
+   */
+  private initializeMemeLoopRuntimeBridge(): void {
+    if (!this.agentInstanceRepository || !this.agentMessageRepository) {
+      logger.warn('Skip MemeLoopRuntime bridge init: repositories not ready');
+      return;
+    }
+    if (this.memeLoopRuntime) return;
+
+    const toProtocolRole = (role: AgentInstanceMessage['role']): ChatMessage['role'] => {
+      if (role === 'assistant' || role === 'tool' || role === 'user') return role;
+      return 'assistant';
+    };
+
+    const storage: IAgentStorage = {
+      listConversations: async () => {
+        const rows = await this.agentInstanceRepository!.find({ order: { modified: 'DESC' }, take: 200 });
+        return rows.map((row): ConversationMeta => ({
+          conversationId: row.id,
+          title: row.name || row.agentDefId,
+          lastMessagePreview: row.status?.message?.content || '',
+          lastMessageTimestamp: row.modified?.getTime() ?? row.created.getTime(),
+          messageCount: 0,
+          originNodeId: 'desktop',
+          definitionId: row.agentDefId,
+          isUserInitiated: true,
+        }));
+      },
+      getMessages: async (conversationId: string) => {
+        const rows = await this.agentMessageRepository!.find({ where: { agentId: conversationId }, order: { created: 'ASC' } });
+        return rows.map((row): ChatMessage => ({
+          messageId: row.id,
+          conversationId: row.agentId,
+          originNodeId: 'desktop',
+          timestamp: row.modified?.getTime() ?? row.created.getTime(),
+          lamportClock: 1,
+          role: toProtocolRole(row.role),
+          content: row.content,
+        }));
+      },
+      appendMessage: async (message: ChatMessage) => {
+        const entity = this.agentMessageRepository!.create({
+          id: message.messageId || nanoid(),
+          agentId: message.conversationId,
+          role: message.role === 'assistant' ? 'assistant' : message.role,
+          content: message.content,
+          contentType: 'text/plain',
+        });
+        await this.agentMessageRepository!.save(entity);
+      },
+      upsertConversationMetadata: async (meta: ConversationMeta) => {
+        const existing = await this.agentInstanceRepository!.findOne({ where: { id: meta.conversationId } });
+        if (existing) {
+          existing.name = meta.title || existing.name;
+          await this.agentInstanceRepository!.save(existing);
+          return;
+        }
+        const created = this.agentInstanceRepository!.create({
+          id: meta.conversationId,
+          agentDefId: meta.definitionId || 'default',
+          name: meta.title || meta.definitionId || 'MemeLoop Agent',
+          status: { state: 'submitted', modified: new Date(meta.lastMessageTimestamp) },
+          created: new Date(meta.lastMessageTimestamp),
+          modified: new Date(meta.lastMessageTimestamp),
+        });
+        await this.agentInstanceRepository!.save(created);
+      },
+      insertMessagesIfAbsent: async messages => {
+        for (const msg of messages) {
+          const exists = await this.agentMessageRepository!.findOne({ where: { id: msg.messageId } });
+          if (!exists) {
+            const entity = this.agentMessageRepository!.create({
+              id: msg.messageId,
+              agentId: msg.conversationId,
+              role: msg.role === 'assistant' ? 'assistant' : msg.role,
+              content: msg.content,
+              contentType: 'text/plain',
+            });
+            await this.agentMessageRepository!.save(entity);
+          }
+        }
+      },
+      getAttachment: async (_contentHash: string): Promise<AttachmentRef | null> => null,
+      saveAttachment: async (_ref: AttachmentRef, _data: Buffer | Uint8Array): Promise<void> => undefined,
+      getAgentDefinition: async (id: string): Promise<AgentDefinition | null> => {
+        const def = await this.agentDefinitionService.getAgentDef(id);
+        return (def as unknown as AgentDefinition) ?? null;
+      },
+      saveAgentInstance: async () => undefined,
+      getConversationMeta: async (conversationId: string): Promise<ConversationMeta | null> => {
+        const row = await this.agentInstanceRepository!.findOne({ where: { id: conversationId } });
+        if (!row) return null;
+        return {
+          conversationId: row.id,
+          title: row.name || row.agentDefId,
+          lastMessagePreview: row.status?.message?.content || '',
+          lastMessageTimestamp: row.modified?.getTime() ?? row.created.getTime(),
+          messageCount: 0,
+          originNodeId: 'desktop',
+          definitionId: row.agentDefId,
+          isUserInitiated: true,
+        };
+      },
+    };
+
+    const tools = new Map<string, unknown>();
+    const toolRegistry: IToolRegistry = {
+      registerTool: (id, impl) => {
+        tools.set(id, impl);
+      },
+      getTool: id => tools.get(id),
+      listTools: () => Array.from(tools.keys()),
+    };
+
+    const llmProvider: ILLMProvider = {
+      name: 'tidgi-desktop-bridge',
+      chat: async function* (request: unknown) {
+        const req = request as {
+          messages?: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: unknown }>;
+          conversationId?: string;
+        };
+        const providerRegistryService = container.get(serviceIdentifier.ProviderRegistry) as any;
+        const aiConfig = await providerRegistryService.getAIConfig();
+        const messages = (req.messages ?? []).map(message => ({
+          role: message.role,
+          content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content ?? ''),
+        }));
+        const generator = await providerRegistryService.generateFromAI(messages, aiConfig, { agentInstanceId: req.conversationId });
+        for await (const event of generator as AsyncIterable<any>) {
+          if (event?.status === 'update' || event?.status === 'done') {
+            yield event.content;
+          }
+        }
+      },
+    };
+
+    const runtimeContext: MemeLoopAgentFrameworkContext = {
+      storage,
+      tools: toolRegistry,
+      llmProvider,
+      syncAdapters: [],
+      network: {
+        start: async () => undefined,
+        stop: async () => undefined,
+      },
+    };
+    runtimeContext.runTaskAgent = createTaskAgent(runtimeContext);
+    this.memeLoopRuntime = createMemeLoopRuntime(runtimeContext);
+
+    logger.info('MemeLoopRuntime bridge initialized in AgentInstanceService');
+  }
+
+  private async initializeMemeLoopWorker(): Promise<void> {
+    if (this.memeLoopWorker) return;
+    try {
+      const worker = (MemeLoopWorkerFactory as () => Worker)();
+      this.memeLoopNativeWorker = worker;
+      this.memeLoopWorker = createWorkerProxy<MemeLoopWorker>(worker);
+      const ping = await this.memeLoopWorker.ping();
+      logger.info('MemeLoop worker initialized', ping);
+    } catch (error) {
+      logger.error('Failed to initialize MemeLoop worker', { error });
+      throw error;
+    }
   }
 
   /**
@@ -253,7 +508,11 @@ export class AgentInstanceService implements IAgentInstanceService {
   public async createAgent(agentDefinitionID?: string, options?: { preview?: boolean; volatile?: boolean }): Promise<AgentInstance> {
     this.ensureRepositories();
     try {
-      return await repo.createAgent(this.agentInstanceRepository!, this.agentDefinitionService, agentDefinitionID, options);
+      const created = await repo.createAgent(this.agentInstanceRepository!, this.agentDefinitionService, agentDefinitionID, options);
+      // Don't block the agent tab creation UI on MemeLoop worker conversation initialization.
+      // Worker conversation binding may take time (or fail), but the agent instance can still be created.
+      void this.ensureWorkerConversation(created.id, created.agentDefId);
+      return created;
     } catch (error) {
       logger.error('Failed to create agent instance', { error });
       throw error;
@@ -289,8 +548,11 @@ export class AgentInstanceService implements IAgentInstanceService {
       cancelAlarm(agentId);
       cancelTasksForAgent(agentId);
       await cleanupMCPClient(agentId);
+      await this.cancelWorkerConversation(agentId);
       await repo.deleteAgent(this.agentInstanceRepository!, this.agentMessageRepository!, agentId);
       this.cleanupAgentSubscriptions(agentId);
+      this.cleanupWorkerConversation(agentId);
+      this.workerConversationByAgentId.delete(agentId);
     } catch (error) {
       logger.error('Failed to delete agent instance', { error });
       throw error;
@@ -463,7 +725,7 @@ export class AgentInstanceService implements IAgentInstanceService {
           }
 
           // Trigger agentStatusChanged hook with actual terminal state (completed, input-required, etc.)
-          const terminalState = (lastResult.state ?? 'completed') as 'working' | 'completed' | 'failed' | 'canceled';
+          const terminalState = (lastResult.state ?? 'completed') as 'working' | 'completed' | 'failed' | 'canceled' | 'input-required';
           await frameworkHooks.agentStatusChanged.promise({
             agentFrameworkContext: frameworkContext,
             status: {
@@ -540,6 +802,12 @@ export class AgentInstanceService implements IAgentInstanceService {
 
     // Try to get cancel token
     const cancelToken = this.cancelTokenMap.get(agentId);
+    const workerConversationId = this.workerConversationByAgentId.get(agentId);
+    if (workerConversationId && this.memeLoopWorker) {
+      void this.memeLoopWorker.cancelAgent(workerConversationId).catch((error: unknown) => {
+        logger.warn('MemeLoop worker cancelAgent failed (non-blocking)', { agentId, error });
+      });
+    }
 
     if (cancelToken) {
       // Set cancel flag
@@ -621,6 +889,9 @@ export class AgentInstanceService implements IAgentInstanceService {
       cancelAlarm(agentId);
       cancelTasksForAgent(agentId);
       await cleanupMCPClient(agentId);
+      await this.cancelWorkerConversation(agentId);
+      this.cleanupWorkerConversation(agentId);
+      this.workerConversationByAgentId.delete(agentId);
 
       // Get agent instance
       const instanceEntity = await this.agentInstanceRepository!.findOne({
@@ -661,14 +932,324 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
+  private async ensureWorkerConversation(agentId: string, definitionId: string): Promise<string | undefined> {
+    if (!this.memeLoopWorker) return undefined;
+    const existing = this.workerConversationByAgentId.get(agentId);
+    if (existing) return existing;
+    try {
+      const created = await this.memeLoopWorker.createAgent(definitionId);
+      if (created?.conversationId) {
+        this.workerConversationByAgentId.set(agentId, created.conversationId);
+        this.bindWorkerConversation(agentId, created.conversationId);
+        return created.conversationId;
+      }
+    } catch (error) {
+      logger.warn('Failed to create MemeLoop worker conversation (non-blocking)', { agentId, definitionId, error });
+    }
+    return undefined;
+  }
+
+  private bindWorkerConversation(agentId: string, conversationId: string): void {
+    if (!this.memeLoopWorker) return;
+    if (this.workerConversationCleanupByAgentId.has(agentId)) return;
+    try {
+      // Keep a stable assistant message id while streaming text deltas.
+      let assistantMessageId: string | undefined;
+      let assistantBuffer = '';
+      let lastWasAssistantMessage = false;
+
+      const subscription = this.memeLoopWorker.subscribeToUpdates(conversationId).subscribe({
+        next: (payload: unknown) => {
+          const raw = payload as {
+            update?: {
+              type?: string;
+              // Custom events we emit from worker.
+              payload?: unknown;
+              error?: string;
+              step?: { type?: string; data?: unknown };
+            };
+          };
+          const updateType = raw?.update?.type;
+          if (!updateType) return;
+
+          if (updateType === 'ask-question') {
+            const payload_ = raw.update?.payload as
+              | { type: 'ask-question'; questionId?: string; question: string; inputType?: 'single-select' | 'multi-select' | 'text'; options?: Array<{ label: string; description?: string }>; allowFreeform?: boolean }
+              | undefined;
+            if (!payload_?.question) return;
+
+            const questionId = payload_.questionId ?? `unknown-${Date.now()}`;
+            const askPrompt = {
+              type: 'ask-question',
+              questionId,
+              question: payload_.question,
+              inputType: payload_.inputType ?? 'text',
+              options: payload_.options,
+              allowFreeform: payload_.allowFreeform ?? true,
+            };
+
+            const content = `<functions_result>
+Tool: ask-question
+Parameters: {}
+Result: ${JSON.stringify(askPrompt)}
+</functions_result>`;
+
+            const message = {
+              id: `worker-ask-${questionId}`,
+              agentId,
+              role: 'agent' as const,
+              content,
+              modified: new Date(),
+            };
+
+            const statusKey = `${agentId}:${message.id}`;
+            void this.updateAgent(agentId, {
+              status: {
+                state: 'input-required',
+                modified: new Date(),
+              },
+              messages: [message],
+            }).catch(() => undefined);
+
+            if (this.statusSubjects.has(statusKey)) {
+              this.statusSubjects.get(statusKey)?.next({ state: 'input-required', message, modified: new Date() });
+            }
+            return;
+          }
+
+          if (updateType === 'tool-approval') {
+            const payload_ = raw.update?.payload as
+              | { type: 'tool-approval'; approvalId: string; toolName: string; parameters: Record<string, unknown> }
+              | undefined;
+            if (!payload_?.approvalId || !payload_?.toolName) return;
+
+            const approvalPrompt = {
+              type: 'tool-approval',
+              approvalId: payload_.approvalId,
+              toolName: payload_.toolName,
+              parameters: payload_.parameters ?? {},
+            };
+
+            const content = `<functions_result>
+Tool: tool-approval
+Parameters: {}
+Result: ${JSON.stringify(approvalPrompt)}
+</functions_result>`;
+
+            const message = {
+              id: `worker-approval-${payload_.approvalId}`,
+              agentId,
+              role: 'agent' as const,
+              content,
+              modified: new Date(),
+            };
+
+            const statusKey = `${agentId}:${message.id}`;
+            void this.updateAgent(agentId, {
+              status: {
+                state: 'input-required',
+                modified: new Date(),
+              },
+              messages: [message],
+            }).catch(() => undefined);
+
+            if (this.statusSubjects.has(statusKey)) {
+              this.statusSubjects.get(statusKey)?.next({ state: 'input-required', message, modified: new Date() });
+            }
+            return;
+          }
+
+          if (updateType === 'agent-step') {
+            const step = raw.update?.step;
+            const stepType = step?.type;
+            if (!stepType) return;
+            if (stepType === 'message') {
+              const delta = typeof step.data === 'string' ? step.data : JSON.stringify(step.data ?? '');
+              if (!lastWasAssistantMessage) {
+                assistantMessageId = `worker-assistant-${Date.now()}`;
+                assistantBuffer = delta;
+              } else {
+                assistantBuffer += delta;
+              }
+              lastWasAssistantMessage = true;
+              const messageId = assistantMessageId ?? `worker-assistant-${Date.now()}`;
+              const message = {
+                id: messageId,
+                agentId,
+                role: 'assistant' as const,
+                content: assistantBuffer,
+                modified: new Date(),
+              };
+              const statusKey = `${agentId}:${message.id}`;
+              void this.updateAgent(agentId, {
+                status: {
+                  state: 'working',
+                  modified: new Date(),
+                },
+                messages: [message],
+              }).catch(() => undefined);
+              if (this.statusSubjects.has(statusKey)) {
+                this.statusSubjects.get(statusKey)?.next({ state: 'working', message, modified: new Date() });
+              }
+              return;
+            }
+            if (stepType === 'thinking' || stepType === 'tool') {
+              lastWasAssistantMessage = false;
+              const message = {
+                id: `worker-step-${Date.now()}`,
+                agentId,
+                role: 'agent' as const,
+                content: JSON.stringify({ type: stepType, data: step.data ?? null }),
+                hidden: true,
+                modified: new Date(),
+              };
+              const statusKey = `${agentId}:${message.id}`;
+              void this.updateAgent(agentId, {
+                status: { state: 'working', modified: new Date() },
+                messages: [message],
+              }).catch(() => undefined);
+              if (this.statusSubjects.has(statusKey)) {
+                this.statusSubjects.get(statusKey)?.next({ state: 'working', message, modified: new Date() });
+              }
+            }
+            return;
+          }
+          if (updateType === 'cancelled') {
+            const finalMessageId = assistantMessageId;
+            const finalContent = assistantBuffer;
+            lastWasAssistantMessage = false;
+            assistantMessageId = undefined;
+            assistantBuffer = '';
+            void this.updateAgent(agentId, {
+              status: {
+                state: 'canceled',
+                modified: new Date(),
+              },
+            }).catch(() => undefined);
+            if (finalMessageId) {
+              const message = {
+                id: finalMessageId,
+                agentId,
+                role: 'assistant' as const,
+                content: finalContent,
+              };
+              const statusKey = `${agentId}:${finalMessageId}`;
+              if (this.statusSubjects.has(statusKey)) {
+                this.statusSubjects.get(statusKey)?.next({ state: 'canceled', message, modified: new Date() });
+              }
+            }
+            return;
+          }
+          if (updateType === 'agent-done') {
+            const finalMessageId = assistantMessageId;
+            const finalContent = assistantBuffer;
+            lastWasAssistantMessage = false;
+            assistantMessageId = undefined;
+            assistantBuffer = '';
+            void this.updateAgent(agentId, {
+              status: {
+                state: 'completed',
+                modified: new Date(),
+              },
+            }).catch(() => undefined);
+            if (finalMessageId) {
+              const message = {
+                id: finalMessageId,
+                agentId,
+                role: 'assistant' as const,
+                content: finalContent,
+              };
+              const statusKey = `${agentId}:${finalMessageId}`;
+              if (this.statusSubjects.has(statusKey)) {
+                this.statusSubjects.get(statusKey)?.next({ state: 'completed', message, modified: new Date() });
+              }
+            }
+            return;
+          }
+          if (updateType === 'agent-error') {
+            lastWasAssistantMessage = false;
+            const message = {
+              id: `worker-error-${Date.now()}`,
+              agentId,
+              role: 'error' as const,
+              content: raw?.update?.error || 'MemeLoop worker error',
+              modified: new Date(),
+            };
+            const statusKey = `${agentId}:${message.id}`;
+            void this.updateAgent(agentId, {
+              status: {
+                state: 'failed',
+                modified: new Date(),
+              },
+              messages: [message],
+            }).catch(() => undefined);
+            if (this.statusSubjects.has(statusKey)) {
+              this.statusSubjects.get(statusKey)?.next({ state: 'failed', message, modified: new Date() });
+            }
+          }
+        },
+        error: (error: unknown) => {
+          logger.warn('MemeLoop worker update stream failed', { agentId, conversationId, error });
+        },
+      });
+      this.workerConversationCleanupByAgentId.set(agentId, () => subscription.unsubscribe());
+    } catch (error) {
+      logger.warn('Failed to bind MemeLoop worker update stream', { agentId, conversationId, error });
+    }
+  }
+
+  private cleanupWorkerConversation(agentId: string): void {
+    const cleanup = this.workerConversationCleanupByAgentId.get(agentId);
+    if (cleanup) {
+      try {
+        cleanup();
+      } catch {
+        // ignore
+      }
+      this.workerConversationCleanupByAgentId.delete(agentId);
+    }
+  }
+
+  private async cancelWorkerConversation(agentId: string): Promise<void> {
+    const workerConversationId = this.workerConversationByAgentId.get(agentId);
+    if (!workerConversationId || !this.memeLoopWorker) return;
+    try {
+      await this.memeLoopWorker.cancelAgent(workerConversationId);
+    } catch (error) {
+      logger.warn('Failed to cancel MemeLoop worker conversation during cleanup', { agentId, workerConversationId, error });
+    }
+  }
+
   public async resolveToolApproval(approvalId: string, decision: 'allow' | 'deny'): Promise<void> {
+    if (this.memeLoopWorker) {
+      try {
+        await this.memeLoopWorker.resolveToolApproval(approvalId, decision);
+        return;
+      } catch (error) {
+        logger.warn('MemeLoop worker resolveToolApproval failed, fallback to legacy', { approvalId, error });
+      }
+    }
+
     const { resolveApproval } = await import('./tools/approval');
     resolveApproval(approvalId, decision);
   }
 
   public resolveAskQuestion(agentId: string, questionId: string, answer: string): void {
-    // Resolve ask-question by injecting the answer as a tool result and resuming the agent loop.
-    // This keeps the answer in the same turn (no new user message).
+    // Prefer resolving inside MemeLoop worker so the agent can continue in the same turn.
+    if (this.memeLoopWorker) {
+      void this.memeLoopWorker
+        .resolveAskQuestion(agentId, questionId, answer)
+        .then((res) => {
+          if (res?.resolved) return;
+          // If worker can't find the pending question, fall back to legacy behavior.
+          return void this.resolveAskQuestionAsync(agentId, questionId, answer);
+        })
+        .catch(() => {
+          void this.resolveAskQuestionAsync(agentId, questionId, answer);
+        });
+      return;
+    }
+
     void this.resolveAskQuestionAsync(agentId, questionId, answer);
   }
 

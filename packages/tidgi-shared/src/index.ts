@@ -27,7 +27,7 @@ export * from '@services/auth/interface';
 export * from '@services/context/interface';
 export * from '@services/database/interface';
 export * from '@services/deepLink/interface';
-export * from '@services/externalAPI/interface';
+export * from '@services/providerRegistry/interface';
 export * from '@services/git/interface';
 export * from '@services/gitServer/interface';
 export * from '@services/menu/interface';

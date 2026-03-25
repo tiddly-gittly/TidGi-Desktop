@@ -9,7 +9,7 @@ import { wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the external API function
-vi.mock('@services/externalAPI/callEmbeddingAPI', () => ({
+vi.mock('@services/providerRegistry/callEmbeddingAPI', () => ({
   generateEmbeddingsFromProvider: vi.fn(),
 }));
 
@@ -41,7 +41,7 @@ describe('WikiEmbeddingService Integration Tests', () => {
     wikiEmbeddingService = container.get<IWikiEmbeddingService>(serviceIdentifier.WikiEmbedding);
     mockWikiService = container.get(serviceIdentifier.Wiki);
     mockWorkspaceService = container.get(serviceIdentifier.Workspace);
-    mockExternalAPIService = container.get(serviceIdentifier.ExternalAPI);
+    mockExternalAPIService = container.get(serviceIdentifier.ProviderRegistry);
 
     // Initialize the service
     await wikiEmbeddingService.initialize();

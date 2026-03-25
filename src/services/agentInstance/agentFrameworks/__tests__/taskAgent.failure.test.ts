@@ -2,8 +2,8 @@ import type { IAgentDefinitionService } from '@services/agentDefinition/interfac
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
-import * as callProvider from '@services/externalAPI/callProviderAPI';
-import type { IExternalAPIService } from '@services/externalAPI/interface';
+import * as callProvider from '@services/providerRegistry/callProviderAPI';
+import type { IProviderRegistryService } from '@services/providerRegistry/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../../interface';
@@ -104,7 +104,7 @@ describe('basicPromptConcatHandler - failure path persists error message and log
     }
 
     // Initialize external API service logging DB
-    const extSvc = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+    const extSvc = container.get<IProviderRegistryService>(serviceIdentifier.ProviderRegistry);
     await extSvc.initialize();
   });
 
@@ -131,7 +131,7 @@ describe('basicPromptConcatHandler - failure path persists error message and log
 
     // 3) Verify external API logs have error with errorDetail
     // Wait/retry to allow async log write to complete
-    const extSvc = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+    const extSvc = container.get<IProviderRegistryService>(serviceIdentifier.ProviderRegistry);
     let logs = await extSvc.getAPILogs();
     for (let i = 0; i < 10 && !logs.some((l) => l.status === 'error'); i++) {
       await new Promise((r) => setTimeout(r, 100));
@@ -145,7 +145,7 @@ describe('basicPromptConcatHandler - failure path persists error message and log
 
   it('should cover two-round flow: tool_use then Chat.ConfigError.AIProviderError and print ordering', async () => {
     // Mock provider: Round 1 DONE with wiki-operation tool_use; Round 2 ERROR with Chat.ConfigError
-    const extSvc = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+    const extSvc = container.get<IProviderRegistryService>(serviceIdentifier.ProviderRegistry);
     let callIndex = 0;
     vi.spyOn(extSvc, 'generateFromAI').mockImplementation(async function*(_msgs: Array<unknown>, _cfg: AiAPIConfig) {
       callIndex += 1;

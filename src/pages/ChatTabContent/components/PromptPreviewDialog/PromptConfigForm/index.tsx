@@ -1,8 +1,13 @@
 import { Box, CircularProgress, Paper, Typography } from '@mui/material';
 import { IChangeEvent } from '@rjsf/core';
-import Form from '@rjsf/mui';
+import Form, { Theme } from '@rjsf/mui';
 import { ObjectFieldTemplateProps, RJSFSchema, RJSFValidationError } from '@rjsf/utils';
 import validator from '@rjsf/validator-ajv8';
+import type { ExtendedFormContext as MemeloopExtendedFormContext } from '@memeloop/prompt-editor/web';
+
+/** Same as `@memeloop/prompt-editor/web` Theme defaults; use local Theme so bundler resolves one @rjsf/mui + React. */
+const baseTemplates = Theme.templates ?? {};
+const baseWidgets = Theme.widgets ?? {};
 import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,24 +18,12 @@ import { fields } from './fields';
 import { ArrayFieldItemTemplate, ArrayFieldTemplate, FieldTemplate, ObjectFieldTemplate, RootObjectFieldTemplate } from './templates';
 import { widgets } from './widgets';
 
-/**
- * Extended form context that provides access to root form data
- * for conditional field logic and cross-field validation
- */
-export interface ExtendedFormContext {
-  rootFormData?: Record<string, unknown>;
+/** Desktop form context: memeloop core + optional callback for cross-field updates */
+export interface ExtendedFormContext extends MemeloopExtendedFormContext {
   onFormDataChange?: (formData: AgentFrameworkConfig) => void;
 }
 
-/**
- * Configuration for conditional field display logic
- * Used with ConditionalField to show/hide fields based on other field values
- */
-export interface ConditionalFieldConfig {
-  dependsOn: string;
-  showWhen: string | string[];
-  hideWhen?: boolean;
-}
+export type { ConditionalFieldConfig } from '@memeloop/prompt-editor/web';
 
 interface PromptConfigFormProps {
   /** JSON Schema for form validation and generation */
@@ -50,8 +43,8 @@ interface PromptConfigFormProps {
 }
 
 /**
- * React JSON Schema Form component for prompt configuration
- * Uses custom templates and widgets for better styling and user experience
+ * React JSON Schema Form component for prompt configuration.
+ * Merges @memeloop/prompt-editor/web Theme templates/widgets with TidGi custom layout/widgets; hooks stay local to avoid duplicate React.
  */
 export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
   schema,
@@ -75,13 +68,18 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
     };
 
     return {
+      ...baseTemplates,
       ArrayFieldTemplate,
-
       ArrayFieldItemTemplate,
       FieldTemplate,
       ObjectFieldTemplate: rootObjectFieldTemplate,
     };
   }, []);
+
+  const mergedWidgets = useMemo(() => ({
+    ...baseWidgets,
+    ...widgets,
+  }), []);
 
   const handleError = useCallback((errors: RJSFValidationError[]) => {
     setValidationErrors(errors);
@@ -146,7 +144,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
           onError={handleError}
           disabled={disabled}
           templates={templates}
-          widgets={widgets}
+          widgets={mergedWidgets}
           fields={fields}
           showErrorList={false}
           liveValidate='onChange'

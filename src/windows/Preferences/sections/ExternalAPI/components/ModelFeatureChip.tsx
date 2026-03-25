@@ -1,5 +1,5 @@
 import { Chip } from '@mui/material';
-import defaultProvidersConfig from '@services/externalAPI/defaultProviders';
+import defaultProvidersConfig from '@services/providerRegistry/defaultProviders';
 import { useTranslation } from 'react-i18next';
 
 export function ModelFeatureChip({ feature }: { feature: string }) {

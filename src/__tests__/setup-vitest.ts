@@ -32,6 +32,30 @@ import { vi } from 'vitest';
 vi.mock('react-i18next', () => import('./__mocks__/react-i18next'));
 vi.mock('@services/libs/log', () => import('./__mocks__/services-log'));
 vi.mock('@services/libs/i18n', () => import('./__mocks__/services-i18n'));
+vi.mock('@services/libs/workerAdapter', async () => {
+  const rxjs = await import('rxjs');
+  return {
+    createWorkerProxy: () => ({
+      ping: async () => ({ ok: true }),
+      createAgent: async () => ({ conversationId: 'test-conversation-id' }),
+      sendMessage: async () => ({ ok: true }),
+      cancelAgent: async () => ({ ok: true }),
+      subscribeToUpdates: () => new rxjs.Observable(() => undefined),
+    }),
+    handleWorkerMessages: () => undefined,
+  };
+});
+vi.mock('@services/agentInstance/memeloopWorkerFactory', () => ({
+  default: () => ({
+    on: () => undefined,
+    off: () => undefined,
+    once: () => undefined,
+    postMessage: () => undefined,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    terminate: () => undefined,
+  }),
+}));
 
 // Mock electron-settings to provide a proper settings object
 vi.mock('electron-settings', () => {

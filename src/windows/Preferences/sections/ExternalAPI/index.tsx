@@ -5,7 +5,7 @@ import TuneIcon from '@mui/icons-material/Tune';
 import { Button, List } from '@mui/material';
 
 import { ListItemText } from '@/components/ListItem';
-import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, ModelInfo } from '@services/providerRegistry/interface';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { ListItemVertical, Paper, SectionTitle } from '../../PreferenceComponents';
 import { AIModelParametersDialog } from './components/AIModelParametersDialog';

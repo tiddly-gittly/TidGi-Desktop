@@ -1,5 +1,5 @@
 import { Box, Button, FormControl, InputLabel, MenuItem, Select, TextField, Typography } from '@mui/material';
-import { AIProviderConfig } from '@services/externalAPI/interface';
+import { AIProviderConfig } from '@services/providerRegistry/interface';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 

@@ -2,7 +2,7 @@ import { WikiChannel } from '@/constants/channels';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentInstance, IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
-import type { IExternalAPIService } from '@services/externalAPI/interface';
+import type { IProviderRegistryService } from '@services/providerRegistry/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { nanoid } from 'nanoid';
@@ -14,13 +14,13 @@ describe('AgentInstanceService Wiki Operation', () => {
   let agentInstanceService: IAgentInstanceService;
   let testAgentInstance: AgentInstance;
   let mockAgentDefinitionService: Partial<IAgentDefinitionService>;
-  let mockExternalAPIService: Partial<IExternalAPIService>;
+  let mockProviderRegistryService: Partial<IProviderRegistryService>;
   let mockWikiService: Partial<IWikiService>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
     mockAgentDefinitionService = container.get(serviceIdentifier.AgentDefinition);
-    mockExternalAPIService = container.get(serviceIdentifier.ExternalAPI);
+    mockProviderRegistryService = container.get(serviceIdentifier.ProviderRegistry);
     mockWikiService = container.get(serviceIdentifier.Wiki);
 
     agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
@@ -70,7 +70,7 @@ describe('AgentInstanceService Wiki Operation', () => {
     // Use mockReturnValueOnce per round: the iterative basicPromptConcatHandler calls
     // generateFromAI once per round and breaks the stream with `break` when a tool result
     // triggers a new round.  A shared generator instance would be terminated by that break.
-    mockExternalAPIService.generateFromAI = vi.fn()
+    mockProviderRegistryService.generateFromAI = vi.fn()
       // First round: assistant suggests default workspace → error → request another round
       .mockReturnValueOnce((function*() {
         yield {

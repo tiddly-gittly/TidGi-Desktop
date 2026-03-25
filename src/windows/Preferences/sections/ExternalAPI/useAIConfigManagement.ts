@@ -1,5 +1,5 @@
 import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { AIProviderConfig } from '@services/externalAPI/interface';
+import { AIProviderConfig } from '@services/providerRegistry/interface';
 import { cloneDeep } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 

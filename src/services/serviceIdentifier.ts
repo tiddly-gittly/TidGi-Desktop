@@ -6,7 +6,7 @@ export default {
   Context: Symbol.for('Context'),
   Database: Symbol.for('Database'),
   DeepLink: Symbol.for('DeepLinkService'),
-  ExternalAPI: Symbol.for('ExternalAPI'),
+  ProviderRegistry: Symbol.for('ProviderRegistry'),
   Git: Symbol.for('Git'),
   GitServer: Symbol.for('GitServer'),
   MenuService: Symbol.for('MenuService'),

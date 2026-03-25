@@ -176,6 +176,9 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
    */
 
   const isStreaming = streamingMessageIds.size > 0;
+  // Keep the input enabled while agent is still being fetched/initialized.
+  // This avoids MUI 'disabled' rendering differences that break our E2E selectors.
+  const inputDisabled = agent ? isWorking : false;
 
   // Agent switching: create new agent instance with different definition, update tab
   const updateTabData = useTabStore(useShallow((state) => state.updateTabData));
@@ -250,7 +253,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
         onSend={handleSendMessage}
         onCancel={cancelAgent}
         onKeyPress={handleKeyPress}
-        disabled={!agent || isWorking}
+        disabled={inputDisabled}
         isStreaming={isStreaming}
         selectedFile={selectedFile}
         onFileSelect={handleFileSelect}

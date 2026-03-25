@@ -1,5 +1,5 @@
 import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { AIProviderConfig, IExternalAPIService, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, IProviderRegistryService, ModelFeature, ModelInfo } from '@services/providerRegistry/interface';
 import { BehaviorSubject } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -46,7 +46,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
       });
 
       // Frontend should be able to subscribe to config changes
-      const subscription = (window.service.externalAPI as unknown as IExternalAPIService).defaultConfig$.subscribe((config: AiAPIConfig) => {
+      const subscription = (window.service.externalAPI as unknown as IProviderRegistryService).defaultConfig$.subscribe((config: AiAPIConfig) => {
         expect(config.default?.provider).toBe('openai');
       });
 
@@ -72,7 +72,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
       });
 
       // Frontend should be able to subscribe to provider changes
-      const subscription = (window.service.externalAPI as unknown as IExternalAPIService).providers$.subscribe((providers: AIProviderConfig[]) => {
+      const subscription = (window.service.externalAPI as unknown as IProviderRegistryService).providers$.subscribe((providers: AIProviderConfig[]) => {
         expect(providers).toHaveLength(1);
         expect(providers[0].provider).toBe('openai');
       });

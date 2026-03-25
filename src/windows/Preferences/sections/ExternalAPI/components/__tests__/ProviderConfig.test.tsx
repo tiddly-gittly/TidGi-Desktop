@@ -5,7 +5,7 @@ import '@testing-library/jest-dom/vitest';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
 
-import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/providerRegistry/interface';
 import { ProviderConfig } from '../ProviderConfig';
 
 // Mock data

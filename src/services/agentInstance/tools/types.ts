@@ -1,7 +1,7 @@
 import { ToolCallingMatch } from '@services/agentDefinition/interface';
 import { AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
 import { AgentInstanceMessage } from '@services/agentInstance/interface';
-import { AIStreamResponse } from '@services/externalAPI/interface';
+import { AIStreamResponse } from '@services/providerRegistry/interface';
 import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
 import type { IPrompt, IPromptConcatTool } from '../promptConcat/promptConcatSchema';
 
@@ -148,7 +148,7 @@ export interface UserMessageContext extends BaseToolContext {
 export interface AgentStatusContext extends BaseToolContext {
   /** New status state */
   status: {
-    state: 'working' | 'completed' | 'failed' | 'canceled';
+    state: 'working' | 'completed' | 'failed' | 'canceled' | 'input-required';
     modified: Date;
   };
 }

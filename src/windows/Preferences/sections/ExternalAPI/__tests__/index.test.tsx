@@ -8,7 +8,7 @@ import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSc
 import { lightTheme } from '@services/theme/defaultTheme';
 import { BehaviorSubject } from 'rxjs';
 
-import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/providerRegistry/interface';
 import { ExternalAPI } from '../index';
 
 // Mock data

@@ -1,5 +1,5 @@
 import { After, DataTable, Given, Then, When } from '@cucumber/cucumber';
-import { AIGlobalSettings, AIProviderConfig } from '@services/externalAPI/interface';
+import { AIGlobalSettings, AIProviderConfig } from '@services/providerRegistry/interface';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';

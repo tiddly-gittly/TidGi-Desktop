@@ -1,6 +1,6 @@
 import { container } from '@services/container';
-import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
+import type { IProviderRegistryService } from '@services/providerRegistry/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { merge } from 'lodash';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
@@ -20,7 +20,7 @@ import { AgentFrameworkContext } from './utilities/type';
  * - Control flow between human users and AI models
  * - Coordinate with plugins for prompt processing and response handling
  * - Delegate prompt concatenation to plugin system
- * - Delegate AI API calls to externalAPIService
+ * - Delegate AI API calls to provider registry service
  * - Manage message history and conversation state
  * - Handle tool execution coordination
  * - Process yieldNextRoundTo actions from response plugins
@@ -83,10 +83,10 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
 
   // Ensure AI configuration exists — merge global → agentDef → agent-instance overrides
   // Store back onto context.agent so tool handlers (e.g. wikiSearch) can read the merged config
-  const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+  const providerRegistryService = container.get<IProviderRegistryService>(serviceIdentifier.ProviderRegistry);
   const aiApiConfig: AiAPIConfig = merge(
     {},
-    await externalAPIService.getAIConfig(),
+    await providerRegistryService.getAIConfig(),
     context.agentDef.aiApiConfig,
     context.agent.aiApiConfig,
   );
@@ -155,8 +155,8 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
           messagesCount: context.agent.messages.length,
         });
 
-        // Delegate AI API calls to externalAPIService
-        for await (const response of externalAPIService.generateFromAI(flatPrompts, aiApiConfig, { agentInstanceId: context.agent.id, awaitLogs: true })) {
+        // Delegate AI API calls to provider registry service
+        for await (const response of providerRegistryService.generateFromAI(flatPrompts, aiApiConfig, { agentInstanceId: context.agent.id, awaitLogs: true })) {
           if (!currentRequestId && response.requestId) {
             currentRequestId = response.requestId;
           }
@@ -168,7 +168,7 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
             });
 
             if (currentRequestId) {
-              await externalAPIService.cancelAIRequest(currentRequestId);
+              await providerRegistryService.cancelAIRequest(currentRequestId);
               yield canceled();
             }
             return;
@@ -317,7 +317,7 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
           logger.debug('Cancelling AI request in finally block', {
             requestId: currentRequestId,
           });
-          await externalAPIService.cancelAIRequest(currentRequestId);
+          await providerRegistryService.cancelAIRequest(currentRequestId);
         }
       }
     }

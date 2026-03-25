@@ -13,7 +13,7 @@ import { AuthenticationServiceIPCDescriptor, type IAuthenticationService } from 
 import { ContextServiceIPCDescriptor, type IContextService } from '@services/context/interface';
 import { DatabaseServiceIPCDescriptor, type IDatabaseService } from '@services/database/interface';
 import { DeepLinkServiceIPCDescriptor, type IDeepLinkService } from '@services/deepLink/interface';
-import { ExternalAPIServiceIPCDescriptor, type IExternalAPIService } from '@services/externalAPI/interface';
+import { ProviderRegistryServiceIPCDescriptor, type IProviderRegistryService } from '@services/providerRegistry/interface';
 import { GitServiceIPCDescriptor, type IGitService } from '@services/git/interface';
 import { type IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
 import { type INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';
@@ -37,7 +37,7 @@ export const agentInstance = createProxy<AsyncifyProxy<IAgentInstanceService>>(A
 export const auth = createProxy<IAuthenticationService>(AuthenticationServiceIPCDescriptor);
 export const context = createProxy<IContextService>(ContextServiceIPCDescriptor);
 export const deepLink = createProxy<IDeepLinkService>(DeepLinkServiceIPCDescriptor);
-export const externalAPI = createProxy<IExternalAPIService>(ExternalAPIServiceIPCDescriptor);
+export const externalAPI = createProxy<IProviderRegistryService>(ProviderRegistryServiceIPCDescriptor);
 export const database = createProxy<IDatabaseService>(DatabaseServiceIPCDescriptor);
 export const git = createProxy<IGitService>(GitServiceIPCDescriptor);
 export const menu = createProxy<IMenuService>(MenuServiceIPCDescriptor);
@@ -79,6 +79,6 @@ export const descriptors = {
   window: WindowServiceIPCDescriptor,
   workspace: WorkspaceServiceIPCDescriptor,
   workspaceView: WorkspaceViewServiceIPCDescriptor,
-  externalAPI: ExternalAPIServiceIPCDescriptor,
+  externalAPI: ProviderRegistryServiceIPCDescriptor,
   database: DatabaseServiceIPCDescriptor,
 };

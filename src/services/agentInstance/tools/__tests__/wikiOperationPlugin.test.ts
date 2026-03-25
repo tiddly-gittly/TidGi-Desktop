@@ -13,7 +13,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
 import type { IPromptConcatTool } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import type { IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import type { AIStreamResponse } from '@services/externalAPI/interface';
+import type { AIStreamResponse } from '@services/providerRegistry/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { AgentFrameworkContext } from '../../agentFrameworks/utilities/type';
 import type { AgentInstance } from '../../interface';

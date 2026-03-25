@@ -1,6 +1,6 @@
 import { DatabaseChannel } from '@/constants/channels';
 import type { IUserInfos } from '@services/auth/interface';
-import { AIGlobalSettings } from '@services/externalAPI/interface';
+import { AIGlobalSettings } from '@services/providerRegistry/interface';
 import type { IPreferences } from '@services/preferences/interface';
 import type { ISyncableWikiConfig, IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';

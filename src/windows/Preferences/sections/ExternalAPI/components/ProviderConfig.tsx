@@ -6,8 +6,8 @@ import { Dispatch, SetStateAction, SyntheticEvent, useCallback, useEffect, useMe
 import { useTranslation } from 'react-i18next';
 
 import { ListItemText } from '@/components/ListItem';
-import defaultProvidersConfig from '@services/externalAPI/defaultProviders';
-import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import defaultProvidersConfig from '@services/providerRegistry/defaultProviders';
+import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/providerRegistry/interface';
 import { ListItemVertical } from '../../../PreferenceComponents';
 import { NewModelDialog } from './NewModelDialog';
 import { NewProviderForm } from './NewProviderForm';

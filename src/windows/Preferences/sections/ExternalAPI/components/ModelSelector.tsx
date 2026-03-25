@@ -1,6 +1,6 @@
 import { Autocomplete, Box, Typography } from '@mui/material';
 import { ModelSelection } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, ModelInfo } from '@services/providerRegistry/interface';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextField } from '../../../PreferenceComponents';

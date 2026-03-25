@@ -1,8 +1,8 @@
 import type { ModelMessage } from 'ai';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { AiAPIConfig } from '../../src/services/agentInstance/promptConcat/promptConcatSchema';
-import { streamFromProvider } from '../../src/services/externalAPI/callProviderAPI';
-import type { AIProviderConfig } from '../../src/services/externalAPI/interface';
+import { streamFromProvider } from '../../src/services/providerRegistry/callProviderAPI';
+import type { AIProviderConfig } from '../../src/services/providerRegistry/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 
 describe('Mock OpenAI Server', () => {

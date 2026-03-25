@@ -65,9 +65,14 @@ export default defineConfig({
   },
 
   resolve: {
+    dedupe: ['react', 'react-dom'],
     alias: [
       { find: '@', replacement: path.resolve(__dirname, './src') },
       { find: '@services', replacement: path.resolve(__dirname, './src/services') },
+      { find: 'memeloop', replacement: path.resolve(__dirname, '../memeloop/packages/memeloop/src') },
+      { find: '@memeloop/protocol', replacement: path.resolve(__dirname, '../memeloop/packages/memeloop-protocol/src') },
+      { find: /agentInstance\/memeloopWorkerFactory(\.ts)?$/, replacement: path.resolve(__dirname, './src/__tests__/__stubs__/memeloopWorkerFactoryStub.ts') },
+      { find: /\?nodeWorker$/, replacement: path.resolve(__dirname, './src/__tests__/__stubs__/memeloopWorkerFactoryStub.ts') },
       // Stub optional MCP SDK so tests don't fail on import-resolution when SDK is not installed
       { find: /^@modelcontextprotocol\/sdk\/.*$/, replacement: path.resolve(__dirname, './src/__tests__/__stubs__/mcpSdkStub.ts') },
     ],

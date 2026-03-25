@@ -1,13 +1,14 @@
-import type { AIStreamResponse, IExternalAPIService } from '@/services/externalAPI/interface';
+import type { AIStreamResponse } from '@/services/providerRegistry/interface';
 import { AgentBrowserService } from '@services/agentBrowser';
 import { AgentDefinitionService } from '@services/agentDefinition';
 import { AgentInstanceService } from '@services/agentInstance';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
 import { DatabaseService } from '@services/database';
-import { ExternalAPIService } from '@services/externalAPI';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
+import { ProviderRegistryService } from '@services/providerRegistry';
+import type { IProviderRegistryService } from '@services/providerRegistry/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IWikiService } from '@services/wiki/interface';
@@ -34,7 +35,7 @@ export const serviceInstances: {
   auth: Record<string, unknown>;
   context: Partial<IContextService>;
   preference: Partial<IPreferenceService>;
-  externalAPI: Partial<IExternalAPIService>;
+  externalAPI: Partial<IProviderRegistryService>;
 } = {
   workspace: {
     countWorkspaces: vi.fn().mockResolvedValue(5),
@@ -122,7 +123,7 @@ container.bind(serviceIdentifier.WorkspaceView).toConstantValue(serviceInstances
 container.bind(serviceIdentifier.Window).toConstantValue(serviceInstances.window);
 container.bind(serviceIdentifier.NativeService).toConstantValue(serviceInstances.native);
 container.bind(serviceIdentifier.Wiki).toConstantValue(serviceInstances.wiki);
-container.bind(serviceIdentifier.ExternalAPI).to(ExternalAPIService).inSingletonScope();
+container.bind(serviceIdentifier.ProviderRegistry).to(ProviderRegistryService).inSingletonScope();
 container.bind(serviceIdentifier.Preference).toConstantValue(serviceInstances.preference);
 container.bind(serviceIdentifier.Context).toConstantValue(serviceInstances.context);
 container.bind(serviceIdentifier.Authentication).toConstantValue(serviceInstances.auth);

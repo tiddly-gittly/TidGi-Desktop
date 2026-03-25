@@ -77,3 +77,4 @@ tsconfig.test.json.tsbuildinfo
 /test-artifacts
 /test-artifacts-ci
 test-artifacts-ci.zip
+/.pnpm-store

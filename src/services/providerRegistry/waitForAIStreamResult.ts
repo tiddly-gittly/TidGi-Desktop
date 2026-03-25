@@ -1,10 +1,10 @@
 import { logger } from '@services/libs/log';
-import { IExternalAPIService } from './interface';
+import { IProviderRegistryService } from './interface';
 
 export async function waitForAIStreamResult(
   prompt: string,
-  aiConfig: Awaited<ReturnType<IExternalAPIService['getAIConfig']>>,
-  externalAPIService: IExternalAPIService,
+  aiConfig: Awaited<ReturnType<IProviderRegistryService['getAIConfig']>>,
+  externalAPIService: IProviderRegistryService,
 ): Promise<string | undefined> {
   try {
     if (!aiConfig?.free?.model || !aiConfig?.free?.provider) {

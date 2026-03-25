@@ -3,12 +3,12 @@ import type { IAgentDefinitionService } from '@services/agentDefinition/interfac
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
-import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
+import type { IProviderRegistryService } from '@services/providerRegistry/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { ISyncService } from '@services/sync/interface';
 import type { IViewService } from '@services/view/interface';
@@ -35,7 +35,7 @@ export class MenuService implements IMenuService {
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.Context) private readonly contextService: IContextService,
-    @inject(serviceIdentifier.ExternalAPI) private readonly externalAPIService: IExternalAPIService,
+    @inject(serviceIdentifier.ProviderRegistry) private readonly providerRegistryService: IProviderRegistryService,
     @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
   ) {
@@ -156,7 +156,7 @@ export class MenuService implements IMenuService {
             agentDefinition: container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition),
             auth: container.get<IAuthenticationService>(serviceIdentifier.Authentication),
             context: container.get<IContextService>(serviceIdentifier.Context),
-            externalAPI: this.externalAPIService,
+            externalAPI: this.providerRegistryService,
             git: container.get<IGitService>(serviceIdentifier.Git),
             native: container.get<INativeService>(serviceIdentifier.NativeService),
             preference: this.preferenceService,

@@ -13,13 +13,13 @@ import { AuthenticationServiceIPCDescriptor, type IAuthenticationService } from 
 import { ContextServiceIPCDescriptor, type IContextService } from '@services/context/interface';
 import { DatabaseServiceIPCDescriptor, type IDatabaseService } from '@services/database/interface';
 import { DeepLinkServiceIPCDescriptor, type IDeepLinkService } from '@services/deepLink/interface';
-import { ExternalAPIServiceIPCDescriptor, type IExternalAPIService } from '@services/externalAPI/interface';
 import { GitServiceIPCDescriptor, type IGitService } from '@services/git/interface';
 import { GitServerServiceIPCDescriptor, type IGitServerService } from '@services/gitServer/interface';
 import { type IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
 import { type INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';
 import { type INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
 import { type IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/preferences/interface';
+import { ProviderRegistryServiceIPCDescriptor, type IProviderRegistryService } from '@services/providerRegistry/interface';
 import { type ISyncService, SyncServiceIPCDescriptor } from '@services/sync/interface';
 import { type ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences/interface';
 import { type IThemeService, ThemeServiceIPCDescriptor } from '@services/theme/interface';
@@ -40,7 +40,7 @@ export const auth = createWorkerProxy<WorkerProxy<IAuthenticationService>>(Authe
 export const context = createWorkerProxy<WorkerProxy<IContextService>>(ContextServiceIPCDescriptor, Observable);
 export const database = createWorkerProxy<WorkerProxy<IDatabaseService>>(DatabaseServiceIPCDescriptor, Observable);
 export const deepLink = createWorkerProxy<WorkerProxy<IDeepLinkService>>(DeepLinkServiceIPCDescriptor, Observable);
-export const externalAPI = createWorkerProxy<WorkerProxy<IExternalAPIService>>(ExternalAPIServiceIPCDescriptor, Observable);
+export const externalAPI = createWorkerProxy<WorkerProxy<IProviderRegistryService>>(ProviderRegistryServiceIPCDescriptor, Observable);
 export const git = createWorkerProxy<WorkerProxy<IGitService>>(GitServiceIPCDescriptor, Observable);
 export const gitServer = createWorkerProxy<WorkerProxy<IGitServerService>>(GitServerServiceIPCDescriptor, Observable);
 export const menu = createWorkerProxy<WorkerProxy<IMenuService>>(MenuServiceIPCDescriptor, Observable);

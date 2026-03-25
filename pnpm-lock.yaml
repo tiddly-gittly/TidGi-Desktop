@@ -50,6 +50,12 @@ importers:
       '@fontsource/roboto':
         specifier: ^5.2.8
         version: 5.2.8
+      '@memeloop/prompt-editor':
+        specifier: link:../memeloop/packages/memeloop-prompt-editor
+        version: link:../memeloop/packages/memeloop-prompt-editor
+      '@memeloop/protocol':
+        specifier: link:../memeloop/packages/memeloop-protocol
+        version: link:../memeloop/packages/memeloop-protocol
       '@monaco-editor/react':
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -182,6 +188,12 @@ importers:
       material-ui-popup-state:
         specifier: ^5.3.6
         version: 5.3.6(@mui/material@7.3.5(@emotion/react@11.14.0(@types/react@19.2.6)(react@19.2.0))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@19.2.6)(react@19.2.0))(@types/react@19.2.6)(react@19.2.0))(@types/react@19.2.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(@types/react@19.2.6)(react@19.2.0)
+      memeloop:
+        specifier: link:../memeloop/packages/memeloop
+        version: link:../memeloop/packages/memeloop
+      memeloop-node:
+        specifier: link:../memeloop/packages/memeloop-node
+        version: link:../memeloop/packages/memeloop-node
       menubar:
         specifier: 9.5.2
         version: 9.5.2(electron@41.1.1)
