@@ -215,7 +215,7 @@ export function CommitDetailsPanel(
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
-      await window.service.sync.syncWikiIfNeeded(workspace);
+      await window.service.sync.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage') });
       // Notify parent to select the new commit
       if (onCommitSuccess) {
         onCommitSuccess();

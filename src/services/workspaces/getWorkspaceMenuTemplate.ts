@@ -125,7 +125,7 @@ export async function getSimplifiedWorkspaceMenuTemplate(
   }
 
   // Local backup option (always shown for all wiki workspaces)
-  const backupItems = createBackupMenuItems(workspace, t, service.sync, aiGenerateBackupTitleEnabled, false);
+  const backupItems = createBackupMenuItems(workspace, t, service.git, aiGenerateBackupTitleEnabled, false);
   template.push(...backupItems);
 
   return template;
@@ -227,7 +227,7 @@ export async function getWorkspaceMenuTemplate(
   }
 
   // Local backup is always shown for all wiki workspaces
-  const backupItems = createBackupMenuItems(workspace, t, service.sync, aiGenerateBackupTitleEnabled, false);
+  const backupItems = createBackupMenuItems(workspace, t, service.git, aiGenerateBackupTitleEnabled, false);
   template.push(...backupItems);
 
   if (!isSubWiki) {

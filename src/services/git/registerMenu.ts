@@ -36,16 +36,20 @@ export async function registerMenu(): Promise<void> {
     return userInfo !== undefined;
   };
 
-  // Build commit and sync menu items with dynamic enabled/click that checks activeWorkspace at runtime
+  const isAIEnabled = async (): Promise<boolean> => {
+    const activeWorkspace = await workspaceService.getActiveWorkspace();
+    if (!activeWorkspace || !isWikiWorkspace(activeWorkspace)) return false;
+    return gitService.isAIGenerateBackupTitleEnabled();
+  };
+
+  // Always register all items; visibility is determined dynamically so AI items appear/disappear
+  // when the user enables or disables AI without needing an app restart.
   const commitMenuItems: DeferredMenuItemConstructorOptions[] = [
     {
       label: () => i18n.t('ContextMenu.BackupNow'),
       id: 'backup-now',
       visible: hasActiveWikiWorkspace,
-      enabled: async () => {
-        const activeWorkspace = await workspaceService.getActiveWorkspace();
-        return activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace);
-      },
+      enabled: hasActiveWikiWorkspace,
       click: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
@@ -57,75 +61,28 @@ export async function registerMenu(): Promise<void> {
         }
       },
     },
-  ];
-
-  // Add AI backup item if enabled
-  const aiGenerateBackupTitleEnabled = await gitService.isAIGenerateBackupTitleEnabled();
-  if (aiGenerateBackupTitleEnabled) {
-    commitMenuItems.push({
+    {
       label: () => i18n.t('ContextMenu.BackupNow') + i18n.t('ContextMenu.WithAI'),
       id: 'backup-now-ai',
-      visible: hasActiveWikiWorkspace,
-      enabled: async () => {
-        const activeWorkspace = await workspaceService.getActiveWorkspace();
-        return activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace);
-      },
+      visible: isAIEnabled,
+      enabled: isAIEnabled,
       click: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
           await gitService.commitAndSync(activeWorkspace, {
             dir: activeWorkspace.wikiFolderLocation,
             commitOnly: true,
-            // Don't provide commitMessage to trigger AI generation
+            // Omit commitMessage to trigger AI generation in commitAndSync
           });
         }
       },
-    });
-  }
+    },
+  ];
 
-  // Build sync menu items
-  const syncMenuItems: DeferredMenuItemConstructorOptions[] = [];
-
-  const isOnline = await contextService.isOnline();
-  const offlineText = isOnline ? '' : ` (${i18n.t('ContextMenu.NoNetworkConnection')})`;
-
-  if (aiGenerateBackupTitleEnabled) {
-    syncMenuItems.push(
-      {
-        label: () => i18n.t('ContextMenu.SyncNow') + offlineText,
-        id: 'sync-now',
-        visible: hasActiveSyncableWorkspace,
-        enabled: async () => {
-          const online = await contextService.isOnline();
-          return online && await hasActiveSyncableWorkspace();
-        },
-        click: async () => {
-          const activeWorkspace = await workspaceService.getActiveWorkspace();
-          if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
-            await syncService.syncWikiIfNeeded(activeWorkspace, { commitMessage: i18n.t('LOG.CommitBackupMessage') });
-          }
-        },
-      },
-      {
-        label: () => i18n.t('ContextMenu.SyncNow') + i18n.t('ContextMenu.WithAI') + offlineText,
-        id: 'sync-now-ai',
-        visible: hasActiveSyncableWorkspace,
-        enabled: async () => {
-          const online = await contextService.isOnline();
-          return online && await hasActiveSyncableWorkspace();
-        },
-        click: async () => {
-          const activeWorkspace = await workspaceService.getActiveWorkspace();
-          if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
-            // Source will be tracked as 'sync' in syncWikiIfNeeded
-            await syncService.syncWikiIfNeeded(activeWorkspace, { useAICommitMessage: true });
-          }
-        },
-      },
-    );
-  } else {
-    syncMenuItems.push({
-      label: () => i18n.t('ContextMenu.SyncNow') + offlineText,
+  // Both plain and AI sync items are always registered; visibility is dynamic.
+  const syncMenuItems: DeferredMenuItemConstructorOptions[] = [
+    {
+      label: () => i18n.t('ContextMenu.SyncNow'),
       id: 'sync-now',
       visible: hasActiveSyncableWorkspace,
       enabled: async () => {
@@ -138,8 +95,27 @@ export async function registerMenu(): Promise<void> {
           await syncService.syncWikiIfNeeded(activeWorkspace, { commitMessage: i18n.t('LOG.CommitBackupMessage') });
         }
       },
-    });
-  }
+    },
+    {
+      label: () => i18n.t('ContextMenu.SyncNow') + i18n.t('ContextMenu.WithAI'),
+      id: 'sync-now-ai',
+      visible: async () => {
+        const online = await contextService.isOnline();
+        return online && await isAIEnabled() && await hasActiveSyncableWorkspace();
+      },
+      enabled: async () => {
+        const online = await contextService.isOnline();
+        return online && await isAIEnabled() && await hasActiveSyncableWorkspace();
+      },
+      click: async () => {
+        const activeWorkspace = await workspaceService.getActiveWorkspace();
+        if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
+          // Source will be tracked as 'sync' in syncWikiIfNeeded
+          await syncService.syncWikiIfNeeded(activeWorkspace, { useAICommitMessage: true });
+        }
+      },
+    },
+  ];
 
   // Add to Sync menu - git history, backup, and sync items
   await menuService.insertMenu(

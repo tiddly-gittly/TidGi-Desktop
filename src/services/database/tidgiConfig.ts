@@ -117,10 +117,6 @@ export function removeSyncableFields(workspace: IWikiWorkspaceMinimal): Partial<
   for (const field of syncableConfigFields) {
     delete (localWorkspace as Record<string, unknown>)[field];
   }
-  getLogger().debug('Removed syncable fields from workspace', {
-    workspaceId: workspace.id,
-    removedFields: syncableConfigFields.filter(field => field in workspace),
-  });
   return localWorkspace;
 }
 

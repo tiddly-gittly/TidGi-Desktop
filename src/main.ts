@@ -218,7 +218,6 @@ const commonInit = async (): Promise<void> => {
       mainWindow.on('unmaximize', handleMaximize);
     }
   }
-  nativeService.startProcessMonitoring();
   // trigger whenTrulyReady
   ipcMain.emit(MainChannel.commonInitFinished);
 };

@@ -63,6 +63,7 @@ export class Sync implements ISyncService {
       typeof gitUrl === 'string' &&
       userInfo !== undefined
     ) {
+      // cloud workspace with valid auth: full sync
       const syncOrForcePullConfigs = { remoteUrl: gitUrl, userInfo, dir: wikiFolderLocation, commitMessage } satisfies ICommitAndSyncConfigs;
       // sync current workspace first
       const hasChanges = await gitService.syncOrForcePull(workspace, syncOrForcePullConfigs);
@@ -98,6 +99,13 @@ export class Sync implements ISyncService {
           await viewService.reloadViewsWebContents(id);
         }
       }
+    } else {
+      // cloud workspace but missing gitUrl or userInfo - log and notify instead of silently doing nothing
+      const reason = typeof gitUrl !== 'string' ? 'missing gitUrl' : 'missing userInfo (not authenticated)';
+      logger.warn('syncWikiIfNeeded skipped for cloud workspace', { workspaceId: id, reason });
+      await wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, idToUse, [
+        `${i18n.t('Log.SynchronizationFailed')} (${reason})`,
+      ]);
     }
   }
 

@@ -310,6 +310,7 @@ export class Git implements IGitService {
     // return the `hasChanges` result.
     return await new Promise<boolean>((resolve, reject) => {
       if (!observable) {
+        logger.warn('gitWorker.commitAndSyncWiki returned undefined - gitWorker may not be initialized', { wikiFolderPath });
         resolve(false);
         return;
       }

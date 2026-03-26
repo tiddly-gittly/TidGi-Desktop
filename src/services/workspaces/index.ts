@@ -243,56 +243,23 @@ export class Workspace implements IWorkspaceService {
       }
     }
 
-    // Save to settings.json - remove syncable fields from wiki workspaces
-    // They are stored in tidgi.config.json in the wiki folder
-    await this.saveWorkspacesToSettings(immediate);
+    // Persist only this workspace to settings.json, stripping syncable fields when tidgi.config.json exists.
+    // Updating a single entry avoids iterating all workspaces on every system-internal update (e.g. hibernated, lastNodeJSArgv).
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    const currentSettingsWorkspaces = databaseService.getSetting('workspaces') ?? {};
+    currentSettingsWorkspaces[id] = isWikiWorkspace(workspaceToSave) && readTidgiConfigSync(workspaceToSave.wikiFolderLocation) !== undefined
+      ? removeSyncableFields(workspaceToSave) as IWorkspace
+      : workspaceToSave;
+    databaseService.setSetting('workspaces', currentSettingsWorkspaces);
+    if (immediate === true) {
+      await databaseService.immediatelyStoreSettingsToFile();
+    }
 
     // update subject so ui can react to it (can be skipped for batch operations)
     if (!skipUiUpdate) {
       this.updateWorkspaceSubject();
       // menu is mostly invisible, so we don't need to update it immediately
       void this.updateWorkspaceMenuItems();
-    }
-  }
-
-  /**
-   * Save all workspaces to settings.json, removing syncable fields from wiki workspaces
-   * Only removes syncable fields if tidgi.config.json exists (to maintain backward compatibility)
-   * @param immediate Whether to immediately flush to disk
-   */
-  private async saveWorkspacesToSettings(immediate?: boolean): Promise<void> {
-    const workspaces = this.getWorkspacesSync();
-    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    const workspacesForSettings: Record<string, IWorkspace> = {};
-
-    for (const [key, ws] of Object.entries(workspaces)) {
-      if (isWikiWorkspace(ws)) {
-        // Only remove syncable fields if tidgi.config.json exists
-        // This prevents losing data when tidgi.config.json hasn't been created yet
-        const configExists = await readTidgiConfig(ws.wikiFolderLocation);
-        if (configExists) {
-          workspacesForSettings[key] = removeSyncableFields(ws) as IWorkspace;
-          logger.debug('saveWorkspacesToSettings: Removed syncable fields (tidgi.config.json exists)', {
-            workspaceId: ws.id,
-            wikiFolderLocation: ws.wikiFolderLocation,
-          });
-        } else {
-          // Keep all fields in settings.json if tidgi.config.json doesn't exist
-          workspacesForSettings[key] = ws;
-          logger.debug('saveWorkspacesToSettings: Keeping all fields (no tidgi.config.json)', {
-            workspaceId: ws.id,
-            wikiFolderLocation: ws.wikiFolderLocation,
-          });
-        }
-      } else {
-        // Keep dedicated workspaces as is
-        workspacesForSettings[key] = ws;
-      }
-    }
-
-    databaseService.setSetting('workspaces', workspacesForSettings);
-    if (immediate === true) {
-      await databaseService.immediatelyStoreSettingsToFile();
     }
   }
 
@@ -588,8 +555,10 @@ export class Workspace implements IWorkspaceService {
     const workspaces = this.getWorkspacesSync();
     if (id in workspaces) {
       delete workspaces[id];
-      // Use saveWorkspacesToSettings to ensure syncable fields are properly removed
-      await this.saveWorkspacesToSettings(false);
+      const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+      const currentSettingsWorkspaces = databaseService.getSetting('workspaces') ?? {};
+      delete currentSettingsWorkspaces[id];
+      databaseService.setSetting('workspaces', currentSettingsWorkspaces);
     } else {
       throw new Error(`Try to remove workspace, but id ${id} does not exist`);
     }
