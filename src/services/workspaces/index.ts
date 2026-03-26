@@ -33,7 +33,6 @@ import type {
 } from './interface';
 import { isWikiWorkspace, wikiWorkspaceDefaultValues } from './interface';
 import { registerMenu } from './registerMenu';
-import { syncableConfigFields } from './syncableConfig';
 import { workspaceSorter } from './utilities';
 
 @injectable()
@@ -209,28 +208,23 @@ export class Workspace implements IWorkspaceService {
     const workspaceToSave = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspaceToSave);
 
+    // Capture previous in-memory state before overwriting, for precise syncable-field diffing below.
+    const previousWorkspace = workspaces[id];
+
     // Update memory cache with full workspace data (including syncable fields)
     workspaces[id] = workspaceToSave;
 
     // Write tidgi.config.json only when syncable fields actually changed.
-    // Compare against the ACTUAL FILE content (not just in-memory), so that when a field is newly
-    // added to syncableConfigFields (e.g. isSubWiki, mainWikiToLink) but the existing file predates
-    // that addition, the file gets updated on the next save rather than only on an explicit change.
+    // Compare previous vs new in-memory syncable config using extractSyncableConfig (which already
+    // knows the full field list and default values), so non-syncable updates like lastNodeJSArgv or
+    // hibernated never trigger a file write.
     if (isWikiWorkspace(workspaceToSave)) {
       const newSyncableConfig = extractSyncableConfig(workspaceToSave);
-      const existingFileConfig = readTidgiConfigSync(workspaceToSave.wikiFolderLocation);
-      // existingFileConfig is undefined when the file doesn't exist → always write on first save.
-      // When the file exists, compare its content against what we'd write to detect migration gaps.
-      const fileConfigForComparison = existingFileConfig ?? {};
-      const syncableChanged = existingFileConfig === undefined ||
-        syncableConfigFields.some((field) =>
-          // treat a missing key (e.g. newly added field) as changed so the file gets updated
-          !Object.prototype.hasOwnProperty.call(fileConfigForComparison, field) ||
-          !isEqual(
-            (newSyncableConfig as Record<string, unknown>)[field],
-            (fileConfigForComparison as Record<string, unknown>)[field],
-          )
-        );
+      const previousSyncableConfig = previousWorkspace !== undefined && isWikiWorkspace(previousWorkspace)
+        ? extractSyncableConfig(previousWorkspace)
+        : undefined;
+      // Write when: first time saving this workspace (no previous state), or any syncable field changed.
+      const syncableChanged = previousSyncableConfig === undefined || !isEqual(newSyncableConfig, previousSyncableConfig);
       if (syncableChanged) {
         try {
           await writeTidgiConfig(workspaceToSave.wikiFolderLocation, newSyncableConfig);
