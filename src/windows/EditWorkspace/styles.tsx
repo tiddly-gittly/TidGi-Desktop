@@ -28,6 +28,21 @@ export const FlexGrow = styled('div')`
   flex: 1;
 `;
 
+/** Outer wrapper for the sidebar + scrollable content layout, same pattern as Preferences */
+export const SidebarAndContent = styled('div')`
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+`;
+
+/** The main content area offset to the right of the fixed-width sidebar */
+export const ContentWithSidebar = styled('div')`
+  margin-left: 200px;
+  flex: 1;
+  overflow-y: auto;
+  padding-top: 4px;
+`;
+
 export const Button = styled((props: React.ComponentProps<typeof ButtonRaw>) => <ButtonRaw {...props} />)`
   float: right;
   margin-left: 10px;

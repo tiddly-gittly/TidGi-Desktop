@@ -1,88 +1,10 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 import { PreferenceChannel } from '@/constants/channels';
-import type { HunspellLanguages } from '@/constants/hunspellLanguages';
 import type { BehaviorSubject } from 'rxjs';
 
-export interface IPreferences {
-  allowPrerelease: boolean;
-  alwaysOnTop: boolean;
-  askForDownloadPath: boolean;
-  tidgiMiniWindow: boolean;
-  /**
-   * 完全关闭反盗链
-   */
-  disableAntiAntiLeech: boolean;
-  /**
-   * Only disable anti-leech for these urls
-   */
-  disableAntiAntiLeechForUrls: string[];
-  downloadPath: string;
-  /**
-   * Enable debug logging for external API requests and responses
-   */
-  externalAPIDebug: boolean;
-  hibernateUnusedWorkspacesAtLaunch: boolean;
-  hideMenuBar: boolean;
-  ignoreCertificateErrors: boolean;
-  language: string;
-  tidgiMiniWindowAlwaysOnTop: boolean;
-  pauseNotifications: string | undefined;
-  pauseNotificationsBySchedule: boolean;
-  pauseNotificationsByScheduleFrom: string;
-  pauseNotificationsByScheduleTo: string;
-  pauseNotificationsMuteAudio: boolean;
-  rememberLastPageVisited: boolean;
-  runOnBackground: boolean;
-  shareWorkspaceBrowsingData: boolean;
-  showSideBarIcon: boolean;
-  showSideBarText: boolean;
-  /**
-   * Should show sidebar on main window?
-   */
-  sidebar: boolean;
-  /**
-   * Should show sidebar on tidgi mini window?
-   */
-  tidgiMiniWindowShowSidebar: boolean;
-  spellcheck: boolean;
-  spellcheckLanguages: HunspellLanguages[];
-  swipeToNavigate: boolean;
-  /**
-   * Whether menubar window should show the same workspace as main window
-   */
-  tidgiMiniWindowSyncWorkspaceWithMainWindow: boolean;
-  /**
-   * The workspace ID that tidgi mini window should always show when tidgiMiniWindowSyncWorkspaceWithMainWindow is false
-   */
-  tidgiMiniWindowFixedWorkspaceId: string | undefined;
-  /**
-   * Whether to show title bar on tidgi mini window (independent of main window's titleBar setting)
-   */
-  tidgiMiniWindowShowTitleBar: boolean;
-  /**
-   * Keyboard shortcuts configuration stored as serviceIdentifier.methodName -> shortcut
-   */
-  keyboardShortcuts: Record<string, string>;
-  syncBeforeShutdown: boolean;
-  syncDebounceInterval: number;
-  /**
-   * Only start a sync when there are no draft (prevent your blog has a draft tiddler)
-   */
-  syncOnlyWhenNoDraft: boolean;
-  /**
-   * Whether to use AI to generate backup/commit titles
-   */
-  aiGenerateBackupTitle: boolean;
-  /**
-   * Timeout for AI-generated backup title in milliseconds
-   */
-  aiGenerateBackupTitleTimeout: number;
-  themeSource: 'system' | 'light' | 'dark';
-  titleBar: boolean;
-  unreadCountBadge: boolean;
-  useHardwareAcceleration: boolean;
-}
+import type { IPreferences } from './zodSchema';
+export type { IPreferences } from './zodSchema';
 
 export enum PreferenceSections {
   developers = 'developers',

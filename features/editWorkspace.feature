@@ -14,12 +14,12 @@ Feature: Edit Workspace
 
   @edit-workspace-save-http-api
   Scenario: Save button disappears after enabling HTTP API and restarting wiki
-    # Enable HTTP API (this requires restart, so save button will show a restart snackbar)
-    When I click on "server options accordion and enableHTTPAPI switch and save button" elements with selectors:
-      | element description      | selector                                         |
-      | server options accordion | [data-testid='preference-section-serverOptions'] |
-      | enableHTTPAPI switch     | [data-testid='enable-http-api-switch']           |
-      | save button              | [data-testid='edit-workspace-save-button']       |
+    # Server section is always visible (no accordion). Click sidebar to scroll to it, then toggle the switch.
+    When I click on "server section sidebar and enableHTTPAPI switch and save button" elements with selectors:
+      | element description        | selector                                              |
+      | server section sidebar btn | [data-testid='preference-section-server']             |
+      | enableHTTPAPI switch       | [data-testid='enable-http-api-switch']                |
+      | save button                | [data-testid='edit-workspace-save-button']            |
     Then I should not see a "save button" element with selector "[data-testid='edit-workspace-save-button']"
     Then I should see a "restart snackbar with restart button" element with selector "button:has-text('现在重启知识库')"
     # Clear RESTARTING marker to catch the new restart event

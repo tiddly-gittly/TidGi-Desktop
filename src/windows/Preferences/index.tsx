@@ -1,12 +1,15 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { styled } from '@mui/material/styles';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useInfoSnackbar } from '@/components/InfoSnackbar';
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
+import { usePreferenceObservable } from '@services/preferences/hooks';
 
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { SearchBar } from './SearchBar';
+import { PreferenceSearchResultsView } from './SearchResultsView';
 import { AIAgent } from './sections/AIAgent';
 import { DeveloperTools } from './sections/DeveloperTools';
 import { Downloads } from './sections/Downloads';
@@ -43,16 +46,21 @@ export default function Preferences(): React.JSX.Element {
   const sections = usePreferenceSections();
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
   const [showInfoSnackbar, InfoSnackbarComponent] = useInfoSnackbar();
+  const [searchQuery, setSearchQuery] = useState('');
+  const preferences = usePreferenceObservable();
 
   // handle open preference from other window, and goto some tab
   useEffect(() => {
+    if (searchQuery) return;
     const scrollTo = (window.meta() as IPossibleWindowMeta<WindowMeta[WindowNames.preferences]>).preferenceGotoTab;
     if (scrollTo === undefined) return;
     setTimeout(() => {
       // wait 100ms so page anchors are all loaded. Otherwise scroll will stop halfway.
       sections[scrollTo].ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
-  }, [sections]);
+  }, [sections, searchQuery]);
+
+  const isSearching = searchQuery.trim().length > 0;
 
   return (
     <Root>
@@ -63,26 +71,42 @@ export default function Preferences(): React.JSX.Element {
         <title>{t('ContextMenu.Preferences')}</title>
       </Helmet>
 
-      <SectionSideBar sections={sections} />
+      {!isSearching && <SectionSideBar sections={sections} />}
       <Inner>
-        <TiddlyWiki sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <General sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <TidGiMiniWindow sections={sections} />
-        <Sync sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <ExternalAPI sections={sections} />
-        <AIAgent sections={sections} />
-        <Search sections={sections} requestRestartCountDown={requestRestartCountDown} showInfoSnackbar={showInfoSnackbar} />
-        <Notifications sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <System sections={sections} />
-        <Languages sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <DeveloperTools sections={sections} />
-        <Downloads sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <Network sections={sections} />
-        <PrivacyAndSecurity sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <Performance sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <Updates sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <FriendLinks sections={sections} />
-        <Miscellaneous sections={sections} />
+        <SearchBar value={searchQuery} onChange={setSearchQuery} />
+
+        {isSearching
+          ? (
+            preferences !== undefined && (
+              <PreferenceSearchResultsView
+                query={searchQuery}
+                preferences={preferences}
+                onNeedsRestart={requestRestartCountDown}
+              />
+            )
+          )
+          : (
+            <>
+              <TiddlyWiki sections={sections} requestRestartCountDown={requestRestartCountDown} />
+              <General sections={sections} requestRestartCountDown={requestRestartCountDown} />
+              <TidGiMiniWindow sections={sections} />
+              <Sync sections={sections} requestRestartCountDown={requestRestartCountDown} />
+              <ExternalAPI sections={sections} />
+              <AIAgent sections={sections} />
+              <Search sections={sections} requestRestartCountDown={requestRestartCountDown} showInfoSnackbar={showInfoSnackbar} />
+              <Notifications sections={sections} requestRestartCountDown={requestRestartCountDown} />
+              <System sections={sections} />
+              <Languages sections={sections} requestRestartCountDown={requestRestartCountDown} />
+              <DeveloperTools sections={sections} />
+              <Downloads sections={sections} requestRestartCountDown={requestRestartCountDown} />
+              <Network sections={sections} />
+              <PrivacyAndSecurity sections={sections} requestRestartCountDown={requestRestartCountDown} />
+              <Performance sections={sections} requestRestartCountDown={requestRestartCountDown} />
+              <Updates sections={sections} requestRestartCountDown={requestRestartCountDown} />
+              <FriendLinks sections={sections} />
+              <Miscellaneous sections={sections} />
+            </>
+          )}
       </Inner>
     </Root>
   );
