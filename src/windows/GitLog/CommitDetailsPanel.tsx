@@ -215,7 +215,13 @@ export function CommitDetailsPanel(
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
-      await window.service.sync.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage') });
+      // Use gitService.commitAndSync directly (commitOnly=true) — same code path as the
+      // context-menu "BackupNow" button, so both stay in sync automatically.
+      await window.service.git.commitAndSync(workspace, {
+        dir: workspace.wikiFolderLocation,
+        commitOnly: true,
+        commitMessage: t('LOG.CommitBackupMessage'),
+      });
       // Notify parent to select the new commit
       if (onCommitSuccess) {
         onCommitSuccess();
@@ -235,7 +241,11 @@ export function CommitDetailsPanel(
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
-      await window.service.sync.syncWikiIfNeeded(workspace, { useAICommitMessage: true });
+      // Same code path as context-menu "BackupNow (AI)" — omit commitMessage to trigger AI.
+      await window.service.git.commitAndSync(workspace, {
+        dir: workspace.wikiFolderLocation,
+        commitOnly: true,
+      });
       // Notify parent to select the new commit
       if (onCommitSuccess) {
         onCommitSuccess();
@@ -416,6 +426,7 @@ export function CommitDetailsPanel(
                   onClick={handleCommitNowWithAI}
                   fullWidth
                   disabled={isCommittingWithAI}
+                  data-testid='commit-now-ai-button'
                   startIcon={isCommittingWithAI ? <CircularProgress size={16} color='inherit' /> : undefined}
                 >
                   {isCommittingWithAI ? t('GitLog.Committing') : t('ContextMenu.BackupNow') + t('ContextMenu.WithAI')}

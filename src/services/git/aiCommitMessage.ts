@@ -145,7 +145,8 @@ ${changes}
 
 Generate only the commit message, nothing else:`;
 
-    const timeout = preferences.aiGenerateBackupTitleTimeout ?? 5000;
+    // Default timeout is 60 s — local/slow models can easily take 30-60 s.
+    const timeout = preferences.aiGenerateBackupTitleTimeout ?? 60_000;
     logger.debug('Starting AI commit message generation', { timeout, source });
 
     const startTime = Date.now();

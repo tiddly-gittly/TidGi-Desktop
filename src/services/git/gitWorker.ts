@@ -3,6 +3,37 @@ import { WikiChannel } from '@/constants/channels';
 import { handleWorkerMessages } from '@services/libs/workerAdapter';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+
+/**
+ * Decode git's octal-escaped non-ASCII filenames in log messages.
+ * Git quotes non-ASCII paths as `"\344\270\211..."` by default (core.quotepath=true).
+ * git-sync-js does not pass -c core.quotePath=false to `git commit`, so the commit
+ * summary lines contain these octal escapes. This function decodes them to readable UTF-8.
+ */
+function decodeGitOctalEscapes(message: string): string {
+  return message.replace(/"((?:[^"\\]|\\.)*)"/g, (_outer, inner: string) => {
+    const bytes: number[] = [];
+    const parts: string[] = [];
+    let index = 0;
+    while (index < inner.length) {
+      if (inner[index] === '\\' && index + 3 < inner.length && /^[0-7]{3}$/.test(inner.slice(index + 1, index + 4))) {
+        bytes.push(Number.parseInt(inner.slice(index + 1, index + 4), 8));
+        index += 4;
+      } else {
+        if (bytes.length > 0) {
+          parts.push(Buffer.from(bytes).toString('utf-8'));
+          bytes.length = 0;
+        }
+        parts.push(inner[index]);
+        index++;
+      }
+    }
+    if (bytes.length > 0) {
+      parts.push(Buffer.from(bytes).toString('utf-8'));
+    }
+    return parts.join('');
+  });
+}
 import {
   AssumeSyncError,
   CantForcePullError,
@@ -109,10 +140,10 @@ function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs
       defaultGitInfo,
       logger: {
         debug: (message: string, context: ILoggerContext): void => {
-          observer.next({ message, level: 'debug', meta: { callerFunction: 'commitAndSync', ...context } });
+          observer.next({ message: decodeGitOctalEscapes(message), level: 'debug', meta: { callerFunction: 'commitAndSync', ...context } });
         },
         warn: (message: string, context: ILoggerContext): void => {
-          observer.next({ message, level: 'warn', meta: { callerFunction: 'commitAndSync', ...context } });
+          observer.next({ message: decodeGitOctalEscapes(message), level: 'warn', meta: { callerFunction: 'commitAndSync', ...context } });
         },
         info: (message: GitStep, context: ILoggerContext): void => {
           observer.next({ message, level: 'info', meta: { handler: WikiChannel.syncProgress, id: workspaceIDForNotification, callerFunction: 'commitAndSync', ...context } });
