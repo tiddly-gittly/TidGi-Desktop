@@ -3,9 +3,9 @@ import type { Observable } from 'rxjs';
 
 import { AgentChannel } from '@/constants/channels';
 import { AgentDefinition } from '@services/agentDefinition/interface';
-import { PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
-import { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskManager';
+import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema/types';
+import type { PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcatTypes';
+import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskTypes';
 
 /**
  * Content of a session instance that user chat with an agent.

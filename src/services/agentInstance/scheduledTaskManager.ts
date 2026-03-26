@@ -15,49 +15,12 @@ import { Cron } from 'croner';
 import { nanoid } from 'nanoid';
 import { Repository } from 'typeorm';
 
-import { type ScheduleConfig, ScheduledTaskEntity, type ScheduleKind } from '@services/database/schema/agent';
+import { ScheduledTaskEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import type { IAgentInstanceService } from './interface';
+import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskTypes';
 
-// ─── Public data shape exposed to UI ─────────────────────────────────────────
-
-export interface ScheduledTask {
-  id: string;
-  agentInstanceId: string;
-  agentDefinitionId?: string;
-  name?: string;
-  scheduleKind: ScheduleKind;
-  schedule: ScheduleConfig;
-  payload?: { message: string };
-  enabled: boolean;
-  deleteAfterRun: boolean;
-  activeHoursStart?: string;
-  activeHoursEnd?: string;
-  lastRunAt?: string;
-  nextRunAt?: string;
-  runCount: number;
-  maxRuns?: number;
-  createdBy: string;
-  created: string;
-  updated: string;
-}
-
-export interface CreateScheduledTaskInput {
-  agentInstanceId: string;
-  agentDefinitionId?: string;
-  name?: string;
-  scheduleKind: ScheduleKind;
-  schedule: ScheduleConfig;
-  payload?: { message: string };
-  enabled?: boolean;
-  deleteAfterRun?: boolean;
-  activeHoursStart?: string;
-  activeHoursEnd?: string;
-  maxRuns?: number;
-  createdBy?: string;
-}
-
-export type UpdateScheduledTaskInput = Partial<Omit<CreateScheduledTaskInput, 'agentInstanceId'>> & { id: string };
+export type { CreateScheduledTaskInput, ScheduleConfig, ScheduledTask, ScheduleKind, UpdateScheduledTaskInput } from './scheduledTaskTypes';
 
 // ─── Internal runtime entry ───────────────────────────────────────────────────
 

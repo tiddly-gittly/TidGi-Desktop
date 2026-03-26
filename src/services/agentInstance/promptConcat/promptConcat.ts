@@ -22,6 +22,7 @@ import { AgentInstanceMessage } from '../interface';
 import { createAgentFrameworkHooks, pluginRegistry, PromptConcatHookContext } from '../tools';
 import type { AgentPromptDescription, IPrompt } from './promptConcatSchema';
 import type { IPromptConcatTool } from './promptConcatSchema/tools';
+import type { PromptConcatStreamState } from './promptConcatTypes';
 
 /**
  * Context type specific for prompt concatenation operations
@@ -179,24 +180,6 @@ export function flattenPrompts(prompts: IPrompt[]): ModelMessage[] {
 
   collectRolePrompts(prompts);
   return result;
-}
-
-/**
- * Streaming state for prompt processing
- */
-export interface PromptConcatStreamState {
-  /** Current processed prompts */
-  processedPrompts: IPrompt[];
-  /** Current flat prompts for LLM */
-  flatPrompts: ModelMessage[];
-  /** Current processing step */
-  step: 'plugin' | 'finalize' | 'flatten' | 'complete';
-  /** Current plugin being processed (if step is 'plugin') */
-  currentPlugin?: IPromptConcatTool;
-  /** Processing progress (0-1) */
-  progress: number;
-  /** Whether processing is complete */
-  isComplete: boolean;
 }
 
 /**

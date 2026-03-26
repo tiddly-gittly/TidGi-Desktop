@@ -7,9 +7,10 @@ import type { AgentHeartbeatConfig } from '@services/agentDefinition/interface';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { basicPromptConcatHandler } from '@services/agentInstance/agentFrameworks/taskAgent';
 import type { AgentFramework, AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
-import { promptConcatStream, PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcat';
+import { promptConcatStream } from '@services/agentInstance/promptConcat/promptConcat';
 import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { getPromptConcatAgentFrameworkConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
+import type { PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcatTypes';
 import { createHooksWithPlugins, initializePluginSystem } from '@services/agentInstance/tools';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
@@ -32,7 +33,6 @@ import type {
   SetBackgroundAlarmInput,
   SetBackgroundHeartbeatInput,
 } from './interface';
-import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskManager';
 import {
   addTask as stmAddTask,
   cancelTasksForAgent,
@@ -44,6 +44,7 @@ import {
   restoreScheduledTasks,
   updateTask as stmUpdateTask,
 } from './scheduledTaskManager';
+import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskTypes';
 import { cancelAlarm, getActiveAlarmEntries, scheduleAlarmTimer } from './tools/alarmClock';
 import { cleanupMCPClient } from './tools/modelContextProtocol';
 

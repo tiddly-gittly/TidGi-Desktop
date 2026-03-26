@@ -4,7 +4,7 @@
 
 import { lastValueFrom, Observable } from 'rxjs';
 import { last } from 'rxjs/operators';
-import { PromptConcatStreamState } from './promptConcat';
+import type { PromptConcatStreamState } from './promptConcatTypes';
 
 /**
  * Helper function to get the final result from a prompt concatenation stream

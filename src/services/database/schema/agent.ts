@@ -1,37 +1,10 @@
 import type { AgentDefinition, AgentHeartbeatConfig, AgentToolConfig } from '@services/agentDefinition/interface';
 import type { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage } from '@services/agentInstance/interface';
-import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema/types';
+import type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/scheduledTaskTypes';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
-/**
- * Persisted scheduled task — unified replacement for AgentDefinition.heartbeat and AgentInstanceEntity.scheduledAlarm.
- * Supports interval, one-shot ("at"), and cron expression ("cron") scheduling.
- */
-export type ScheduleKind = 'interval' | 'at' | 'cron';
-
-export interface IntervalSchedule {
-  kind: 'interval';
-  /** Seconds between runs */
-  intervalSeconds: number;
-}
-
-export interface AtSchedule {
-  kind: 'at';
-  /** ISO 8601 datetime */
-  wakeAtISO: string;
-  /** Optional: repeat every N minutes after first fire */
-  repeatIntervalMinutes?: number;
-}
-
-export interface CronSchedule {
-  kind: 'cron';
-  /** Cron expression (croner-compatible, 5 or 6 fields) */
-  expression: string;
-  /** IANA timezone, e.g. "Asia/Shanghai". Defaults to local. */
-  timezone?: string;
-}
-
-export type ScheduleConfig = IntervalSchedule | AtSchedule | CronSchedule;
+export type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/scheduledTaskTypes';
 
 @Entity('scheduled_tasks')
 export class ScheduledTaskEntity {
