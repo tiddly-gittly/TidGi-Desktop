@@ -392,7 +392,10 @@ class TidGiIPCSyncAdaptor {
       // a local edit and immediately calls our saveTiddler.
       this.titlesBeingLoaded.add(title);
       const tiddlerFields = getTiddlerResponse.data as ITiddlerFields;
-      this.rememberRevision(title, tiddlerFields.revision);
+      const revision = typeof tiddlerFields.revision === 'string' || typeof tiddlerFields.revision === 'number'
+        ? tiddlerFields.revision
+        : undefined;
+      this.rememberRevision(title, revision);
       callback?.(null, tiddlerFields);
       // storeTiddler's addTiddler + change handler + tiddlerInfo update all run
       // synchronously before this next line.  Use queueMicrotask so the flag
