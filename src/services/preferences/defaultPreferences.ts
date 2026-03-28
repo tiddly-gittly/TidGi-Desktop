@@ -1,4 +1,5 @@
 import { DEFAULT_DOWNLOADS_PATH } from '@/constants/appPaths';
+import { isMac } from '@/helpers/system';
 import { app } from 'electron';
 import semver from 'semver';
 import type { IPreferences } from './interface';
@@ -22,7 +23,9 @@ export const defaultPreferences: IPreferences = {
   pauseNotificationsByScheduleTo: getDefaultPauseNotificationsByScheduleTo(),
   pauseNotificationsMuteAudio: false,
   rememberLastPageVisited: true,
-  runOnBackground: true,
+  // macOS convention: keep app running after all windows close (user re-opens via dock).
+  // Windows/Linux convention: exit when the last window is closed.
+  runOnBackground: isMac,
   shareWorkspaceBrowsingData: false,
   showSideBarIcon: true,
   showSideBarText: true,

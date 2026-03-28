@@ -305,6 +305,10 @@ export class Window implements IWindowService {
     return this.windowMeta[windowName] as WindowMeta[N];
   }
 
+  public getWindowMetaSync<N extends WindowNames>(windowName: N): WindowMeta[N] | undefined {
+    return this.windowMeta[windowName] as WindowMeta[N] | undefined;
+  }
+
   /**
    * When using `loadURL`, window meta will be clear. And we can only append meta to a new window. So we need to push meta to window after `loadURL`.
    */

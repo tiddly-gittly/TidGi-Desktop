@@ -263,11 +263,21 @@ app.on('before-quit', (event): void => {
   event.preventDefault();
 
   if (beforeQuitCleanupPromise === undefined) {
+    // Safety net: if cleanup hangs (e.g. a wiki worker never terminates), force-exit after 15 s.
+    const forceExitTimer = setTimeout(() => {
+      logger.warn('before-quit cleanup timed out after 15 s, forcing exit');
+      shouldSkipBeforeQuitInterception = true;
+      app.exit(0);
+    }, 15_000);
+    // Allow the process to exit even if this timer is still pending.
+    forceExitTimer.unref();
+
     beforeQuitCleanupPromise = runBeforeQuitCleanup()
       .catch((error: unknown) => {
         logger.error('before-quit cleanup failed unexpectedly', { error });
       })
       .finally(() => {
+        clearTimeout(forceExitTimer);
         shouldSkipBeforeQuitInterception = true;
         app.exit(0);
       });

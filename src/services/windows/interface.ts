@@ -40,6 +40,8 @@ export interface IWindowService {
   /** get window, this should not be called in renderer side */
   get(windowName: WindowNames): BrowserWindow | undefined;
   getWindowMeta<N extends WindowNames>(windowName: N): Promise<WindowMeta[N] | undefined>;
+  /** Synchronous variant — main-process only, not proxied via IPC. */
+  getWindowMetaSync<N extends WindowNames>(windowName: N): WindowMeta[N] | undefined;
   goBack(): Promise<void>;
   goForward(): Promise<void>;
   goHome(): Promise<void>;
