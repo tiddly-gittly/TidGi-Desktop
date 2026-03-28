@@ -35,14 +35,16 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
     }
   });
   // Hide window instead closing on macos
-  newWindow.on('close', async (event) => {
+  newWindow.on('close', (event) => {
     // only do this for main window
     if (windowName !== WindowNames.main || newWindow === undefined) return;
-    const windowMeta = await windowService.getWindowMeta(windowName);
-    const runOnBackground = await preferenceService.get('runOnBackground');
+    // event.preventDefault() must be called synchronously — calling it after any await has no effect because
+    // Electron checks the flag once all synchronous listeners have returned.
+    const windowMeta = windowService.getWindowMetaSync(windowName);
+    const runOnBackground = preferenceService.getPreferences().runOnBackground;
     if (runOnBackground && windowMeta?.forceClose !== true) {
       event.preventDefault();
-      await windowService.hide(windowName);
+      void windowService.hide(windowName);
     }
   });
 
@@ -62,6 +64,21 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
   newWindow.on('leave-full-screen', async () => {
     if (windowName !== WindowNames.main || newWindow === undefined) return;
     newWindow.webContents.send('is-fullscreen-updated', false);
+    await workspaceViewService.realignActiveWorkspace();
+  });
+
+  // On Windows, minimizing fires a resize event with getContentSize()=[0,0].
+  // The resize handler is guarded against 0x0, so bounds are preserved while minimized.
+  // On restore, re-apply correct bounds to all windows (main + tidgi mini) in case the window
+  // was brought back from a state where bounds could not be set.
+  newWindow.on('restore', async () => {
+    if (newWindow === undefined) return;
+    await workspaceViewService.realignActiveWorkspace();
+  });
+
+  // When the window becomes visible again (e.g. from tray/hide), realign so any pending 0x0 view is fixed.
+  newWindow.on('show', async () => {
+    if (newWindow === undefined) return;
     await workspaceViewService.realignActiveWorkspace();
   });
 }

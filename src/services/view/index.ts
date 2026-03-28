@@ -219,6 +219,8 @@ export class View implements IViewService {
       if (this.customBoundsMap.has(key)) return;
 
       const contentSize = browserWindow.getContentSize();
+      // Window is minimized on Windows — getContentSize() returns [0,0]. Skip to avoid wiping view bounds.
+      if (contentSize[0] === 0 && contentSize[1] === 0) return;
       view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
     }, 200);
 
@@ -297,8 +299,12 @@ export class View implements IViewService {
   // ── Visibility (offscreen-bounds only) ────────────────────
 
   private moveOffscreen(view: WebContentsView, browserWindow: BrowserWindow): void {
+    // When the window is minimized on Windows, getContentSize returns [0,0].
+    // Fall back to a non-zero size so the view is placed safely offscreen and not at origin with 0 size.
     const [w, h] = browserWindow.getContentSize();
-    view.setBounds({ x: -w, y: -h, width: w, height: h });
+    const safeW = w > 0 ? w : 1200;
+    const safeH = h > 0 ? h : 800;
+    view.setBounds({ x: -safeW, y: -safeH, width: safeW, height: safeH });
   }
 
   /**
@@ -382,6 +388,8 @@ export class View implements IViewService {
       return;
     }
     const contentSize = browserWindow.getContentSize();
+    // Window is minimized on Windows — getContentSize() returns [0,0]. Skip to avoid wiping view bounds.
+    if (contentSize[0] === 0 && contentSize[1] === 0) return;
     view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
   }
 

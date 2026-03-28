@@ -93,8 +93,11 @@ export interface IWikiService {
   wikiStartup(workspace: IWorkspace): Promise<void>;
 }
 export interface IWorkerInfo {
+  heapTotal_MB: number;
+  heapUsed_MB: number;
   isRunning: boolean;
   port: number;
+  rss_MB: number;
   /** Node.js worker_threads thread ID. -1 if the worker is not running. */
   threadId: number;
   workspaceID: string;

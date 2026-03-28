@@ -94,15 +94,36 @@ export class Wiki implements IWikiService {
   public async getWorkersInfo(): Promise<IWorkerInfo[]> {
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspaces = await workspaceService.getWorkspacesAsList();
-    return workspaces
-      .filter((w): w is IWikiWorkspace => isWikiWorkspace(w) && !w.isSubWiki)
-      .map((workspace) => ({
-        workspaceID: workspace.id,
-        workspaceName: workspace.name,
-        port: workspace.port,
-        isRunning: this.wikiWorkers[workspace.id] !== undefined,
-        threadId: this.wikiWorkers[workspace.id]?.nativeWorker.threadId ?? -1,
-      }));
+    return Promise.all(
+      workspaces
+        .filter((w): w is IWikiWorkspace => isWikiWorkspace(w) && !w.isSubWiki)
+        .map(async (workspace) => {
+          const workerProxy = this.wikiWorkers[workspace.id]?.proxy;
+          let rss_MB = -1;
+          let heapUsed_MB = -1;
+          let heapTotal_MB = -1;
+          if (workerProxy !== undefined) {
+            try {
+              const mem = await workerProxy.getMemoryUsage();
+              rss_MB = mem.rss_MB;
+              heapUsed_MB = mem.heapUsed_MB;
+              heapTotal_MB = mem.heapTotal_MB;
+            } catch {
+              // worker may be busy or not yet ready
+            }
+          }
+          return {
+            workspaceID: workspace.id,
+            workspaceName: workspace.name,
+            port: workspace.port,
+            isRunning: this.wikiWorkers[workspace.id] !== undefined,
+            threadId: this.wikiWorkers[workspace.id]?.nativeWorker.threadId ?? -1,
+            rss_MB,
+            heapUsed_MB,
+            heapTotal_MB,
+          };
+        }),
+    );
   }
 
   private getNativeWorker(id: string): Worker | undefined {

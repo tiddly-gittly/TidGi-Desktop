@@ -27,13 +27,13 @@ import { useTranslation } from 'react-i18next';
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import type { IProcessInfo } from '@services/native/processInfo';
+import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import type { IViewInfo } from '@services/view/interface';
 import type { IWorkerInfo } from '@services/wiki/interface';
 import { Paper, SectionTitle } from '../PreferenceComponents';
-import type { ISectionProps } from '../useSections';
 
-export function DeveloperTools(props: ISectionProps): React.JSX.Element {
+export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
   const { t } = useTranslation();
   const preference = usePreferenceObservable();
 
@@ -79,7 +79,7 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
 
   return (
     <>
-      <SectionTitle ref={props.sections.developers.ref}>{t('Preference.DeveloperTools')}</SectionTitle>
+      <SectionTitle ref={props.sectionRef}>{t('Preference.DeveloperTools')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           {LOG_FOLDER === undefined || SETTINGS_FOLDER === undefined ? <ListItem>{t('Loading')}</ListItem> : (
@@ -195,7 +195,7 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                     const info = await window.service.database.getDatabaseInfo('externalApi');
                     if (!info?.exists) {
                       // if database didn't exist before, enabling externalAPIDebug requires application restart to initialize the database table
-                      props.requestRestartCountDown?.();
+                      props.onNeedsRestart?.();
                     }
                   }}
                   name='externalAPIDebug'
@@ -392,6 +392,16 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                         </TableCell>
                         <TableCell>{t('Preference.WorkerDebugPort')}</TableCell>
                         <TableCell>{t('Preference.WorkerDebugStatus')}</TableCell>
+                        <TableCell>
+                          <Tooltip title={t('Preference.ProcessInfoRSSTooltip')} placement='top'>
+                            <span>{t('Preference.ProcessInfoRSS')}</span>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title={t('Preference.ProcessInfoHeapUsedTooltip')} placement='top'>
+                            <span>{t('Preference.ProcessInfoHeapUsed')}</span>
+                          </Tooltip>
+                        </TableCell>
                         <TableCell>{t('Preference.WorkerDebugActions')}</TableCell>
                       </TableRow>
                     </TableHead>
@@ -416,6 +426,28 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                             />
                           </TableCell>
                           <TableCell>
+                            {info.rss_MB >= 0
+                              ? (
+                                <Typography
+                                  variant='body2'
+                                  fontWeight='bold'
+                                  color={info.rss_MB > 500 ? 'error' : info.rss_MB > 200 ? 'warning.main' : 'success.main'}
+                                >
+                                  {`${info.rss_MB} MB`}
+                                </Typography>
+                              )
+                              : <Typography variant='caption' color='text.secondary'>-</Typography>}
+                          </TableCell>
+                          <TableCell>
+                            {info.heapUsed_MB >= 0
+                              ? (
+                                <Typography variant='body2'>
+                                  {`${info.heapUsed_MB} / ${info.heapTotal_MB} MB`}
+                                </Typography>
+                              )
+                              : <Typography variant='caption' color='text.secondary'>-</Typography>}
+                          </TableCell>
+                          <TableCell>
                             <Button
                               size='small'
                               variant='outlined'
@@ -431,7 +463,7 @@ export function DeveloperTools(props: ISectionProps): React.JSX.Element {
                       ))}
                       {diagData.workersInfo.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={5} align='center'>
+                          <TableCell colSpan={7} align='center'>
                             <Typography color='text.secondary'>{t('Preference.WorkerDebugEmpty')}</Typography>
                           </TableCell>
                         </TableRow>
