@@ -228,12 +228,10 @@ export class Git implements IGitService {
   }
 
   public async commitAndSync(workspace: IWorkspace, configs: ICommitAndSyncConfigs): Promise<boolean> {
-    // For commit-only operations (local workspace), we don't need network
-    // Only check network for sync operations
-    if (!configs.commitOnly && !net.isOnline()) {
-      // If not online and trying to sync, will not have any change
-      return false;
-    }
+    // Note: we no longer pre-check net.isOnline() here because it can return false even when
+    // the user IS online (e.g. VPN, certain firewall configs, Electron quirks). The underlying
+    // git operations will fail naturally with a user-visible error notification if there
+    // really is no network, so the silent early-return was causing "sync has no reaction" bugs.
     if (!isWikiWorkspace(workspace)) {
       return false;
     }
@@ -283,9 +281,8 @@ export class Git implements IGitService {
   }
 
   public async forcePull(workspace: IWorkspace, configs: IForcePullConfigs): Promise<boolean> {
-    if (!net.isOnline()) {
-      return false;
-    }
+    // Same reasoning as commitAndSync: let the underlying git operation surface a real error
+    // rather than silently swallowing it when net.isOnline() gives a false negative.
     if (!isWikiWorkspace(workspace)) {
       return false;
     }

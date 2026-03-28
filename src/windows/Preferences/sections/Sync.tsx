@@ -5,19 +5,19 @@ import { useTranslation } from 'react-i18next';
 import { TokenForm } from '../../../components/TokenForm';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
+import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { Paper, SectionTitle, TimePickerContainer } from '../PreferenceComponents';
-import type { ISectionProps } from '../useSections';
 
-export function Sync(props: Required<ISectionProps>): React.JSX.Element {
+export function Sync(props: ICustomSectionProps): React.JSX.Element {
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();
 
   return (
     <>
-      <SectionTitle ref={props.sections.sync.ref}>{t('Preference.Sync')}</SectionTitle>
+      <SectionTitle ref={props.sectionRef}>{t('Preference.Sync')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           {preference === undefined ? <ListItem>{t('Loading')}</ListItem> : (
@@ -34,7 +34,7 @@ export function Sync(props: Required<ISectionProps>): React.JSX.Element {
                     checked={preference.syncBeforeShutdown}
                     onChange={async (event) => {
                       await window.service.preference.set('syncBeforeShutdown', event.target.checked);
-                      props.requestRestartCountDown();
+                      props.onNeedsRestart();
                     }}
                   />
                 }
@@ -74,7 +74,7 @@ export function Sync(props: Required<ISectionProps>): React.JSX.Element {
                       const seconds = date.getSeconds();
                       const intervalMs = (hours * 60 * 60 + minutes * 60 + seconds) * 1000;
                       await window.service.preference.set('syncDebounceInterval', intervalMs);
-                      props.requestRestartCountDown();
+                      props.onNeedsRestart();
                     }}
                     onClose={async () => {
                       await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: false });

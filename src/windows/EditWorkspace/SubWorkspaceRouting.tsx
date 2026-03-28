@@ -7,7 +7,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWikiWorkspace } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { useAvailableTags } from '../AddWorkspace/useAvailableTags';
-import { SectionTitle } from '../Preferences/PreferenceComponents';
+import { WorkspaceSectionTitle } from './styles';
 import { TextField } from './styles';
 
 interface SubWorkspaceRoutingProps {
@@ -63,7 +63,7 @@ export function SubWorkspaceRouting(props: SubWorkspaceRoutingProps): React.JSX.
   const availableTags = useAvailableTags(workspace.mainWikiID ?? undefined, true);
   return (
     <>
-      <SectionTitle ref={sectionRef}>{t('AddWorkspace.SubWorkspaceOptions')}</SectionTitle>
+      <WorkspaceSectionTitle ref={sectionRef}>{t('AddWorkspace.SubWorkspaceOptions')}</WorkspaceSectionTitle>
       <List disablePadding>
         <ListItem
           disableGutters

@@ -3,7 +3,11 @@ import { keyframes, styled } from '@mui/material/styles';
 import React from 'react';
 
 import { PreferenceSections } from '@services/preferences/interface';
-import { ISectionProps } from './useSections';
+import type { ISectionRecord } from './useSections';
+
+interface SectionSideBarProps {
+  sections: ISectionRecord;
+}
 
 const SideBar = styled('div')`
   position: fixed;
@@ -37,7 +41,7 @@ const SideMenuListItem = styled(ListItemButton)<{ index: number }>`
   animation-delay: ${({ index }) => index * 0.05}s;
 `;
 
-export function SectionSideBar(props: ISectionProps): React.JSX.Element {
+export function SectionSideBar(props: SectionSideBarProps): React.JSX.Element {
   return (
     <SideBar>
       <List dense>

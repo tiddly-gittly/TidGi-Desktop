@@ -2,14 +2,14 @@ import { KeyboardShortcutRegister } from '@/components/KeyboardShortcutRegister'
 import { ListItem } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { Box, Divider, FormControl, InputLabel, List, ListItemText, MenuItem, Select, Switch, Typography } from '@mui/material';
+import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import type { IWindowService } from '@services/windows/interface';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Paper, SectionTitle } from '../PreferenceComponents';
-import type { ISectionProps } from '../useSections';
 
-export function TidGiMiniWindow(props: Partial<ISectionProps>): React.JSX.Element {
+export function TidGiMiniWindow(props: ICustomSectionProps): React.JSX.Element {
   const { t } = useTranslation();
   const preference = usePreferenceObservable();
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
@@ -21,7 +21,7 @@ export function TidGiMiniWindow(props: Partial<ISectionProps>): React.JSX.Elemen
 
   return (
     <>
-      <SectionTitle ref={props.sections?.tidgiMiniWindow.ref}>{t('Menu.TidGiMiniWindow')}</SectionTitle>
+      <SectionTitle ref={props.sectionRef}>{t('Menu.TidGiMiniWindow')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           {/* Attach to taskbar/system tray settings */}

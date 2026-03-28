@@ -1,10 +1,12 @@
 import { styled } from '@mui/material/styles';
+import React from 'react';
 
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
+import { List, Paper } from '@mui/material';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
-import { Languages } from '../../windows/Preferences/sections/Languages';
-import { TiddlyWiki } from '../../windows/Preferences/sections/TiddlyWiki';
+import { LanguageSelectorItem } from '../../windows/Preferences/customItems/LanguageSelectorItem';
+import { WikiUserNameItem } from '../../windows/Preferences/customItems/WikiUserNameItem';
 import { NewUserMessage } from './NewUserMessage';
 
 const InnerContentRoot = styled('div')`
@@ -29,8 +31,12 @@ export default function Guide(): React.JSX.Element {
           <NewUserMessage sidebar={preferences.sidebar} themeSource={preferences.themeSource} />
         )}
       </InnerContentRoot>
-      <Languages languageSelectorOnly />
-      <TiddlyWiki requestRestartCountDown={requestRestartCountDown} />
+      <Paper elevation={0}>
+        <List dense disablePadding>
+          <LanguageSelectorItem />
+          <WikiUserNameItem onNeedsRestart={requestRestartCountDown} />
+        </List>
+      </Paper>
       {RestartSnackbar}
     </>
   );

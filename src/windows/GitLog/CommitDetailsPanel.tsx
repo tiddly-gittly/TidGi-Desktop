@@ -91,6 +91,7 @@ export function CommitDetailsPanel(
   const [isCommitting, setIsCommitting] = useState(false);
   const [isAIEnabled, setIsAIEnabled] = useState(false);
   const [isCommittingWithAI, setIsCommittingWithAI] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isEditMessageOpen, setIsEditMessageOpen] = useState(false);
   const [newCommitMessage, setNewCommitMessage] = useState('');
   const [isAmending, setIsAmending] = useState(false);
@@ -254,6 +255,26 @@ export function CommitDetailsPanel(
       console.error('Failed to commit with AI:', error);
     } finally {
       setIsCommittingWithAI(false);
+    }
+  };
+
+  /** Commit all uncommitted changes AND push to remote in one step. */
+  const handleSyncToRemote = async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    try {
+      const workspace = await window.service.workspace.get(workspaceID);
+      if (!workspace || !('wikiFolderLocation' in workspace)) return;
+      // Use syncWikiIfNeeded which handles commit + full push for cloud workspaces.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      await (window.service as any).sync.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage') });
+      if (onCommitSuccess) {
+        onCommitSuccess();
+      }
+    } catch (error) {
+      console.error('Failed to sync to remote:', error);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -432,6 +453,17 @@ export function CommitDetailsPanel(
                   {isCommittingWithAI ? t('GitLog.Committing') : t('ContextMenu.BackupNow') + t('ContextMenu.WithAI')}
                 </Button>
               )}
+              <Button
+                variant='contained'
+                color='warning'
+                onClick={handleSyncToRemote}
+                fullWidth
+                disabled={isSyncing}
+                data-testid='sync-to-remote-button'
+                startIcon={isSyncing ? <CircularProgress size={16} color='inherit' /> : undefined}
+              >
+                {isSyncing ? t('GitLog.Syncing', 'Syncing…') : t('ContextMenu.SyncNow')}
+              </Button>
               <Divider sx={{ my: 1 }} />
             </>
           )}

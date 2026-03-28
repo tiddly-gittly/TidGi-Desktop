@@ -3,7 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isWikiWorkspace, IWorkspace, wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
-import { SectionTitle } from '../Preferences/PreferenceComponents';
+import { WorkspaceSectionTitle } from './styles';
 import { TextField } from './styles';
 
 interface MiscOptionsProps {
@@ -38,7 +38,7 @@ export function MiscOptions(props: MiscOptionsProps): React.JSX.Element {
 
   return (
     <>
-      <SectionTitle ref={sectionRef}>{t('EditWorkspace.MiscOptions')}</SectionTitle>
+      <WorkspaceSectionTitle ref={sectionRef}>{t('EditWorkspace.MiscOptions')}</WorkspaceSectionTitle>
       {!isSubWiki && (
         <List>
           <Divider />

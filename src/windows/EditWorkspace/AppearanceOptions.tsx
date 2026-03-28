@@ -5,7 +5,7 @@ import defaultIcon from '../../images/default-icon.png';
 
 import { wikiPictureExtensions } from '@/constants/fileNames';
 import { IWorkspace } from '@services/workspaces/interface';
-import { SectionTitle } from '../Preferences/PreferenceComponents';
+import { WorkspaceSectionTitle } from './styles';
 import { Avatar, AvatarFlex, AvatarLeft, AvatarPicture, AvatarRight, PictureButton, TextField } from './styles';
 
 interface AppearanceOptionsProps {
@@ -28,7 +28,7 @@ export function AppearanceOptions(props: AppearanceOptionsProps): React.JSX.Elem
 
   return (
     <>
-      <SectionTitle ref={sectionRef}>{t('EditWorkspace.AppearanceOptions')}</SectionTitle>
+      <WorkspaceSectionTitle ref={sectionRef}>{t('EditWorkspace.AppearanceOptions')}</WorkspaceSectionTitle>
       <TextField
         id='outlined-full-width'
         label={t('EditWorkspace.Name')}

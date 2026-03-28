@@ -1,51 +1,73 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { styled } from '@mui/material/styles';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useInfoSnackbar } from '@/components/InfoSnackbar';
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
+import { allSections } from '@services/preferences/definitions/registry';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 
+import { PreferenceSections } from '@services/preferences/interface';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import React from 'react';
+import { registerCustomSections } from './registerCustomSections';
+import { AllSectionsRenderer } from './SchemaRenderer';
 import { SearchBar } from './SearchBar';
 import { PreferenceSearchResultsView } from './SearchResultsView';
-import { AIAgent } from './sections/AIAgent';
-import { DeveloperTools } from './sections/DeveloperTools';
-import { Downloads } from './sections/Downloads';
-import { ExternalAPI } from './sections/ExternalAPI';
-import { FriendLinks } from './sections/FriendLinks';
-import { General } from './sections/General';
-import { Languages } from './sections/Languages';
-import { Miscellaneous } from './sections/Miscellaneous';
-import { Network } from './sections/Network';
-import { Notifications } from './sections/Notifications';
-import { Performance } from './sections/Performance';
-import { PrivacyAndSecurity } from './sections/PrivacyAndSecurity';
-import { Search } from './sections/Search';
-import { Sync } from './sections/Sync';
-import { System } from './sections/System';
-import { TiddlyWiki } from './sections/TiddlyWiki';
-import { TidGiMiniWindow } from './sections/TidGiMiniWindow';
-import { Updates } from './sections/Updates';
 import { SectionSideBar } from './SectionsSideBar';
-import { usePreferenceSections } from './useSections';
+import type { ISectionRecord } from './useSections';
+
+// Register custom section components on module load
+registerCustomSections();
 
 const Root = styled('div')`
   padding: 20px;
+  overflow-x: hidden;
 `;
 
 const Inner = styled('div')`
   width: 100%;
   max-width: 550px;
+  /* Use min-width so the skeleton placeholders never cause a narrower layout that
+     makes the scrollbar appear momentarily during progressive section rendering. */
+  min-width: 300px;
   float: right;
+  box-sizing: border-box;
 `;
+
+/** Build ISectionRecord from allSections for sidebar + scroll nav */
+function useSectionRecord(): { record: ISectionRecord; refs: Map<string, React.RefObject<HTMLSpanElement | null>> } {
+  const { t } = useTranslation(['translation', 'agent']);
+  const references = useMemo(() => {
+    const map = new Map<string, React.RefObject<HTMLSpanElement | null>>();
+    for (const section of allSections) {
+      map.set(section.id, React.createRef<HTMLSpanElement>());
+    }
+    return map;
+  }, []);
+
+  const record = useMemo(() => {
+    const result: Record<string, ISectionRecord[PreferenceSections]> = {};
+    for (const section of allSections) {
+      result[section.id] = {
+        text: t(section.titleKey, section.ns ? { ns: section.ns } : undefined),
+        Icon: section.Icon,
+        hidden: section.hidden,
+        ref: references.get(section.id) ?? React.createRef<HTMLSpanElement>(),
+      };
+    }
+    return result as ISectionRecord;
+  }, [t, references]);
+
+  return { record, refs: references };
+}
 
 export default function Preferences(): React.JSX.Element {
   const { t } = useTranslation();
-  const sections = usePreferenceSections();
+  const { record: sections, refs: sectionReferences } = useSectionRecord();
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
-  const [showInfoSnackbar, InfoSnackbarComponent] = useInfoSnackbar();
+  const [_showInfoSnackbar, InfoSnackbarComponent] = useInfoSnackbar();
   const [searchQuery, setSearchQuery] = useState('');
   const preferences = usePreferenceObservable();
 
@@ -55,7 +77,6 @@ export default function Preferences(): React.JSX.Element {
     const scrollTo = (window.meta() as IPossibleWindowMeta<WindowMeta[WindowNames.preferences]>).preferenceGotoTab;
     if (scrollTo === undefined) return;
     setTimeout(() => {
-      // wait 100ms so page anchors are all loaded. Otherwise scroll will stop halfway.
       sections[scrollTo].ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   }, [sections, searchQuery]);
@@ -86,26 +107,10 @@ export default function Preferences(): React.JSX.Element {
             )
           )
           : (
-            <>
-              <TiddlyWiki sections={sections} requestRestartCountDown={requestRestartCountDown} />
-              <General sections={sections} requestRestartCountDown={requestRestartCountDown} />
-              <TidGiMiniWindow sections={sections} />
-              <Sync sections={sections} requestRestartCountDown={requestRestartCountDown} />
-              <ExternalAPI sections={sections} />
-              <AIAgent sections={sections} />
-              <Search sections={sections} requestRestartCountDown={requestRestartCountDown} showInfoSnackbar={showInfoSnackbar} />
-              <Notifications sections={sections} requestRestartCountDown={requestRestartCountDown} />
-              <System sections={sections} />
-              <Languages sections={sections} requestRestartCountDown={requestRestartCountDown} />
-              <DeveloperTools sections={sections} />
-              <Downloads sections={sections} requestRestartCountDown={requestRestartCountDown} />
-              <Network sections={sections} />
-              <PrivacyAndSecurity sections={sections} requestRestartCountDown={requestRestartCountDown} />
-              <Performance sections={sections} requestRestartCountDown={requestRestartCountDown} />
-              <Updates sections={sections} requestRestartCountDown={requestRestartCountDown} />
-              <FriendLinks sections={sections} />
-              <Miscellaneous sections={sections} />
-            </>
+            <AllSectionsRenderer
+              onNeedsRestart={requestRestartCountDown}
+              sectionRefs={sectionReferences}
+            />
           )}
       </Inner>
     </Root>

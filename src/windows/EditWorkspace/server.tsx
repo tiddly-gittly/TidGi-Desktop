@@ -14,7 +14,7 @@ import { getDefaultHTTPServerIP } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useActualIp } from '@services/native/hooks';
 import { isWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
-import { SectionTitle } from '../Preferences/PreferenceComponents';
+import { WorkspaceSectionTitle } from './styles';
 
 const HttpsCertKeyListItem = styled(ListItem)`
   flex-direction: row;
@@ -80,9 +80,9 @@ export function ServerOptions(props: IServerOptionsProps) {
 
   return (
     <>
-      <SectionTitle ref={sectionRef} data-testid='preference-section-serverOptions'>
+      <WorkspaceSectionTitle ref={sectionRef} data-testid='preference-section-serverOptions'>
         {t('EditWorkspace.ServerOptions')} ({t('EditWorkspace.EnableHTTPAPI')})
-      </SectionTitle>
+      </WorkspaceSectionTitle>
       <List>
         <ListItem
           disableGutters

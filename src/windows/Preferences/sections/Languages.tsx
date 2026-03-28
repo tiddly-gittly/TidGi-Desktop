@@ -5,12 +5,12 @@ import { useTranslation } from 'react-i18next';
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { hunspellLanguagesMap } from '@/constants/hunspellLanguages';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { InputLabel, Paper, SectionTitle } from '../PreferenceComponents';
-import type { ISectionProps } from '../useSections';
 
-export function Languages(props: Partial<ISectionProps> & { languageSelectorOnly?: boolean }): React.JSX.Element {
+export function Languages(props: ICustomSectionProps & { languageSelectorOnly?: boolean }): React.JSX.Element {
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();
@@ -24,7 +24,7 @@ export function Languages(props: Partial<ISectionProps> & { languageSelectorOnly
 
   return (
     <>
-      <SectionTitle ref={props.sections?.languages.ref}>{t('Preference.Languages')}</SectionTitle>
+      <SectionTitle ref={props.sectionRef}>{t('Preference.Languages')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           {preference === undefined || platform === undefined || supportedLanguagesMap === undefined || preference.language === undefined ? <ListItem>{t('Loading')}</ListItem> : (
@@ -61,7 +61,7 @@ export function Languages(props: Partial<ISectionProps> & { languageSelectorOnly
                         checked={preference.spellcheck}
                         onChange={async (event) => {
                           await window.service.preference.set('spellcheck', event.target.checked);
-                          props.requestRestartCountDown?.();
+                          props.onNeedsRestart?.();
                         }}
                       />
                     }

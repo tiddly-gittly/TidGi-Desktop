@@ -6,14 +6,14 @@ import { Button, List } from '@mui/material';
 
 import { ListItemText } from '@/components/ListItem';
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
+import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { ListItemVertical, Paper, SectionTitle } from '../../PreferenceComponents';
-import type { ISectionProps } from '../../useSections';
 import { AIModelParametersDialog } from './components/AIModelParametersDialog';
 import { ModelSelector } from './components/ModelSelector';
 import { ProviderConfig } from './components/ProviderConfig';
 import { useAIConfigManagement } from './useAIConfigManagement';
 
-export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
+export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
   const { t } = useTranslation('agent');
   const {
     loading,
@@ -129,7 +129,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
 
   return (
     <>
-      <SectionTitle ref={props.sections?.externalAPI.ref}>{t('Preference.ExternalAPI')}</SectionTitle>
+      <SectionTitle ref={props.sectionRef}>{t('Preference.ExternalAPI')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           {loading ? <ListItemVertical>{t('Loading')}</ListItemVertical> : (

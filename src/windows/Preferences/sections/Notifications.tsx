@@ -7,12 +7,12 @@ import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { Link, ListItemVertical, Paper, SectionTitle, TimePickerContainer } from '../PreferenceComponents';
-import type { ISectionProps } from '../useSections';
 
-export function Notifications(props: Required<ISectionProps>): React.JSX.Element {
+export function Notifications(props: ICustomSectionProps): React.JSX.Element {
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();
@@ -29,7 +29,7 @@ export function Notifications(props: Required<ISectionProps>): React.JSX.Element
 
   return (
     <>
-      <SectionTitle ref={props.sections.notifications.ref}>{t('Preference.Notifications')}</SectionTitle>
+      <SectionTitle ref={props.sectionRef}>{t('Preference.Notifications')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           {preference === undefined || platform === undefined ? <ListItem>{t('Loading')}</ListItem> : (
@@ -109,7 +109,7 @@ export function Notifications(props: Required<ISectionProps>): React.JSX.Element
                     checked={preference.unreadCountBadge}
                     onChange={async (event) => {
                       await window.service.preference.set('unreadCountBadge', event.target.checked);
-                      props.requestRestartCountDown();
+                      props.onNeedsRestart();
                     }}
                   />
                 }

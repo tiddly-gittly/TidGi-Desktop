@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { PageType } from '@/constants/pageTypes';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import type { EmbeddingStatus } from '@services/wikiEmbedding/interface';
 import { Paper, SectionTitle } from '../PreferenceComponents';
-import type { ISectionProps } from '../useSections';
 
 type WorkspaceEmbeddingStatus = Partial<EmbeddingStatus> & {
   workspaceId: string;
@@ -17,9 +17,9 @@ type WorkspaceEmbeddingStatus = Partial<EmbeddingStatus> & {
 };
 
 export function Search(
-  props: Partial<ISectionProps> & { showInfoSnackbar?: (payload: { message: string; severity?: 'error' | 'warning' | 'info' | 'success' }) => void },
+  props: ICustomSectionProps & { showInfoSnackbar?: (payload: { message: string; severity?: 'error' | 'warning' | 'info' | 'success' }) => void },
 ): React.JSX.Element {
-  const { sections, requestRestartCountDown: _requestRestartCountDown, showInfoSnackbar } = props;
+  const { showInfoSnackbar } = props;
   const { t } = useTranslation();
   const [_embeddingStatuses, _setEmbeddingStatuses] = useState<WorkspaceEmbeddingStatus[]>([]);
   const [loading, setLoading] = useState(false);
@@ -136,8 +136,6 @@ export function Search(
           message: t('Preference.SearchEmbeddingNoAIConfigError'),
           severity: 'error',
         });
-        // Scroll to external API section
-        sections?.externalAPI?.ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
 
@@ -147,8 +145,6 @@ export function Search(
           message: t('Preference.SearchEmbeddingNoEmbeddingModelError'),
           severity: 'warning',
         });
-        // Scroll to external API section
-        sections?.externalAPI?.ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
 
@@ -267,7 +263,7 @@ export function Search(
 
   return (
     <>
-      <SectionTitle ref={props.sections?.search?.ref}>{t('Preference.Search')}</SectionTitle>
+      <SectionTitle ref={props.sectionRef}>{t('Preference.Search')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           {loading

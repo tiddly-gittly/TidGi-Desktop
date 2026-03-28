@@ -1,8 +1,8 @@
-import { Divider, Grid, Typography } from '@mui/material';
+import { Divider, Grid, List, Paper, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useTranslation } from 'react-i18next';
-import { Languages } from '../../windows/Preferences/sections/Languages';
+import { LanguageSelectorItem } from '../../windows/Preferences/customItems/LanguageSelectorItem';
 import { HelpWebsiteItem } from './HelpWebsiteItem';
 import { useLoadHelpPagesList } from './useLoadHelpPagesList';
 
@@ -27,7 +27,11 @@ export default function Help(): React.JSX.Element {
   const items = useLoadHelpPagesList(preference?.language);
   return (
     <>
-      <Languages languageSelectorOnly />
+      <Paper elevation={0}>
+        <List dense disablePadding>
+          <LanguageSelectorItem />
+        </List>
+      </Paper>
       <InnerContentRoot>
         <Typography>{t('Help.Description')}</Typography>
         <StyledDivider>{t('Help.List')}</StyledDivider>

@@ -7,7 +7,7 @@ import { SupportedStorageServices } from '@services/types';
 import { isWikiWorkspace, IWorkspace, wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
 import { SyncedWikiDescription } from '../AddWorkspace/Description';
 import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
-import { SectionTitle } from '../Preferences/PreferenceComponents';
+import { WorkspaceSectionTitle } from './styles';
 import { TextField } from './styles';
 
 interface SaveAndSyncOptionsProps {
@@ -50,7 +50,7 @@ export function SaveAndSyncOptions(props: SaveAndSyncOptionsProps): React.JSX.El
 
   return (
     <>
-      <SectionTitle ref={sectionRef}>{t('EditWorkspace.SaveAndSyncOptions')}</SectionTitle>
+      <WorkspaceSectionTitle ref={sectionRef}>{t('EditWorkspace.SaveAndSyncOptions')}</WorkspaceSectionTitle>
       <TextField
         fullWidth
         id='outlined-full-width'

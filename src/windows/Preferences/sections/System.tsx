@@ -4,18 +4,18 @@ import PopupState, { bindMenu, bindTrigger } from 'material-ui-popup-state';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
+import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { getOpenAtLoginString, useSystemPreferenceObservable } from '@services/systemPreferences/hooks';
 import { Paper, SectionTitle } from '../PreferenceComponents';
-import type { ISectionProps } from '../useSections';
 
-export function System(props: ISectionProps): React.JSX.Element {
+export function System(props: ICustomSectionProps): React.JSX.Element {
   const { t } = useTranslation();
 
   const systemPreference = useSystemPreferenceObservable();
 
   return (
     <>
-      <SectionTitle ref={props.sections.system.ref}>{t('Preference.System')}</SectionTitle>
+      <SectionTitle ref={props.sectionRef}>{t('Preference.System')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           {systemPreference === undefined ? <ListItem>{t('Loading')}</ListItem> : (

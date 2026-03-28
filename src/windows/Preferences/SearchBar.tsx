@@ -29,7 +29,7 @@ export function SearchBar({ value, onChange }: SearchBarProps): React.JSX.Elemen
       onChange={(event) => {
         onChange(event.target.value);
       }}
-      placeholder={t('Preference.SearchPlaceholder', { defaultValue: 'Search settings…' })}
+      placeholder={t('Preference.SearchPlaceholder')}
       variant='outlined'
       size='small'
       slotProps={{

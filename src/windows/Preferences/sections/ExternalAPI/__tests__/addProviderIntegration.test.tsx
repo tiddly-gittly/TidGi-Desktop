@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
@@ -111,7 +112,7 @@ describe('ExternalAPI Add Provider with Embedding Model', () => {
   const renderExternalAPI = async () => {
     const result = render(
       <TestWrapper>
-        <ExternalAPI />
+        <ExternalAPI sectionRef={React.createRef()} onNeedsRestart={() => {}} />
       </TestWrapper>,
     );
 
