@@ -7,6 +7,17 @@ configure({ computedStyleSupportsPseudoElements: false });
 const originalGetComputedStyle = window.getComputedStyle;
 window.getComputedStyle = (elt) => originalGetComputedStyle.call(window, elt);
 
+// JSDOM / Node doesn't implement requestIdleCallback — provide a simple polyfill
+// so components that use it (e.g., AllSectionsRenderer) don't throw in tests.
+// Use setTimeout(0) so progressive rendering completes quickly in test environments.
+if (typeof window.requestIdleCallback === 'undefined') {
+  (window as unknown as Record<string, unknown>).requestIdleCallback = (
+    cb: IdleRequestCallback,
+    _options?: IdleRequestOptions,
+  ) => window.setTimeout(() => { cb({ timeRemaining: () => 50, didTimeout: false } as IdleDeadline); }, 0);
+  (window as unknown as Record<string, unknown>).cancelIdleCallback = (id: number) => window.clearTimeout(id);
+}
+
 import './__mocks__/window';
 import './__mocks__/services-container';
 import { vi } from 'vitest';
