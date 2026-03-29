@@ -281,6 +281,24 @@ export class Window implements IWindowService {
       }
     }
     windowWithBrowserViewState?.manage(newWindow);
+    if (isWindowWithBrowserView) {
+      const activeWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();
+      const viewService = container.get<IViewService>(serviceIdentifier.View);
+      const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+      // If a window with BrowserViews is being recreated while the app keeps running
+      // (for example, main window closed while tidgi mini window keeps the app alive),
+      // existing WebContentsView instances still live in ViewService and must be attached
+      // to the new BrowserWindow immediately. Otherwise the window comes back blank until
+      // the user manually switches workspace.
+      if (activeWorkspace !== undefined && viewService.getView(activeWorkspace.id, windowName) !== undefined) {
+        logger.info('open: restoring existing view into recreated window', {
+          function: 'Window.open',
+          windowName,
+          workspaceID: activeWorkspace.id,
+        });
+        await workspaceViewService.refreshActiveWorkspaceView();
+      }
+    }
     if (returnWindow === true) {
       return newWindow;
     }

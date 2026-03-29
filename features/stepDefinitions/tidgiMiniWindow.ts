@@ -38,6 +38,24 @@ Given('I configure tidgi mini window with shortcut', async function(this: Applic
   await fs.writeJson(settingsPath, finalSettings, { spaces: 2 });
 });
 
+Given('I configure tidgi mini window and disable runOnBackground', async function(this: ApplicationWorld) {
+  const settingsPath = getSettingsPath(this);
+  let existing = {} as ISettingFile;
+  if (await fs.pathExists(settingsPath)) {
+    existing = await fs.readJson(settingsPath) as ISettingFile;
+  } else {
+    await fs.ensureDir(path.dirname(settingsPath));
+  }
+
+  const updatedPreferences = {
+    ...existing.preferences,
+    tidgiMiniWindow: true,
+    runOnBackground: false,
+  };
+  const finalSettings = { ...existing, preferences: updatedPreferences } as ISettingFile;
+  await fs.writeJson(settingsPath, finalSettings, { spaces: 2 });
+});
+
 // Cleanup function to be called after tidgi mini window tests (after app closes)
 async function clearTidgiMiniWindowSettings(scenarioRoot?: string) {
   const root = scenarioRoot || process.cwd();

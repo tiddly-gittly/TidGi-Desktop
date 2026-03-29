@@ -473,10 +473,13 @@ When('I reopen the main window as second instance would', async function(this: A
     // receives an empty array as commandLine, not our workingDirectory string.
     app.emit('second-instance', /* event */ {}, /* argv */ [], /* workingDirectory */ '', /* additionalData */ {});
     // In test mode, window.open() intentionally skips existedWindow.show() to avoid UI popups.
-    // We call show() explicitly here so the 'show' event fires and refreshActiveWorkspaceView runs —
-    // the same path that fires in production when the app is reopened from background.
-    const mainWindow = BrowserWindow.getAllWindows().find(win => !win.isDestroyed() && win.webContents?.getURL().includes('index.html'));
-    mainWindow?.show();
+    // Show all surviving windows explicitly so the recreated main window is guaranteed visible.
+    // This avoids brittle heuristics that try to distinguish main vs tidgi mini window by size.
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) {
+        win.show();
+      }
+    }
   });
   // Wait for show → refreshActiveWorkspaceView → buildMenu to complete.
   await this.app.evaluate(async () => new Promise<void>(resolve => setTimeout(resolve, 500)));

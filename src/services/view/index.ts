@@ -219,11 +219,23 @@ export class View implements IViewService {
       this.moveOffscreen(view, browserWindow);
     }
 
-    // Wire debounced resize handler, store cleanup function
-    const key = `${workspace.id}-${windowName}`;
+    this.bindResizeHandler(workspace.id, windowName, browserWindow, view);
+
+    return view;
+  }
+
+  private bindResizeHandler(
+    workspaceID: string,
+    windowName: WindowNames,
+    browserWindow: BrowserWindow,
+    view: WebContentsView,
+  ): void {
+    const key = `${workspaceID}-${windowName}`;
+    this.resizeCleanups.get(key)?.();
+
     const debouncedResize = debounce(async () => {
       if (browserWindow.isDestroyed()) return;
-      const ws = await this.workspaceService.get(workspace.id);
+      const ws = await this.workspaceService.get(workspaceID);
       if (ws === undefined) return;
       // Skip resize for hidden (non-active) main-window views
       if (windowName === WindowNames.main && !ws.active) return;
@@ -240,8 +252,6 @@ export class View implements IViewService {
     this.resizeCleanups.set(key, () => {
       browserWindow.removeListener('resize', debouncedResize);
     });
-
-    return view;
   }
 
   public async initializeViewHandlersAndLoad(
@@ -348,6 +358,10 @@ export class View implements IViewService {
     try {
       browserWindow.contentView.addChildView(view);
     } catch { /* already added */ }
+    // If the BrowserWindow was recreated, the resize listener is still bound to the
+    // old BrowserWindow instance. Rebind it here so dragging/resizing the restored
+    // window keeps the view filling the window.
+    this.bindResizeHandler(workspaceID, windowName, browserWindow, view);
     const contentSize = browserWindow.getContentSize();
     view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
     view.webContents.focus();

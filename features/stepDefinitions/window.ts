@@ -194,3 +194,65 @@ When('I confirm the {string} window browser view is not positioned within visibl
     );
   }
 });
+
+When('I resize the {string} window to {int}x{int}', async function(this: ApplicationWorld, windowType: string, width: number, height: number) {
+  if (!this.app) {
+    throw new Error('Application is not launched');
+  }
+
+  const targetWindow = await this.findWindowByType(windowType);
+  if (!targetWindow || targetWindow.isClosed()) {
+    throw new Error(`Window "${windowType}" is not available or has been closed`);
+  }
+
+  const browserWindow = await this.app.browserWindow(targetWindow);
+  await browserWindow.evaluate((win: Electron.BrowserWindow, size: { width: number; height: number }) => {
+    const bounds = win.getBounds();
+    win.setBounds({ ...bounds, width: size.width, height: size.height });
+  }, { width, height });
+  // View resize is debounced by 200ms in ViewService. Wait past that boundary so
+  // we assert the final state, not the transient pre-resize bounds.
+  await this.app.evaluate(async () => new Promise<void>(resolve => setTimeout(resolve, 350)));
+});
+
+When('I confirm the {string} window browser view fills the window content area', async function(this: ApplicationWorld, windowType: string) {
+  if (!this.app) {
+    throw new Error('Application is not available');
+  }
+
+  const targetWindow = await this.findWindowByType(windowType);
+  if (!targetWindow || targetWindow.isClosed()) {
+    throw new Error(`Window "${windowType}" is not available or has been closed`);
+  }
+
+  const browserWindow = await this.app.browserWindow(targetWindow);
+  const viewInfo = await browserWindow.evaluate((win: Electron.BrowserWindow) => {
+    const children = 'children' in win.contentView ? (win.contentView.children || []) : [];
+    const targetView = children.find((child) => child && child.constructor.name === 'WebContentsView') as Electron.WebContentsView | undefined;
+    if (!targetView) {
+      return { hasView: false };
+    }
+    return {
+      hasView: true,
+      view: targetView.getBounds(),
+      content: win.getContentBounds(),
+    };
+  });
+
+  if (!viewInfo.hasView || !viewInfo.view || !viewInfo.content) {
+    throw new Error(`No browser view found in "${windowType}" window`);
+  }
+
+  const expectedWidth = viewInfo.content.width - viewInfo.view.x;
+  const expectedHeight = viewInfo.content.height - viewInfo.view.y;
+  const matches = viewInfo.view.width === expectedWidth && viewInfo.view.height === expectedHeight;
+
+  if (!matches) {
+    throw new Error(
+      `Browser view does not fill the window content area.\n` +
+        `View: {x: ${viewInfo.view.x}, y: ${viewInfo.view.y}, width: ${viewInfo.view.width}, height: ${viewInfo.view.height}}\n` +
+        `Content: {width: ${viewInfo.content.width}, height: ${viewInfo.content.height}}\n` +
+        `Expected view size: {width: ${expectedWidth}, height: ${expectedHeight}}`,
+    );
+  }
+});
