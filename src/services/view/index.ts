@@ -339,7 +339,12 @@ export class View implements IViewService {
     const key = `${workspaceID}-${windowName}`;
     this.customBoundsMap.delete(key);
     this.activelyShownViews.add(key);
-    // Ensure it's a child (idempotent in Electron)
+    // Ensure it's a child and brought to the front. Removing and re-adding forces
+    // Electron to properly render the view, preventing blank screen bugs when
+    // restoring a window from minimized/hidden state.
+    try {
+      browserWindow.contentView.removeChildView(view);
+    } catch { /* ignore if not attached */ }
     try {
       browserWindow.contentView.addChildView(view);
     } catch { /* already added */ }
@@ -403,7 +408,11 @@ export class View implements IViewService {
     // Window is minimized on Windows — getContentSize() returns [0,0]. Skip to avoid wiping view bounds.
     if (contentSize[0] === 0 && contentSize[1] === 0) return;
     // Re-attach in case the view became orphaned (e.g. its parent BrowserWindow was destroyed and
-    // recreated). If the view is already a child, addChildView is a safe no-op.
+    // recreated) or became visually blank (Windows bug when restoring from background).
+    // Removing and re-adding forces Electron to bring the view to the top and repaint.
+    try {
+      browserWindow.contentView.removeChildView(view);
+    } catch { /* ignore if not a child */ }
     try {
       browserWindow.contentView.addChildView(view);
     } catch {
