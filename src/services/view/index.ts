@@ -72,7 +72,15 @@ export class View implements IViewService {
 
   public getView(workspaceID: string, windowName: WindowNames): WebContentsView | undefined {
     let view = this.views.get(workspaceID)?.get(windowName);
-    if (view) return view;
+    if (view) {
+      // Stale entry from a window that was destroyed (e.g. close-handler race in older builds).
+      // Remove it so callers know to recreate the view rather than reusing a dead one.
+      if (view.webContents.isDestroyed()) {
+        this.views.get(workspaceID)?.delete(windowName);
+        return undefined;
+      }
+      return view;
+    }
 
     // Case-insensitive fallback — indicates a casing bug elsewhere, but keeps things working
     const lower = workspaceID.toLowerCase();
@@ -80,6 +88,10 @@ export class View implements IViewService {
       if (id.toLowerCase() === lower) {
         view = windowViews.get(windowName);
         if (view) {
+          if (view.webContents.isDestroyed()) {
+            windowViews.delete(windowName);
+            continue;
+          }
           logger[process.env.NODE_ENV === 'development' ? 'warn' : 'debug'](
             'getView: case-insensitive match — workspace ID casing inconsistency',
             { requestedId: workspaceID, actualId: id, windowName },
@@ -390,6 +402,13 @@ export class View implements IViewService {
     const contentSize = browserWindow.getContentSize();
     // Window is minimized on Windows — getContentSize() returns [0,0]. Skip to avoid wiping view bounds.
     if (contentSize[0] === 0 && contentSize[1] === 0) return;
+    // Re-attach in case the view became orphaned (e.g. its parent BrowserWindow was destroyed and
+    // recreated). If the view is already a child, addChildView is a safe no-op.
+    try {
+      browserWindow.contentView.addChildView(view);
+    } catch {
+      // Already added or transitional window state — safe to ignore.
+    }
     view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
   }
 
