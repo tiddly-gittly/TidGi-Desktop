@@ -626,6 +626,7 @@ export class WorkspaceView implements IWorkspaceViewService {
    * `webContents.focus()`, potentially interfering with focus state.
    */
   public async refreshActiveWorkspaceView(): Promise<void> {
+    logger.info('[test-id-REFRESH_ACTIVE_VIEW_START]');
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const activeWorkspace = await workspaceService.getActiveWorkspace();
     if (activeWorkspace !== undefined) {
@@ -641,6 +642,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         error,
       });
     }
+    logger.info('[test-id-REFRESH_ACTIVE_VIEW_DONE]');
   }
 
   public async realignActiveWorkspace(id?: string): Promise<void> {

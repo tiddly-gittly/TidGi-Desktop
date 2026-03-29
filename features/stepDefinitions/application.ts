@@ -439,3 +439,37 @@ When('I set file {string} to file input with selector {string}', async function(
   // This works even for hidden inputs
   await page.locator(selector).setInputFiles(targetPath);
 });
+
+/**
+ * Hide the main window exactly as `runOnBackground` does when the user presses the close button.
+ * Directly hides the Electron BrowserWindow in the main process without going through the
+ * renderer IPC proxy (since `hide` is intentionally not exposed to the renderer).
+ */
+When('I hide the main window as if closing with runOnBackground', async function(this: ApplicationWorld) {
+  if (!this.app) throw new Error('Application is not launched');
+  await this.app.evaluate(({ BrowserWindow }) => {
+    const windows = BrowserWindow.getAllWindows();
+    // The main window is identified by its index.html URL
+    const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents?.getURL().includes('index.html'));
+    if (!mainWindow) throw new Error('Main window not found for hide');
+    mainWindow.hide();
+  });
+  // Allow the hide and event loop to settle before continuing.
+  await this.app.evaluate(async () => new Promise<void>(resolve => setTimeout(resolve, 300)));
+});
+
+/**
+ * Reopen the main window the same way a second-instance launch triggers it.
+ * Emits the Electron `second-instance` app event directly in the main process, which
+ * calls `windowService.open(WindowNames.main)` → `existedWindow.show()` → 'show' event
+ * → `refreshActiveWorkspaceView()`.
+ */
+When('I reopen the main window as second instance would', async function(this: ApplicationWorld) {
+  if (!this.app) throw new Error('Application is not launched');
+  await this.app.evaluate(({ app }) => {
+    // Trigger the same handler that a real second-instance launch fires.
+    app.emit('second-instance', /* argv */ [], /* workingDirectory */ process.cwd(), /* additionalData */ {});
+  });
+  // Wait for show → refreshActiveWorkspaceView → buildMenu to complete.
+  await this.app.evaluate(async () => new Promise<void>(resolve => setTimeout(resolve, 500)));
+});

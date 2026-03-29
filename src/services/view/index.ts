@@ -352,6 +352,7 @@ export class View implements IViewService {
     view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
     view.webContents.focus();
     browserWindow.setTitle(view.webContents.getTitle());
+    logger.info('[test-id-VIEW_SHOWN]', { workspaceID, windowName });
   }
 
   public async hideView(workspaceID: string, windowName: WindowNames): Promise<void> {
