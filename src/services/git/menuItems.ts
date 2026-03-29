@@ -124,9 +124,9 @@ export function createSyncMenuItems(
       enabled: isOnline,
       click: async () => {
         if (aiEnabled) {
-          await syncService.syncWikiIfNeeded(workspace, { useAICommitMessage: true });
+          await syncService.syncWikiIfNeeded(workspace, { useAICommitMessage: true, force: true });
         } else {
-          await syncService.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage') });
+          await syncService.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage'), force: true });
         }
       },
     },

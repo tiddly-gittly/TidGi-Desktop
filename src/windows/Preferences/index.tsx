@@ -1,5 +1,4 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
-import { styled } from '@mui/material/styles';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -21,20 +20,7 @@ import type { ISectionRecord } from './useSections';
 // Register custom section components on module load
 registerCustomSections();
 
-const Root = styled('div')`
-  padding: 20px;
-  overflow-x: hidden;
-`;
-
-const Inner = styled('div')`
-  width: 100%;
-  max-width: 550px;
-  /* Use min-width so the skeleton placeholders never cause a narrower layout that
-     makes the scrollbar appear momentarily during progressive section rendering. */
-  min-width: 300px;
-  float: right;
-  box-sizing: border-box;
-`;
+import { PageInner as Inner, PageRoot as Root } from './PreferenceComponents';
 
 /** Build ISectionRecord from allSections for sidebar + scroll nav */
 function useSectionRecord(): { record: ISectionRecord; refs: Map<string, React.RefObject<HTMLSpanElement | null>> } {

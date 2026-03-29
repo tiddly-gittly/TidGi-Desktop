@@ -20,7 +20,6 @@ export function NotificationScheduleItem(): React.JSX.Element | null {
         <TimePicker
           label='from'
           value={new Date(preference.pauseNotificationsByScheduleFrom)}
-          // eslint-disable-next-line @typescript-eslint/no-misused-promises
           onChange={async (d) => {
             if (d !== null && d instanceof Date) {
               await window.service.preference.set('pauseNotificationsByScheduleFrom', d.toString());
@@ -37,7 +36,6 @@ export function NotificationScheduleItem(): React.JSX.Element | null {
         <TimePicker
           label='to'
           value={new Date(preference.pauseNotificationsByScheduleTo)}
-          // eslint-disable-next-line @typescript-eslint/no-misused-promises
           onChange={async (d) => {
             if (d !== null && d instanceof Date) {
               await window.service.preference.set('pauseNotificationsByScheduleTo', d.toString());

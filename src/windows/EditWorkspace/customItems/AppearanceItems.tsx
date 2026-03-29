@@ -1,18 +1,13 @@
-import { Divider, Tooltip } from '@mui/material';
+import { Tooltip } from '@mui/material';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import defaultIcon from '../../images/default-icon.png';
+import defaultIcon from '../../../images/default-icon.png';
 
+import { ListItem, ListItemText } from '@/components/ListItem';
 import { wikiPictureExtensions } from '@/constants/fileNames';
-import { IWorkspace } from '@services/workspaces/interface';
-import { WorkspaceSectionTitle } from './styles';
-import { Avatar, AvatarFlex, AvatarLeft, AvatarPicture, AvatarRight, PictureButton, TextField } from './styles';
-
-interface AppearanceOptionsProps {
-  workspace: IWorkspace;
-  workspaceSetter: (newValue: IWorkspace) => void;
-  sectionRef?: React.RefObject<HTMLSpanElement | null>;
-}
+import { ListItemVertical, TextField } from '../../Preferences/PreferenceComponents';
+import { Avatar, AvatarFlex, AvatarLeft, AvatarPicture, AvatarRight, PictureButton } from '../styles';
+import { useWorkspaceForm } from '../WorkspaceFormContext';
 
 const getValidIconPath = (iconPath?: string | null): string => {
   if (typeof iconPath === 'string') {
@@ -21,25 +16,30 @@ const getValidIconPath = (iconPath?: string | null): string => {
   return defaultIcon;
 };
 
-export function AppearanceOptions(props: AppearanceOptionsProps): React.JSX.Element {
+export function WorkspaceNameItem(): React.JSX.Element {
   const { t } = useTranslation();
-  const { workspace, workspaceSetter, sectionRef } = props;
-  const { name, picturePath } = workspace;
-
+  const { workspace, workspaceSetter } = useWorkspaceForm();
   return (
-    <>
-      <WorkspaceSectionTitle ref={sectionRef}>{t('EditWorkspace.AppearanceOptions')}</WorkspaceSectionTitle>
+    <ListItemVertical>
+      <ListItemText primary={t('EditWorkspace.Name')} secondary={t('EditWorkspace.NameDescription')} />
       <TextField
-        id='outlined-full-width'
-        label={t('EditWorkspace.Name')}
-        helperText={t('EditWorkspace.NameDescription')}
+        fullWidth
         placeholder='Optional'
-        value={name ?? ''}
+        value={workspace.name ?? ''}
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           workspaceSetter({ ...workspace, name: event.target.value });
         }}
       />
-      <Divider />
+    </ListItemVertical>
+  );
+}
+
+export function WorkspaceAvatarItem(): React.JSX.Element {
+  const { t } = useTranslation();
+  const { workspace, workspaceSetter } = useWorkspaceForm();
+  const { picturePath } = workspace;
+  return (
+    <ListItem>
       <AvatarFlex>
         <AvatarLeft>
           <Avatar transparentBackground={false}>
@@ -61,7 +61,6 @@ export function AppearanceOptions(props: AppearanceOptionsProps): React.JSX.Elem
               {t('EditWorkspace.SelectLocal')}
             </PictureButton>
           </Tooltip>
-
           <Tooltip title={t('EditWorkspace.NoRevert') ?? ''} placement='bottom'>
             <PictureButton
               onClick={() => {
@@ -74,6 +73,6 @@ export function AppearanceOptions(props: AppearanceOptionsProps): React.JSX.Elem
           </Tooltip>
         </AvatarRight>
       </AvatarFlex>
-    </>
+    </ListItem>
   );
 }

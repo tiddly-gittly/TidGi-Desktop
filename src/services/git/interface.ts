@@ -96,6 +96,16 @@ export interface IGitStateChange {
 }
 
 /**
+ * Git sync progress event for renderer windows (e.g. GitLog panel).
+ */
+export interface IGitSyncProgressEvent {
+  /** Target workspace id where this progress belongs */
+  workspaceID: string;
+  /** Human-readable, localized progress message */
+  message: string;
+}
+
+/**
  * System Preferences are not stored in storage but stored in macOS Preferences.
  * It can be retrieved and changed using Electron APIs
  */
@@ -104,6 +114,10 @@ export interface IGitService {
    * Observable that emits when git state changes (commit, sync, etc.)
    */
   gitStateChange$: BehaviorSubject<IGitStateChange | undefined>;
+  /**
+   * Observable that emits sync progress messages from git-sync-js.
+   */
+  gitSyncProgress$: BehaviorSubject<IGitSyncProgressEvent | undefined>;
   initialize(): Promise<void>;
   clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void>;
   /**
@@ -187,6 +201,7 @@ export const GitServiceIPCDescriptor = {
     getModifiedFileList: ProxyPropertyType.Function,
     getWorkspacesRemote: ProxyPropertyType.Function,
     gitStateChange$: ProxyPropertyType.Value$,
+    gitSyncProgress$: ProxyPropertyType.Value$,
     initWikiGit: ProxyPropertyType.Function,
     notifyFileChange: ProxyPropertyType.Function,
     revertCommit: ProxyPropertyType.Function,

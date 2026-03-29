@@ -4,8 +4,8 @@
  * regardless of whether the section is schema-driven or uses a custom component.
  * This acts as a safety net during schema-ification of complex sections.
  */
-import React from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
+import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { ThemeProvider } from '@mui/material/styles';
@@ -16,8 +16,8 @@ import { BehaviorSubject } from 'rxjs';
 
 import { defaultPreferences } from '@services/preferences/defaultPreferences';
 import type { IPreferences } from '@services/preferences/interface';
-import { AllSectionsRenderer } from '../SchemaRenderer';
 import { registerCustomSections } from '../registerCustomSections';
+import { AllSectionsRenderer } from '../SchemaRenderer';
 
 // Register custom section components
 registerCustomSections();

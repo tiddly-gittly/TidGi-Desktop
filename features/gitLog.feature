@@ -69,6 +69,8 @@ Feature: Git Log Window
     When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作')"
     # Verify the commit now button is visible
     Then I should see a "commit now button" element with selector "button[data-testid='commit-now-button']"
+    # In uncommitted state, sync-to-remote button must NOT appear (it only appears for unpushed commits)
+    Then I should not see a "sync-to-remote button" element with selector "button[data-testid='sync-to-remote-button']"
     # Clear old git-log-refreshed markers BEFORE clicking commit button
     When I clear log lines containing "[test-id-git-log-refreshed]"
     # Click the commit now button
@@ -188,3 +190,53 @@ Feature: Git Log Window
       | element description                 | selector                         |
       | Index.tid in uncommitted list       | li:has-text('Index.tid')         |
       | AutoRefreshTest.tid in uncommitted list | li:has-text('AutoRefreshTest.tid') |
+
+  @git @sync
+  Scenario: GitLog sync-to-remote button pushes unpushed commits to remote
+    # Configure a bare remote repository so this workspace becomes a cloud workspace
+    When I create a bare git repository at "{tmpDir}/remote-gitlog-sync.git"
+    When I open edit workspace window for workspace with name "wiki"
+    And I switch to "editWorkspace" window
+    And I wait for the page to load completely
+    When I click on "saveAndSyncOptions accordion and syncToCloud toggle" elements with selectors:
+      | element description         | selector                                              |
+      | saveAndSyncOptions accordion| [data-testid='preference-section-saveAndSync']        |
+      | syncToCloud toggle          | [data-testid='synced-local-workspace-switch']         |
+    When I type in "git url input and github username input and github email input and github token input" elements with selectors:
+      | text                                    | selector                                                                                                                                                     |
+      | {tmpDir}/remote-gitlog-sync.git         | label:has-text('Git仓库线上网址') + * input, label:has-text('Git Repo URL') + * input, input[aria-label='Git仓库线上网址'], input[aria-label='Git Repo URL'] |
+      | testuser                                | [data-testid='github-userName-input'] input                                                                                                                  |
+      | testuser@example.com                    | [data-testid='github-email-input'] input                                                                                                                     |
+      | test-token-12345                        | [data-testid='github-token-input'] input                                                                                                                     |
+    When I click on a "save workspace button" element with selector "[data-testid='edit-workspace-save-button']"
+    Then I should not see a "save workspace button" element with selector "[data-testid='edit-workspace-save-button']"
+    When I switch to "main" window
+    # Create a tiddler file to produce a change
+    When I create file "{tmpDir}/wiki/tiddlers/SyncButtonTest.tid" with content:
+      """
+      created: 20250226100000000
+      modified: 20250226100000000
+      title: SyncButtonTest
+      tags: SyncTest
+
+      This tiddler tests the GitLog sync-to-remote button.
+      """
+    Then I wait for tiddler "SyncButtonTest" to be added by watch-fs
+    # Do a local-only backup first (creates an unpushed commit)
+    When I click menu "同步和备份 > 立即本地Git备份"
+    Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
+    # Open GitLog window and verify the sync-to-remote button appears on the unpushed commit
+    When I click menu "同步和备份 > 查看历史备份"
+    And I switch to "gitHistory" window
+    And I wait for the page to load completely
+    Then I wait for "git log UI refreshed" log marker "[test-id-git-log-refreshed]"
+    # Switch to Actions tab
+    When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作'), button[role='tab']:has-text('Actions')"
+    # Verify sync-to-remote button is visible (this is the button that was previously broken)
+    Then I should see a "sync-to-remote button" element with selector "button[data-testid='sync-to-remote-button']"
+    When I clear test-id markers from logs
+    # Click the sync-to-remote button
+    When I click on a "sync-to-remote button" element with selector "button[data-testid='sync-to-remote-button']"
+    Then I wait for "git sync completed" log marker "[test-id-git-sync-complete]"
+    # Verify the file was pushed to the remote repository
+    And the remote repository "{tmpDir}/remote-gitlog-sync.git" should contain file "tiddlers/SyncButtonTest.tid"

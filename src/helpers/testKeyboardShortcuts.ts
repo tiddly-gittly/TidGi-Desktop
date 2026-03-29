@@ -27,11 +27,11 @@
 
 export function initTestKeyboardShortcutFallback(): () => void {
   const isTestEnvironment = process.env.NODE_ENV === 'test';
+  if (!isTestEnvironment) return () => {};
   void window.service.native.log('debug', 'Renderer(Test): initTestKeyboardShortcutFallback called', {
     isTestEnvironment,
     nodeEnv: process.env.NODE_ENV,
   });
-  if (!isTestEnvironment) return () => {};
 
   let allShortcuts: Record<string, string> = {};
   let platform = 'win32';

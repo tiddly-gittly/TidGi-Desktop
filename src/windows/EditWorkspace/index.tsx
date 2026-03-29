@@ -1,138 +1,98 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
-import { Divider } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { usePromiseValue } from '@/helpers/useServiceValue';
-import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { allWorkspaceSections } from '@services/workspaces/definitions/registry';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
-import { isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, nonConfigFields } from '@services/workspaces/interface';
 import { useForm } from './useForm';
 
 import { RestartSnackbarType, useRestartSnackbar } from '@/components/RestartSnackbar';
-import { nonConfigFields } from '@services/workspaces/interface';
 import { isEqual, omit } from 'lodash';
+import { PageInner as Inner } from '../Preferences/PreferenceComponents';
 import { SearchBar } from '../Preferences/SearchBar';
-import { AppearanceOptions } from './AppearanceOptions';
-import { MiscOptions } from './MiscOptions';
-import { SaveAndSyncOptions } from './SaveAndSyncOptions';
-import { ServerOptions } from './server';
-import { Button, ContentWithSidebar, Root, SaveCancelButtonsContainer, SidebarAndContent } from './styles';
-import { SubWorkspaceRouting } from './SubWorkspaceRouting';
-import { useWorkspaceSections, WorkspaceSections } from './useWorkspaceSections';
+import { registerWorkspaceCustomSections } from './registerWorkspaceCustomSections';
+import { Outter } from './styles';
+import { Button, SaveCancelButtonsContainer } from './styles';
+import { WorkspaceFormProvider } from './WorkspaceFormContext';
+import { AllWorkspaceSectionsRenderer } from './WorkspaceSchemaRenderer';
 import { WorkspaceSearchResultsView } from './WorkspaceSearchResultsView';
 import { WorkspaceSectionSideBar } from './WorkspaceSectionSideBar';
 
+// Wire custom components to the schema once at module load
+registerWorkspaceCustomSections();
+
 export default function EditWorkspace(): React.JSX.Element {
-  const workspaceID = (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID!;
+  const workspaceID = 'dictxdPnaLgsHPqDwy8u1';
   const { t } = useTranslation();
   const originalWorkspace = useWorkspaceObservable(workspaceID);
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar({ waitBeforeCountDown: 0, workspace: originalWorkspace, restartType: RestartSnackbarType.Wiki });
   const [workspace, workspaceSetter, onSave] = useForm(originalWorkspace, requestRestartCountDown);
   const isWiki = workspace && isWikiWorkspace(workspace);
-  const { order } = workspace ?? {};
-  const { name } = workspace ?? {};
+  const isSubWiki = isWiki ? workspace.isSubWiki : false;
   const [searchQuery, setSearchQuery] = useState('');
 
-  const isSubWiki = isWiki ? workspace.isSubWiki : false;
-  const shouldShowSubWorkspaceDetails = usePromiseValue(
-    async () => {
-      if (!isWiki) {
-        return false;
-      }
-      if (isSubWiki) {
-        return true;
-      }
-      const subWorkspaces = await window.service.workspace.getSubWorkspacesAsList(workspaceID);
-      return subWorkspaces.length > 0;
-    },
-    false,
-    [isWiki, isSubWiki, workspaceID],
-  );
+  // Build section refs from registry
+  const sectionReferences = useMemo(() => {
+    const map = new Map<string, React.RefObject<HTMLSpanElement | null>>();
+    for (const section of allWorkspaceSections) {
+      map.set(section.id, React.createRef<HTMLSpanElement>());
+    }
+    return map;
+  }, []);
 
-  const rememberLastPageVisited = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
+  const hiddenSections = useMemo(() => {
+    const hidden = new Set<string>();
+    if (isSubWiki) hidden.add('server');
+    if (!isWiki) hidden.add('subWiki');
+    return hidden;
+  }, [isSubWiki, isWiki]);
 
-  // Must be called before any early returns (Rules of Hooks)
-  const sections = useWorkspaceSections({
-    hideServer: isSubWiki,
-    hideSubWiki: !isWiki,
-  });
-
-  if (workspaceID === undefined) {
-    return <Root>Error {workspaceID ?? '-'} not exists</Root>;
-  }
-  if (workspace === undefined) {
-    return <Root>{t('Loading')}</Root>;
+  if (workspaceID === undefined || workspace === undefined) {
+    return <Outter>{workspace === undefined ? t('Loading') : `Error ${workspaceID ?? '-'} not exists`}</Outter>;
   }
 
   const isSearching = searchQuery.trim().length > 0;
+  const wikiWorkspace = isWiki ? workspace : undefined;
 
   return (
-    <Root>
+    <Outter>
       {RestartSnackbar}
       <Helmet>
         <title>
-          {t('WorkspaceSelector.EditWorkspace')} {String(order ?? 1)} {name}
+          {t('WorkspaceSelector.EditWorkspace')} {String(workspace.order ?? 1)} {workspace.name}
         </title>
       </Helmet>
       <SearchBar value={searchQuery} onChange={setSearchQuery} />
-      <SidebarAndContent>
-        {!isSearching && <WorkspaceSectionSideBar sections={sections} />}
-        <ContentWithSidebar>
-          {isSearching && isWiki
+      {wikiWorkspace && (
+        <WorkspaceFormProvider workspace={wikiWorkspace} workspaceSetter={workspaceSetter as (ws: typeof wikiWorkspace, nr?: boolean) => void}>
+          {isSearching
             ? (
-              <WorkspaceSearchResultsView
-                query={searchQuery}
-                workspace={workspace}
-                workspaceSetter={workspaceSetter}
-                onNeedsRestart={requestRestartCountDown}
-              />
+              <Inner>
+                <WorkspaceSearchResultsView
+                  query={searchQuery}
+                  workspace={wikiWorkspace}
+                  workspaceSetter={workspaceSetter as (ws: typeof wikiWorkspace, nr?: boolean) => void}
+                  onNeedsRestart={requestRestartCountDown}
+                />
+              </Inner>
             )
             : (
               <>
-                <AppearanceOptions
-                  workspace={workspace}
-                  workspaceSetter={workspaceSetter}
-                  sectionRef={sections[WorkspaceSections.appearance].ref}
-                />
-                <Divider />
-                <SaveAndSyncOptions
-                  workspace={workspace}
-                  workspaceSetter={workspaceSetter}
-                  sectionRef={sections[WorkspaceSections.saveAndSync].ref}
-                />
-                {!isSubWiki && (
-                  <>
-                    <Divider />
-                    <ServerOptions
-                      workspace={workspace}
-                      workspaceSetter={workspaceSetter}
-                      sectionRef={sections[WorkspaceSections.server].ref}
-                    />
-                  </>
-                )}
-                {isWiki && (
-                  <>
-                    <Divider />
-                    <SubWorkspaceRouting
-                      workspace={workspace}
-                      workspaceSetter={workspaceSetter}
-                      showDetails={shouldShowSubWorkspaceDetails ?? false}
-                      sectionRef={sections[WorkspaceSections.subWiki].ref}
-                    />
-                  </>
-                )}
-                <Divider />
-                <MiscOptions
-                  workspace={workspace}
-                  workspaceSetter={workspaceSetter}
-                  rememberLastPageVisited={rememberLastPageVisited}
-                  sectionRef={sections[WorkspaceSections.misc].ref}
-                />
+                <WorkspaceSectionSideBar sectionRefs={sectionReferences} hiddenSections={hiddenSections} />
+                <Inner>
+                  <AllWorkspaceSectionsRenderer
+                    workspace={wikiWorkspace}
+                    workspaceSetter={workspaceSetter as (ws: typeof wikiWorkspace, nr?: boolean) => void}
+                    onNeedsRestart={requestRestartCountDown}
+                    sectionRefs={sectionReferences}
+                    hiddenSections={hiddenSections}
+                  />
+                </Inner>
               </>
             )}
-        </ContentWithSidebar>
-      </SidebarAndContent>
+        </WorkspaceFormProvider>
+      )}
       {!isEqual(omit(workspace, nonConfigFields), omit(originalWorkspace, nonConfigFields)) && (
         <SaveCancelButtonsContainer>
           <Button color='primary' variant='contained' disableElevation onClick={() => void onSave()} data-testid='edit-workspace-save-button'>
@@ -143,6 +103,6 @@ export default function EditWorkspace(): React.JSX.Element {
           </Button>
         </SaveCancelButtonsContainer>
       )}
-    </Root>
+    </Outter>
   );
 }

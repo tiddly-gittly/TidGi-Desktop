@@ -13,8 +13,10 @@ import { tlsCertExtensions, tlsKeyExtensions } from '@/constants/fileNames';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useActualIp } from '@services/native/hooks';
-import { isWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
-import { WorkspaceSectionTitle } from './styles';
+import type { ICustomSectionProps } from '@services/preferences/definitions/types';
+import { isWikiWorkspace } from '@services/workspaces/interface';
+import { Paper, SectionTitle } from '../Preferences/PreferenceComponents';
+import { useWorkspaceForm } from './WorkspaceFormContext';
 
 const HttpsCertKeyListItem = styled(ListItem)`
   flex-direction: row;
@@ -29,16 +31,11 @@ const AuthTokenTextAndButtonContainer = styled('div')`
   flex-direction: row;
 `;
 
-export interface IServerOptionsProps {
-  workspace: IWorkspace;
-  workspaceSetter: (newValue: IWorkspace, requestSaveAndRestart?: boolean) => void;
-  sectionRef?: React.RefObject<HTMLSpanElement | null>;
-}
-export function ServerOptions(props: IServerOptionsProps) {
+export function ServerOptions(props: ICustomSectionProps) {
   const { t } = useTranslation();
-  const { workspace, workspaceSetter, sectionRef } = props;
+  const { sectionRef } = props;
+  const { workspace, workspaceSetter } = useWorkspaceForm();
 
-  const isWiki = isWikiWorkspace(workspace);
   const {
     https = { enabled: false },
     port,
@@ -50,18 +47,7 @@ export function ServerOptions(props: IServerOptionsProps) {
     authToken,
     userName,
     id,
-  } = isWiki ? workspace : {
-    https: { enabled: false },
-    port: 0,
-    rootTiddler: '',
-    lastNodeJSArgv: [],
-    enableHTTPAPI: false,
-    readOnlyMode: false,
-    tokenAuth: false,
-    authToken: '',
-    userName: '',
-    id: workspace.id,
-  };
+  } = workspace;
   const actualIP = useActualIp(getDefaultHTTPServerIP(port), id);
   // some feature need a username to work, so if userName is empty, assign a fallbackUserName DEFAULT_USER_NAME
 
@@ -80,294 +66,296 @@ export function ServerOptions(props: IServerOptionsProps) {
 
   return (
     <>
-      <WorkspaceSectionTitle ref={sectionRef} data-testid='preference-section-serverOptions'>
+      <SectionTitle ref={sectionRef} data-testid='preference-section-serverOptions'>
         {t('EditWorkspace.ServerOptions')} ({t('EditWorkspace.EnableHTTPAPI')})
-      </WorkspaceSectionTitle>
-      <List>
-        <ListItem
-          disableGutters
-          secondaryAction={
-            <Switch
-              edge='end'
-              color='primary'
-              checked={enableHTTPAPI}
-              data-testid='enable-http-api-switch'
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                workspaceSetter({ ...workspace, enableHTTPAPI: event.target.checked }, true);
+      </SectionTitle>
+      <Paper elevation={0}>
+        <List dense disablePadding>
+          <ListItem
+            secondaryAction={
+              <Switch
+                edge='end'
+                color='primary'
+                checked={enableHTTPAPI}
+                data-testid='enable-http-api-switch'
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  workspaceSetter({ ...workspace, enableHTTPAPI: event.target.checked }, true);
+                }}
+              />
+            }
+          >
+            <ListItemText primary={t('EditWorkspace.EnableHTTPAPI')} secondary={t('EditWorkspace.EnableHTTPAPIDescription')} />
+          </ListItem>
+
+          <ListItem>
+            <TextField
+              id='outlined-full-width'
+              label={t('EditWorkspace.Port')}
+              helperText={
+                <span>
+                  {t('EditWorkspace.URL')}{' '}
+                  <Link
+                    onClick={async () => {
+                      if (actualIP) {
+                        await window.service.native.openURI(actualIP);
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {actualIP}
+                  </Link>
+                </span>
+              }
+              placeholder='Optional'
+              value={portInput}
+              onChange={(event) => {
+                const raw = event.target.value;
+                setPortInput(raw);
+                startTransition(() => {
+                  const parsed = raw.trim() === '' ? 0 : Number.parseInt(raw.trim(), 10);
+                  if (!Number.isNaN(parsed) && parsed >= 0) {
+                    workspaceSetter({ ...workspace, port: parsed }, true);
+                  }
+                });
+              }}
+              onBlur={() => {
+                const trimmed = portInput.trim();
+                const number_ = trimmed === '' ? 0 : Number.parseInt(trimmed, 10);
+                if (!Number.isNaN(number_) && number_ >= 0) {
+                  setPortInput(String(number_));
+                  void (async () => {
+                    const homeUrl = await window.service.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(number_), id);
+                    workspaceSetter({ ...workspace, port: number_, homeUrl }, true);
+                  })();
+                } else {
+                  setPortInput(String(port ?? ''));
+                }
               }}
             />
-          }
-        >
-          <ListItemText primary={t('EditWorkspace.EnableHTTPAPI')} secondary={t('EditWorkspace.EnableHTTPAPIDescription')} />
-        </ListItem>
+          </ListItem>
 
-        <ListItem disableGutters>
-          <TextField
-            id='outlined-full-width'
-            label={t('EditWorkspace.Port')}
-            helperText={
-              <span>
-                {t('EditWorkspace.URL')}{' '}
-                <Link
+          <Divider />
+          <ListItem
+            secondaryAction={
+              <Switch
+                edge='end'
+                color='primary'
+                checked={tokenAuth}
+                onChange={async () => {
+                  const nextTokenAuth = !tokenAuth;
+
+                  const newAuthToken = authToken || await (window.service.auth.generateOneTimeAdminAuthTokenForWorkspace(id));
+                  workspaceSetter({
+                    ...workspace,
+                    userName: userNameIsEmpty ? DEFAULT_USER_NAME : userName,
+                    tokenAuth: nextTokenAuth,
+                    readOnlyMode: nextTokenAuth ? false : readOnlyMode,
+                    authToken: newAuthToken,
+                  }, true);
+                }}
+              />
+            }
+          >
+            <ListItemText
+              primary={t('EditWorkspace.TokenAuth')}
+              secondary={
+                <>
+                  <div>{t('EditWorkspace.TokenAuthDescription')}</div>
+                  {(userNameIsEmpty || !fallbackUserName) && <div>{t('EditWorkspace.TokenAuthAutoFillUserNameDescription')}</div>}
+                </>
+              }
+            />
+          </ListItem>
+          {tokenAuth && (
+            <>
+              <ListItem>
+                <TextField
+                  id='outlined-full-width'
+                  label={t('EditWorkspace.TokenAuthCurrentToken')}
+                  helperText={
+                    <AuthTokenTextAndButtonContainer>
+                      <div>{t('EditWorkspace.TokenAuthCurrentTokenDescription')}</div>{' '}
+                      <Button
+                        onClick={async () => {
+                          const newAuthToken = await (window.service.auth.generateOneTimeAdminAuthTokenForWorkspace(id));
+                          workspaceSetter({ ...workspace, authToken: newAuthToken }, true);
+                        }}
+                      >
+                        {t('EditWorkspace.Generate')}
+                      </Button>
+                    </AuthTokenTextAndButtonContainer>
+                  }
+                  placeholder={t('EditWorkspace.TokenAuthCurrentTokenEmptyText')}
+                  fullWidth
+                  value={authToken ?? ''}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    workspaceSetter({ ...workspace, authToken: event.target.value }, true);
+                  }}
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemText
+                  primary={t('EditWorkspace.TokenAuthCurrentHeader')}
+                  secondary={`"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`}
+                />
+              </ListItem>
+            </>
+          )}
+          {Array.isArray(lastNodeJSArgv) && (
+            <>
+              <Divider />
+              <ListItem>
+                <ListItemText primary={t('EditWorkspace.LastNodeJSArgv')} secondary={`tiddlywiki ${lastNodeJSArgv.join(' ')}`} />
+              </ListItem>
+            </>
+          )}
+          <Divider />
+          <ListItem
+            secondaryAction={
+              <Switch
+                edge='end'
+                color='primary'
+                checked={readOnlyMode}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  workspaceSetter({ ...workspace, readOnlyMode: event.target.checked, tokenAuth: event.target.checked ? false : tokenAuth }, true);
+                }}
+              />
+            }
+          >
+            <ListItemText primary={t('EditWorkspace.ReadOnlyMode')} secondary={t('EditWorkspace.ReadOnlyModeDescription')} />
+          </ListItem>
+
+          {workspace !== undefined && readOnlyMode && <ExcludedPluginsAutocomplete />}
+          <ListItem
+            secondaryAction={
+              <Switch
+                edge='end'
+                color='primary'
+                checked={https.enabled}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  workspaceSetter({ ...workspace, https: { ...https, enabled: event.target.checked } });
+                }}
+              />
+            }
+          >
+            <ListItemText primary={t('EditWorkspace.EnableHTTPS')} secondary={t('EditWorkspace.EnableHTTPSDescription')} />
+          </ListItem>
+          {https.enabled && (
+            <>
+              <ListItem>
+                <ListItemText secondary={t('EditWorkspace.UploadOrSelectPathDescription')} />
+              </ListItem>
+              <HttpsCertKeyListItem>
+                <Button
+                  size='small'
+                  variant='contained'
                   onClick={async () => {
-                    if (actualIP) {
-                      await window.service.native.openURI(actualIP);
+                    const filePaths = await window.service.native.pickFile([{ name: t('EditWorkspace.HTTPSUploadCert'), extensions: tlsCertExtensions }]);
+                    if (filePaths.length > 0) {
+                      const certKeyFolder = await window.service.context.get('HTTPS_CERT_KEY_FOLDER');
+                      const resultPath = await window.service.native.copyPath(filePaths[0], certKeyFolder, { fileToDir: true });
+                      if (resultPath) {
+                        workspaceSetter({ ...workspace, https: { ...https, tlsCert: resultPath } });
+                      }
                     }
                   }}
-                  style={{ cursor: 'pointer' }}
                 >
-                  {actualIP}
-                </Link>
-              </span>
-            }
-            placeholder='Optional'
-            value={portInput}
-            onChange={(event) => {
-              const raw = event.target.value;
-              setPortInput(raw);
-              startTransition(() => {
-                const parsed = raw.trim() === '' ? 0 : Number.parseInt(raw.trim(), 10);
-                if (!Number.isNaN(parsed) && parsed >= 0) {
-                  workspaceSetter({ ...workspace, port: parsed }, true);
-                }
-              });
-            }}
-            onBlur={() => {
-              const trimmed = portInput.trim();
-              const number_ = trimmed === '' ? 0 : Number.parseInt(trimmed, 10);
-              if (!Number.isNaN(number_) && number_ >= 0) {
-                setPortInput(String(number_));
-                void (async () => {
-                  const homeUrl = await window.service.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(number_), id);
-                  workspaceSetter({ ...workspace, port: number_, homeUrl }, true);
-                })();
-              } else {
-                setPortInput(String(port ?? ''));
-              }
-            }}
-          />
-        </ListItem>
-
-        <Divider />
-        <ListItem
-          disableGutters
-          secondaryAction={
-            <Switch
-              edge='end'
-              color='primary'
-              checked={tokenAuth}
-              onChange={async () => {
-                const nextTokenAuth = !tokenAuth;
-
-                const newAuthToken = authToken || await (window.service.auth.generateOneTimeAdminAuthTokenForWorkspace(id));
-                workspaceSetter({
-                  ...workspace,
-                  userName: userNameIsEmpty ? DEFAULT_USER_NAME : userName,
-                  tokenAuth: nextTokenAuth,
-                  readOnlyMode: nextTokenAuth ? false : readOnlyMode,
-                  authToken: newAuthToken,
-                }, true);
-              }}
-            />
-          }
-        >
-          <ListItemText
-            primary={t('EditWorkspace.TokenAuth')}
-            secondary={
-              <>
-                <div>{t('EditWorkspace.TokenAuthDescription')}</div>
-                {(userNameIsEmpty || !fallbackUserName) && <div>{t('EditWorkspace.TokenAuthAutoFillUserNameDescription')}</div>}
-              </>
-            }
-          />
-        </ListItem>
-        {tokenAuth && (
-          <>
-            <ListItem disableGutters>
-              <TextField
-                id='outlined-full-width'
-                label={t('EditWorkspace.TokenAuthCurrentToken')}
-                helperText={
-                  <AuthTokenTextAndButtonContainer>
-                    <div>{t('EditWorkspace.TokenAuthCurrentTokenDescription')}</div>{' '}
-                    <Button
-                      onClick={async () => {
-                        const newAuthToken = await (window.service.auth.generateOneTimeAdminAuthTokenForWorkspace(id));
-                        workspaceSetter({ ...workspace, authToken: newAuthToken }, true);
-                      }}
-                    >
-                      {t('EditWorkspace.Generate')}
-                    </Button>
-                  </AuthTokenTextAndButtonContainer>
-                }
-                placeholder={t('EditWorkspace.TokenAuthCurrentTokenEmptyText')}
-                fullWidth
-                value={authToken ?? ''}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  workspaceSetter({ ...workspace, authToken: event.target.value }, true);
-                }}
-              />
-            </ListItem>
-            <ListItem disableGutters>
-              <ListItemText
-                primary={t('EditWorkspace.TokenAuthCurrentHeader')}
-                secondary={`"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`}
-              />
-            </ListItem>
-          </>
-        )}
-        {Array.isArray(lastNodeJSArgv) && (
-          <>
-            <Divider />
-            <ListItem disableGutters>
-              <ListItemText primary={t('EditWorkspace.LastNodeJSArgv')} secondary={`tiddlywiki ${lastNodeJSArgv.join(' ')}`} />
-            </ListItem>
-          </>
-        )}
-        <Divider />
-        <ListItem
-          disableGutters
-          secondaryAction={
-            <Switch
-              edge='end'
-              color='primary'
-              checked={readOnlyMode}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                workspaceSetter({ ...workspace, readOnlyMode: event.target.checked, tokenAuth: event.target.checked ? false : tokenAuth }, true);
-              }}
-            />
-          }
-        >
-          <ListItemText primary={t('EditWorkspace.ReadOnlyMode')} secondary={t('EditWorkspace.ReadOnlyModeDescription')} />
-        </ListItem>
-
-        {workspace !== undefined && readOnlyMode && <ExcludedPluginsAutocomplete workspace={workspace} workspaceSetter={workspaceSetter} />}
-        <ListItem
-          disableGutters
-          secondaryAction={
-            <Switch
-              edge='end'
-              color='primary'
-              checked={https.enabled}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                workspaceSetter({ ...workspace, https: { ...https, enabled: event.target.checked } });
-              }}
-            />
-          }
-        >
-          <ListItemText primary={t('EditWorkspace.EnableHTTPS')} secondary={t('EditWorkspace.EnableHTTPSDescription')} />
-        </ListItem>
-        {https.enabled && (
-          <>
-            <ListItem disableGutters>
-              <ListItemText secondary={t('EditWorkspace.UploadOrSelectPathDescription')} />
-            </ListItem>
-            <HttpsCertKeyListItem>
-              <Button
-                size='small'
-                variant='contained'
-                onClick={async () => {
-                  const filePaths = await window.service.native.pickFile([{ name: t('EditWorkspace.HTTPSUploadCert'), extensions: tlsCertExtensions }]);
-                  if (filePaths.length > 0) {
-                    const certKeyFolder = await window.service.context.get('HTTPS_CERT_KEY_FOLDER');
-                    const resultPath = await window.service.native.copyPath(filePaths[0], certKeyFolder, { fileToDir: true });
-                    if (resultPath) {
-                      workspaceSetter({ ...workspace, https: { ...https, tlsCert: resultPath } });
+                  {t('EditWorkspace.HTTPSUploadCert')}
+                </Button>
+                <Button
+                  size='small'
+                  variant='outlined'
+                  onClick={async () => {
+                    const filePaths = await window.service.native.pickFile([{ name: t('EditWorkspace.HTTPSPickCert'), extensions: tlsCertExtensions }]);
+                    if (filePaths.length > 0) {
+                      workspaceSetter({ ...workspace, https: { ...https, tlsCert: filePaths[0] } });
                     }
-                  }
-                }}
-              >
-                {t('EditWorkspace.HTTPSUploadCert')}
-              </Button>
-              <Button
-                size='small'
-                variant='outlined'
-                onClick={async () => {
-                  const filePaths = await window.service.native.pickFile([{ name: t('EditWorkspace.HTTPSPickCert'), extensions: tlsCertExtensions }]);
-                  if (filePaths.length > 0) {
-                    workspaceSetter({ ...workspace, https: { ...https, tlsCert: filePaths[0] } });
-                  }
-                }}
-              >
-                {t('EditWorkspace.HTTPSPickCert')}
-              </Button>
-            </HttpsCertKeyListItem>
-            <HttpsCertKeyListItem disableGutters>
-              <TextField
-                id='outlined-full-width'
-                label={t('EditWorkspace.HTTPSCertPath')}
-                helperText={t('EditWorkspace.HTTPSCertPathDescription')}
-                placeholder='Optional'
-                fullWidth
-                value={https.tlsCert ?? ''}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  workspaceSetter({ ...workspace, https: { ...https, tlsCert: event.target.value || undefined } });
-                }}
-              />
-            </HttpsCertKeyListItem>
+                  }}
+                >
+                  {t('EditWorkspace.HTTPSPickCert')}
+                </Button>
+              </HttpsCertKeyListItem>
+              <HttpsCertKeyListItem>
+                <TextField
+                  id='outlined-full-width'
+                  label={t('EditWorkspace.HTTPSCertPath')}
+                  helperText={t('EditWorkspace.HTTPSCertPathDescription')}
+                  placeholder='Optional'
+                  fullWidth
+                  value={https.tlsCert ?? ''}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    workspaceSetter({ ...workspace, https: { ...https, tlsCert: event.target.value || undefined } });
+                  }}
+                />
+              </HttpsCertKeyListItem>
 
-            <HttpsCertKeyListItem>
-              <Button
-                size='small'
-                variant='contained'
-                onClick={async () => {
-                  const filePaths = await window.service.native.pickFile([{ name: t('EditWorkspace.HTTPSUploadKey'), extensions: tlsKeyExtensions }]);
-                  if (filePaths.length > 0) {
-                    const certKeyFolder = await window.service.context.get('HTTPS_CERT_KEY_FOLDER');
-                    const resultPath = await window.service.native.copyPath(filePaths[0], certKeyFolder, { fileToDir: true });
-                    if (resultPath) {
-                      workspaceSetter({ ...workspace, https: { ...https, tlsKey: resultPath } });
+              <HttpsCertKeyListItem>
+                <Button
+                  size='small'
+                  variant='contained'
+                  onClick={async () => {
+                    const filePaths = await window.service.native.pickFile([{ name: t('EditWorkspace.HTTPSUploadKey'), extensions: tlsKeyExtensions }]);
+                    if (filePaths.length > 0) {
+                      const certKeyFolder = await window.service.context.get('HTTPS_CERT_KEY_FOLDER');
+                      const resultPath = await window.service.native.copyPath(filePaths[0], certKeyFolder, { fileToDir: true });
+                      if (resultPath) {
+                        workspaceSetter({ ...workspace, https: { ...https, tlsKey: resultPath } });
+                      }
                     }
-                  }
-                }}
-              >
-                {t('EditWorkspace.HTTPSUploadKey')}
-              </Button>
-              <Button
-                size='small'
-                variant='outlined'
-                onClick={async () => {
-                  const filePaths = await window.service.native.pickFile([{ name: t('EditWorkspace.HTTPSPickKey'), extensions: tlsCertExtensions }]);
-                  if (filePaths.length > 0) {
-                    workspaceSetter({ ...workspace, https: { ...https, tlsKey: filePaths[0] } });
-                  }
-                }}
-              >
-                {t('EditWorkspace.HTTPSPickKey')}
-              </Button>
-            </HttpsCertKeyListItem>
-            <HttpsCertKeyListItem disableGutters>
-              <TextField
-                id='outlined-full-width'
-                label={t('EditWorkspace.HTTPSKeyPath')}
-                helperText={t('EditWorkspace.HTTPSKeyPathDescription')}
-                placeholder='Optional'
-                fullWidth
-                value={https.tlsKey ?? ''}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  workspaceSetter({ ...workspace, https: { ...https, tlsKey: event.target.value || undefined } });
-                }}
-              />
-            </HttpsCertKeyListItem>
-            <Divider />
-          </>
-        )}
-      </List>
-      <AutocompleteWithMarginTop
-        freeSolo
-        options={rootTiddlers}
-        value={rootTiddler}
-        defaultValue={rootTiddlers[0]}
-        onInputChange={(event: React.SyntheticEvent, value: string) => {
-          void event;
-          workspaceSetter({ ...workspace, rootTiddler: value });
-          // void requestSaveAndRestart();
-        }}
-        renderInput={(parameters: AutocompleteRenderInputParams) => (
-          <TextField {...parameters} label={t('EditWorkspace.WikiRootTiddler')} helperText={t('EditWorkspace.WikiRootTiddlerDescription')} />
-        )}
-        renderOption={(props, option) => <li {...props}>{t(`EditWorkspace.WikiRootTiddlerItems.${String(option).replace('$:/core/save/', '')}`)} ({String(option)})</li>}
-      />
+                  }}
+                >
+                  {t('EditWorkspace.HTTPSUploadKey')}
+                </Button>
+                <Button
+                  size='small'
+                  variant='outlined'
+                  onClick={async () => {
+                    const filePaths = await window.service.native.pickFile([{ name: t('EditWorkspace.HTTPSPickKey'), extensions: tlsCertExtensions }]);
+                    if (filePaths.length > 0) {
+                      workspaceSetter({ ...workspace, https: { ...https, tlsKey: filePaths[0] } });
+                    }
+                  }}
+                >
+                  {t('EditWorkspace.HTTPSPickKey')}
+                </Button>
+              </HttpsCertKeyListItem>
+              <HttpsCertKeyListItem>
+                <TextField
+                  id='outlined-full-width'
+                  label={t('EditWorkspace.HTTPSKeyPath')}
+                  helperText={t('EditWorkspace.HTTPSKeyPathDescription')}
+                  placeholder='Optional'
+                  fullWidth
+                  value={https.tlsKey ?? ''}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    workspaceSetter({ ...workspace, https: { ...https, tlsKey: event.target.value || undefined } });
+                  }}
+                />
+              </HttpsCertKeyListItem>
+              <Divider />
+            </>
+          )}
+
+          <ListItem>
+            <AutocompleteWithMarginTop
+              fullWidth
+              freeSolo
+              options={rootTiddlers}
+              value={rootTiddler}
+              defaultValue={rootTiddlers[0]}
+              onInputChange={(event: React.SyntheticEvent, value: string) => {
+                void event;
+                workspaceSetter({ ...workspace, rootTiddler: value });
+                // void requestSaveAndRestart();
+              }}
+              renderInput={(parameters: AutocompleteRenderInputParams) => (
+                <TextField {...parameters} label={t('EditWorkspace.WikiRootTiddler')} helperText={t('EditWorkspace.WikiRootTiddlerDescription')} />
+              )}
+              renderOption={(props, option) => <li {...props}>{t(`EditWorkspace.WikiRootTiddlerItems.${String(option).replace('$:/core/save/', '')}`)} ({String(option)})</li>}
+            />
+          </ListItem>
+        </List>
+      </Paper>
     </>
   );
 }
@@ -375,9 +363,9 @@ export function ServerOptions(props: IServerOptionsProps) {
 const autocompleteExcludedPluginsFilter = createFilterOptions<string>();
 const uncheckedIcon = <CheckBoxOutlineBlankIcon fontSize='small' />;
 const checkedIcon = <CheckBoxIcon fontSize='small' />;
-function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSetter: (newValue: IWorkspace, requestSaveAndRestart?: boolean) => void }) {
+function ExcludedPluginsAutocomplete() {
   const { t } = useTranslation();
-  const { workspaceSetter, workspace } = props;
+  const { workspace, workspaceSetter } = useWorkspaceForm();
 
   if (!isWikiWorkspace(workspace)) {
     return null;
@@ -396,66 +384,69 @@ function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSe
 
   return (
     <>
-      <ListItem disableGutters>
+      <ListItem>
         <ListItemText primary={t('EditWorkspace.ExcludedPlugins')} secondary={t('EditWorkspace.ExcludedPluginsDescription')} />
       </ListItem>
-      <Autocomplete
-        freeSolo
-        multiple
-        disableCloseOnSelect
-        options={pluginsInWiki}
-        value={excludedPlugins}
-        limitTags={2}
-        renderOption={(props, option, { selected }) => (
-          <li {...props}>
-            <Checkbox
-              icon={uncheckedIcon}
-              checkedIcon={checkedIcon}
-              style={{ marginRight: 8 }}
-              checked={selected}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                if (event.target.checked) {
-                  workspaceSetter({ ...workspace, excludedPlugins: [...excludedPlugins.filter(item => item !== option), option] }, true);
-                } else {
-                  workspaceSetter({ ...workspace, excludedPlugins: excludedPlugins.filter(item => item !== option) }, true);
-                }
-              }}
-            />
-            {option}
-          </li>
-        )}
-        slotProps={{
-          chip: {
-            onDelete: (event: Event) => {
-              // Be defensive: event.target can be null and EventTarget doesn't have DOM properties in TS.
-              const target = event.target as HTMLElement | null;
-              if (!target) return;
-              let node = target.parentNode as HTMLElement | null;
-              if (!node) return;
-              if (node.tagName !== 'DIV') {
-                node = node.parentNode as HTMLElement | null;
+      <ListItem>
+        <Autocomplete
+          fullWidth
+          freeSolo
+          multiple
+          disableCloseOnSelect
+          options={pluginsInWiki}
+          value={excludedPlugins}
+          limitTags={2}
+          renderOption={(props, option, { selected }) => (
+            <li {...props}>
+              <Checkbox
+                icon={uncheckedIcon}
+                checkedIcon={checkedIcon}
+                style={{ marginRight: 8 }}
+                checked={selected}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  if (event.target.checked) {
+                    workspaceSetter({ ...workspace, excludedPlugins: [...excludedPlugins.filter(item => item !== option), option] }, true);
+                  } else {
+                    workspaceSetter({ ...workspace, excludedPlugins: excludedPlugins.filter(item => item !== option) }, true);
+                  }
+                }}
+              />
+              {option}
+            </li>
+          )}
+          slotProps={{
+            chip: {
+              onDelete: (event: Event) => {
+                // Be defensive: event.target can be null and EventTarget doesn't have DOM properties in TS.
+                const target = event.target as HTMLElement | null;
+                if (!target) return;
+                let node = target.parentNode as HTMLElement | null;
                 if (!node) return;
-              }
+                if (node.tagName !== 'DIV') {
+                  node = node.parentNode as HTMLElement | null;
+                  if (!node) return;
+                }
 
-              const value = node.innerText;
-              workspaceSetter({ ...workspace, excludedPlugins: excludedPlugins.filter(item => item !== value) }, true);
+                const value = node.innerText;
+                workspaceSetter({ ...workspace, excludedPlugins: excludedPlugins.filter(item => item !== value) }, true);
+              },
             },
-          },
-        }}
-        filterOptions={(options, parameters) => {
-          const filtered = autocompleteExcludedPluginsFilter(options, parameters);
+          }}
+          filterOptions={(options, parameters) => {
+            const filtered = autocompleteExcludedPluginsFilter(options, parameters);
 
-          if (parameters.inputValue !== '') {
-            filtered.push(parameters.inputValue);
-          }
+            if (parameters.inputValue !== '') {
+              filtered.push(parameters.inputValue);
+            }
 
-          return filtered;
-        }}
-        groupBy={(option) => option.split('/')[2]}
-        renderInput={(parameters: AutocompleteRenderInputParams) => (
-          <TextField {...parameters} label={t('EditWorkspace.AddExcludedPlugins')} helperText={t('EditWorkspace.AddExcludedPluginsDescription')} />
-        )}
-      />
+            return filtered;
+          }}
+          groupBy={(option) => option.split('/')[2]}
+          renderInput={(parameters: AutocompleteRenderInputParams) => (
+            <TextField {...parameters} label={t('EditWorkspace.AddExcludedPlugins')} helperText={t('EditWorkspace.AddExcludedPluginsDescription')} />
+          )}
+        />
+      </ListItem>
     </>
   );
 }

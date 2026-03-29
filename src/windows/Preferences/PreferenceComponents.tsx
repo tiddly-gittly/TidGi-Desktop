@@ -11,6 +11,21 @@ export const Paper = styled(PaperRaw)`
   color: ${({ theme }) => theme.palette.text.primary};
 `;
 
+export const PageRoot = styled('div')`
+  padding: 20px;
+  overflow-x: hidden;
+`;
+
+export const PageInner = styled('div')`
+  width: 100%;
+  max-width: 550px;
+  /* Use min-width so the skeleton placeholders never cause a narrower layout that
+     makes the scrollbar appear momentarily during progressive section rendering. */
+  min-width: 300px;
+  float: right;
+  box-sizing: border-box;
+`;
+
 const animateMoveFromRight = keyframes`
   from {
     transform: translate3d(40px, 0, 0);

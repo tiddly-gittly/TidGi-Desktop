@@ -24,8 +24,8 @@ function tx(t: TFunction<['translation', 'agent']>, key: string, ns?: string): s
 function txEn(key: string, ns?: string): string {
   try {
     return ns
-      ? (i18next.t(key, { lng: 'en', ns }) as string)
-      : (i18next.t(key, { lng: 'en' }) as string);
+      ? (i18next.t(key, { lng: 'en', ns }))
+      : (i18next.t(key, { lng: 'en' }));
   } catch {
     return '';
   }

@@ -1,8 +1,10 @@
 import { Divider as DividerRaw, List, ListItemButton, ListItemIcon as ListItemIconRaw, ListItemText } from '@mui/material';
 import { keyframes, styled } from '@mui/material/styles';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
-import type { IWorkspaceSectionRecord, WorkspaceSections } from './useWorkspaceSections';
+import type { IGenericSectionDefinition } from '@services/preferences/definitions/types';
+import { allWorkspaceSections } from '@services/workspaces/definitions/registry';
 
 const SideBar = styled('div')`
   position: fixed;
@@ -38,30 +40,33 @@ const SideMenuListItem = styled(ListItemButton)<{ index: number }>`
 `;
 
 interface WorkspaceSectionSideBarProps {
-  sections: IWorkspaceSectionRecord;
+  sectionRefs: Map<string, React.RefObject<HTMLSpanElement | null>>;
+  hiddenSections?: Set<string>;
 }
 
-export function WorkspaceSectionSideBar({ sections }: WorkspaceSectionSideBarProps): React.JSX.Element {
+export function WorkspaceSectionSideBar({ sectionRefs, hiddenSections }: WorkspaceSectionSideBarProps): React.JSX.Element {
+  const { t } = useTranslation();
+  const visibleSections = allWorkspaceSections.filter((s) => !hiddenSections?.has(s.id) && !s.hidden);
+
   return (
     <SideBar>
       <List dense>
-        {(Object.keys(sections) as WorkspaceSections[]).map((sectionKey, index) => {
-          const { Icon, text, ref, hidden } = sections[sectionKey];
-          if (hidden === true) return <React.Fragment key={sectionKey} />;
+        {visibleSections.map((section: IGenericSectionDefinition, index: number) => {
+          const { Icon } = section;
           return (
-            <React.Fragment key={sectionKey}>
+            <React.Fragment key={section.id}>
               {index > 0 && <Divider />}
               <SideMenuListItem
                 index={index}
                 onClick={() => {
-                  ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  sectionRefs.get(section.id)?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }}
-                data-testid={`preference-section-${sectionKey}`}
+                data-testid={`preference-section-${section.id}`}
               >
                 <ListItemIcon>
                   <Icon />
                 </ListItemIcon>
-                <ListItemText primary={text} />
+                <ListItemText primary={t(section.titleKey, section.ns ? { ns: section.ns } : undefined)} />
               </SideMenuListItem>
             </React.Fragment>
           );

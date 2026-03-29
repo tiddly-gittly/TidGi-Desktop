@@ -1,84 +1,18 @@
-import { Accordion, AccordionSummary, Paper, Typography } from '@mui/material';
-import { Button as ButtonRaw, TextField as TextFieldRaw } from '@mui/material';
-import { css, keyframes, styled } from '@mui/material/styles';
-import React, { ReactNode } from 'react';
+import { Button as ButtonRaw } from '@mui/material';
+import { css, styled } from '@mui/material/styles';
+import React from 'react';
 
-export const OptionsAccordion = styled((props: React.ComponentProps<typeof Accordion>) => <Accordion {...props} />)`
-  box-shadow: unset;
-  background-color: unset;
-`;
+import { PageRoot } from '../Preferences/PreferenceComponents';
 
-export const OptionsAccordionSummary = styled((props: React.ComponentProps<typeof AccordionSummary>) => <AccordionSummary {...props} />)`
-  padding: 0;
-  flex-direction: row-reverse;
-`;
-
-export const Root = styled((props: React.ComponentProps<typeof Paper>) => <Paper {...props} />)`
-  height: 100%;
-  width: 100%;
-  padding: 20px;
+/** Same as Preferences Root — the outermost scrollable container */
+export const Outter = styled(PageRoot)`
   /** for SaveCancelButtonsContainer 's height */
   margin-bottom: 40px;
-  display: flex;
-  flex-direction: column;
-  background: ${({ theme }) => theme.palette.background.paper};
-`;
-
-export const FlexGrow = styled('div')`
-  flex: 1;
-`;
-
-/** Outer wrapper for the sidebar + scrollable content layout, same pattern as Preferences */
-export const SidebarAndContent = styled('div')`
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-`;
-
-/** The main content area offset to the right of the fixed-width sidebar */
-export const ContentWithSidebar = styled('div')`
-  margin-left: 200px;
-  flex: 1;
-  overflow-y: auto;
-  padding-top: 4px;
-  padding-right: 8px;
-`;
-
-/** Larger section heading for EditWorkspace — overrides the Preferences subtitle2 size */
-export const SectionHeading = styled('h3')`
-  margin: 16px 0 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.palette.text.primary};
-`;
-
-const animateMoveFromRight = keyframes`
-  from { transform: translate3d(40px, 0, 0); opacity: 0; }
-  to   { transform: translate3d(0px, 0, 0);  opacity: 1; }
-`;
-
-/**
- * Larger section title for EditWorkspace — same scroll-anchor API as the Preferences SectionTitle
- * (accepts a ref for sidebar navigation) but uses subtitle1 size (~16px) instead of subtitle2.
- */
-export const WorkspaceSectionTitle = styled(
-  (props: { children?: ReactNode } & React.ComponentProps<typeof Typography>) => <Typography variant='subtitle1' {...props} />,
-)`
-  padding-left: 0 !important;
-  font-weight: 600;
-  animation: ${animateMoveFromRight} 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 `;
 
 export const Button = styled((props: React.ComponentProps<typeof ButtonRaw>) => <ButtonRaw {...props} />)`
   float: right;
   margin-left: 10px;
-`;
-
-export const TextField = styled((props: React.ComponentProps<typeof TextFieldRaw>) => (
-  <TextFieldRaw fullWidth margin='dense' size='small' variant='filled' slotProps={{ inputLabel: { shrink: true } }} {...props} />
-))`
-  margin-bottom: 10px;
-  font-size: 0.95rem;
 `;
 
 export const AvatarFlex = styled('div')`
@@ -147,7 +81,3 @@ export const AvatarPicture = styled('img')`
 `;
 
 export const PictureButton = styled((props: React.ComponentProps<typeof ButtonRaw>) => <ButtonRaw variant='outlined' size='small' {...props} />)``;
-
-export const _Caption = styled((props: { children?: ReactNode } & React.ComponentProps<typeof Typography>) => <Typography variant='caption' {...props} />)`
-  display: block;
-`;

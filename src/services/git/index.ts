@@ -23,7 +23,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
 import * as gitOperations from './gitOperations';
 import type { GitWorker } from './gitWorker';
-import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitStateChange, IGitUserInfos } from './interface';
+import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitStateChange, IGitSyncProgressEvent, IGitUserInfos } from './interface';
 import { registerMenu } from './registerMenu';
 import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 
@@ -32,6 +32,7 @@ export class Git implements IGitService {
   private gitWorker?: GitWorker;
   private nativeWorker?: Worker;
   public gitStateChange$ = new BehaviorSubject<IGitStateChange | undefined>(undefined);
+  public gitSyncProgress$ = new BehaviorSubject<IGitSyncProgressEvent | undefined>(undefined);
 
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
@@ -174,6 +175,19 @@ export class Git implements IGitService {
         return;
       }
       const { message, meta, level } = messageObject;
+      if (
+        typeof meta === 'object' &&
+        meta !== null &&
+        'handler' in meta &&
+        (meta as { handler?: string }).handler === WikiChannel.syncProgress &&
+        'id' in meta &&
+        typeof (meta as { id?: unknown }).id === 'string'
+      ) {
+        this.gitSyncProgress$.next({
+          workspaceID: (meta as { id: string }).id,
+          message: translateMessage(message),
+        });
+      }
       if (typeof meta === 'object' && meta !== null && 'step' in meta) {
         this.popGitErrorNotificationToUser((meta as { step: GitStep }).step, message);
       }
@@ -237,10 +251,13 @@ export class Git implements IGitService {
     }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     try {
-      try {
-        await this.updateGitInfoTiddler(workspace, configs.remoteUrl, configs.userInfo?.branch);
-      } catch (error: unknown) {
-        logger.error('updateGitInfoTiddler failed when commitAndSync', { error });
+      // Sub-wikis don't have their own wiki worker, so wikiOperationInServer would hang forever
+      if (!workspace.isSubWiki) {
+        try {
+          await this.updateGitInfoTiddler(workspace, configs.remoteUrl, configs.userInfo?.branch);
+        } catch (error: unknown) {
+          logger.error('updateGitInfoTiddler failed when commitAndSync', { error });
+        }
       }
 
       // Generate AI commit message if not provided and settings allow

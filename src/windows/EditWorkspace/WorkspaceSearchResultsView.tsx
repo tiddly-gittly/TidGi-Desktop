@@ -1,10 +1,11 @@
-import { Divider, List, ListItem, MenuItem, Select, Switch, TextField, Typography } from '@mui/material';
+import { Divider, List, ListItem, Switch, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { IWikiWorkspace } from '@services/workspaces/interface';
-import { IWorkspaceSettingPropertySchema, workspaceSectionTitleKeys, workspaceSettingsSchema } from '@services/workspaces/workspaceSettingsSchema';
+import type { IGenericSectionDefinition } from '@services/preferences/definitions/types';
+import { allWorkspaceSections } from '@services/workspaces/definitions/registry';
+import type { IWikiWorkspace } from '@services/workspaces/interface';
 import { HighlightText } from '../Preferences/HighlightText';
 
 const ResultsContainer = styled('div')`
@@ -50,13 +51,30 @@ const ControlBlock = styled('div')`
   align-items: center;
 `;
 
-type WorkspaceFieldKey = keyof typeof workspaceSettingsSchema;
-
 interface WorkspaceSearchResultsViewProps {
   onNeedsRestart: () => void;
   query: string;
   workspace: IWikiWorkspace;
   workspaceSetter: (workspace: IWikiWorkspace, requestSaveAndRestart?: boolean) => void;
+}
+
+/** Build a flat list of searchable items from the section registry */
+type SearchableItem = {
+  fieldKey: string;
+  item: { key: string; titleKey: string; descriptionKey?: string; type: string; needsRestart?: boolean };
+  section: IGenericSectionDefinition;
+};
+
+function getSearchableItems(): SearchableItem[] {
+  const items: SearchableItem[] = [];
+  for (const section of allWorkspaceSections) {
+    for (const item of section.items) {
+      if ('key' in item && 'titleKey' in item && item.type.startsWith('preference-')) {
+        items.push({ fieldKey: item.key, item: item as SearchableItem['item'], section });
+      }
+    }
+  }
+  return items;
 }
 
 export function WorkspaceSearchResultsView({
@@ -68,15 +86,12 @@ export function WorkspaceSearchResultsView({
   const { t } = useTranslation();
   const normalizedQuery = query.toLowerCase().trim();
 
-  type ResultEntry = { fieldKey: WorkspaceFieldKey; schema: IWorkspaceSettingPropertySchema };
-  const filteredEntries: ResultEntry[] = (Object.entries(workspaceSettingsSchema) as [WorkspaceFieldKey, IWorkspaceSettingPropertySchema][])
-    .filter(([, schema]) => {
-      const title = t(schema.titleKey).toLowerCase();
-      const desc = schema.descriptionKey ? t(schema.descriptionKey).toLowerCase() : '';
-      const section = t(workspaceSectionTitleKeys[schema.section]).toLowerCase();
-      return title.includes(normalizedQuery) || desc.includes(normalizedQuery) || section.includes(normalizedQuery);
-    })
-    .map(([fieldKey, schema]) => ({ fieldKey, schema }));
+  const filteredEntries = getSearchableItems().filter(({ item, section }) => {
+    const title = t(item.titleKey).toLowerCase();
+    const desc = item.descriptionKey ? t(item.descriptionKey).toLowerCase() : '';
+    const sectionTitle = t(section.titleKey).toLowerCase();
+    return title.includes(normalizedQuery) || desc.includes(normalizedQuery) || sectionTitle.includes(normalizedQuery);
+  });
 
   if (filteredEntries.length === 0) {
     return (
@@ -89,13 +104,13 @@ export function WorkspaceSearchResultsView({
   return (
     <ResultsContainer>
       <List disablePadding>
-        {filteredEntries.map(({ fieldKey, schema }, index) => (
+        {filteredEntries.map(({ fieldKey, item, section }, index) => (
           <React.Fragment key={fieldKey}>
             {index > 0 && <Divider />}
             <SectionLabel>
-              <HighlightText text={t(workspaceSectionTitleKeys[schema.section])} query={query} />
+              <HighlightText text={t(section.titleKey)} query={query} />
             </SectionLabel>
-            {renderWorkspaceField(fieldKey, schema, workspace, workspaceSetter, onNeedsRestart, query, t)}
+            {renderWorkspaceField(fieldKey, item, workspace, workspaceSetter, onNeedsRestart, query, t)}
           </React.Fragment>
         ))}
       </List>
@@ -104,33 +119,18 @@ export function WorkspaceSearchResultsView({
 }
 
 function renderWorkspaceField(
-  fieldKey: WorkspaceFieldKey,
-  schema: IWorkspaceSettingPropertySchema,
+  fieldKey: string,
+  item: SearchableItem['item'],
   workspace: IWikiWorkspace,
   workspaceSetter: (workspace: IWikiWorkspace, requestSaveAndRestart?: boolean) => void,
   onNeedsRestart: () => void,
   query: string,
   t: ReturnType<typeof useTranslation>['t'],
 ): React.JSX.Element {
-  const title = t(schema.titleKey);
-  const description = schema.descriptionKey ? t(schema.descriptionKey) : undefined;
+  const title = t(item.titleKey);
+  const description = item.descriptionKey ? t(item.descriptionKey) : undefined;
 
-  if (!schema.inlineEditable) {
-    return (
-      <SettingRow disablePadding key={fieldKey}>
-        <SettingTextBlock>
-          <SettingTitle>
-            <HighlightText text={title} query={query} />
-          </SettingTitle>
-          <SettingDescription>
-            <HighlightText text={t('Preference.SearchOpenSection', { defaultValue: 'Open the section below to edit this setting' })} query='' />
-          </SettingDescription>
-        </SettingTextBlock>
-      </SettingRow>
-    );
-  }
-
-  if (schema.type === 'boolean') {
+  if (item.type === 'preference-boolean') {
     const value = (workspace as unknown as Record<string, unknown>)[fieldKey] as boolean ?? false;
     return (
       <SettingRow disablePadding key={fieldKey}>
@@ -148,8 +148,8 @@ function renderWorkspaceField(
           <Switch
             checked={value}
             onChange={(_, checked) => {
-              workspaceSetter({ ...workspace, [fieldKey]: checked }, schema.needsRestart);
-              if (schema.needsRestart) onNeedsRestart();
+              workspaceSetter({ ...workspace, [fieldKey]: checked }, item.needsRestart);
+              if (item.needsRestart) onNeedsRestart();
             }}
             color='primary'
             size='small'
@@ -159,39 +159,7 @@ function renderWorkspaceField(
     );
   }
 
-  if (schema.type === 'string' && schema.enum) {
-    const value = (workspace as unknown as Record<string, unknown>)[fieldKey] as string ?? '';
-    const enumNames = schema.enumNames ?? schema.enum;
-    return (
-      <SettingRow disablePadding key={fieldKey}>
-        <SettingTextBlock>
-          <SettingTitle>
-            <HighlightText text={title} query={query} />
-          </SettingTitle>
-          {description && (
-            <SettingDescription>
-              <HighlightText text={description} query={query} />
-            </SettingDescription>
-          )}
-        </SettingTextBlock>
-        <ControlBlock>
-          <Select
-            value={value}
-            onChange={(event) => {
-              workspaceSetter({ ...workspace, [fieldKey]: event.target.value });
-            }}
-            size='small'
-            variant='outlined'
-            sx={{ minWidth: 140 }}
-          >
-            {schema.enum.map((v, index) => <MenuItem key={v} value={v}>{t(enumNames[index] ?? v)}</MenuItem>)}
-          </Select>
-        </ControlBlock>
-      </SettingRow>
-    );
-  }
-
-  if (schema.type === 'number') {
+  if (item.type === 'preference-number') {
     const value = (workspace as unknown as Record<string, unknown>)[fieldKey] as number ?? 0;
     return (
       <SettingRow disablePadding key={fieldKey}>

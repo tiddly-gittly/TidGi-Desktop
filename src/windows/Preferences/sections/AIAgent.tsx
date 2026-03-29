@@ -39,7 +39,6 @@ import { Paper, SectionTitle } from '../PreferenceComponents';
 import { ToolApprovalSettingsDialog } from './ExternalAPI/components/ToolApprovalSettingsDialog';
 
 export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
-
   const { t } = useTranslation('agent');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [toolApprovalDialogOpen, setToolApprovalDialogOpen] = useState(false);

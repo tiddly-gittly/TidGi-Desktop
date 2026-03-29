@@ -92,7 +92,7 @@ export async function registerMenu(): Promise<void> {
       click: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
-          await syncService.syncWikiIfNeeded(activeWorkspace, { commitMessage: i18n.t('LOG.CommitBackupMessage') });
+          await syncService.syncWikiIfNeeded(activeWorkspace, { commitMessage: i18n.t('LOG.CommitBackupMessage'), force: true });
         }
       },
     },
@@ -111,7 +111,7 @@ export async function registerMenu(): Promise<void> {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
         if (activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace)) {
           // Source will be tracked as 'sync' in syncWikiIfNeeded
-          await syncService.syncWikiIfNeeded(activeWorkspace, { useAICommitMessage: true });
+          await syncService.syncWikiIfNeeded(activeWorkspace, { useAICommitMessage: true, force: true });
         }
       },
     },

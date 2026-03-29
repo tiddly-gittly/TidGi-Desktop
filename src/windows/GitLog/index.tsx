@@ -206,6 +206,7 @@ export default function GitHistory(): React.JSX.Element {
                 <CommitDetailsPanel
                   commit={selectedCommit ?? null}
                   workspaceID={workspaceInfo.id}
+                  showSnackbar={showSnackbar}
                   onFileSelect={setSelectedFile}
                   selectedFile={selectedFile}
                   onCommitSuccess={handleCommitSuccess}

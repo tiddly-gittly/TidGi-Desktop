@@ -25,6 +25,11 @@ export interface ISyncService {
 export interface ISyncOptions {
   commitMessage?: string;
   useAICommitMessage?: boolean;
+  /**
+   * When true, bypass the "syncOnlyWhenNoDraft" preference check.
+   * Use this when the user explicitly triggers sync (e.g. from the GitLog panel).
+   */
+  force?: boolean;
 }
 export const SyncServiceIPCDescriptor = {
   channel: SyncChannel.name,

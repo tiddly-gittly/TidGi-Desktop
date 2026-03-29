@@ -75,6 +75,7 @@ interface ICommitDetailsPanelProps {
   isLatestCommit?: boolean;
   workspaceID: string;
   onCommitSuccess?: () => void;
+  showSnackbar?: (message: string, severity?: 'success' | 'error' | 'info') => void;
   onFileSelect?: (file: string | null) => void;
   onRevertSuccess?: () => void;
   onUndoSuccess?: () => void;
@@ -82,7 +83,7 @@ interface ICommitDetailsPanelProps {
 }
 
 export function CommitDetailsPanel(
-  { commit, isLatestCommit: _isLatestCommit, workspaceID, onCommitSuccess, onFileSelect, onRevertSuccess, onUndoSuccess, selectedFile }: ICommitDetailsPanelProps,
+  { commit, isLatestCommit: _isLatestCommit, workspaceID, onCommitSuccess, showSnackbar, onFileSelect, onRevertSuccess, onUndoSuccess, selectedFile }: ICommitDetailsPanelProps,
 ): React.JSX.Element {
   const { t } = useTranslation();
   const [currentTab, setCurrentTab] = useState<'details' | 'actions'>('details');
@@ -95,6 +96,31 @@ export function CommitDetailsPanel(
   const [isEditMessageOpen, setIsEditMessageOpen] = useState(false);
   const [newCommitMessage, setNewCommitMessage] = useState('');
   const [isAmending, setIsAmending] = useState(false);
+
+  const reportProgress = (message: string, severity: 'success' | 'error' | 'info' = 'info') => {
+    showSnackbar?.(message, severity);
+  };
+
+  // Bridge real sync progress text from git-sync-js (published by main process through gitSyncProgress$)
+  // to GitLog snackbar, but only while a commit/sync action from this panel is running.
+  useEffect(() => {
+    const observable = window.observables?.git?.gitSyncProgress$;
+    if (!observable) return;
+    let lastMessage = '';
+    const subscription = observable.subscribe({
+      next: (progressEvent) => {
+        if (!progressEvent) return;
+        if (progressEvent.workspaceID !== workspaceID) return;
+        if (!isCommitting && !isCommittingWithAI && !isSyncing) return;
+        if (progressEvent.message === lastMessage) return;
+        lastMessage = progressEvent.message;
+        reportProgress(progressEvent.message, 'info');
+      },
+    });
+    return () => {
+      subscription?.unsubscribe?.();
+    };
+  }, [workspaceID, isCommitting, isCommittingWithAI, isSyncing]);
 
   // Use files from commit entry (already loaded in useGitLogData)
   const fileChanges = commit?.files ?? [];
@@ -212,6 +238,7 @@ export function CommitDetailsPanel(
     if (isCommitting) return;
 
     setIsCommitting(true);
+    reportProgress(t('GitLog.Committing'), 'info');
     try {
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
@@ -227,8 +254,10 @@ export function CommitDetailsPanel(
       if (onCommitSuccess) {
         onCommitSuccess();
       }
+      reportProgress(t('LOG.CommitComplete'), 'success');
     } catch (error) {
       console.error('Failed to commit:', error);
+      reportProgress(t('Sync.Failure', { error: error instanceof Error ? error.message : 'Unknown error' }), 'error');
     } finally {
       setIsCommitting(false);
     }
@@ -238,6 +267,7 @@ export function CommitDetailsPanel(
     if (isCommittingWithAI) return;
 
     setIsCommittingWithAI(true);
+    reportProgress(t('GitLog.Committing'), 'info');
     try {
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
@@ -251,8 +281,10 @@ export function CommitDetailsPanel(
       if (onCommitSuccess) {
         onCommitSuccess();
       }
+      reportProgress(t('LOG.CommitComplete'), 'success');
     } catch (error) {
       console.error('Failed to commit with AI:', error);
+      reportProgress(t('Sync.Failure', { error: error instanceof Error ? error.message : 'Unknown error' }), 'error');
     } finally {
       setIsCommittingWithAI(false);
     }
@@ -262,17 +294,27 @@ export function CommitDetailsPanel(
   const handleSyncToRemote = async () => {
     if (isSyncing) return;
     setIsSyncing(true);
+    reportProgress(t('GitLog.Syncing'), 'info');
     try {
       const workspace = await window.service.workspace.get(workspaceID);
-      if (!workspace || !('wikiFolderLocation' in workspace)) return;
-      // Use syncWikiIfNeeded which handles commit + full push for cloud workspaces.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      await (window.service as any).sync.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage') });
+      if (!workspace || !('wikiFolderLocation' in workspace)) {
+        reportProgress('Workspace not found or invalid', 'error');
+        return;
+      }
+      void window.service.native.log('info', 'GitLog handleSyncToRemote: calling syncWikiIfNeeded', {
+        workspaceID,
+        storageService: String((workspace as unknown as Record<string, unknown>).storageService),
+      });
+      // Pass force:true so user-explicit sync always bypasses the draft check.
+      await window.service.sync.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage'), force: true });
       if (onCommitSuccess) {
         onCommitSuccess();
       }
+      reportProgress(t('Log.SynchronizationFinish'), 'success');
     } catch (error) {
       console.error('Failed to sync to remote:', error);
+      void window.service.native.log('error', 'GitLog handleSyncToRemote failed', { error: error instanceof Error ? error.message : String(error), workspaceID });
+      reportProgress(t('Sync.Failure', { error: error instanceof Error ? error.message : 'Unknown error' }), 'error');
     } finally {
       setIsSyncing(false);
     }
@@ -453,23 +495,26 @@ export function CommitDetailsPanel(
                   {isCommittingWithAI ? t('GitLog.Committing') : t('ContextMenu.BackupNow') + t('ContextMenu.WithAI')}
                 </Button>
               )}
-              <Button
-                variant='contained'
-                color='warning'
-                onClick={handleSyncToRemote}
-                fullWidth
-                disabled={isSyncing}
-                data-testid='sync-to-remote-button'
-                startIcon={isSyncing ? <CircularProgress size={16} color='inherit' /> : undefined}
-              >
-                {isSyncing ? t('GitLog.Syncing', 'Syncing…') : t('ContextMenu.SyncNow')}
-              </Button>
               <Divider sx={{ my: 1 }} />
             </>
           )}
 
           {!isUncommitted && (
             <>
+              {commit.isUnpushed && (
+                <Button
+                  variant='contained'
+                  color='warning'
+                  onClick={handleSyncToRemote}
+                  fullWidth
+                  disabled={isSyncing}
+                  data-testid='sync-to-remote-button'
+                  startIcon={isSyncing ? <CircularProgress size={16} color='inherit' /> : undefined}
+                >
+                  {isSyncing ? t('GitLog.Syncing') : t('ContextMenu.SyncNow')}
+                </Button>
+              )}
+
               <Button
                 variant='contained'
                 color='error'

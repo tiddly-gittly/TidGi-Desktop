@@ -346,6 +346,7 @@ interface IAllSectionsRendererProps {
 }
 
 const INITIAL_SECTION_COUNT = 4;
+const IS_TEST_ENV = process.env.NODE_ENV === 'test';
 
 /** Placeholder skeleton shown for deferred sections while waiting for idle time */
 function DeferredSectionSkeleton({ sectionRef }: { sectionRef?: React.RefObject<HTMLSpanElement | null> }): React.JSX.Element {
@@ -367,8 +368,9 @@ export function AllSectionsRenderer({ onNeedsRestart, sectionRefs }: IAllSection
 
   // Render first INITIAL_SECTION_COUNT sections synchronously.
   // Remaining sections are appended in idle-time batches to keep the first paint fast.
-  const [visibleCount, setVisibleCount] = React.useState(INITIAL_SECTION_COUNT);
+  const [visibleCount, setVisibleCount] = React.useState(IS_TEST_ENV ? allSections.length : INITIAL_SECTION_COUNT);
   React.useEffect(() => {
+    if (IS_TEST_ENV) return;
     if (preference === undefined || visibleCount >= allSections.length) return;
     const id = requestIdleCallback(() => {
       setVisibleCount((c) => Math.min(c + 4, allSections.length));
@@ -408,9 +410,7 @@ export function AllSectionsRenderer({ onNeedsRestart, sectionRefs }: IAllSection
         );
       })}
       {/* Skeleton placeholders for deferred sections — refs attached so sidebar nav still works */}
-      {allSections.slice(visibleCount).map((section) => (
-        <DeferredSectionSkeleton key={section.id} sectionRef={sectionRefs.get(section.id)} />
-      ))}
+      {allSections.slice(visibleCount).map((section) => <DeferredSectionSkeleton key={section.id} sectionRef={sectionRefs.get(section.id)} />)}
     </>
   );
 }

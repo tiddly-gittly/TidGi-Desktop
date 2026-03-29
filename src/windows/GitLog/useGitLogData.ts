@@ -183,6 +183,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         const unpushedHashesPromise = window.service.git.callGitOp(
           'getUnpushedCommitHashes',
           workspaceInfo.wikiFolderLocation,
+          workspaceInfo.gitUrl,
         );
 
         // Load files for each commit
@@ -314,6 +315,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
       const unpushedHashesPromise = window.service.git.callGitOp(
         'getUnpushedCommitHashes',
         workspaceInfo.wikiFolderLocation,
+        workspaceInfo.gitUrl,
       );
 
       // Load files for each commit

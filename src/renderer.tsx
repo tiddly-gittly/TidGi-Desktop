@@ -25,12 +25,18 @@ import 'electron-ipc-cat/fixContextIsolation';
 import { useHashLocation } from 'wouter/use-hash-location';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { RootStyle } from './components/RootStyle';
-import { initTestKeyboardShortcutFallback } from './helpers/testKeyboardShortcuts';
 import { Pages } from './windows';
 
 function App(): JSX.Element {
   const theme = useThemeObservable();
-  useEffect(() => initTestKeyboardShortcutFallback(), []);
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'test') {
+      // Lazy-load test-only keyboard shortcut fallback to avoid any overhead in production
+      void import('./helpers/testKeyboardShortcuts').then(({ initTestKeyboardShortcutFallback }) => {
+        initTestKeyboardShortcutFallback();
+      });
+    }
+  }, []);
 
   return (
     <StrictMode>

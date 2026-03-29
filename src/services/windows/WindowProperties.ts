@@ -72,7 +72,7 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     height: 800,
   },
   [WindowNames.editWorkspace]: {
-    width: 680,
+    width: 840,
     height: 750,
   },
   [WindowNames.gitHistory]: {

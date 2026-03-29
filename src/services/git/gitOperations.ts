@@ -1055,7 +1055,7 @@ function extractTitleFromTiddlerContent(content: string): string | null {
  * Get commits that are unpushed to the remote tracking branch
  * Returns a Set of commit hashes that exist locally but not on the remote
  */
-export async function getUnpushedCommitHashes(repoPath: string): Promise<Set<string>> {
+export async function getUnpushedCommitHashes(repoPath: string, gitUrl?: string | null): Promise<Set<string>> {
   try {
     // Get the current branch name
     const branchResult = await gitExec(['rev-parse', '--abbrev-ref', 'HEAD'], repoPath);
@@ -1064,13 +1064,34 @@ export async function getUnpushedCommitHashes(repoPath: string): Promise<Set<str
     }
     const currentBranch = branchResult.stdout.trim();
 
+    // Check if a remote named "origin" is configured in git config
+    const remoteResult = await gitExec(['remote', 'get-url', 'origin'], repoPath);
+    const hasGitRemote = remoteResult.exitCode === 0 && remoteResult.stdout.trim().length > 0;
+
+    // The workspace may be configured as cloud (has gitUrl) even if origin hasn't been added to git config yet
+    // (this happens when the user switches from local to cloud but hasn't synced yet)
+    const isCloudWorkspace = hasGitRemote || (typeof gitUrl === 'string' && gitUrl.length > 0);
+
     // Check if remote tracking branch exists
     const remoteTrackingBranch = `origin/${currentBranch}`;
     const checkRemoteResult = await gitExec(['rev-parse', '--verify', remoteTrackingBranch], repoPath);
 
-    // If remote tracking branch doesn't exist, no unpushed commits
     if (checkRemoteResult.exitCode !== 0) {
-      return new Set();
+      // Remote tracking branch doesn't exist.
+      // If this is a cloud workspace, all local commits are unpushed (initial push hasn't happened yet).
+      if (!isCloudWorkspace) {
+        return new Set();
+      }
+      // Return ALL local commit hashes as unpushed
+      const allLogResult = await gitExec(['log', '--pretty=format:%H'], repoPath);
+      if (allLogResult.exitCode !== 0) {
+        return new Set();
+      }
+      const allHashes = allLogResult.stdout
+        .trim()
+        .split('\n')
+        .filter((hash: string) => hash.length > 0);
+      return new Set(allHashes);
     }
 
     // Get commit hashes that are on local but not on remote: local commits ahead of remote

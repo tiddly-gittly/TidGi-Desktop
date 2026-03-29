@@ -214,6 +214,11 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
    */
   syncOnStartup: boolean;
   /**
+   * When enabled (default true), syncing this main workspace also syncs/backs-up all linked sub-workspaces.
+   * Set to false to sync only this workspace and leave sub-workspaces untouched.
+   */
+  syncSubWikis?: boolean;
+  /**
    * Tag names in tiddlywiki's filesystemPath, tiddlers with any of these tags will be saved into this subwiki
    */
   tagNames: string[];

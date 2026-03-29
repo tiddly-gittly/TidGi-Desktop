@@ -56,6 +56,52 @@ Feature: Git Sync
     Then the remote repository "{tmpDir}/remote-repo-menu.git" should contain commit with message "使用太记桌面版备份"
     And the remote repository "{tmpDir}/remote-repo-menu.git" should contain file "tiddlers/SyncMenuTestTiddler.tid"
 
+    # Verify AI sync menu can push when there are no uncommitted changes but local is ahead
+    When I create file "{tmpDir}/wiki/tiddlers/SyncMenuAITestTiddler.tid" with content:
+      """
+      created: 20250226090500000
+      modified: 20250226090500000
+      title: SyncMenuAITestTiddler
+      tags: SyncTest
+
+      This is a test tiddler for AI sync menu push behavior.
+      """
+    Then I wait for tiddler "SyncMenuAITestTiddler" to be added by watch-fs
+    # First do local backup to create an unpushed commit
+    When I click menu "同步和备份 > 立即本地Git备份"
+    Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
+
+    # Validate GitLog window can show real sync progress text from git-sync-js
+    When I click menu "同步和备份 > 查看历史备份"
+    And I switch to "gitHistory" window
+    And I wait for the page to load completely
+    When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作'), button[role='tab']:has-text('Actions')"
+    Then I should see a "sync-to-remote button" element with selector "button[data-testid='sync-to-remote-button']"
+    When I click on a "sync-to-remote button" element with selector "button[data-testid='sync-to-remote-button']"
+    Then I should see a "git-sync progress message in GitLog snackbar" element with selector ".MuiAlert-message:has-text('正在检测本地 Git 仓库是否正确地初始化了')"
+    Then I wait for "git sync completed" log marker "[test-id-git-sync-complete]"
+    And I should not see a "sync-to-remote button" element with selector "button[data-testid='sync-to-remote-button']"
+    When I switch to "main" window
+
+    # Create another unpushed commit for AI sync menu coverage
+    When I create file "{tmpDir}/wiki/tiddlers/SyncMenuAISecondTestTiddler.tid" with content:
+      """
+      created: 20250226090600000
+      modified: 20250226090600000
+      title: SyncMenuAISecondTestTiddler
+      tags: SyncTest
+
+      This is a second test tiddler for AI sync menu push behavior.
+      """
+    Then I wait for tiddler "SyncMenuAISecondTestTiddler" to be added by watch-fs
+    When I click menu "同步和备份 > 立即本地Git备份"
+    Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
+    When I clear test-id markers from logs
+    # Then use AI sync menu item to push that unpushed commit
+    When I click menu "同步和备份 > 立即同步云端（AI备份命名）"
+    Then I wait for "git sync completed" log marker "[test-id-git-sync-complete]"
+    And the remote repository "{tmpDir}/remote-repo-menu.git" should contain file "tiddlers/SyncMenuAISecondTestTiddler.tid"
+
     # ══════════════════════════════════════════════════════════════════
     # Part 2: Diverged histories — auto-merge & same-line conflict
     # ══════════════════════════════════════════════════════════════════

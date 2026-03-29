@@ -699,7 +699,6 @@ export class Workspace implements IWorkspaceService {
 
   public async openWorkspaceTiddler(workspace: IWorkspace, title?: string): Promise<void> {
     const { id: idToActive, pageType } = workspace;
-    const oldActiveWorkspace = await this.getActiveWorkspace();
 
     // Handle page workspace - no special action needed as routing handles the page display
     if (pageType) {
