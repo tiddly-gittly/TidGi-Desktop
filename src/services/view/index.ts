@@ -394,6 +394,12 @@ export class View implements IViewService {
     }
   }
 
+  /**
+   * Adjust the bounds of a view that is already visible (e.g. after resize, fullscreen toggle
+   * or sidebar toggle).  This is bounds-only: it does NOT remove/re-add the view to the
+   * compositor.  The force-repaint / re-attach path lives exclusively in `showView()`, which
+   * is called whenever a view transitions from offscreen → onscreen.
+   */
   public async realignView(workspaceID: string, windowName: WindowNames): Promise<void> {
     const view = this.getView(workspaceID, windowName);
     const browserWindow = this.windowService.get(windowName);
@@ -407,17 +413,6 @@ export class View implements IViewService {
     const contentSize = browserWindow.getContentSize();
     // Window is minimized on Windows — getContentSize() returns [0,0]. Skip to avoid wiping view bounds.
     if (contentSize[0] === 0 && contentSize[1] === 0) return;
-    // Re-attach in case the view became orphaned (e.g. its parent BrowserWindow was destroyed and
-    // recreated) or became visually blank (Windows bug when restoring from background).
-    // Removing and re-adding forces Electron to bring the view to the top and repaint.
-    try {
-      browserWindow.contentView.removeChildView(view);
-    } catch { /* ignore if not a child */ }
-    try {
-      browserWindow.contentView.addChildView(view);
-    } catch {
-      // Already added or transitional window state — safe to ignore.
-    }
     view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
   }
 

@@ -173,16 +173,11 @@ export class Window implements IWindowService {
         }
         if (!isTest) {
           // Don't bring up window when running e2e test, otherwise it will annoy the developer who is doing other things.
+          // show() emits the 'show' event which is handled by registerBrowserViewWindowListeners:
+          //   'show' → refreshActiveWorkspaceView() (showView: remove+add+setBounds+focus, then buildMenu)
+          // No explicit call needed here; calling it twice would create a concurrent race
+          // between two removeChildView+addChildView sequences on the same view.
           existedWindow.show();
-        }
-        // Force-show the active workspace view so the compositor repaints it.
-        // refreshActiveWorkspaceView() calls showView() which does removeChildView+
-        // addChildView+focus — necessary on Windows to make the WebContentsView visible
-        // after the window is restored from a hidden/background state.
-        const WindowWithBrowserView = [WindowNames.main, WindowNames.tidgiMiniWindow];
-        if (WindowWithBrowserView.includes(windowName)) {
-          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-          await workspaceViewService.refreshActiveWorkspaceView();
         }
         if (returnWindow === true) {
           return existedWindow;
