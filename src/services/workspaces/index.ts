@@ -716,9 +716,12 @@ export class Workspace implements IWorkspaceService {
     if (!isSubWiki && idToActive) {
       const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
       const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-      if (oldActiveWorkspace?.id !== idToActive) {
-        await workspaceViewService.setActiveWorkspaceView(idToActive);
-      }
+      // Always call setActiveWorkspaceView, even when clicking the already-active workspace.
+      // When the window is restored from background the WebContentsView may be blank;
+      // calling setActiveWorkspaceView forces showView() → remove+add+focus which triggers
+      // a proper compositor repaint.  When switching to a different workspace the logic is
+      // unchanged.  setActiveWorkspaceView is safe to call with the same ID (skips hibernation).
+      await workspaceViewService.setActiveWorkspaceView(idToActive);
       if (title) {
         await wikiService.wikiOperationInBrowser(WikiChannel.openTiddler, idToActive, [title]);
       }
@@ -728,9 +731,8 @@ export class Workspace implements IWorkspaceService {
     if (isSubWiki && mainWikiID) {
       const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
       const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-      if (oldActiveWorkspace?.id !== mainWikiID) {
-        await workspaceViewService.setActiveWorkspaceView(mainWikiID);
-      }
+      // Same reasoning as above — always call even if already active.
+      await workspaceViewService.setActiveWorkspaceView(mainWikiID);
       // Use provided title, or first tag name, or nothing
       const subWikiTag = title ?? tagNames[0];
       if (subWikiTag) {

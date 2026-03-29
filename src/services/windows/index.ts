@@ -175,22 +175,14 @@ export class Window implements IWindowService {
           // Don't bring up window when running e2e test, otherwise it will annoy the developer who is doing other things.
           existedWindow.show();
         }
-        // Ensure wiki views are present and properly attached, then realign.
-        // This handles two edge cases:
-        //   1. Views were destroyed because the window was accidentally closed (old async-close bug)
-        //      → addViewForAllBrowserViews recreates the view via addView.
-        //   2. Views are alive but detached from the BrowserWindow (orphaned)
-        //      → realignView will call addChildView to re-attach them.
+        // Force-show the active workspace view so the compositor repaints it.
+        // refreshActiveWorkspaceView() calls showView() which does removeChildView+
+        // addChildView+focus — necessary on Windows to make the WebContentsView visible
+        // after the window is restored from a hidden/background state.
         const WindowWithBrowserView = [WindowNames.main, WindowNames.tidgiMiniWindow];
         if (WindowWithBrowserView.includes(windowName)) {
           const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-          const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-          const activeWorkspace = await workspaceService.getActiveWorkspace();
-          if (activeWorkspace !== undefined) {
-            // Recreates the view if it was destroyed; skips silently if view already exists.
-            await workspaceViewService.addViewForAllBrowserViews(activeWorkspace);
-          }
-          await workspaceViewService.realignActiveWorkspace();
+          await workspaceViewService.refreshActiveWorkspaceView();
         }
         if (returnWindow === true) {
           return existedWindow;

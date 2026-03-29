@@ -56,6 +56,14 @@ export interface IWorkspaceViewService {
   openWorkspaceWindowWithView(workspace: IWorkspace, configs?: { uri?: string }): Promise<void>;
   realignActiveWorkspace(id?: string): Promise<void>;
   /**
+   * Force-show the current active workspace view and then realign it.
+   * This is a lightweight alternative to setActiveWorkspaceView that does not
+   * switch workspaces or hibernate anything. Use it when the window returns from
+   * a hidden/minimized state and the WebContentsView needs to be re-attached to
+   * the compositor to become visible.
+   */
+  refreshActiveWorkspaceView(): Promise<void>;
+  /**
    * Remove workspace metadata and its view (if it is started and have a browser view)
    */
   removeWorkspaceView(workspaceID: string): Promise<void>;
@@ -89,6 +97,7 @@ export const WorkspaceViewServiceIPCDescriptor = {
     openUrlInWorkspace: ProxyPropertyType.Function,
     openWorkspaceWindowWithView: ProxyPropertyType.Function,
     realignActiveWorkspace: ProxyPropertyType.Function,
+    refreshActiveWorkspaceView: ProxyPropertyType.Function,
     removeWorkspaceView: ProxyPropertyType.Function,
     restartAllWorkspaceView: ProxyPropertyType.Function,
     restartWorkspaceViewService: ProxyPropertyType.Function,

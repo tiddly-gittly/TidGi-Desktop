@@ -614,6 +614,19 @@ export class WorkspaceView implements IWorkspaceViewService {
   /**
    * Seems this is for relocating WebContentsView in the electron window
    */
+  public async refreshActiveWorkspaceView(): Promise<void> {
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const activeWorkspace = await workspaceService.getActiveWorkspace();
+    if (activeWorkspace !== undefined) {
+      // Use showWorkspaceView (not just realignView) so that the view is explicitly
+      // removed-then-added as a child of the BrowserWindow.  This forces the Chromium
+      // compositor to repaint it, which is necessary on Windows when restoring a window
+      // from hide() or from the taskbar/tray.
+      await this.showWorkspaceView(activeWorkspace.id);
+    }
+    await this.realignActiveWorkspace();
+  }
+
   public async realignActiveWorkspace(id?: string): Promise<void> {
     // this function only call browserView.setBounds
     // do not attempt to recall browserView.webContents.focus()

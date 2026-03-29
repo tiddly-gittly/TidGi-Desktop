@@ -76,9 +76,12 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
     await workspaceViewService.realignActiveWorkspace();
   });
 
-  // When the window becomes visible again (e.g. from tray/hide), realign so any pending 0x0 view is fixed.
+  // When the window becomes visible again (e.g. from tray/hide), force-show the active view
+  // before realigning.  A plain realignActiveWorkspace() only calls setBounds which the
+  // compositor may ignore if bounds haven't changed.  refreshActiveWorkspaceView() calls
+  // showView() → removeChildView + addChildView + focus, which forces a repaint.
   newWindow.on('show', async () => {
     if (newWindow === undefined) return;
-    await workspaceViewService.realignActiveWorkspace();
+    await workspaceViewService.refreshActiveWorkspaceView();
   });
 }
