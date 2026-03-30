@@ -4,7 +4,7 @@
  */
 import { sectionById } from '@services/preferences/definitions/registry';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
-import { type ComponentType, type LazyExoticComponent, lazy, Suspense } from 'react';
+import { type ComponentType, lazy, type LazyExoticComponent, Suspense } from 'react';
 import { registerCustomComponent } from './customComponentRegistry';
 import { LanguageSelectorItem } from './customItems/LanguageSelectorItem';
 import { NotificationHelpTextItem, NotificationTestItem } from './customItems/NotificationItems';

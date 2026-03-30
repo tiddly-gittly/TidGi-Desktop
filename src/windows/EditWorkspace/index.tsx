@@ -2,10 +2,10 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { allWorkspaceSections } from '@services/workspaces/definitions/registry';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
 import { isWikiWorkspace, nonConfigFields } from '@services/workspaces/interface';
-import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { useForm } from './useForm';
 
 import { RestartSnackbarType, useRestartSnackbar } from '@/components/RestartSnackbar';

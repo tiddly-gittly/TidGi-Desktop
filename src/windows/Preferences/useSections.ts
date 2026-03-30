@@ -1,5 +1,5 @@
-import type { SvgIconTypeMap } from '@mui/material/SvgIcon';
 import { OverridableComponent } from '@mui/material/OverridableComponent';
+import type { SvgIconTypeMap } from '@mui/material/SvgIcon';
 import type { RefObject } from 'react';
 
 import { PreferenceSections } from '@services/preferences/interface';

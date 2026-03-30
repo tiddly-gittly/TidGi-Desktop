@@ -2,9 +2,9 @@
  * Wires custom section components and custom item components to their workspace definitions.
  * Call once at startup (before rendering EditWorkspace) — same pattern as Preferences registerCustomSections.
  */
-import type { ComponentType } from 'react';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { workspaceSectionById } from '@services/workspaces/definitions/registry';
+import type { ComponentType } from 'react';
 import { WorkspaceAvatarItem, WorkspaceNameItem } from './customItems/AppearanceItems';
 import { LastUrlItem } from './customItems/MiscItems';
 import { GitRepoUrlItem, StorageServiceSwitchItem, TokenFormItem, WorkspacePathItem } from './customItems/SaveAndSyncItems';

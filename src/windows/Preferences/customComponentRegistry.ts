@@ -3,8 +3,8 @@
  * The service-layer definitions reference components by string ID.
  * The UI layer registers the actual React components here.
  */
-import type { ComponentType } from 'react';
 import type { ICustomItemProps } from '@services/preferences/definitions/types';
+import type { ComponentType } from 'react';
 
 const customComponentRegistry = new Map<string, ComponentType<ICustomItemProps>>();
 
