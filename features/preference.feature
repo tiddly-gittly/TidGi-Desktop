@@ -97,38 +97,23 @@ Feature: TidGi Preference
     When I click on a "settings button" element with selector "#open-preferences-button"
     And I switch to "preferences" window
     And I click on a "ai agent section" element with selector "[data-testid='preference-section-aiAgent']"
-    # --- Part A: Create countdown alarm ---
-    And I click on a "add background task button" element with selector "[data-testid='bg-task-add-button']"
-    Then I should see "countdown and message input" elements with selectors:
-      | element description | selector                              |
-      | countdown input     | [data-testid='bg-task-countdown-input'] |
-      | message input       | [data-testid='bg-task-message-input']   |
-    When I type "2" in "countdown input" element with selector "[data-testid='bg-task-countdown-input'] input"
-    And I type "Preference-created countdown task" in "message input" element with selector "[data-testid='bg-task-message-input'] input"
-    And I click on a "save background task button" element with selector "[data-testid='bg-task-save-button']"
-    Then I should see a "created alarm cancel button" element with selector "[data-testid^='cancel-bg-task-'][data-testid$='-alarm']"
-    # --- Part B: Create another alarm, edit to interval, then cancel ---
-    And I click on a "add background task button" element with selector "[data-testid='bg-task-add-button']"
-    When I type "3" in "countdown input" element with selector "[data-testid='bg-task-countdown-input'] input"
-    And I type "Alarm task for edit" in "message input" element with selector "[data-testid='bg-task-message-input'] input"
-    And I click on a "save background task button" element with selector "[data-testid='bg-task-save-button']"
-    Then I should see a "created alarm edit button" element with selector "[data-testid^='edit-bg-task-'][data-testid$='-alarm']"
-    When I click on a "alarm edit button" element with selector "[data-testid^='edit-bg-task-'][data-testid$='-alarm']"
-    And I click on a "schedule mode select" element with selector "[data-testid='bg-task-mode-select']"
-    And I click on a "interval mode option" element with selector "li[role='option']:has-text('Interval')"
-    And I type "5" in "interval input" element with selector "[data-testid='bg-task-interval-input'] input"
-    And I click on a "save background task button" element with selector "[data-testid='bg-task-save-button']"
-    Then I should see a "repeat interval text" element with selector "*:has-text('repeat every 5min')"
-    When I click on a "alarm cancel button" element with selector "[data-testid^='cancel-bg-task-'][data-testid$='-alarm']"
-    Then I should not see a "alarm cancel button" element with selector "[data-testid^='cancel-bg-task-'][data-testid$='-alarm']"
-    # --- Part C: Create heartbeat and disable it ---
-    And I click on a "add heartbeat button" element with selector "[data-testid='bg-heartbeat-add-button']"
-    When I type "120" in "heartbeat interval input" element with selector "[data-testid='bg-heartbeat-interval-input'] input"
-    And I type "Heartbeat from preferences" in "heartbeat message input" element with selector "[data-testid='bg-heartbeat-message-input'] input"
-    And I click on a "save heartbeat button" element with selector "[data-testid='bg-heartbeat-save-button']"
-    Then I should see a "heartbeat cancel button" element with selector "[data-testid^='cancel-bg-task-'][data-testid$='-heartbeat']"
-    When I click on a "heartbeat edit button" element with selector "[data-testid^='edit-bg-task-'][data-testid$='-heartbeat']"
-    And I click on a "heartbeat enabled select" element with selector "[data-testid='bg-heartbeat-enabled-select']"
-    And I click on a "heartbeat disabled option" element with selector "li[role='option']:has-text('Disabled')"
-    And I click on a "save heartbeat button" element with selector "[data-testid='bg-heartbeat-save-button']"
-    Then I should not see a "heartbeat cancel button" element with selector "[data-testid^='cancel-bg-task-'][data-testid$='-heartbeat']"
+    # --- Part A: Create interval task ---
+    And I click on a "add scheduled task button" element with selector "[data-testid='scheduled-task-add-button']"
+    Then I should see "interval and message input" elements with selectors:
+      | element description | selector                                    |
+      | interval input      | [data-testid='scheduled-task-interval-input'] |
+      | message input       | [data-testid='scheduled-task-message-input']  |
+    When I type "120" in "interval input" element with selector "[data-testid='scheduled-task-interval-input'] input"
+    And I type "Preference-created scheduled task" in "message input" element with selector "[data-testid='scheduled-task-message-input'] textarea:not([readonly])"
+    And I click on a "save scheduled task button" element with selector "[data-testid='scheduled-task-save-button']"
+    Then I should see a "created scheduled task row" element with selector "[data-testid^='scheduled-task-row-']"
+    # --- Part B: Edit task into cron mode ---
+    When I click on a "scheduled task edit button" element with selector "[data-testid^='scheduled-task-edit-']"
+    And I click on a "schedule mode select" element with selector "[data-testid='scheduled-task-mode-select']"
+    And I click on a "cron mode option" element with selector "li[role='option']:has-text('Cron expression')"
+    And I type "0 */2 * * *" in "cron expression input" element with selector "[data-testid='scheduled-task-cron-input'] input"
+    And I click on a "save scheduled task button" element with selector "[data-testid='scheduled-task-save-button']"
+    Then I should see a "cron text in schedule column" element with selector "*:has-text('Cron: 0 */2 * * *')"
+    # --- Part C: Delete task ---
+    And I click on a "scheduled task delete button" element with selector "[data-testid^='scheduled-task-delete-']"
+    Then I should not see a "scheduled task row" element with selector "[data-testid^='scheduled-task-row-']"

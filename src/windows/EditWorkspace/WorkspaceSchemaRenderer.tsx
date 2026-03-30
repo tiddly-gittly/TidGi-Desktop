@@ -33,6 +33,10 @@ function matchesPlatform(condition: PlatformCondition | undefined, platform: str
   return true;
 }
 
+function toKebabCase(value: string): string {
+  return value.replaceAll(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+}
+
 // ─── Workspace item renderers ────────────────────────────────────────
 
 function BooleanItem({
@@ -53,6 +57,7 @@ function BooleanItem({
           edge='end'
           color='primary'
           checked={value ?? false}
+          data-testid={`${toKebabCase(item.key)}-switch`}
           onChange={(event) => {
             workspaceSetter({ ...workspace, [item.key]: event.target.checked }, item.needsRestart);
           }}

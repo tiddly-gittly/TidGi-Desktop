@@ -121,12 +121,15 @@ export class Sync implements ISyncService {
         wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, ['[all[]is[draft]]']),
         wikiService.wikiOperationInBrowser(WikiChannel.runFilter, workspaceID, ['[list[$:/StoryList]has:field[wysiwyg]]']),
       ]);
+      let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
+        timeoutHandle = setTimeout(() => {
           reject(new Error('checkCanSyncDueToNoDraft timed out'));
         }, DRAFT_CHECK_TIMEOUT_MS);
       });
-      const draftTitles = (await Promise.race([draftCheckPromise, timeoutPromise])).flat();
+      const draftTitles = (await Promise.race([draftCheckPromise, timeoutPromise]).finally(() => {
+        clearTimeout(timeoutHandle);
+      })).flat();
 
       if (Array.isArray(draftTitles) && draftTitles.length > 0) {
         return false;

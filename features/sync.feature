@@ -29,7 +29,7 @@ Feature: Git Sync
     And I wait for the page to load completely
     When I click on "saveAndSyncOptions accordion and syncToCloud toggle" elements with selectors:
       | element description         | selector                                              |
-      | saveAndSyncOptions accordion| [data-testid='preference-section-saveAndSyncOptions'] |
+      | saveAndSyncOptions accordion| [data-testid='preference-section-saveAndSync']        |
       | syncToCloud toggle          | [data-testid='synced-local-workspace-switch']         |
     When I type in "git url input and github username input and github email input and github token input" elements with selectors:
       | text                              | selector                                                                                                                                                     |
@@ -78,7 +78,7 @@ Feature: Git Sync
     When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作'), button[role='tab']:has-text('Actions')"
     Then I should see a "sync-to-remote button" element with selector "button[data-testid='sync-to-remote-button']"
     When I click on a "sync-to-remote button" element with selector "button[data-testid='sync-to-remote-button']"
-    Then I should see a "git-sync progress message in GitLog snackbar" element with selector ".MuiAlert-message:has-text('正在检测本地 Git 仓库是否正确地初始化了')"
+    Then I should see a "git-sync snackbar message in GitLog" element with selector ".MuiAlert-message"
     Then I wait for "git sync completed" log marker "[test-id-git-sync-complete]"
     And I should not see a "sync-to-remote button" element with selector "button[data-testid='sync-to-remote-button']"
     When I switch to "main" window

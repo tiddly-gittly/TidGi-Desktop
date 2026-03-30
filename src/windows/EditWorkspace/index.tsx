@@ -1,11 +1,11 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { allWorkspaceSections } from '@services/workspaces/definitions/registry';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
-import { isWikiWorkspace, nonConfigFields } from '@services/workspaces/interface';
+import { isWikiWorkspace, type IWorkspace, nonConfigFields } from '@services/workspaces/interface';
 import { useForm } from './useForm';
 
 import { RestartSnackbarType, useRestartSnackbar } from '@/components/RestartSnackbar';
@@ -24,14 +24,55 @@ import { WorkspaceSectionSideBar } from './WorkspaceSectionSideBar';
 registerWorkspaceCustomSections();
 
 export default function EditWorkspace(): React.JSX.Element {
-  const workspaceID = (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID!;
+  const [workspaceID, setWorkspaceID] = useState<string | undefined>(() => (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID);
   const { t } = useTranslation();
   const originalWorkspace = useWorkspaceObservable(workspaceID);
+  const [fallbackWorkspace, setFallbackWorkspace] = useState<IWorkspace | undefined>(undefined);
+
+  // Fallback for rare cases where observable has not emitted yet but the workspace already exists in service storage.
+  useEffect(() => {
+    if (!workspaceID || originalWorkspace !== undefined || fallbackWorkspace !== undefined) return;
+    void window.service.workspace.get(workspaceID).then((workspaceFromService) => {
+      if (workspaceFromService) {
+        setFallbackWorkspace(workspaceFromService);
+      } else {
+        void window.service.workspace.getActiveWorkspace().then((activeWorkspace) => {
+          if (activeWorkspace) {
+            setWorkspaceID(activeWorkspace.id);
+            setFallbackWorkspace(activeWorkspace);
+          }
+        });
+      }
+    });
+  }, [workspaceID, originalWorkspace, fallbackWorkspace]);
+
+  const currentWorkspace = originalWorkspace ?? fallbackWorkspace;
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar({ waitBeforeCountDown: 0, workspace: originalWorkspace, restartType: RestartSnackbarType.Wiki });
-  const [workspace, workspaceSetter, onSave] = useForm(originalWorkspace, requestRestartCountDown);
+  const [workspace, workspaceSetter, onSave] = useForm(currentWorkspace, requestRestartCountDown);
   const isWiki = workspace && isWikiWorkspace(workspace);
   const isSubWiki = isWiki ? workspace.isSubWiki : false;
   const [searchQuery, setSearchQuery] = useState('');
+
+  // In e2e startup there is a brief window where meta can be undefined on first render.
+  // Keep polling until workspaceID is available to avoid getting stuck on a permanent loading page.
+  useEffect(() => {
+    if (workspaceID) return;
+    void window.service.workspace.getActiveWorkspace().then((activeWorkspace) => {
+      if (activeWorkspace) {
+        setWorkspaceID(activeWorkspace.id);
+      }
+    });
+    const timer = setInterval(() => {
+      const id = (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID;
+      if (id) {
+        setWorkspaceID(id);
+        clearInterval(timer);
+      }
+    }, 100);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [workspaceID]);
 
   // Build section refs from registry
   const sectionReferences = useMemo(() => {

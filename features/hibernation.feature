@@ -21,11 +21,10 @@ Feature: Workspace Hibernation
     When I open edit workspace window for workspace with name "wiki"
     And I switch to "editWorkspace" window
     And I wait for the page to load completely
-    When I click on "misc options accordion and hibernation switch and save button" elements with selectors:
-      | element description    | selector                                       |
-      | misc options accordion | [data-testid='preference-section-miscOptions'] |
-      | hibernation switch     | [data-testid='hibernate-when-unused-switch']   |
-      | save button            | [data-testid='edit-workspace-save-button']     |
+    When I click on a "misc options accordion" element with selector "[data-testid='preference-section-misc']"
+    And I click on a "hibernation switch" element with selector "[data-testid='hibernate-when-unused-switch']"
+    And I should see a "save button" element with selector "[data-testid='edit-workspace-save-button']"
+    And I click on a "save button" element with selector "[data-testid='edit-workspace-save-button']"
     Then I should not see a "save button" element with selector "[data-testid='edit-workspace-save-button']"
     Then I switch to "main" window
     When I close "editWorkspace" window
@@ -33,11 +32,10 @@ Feature: Workspace Hibernation
     When I open edit workspace window for workspace with name "wiki2"
     And I switch to "editWorkspace" window
     And I wait for the page to load completely
-    When I click on "misc options accordion and hibernation switch and save button" elements with selectors:
-      | element description    | selector                                       |
-      | misc options accordion | [data-testid='preference-section-miscOptions'] |
-      | hibernation switch     | [data-testid='hibernate-when-unused-switch']   |
-      | save button            | [data-testid='edit-workspace-save-button']     |
+    When I click on a "misc options accordion" element with selector "[data-testid='preference-section-misc']"
+    And I click on a "hibernation switch" element with selector "[data-testid='hibernate-when-unused-switch']"
+    And I should see a "save button" element with selector "[data-testid='edit-workspace-save-button']"
+    And I click on a "save button" element with selector "[data-testid='edit-workspace-save-button']"
     Then I should not see a "save button" element with selector "[data-testid='edit-workspace-save-button']"
     Then I switch to "main" window
     When I close "editWorkspace" window

@@ -298,7 +298,7 @@ export function CommitDetailsPanel(
     try {
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) {
-        reportProgress('Workspace not found or invalid', 'error');
+        reportProgress(t('Sync.Failure', { error: 'workspace not found' }), 'error');
         return;
       }
       void window.service.native.log('info', 'GitLog handleSyncToRemote: calling syncWikiIfNeeded', {

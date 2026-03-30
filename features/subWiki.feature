@@ -163,7 +163,7 @@ Feature: Sub-Wiki Functionality
     And I wait for the page to load completely
     Then I should see "main workspace sub-workspace bindings" elements with selectors:
       | element description               | selector                                                                 |
-      | sub-workspace options accordion   | [data-testid='preference-section-subWorkspaceOptions']                  |
+      | sub-workspace options accordion   | [data-testid='preference-section-subWiki']                              |
       | bound sub-workspace row           | [data-testid='bound-sub-workspace-row']:has-text('SubWikiSettings'):has-text('SettingsTag') |
       | open sub-workspace settings button| [data-testid='open-sub-workspace-settings-button']                      |
     When I open edit workspace window for workspace with name "SubWikiSettings"
@@ -171,7 +171,7 @@ Feature: Sub-Wiki Functionality
     And I wait for the page to load completely
     Then I should see "sub-workspace options accordion and bindings" elements with selectors:
       | element description             | selector                                           |
-      | sub-workspace options accordion | [data-testid='preference-section-subWorkspaceOptions'] |
+      | sub-workspace options accordion | [data-testid='preference-section-subWiki'] |
       | main workspace select           | [data-testid='main-wiki-select']                   |
       | includeTagTree switch           | [data-testid='include-tag-tree-switch']            |
     # Enable includeTagTree option and save
