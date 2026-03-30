@@ -4,7 +4,7 @@
  */
 import { sectionById } from '@services/preferences/definitions/registry';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
-import { lazy, Suspense } from 'react';
+import { type ComponentType, type LazyExoticComponent, lazy, Suspense } from 'react';
 import { registerCustomComponent } from './customComponentRegistry';
 import { LanguageSelectorItem } from './customItems/LanguageSelectorItem';
 import { NotificationHelpTextItem, NotificationTestItem } from './customItems/NotificationItems';
@@ -21,7 +21,7 @@ const LazyDeveloperToolsSection = lazy(() => import('./sections/DeveloperTools')
 const LazySyncSection = lazy(() => import('./sections/Sync').then((m) => ({ default: m.Sync })));
 const LazyTidGiMiniWindowSection = lazy(() => import('./sections/TidGiMiniWindow').then((m) => ({ default: m.TidGiMiniWindow })));
 
-function wrapWithSuspense(LazyComponent: React.LazyExoticComponent<React.ComponentType<ICustomSectionProps>>): React.ComponentType<ICustomSectionProps> {
+function wrapWithSuspense(LazyComponent: LazyExoticComponent<ComponentType<ICustomSectionProps>>): ComponentType<ICustomSectionProps> {
   return function SuspenseWrapper(props: ICustomSectionProps) {
     return (
       <Suspense fallback={<div />}>
@@ -38,7 +38,7 @@ export function registerCustomSections(): void {
   registered = true;
 
   // Section-level custom components (dialogs, tables, polling, etc.)
-  const registerSection = (sectionId: string, component: React.LazyExoticComponent<React.ComponentType<ICustomSectionProps>>) => {
+  const registerSection = (sectionId: string, component: LazyExoticComponent<ComponentType<ICustomSectionProps>>) => {
     const section = sectionById.get(sectionId);
     if (section) {
       section.CustomSectionComponent = wrapWithSuspense(component);

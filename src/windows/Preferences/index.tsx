@@ -10,6 +10,7 @@ import { usePreferenceObservable } from '@services/preferences/hooks';
 import { PreferenceSections } from '@services/preferences/interface';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import React from 'react';
+import { PageInner as Inner, PageRoot as Root } from './PreferenceComponents';
 import { registerCustomSections } from './registerCustomSections';
 import { AllSectionsRenderer } from './SchemaRenderer';
 import { SearchBar } from './SearchBar';
@@ -19,8 +20,6 @@ import type { ISectionRecord } from './useSections';
 
 // Register custom section components on module load
 registerCustomSections();
-
-import { PageInner as Inner, PageRoot as Root } from './PreferenceComponents';
 
 /** Build ISectionRecord from allSections for sidebar + scroll nav */
 function useSectionRecord(): { record: ISectionRecord; refs: Map<string, React.RefObject<HTMLSpanElement | null>> } {

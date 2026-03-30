@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { allWorkspaceSections } from '@services/workspaces/definitions/registry';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
 import { isWikiWorkspace, nonConfigFields } from '@services/workspaces/interface';
+import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { useForm } from './useForm';
 
 import { RestartSnackbarType, useRestartSnackbar } from '@/components/RestartSnackbar';
@@ -23,7 +24,7 @@ import { WorkspaceSectionSideBar } from './WorkspaceSectionSideBar';
 registerWorkspaceCustomSections();
 
 export default function EditWorkspace(): React.JSX.Element {
-  const workspaceID = 'dictxdPnaLgsHPqDwy8u1';
+  const workspaceID = (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID!;
   const { t } = useTranslation();
   const originalWorkspace = useWorkspaceObservable(workspaceID);
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar({ waitBeforeCountDown: 0, workspace: originalWorkspace, restartType: RestartSnackbarType.Wiki });

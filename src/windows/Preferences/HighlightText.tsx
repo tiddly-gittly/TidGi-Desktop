@@ -19,7 +19,7 @@ export function HighlightText({ text, query }: HighlightTextProps): React.JSX.El
   return (
     <>
       {parts.map((part, index) =>
-        regex.test(part)
+        index % 2 === 1
           ? (
             <mark
               key={index}

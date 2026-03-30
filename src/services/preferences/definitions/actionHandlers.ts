@@ -47,8 +47,8 @@ const explicitHandlers: Record<string, (...arguments_: string[]) => Promise<void
       body: 'It is working!',
     });
   },
-  'native.pickDirectory': async (...arguments_: string[]) => {
-    const currentPath = arguments_[0] || '';
+  'native.pickDirectory': async () => {
+    const currentPath = (await window.service.preference.get('downloadPath')) ?? '';
     const filePaths = await window.service.native.pickDirectory(currentPath);
     if (filePaths.length > 0) {
       await window.service.preference.set('downloadPath', filePaths[0]);

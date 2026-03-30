@@ -1,5 +1,6 @@
-import { SvgIconTypeMap } from '@mui/material';
+import type { SvgIconTypeMap } from '@mui/material/SvgIcon';
 import { OverridableComponent } from '@mui/material/OverridableComponent';
+import type { RefObject } from 'react';
 
 import { PreferenceSections } from '@services/preferences/interface';
 
@@ -8,7 +9,7 @@ export type ISectionRecord<SectionTitleElement = HTMLSpanElement> = Record<
   {
     Icon: OverridableComponent<SvgIconTypeMap<unknown>>;
     hidden?: boolean;
-    ref: React.RefObject<SectionTitleElement | null>;
+    ref: RefObject<SectionTitleElement | null>;
     text: string;
   }
 >;

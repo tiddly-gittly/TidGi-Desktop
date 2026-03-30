@@ -2,6 +2,7 @@
  * Wires custom section components and custom item components to their workspace definitions.
  * Call once at startup (before rendering EditWorkspace) — same pattern as Preferences registerCustomSections.
  */
+import type { ComponentType } from 'react';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { workspaceSectionById } from '@services/workspaces/definitions/registry';
 import { WorkspaceAvatarItem, WorkspaceNameItem } from './customItems/AppearanceItems';
@@ -18,7 +19,7 @@ export function registerWorkspaceCustomSections(): void {
   registered = true;
 
   // Section-level custom components (entirely custom-rendered sections)
-  const registerSection = (sectionId: string, component: React.ComponentType<ICustomSectionProps>) => {
+  const registerSection = (sectionId: string, component: ComponentType<ICustomSectionProps>) => {
     const section = workspaceSectionById.get(sectionId);
     if (section) {
       section.CustomSectionComponent = component;
