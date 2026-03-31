@@ -1,6 +1,9 @@
 import { spawn as gitSpawn } from 'dugite';
 import { injectable } from 'inversify';
 import type { ChildProcess } from 'node:child_process';
+import { execFile } from 'node:child_process';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { Observable } from 'rxjs';
 
 import { container } from '@services/container';
@@ -278,5 +281,194 @@ export class GitServerService implements IGitServerService {
     const repoPath = await this.getWorkspaceRepoPath(workspaceId);
     if (!repoPath) return;
     await mergeMobileIncomingIfExists(repoPath);
+  }
+
+  // ── Full Archive for fast mobile clone ────────────────────────────────
+  //
+  // Instead of the standard git-upload-pack protocol (which forces the mobile
+  // device to resolve deltas and checkout 19000+ files one by one in JS),
+  // we generate a tar archive containing the entire working tree plus a
+  // minimal .git directory.  Mobile downloads this (with Range/resume
+  // support) and extracts natively — skipping all the slow JS steps.
+  //
+  // Strategy (zero extra npm dependencies):
+  //  1. `git archive --format=tar HEAD` → working tree tar (excludes .git/)
+  //  2. System `tar` command to append .git metadata files
+  //  3. Concatenate into one archive on disk, cache by HEAD commit hash
+
+  /**
+   * In-memory cache: workspaceId → { commitHash, archivePath, timestamp }.
+   * Invalidated when HEAD changes.
+   */
+  private archiveCache = new Map<string, { commitHash: string; archivePath: string; timestamp: number }>();
+
+  /**
+   * Generate (or return cached) a tar archive of the workspace repo.
+   *
+   * Returns the path to the tar file on disk, plus the HEAD commit hash (for ETag).
+   */
+  public async generateFullArchive(workspaceId: string): Promise<{ archivePath: string; commitHash: string; sizeBytes: number } | undefined> {
+    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
+    if (!repoPath) return undefined;
+
+    // Ensure everything is committed
+    await this.ensureCommittedBeforeServe(repoPath);
+
+    // Get HEAD commit hash
+    const commitHash = (await runGitCollectStdout(['rev-parse', 'HEAD'], repoPath)).trim();
+    if (!commitHash) return undefined;
+
+    // Check cache
+    const cached = this.archiveCache.get(workspaceId);
+    if (cached && cached.commitHash === commitHash) {
+      try {
+        const stat = await fs.stat(cached.archivePath);
+        return { archivePath: cached.archivePath, commitHash, sizeBytes: stat.size };
+      } catch {
+        // Cache file gone, regenerate
+      }
+    }
+
+    logger.info('Generating full archive for mobile sync', { workspaceId, commitHash });
+
+    const cacheDir = path.join(repoPath, '.git', 'tidgi-archive-cache');
+    await fs.mkdir(cacheDir, { recursive: true });
+    const archivePath = path.join(cacheDir, `full-archive-${commitHash.slice(0, 12)}.tar`);
+
+    // Clean old archives
+    try {
+      for (const file of await fs.readdir(cacheDir)) {
+        if (file.startsWith('full-archive-') && file !== path.basename(archivePath)) {
+          await fs.unlink(path.join(cacheDir, file)).catch(() => {});
+        }
+      }
+    } catch { /* non-fatal */ }
+
+    // Return cached file if it already exists on disk
+    try {
+      const stat = await fs.stat(archivePath);
+      this.archiveCache.set(workspaceId, { commitHash, archivePath, timestamp: Date.now() });
+      return { archivePath, commitHash, sizeBytes: stat.size };
+    } catch { /* need to generate */ }
+
+    // ── Step 1: Create working-tree tar via `git archive` ────────────
+    // `git archive` is fast (C code), respects .gitattributes export-ignore,
+    // and only includes tracked files — exactly what we want.
+    const { exitCode: archiveCode } = await runGit(
+      ['archive', '--format=tar', '-o', archivePath, 'HEAD'],
+      repoPath,
+    );
+    if (archiveCode !== 0) {
+      logger.error('git archive failed', { workspaceId, archiveCode });
+      return undefined;
+    }
+
+    // ── Step 2: Prepare a staging directory with .git metadata ───────
+    // We create a temp directory that mirrors the .git structure we need,
+    // then use system `tar` to append it to the archive.
+    const stagingDir = path.join(cacheDir, 'staging');
+    const stagingGit = path.join(stagingDir, '.git');
+    await fs.rm(stagingDir, { recursive: true, force: true });
+
+    const gitDir = path.join(repoPath, '.git');
+
+    // Copy the minimal .git files needed for isomorphic-git
+    // HEAD
+    await fs.mkdir(stagingGit, { recursive: true });
+    await fs.copyFile(path.join(gitDir, 'HEAD'), path.join(stagingGit, 'HEAD'));
+
+    // config — rewrite to a mobile-friendly placeholder
+    const configContent = [
+      '[core]',
+      '\trepositoryformatversion = 0',
+      '\tfilemode = false',
+      '\tbare = false',
+      '[remote "origin"]',
+      '\turl = PLACEHOLDER',
+      '\tfetch = +refs/heads/*:refs/remotes/origin/*',
+      '',
+    ].join('\n');
+    await fs.writeFile(path.join(stagingGit, 'config'), configContent);
+
+    // packed-refs
+    try { await fs.copyFile(path.join(gitDir, 'packed-refs'), path.join(stagingGit, 'packed-refs')); } catch { /* optional */ }
+
+    // shallow
+    try { await fs.copyFile(path.join(gitDir, 'shallow'), path.join(stagingGit, 'shallow')); } catch { /* optional */ }
+
+    // refs/ (recursive copy)
+    await copyDirRecursive(path.join(gitDir, 'refs'), path.join(stagingGit, 'refs'));
+
+    // objects/pack/ (the big .pack + .idx files)
+    const srcPackDir = path.join(gitDir, 'objects', 'pack');
+    const dstPackDir = path.join(stagingGit, 'objects', 'pack');
+    try {
+      const packFiles = await fs.readdir(srcPackDir);
+      if (packFiles.length > 0) {
+        await fs.mkdir(dstPackDir, { recursive: true });
+        for (const f of packFiles) {
+          if (f.endsWith('.pack') || f.endsWith('.idx')) {
+            await fs.copyFile(path.join(srcPackDir, f), path.join(dstPackDir, f));
+          }
+        }
+      }
+    } catch { /* no pack files */ }
+
+    // loose objects (2-char hex subdirs)
+    const srcObjDir = path.join(gitDir, 'objects');
+    try {
+      for (const entry of await fs.readdir(srcObjDir)) {
+        if (entry.length === 2 && /^[\da-f]{2}$/.test(entry)) {
+          const srcSub = path.join(srcObjDir, entry);
+          const dstSub = path.join(stagingGit, 'objects', entry);
+          await copyDirRecursive(srcSub, dstSub);
+        }
+      }
+    } catch { /* no loose objects */ }
+
+    // ── Step 3: Append .git/ staging into the tar ────────────────────
+    // Use system tar (bsdtar on Win10+, GNU tar on Linux/macOS).
+    // `--append` adds to an existing archive.
+    await new Promise<void>((resolve, reject) => {
+      execFile(
+        'tar',
+        ['--append', '-f', archivePath, '-C', stagingDir, '.git'],
+        { timeout: 120_000 },
+        (error) => {
+          if (error) reject(error);
+          else resolve();
+        },
+      );
+    });
+
+    // Clean up staging
+    await fs.rm(stagingDir, { recursive: true, force: true });
+
+    const stat = await fs.stat(archivePath);
+    this.archiveCache.set(workspaceId, { commitHash, archivePath, timestamp: Date.now() });
+
+    logger.info('Full archive generated', { workspaceId, commitHash, sizeBytes: stat.size });
+    return { archivePath, commitHash, sizeBytes: stat.size };
+  }
+}
+
+/** Recursively copy a directory. */
+async function copyDirRecursive(src: string, dst: string): Promise<void> {
+  let entries: string[];
+  try {
+    entries = await fs.readdir(src);
+  } catch {
+    return;
+  }
+  await fs.mkdir(dst, { recursive: true });
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry);
+    const dstPath = path.join(dst, entry);
+    const stat = await fs.stat(srcPath);
+    if (stat.isDirectory()) {
+      await copyDirRecursive(srcPath, dstPath);
+    } else if (stat.isFile()) {
+      await fs.copyFile(srcPath, dstPath);
+    }
   }
 }

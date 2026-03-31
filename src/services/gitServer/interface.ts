@@ -45,6 +45,14 @@ export interface IGitServerService {
    * Resolves .tid conflicts (metadata from mobile, body merged).
    */
   mergeAfterPush(workspaceId: string): Promise<void>;
+
+  /**
+   * Generate a tar archive of the complete workspace (working tree + minimal .git).
+   * Used by mobile for fast clone: download tar → extract natively.
+   * Returns archive path, HEAD commit hash, and file size.
+   * Returns undefined if workspace not found.
+   */
+  generateFullArchive(workspaceId: string): Promise<{ archivePath: string; commitHash: string; sizeBytes: number } | undefined>;
 }
 
 export const GitServerServiceIPCDescriptor = {
@@ -55,5 +63,6 @@ export const GitServerServiceIPCDescriptor = {
     gitSmartHTTPUploadPack$: ProxyPropertyType.Function$,
     gitSmartHTTPReceivePack$: ProxyPropertyType.Function$,
     mergeAfterPush: ProxyPropertyType.Function,
+    generateFullArchive: ProxyPropertyType.Function,
   },
 };
