@@ -1,4 +1,4 @@
-import path from 'path';
+﻿import path from 'path';
 
 /**
  * Helper to get the main window entry URL
@@ -28,8 +28,8 @@ export function getMainWindowEntry(): string {
  * - Production: preload is packaged in resources/app/.vite/build/index.js
  */
 export function getPreloadPath(): string {
-  // Both in dev and prod, preload.js is in the same directory as main.js (__dirname)
-  const preloadPath = path.join(__dirname, 'index.js');
+  // Preload is emitted as preload.js to avoid clashing with main's index.js
+  const preloadPath = path.join(__dirname, 'preload.js');
   console.log('[viteEntry] Preload path:', preloadPath, '__dirname:', __dirname);
   return preloadPath;
 }
