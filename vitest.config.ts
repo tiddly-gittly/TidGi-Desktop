@@ -17,6 +17,11 @@ export default defineConfig({
     // Test environment
     environment: 'jsdom',
 
+    // features/ tests (HTTP/Node.js integration) run in node environment; src/ tests need jsdom
+    environmentMatchGlobs: [
+      ['features/**', 'node'],
+    ],
+
     // Setup files
     setupFiles: ['./src/__tests__/setup-vitest.ts'],
 

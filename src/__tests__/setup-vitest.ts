@@ -1,29 +1,32 @@
 import 'reflect-metadata';
 import '@testing-library/jest-dom/vitest';
 import { configure } from '@testing-library/dom';
+import './__mocks__/window';
 
-configure({ computedStyleSupportsPseudoElements: false });
-// Fix for JSDOM getComputedStyle issue - strip unsupported second parameter
-const originalGetComputedStyle = window.getComputedStyle;
-window.getComputedStyle = (elt) => originalGetComputedStyle.call(window, elt);
+// DOM-specific setup – only runs in jsdom environment (when document is available).
+// In node environment (e.g. features/**/*.test.ts with environmentMatchGlobs), these are skipped.
+if (typeof document !== 'undefined') {
+  configure({ computedStyleSupportsPseudoElements: false });
 
-// JSDOM / Node doesn't implement requestIdleCallback — provide a simple polyfill
-// so components that use it (e.g., AllSectionsRenderer) don't throw in tests.
-// Use setTimeout(0) so progressive rendering completes quickly in test environments.
-if (typeof window.requestIdleCallback === 'undefined') {
-  (window as unknown as Record<string, unknown>).requestIdleCallback = (
-    callback: IdleRequestCallback,
-    _options?: IdleRequestOptions,
-  ) =>
-    window.setTimeout(() => {
-      callback({ timeRemaining: () => 50, didTimeout: false } as IdleDeadline);
-    }, 0);
-  (window as unknown as Record<string, unknown>).cancelIdleCallback = (id: number) => {
-    window.clearTimeout(id);
-  };
+  // Fix for JSDOM getComputedStyle issue - strip unsupported second parameter
+  const originalGetComputedStyle = window.getComputedStyle;
+  window.getComputedStyle = (elt) => originalGetComputedStyle.call(window, elt);
+
+  // JSDOM / Node doesn't implement requestIdleCallback — provide a simple polyfill
+  if (typeof window.requestIdleCallback === 'undefined') {
+    (window as unknown as Record<string, unknown>).requestIdleCallback = (
+      callback: IdleRequestCallback,
+      _options?: IdleRequestOptions,
+    ) =>
+      window.setTimeout(() => {
+        callback({ timeRemaining: () => 50, didTimeout: false } as IdleDeadline);
+      }, 0);
+    (window as unknown as Record<string, unknown>).cancelIdleCallback = (id: number) => {
+      window.clearTimeout(id);
+    };
+  }
 }
 
-import './__mocks__/window';
 import './__mocks__/services-container';
 import { vi } from 'vitest';
 vi.mock('react-i18next', () => import('./__mocks__/react-i18next'));
@@ -108,73 +111,75 @@ import '@/constants/appPaths';
 // Provide them here to avoid ReferenceError when modules reference them.
 (global as unknown as Record<string, unknown>).MAIN_WINDOW_VITE_DEV_SERVER_URL = undefined;
 
-/**
- * Mock matchMedia and other DOM APIs for components using autocomplete search functionality
- *
- * Why this mock is necessary:
- * - @algolia/autocomplete-js uses matchMedia() to detect mobile devices for responsive behavior
- * - @algolia/autocomplete-js also tries to access document/window event properties that don't exist in JSDOM
- * - JSDOM test environment doesn't provide matchMedia() API by default
- * - Without this mock, components using TemplateSearch or Search will throw errors
- * - This enables CreateNewAgentContent and other search-related components to render in tests
- *
- * Components that need this:
- * - CreateNewAgentContent (uses TemplateSearch)
- * - NewTabContent (uses Search)
- * - Any component using Search.tsx or autocomplete functionality
- */
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation((query: string) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(), // deprecated
-    removeListener: vi.fn(), // deprecated
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-});
+if (typeof document !== 'undefined') {
+  /**
+   * Mock matchMedia and other DOM APIs for components using autocomplete search functionality
+   *
+   * Why this mock is necessary:
+   * - @algolia/autocomplete-js uses matchMedia() to detect mobile devices for responsive behavior
+   * - @algolia/autocomplete-js also tries to access document/window event properties that don't exist in JSDOM
+   * - JSDOM test environment doesn't provide matchMedia() API by default
+   * - Without this mock, components using TemplateSearch or Search will throw errors
+   * - This enables CreateNewAgentContent and other search-related components to render in tests
+   *
+   * Components that need this:
+   * - CreateNewAgentContent (uses TemplateSearch)
+   * - NewTabContent (uses Search)
+   * - Any component using Search.tsx or autocomplete functionality
+   */
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(), // deprecated
+      removeListener: vi.fn(), // deprecated
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
 
-// Mock document and window with comprehensive event handling for autocomplete components
-Object.defineProperty(document, 'documentElement', {
-  writable: true,
-  value: Object.assign(document.documentElement || document.createElement('html'), {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    mousedown: vi.fn(),
-    ontouchstart: vi.fn(),
-  }),
-});
+  // Mock document and window with comprehensive event handling for autocomplete components
+  Object.defineProperty(document, 'documentElement', {
+    writable: true,
+    value: Object.assign(document.documentElement || document.createElement('html'), {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      mousedown: vi.fn(),
+      ontouchstart: vi.fn(),
+    }),
+  });
 
-Object.defineProperty(document, 'body', {
-  writable: true,
-  value: Object.assign(document.body || document.createElement('body'), {
-    mousedown: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    ontouchstart: vi.fn(),
-  }),
-});
+  Object.defineProperty(document, 'body', {
+    writable: true,
+    value: Object.assign(document.body || document.createElement('body'), {
+      mousedown: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      ontouchstart: vi.fn(),
+    }),
+  });
 
-// Enhanced window mock with comprehensive event support
-Object.defineProperty(window, 'addEventListener', {
-  writable: true,
-  value: vi.fn(),
-});
+  // Enhanced window mock with comprehensive event support
+  Object.defineProperty(window, 'addEventListener', {
+    writable: true,
+    value: vi.fn(),
+  });
 
-Object.defineProperty(window, 'removeEventListener', {
-  writable: true,
-  value: vi.fn(),
-});
+  Object.defineProperty(window, 'removeEventListener', {
+    writable: true,
+    value: vi.fn(),
+  });
 
-// Mock touch events for autocomplete
-Object.defineProperty(window, 'ontouchstart', {
-  writable: true,
-  value: vi.fn(),
-});
+  // Mock touch events for autocomplete
+  Object.defineProperty(window, 'ontouchstart', {
+    writable: true,
+    value: vi.fn(),
+  });
 
-// Prevent unhandled promise rejections from autocomplete
-window.addEventListener = vi.fn();
-window.removeEventListener = vi.fn();
+  // Prevent unhandled promise rejections from autocomplete
+  window.addEventListener = vi.fn();
+  window.removeEventListener = vi.fn();
+}
