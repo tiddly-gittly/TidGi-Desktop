@@ -41,6 +41,8 @@ export default (
       ['tiddlywiki', 'package.json'],
       ['tiddlywiki', 'boot'],
       ['tiddlywiki', 'core'],
+      // core-server: introduced in TiddlyWiki 5.4.0, contains Commander module ($tw.Commander) required by load-modules startup
+      ['tiddlywiki', 'core-server'],
       // only copy plugins that is used in src/services/wiki/wikiWorker/startNodeJSWiki.ts, other plugins can be installed via JSON from online plugin library
       ['tiddlywiki', 'plugins', 'linonetwo'],
       ['tiddlywiki', 'plugins', 'tiddlywiki', 'filesystem'],
