@@ -399,6 +399,10 @@ Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
     // For UI-configured scenarios: build expected config using actual baseURL
     providerConfig = createProviderConfig();
     providerConfig.baseURL = existingProvider.baseURL ?? providerConfig.baseURL;
+    // UI-created providers won't have an apiKey — align expected with actual
+    if (!existingProvider.apiKey) {
+      delete (providerConfig as unknown as Record<string, unknown>).apiKey;
+    }
   } else {
     providerConfig = createProviderConfig();
   }

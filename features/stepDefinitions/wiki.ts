@@ -26,9 +26,9 @@ import type { ApplicationWorld } from './application';
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-// Type guard for wiki workspace
-function isWikiWorkspace(workspace: IWorkspace): workspace is IWikiWorkspace {
-  return 'wikiFolderLocation' in workspace && workspace.wikiFolderLocation !== undefined;
+// Type guard for wiki workspace (accepts unknown to safely handle undefined from IPC)
+function isWikiWorkspace(workspace: unknown): workspace is IWikiWorkspace {
+  return typeof workspace === 'object' && workspace !== null && 'wikiFolderLocation' in workspace && (workspace as IWikiWorkspace).wikiFolderLocation !== undefined;
 }
 
 // Backoff configuration for retries
@@ -1038,47 +1038,37 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
 When('I restart workspace {string}', async function(this: ApplicationWorld, workspaceName: string) {
   if (!this.app) throw new Error('Application is not available');
 
-  const settingsPath = getSettingsPath(this);
-  const settings = JSON.parse(await fs.readFile(settingsPath, 'utf-8')) as { workspaces?: Record<string, IWorkspace> };
-  if (!settings.workspaces) throw new Error('No workspaces found');
-
-  let targetWorkspaceId: string | undefined;
-  for (const [id, workspace] of Object.entries(settings.workspaces)) {
-    if ('name' in workspace && workspace.name === workspaceName) {
-      targetWorkspaceId = id;
-      break;
-    }
-    if ('wikiFolderLocation' in workspace && workspace.wikiFolderLocation) {
-      const folderName = path.basename(workspace.wikiFolderLocation);
-      if (folderName === workspaceName) {
-        targetWorkspaceId = id;
-        break;
-      }
-    }
-  }
-
-  if (!targetWorkspaceId) throw new Error(`No workspace found: ${workspaceName}`);
-
-  const result = await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
+  const result = await this.app.evaluate(async ({ BrowserWindow }, name: string) => {
     const windows = BrowserWindow.getAllWindows();
     const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents?.getURL().includes('index.html'));
     if (!mainWindow) throw new Error('Main window not found');
 
     return await mainWindow.webContents.executeJavaScript(`
       (async () => {
-        const workspace = await window.service.workspace.get(${JSON.stringify(workspaceId)});
+        var backslash = String.fromCharCode(92);
+        function getFolderName(loc) {
+          if (!loc) return undefined;
+          var i = Math.max(loc.lastIndexOf('/'), loc.lastIndexOf(backslash));
+          return i >= 0 ? loc.substring(i + 1) : loc;
+        }
+        var all = await window.service.workspace.getWorkspacesAsList();
+        var workspace = all.find(function(ws) {
+          if (ws.pageType) return false;
+          if (ws.name === ${JSON.stringify(name)}) return true;
+          return getFolderName('wikiFolderLocation' in ws ? ws.wikiFolderLocation : '') === ${JSON.stringify(name)};
+        }) || null;
         if (!workspace) return { success: false, error: 'Workspace not found' };
         try {
           await window.service.wiki.restartWiki(workspace);
           // Reload view to show fresh content from disk after wiki restart
-          await window.service.view.reloadViewsWebContents(${JSON.stringify(workspaceId)});
+          await window.service.view.reloadViewsWebContents(workspace.id);
           return { success: true };
         } catch (error) {
           return { success: false, error: error.message };
         }
       })();
     `) as Promise<{ success: boolean; error?: string }>;
-  }, targetWorkspaceId);
+  }, workspaceName);
 
   if (!result.success) throw new Error(`Failed to restart: ${result.error ?? 'Unknown error'}`);
 });
@@ -1123,75 +1113,58 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
     settingsUpdate[property] = parsedValue;
   }
 
-  // Read settings file to get workspace ID
-  const settings = await fs.readJson(getSettingsPath(this)) as { workspaces?: Record<string, IWorkspace> };
-  const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
-
-  // Find workspace by name or by wikiFolderLocation (in case name is removed from settings.json)
-  let targetWorkspaceId: string | undefined;
-  for (const [id, workspace] of Object.entries(workspaces)) {
-    if (workspace.pageType) continue; // Skip page workspaces
-
-    // Try to match by name (if available in settings.json)
-    if (workspace.name === workspaceName) {
-      targetWorkspaceId = id;
-      break;
-    }
-
-    // Try to read name from tidgi.config.json
-    if (isWikiWorkspace(workspace)) {
-      try {
-        const tidgiConfigPath = path.join(workspace.wikiFolderLocation, 'tidgi.config.json');
-        if (await fs.pathExists(tidgiConfigPath)) {
-          const tidgiConfig = await fs.readJson(tidgiConfigPath) as { name?: string };
-          if (tidgiConfig.name === workspaceName) {
-            targetWorkspaceId = id;
-            break;
-          }
-        }
-      } catch {
-        // Ignore errors
+  // Helper JS snippet for renderer-side workspace lookup by name or folder basename.
+  // Uses String.fromCharCode(92) for backslash to avoid template-literal escaping issues.
+  const findWorkspaceJS = (targetName: string) => `
+    (async () => {
+      var backslash = String.fromCharCode(92);
+      function getFolderName(loc) {
+        if (!loc) return undefined;
+        var i1 = loc.lastIndexOf('/');
+        var i2 = loc.lastIndexOf(backslash);
+        var i = Math.max(i1, i2);
+        return i >= 0 ? loc.substring(i + 1) : loc;
       }
-    }
-
-    // Fallback: try to match by folder name in wikiFolderLocation
-    if ('wikiFolderLocation' in workspace && workspace.wikiFolderLocation) {
-      const folderName = path.basename(workspace.wikiFolderLocation);
-      if (folderName === workspaceName) {
-        targetWorkspaceId = id;
-        break;
+      var workspaces = await window.service.workspace.getWorkspacesAsList();
+      var found = workspaces.find(function(ws) {
+        if (ws.pageType) return false;
+        if (ws.name === ${JSON.stringify(targetName)}) return true;
+        var fn = 'wikiFolderLocation' in ws ? getFolderName(ws.wikiFolderLocation) : undefined;
+        return fn === ${JSON.stringify(targetName)};
+      });
+      if (!found && ${JSON.stringify(targetName)} === 'wiki') {
+        found = workspaces.find(function(ws) {
+          return !ws.pageType && !ws.isSubWiki;
+        });
       }
-    }
-  }
+      return found || null;
+    })()
+  `;
 
-  if (!targetWorkspaceId) {
+  // Resolve workspace from the live renderer to avoid stale IDs from the settings file.
+  const runtimeWorkspace = await this.app.evaluate(async ({ BrowserWindow }, name: string) => {
+    const windows = BrowserWindow.getAllWindows();
+    const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+    if (!mainWindow) return null;
+    return await mainWindow.webContents.executeJavaScript(name) as Promise<IWorkspace | null>;
+  }, findWorkspaceJS(workspaceName));
+
+  if (!runtimeWorkspace) {
     throw new Error(`No workspace found with name: ${workspaceName}`);
   }
+  const targetWorkspaceId = runtimeWorkspace.id;
 
   // If enableFileSystemWatch is being changed, check current state BEFORE updating
   let watchFsCurrentlyEnabled = false;
   if ('enableFileSystemWatch' in settingsUpdate) {
-    const currentWorkspace = await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
-      const windows = BrowserWindow.getAllWindows();
-      const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
-      if (!mainWindow) return null;
-
-      return await mainWindow.webContents.executeJavaScript(`window.service.workspace.get(${JSON.stringify(workspaceId)})`) as Promise<IWorkspace | null>;
-    }, targetWorkspaceId);
-
-    watchFsCurrentlyEnabled = currentWorkspace !== null && isWikiWorkspace(currentWorkspace) && currentWorkspace.enableFileSystemWatch;
+    watchFsCurrentlyEnabled = isWikiWorkspace(runtimeWorkspace) && runtimeWorkspace.enableFileSystemWatch;
   }
 
   // Update workspace settings via main window
   await this.app.evaluate(async ({ BrowserWindow }, { workspaceId, updates }: { workspaceId: string; updates: Record<string, unknown> }) => {
     const windows = BrowserWindow.getAllWindows();
     const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
-
-    if (!mainWindow) {
-      throw new Error('Main window not found');
-    }
-
-    // Call workspace service to update workspace settings
+    if (!mainWindow) throw new Error('Main window not found');
     await mainWindow.webContents.executeJavaScript(`
       (async () => {
         await window.service.workspace.update(${JSON.stringify(workspaceId)}, ${JSON.stringify(updates)});
@@ -1223,21 +1196,15 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
     // Clear log markers to ensure we wait for fresh ones after restart
     await clearLogLinesContaining(this, '[test-id-WATCH_FS_STABILIZED]');
 
-    // Restart the wiki
+    // Restart the wiki using the runtime-resolved workspace ID
     const restartResult = await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
       const windows = BrowserWindow.getAllWindows();
       const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
-
-      if (!mainWindow) {
-        throw new Error('Main window not found');
-      }
-
+      if (!mainWindow) throw new Error('Main window not found');
       const result = await mainWindow.webContents.executeJavaScript(`
         (async () => {
-          const workspace = await window.service.workspace.get(${JSON.stringify(workspaceId)});
-          if (!workspace) {
-            return { success: false, error: 'Workspace not found' };
-          }
+          var workspace = await window.service.workspace.get(${JSON.stringify(workspaceId)});
+          if (!workspace) return { success: false, error: 'Workspace not found for id=' + ${JSON.stringify(workspaceId)} };
           try {
             await window.service.wiki.restartWiki(workspace);
             return { success: true };
