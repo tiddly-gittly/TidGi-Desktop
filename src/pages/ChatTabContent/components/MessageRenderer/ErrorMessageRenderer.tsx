@@ -96,8 +96,10 @@ export const ErrorMessageRenderer: React.FC<MessageRendererProps> = ({ message }
 
   // Check if this is a provider-related error that could be fixed in settings
   const isSettingsFixableError =
+    message.role === 'error' ||
     ['MissingConfigError', 'MissingProviderError', 'AuthenticationError', 'MissingAPIKeyError', 'MissingBaseURLError', 'UnsupportedFeatureError'].includes(errorName) ||
-    ['NO_DEFAULT_MODEL', 'PROVIDER_NOT_FOUND', 'AUTHENTICATION_FAILED', 'MISSING_API_KEY', 'MISSING_BASE_URL', 'MODEL_NO_VISION_SUPPORT'].includes(errorCode);
+    ['NO_DEFAULT_MODEL', 'PROVIDER_NOT_FOUND', 'AUTHENTICATION_FAILED', 'MISSING_API_KEY', 'MISSING_BASE_URL', 'MODEL_NO_VISION_SUPPORT'].includes(errorCode) ||
+    errorMessage.startsWith('Chat.ConfigError.');
 
   // Determine the display message with proper i18n handling
   let displayMessage = errorMessage;
@@ -116,6 +118,8 @@ export const ErrorMessageRenderer: React.FC<MessageRendererProps> = ({ message }
       displayMessage = translatedByName;
     }
   }
+  const titleText = t('Chat.ConfigError.Title');
+  const goToSettingsText = t('Chat.ConfigError.GoToSettings');
 
   return (
     <ErrorWrapper data-testid='error-message'>
@@ -123,7 +127,7 @@ export const ErrorMessageRenderer: React.FC<MessageRendererProps> = ({ message }
         <ErrorHeader>
           <WarningAmberIcon sx={{ mr: 1 }} />
           <Typography variant='subtitle1' fontWeight='bold'>
-            {t('Chat.ConfigError.Title')}
+            {titleText}
           </Typography>
         </ErrorHeader>
 
@@ -140,7 +144,7 @@ export const ErrorMessageRenderer: React.FC<MessageRendererProps> = ({ message }
               size='small'
               onClick={handleGoToSettings}
             >
-              {t('Chat.ConfigError.GoToSettings')}
+              {goToSettingsText}
             </Button>
           </ErrorActions>
         )}

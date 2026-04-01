@@ -107,8 +107,8 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ message, isUse
       }
     }
 
-    // Check if this is an error message with metadata
-    if (!contentRendered && message.metadata?.errorDetail) {
+    // Check if this is an error message (role-based or metadata-based)
+    if (!contentRendered && (message.role === 'error' || message.metadata?.errorDetail)) {
       // Find error renderer
       const errorRenderer = sortedRenderers.find(r => r.id === 'error');
       if (errorRenderer) {

@@ -103,7 +103,7 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
         // Common patterns: init*, start*, sync*, commit*, clone*, force*, execute*, *Observer*, get*Observer
         const isObservable = method.includes('init') || method.includes('sync') || method.includes('commit') ||
           method.includes('start') || method.includes('clone') || method.includes('force') ||
-          method.includes('execute') || method.toLowerCase().includes('observer');
+          method.includes('execute') || method.includes('subscribe') || method.toLowerCase().includes('observer');
 
         if (isObservable) {
           // Return Observable for streaming responses

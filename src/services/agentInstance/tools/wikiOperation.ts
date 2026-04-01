@@ -13,6 +13,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { z } from 'zod/v4';
 import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { registerWorkerBridgeTool } from './workerToolBridge';
 
 /**
  * Wiki Operation Config Schema (user-configurable in UI)
@@ -230,3 +231,11 @@ const wikiOperationDefinition = registerToolDefinition({
 });
 
 export const wikiOperationTool = wikiOperationDefinition.tool;
+
+registerWorkerBridgeTool('wiki-operation', async (args) => {
+  const result = await executeWikiOperation(args as WikiOperationToolParameters);
+  if (result.success) {
+    return { result: result.data, metadata: result.metadata };
+  }
+  return { error: result.error ?? 'wiki-operation failed', metadata: result.metadata };
+});

@@ -1,3 +1,4 @@
+import { DEFAULT_AGENT_FRAMEWORK_ID } from '@services/agentInstance/defaultAgentFrameworkId';
 import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import React, { useCallback, useEffect, useState } from 'react';
 
@@ -52,9 +53,11 @@ export const useAgentFrameworkConfigManagement = ({ agentDefId, agentId }: useAg
           agentFrameworkID = agentDefinition?.agentFrameworkID;
         }
 
-        if (agentFrameworkID) {
+        const resolvedFrameworkId =
+          agentFrameworkID ?? (agentId || agentDefId ? DEFAULT_AGENT_FRAMEWORK_ID : undefined);
+        if (resolvedFrameworkId) {
           try {
-            const frameworkSchema = await window.service.agentInstance.getFrameworkConfigSchema(agentFrameworkID);
+            const frameworkSchema = await window.service.agentInstance.getFrameworkConfigSchema(resolvedFrameworkId);
             setSchema(frameworkSchema);
           } catch (error) {
             void window.service.native.log('error', 'Failed to load framework schema', { function: 'useAgentFrameworkConfigManagement.fetchConfig', error });

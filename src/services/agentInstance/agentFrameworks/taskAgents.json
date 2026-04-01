@@ -4,7 +4,7 @@
     "name": "Task Agent",
     "description": "General-purpose TiddlyWiki AI assistant with tool access",
     "avatarUrl": "https://example.com/task-agent.png",
-    "agentFrameworkID": "basicPromptConcatHandler",
+    "agentFrameworkID": "memeloopTaskAgentWorker",
     "agentFrameworkConfig": {
       "prompts": [
         {
@@ -278,7 +278,7 @@
     "name": "Plan Agent",
     "description": "Read-only planning assistant — searches and analyzes wiki content without making changes",
     "avatarUrl": "",
-    "agentFrameworkID": "basicPromptConcatHandler",
+    "agentFrameworkID": "memeloopTaskAgentWorker",
     "agentFrameworkConfig": {
       "prompts": [
         {

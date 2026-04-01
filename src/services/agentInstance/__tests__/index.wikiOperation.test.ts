@@ -43,8 +43,11 @@ describe('AgentInstanceService Wiki Operation', () => {
       messages: [],
     };
 
-    // Mock agent definition service to return our test agent definition
-    mockAgentDefinitionService.getAgentDef = vi.fn().mockResolvedValue(exampleAgent);
+    // Mock agent definition: keep in-process basicPromptConcatHandler (this test stubs generateFromAI per round).
+    mockAgentDefinitionService.getAgentDef = vi.fn().mockResolvedValue({
+      ...exampleAgent,
+      agentFrameworkID: 'basicPromptConcatHandler',
+    });
     vi.spyOn(agentInstanceService, 'getAgent').mockResolvedValue(testAgentInstance);
   });
 

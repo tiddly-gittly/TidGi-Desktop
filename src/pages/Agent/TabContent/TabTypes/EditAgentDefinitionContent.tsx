@@ -3,6 +3,7 @@ import { Alert, Box, Button, CircularProgress, Container, Divider, MenuItem, Tex
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
+import { DEFAULT_AGENT_FRAMEWORK_ID } from '@services/agentInstance/defaultAgentFrameworkId';
 import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import type { CreateScheduledTaskInput, ScheduledTask } from '@services/agentInstance/scheduledTaskManager';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
@@ -288,27 +289,28 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
   // Load framework config schema
   useEffect(() => {
     const loadSchema = async () => {
-      if (!agentDefinition?.agentFrameworkID) {
-        // No agentFrameworkID found
+      if (!agentDefinition) {
         return;
       }
 
+      const frameworkId = agentDefinition.agentFrameworkID ?? DEFAULT_AGENT_FRAMEWORK_ID;
+
       try {
         // Loading framework config schema
-        const schema = await window.service.agentInstance.getFrameworkConfigSchema(agentDefinition.agentFrameworkID);
+        const schema = await window.service.agentInstance.getFrameworkConfigSchema(frameworkId);
         // Schema loaded successfully
         setPromptSchema(schema);
       } catch (error) {
         void window.service.native.log('error', 'EditAgentDefinitionContent: Failed to load framework config schema', {
           error,
-          agentFrameworkID: agentDefinition.agentFrameworkID,
+          agentFrameworkID: frameworkId,
         });
         console.error('Failed to load framework config schema:', error);
       }
     };
 
     void loadSchema();
-  }, [agentDefinition?.agentFrameworkID]);
+  }, [agentDefinition?.id, agentDefinition?.agentFrameworkID]);
 
   // Auto-save to backend whenever agentDefinition changes (debounced)
   const saveToBackendDebounced = useDebouncedCallback(

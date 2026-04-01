@@ -1,4 +1,5 @@
 import { AgentDefinition } from '@services/agentDefinition/interface';
+import { DEFAULT_AGENT_FRAMEWORK_ID } from '@services/agentInstance/defaultAgentFrameworkId';
 import type { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
 import { Subscription } from 'rxjs';
 import type { StoreApi } from 'zustand';
@@ -233,7 +234,7 @@ export const agentActions = (
               newMessageIds.push(message.id);
 
               // Subscribe to AI message updates
-              if ((message.role === 'agent' || message.role === 'assistant') && !messageSubscriptions.has(message.id)) {
+              if ((message.role === 'agent' || message.role === 'assistant' || message.role === 'error') && !messageSubscriptions.has(message.id)) {
                 // Only mark as streaming if agent is still working
                 // This prevents marking completed messages as streaming when loading history
                 if (!isAgentTerminalState) {
@@ -249,7 +250,11 @@ export const agentActions = (
                         set(state => {
                           const newMessages = new Map(state.messages);
                           newMessages.set(status.message!.id, status.message!);
-                          return { messages: newMessages };
+                          const alreadyOrdered = state.orderedMessageIds.includes(status.message!.id);
+                          return {
+                            messages: newMessages,
+                            orderedMessageIds: alreadyOrdered ? state.orderedMessageIds : [...state.orderedMessageIds, status.message!.id],
+                          };
                         });
                         // Clear streaming flag when status is completed
                         if (status.state === 'completed' || status.state === 'failed' || status.state === 'canceled' || status.state === 'input-required') {
@@ -338,10 +343,16 @@ export const agentActions = (
       if (agentDef?.agentFrameworkID) {
         return agentDef.agentFrameworkID;
       }
+      if (agentDef && !agentDef.agentFrameworkID) {
+        return DEFAULT_AGENT_FRAMEWORK_ID;
+      }
       if (agent?.agentDefId) {
         const fetchedAgentDefinition = await window.service.agentDefinition.getAgentDef(agent.agentDefId);
         if (fetchedAgentDefinition?.agentFrameworkID) {
           return fetchedAgentDefinition.agentFrameworkID;
+        }
+        if (fetchedAgentDefinition) {
+          return DEFAULT_AGENT_FRAMEWORK_ID;
         }
       }
 

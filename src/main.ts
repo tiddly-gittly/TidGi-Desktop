@@ -24,6 +24,8 @@ import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
+import { AgentInstanceService } from '@services/agentInstance';
+import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IContextService } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
@@ -97,6 +99,14 @@ let shouldSkipBeforeQuitInterception = false;
 const runBeforeQuitCleanup = async (): Promise<void> => {
   logger.info('App before-quit - starting cleanup');
   try {
+    try {
+      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance) as AgentInstanceService;
+      await agentInstanceService.disposeMemeLoopWorker();
+      logger.info('App before-quit - MemeLoop worker disposed');
+    } catch (error) {
+      logger.error('App before-quit - MemeLoop worker dispose failed', { error });
+    }
+
     logger.info('App before-quit - tidgi mini window closed');
     // Stop all wiki workers FIRST - must be sequential
     // Wiki workers might be using SQLite databases

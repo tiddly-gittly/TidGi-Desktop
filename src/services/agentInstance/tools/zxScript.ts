@@ -11,6 +11,7 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import { firstValueFrom, toArray } from 'rxjs';
 import { z } from 'zod/v4';
 import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { registerWorkerBridgeTool } from './workerToolBridge';
 import { terminalSessionManager } from '../terminal/sessionManager';
 
 export const ZxScriptParameterSchema = z.object({
@@ -297,3 +298,39 @@ const zxScriptDefinition = registerToolDefinition({
 });
 
 export const zxScriptTool = zxScriptDefinition.tool;
+
+registerWorkerBridgeTool('zx-script', async (args) => {
+  const result = await executeZxScript(args as z.infer<typeof ZxScriptToolSchema>);
+  if (result.success) return { result: result.data, metadata: result.metadata };
+  return { error: result.error ?? 'zx-script failed' };
+});
+
+registerWorkerBridgeTool('terminal.execute', async (args) => {
+  const result = await executeTerminalExecute(args as z.infer<typeof TerminalExecuteToolSchema>, 30000);
+  if (result.success) return { result: result.data };
+  return { error: result.error ?? 'terminal.execute failed' };
+});
+
+registerWorkerBridgeTool('terminal.follow', async (args) => {
+  const result = await executeTerminalFollow(args as z.infer<typeof TerminalFollowToolSchema>);
+  if (result.success) return { result: result.data };
+  return { error: result.error ?? 'terminal.follow failed' };
+});
+
+registerWorkerBridgeTool('terminal.respond', async (args) => {
+  const result = await executeTerminalRespond(args as z.infer<typeof TerminalRespondToolSchema>);
+  if (result.success) return { result: result.data };
+  return { error: result.error ?? 'terminal.respond failed' };
+});
+
+registerWorkerBridgeTool('terminal.cancel', async (args) => {
+  const result = await executeTerminalCancel(args as z.infer<typeof TerminalCancelToolSchema>);
+  if (result.success) return { result: result.data };
+  return { error: result.error ?? 'terminal.cancel failed' };
+});
+
+registerWorkerBridgeTool('terminal.list', async () => {
+  const result = await executeTerminalList();
+  if (result.success) return { result: result.data };
+  return { error: result.error ?? 'terminal.list failed' };
+});

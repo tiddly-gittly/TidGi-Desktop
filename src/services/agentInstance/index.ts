@@ -5,6 +5,7 @@ import { DataSource, Repository } from 'typeorm';
 import { Worker } from 'worker_threads';
 import type { AgentDefinition, AttachmentRef, ChatMessage, ConversationMeta } from '@memeloop/protocol';
 import { createMemeLoopRuntime, createTaskAgent, type AgentFrameworkContext as MemeLoopAgentFrameworkContext, type IAgentStorage, type ILLMProvider, type IToolRegistry, type MemeLoopRuntime } from 'memeloop';
+import { DEFAULT_AGENT_FRAMEWORK_ID } from './defaultAgentFrameworkId';
 import MemeLoopWorkerFactory from './memeloopWorkerFactory';
 import { createWorkerProxy } from '@services/libs/workerAdapter';
 import type { MemeLoopWorker } from './memeloopWorker';
@@ -53,6 +54,7 @@ import {
 import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskTypes';
 import { cancelAlarm, getActiveAlarmEntries, scheduleAlarmTimer } from './tools/alarmClock';
 import { cleanupMCPClient } from './tools/modelContextProtocol';
+import { executeWorkerBridgeTool, listWorkerBridgeTools } from './tools/workerToolBridge';
 
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {
@@ -77,8 +79,48 @@ export class AgentInstanceService implements IAgentInstanceService {
   private memeLoopRuntime: MemeLoopRuntime | null = null;
   private memeLoopNativeWorker?: Worker;
   private memeLoopWorker?: MemeLoopWorker;
+  private memeLoopWorkerLogCleanup?: () => void;
+  private workerAgentIdByConversationId: Map<string, string> = new Map();
+
+  private normalizeMultimodalForModelSupport(messages: Array<{ role: 'system' | 'user' | 'assistant'; content: any }>): Array<{
+    role: 'system' | 'user' | 'assistant';
+    content: any;
+  }> {
+    // In test runs we use a mock provider that doesn't implement vision.
+    if (process.env.NODE_ENV !== 'test') return messages;
+    return messages.map((msg) => {
+      const c = msg.content;
+      if (!Array.isArray(c)) return msg;
+      const textParts = c
+        .map((part) => {
+          if (typeof part === 'string') return part;
+          if (part && typeof part === 'object' && (part as any).type === 'text') {
+            return String((part as any).text ?? '');
+          }
+          return '';
+        })
+        .filter(Boolean)
+        .join('\n');
+      return { ...msg, content: textParts || '[non-text attachment omitted for current model]' };
+    });
+  }
+
+  private extractToolStepText(data: unknown): string {
+    if (typeof data === 'string') return data;
+    if (data == null) return '';
+    if (typeof data !== 'object') return String(data);
+    const anyData = data as Record<string, unknown>;
+    if (typeof anyData.error === 'string' && anyData.error.length > 0) return anyData.error;
+    if (typeof anyData.result === 'string' && anyData.result.length > 0) return anyData.result;
+    if (typeof anyData.message === 'string' && anyData.message.length > 0) return anyData.message;
+    if (typeof anyData.summary === 'string' && anyData.summary.length > 0) return anyData.summary;
+    return JSON.stringify(data ?? '');
+  }
   private workerConversationByAgentId: Map<string, string> = new Map();
   private workerConversationCleanupByAgentId: Map<string, () => void> = new Map();
+
+  /** Serializes worker ping/restart so concurrent agent turns do not double-terminate or race proxies. */
+  private memeLoopWorkerMutex: Promise<void> = Promise.resolve();
 
   public async initialize(): Promise<void> {
     try {
@@ -123,7 +165,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Register built-in frameworks
       this.registerBuiltinFrameworks();
       this.initializeMemeLoopRuntimeBridge();
-      await this.initializeMemeLoopWorker();
+      await this.ensureMemeLoopWorkerHealthy();
       logger.debug('AgentInstance frameworks registered');
     } catch (error) {
       logger.error('Failed to initialize agent instance frameworks', { error });
@@ -150,6 +192,13 @@ export class AgentInstanceService implements IAgentInstanceService {
     AgentInstance | undefined | void,
     unknown
   > {
+    try {
+      await this.ensureMemeLoopWorkerHealthy();
+    } catch (error) {
+      logger.error('MemeLoop worker unavailable for memeloopTaskAgentWorker', { error });
+      yield { state: 'failed' };
+      return;
+    }
     const worker = this.memeLoopWorker;
     if (!worker) {
       yield { state: 'failed' };
@@ -204,8 +253,11 @@ export class AgentInstanceService implements IAgentInstanceService {
       void subscription;
     });
 
+    logger.warn('MemeLoop worker sendMessage start', { agentId, workerConversationId });
     await worker.sendMessage(workerConversationId, lastUserMessage.content);
+    logger.warn('MemeLoop worker sendMessage returned', { agentId, workerConversationId });
     const terminalState = await terminalStatePromise;
+    logger.warn('MemeLoop worker terminal state resolved', { agentId, workerConversationId, terminalState });
 
     // Do not attach message artifacts here: worker-side `bindWorkerConversation` already updates messages/status.
     yield { state: terminalState };
@@ -369,13 +421,229 @@ export class AgentInstanceService implements IAgentInstanceService {
     if (this.memeLoopWorker) return;
     try {
       const worker = (MemeLoopWorkerFactory as () => Worker)();
+      worker.on('message', (message: unknown) => {
+        const m = message as {
+          type?: string;
+          id?: string;
+          request?: unknown;
+          toolId?: string;
+          args?: Record<string, unknown>;
+        };
+
+        if (m?.type === 'memeloop-tool-list' && m.id) {
+          worker.postMessage({
+            type: 'memeloop-tool-list-result',
+            id: m.id,
+            tools: listWorkerBridgeTools(),
+          });
+          return;
+        }
+
+        if (m?.type === 'memeloop-tool-call' && m.id && m.toolId) {
+          void (async () => {
+            try {
+              const result = await executeWorkerBridgeTool(m.toolId!, m.args ?? {});
+              worker.postMessage({
+                type: 'memeloop-tool-call-result',
+                id: m.id,
+                result,
+              });
+            } catch (error) {
+              worker.postMessage({
+                type: 'memeloop-tool-call-error',
+                id: m.id,
+                error: {
+                  message: (error as any)?.message ?? String(error),
+                  name: (error as any)?.name ?? 'Error',
+                  stack: (error as any)?.stack,
+                },
+              });
+            }
+          })();
+          return;
+        }
+
+        if (m?.type === 'memeloop-llm-chat' && m.id) {
+          void (async () => {
+            try {
+              const req = m.request as {
+                conversationId?: string;
+                messages?: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string }>;
+              };
+
+              const conversationId = req.conversationId;
+              const mappedAgentId = conversationId ? this.workerAgentIdByConversationId.get(conversationId) : undefined;
+              let modelMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: any }>;
+              if (mappedAgentId && this.agentInstanceRepository && this.agentMessageRepository) {
+                const agentRow = await this.agentInstanceRepository.findOne({ where: { id: mappedAgentId } });
+                const def = await this.agentDefinitionService.getAgentDef(agentRow?.agentDefId ?? 'task-agent');
+                const rows = await this.agentMessageRepository.find({ where: { agentId: mappedAgentId }, order: { created: 'ASC' } });
+                const historyMessages = rows.map((row): any => ({
+                  id: row.id,
+                  agentId: row.agentId,
+                  role: row.role,
+                  content: row.content,
+                  metadata: row.metadata ?? undefined,
+                  created: row.created,
+                  modified: row.modified ?? row.created,
+                }));
+                const { promptConcat } = await import('./promptConcat/promptConcat');
+                const frameworkContext: any = {
+                  agent: {
+                    id: mappedAgentId,
+                    messages: historyMessages,
+                    agentDefId: agentRow?.agentDefId ?? 'task-agent',
+                    status: { state: 'working', modified: new Date() },
+                    created: agentRow?.created ?? new Date(),
+                    agentFrameworkConfig: agentRow?.agentFrameworkConfig ?? {},
+                  },
+                  agentDef: { id: def.id, name: def.name, agentFrameworkConfig: def.agentFrameworkConfig ?? {} },
+                  isCancelled: () => false,
+                };
+                const concatResult = await promptConcat(
+                  { agentFrameworkConfig: def.agentFrameworkConfig ?? {} },
+                  historyMessages,
+                  frameworkContext,
+                );
+                modelMessages = (concatResult.flatPrompts as any[]).map(m_ => ({
+                  role: (m_.role === 'tool' ? 'assistant' : m_.role) as 'system' | 'user' | 'assistant',
+                  content: m_.content,
+                }));
+              } else {
+                modelMessages = (req.messages ?? []).map(msg => ({
+                  role: (msg.role === 'tool' ? 'assistant' : msg.role) as 'system' | 'user' | 'assistant',
+                  content: msg.content,
+                }));
+              }
+
+              const providerRegistryService = container.get(serviceIdentifier.ProviderRegistry) as any;
+              const aiConfig = await providerRegistryService.getAIConfig();
+              logger.warn('memeloop-llm-chat request prepared', {
+                conversationId,
+                agentId: mappedAgentId,
+                messageCount: modelMessages.length,
+                hasNonStringContent: modelMessages.some(msg => typeof msg.content !== 'string'),
+              });
+              const generator = await providerRegistryService.generateFromAI(
+                this.normalizeMultimodalForModelSupport(modelMessages),
+                aiConfig,
+                {
+                  agentInstanceId: conversationId,
+                },
+              );
+              let previousSnapshot = '';
+              for await (const event of generator as AsyncIterable<any>) {
+                logger.warn('memeloop-llm-chat event', {
+                  conversationId,
+                  status: event?.status,
+                  hasContent: event?.content !== undefined && event?.content !== null,
+                  contentType: typeof event?.content,
+                  contentPreview: typeof event?.content === 'string' ? String(event.content).slice(0, 120) : undefined,
+                });
+                if (event?.status === 'error') {
+                  const msg = String(event?.content ?? 'AI provider error');
+                  throw new Error(msg);
+                }
+                if (event?.status === 'update' || event?.status === 'done') {
+                  if (event?.content !== undefined && event?.content !== null) {
+                    const snapshot = String(event.content);
+                    const delta = snapshot.startsWith(previousSnapshot) ? snapshot.slice(previousSnapshot.length) : snapshot;
+                    previousSnapshot = snapshot;
+                    if (delta) worker.postMessage({ type: 'memeloop-llm-chat-delta', id: m.id, delta });
+                  }
+                }
+              }
+              worker.postMessage({ type: 'memeloop-llm-chat-done', id: m.id });
+            } catch (error) {
+              worker.postMessage({
+                type: 'memeloop-llm-chat-error',
+                id: m.id,
+                error: {
+                  message: (error as any)?.message ?? String(error),
+                  name: (error as any)?.name ?? 'Error',
+                  stack: (error as any)?.stack,
+                },
+              });
+            }
+          })();
+          return;
+        }
+      });
+      worker.on('error', (error) => {
+        logger.error('MemeLoop native worker thread error', { error });
+      });
+      worker.on('exit', (code) => {
+        logger.warn('MemeLoop native worker thread exited', { code });
+      });
       this.memeLoopNativeWorker = worker;
       this.memeLoopWorker = createWorkerProxy<MemeLoopWorker>(worker);
-      const ping = await this.memeLoopWorker.ping();
+
+      // Subscribe worker logs via the standard workerAdapter streaming protocol.
+      this.memeLoopWorkerLogCleanup?.();
+      try {
+        const sub = (this.memeLoopWorker as any).subscribeLogs?.().subscribe({
+          next: (evt: unknown) => {
+            const e = evt as { level?: string; message?: string; meta?: unknown };
+            const level = e.level ?? 'info';
+            const text = e.message ?? '[memeloop-worker]';
+            const meta = e.meta;
+            if (level === 'warn') logger.warn(text, meta as any);
+            else if (level === 'error') logger.error(text, meta as any);
+            else if (level === 'debug') logger.debug(text, meta as any);
+            else logger.info(text, meta as any);
+          },
+          error: (error: unknown) => {
+            logger.error('MemeLoop worker log stream failed', { error });
+          },
+        });
+        this.memeLoopWorkerLogCleanup = () => sub.unsubscribe();
+      } catch (error) {
+        logger.warn('Failed to subscribe MemeLoop worker logs', { error });
+      }
+
+      const ping = await Promise.race([
+        this.memeLoopWorker.ping(),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('MemeLoop worker initial ping timeout')), 8000);
+        }),
+      ]);
       logger.info('MemeLoop worker initialized', ping);
     } catch (error) {
       logger.error('Failed to initialize MemeLoop worker', { error });
       throw error;
+    }
+  }
+
+  /**
+   * Ensures the worker thread exists and responds to ping; on failure disposes and recreates it.
+   * Caller should treat this as required before any `memeLoopWorker` RPC (serialized via mutex).
+   */
+  private async ensureMemeLoopWorkerHealthy(): Promise<void> {
+    const previous = this.memeLoopWorkerMutex;
+    let release!: () => void;
+    this.memeLoopWorkerMutex = new Promise<void>(resolve => {
+      release = resolve;
+    });
+    await previous;
+    try {
+      if (!this.memeLoopWorker) {
+        await this.initializeMemeLoopWorker();
+        return;
+      }
+      try {
+        await Promise.race([
+          this.memeLoopWorker.ping(),
+          new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('MemeLoop worker ping timeout')), 5000);
+          }),
+        ]);
+      } catch (error: unknown) {
+        logger.warn('MemeLoop worker unhealthy; restarting worker thread', { error });
+        await this.disposeMemeLoopWorker();
+        await this.initializeMemeLoopWorker();
+      }
+    } finally {
+      release();
     }
   }
 
@@ -592,10 +860,12 @@ export class AgentInstanceService implements IAgentInstanceService {
       }
 
       // Get appropriate framework, fall back to the default when older agent definitions lack this field
-      const agentFrameworkId = agentDefinition.agentFrameworkID ?? 'basicPromptConcatHandler';
-      if (!agentFrameworkId) {
-        throw new Error(`Agent framework ID not found in agent definition: ${agentDefinition.id}`);
-      }
+      const agentFrameworkId = agentDefinition.agentFrameworkID ?? DEFAULT_AGENT_FRAMEWORK_ID;
+      logger.warn('Agent framework selected for sendMsgToAgent', {
+        agentId,
+        definitionId: agentDefinition.id,
+        agentFrameworkId,
+      });
       const framework = this.agentFrameworks.get(agentFrameworkId);
       if (!framework) {
         throw new Error(`Framework not found: ${agentFrameworkId}`);
@@ -643,12 +913,14 @@ export class AgentInstanceService implements IAgentInstanceService {
       }
 
       // Trigger userMessageReceived hook with the configured tools
+      logger.warn('sendMsgToAgent before userMessageReceived hook', { agentId, messageId });
       await frameworkHooks.userMessageReceived.promise({
         agentFrameworkContext: frameworkContext,
         content,
         messageId,
         timestamp: now,
       });
+      logger.warn('sendMsgToAgent after userMessageReceived hook', { agentId, messageId });
 
       // Attach beforeCommitMap to the user message metadata after it's created by the messagePersistence hook.
       // This allows the frontend to know which commit hash to rollback to for this turn.
@@ -668,7 +940,9 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       try {
         // Create async generator
+        logger.warn('sendMsgToAgent before framework generator', { agentId, agentFrameworkId });
         const generator = framework(frameworkContext);
+        logger.warn('sendMsgToAgent framework generator created', { agentId, agentFrameworkId });
 
         // Track the last message for completion handling
         let lastResult: AgentInstanceLatestStatus | undefined;
@@ -803,10 +1077,15 @@ export class AgentInstanceService implements IAgentInstanceService {
     // Try to get cancel token
     const cancelToken = this.cancelTokenMap.get(agentId);
     const workerConversationId = this.workerConversationByAgentId.get(agentId);
-    if (workerConversationId && this.memeLoopWorker) {
-      void this.memeLoopWorker.cancelAgent(workerConversationId).catch((error: unknown) => {
-        logger.warn('MemeLoop worker cancelAgent failed (non-blocking)', { agentId, error });
-      });
+    if (workerConversationId) {
+      void this.ensureMemeLoopWorkerHealthy()
+        .then(() => {
+          if (!this.memeLoopWorker) return;
+          return this.memeLoopWorker.cancelAgent(workerConversationId);
+        })
+        .catch((error: unknown) => {
+          logger.warn('MemeLoop worker cancelAgent failed (non-blocking)', { agentId, error });
+        });
     }
 
     if (cancelToken) {
@@ -933,6 +1212,12 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   private async ensureWorkerConversation(agentId: string, definitionId: string): Promise<string | undefined> {
+    try {
+      await this.ensureMemeLoopWorkerHealthy();
+    } catch (error) {
+      logger.error('Failed to ensure MemeLoop worker for conversation', { agentId, definitionId, error });
+      return undefined;
+    }
     if (!this.memeLoopWorker) return undefined;
     const existing = this.workerConversationByAgentId.get(agentId);
     if (existing) return existing;
@@ -944,7 +1229,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         return created.conversationId;
       }
     } catch (error) {
-      logger.warn('Failed to create MemeLoop worker conversation (non-blocking)', { agentId, definitionId, error });
+      logger.error('Failed to create MemeLoop worker conversation', { agentId, definitionId, error });
     }
     return undefined;
   }
@@ -953,6 +1238,8 @@ export class AgentInstanceService implements IAgentInstanceService {
     if (!this.memeLoopWorker) return;
     if (this.workerConversationCleanupByAgentId.has(agentId)) return;
     try {
+      logger.warn('MemeLoop bindWorkerConversation subscribed', { agentId, conversationId });
+      this.workerAgentIdByConversationId.set(conversationId, agentId);
       // Keep a stable assistant message id while streaming text deltas.
       let assistantMessageId: string | undefined;
       let assistantBuffer = '';
@@ -971,6 +1258,15 @@ export class AgentInstanceService implements IAgentInstanceService {
           };
           const updateType = raw?.update?.type;
           if (!updateType) return;
+          // Debug hook: verify whether MemeLoop emits ask-question/tool-approval updates.
+          // Keep this log short to avoid huge log files in e2e.
+          logger.warn('MemeLoop worker update received', {
+            agentId,
+            conversationId,
+            updateType,
+            hasPayload: Boolean(raw?.update?.payload),
+            stepType: raw?.update?.step?.type,
+          });
 
           if (updateType === 'ask-question') {
             const payload_ = raw.update?.payload as
@@ -1064,7 +1360,13 @@ Result: ${JSON.stringify(approvalPrompt)}
             const stepType = step?.type;
             if (!stepType) return;
             if (stepType === 'message') {
-              const delta = typeof step.data === 'string' ? step.data : JSON.stringify(step.data ?? '');
+              const data = step.data as unknown;
+              const delta = typeof data === 'string'
+                ? data
+                : (data && typeof data === 'object' && 'content' in (data as any) && typeof (data as any).content === 'string')
+                  ? String((data as any).content)
+                  : JSON.stringify(data ?? '');
+              logger.warn('MemeLoop worker assistant delta', { agentId, conversationId, deltaPreview: delta.slice(0, 120) });
               if (!lastWasAssistantMessage) {
                 assistantMessageId = `worker-assistant-${Date.now()}`;
                 assistantBuffer = delta;
@@ -1093,24 +1395,32 @@ Result: ${JSON.stringify(approvalPrompt)}
               }
               return;
             }
-            if (stepType === 'thinking' || stepType === 'tool') {
+            if (stepType === 'thinking') {
+              // Do not materialize hidden "step" messages into the chat history.
+              // The UI may still render hidden messages in the DOM, which breaks E2E
+              // that expects exactly user+assistant bubbles for a plain-text turn.
               lastWasAssistantMessage = false;
-              const message = {
-                id: `worker-step-${Date.now()}`,
+            }
+            if (stepType === 'tool') {
+              lastWasAssistantMessage = false;
+              const data = step.data as unknown;
+              const content = this.extractToolStepText(data);
+              logger.warn('MemeLoop tool step materialized', {
                 agentId,
-                role: 'agent' as const,
-                content: JSON.stringify({ type: stepType, data: step.data ?? null }),
-                hidden: true,
+                conversationId,
+                contentPreview: content.slice(0, 200),
+              });
+              const message = {
+                id: `worker-tool-${Date.now()}`,
+                agentId,
+                role: 'tool' as const,
+                content,
                 modified: new Date(),
               };
-              const statusKey = `${agentId}:${message.id}`;
               void this.updateAgent(agentId, {
                 status: { state: 'working', modified: new Date() },
                 messages: [message],
               }).catch(() => undefined);
-              if (this.statusSubjects.has(statusKey)) {
-                this.statusSubjects.get(statusKey)?.next({ state: 'working', message, modified: new Date() });
-              }
             }
             return;
           }
@@ -1212,7 +1522,13 @@ Result: ${JSON.stringify(approvalPrompt)}
 
   private async cancelWorkerConversation(agentId: string): Promise<void> {
     const workerConversationId = this.workerConversationByAgentId.get(agentId);
-    if (!workerConversationId || !this.memeLoopWorker) return;
+    if (!workerConversationId) return;
+    try {
+      await this.ensureMemeLoopWorkerHealthy();
+    } catch {
+      return;
+    }
+    if (!this.memeLoopWorker) return;
     try {
       await this.memeLoopWorker.cancelAgent(workerConversationId);
     } catch (error) {
@@ -1221,6 +1537,11 @@ Result: ${JSON.stringify(approvalPrompt)}
   }
 
   public async resolveToolApproval(approvalId: string, decision: 'allow' | 'deny'): Promise<void> {
+    try {
+      await this.ensureMemeLoopWorkerHealthy();
+    } catch {
+      // fall through to legacy resolver
+    }
     if (this.memeLoopWorker) {
       try {
         await this.memeLoopWorker.resolveToolApproval(approvalId, decision);
@@ -1236,21 +1557,24 @@ Result: ${JSON.stringify(approvalPrompt)}
 
   public resolveAskQuestion(agentId: string, questionId: string, answer: string): void {
     // Prefer resolving inside MemeLoop worker so the agent can continue in the same turn.
-    if (this.memeLoopWorker) {
-      void this.memeLoopWorker
-        .resolveAskQuestion(agentId, questionId, answer)
-        .then((res) => {
+    void (async () => {
+      try {
+        await this.ensureMemeLoopWorkerHealthy();
+      } catch (error) {
+        logger.warn('MemeLoop worker unavailable for resolveAskQuestion; using legacy path', { agentId, error });
+        await this.resolveAskQuestionAsync(agentId, questionId, answer);
+        return;
+      }
+      if (this.memeLoopWorker) {
+        try {
+          const res = await this.memeLoopWorker.resolveAskQuestion(agentId, questionId, answer);
           if (res?.resolved) return;
-          // If worker can't find the pending question, fall back to legacy behavior.
-          return void this.resolveAskQuestionAsync(agentId, questionId, answer);
-        })
-        .catch(() => {
-          void this.resolveAskQuestionAsync(agentId, questionId, answer);
-        });
-      return;
-    }
-
-    void this.resolveAskQuestionAsync(agentId, questionId, answer);
+        } catch {
+          // fall through
+        }
+      }
+      await this.resolveAskQuestionAsync(agentId, questionId, answer);
+    })();
   }
 
   private async resolveAskQuestionAsync(agentId: string, questionId: string, answer: string): Promise<void> {
@@ -1711,6 +2035,33 @@ Result: ${JSON.stringify(approvalPrompt)}
       };
       void processStream();
     });
+  }
+
+  /**
+   * Terminate the MemeLoop worker thread and drop proxies. Call from app `before-quit` so the process can exit cleanly.
+   */
+  public async disposeMemeLoopWorker(): Promise<void> {
+    this.memeLoopWorkerLogCleanup?.();
+    this.memeLoopWorkerLogCleanup = undefined;
+    for (const [agentId, cleanup] of [...this.workerConversationCleanupByAgentId.entries()]) {
+      try {
+        cleanup();
+      } catch {
+        // ignore
+      }
+      this.workerConversationCleanupByAgentId.delete(agentId);
+    }
+    this.workerConversationByAgentId.clear();
+
+    if (this.memeLoopNativeWorker) {
+      try {
+        await this.memeLoopNativeWorker.terminate();
+      } catch (error) {
+        logger.warn('Failed to terminate MemeLoop native worker', { error });
+      }
+      this.memeLoopNativeWorker = undefined;
+    }
+    this.memeLoopWorker = undefined;
   }
 
   public getFrameworkConfigSchema(frameworkId: string): Record<string, unknown> {

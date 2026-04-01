@@ -15,6 +15,7 @@ import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
 import type { AiAPIConfig } from '../promptConcat/promptConcatSchema';
 import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { registerWorkerBridgeTool } from './workerToolBridge';
 
 /**
  * Wiki Search Config Schema (user-configurable in UI)
@@ -362,3 +363,19 @@ const wikiSearchDefinition = registerToolDefinition({
 });
 
 export const wikiSearchTool = wikiSearchDefinition.tool;
+
+registerWorkerBridgeTool('wiki-search', async (args) => {
+  const result = await executeWikiSearch(args as WikiSearchToolParameters);
+  if (result.success) {
+    return { result: result.data, metadata: result.metadata };
+  }
+  return { error: result.error ?? 'wiki-search failed', metadata: result.metadata };
+});
+
+registerWorkerBridgeTool('wiki-update-embeddings', async (args) => {
+  const result = await executeWikiUpdateEmbeddings(args as WikiUpdateEmbeddingsToolParameters);
+  if (result.success) {
+    return { result: result.data, metadata: result.metadata };
+  }
+  return { error: result.error ?? 'wiki-update-embeddings failed', metadata: result.metadata };
+});

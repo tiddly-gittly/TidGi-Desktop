@@ -23,6 +23,7 @@ export default (
   callback: () => void,
 ): void => {
   const cwd = path.resolve(buildPath, '..');
+  const appNodeModulesDir = path.resolve(buildPath, 'node_modules');
   const projectRoot = path.resolve(__dirname, '..');
 
   console.log('Copy npm packages with node-worker dependencies with binary (dugite) or __filename usages (tiddlywiki), which cannot be prepared properly by webpack');
@@ -50,6 +51,17 @@ export default (
       ['tiddlywiki', 'tiddlywiki.js'],
       // node binary
       ['better-sqlite3', 'build', 'Release', 'better_sqlite3.node'],
+      // `ws` optional native deps (required in our bundled Electron runtime when it tries to resolve them)
+      ['bufferutil'],
+      ['utf-8-validate'],
+      // `memeloop` node server uses lazy `require('faye-websocket')`
+      ['faye-websocket'],
+      // `faye-websocket` runtime dependency
+      ['websocket-driver'],
+      // `websocket-driver` runtime dependencies
+      ['http-parser-js'],
+      ['safe-buffer'],
+      ['websocket-extensions'],
       // nsfw native module
       ['nsfw', 'build', 'Release', 'nsfw.node'],
       // Refer to `node_modules\sqlite-vec\index.cjs` for latest file names
@@ -68,11 +80,18 @@ export default (
     for (const packagePathInNodeModules of packagePathsToCopyDereferenced) {
       // some binary may not exist in other platforms, so allow failing here.
       try {
-        fs.copySync(
-          path.resolve(sourceNodeModulesFolder, ...packagePathInNodeModules),
-          path.resolve(cwd, 'node_modules', ...packagePathInNodeModules),
-          { dereference: true },
-        );
+        const first = packagePathInNodeModules[0] ?? '';
+        const source = path.resolve(sourceNodeModulesFolder, ...packagePathInNodeModules);
+
+        const destMain = path.resolve(cwd, 'node_modules', ...packagePathInNodeModules);
+        fs.copySync(source, destMain, { dereference: true });
+
+        // `ws`'s optional native deps may be required from inside `app.asar` bundles,
+        // so place them both in Resources/node_modules and Resources/app/node_modules.
+        if (first === 'bufferutil' || first === 'utf-8-validate') {
+          const destApp = path.resolve(appNodeModulesDir, ...packagePathInNodeModules);
+          fs.copySync(source, destApp, { dereference: true });
+        }
       } catch (error) {
         // some binary may not exist in other platforms, so allow failing here.
         const errorMessage = error instanceof Error ? error.message : String(error);

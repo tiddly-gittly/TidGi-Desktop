@@ -1,21 +1,17 @@
 import 'source-map-support/register';
 
 import { nanoid } from 'nanoid';
-import { firstValueFrom, Observable, toArray } from 'rxjs';
+import { firstValueFrom, Observable, Subject, toArray } from 'rxjs';
 import path from 'node:path';
 import fs from 'node:fs';
+import type { AddressInfo } from 'node:net';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { AgentDefinition, AttachmentRef, ChatMessage, ConversationMeta } from '@memeloop/protocol';
+import taskAgents from './agentFrameworks/taskAgents.json';
 
-import {
-  createMemeLoopRuntime,
-  createTaskAgent,
-  registerBuiltinTools,
-  resolveApproval,
-  resolveQuestionAnswer,
-  onApprovalRequest,
-} from 'memeloop';
+import { resolveApproval, resolveQuestionAnswer, onApprovalRequest } from 'memeloop';
+import type { IWikiManager, TiddlerFields } from 'memeloop-node';
 import { handleWorkerMessages } from '@services/libs/workerAdapter';
 import {
   agentDefinition as agentDefinitionService,
@@ -23,19 +19,234 @@ import {
   native as nativeService,
   workspace as workspaceService,
 } from '@services/wiki/wikiWorker/services';
-import type { AgentFrameworkContext, IAgentStorage, IToolRegistry, PromptConcatHooks } from 'memeloop';
-import type { IWikiManager, TiddlerFields } from 'memeloop-node/src/knowledge/wikiManager';
-import { registerWikiTools } from 'memeloop-node/src/tools/wikiTools';
-import { registerFileTools } from 'memeloop-node/src/tools/fileSystem';
-import { registerTerminalTools } from 'memeloop-node/src/tools/terminal';
-import { registerGenericNodeTools } from 'memeloop-node/src/tools/genericNodeTools';
 import { TerminalSessionManager } from './terminal/sessionManager';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { parentPort } = require('worker_threads') as typeof import('worker_threads');
+
+type WorkerLogEvent = {
+  level: 'debug' | 'info' | 'warn' | 'error';
+  message: string;
+  meta?: unknown;
+};
+
+// Use the existing workerAdapter Observable streaming channel for logs,
+// so we don't invent a one-off postMessage protocol.
+const logSubject = new Subject<WorkerLogEvent>();
+function workerLog(level: WorkerLogEvent['level'], message: string, meta?: unknown): void {
+  try {
+    logSubject.next({ level, message, meta });
+  } catch {
+    // ignore
+  }
+}
+
+type MainLlmChatRequest = {
+  conversationId?: string;
+  messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string }>;
+};
+
+type PendingLlmStream = {
+  deltas: string[];
+  waiters: Array<(r: IteratorResult<string, undefined>) => void>;
+  done: boolean;
+  error?: Error;
+};
+const pendingMainLlmChat = new Map<string, PendingLlmStream>();
+type PendingMainRequest<T> = {
+  resolve: (value: T) => void;
+  reject: (error: Error) => void;
+};
+const pendingMainToolList = new Map<string, PendingMainRequest<string[]>>();
+const pendingMainToolCall = new Map<string, PendingMainRequest<unknown>>();
+
+if (parentPort) {
+  parentPort.on('message', (message: unknown) => {
+    const m = message as {
+      type?: string;
+      id?: string;
+      delta?: string;
+      tools?: string[];
+      result?: unknown;
+      error?: { message: string; name?: string; stack?: string };
+    };
+    if (!m?.id) return;
+    if (m.type === 'memeloop-tool-list-result') {
+      const pending = pendingMainToolList.get(m.id);
+      if (!pending) return;
+      pendingMainToolList.delete(m.id);
+      pending.resolve(Array.isArray(m.tools) ? m.tools.filter((t): t is string => typeof t === 'string') : []);
+      return;
+    }
+    if (m.type === 'memeloop-tool-call-result') {
+      const pending = pendingMainToolCall.get(m.id);
+      if (!pending) return;
+      pendingMainToolCall.delete(m.id);
+      pending.resolve(m.result);
+      return;
+    }
+    if (m.type === 'memeloop-tool-call-error') {
+      const pending = pendingMainToolCall.get(m.id);
+      if (!pending) return;
+      pendingMainToolCall.delete(m.id);
+      const error = new Error(m.error?.message ?? 'memeloop-tool-call failed');
+      error.name = m.error?.name ?? 'Error';
+      error.stack = m.error?.stack;
+      pending.reject(error);
+      return;
+    }
+
+    const pending = pendingMainLlmChat.get(m.id);
+    if (!pending) return;
+    if (m.type === 'memeloop-llm-chat-delta') {
+      const delta = String(m.delta ?? '');
+      if (!delta) return;
+      const waiter = pending.waiters.shift();
+      if (waiter) waiter({ value: delta, done: false });
+      else pending.deltas.push(delta);
+    } else if (m.type === 'memeloop-llm-chat-done') {
+      pending.done = true;
+      while (pending.waiters.length > 0) {
+        const waiter = pending.waiters.shift();
+        if (waiter) waiter({ value: undefined, done: true });
+      }
+      pendingMainLlmChat.delete(m.id);
+    } else if (m.type === 'memeloop-llm-chat-error') {
+      const error = new Error(m.error?.message ?? 'memeloop-llm-chat failed');
+      error.name = m.error?.name ?? 'Error';
+      error.stack = m.error?.stack;
+      pending.error = error;
+      while (pending.waiters.length > 0) {
+        const waiter = pending.waiters.shift();
+        if (waiter) waiter({ value: undefined, done: true });
+      }
+      pendingMainLlmChat.delete(m.id);
+    }
+  });
+}
+
+function makeMainRequestId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+async function requestMainBridgeToolList(timeoutMs = 10000): Promise<string[]> {
+  const id = makeMainRequestId('tools');
+  const result = await new Promise<string[]>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      pendingMainToolList.delete(id);
+      reject(new Error(`memeloop-tool-list timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+    pendingMainToolList.set(id, {
+      resolve: (tools) => {
+        clearTimeout(timeout);
+        resolve(tools);
+      },
+      reject: (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      },
+    });
+    parentPort?.postMessage({ type: 'memeloop-tool-list', id });
+  });
+  return result;
+}
+
+async function callMainTool(toolId: string, args: Record<string, unknown>, timeoutMs = 60000): Promise<unknown> {
+  const id = makeMainRequestId('toolcall');
+  const result = await new Promise<unknown>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      pendingMainToolCall.delete(id);
+      reject(new Error(`memeloop-tool-call timed out after ${timeoutMs}ms for ${toolId}`));
+    }, timeoutMs);
+    pendingMainToolCall.set(id, {
+      resolve: (value) => {
+        clearTimeout(timeout);
+        resolve(value);
+      },
+      reject: (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      },
+    });
+    parentPort?.postMessage({ type: 'memeloop-tool-call', id, toolId, args });
+  });
+  return result;
+}
+
+async function* callMainLlmChat(request: MainLlmChatRequest): AsyncGenerator<string, void, unknown> {
+  const id = `llm_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const pending: PendingLlmStream = { deltas: [], waiters: [], done: false };
+  pendingMainLlmChat.set(id, pending);
+  parentPort?.postMessage({ type: 'memeloop-llm-chat', id, request });
+
+  while (true) {
+    if (pending.error) throw pending.error;
+    if (pending.deltas.length > 0) {
+      yield pending.deltas.shift()!;
+      continue;
+    }
+    if (pending.done) return;
+    const next = await new Promise<IteratorResult<string, undefined>>((resolve) => {
+      pending.waiters.push(resolve);
+    });
+    if (pending.error) throw pending.error;
+    if (next.done) return;
+    if (next.value) yield next.value;
+  }
+}
+
+const workerLogger = {
+  warn: (...a: unknown[]) => workerLog('warn', '[memeloop-worker]', { a }),
+  error: (...a: unknown[]) => workerLog('error', '[memeloop-worker]', { a }),
+};
+
+process.on('uncaughtException', (err) => {
+  workerLog('error', '[memeloop-worker] uncaughtException', { err });
+});
+process.on('unhandledRejection', (reason) => {
+  workerLog('error', '[memeloop-worker] unhandledRejection', { reason });
+});
+process.on('exit', (code) => {
+  workerLog('error', '[memeloop-worker] exit', { code });
+});
+for (const sig of ['SIGABRT', 'SIGSEGV', 'SIGILL', 'SIGFPE', 'SIGBUS', 'SIGTERM', 'SIGHUP', 'SIGINT'] as const) {
+  process.on(sig, () => {
+    workerLog('error', '[memeloop-worker] signal', { sig });
+  });
+}
 
 type RuntimeUpdate = { conversationId: string; update: unknown };
 
 const metas = new Map<string, ConversationMeta>();
 const messages = new Map<string, ChatMessage[]>();
 const definitionStore = new Map<string, AgentDefinition>();
+
+// Seed built-in agent definitions locally to avoid IPC-dependent lookups from within this worker thread.
+for (const def of taskAgents as unknown as AgentDefinition[]) {
+  if (def?.id) definitionStore.set(def.id, def);
+}
+
+/** Prevent unbounded growth of in-memory conversation state inside the worker thread. */
+const MAX_WORKER_CONVERSATIONS = 128;
+
+function trimWorkerConversationsIfNeeded(): void {
+  while (metas.size > MAX_WORKER_CONVERSATIONS) {
+    let oldestId: string | undefined;
+    let oldestTs = Number.POSITIVE_INFINITY;
+    for (const [id, meta] of metas) {
+      const ts = meta.lastMessageTimestamp ?? 0;
+      if (ts < oldestTs) {
+        oldestTs = ts;
+        oldestId = id;
+      }
+    }
+    if (!oldestId) break;
+    metas.delete(oldestId);
+    messages.delete(oldestId);
+    customUpdateListenersByConversationId.delete(oldestId);
+    conversationCancellation.delete(oldestId);
+  }
+}
 
 type AskQuestionPrompt = {
   type: 'ask-question';
@@ -58,10 +269,29 @@ type WorkerCustomUpdate =
   | { type: 'tool-approval'; payload: ToolApprovalPrompt };
 
 const customUpdateListenersByConversationId = new Map<string, Set<(update: WorkerCustomUpdate) => void>>();
-function emitCustomUpdate(conversationId: string, update: WorkerCustomUpdate): void {
-  const set = customUpdateListenersByConversationId.get(conversationId);
-  if (!set || set.size === 0) return;
-  for (const listener of set) {
+function emitCustomUpdate(conversationId: string | undefined, update: WorkerCustomUpdate): void {
+  // Some runtimes may pass a different identifier than the one we used for subscribeToUpdates().
+  // When we can't match a set by id, broadcast to all listener sets to avoid missing ask-question/tool-approval.
+  const setById = conversationId ? customUpdateListenersByConversationId.get(conversationId) : undefined;
+  const targetSets = setById && setById.size > 0 ? [setById] : Array.from(customUpdateListenersByConversationId.values());
+  if (targetSets.length === 0) return;
+
+  workerLog('warn', '[memeloop-worker] emitCustomUpdate', {
+    conversationId,
+    type: update.type,
+    targetSets: targetSets.length,
+    questionId: update.type === 'ask-question' ? update.payload.questionId : undefined,
+    question: update.type === 'ask-question' ? update.payload.question : undefined,
+    inputType: update.type === 'ask-question' ? update.payload.inputType : undefined,
+  });
+
+  // Deduplicate listeners across sets.
+  const listeners = new Set<(update: WorkerCustomUpdate) => void>();
+  for (const s of targetSets) {
+    for (const l of s) listeners.add(l);
+  }
+
+  for (const listener of listeners) {
     try {
       listener(update);
     } catch {
@@ -87,6 +317,7 @@ const inMemoryStorage = {
   },
   upsertConversationMetadata: async (meta: ConversationMeta) => {
     metas.set(meta.conversationId, meta);
+    trimWorkerConversationsIfNeeded();
   },
   insertMessagesIfAbsent: async (incoming: ChatMessage[]) => {
     for (const msg of incoming) {
@@ -102,40 +333,12 @@ const inMemoryStorage = {
   getAgentDefinition: async (id: string): Promise<AgentDefinition | null> => {
     const hit = definitionStore.get(id);
     if (hit) return hit;
-    const fetched = await agentDefinitionService.getAgentDef(id);
-    if (fetched) {
-      const normalized = fetched as unknown as AgentDefinition;
-      definitionStore.set(id, normalized);
-      return normalized;
-    }
+    // Avoid calling main-process services from this worker; definitions should be pre-seeded or loaded via runtime wiki manager.
     return null;
   },
   saveAgentInstance: async () => undefined,
   getConversationMeta: async (conversationId: string): Promise<ConversationMeta | null> => metas.get(conversationId) ?? null,
 };
-
-class SimpleToolRegistry implements IToolRegistry {
-  private tools = new Map<string, unknown>();
-  private readonly promptPlugins = new Map<string, (hooks: PromptConcatHooks) => void>();
-
-  getPromptPlugins(): Map<string, (hooks: PromptConcatHooks) => void> {
-    return this.promptPlugins;
-  }
-
-  registerTool(id: string, impl: unknown): void {
-    this.tools.set(id, impl);
-  }
-
-  getTool(id: string): unknown | undefined {
-    return this.tools.get(id);
-  }
-
-  listTools(): string[] {
-    return Array.from(this.tools.keys());
-  }
-}
-
-const toolRegistry = new SimpleToolRegistry();
 
 const conversationCancellation = new Set<string>();
 
@@ -146,52 +349,15 @@ const llmProvider = {
       messages?: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: unknown }>;
       conversationId?: string;
     };
-    const aiConfig = await providerRegistryService.getAIConfig();
     const modelMessages = (req.messages ?? []).map(message => ({
       role: message.role,
       content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content ?? ''),
     }));
-    // `electron-ipc-cat` proxies can widen the return type to Promise<AsyncGenerator<...>>,
-    // so we explicitly await before `for await`.
-    const generator = await (providerRegistryService as any).generateFromAI(modelMessages as any, aiConfig, {
-      agentInstanceId: req.conversationId,
-    });
-    for await (const event of generator as AsyncIterable<any>) {
-      if (event?.status === 'update' || event?.status === 'done') {
-        yield {
-          type: 'text-delta',
-          content: String(event?.content ?? ''),
-          id: nanoid(),
-        };
-      }
-    }
+                for await (const delta of callMainLlmChat({ conversationId: req.conversationId, messages: modelMessages })) {
+                  yield { type: 'text-delta', content: delta, id: nanoid() };
+                }
   },
 };
-
-// Desktop zx-script adapter: keep worker-side tool IDs aligned with TidGi llm tool name (`zx-script`).
-toolRegistry.registerTool('zx-script', async (args: Record<string, unknown>) => {
-  const workspaceName = args.workspaceName as string | undefined;
-  const script = args.script as string | undefined;
-  const fileName = (args.fileName as string | undefined) ?? 'agent-script.mjs';
-
-  if (!workspaceName || typeof workspaceName !== 'string') {
-    return { error: 'Missing or invalid workspaceName' };
-  }
-  if (!script || typeof script !== 'string') {
-    return { error: 'Missing or invalid script' };
-  }
-
-  const workspaces = await workspaceService.getWorkspacesAsList();
-  const target = workspaces.find(ws => ws.name === workspaceName || ws.id === workspaceName);
-  if (!target) {
-    return { error: `Workspace "${workspaceName}" not found` };
-  }
-
-  const output$ = nativeService.executeZxScript$({ fileContent: script, fileName }, target.id) as unknown as Observable<string>;
-  const outputLines = await firstValueFrom(output$.pipe(toArray()));
-  const output = outputLines.join('\n').trim();
-  return { result: output || '(script completed with no output)' };
-});
 
 // Minimal wiki manager: boot tiddlywiki directly in worker.
 class DesktopTiddlyWikiManager implements IWikiManager {
@@ -318,14 +484,7 @@ class DesktopTiddlyWikiManager implements IWikiManager {
   }
 }
 
-// Register node tooling for the worker runtime.
-registerTerminalTools(toolRegistry, new TerminalSessionManager());
-registerFileTools(toolRegistry, process.cwd());
-registerWikiTools(toolRegistry, new DesktopTiddlyWikiManager(), 'default');
-registerGenericNodeTools(toolRegistry);
-
-// Wire tool approval requests (used by memeloop taskAgent when toolPermissions.action === "ask").
-onApprovalRequest((request) => {
+onApprovalRequest(request => {
   emitCustomUpdate(request.agentId, {
     type: 'tool-approval',
     payload: {
@@ -337,73 +496,257 @@ onApprovalRequest((request) => {
   });
 });
 
-const runtimeContext: AgentFrameworkContext = {
-  storage: inMemoryStorage,
-  llmProvider,
-  tools: toolRegistry,
-  syncAdapters: [],
-  network: {
-    start: async () => undefined,
-    stop: async () => undefined,
-  },
-  conversationCancellation,
-  resolveAgentDefinition: async (definitionId: string) => inMemoryStorage.getAgentDefinition(definitionId),
-  taskAgent: {
-    maxIterations: 32,
-    isCancelled: (cid: string) => conversationCancellation.has(cid),
-  },
-  logger: {
-    warn: (...a: unknown[]) => console.warn('[memeloop-worker]', ...a),
-    error: (...a: unknown[]) => console.error('[memeloop-worker]', ...a),
-  },
-};
+const wikiManager = new DesktopTiddlyWikiManager();
 
-runtimeContext.runTaskAgent = createTaskAgent(runtimeContext);
+const localNodeId = `tidgi-desktop-${nanoid(8)}`;
+const terminalManager = new TerminalSessionManager();
 
-registerBuiltinTools(toolRegistry, {
-  ...runtimeContext,
-  runLocalAgent: runtimeContext.runTaskAgent,
-  getPeers: async () => [],
-  sendRpcToNode: async () => ({ ok: false, error: 'remoteAgent not configured in desktop worker' }),
-  mcpCallRemote: async () => ({ ok: false, error: 'mcpClient not configured in desktop worker' }),
-  notifyAskQuestion: ({ questionId, question, conversationId }: { questionId: string; question: string; conversationId: string }) => {
-    emitCustomUpdate(conversationId, {
-      type: 'ask-question',
-      payload: {
-        type: 'ask-question',
-        questionId,
-        question,
-        inputType: 'text',
-        allowFreeform: true,
-      },
+let runtime: any;
+let storage: any;
+let toolRegistry: any;
+let runtimeWikiManager: IWikiManager;
+let agentDefinitions: any;
+let fileBaseDirResolved: string;
+let createNodeServerFn: any;
+let runtimeInitPromise: Promise<void> | undefined;
+
+async function ensureRuntimeInitialized(): Promise<void> {
+  if (runtime) return;
+  if (runtimeInitPromise) {
+    await runtimeInitPromise;
+    return;
+  }
+
+  runtimeInitPromise = (async () => {
+    // Avoid worker module init crashes: load memeloop-node lazily.
+    const memeloopNode = await import('memeloop-node');
+    const { createNodeRuntime, ToolRegistry, createNodeServer } = memeloopNode as unknown as {
+      createNodeRuntime: typeof memeloopNode.createNodeRuntime;
+      ToolRegistry: typeof memeloopNode.ToolRegistry;
+      createNodeServer: typeof memeloopNode.createNodeServer;
+    };
+
+    createNodeServerFn = createNodeServer;
+
+    const mainBridgeToolIds = await requestMainBridgeToolList().catch((error) => {
+      workerLog('warn', '[memeloop-worker] failed to load main bridge tool list', { error });
+      return [] as string[];
     });
-  },
-} as any);
 
-const runtime = createMemeLoopRuntime(runtimeContext);
+    const runtimeResult = createNodeRuntime({
+      storage: inMemoryStorage,
+      llmProvider,
+      toolRegistry: new ToolRegistry(),
+      configureTools(registry) {
+        // Desktop zx-script adapter: align worker tool id with TidGi llm tool name (`zx-script`).
+        registry.registerTool('zx-script', async (args: Record<string, unknown>) => {
+          const workspaceName = args.workspaceName as string | undefined;
+          const script = args.script as string | undefined;
+          const fileName = (args.fileName as string | undefined) ?? 'agent-script.mjs';
+
+          if (!workspaceName || typeof workspaceName !== 'string') {
+            return { error: 'Missing or invalid workspaceName' };
+          }
+          if (!script || typeof script !== 'string') {
+            return { error: 'Missing or invalid script' };
+          }
+
+          const workspaces = await workspaceService.getWorkspacesAsList();
+          const target = workspaces.find(ws => ws.name === workspaceName || ws.id === workspaceName);
+          if (!target) {
+            return { error: `Workspace "${workspaceName}" not found` };
+          }
+
+          const output$ = nativeService.executeZxScript$({ fileContent: script, fileName }, target.id) as unknown as Observable<string>;
+          const outputLines = await firstValueFrom(output$.pipe(toArray()));
+          const output = outputLines.join('\n').trim();
+          return { result: output || '(script completed with no output)' };
+        });
+
+        for (const toolId of mainBridgeToolIds) {
+          if (typeof registry.getTool === 'function' && registry.getTool(toolId)) continue;
+          registry.registerTool(toolId, async (args: Record<string, unknown>) => {
+            return callMainTool(toolId, args ?? {});
+          });
+        }
+      },
+      builtinToolContext: {
+        getPeers: async () => [],
+        sendRpcToNode: async () => ({ ok: false, error: 'remoteAgent not configured in desktop worker' }),
+        mcpCallRemote: async () => ({ ok: false, error: 'mcpClient not configured in desktop worker' }),
+        notifyAskQuestion: (payload: unknown) => {
+          const p = payload as Partial<AskQuestionPrompt> & { conversationId?: string; questionId?: string; question?: string };
+          if (!p.questionId || !p.question) return;
+
+          emitCustomUpdate(p.conversationId, {
+            type: 'ask-question',
+            payload: {
+              type: 'ask-question',
+              questionId: p.questionId,
+              question: p.question,
+              inputType: p.inputType ?? undefined,
+              options: p.options,
+              allowFreeform: p.allowFreeform,
+            },
+          });
+        },
+      },
+      terminalManager,
+      fileBaseDir: process.cwd(),
+      wikiManager,
+      wikiAgentDefinitionWikiIds: ['default'],
+      includeVscodeCli: false,
+      conversationCancellation,
+      logger: {
+        warn: (...a: unknown[]) => workerLogger.warn(...a),
+        error: (...a: unknown[]) => workerLogger.error(...a),
+      },
+      network: {
+        start: async () => undefined,
+        stop: async () => undefined,
+      },
+      taskAgent: { maxIterations: 32 },
+    });
+
+    runtime = runtimeResult.runtime;
+    storage = runtimeResult.storage;
+    toolRegistry = runtimeResult.toolRegistry;
+    runtimeWikiManager = runtimeResult.wikiManager;
+    agentDefinitions = runtimeResult.agentDefinitions;
+    fileBaseDirResolved = runtimeResult.fileBaseDirResolved;
+  })();
+
+  await runtimeInitPromise;
+}
+
+let desktopNodeServer: import('node:http').Server | undefined;
+let desktopNodePort: number | undefined;
+let desktopNodeStarted = false;
+let desktopNodeStartPromise: Promise<void> | undefined;
+
+async function ensureDesktopNodeStarted(): Promise<void> {
+  await ensureRuntimeInitialized();
+  if (desktopNodeStarted) return;
+  if (desktopNodeStartPromise) {
+    await desktopNodeStartPromise;
+    return;
+  }
+
+  desktopNodeStartPromise = (async () => {
+    let stage = 'init';
+    try {
+      const desiredPort = parseInt(process.env.TIDGI_MEMELOOP_PORT ?? '', 10);
+      stage = 'resolve-port';
+      const port = Number.isFinite(desiredPort) && desiredPort > 0 ? desiredPort : 0;
+      workerLog('warn', '[memeloop-worker][desktop-as-node] ensureDesktopNodeStarted', {
+        stage,
+        port,
+        nodeId: localNodeId,
+        env: { NODE_ENV: process.env.NODE_ENV },
+      });
+      stage = 'create-server';
+      workerLog('warn', '[memeloop-worker][desktop-as-node] before createNodeServer', { stage });
+      desktopNodeServer = createNodeServerFn({
+        port,
+        nodeId: localNodeId,
+        rpcContext: {
+          runtime,
+          storage,
+          toolRegistry,
+          terminalManager,
+          wikiManager: runtimeWikiManager,
+          nodeId: localNodeId,
+          mcpServers: [],
+          imChannels: [],
+          agentDefinitions,
+          fileBaseDir: fileBaseDirResolved,
+        },
+        serviceName: 'tidgi-desktop',
+      });
+      workerLog('warn', '[memeloop-worker][desktop-as-node] after createNodeServer', { stage });
+
+      stage = 'listen';
+      await new Promise<void>((resolve, reject) => {
+        workerLog('warn', '[memeloop-worker][desktop-as-node] before listen', { stage, port });
+        const timeout = setTimeout(() => {
+          reject(new Error('desktop node server listen timeout'));
+        }, 5000);
+        desktopNodeServer!.listen(port, () => resolve());
+        desktopNodeServer!.once('error', reject);
+        desktopNodeServer!.once('listening', () => clearTimeout(timeout));
+      });
+      workerLog('warn', '[memeloop-worker][desktop-as-node] after listen resolved', { stage });
+      stage = 'read-address';
+      const address = desktopNodeServer.address();
+      if (address && typeof address === 'object') {
+        desktopNodePort = (address as AddressInfo).port;
+      }
+      desktopNodeStarted = true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`desktop node start failed at stage=${stage}: ${message}`);
+    } finally {
+      desktopNodeStartPromise = undefined;
+    }
+  })();
+
+  await desktopNodeStartPromise;
+}
+
+async function stopDesktopNodeServer(): Promise<void> {
+  if (!desktopNodeServer) return;
+  const server = desktopNodeServer;
+  desktopNodeServer = undefined;
+  desktopNodeStarted = false;
+  await new Promise<void>(resolve => server.close(() => resolve()));
+}
 
 const workerState = {
   initializedAt: Date.now(),
 };
 
 const memeloopWorker = {
-  ping: async () => ({ ok: true, initializedAt: workerState.initializedAt }),
+  subscribeLogs: () => logSubject.asObservable(),
+  ping: async () => {
+    workerLog('warn', '[memeloop-worker] ping');
+    await ensureDesktopNodeStarted();
+    return { ok: true, initializedAt: workerState.initializedAt, nodeId: localNodeId, port: desktopNodePort };
+  },
   createAgent: async (definitionId: string, initialMessage?: string) => {
-    // Ensure the definition is cached early so the first turn can build prompts.
-    await inMemoryStorage.getAgentDefinition(definitionId);
-    return await runtime.createAgent({ definitionId, initialMessage });
+    workerLog('warn', '[memeloop-worker] createAgent', { definitionId });
+    await ensureDesktopNodeStarted();
+    try {
+      await inMemoryStorage.getAgentDefinition(definitionId);
+      workerLog('warn', '[memeloop-worker] createAgent runtime.createAgent start', { definitionId });
+      const created = await runtime.createAgent({ definitionId, initialMessage });
+      workerLog('warn', '[memeloop-worker] createAgent runtime.createAgent done', { definitionId, conversationId: created?.conversationId });
+      return created;
+    } catch (error) {
+      workerLog('error', '[memeloop-worker] createAgent failed', { definitionId, error });
+      throw error;
+    }
   },
   sendMessage: async (conversationId: string, message: string) => {
-    await runtime.sendMessage({ conversationId, message });
-    return { ok: true };
+    workerLog('warn', '[memeloop-worker] sendMessage start', { conversationId });
+    await ensureDesktopNodeStarted();
+    try {
+      await runtime.sendMessage({ conversationId, message });
+      workerLog('warn', '[memeloop-worker] sendMessage done', { conversationId });
+      return { ok: true };
+    } catch (e) {
+      workerLog('error', '[memeloop-worker] sendMessage failed', { conversationId, error: e });
+      throw e;
+    }
   },
   cancelAgent: async (conversationId: string) => {
+    workerLog('warn', '[memeloop-worker] cancelAgent', { conversationId });
     conversationCancellation.add(conversationId);
     await runtime.cancelAgent(conversationId);
     return { ok: true };
   },
   subscribeToUpdates: (conversationId: string) =>
-    new Observable<RuntimeUpdate>((observer) => {
+    new Observable<RuntimeUpdate>(observer => {
+      workerLog('warn', '[memeloop-worker] subscribeToUpdates start', { conversationId });
       const dispose = runtime.subscribeToUpdates(conversationId, update => {
         observer.next({ conversationId, update });
       });
@@ -420,21 +763,28 @@ const memeloopWorker = {
       set.add(listener);
 
       return () => {
+        workerLog('warn', '[memeloop-worker] subscribeToUpdates dispose', { conversationId });
         set?.delete(listener);
         if (set && set.size === 0) customUpdateListenersByConversationId.delete(conversationId);
         dispose();
       };
     }),
   resolveAskQuestion: async (_conversationId: string, questionId: string, answer: string) => {
+    workerLog('warn', '[memeloop-worker] resolveAskQuestion', { questionId });
     const resolved = resolveQuestionAnswer(questionId, answer);
     return { resolved };
   },
   resolveToolApproval: async (approvalId: string, decision: 'allow' | 'deny') => {
+    workerLog('warn', '[memeloop-worker] resolveToolApproval', { approvalId, decision });
     resolveApproval(approvalId, decision);
     return { ok: true };
   },
 };
 
 export type MemeLoopWorker = typeof memeloopWorker;
+
+process.on('beforeExit', () => {
+  void stopDesktopNodeServer();
+});
 
 handleWorkerMessages(memeloopWorker);

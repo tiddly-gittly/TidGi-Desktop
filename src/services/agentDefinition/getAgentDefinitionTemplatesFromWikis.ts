@@ -6,6 +6,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
+import { DEFAULT_AGENT_FRAMEWORK_ID } from '@services/agentInstance/defaultAgentFrameworkId';
 import { AgentDefinition, AgentToolConfig } from './interface';
 
 /**
@@ -146,7 +147,7 @@ export function validateAndConvertWikiTiddlerToAgentTemplate(
       name: getStringField(tiddler.caption) || getStringField(tiddler.title),
       description: getStringField(tiddler.description) || `Agent template from ${workspaceName || 'wiki'}`,
       avatarUrl: getStringField(tiddler.avatar_url) || undefined,
-      agentFrameworkID: getStringField(tiddler.agentFrameworkID) || 'basicPromptConcatHandler',
+      agentFrameworkID: getStringField(tiddler.agentFrameworkID) || DEFAULT_AGENT_FRAMEWORK_ID,
       agentFrameworkConfig,
       aiApiConfig: parseAiApiConfig(tiddler.ai_api_config),
       agentTools: parseAgentTools(tiddler.agent_tools),

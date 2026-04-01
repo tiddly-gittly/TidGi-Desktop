@@ -43,6 +43,7 @@ export interface ITerminalSessionManager {
     sessionId: string,
     options?: { fromSeq?: number; untilExit?: boolean; maxWaitMs?: number },
   ): Promise<TerminalFollowResult>;
+  getChunksSince(sessionId: string, fromSeq?: number): TerminalOutputChunk[];
   onOutput(listener: (chunk: TerminalOutputChunk) => void): () => void;
   onStatusUpdate(
     listener: (update: { sessionId: string; status: TerminalSessionStatus; exitCode: number | null; ts: number }) => void,
@@ -204,6 +205,12 @@ export class TerminalSessionManager extends EventEmitter implements ITerminalSes
   get(sessionId: string): TerminalSessionInfo | undefined {
     const s = this.sessions.get(sessionId);
     return s ? this.toInfo(s) : undefined;
+  }
+
+  getChunksSince(sessionId: string, fromSeq = 1): TerminalOutputChunk[] {
+    const s = this.sessions.get(sessionId);
+    if (!s) return [];
+    return s.chunks.filter((c) => c.seq >= fromSeq);
   }
 
   private toInfo(s: SessionState): TerminalSessionInfo {

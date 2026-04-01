@@ -84,9 +84,11 @@ Then('I should see {string} elements with selectors:', async function(this: Appl
   }
 
   // Check all elements in parallel for better performance
+  // Keep this below cucumber step timeout so we can report which selector missed.
+  const ELEMENT_CHECK_TIMEOUT_MS = 20_000;
   await Promise.all(dataRows.map(async ([elementComment, selector]) => {
     try {
-      await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+      await currentWindow.waitForSelector(selector, { timeout: ELEMENT_CHECK_TIMEOUT_MS });
       const isVisible = await currentWindow.isVisible(selector);
       if (!isVisible) {
         errors.push(`Element "${elementComment}" with selector "${selector}" is not visible`);

@@ -4,6 +4,7 @@ import { Box, Button, Container, Step, StepLabel, Stepper, TextField, Typography
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
+import { DEFAULT_AGENT_FRAMEWORK_ID } from '@services/agentInstance/defaultAgentFrameworkId';
 import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { nanoid } from 'nanoid';
@@ -99,19 +100,22 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
   // Load schema when temporaryAgentDefinition is available
   useEffect(() => {
     const loadSchema = async () => {
-      if (temporaryAgentDefinition?.agentFrameworkID) {
-        try {
-          const schema = await window.service.agentInstance.getFrameworkConfigSchema(temporaryAgentDefinition.agentFrameworkID);
-          setPromptSchema(schema as RJSFSchema);
-        } catch (error) {
-          console.error('Failed to load framework config schema:', error);
-          setPromptSchema(null);
-        }
+      if (!temporaryAgentDefinition) {
+        setPromptSchema(null);
+        return;
+      }
+      const frameworkId = temporaryAgentDefinition.agentFrameworkID ?? DEFAULT_AGENT_FRAMEWORK_ID;
+      try {
+        const schema = await window.service.agentInstance.getFrameworkConfigSchema(frameworkId);
+        setPromptSchema(schema as RJSFSchema);
+      } catch (error) {
+        console.error('Failed to load framework config schema:', error);
+        setPromptSchema(null);
       }
     };
 
     void loadSchema();
-  }, [temporaryAgentDefinition?.agentFrameworkID]);
+  }, [temporaryAgentDefinition?.id, temporaryAgentDefinition?.agentFrameworkID]);
 
   // Create preview agent when entering step 3
   useEffect(() => {

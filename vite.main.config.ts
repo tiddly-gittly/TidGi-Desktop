@@ -46,6 +46,10 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@services': path.resolve(__dirname, './src/services'),
+      // Linked monorepo packages: use sources so main/worker bundles work without a prior `pnpm build` in each package.
+      memeloop: path.resolve(__dirname, '../memeloop/packages/memeloop/src'),
+      'memeloop-node': path.resolve(__dirname, '../memeloop/packages/memeloop-node/src'),
+      '@memeloop/protocol': path.resolve(__dirname, '../memeloop/packages/memeloop-protocol/src'),
       // Force use CommonJS version of i18next-fs-backend to avoid top-level await in ESM version
       'i18next-fs-backend': path.resolve(__dirname, './node_modules/i18next-fs-backend/cjs/index.js'),
       'i18next-electron-fs-backend': path.resolve(__dirname, './node_modules/i18next-electron-fs-backend/cjs/index.js'),
@@ -80,6 +84,11 @@ export default defineConfig({
         // Use RegExp to match both package name and sub-paths (e.g., @sap/hana-client/extension/Stream)
         // We only use better-sqlite3, so external all others to avoid "module not found" errors
         ...typeormOptionalDepsRegex,
+
+        // `ws` optionally uses these native modules. They are not required for correctness,
+        // and bundlers may try to resolve them eagerly and fail in packaged Electron.
+        'bufferutil',
+        'utf-8-validate',
       ],
     },
   },

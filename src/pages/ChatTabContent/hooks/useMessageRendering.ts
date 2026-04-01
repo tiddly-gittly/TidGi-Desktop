@@ -21,7 +21,7 @@ registerMessageRenderer('thinking', {
 
 registerMessageRenderer('error', {
   renderer: ErrorMessageRenderer,
-  pattern: /^Error:/,
+  pattern: /^(Error:|Chat\.ConfigError\.)/,
   priority: 200,
 });
 
