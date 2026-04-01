@@ -44,11 +44,12 @@ When('I wait for the page to load completely', async function(this: ApplicationW
     this.currentWindow = currentWindow;
   }
   await currentWindow?.waitForLoadState('domcontentloaded', { timeout: PLAYWRIGHT_TIMEOUT });
-  // Some startup pages keep background activity and never reach networkidle quickly.
+  // Short networkidle gives workspace-creation and other startup IPC time to finish
+  // without blocking on long-lived connections. 3s is enough for the initial burst.
   try {
-    await currentWindow?.waitForLoadState('networkidle', { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+    await currentWindow?.waitForLoadState('networkidle', { timeout: 3000 });
   } catch {
-    // Ignore networkidle timeout when DOM is already ready.
+    // Ignore – DOM is already ready.
   }
 });
 

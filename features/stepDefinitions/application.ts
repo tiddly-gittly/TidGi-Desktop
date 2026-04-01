@@ -1,4 +1,4 @@
-import { AfterStep, setWorldConstructor, When } from '@cucumber/cucumber';
+import { AfterStep, setWorldConstructor, Status, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
@@ -327,24 +327,21 @@ async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
 AfterStep({ timeout: 3000 }, async function(this: ApplicationWorld, { pickle, pickleStep, result }) {
   if (!this.app) return;
 
+  // Only capture screenshots for failed steps to avoid ~200-500ms IPC overhead per step.
+  // With 1400+ steps, capturing every step adds 4-10 minutes to CI.
+  if (result?.status !== Status.FAILED) return;
+
   try {
     const stepText = pickleStep.text;
-
-    // Skip screenshots for steps that don't interact with the UI
-    if (stepText.match(/^I wait for|^I clear log|^I create file |^I sync |^I clone |^file "/i)) {
-      return;
-    }
-
     const scenarioName = pickle.name;
     const cleanScenarioName = makeSlugPath(scenarioName, 60);
     const cleanStepText = makeSlugPath(stepText, 80);
-    const stepStatus = result && typeof result.status === 'string' ? result.status : 'unknown-status';
 
     const scenarioScreenshotsDirectory = path.resolve(process.cwd(), 'test-artifacts', cleanScenarioName, 'userData-test', 'logs', 'screenshots');
     await fs.ensureDir(scenarioScreenshotsDirectory);
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const screenshotPath = path.resolve(scenarioScreenshotsDirectory, `${timestamp}-${cleanStepText}-${stepStatus}.png`);
+    const screenshotPath = path.resolve(scenarioScreenshotsDirectory, `${timestamp}-${cleanStepText}-FAILED.png`);
 
     // Steps operating on BrowserView (WebContentsView) → capture the embedded wiki view
     // Other steps (main window UI, editWorkspace, preferences, etc.) → capture the current window page
