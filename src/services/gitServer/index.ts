@@ -331,15 +331,15 @@ export class GitServerService implements IGitServerService {
 
     logger.info('Generating full archive for mobile sync', { workspaceId, commitHash });
 
-    const cacheDir = path.join(repoPath, '.git', 'tidgi-archive-cache');
-    await fs.mkdir(cacheDir, { recursive: true });
-    const archivePath = path.join(cacheDir, `full-archive-${commitHash.slice(0, 12)}.tar`);
+    const cacheDirectory = path.join(repoPath, '.git', 'tidgi-archive-cache');
+    await fs.mkdir(cacheDirectory, { recursive: true });
+    const archivePath = path.join(cacheDirectory, `full-archive-${commitHash.slice(0, 12)}.tar`);
 
     // Clean old archives
     try {
-      for (const file of await fs.readdir(cacheDir)) {
+      for (const file of await fs.readdir(cacheDirectory)) {
         if (file.startsWith('full-archive-') && file !== path.basename(archivePath)) {
-          await fs.unlink(path.join(cacheDir, file)).catch(() => {});
+          await fs.unlink(path.join(cacheDirectory, file)).catch(() => {});
         }
       }
     } catch { /* non-fatal */ }
@@ -366,16 +366,16 @@ export class GitServerService implements IGitServerService {
     // ── Step 2: Prepare a staging directory with .git metadata ───────
     // We create a temp directory that mirrors the .git structure we need,
     // then use system `tar` to append it to the archive.
-    const stagingDir = path.join(cacheDir, 'staging');
-    const stagingGit = path.join(stagingDir, '.git');
-    await fs.rm(stagingDir, { recursive: true, force: true });
+    const stagingDirectory = path.join(cacheDirectory, 'staging');
+    const stagingGit = path.join(stagingDirectory, '.git');
+    await fs.rm(stagingDirectory, { recursive: true, force: true });
 
-    const gitDir = path.join(repoPath, '.git');
+    const gitDirectory = path.join(repoPath, '.git');
 
     // Copy the minimal .git files needed for isomorphic-git
     // HEAD
     await fs.mkdir(stagingGit, { recursive: true });
-    await fs.copyFile(path.join(gitDir, 'HEAD'), path.join(stagingGit, 'HEAD'));
+    await fs.copyFile(path.join(gitDirectory, 'HEAD'), path.join(stagingGit, 'HEAD'));
 
     // config — rewrite to a mobile-friendly placeholder
     const configContent = [
@@ -391,37 +391,45 @@ export class GitServerService implements IGitServerService {
     await fs.writeFile(path.join(stagingGit, 'config'), configContent);
 
     // packed-refs
-    try { await fs.copyFile(path.join(gitDir, 'packed-refs'), path.join(stagingGit, 'packed-refs')); } catch { /* optional */ }
+    try {
+      await fs.copyFile(path.join(gitDirectory, 'packed-refs'), path.join(stagingGit, 'packed-refs'));
+    } catch {
+      /* optional */
+    }
 
     // shallow
-    try { await fs.copyFile(path.join(gitDir, 'shallow'), path.join(stagingGit, 'shallow')); } catch { /* optional */ }
+    try {
+      await fs.copyFile(path.join(gitDirectory, 'shallow'), path.join(stagingGit, 'shallow'));
+    } catch {
+      /* optional */
+    }
 
     // refs/ (recursive copy)
-    await copyDirRecursive(path.join(gitDir, 'refs'), path.join(stagingGit, 'refs'));
+    await copyDirectoryRecursive(path.join(gitDirectory, 'refs'), path.join(stagingGit, 'refs'));
 
     // objects/pack/ (the big .pack + .idx files)
-    const srcPackDir = path.join(gitDir, 'objects', 'pack');
-    const dstPackDir = path.join(stagingGit, 'objects', 'pack');
+    const sourcePackDirectory = path.join(gitDirectory, 'objects', 'pack');
+    const destinationPackDirectory = path.join(stagingGit, 'objects', 'pack');
     try {
-      const packFiles = await fs.readdir(srcPackDir);
+      const packFiles = await fs.readdir(sourcePackDirectory);
       if (packFiles.length > 0) {
-        await fs.mkdir(dstPackDir, { recursive: true });
+        await fs.mkdir(destinationPackDirectory, { recursive: true });
         for (const f of packFiles) {
           if (f.endsWith('.pack') || f.endsWith('.idx')) {
-            await fs.copyFile(path.join(srcPackDir, f), path.join(dstPackDir, f));
+            await fs.copyFile(path.join(sourcePackDirectory, f), path.join(destinationPackDirectory, f));
           }
         }
       }
     } catch { /* no pack files */ }
 
     // loose objects (2-char hex subdirs)
-    const srcObjDir = path.join(gitDir, 'objects');
+    const sourceObjectDirectory = path.join(gitDirectory, 'objects');
     try {
-      for (const entry of await fs.readdir(srcObjDir)) {
+      for (const entry of await fs.readdir(sourceObjectDirectory)) {
         if (entry.length === 2 && /^[\da-f]{2}$/.test(entry)) {
-          const srcSub = path.join(srcObjDir, entry);
-          const dstSub = path.join(stagingGit, 'objects', entry);
-          await copyDirRecursive(srcSub, dstSub);
+          const sourceSubDirectory = path.join(sourceObjectDirectory, entry);
+          const destinationSubDirectory = path.join(stagingGit, 'objects', entry);
+          await copyDirectoryRecursive(sourceSubDirectory, destinationSubDirectory);
         }
       }
     } catch { /* no loose objects */ }
@@ -432,17 +440,17 @@ export class GitServerService implements IGitServerService {
     await new Promise<void>((resolve, reject) => {
       execFile(
         'tar',
-        ['--append', '-f', archivePath, '-C', stagingDir, '.git'],
+        ['--append', '-f', archivePath, '-C', stagingDirectory, '.git'],
         { timeout: 120_000 },
         (error) => {
-          if (error) reject(error);
+          if (error) reject(error instanceof Error ? error : new Error('tar append failed'));
           else resolve();
         },
       );
     });
 
     // Clean up staging
-    await fs.rm(stagingDir, { recursive: true, force: true });
+    await fs.rm(stagingDirectory, { recursive: true, force: true });
 
     const stat = await fs.stat(archivePath);
     this.archiveCache.set(workspaceId, { commitHash, archivePath, timestamp: Date.now() });
@@ -453,22 +461,22 @@ export class GitServerService implements IGitServerService {
 }
 
 /** Recursively copy a directory. */
-async function copyDirRecursive(src: string, dst: string): Promise<void> {
+async function copyDirectoryRecursive(source: string, destination: string): Promise<void> {
   let entries: string[];
   try {
-    entries = await fs.readdir(src);
+    entries = await fs.readdir(source);
   } catch {
     return;
   }
-  await fs.mkdir(dst, { recursive: true });
+  await fs.mkdir(destination, { recursive: true });
   for (const entry of entries) {
-    const srcPath = path.join(src, entry);
-    const dstPath = path.join(dst, entry);
-    const stat = await fs.stat(srcPath);
+    const sourcePath = path.join(source, entry);
+    const destinationPath = path.join(destination, entry);
+    const stat = await fs.stat(sourcePath);
     if (stat.isDirectory()) {
-      await copyDirRecursive(srcPath, dstPath);
+      await copyDirectoryRecursive(sourcePath, destinationPath);
     } else if (stat.isFile()) {
-      await fs.copyFile(srcPath, dstPath);
+      await fs.copyFile(sourcePath, destinationPath);
     }
   }
 }
