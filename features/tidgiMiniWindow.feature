@@ -51,8 +51,8 @@ Feature: TidGi Mini Window
     When I press the key combination "CommandOrControl+Shift+M"
     And I confirm the "tidgiMiniWindow" window not visible
     When I execute TiddlyWiki code in browser view: "$tw.wiki.addTiddler(new $tw.Tiddler({title: 'Index', text: 'TidgiMiniWindowHiddenSync123'}))"
-    Then I switch to "main" window
-    When I press the key combination "CommandOrControl+Shift+M"
+    # Use IPC toggle instead of keyboard shortcut to avoid race condition with TW syncer
+    When I toggle tidgi mini window via IPC
     And I confirm the "tidgiMiniWindow" window visible
     Then I switch to "tidgiMiniWindow" window
     And the browser view should be loaded and visible

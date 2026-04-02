@@ -1,4 +1,4 @@
-import { Given } from '@cucumber/cucumber';
+import { Given, When } from '@cucumber/cucumber';
 import fs from 'fs-extra';
 import { omit } from 'lodash';
 import path from 'path';
@@ -99,5 +99,17 @@ async function clearTidgiMiniWindowSettings(scenarioRoot?: string) {
   const cleaned = { ...parsed, preferences: cleanedPreferences, workspaces };
   await fs.writeJson(settingsPath, cleaned, { spaces: 2 });
 }
+
+When('I toggle tidgi mini window via IPC', async function(this: ApplicationWorld) {
+  if (!this.app) {
+    throw new Error('Application not launched');
+  }
+  await this.app.evaluate(async ({ BrowserWindow }) => {
+    // Find the main window and call toggleTidgiMiniWindow via the service proxy
+    const mainWindow = BrowserWindow.getAllWindows().find(w => !w.isDestroyed() && w.webContents?.getType() === 'window');
+    if (!mainWindow) throw new Error('Main window not found');
+    await mainWindow.webContents.executeJavaScript('window.service.window.toggleTidgiMiniWindow()');
+  });
+});
 
 export { clearTidgiMiniWindowSettings };

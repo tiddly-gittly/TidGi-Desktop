@@ -58,12 +58,10 @@ Feature: Talk with AI from Wiki Selection
     And I should see 2 messages in chat history
     
     # Part 4: Verify split view doesn't interfere with regular chat
-    # Create another regular chat tab
-    When I click on "new tab button and search input and agent suggestion" elements with selectors:
-      | element description | selector                                                      |
-      | new tab button      | [data-tab-id='new-tab-button']                                |
-      | search input        | .aa-Input                                                     |
-      | agent suggestion    | [data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper |
+    # Create another regular chat tab (split into individual clicks for CI reliability)
+    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    And I click on a "search input" element with selector ".aa-Input"
+    And I click on an "agent suggestion" element with selector "[data-autocomplete-source-id='agentsSource'] .aa-ItemWrapper"
     # Now in regular chat tab - split view and browser view should not be visible
     Then I should not see a "split view container" element with selector "[data-testid='split-view-container']"
     And I confirm the "main" window browser view is not positioned within visible window bounds
