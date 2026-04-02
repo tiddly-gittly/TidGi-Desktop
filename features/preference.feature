@@ -86,8 +86,8 @@ Feature: TidGi Preference
     When I close "preferences" window
     And I ensure test ai settings exists
 
-  @ai-setting
-  Scenario: Background tasks — create alarm, edit-to-interval, cancel, create heartbeat, disable
+    # --- Part B: Background tasks — create alarm, edit-to-interval, cancel ---
+    Then I switch to "main" window
     When I click on "agent workspace button and new tab button and create default agent button" elements with selectors:
       | element description         | selector                                    |
       | agent workspace             | [data-testid='workspace-agent']             |
@@ -97,7 +97,6 @@ Feature: TidGi Preference
     When I click on a "settings button" element with selector "#open-preferences-button"
     And I switch to "preferences" window
     And I click on a "ai agent section" element with selector "[data-testid='preference-section-aiAgent']"
-    # --- Part A: Create interval task ---
     And I click on a "add scheduled task button" element with selector "[data-testid='scheduled-task-add-button']"
     Then I should see "interval and message input" elements with selectors:
       | element description | selector                                    |
@@ -107,13 +106,11 @@ Feature: TidGi Preference
     And I type "Preference-created scheduled task" in "message input" element with selector "[data-testid='scheduled-task-message-input'] textarea:not([readonly])"
     And I click on a "save scheduled task button" element with selector "[data-testid='scheduled-task-save-button']"
     Then I should see a "created scheduled task row" element with selector "[data-testid^='scheduled-task-row-']"
-    # --- Part B: Edit task into cron mode ---
     When I click on a "scheduled task edit button" element with selector "[data-testid^='scheduled-task-edit-']"
     And I click on a "schedule mode select" element with selector "[data-testid='scheduled-task-mode-select']"
     And I click on a "cron mode option" element with selector "li[role='option']:has-text('Cron expression')"
     And I type "0 */2 * * *" in "cron expression input" element with selector "[data-testid='scheduled-task-cron-input'] input"
     And I click on a "save scheduled task button" element with selector "[data-testid='scheduled-task-save-button']"
     Then I should see a "cron text in schedule column" element with selector "*:has-text('Cron: 0 */2 * * *')"
-    # --- Part C: Delete task ---
     And I click on a "scheduled task delete button" element with selector "[data-testid^='scheduled-task-delete-']"
     Then I should not see a "scheduled task row" element with selector "[data-testid^='scheduled-task-row-']"

@@ -11,15 +11,12 @@ Feature: TidGi Default Wiki
     And I wait for the page to load completely
 
   @wiki
-  Scenario: Application has default wiki workspace
+  Scenario: Application has default wiki workspace with TiddlyWiki content
     Then I should see "page body and wiki workspace" elements with selectors:
       | element description | selector                                        |
       | page body           | body                                            |
       | wiki workspace      | div[data-testid^='workspace-']:has-text('wiki') |
     And the window title should contain "太记"
-
-  @wiki
-  Scenario: Default wiki workspace displays TiddlyWiki content in browser view
     And the browser view should be loaded and visible
     And I should see "我的 TiddlyWiki" in the browser view content
 

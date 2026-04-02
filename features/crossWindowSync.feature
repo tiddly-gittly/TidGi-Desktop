@@ -14,8 +14,14 @@ Feature: Cross-Window Synchronization
 
   @crossWindowSync @crossWindowSync-basic
   Scenario: Changes made to files should sync back to browser via SSE
-    # Edit Index tiddler in window A
+    When I update workspace "wiki" settings:
+      | property              | value |
+      | enableFileSystemWatch | true  |
+    And I wait for SSE and watch-fs to be ready
+    # Edit Index tiddler in window A via TW syncer (this triggers save to server → disk)
     When I execute TiddlyWiki code in browser view: "$tw.wiki.addTiddler(new $tw.Tiddler({title: 'Index', text: 'CrossWindowSyncTestContent123'}))"
+    # Wait for the syncer to save the tiddler to disk via server, so window B sees it
+    Then I wait for tiddler "Index" to be updated by watch-fs
     
     # Open workspace in a new window (window B)
     When I open workspace "wiki" in a new window

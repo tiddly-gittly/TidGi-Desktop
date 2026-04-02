@@ -12,10 +12,9 @@ Feature: Tiddler Creation and Editing
     Then the browser view should be loaded and visible
     And I wait for "SSE backend ready" log marker "[test-id-SSE_READY]"
 
-  @tiddler @tiddler-create
-  Scenario: Create a new tiddler with tag and custom field via UI
-    # These are micro steps of `When I create a tiddler "MyTestTiddler" with field "customfield" set to "customvalue" in browser view` and `When I create a tiddler "MyTestTiddler" with tag "MyTestTag" in browser view`
-    # Click add tiddler button and focus title input
+  @tiddler @tiddler-create @tiddler-draft-rapid-save
+  Scenario: Create tiddler with tag and custom field, then test rapid save
+    # --- Part 1: Create a new tiddler with tag and custom field via UI ---
     And I click on "add tiddler button and title input" elements in browser view with selectors:
       | element description | selector                                                                 |
       | add tiddler button  | button:has(.tc-image-new-button)                                         |
@@ -23,11 +22,9 @@ Feature: Tiddler Creation and Editing
     And I press "Control+a" in browser view
     And I press "Delete" in browser view
     And I type "MyTestTiddler" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    # Add a tag
     And I click on "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
     And I type "MyTestTag" in "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
     And I click on "add tag button" element in browser view with selector "div[data-tiddler-title^='Draft of'] span.tc-add-tag-button button"
-    # Add a custom field
     And I click on "add field name input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-name-wrapper input"
     And I type "customfield" in "add field name input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-name-wrapper input"
     And I click on "add field value input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-value input"
@@ -36,29 +33,16 @@ Feature: Tiddler Creation and Editing
       | element description | selector                                                       |
       | add field button    | div[data-tiddler-title^='Draft of'] .tc-edit-field-add button   |
       | confirm button      | button:has(.tc-image-done-button)                              |
-    # Verify the tiddler and tag were created
     Then I should see "MyTestTiddler tiddler and MyTestTag tag" elements in browser view with selectors:
       | element description | selector                                                         |
       | MyTestTiddler tiddler | div[data-tiddler-title='MyTestTiddler']                         |
       | MyTestTag tag         | [data-tiddler-title='MyTestTiddler'] [data-tag-title='MyTestTag'] |
-    # Verify the tiddler file was created
     Then file "MyTestTiddler.tid" should exist in "{tmpDir}/wiki/tiddlers"
 
-  @tiddler @tiddler-draft-rapid-save
-  Scenario: Rapid typing and immediate save should not lose characters
-    # Test case for: user types quickly, then immediately saves via the done button without waiting.
-    # This scenario verifies that the revision tracking and save serialization prevent
-    # earlier echo revisions from overwriting the latest typed content.
-    # Click add tiddler button to create a draft
+    # --- Part 2: Rapid typing and immediate save should not lose characters ---
     When I click on "add tiddler button" element in browser view with selector "button:has(.tc-image-new-button)"
-    # Get into title field and clear any default text
     And I click on "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    # Type quickly without pauses - this tests the rapid input scenario
-    # The title field should be pre-selected, so we can type directly
     And I type "RapidSaveTiddler" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    # Click the done button immediately without waiting for auto-save
     And I click on "confirm button" element in browser view with selector "button:has(.tc-image-done-button)"
-    # Verify the tiddler was created with the full title (no lost characters)
     Then I should see a "RapidSaveTiddler tiddler" element in browser view with selector "div[data-tiddler-title='RapidSaveTiddler']"
-    # Verify the file was created with correct content
     Then file "RapidSaveTiddler.tid" should exist in "{tmpDir}/wiki/tiddlers"
