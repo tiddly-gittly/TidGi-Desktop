@@ -1,4 +1,4 @@
-﻿import path from 'path';
+import path from 'path';
 
 /**
  * Helper to get the main window entry URL
@@ -24,8 +24,8 @@ export function getMainWindowEntry(): string {
 /**
  * Get preload script path
  * In Electron Forge Vite plugin:
- * - Development: preload is built to .vite/build/index.js (same dir as main)
- * - Production: preload is packaged in resources/app/.vite/build/index.js
+ * - Development: preload is built to .vite/build/preload.js (same dir as main)
+ * - Production: preload is packaged in resources/app/.vite/build/preload.js
  */
 export function getPreloadPath(): string {
   // Preload is emitted as preload.js to avoid clashing with main's index.js

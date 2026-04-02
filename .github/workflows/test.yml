@@ -20,6 +20,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: lts/*
+          cache: 'pnpm'
 
       # Install C++ build tools for native modules (nsfw, better-sqlite3)
       - name: Install build dependencies
@@ -43,16 +44,26 @@ jobs:
           # Install Chinese fonts and locale support for i18n testing
           sudo apt-get install -y fonts-noto-cjk fonts-wqy-zenhei language-pack-zh-hans
           sudo locale-gen zh_CN.UTF-8
-      - name: Run tests
+      - name: Run unit tests
+        run: pnpm run test:unit
+        env:
+          CI: true
+        timeout-minutes: 5
+      - name: Prepare E2E
+        run: pnpm run test:prepare-e2e
+        env:
+          CI: true
+        timeout-minutes: 5
+      - name: Run E2E tests
         # E2E GUI tests with Electron on Linux require a virtual framebuffer, upgrade screen size from time to time.
-        run: xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test
+        run: xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test:e2e
         env:
           CI: true
           DISPLAY: :99
           # Set Chinese locale for i18n testing
           LANG: zh_CN.UTF-8
           LC_ALL: zh_CN.UTF-8
-        timeout-minutes: 25
+        timeout-minutes: 22
 
       # Upload test artifacts (screenshots, logs)
       - name: Upload test artifacts
