@@ -105,8 +105,8 @@ When('I toggle tidgi mini window via IPC', async function(this: ApplicationWorld
     throw new Error('Application not launched');
   }
   await this.app.evaluate(async ({ BrowserWindow }) => {
-    // Find the main window and call toggleTidgiMiniWindow via the service proxy
-    const mainWindow = BrowserWindow.getAllWindows().find(w => !w.isDestroyed() && w.webContents?.getType() === 'window');
+    // Find the main window by URL (consistent with other step defs)
+    const mainWindow = BrowserWindow.getAllWindows().find(w => !w.isDestroyed() && w.webContents?.getURL().includes('index.html'));
     if (!mainWindow) throw new Error('Main window not found');
     await mainWindow.webContents.executeJavaScript('window.service.window.toggleTidgiMiniWindow()');
   });

@@ -45,7 +45,8 @@ When('I wait for the page to load completely', async function(this: ApplicationW
   }
   await currentWindow?.waitForLoadState('domcontentloaded', { timeout: PLAYWRIGHT_TIMEOUT });
   // Short networkidle gives workspace-creation and other startup IPC time to finish
-  // without blocking on long-lived connections. 3s is enough for the initial burst.
+  // without blocking on long-lived connections. 3s is intentionally different from
+  // PLAYWRIGHT_TIMEOUT — this is just a grace period, not a hard requirement.
   try {
     await currentWindow?.waitForLoadState('networkidle', { timeout: 3000 });
   } catch {
