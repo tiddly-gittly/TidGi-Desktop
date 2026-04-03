@@ -1513,6 +1513,7 @@ Result: ${JSON.stringify(approvalPrompt)}
   }
 
   private cleanupWorkerConversation(agentId: string): void {
+    const workerConversationId = this.workerConversationByAgentId.get(agentId);
     const cleanup = this.workerConversationCleanupByAgentId.get(agentId);
     if (cleanup) {
       try {
@@ -1521,6 +1522,9 @@ Result: ${JSON.stringify(approvalPrompt)}
         // ignore
       }
       this.workerConversationCleanupByAgentId.delete(agentId);
+    }
+    if (workerConversationId) {
+      this.workerAgentIdByConversationId.delete(workerConversationId);
     }
   }
 
@@ -2055,6 +2059,7 @@ Result: ${JSON.stringify(approvalPrompt)}
       }
       this.workerConversationCleanupByAgentId.delete(agentId);
     }
+    this.workerAgentIdByConversationId.clear();
     this.workerConversationByAgentId.clear();
 
     if (this.memeLoopNativeWorker) {
