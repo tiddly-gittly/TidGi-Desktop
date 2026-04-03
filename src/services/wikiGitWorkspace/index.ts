@@ -82,6 +82,8 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       const isSyncedWiki = storageService !== SupportedStorageServices.local;
       if (await hasGit(wikiFolderLocation)) {
         logger.warn('Skip git init because it already has a git setup.', { wikiFolderLocation });
+        // Still emit the marker so e2e tests waiting for git-init-complete don't hang
+        logger.info(`[test-id-git-init-complete]`, { wikiFolderLocation });
       } else {
         if (isSyncedWiki) {
           if (typeof gitUrl === 'string' && userInfo !== undefined) {
