@@ -69,7 +69,6 @@
     "better-sqlite3": "^12.8.0",
     "bluebird": "3.7.2",
     "bufferutil": "^4.1.0",
-    "faye-websocket": "^0.11.4",
     "croner": "^10.0.1",
     "date-fns": "3.6.0",
     "default-gateway": "6.0.3",
@@ -81,6 +80,7 @@
     "electron-window-state": "5.0.3",
     "espree": "^11.0.0",
     "exponential-backoff": "^3.1.3",
+    "faye-websocket": "^0.11.4",
     "fs-extra": "11.3.2",
     "git-sync-js": "^2.3.2",
     "graphql-hooks": "8.2.0",
@@ -209,6 +209,7 @@
     "onlyBuiltDependencies": [
       "@swc/core",
       "better-sqlite3",
+      "bufferutil",
       "dprint",
       "dugite",
       "electron",
@@ -216,7 +217,8 @@
       "esbuild",
       "nsfw",
       "registry-js",
-      "unrs-resolver"
+      "unrs-resolver",
+      "utf-8-validate"
     ]
   },
   "private": false
