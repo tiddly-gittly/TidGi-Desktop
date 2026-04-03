@@ -14,6 +14,9 @@ const { description } = packageJson;
 const supportedLanguageCodes = Object.keys(supportedLanguages);
 
 const config: ForgeConfig = {
+  rebuildConfig: {
+    projectRootPath: __dirname,
+  },
   packagerConfig: {
     name: 'TidGi',
     executableName: 'tidgi',
