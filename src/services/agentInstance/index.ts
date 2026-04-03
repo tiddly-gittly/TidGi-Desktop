@@ -997,8 +997,12 @@ export class AgentInstanceService implements IAgentInstanceService {
               }
             });
           }
+        }
 
-          // Trigger agentStatusChanged hook with actual terminal state (completed, input-required, etc.)
+        if (lastResult) {
+          // Trigger agentStatusChanged hook with actual terminal state (completed, input-required, etc.).
+          // This must run even when the framework yields no message (e.g. memeloopTaskAgentWorkerHandler
+          // yields { state } without a message; worker-side updates handle message materialization).
           const terminalState = (lastResult.state ?? 'completed') as 'working' | 'completed' | 'failed' | 'canceled' | 'input-required';
           await frameworkHooks.agentStatusChanged.promise({
             agentFrameworkContext: frameworkContext,
