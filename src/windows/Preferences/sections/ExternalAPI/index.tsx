@@ -1,20 +1,28 @@
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
-import TuneIcon from '@mui/icons-material/Tune';
-import { Button, List } from '@mui/material';
+import TuneIcon from "@mui/icons-material/Tune";
+import { Button, List } from "@mui/material";
 
-import { ListItemText } from '@/components/ListItem';
-import { AIProviderConfig, ModelInfo } from '@services/providerRegistry/interface';
-import type { ICustomSectionProps } from '@services/preferences/definitions/types';
-import { ListItemVertical, Paper, SectionTitle } from '../../PreferenceComponents';
-import { AIModelParametersDialog } from './components/AIModelParametersDialog';
-import { ModelSelector } from './components/ModelSelector';
-import { ProviderConfig } from './components/ProviderConfig';
-import { useAIConfigManagement } from './useAIConfigManagement';
+import { ListItemText } from "@/components/ListItem";
+import {
+  AIProviderConfig,
+  ModelInfo,
+} from "@services/providerRegistry/interface";
+import type { ICustomSectionProps } from "@services/preferences/definitions/types";
+import {
+  ListItemVertical,
+  Paper,
+  SectionTitle,
+} from "../../PreferenceComponents";
+import { AIModelParametersDialog } from "./components/AIModelParametersDialog";
+import { ModelSelector } from "./components/ModelSelector";
+import { ProviderConfig } from "./components/ProviderConfig";
+import { ProviderSettings } from "./components/ProviderSettings";
+import { useAIConfigManagement } from "./useAIConfigManagement";
 
 export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
-  const { t } = useTranslation('agent');
+  const { t } = useTranslation("agent");
   const {
     loading,
     config,
@@ -43,7 +51,9 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
 
     try {
       // Delete the default model configuration
-      await window.service.externalAPI.deleteFieldFromDefaultAIConfig('default');
+      await window.service.externalAPI.deleteFieldFromDefaultAIConfig(
+        "default",
+      );
 
       // Update local state to reflect deletion
       const updatedConfig = {
@@ -53,7 +63,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
 
       await handleConfigChange(updatedConfig);
     } catch (error) {
-      console.error('Failed to clear model configuration:', error);
+      console.error("Failed to clear model configuration:", error);
     }
   };
 
@@ -61,7 +71,9 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
     if (!config) return;
 
     // Delete the embedding model configuration
-    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('embedding');
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig(
+      "embedding",
+    );
 
     // Update local state to reflect the change
     const updatedConfig = {
@@ -74,7 +86,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
   const handleSpeechModelClear = async () => {
     if (!config) return;
 
-    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('speech');
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig("speech");
 
     const updatedConfig = {
       ...config,
@@ -86,7 +98,9 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
   const handleImageGenerationModelClear = async () => {
     if (!config) return;
 
-    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('imageGeneration');
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig(
+      "imageGeneration",
+    );
 
     const updatedConfig = {
       ...config,
@@ -98,7 +112,9 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
   const handleTranscriptionsModelClear = async () => {
     if (!config) return;
 
-    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('transcriptions');
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig(
+      "transcriptions",
+    );
 
     const updatedConfig = {
       ...config,
@@ -118,7 +134,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
   const handleFreeModelClear = async () => {
     if (!config) return;
 
-    await window.service.externalAPI.deleteFieldFromDefaultAIConfig('free');
+    await window.service.externalAPI.deleteFieldFromDefaultAIConfig("free");
 
     const updatedConfig = {
       ...config,
@@ -129,24 +145,40 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
 
   return (
     <>
-      <SectionTitle ref={props.sectionRef}>{t('Preference.ExternalAPI')}</SectionTitle>
+      <SectionTitle ref={props.sectionRef}>
+        {t("Preference.ExternalAPI")}
+      </SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
-          {loading ? <ListItemVertical>{t('Loading')}</ListItemVertical> : (
+          {loading ? (
+            <ListItemVertical>{t("Loading")}</ListItemVertical>
+          ) : (
             <>
               {providers.length > 0 && (
                 <>
                   <ListItemVertical>
                     <ListItemText
-                      primary={t('Preference.DefaultAIModelSelection')}
-                      secondary={t('Preference.DefaultAIModelSelectionDescription')}
+                      primary={t("Preference.DefaultAIModelSelection")}
+                      secondary={t(
+                        "Preference.DefaultAIModelSelectionDescription",
+                      )}
                     />
                     <ModelSelector
                       selectedModel={defaultModelConfig}
-                      modelOptions={providers.flatMap(provider =>
+                      modelOptions={providers.flatMap((provider) =>
                         provider.models
-                          .filter(model => Array.isArray(model.features) && model.features.includes('language'))
-                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
+                          .filter(
+                            (model) =>
+                              Array.isArray(model.features) &&
+                              model.features.includes("language"),
+                          )
+                          .map(
+                            (model) =>
+                              [provider, model] as [
+                                AIProviderConfig,
+                                ModelInfo,
+                              ],
+                          ),
                       )}
                       onChange={handleModelChange}
                       onClear={handleModelClear}
@@ -155,15 +187,27 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
 
                   <ListItemVertical>
                     <ListItemText
-                      primary={t('Preference.DefaultEmbeddingModelSelection')}
-                      secondary={t('Preference.DefaultEmbeddingModelSelectionDescription')}
+                      primary={t("Preference.DefaultEmbeddingModelSelection")}
+                      secondary={t(
+                        "Preference.DefaultEmbeddingModelSelectionDescription",
+                      )}
                     />
                     <ModelSelector
                       selectedModel={embeddingConfig}
-                      modelOptions={providers.flatMap(provider =>
+                      modelOptions={providers.flatMap((provider) =>
                         provider.models
-                          .filter(model => Array.isArray(model.features) && model.features.includes('embedding'))
-                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
+                          .filter(
+                            (model) =>
+                              Array.isArray(model.features) &&
+                              model.features.includes("embedding"),
+                          )
+                          .map(
+                            (model) =>
+                              [provider, model] as [
+                                AIProviderConfig,
+                                ModelInfo,
+                              ],
+                          ),
                       )}
                       onChange={handleEmbeddingModelChange}
                       onClear={handleEmbeddingModelClear}
@@ -172,15 +216,27 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
 
                   <ListItemVertical>
                     <ListItemText
-                      primary={t('Preference.DefaultSpeechModelSelection')}
-                      secondary={t('Preference.DefaultSpeechModelSelectionDescription')}
+                      primary={t("Preference.DefaultSpeechModelSelection")}
+                      secondary={t(
+                        "Preference.DefaultSpeechModelSelectionDescription",
+                      )}
                     />
                     <ModelSelector
                       selectedModel={speechConfig}
-                      modelOptions={providers.flatMap(provider =>
+                      modelOptions={providers.flatMap((provider) =>
                         provider.models
-                          .filter(model => Array.isArray(model.features) && model.features.includes('speech'))
-                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
+                          .filter(
+                            (model) =>
+                              Array.isArray(model.features) &&
+                              model.features.includes("speech"),
+                          )
+                          .map(
+                            (model) =>
+                              [provider, model] as [
+                                AIProviderConfig,
+                                ModelInfo,
+                              ],
+                          ),
                       )}
                       onChange={handleSpeechModelChange}
                       onClear={handleSpeechModelClear}
@@ -189,15 +245,29 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
 
                   <ListItemVertical>
                     <ListItemText
-                      primary={t('Preference.DefaultImageGenerationModelSelection')}
-                      secondary={t('Preference.DefaultImageGenerationModelSelectionDescription')}
+                      primary={t(
+                        "Preference.DefaultImageGenerationModelSelection",
+                      )}
+                      secondary={t(
+                        "Preference.DefaultImageGenerationModelSelectionDescription",
+                      )}
                     />
                     <ModelSelector
                       selectedModel={imageGenerationConfig}
-                      modelOptions={providers.flatMap(provider =>
+                      modelOptions={providers.flatMap((provider) =>
                         provider.models
-                          .filter(model => Array.isArray(model.features) && model.features.includes('imageGeneration'))
-                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
+                          .filter(
+                            (model) =>
+                              Array.isArray(model.features) &&
+                              model.features.includes("imageGeneration"),
+                          )
+                          .map(
+                            (model) =>
+                              [provider, model] as [
+                                AIProviderConfig,
+                                ModelInfo,
+                              ],
+                          ),
                       )}
                       onChange={handleImageGenerationModelChange}
                       onClear={handleImageGenerationModelClear}
@@ -206,15 +276,29 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
 
                   <ListItemVertical>
                     <ListItemText
-                      primary={t('Preference.DefaultTranscriptionsModelSelection')}
-                      secondary={t('Preference.DefaultTranscriptionsModelSelectionDescription')}
+                      primary={t(
+                        "Preference.DefaultTranscriptionsModelSelection",
+                      )}
+                      secondary={t(
+                        "Preference.DefaultTranscriptionsModelSelectionDescription",
+                      )}
                     />
                     <ModelSelector
                       selectedModel={transcriptionsConfig}
-                      modelOptions={providers.flatMap(provider =>
+                      modelOptions={providers.flatMap((provider) =>
                         provider.models
-                          .filter(model => Array.isArray(model.features) && model.features.includes('transcriptions'))
-                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
+                          .filter(
+                            (model) =>
+                              Array.isArray(model.features) &&
+                              model.features.includes("transcriptions"),
+                          )
+                          .map(
+                            (model) =>
+                              [provider, model] as [
+                                AIProviderConfig,
+                                ModelInfo,
+                              ],
+                          ),
                       )}
                       onChange={handleTranscriptionsModelChange}
                       onClear={handleTranscriptionsModelClear}
@@ -223,15 +307,27 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
 
                   <ListItemVertical>
                     <ListItemText
-                      primary={t('Preference.DefaultFreeModelSelection')}
-                      secondary={t('Preference.DefaultFreeModelSelectionDescription')}
+                      primary={t("Preference.DefaultFreeModelSelection")}
+                      secondary={t(
+                        "Preference.DefaultFreeModelSelectionDescription",
+                      )}
                     />
                     <ModelSelector
                       selectedModel={freeModelConfig}
-                      modelOptions={providers.flatMap(provider =>
+                      modelOptions={providers.flatMap((provider) =>
                         provider.models
-                          .filter(model => Array.isArray(model.features) && model.features.includes('free'))
-                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
+                          .filter(
+                            (model) =>
+                              Array.isArray(model.features) &&
+                              model.features.includes("free"),
+                          )
+                          .map(
+                            (model) =>
+                              [provider, model] as [
+                                AIProviderConfig,
+                                ModelInfo,
+                              ],
+                          ),
                       )}
                       onChange={handleFreeModelChange}
                       onClear={handleFreeModelClear}
@@ -240,18 +336,22 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
 
                   <ListItemVertical>
                     <ListItemText
-                      primary={t('Preference.ModelParameters', { ns: 'agent' })}
-                      secondary={t('Preference.ModelParametersDescription', { ns: 'agent' })}
+                      primary={t("Preference.ModelParameters", { ns: "agent" })}
+                      secondary={t("Preference.ModelParametersDescription", {
+                        ns: "agent",
+                      })}
                     />
                     <Button
-                      variant='outlined'
-                      color='primary'
+                      variant="outlined"
+                      color="primary"
                       startIcon={<TuneIcon />}
                       onClick={openParametersDialog}
                       disabled={!config}
-                      sx={{ alignSelf: 'flex-start' }}
+                      sx={{ alignSelf: "flex-start" }}
                     >
-                      {t('Preference.ConfigureModelParameters', { ns: 'agent' })}
+                      {t("Preference.ConfigureModelParameters", {
+                        ns: "agent",
+                      })}
                     </Button>
                   </ListItemVertical>
                 </>
@@ -262,8 +362,12 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                 changeDefaultModel={handleModelChange}
                 changeDefaultEmbeddingModel={handleEmbeddingModelChange}
                 changeDefaultSpeechModel={handleSpeechModelChange}
-                changeDefaultImageGenerationModel={handleImageGenerationModelChange}
-                changeDefaultTranscriptionsModel={handleTranscriptionsModelChange}
+                changeDefaultImageGenerationModel={
+                  handleImageGenerationModelChange
+                }
+                changeDefaultTranscriptionsModel={
+                  handleTranscriptionsModelChange
+                }
                 changeDefaultFreeModel={handleFreeModelChange}
                 setProviders={setProviders}
               />
@@ -271,6 +375,34 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
           )}
         </List>
       </Paper>
+
+      <ProviderSettings
+        providers={providers}
+        onProviderAdd={async (provider) => {
+          await window.service.externalAPI.updateProvider(
+            provider.provider!,
+            provider,
+          );
+          const updatedProviders =
+            await window.service.externalAPI.getAIProviders();
+          setProviders(updatedProviders);
+        }}
+        onProviderEdit={async (providerName, updates) => {
+          await window.service.externalAPI.updateProvider(
+            providerName,
+            updates,
+          );
+          const updatedProviders =
+            await window.service.externalAPI.getAIProviders();
+          setProviders(updatedProviders);
+        }}
+        onProviderDelete={async (providerName) => {
+          await window.service.externalAPI.deleteProvider(providerName);
+          const updatedProviders =
+            await window.service.externalAPI.getAIProviders();
+          setProviders(updatedProviders);
+        }}
+      />
 
       {/* 模型参数设置对话框 */}
       <AIModelParametersDialog
