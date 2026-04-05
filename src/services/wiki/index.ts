@@ -482,17 +482,14 @@ export class Wiki implements IWikiService {
                 });
               }
 
-              // Register Wiki Git endpoint: /git/{wikiId}/* -> http://localhost:{port}/tw-mobile-sync/git/{wikiId}/*
+              // Register Wiki Git endpoint: /git/{wikiId}/* handled directly by memeloop node
               try {
                 const memeloopNodeService = this.getMemeloopNodeService();
-                const backendUrl = `http://${defaultServerIP}:${port}`;
                 await memeloopNodeService.registerWikiGitEndpoint(
                   workspaceID,
-                  backendUrl,
                 );
                 logger.info("Registered Wiki Git endpoint with memeloop node", {
                   workspaceID,
-                  backendUrl,
                   function: "startWiki.listening",
                 });
               } catch (error) {
