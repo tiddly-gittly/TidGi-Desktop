@@ -103,10 +103,6 @@
     "SetupAgentDescription": "Configure your new agent by choosing a name and template",
     "Title": "Create New Agent"
   },
-  "WikiEmbed": {
-    "Error": "Failed to embed wiki",
-    "Loading": "Loading wiki..."
-  },
   "EditAgent": {
     "AgentDescription": "Agent Description",
     "AgentDescriptionHelper": "Describe the functionality and purpose of your intelligent agent.",
@@ -250,7 +246,35 @@
     "TopPDescription": "Control the randomness of responses. Lower values make responses more deterministic, while higher values allow for greater variability.",
     "WorkflowFile": "Workflow File",
     "WorkflowFileHelp": "Path to the ComfyUI workflow JSON file",
-    "WorkflowFilePath": "Workflow File Path"
+    "WorkflowFilePath": "Workflow File Path",
+    "Actions": "Actions",
+    "AddCustomProvider": "Add Custom Provider",
+    "APIKeyHelp": "API authentication key (leave empty for local providers like Ollama)",
+    "BaseURLHelp": "API endpoint URL (required for OpenAI-compatible and Ollama providers)",
+    "Cancel": "Cancel",
+    "CustomProviders": "Custom Providers",
+    "Delete": "Delete",
+    "Disabled": "Disabled",
+    "Edit": "Edit",
+    "EditProvider": "Edit Provider",
+    "Enabled": "Enabled",
+    "ManageSubscription": "Manage Subscription",
+    "MemeloopAPIKey": "Memeloop API Key",
+    "MemeloopAPIKeyHelp": "Enter your self-hosted memeloop API key",
+    "MemeloopSubscription": "Memeloop Subscription",
+    "NoCustomProviders": "No custom providers configured. Add a custom provider to use your own API endpoints.",
+    "ProviderNameCannotBeChanged": "Provider name cannot be changed after creation",
+    "ProviderNameHelp": "Unique identifier for this provider (e.g., my-custom-provider)",
+    "Save": "Save",
+    "SaveSubscriptionMode": "Save Subscription Mode",
+    "Saving": "Saving...",
+    "SelfHostedMode": "Self-Hosted Mode",
+    "SelfHostedModeDescription": "Use your own API key to access memeloop services",
+    "Status": "Status",
+    "SubscriptionActiveUntil": "Subscription active until: {{date}}",
+    "SubscriptionInfo": "Manage your subscription and billing settings online.",
+    "SubscriptionMode": "Subscription Mode",
+    "SubscriptionModeDescription": "Subscribe to memeloop cloud service for managed access"
   },
   "Prompt": {
     "AutoRefresh": "Preview auto-refreshes with input text changes",
@@ -395,14 +419,10 @@
         },
         "ReadFile": {
           "Parameters": {
-            "commitHash": {
-            },
-            "filePath": {
-            },
-            "maxLines": {
-            },
-            "workspaceName": {
-            }
+            "commitHash": {},
+            "filePath": {},
+            "maxLines": {},
+            "workspaceName": {}
           }
         }
       }
@@ -437,8 +457,7 @@
       "ProviderTitle": "provider",
       "Title": "model selection"
     },
-    "Plugin": {
-    },
+    "Plugin": {},
     "Position": {
       "Description": "Position Parameter Configuration",
       "TargetId": "target element ID",
@@ -472,8 +491,7 @@
       "TextTitle": "text",
       "Title": "prompt"
     },
-    "ProviderModel": {
-    },
+    "ProviderModel": {},
     "Response": {
       "Caption": "Response header, used to identify the response entry",
       "CaptionTitle": "Title",
