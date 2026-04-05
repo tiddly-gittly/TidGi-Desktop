@@ -73,6 +73,8 @@ export enum PreferenceSections {
   wiki = "wiki",
   externalAPI = "externalAPI",
   aiAgent = "aiAgent",
+  wikiSync = "wikiSync",
+  imChannels = "imChannels",
 }
 
 /**

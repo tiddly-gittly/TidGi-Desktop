@@ -28,6 +28,7 @@ import type {
 import { updatesSection } from "./updates";
 import { wikiSection } from "./wiki";
 import { wikiSyncSection } from "./wikiSync";
+import { imChannelsSection } from "./imChannels";
 
 /**
  * Ordered list of all sections. Display order matches array order.
@@ -38,6 +39,7 @@ export const allSections: ISectionDefinition[] = [
   tidgiMiniWindowSection,
   syncSection,
   wikiSyncSection,
+  imChannelsSection,
   externalAPISection,
   aiAgentSection,
   searchSection,
