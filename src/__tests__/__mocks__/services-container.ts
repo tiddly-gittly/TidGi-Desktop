@@ -1,4 +1,7 @@
 import type { AIStreamResponse } from '@/services/providerRegistry/interface';
+import type { IToolPermissionsService } from '@/services/toolPermissions/interface';
+import type { IMemeloopNodeService } from '@/services/memeloopNode/interface';
+import type { IRemoteTerminalService } from '@/services/remoteTerminal/interface';
 import { AgentBrowserService } from '@services/agentBrowser';
 import { AgentDefinitionService } from '@services/agentDefinition';
 import { AgentInstanceService } from '@services/agentInstance';
@@ -17,7 +20,7 @@ import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { vi } from 'vitest';
 
 // Mock bindServiceAndProxy to be an empty function
@@ -36,6 +39,9 @@ export const serviceInstances: {
   context: Partial<IContextService>;
   preference: Partial<IPreferenceService>;
   externalAPI: Partial<IProviderRegistryService>;
+  toolPermissions: Partial<IToolPermissionsService>;
+  memeloopNode: Partial<IMemeloopNodeService>;
+  remoteTerminal: Partial<IRemoteTerminalService>;
 } = {
   workspace: {
     countWorkspaces: vi.fn().mockResolvedValue(5),
@@ -114,6 +120,56 @@ export const serviceInstances: {
     updateDefaultAIConfig: vi.fn(async () => undefined),
     deleteFieldFromDefaultAIConfig: vi.fn(async () => undefined),
   },
+  toolPermissions: {
+    getPermissions: vi.fn(async () => []),
+    addPermission: vi.fn(async () => undefined),
+    removePermission: vi.fn(async () => undefined),
+    clearList: vi.fn(async () => undefined),
+    checkPermission: vi.fn(async () => true),
+    requestApproval: vi.fn(async () => 'allow-once' as const),
+    resolveApproval: vi.fn(async () => undefined),
+    pendingApprovals$: new BehaviorSubject([]),
+    getSessionApprovals: vi.fn(async () => []),
+    clearSessionApprovals: vi.fn(async () => undefined),
+  } as Partial<IToolPermissionsService>,
+  memeloopNode: {
+    startServer: vi.fn(async () => undefined),
+    stopServer: vi.fn(async () => undefined),
+    getServerStatus: vi.fn(async () => ({ running: false })),
+    registerWikiGitEndpoint: vi.fn(async () => undefined),
+    unregisterWikiGitEndpoint: vi.fn(async () => undefined),
+    getRegisteredWikis: vi.fn(async () => []),
+    getConnectedPeers: vi.fn(async () => []),
+    listRemoteWikis: vi.fn(async () => []),
+    listAllRemoteWikis: vi.fn(async () => []),
+    addPeer: vi.fn(async () => ({ nodeId: 'mock-node' })),
+    removePeer: vi.fn(async () => undefined),
+    syncNow: vi.fn(async () => ({ synced: true })),
+    antiEntropy: vi.fn(async () => ({ synced: true })),
+    getSyncStatus: vi.fn(async () => ({ versionVector: {}, peerCount: 0, syncRunning: false })),
+    getIdentityStatus: vi.fn(async () => ({ nodeId: '', hasKeypair: false, cloudUrl: null, cloudLoggedIn: false, cloudEmail: null, cloudNodeRegistered: false, knownNodeCount: 0 })),
+    regenerateKeypair: vi.fn(async () => ({ nodeId: 'new-node-id' })),
+    cloudLogin: vi.fn(async () => ({ ok: true })),
+    cloudLogout: vi.fn(async () => undefined),
+    setCloudUrl: vi.fn(async () => undefined),
+    getCloudUrl: vi.fn(async () => null),
+    requestNodeOtp: vi.fn(async () => ({ otp: '123456', expiresIn: 300 })),
+    registerNodeWithOtp: vi.fn(async () => ({ nodeId: 'cloud-node-id' })),
+    getKnownNodes: vi.fn(async () => []),
+    removeKnownNode: vi.fn(async () => undefined),
+    getLocalPinCode: vi.fn(async () => 'ABCDEF'),
+    confirmPeerPin: vi.fn(async () => ({ ok: true })),
+    getSubscriptionStatus: vi.fn(async () => ({
+      plan: 'free' as const, status: 'active' as const, tokenUsed: 0, tokenTotal: 10000, billingHistory: [],
+    })),
+    openBillingPage: vi.fn(async () => undefined),
+  } as Partial<IMemeloopNodeService>,
+  remoteTerminal: {
+    listSessions: vi.fn(async () => []),
+    followSession: vi.fn(async () => ({ output: '', exitCode: null })),
+    respondToSession: vi.fn(async () => undefined),
+    cancelSession: vi.fn(async () => undefined),
+  } as Partial<IRemoteTerminalService>,
 };
 
 // Bind the shared mocks into container so real services resolved from container.get()
