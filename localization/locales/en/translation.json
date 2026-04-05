@@ -745,5 +745,18 @@
     "ViewGitHistory": "View Backup History (Git)",
     "WakeUpWorkspace": "WakeUp Workspace"
   },
-  "Yes": "Yes"
+  "Yes": "Yes",
+  "Subscription": {
+    "Title": "Subscription Management",
+    "Description": "Manage your memeloop subscription and token usage",
+    "CurrentPlan": "Current Plan",
+    "Status": "Status",
+    "RenewalDate": "Renewal Date",
+    "ManageBilling": "Manage Billing",
+    "TokenUsage": "Token Usage",
+    "Used": "Used",
+    "BillingHistory": "Billing History",
+    "NoData": "No subscription data available",
+    "NoDataDescription": "Please connect to memeloop cloud to view your subscription"
+  }
 }

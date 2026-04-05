@@ -772,5 +772,18 @@
     "ViewGitHistory": "查看历史备份（Git）",
     "WakeUpWorkspace": "唤醒工作区"
   },
-  "Yes": "是的"
+  "Yes": "是的",
+  "Subscription": {
+    "Title": "订阅管理",
+    "Description": "管理您的 memeloop 订阅和 Token 用量",
+    "CurrentPlan": "当前套餐",
+    "Status": "状态",
+    "RenewalDate": "续费日期",
+    "ManageBilling": "管理账单",
+    "TokenUsage": "Token 用量",
+    "Used": "已使用",
+    "BillingHistory": "账单历史",
+    "NoData": "暂无订阅数据",
+    "NoDataDescription": "请先连接到 memeloop 云服务以查看您的订阅"
+  }
 }

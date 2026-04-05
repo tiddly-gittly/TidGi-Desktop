@@ -699,6 +699,77 @@ export class MemeloopNode implements IMemeloopNodeService {
       return { ok: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
+
+  // ── Subscription management ──
+
+  async getSubscriptionStatus(): Promise<{
+    plan: "free" | "pro" | "enterprise";
+    status: "active" | "expired" | "cancelled";
+    tokenUsed: number;
+    tokenTotal: number;
+    renewalDate?: string;
+    billingHistory: Array<{
+      id: string;
+      date: string;
+      amount: number;
+      status: "paid" | "pending" | "failed";
+    }>;
+  }> {
+    let token = this.cloudAuth?.accessToken;
+    if (!token) {
+      const refreshed = await this.refreshCloudToken();
+      if (!refreshed) throw new Error("Not logged in to cloud");
+      token = this.cloudAuth?.accessToken ?? null;
+    }
+    if (!token) throw new Error("Not logged in to cloud");
+    const cloudUrl = this.cloudAuth!.cloudUrl;
+    const url = `${cloudUrl.replace(/\/$/, "")}/api/subscription/status`;
+
+    let res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.status === 401) {
+      const refreshed = await this.refreshCloudToken();
+      if (refreshed && this.cloudAuth?.accessToken) {
+        res = await fetch(url, {
+          headers: { Authorization: `Bearer ${this.cloudAuth.accessToken}` },
+        });
+      } else {
+        throw new Error("Authentication expired, please login again");
+      }
+    }
+
+    if (!res.ok) throw new Error(`Failed to fetch subscription status: ${res.status}`);
+    return await res.json() as Awaited<ReturnType<IMemeloopNodeService["getSubscriptionStatus"]>>;
+  }
+
+  async openBillingPage(): Promise<void> {
+    let token = this.cloudAuth?.accessToken;
+    if (!token) {
+      const refreshed = await this.refreshCloudToken();
+      if (!refreshed) throw new Error("Not logged in to cloud");
+      token = this.cloudAuth?.accessToken ?? null;
+    }
+    if (!token) throw new Error("Not logged in to cloud");
+    const cloudUrl = this.cloudAuth!.cloudUrl;
+    // Request a short-lived billing session URL from the cloud API
+    // to avoid leaking the JWT in browser history / URL bar.
+    const res = await fetch(`${cloudUrl.replace(/\/$/, "")}/api/subscription/billing-session`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    });
+    if (!res.ok) {
+      // Fallback: open the billing page without auth (user will need to login in browser)
+      const { shell } = await import("electron");
+      await shell.openExternal(`${cloudUrl.replace(/\/$/, "")}/billing`);
+      return;
+    }
+    const data = await res.json() as { url?: string };
+    const billingUrl = data.url ?? `${cloudUrl.replace(/\/$/, "")}/billing`;
+    const { shell } = await import("electron");
+    await shell.openExternal(billingUrl);
+  }
 }
 
 function readRequestBody(req: http.IncomingMessage): Promise<Buffer> {
