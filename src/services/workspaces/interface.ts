@@ -332,6 +332,8 @@ export type INewWikiWorkspaceConfig =
     | 'includeTagTree'
     | 'fileSystemPathFilterEnable'
     | 'fileSystemPathFilter'
+    | 'syncTargetNodeIds'
+    | 'syncToCloudGitea'
   >
   & {
     useTidgiConfig?: boolean;

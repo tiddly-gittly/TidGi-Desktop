@@ -24,14 +24,9 @@ export function ToolApprovalDialog(): React.JSX.Element {
     useState<IToolApprovalRequest | null>(null);
 
   useEffect(() => {
-    const service = window.service.toolPermissions as unknown as {
-      pendingApprovals$: {
-        subscribe: (callback: (requests: IToolApprovalRequest[]) => void) => {
-          unsubscribe: () => void;
-        };
-      };
-    };
-    const subscription = service.pendingApprovals$.subscribe(
+    const observable = window.observables.toolPermissions?.pendingApprovals$;
+    if (!observable) return;
+    const subscription = observable.subscribe(
       (requests: IToolApprovalRequest[]) => {
         setPendingRequests(requests);
         if (requests.length > 0 && !currentRequest) {

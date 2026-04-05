@@ -1,5 +1,5 @@
 import type { AIStreamResponse } from '@/services/providerRegistry/interface';
-import type { IToolPermissionsService } from '@/services/toolPermissions/interface';
+import type { IToolApprovalRequest, IToolPermissionsService } from '@/services/toolPermissions/interface';
 import type { IMemeloopNodeService } from '@/services/memeloopNode/interface';
 import type { IRemoteTerminalService } from '@/services/remoteTerminal/interface';
 import { AgentBrowserService } from '@services/agentBrowser';
@@ -128,7 +128,7 @@ export const serviceInstances: {
     checkPermission: vi.fn(async () => true),
     requestApproval: vi.fn(async () => 'allow-once' as const),
     resolveApproval: vi.fn(async () => undefined),
-    pendingApprovals$: new BehaviorSubject([]),
+    pendingApprovals$: new BehaviorSubject<IToolApprovalRequest[]>([]),
     getSessionApprovals: vi.fn(async () => []),
     clearSessionApprovals: vi.fn(async () => undefined),
   } as Partial<IToolPermissionsService>,
@@ -166,10 +166,10 @@ export const serviceInstances: {
   } as Partial<IMemeloopNodeService>,
   remoteTerminal: {
     listSessions: vi.fn(async () => []),
-    followSession: vi.fn(async () => ({ output: '', exitCode: null })),
+    followSession: vi.fn(async () => ({ sessionId: '', status: 'running' as const, exitCode: null, nextSeq: 0, done: false, chunks: [] })),
     respondToSession: vi.fn(async () => undefined),
     cancelSession: vi.fn(async () => undefined),
-  } as Partial<IRemoteTerminalService>,
+  } as unknown as Partial<IRemoteTerminalService>,
 };
 
 // Bind the shared mocks into container so real services resolved from container.get()
