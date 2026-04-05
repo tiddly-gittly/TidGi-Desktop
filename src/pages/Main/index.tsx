@@ -1,23 +1,24 @@
-import { Helmet } from '@dr.pogodin/react-helmet';
-import { styled } from '@mui/material/styles';
-import { lazy, Suspense } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Route, Switch } from 'wouter';
+import { Helmet } from "@dr.pogodin/react-helmet";
+import { styled } from "@mui/material/styles";
+import { lazy, Suspense } from "react";
+import { useTranslation } from "react-i18next";
+import { Route, Switch } from "wouter";
 
-import { PageType } from '@/constants/pageTypes';
-import { usePreferenceObservable } from '@services/preferences/hooks';
-import { WindowNames } from '@services/windows/WindowProperties';
-import { ContentLoading } from './ContentLoading';
-import FindInPage from './FindInPage';
-import { SideBar } from './Sidebar';
-import { useAskAIWithSelection } from './useAskAIWithSelection';
-import { useInitialPage } from './useInitialPage';
+import { PageType } from "@/constants/pageTypes";
+import { ToolApprovalDialog } from "@/components/ToolApprovalDialog";
+import { usePreferenceObservable } from "@services/preferences/hooks";
+import { WindowNames } from "@services/windows/WindowProperties";
+import { ContentLoading } from "./ContentLoading";
+import FindInPage from "./FindInPage";
+import { SideBar } from "./Sidebar";
+import { useAskAIWithSelection } from "./useAskAIWithSelection";
+import { useInitialPage } from "./useInitialPage";
 
-import { subPages } from './subPages';
+import { subPages } from "./subPages";
 
-const WikiBackground = lazy(() => import('../WikiBackground'));
+const WikiBackground = lazy(() => import("../WikiBackground"));
 
-const OuterRoot = styled('div')`
+const OuterRoot = styled("div")`
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -25,7 +26,7 @@ const OuterRoot = styled('div')`
   overflow: hidden;
 `;
 
-const Root = styled('div')`
+const Root = styled("div")`
   display: flex;
   flex-direction: row;
   flex: 1;
@@ -43,7 +44,7 @@ const Root = styled('div')`
   }
 `;
 
-const ContentRoot = styled('div')<{ $sidebar: boolean }>(
+const ContentRoot = styled("div")<{ $sidebar: boolean }>(
   ({ theme, $sidebar }) => `
   flex: 1;
   display: flex;
@@ -70,23 +71,33 @@ export default function Main(): React.JSX.Element {
   const windowName = window.meta().windowName;
   const preferences = usePreferenceObservable();
   const isTidgiMiniWindow = windowName === WindowNames.tidgiMiniWindow;
-  const showSidebar = (isTidgiMiniWindow ? preferences?.tidgiMiniWindowShowSidebar : preferences?.sidebar) ?? true;
+  const showSidebar =
+    (isTidgiMiniWindow
+      ? preferences?.tidgiMiniWindowShowSidebar
+      : preferences?.sidebar) ?? true;
   return (
     <OuterRoot>
       <Helmet>
-        <title>{t('Menu.TidGi')}{isTidgiMiniWindow ? ` [${t('Menu.TidGiMiniWindow')}]` : ' [App]'}</title>
+        <title>
+          {t("Menu.TidGi")}
+          {isTidgiMiniWindow ? ` [${t("Menu.TidGiMiniWindow")}]` : " [App]"}
+        </title>
       </Helmet>
+      <ToolApprovalDialog />
       <Root data-windowname={windowName} data-showsidebar={showSidebar}>
         {showSidebar && <SideBar />}
         <ContentRoot $sidebar={showSidebar}>
           <FindInPage />
           <Suspense fallback={<ContentLoading />}>
             <Switch>
-              <Route path={`/${PageType.wiki}/:id/`} component={WikiBackground} />
+              <Route
+                path={`/${PageType.wiki}/:id/`}
+                component={WikiBackground}
+              />
               <Route path={`/${PageType.agent}`} component={subPages.Agent} />
               <Route path={`/${PageType.guide}`} component={subPages.Guide} />
               <Route path={`/${PageType.help}`} component={subPages.Help} />
-              <Route path='/' component={subPages.Guide} />
+              <Route path="/" component={subPages.Guide} />
               <Route component={subPages.Guide} />
             </Switch>
           </Suspense>

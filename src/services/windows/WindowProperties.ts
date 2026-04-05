@@ -1,44 +1,59 @@
-import type { CreateWorkspaceTabs } from '@/windows/AddWorkspace/constants';
-import type { PreferenceSections } from '@services/preferences/interface';
-import { IWorkspace } from '@services/workspaces/interface';
+import type { CreateWorkspaceTabs } from "@/windows/AddWorkspace/constants";
+import type { PreferenceSections } from "@services/preferences/interface";
+import { IWorkspace } from "@services/workspaces/interface";
 
 export enum WindowNames {
-  about = 'about',
-  addWorkspace = 'addWorkspace',
+  about = "about",
+  addWorkspace = "addWorkspace",
   /**
    * Open any website URL, this is a popup window that user can open a help resource.
    */
-  any = 'any',
-  auth = 'auth',
-  editWorkspace = 'editWorkspace',
+  any = "any",
+  auth = "auth",
+  editWorkspace = "editWorkspace",
   /**
    * Git history viewer window
    */
-  gitHistory = 'gitHistory',
+  gitHistory = "gitHistory",
   /**
    * Window with workspace list and new wiki button on left side bar
    * We only have a single instance of main window, that is the app window.
    */
-  main = 'main',
-  tidgiMiniWindow = 'tidgiMiniWindow',
-  notifications = 'notifications',
-  preferences = 'preferences',
+  main = "main",
+  tidgiMiniWindow = "tidgiMiniWindow",
+  notifications = "notifications",
+  preferences = "preferences",
+  /**
+   * Remote terminal viewer window
+   */
+  remoteTerminal = "remoteTerminal",
+  /**
+   * Node management window for discovered/connected nodes
+   */
+  nodeManagement = "nodeManagement",
+  /**
+   * Subscription management window for memeloop cloud
+   */
+  subscription = "subscription",
   /**
    * Second wiki window in a popup window.
    */
-  secondary = 'secondary',
-  spellcheck = 'spellcheck',
+  secondary = "secondary",
+  spellcheck = "spellcheck",
   /**
    * browserView that loads the wiki webpage
    * We will have multiple view window, each main workspace will have one.
    */
-  view = 'view',
+  view = "view",
 }
 
 /**
  * Width height of windows
  */
-export const windowDimension: Record<WindowNames, { height?: number; width?: number }> = {
+export const windowDimension: Record<
+  WindowNames,
+  { height?: number; width?: number }
+> = {
   [WindowNames.main]: {
     width: 1200,
     height: 768,
@@ -83,6 +98,18 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     width: 840,
     height: 700,
   },
+  [WindowNames.remoteTerminal]: {
+    width: 1400,
+    height: 900,
+  },
+  [WindowNames.nodeManagement]: {
+    width: 1200,
+    height: 800,
+  },
+  [WindowNames.subscription]: {
+    width: 900,
+    height: 700,
+  },
   [WindowNames.notifications]: {
     width: 400,
     height: 585,
@@ -113,11 +140,16 @@ export interface WindowMeta {
   [WindowNames.tidgiMiniWindow]: undefined;
   [WindowNames.notifications]: undefined;
   [WindowNames.preferences]: IPreferenceWindowMeta;
+  [WindowNames.remoteTerminal]: { nodeId?: string };
+  [WindowNames.nodeManagement]: undefined;
+  [WindowNames.subscription]: undefined;
   [WindowNames.spellcheck]: undefined;
   [WindowNames.secondary]: undefined;
   [WindowNames.view]: IBrowserViewMetaData;
 }
-export type IPossibleWindowMeta<M extends WindowMeta[WindowNames] = WindowMeta[WindowNames.main]> = {
+export type IPossibleWindowMeta<
+  M extends WindowMeta[WindowNames] = WindowMeta[WindowNames.main],
+> = {
   windowName: WindowNames;
 } & M;
 

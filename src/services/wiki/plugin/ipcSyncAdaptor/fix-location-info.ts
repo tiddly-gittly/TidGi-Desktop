@@ -77,6 +77,21 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
 
       asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/tokenAuth', text: mapBoolean(tokenAuth) }, { title: '$:/info/tidgi/enableHTTPAPI', text: mapBoolean(enableHTTPAPI) });
 
+      // Add memeloop node URL for mobile sync — mobile now connects to memeloop node, not TiddlyWiki HTTP server
+      try {
+        const memeloopStatus = await tidgiService.memeloopNode.getServerStatus();
+        if (memeloopStatus.running && memeloopStatus.port) {
+          const memeloopUrl = await tidgiService.native.getLocalHostUrlWithActualInfo(
+            getDefaultHTTPServerIP(memeloopStatus.port),
+            workspaceID,
+          );
+          const memeloopUrlObject = new URL(memeloopUrl);
+          asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/memeloopNodeUrl', text: memeloopUrlObject.origin });
+        }
+      } catch {
+        // non-fatal: memeloop node may not be available
+      }
+
       // Add workspace name for QR code
       if (workspaceName) {
         asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/workspaceName', text: workspaceName });

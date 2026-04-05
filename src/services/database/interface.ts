@@ -1,16 +1,22 @@
-import { DatabaseChannel } from '@/constants/channels';
-import type { IUserInfos } from '@services/auth/interface';
-import { AIGlobalSettings } from '@services/providerRegistry/interface';
-import type { IPreferences } from '@services/preferences/interface';
-import type { ISyncableWikiConfig, IWorkspace } from '@services/workspaces/interface';
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import { DataSource } from 'typeorm';
+import { DatabaseChannel } from "@/constants/channels";
+import type { IUserInfos } from "@services/auth/interface";
+import { AIGlobalSettings } from "@services/providerRegistry/interface";
+import type { IPreferences } from "@services/preferences/interface";
+import type { IToolPermissionEntry } from "@services/toolPermissions/interface";
+import type {
+  ISyncableWikiConfig,
+  IWorkspace,
+} from "@services/workspaces/interface";
+import { ProxyPropertyType } from "electron-ipc-cat/common";
+import { DataSource } from "typeorm";
 
 export interface ISettingFile {
   preferences: IPreferences;
   userInfos: IUserInfos;
   workspaces: Record<string, IWorkspace>;
   aiSettings?: AIGlobalSettings;
+  "toolPermissions.blacklist"?: IToolPermissionEntry[];
+  "toolPermissions.whitelist"?: IToolPermissionEntry[];
 }
 
 /**
@@ -45,7 +51,10 @@ export interface IDatabaseService {
    * @param key setting file top level key like `userInfos`
    * @param value whole setting from a service
    */
-  setSetting<K extends keyof ISettingFile>(key: K, value: ISettingFile[K]): void;
+  setSetting<K extends keyof ISettingFile>(
+    key: K,
+    value: ISettingFile[K],
+  ): void;
 
   /**
    * Initialize database for specific key
@@ -55,7 +64,11 @@ export interface IDatabaseService {
   /**
    * Get database connection for specific key
    */
-  getDatabase(key: string, options?: DatabaseInitOptions, isRetry?: boolean): Promise<DataSource>;
+  getDatabase(
+    key: string,
+    options?: DatabaseInitOptions,
+    isRetry?: boolean,
+  ): Promise<DataSource>;
 
   /**
    * Close database connection
@@ -88,7 +101,9 @@ export interface IDatabaseService {
    * Exposed over IPC so the renderer can pre-fill the Add Workspace form when
    * importing an existing wiki with "use tidgi.config" enabled.
    */
-  readWikiConfig(wikiFolderLocation: string): Promise<Partial<ISyncableWikiConfig> | undefined>;
+  readWikiConfig(
+    wikiFolderLocation: string,
+  ): Promise<Partial<ISyncableWikiConfig> | undefined>;
 }
 
 export const DatabaseServiceIPCDescriptor = {
