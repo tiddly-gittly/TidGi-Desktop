@@ -1,19 +1,21 @@
-import type { HunspellLanguages } from '@/constants/hunspellLanguages';
-import { z } from 'zod';
-import { aiAgentSection } from './aiAgent';
-import { developersSection } from './developers';
-import { downloadsSection } from './downloads';
-import { externalAPISection } from './externalAPI';
-import { generalSection } from './general';
-import { languagesSection } from './languages';
-import { miscSection } from './misc';
-import { networkSection } from './network';
-import { notificationsSection } from './notifications';
-import { performanceSection } from './performance';
-import { privacySection } from './privacy';
-import { syncSection } from './sync';
-import { systemSection } from './system';
-import { tidgiMiniWindowSection } from './tidgiMiniWindow';
+import type { HunspellLanguages } from "@/constants/hunspellLanguages";
+import { z } from "zod";
+import { aiAgentSection } from "./aiAgent";
+import { developersSection } from "./developers";
+import { downloadsSection } from "./downloads";
+import { externalAPISection } from "./externalAPI";
+import { friendLinksSection } from "./friendLinks";
+import { generalSection } from "./general";
+import { languagesSection } from "./languages";
+import { miscSection } from "./misc";
+import { networkSection } from "./network";
+import { notificationsSection } from "./notifications";
+import { performanceSection } from "./performance";
+import { privacySection } from "./privacy";
+import { searchSection } from "./search";
+import { syncSection } from "./sync";
+import { systemSection } from "./system";
+import { tidgiMiniWindowSection } from "./tidgiMiniWindow";
 import type {
   IBooleanPreferenceItem,
   IEnumPreferenceItem,
@@ -22,9 +24,9 @@ import type {
   IStringArrayPreferenceItem,
   IStringPreferenceItem,
   PreferenceItemDefinition,
-} from './types';
-import { updatesSection } from './updates';
-import { wikiSection } from './wiki';
+} from "./types";
+import { updatesSection } from "./updates";
+import { wikiSection } from "./wiki";
 
 /**
  * Ordered list of all sections. Display order matches array order.
@@ -36,6 +38,7 @@ export const allSections: ISectionDefinition[] = [
   syncSection,
   externalAPISection,
   aiAgentSection,
+  searchSection,
   notificationsSection,
   systemSection,
   languagesSection,
@@ -45,19 +48,29 @@ export const allSections: ISectionDefinition[] = [
   privacySection,
   performanceSection,
   updatesSection,
+  friendLinksSection,
   miscSection,
 ];
 
 /** Map from section ID to its definition */
-export const sectionById = new Map<string, ISectionDefinition>(allSections.map((s) => [s.id, s]));
+export const sectionById = new Map<string, ISectionDefinition>(
+  allSections.map((s) => [s.id, s]),
+);
 
 /**
  * Type guard: is this a preference-backed item (has a `key`)?
  */
-export type PreferenceItem = IBooleanPreferenceItem | IEnumPreferenceItem | INumberPreferenceItem | IStringPreferenceItem | IStringArrayPreferenceItem;
+export type PreferenceItem =
+  | IBooleanPreferenceItem
+  | IEnumPreferenceItem
+  | INumberPreferenceItem
+  | IStringPreferenceItem
+  | IStringArrayPreferenceItem;
 
-export function isPreferenceItem(item: PreferenceItemDefinition): item is PreferenceItem {
-  return item.type.startsWith('preference-');
+export function isPreferenceItem(
+  item: PreferenceItemDefinition,
+): item is PreferenceItem {
+  return item.type.startsWith("preference-");
 }
 
 /**
@@ -88,7 +101,9 @@ export function buildZodSchema(): z.ZodObject<Record<string, z.ZodType>> {
   }
   // Extra fields not managed by section definitions but part of IPreferences
   shape.keyboardShortcuts = z.record(z.string(), z.string());
-  shape.spellcheckLanguages = z.array(z.string() as z.ZodType<HunspellLanguages>);
+  shape.spellcheckLanguages = z.array(
+    z.string() as z.ZodType<HunspellLanguages>,
+  );
   shape.pauseNotifications = z.string().optional();
   // Schedule fields rendered by custom TimePicker component
   shape.pauseNotificationsBySchedule = z.boolean();
@@ -96,6 +111,8 @@ export function buildZodSchema(): z.ZodObject<Record<string, z.ZodType>> {
   shape.pauseNotificationsByScheduleTo = z.string();
   // Language is managed by a custom selector
   shape.language = z.string();
+  // Memeloop node server port
+  shape.memeloopNodePort = z.number();
   return z.object(shape) as z.ZodObject<Record<string, z.ZodType>>;
 }
 
