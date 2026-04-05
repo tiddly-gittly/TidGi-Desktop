@@ -136,6 +136,16 @@ export class AgentInstanceService implements IAgentInstanceService {
   private memeLoopWorkerLogCleanup?: () => void;
   private workerAgentIdByConversationId: Map<string, string> = new Map();
 
+  /**
+   * Internal accessor for the worker proxy — used by MemeloopNode service
+   * to delegate peer/sync operations to the worker thread.
+   */
+  async getMemeLoopWorkerProxy(): Promise<MemeLoopWorker> {
+    await this.ensureMemeLoopWorkerHealthy();
+    if (!this.memeLoopWorker) throw new Error("MemeLoop worker not available");
+    return this.memeLoopWorker;
+  }
+
   private normalizeMultimodalForModelSupport(
     messages: Array<{ role: "system" | "user" | "assistant"; content: any }>,
   ): Array<{

@@ -12,6 +12,7 @@ import type {
   AttachmentRef,
   ChatMessage,
   ConversationMeta,
+  NodeStatus,
 } from "@memeloop/protocol";
 import taskAgents from "./agentFrameworks/taskAgents.json";
 
@@ -19,6 +20,10 @@ import {
   resolveApproval,
   resolveQuestionAnswer,
   onApprovalRequest,
+  ChatSyncEngine,
+  PeerNodeSyncAdapter,
+  type PeerNodeTransport,
+  type ChatSyncPeer,
 } from "memeloop";
 import type { IWikiManager, TiddlerFields } from "memeloop-node";
 import { handleWorkerMessages } from "@services/libs/workerAdapter";
@@ -596,7 +601,10 @@ onApprovalRequest((request) => {
 
 const wikiManager = new DesktopTiddlyWikiManager();
 
-const localNodeId = `tidgi-desktop-${nanoid(8)}`;
+// Use persistent keypair-derived nodeId instead of random nanoid.
+// Lazy: initialized in ensureRuntimeInitialized when memeloop-node is available.
+let localNodeId = `tidgi-desktop-${nanoid(8)}`;
+let noiseStaticKeyPair: { publicKey: Buffer; secretKey: Buffer } | undefined;
 const terminalManager = new TerminalSessionManager();
 
 let runtime: any;
@@ -608,6 +616,14 @@ let fileBaseDirResolved: string;
 let createNodeServerFn: any;
 let runtimeInitPromise: Promise<void> | undefined;
 
+// ── Peer connection & sync engine (populated in ensureRuntimeInitialized) ──
+let peerConnectionManager:
+  | import("memeloop-node").PeerConnectionManager
+  | undefined;
+let chatSyncEngine: ChatSyncEngine | undefined;
+let syncTimerId: ReturnType<typeof setInterval> | undefined;
+const SYNC_INTERVAL_MS = 30_000;
+
 async function ensureRuntimeInitialized(): Promise<void> {
   if (runtime) return;
   if (runtimeInitPromise) {
@@ -618,14 +634,46 @@ async function ensureRuntimeInitialized(): Promise<void> {
   runtimeInitPromise = (async () => {
     // Avoid worker module init crashes: load memeloop-node lazily.
     const memeloopNode = await import("memeloop-node");
-    const { createNodeRuntime, ToolRegistry, createNodeServer } =
-      memeloopNode as unknown as {
-        createNodeRuntime: typeof memeloopNode.createNodeRuntime;
-        ToolRegistry: typeof memeloopNode.ToolRegistry;
-        createNodeServer: typeof memeloopNode.createNodeServer;
-      };
+    const {
+      createNodeRuntime,
+      ToolRegistry,
+      createNodeServer,
+      PeerConnectionManager,
+      loadOrCreateNodeKeypair: loadKeypair,
+    } = memeloopNode as unknown as {
+      createNodeRuntime: typeof memeloopNode.createNodeRuntime;
+      ToolRegistry: typeof memeloopNode.ToolRegistry;
+      createNodeServer: typeof memeloopNode.createNodeServer;
+      PeerConnectionManager: typeof memeloopNode.PeerConnectionManager;
+      loadOrCreateNodeKeypair: typeof memeloopNode.loadOrCreateNodeKeypair;
+    };
 
     createNodeServerFn = createNodeServer;
+
+    // Load persistent keypair for stable nodeId and Noise encryption.
+    try {
+      const keypair = loadKeypair();
+      localNodeId = keypair.nodeId;
+      noiseStaticKeyPair = {
+        publicKey: Buffer.from(keypair.x25519PublicKey, "base64url"),
+        secretKey: Buffer.from(keypair.x25519PrivateKey, "base64url"),
+      };
+      workerLog("warn", "[memeloop-worker] loaded persistent keypair", {
+        nodeId: localNodeId,
+      });
+    } catch (error) {
+      workerLog(
+        "warn",
+        "[memeloop-worker] keypair load failed, using random nodeId",
+        { error },
+      );
+    }
+
+    // Instantiate PeerConnectionManager for outbound connections to other nodes.
+    peerConnectionManager = new PeerConnectionManager({
+      localNodeId,
+      ...(noiseStaticKeyPair ? { noiseStaticKeyPair } : {}),
+    });
 
     const mainBridgeToolIds = await requestMainBridgeToolList().catch(
       (error) => {
@@ -692,15 +740,37 @@ async function ensureRuntimeInitialized(): Promise<void> {
         }
       },
       builtinToolContext: {
-        getPeers: async () => [],
-        sendRpcToNode: async () => ({
-          ok: false,
-          error: "remoteAgent not configured in desktop worker",
-        }),
-        mcpCallRemote: async () => ({
-          ok: false,
-          error: "mcpClient not configured in desktop worker",
-        }),
+        getPeers: async () => peerConnectionManager?.getPeers() ?? [],
+        sendRpcToNode: async (
+          nodeId: string,
+          method: string,
+          params: unknown,
+        ) => {
+          if (!peerConnectionManager) {
+            throw new Error("PeerConnectionManager not initialized");
+          }
+          return peerConnectionManager.sendRpcToNode(nodeId, method, params);
+        },
+        mcpCallRemote: async (
+          nodeId: string,
+          serverName: string,
+          toolName: string,
+          args: Record<string, unknown>,
+        ) => {
+          if (!peerConnectionManager) {
+            throw new Error("PeerConnectionManager not initialized");
+          }
+          const result = await peerConnectionManager.sendRpcToNode(
+            nodeId,
+            "memeloop.mcp.callTool",
+            { serverName, toolName, arguments: args },
+          );
+          const r = result as { result?: unknown; error?: string };
+          if (r.error) {
+            throw new Error(r.error);
+          }
+          return r.result;
+        },
         notifyAskQuestion: (payload: unknown) => {
           const p = payload as Partial<AskQuestionPrompt> & {
             conversationId?: string;
@@ -745,6 +815,76 @@ async function ensureRuntimeInitialized(): Promise<void> {
     runtimeWikiManager = runtimeResult.wikiManager ?? undefined;
     agentDefinitions = runtimeResult.agentDefinitions;
     fileBaseDirResolved = runtimeResult.fileBaseDirResolved;
+
+    // ── Initialize ChatSyncEngine with PeerConnectionManager as transport ──
+    const pcm = peerConnectionManager!;
+    const desktopTransport: PeerNodeTransport = {
+      nodeId: localNodeId,
+      exchangeVersionVector: async (targetNodeId, localVersion) => {
+        const result = await pcm.sendRpcToNode(
+          targetNodeId,
+          "memeloop.sync.exchangeVersionVector",
+          { localVersion },
+        );
+        return result as {
+          remoteVersion: Record<string, number>;
+          missingForRemote: ConversationMeta[];
+        };
+      },
+      pullMissingMetadata: async (targetNodeId, sinceVersion) => {
+        const result = await pcm.sendRpcToNode(
+          targetNodeId,
+          "memeloop.sync.pullMissingMetadata",
+          { sinceVersion },
+        );
+        return (result as { metas: ConversationMeta[] }).metas;
+      },
+      pullMissingMessages: async (
+        targetNodeId,
+        conversationId,
+        knownMessageIds,
+      ) => {
+        const result = await pcm.sendRpcToNode(
+          targetNodeId,
+          "memeloop.sync.pullMissingMessages",
+          { conversationId, knownMessageIds },
+        );
+        return (result as { messages: ChatMessage[] }).messages;
+      },
+      pullAttachmentBlob: async (targetNodeId, contentHash) => {
+        const result = await pcm.sendRpcToNode(
+          targetNodeId,
+          "memeloop.storage.getAttachmentBlob",
+          { contentHash },
+        );
+        return result as {
+          data: Uint8Array;
+          filename: string;
+          mimeType: string;
+          size: number;
+        } | null;
+      },
+    };
+
+    chatSyncEngine = new ChatSyncEngine({
+      nodeId: localNodeId,
+      storage: inMemoryStorage,
+      peers: () => {
+        const nodeIds = pcm.getPeerNodeIds();
+        return nodeIds.map(
+          (nid) => new PeerNodeSyncAdapter(nid, desktopTransport),
+        );
+      },
+    });
+
+    // Start periodic metadata gossip + message sync.
+    syncTimerId = setInterval(() => {
+      chatSyncEngine?.syncOnce().catch((error) => {
+        workerLog("warn", "[memeloop-worker][sync] periodic sync failed", {
+          error: error instanceof Error ? error.message : error,
+        });
+      });
+    }, SYNC_INTERVAL_MS);
   })();
 
   await runtimeInitPromise;
@@ -847,6 +987,11 @@ async function ensureDesktopNodeStarted(): Promise<void> {
 }
 
 async function stopDesktopNodeServer(): Promise<void> {
+  if (syncTimerId) {
+    clearInterval(syncTimerId);
+    syncTimerId = undefined;
+  }
+  peerConnectionManager?.shutdown();
   if (!desktopNodeServer) return;
   const server = desktopNodeServer;
   desktopNodeServer = undefined;
@@ -975,6 +1120,62 @@ const memeloopWorker = {
     });
     resolveApproval(approvalId, decision);
     return { ok: true };
+  },
+
+  // ── Peer connection management ──
+  addPeer: async (wsUrl: string) => {
+    await ensureRuntimeInitialized();
+    if (!peerConnectionManager)
+      throw new Error("PeerConnectionManager not ready");
+    const { nodeId } = await peerConnectionManager.addPeerByUrl(wsUrl);
+    workerLog("warn", "[memeloop-worker] addPeer succeeded", { wsUrl, nodeId });
+    return { nodeId };
+  },
+  removePeer: async (nodeId: string) => {
+    peerConnectionManager?.removePeer(nodeId);
+    return { ok: true };
+  },
+  getConnectedPeers: async (): Promise<NodeStatus[]> => {
+    return peerConnectionManager?.getPeers() ?? [];
+  },
+
+  // ── Sync controls ──
+  syncNow: async () => {
+    await ensureRuntimeInitialized();
+    if (!chatSyncEngine)
+      return { synced: false, reason: "engine not initialized" };
+    try {
+      await chatSyncEngine.syncOnce();
+      return { synced: true };
+    } catch (error) {
+      return {
+        synced: false,
+        reason: error instanceof Error ? error.message : String(error),
+      };
+    }
+  },
+  antiEntropy: async () => {
+    await ensureRuntimeInitialized();
+    if (!chatSyncEngine)
+      return { synced: false, reason: "engine not initialized" };
+    try {
+      await chatSyncEngine.antiEntropyOnce();
+      return { synced: true };
+    } catch (error) {
+      return {
+        synced: false,
+        reason: error instanceof Error ? error.message : String(error),
+      };
+    }
+  },
+  getSyncStatus: async () => {
+    const vv = chatSyncEngine?.getVersionVector() ?? {};
+    const peerCount = peerConnectionManager?.getPeerNodeIds().length ?? 0;
+    return {
+      versionVector: vv,
+      peerCount,
+      syncRunning: syncTimerId !== undefined,
+    };
   },
 };
 
