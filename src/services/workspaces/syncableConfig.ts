@@ -61,6 +61,8 @@ export const syncableConfigFields = [
   'https',
   'isSubWiki',
   'mainWikiID',
+  'syncTargetNodeIds',
+  'syncToCloudGitea',
 ] as const;
 
 /**
@@ -101,6 +103,8 @@ export const syncableConfigDefaultValues = {
   https: undefined as { enabled: boolean; tlsCert?: string; tlsKey?: string } | undefined,
   isSubWiki: false,
   mainWikiID: null as string | null,
+  syncTargetNodeIds: [] as string[],
+  syncToCloudGitea: false,
 } as const;
 
 /**
@@ -133,6 +137,8 @@ export type ISyncableWikiConfig = {
   https?: { enabled: boolean; tlsCert?: string; tlsKey?: string };
   isSubWiki: boolean;
   mainWikiID: string | null;
+  syncTargetNodeIds: string[];
+  syncToCloudGitea: boolean;
 };
 
 /**

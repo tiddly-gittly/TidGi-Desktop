@@ -165,6 +165,17 @@
       "type": ["string", "null"],
       "description": "Canonical workspace ID of the main wiki this sub-wiki is attached to",
       "default": null
+    },
+    "syncTargetNodeIds": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Node IDs this wiki should sync to via memeloop Git endpoints",
+      "default": []
+    },
+    "syncToCloudGitea": {
+      "type": "boolean",
+      "description": "Whether to sync this wiki to Cloud Gitea",
+      "default": false
     }
   },
   "required": ["version"],

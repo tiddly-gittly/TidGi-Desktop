@@ -58,5 +58,12 @@ export const saveAndSyncSection: IGenericSectionDefinition = {
       titleKey: 'EditWorkspace.BackupOnInterval',
       descriptionKey: 'EditWorkspace.BackupOnIntervalDescription',
     },
+    { type: 'divider' },
+    {
+      type: 'preference-boolean',
+      key: 'syncToCloudGitea',
+      titleKey: 'EditWorkspace.SyncToCloudGitea',
+      descriptionKey: 'EditWorkspace.SyncToCloudGiteaDescription',
+    },
   ],
 };

@@ -65,6 +65,8 @@ export const syncableConfigDefaultValues = {
   isSubWiki: false,
   mainWikiID: null as string | null,
   mainWikiToLink: null as string | null,
+  syncTargetNodeIds: [] as string[],
+  syncToCloudGitea: false,
 } as const;
 
 export const localConfigDefaultValues = {
@@ -262,6 +264,15 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
    * When enabled, the file system watcher will skip symlinks to avoid redundant file sync operations.
    */
   ignoreSymlinks: boolean;
+  /**
+   * Node IDs that this wiki should sync to via memeloop Git endpoints.
+   * Empty array means no remote sync targets configured.
+   */
+  syncTargetNodeIds: string[];
+  /**
+   * Whether to sync this wiki to Cloud Gitea (requires active subscription).
+   */
+  syncToCloudGitea: boolean;
 }
 export type IWorkspace = IWikiWorkspace | IDedicatedWorkspace;
 
