@@ -726,6 +726,8 @@
     "WikiSync.RegisterNode": "注册节点",
     "WikiSync.KnownNodes": "受信任节点",
     "WikiSync.RemoveTrust": "移除信任",
+    "WikiSync.NodeManagement": "节点管理",
+    "WikiSync.NoPeers": "未连接任何节点",
     "hardwareAcceleration": "使用硬件加速"
   },
   "Save": "保存",

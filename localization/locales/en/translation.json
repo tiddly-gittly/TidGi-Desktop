@@ -699,6 +699,8 @@
     "WikiSync.RegisterNode": "Register Node",
     "WikiSync.KnownNodes": "Trusted Nodes",
     "WikiSync.RemoveTrust": "Remove trust",
+    "WikiSync.NodeManagement": "Node Management",
+    "WikiSync.NoPeers": "No nodes connected",
     "hardwareAcceleration": "Use hardware acceleration when available"
   },
   "Save": "save",

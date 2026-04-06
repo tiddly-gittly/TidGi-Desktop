@@ -19,8 +19,6 @@ const LazyAIAgentSection = lazy(() => import('./sections/AIAgent').then((m) => (
 const LazyDeveloperToolsSection = lazy(() => import('./sections/DeveloperTools').then((m) => ({ default: m.DeveloperTools })));
 const LazySyncSection = lazy(() => import('./sections/Sync').then((m) => ({ default: m.Sync })));
 const LazyTidGiMiniWindowSection = lazy(() => import('./sections/TidGiMiniWindow').then((m) => ({ default: m.TidGiMiniWindow })));
-const LazyWikiSyncSection = lazy(() => import('./sections/WikiSync').then((m) => ({ default: m.WikiSync })));
-const LazyIMChannelsSection = lazy(() => import('./sections/IMChannels').then((m) => ({ default: m.IMChannels })));
 
 function wrapWithSuspense(LazyComponent: LazyExoticComponent<ComponentType<ICustomSectionProps>>): ComponentType<ICustomSectionProps> {
   return function SuspenseWrapper(props: ICustomSectionProps) {
@@ -49,8 +47,6 @@ export function registerCustomSections(): void {
   registerSection('aiAgent', LazyAIAgentSection);
   registerSection('developers', LazyDeveloperToolsSection);
   registerSection('sync', LazySyncSection);
-  registerSection('wikiSync', LazyWikiSyncSection);
-  registerSection('imChannels', LazyIMChannelsSection);
   registerSection('tidgiMiniWindow', LazyTidGiMiniWindowSection);
 
   // Item-level custom components (small self-contained widgets)

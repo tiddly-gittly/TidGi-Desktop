@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import CloudIcon from "@mui/icons-material/Cloud";
+import LoginIcon from "@mui/icons-material/Login";
+import LogoutIcon from "@mui/icons-material/Logout";
 import TuneIcon from "@mui/icons-material/Tune";
-import { Button, List } from "@mui/material";
+import { Alert, Box, Button, Chip, CircularProgress, Divider, List, TextField, Typography } from "@mui/material";
 
 import { ListItemText } from "@/components/ListItem";
 import {
@@ -10,6 +13,7 @@ import {
   ModelInfo,
 } from "@services/providerRegistry/interface";
 import type { ICustomSectionProps } from "@services/preferences/definitions/types";
+import type { NodeIdentityStatus } from "@services/memeloopNode/interface";
 import {
   ListItemVertical,
   Paper,
@@ -411,6 +415,139 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
         config={config}
         onSave={handleConfigChange}
       />
+
+      <CloudAuthPanel />
+    </>
+  );
+}
+
+// ─── Cloud service auth panel (moved from WikiSync section) ──────────────────
+
+function CloudAuthPanel(): React.JSX.Element {
+  const { t } = useTranslation();
+  const [identity, setIdentity] = useState<NodeIdentityStatus | null>(null);
+  const [cloudUrl, setCloudUrl] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [otp, setOtp] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    const id = await window.service.memeloopNode.getIdentityStatus();
+    setIdentity(id);
+    const url = await window.service.memeloopNode.getCloudUrl();
+    if (url) setCloudUrl(url);
+  }, []);
+
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  const handleSetCloudUrl = useCallback(async () => {
+    if (!cloudUrl.trim()) return;
+    setError(null);
+    await window.service.memeloopNode.setCloudUrl(cloudUrl.trim());
+    await refresh();
+  }, [cloudUrl, refresh]);
+
+  const handleLogin = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await window.service.memeloopNode.cloudLogin(email, password);
+      if (!result.ok) setError(result.error ?? 'Login failed');
+      else { setPassword(''); await refresh(); }
+    } finally { setLoading(false); }
+  }, [email, password, refresh]);
+
+  const handleLogout = useCallback(async () => {
+    await window.service.memeloopNode.cloudLogout();
+    await refresh();
+  }, [refresh]);
+
+  const handleRequestOtp = useCallback(async () => {
+    setError(null);
+    try {
+      const result = await window.service.memeloopNode.requestNodeOtp();
+      setOtp(result.otp);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }, []);
+
+  const handleRegisterNode = useCallback(async () => {
+    if (!otp) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await window.service.memeloopNode.registerNodeWithOtp(otp);
+      if (result.error) setError(result.error);
+      else { setOtp(null); await refresh(); }
+    } finally { setLoading(false); }
+  }, [otp, refresh]);
+
+  return (
+    <>
+      <Divider sx={{ mt: 2 }} />
+      <Box sx={{ px: 2, pt: 1.5, pb: 0.5 }}>
+        <Typography variant="subtitle1" fontWeight="medium">
+          <CloudIcon sx={{ verticalAlign: 'middle', mr: 0.5, fontSize: '1.2em' }} />
+          {t('Preference.WikiSync.CloudAuth')}
+        </Typography>
+      </Box>
+
+      <Box sx={{ mx: 2, mb: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'flex-start' }}>
+          <TextField
+            size="small"
+            label={t('Preference.WikiSync.CloudUrl')}
+            placeholder="https://api.memeloop.dev"
+            value={cloudUrl}
+            onChange={(e) => setCloudUrl(e.target.value)}
+            fullWidth
+          />
+          <Button size="small" variant="outlined" onClick={handleSetCloudUrl} sx={{ minWidth: 60 }}>
+            {t('Preference.WikiSync.Save')}
+          </Button>
+        </Box>
+
+        {identity?.cloudLoggedIn
+          ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Chip label={identity.cloudEmail ?? 'Logged in'} color="success" size="small" />
+              {identity.cloudNodeRegistered && <Chip label={t('Preference.WikiSync.NodeRegistered')} size="small" variant="outlined" color="info" />}
+              <Button size="small" startIcon={<LogoutIcon />} onClick={handleLogout}>
+                {t('Preference.WikiSync.Logout')}
+              </Button>
+            </Box>
+            )
+          : (
+            <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <TextField size="small" label={t('Preference.WikiSync.Email')} value={email} onChange={(e) => setEmail(e.target.value)} />
+              <TextField size="small" label={t('Preference.WikiSync.Password')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Button size="small" variant="contained" startIcon={loading ? <CircularProgress size={14} /> : <LoginIcon />} onClick={handleLogin} disabled={loading || !email || !password}>
+                {t('Preference.WikiSync.Login')}
+              </Button>
+            </Box>
+            )}
+
+        {identity?.cloudLoggedIn && !identity.cloudNodeRegistered && (
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Button size="small" variant="outlined" onClick={handleRequestOtp}>
+              {t('Preference.WikiSync.RequestOtp')}
+            </Button>
+            {otp && (
+              <>
+                <Typography variant="body2">{t('Preference.WikiSync.OtpCode')}: <strong>{otp}</strong></Typography>
+                <Button size="small" variant="contained" onClick={handleRegisterNode} disabled={loading}>
+                  {t('Preference.WikiSync.RegisterNode')}
+                </Button>
+              </>
+            )}
+          </Box>
+        )}
+
+        {error && <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert>}
+      </Box>
     </>
   );
 }
