@@ -22,7 +22,6 @@ import { AIProviderConfig } from "@services/providerRegistry/interface";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ProviderFormDialog } from "./ProviderFormDialog";
-import { SubscriptionModeToggle } from "./SubscriptionModeToggle";
 
 interface ProviderSettingsProps {
   providers: AIProviderConfig[];
@@ -120,8 +119,6 @@ export function ProviderSettings({
           {t("Preference.AddCustomProvider")}
         </Button>
       </Box>
-
-      <SubscriptionModeToggle />
 
       {customProviders.length === 0 ? (
         <Paper

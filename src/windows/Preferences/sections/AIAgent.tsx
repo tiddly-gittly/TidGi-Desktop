@@ -1,18 +1,18 @@
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import AddIcon from "@mui/icons-material/Add";
-import AddLinkIcon from "@mui/icons-material/AddLink";
-import AlarmIcon from "@mui/icons-material/Alarm";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import CloudOffIcon from "@mui/icons-material/CloudOff";
-import DeleteIcon from "@mui/icons-material/Delete";
-import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
-import EditIcon from "@mui/icons-material/Edit";
-import FavoriteIcon from "@mui/icons-material/Favorite";
-import FingerprintIcon from "@mui/icons-material/Fingerprint";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import SecurityIcon from "@mui/icons-material/Security";
-import SyncIcon from "@mui/icons-material/Sync";
-import VpnKeyIcon from "@mui/icons-material/VpnKey";
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import AddIcon from '@mui/icons-material/Add';
+import AddLinkIcon from '@mui/icons-material/AddLink';
+import AlarmIcon from '@mui/icons-material/Alarm';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import CloudOffIcon from '@mui/icons-material/CloudOff';
+import DeleteIcon from '@mui/icons-material/Delete';
+import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
+import EditIcon from '@mui/icons-material/Edit';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FingerprintIcon from '@mui/icons-material/Fingerprint';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import SecurityIcon from '@mui/icons-material/Security';
+import SyncIcon from '@mui/icons-material/Sync';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import {
   Alert,
   Box,
@@ -38,28 +38,24 @@ import {
   TextField,
   Tooltip,
   Typography,
-} from "@mui/material";
-import React, { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+} from '@mui/material';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
-import { ListItem, ListItemText } from "@/components/ListItem";
-import type {
-  CreateScheduledTaskInput,
-  ScheduledTask,
-} from "@/services/agentInstance/scheduledTaskManager";
-import type { IConnectedPeer, IRemoteWiki, NodeIdentityStatus } from "@services/memeloopNode/interface";
-import type { KnownNodeEntry } from "@memeloop/protocol";
-import type { ICustomSectionProps } from "@services/preferences/definitions/types";
-import { Paper, SectionTitle } from "../PreferenceComponents";
-import { ToolApprovalSettingsDialog } from "./ExternalAPI/components/ToolApprovalSettingsDialog";
-import { ToolPermissionsDialog } from "./ExternalAPI/components/ToolPermissionsDialog";
+import { ListItem, ListItemText } from '@/components/ListItem';
+import type { CreateScheduledTaskInput, ScheduledTask } from '@/services/agentInstance/scheduledTaskManager';
+import type { KnownNodeEntry } from '@memeloop/protocol';
+import type { IConnectedPeer, IRemoteWiki, NodeIdentityStatus } from '@services/memeloopNode/interface';
+import type { ICustomSectionProps } from '@services/preferences/definitions/types';
+import { Paper, SectionTitle } from '../PreferenceComponents';
+import { ToolApprovalSettingsDialog } from './ExternalAPI/components/ToolApprovalSettingsDialog';
+import { ToolPermissionsDialog } from './ExternalAPI/components/ToolPermissionsDialog';
 
 export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
-  const { t } = useTranslation("agent");
+  const { t } = useTranslation('agent');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [toolApprovalDialogOpen, setToolApprovalDialogOpen] = useState(false);
-  const [toolPermissionsDialogOpen, setToolPermissionsDialogOpen] =
-    useState(false);
+  const [toolPermissionsDialogOpen, setToolPermissionsDialogOpen] = useState(false);
   const [agentInfo, setAgentInfo] = useState<{
     exists: boolean;
     size?: number;
@@ -72,10 +68,9 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
   // ── New unified ScheduledTask state ────────────────────────────────────────
   const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>([]);
   const [scheduledTaskDialogOpen, setScheduledTaskDialogOpen] = useState(false);
-  const [editingScheduledTask, setEditingScheduledTask] =
-    useState<ScheduledTask | null>(null);
+  const [editingScheduledTask, setEditingScheduledTask] = useState<ScheduledTask | null>(null);
 
-  type StMode = "interval" | "cron";
+  type StMode = 'interval' | 'cron';
   interface StEditorState {
     agentId: string;
     mode: StMode;
@@ -89,15 +84,15 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
     enabled: boolean;
   }
   const makeInitialStEditor = (): StEditorState => ({
-    agentId: "",
-    mode: "interval",
+    agentId: '',
+    mode: 'interval',
     intervalSeconds: 300,
-    cronExpression: "0 9 * * 1-5",
+    cronExpression: '0 9 * * 1-5',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    message: "",
-    activeHoursStart: "",
-    activeHoursEnd: "",
-    name: "",
+    message: '',
+    activeHoursStart: '',
+    activeHoursEnd: '',
+    name: '',
     enabled: true,
   });
   const [stEditor, setStEditor] = useState<StEditorState>(makeInitialStEditor);
@@ -167,17 +162,16 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
         ) => Promise<string[]>;
       };
 
-      const schedule: CreateScheduledTaskInput["schedule"] =
-        stEditor.mode === "interval"
-          ? {
-              kind: "interval",
-              intervalSeconds: Math.max(60, stEditor.intervalSeconds),
-            }
-          : {
-              kind: "cron",
-              expression: stEditor.cronExpression,
-              timezone: stEditor.timezone || undefined,
-            };
+      const schedule: CreateScheduledTaskInput['schedule'] = stEditor.mode === 'interval'
+        ? {
+          kind: 'interval',
+          intervalSeconds: Math.max(60, stEditor.intervalSeconds),
+        }
+        : {
+          kind: 'cron',
+          expression: stEditor.cronExpression,
+          timezone: stEditor.timezone || undefined,
+        };
 
       const input: CreateScheduledTaskInput = {
         agentInstanceId: stEditor.agentId,
@@ -188,7 +182,7 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
         activeHoursStart: stEditor.activeHoursStart || undefined,
         activeHoursEnd: stEditor.activeHoursEnd || undefined,
         enabled: stEditor.enabled,
-        createdBy: "settings-ui",
+        createdBy: 'settings-ui',
       };
 
       if (editingScheduledTask) {
@@ -209,7 +203,7 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
 
   // Update cron preview when expression changes
   useEffect(() => {
-    if (stEditor.mode !== "cron" || !stEditor.cronExpression) {
+    if (stEditor.mode !== 'cron' || !stEditor.cronExpression) {
       setCronPreviewDates([]);
       return;
     }
@@ -253,15 +247,15 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
   useEffect(() => {
     const fetchInfo = async () => {
       try {
-        const info = await window.service.database.getDatabaseInfo("agent");
-        const path = await window.service.database.getDatabasePath("agent");
+        const info = await window.service.database.getDatabaseInfo('agent');
+        const path = await window.service.database.getDatabasePath('agent');
         setAgentInfo({ ...info, path });
       } catch (error) {
         void window.service.native.log(
-          "error",
-          "AIAgent: fetch agent database info failed",
+          'error',
+          'AIAgent: fetch agent database info failed',
           {
-            function: "AIAgent.fetchInfo",
+            function: 'AIAgent.fetchInfo',
             error,
           },
         );
@@ -273,14 +267,14 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
   return (
     <>
       <SectionTitle ref={props.sectionRef}>
-        {t("Preference.AIAgent")}
+        {t('Preference.AIAgent')}
       </SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           <ListItem>
             <ListItemText
-              primary={t("Preference.AIAgentDescription")}
-              secondary={t("Preference.AIAgentDescriptionDetail")}
+              primary={t('Preference.AIAgentDescription')}
+              secondary={t('Preference.AIAgentDescriptionDetail')}
             />
           </ListItem>
           <ListItemButton
@@ -290,10 +284,10 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
                   await window.service.native.openPath(agentInfo.path, true);
                 } catch (error) {
                   void window.service.native.log(
-                    "error",
-                    "AIAgent: open database folder failed",
+                    'error',
+                    'AIAgent: open database folder failed',
                     {
-                      function: "AIAgent.openDatabaseFolder",
+                      function: 'AIAgent.openDatabaseFolder',
                       error,
                       path: agentInfo.path,
                     },
@@ -303,10 +297,10 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
             }}
           >
             <ListItemText
-              primary={t("Preference.OpenDatabaseFolder")}
-              secondary={agentInfo.path || t("Unknown", { ns: "translation" })}
+              primary={t('Preference.OpenDatabaseFolder')}
+              secondary={agentInfo.path || t('Unknown', { ns: 'translation' })}
             />
-            <ChevronRightIcon color="action" />
+            <ChevronRightIcon color='action' />
           </ListItemButton>
           <ListItemButton
             onClick={() => {
@@ -314,11 +308,11 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
             }}
           >
             <ListItemText
-              primary={t("Preference.DeleteAgentDatabase")}
-              secondary={t("Preference.AgentDatabaseDescription", {
+              primary={t('Preference.DeleteAgentDatabase')}
+              secondary={t('Preference.AgentDatabaseDescription', {
                 size: agentInfo.size
-                  ? (agentInfo.size / 1024 / 1024).toFixed(2) + " MB"
-                  : t("Unknown", { ns: "translation" }),
+                  ? (agentInfo.size / 1024 / 1024).toFixed(2) + ' MB'
+                  : t('Unknown', { ns: 'translation' }),
               })}
             />
           </ListItemButton>
@@ -327,24 +321,24 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
               setToolApprovalDialogOpen(true);
             }}
           >
-            <SecurityIcon sx={{ mr: 1 }} color="action" />
+            <SecurityIcon sx={{ mr: 1 }} color='action' />
             <ListItemText
-              primary="Tool Approval & Timeout Settings"
-              secondary="Configure per-tool approval rules, timeout limits, regex patterns, and API retry settings"
+              primary='Tool Approval & Timeout Settings'
+              secondary='Configure per-tool approval rules, timeout limits, regex patterns, and API retry settings'
             />
-            <ChevronRightIcon color="action" />
+            <ChevronRightIcon color='action' />
           </ListItemButton>
           <ListItemButton
             onClick={() => {
               setToolPermissionsDialogOpen(true);
             }}
           >
-            <SecurityIcon sx={{ mr: 1 }} color="action" />
+            <SecurityIcon sx={{ mr: 1 }} color='action' />
             <ListItemText
-              primary="Tool Permissions (Blacklist/Whitelist)"
-              secondary="Manage which tools can be executed by agents"
+              primary='Tool Permissions (Blacklist/Whitelist)'
+              secondary='Manage which tools can be executed by agents'
             />
-            <ChevronRightIcon color="action" />
+            <ChevronRightIcon color='action' />
           </ListItemButton>
         </List>
 
@@ -352,196 +346,188 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
         <Divider />
         <Box
           sx={{
-            display: "flex",
-            alignItems: "center",
+            display: 'flex',
+            alignItems: 'center',
             gap: 0.5,
             px: 2,
             pt: 1.5,
             pb: 0.5,
           }}
         >
-          <AccessTimeIcon fontSize="small" sx={{ color: "text.secondary" }} />
+          <AccessTimeIcon fontSize='small' sx={{ color: 'text.secondary' }} />
           <Typography
-            variant="caption"
+            variant='caption'
             sx={{
               fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              color: "text.secondary",
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: 'text.secondary',
               flex: 1,
             }}
           >
-            {t("Preference.ScheduledTasks", "Scheduled Tasks")}
+            {t('Preference.ScheduledTasks', 'Scheduled Tasks')}
           </Typography>
           <Button
-            size="small"
+            size='small'
             startIcon={<AddIcon />}
             onClick={async () => {
               const options = await fetchAgentOptions();
               setEditingScheduledTask(null);
               setStEditor({
                 ...makeInitialStEditor(),
-                agentId: options[0]?.id ?? "",
+                agentId: options[0]?.id ?? '',
               });
               setScheduledTaskDialogOpen(true);
             }}
-            data-testid="scheduled-task-add-button"
+            data-testid='scheduled-task-add-button'
           >
-            {t("Preference.AddScheduledTask", "Add Task")}
+            {t('Preference.AddScheduledTask', 'Add Task')}
           </Button>
           <Button
-            size="small"
+            size='small'
             onClick={() => {
               void fetchScheduledTasks();
             }}
           >
-            {t("Refresh")}
+            {t('Refresh')}
           </Button>
         </Box>
         <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ px: 2, pb: 1, fontSize: "0.8rem" }}
+          variant='body2'
+          color='text.secondary'
+          sx={{ px: 2, pb: 1, fontSize: '0.8rem' }}
         >
           {t(
-            "Preference.ScheduledTasksDescription",
-            "Periodically wake agents on a schedule (interval or cron). Tasks survive app restarts.",
+            'Preference.ScheduledTasksDescription',
+            'Periodically wake agents on a schedule (interval or cron). Tasks survive app restarts.',
           )}
         </Typography>
 
-        {scheduledTasks.length === 0 ? (
-          <Box sx={{ px: 2, py: 2, textAlign: "center" }}>
-            <Typography variant="body2" color="text.secondary">
-              {t(
-                "Preference.NoScheduledTasks",
-                "No scheduled tasks. Add one to periodically wake an agent.",
-              )}
-            </Typography>
-          </Box>
-        ) : (
-          <Table size="small" data-testid="scheduled-tasks-table">
-            <TableHead>
-              <TableRow>
-                <TableCell>{t("Name")}</TableCell>
-                <TableCell>{t("Agent")}</TableCell>
-                <TableCell>{t("Type")}</TableCell>
-                <TableCell>{t("Schedule")}</TableCell>
-                <TableCell>{t("Next Run")}</TableCell>
-                <TableCell>{t("Runs")}</TableCell>
-                <TableCell>{t("Enabled")}</TableCell>
-                <TableCell>{t("Actions")}</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {scheduledTasks.map((task) => {
-                const scheduleDesc =
-                  task.scheduleKind === "interval"
+        {scheduledTasks.length === 0
+          ? (
+            <Box sx={{ px: 2, py: 2, textAlign: 'center' }}>
+              <Typography variant='body2' color='text.secondary'>
+                {t(
+                  'Preference.NoScheduledTasks',
+                  'No scheduled tasks. Add one to periodically wake an agent.',
+                )}
+              </Typography>
+            </Box>
+          )
+          : (
+            <Table size='small' data-testid='scheduled-tasks-table'>
+              <TableHead>
+                <TableRow>
+                  <TableCell>{t('Name')}</TableCell>
+                  <TableCell>{t('Agent')}</TableCell>
+                  <TableCell>{t('Type')}</TableCell>
+                  <TableCell>{t('Schedule')}</TableCell>
+                  <TableCell>{t('Next Run')}</TableCell>
+                  <TableCell>{t('Runs')}</TableCell>
+                  <TableCell>{t('Enabled')}</TableCell>
+                  <TableCell>{t('Actions')}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {scheduledTasks.map((task) => {
+                  const scheduleDesc = task.scheduleKind === 'interval'
                     ? `Every ${(task.schedule as { intervalSeconds: number }).intervalSeconds}s`
-                    : task.scheduleKind === "cron"
-                      ? `Cron: ${(task.schedule as { expression: string }).expression}`
-                      : `At: ${(task.schedule as { wakeAtISO: string }).wakeAtISO}`;
-                const nextRun = task.nextRunAt
-                  ? new Date(task.nextRunAt).toLocaleString()
-                  : "—";
-                const agentOption = agentOptions.find(
-                  (a) => a.id === task.agentInstanceId,
-                );
-                const typeIcon =
-                  task.scheduleKind === "interval" ? (
-                    <FavoriteIcon fontSize="inherit" color="success" />
-                  ) : (
-                    <AlarmIcon fontSize="inherit" color="warning" />
+                    : task.scheduleKind === 'cron'
+                    ? `Cron: ${(task.schedule as { expression: string }).expression}`
+                    : `At: ${(task.schedule as { wakeAtISO: string }).wakeAtISO}`;
+                  const nextRun = task.nextRunAt
+                    ? new Date(task.nextRunAt).toLocaleString()
+                    : '—';
+                  const agentOption = agentOptions.find(
+                    (a) => a.id === task.agentInstanceId,
                   );
+                  const typeIcon = task.scheduleKind === 'interval' ? <FavoriteIcon fontSize='inherit' color='success' /> : <AlarmIcon fontSize='inherit' color='warning' />;
 
-                return (
-                  <TableRow
-                    key={task.id}
-                    data-testid={`scheduled-task-row-${task.id}`}
-                  >
-                    <TableCell>{task.name ?? "—"}</TableCell>
-                    <TableCell>
-                      {agentOption?.label ?? task.agentInstanceId.slice(0, 8)}
-                    </TableCell>
-                    <TableCell>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-                      >
-                        {typeIcon}
-                        {task.scheduleKind}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Tooltip title={task.payload?.message ?? ""}>
-                        <span>{scheduleDesc}</span>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell>{nextRun}</TableCell>
-                    <TableCell>{task.runCount}</TableCell>
-                    <TableCell>
-                      <Switch
-                        size="small"
-                        checked={task.enabled}
-                        onChange={() => {
-                          void handleToggleScheduledTask(task);
-                        }}
-                        data-testid={`scheduled-task-enable-${task.id}`}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Tooltip title="Edit">
-                        <IconButton
-                          size="small"
-                          onClick={async () => {
-                            await fetchAgentOptions();
-                            setEditingScheduledTask(task);
-                            const s = task.schedule;
-                            setStEditor({
-                              agentId: task.agentInstanceId,
-                              mode:
-                                task.scheduleKind === "cron"
-                                  ? "cron"
-                                  : "interval",
-                              intervalSeconds:
-                                s.kind === "interval" ? s.intervalSeconds : 300,
-                              cronExpression:
-                                s.kind === "cron"
+                  return (
+                    <TableRow
+                      key={task.id}
+                      data-testid={`scheduled-task-row-${task.id}`}
+                    >
+                      <TableCell>{task.name ?? '—'}</TableCell>
+                      <TableCell>
+                        {agentOption?.label ?? task.agentInstanceId.slice(0, 8)}
+                      </TableCell>
+                      <TableCell>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                        >
+                          {typeIcon}
+                          {task.scheduleKind}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title={task.payload?.message ?? ''}>
+                          <span>{scheduleDesc}</span>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>{nextRun}</TableCell>
+                      <TableCell>{task.runCount}</TableCell>
+                      <TableCell>
+                        <Switch
+                          size='small'
+                          checked={task.enabled}
+                          onChange={() => {
+                            void handleToggleScheduledTask(task);
+                          }}
+                          data-testid={`scheduled-task-enable-${task.id}`}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title='Edit'>
+                          <IconButton
+                            size='small'
+                            onClick={async () => {
+                              await fetchAgentOptions();
+                              setEditingScheduledTask(task);
+                              const s = task.schedule;
+                              setStEditor({
+                                agentId: task.agentInstanceId,
+                                mode: task.scheduleKind === 'cron'
+                                  ? 'cron'
+                                  : 'interval',
+                                intervalSeconds: s.kind === 'interval' ? s.intervalSeconds : 300,
+                                cronExpression: s.kind === 'cron'
                                   ? s.expression
-                                  : "0 9 * * 1-5",
-                              timezone:
-                                (s as { timezone?: string }).timezone ??
-                                Intl.DateTimeFormat().resolvedOptions()
-                                  .timeZone,
-                              message: task.payload?.message ?? "",
-                              activeHoursStart: task.activeHoursStart ?? "",
-                              activeHoursEnd: task.activeHoursEnd ?? "",
-                              name: task.name ?? "",
-                              enabled: task.enabled,
-                            });
-                            setScheduledTaskDialogOpen(true);
-                          }}
-                          data-testid={`scheduled-task-edit-${task.id}`}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            void handleDeleteScheduledTask(task.id);
-                          }}
-                          data-testid={`scheduled-task-delete-${task.id}`}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
+                                  : '0 9 * * 1-5',
+                                timezone: (s as { timezone?: string }).timezone ??
+                                  Intl.DateTimeFormat().resolvedOptions()
+                                    .timeZone,
+                                message: task.payload?.message ?? '',
+                                activeHoursStart: task.activeHoursStart ?? '',
+                                activeHoursEnd: task.activeHoursEnd ?? '',
+                                name: task.name ?? '',
+                                enabled: task.enabled,
+                              });
+                              setScheduledTaskDialogOpen(true);
+                            }}
+                            data-testid={`scheduled-task-edit-${task.id}`}
+                          >
+                            <EditIcon fontSize='small' />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title='Delete'>
+                          <IconButton
+                            size='small'
+                            onClick={() => {
+                              void handleDeleteScheduledTask(task.id);
+                            }}
+                            data-testid={`scheduled-task-delete-${task.id}`}
+                          >
+                            <DeleteIcon fontSize='small' />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
       </Paper>
 
       {/* ── ScheduledTask create/edit dialog ──────────────────────────────── */}
@@ -550,24 +536,24 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
         onClose={() => {
           setScheduledTaskDialogOpen(false);
         }}
-        maxWidth="sm"
+        maxWidth='sm'
         fullWidth
-        data-testid="scheduled-task-dialog"
+        data-testid='scheduled-task-dialog'
       >
         <DialogTitle>
-          {editingScheduledTask ? "Edit Scheduled Task" : "Add Scheduled Task"}
+          {editingScheduledTask ? 'Edit Scheduled Task' : 'Add Scheduled Task'}
         </DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
             select
-            label="Agent"
-            margin="dense"
+            label='Agent'
+            margin='dense'
             value={stEditor.agentId}
             onChange={(event) => {
               setStEditor((p) => ({ ...p, agentId: event.target.value }));
             }}
-            data-testid="scheduled-task-agent-select"
+            data-testid='scheduled-task-agent-select'
           >
             {agentOptions.map((o) => (
               <MenuItem key={o.id} value={o.id}>
@@ -578,20 +564,20 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
 
           <TextField
             fullWidth
-            label="Task name (optional)"
-            margin="dense"
+            label='Task name (optional)'
+            margin='dense'
             value={stEditor.name}
             onChange={(event) => {
               setStEditor((p) => ({ ...p, name: event.target.value }));
             }}
-            data-testid="scheduled-task-name-input"
+            data-testid='scheduled-task-name-input'
           />
 
           <TextField
             fullWidth
             select
-            label="Schedule mode"
-            margin="dense"
+            label='Schedule mode'
+            margin='dense'
             value={stEditor.mode}
             onChange={(event) => {
               setStEditor((p) => ({
@@ -599,39 +585,39 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
                 mode: event.target.value as StMode,
               }));
             }}
-            data-testid="scheduled-task-mode-select"
+            data-testid='scheduled-task-mode-select'
           >
-            <MenuItem value="interval">Interval (every N seconds)</MenuItem>
-            <MenuItem value="cron">Cron expression</MenuItem>
+            <MenuItem value='interval'>Interval (every N seconds)</MenuItem>
+            <MenuItem value='cron'>Cron expression</MenuItem>
           </TextField>
 
-          {stEditor.mode === "interval" && (
+          {stEditor.mode === 'interval' && (
             <TextField
               fullWidth
-              type="number"
-              label="Interval (seconds)"
-              margin="dense"
+              type='number'
+              label='Interval (seconds)'
+              margin='dense'
               value={stEditor.intervalSeconds}
               onChange={(event) => {
                 setStEditor((p) => ({
                   ...p,
                   intervalSeconds: Number.parseInt(
-                    event.target.value || "300",
+                    event.target.value || '300',
                     10,
                   ),
                 }));
               }}
               slotProps={{ htmlInput: { min: 60 } }}
-              data-testid="scheduled-task-interval-input"
+              data-testid='scheduled-task-interval-input'
             />
           )}
 
-          {stEditor.mode === "cron" && (
+          {stEditor.mode === 'cron' && (
             <>
-              <Box sx={{ display: "flex", gap: 1 }}>
+              <Box sx={{ display: 'flex', gap: 1 }}>
                 <TextField
-                  label="Cron expression"
-                  margin="dense"
+                  label='Cron expression'
+                  margin='dense'
                   value={stEditor.cronExpression}
                   onChange={(event) => {
                     setStEditor((p) => ({
@@ -639,13 +625,13 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
                       cronExpression: event.target.value,
                     }));
                   }}
-                  helperText="min hour day month weekday"
+                  helperText='min hour day month weekday'
                   sx={{ flex: 2 }}
-                  data-testid="scheduled-task-cron-input"
+                  data-testid='scheduled-task-cron-input'
                 />
                 <TextField
-                  label="Timezone"
-                  margin="dense"
+                  label='Timezone'
+                  margin='dense'
                   value={stEditor.timezone}
                   onChange={(event) => {
                     setStEditor((p) => ({
@@ -654,19 +640,19 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
                     }));
                   }}
                   sx={{ flex: 1 }}
-                  data-testid="scheduled-task-timezone-input"
+                  data-testid='scheduled-task-timezone-input'
                 />
               </Box>
               {cronPreviewDates.length > 0 && (
                 <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mt: 0.5 }}
+                  variant='caption'
+                  color='text.secondary'
+                  sx={{ display: 'block', mt: 0.5 }}
                 >
-                  {"Next runs: "}
+                  {'Next runs: '}
                   {cronPreviewDates
                     .map((d) => new Date(d).toLocaleString())
-                    .join(" → ")}
+                    .join(' → ')}
                 </Typography>
               )}
             </>
@@ -676,20 +662,20 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
             fullWidth
             multiline
             minRows={2}
-            label="Wake-up message (optional)"
-            margin="dense"
+            label='Wake-up message (optional)'
+            margin='dense'
             value={stEditor.message}
             onChange={(event) => {
               setStEditor((p) => ({ ...p, message: event.target.value }));
             }}
-            data-testid="scheduled-task-message-input"
+            data-testid='scheduled-task-message-input'
           />
 
-          <Box sx={{ display: "flex", gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
             <TextField
-              type="time"
-              label="Active hours start (optional)"
-              margin="dense"
+              type='time'
+              label='Active hours start (optional)'
+              margin='dense'
               value={stEditor.activeHoursStart}
               onChange={(event) => {
                 setStEditor((p) => ({
@@ -698,12 +684,12 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
                 }));
               }}
               sx={{ flex: 1 }}
-              data-testid="scheduled-task-active-start-input"
+              data-testid='scheduled-task-active-start-input'
             />
             <TextField
-              type="time"
-              label="Active hours end (optional)"
-              margin="dense"
+              type='time'
+              label='Active hours end (optional)'
+              margin='dense'
               value={stEditor.activeHoursEnd}
               onChange={(event) => {
                 setStEditor((p) => ({
@@ -712,7 +698,7 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
                 }));
               }}
               sx={{ flex: 1 }}
-              data-testid="scheduled-task-active-end-input"
+              data-testid='scheduled-task-active-end-input'
             />
           </Box>
         </DialogContent>
@@ -721,7 +707,7 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
             onClick={() => {
               setScheduledTaskDialogOpen(false);
             }}
-            data-testid="scheduled-task-cancel-button"
+            data-testid='scheduled-task-cancel-button'
           >
             Cancel
           </Button>
@@ -729,7 +715,7 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
             onClick={() => {
               void handleSaveScheduledTask();
             }}
-            data-testid="scheduled-task-save-button"
+            data-testid='scheduled-task-save-button'
           >
             Save
           </Button>
@@ -756,10 +742,10 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
           setDeleteDialogOpen(false);
         }}
       >
-        <DialogTitle>{t("Preference.ConfirmDelete")}</DialogTitle>
+        <DialogTitle>{t('Preference.ConfirmDelete')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {t("Preference.ConfirmDeleteAgentDatabase")}
+            {t('Preference.ConfirmDeleteAgentDatabase')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -768,33 +754,31 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
               setDeleteDialogOpen(false);
             }}
           >
-            {t("Cancel")}
+            {t('Cancel')}
           </Button>
           <Button
             onClick={async () => {
               try {
-                await window.service.database.deleteDatabase("agent");
+                await window.service.database.deleteDatabase('agent');
                 setDeleteDialogOpen(false);
                 // Refresh info after deletion
-                const info =
-                  await window.service.database.getDatabaseInfo("agent");
-                const path =
-                  await window.service.database.getDatabasePath("agent");
+                const info = await window.service.database.getDatabaseInfo('agent');
+                const path = await window.service.database.getDatabasePath('agent');
                 setAgentInfo({ ...info, path });
               } catch (error) {
                 void window.service.native.log(
-                  "error",
-                  "AIAgent: delete agent database failed",
+                  'error',
+                  'AIAgent: delete agent database failed',
                   {
-                    function: "AIAgent.handleDelete",
+                    function: 'AIAgent.handleDelete',
                     error,
                   },
                 );
               }
             }}
-            color="error"
+            color='error'
           >
-            {t("Delete")}
+            {t('Delete')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -815,14 +799,16 @@ function NodeManagementSection(): React.JSX.Element {
     void window.service.memeloopNode.getServerStatus().then((s) => {
       if (!cancelled) setStatus(s);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
     <>
       <Divider sx={{ mt: 2 }} />
       <Box sx={{ px: 2, pt: 1.5, pb: 0.5 }}>
-        <Typography variant="subtitle1" fontWeight="medium">
+        <Typography variant='subtitle1' fontWeight='medium'>
           {t('Preference.WikiSync.NodeManagement')}
         </Typography>
       </Box>
@@ -830,16 +816,16 @@ function NodeManagementSection(): React.JSX.Element {
       {status === null
         ? <CircularProgress size={20} sx={{ m: 2 }} />
         : status.running
-          ? (
-            <Alert severity="info" sx={{ mb: 1, mx: 2 }} icon={<SyncIcon />}>
-              {t('Preference.WikiSync.NodeRunning', { port: status.port, nodeId: status.nodeId?.slice(0, 16) })}
-            </Alert>
-            )
-          : (
-            <Alert severity="warning" sx={{ mb: 1, mx: 2 }}>
-              {t('Preference.WikiSync.NodeNotRunning')}
-            </Alert>
-            )}
+        ? (
+          <Alert severity='info' sx={{ mb: 1, mx: 2 }} icon={<SyncIcon />}>
+            {t('Preference.WikiSync.NodeRunning', { port: status.port, nodeId: status.nodeId?.slice(0, 16) })}
+          </Alert>
+        )
+        : (
+          <Alert severity='warning' sx={{ mb: 1, mx: 2 }}>
+            {t('Preference.WikiSync.NodeNotRunning')}
+          </Alert>
+        )}
 
       <IdentityPanel />
       <KnownNodesPanel />
@@ -857,31 +843,33 @@ function IdentityPanel(): React.JSX.Element {
 
   useEffect(() => {
     void window.service.memeloopNode.getIdentityStatus().then(setIdentity);
-    void window.service.memeloopNode.getLocalPinCode().then(setPinCode).catch(() => setPinCode(null));
+    void window.service.memeloopNode.getLocalPinCode().then(setPinCode).catch(() => {
+      setPinCode(null);
+    });
   }, []);
 
   if (!identity) return <CircularProgress size={16} sx={{ m: 1 }} />;
 
   return (
     <Paper elevation={0} sx={{ p: 1.5, mb: 1, mx: 2 }}>
-      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+      <Typography variant='subtitle2' sx={{ mb: 1 }}>
         <FingerprintIcon sx={{ verticalAlign: 'middle', mr: 0.5, fontSize: '1.2em' }} />
         {t('Preference.WikiSync.Identity')}
       </Typography>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        <Typography variant="body2">
+        <Typography variant='body2'>
           {t('Preference.WikiSync.NodeId')}: <code>{identity.nodeId.slice(0, 24)}…</code>
         </Typography>
         {pinCode && (
-          <Typography variant="body2">
+          <Typography variant='body2'>
             {t('Preference.WikiSync.PinCode')}: <strong>{pinCode}</strong>
           </Typography>
         )}
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
           {identity.hasKeypair
-            ? <Chip icon={<VpnKeyIcon />} label={t('Preference.WikiSync.KeypairReady')} color="success" size="small" variant="outlined" />
-            : <Chip label={t('Preference.WikiSync.NoKeypair')} color="warning" size="small" variant="outlined" />}
-          <Chip label={t('Preference.WikiSync.KnownNodeCount', { count: identity.knownNodeCount })} size="small" variant="outlined" />
+            ? <Chip icon={<VpnKeyIcon />} label={t('Preference.WikiSync.KeypairReady')} color='success' size='small' variant='outlined' />
+            : <Chip label={t('Preference.WikiSync.NoKeypair')} color='warning' size='small' variant='outlined' />}
+          <Chip label={t('Preference.WikiSync.KnownNodeCount', { count: identity.knownNodeCount })} size='small' variant='outlined' />
         </Box>
       </Box>
     </Paper>
@@ -897,7 +885,9 @@ function KnownNodesPanel(): React.JSX.Element {
     setNodes(n);
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   const handleRemove = useCallback(async (nodeId: string) => {
     await window.service.memeloopNode.removeKnownNode(nodeId);
@@ -908,7 +898,7 @@ function KnownNodesPanel(): React.JSX.Element {
 
   return (
     <Paper elevation={0} sx={{ p: 1.5, mb: 1, mx: 2 }}>
-      <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+      <Typography variant='subtitle2' sx={{ mb: 0.5 }}>
         <VpnKeyIcon sx={{ verticalAlign: 'middle', mr: 0.5, fontSize: '1.2em' }} />
         {t('Preference.WikiSync.KnownNodes')}
       </Typography>
@@ -918,8 +908,8 @@ function KnownNodesPanel(): React.JSX.Element {
             <ListItem
               secondaryAction={
                 <Tooltip title={t('Preference.WikiSync.RemoveTrust')}>
-                  <IconButton size="small" onClick={() => handleRemove(node.nodeId)}>
-                    <DeleteIcon fontSize="small" />
+                  <IconButton size='small' onClick={() => handleRemove(node.nodeId)}>
+                    <DeleteIcon fontSize='small' />
                   </IconButton>
                 </Tooltip>
               }
@@ -929,7 +919,7 @@ function KnownNodesPanel(): React.JSX.Element {
                 secondary={`${node.trustSource} · ${new Date(node.lastConnected).toLocaleDateString()}`}
               />
             </ListItem>
-            <Divider component="li" />
+            <Divider component='li' />
           </Box>
         ))}
       </List>
@@ -950,7 +940,9 @@ function SyncStatusPanel(): React.JSX.Element {
   useEffect(() => {
     void refreshStatus();
     const id = setInterval(() => void refreshStatus(), 10_000);
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+    };
   }, [refreshStatus]);
 
   const handleSyncNow = useCallback(async () => {
@@ -969,16 +961,14 @@ function SyncStatusPanel(): React.JSX.Element {
     <Paper elevation={0} sx={{ p: 1.5, mb: 1, mx: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
-          <Typography variant="body2">
+          <Typography variant='body2'>
             {t('Preference.WikiSync.PeerCount', { count: syncStatus.peerCount })}
-            {syncStatus.syncRunning && (
-              <Chip label={t('Preference.WikiSync.SyncActive')} color="success" size="small" variant="outlined" sx={{ ml: 1 }} />
-            )}
+            {syncStatus.syncRunning && <Chip label={t('Preference.WikiSync.SyncActive')} color='success' size='small' variant='outlined' sx={{ ml: 1 }} />}
           </Typography>
         </Box>
         <Button
-          size="small"
-          variant="outlined"
+          size='small'
+          variant='outlined'
           startIcon={syncing ? <CircularProgress size={14} /> : <SyncIcon />}
           onClick={handleSyncNow}
           disabled={syncing}
@@ -1003,8 +993,8 @@ function AddPeerPanel(): React.JSX.Element {
     try {
       await window.service.memeloopNode.addPeer(url.trim());
       setUrl('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : String(error_));
     } finally {
       setConnecting(false);
     }
@@ -1012,23 +1002,26 @@ function AddPeerPanel(): React.JSX.Element {
 
   return (
     <Paper elevation={0} sx={{ p: 1.5, mb: 1, mx: 2 }}>
-      <Typography variant="body2" sx={{ mb: 1 }}>
+      <Typography variant='body2' sx={{ mb: 1 }}>
         <AddLinkIcon sx={{ verticalAlign: 'middle', mr: 0.5, fontSize: '1.2em' }} />
         {t('Preference.WikiSync.AddPeer')}
       </Typography>
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
         <TextField
-          size="small"
-          placeholder="ws://192.168.1.100:9000"
+          size='small'
+          placeholder='ws://192.168.1.100:9000'
           value={url}
-          onChange={(e) => { setUrl(e.target.value); setError(null); }}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            setError(null);
+          }}
           fullWidth
           error={!!error}
           helperText={error}
         />
         <Button
-          size="small"
-          variant="contained"
+          size='small'
+          variant='contained'
           onClick={handleAdd}
           disabled={connecting || !url.trim()}
           sx={{ minWidth: 80 }}
@@ -1067,14 +1060,14 @@ function RemoteWikiList(): React.JSX.Element {
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', mx: 2, mt: 1, mb: 0.5 }}>
-        <Typography variant="subtitle2">
+        <Typography variant='subtitle2'>
           <DesktopWindowsIcon sx={{ verticalAlign: 'middle', mr: 0.5, fontSize: '1.2em' }} />
           {t('Preference.WikiSync.RemoteNodes')}
           {peers.length > 0 && ` (${peers.length})`}
         </Typography>
         <Tooltip title={t('Preference.WikiSync.Refresh')}>
-          <IconButton size="small" onClick={refresh} disabled={loading} sx={{ ml: 1 }}>
-            {loading ? <CircularProgress size={16} /> : <RefreshIcon fontSize="small" />}
+          <IconButton size='small' onClick={refresh} disabled={loading} sx={{ ml: 1 }}>
+            {loading ? <CircularProgress size={16} /> : <RefreshIcon fontSize='small' />}
           </IconButton>
         </Tooltip>
       </Box>
@@ -1086,27 +1079,27 @@ function RemoteWikiList(): React.JSX.Element {
                 <ListItemText
                   primary={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CloudOffIcon fontSize="small" color="disabled" />
+                      <CloudOffIcon fontSize='small' color='disabled' />
                       <span>{t('Preference.WikiSync.NoPeers')}</span>
                     </Box>
                   }
                 />
               </ListItem>
-              )
+            )
             : peers.map((peer) => {
-                const wikis = remoteWikis.filter((w) => w.nodeId === peer.nodeId);
-                return (
-                  <Box key={peer.nodeId}>
-                    <ListItem>
-                      <ListItemText
-                        primary={peer.name ?? peer.nodeId.slice(0, 16)}
-                        secondary={`${wikis.length} wiki(s)`}
-                      />
-                    </ListItem>
-                    <Divider component="li" />
-                  </Box>
-                );
-              })}
+              const wikis = remoteWikis.filter((w) => w.nodeId === peer.nodeId);
+              return (
+                <Box key={peer.nodeId}>
+                  <ListItem>
+                    <ListItemText
+                      primary={peer.name ?? peer.nodeId.slice(0, 16)}
+                      secondary={`${wikis.length} wiki(s)`}
+                    />
+                  </ListItem>
+                  <Divider component='li' />
+                </Box>
+              );
+            })}
         </List>
       </Paper>
     </>

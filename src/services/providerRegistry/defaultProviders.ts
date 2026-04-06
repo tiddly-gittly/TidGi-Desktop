@@ -3,6 +3,28 @@ import { t } from '@services/libs/i18n/placeholder';
 export default {
   providers: [
     {
+      // Official memeloop cloud — API key = cloud token, baseURL = cloud API endpoint.
+      // providerClass 'memeloopCloud' triggers cloud-specific auth flow in ProviderRegistry.
+      provider: 'memeloop',
+      providerClass: 'memeloopCloud',
+      isPreset: true,
+      enabled: false,
+      showBaseURLField: true,
+      baseURL: 'https://api.memeloop.dev',
+      models: [
+        {
+          name: 'memeloop-default',
+          caption: 'Memeloop Default',
+          features: ['language', 'reasoning', 'toolCalling', 'free'],
+        },
+        {
+          name: 'memeloop-embedding',
+          caption: 'Memeloop Embedding',
+          features: ['embedding'],
+        },
+      ],
+    },
+    {
       provider: 'openai',
       providerClass: 'openai',
       isPreset: true,

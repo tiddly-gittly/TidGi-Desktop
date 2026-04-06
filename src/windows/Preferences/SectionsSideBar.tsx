@@ -20,6 +20,13 @@ const SideBar = styled('div')`
   overflow-y: auto;
   background-color: ${({ theme }) => theme.palette.background.default};
   color: ${({ theme }) => theme.palette.text.primary};
+
+  /* Hide scrollbar visually but keep scroll functionality */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 const ListItemIcon = styled(ListItemIconRaw)`
   color: ${({ theme }) => theme.palette.text.primary};
