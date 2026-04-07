@@ -334,6 +334,20 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
             />
             <ChevronRightIcon color='action' />
           </ListItemButton>
+
+          {/* ── Node Management items (from schema) ────────────────────── */}
+          <Divider />
+          {preference === undefined ? null : aiAgentSection.items
+            .filter(item => !('titleKey' in item && item.titleKey === 'Preference.AIAgentManage'))
+            .map((item, idx) => (
+              <ItemRenderer
+                key={`${item.type}-${idx}`}
+                item={item}
+                preference={preference}
+                onNeedsRestart={props.onNeedsRestart}
+                platform={undefined}
+              />
+            ))}
         </List>
 
         {/* ── Scheduled Tasks sub-section ─────────────────────────────── */}
@@ -776,28 +790,6 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
           </Button>
         </DialogActions>
       </Dialog>
-
-{/* Node management is defined as a generic schema items in aiAgent.ts but the
-            CustomSectionComponent takes priority over schema items, so we render them directly. */}
-        <Divider sx={{ mt: 2 }} />
-        <SectionTitle>
-          {t('Preference.WikiSync.NodeManagement', { ns: 'translation' })}
-        </SectionTitle>
-        <Paper elevation={0}>
-          <List dense disablePadding>
-            {aiAgentSection.items
-              .filter(item => !('titleKey' in item && item.titleKey === 'Preference.AIAgentManage'))
-              .map((item, idx) => (
-                <ItemRenderer
-                  key={`${item.type}-${idx}`}
-                  item={item}
-                  preference={preference}
-                  onNeedsRestart={props.onNeedsRestart}
-                  platform={undefined}
-                />
-              ))}
-          </List>
-        </Paper>
     </>
   );
 }

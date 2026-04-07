@@ -76,6 +76,7 @@ export const actionInputItemSchema = definitionBaseSchema.extend({
   type: z.literal('action-input'),
   handler: z.string(),
   buttonTextKey: z.string().optional(),
+  buttonTextNs: z.string().optional(),
   placeholderKey: z.string().optional(),
 });
 export type IActionInputItem = z.infer<typeof actionInputItemSchema>;

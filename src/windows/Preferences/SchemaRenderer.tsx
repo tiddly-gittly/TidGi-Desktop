@@ -273,16 +273,19 @@ function ActionInputItem({ item }: { item: IActionInputItem }): React.JSX.Elemen
           primary={t(item.titleKey, item.ns ? { ns: item.ns } : undefined)}
           secondary={item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined}
         />
-        <Box sx={{ display: 'flex', mt: 1, gap: 1 }}>
+        <Box sx={{ display: 'flex', mt: 1, gap: 1, alignItems: 'center' }}>
           <TextField
             size="small"
             fullWidth
             value={value}
+            sx={{ flex: 1 }}
             onChange={(e) => setValue(e.target.value)}
             placeholder={item.placeholderKey ? t(item.placeholderKey, item.ns ? { ns: item.ns } : undefined) : ''}
           />
           <Button
             variant="contained"
+            disableElevation
+            sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
             disabled={!value || loading}
             onClick={async () => {
               setLoading(true);
@@ -295,7 +298,7 @@ function ActionInputItem({ item }: { item: IActionInputItem }): React.JSX.Elemen
               }
             }}
           >
-            {item.buttonTextKey ? t(item.buttonTextKey, item.ns ? { ns: item.ns } : undefined) : t('Submit')}
+            {item.buttonTextKey ? t(item.buttonTextKey, { ns: item.buttonTextNs || item.ns }) : t('Submit', { ns: 'translation' })}
           </Button>
         </Box>
       </Box>
