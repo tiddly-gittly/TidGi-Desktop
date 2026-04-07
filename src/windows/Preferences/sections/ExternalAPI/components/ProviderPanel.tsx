@@ -104,7 +104,7 @@ export function ProviderPanel({
         </Typography>
       )}
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, mb: 1 }}>
         <TextField
           label={t('Preference.APIKey')}
           type={showApiKey ? 'text' : 'password'}
@@ -113,7 +113,7 @@ export function ProviderPanel({
             onFormChange('apiKey', event.target.value);
           }}
           fullWidth
-          margin='normal'
+          sx={{ flex: 1 }}
           disabled={provider.providerClass === 'ollama'} // Ollama doesn't require API key
           slotProps={{
             htmlInput: { 'data-testid': 'provider-api-key-input' },
@@ -137,7 +137,7 @@ export function ProviderPanel({
 
         {/* Browser login button (for OAuth providers like memeloop) or Get API Key link */}
         {(provider.loginUrl || provider.apiKeyUrl) && (
-          <Button
+            <Button
             variant='outlined'
             size='medium'
             startIcon={provider.loginUrl ? <OpenInBrowserIcon /> : <VpnKeyIcon />}
@@ -145,7 +145,7 @@ export function ProviderPanel({
               const url = provider.loginUrl ?? provider.apiKeyUrl;
               if (url) void window.service.native.openURI(url);
             }}
-            sx={{ textTransform: 'none', height: 40, mt: provider.providerClass === 'ollama' ? 0 : 2, whiteSpace: 'nowrap' }}
+            sx={{ textTransform: 'none', height: 40, whiteSpace: 'nowrap', flexShrink: 0 }}
           >
             {provider.loginUrl ? t('Preference.LoginWithBrowser') : t('Preference.GetAPIKey')}
           </Button>

@@ -7,7 +7,6 @@ import type { ICustomSectionProps } from '@services/preferences/definitions/type
 import { type ComponentType, lazy, type LazyExoticComponent, Suspense } from 'react';
 import { registerCustomComponent } from './customComponentRegistry';
 import { LanguageSelectorItem } from './customItems/LanguageSelectorItem';
-import { NodeManagementItem } from './customItems/NodeManagementItem';
 import { NotificationHelpTextItem, NotificationTestItem } from './customItems/NotificationItems';
 import { NotificationScheduleItem } from './customItems/NotificationScheduleItem';
 import { OpenAtLoginItem } from './customItems/OpenAtLoginItem';
@@ -16,6 +15,7 @@ import { WikiUserNameItem } from './customItems/WikiUserNameItem';
 
 // ─── Lazy-loaded section-level custom components (very complex sections) ──
 const LazyExternalAPISection = lazy(() => import('./sections/ExternalAPI').then((m) => ({ default: m.ExternalAPI })));
+const LazyAIModelsSection = lazy(() => import('./sections/AIModels').then((m) => ({ default: m.AIModels })));
 const LazyAIAgentSection = lazy(() => import('./sections/AIAgent').then((m) => ({ default: m.AIAgent })));
 const LazyDeveloperToolsSection = lazy(() => import('./sections/DeveloperTools').then((m) => ({ default: m.DeveloperTools })));
 const LazySyncSection = lazy(() => import('./sections/Sync').then((m) => ({ default: m.Sync })));
@@ -45,6 +45,7 @@ export function registerCustomSections(): void {
     }
   };
   registerSection('externalAPI', LazyExternalAPISection);
+  registerSection('aiModels', LazyAIModelsSection);
   registerSection('aiAgent', LazyAIAgentSection);
   registerSection('developers', LazyDeveloperToolsSection);
   registerSection('sync', LazySyncSection);
@@ -58,5 +59,4 @@ export function registerCustomSections(): void {
   registerCustomComponent('notifications.schedule', NotificationScheduleItem);
   registerCustomComponent('notifications.test', NotificationTestItem);
   registerCustomComponent('notifications.helpText', NotificationHelpTextItem);
-  registerCustomComponent('aiAgent.nodeManagement', NodeManagementItem);
 }

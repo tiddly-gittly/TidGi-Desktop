@@ -1,7 +1,5 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { Divider, List, ListItemButton, Skeleton, Switch, TextField, Typography } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import i18next from 'i18next';
+import { Box, Button, Divider, List, ListItemButton, Skeleton, Switch, TextField } from '@mui/material';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -12,6 +10,7 @@ import { allSections } from '@services/preferences/definitions/registry';
 import { getSideEffect } from '@services/preferences/definitions/sideEffects';
 import type {
   IActionItem,
+  IActionInputItem,
   IBooleanPreferenceItem,
   ICustomItem,
   IEnumPreferenceItem,
@@ -25,7 +24,6 @@ import type {
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import type { IPreferences } from '@services/preferences/interface';
 import { getCustomComponent } from './customComponentRegistry';
-import { HighlightText } from './HighlightText';
 import { Paper, SectionTitle } from './PreferenceComponents';
 
 // ─── Platform filter ─────────────────────────────────────────────────
@@ -38,43 +36,19 @@ function matchesPlatform(condition: PlatformCondition | undefined, platform: str
   return true;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────
-
-/** Return the English translation for a key — used for search matching independent of UI language. */
-function txEn(key: string, ns?: string): string {
-  try {
-    return ns ? (i18next.t(key, { lng: 'en', ns })) : (i18next.t(key, { lng: 'en' }));
-  } catch {
-    return '';
-  }
-}
-
-/** Label shown in search results for the section the item belongs to. */
-const SearchSectionLabel = styled(Typography)`
-  color: ${({ theme }) => theme.palette.text.secondary};
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-top: 4px;
-`;
-
 // ─── Item renderers ──────────────────────────────────────────────────
 
 function BooleanItem({
   item,
   preference,
   onNeedsRestart,
-  query = '',
 }: {
   item: IBooleanPreferenceItem;
   onNeedsRestart: () => void;
   preference: IPreferences;
-  query?: string;
 }): React.JSX.Element {
   const { t } = useTranslation(['translation', 'agent']);
   const value = preference[item.key] as boolean;
-  const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
-  const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
   return (
     <ListItem
       secondaryAction={
@@ -99,8 +73,8 @@ function BooleanItem({
       }
     >
       <ListItemText
-        primary={<HighlightText text={primaryText} query={query} />}
-        secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
+        primary={t(item.titleKey, item.ns ? { ns: item.ns } : undefined)}
+        secondary={item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined}
       />
     </ListItem>
   );
@@ -110,17 +84,13 @@ function EnumItem({
   item,
   preference,
   onNeedsRestart,
-  query = '',
 }: {
   item: IEnumPreferenceItem;
   onNeedsRestart: () => void;
   preference: IPreferences;
-  query?: string;
 }): React.JSX.Element {
   const { t } = useTranslation(['translation', 'agent']);
   const value = preference[item.key] as string;
-  const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
-  const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
 
   return (
     <ListItem
@@ -152,8 +122,8 @@ function EnumItem({
       }
     >
       <ListItemText
-        primary={<HighlightText text={primaryText} query={query} />}
-        secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
+        primary={t(item.titleKey, item.ns ? { ns: item.ns } : undefined)}
+        secondary={item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined}
       />
     </ListItem>
   );
@@ -163,17 +133,13 @@ function NumberItem({
   item,
   preference,
   onNeedsRestart,
-  query = '',
 }: {
   item: INumberPreferenceItem;
   onNeedsRestart: () => void;
   preference: IPreferences;
-  query?: string;
 }): React.JSX.Element {
   const { t } = useTranslation(['translation', 'agent']);
   const value = preference[item.key] as number;
-  const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
-  const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
   return (
     <ListItem
       secondaryAction={
@@ -195,8 +161,8 @@ function NumberItem({
       }
     >
       <ListItemText
-        primary={<HighlightText text={primaryText} query={query} />}
-        secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
+        primary={t(item.titleKey, item.ns ? { ns: item.ns } : undefined)}
+        secondary={item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined}
       />
     </ListItem>
   );
@@ -206,22 +172,18 @@ function StringItem({
   item,
   preference,
   onNeedsRestart,
-  query = '',
 }: {
   item: IStringPreferenceItem;
   onNeedsRestart: () => void;
   preference: IPreferences;
-  query?: string;
 }): React.JSX.Element {
   const { t } = useTranslation(['translation', 'agent']);
   const value = (preference[item.key] as string) ?? '';
-  const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
-  const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
   return (
     <ListItem>
       <ListItemText
-        primary={<HighlightText text={primaryText} query={query} />}
-        secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
+        primary={t(item.titleKey, item.ns ? { ns: item.ns } : undefined)}
+        secondary={item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined}
       />
       <TextField
         size='small'
@@ -243,12 +205,10 @@ function StringArrayItem({
   item,
   preference,
   onNeedsRestart,
-  query = '',
 }: {
   item: IStringArrayPreferenceItem;
   onNeedsRestart: () => void;
   preference: IPreferences;
-  query?: string;
 }): React.JSX.Element {
   const { t } = useTranslation(['translation', 'agent']);
   const value = (preference[item.key] as string[]) ?? [];
@@ -256,14 +216,12 @@ function StringArrayItem({
   React.useEffect(() => {
     setLocalValue(value.join('\n'));
   }, [value.join('\n')]);
-  const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
-  const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
 
   return (
     <ListItem>
       <ListItemText
-        primary={<HighlightText text={primaryText} query={query} />}
-        secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
+        primary={t(item.titleKey, item.ns ? { ns: item.ns } : undefined)}
+        secondary={item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined}
       />
       <TextField
         size='small'
@@ -286,10 +244,8 @@ function StringArrayItem({
   );
 }
 
-function ActionItem({ item, query = '' }: { item: IActionItem; query?: string }): React.JSX.Element {
+function ActionItem({ item }: { item: IActionItem }): React.JSX.Element {
   const { t } = useTranslation(['translation', 'agent']);
-  const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
-  const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
   return (
     <ListItemButton
       onClick={async () => {
@@ -298,11 +254,52 @@ function ActionItem({ item, query = '' }: { item: IActionItem; query?: string })
       }}
     >
       <ListItemText
-        primary={<HighlightText text={primaryText} query={query} />}
-        secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
+        primary={t(item.titleKey, item.ns ? { ns: item.ns } : undefined)}
+        secondary={item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined}
       />
       <ChevronRightIcon color='action' />
     </ListItemButton>
+  );
+}
+
+function ActionInputItem({ item }: { item: IActionInputItem }): React.JSX.Element {
+  const { t } = useTranslation(['translation', 'agent']);
+  const [value, setValue] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  return (
+    <ListItem>
+      <Box sx={{ display: 'flex', flexGrow: 1, flexDirection: 'column' }}>
+        <ListItemText
+          primary={t(item.titleKey, item.ns ? { ns: item.ns } : undefined)}
+          secondary={item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined}
+        />
+        <Box sx={{ display: 'flex', mt: 1, gap: 1 }}>
+          <TextField
+            size="small"
+            fullWidth
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={item.placeholderKey ? t(item.placeholderKey, item.ns ? { ns: item.ns } : undefined) : ''}
+          />
+          <Button
+            variant="contained"
+            disabled={!value || loading}
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const handler = getActionHandler(item.handler);
+                await handler(value);
+                setValue('');
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            {item.buttonTextKey ? t(item.buttonTextKey, item.ns ? { ns: item.ns } : undefined) : t('Submit')}
+          </Button>
+        </Box>
+      </Box>
+    </ListItem>
   );
 }
 
@@ -317,94 +314,38 @@ function CustomItemWrapper({ item, onNeedsRestart }: { item: ICustomItem; onNeed
 
 // ─── Section renderer ────────────────────────────────────────────────
 
-function ItemRenderer({
+export function ItemRenderer({
   item,
   preference,
   platform,
   onNeedsRestart,
-  query = '',
 }: {
   item: PreferenceItemDefinition;
   onNeedsRestart: () => void;
   platform: string | undefined;
   preference: IPreferences;
-  query?: string;
 }): React.JSX.Element | null {
-  if (item.type === 'divider') return query ? null : <Divider />;
+  if (item.type === 'divider') return <Divider />;
   if ('platform' in item && !matchesPlatform(item.platform, platform)) return null;
 
   switch (item.type) {
     case 'preference-boolean':
-      return <BooleanItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
+      return <BooleanItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} />;
     case 'preference-enum':
-      return <EnumItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
+      return <EnumItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} />;
     case 'preference-number':
-      return <NumberItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
+      return <NumberItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} />;
     case 'preference-string':
-      return <StringItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
+      return <StringItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} />;
     case 'preference-string-array':
-      return <StringArrayItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
+      return <StringArrayItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} />;
     case 'action':
-      return <ActionItem item={item} query={query} />;
+      return <ActionItem item={item} />;
+    case 'action-input':
+      return <ActionInputItem item={item} />;
     case 'custom':
-      // In search mode: show a read-only info card so the user knows where to find it.
-      // In normal mode: render the registered custom component.
-      if (query) {
-        const primaryText = i18next.t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
-        const secondaryText = item.descriptionKey ? i18next.t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
-        return (
-          <ListItem>
-            <ListItemText
-              primary={<HighlightText text={primaryText} query={query} />}
-              secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
-            />
-          </ListItem>
-        );
-      }
       return <CustomItemWrapper item={item} onNeedsRestart={onNeedsRestart} />;
   }
-}
-
-// ─── Search helpers ───────────────────────────────────────────────────
-
-interface ISearchHit {
-  item: PreferenceItemDefinition;
-  section: ISectionDefinition;
-}
-
-function collectSearchHits(query: string, platform: string | undefined, t: (key: string, options?: Record<string, unknown>) => string): ISearchHit[] {
-  const q = query.toLowerCase().trim();
-  if (!q) return [];
-  const hits: ISearchHit[] = [];
-  for (const section of allSections) {
-    const sectionTitleLower = txEn(section.titleKey, section.ns).toLowerCase();
-    const sectionTitleCurrent = t(section.titleKey, section.ns ? { ns: section.ns } : undefined).toLowerCase();
-    const sectionKeyLower = section.titleKey.toLowerCase();
-    for (const item of section.items) {
-      if (item.type === 'divider') continue;
-      if ('platform' in item && !matchesPlatform(item.platform, platform)) continue;
-      const titleEn = txEn(item.titleKey, item.ns).toLowerCase();
-      const titleCurrent = t(item.titleKey, item.ns ? { ns: item.ns } : undefined).toLowerCase();
-      const descEn = item.descriptionKey ? txEn(item.descriptionKey, item.ns).toLowerCase() : '';
-      const descCurrent = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined).toLowerCase() : '';
-      const titleKeyLower = item.titleKey.toLowerCase();
-      const descKeyLower = item.descriptionKey?.toLowerCase() ?? '';
-      if (
-        titleEn.includes(q) ||
-        titleCurrent.includes(q) ||
-        descEn.includes(q) ||
-        descCurrent.includes(q) ||
-        titleKeyLower.includes(q) ||
-        descKeyLower.includes(q) ||
-        sectionTitleLower.includes(q) ||
-        sectionTitleCurrent.includes(q) ||
-        sectionKeyLower.includes(q)
-      ) {
-        hits.push({ item, section });
-      }
-    }
-  }
-  return hits;
 }
 
 interface ISectionRendererProps {
@@ -445,8 +386,6 @@ export function SectionRenderer({ section, sectionRef, preference, platform, onN
 
 interface IAllSectionsRendererProps {
   onNeedsRestart: () => void;
-  /** When provided, renders a flat filtered search-results view instead of the full sections layout. */
-  query?: string;
   sectionRefs: Map<string, React.RefObject<HTMLSpanElement | null>>;
 }
 
@@ -467,16 +406,15 @@ function DeferredSectionSkeleton({ sectionRef }: { sectionRef?: React.RefObject<
   );
 }
 
-export function AllSectionsRenderer({ onNeedsRestart, sectionRefs, query = '' }: IAllSectionsRendererProps): React.JSX.Element {
+export function AllSectionsRenderer({ onNeedsRestart, sectionRefs }: IAllSectionsRendererProps): React.JSX.Element {
   const preference = usePreferenceObservable();
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
-  const { t } = useTranslation(['translation', 'agent']);
 
-  // All hooks must be called unconditionally before any conditional return.
+  // Render first INITIAL_SECTION_COUNT sections synchronously.
+  // Remaining sections are appended in idle-time batches to keep the first paint fast.
   const [visibleCount, setVisibleCount] = React.useState(IS_TEST_ENV ? allSections.length : INITIAL_SECTION_COUNT);
   React.useEffect(() => {
     if (IS_TEST_ENV) return;
-    if (query.trim()) return; // don't advance deferred loading while searching
     if (preference === undefined || visibleCount >= allSections.length) return;
     const id = requestIdleCallback(() => {
       setVisibleCount((c) => Math.min(c + 4, allSections.length));
@@ -484,47 +422,7 @@ export function AllSectionsRenderer({ onNeedsRestart, sectionRefs, query = '' }:
     return () => {
       cancelIdleCallback(id);
     };
-  }, [visibleCount, preference, query]);
-
-  // ── Search mode ───────────────────────────────────────────────────
-  if (query.trim()) {
-    if (preference === undefined) {
-      return <Skeleton variant='text' width={200} height={24} sx={{ mt: 2 }} />;
-    }
-    const hits = collectSearchHits(query, platform, t);
-    if (hits.length === 0) {
-      return (
-        <Typography color='text.secondary' sx={{ mt: 2 }}>
-          {t('Preference.SearchNoResult', { defaultValue: 'No settings found for "{{query}}"', query })}
-        </Typography>
-      );
-    }
-    return (
-      <>
-        {hits.map(({ item, section }, index) => {
-          const sectionTitle = t(section.titleKey, section.ns ? { ns: section.ns } : undefined);
-          const itemKey = 'key' in item ? item.key : ('handler' in item ? `action-${item.handler}-${index}` : `item-${index}`);
-          return (
-            <React.Fragment key={itemKey}>
-              {index > 0 && <Divider />}
-              <SearchSectionLabel>
-                <HighlightText text={sectionTitle} query={query} />
-              </SearchSectionLabel>
-              <ItemRenderer
-                item={item}
-                preference={preference}
-                platform={platform}
-                onNeedsRestart={onNeedsRestart}
-                query={query}
-              />
-            </React.Fragment>
-          );
-        })}
-      </>
-    );
-  }
-
-  // ── Normal (non-search) mode ──────────────────────────────────────
+  }, [visibleCount, preference]);
 
   if (preference === undefined) {
     // Show skeletons for all sections while preferences load — with refs attached for sidebar nav

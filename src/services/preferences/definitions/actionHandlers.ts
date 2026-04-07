@@ -54,6 +54,33 @@ const explicitHandlers: Record<string, (...arguments_: string[]) => Promise<void
       await window.service.preference.set('downloadPath', filePaths[0]);
     }
   },
+  'memeloopNode.showIdentity': async () => {
+    const identity = await window.service.memeloopNode.getIdentityStatus();
+    let pinCode = '';
+    try {
+      const storedPin = await window.service.memeloopNode.getLocalPinCode();
+      if (storedPin) pinCode = storedPin;
+    } catch {
+      // Ignored
+    }
+    const msg = `Node ID: ${identity.nodeId}\nHas Keypair: ${identity.hasKeypair ? 'Yes' : 'No'}\nKnown Nodes: ${identity.knownNodeCount}\nPIN Code: ${pinCode || 'None'}`;
+    await window.service.native.showElectronMessageBox({ title: 'Node Identity', message: msg });
+  },
+  'memeloopNode.showKnownNodes': async () => {
+    const nodes = await window.service.memeloopNode.getKnownNodes();
+    const msg = nodes.length > 0 ? nodes.map(n => `${n.name || n.nodeId.slice(0, 16)} (${n.trustSource})`).join('\n') : 'No known nodes';
+    await window.service.native.showElectronMessageBox({ title: 'Known Nodes', message: msg });
+  },
+  'memeloopNode.showRemoteWikis': async () => {
+    const wikis = await window.service.memeloopNode.listAllRemoteWikis();
+    const msg = wikis.length > 0 ? wikis.map(w => w.name).join('\n') : 'No remote wikis';
+    await window.service.native.showElectronMessageBox({ title: 'Remote Wikis', message: msg });
+  },
+  'memeloopNode.showSyncStatus': async () => {
+    const status = await window.service.memeloopNode.getSyncStatus();
+    const msg = `Connected peers: ${status.peerCount}\nSync currently active: ${status.syncRunning ? 'Yes' : 'No'}`;
+    await window.service.native.showElectronMessageBox({ title: 'Sync Status', message: msg });
+  },
 };
 
 /**

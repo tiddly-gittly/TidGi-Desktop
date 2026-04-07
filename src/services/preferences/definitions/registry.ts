@@ -1,6 +1,7 @@
 import type { HunspellLanguages } from "@/constants/hunspellLanguages";
 import { z } from "zod";
 import { aiAgentSection } from "./aiAgent";
+import { aiModelsSection } from "./aiModels";
 import { developersSection } from "./developers";
 import { downloadsSection } from "./downloads";
 import { externalAPISection } from "./externalAPI";
@@ -37,6 +38,7 @@ export const allSections: ISectionDefinition[] = [
   tidgiMiniWindowSection,
   syncSection,
   externalAPISection,
+  aiModelsSection,
   aiAgentSection,
   searchSection,
   notificationsSection,

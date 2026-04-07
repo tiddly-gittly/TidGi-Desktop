@@ -38,12 +38,15 @@ import { ListItem, ListItemText } from '@/components/ListItem';
 import type { CreateScheduledTaskInput, ScheduledTask } from '@/services/agentInstance/scheduledTaskManager';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { Paper, SectionTitle } from '../PreferenceComponents';
-import { NodeManagementItem } from '../customItems/NodeManagementItem';
+import { ItemRenderer } from '../SchemaRenderer';
+import { usePreferenceObservable } from '@services/preferences/hooks';
+import { aiAgentSection } from '@services/preferences/definitions/aiAgent';
 import { ToolApprovalSettingsDialog } from './ExternalAPI/components/ToolApprovalSettingsDialog';
 import { ToolPermissionsDialog } from './ExternalAPI/components/ToolPermissionsDialog';
 
 export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
   const { t } = useTranslation('agent');
+  const preference = usePreferenceObservable();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [toolApprovalDialogOpen, setToolApprovalDialogOpen] = useState(false);
   const [toolPermissionsDialogOpen, setToolPermissionsDialogOpen] = useState(false);
@@ -774,13 +777,27 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
         </DialogActions>
       </Dialog>
 
-      {/* Node management is defined as a 'custom' schema item in aiAgent.ts but the
-          CustomSectionComponent takes priority over schema items, so we render it directly. */}
-      <Divider sx={{ mt: 2 }} />
-      <SectionTitle>
-        {t('Preference.WikiSync.NodeManagement', { ns: 'translation' })}
-      </SectionTitle>
-      <NodeManagementItem onNeedsRestart={props.onNeedsRestart} />
+{/* Node management is defined as a generic schema items in aiAgent.ts but the
+            CustomSectionComponent takes priority over schema items, so we render them directly. */}
+        <Divider sx={{ mt: 2 }} />
+        <SectionTitle>
+          {t('Preference.WikiSync.NodeManagement', { ns: 'translation' })}
+        </SectionTitle>
+        <Paper elevation={0}>
+          <List dense disablePadding>
+            {aiAgentSection.items
+              .filter(item => !('titleKey' in item && item.titleKey === 'Preference.AIAgentManage'))
+              .map((item, idx) => (
+                <ItemRenderer
+                  key={`${item.type}-${idx}`}
+                  item={item}
+                  preference={preference}
+                  onNeedsRestart={props.onNeedsRestart}
+                  platform={undefined}
+                />
+              ))}
+          </List>
+        </Paper>
     </>
   );
 }

@@ -72,6 +72,14 @@ export const actionItemSchema = definitionBaseSchema.extend({
 });
 export type IActionItem = z.infer<typeof actionItemSchema>;
 
+export const actionInputItemSchema = definitionBaseSchema.extend({
+  type: z.literal('action-input'),
+  handler: z.string(),
+  buttonTextKey: z.string().optional(),
+  placeholderKey: z.string().optional(),
+});
+export type IActionInputItem = z.infer<typeof actionInputItemSchema>;
+
 export const customItemSchema = definitionBaseSchema.extend({
   type: z.literal('custom'),
   componentId: z.string(),
@@ -90,6 +98,7 @@ export const preferenceItemDefinitionSchema = z.discriminatedUnion('type', [
   stringPreferenceItemSchema,
   stringArrayPreferenceItemSchema,
   actionItemSchema,
+  actionInputItemSchema,
   customItemSchema,
   dividerItemSchema,
 ]);

@@ -152,6 +152,7 @@
   },
   "Preference": {
     "AIAgent": "AI Agent",
+    "AIModels": "Default Models",
     "AIAgentDescription": "Manage AI Agent conversation records database",
     "AIAgentDescriptionDetail": "Here you can view and delete the size and location information of the AI Agent conversation records database",
     "AIAgentManage": "Manage AI Agent",
@@ -217,7 +218,7 @@
     "DeleteProvider": "Delete provider",
     "DisabledProviderInfo": "This provider is disabled, and its models will not appear in the model selection list",
     "EnableProvider": "Enable this provider",
-    "ExternalAPI": "External API",
+    "ExternalAPI": "Service Providers",
     "ExternalAPIDebug": "Enable API Debug Logging",
     "ExternalAPIDebugDescription": "When enabled, all API requests and responses will be logged to the database for debugging purposes",
     "ExternalApiDatabaseDescription": "Database containing external API debug information, occupying {{size}}",
