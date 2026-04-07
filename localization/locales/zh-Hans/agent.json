@@ -299,10 +299,6 @@
     "ScheduledTasksDescription": "按计划（间隔或 cron）定期唤醒智能体。任务在重启后也会保留。",
     "AddScheduledTask": "添加任务",
     "NoScheduledTasks": "没有定时任务。添加一个来定期唤醒智能体。",
-    "ToolApprovalSettings": "工具审批与超时设置",
-    "ToolApprovalSettingsDescription": "配置各工具的审批规则、超时限制、正则模式和 API 重试设置",
-    "ToolPermissions": "工具权限（黑名单/白名单）",
-    "ToolPermissionsDescription": "管理智能体可以执行哪些工具",
     "NodeManagement": "节点管理",
     "NodeManagementDescription": "管理本地 memeloop 节点的身份、已知节点与对等连接",
     "NodeIdentity": "节点身份",
@@ -754,9 +750,5 @@
         }
       }
     }
-  },
-  "WikiEmbed": {
-    "Error": "嵌入Wiki失败",
-    "Loading": "正在加载Wiki..."
   }
 }

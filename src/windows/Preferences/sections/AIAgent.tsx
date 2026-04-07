@@ -38,6 +38,7 @@ import { ListItem, ListItemText } from '@/components/ListItem';
 import type { CreateScheduledTaskInput, ScheduledTask } from '@/services/agentInstance/scheduledTaskManager';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { Paper, SectionTitle } from '../PreferenceComponents';
+import { NodeManagementItem } from '../customItems/NodeManagementItem';
 import { ToolApprovalSettingsDialog } from './ExternalAPI/components/ToolApprovalSettingsDialog';
 import { ToolPermissionsDialog } from './ExternalAPI/components/ToolPermissionsDialog';
 
@@ -772,6 +773,14 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Node management is defined as a 'custom' schema item in aiAgent.ts but the
+          CustomSectionComponent takes priority over schema items, so we render it directly. */}
+      <Divider sx={{ mt: 2 }} />
+      <SectionTitle>
+        {t('Preference.WikiSync.NodeManagement', { ns: 'translation' })}
+      </SectionTitle>
+      <NodeManagementItem onNeedsRestart={props.onNeedsRestart} />
     </>
   );
 }
