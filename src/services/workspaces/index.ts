@@ -67,7 +67,7 @@ export class Workspace implements IWorkspaceService {
    * Update items like "activate workspace1" or "open devtool in workspace1" in the menu
    */
   private async updateWorkspaceMenuItems(): Promise<void> {
-    const newMenuItems = (await this.getWorkspacesAsList()).flatMap((workspace, index) => [
+    const newMenuItems = (await this.getWorkspacesAsList()).filter((workspace) => isWikiWorkspace(workspace)).flatMap((workspace, index) => [
       {
         label: (): string => workspace.name || `Workspace ${index + 1}`,
         id: workspace.id,
