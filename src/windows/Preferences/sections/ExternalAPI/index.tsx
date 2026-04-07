@@ -11,7 +11,6 @@ import { ListItemVertical, Paper, SectionTitle } from '../../PreferenceComponent
 import { AIModelParametersDialog } from './components/AIModelParametersDialog';
 import { ModelSelector } from './components/ModelSelector';
 import { ProviderConfig } from './components/ProviderConfig';
-import { ProviderSettings } from './components/ProviderSettings';
 import { useAIConfigManagement } from './useAIConfigManagement';
 
 export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
@@ -362,31 +361,6 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
           )}
         </List>
       </Paper>
-
-      <ProviderSettings
-        providers={providers}
-        onProviderAdd={async (provider) => {
-          await window.service.externalAPI.updateProvider(
-            provider.provider!,
-            provider,
-          );
-          const updatedProviders = await window.service.externalAPI.getAIProviders();
-          setProviders(updatedProviders);
-        }}
-        onProviderEdit={async (providerName, updates) => {
-          await window.service.externalAPI.updateProvider(
-            providerName,
-            updates,
-          );
-          const updatedProviders = await window.service.externalAPI.getAIProviders();
-          setProviders(updatedProviders);
-        }}
-        onProviderDelete={async (providerName) => {
-          await window.service.externalAPI.deleteProvider(providerName);
-          const updatedProviders = await window.service.externalAPI.getAIProviders();
-          setProviders(updatedProviders);
-        }}
-      />
 
       {/* 模型参数设置对话框 */}
       <AIModelParametersDialog
