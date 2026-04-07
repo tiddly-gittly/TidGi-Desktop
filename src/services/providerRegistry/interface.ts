@@ -168,6 +168,10 @@ export interface AIProviderConfig {
   isPreset?: boolean;
   enabled?: boolean;
   showBaseURLField?: boolean;
+  /** URL to the provider's API key management page, shown as a "Get API Key" link in the UI */
+  apiKeyUrl?: string;
+  /** URL for browser-based login (e.g. OAuth). Opens external browser. Takes priority over apiKeyUrl when present. */
+  loginUrl?: string;
 }
 
 /**

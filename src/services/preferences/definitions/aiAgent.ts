@@ -25,5 +25,14 @@ export const aiAgentSection: ISectionDefinition = {
       needsRestart: true,
       zod: z.number().int().min(1024).max(65535),
     },
+    { type: 'divider' },
+    {
+      // Node management panel: identity, known nodes, sync status, add peer, remote wikis.
+      // Using 'custom' type so the search index can find it via translated title/description keys.
+      type: 'custom',
+      titleKey: 'Preference.WikiSync.NodeManagement',
+      descriptionKey: 'Preference.WikiSync.NodeManagementDescription',
+      componentId: 'aiAgent.nodeManagement',
+    },
   ],
 };

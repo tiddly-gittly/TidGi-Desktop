@@ -727,6 +727,7 @@
     "WikiSync.KnownNodes": "受信任节点",
     "WikiSync.RemoveTrust": "移除信任",
     "WikiSync.NodeManagement": "节点管理",
+    "WikiSync.NodeManagementDescription": "查看节点身份、已知节点、同步状态，以及连接新对等节点",
     "WikiSync.NoPeers": "未连接任何节点",
     "hardwareAcceleration": "使用硬件加速"
   },

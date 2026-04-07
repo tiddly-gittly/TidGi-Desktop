@@ -3,14 +3,16 @@ import { t } from '@services/libs/i18n/placeholder';
 export default {
   providers: [
     {
-      // Official memeloop cloud — API key = cloud token, baseURL = cloud API endpoint.
-      // providerClass 'memeloopCloud' triggers cloud-specific auth flow in ProviderRegistry.
+      // Official memeloop cloud — API key = cloud token obtained after browser login.
+      // providerClass 'memeloopCloud' is used by ProviderRegistry for cloud-specific logic.
       provider: 'memeloop',
       providerClass: 'memeloopCloud',
       isPreset: true,
       enabled: false,
       showBaseURLField: true,
       baseURL: 'https://api.memeloop.dev',
+      apiKeyUrl: 'https://memeloop.dev/login',
+      loginUrl: 'https://memeloop.dev/login',
       models: [
         {
           name: 'memeloop-default',
@@ -58,6 +60,7 @@ export default {
       isPreset: true,
       enabled: true,
       baseURL: 'https://api.siliconflow.cn/v1',
+      apiKeyUrl: 'https://cloud.siliconflow.cn/i/AwRxPUi7',
       models: [
         {
           name: 'Qwen/Qwen2.5-7B-Instruct',

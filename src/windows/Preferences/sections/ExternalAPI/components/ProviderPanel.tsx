@@ -1,6 +1,8 @@
 import { Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import { Box, Button, Chip, FormControlLabel, IconButton, InputAdornment, Switch, Typography } from '@mui/material';
 import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/providerRegistry/interface';
 import React, { useState } from 'react';
@@ -131,6 +133,24 @@ export function ProviderPanel({
           },
         }}
       />
+
+      {/* Browser login button (for OAuth providers like memeloop) or Get API Key link */}
+      {(provider.loginUrl || provider.apiKeyUrl) && (
+        <Box sx={{ mt: 0.5, mb: 1 }}>
+          <Button
+            variant='text'
+            size='small'
+            startIcon={provider.loginUrl ? <OpenInBrowserIcon /> : <VpnKeyIcon />}
+            onClick={() => {
+              const url = provider.loginUrl ?? provider.apiKeyUrl;
+              if (url) void window.service.native.openURI(url);
+            }}
+            sx={{ textTransform: 'none' }}
+          >
+            {provider.loginUrl ? t('Preference.LoginWithBrowser') : t('Preference.GetAPIKey')}
+          </Button>
+        </Box>
+      )}
 
       {/* Show baseURL field (if needed) */}
       {shouldShowBaseURL && (

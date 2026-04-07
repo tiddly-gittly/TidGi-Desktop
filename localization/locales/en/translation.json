@@ -700,6 +700,7 @@
     "WikiSync.KnownNodes": "Trusted Nodes",
     "WikiSync.RemoveTrust": "Remove trust",
     "WikiSync.NodeManagement": "Node Management",
+    "WikiSync.NodeManagementDescription": "View node identity, trusted nodes, sync status, and connect to new peer nodes",
     "WikiSync.NoPeers": "No nodes connected",
     "hardwareAcceleration": "Use hardware acceleration when available"
   },

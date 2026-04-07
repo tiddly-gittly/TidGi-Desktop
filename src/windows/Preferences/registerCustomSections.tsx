@@ -7,6 +7,7 @@ import type { ICustomSectionProps } from '@services/preferences/definitions/type
 import { type ComponentType, lazy, type LazyExoticComponent, Suspense } from 'react';
 import { registerCustomComponent } from './customComponentRegistry';
 import { LanguageSelectorItem } from './customItems/LanguageSelectorItem';
+import { NodeManagementItem } from './customItems/NodeManagementItem';
 import { NotificationHelpTextItem, NotificationTestItem } from './customItems/NotificationItems';
 import { NotificationScheduleItem } from './customItems/NotificationScheduleItem';
 import { OpenAtLoginItem } from './customItems/OpenAtLoginItem';
@@ -57,4 +58,5 @@ export function registerCustomSections(): void {
   registerCustomComponent('notifications.schedule', NotificationScheduleItem);
   registerCustomComponent('notifications.test', NotificationTestItem);
   registerCustomComponent('notifications.helpText', NotificationHelpTextItem);
+  registerCustomComponent('aiAgent.nodeManagement', NodeManagementItem);
 }
