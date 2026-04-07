@@ -12,6 +12,8 @@ const files = [
   'localization/locales/zh-Hans/translation.json',
 ];
 
+let hasErrors = false;
+
 for (const f of files) {
   const text = readFileSync(f, 'utf8');
   const stack = [new Map()]; // each entry = Map<key, firstLine>
@@ -62,7 +64,13 @@ for (const f of files) {
   if (dups.length) {
     console.log(`\n${f} — ${dups.length} duplicate(s):`);
     dups.forEach(d => console.log(d));
+    hasErrors = true;
   } else {
     console.log(`${f}: OK`);
   }
+}
+
+if (hasErrors) {
+  console.error('\nFailed: duplicate keys found in locale files.');
+  process.exit(1);
 }

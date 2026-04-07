@@ -30,6 +30,7 @@
     "lint": "eslint ./src ./features ./scripts ./localization ./*.ts --ext js,ts,tsx,json",
     "lint:fix": "eslint ./src ./features ./scripts ./localization ./*.ts --ext ts,tsx,json --fix",
     "check": "tsc --noEmit --skipLibCheck",
+    "check:i18n": "node scripts/check-i18n-dups.mjs",
     "installType": "typesync"
   },
   "repository": "https://github.com/tiddly-gittly/TidGi-Desktop",

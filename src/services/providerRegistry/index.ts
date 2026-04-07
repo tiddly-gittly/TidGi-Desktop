@@ -18,6 +18,7 @@ import { streamFromProvider } from './callProviderAPI';
 import { generateSpeechFromProvider } from './callSpeechAPI';
 import { generateTranscriptionFromProvider } from './callTranscriptionsAPI';
 import { extractErrorDetails } from './errorHandlers';
+import defaultProvidersConfig from './defaultProviders';
 import type {
   AIEmbeddingResponse,
   AIGlobalSettings,
@@ -300,7 +301,18 @@ export class ProviderRegistryService implements IProviderRegistryService {
 
   async getAIProviders(): Promise<AIProviderConfig[]> {
     this.ensureSettingsLoaded();
-    return cloneDeep(this.userSettings.providers);
+    const providers = cloneDeep(this.userSettings.providers);
+    // Merge read-only display fields (loginUrl, apiKeyUrl) from defaultProviders back into
+    // stored providers. These fields are never persisted to DB (they're hardcoded in source),
+    // so we re-hydrate them at read time.
+    for (const stored of providers) {
+      const preset = defaultProvidersConfig.providers.find(d => d.provider === stored.provider);
+      if (preset) {
+        if (preset.loginUrl && !stored.loginUrl) stored.loginUrl = preset.loginUrl;
+        if (preset.apiKeyUrl && !stored.apiKeyUrl) stored.apiKeyUrl = preset.apiKeyUrl;
+      }
+    }
+    return providers;
   }
 
   async getAIConfig(): Promise<AiAPIConfig> {
