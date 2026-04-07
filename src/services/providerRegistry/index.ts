@@ -100,7 +100,7 @@ export class ProviderRegistryService implements IProviderRegistryService {
 
     // Update Observables with loaded settings
     this.defaultConfig$.next(this.userSettings.defaultConfig);
-    this.providers$.next(this.userSettings.providers);
+    this.providers$.next(this.getHydratedProviders());
   }
 
   private ensureSettingsLoaded(): void {
@@ -113,7 +113,7 @@ export class ProviderRegistryService implements IProviderRegistryService {
     this.databaseService.setSetting('aiSettings', this.userSettings);
     // Emit updated config and providers to subscribers
     this.defaultConfig$.next(cloneDeep(this.userSettings.defaultConfig));
-    this.providers$.next(cloneDeep(this.userSettings.providers));
+    this.providers$.next(this.getHydratedProviders());
   }
 
   /**
@@ -209,7 +209,7 @@ export class ProviderRegistryService implements IProviderRegistryService {
       // Save without triggering reactToConfigChange again (use internal save)
       this.databaseService.setSetting('aiSettings', this.userSettings);
       this.defaultConfig$.next(cloneDeep(this.userSettings.defaultConfig));
-      this.providers$.next(cloneDeep(this.userSettings.providers));
+      this.providers$.next(this.getHydratedProviders());
     }
   }
 
@@ -299,12 +299,8 @@ export class ProviderRegistryService implements IProviderRegistryService {
     }
   }
 
-  async getAIProviders(): Promise<AIProviderConfig[]> {
-    this.ensureSettingsLoaded();
+  private getHydratedProviders(): AIProviderConfig[] {
     const providers = cloneDeep(this.userSettings.providers);
-    // Merge read-only display fields (loginUrl, apiKeyUrl) from defaultProviders back into
-    // stored providers. These fields are never persisted to DB (they're hardcoded in source),
-    // so we re-hydrate them at read time.
     for (const stored of providers) {
       const preset = defaultProvidersConfig.providers.find(d => d.provider === stored.provider);
       if (preset) {
@@ -313,6 +309,11 @@ export class ProviderRegistryService implements IProviderRegistryService {
       }
     }
     return providers;
+  }
+
+  async getAIProviders(): Promise<AIProviderConfig[]> {
+    this.ensureSettingsLoaded();
+    return this.getHydratedProviders();
   }
 
   async getAIConfig(): Promise<AiAPIConfig> {

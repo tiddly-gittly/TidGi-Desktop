@@ -27,11 +27,41 @@ export const aiAgentSection: ISectionDefinition = {
     },
     { type: 'divider' },
     {
-      // Node management panel: identity, known nodes, sync status, add peer, remote wikis.
-      // Using 'custom' type so the search index can find it via translated title/description keys.
+      // Custom items used to make Node Management searchable. Even though AIAgent.tsx is a CustomSectionComponent
+      // and renders them manually, declaring them here allows Search to index them.
       type: 'custom',
-      titleKey: 'Preference.WikiSync.NodeManagement',
-      descriptionKey: 'Preference.WikiSync.NodeManagementDescription',
+      titleKey: 'Preference.NodeManagement',
+      descriptionKey: 'Preference.NodeManagementDescription',
+      componentId: 'aiAgent.nodeManagement',
+    },
+    {
+      type: 'custom',
+      titleKey: 'Preference.NodeIdentity',
+      descriptionKey: 'Preference.NodeIdentityDescription',
+      componentId: 'aiAgent.nodeManagement',
+    },
+    {
+      type: 'custom',
+      titleKey: 'Preference.KnownNodes',
+      descriptionKey: 'Preference.KnownNodesDescription',
+      componentId: 'aiAgent.nodeManagement',
+    },
+    {
+      type: 'custom',
+      titleKey: 'Preference.ConnectPeer',
+      descriptionKey: 'Preference.ConnectPeerDescription',
+      componentId: 'aiAgent.nodeManagement',
+    },
+    {
+      type: 'custom',
+      titleKey: 'Preference.SyncStatus',
+      descriptionKey: 'Preference.SyncStatusDescription',
+      componentId: 'aiAgent.nodeManagement',
+    },
+    {
+      type: 'custom',
+      titleKey: 'Preference.RemoteWikis',
+      descriptionKey: 'Preference.RemoteWikisDescription',
       componentId: 'aiAgent.nodeManagement',
     },
   ],

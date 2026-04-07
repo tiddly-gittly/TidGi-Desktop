@@ -104,53 +104,53 @@ export function ProviderPanel({
         </Typography>
       )}
 
-      <TextField
-        label={t('Preference.APIKey')}
-        type={showApiKey ? 'text' : 'password'}
-        value={formState.apiKey}
-        onChange={(event) => {
-          onFormChange('apiKey', event.target.value);
-        }}
-        fullWidth
-        margin='normal'
-        disabled={provider.providerClass === 'ollama'} // Ollama doesn't require API key
-        slotProps={{
-          htmlInput: { 'data-testid': 'provider-api-key-input' },
-          input: {
-            endAdornment: (
-              <InputAdornment position='end'>
-                <IconButton
-                  onClick={() => {
-                    setShowApiKey(!showApiKey);
-                  }}
-                  edge='end'
-                  size='small'
-                >
-                  {showApiKey ? <VisibilityOffIcon fontSize='small' /> : <VisibilityIcon fontSize='small' />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          },
-        }}
-      />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <TextField
+          label={t('Preference.APIKey')}
+          type={showApiKey ? 'text' : 'password'}
+          value={formState.apiKey}
+          onChange={(event) => {
+            onFormChange('apiKey', event.target.value);
+          }}
+          fullWidth
+          margin='normal'
+          disabled={provider.providerClass === 'ollama'} // Ollama doesn't require API key
+          slotProps={{
+            htmlInput: { 'data-testid': 'provider-api-key-input' },
+            input: {
+              endAdornment: (
+                <InputAdornment position='end'>
+                  <IconButton
+                    onClick={() => {
+                      setShowApiKey(!showApiKey);
+                    }}
+                    edge='end'
+                    size='small'
+                  >
+                    {showApiKey ? <VisibilityOffIcon fontSize='small' /> : <VisibilityIcon fontSize='small' />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
 
-      {/* Browser login button (for OAuth providers like memeloop) or Get API Key link */}
-      {(provider.loginUrl || provider.apiKeyUrl) && (
-        <Box sx={{ mt: 0.5, mb: 1 }}>
+        {/* Browser login button (for OAuth providers like memeloop) or Get API Key link */}
+        {(provider.loginUrl || provider.apiKeyUrl) && (
           <Button
-            variant='text'
-            size='small'
+            variant='outlined'
+            size='medium'
             startIcon={provider.loginUrl ? <OpenInBrowserIcon /> : <VpnKeyIcon />}
             onClick={() => {
               const url = provider.loginUrl ?? provider.apiKeyUrl;
               if (url) void window.service.native.openURI(url);
             }}
-            sx={{ textTransform: 'none' }}
+            sx={{ textTransform: 'none', height: 40, mt: provider.providerClass === 'ollama' ? 0 : 2, whiteSpace: 'nowrap' }}
           >
             {provider.loginUrl ? t('Preference.LoginWithBrowser') : t('Preference.GetAPIKey')}
           </Button>
-        </Box>
-      )}
+        )}
+      </Box>
 
       {/* Show baseURL field (if needed) */}
       {shouldShowBaseURL && (
