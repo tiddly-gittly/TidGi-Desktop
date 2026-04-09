@@ -7,6 +7,14 @@ export const syncSection: ISectionDefinition = {
   titleKey: 'Preference.Sync',
   Icon: GitHubIcon,
   items: [
+    // Git credential / token form (complex OAuth UI rendered by CustomSectionComponent)
+    {
+      type: 'custom',
+      componentId: 'sync.tokenForm',
+      titleKey: 'Preference.Token',
+      descriptionKey: 'Preference.TokenDescription',
+    },
+    { type: 'divider' },
     {
       type: 'preference-boolean',
       key: 'syncBeforeShutdown',
@@ -47,6 +55,13 @@ export const syncSection: ISectionDefinition = {
       titleKey: 'Preference.AIGenerateBackupTitleTimeout',
       descriptionKey: 'Preference.AIGenerateBackupTitleTimeoutDescription',
       zod: z.number(),
+    },
+    { type: 'divider' },
+    {
+      type: 'custom',
+      componentId: 'sync.moreSettings',
+      titleKey: 'Preference.MoreWorkspaceSyncSettings',
+      descriptionKey: 'Preference.MoreWorkspaceSyncSettingsDescription',
     },
   ],
 };
