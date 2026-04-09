@@ -1,3 +1,4 @@
+import SearchIcon from '@mui/icons-material/Search';
 import { Divider as DividerRaw, List, ListItemButton, ListItemIcon as ListItemIconRaw, ListItemText } from '@mui/material';
 import { keyframes, styled } from '@mui/material/styles';
 import React from 'react';
@@ -42,22 +43,33 @@ const SideMenuListItem = styled(ListItemButton)<{ index: number }>`
 interface WorkspaceSectionSideBarProps {
   sectionRefs: Map<string, React.RefObject<HTMLSpanElement | null>>;
   hiddenSections?: Set<string>;
+  onSearchClick: () => void;
 }
 
-export function WorkspaceSectionSideBar({ sectionRefs, hiddenSections }: WorkspaceSectionSideBarProps): React.JSX.Element {
+export function WorkspaceSectionSideBar({ sectionRefs, hiddenSections, onSearchClick }: WorkspaceSectionSideBarProps): React.JSX.Element {
   const { t } = useTranslation();
   const visibleSections = allWorkspaceSections.filter((s) => !hiddenSections?.has(s.id) && !s.hidden);
 
   return (
     <SideBar>
       <List dense>
+        <SideMenuListItem
+          index={0}
+          onClick={onSearchClick}
+          data-testid='workspace-section-search'
+        >
+          <ListItemIcon>
+            <SearchIcon />
+          </ListItemIcon>
+          <ListItemText primary={t('Preference.Search')} />
+        </SideMenuListItem>
         {visibleSections.map((section: IGenericSectionDefinition, index: number) => {
           const { Icon } = section;
           return (
             <React.Fragment key={section.id}>
-              {index > 0 && <Divider />}
+              <Divider />
               <SideMenuListItem
-                index={index}
+                index={index + 1}
                 onClick={() => {
                   sectionRefs.get(section.id)?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }}
