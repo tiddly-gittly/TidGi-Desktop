@@ -16,11 +16,12 @@ const SearchTextField = styled(TextField)`
 `;
 
 interface SearchBarProps {
+  inputRef?: React.RefObject<HTMLInputElement | null>;
   onChange: (value: string) => void;
   value: string;
 }
 
-export function SearchBar({ value, onChange }: SearchBarProps): React.JSX.Element {
+export function SearchBar({ value, onChange, inputRef }: SearchBarProps): React.JSX.Element {
   const { t } = useTranslation();
 
   return (
@@ -33,6 +34,7 @@ export function SearchBar({ value, onChange }: SearchBarProps): React.JSX.Elemen
       variant='outlined'
       size='small'
       slotProps={{
+        htmlInput: { ref: inputRef },
         input: {
           startAdornment: (
             <InputAdornment position='start'>
