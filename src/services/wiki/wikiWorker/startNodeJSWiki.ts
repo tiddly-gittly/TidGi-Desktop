@@ -14,6 +14,7 @@ import inspector from 'node:inspector';
 import path from 'path';
 import { Observable } from 'rxjs';
 import { IWidgetEvent, TiddlyWiki } from 'tiddlywiki';
+import type { ITiddlyWiki } from 'tiddlywiki';
 import { IWikiMessage, WikiControlActions } from '../interface';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import type { IStartNodeJSWikiConfigs } from '../wikiWorker';
@@ -21,6 +22,34 @@ import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
 import { createLoadWikiTiddlersWithSubWikis } from './loadWikiTiddlersWithSubWikis';
 import { authTokenIsProvided } from './wikiWorkerUtilities';
+
+/**
+ * Directly set $:/palette to the correct dark/light palette tiddler before
+ * rendering the index page, mirroring what the DarkLightChangeActions widget actions do.
+ *
+ * This avoids a race condition where invokeActionsByTag (called in
+ * th-server-command-post-start) might run after the first getIndex request is
+ * already being processed, causing the initial page load to use the wrong palette.
+ */
+function applyInitialDarkMode(wikiInstance: ITiddlyWiki, shouldUseDarkColors: boolean): void {
+  try {
+    const detectionEnabled = wikiInstance.wiki.getTiddlerText('$:/config/palette/enable-light-dark-detection', 'yes');
+    if (detectionEnabled !== 'yes') return;
+
+    const defaultPaletteKey = shouldUseDarkColors ? '$:/config/palette/default-dark' : '$:/config/palette/default-light';
+    const defaultPaletteName = wikiInstance.wiki.getTiddlerText(defaultPaletteKey, '');
+    if (!defaultPaletteName) return;
+
+    const defaultPaletteTiddler = wikiInstance.wiki.getTiddler(defaultPaletteName);
+    if (defaultPaletteTiddler === undefined) return;
+
+    const paletteText = defaultPaletteTiddler.fields.text ?? '';
+    // Set $:/palette to point at the chosen palette name, same as what $action-setfield does
+    wikiInstance.wiki.addTiddler(new (wikiInstance.Tiddler)({ title: '$:/palette', text: paletteText }));
+  } catch {
+    // Non-fatal: fall back to whatever palette is already set
+  }
+}
 
 export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
   const {
@@ -259,6 +288,10 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
         });
       });
       wikiInstance.boot.startup({ bootPath: TIDDLY_WIKI_BOOT_PATH });
+      // Set the correct palette BEFORE allowing getIndex requests, so the rendered HTML
+      // always has the right color scheme on first load (fixes race condition where
+      // th-server-command-post-start / invokeActionsByTag ran after renderTiddler).
+      applyInitialDarkMode(wikiInstance, shouldUseDarkColors);
       // after setWikiInstance, ipc server routes will start serving content
       ipcServerRoutes.setConfig({ readOnlyMode });
       ipcServerRoutes.setHomePath(homePath);
