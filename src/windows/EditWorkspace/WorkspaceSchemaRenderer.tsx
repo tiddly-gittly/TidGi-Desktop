@@ -2,7 +2,9 @@
  * Schema-driven renderer for workspace settings — mirrors SchemaRenderer.tsx for Preferences.
  * Renders IGenericSectionDefinition items by reading from workspace state and writing via workspaceSetter.
  */
-import { Divider, List, Skeleton, Switch, TextField } from '@mui/material';
+import { Divider, List, Skeleton, Switch, TextField, Typography } from '@mui/material';
+import { styled } from '@mui/material/styles';
+import i18next from 'i18next';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -20,8 +22,28 @@ import type {
 } from '@services/preferences/definitions/types';
 import { allWorkspaceSections } from '@services/workspaces/definitions/registry';
 import type { IWikiWorkspace } from '@services/workspaces/interface';
+import { HighlightText } from '../Preferences/HighlightText';
 import { Paper, SectionTitle } from '../Preferences/PreferenceComponents';
 import { getCustomComponent } from './workspaceCustomComponentRegistry';
+
+// ─── Helpers ─────────────────────────────────────────────────────
+
+/** Return the English translation for a key — used for search matching. */
+function txEn(key: string, ns?: string): string {
+  try {
+    return ns ? (i18next.t(key, { lng: 'en', ns })) : (i18next.t(key, { lng: 'en' }));
+  } catch {
+    return '';
+  }
+}
+
+const SearchSectionLabel = styled(Typography)`
+  color: ${({ theme }) => theme.palette.text.secondary};
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+`;
 
 // ─── Platform filter ─────────────────────────────────────────────────
 
@@ -43,13 +65,17 @@ function BooleanItem({
   item,
   workspace,
   workspaceSetter,
+  query = '',
 }: {
   item: IGenericBooleanItem;
+  query?: string;
   workspace: IWikiWorkspace;
   workspaceSetter: (ws: IWikiWorkspace, needsRestart?: boolean) => void;
 }): React.JSX.Element {
   const { t } = useTranslation();
   const value = (workspace as unknown as Record<string, unknown>)[item.key] as boolean;
+  const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
+  const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
   return (
     <ListItem
       secondaryAction={
@@ -65,8 +91,8 @@ function BooleanItem({
       }
     >
       <ListItemText
-        primary={t(item.titleKey, item.ns ? { ns: item.ns } : undefined)}
-        secondary={item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined}
+        primary={<HighlightText text={primaryText} query={query} />}
+        secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
       />
     </ListItem>
   );
@@ -76,13 +102,17 @@ function EnumItem({
   item,
   workspace,
   workspaceSetter,
+  query = '',
 }: {
   item: IGenericEnumItem;
+  query?: string;
   workspace: IWikiWorkspace;
   workspaceSetter: (ws: IWikiWorkspace, needsRestart?: boolean) => void;
 }): React.JSX.Element {
   const { t } = useTranslation();
   const value = (workspace as unknown as Record<string, unknown>)[item.key] as string;
+  const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
+  const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
   return (
     <ListItem
       secondaryAction={
@@ -101,8 +131,8 @@ function EnumItem({
       }
     >
       <ListItemText
-        primary={t(item.titleKey, item.ns ? { ns: item.ns } : undefined)}
-        secondary={item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined}
+        primary={<HighlightText text={primaryText} query={query} />}
+        secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
       />
     </ListItem>
   );
@@ -112,13 +142,17 @@ function NumberItem({
   item,
   workspace,
   workspaceSetter,
+  query = '',
 }: {
   item: IGenericNumberItem;
+  query?: string;
   workspace: IWikiWorkspace;
   workspaceSetter: (ws: IWikiWorkspace, needsRestart?: boolean) => void;
 }): React.JSX.Element {
   const { t } = useTranslation();
   const value = (workspace as unknown as Record<string, unknown>)[item.key] as number;
+  const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
+  const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
   return (
     <ListItem
       secondaryAction={
@@ -137,8 +171,8 @@ function NumberItem({
       }
     >
       <ListItemText
-        primary={t(item.titleKey, item.ns ? { ns: item.ns } : undefined)}
-        secondary={item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined}
+        primary={<HighlightText text={primaryText} query={query} />}
+        secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
       />
     </ListItem>
   );
@@ -148,18 +182,22 @@ function StringItem({
   item,
   workspace,
   workspaceSetter,
+  query = '',
 }: {
   item: IGenericStringItem;
+  query?: string;
   workspace: IWikiWorkspace;
   workspaceSetter: (ws: IWikiWorkspace, needsRestart?: boolean) => void;
 }): React.JSX.Element {
   const { t } = useTranslation();
   const value = ((workspace as unknown as Record<string, unknown>)[item.key] as string) ?? '';
+  const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
+  const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
   return (
     <ListItem>
       <ListItemText
-        primary={t(item.titleKey, item.ns ? { ns: item.ns } : undefined)}
-        secondary={item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined}
+        primary={<HighlightText text={primaryText} query={query} />}
+        secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
       />
       <TextField
         size='small'
@@ -197,29 +235,31 @@ function WorkspaceItemRenderer({
   workspaceSetter,
   platform,
   onNeedsRestart,
+  query = '',
 }: {
   item: GenericSettingItemDefinition;
   onNeedsRestart: () => void;
   platform: string | undefined;
+  query?: string;
   workspace: IWikiWorkspace;
   workspaceSetter: (ws: IWikiWorkspace, needsRestart?: boolean) => void;
 }): React.JSX.Element | null {
-  if (item.type === 'divider') return <Divider />;
+  if (item.type === 'divider') return query ? null : <Divider />;
   if ('platform' in item && !matchesPlatform(item.platform, platform)) return null;
 
   switch (item.type) {
     case 'preference-boolean':
-      return <BooleanItem item={item} workspace={workspace} workspaceSetter={workspaceSetter} />;
+      return <BooleanItem item={item} workspace={workspace} workspaceSetter={workspaceSetter} query={query} />;
     case 'preference-enum':
-      return <EnumItem item={item} workspace={workspace} workspaceSetter={workspaceSetter} />;
+      return <EnumItem item={item} workspace={workspace} workspaceSetter={workspaceSetter} query={query} />;
     case 'preference-number':
-      return <NumberItem item={item} workspace={workspace} workspaceSetter={workspaceSetter} />;
+      return <NumberItem item={item} workspace={workspace} workspaceSetter={workspaceSetter} query={query} />;
     case 'preference-string':
-      return <StringItem item={item} workspace={workspace} workspaceSetter={workspaceSetter} />;
+      return <StringItem item={item} workspace={workspace} workspaceSetter={workspaceSetter} query={query} />;
     case 'action':
       return null;
     case 'custom':
-      return <CustomItemWrapper item={item} onNeedsRestart={onNeedsRestart} />;
+      return query ? null : <CustomItemWrapper item={item} onNeedsRestart={onNeedsRestart} />;
   }
 }
 
@@ -270,6 +310,8 @@ export function WorkspaceSectionRenderer({
 
 interface IAllWorkspaceSectionsRendererProps {
   onNeedsRestart: () => void;
+  /** When provided, renders a flat filtered search-results view instead of the full sections layout. */
+  query?: string;
   sectionRefs: Map<string, React.RefObject<HTMLSpanElement | null>>;
   workspace: IWikiWorkspace;
   workspaceSetter: (ws: IWikiWorkspace, needsRestart?: boolean) => void;
@@ -298,17 +340,21 @@ export function AllWorkspaceSectionsRenderer({
   workspace,
   workspaceSetter,
   hiddenSections,
+  query = '',
 }: IAllWorkspaceSectionsRendererProps): React.JSX.Element {
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
+  const { t } = useTranslation();
 
   const visibleSections = React.useMemo(
     () => allWorkspaceSections.filter((s) => !hiddenSections?.has(s.id) && !s.hidden),
     [hiddenSections],
   );
 
+  // All hooks must be called unconditionally before any conditional return.
   const [visibleCount, setVisibleCount] = React.useState(IS_TEST_ENV ? visibleSections.length : INITIAL_SECTION_COUNT);
   React.useEffect(() => {
     if (IS_TEST_ENV) return;
+    if (query.trim()) return; // don't advance deferred loading while searching
     if (visibleCount >= visibleSections.length) return;
     const id = requestIdleCallback(() => {
       setVisibleCount((c) => Math.min(c + 3, visibleSections.length));
@@ -316,7 +362,66 @@ export function AllWorkspaceSectionsRenderer({
     return () => {
       cancelIdleCallback(id);
     };
-  }, [visibleCount, visibleSections.length]);
+  }, [visibleCount, visibleSections.length, query]);
+
+  // ── Search mode ─────────────────────────────────────────────────
+  if (query.trim()) {
+    const q = query.toLowerCase().trim();
+    const hits: Array<{ item: GenericSettingItemDefinition & { key: string; titleKey: string }; section: IGenericSectionDefinition }> = [];
+    for (const section of visibleSections) {
+      if (section.CustomSectionComponent) continue; // opaque custom sections skipped
+      const sectionTitleEn = txEn(section.titleKey, section.ns).toLowerCase();
+      const sectionKeyLower = section.titleKey.toLowerCase();
+      for (const item of section.items) {
+        if (item.type === 'divider' || item.type === 'custom' || item.type === 'action') continue;
+        if ('platform' in item && !matchesPlatform(item.platform, platform)) continue;
+        const titleEn = txEn(item.titleKey, item.ns).toLowerCase();
+        const descEn = item.descriptionKey ? txEn(item.descriptionKey, item.ns).toLowerCase() : '';
+        const titleKeyLower = item.titleKey.toLowerCase();
+        if (
+          titleEn.includes(q) ||
+          descEn.includes(q) ||
+          titleKeyLower.includes(q) ||
+          sectionTitleEn.includes(q) ||
+          sectionKeyLower.includes(q)
+        ) {
+          hits.push({ item: item as GenericSettingItemDefinition & { key: string; titleKey: string }, section });
+        }
+      }
+    }
+    if (hits.length === 0) {
+      return (
+        <Typography color='text.secondary' sx={{ mt: 2 }}>
+          {t('Preference.SearchNoResult', { defaultValue: 'No settings found for "{{query}}"', query })}
+        </Typography>
+      );
+    }
+    return (
+      <>
+        {hits.map(({ item, section }, index) => {
+          const sectionTitle = t(section.titleKey, section.ns ? { ns: section.ns } : undefined);
+          return (
+            <React.Fragment key={item.key}>
+              {index > 0 && <Divider />}
+              <SearchSectionLabel>
+                <HighlightText text={sectionTitle} query={query} />
+              </SearchSectionLabel>
+              <WorkspaceItemRenderer
+                item={item}
+                workspace={workspace}
+                workspaceSetter={workspaceSetter}
+                platform={platform}
+                onNeedsRestart={onNeedsRestart}
+                query={query}
+              />
+            </React.Fragment>
+          );
+        })}
+      </>
+    );
+  }
+
+  // ── Normal (non-search) mode ─────────────────────────────────────
 
   return (
     <>
