@@ -5,6 +5,7 @@ export const friendLinksSection: ISectionDefinition = {
   id: 'friendLinks',
   titleKey: 'Preference.FriendLinks',
   Icon: StorefrontIcon,
+  hidden: true,
   items: [
     {
       type: 'action',
