@@ -347,8 +347,21 @@ function ItemRenderer({
     case 'action':
       return <ActionItem item={item} query={query} />;
     case 'custom':
-      // custom items are opaque — skip in search mode, render normally otherwise
-      return query ? null : <CustomItemWrapper item={item} onNeedsRestart={onNeedsRestart} />;
+      // In search mode: show a read-only info card so the user knows where to find it.
+      // In normal mode: render the registered custom component.
+      if (query) {
+        const primaryText = i18next.t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
+        const secondaryText = item.descriptionKey ? i18next.t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
+        return (
+          <ListItem>
+            <ListItemText
+              primary={<HighlightText text={primaryText} query={query} />}
+              secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
+            />
+          </ListItem>
+        );
+      }
+      return <CustomItemWrapper item={item} onNeedsRestart={onNeedsRestart} />;
   }
 }
 
@@ -364,12 +377,10 @@ function collectSearchHits(query: string, platform: string | undefined): ISearch
   if (!q) return [];
   const hits: ISearchHit[] = [];
   for (const section of allSections) {
-    // Skip entirely-custom sections (they have no item-level schema to search)
-    if (section.CustomSectionComponent && section.items.every((index) => index.type === 'custom')) continue;
     const sectionTitleLower = txEn(section.titleKey, section.ns).toLowerCase();
     const sectionKeyLower = section.titleKey.toLowerCase();
     for (const item of section.items) {
-      if (item.type === 'divider' || item.type === 'custom') continue;
+      if (item.type === 'divider') continue;
       if ('platform' in item && !matchesPlatform(item.platform, platform)) continue;
       const titleEn = txEn(item.titleKey, item.ns).toLowerCase();
       const descEn = item.descriptionKey ? txEn(item.descriptionKey, item.ns).toLowerCase() : '';

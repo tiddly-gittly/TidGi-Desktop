@@ -257,9 +257,24 @@ function WorkspaceItemRenderer({
     case 'preference-string':
       return <StringItem item={item} workspace={workspace} workspaceSetter={workspaceSetter} query={query} />;
     case 'action':
+      // action items not supported in workspace settings — skip
       return null;
     case 'custom':
-      return query ? null : <CustomItemWrapper item={item} onNeedsRestart={onNeedsRestart} />;
+      // In search mode: show a read-only info card so the user can navigate there.
+      // In normal mode: render the registered custom component.
+      if (query) {
+        const primaryText = i18next.t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
+        const secondaryText = item.descriptionKey ? i18next.t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
+        return (
+          <ListItem>
+            <ListItemText
+              primary={<HighlightText text={primaryText} query={query} />}
+              secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
+            />
+          </ListItem>
+        );
+      }
+      return <CustomItemWrapper item={item} onNeedsRestart={onNeedsRestart} />;
   }
 }
 
@@ -367,14 +382,14 @@ export function AllWorkspaceSectionsRenderer({
   // ── Search mode ─────────────────────────────────────────────────
   if (query.trim()) {
     const q = query.toLowerCase().trim();
-    const hits: Array<{ item: GenericSettingItemDefinition & { key: string; titleKey: string }; section: IGenericSectionDefinition }> = [];
+    const hits: Array<{ item: GenericSettingItemDefinition & { titleKey: string }; section: IGenericSectionDefinition }> = [];
     for (const section of visibleSections) {
-      if (section.CustomSectionComponent) continue; // opaque custom sections skipped
       const sectionTitleEn = txEn(section.titleKey, section.ns).toLowerCase();
       const sectionKeyLower = section.titleKey.toLowerCase();
       for (const item of section.items) {
-        if (item.type === 'divider' || item.type === 'custom' || item.type === 'action') continue;
+        if (item.type === 'divider') continue;
         if ('platform' in item && !matchesPlatform(item.platform, platform)) continue;
+        if (!('titleKey' in item)) continue;
         const titleEn = txEn(item.titleKey, item.ns).toLowerCase();
         const descEn = item.descriptionKey ? txEn(item.descriptionKey, item.ns).toLowerCase() : '';
         const titleKeyLower = item.titleKey.toLowerCase();
@@ -385,7 +400,7 @@ export function AllWorkspaceSectionsRenderer({
           sectionTitleEn.includes(q) ||
           sectionKeyLower.includes(q)
         ) {
-          hits.push({ item: item as GenericSettingItemDefinition & { key: string; titleKey: string }, section });
+          hits.push({ item: item as GenericSettingItemDefinition & { titleKey: string }, section });
         }
       }
     }
@@ -400,8 +415,9 @@ export function AllWorkspaceSectionsRenderer({
       <>
         {hits.map(({ item, section }, index) => {
           const sectionTitle = t(section.titleKey, section.ns ? { ns: section.ns } : undefined);
+          const itemKey = 'key' in item ? item.key : ('handler' in item ? `action-${item.handler}-${index}` : `item-${index}`);
           return (
-            <React.Fragment key={item.key}>
+            <React.Fragment key={itemKey}>
               {index > 0 && <Divider />}
               <SearchSectionLabel>
                 <HighlightText text={sectionTitle} query={query} />
