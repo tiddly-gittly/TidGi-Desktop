@@ -16,7 +16,6 @@ import { WikiUserNameItem } from './customItems/WikiUserNameItem';
 // ─── Lazy-loaded section-level custom components (very complex sections) ──
 const LazyExternalAPISection = lazy(() => import('./sections/ExternalAPI').then((m) => ({ default: m.ExternalAPI })));
 const LazyAIAgentSection = lazy(() => import('./sections/AIAgent').then((m) => ({ default: m.AIAgent })));
-const LazySearchSection = lazy(() => import('./sections/Search').then((m) => ({ default: m.Search })));
 const LazyDeveloperToolsSection = lazy(() => import('./sections/DeveloperTools').then((m) => ({ default: m.DeveloperTools })));
 const LazySyncSection = lazy(() => import('./sections/Sync').then((m) => ({ default: m.Sync })));
 const LazyTidGiMiniWindowSection = lazy(() => import('./sections/TidGiMiniWindow').then((m) => ({ default: m.TidGiMiniWindow })));
@@ -46,7 +45,6 @@ export function registerCustomSections(): void {
   };
   registerSection('externalAPI', LazyExternalAPISection);
   registerSection('aiAgent', LazyAIAgentSection);
-  registerSection('search', LazySearchSection);
   registerSection('developers', LazyDeveloperToolsSection);
   registerSection('sync', LazySyncSection);
   registerSection('tidgiMiniWindow', LazyTidGiMiniWindowSection);

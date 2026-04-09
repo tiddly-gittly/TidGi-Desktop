@@ -6,6 +6,7 @@ import type { ICustomSectionProps } from '@services/preferences/definitions/type
 import { workspaceSectionById } from '@services/workspaces/definitions/registry';
 import type { ComponentType } from 'react';
 import { WorkspaceAvatarItem, WorkspaceNameItem } from './customItems/AppearanceItems';
+import { EmbeddingSection } from './customItems/EmbeddingItem';
 import { LastUrlItem } from './customItems/MiscItems';
 import { GitRepoUrlItem, StorageServiceSwitchItem, TokenFormItem, WorkspacePathItem } from './customItems/SaveAndSyncItems';
 import { ServerOptions } from './server';
@@ -27,6 +28,7 @@ export function registerWorkspaceCustomSections(): void {
   };
   registerSection('server', ServerOptions);
   registerSection('subWiki', SubWorkspaceRouting);
+  registerSection('search', EmbeddingSection);
 
   // Item-level custom components
   registerWorkspaceCustomComponent('workspace.name', WorkspaceNameItem);

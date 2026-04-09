@@ -2,6 +2,7 @@ import type { GenericSettingItemDefinition, IGenericSectionDefinition } from '@s
 import { appearanceSection } from './appearance';
 import { miscSection } from './misc';
 import { saveAndSyncSection } from './saveAndSync';
+import { searchSection } from './search';
 import { serverSection } from './server';
 import { subWikiSection } from './subWiki';
 
@@ -14,6 +15,7 @@ export const allWorkspaceSections: IGenericSectionDefinition[] = [
   saveAndSyncSection,
   serverSection,
   subWikiSection,
+  searchSection,
   miscSection,
 ];
 
