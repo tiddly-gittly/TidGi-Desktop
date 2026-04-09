@@ -56,7 +56,6 @@ export interface IPreferences {
 export enum PreferenceSections {
   developers = 'developers',
   downloads = 'downloads',
-  friendLinks = 'friendLinks',
   general = 'general',
   languages = 'languages',
   tidgiMiniWindow = 'tidgiMiniWindow',
