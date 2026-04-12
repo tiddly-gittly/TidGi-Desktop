@@ -6,17 +6,17 @@ import { onWorkerServicesReady } from './servicesReady';
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
 import type { TidgiService } from '@/types/tidgi-tw';
-import { DARK_LIGHT_CHANGE_ACTIONS_TAG } from '@services/theme/interface';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
 import type { Server } from 'node:http';
 import inspector from 'node:inspector';
 import path from 'path';
 import { Observable } from 'rxjs';
-import { IWidgetEvent, TiddlyWiki } from 'tiddlywiki';
+import { TiddlyWiki } from 'tiddlywiki';
 import { IWikiMessage, WikiControlActions } from '../interface';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import type { IStartNodeJSWikiConfigs } from '../wikiWorker';
+import { applyInitialPaletteBeforeIndexRender } from './applyInitialPalette';
 import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
 import { createLoadWikiTiddlersWithSubWikis } from './loadWikiTiddlersWithSubWikis';
@@ -241,11 +241,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
         nodeServer.on('error', function(error: Error) {
           observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message, argv: fullBootArgv });
         });
-        // Similar to how updateActiveWikiTheme calls WikiChannel.invokeActionsByTag
-        // TODO: now working, can't change theme to dark on start.
-        wikiInstance.rootWidget.invokeActionsByTag(DARK_LIGHT_CHANGE_ACTIONS_TAG, new Event('TidGi-invokeActionByTag') as unknown as IWidgetEvent, {
-          'dark-mode': shouldUseDarkColors ? 'yes' : 'no',
-        });
+        applyInitialPaletteBeforeIndexRender(wikiInstance, shouldUseDarkColors);
         nodeServer.on('listening', function() {
           observer.next({
             type: 'control',

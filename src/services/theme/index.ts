@@ -63,15 +63,22 @@ export class ThemeService implements IThemeService {
     const workspaces = await workspaceService.getWorkspacesAsList();
     const shouldUseDarkColors = this.shouldUseDarkColorsSync();
     const backgroundColor = shouldUseDarkColors ? '#212121' : '#ffffff';
+    const themeActionData = {
+      'dark-mode': shouldUseDarkColors ? 'yes' : 'no',
+    };
 
     await Promise.all(
       workspaces.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.hibernated).map(async (workspace) => {
+        // Keep the worker-side wiki in sync so any later tidgi:// index render uses the current palette.
+        await wikiService.wikiOperationInServer(WikiChannel.invokeActionsByTag, workspace.id, [
+          DARK_LIGHT_CHANGE_ACTIONS_TAG,
+          themeActionData,
+        ]);
+
         // Update wiki theme via TiddlyWiki actions
         await wikiService.wikiOperationInBrowser(WikiChannel.invokeActionsByTag, workspace.id, [
           DARK_LIGHT_CHANGE_ACTIONS_TAG,
-          {
-            'dark-mode': shouldUseDarkColors ? 'yes' : 'no',
-          },
+          themeActionData,
         ]);
 
         // Update browser view background color

@@ -25,7 +25,7 @@ registerWorkspaceCustomSections();
 export default function EditWorkspace(): React.JSX.Element {
   const [workspaceID, setWorkspaceID] = useState<string | undefined>(() => (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID);
   const { t } = useTranslation();
-  const originalWorkspace = useWorkspaceObservable(workspaceID);
+  const originalWorkspace = useWorkspaceObservable(workspaceID ?? '');
   const [fallbackWorkspace, setFallbackWorkspace] = useState<IWorkspace | undefined>(undefined);
 
   // Fallback for rare cases where observable has not emitted yet but the workspace already exists in service storage.
