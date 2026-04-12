@@ -47,6 +47,13 @@ export interface IGitServerService {
   mergeAfterPush(workspaceId: string): Promise<void>;
 
   /**
+   * Receive a git bundle from mobile and fetch its contents into mobile-incoming branch.
+   * Alternative to receive-pack that avoids JGit's HTTP push protocol issues.
+   * @param bundleData raw git bundle bytes
+   */
+  receiveBundleAndFetch(workspaceId: string, bundleData: Uint8Array): Promise<void>;
+
+  /**
    * Generate a tar archive of the complete workspace (working tree + minimal .git).
    * Used by mobile for fast clone: download tar → extract natively.
    * Returns archive path, HEAD commit hash, and file size.
@@ -63,6 +70,7 @@ export const GitServerServiceIPCDescriptor = {
     gitSmartHTTPUploadPack$: ProxyPropertyType.Function$,
     gitSmartHTTPReceivePack$: ProxyPropertyType.Function$,
     mergeAfterPush: ProxyPropertyType.Function,
+    receiveBundleAndFetch: ProxyPropertyType.Function,
     generateFullArchive: ProxyPropertyType.Function,
   },
 };

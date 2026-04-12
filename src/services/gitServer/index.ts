@@ -283,6 +283,49 @@ export class GitServerService implements IGitServerService {
     await mergeMobileIncomingIfExists(repoPath);
   }
 
+  /**
+   * Receive a git bundle from mobile and import it into the mobile-incoming branch.
+   *
+   * This is an alternative to receive-pack that avoids JGit's HTTP transport bugs
+   * ("Starting read stage without written request data pending is not supported").
+   *
+   * Flow:
+   * 1. Write bundle bytes to a temp file
+   * 2. `git bundle verify <file>` to validate
+   * 3. `git fetch <file> master:mobile-incoming` to import commits
+   * 4. Clean up temp file
+   */
+  public async receiveBundleAndFetch(workspaceId: string, bundleData: Uint8Array): Promise<void> {
+    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
+    if (!repoPath) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
+
+    // Ensure local changes are committed before importing
+    await this.ensureCommittedBeforeServe(repoPath);
+
+    // Write bundle to temp file
+    const bundlePath = path.join(repoPath, '.git', 'incoming.bundle');
+    try {
+      await fs.writeFile(bundlePath, Buffer.from(bundleData));
+
+      // Verify bundle is valid
+      const verifyResult = await runGitCollectStdout(['bundle', 'verify', bundlePath], repoPath);
+      logger.info('Bundle verified', { workspaceId, verifyResult: verifyResult.trim() });
+
+      // Fetch from bundle: mobile's master branch → local mobile-incoming branch
+      await runGit(['fetch', bundlePath, 'master:mobile-incoming'], repoPath);
+      logger.info('Bundle fetch complete', { workspaceId });
+    } finally {
+      // Clean up temp file
+      try {
+        await fs.unlink(bundlePath);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+  }
+
   // ── Full Archive for fast mobile clone ────────────────────────────────
   //
   // Instead of the standard git-upload-pack protocol (which forces the mobile
