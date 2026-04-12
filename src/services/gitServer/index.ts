@@ -12,7 +12,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { GitHTTPResponseChunk, IGitServerService } from './interface';
-import { DESKTOP_GIT_IDENTITY, mergeMobileIncomingIfExists, runGit, runGitCollectStdout } from './mergeUtilities';
+import { DESKTOP_GIT_IDENTITY, runGit, runGitCollectStdout } from './mergeUtilities';
 
 const ALLOWED_GIT_SERVICES = new Set(['git-upload-pack', 'git-receive-pack']);
 
@@ -273,57 +273,35 @@ export class GitServerService implements IGitServerService {
     });
   }
 
-  /**
-   * Called by the merge-incoming HTTP endpoint AFTER receive-pack completes.
-   * Runs on desktop main process where dugite is available.
-   */
-  public async mergeAfterPush(workspaceId: string): Promise<void> {
-    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
-    if (!repoPath) return;
-    await mergeMobileIncomingIfExists(repoPath);
-  }
+  // ── Generic file I/O for plugins ────────────────────────────────────
 
-  /**
-   * Receive a git bundle from mobile and import it into the mobile-incoming branch.
-   *
-   * This is an alternative to receive-pack that avoids JGit's HTTP transport bugs
-   * ("Starting read stage without written request data pending is not supported").
-   *
-   * Flow:
-   * 1. Write bundle bytes to a temp file
-   * 2. `git bundle verify <file>` to validate
-   * 3. `git fetch <file> master:mobile-incoming` to import commits
-   * 4. Clean up temp file
-   */
-  public async receiveBundleAndFetch(workspaceId: string, bundleData: Uint8Array): Promise<void> {
+  public async readWorkspaceFile(workspaceId: string, relativePath: string): Promise<string | undefined> {
     const repoPath = await this.getWorkspaceRepoPath(workspaceId);
     if (!repoPath) {
       throw new Error(`Workspace ${workspaceId} not found`);
     }
-
-    // Ensure local changes are committed before importing
-    await this.ensureCommittedBeforeServe(repoPath);
-
-    // Write bundle to temp file
-    const bundlePath = path.join(repoPath, '.git', 'incoming.bundle');
-    try {
-      await fs.writeFile(bundlePath, Buffer.from(bundleData));
-
-      // Verify bundle is valid
-      const verifyResult = await runGitCollectStdout(['bundle', 'verify', bundlePath], repoPath);
-      logger.info('Bundle verified', { workspaceId, verifyResult: verifyResult.trim() });
-
-      // Fetch from bundle: mobile's master branch → local mobile-incoming branch
-      await runGit(['fetch', bundlePath, 'master:mobile-incoming'], repoPath);
-      logger.info('Bundle fetch complete', { workspaceId });
-    } finally {
-      // Clean up temp file
-      try {
-        await fs.unlink(bundlePath);
-      } catch {
-        // Ignore cleanup errors
-      }
+    // Prevent path traversal: resolve and ensure it stays within repoPath
+    const fullPath = path.resolve(repoPath, relativePath);
+    if (!fullPath.startsWith(repoPath)) {
+      throw new Error('Path traversal not allowed');
     }
+    try {
+      return await fs.readFile(fullPath, 'utf-8');
+    } catch {
+      return undefined;
+    }
+  }
+
+  public async writeWorkspaceFile(workspaceId: string, relativePath: string, content: string): Promise<void> {
+    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
+    if (!repoPath) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
+    const fullPath = path.resolve(repoPath, relativePath);
+    if (!fullPath.startsWith(repoPath)) {
+      throw new Error('Path traversal not allowed');
+    }
+    await fs.writeFile(fullPath, content, 'utf-8');
   }
 
   // ── Generic git command runner for plugins ────────────────────────────

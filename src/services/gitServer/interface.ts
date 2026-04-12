@@ -41,17 +41,22 @@ export interface IGitServerService {
   gitSmartHTTPReceivePack$(workspaceId: string, requestBody: Uint8Array): Observable<GitHTTPResponseChunk>;
 
   /**
-   * After receive-pack completes, merge mobile-incoming branch into main.
-   * Resolves .tid conflicts (metadata from mobile, body merged).
+   * Read a file from the workspace working tree (relative to repo root).
+   * Used by plugins for conflict resolution, reading tiddler files, etc.
+   * @param workspaceId workspace ID
+   * @param relativePath path relative to repo root (e.g. 'tiddlers/MyTiddler.tid')
+   * @returns file content as UTF-8 string, or undefined if file not found
    */
-  mergeAfterPush(workspaceId: string): Promise<void>;
+  readWorkspaceFile(workspaceId: string, relativePath: string): Promise<string | undefined>;
 
   /**
-   * Receive a git bundle from mobile and fetch its contents into mobile-incoming branch.
-   * Alternative to receive-pack that avoids JGit's HTTP push protocol issues.
-   * @param bundleData raw git bundle bytes
+   * Write a file to the workspace working tree (relative to repo root).
+   * Used by plugins for conflict resolution, writing resolved tiddler files, etc.
+   * @param workspaceId workspace ID
+   * @param relativePath path relative to repo root (e.g. 'tiddlers/MyTiddler.tid')
+   * @param content file content as UTF-8 string
    */
-  receiveBundleAndFetch(workspaceId: string, bundleData: Uint8Array): Promise<void>;
+  writeWorkspaceFile(workspaceId: string, relativePath: string, content: string): Promise<void>;
 
   /**
    * Generate a tar archive of the complete workspace (working tree + minimal .git).
@@ -96,8 +101,8 @@ export const GitServerServiceIPCDescriptor = {
     gitSmartHTTPInfoRefs$: ProxyPropertyType.Function$,
     gitSmartHTTPUploadPack$: ProxyPropertyType.Function$,
     gitSmartHTTPReceivePack$: ProxyPropertyType.Function$,
-    mergeAfterPush: ProxyPropertyType.Function,
-    receiveBundleAndFetch: ProxyPropertyType.Function,
+    readWorkspaceFile: ProxyPropertyType.Function,
+    writeWorkspaceFile: ProxyPropertyType.Function,
     generateFullArchive: ProxyPropertyType.Function,
     runGitCommand: ProxyPropertyType.Function,
     writeTempGitFile: ProxyPropertyType.Function,
