@@ -60,6 +60,33 @@ export interface IGitServerService {
    * Returns undefined if workspace not found.
    */
   generateFullArchive(workspaceId: string): Promise<{ archivePath: string; commitHash: string; sizeBytes: number } | undefined>;
+
+  /**
+   * Run a git command in the specified workspace repository using dugite.
+   * Exposed so TiddlyWiki plugins can run arbitrary git commands without
+   * needing TidGi Desktop code changes.
+   * @param workspaceId workspace ID
+   * @param args git command arguments (e.g. ['fetch', 'bundle.file', 'master:mobile-incoming'])
+   * @returns { exitCode, stdout, stderr }
+   */
+  runGitCommand(workspaceId: string, args: string[]): Promise<{ exitCode: number | null; stdout: string; stderr: string }>;
+
+  /**
+   * Write a temporary file to the workspace's .git directory.
+   * Used by plugins that need to write temp files (e.g. git bundles) before running git commands.
+   * @param workspaceId workspace ID
+   * @param fileName file name (will be placed inside .git/)
+   * @param data file content as Uint8Array
+   * @returns full path to the written file
+   */
+  writeTempGitFile(workspaceId: string, fileName: string, data: Uint8Array): Promise<string>;
+
+  /**
+   * Delete a file from the workspace's .git directory.
+   * @param workspaceId workspace ID
+   * @param fileName file name inside .git/
+   */
+  deleteTempGitFile(workspaceId: string, fileName: string): Promise<void>;
 }
 
 export const GitServerServiceIPCDescriptor = {
@@ -72,5 +99,8 @@ export const GitServerServiceIPCDescriptor = {
     mergeAfterPush: ProxyPropertyType.Function,
     receiveBundleAndFetch: ProxyPropertyType.Function,
     generateFullArchive: ProxyPropertyType.Function,
+    runGitCommand: ProxyPropertyType.Function,
+    writeTempGitFile: ProxyPropertyType.Function,
+    deleteTempGitFile: ProxyPropertyType.Function,
   },
 };

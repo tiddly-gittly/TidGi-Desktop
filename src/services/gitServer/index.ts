@@ -326,6 +326,41 @@ export class GitServerService implements IGitServerService {
     }
   }
 
+  // ── Generic git command runner for plugins ────────────────────────────
+  public async runGitCommand(workspaceId: string, args: string[]): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {
+    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
+    if (!repoPath) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
+    return await runGit(args, repoPath);
+  }
+
+  public async writeTempGitFile(workspaceId: string, fileName: string, data: Uint8Array): Promise<string> {
+    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
+    if (!repoPath) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
+    // Sanitize fileName to prevent path traversal
+    const sanitized = path.basename(fileName);
+    const filePath = path.join(repoPath, '.git', sanitized);
+    await fs.writeFile(filePath, Buffer.from(data));
+    return filePath;
+  }
+
+  public async deleteTempGitFile(workspaceId: string, fileName: string): Promise<void> {
+    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
+    if (!repoPath) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
+    const sanitized = path.basename(fileName);
+    const filePath = path.join(repoPath, '.git', sanitized);
+    try {
+      await fs.unlink(filePath);
+    } catch {
+      // Ignore if file doesn't exist
+    }
+  }
+
   // ── Full Archive for fast mobile clone ────────────────────────────────
   //
   // Instead of the standard git-upload-pack protocol (which forces the mobile
