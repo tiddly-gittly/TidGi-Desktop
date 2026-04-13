@@ -36,6 +36,68 @@ const BROWSER_VIEW_RETRY_ATTEMPTS = Math.max(
   Math.floor((CUCUMBER_GLOBAL_TIMEOUT - 4000) / ESTIMATED_PER_ATTEMPT_MS),
 );
 
+type BrowserViewBackgroundMode = 'dark' | 'light';
+
+function parseRgbColor(backgroundColor: string): { red: number; green: number; blue: number } | undefined {
+  const match = backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  if (!match) {
+    return undefined;
+  }
+  return {
+    red: Number(match[1]),
+    green: Number(match[2]),
+    blue: Number(match[3]),
+  };
+}
+
+async function assertBrowserViewBodyBackground(
+  world: ApplicationWorld,
+  expectedMode: BrowserViewBackgroundMode,
+): Promise<void> {
+  if (!world.app) {
+    throw new Error('Application not launched');
+  }
+
+  const colorInfo = await executeTiddlyWikiCode<{ backgroundColor: string; paletteTitle: string }>(
+    world.app,
+    `(function() {
+      const backgroundColor = window.getComputedStyle(document.body).backgroundColor || '';
+      let paletteTitle = '';
+      try {
+        if (typeof $tw !== 'undefined' && $tw.wiki) {
+          paletteTitle = $tw.wiki.getTiddlerText('$:/palette', '') || '';
+        }
+      } catch {
+        paletteTitle = '';
+      }
+      return { backgroundColor, paletteTitle };
+    })()`,
+    world.currentWindow,
+    200,
+  );
+
+  if (!colorInfo) {
+    throw new Error('Failed to read browser view background color');
+  }
+
+  const rgb = parseRgbColor(colorInfo.backgroundColor);
+  if (!rgb) {
+    throw new Error(`Unexpected background color format: ${colorInfo.backgroundColor}; palette=${colorInfo.paletteTitle}`);
+  }
+
+  const { red, green, blue } = rgb;
+  const isDark = red < 128 && green < 128 && blue < 128;
+  const isLight = red > 200 && green > 200 && blue > 200;
+
+  if (expectedMode === 'dark' && !isDark) {
+    throw new Error(`Expected dark background in browser view, got ${colorInfo.backgroundColor}; palette=${colorInfo.paletteTitle}`);
+  }
+
+  if (expectedMode === 'light' && !isLight) {
+    throw new Error(`Expected light background in browser view, got ${colorInfo.backgroundColor}; palette=${colorInfo.paletteTitle}`);
+  }
+}
+
 Then('I should see {string} in the browser view content', async function(this: ApplicationWorld, expectedText: string) {
   if (!this.app) {
     throw new Error('Application not launched');
@@ -521,4 +583,19 @@ Then('image {string} should be loaded in browser view', async function(this: App
   ).catch(() => {
     throw new Error(`Image ${imageName} is not loaded correctly in browser view. Last diagnostic: ${lastDiagnostic}`);
   });
+});
+
+Then('browser view body background should be dark', async function(this: ApplicationWorld) {
+  await assertBrowserViewBodyBackground(this, 'dark');
+});
+
+Then('browser view body background should be light', async function(this: ApplicationWorld) {
+  await assertBrowserViewBodyBackground(this, 'light');
+});
+
+Then('browser view body background should be {string}', async function(this: ApplicationWorld, mode: string) {
+  if (mode !== 'dark' && mode !== 'light') {
+    throw new Error(`Unsupported browser view background mode: ${mode}. Use "dark" or "light".`);
+  }
+  await assertBrowserViewBodyBackground(this, mode);
 });
