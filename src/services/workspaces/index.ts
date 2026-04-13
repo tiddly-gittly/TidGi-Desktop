@@ -619,7 +619,7 @@ export class Workspace implements IWorkspaceService {
       picturePath: null,
     };
 
-    await this.set(newID, newWorkspace);
+    await this.set(newID, newWorkspace, true);
     logger.info(`[test-id-WORKSPACE_CREATED] Workspace created`, { workspaceId: newID, workspaceName: newWorkspace.name, wikiFolderLocation: newWorkspace.wikiFolderLocation });
 
     return newWorkspace;

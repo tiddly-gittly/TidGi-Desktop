@@ -7,6 +7,7 @@ import omit from 'lodash/omit';
 import path from 'path';
 import { Observable, Subject, type Subscription } from 'rxjs';
 import type { ITiddlerFields, ITiddlyWiki } from 'tiddlywiki';
+import { applyInitialPaletteBeforeIndexRender } from './applyInitialPalette';
 
 /**
  * Change info emitted by TidGi's change Observable.
@@ -39,6 +40,7 @@ export class IpcServerRoutes {
   private wikiInstance!: ITiddlyWiki;
   private readonly pendingIpcServerRoutesRequests: Array<(value: void | PromiseLike<void>) => void> = [];
   #readonlyMode = false;
+  #shouldUseDarkColors: boolean | undefined;
   /** List of sub-wiki paths for file searching */
   private subWikiPaths: string[] = [];
 
@@ -51,8 +53,11 @@ export class IpcServerRoutes {
   private changeSubject: Subject<ITidGiChangedTiddlers> | undefined;
   private changeListenerInstalled = false;
 
-  setConfig({ readOnlyMode }: { readOnlyMode?: boolean }) {
+  setConfig({ readOnlyMode, shouldUseDarkColors }: { readOnlyMode?: boolean; shouldUseDarkColors?: boolean }) {
     this.#readonlyMode = Boolean(readOnlyMode);
+    if (shouldUseDarkColors !== undefined) {
+      this.#shouldUseDarkColors = shouldUseDarkColors;
+    }
   }
 
   setSubWikiPaths(subWikiPaths: string[]) {
@@ -168,6 +173,9 @@ export class IpcServerRoutes {
 
   async getIndex(rootTiddler: string): Promise<IWikiServerRouteResponse> {
     await this.waitForIpcServerRoutesAvailable();
+    if (this.#shouldUseDarkColors !== undefined) {
+      applyInitialPaletteBeforeIndexRender(this.wikiInstance, this.#shouldUseDarkColors);
+    }
     const wikiHTML = this.wikiInstance.wiki.renderTiddler('text/plain', rootTiddler);
     return { statusCode: 200, headers: { 'Content-Type': 'text/html' }, data: wikiHTML };
   }

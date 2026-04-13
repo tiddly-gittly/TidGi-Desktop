@@ -39,6 +39,14 @@ export class ThemeService implements IThemeService {
   }
 
   private shouldUseDarkColorsSync(): boolean {
+    const mockedSystemPalette = process.env.TIDGI_E2E_MOCK_SYSTEM_PALETTE;
+    if (
+      process.env.E2E_TEST === 'true' &&
+      nativeTheme.themeSource === 'system' &&
+      (mockedSystemPalette === 'dark' || mockedSystemPalette === 'light')
+    ) {
+      return mockedSystemPalette === 'dark';
+    }
     return nativeTheme.shouldUseDarkColors;
   }
 
