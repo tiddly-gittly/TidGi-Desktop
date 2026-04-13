@@ -19,18 +19,47 @@ export default (
   buildPath: string,
   _electronVersion: string,
   platform: string,
-  _arch: string,
+  arch: string,
   callback: () => void,
 ): void => {
   const cwd = path.resolve(buildPath, '..');
-  const appNodeModulesDir = path.resolve(buildPath, 'node_modules');
+  const appNodeModulesDirectory = path.resolve(buildPath, 'node_modules');
   const projectRoot = path.resolve(__dirname, '..');
+  const linkedWorkspaceNodeModulesDirectory = path.resolve(
+    projectRoot,
+    '../memeloop/node_modules/.pnpm/node_modules',
+  );
+  const packageSourceRoots = [
+    path.resolve(projectRoot, 'node_modules'),
+    linkedWorkspaceNodeModulesDirectory,
+  ];
 
-  console.log('Copy npm packages with node-worker dependencies with binary (dugite) or __filename usages (tiddlywiki), which cannot be prepared properly by webpack');
+  const resolvePackageSource = (...packagePathInNodeModules: string[]) => {
+    for (const sourceRoot of packageSourceRoots) {
+      const candidate = path.resolve(sourceRoot, ...packagePathInNodeModules);
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+
+    return path.resolve(
+      packageSourceRoots[0] ?? projectRoot,
+      ...packagePathInNodeModules,
+    );
+  };
+
+  const getSqliteVecPlatformPackageName = () => {
+    const os = platform === 'win32' ? 'windows' : platform;
+    return `sqlite-vec-${os}-${arch}`;
+  };
+
+  console.log(
+    'Copy npm packages with node-worker dependencies with binary (dugite) or __filename usages (tiddlywiki), which cannot be prepared properly by webpack',
+  );
 
   if (['production', 'test'].includes(process.env.NODE_ENV ?? '')) {
     console.log('Copying tiddlywiki dependency to dist');
-    const sourceNodeModulesFolder = path.resolve(projectRoot, 'node_modules');
+    const sourceNodeModulesFolder = packageSourceRoots[0] ?? path.resolve(projectRoot, 'node_modules');
 
     fs.cpSync(
       path.join(sourceNodeModulesFolder, 'zx'),
@@ -62,13 +91,21 @@ export default (
       ['http-parser-js'],
       ['safe-buffer'],
       ['websocket-extensions'],
+      // Noise handshake resolves native crypto addons relative to package files at runtime.
+      ['sodium-universal'],
+      ['sodium-native'],
+      ['require-addon'],
+      ['which-runtime'],
+      ['bare-addon-resolve'],
+      ['bare-module-resolve'],
+      ['bare-semver'],
       // nsfw native module
       ['nsfw', 'build', 'Release', 'nsfw.node'],
       // Refer to `node_modules\sqlite-vec\index.cjs` for latest file names
       // sqlite-vec: copy main entry files and platform-specific binary
       ['sqlite-vec', 'package.json'],
       ['sqlite-vec', 'index.cjs'],
-      [`sqlite-vec-${process.platform === 'win32' ? 'windows' : process.platform}-${process.arch}`],
+      [getSqliteVecPlatformPackageName()],
     ];
 
     // macOS only: copy app-path binary for finding apps
@@ -81,16 +118,33 @@ export default (
       // some binary may not exist in other platforms, so allow failing here.
       try {
         const first = packagePathInNodeModules[0] ?? '';
-        const source = path.resolve(sourceNodeModulesFolder, ...packagePathInNodeModules);
+        const source = resolvePackageSource(...packagePathInNodeModules);
 
-        const destMain = path.resolve(cwd, 'node_modules', ...packagePathInNodeModules);
-        fs.copySync(source, destMain, { dereference: true });
+        const destinationMain = path.resolve(
+          cwd,
+          'node_modules',
+          ...packagePathInNodeModules,
+        );
+        fs.copySync(source, destinationMain, { dereference: true });
 
         // `ws`'s optional native deps may be required from inside `app.asar` bundles,
         // so place them both in Resources/node_modules and Resources/app/node_modules.
-        if (first === 'bufferutil' || first === 'utf-8-validate') {
-          const destApp = path.resolve(appNodeModulesDir, ...packagePathInNodeModules);
-          fs.copySync(source, destApp, { dereference: true });
+        if (
+          first === 'bufferutil' ||
+          first === 'utf-8-validate' ||
+          first === 'sodium-universal' ||
+          first === 'sodium-native' ||
+          first === 'require-addon' ||
+          first === 'which-runtime' ||
+          first === 'bare-addon-resolve' ||
+          first === 'bare-module-resolve' ||
+          first === 'bare-semver'
+        ) {
+          const destinationApp = path.resolve(
+            appNodeModulesDirectory,
+            ...packagePathInNodeModules,
+          );
+          fs.copySync(source, destinationApp, { dereference: true });
         }
       } catch (error) {
         // some binary may not exist in other platforms, so allow failing here.

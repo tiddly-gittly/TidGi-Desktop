@@ -15,7 +15,10 @@ const supportedLanguageCodes = Object.keys(supportedLanguages);
 
 const config: ForgeConfig = {
   rebuildConfig: {
+    // Prevent @electron/rebuild from traversing symlinks into sibling projects (e.g. memeloop-cloud)
+    // that share the same pnpm store. Only rebuild the native modules actually used by TidGi.
     projectRootPath: __dirname,
+    onlyModules: ['better-sqlite3', 'bufferutil', 'nsfw', 'registry-js', 'utf-8-validate'],
   },
   packagerConfig: {
     name: 'TidGi',
