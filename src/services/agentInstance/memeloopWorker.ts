@@ -1,46 +1,24 @@
-import "source-map-support/register";
+import 'source-map-support/register';
 
-import { nanoid } from "nanoid";
-import { firstValueFrom, Observable, Subject, toArray } from "rxjs";
-import path from "node:path";
-import fs from "node:fs";
-import type { AddressInfo } from "node:net";
-import type { ITiddlerFields } from "tiddlywiki";
-import { isWikiWorkspace } from "@services/workspaces/interface";
-import type {
-  AgentDefinition,
-  AttachmentRef,
-  ChatMessage,
-  ConversationMeta,
-  NodeStatus,
-} from "@memeloop/protocol";
-import taskAgents from "./agentFrameworks/taskAgents.json";
+import type { AgentDefinition, AttachmentRef, ChatMessage, ConversationMeta, NodeStatus } from '@memeloop/protocol';
+import { isWikiWorkspace } from '@services/workspaces/interface';
+import { nanoid } from 'nanoid';
+import { createPrivateKey, createPublicKey } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { firstValueFrom, Observable, Subject, toArray } from 'rxjs';
+import taskAgents from './agentFrameworks/taskAgents.json';
 
-import {
-  resolveApproval,
-  resolveQuestionAnswer,
-  onApprovalRequest,
-  ChatSyncEngine,
-  PeerNodeSyncAdapter,
-  type PeerNodeTransport,
-  type ChatSyncPeer,
-} from "memeloop";
-import type { IWikiManager, TiddlerFields } from "memeloop-node";
-import { handleWorkerMessages } from "@services/libs/workerAdapter";
-import {
-  agentDefinition as agentDefinitionService,
-  externalAPI as providerRegistryService,
-  native as nativeService,
-  workspace as workspaceService,
-} from "@services/wiki/wikiWorker/services";
-import { TerminalSessionManager } from "./terminal/sessionManager";
+import { handleWorkerMessages } from '@services/libs/workerAdapter';
+import { native as nativeService, workspace as workspaceService } from '@services/wiki/wikiWorker/services';
+import { ChatSyncEngine, onApprovalRequest, PeerNodeSyncAdapter, type PeerNodeTransport, resolveApproval, resolveQuestionAnswer } from 'memeloop';
+import type { IWikiManager, TiddlerFields } from 'memeloop-node';
+import { TerminalSessionManager } from './terminal/sessionManager';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { parentPort } =
-  require("worker_threads") as typeof import("worker_threads");
+const { parentPort } = require('worker_threads') as typeof import('worker_threads');
 
 type WorkerLogEvent = {
-  level: "debug" | "info" | "warn" | "error";
+  level: 'debug' | 'info' | 'warn' | 'error';
   message: string;
   meta?: unknown;
 };
@@ -49,7 +27,7 @@ type WorkerLogEvent = {
 // so we don't invent a one-off postMessage protocol.
 const logSubject = new Subject<WorkerLogEvent>();
 function workerLog(
-  level: WorkerLogEvent["level"],
+  level: WorkerLogEvent['level'],
   message: string,
   meta?: unknown,
 ): void {
@@ -63,7 +41,7 @@ function workerLog(
 type MainLlmChatRequest = {
   conversationId?: string;
   messages: Array<{
-    role: "system" | "user" | "assistant" | "tool";
+    role: 'system' | 'user' | 'assistant' | 'tool';
     content: string;
   }>;
 };
@@ -83,7 +61,7 @@ const pendingMainToolList = new Map<string, PendingMainRequest<string[]>>();
 const pendingMainToolCall = new Map<string, PendingMainRequest<unknown>>();
 
 if (parentPort) {
-  parentPort.on("message", (message: unknown) => {
+  parentPort.on('message', (message: unknown) => {
     const m = message as {
       type?: string;
       id?: string;
@@ -93,30 +71,30 @@ if (parentPort) {
       error?: { message: string; name?: string; stack?: string };
     };
     if (!m?.id) return;
-    if (m.type === "memeloop-tool-list-result") {
+    if (m.type === 'memeloop-tool-list-result') {
       const pending = pendingMainToolList.get(m.id);
       if (!pending) return;
       pendingMainToolList.delete(m.id);
       pending.resolve(
         Array.isArray(m.tools)
-          ? m.tools.filter((t): t is string => typeof t === "string")
+          ? m.tools.filter((t): t is string => typeof t === 'string')
           : [],
       );
       return;
     }
-    if (m.type === "memeloop-tool-call-result") {
+    if (m.type === 'memeloop-tool-call-result') {
       const pending = pendingMainToolCall.get(m.id);
       if (!pending) return;
       pendingMainToolCall.delete(m.id);
       pending.resolve(m.result);
       return;
     }
-    if (m.type === "memeloop-tool-call-error") {
+    if (m.type === 'memeloop-tool-call-error') {
       const pending = pendingMainToolCall.get(m.id);
       if (!pending) return;
       pendingMainToolCall.delete(m.id);
-      const error = new Error(m.error?.message ?? "memeloop-tool-call failed");
-      error.name = m.error?.name ?? "Error";
+      const error = new Error(m.error?.message ?? 'memeloop-tool-call failed');
+      error.name = m.error?.name ?? 'Error';
       error.stack = m.error?.stack;
       pending.reject(error);
       return;
@@ -124,22 +102,22 @@ if (parentPort) {
 
     const pending = pendingMainLlmChat.get(m.id);
     if (!pending) return;
-    if (m.type === "memeloop-llm-chat-delta") {
-      const delta = String(m.delta ?? "");
+    if (m.type === 'memeloop-llm-chat-delta') {
+      const delta = String(m.delta ?? '');
       if (!delta) return;
       const waiter = pending.waiters.shift();
       if (waiter) waiter({ value: delta, done: false });
       else pending.deltas.push(delta);
-    } else if (m.type === "memeloop-llm-chat-done") {
+    } else if (m.type === 'memeloop-llm-chat-done') {
       pending.done = true;
       while (pending.waiters.length > 0) {
         const waiter = pending.waiters.shift();
         if (waiter) waiter({ value: undefined, done: true });
       }
       pendingMainLlmChat.delete(m.id);
-    } else if (m.type === "memeloop-llm-chat-error") {
-      const error = new Error(m.error?.message ?? "memeloop-llm-chat failed");
-      error.name = m.error?.name ?? "Error";
+    } else if (m.type === 'memeloop-llm-chat-error') {
+      const error = new Error(m.error?.message ?? 'memeloop-llm-chat failed');
+      error.name = m.error?.name ?? 'Error';
       error.stack = m.error?.stack;
       pending.error = error;
       while (pending.waiters.length > 0) {
@@ -156,7 +134,7 @@ function makeMainRequestId(prefix: string): string {
 }
 
 async function requestMainBridgeToolList(timeoutMs = 10000): Promise<string[]> {
-  const id = makeMainRequestId("tools");
+  const id = makeMainRequestId('tools');
   const result = await new Promise<string[]>((resolve, reject) => {
     const timeout = setTimeout(() => {
       pendingMainToolList.delete(id);
@@ -172,17 +150,17 @@ async function requestMainBridgeToolList(timeoutMs = 10000): Promise<string[]> {
         reject(error);
       },
     });
-    parentPort?.postMessage({ type: "memeloop-tool-list", id });
+    parentPort?.postMessage({ type: 'memeloop-tool-list', id });
   });
   return result;
 }
 
 async function callMainTool(
   toolId: string,
-  args: Record<string, unknown>,
+  arguments_: Record<string, unknown>,
   timeoutMs = 60000,
 ): Promise<unknown> {
-  const id = makeMainRequestId("toolcall");
+  const id = makeMainRequestId('toolcall');
   const result = await new Promise<unknown>((resolve, reject) => {
     const timeout = setTimeout(() => {
       pendingMainToolCall.delete(id);
@@ -202,7 +180,7 @@ async function callMainTool(
         reject(error);
       },
     });
-    parentPort?.postMessage({ type: "memeloop-tool-call", id, toolId, args });
+    parentPort?.postMessage({ type: 'memeloop-tool-call', id, toolId, args: arguments_ });
   });
   return result;
 }
@@ -213,7 +191,7 @@ async function* callMainLlmChat(
   const id = `llm_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const pending: PendingLlmStream = { deltas: [], waiters: [], done: false };
   pendingMainLlmChat.set(id, pending);
-  parentPort?.postMessage({ type: "memeloop-llm-chat", id, request });
+  parentPort?.postMessage({ type: 'memeloop-llm-chat', id, request });
 
   while (true) {
     if (pending.error) throw pending.error;
@@ -234,31 +212,37 @@ async function* callMainLlmChat(
 }
 
 const workerLogger = {
-  warn: (...a: unknown[]) => workerLog("warn", "[memeloop-worker]", { a }),
-  error: (...a: unknown[]) => workerLog("error", "[memeloop-worker]", { a }),
+  warn: (...a: unknown[]) => {
+    workerLog('warn', '[memeloop-worker]', { a });
+  },
+  error: (...a: unknown[]) => {
+    workerLog('error', '[memeloop-worker]', { a });
+  },
 };
 
-process.on("uncaughtException", (err) => {
-  workerLog("error", "[memeloop-worker] uncaughtException", { err });
+process.on('uncaughtException', (error) => {
+  workerLog('error', '[memeloop-worker] uncaughtException', { err: error });
 });
-process.on("unhandledRejection", (reason) => {
-  workerLog("error", "[memeloop-worker] unhandledRejection", { reason });
+process.on('unhandledRejection', (reason) => {
+  workerLog('error', '[memeloop-worker] unhandledRejection', { reason });
 });
-process.on("exit", (code) => {
-  workerLog("error", "[memeloop-worker] exit", { code });
+process.on('exit', (code) => {
+  workerLog('error', '[memeloop-worker] exit', { code });
 });
-for (const sig of [
-  "SIGABRT",
-  "SIGSEGV",
-  "SIGILL",
-  "SIGFPE",
-  "SIGBUS",
-  "SIGTERM",
-  "SIGHUP",
-  "SIGINT",
-] as const) {
+for (
+  const sig of [
+    'SIGABRT',
+    'SIGSEGV',
+    'SIGILL',
+    'SIGFPE',
+    'SIGBUS',
+    'SIGTERM',
+    'SIGHUP',
+    'SIGINT',
+  ] as const
+) {
   process.on(sig, () => {
-    workerLog("error", "[memeloop-worker] signal", { sig });
+    workerLog('error', '[memeloop-worker] signal', { sig });
   });
 }
 
@@ -296,24 +280,24 @@ function trimWorkerConversationsIfNeeded(): void {
 }
 
 type AskQuestionPrompt = {
-  type: "ask-question";
+  type: 'ask-question';
   questionId?: string;
   question: string;
-  inputType?: "single-select" | "multi-select" | "text";
+  inputType?: 'single-select' | 'multi-select' | 'text';
   options?: Array<{ label: string; description?: string }>;
   allowFreeform?: boolean;
 };
 
 type ToolApprovalPrompt = {
-  type: "tool-approval";
+  type: 'tool-approval';
   approvalId: string;
   toolName: string;
   parameters: Record<string, unknown>;
 };
 
 type WorkerCustomUpdate =
-  | { type: "ask-question"; payload: AskQuestionPrompt }
-  | { type: "tool-approval"; payload: ToolApprovalPrompt };
+  | { type: 'ask-question'; payload: AskQuestionPrompt }
+  | { type: 'tool-approval'; payload: ToolApprovalPrompt };
 
 const customUpdateListenersByConversationId = new Map<
   string,
@@ -328,22 +312,18 @@ function emitCustomUpdate(
   const setById = conversationId
     ? customUpdateListenersByConversationId.get(conversationId)
     : undefined;
-  const targetSets =
-    setById && setById.size > 0
-      ? [setById]
-      : Array.from(customUpdateListenersByConversationId.values());
+  const targetSets = setById && setById.size > 0
+    ? [setById]
+    : Array.from(customUpdateListenersByConversationId.values());
   if (targetSets.length === 0) return;
 
-  workerLog("warn", "[memeloop-worker] emitCustomUpdate", {
+  workerLog('warn', '[memeloop-worker] emitCustomUpdate', {
     conversationId,
     type: update.type,
     targetSets: targetSets.length,
-    questionId:
-      update.type === "ask-question" ? update.payload.questionId : undefined,
-    question:
-      update.type === "ask-question" ? update.payload.question : undefined,
-    inputType:
-      update.type === "ask-question" ? update.payload.inputType : undefined,
+    questionId: update.type === 'ask-question' ? update.payload.questionId : undefined,
+    question: update.type === 'ask-question' ? update.payload.question : undefined,
+    inputType: update.type === 'ask-question' ? update.payload.inputType : undefined,
   });
 
   // Deduplicate listeners across sets.
@@ -363,8 +343,7 @@ function emitCustomUpdate(
 
 const inMemoryStorage = {
   listConversations: async (_options?: unknown) => Array.from(metas.values()),
-  getMessages: async (conversationId: string, _options?: unknown) =>
-    messages.get(conversationId) ?? [],
+  getMessages: async (conversationId: string, _options?: unknown) => messages.get(conversationId) ?? [],
   appendMessage: async (message: ChatMessage) => {
     const list = messages.get(message.conversationId) ?? [];
     list.push(message);
@@ -382,18 +361,17 @@ const inMemoryStorage = {
     trimWorkerConversationsIfNeeded();
   },
   insertMessagesIfAbsent: async (incoming: ChatMessage[]) => {
-    for (const msg of incoming) {
-      const list = messages.get(msg.conversationId) ?? [];
-      if (!list.some((existing) => existing.messageId === msg.messageId)) {
-        list.push(msg);
-        messages.set(msg.conversationId, list);
+    for (const message of incoming) {
+      const list = messages.get(message.conversationId) ?? [];
+      if (!list.some((existing) => existing.messageId === message.messageId)) {
+        list.push(message);
+        messages.set(message.conversationId, list);
       }
     }
   },
-  getAttachment: async (_contentHash: string): Promise<AttachmentRef | null> =>
-    null,
+  getAttachment: async (_contentHash: string): Promise<AttachmentRef | null> => null,
   saveAttachment: async (
-    _ref: AttachmentRef,
+    _reference: AttachmentRef,
     _data: Buffer | Uint8Array,
   ): Promise<void> => undefined,
   getAgentDefinition: async (id: string): Promise<AgentDefinition | null> => {
@@ -411,27 +389,28 @@ const inMemoryStorage = {
 const conversationCancellation = new Set<string>();
 
 const llmProvider = {
-  name: "tidgi-memeloop-worker",
-  chat: async function* (request: unknown) {
-    const req = request as {
+  name: 'tidgi-memeloop-worker',
+  chat: async function*(request: unknown) {
+    const request_ = request as {
       messages?: Array<{
-        role: "system" | "user" | "assistant" | "tool";
+        role: 'system' | 'user' | 'assistant' | 'tool';
         content: unknown;
       }>;
       conversationId?: string;
     };
-    const modelMessages = (req.messages ?? []).map((message) => ({
+    const modelMessages = (request_.messages ?? []).map((message) => ({
       role: message.role,
-      content:
-        typeof message.content === "string"
-          ? message.content
-          : JSON.stringify(message.content ?? ""),
+      content: typeof message.content === 'string'
+        ? message.content
+        : JSON.stringify(message.content ?? ''),
     }));
-    for await (const delta of callMainLlmChat({
-      conversationId: req.conversationId,
-      messages: modelMessages,
-    })) {
-      yield { type: "text-delta", content: delta, id: nanoid() };
+    for await (
+      const delta of callMainLlmChat({
+        conversationId: request_.conversationId,
+        messages: modelMessages,
+      })
+    ) {
+      yield { type: 'text-delta', content: delta, id: nanoid() };
     }
   },
 };
@@ -439,7 +418,7 @@ const llmProvider = {
 // Minimal wiki manager: boot tiddlywiki directly in worker.
 class DesktopTiddlyWikiManager implements IWikiManager {
   private cache = new Map<string, Promise<any>>();
-  private readonly agentDefTag = "$:/tags/MemeLoop/AgentDefinition";
+  private readonly agentDefTag = '$:/tags/MemeLoop/AgentDefinition';
 
   private async bootWikiByPath(wikiPath: string): Promise<any> {
     const absolutePath = path.resolve(wikiPath);
@@ -448,12 +427,12 @@ class DesktopTiddlyWikiManager implements IWikiManager {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { TiddlyWiki } = require("tiddlywiki") as { TiddlyWiki: () => any };
+    const { TiddlyWiki } = require('tiddlywiki') as { TiddlyWiki: () => any };
     const $tw = TiddlyWiki();
-    $tw.boot.argv = [absolutePath, "--load"];
+    $tw.boot.argv = [absolutePath, '--load'];
     await new Promise<void>((resolve, reject) => {
-      $tw.boot.boot((err?: Error) => {
-        if (err) reject(err);
+      $tw.boot.boot((error?: Error) => {
+        if (error) reject(error);
         else resolve();
       });
     });
@@ -465,13 +444,14 @@ class DesktopTiddlyWikiManager implements IWikiManager {
     if (cached) return cached;
 
     const p = (async () => {
-      if (wikiId === "default") {
+      if (wikiId === 'default') {
         const workspaces = await workspaceService.getWorkspacesAsList();
         const fallback = workspaces.find(isWikiWorkspace) ?? workspaces[0];
-        if (!fallback || !isWikiWorkspace(fallback))
+        if (!fallback || !isWikiWorkspace(fallback)) {
           throw new Error(
-            "No wiki workspaces available to resolve wikiId=default",
+            'No wiki workspaces available to resolve wikiId=default',
           );
+        }
         return this.bootWikiByPath(fallback.wikiFolderLocation);
       }
 
@@ -508,14 +488,14 @@ class DesktopTiddlyWikiManager implements IWikiManager {
     return {
       ...(tiddler.fields ?? {}),
       title,
-      type: tiddler.fields?.type ?? "text/vnd.tiddlywiki",
+      type: tiddler.fields?.type ?? 'text/vnd.tiddlywiki',
     } as TiddlerFields;
   }
 
   async setTiddler(wikiId: string, tiddler: TiddlerFields): Promise<void> {
     const $tw = await this.getWiki(wikiId);
     const fields = { ...tiddler };
-    if (!fields.title) fields.title = "";
+    if (!fields.title) fields.title = '';
     $tw.wiki.addTiddler(new $tw.Tiddler(fields));
   }
 
@@ -524,14 +504,14 @@ class DesktopTiddlyWikiManager implements IWikiManager {
     filter?: { tag?: string; type?: string },
   ): Promise<TiddlerFields[]> {
     const $tw = await this.getWiki(wikiId);
-    let filterStr = "[all[tiddlers]!is[system]sort[title]]";
+    let filterString = '[all[tiddlers]!is[system]sort[title]]';
     if (filter?.tag) {
-      filterStr = `[all[tiddlers]!is[system]tag[${filter.tag}]sort[title]]`;
+      filterString = `[all[tiddlers]!is[system]tag[${filter.tag}]sort[title]]`;
     } else if (filter?.type) {
-      filterStr = `[all[tiddlers]!is[system]type[${filter.type}]sort[title]]`;
+      filterString = `[all[tiddlers]!is[system]type[${filter.type}]sort[title]]`;
     }
 
-    const titles: string[] = $tw.wiki.filterTiddlers(filterStr);
+    const titles: string[] = $tw.wiki.filterTiddlers(filterString);
     const out: TiddlerFields[] = [];
     for (const title of titles) {
       const tiddler = $tw.wiki.getTiddler(title);
@@ -539,7 +519,7 @@ class DesktopTiddlyWikiManager implements IWikiManager {
       out.push({
         ...(tiddler.fields ?? {}),
         title,
-        type: tiddler.fields?.type ?? "text/vnd.tiddlywiki",
+        type: tiddler.fields?.type ?? 'text/vnd.tiddlywiki',
       } as TiddlerFields);
     }
     return out;
@@ -547,9 +527,9 @@ class DesktopTiddlyWikiManager implements IWikiManager {
 
   async search(wikiId: string, query: string): Promise<TiddlerFields[]> {
     const $tw = await this.getWiki(wikiId);
-    const escaped = query.replace(/\\/g, "\\\\").replace(/\]/g, "\\]");
-    const filterStr = `[all[tiddlers]!is[system]search:title,text,tags[${escaped}]]`;
-    const titles: string[] = $tw.wiki.filterTiddlers(filterStr);
+    const escaped = query.replace(/\\/g, '\\\\').replace(/\]/g, '\\]');
+    const filterString = `[all[tiddlers]!is[system]search:title,text,tags[${escaped}]]`;
+    const titles: string[] = $tw.wiki.filterTiddlers(filterString);
 
     const out: TiddlerFields[] = [];
     for (const title of titles) {
@@ -558,7 +538,7 @@ class DesktopTiddlyWikiManager implements IWikiManager {
       out.push({
         ...(tiddler.fields ?? {}),
         title,
-        type: tiddler.fields?.type ?? "text/vnd.tiddlywiki",
+        type: tiddler.fields?.type ?? 'text/vnd.tiddlywiki',
       } as TiddlerFields);
     }
     return out;
@@ -571,14 +551,13 @@ class DesktopTiddlyWikiManager implements IWikiManager {
       const tags = t.tags;
       const hasTag = Array.isArray(tags) && tags.includes(this.agentDefTag);
       if (!hasTag) continue;
-      const text =
-        typeof (t as ITiddlerFields).text === "string"
-          ? (t as ITiddlerFields).text
-          : "";
+      const text = typeof (t).text === 'string'
+        ? (t).text
+        : '';
       if (!text.trim()) continue;
       try {
-        const raw = JSON.parse(text) as any;
-        if (raw && typeof raw.id === "string") out.push(raw);
+        const raw = JSON.parse(text);
+        if (raw && typeof raw.id === 'string') out.push(raw);
       } catch {
         // skip invalid JSON
       }
@@ -589,9 +568,9 @@ class DesktopTiddlyWikiManager implements IWikiManager {
 
 onApprovalRequest((request) => {
   emitCustomUpdate(request.agentId, {
-    type: "tool-approval",
+    type: 'tool-approval',
     payload: {
-      type: "tool-approval",
+      type: 'tool-approval',
       approvalId: request.approvalId,
       toolName: request.toolName,
       parameters: request.parameters,
@@ -613,12 +592,12 @@ let toolRegistry: any;
 let runtimeWikiManager: IWikiManager | undefined;
 let agentDefinitions: any;
 let fileBaseDirResolved: string;
-let createNodeServerFn: any;
+let createNodeServerFunction: any;
 let runtimeInitPromise: Promise<void> | undefined;
 
 // ── Peer connection & sync engine (populated in ensureRuntimeInitialized) ──
 let peerConnectionManager:
-  | import("memeloop-node").PeerConnectionManager
+  | import('memeloop-node').PeerConnectionManager
   | undefined;
 let chatSyncEngine: ChatSyncEngine | undefined;
 let syncTimerId: ReturnType<typeof setInterval> | undefined;
@@ -633,7 +612,7 @@ async function ensureRuntimeInitialized(): Promise<void> {
 
   runtimeInitPromise = (async () => {
     // Avoid worker module init crashes: load memeloop-node lazily.
-    const memeloopNode = await import("memeloop-node");
+    const memeloopNode = await import('memeloop-node');
     const {
       createNodeRuntime,
       ToolRegistry,
@@ -648,23 +627,40 @@ async function ensureRuntimeInitialized(): Promise<void> {
       loadOrCreateNodeKeypair: typeof memeloopNode.loadOrCreateNodeKeypair;
     };
 
-    createNodeServerFn = createNodeServer;
+    createNodeServerFunction = createNodeServer;
 
     // Load persistent keypair for stable nodeId and Noise encryption.
     try {
       const keypair = loadKeypair();
       localNodeId = keypair.nodeId;
+      const privDer = Buffer.from(keypair.x25519PrivateKey, 'base64url');
+      const pubDer = Buffer.from(keypair.x25519PublicKey, 'base64url');
+      const privKey = createPrivateKey({
+        key: privDer,
+        format: 'der',
+        type: 'pkcs8',
+      });
+      const pubKey = createPublicKey({
+        key: pubDer,
+        format: 'der',
+        type: 'spki',
+      });
+      const privJwk = privKey.export({ format: 'jwk' }) as { d?: string };
+      const pubJwk = pubKey.export({ format: 'jwk' }) as { x?: string };
+      if (!privJwk.d || !pubJwk.x) {
+        throw new Error('x25519 JWK export failed');
+      }
       noiseStaticKeyPair = {
-        publicKey: Buffer.from(keypair.x25519PublicKey, "base64url"),
-        secretKey: Buffer.from(keypair.x25519PrivateKey, "base64url"),
+        publicKey: Buffer.from(pubJwk.x, 'base64url'),
+        secretKey: Buffer.from(privJwk.d, 'base64url'),
       };
-      workerLog("warn", "[memeloop-worker] loaded persistent keypair", {
+      workerLog('warn', '[memeloop-worker] loaded persistent keypair', {
         nodeId: localNodeId,
       });
     } catch (error) {
       workerLog(
-        "warn",
-        "[memeloop-worker] keypair load failed, using random nodeId",
+        'warn',
+        '[memeloop-worker] keypair load failed, using random nodeId',
         { error },
       );
     }
@@ -678,8 +674,8 @@ async function ensureRuntimeInitialized(): Promise<void> {
     const mainBridgeToolIds = await requestMainBridgeToolList().catch(
       (error) => {
         workerLog(
-          "warn",
-          "[memeloop-worker] failed to load main bridge tool list",
+          'warn',
+          '[memeloop-worker] failed to load main bridge tool list',
           { error },
         );
         return [] as string[];
@@ -693,18 +689,17 @@ async function ensureRuntimeInitialized(): Promise<void> {
       configureTools(registry) {
         // Desktop zx-script adapter: align worker tool id with TidGi llm tool name (`zx-script`).
         registry.registerTool(
-          "zx-script",
-          async (args: Record<string, unknown>) => {
-            const workspaceName = args.workspaceName as string | undefined;
-            const script = args.script as string | undefined;
-            const fileName =
-              (args.fileName as string | undefined) ?? "agent-script.mjs";
+          'zx-script',
+          async (arguments_: Record<string, unknown>) => {
+            const workspaceName = arguments_.workspaceName as string | undefined;
+            const script = arguments_.script as string | undefined;
+            const fileName = (arguments_.fileName as string | undefined) ?? 'agent-script.mjs';
 
-            if (!workspaceName || typeof workspaceName !== "string") {
-              return { error: "Missing or invalid workspaceName" };
+            if (!workspaceName || typeof workspaceName !== 'string') {
+              return { error: 'Missing or invalid workspaceName' };
             }
-            if (!script || typeof script !== "string") {
-              return { error: "Missing or invalid script" };
+            if (!script || typeof script !== 'string') {
+              return { error: 'Missing or invalid script' };
             }
 
             const workspaces = await workspaceService.getWorkspacesAsList();
@@ -720,21 +715,22 @@ async function ensureRuntimeInitialized(): Promise<void> {
               target.id,
             ) as unknown as Observable<string>;
             const outputLines = await firstValueFrom(output$.pipe(toArray()));
-            const output = outputLines.join("\n").trim();
-            return { result: output || "(script completed with no output)" };
+            const output = outputLines.join('\n').trim();
+            return { result: output || '(script completed with no output)' };
           },
         );
 
         for (const toolId of mainBridgeToolIds) {
           if (
-            typeof registry.getTool === "function" &&
+            typeof registry.getTool === 'function' &&
             registry.getTool(toolId)
-          )
+          ) {
             continue;
+          }
           registry.registerTool(
             toolId,
-            async (args: Record<string, unknown>) => {
-              return callMainTool(toolId, args ?? {});
+            async (arguments_: Record<string, unknown>) => {
+              return callMainTool(toolId, arguments_ ?? {});
             },
           );
         }
@@ -744,26 +740,26 @@ async function ensureRuntimeInitialized(): Promise<void> {
         sendRpcToNode: async (
           nodeId: string,
           method: string,
-          params: unknown,
+          parameters: unknown,
         ) => {
           if (!peerConnectionManager) {
-            throw new Error("PeerConnectionManager not initialized");
+            throw new Error('PeerConnectionManager not initialized');
           }
-          return peerConnectionManager.sendRpcToNode(nodeId, method, params);
+          return peerConnectionManager.sendRpcToNode(nodeId, method, parameters);
         },
         mcpCallRemote: async (
           nodeId: string,
           serverName: string,
           toolName: string,
-          args: Record<string, unknown>,
+          arguments_: Record<string, unknown>,
         ) => {
           if (!peerConnectionManager) {
-            throw new Error("PeerConnectionManager not initialized");
+            throw new Error('PeerConnectionManager not initialized');
           }
           const result = await peerConnectionManager.sendRpcToNode(
             nodeId,
-            "memeloop.mcp.callTool",
-            { serverName, toolName, arguments: args },
+            'memeloop.mcp.callTool',
+            { serverName, toolName, arguments: arguments_ },
           );
           const r = result as { result?: unknown; error?: string };
           if (r.error) {
@@ -780,9 +776,9 @@ async function ensureRuntimeInitialized(): Promise<void> {
           if (!p.questionId || !p.question) return;
 
           emitCustomUpdate(p.conversationId, {
-            type: "ask-question",
+            type: 'ask-question',
             payload: {
-              type: "ask-question",
+              type: 'ask-question',
               questionId: p.questionId,
               question: p.question,
               inputType: p.inputType ?? undefined,
@@ -795,12 +791,16 @@ async function ensureRuntimeInitialized(): Promise<void> {
       terminalManager,
       fileBaseDir: process.cwd(),
       wikiManager,
-      wikiAgentDefinitionWikiIds: ["default"],
+      wikiAgentDefinitionWikiIds: ['default'],
       includeVscodeCli: false,
       conversationCancellation,
       logger: {
-        warn: (...a: unknown[]) => workerLogger.warn(...a),
-        error: (...a: unknown[]) => workerLogger.error(...a),
+        warn: (...a: unknown[]) => {
+          workerLogger.warn(...a);
+        },
+        error: (...a: unknown[]) => {
+          workerLogger.error(...a);
+        },
       },
       network: {
         start: async () => undefined,
@@ -817,13 +817,13 @@ async function ensureRuntimeInitialized(): Promise<void> {
     fileBaseDirResolved = runtimeResult.fileBaseDirResolved;
 
     // ── Initialize ChatSyncEngine with PeerConnectionManager as transport ──
-    const pcm = peerConnectionManager!;
+    const pcm = peerConnectionManager;
     const desktopTransport: PeerNodeTransport = {
       nodeId: localNodeId,
       exchangeVersionVector: async (targetNodeId, localVersion) => {
         const result = await pcm.sendRpcToNode(
           targetNodeId,
-          "memeloop.sync.exchangeVersionVector",
+          'memeloop.sync.exchangeVersionVector',
           { localVersion },
         );
         return result as {
@@ -834,7 +834,7 @@ async function ensureRuntimeInitialized(): Promise<void> {
       pullMissingMetadata: async (targetNodeId, sinceVersion) => {
         const result = await pcm.sendRpcToNode(
           targetNodeId,
-          "memeloop.sync.pullMissingMetadata",
+          'memeloop.sync.pullMissingMetadata',
           { sinceVersion },
         );
         return (result as { metas: ConversationMeta[] }).metas;
@@ -846,7 +846,7 @@ async function ensureRuntimeInitialized(): Promise<void> {
       ) => {
         const result = await pcm.sendRpcToNode(
           targetNodeId,
-          "memeloop.sync.pullMissingMessages",
+          'memeloop.sync.pullMissingMessages',
           { conversationId, knownMessageIds },
         );
         return (result as { messages: ChatMessage[] }).messages;
@@ -854,7 +854,7 @@ async function ensureRuntimeInitialized(): Promise<void> {
       pullAttachmentBlob: async (targetNodeId, contentHash) => {
         const result = await pcm.sendRpcToNode(
           targetNodeId,
-          "memeloop.storage.getAttachmentBlob",
+          'memeloop.storage.getAttachmentBlob',
           { contentHash },
         );
         return result as {
@@ -880,7 +880,7 @@ async function ensureRuntimeInitialized(): Promise<void> {
     // Start periodic metadata gossip + message sync.
     syncTimerId = setInterval(() => {
       chatSyncEngine?.syncOnce().catch((error) => {
-        workerLog("warn", "[memeloop-worker][sync] periodic sync failed", {
+        workerLog('warn', '[memeloop-worker][sync] periodic sync failed', {
           error: error instanceof Error ? error.message : error,
         });
       });
@@ -890,7 +890,7 @@ async function ensureRuntimeInitialized(): Promise<void> {
   await runtimeInitPromise;
 }
 
-let desktopNodeServer: import("node:http").Server | undefined;
+let desktopNodeServer: import('node:http').Server | undefined;
 let desktopNodePort: number | undefined;
 let desktopNodeStarted = false;
 let desktopNodeStartPromise: Promise<void> | undefined;
@@ -904,15 +904,14 @@ async function ensureDesktopNodeStarted(): Promise<void> {
   }
 
   desktopNodeStartPromise = (async () => {
-    let stage = "init";
+    let stage = 'init';
     try {
-      const desiredPort = parseInt(process.env.TIDGI_MEMELOOP_PORT ?? "", 10);
-      stage = "resolve-port";
-      const port =
-        Number.isFinite(desiredPort) && desiredPort > 0 ? desiredPort : 0;
+      const desiredPort = parseInt(process.env.TIDGI_MEMELOOP_PORT ?? '', 10);
+      stage = 'resolve-port';
+      const port = Number.isFinite(desiredPort) && desiredPort > 0 ? desiredPort : 0;
       workerLog(
-        "warn",
-        "[memeloop-worker][desktop-as-node] ensureDesktopNodeStarted",
+        'warn',
+        '[memeloop-worker][desktop-as-node] ensureDesktopNodeStarted',
         {
           stage,
           port,
@@ -920,13 +919,13 @@ async function ensureDesktopNodeStarted(): Promise<void> {
           env: { NODE_ENV: process.env.NODE_ENV },
         },
       );
-      stage = "create-server";
+      stage = 'create-server';
       workerLog(
-        "warn",
-        "[memeloop-worker][desktop-as-node] before createNodeServer",
+        'warn',
+        '[memeloop-worker][desktop-as-node] before createNodeServer',
         { stage },
       );
-      desktopNodeServer = createNodeServerFn({
+      desktopNodeServer = createNodeServerFunction({
         port,
         nodeId: localNodeId,
         rpcContext: {
@@ -941,36 +940,40 @@ async function ensureDesktopNodeStarted(): Promise<void> {
           agentDefinitions,
           fileBaseDir: fileBaseDirResolved,
         },
-        serviceName: "tidgi-desktop",
+        serviceName: 'tidgi-desktop',
       });
       workerLog(
-        "warn",
-        "[memeloop-worker][desktop-as-node] after createNodeServer",
+        'warn',
+        '[memeloop-worker][desktop-as-node] after createNodeServer',
         { stage },
       );
 
-      stage = "listen";
+      stage = 'listen';
       await new Promise<void>((resolve, reject) => {
-        workerLog("warn", "[memeloop-worker][desktop-as-node] before listen", {
+        workerLog('warn', '[memeloop-worker][desktop-as-node] before listen', {
           stage,
           port,
         });
         const timeout = setTimeout(() => {
-          reject(new Error("desktop node server listen timeout"));
+          reject(new Error('desktop node server listen timeout'));
         }, 5000);
-        desktopNodeServer?.listen(port, () => resolve());
-        desktopNodeServer?.once("error", reject);
-        desktopNodeServer?.once("listening", () => clearTimeout(timeout));
+        desktopNodeServer?.listen(port, () => {
+          resolve();
+        });
+        desktopNodeServer?.once('error', reject);
+        desktopNodeServer?.once('listening', () => {
+          clearTimeout(timeout);
+        });
       });
       workerLog(
-        "warn",
-        "[memeloop-worker][desktop-as-node] after listen resolved",
+        'warn',
+        '[memeloop-worker][desktop-as-node] after listen resolved',
         { stage },
       );
-      stage = "read-address";
+      stage = 'read-address';
       const address = desktopNodeServer?.address();
-      if (address && typeof address === "object") {
-        desktopNodePort = (address as AddressInfo).port;
+      if (address && typeof address === 'object') {
+        desktopNodePort = (address).port;
       }
       desktopNodeStarted = true;
     } catch (error) {
@@ -996,7 +999,11 @@ async function stopDesktopNodeServer(): Promise<void> {
   const server = desktopNodeServer;
   desktopNodeServer = undefined;
   desktopNodeStarted = false;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
+  await new Promise<void>((resolve) =>
+    server.close(() => {
+      resolve();
+    })
+  );
 }
 
 const workerState = {
@@ -1006,7 +1013,7 @@ const workerState = {
 const memeloopWorker = {
   subscribeLogs: () => logSubject.asObservable(),
   ping: async () => {
-    workerLog("warn", "[memeloop-worker] ping");
+    workerLog('warn', '[memeloop-worker] ping');
     await ensureDesktopNodeStarted();
     return {
       ok: true,
@@ -1016,13 +1023,13 @@ const memeloopWorker = {
     };
   },
   createAgent: async (definitionId: string, initialMessage?: string) => {
-    workerLog("warn", "[memeloop-worker] createAgent", { definitionId });
+    workerLog('warn', '[memeloop-worker] createAgent', { definitionId });
     await ensureDesktopNodeStarted();
     try {
       await inMemoryStorage.getAgentDefinition(definitionId);
       workerLog(
-        "warn",
-        "[memeloop-worker] createAgent runtime.createAgent start",
+        'warn',
+        '[memeloop-worker] createAgent runtime.createAgent start',
         { definitionId },
       );
       const created = await runtime.createAgent({
@@ -1030,13 +1037,13 @@ const memeloopWorker = {
         initialMessage,
       });
       workerLog(
-        "warn",
-        "[memeloop-worker] createAgent runtime.createAgent done",
+        'warn',
+        '[memeloop-worker] createAgent runtime.createAgent done',
         { definitionId, conversationId: created?.conversationId },
       );
       return created;
     } catch (error) {
-      workerLog("error", "[memeloop-worker] createAgent failed", {
+      workerLog('error', '[memeloop-worker] createAgent failed', {
         definitionId,
         error,
       });
@@ -1044,18 +1051,18 @@ const memeloopWorker = {
     }
   },
   sendMessage: async (conversationId: string, message: string) => {
-    workerLog("warn", "[memeloop-worker] sendMessage start", {
+    workerLog('warn', '[memeloop-worker] sendMessage start', {
       conversationId,
     });
     await ensureDesktopNodeStarted();
     try {
       await runtime.sendMessage({ conversationId, message });
-      workerLog("warn", "[memeloop-worker] sendMessage done", {
+      workerLog('warn', '[memeloop-worker] sendMessage done', {
         conversationId,
       });
       return { ok: true };
     } catch (e) {
-      workerLog("error", "[memeloop-worker] sendMessage failed", {
+      workerLog('error', '[memeloop-worker] sendMessage failed', {
         conversationId,
         error: e,
       });
@@ -1063,14 +1070,14 @@ const memeloopWorker = {
     }
   },
   cancelAgent: async (conversationId: string) => {
-    workerLog("warn", "[memeloop-worker] cancelAgent", { conversationId });
+    workerLog('warn', '[memeloop-worker] cancelAgent', { conversationId });
     conversationCancellation.add(conversationId);
     await runtime.cancelAgent(conversationId);
     return { ok: true };
   },
   subscribeToUpdates: (conversationId: string) =>
     new Observable<RuntimeUpdate>((observer) => {
-      workerLog("warn", "[memeloop-worker] subscribeToUpdates start", {
+      workerLog('warn', '[memeloop-worker] subscribeToUpdates start', {
         conversationId,
       });
       const dispose = runtime.subscribeToUpdates(
@@ -1092,12 +1099,13 @@ const memeloopWorker = {
       set.add(listener);
 
       return () => {
-        workerLog("warn", "[memeloop-worker] subscribeToUpdates dispose", {
+        workerLog('warn', '[memeloop-worker] subscribeToUpdates dispose', {
           conversationId,
         });
         set?.delete(listener);
-        if (set && set.size === 0)
+        if (set && set.size === 0) {
           customUpdateListenersByConversationId.delete(conversationId);
+        }
         dispose();
       };
     }),
@@ -1106,15 +1114,15 @@ const memeloopWorker = {
     questionId: string,
     answer: string,
   ) => {
-    workerLog("warn", "[memeloop-worker] resolveAskQuestion", { questionId });
+    workerLog('warn', '[memeloop-worker] resolveAskQuestion', { questionId });
     const resolved = resolveQuestionAnswer(questionId, answer);
     return { resolved };
   },
   resolveToolApproval: async (
     approvalId: string,
-    decision: "allow" | "deny",
+    decision: 'allow' | 'deny',
   ) => {
-    workerLog("warn", "[memeloop-worker] resolveToolApproval", {
+    workerLog('warn', '[memeloop-worker] resolveToolApproval', {
       approvalId,
       decision,
     });
@@ -1125,11 +1133,25 @@ const memeloopWorker = {
   // ── Peer connection management ──
   addPeer: async (wsUrl: string) => {
     await ensureRuntimeInitialized();
-    if (!peerConnectionManager)
-      throw new Error("PeerConnectionManager not ready");
-    const { nodeId } = await peerConnectionManager.addPeerByUrl(wsUrl);
-    workerLog("warn", "[memeloop-worker] addPeer succeeded", { wsUrl, nodeId });
-    return { nodeId };
+    if (!peerConnectionManager) {
+      throw new Error('PeerConnectionManager not ready');
+    }
+    try {
+      const { nodeId } = await peerConnectionManager.addPeerByUrl(wsUrl);
+      workerLog('warn', '[memeloop-worker] addPeer succeeded', {
+        wsUrl,
+        nodeId,
+      });
+      return { nodeId };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      workerLog('error', '[memeloop-worker] addPeer failed', {
+        wsUrl,
+        message,
+        error,
+      });
+      throw new Error(message);
+    }
   },
   removePeer: async (nodeId: string) => {
     peerConnectionManager?.removePeer(nodeId);
@@ -1142,8 +1164,9 @@ const memeloopWorker = {
   // ── Sync controls ──
   syncNow: async () => {
     await ensureRuntimeInitialized();
-    if (!chatSyncEngine)
-      return { synced: false, reason: "engine not initialized" };
+    if (!chatSyncEngine) {
+      return { synced: false, reason: 'engine not initialized' };
+    }
     try {
       await chatSyncEngine.syncOnce();
       return { synced: true };
@@ -1156,8 +1179,9 @@ const memeloopWorker = {
   },
   antiEntropy: async () => {
     await ensureRuntimeInitialized();
-    if (!chatSyncEngine)
-      return { synced: false, reason: "engine not initialized" };
+    if (!chatSyncEngine) {
+      return { synced: false, reason: 'engine not initialized' };
+    }
     try {
       await chatSyncEngine.antiEntropyOnce();
       return { synced: true };
@@ -1181,7 +1205,7 @@ const memeloopWorker = {
 
 export type MemeLoopWorker = typeof memeloopWorker;
 
-process.on("beforeExit", () => {
+process.on('beforeExit', () => {
   void stopDesktopNodeServer();
 });
 
