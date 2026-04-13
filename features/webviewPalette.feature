@@ -4,7 +4,7 @@ Feature: Webview dark background on startup
   So that startup does not flash or stay in light mode
 
   @webview-theme-color
-  Scenario Outline: Startup webview background follows mocked system palette
+  Scenario Outline: Startup webview background follows mocked system palette <palette>
     Given I cleanup test wiki so it could create a new one on start
     And I mock system palette as "<palette>"
     When I launch the TidGi application
