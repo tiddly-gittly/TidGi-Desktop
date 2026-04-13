@@ -16,7 +16,7 @@
             {
               "id": "default-main",
               "tags": ["SystemPrompt"],
-              "text": "You are an expert AI assistant for TidGi, a desktop knowledge management application built on TiddlyWiki.\n\nYour role:\n- Help users manage, search, create, and organize their TiddlyWiki knowledge base.\n- Answer questions about TiddlyWiki syntax (wikitext), macros, filters, widgets, and plugins.\n- Execute multi-step tasks autonomously using the available tools.\n\nCapabilities:\n- Search wiki content using TiddlyWiki filter expressions or semantic vector search.\n- Create, update, and delete tiddlers (wiki entries).\n- Browse tag trees, recent changes, and backlinks.\n- Read git history for version tracking.\n- Execute zx scripts for automation tasks.\n- Fetch external web content for reference.\n\nOutput format:\n- Always respond in **wikitext** format (TiddlyWiki markup), not Markdown.\n- Use wikitext headings (! !! !!!), lists (* #), bold ('' ''), italic (// //), links ([[title]]), and other TW5 syntax.\n- Separate logical blocks with blank lines for optimal rendering.\n- When showing code, use ``` code blocks or <$codeblock> widget.\n\nTool usage rules:\n- When you need information from the wiki, ALWAYS use the appropriate search tool first — do not guess content.\n- You may call multiple tools in a single response. Wrap them in <parallel_tool_calls> for concurrent execution.\n- After receiving tool results, analyze and explain them to the user. Never return empty content after tool use.\n- If a tool call fails, read the error message carefully and retry with corrected parameters.\n- When your task is fully complete, call the summary tool to present your final answer.\n\nBehavior:\n- Be concise and precise. Avoid unnecessary preamble.\n- If a task requires multiple steps, plan ahead and execute them one by one.\n- If you need clarification from the user, use the ask-question tool.\n- Respect the user's wiki structure and conventions."
+              "text": "You are an expert AI assistant for TidGi, a desktop knowledge management application built on TiddlyWiki.\n\nYour role:\n- Help users manage, search, create, and organize their TiddlyWiki knowledge base.\n- Answer questions about TiddlyWiki syntax (wikitext), macros, filters, widgets, and plugins.\n- Execute multi-step tasks autonomously using the available tools.\n\nCapabilities:\n- Search wiki content using TiddlyWiki filter expressions or semantic vector search.\n- Create, update, and delete tiddlers (wiki entries).\n- Browse tag trees, recent changes, and backlinks.\n- Read git history for version tracking.\n- Execute zx scripts for automation tasks.\n- Fetch external web content for reference.\n- Delegate work to a connected remote memeloop node when the user clearly wants another machine or node to perform the task.\n\nOutput format:\n- Always respond in **wikitext** format (TiddlyWiki markup), not Markdown.\n- Use wikitext headings (! !! !!!), lists (* #), bold ('' ''), italic (// //), links ([[title]]), and other TW5 syntax.\n- Separate logical blocks with blank lines for optimal rendering.\n- When showing code, use ``` code blocks or <$codeblock> widget.\n\nTool usage rules:\n- When you need information from the wiki, ALWAYS use the appropriate search tool first — do not guess content.\n- You may call multiple tools in a single response. Wrap them in <parallel_tool_calls> for concurrent execution.\n- When a connected remote memeloop node should do the work, use remoteAgent instead of pretending you executed the task locally.\n- If you are not sure which remote node or definition to use, inspect connected nodes first with <tool_use name=\"remoteAgent\">{}</tool_use>.\n- After receiving tool results, analyze and explain them to the user. Never return empty content after tool use.\n- If a tool call fails, read the error message carefully and retry with corrected parameters.\n- When your task is fully complete, call the summary tool to present your final answer.\n\nBehavior:\n- Be concise and precise. Avoid unnecessary preamble.\n- If a task requires multiple steps, plan ahead and execute them one by one.\n- If you need clarification from the user, use the ask-question tool.\n- Respect the user's wiki structure and conventions."
             },
             {
               "id": "default-tools",
@@ -29,6 +29,10 @@
                 {
                   "id": "default-post-tool",
                   "text": "</tools>"
+                },
+                {
+                  "id": "default-remote-agent-tool",
+                  "text": "\n## remoteAgent\n**Description**: Create and run a sub-agent on a connected remote memeloop node. Use this when the user wants another machine or node to carry out the task.\n**Parameters**:\n- nodeId (string, Required): Target remote node ID.\n- definitionId (string, Required): Agent definition ID exposed by that node, such as \"memeloop:code-assistant\".\n- message (string, Required): The exact remote task instructions.\n\nIf you do not know which node or definition to use yet, inspect connected nodes first with an empty JSON object.\n\n**Examples**:\n- <tool_use name=\"remoteAgent\">{}</tool_use>\n- <tool_use name=\"remoteAgent\">{\"nodeId\":\"remote-node\",\"definitionId\":\"memeloop:code-assistant\",\"message\":\"Create the requested file and report the result.\"}</tool_use>\n"
                 }
               ]
             },
@@ -145,7 +149,10 @@
           "description": "Agent调用此工具来结束循环并呈现最终答案",
           "toolId": "summary",
           "summaryParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -154,7 +161,10 @@
           "description": "暂停并向用户提出澄清问题",
           "toolId": "askQuestion",
           "askQuestionParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -163,7 +173,10 @@
           "description": "查找指向特定条目的所有反向链接",
           "toolId": "backlinks",
           "backlinksParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -172,7 +185,10 @@
           "description": "获取以某条目为根的标签树层级结构",
           "toolId": "toc",
           "tocParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -181,7 +197,10 @@
           "description": "获取最近修改的条目列表",
           "toolId": "recent",
           "recentParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -190,7 +209,10 @@
           "description": "分页列出Wiki条目（轻量数据）",
           "toolId": "listTiddlers",
           "listTiddlersParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -199,7 +221,10 @@
           "description": "渲染条目并检查渲染错误或警告",
           "toolId": "getErrors",
           "getErrorsParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -209,7 +234,10 @@
           "toolId": "zxScript",
           "approval": { "mode": "confirm" },
           "zxScriptParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -218,7 +246,10 @@
           "description": "获取外部网页内容作为参考",
           "toolId": "webFetch",
           "webFetchParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -228,7 +259,10 @@
           "toolId": "spawnAgent",
           "approval": { "mode": "confirm" },
           "spawnAgentParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -237,7 +271,10 @@
           "description": "对条目文本做精确范围替换，返回统一diff摘要",
           "toolId": "editTiddler",
           "editTiddlerParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -246,7 +283,10 @@
           "description": "持久化的任务计划列表，自动注入到每轮提示词中",
           "toolId": "todo",
           "todoParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" },
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            },
             "todoInjectionTargetId": "default-auto-continue"
           }
         },
@@ -257,7 +297,10 @@
           "toolId": "alarmClock",
           "approval": { "mode": "auto" },
           "alarmClockParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -364,7 +407,10 @@
           "toolId": "wikiSearch",
           "wikiSearchParam": {
             "sourceType": "wiki",
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -373,7 +419,10 @@
           "toolId": "wikiOperation",
           "enabled": false,
           "wikiOperationParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -386,7 +435,10 @@
             "describeTag": "$:/tags/AI/Prompt/Describe",
             "actionsTag": "$:/tags/AI/Prompt/Actions",
             "enableCache": true,
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -394,7 +446,10 @@
           "caption": "Git版本历史工具",
           "toolId": "git",
           "gitParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -402,7 +457,10 @@
           "caption": "Summary (完成任务)",
           "toolId": "summary",
           "summaryParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -410,7 +468,10 @@
           "caption": "Ask Question (向用户提问)",
           "toolId": "askQuestion",
           "askQuestionParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -418,7 +479,10 @@
           "caption": "Wiki反向链接",
           "toolId": "backlinks",
           "backlinksParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -426,7 +490,10 @@
           "caption": "Wiki标签树/目录",
           "toolId": "toc",
           "tocParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -434,7 +501,10 @@
           "caption": "Wiki最近修改",
           "toolId": "recent",
           "recentParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -442,7 +512,10 @@
           "caption": "Wiki条目列表",
           "toolId": "listTiddlers",
           "listTiddlersParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -450,7 +523,10 @@
           "caption": "Wiki渲染错误检查",
           "toolId": "getErrors",
           "getErrorsParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -459,7 +535,10 @@
           "toolId": "editTiddler",
           "enabled": false,
           "editTiddlerParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -468,7 +547,10 @@
           "toolId": "zxScript",
           "enabled": false,
           "zxScriptParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -476,7 +558,10 @@
           "caption": "网页抓取",
           "toolId": "webFetch",
           "webFetchParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -485,7 +570,10 @@
           "toolId": "spawnAgent",
           "enabled": false,
           "spawnAgentParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {
@@ -493,7 +581,10 @@
           "caption": "Todo / 计划列表",
           "toolId": "todo",
           "todoParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" },
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            },
             "todoInjectionTargetId": "default-auto-continue"
           }
         },
@@ -503,7 +594,10 @@
           "toolId": "alarmClock",
           "enabled": false,
           "alarmClockParam": {
-            "toolListPosition": { "position": "after", "targetId": "default-before-tool" }
+            "toolListPosition": {
+              "position": "after",
+              "targetId": "default-before-tool"
+            }
           }
         },
         {

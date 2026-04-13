@@ -6,6 +6,7 @@ import fs from 'fs-extra';
 import { isEqual, omit } from 'lodash';
 import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
+import { startRemoteMemeloopTestNode } from '../supports/memeloopRemoteTestNode';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getSettingsPath } from '../supports/paths';
 import { PLAYWRIGHT_SHORT_TIMEOUT } from '../supports/timeouts';
@@ -39,7 +40,7 @@ function generateSemanticEmbedding(tag: string): number[] {
 
   // Generate base vector from tag
   const seed = Array.from(baseTag).reduce((hash, char) => {
-    return ((hash << 5) - hash) + char.charCodeAt(0);
+    return (hash << 5) - hash + char.charCodeAt(0);
   }, 0);
 
   for (let dimension = 0; dimension < 384; dimension++) {
@@ -52,7 +53,7 @@ function generateSemanticEmbedding(tag: string): number[] {
       value = -value;
     } else if (isSimilar || isQuery) {
       // Very similar (>95% similarity) - add small noise
-      value = value + (Math.sin(dimension * 0.01) * 0.05);
+      value = value + Math.sin(dimension * 0.01) * 0.05;
     }
 
     // Normalize to [-1, 1]
@@ -93,23 +94,89 @@ async function startMockOpenAIServerAndUpdateSettings(
  * Start mock OpenAI server without any rules.
  * Rules can be added later using "I add mock OpenAI responses" step.
  */
-Given('I have started the mock OpenAI server without rules', function(this: ApplicationWorld, done: (error?: Error) => void) {
-  startMockOpenAIServerAndUpdateSettings(this, [])
-    .then(() => {
-      done();
-    })
-    .catch((error: unknown) => {
-      done(error as Error);
-    });
-});
+Given(
+  'I have started the mock OpenAI server without rules',
+  function(this: ApplicationWorld, done: (error?: Error) => void) {
+    startMockOpenAIServerAndUpdateSettings(this, [])
+      .then(() => {
+        done();
+      })
+      .catch((error: unknown) => {
+        done(error as Error);
+      });
+  },
+);
 
 /**
  * Start mock OpenAI server with predefined rules from dataTable.
  * This is the legacy method used when rules are known upfront.
  */
-Given('I have started the mock OpenAI server', function(this: ApplicationWorld, dataTable: DataTable | undefined, done: (error?: Error) => void) {
-  try {
-    const rules: Array<{ response: string; stream?: boolean; embedding?: number[] }> = [];
+Given(
+  'I have started the mock OpenAI server',
+  function(
+    this: ApplicationWorld,
+    dataTable: DataTable | undefined,
+    done: (error?: Error) => void,
+  ) {
+    try {
+      const rules: Array<{
+        response: string;
+        stream?: boolean;
+        embedding?: number[];
+      }> = [];
+      if (dataTable && typeof dataTable.raw === 'function') {
+        const rows = dataTable.raw();
+        // Skip header row
+        for (let index = 1; index < rows.length; index++) {
+          const row = rows[index];
+          const response = (row[0] ?? '').trim();
+          const stream = (row[1] ?? '').trim().toLowerCase() === 'true';
+          const embeddingTag = (row[2] ?? '').trim();
+
+          // Generate embedding from semantic tag if provided
+          let embedding: number[] | undefined;
+          if (embeddingTag) {
+            embedding = generateSemanticEmbedding(embeddingTag);
+          }
+
+          // Include rules with a response OR an embedding — MockOpenAIServer separates them into chatRules vs embeddingRules internally
+          if (response || embedding) {
+            rules.push({ response, stream, embedding });
+          }
+        }
+      }
+
+      startMockOpenAIServerAndUpdateSettings(this, rules)
+        .then(() => {
+          done();
+        })
+        .catch((error: unknown) => {
+          done(error as Error);
+        });
+    } catch (error) {
+      done(error as Error);
+    }
+  },
+);
+
+/**
+ * Add new responses to an already-running mock OpenAI server.
+ * This allows scenarios to configure server responses after the application has started.
+ */
+Given(
+  'I add mock OpenAI responses:',
+  function(this: ApplicationWorld, dataTable: DataTable | undefined) {
+    if (!this.mockOpenAIServer) {
+      throw new Error(
+        'Mock OpenAI server is not running. Use "I have started the mock OpenAI server" first.',
+      );
+    }
+
+    const rules: Array<{
+      response: string;
+      stream?: boolean;
+      embedding?: number[];
+    }> = [];
     if (dataTable && typeof dataTable.raw === 'function') {
       const rows = dataTable.raw();
       // Skip header row
@@ -130,50 +197,86 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
       }
     }
 
-    startMockOpenAIServerAndUpdateSettings(this, rules)
-      .then(() => {
-        done();
-      })
-      .catch((error: unknown) => {
-        done(error as Error);
-      });
-  } catch (error) {
-    done(error as Error);
-  }
-});
+    this.mockOpenAIServer.addRules(rules);
+  },
+);
 
-/**
- * Add new responses to an already-running mock OpenAI server.
- * This allows scenarios to configure server responses after the application has started.
- */
-Given('I add mock OpenAI responses:', function(this: ApplicationWorld, dataTable: DataTable | undefined) {
-  if (!this.mockOpenAIServer) {
-    throw new Error('Mock OpenAI server is not running. Use "I have started the mock OpenAI server" first.');
-  }
-
-  const rules: Array<{ response: string; stream?: boolean; embedding?: number[] }> = [];
-  if (dataTable && typeof dataTable.raw === 'function') {
-    const rows = dataTable.raw();
-    // Skip header row
-    for (let index = 1; index < rows.length; index++) {
-      const row = rows[index];
-      const response = (row[0] ?? '').trim();
-      const stream = (row[1] ?? '').trim().toLowerCase() === 'true';
-      const embeddingTag = (row[2] ?? '').trim();
-
-      // Generate embedding from semantic tag if provided
-      let embedding: number[] | undefined;
-      if (embeddingTag) {
-        embedding = generateSemanticEmbedding(embeddingTag);
-      }
-
-      // Include rules with a response OR an embedding — MockOpenAIServer separates them into chatRules vs embeddingRules internally
-      if (response || embedding) rules.push({ response, stream, embedding });
+Given(
+  'I have connected a remote memeloop test node backed by mock OpenAI',
+  async function(this: ApplicationWorld) {
+    if (!this.mockOpenAIServer || !this.providerConfig?.baseURL) {
+      throw new Error(
+        'Mock OpenAI server must be running before the remote memeloop node is started.',
+      );
     }
-  }
 
-  this.mockOpenAIServer.addRules(rules);
-});
+    const currentWindow = this.currentWindow || (await this.getWindow('main'));
+    if (!currentWindow) {
+      throw new Error('Main window is not available for remote node setup.');
+    }
+
+    const remoteNode = await startRemoteMemeloopTestNode(this, {
+      nodeId: 'remote-e2e-node',
+      config: {
+        providers: [
+          {
+            name: 'openai',
+            baseUrl: this.providerConfig.baseURL,
+            apiKey: 'test-api-key',
+          },
+        ],
+        tools: {
+          allowlist: ['file.read', 'file.search', 'file.write'],
+        },
+      },
+    });
+    this.remoteMemeloopNode = remoteNode;
+
+    const addedPeer = await currentWindow.evaluate(async (wsUrl: string) => {
+      const windowWithService = window as unknown as {
+        service: {
+          memeloopNode: {
+            addPeer: (peerUrl: string) => Promise<{ nodeId: string }>;
+          };
+        };
+      };
+
+      return windowWithService.service.memeloopNode.addPeer(wsUrl);
+    }, remoteNode.wsUrl);
+
+    if (addedPeer.nodeId !== remoteNode.nodeId) {
+      throw new Error(
+        `Expected connected node ${remoteNode.nodeId}, got ${addedPeer.nodeId}`,
+      );
+    }
+
+    await backOff(async () => {
+      const isConnected = await currentWindow.evaluate(
+        async (expectedNodeId: string) => {
+          const windowWithService = window as unknown as {
+            service: {
+              memeloopNode: {
+                getConnectedPeers: () => Promise<
+                  Array<{ nodeId: string; status: string }>
+                >;
+              };
+            };
+          };
+
+          const peers = await windowWithService.service.memeloopNode.getConnectedPeers();
+          return peers.some(
+            (peer) => peer.nodeId === expectedNodeId && peer.status === 'online',
+          );
+        },
+        remoteNode.nodeId,
+      );
+
+      if (!isConnected) {
+        throw new Error(`Remote node ${remoteNode.nodeId} is not online yet.`);
+      }
+    }, BACKOFF_OPTIONS);
+  },
+);
 
 // Mock OpenAI server cleanup - for scenarios using mock OpenAI
 After({ tags: '@mockOpenAI' }, async function(this: ApplicationWorld) {
@@ -194,18 +297,21 @@ After({ tags: '@mockOpenAI' }, async function(this: ApplicationWorld) {
 
 // Only keep agent-specific steps that can't use generic ones
 
-Then('I should see {int} messages in chat history', async function(this: ApplicationWorld, expectedCount: number) {
-  const currentWindow = this.currentWindow || this.mainWindow;
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
+Then(
+  'I should see {int} messages in chat history',
+  async function(this: ApplicationWorld, expectedCount: number) {
+    const currentWindow = this.currentWindow || this.mainWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
+    }
 
-  const messageSelector = '[data-testid="message-bubble"]';
+    const messageSelector = '[data-testid="message-bubble"]';
 
-  await backOff(
-    async () => {
+    await backOff(async () => {
       // Wait for at least one message to exist
-      await currentWindow.waitForSelector(messageSelector, { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+      await currentWindow.waitForSelector(messageSelector, {
+        timeout: PLAYWRIGHT_SHORT_TIMEOUT,
+      });
 
       // Count current messages
       const messages = currentWindow.locator(messageSelector);
@@ -214,135 +320,219 @@ Then('I should see {int} messages in chat history', async function(this: Applica
       if (currentCount === expectedCount) {
         return; // Success
       } else if (currentCount > expectedCount) {
-        throw new Error(`Expected ${expectedCount} messages but found ${currentCount} (too many)`);
+        throw new Error(
+          `Expected ${expectedCount} messages but found ${currentCount} (too many)`,
+        );
       } else {
         // Not enough messages yet, throw to trigger retry
-        throw new Error(`Expected ${expectedCount} messages but found ${currentCount}`);
+        throw new Error(
+          `Expected ${expectedCount} messages but found ${currentCount}`,
+        );
       }
-    },
-    BACKOFF_OPTIONS,
-  ).catch(async (error: unknown) => {
-    // Get final count for error message
-    try {
-      const finalCount = await currentWindow.locator(messageSelector).count();
-      throw new Error(`Could not find expected ${expectedCount} messages. Found ${finalCount}. Error: ${(error as Error).message}`);
-    } catch {
-      throw new Error(`Could not find expected ${expectedCount} messages. Error: ${(error as Error).message}`);
+    }, BACKOFF_OPTIONS).catch(async (error: unknown) => {
+      // Get final count for error message
+      try {
+        const finalCount = await currentWindow.locator(messageSelector).count();
+        throw new Error(
+          `Could not find expected ${expectedCount} messages. Found ${finalCount}. Error: ${(error as Error).message}`,
+        );
+      } catch {
+        throw new Error(
+          `Could not find expected ${expectedCount} messages. Error: ${(error as Error).message}`,
+        );
+      }
+    });
+  },
+);
+
+Then(
+  'the last AI request should contain system prompt {string}',
+  async function(this: ApplicationWorld, expectedPrompt: string) {
+    if (!this.mockOpenAIServer) {
+      throw new Error('Mock OpenAI server is not running');
     }
-  });
-});
 
-Then('the last AI request should contain system prompt {string}', async function(this: ApplicationWorld, expectedPrompt: string) {
-  if (!this.mockOpenAIServer) {
-    throw new Error('Mock OpenAI server is not running');
-  }
+    const lastRequest = this.mockOpenAIServer.getLastRequest();
+    if (!lastRequest) {
+      throw new Error('No AI request has been made yet');
+    }
 
-  const lastRequest = this.mockOpenAIServer.getLastRequest();
-  if (!lastRequest) {
-    throw new Error('No AI request has been made yet');
-  }
+    // Find system message in the request
+    const systemMessage = lastRequest.messages.find(
+      (message) => message.role === 'system',
+    );
+    if (!systemMessage) {
+      throw new Error('No system message found in the AI request');
+    }
 
-  // Find system message in the request
-  const systemMessage = lastRequest.messages.find(message => message.role === 'system');
-  if (!systemMessage) {
-    throw new Error('No system message found in the AI request');
-  }
+    if (
+      !systemMessage.content ||
+      !systemMessage.content.includes(expectedPrompt)
+    ) {
+      throw new Error(
+        `Expected system prompt to contain "${expectedPrompt}", but got: "${systemMessage.content}"`,
+      );
+    }
+  },
+);
 
-  if (!systemMessage.content || !systemMessage.content.includes(expectedPrompt)) {
-    throw new Error(`Expected system prompt to contain "${expectedPrompt}", but got: "${systemMessage.content}"`);
-  }
-});
+Then(
+  'the last AI request system prompt should not contain {string}',
+  async function(this: ApplicationWorld, unexpectedText: string) {
+    if (!this.mockOpenAIServer) {
+      throw new Error('Mock OpenAI server is not running');
+    }
 
-Then('the last AI request system prompt should not contain {string}', async function(this: ApplicationWorld, unexpectedText: string) {
-  if (!this.mockOpenAIServer) {
-    throw new Error('Mock OpenAI server is not running');
-  }
+    const lastRequest = this.mockOpenAIServer.getLastRequest();
+    if (!lastRequest) {
+      throw new Error('No AI request has been made yet');
+    }
 
-  const lastRequest = this.mockOpenAIServer.getLastRequest();
-  if (!lastRequest) {
-    throw new Error('No AI request has been made yet');
-  }
+    const systemMessage = lastRequest.messages.find(
+      (message) => message.role === 'system',
+    );
+    if (!systemMessage) {
+      // No system message means it definitely doesn't contain the text
+      return;
+    }
 
-  const systemMessage = lastRequest.messages.find(message => message.role === 'system');
-  if (!systemMessage) {
-    // No system message means it definitely doesn't contain the text
-    return;
-  }
+    if (
+      systemMessage.content &&
+      systemMessage.content.includes(unexpectedText)
+    ) {
+      throw new Error(
+        `Expected system prompt NOT to contain "${unexpectedText}", but it was found in: "${systemMessage.content.substring(0, 300)}..."`,
+      );
+    }
+  },
+);
 
-  if (systemMessage.content && systemMessage.content.includes(unexpectedText)) {
-    throw new Error(`Expected system prompt NOT to contain "${unexpectedText}", but it was found in: "${systemMessage.content.substring(0, 300)}..."`);
-  }
-});
+Then(
+  'the last AI request should have {int} messages',
+  async function(this: ApplicationWorld, expectedCount: number) {
+    if (!this.mockOpenAIServer) {
+      throw new Error('Mock OpenAI server is not running');
+    }
 
-Then('the last AI request should have {int} messages', async function(this: ApplicationWorld, expectedCount: number) {
-  if (!this.mockOpenAIServer) {
-    throw new Error('Mock OpenAI server is not running');
-  }
+    const lastRequest = this.mockOpenAIServer.getLastRequest();
+    if (!lastRequest) {
+      throw new Error('No AI request has been made yet');
+    }
 
-  const lastRequest = this.mockOpenAIServer.getLastRequest();
-  if (!lastRequest) {
-    throw new Error('No AI request has been made yet');
-  }
+    const actualCount = lastRequest.messages.length;
+    if (actualCount !== expectedCount) {
+      throw new Error(
+        `Expected ${expectedCount} messages in the AI request, but got ${actualCount}`,
+      );
+    }
+  },
+);
 
-  const actualCount = lastRequest.messages.length;
-  if (actualCount !== expectedCount) {
-    throw new Error(`Expected ${expectedCount} messages in the AI request, but got ${actualCount}`);
-  }
-});
+Then(
+  'the last AI request user message should contain {string}',
+  async function(this: ApplicationWorld, expectedText: string) {
+    if (!this.mockOpenAIServer) {
+      throw new Error('Mock OpenAI server is not running');
+    }
 
-Then('the last AI request user message should contain {string}', async function(this: ApplicationWorld, expectedText: string) {
-  if (!this.mockOpenAIServer) {
-    throw new Error('Mock OpenAI server is not running');
-  }
+    // Poll for the request to arrive — there can be a delay between pressing Enter
+    // and the mock server actually receiving the HTTP request.
+    const lastRequest = await backOff(
+      async () => {
+        const request = this.mockOpenAIServer!.getLastRequest();
+        if (!request) throw new Error('No AI request has been made yet');
+        return request;
+      },
+      {
+        numOfAttempts: 40,
+        startingDelay: 250,
+        timeMultiple: 1,
+        maxDelay: 250,
+        delayFirstAttempt: true,
+      },
+    );
 
-  // Poll for the request to arrive — there can be a delay between pressing Enter
-  // and the mock server actually receiving the HTTP request.
-  const lastRequest = await backOff(
-    async () => {
-      const request = this.mockOpenAIServer!.getLastRequest();
-      if (!request) throw new Error('No AI request has been made yet');
-      return request;
-    },
-    { numOfAttempts: 40, startingDelay: 250, timeMultiple: 1, maxDelay: 250, delayFirstAttempt: true },
-  );
+    // Find the last user message in the request
+    const userMessages = lastRequest.messages.filter(
+      (message) => message.role === 'user',
+    );
+    if (userMessages.length === 0) {
+      throw new Error('No user message found in the AI request');
+    }
 
-  // Find the last user message in the request
-  const userMessages = lastRequest.messages.filter(message => message.role === 'user');
-  if (userMessages.length === 0) {
-    throw new Error('No user message found in the AI request');
-  }
+    const lastUserMessage = userMessages[userMessages.length - 1];
+    const content = lastUserMessage.content ?? '';
 
-  const lastUserMessage = userMessages[userMessages.length - 1];
-  const content = lastUserMessage.content ?? '';
+    const normalizedExpectedText = expectedText.replaceAll('\\n', '\n');
+    const contentHasExpectedText = content.includes(expectedText) ||
+      content.includes(normalizedExpectedText);
+    if (!contentHasExpectedText) {
+      throw new Error(
+        `Expected user message to contain "${expectedText}", but got: "${content}"`,
+      );
+    }
+  },
+);
 
-  const normalizedExpectedText = expectedText.replaceAll('\\n', '\n');
-  const contentHasExpectedText = content.includes(expectedText) || content.includes(normalizedExpectedText);
-  if (!contentHasExpectedText) {
-    throw new Error(`Expected user message to contain "${expectedText}", but got: "${content}"`);
-  }
-});
+Then(
+  'the last AI request user message should not contain {string}',
+  async function(this: ApplicationWorld, unexpectedText: string) {
+    if (!this.mockOpenAIServer) {
+      throw new Error('Mock OpenAI server is not running');
+    }
 
-Then('the last AI request user message should not contain {string}', async function(this: ApplicationWorld, unexpectedText: string) {
-  if (!this.mockOpenAIServer) {
-    throw new Error('Mock OpenAI server is not running');
-  }
+    const lastRequest = this.mockOpenAIServer.getLastRequest();
+    if (!lastRequest) {
+      throw new Error('No AI request has been made yet');
+    }
 
-  const lastRequest = this.mockOpenAIServer.getLastRequest();
-  if (!lastRequest) {
-    throw new Error('No AI request has been made yet');
-  }
+    // Find the last user message in the request
+    const userMessages = lastRequest.messages.filter(
+      (message) => message.role === 'user',
+    );
+    if (userMessages.length === 0) {
+      throw new Error('No user message found in the AI request');
+    }
 
-  // Find the last user message in the request
-  const userMessages = lastRequest.messages.filter(message => message.role === 'user');
-  if (userMessages.length === 0) {
-    throw new Error('No user message found in the AI request');
-  }
+    const lastUserMessage = userMessages[userMessages.length - 1];
+    if (
+      lastUserMessage.content &&
+      lastUserMessage.content.includes(unexpectedText)
+    ) {
+      throw new Error(
+        `Expected user message NOT to contain "${unexpectedText}", but it was found in: "${lastUserMessage.content.substring(0, 200)}..."`,
+      );
+    }
+  },
+);
 
-  const lastUserMessage = userMessages[userMessages.length - 1];
-  if (lastUserMessage.content && lastUserMessage.content.includes(unexpectedText)) {
-    throw new Error(`Expected user message NOT to contain "${unexpectedText}", but it was found in: "${lastUserMessage.content.substring(0, 200)}..."`);
-  }
-});
+Then(
+  'the remote memeloop node should have file {string} with content {string}',
+  async function(
+    this: ApplicationWorld,
+    relativePath: string,
+    expectedContent: string,
+  ) {
+    if (!this.remoteMemeloopNode) {
+      throw new Error('Remote memeloop node is not available.');
+    }
+
+    const filePath = path.resolve(
+      this.remoteMemeloopNode.workspaceDir,
+      relativePath,
+    );
+    if (!(await fs.pathExists(filePath))) {
+      throw new Error(`Remote file not found: ${filePath}`);
+    }
+
+    const actualContent = await fs.readFile(filePath, 'utf8');
+    if (actualContent !== expectedContent) {
+      throw new Error(
+        `Remote file content mismatch. Expected "${expectedContent}" but got "${actualContent}".`,
+      );
+    }
+  },
+);
 
 // Factory function to create scenario-specific provider config
 // Returns a new object each time to avoid state pollution between scenarios
@@ -362,11 +552,22 @@ function createProviderConfig(): AIProviderConfig {
   };
 }
 
-const desiredModelParameters = { temperature: 0.7, systemPrompt: 'You are a helpful assistant.', topP: 0.95 };
+const desiredModelParameters = {
+  temperature: 0.7,
+  systemPrompt: 'You are a helpful assistant.',
+  topP: 0.95,
+};
 
 // Step to remove AI settings for testing config errors
 Given('I remove test ai settings', function(this: ApplicationWorld) {
-  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
+  const settingsPath = path.resolve(
+    process.cwd(),
+    'test-artifacts',
+    this.scenarioSlug,
+    'userData-test',
+    'settings',
+    'settings.json',
+  );
   if (fs.existsSync(settingsPath)) {
     const existing = fs.readJsonSync(settingsPath) as ISettingFile;
     // Remove aiSettings but keep other settings
@@ -376,7 +577,14 @@ Given('I remove test ai settings', function(this: ApplicationWorld) {
 });
 
 Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
-  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
+  const settingsPath = path.resolve(
+    process.cwd(),
+    'test-artifacts',
+    this.scenarioSlug,
+    'userData-test',
+    'settings',
+    'settings.json',
+  );
   const parsed = fs.readJsonSync(settingsPath) as Record<string, unknown>;
   const actual = (parsed.aiSettings as Record<string, unknown> | undefined) || null;
 
@@ -390,7 +598,9 @@ Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
   // and use actual baseURL from settings (for UI-configured scenarios)
   let providerConfig: AIProviderConfig;
   const providerName = 'TestProvider';
-  const existingProvider = actualProviders.find(p => p.provider === providerName) as AIProviderConfig | undefined;
+  const existingProvider = actualProviders.find(
+    (p) => p.provider === providerName,
+  ) as AIProviderConfig | undefined;
 
   if (this.providerConfig) {
     // Use the mock server's providerConfig
@@ -412,54 +622,92 @@ Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
   const modelName = modelsArray[0]?.name;
 
   // Check TestProvider exists
-  const testProvider = actualProviders.find(p => p.provider === providerName);
+  const testProvider = actualProviders.find((p) => p.provider === providerName);
   if (!testProvider) {
-    console.error('TestProvider not found in actual providers:', JSON.stringify(actualProviders, null, 2));
+    console.error(
+      'TestProvider not found in actual providers:',
+      JSON.stringify(actualProviders, null, 2),
+    );
     throw new Error('TestProvider not found in aiSettings');
   }
 
   // Verify TestProvider configuration
   if (!isEqual(testProvider, providerConfig)) {
-    console.error('TestProvider config mismatch. expected:', JSON.stringify(providerConfig, null, 2));
-    console.error('TestProvider config actual:', JSON.stringify(testProvider, null, 2));
+    console.error(
+      'TestProvider config mismatch. expected:',
+      JSON.stringify(providerConfig, null, 2),
+    );
+    console.error(
+      'TestProvider config actual:',
+      JSON.stringify(testProvider, null, 2),
+    );
     throw new Error('TestProvider configuration does not match expected');
   }
 
   // Check ComfyUI provider exists
-  const comfyuiProvider = actualProviders.find(p => p.provider === 'comfyui');
+  const comfyuiProvider = actualProviders.find((p) => p.provider === 'comfyui');
   if (!comfyuiProvider) {
-    console.error('ComfyUI provider not found in actual providers:', JSON.stringify(actualProviders, null, 2));
+    console.error(
+      'ComfyUI provider not found in actual providers:',
+      JSON.stringify(actualProviders, null, 2),
+    );
     throw new Error('ComfyUI provider not found in aiSettings');
   }
 
   // Verify ComfyUI has test-flux model with workflow path
   const comfyuiModels = (comfyuiProvider.models as Array<Record<string, unknown>>) || [];
-  const testFluxModel = comfyuiModels.find(m => m.name === 'test-flux');
+  const testFluxModel = comfyuiModels.find((m) => m.name === 'test-flux');
   if (!testFluxModel) {
-    console.error('test-flux model not found in ComfyUI models:', JSON.stringify(comfyuiModels, null, 2));
+    console.error(
+      'test-flux model not found in ComfyUI models:',
+      JSON.stringify(comfyuiModels, null, 2),
+    );
     throw new Error('test-flux model not found in ComfyUI provider');
   }
 
   // Verify workflow path
-  const parameters = testFluxModel.parameters as Record<string, unknown> | undefined;
+  const parameters = testFluxModel.parameters as
+    | Record<string, unknown>
+    | undefined;
   if (!parameters || parameters.workflowPath !== 'C:/test/mock/workflow.json') {
-    console.error('Workflow path mismatch. expected: C:/test/mock/workflow.json, actual:', parameters?.workflowPath);
+    console.error(
+      'Workflow path mismatch. expected: C:/test/mock/workflow.json, actual:',
+      parameters?.workflowPath,
+    );
     throw new Error('Workflow path not correctly saved');
   }
 
   // Verify default config
   const defaultConfig = actual.defaultConfig as Record<string, unknown>;
   const defaultModel = defaultConfig.default as Record<string, unknown>;
-  if (defaultModel?.provider !== providerName || defaultModel?.model !== modelName) {
-    console.error('Default config mismatch. expected provider:', providerName, 'model:', modelName);
-    console.error('actual defaultModel:', JSON.stringify(defaultModel, null, 2));
+  if (
+    defaultModel?.provider !== providerName ||
+    defaultModel?.model !== modelName
+  ) {
+    console.error(
+      'Default config mismatch. expected provider:',
+      providerName,
+      'model:',
+      modelName,
+    );
+    console.error(
+      'actual defaultModel:',
+      JSON.stringify(defaultModel, null, 2),
+    );
     throw new Error('Default configuration does not match expected');
   }
 });
 
 // Version without datatable for simple cases
 Given('I add test ai settings', async function(this: ApplicationWorld) {
-  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
+  const settingsPath = path.resolve(
+    process.cwd(),
+    'test-artifacts',
+    this.scenarioSlug,
+    'userData-test',
+    'settings',
+    'settings.json',
+  );
   let existing = {} as ISettingFile;
   if (fs.existsSync(settingsPath)) {
     existing = fs.readJsonSync(settingsPath) as ISettingFile;
@@ -499,154 +747,213 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
 
   const newPreferences = existing.preferences || {};
 
-  fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi, preferences: newPreferences } as ISettingFile, { spaces: 2 });
+  fs.writeJsonSync(
+    settingsPath,
+    {
+      ...existing,
+      aiSettings: newAi,
+      preferences: newPreferences,
+    } as ISettingFile,
+    { spaces: 2 },
+  );
 });
 
 // Version with datatable for advanced configuration
-Given('I add test ai settings:', async function(this: ApplicationWorld, dataTable: DataTable) {
-  const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
-  let existing = {} as ISettingFile;
-  if (fs.existsSync(settingsPath)) {
-    existing = fs.readJsonSync(settingsPath) as ISettingFile;
-  } else {
-    fs.ensureDirSync(path.dirname(settingsPath));
-  }
+Given(
+  'I add test ai settings:',
+  async function(this: ApplicationWorld, dataTable: DataTable) {
+    const settingsPath = path.resolve(
+      process.cwd(),
+      'test-artifacts',
+      this.scenarioSlug,
+      'userData-test',
+      'settings',
+      'settings.json',
+    );
+    let existing = {} as ISettingFile;
+    if (fs.existsSync(settingsPath)) {
+      existing = fs.readJsonSync(settingsPath) as ISettingFile;
+    } else {
+      fs.ensureDirSync(path.dirname(settingsPath));
+    }
 
-  // Initialize scenario-specific providerConfig if not set
-  if (!this.providerConfig) {
-    this.providerConfig = createProviderConfig();
-  }
-  const providerConfig = this.providerConfig;
+    // Initialize scenario-specific providerConfig if not set
+    if (!this.providerConfig) {
+      this.providerConfig = createProviderConfig();
+    }
+    const providerConfig = this.providerConfig;
 
-  const modelsArray = providerConfig.models;
-  const modelName = modelsArray[0]?.name;
-  const embeddingModelName = modelsArray[1]?.name;
-  const speechModelName = modelsArray[2]?.name;
+    const modelsArray = providerConfig.models;
+    const modelName = modelsArray[0]?.name;
+    const embeddingModelName = modelsArray[1]?.name;
+    const speechModelName = modelsArray[2]?.name;
 
-  // Parse options from data table
-  let freeModel: string | undefined;
-  let aiGenerateBackupTitle: boolean | undefined;
-  let aiGenerateBackupTitleTimeout: number | undefined;
+    // Parse options from data table
+    let freeModel: string | undefined;
+    let aiGenerateBackupTitle: boolean | undefined;
+    let aiGenerateBackupTitleTimeout: number | undefined;
 
-  if (dataTable && typeof dataTable.raw === 'function') {
-    const rows = dataTable.raw();
-    // Process all rows as key-value pairs (no header row)
-    for (let index = 0; index < rows.length; index++) {
-      const row = rows[index];
-      const key = (row[0] ?? '').trim();
-      const value = (row[1] ?? '').trim();
+    if (dataTable && typeof dataTable.raw === 'function') {
+      const rows = dataTable.raw();
+      // Process all rows as key-value pairs (no header row)
+      for (let index = 0; index < rows.length; index++) {
+        const row = rows[index];
+        const key = (row[0] ?? '').trim();
+        const value = (row[1] ?? '').trim();
 
-      if (key === 'freeModel') {
-        // If value is 'true', enable freeModel using the same model as main model
-        if (value === 'true') {
-          freeModel = modelName;
+        if (key === 'freeModel') {
+          // If value is 'true', enable freeModel using the same model as main model
+          if (value === 'true') {
+            freeModel = modelName;
+          }
+        } else if (key === 'aiGenerateBackupTitle') {
+          aiGenerateBackupTitle = value === 'true';
+        } else if (key === 'aiGenerateBackupTitleTimeout') {
+          aiGenerateBackupTitleTimeout = Number.parseInt(value, 10);
         }
-      } else if (key === 'aiGenerateBackupTitle') {
-        aiGenerateBackupTitle = value === 'true';
-      } else if (key === 'aiGenerateBackupTitleTimeout') {
-        aiGenerateBackupTitleTimeout = Number.parseInt(value, 10);
       }
     }
-  }
 
-  const newAi: AIGlobalSettings = {
-    providers: [providerConfig],
-    defaultConfig: {
-      default: {
-        provider: providerConfig.provider,
-        model: modelName,
+    const newAi: AIGlobalSettings = {
+      providers: [providerConfig],
+      defaultConfig: {
+        default: {
+          provider: providerConfig.provider,
+          model: modelName,
+        },
+        embedding: {
+          provider: providerConfig.provider,
+          model: embeddingModelName,
+        },
+        speech: {
+          provider: providerConfig.provider,
+          model: speechModelName,
+        },
+        ...(freeModel
+          ? {
+            free: {
+              provider: providerConfig.provider,
+              model: freeModel,
+            },
+          }
+          : {}),
+        modelParameters: desiredModelParameters,
       },
-      embedding: {
-        provider: providerConfig.provider,
-        model: embeddingModelName,
-      },
-      speech: {
-        provider: providerConfig.provider,
-        model: speechModelName,
-      },
-      ...(freeModel
-        ? {
-          free: {
-            provider: providerConfig.provider,
-            model: freeModel,
-          },
-        }
+    };
+
+    const newPreferences = {
+      ...(existing.preferences || {}),
+      ...(aiGenerateBackupTitle !== undefined ? { aiGenerateBackupTitle } : {}),
+      ...(aiGenerateBackupTitleTimeout !== undefined
+        ? { aiGenerateBackupTitleTimeout }
         : {}),
-      modelParameters: desiredModelParameters,
-    },
-  };
+    };
 
-  const newPreferences = {
-    ...(existing.preferences || {}),
-    ...(aiGenerateBackupTitle !== undefined ? { aiGenerateBackupTitle } : {}),
-    ...(aiGenerateBackupTitleTimeout !== undefined ? { aiGenerateBackupTitleTimeout } : {}),
-  };
-
-  fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi, preferences: newPreferences } as ISettingFile, { spaces: 2 });
-});
+    fs.writeJsonSync(
+      settingsPath,
+      {
+        ...existing,
+        aiSettings: newAi,
+        preferences: newPreferences,
+      } as ISettingFile,
+      { spaces: 2 },
+    );
+  },
+);
 
 async function clearAISettings(scenarioRoot?: string) {
   const root = scenarioRoot || process.cwd();
-  const settingsPath = path.resolve(root, 'userData-test', 'settings', 'settings.json');
+  const settingsPath = path.resolve(
+    root,
+    'userData-test',
+    'settings',
+    'settings.json',
+  );
   if (!(await fs.pathExists(settingsPath))) return;
-  const parsed = await fs.readJson(settingsPath) as ISettingFile;
+  const parsed = (await fs.readJson(settingsPath)) as ISettingFile;
   const cleaned = omit(parsed, ['aiSettings']);
   await fs.writeJson(settingsPath, cleaned, { spaces: 2 });
 }
 
 // Step to send ask AI with selection IPC message
-When('I send ask AI with selection message with text {string} and workspace {string}', async function(this: ApplicationWorld, selectionText: string, workspaceName: string) {
-  const currentWindow = await this.getWindow('main');
-  if (!currentWindow) {
-    throw new Error('Main window not found');
-  }
-
-  // Get workspace ID from workspace name
-  const workspaceId = await currentWindow.evaluate(async (name: string): Promise<string | undefined> => {
-    // Use a narrow type view of window.service to avoid coupling to preload internals.
-    const windowWithService = window as unknown as { service: { workspace: { getWorkspacesAsList: () => Promise<IWorkspace[]> } } };
-    const workspaces = await windowWithService.service.workspace.getWorkspacesAsList();
-    const workspace = workspaces.find((ws) => ws.name === name);
-    return workspace?.id;
-  }, workspaceName);
-
-  if (!workspaceId) {
-    throw new Error(`Workspace with name "${workspaceName}" not found`);
-  }
-
-  // Send IPC message to trigger "Talk with AI" through main process
-  // Use app.evaluate to access Electron main process API
-  if (!this.app) {
-    throw new Error('Electron app not found');
-  }
-
-  const sendResult = await this.app.evaluate(async ({ BrowserWindow }, { text, wsId }: { text: string; wsId: string }) => {
-    // Find main window - the first window is always the main window in TidGi
-    const allWindows = BrowserWindow.getAllWindows();
-    const mainWindow = allWindows[0]; // Main window is always the first window created
-
-    if (!mainWindow) {
-      return { success: false, error: 'No windows found', windowCount: allWindows.length };
+When(
+  'I send ask AI with selection message with text {string} and workspace {string}',
+  async function(
+    this: ApplicationWorld,
+    selectionText: string,
+    workspaceName: string,
+  ) {
+    const currentWindow = await this.getWindow('main');
+    if (!currentWindow) {
+      throw new Error('Main window not found');
     }
 
-    const data = {
-      selectionText: text,
-      wikiUrl: `tidgi://${wsId}`,
-      workspaceId: wsId,
-    };
+    // Get workspace ID from workspace name
+    const workspaceId = await currentWindow.evaluate(
+      async (name: string): Promise<string | undefined> => {
+        // Use a narrow type view of window.service to avoid coupling to preload internals.
+        const windowWithService = window as unknown as {
+          service: {
+            workspace: { getWorkspacesAsList: () => Promise<IWorkspace[]> };
+          };
+        };
+        const workspaces = await windowWithService.service.workspace.getWorkspacesAsList();
+        const workspace = workspaces.find((ws) => ws.name === name);
+        return workspace?.id;
+      },
+      workspaceName,
+    );
 
-    // Send IPC message to renderer
-    mainWindow.webContents.send('ask-ai-with-selection', data);
+    if (!workspaceId) {
+      throw new Error(`Workspace with name "${workspaceName}" not found`);
+    }
 
-    return { success: true };
-  }, { text: selectionText, wsId: workspaceId });
+    // Send IPC message to trigger "Talk with AI" through main process
+    // Use app.evaluate to access Electron main process API
+    if (!this.app) {
+      throw new Error('Electron app not found');
+    }
 
-  if (!sendResult.success) {
-    throw new Error(`Failed to send IPC message: ${sendResult.error || 'Unknown error'}`);
-  }
+    const sendResult = await this.app.evaluate(
+      async (
+        { BrowserWindow },
+        { text, wsId }: { text: string; wsId: string },
+      ) => {
+        // Find main window - the first window is always the main window in TidGi
+        const allWindows = BrowserWindow.getAllWindows();
+        const mainWindow = allWindows[0]; // Main window is always the first window created
 
-  // Small delay to ensure IPC message is processed (cross-process communication needs time)
-  await new Promise(resolve => setTimeout(resolve, 200));
-});
+        if (!mainWindow) {
+          return {
+            success: false,
+            error: 'No windows found',
+            windowCount: allWindows.length,
+          };
+        }
+
+        const data = {
+          selectionText: text,
+          wikiUrl: `tidgi://${wsId}`,
+          workspaceId: wsId,
+        };
+
+        // Send IPC message to renderer
+        mainWindow.webContents.send('ask-ai-with-selection', data);
+
+        return { success: true };
+      },
+      { text: selectionText, wsId: workspaceId },
+    );
+
+    if (!sendResult.success) {
+      throw new Error(
+        `Failed to send IPC message: ${sendResult.error || 'Unknown error'}`,
+      );
+    }
+
+    // Small delay to ensure IPC message is processed (cross-process communication needs time)
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  },
+);
 
 export { clearAISettings };

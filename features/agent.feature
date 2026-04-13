@@ -73,6 +73,30 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | success in last message        | [data-testid='message-bubble']:has-text('已成功')             |
       | wiki workspace in last message | [data-testid='message-bubble']:has-text('wiki')               |
 
+  @agent @mockOpenAI
+  Scenario: Remote memeloop node task completes through agent workspace
+    Given I add mock OpenAI responses:
+      | response                                                                                                                                                                                                 | stream |
+      | <tool_use name="remoteAgent">{"nodeId":"remote-e2e-node","definitionId":"memeloop:code-assistant","message":"Create the file remote-output/task-result.txt with content 'created by remote worker'. Then report the exact file path and content."}</tool_use> | false  |
+      | <tool_use name="file.write">{"path":"remote-output/task-result.txt","content":"created by remote worker"}</tool_use>                                                                        | false  |
+      | Remote worker created remote-output/task-result.txt with content "created by remote worker".                                                                                                          | false  |
+      | 远程 node 已完成任务，remote-output/task-result.txt 已创建，内容为 created by remote worker。                                                                                                          | false  |
+    And I have connected a remote memeloop test node backed by mock OpenAI
+    And I click on "new tab button and create default agent button" elements with selectors:
+      | element description         | selector                                    |
+      | new tab button              | [data-tab-id='new-tab-button']              |
+      | create default agent button | [data-testid='create-default-agent-button'] |
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
+    When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
+    When I type "请让远程 memeloop node 创建 remote-output/task-result.txt，并告诉我结果。" in "chat input" element with selector "[data-testid='agent-message-input']"
+    And I press "Enter" key
+    Then I should see 4 messages in chat history
+    And I should see "remote tool result and final remote summary" elements with selectors:
+      | element description  | selector                                                                                                   |
+      | remote tool result   | [data-testid='message-bubble']:has-text('remote-output/task-result.txt'):has-text('created by remote worker') |
+      | final remote summary | [data-testid='message-bubble']:has-text('远程 node 已完成任务')                                            |
+    And the remote memeloop node should have file "remote-output/task-result.txt" with content "created by remote worker"
+
   @agent
   Scenario: Create default agent from New Tab quick access
     When I click on "new tab button and create default agent button" elements with selectors:
