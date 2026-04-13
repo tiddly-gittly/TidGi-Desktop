@@ -1,15 +1,27 @@
-import { AfterStep, Given, setWorldConstructor, Status, When } from '@cucumber/cucumber';
-import { backOff } from 'exponential-backoff';
-import fs from 'fs-extra';
-import path from 'path';
-import { _electron as electron } from 'playwright';
-import type { ElectronApplication, Page } from 'playwright';
-import { windowDimension, WindowNames } from '../../src/services/windows/WindowProperties';
-import { MockOAuthServer } from '../supports/mockOAuthServer';
-import { MockOpenAIServer } from '../supports/mockOpenAI';
-import { getPackedAppPath, makeSlugPath } from '../supports/paths';
-import { PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
-import { captureScreenshot, captureWindowScreenshot } from '../supports/webContentsViewHelper';
+import {
+  AfterStep,
+  setWorldConstructor,
+  Status,
+  When,
+} from "@cucumber/cucumber";
+import { backOff } from "exponential-backoff";
+import fs from "fs-extra";
+import path from "path";
+import { _electron as electron } from "playwright";
+import type { ElectronApplication, Page } from "playwright";
+import {
+  windowDimension,
+  WindowNames,
+} from "../../src/services/windows/WindowProperties";
+import { MockOAuthServer } from "../supports/mockOAuthServer";
+import { MockOpenAIServer } from "../supports/mockOpenAI";
+import type { RemoteMemeloopTestNodeHandle } from "../supports/memeloopRemoteTestNode";
+import { getPackedAppPath, makeSlugPath } from "../supports/paths";
+import { PLAYWRIGHT_TIMEOUT } from "../supports/timeouts";
+import {
+  captureScreenshot,
+  captureWindowScreenshot,
+} from "../supports/webContentsViewHelper";
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -53,14 +65,21 @@ export function checkWindowName(windowType: string): WindowNames {
   if (windowType in WindowNames) {
     return (WindowNames as Record<string, WindowNames>)[windowType];
   }
-  throw new Error(`Window type "${windowType}" is not a valid WindowNames. Check the WindowNames enum in WindowProperties.ts. Available: ${Object.keys(WindowNames).join(', ')}`);
+  throw new Error(
+    `Window type "${windowType}" is not a valid WindowNames. Check the WindowNames enum in WindowProperties.ts. Available: ${Object.keys(WindowNames).join(", ")}`,
+  );
 }
 
 // Helper function to get window dimensions and ensure they are valid
-export function checkWindowDimension(windowName: WindowNames): { width: number; height: number } {
+export function checkWindowDimension(windowName: WindowNames): {
+  width: number;
+  height: number;
+} {
   const targetDimensions = windowDimension[windowName];
   if (!targetDimensions.width || !targetDimensions.height) {
-    throw new Error(`Window "${windowName}" does not have valid dimensions defined in windowDimension`);
+    throw new Error(
+      `Window "${windowName}" does not have valid dimensions defined in windowDimension`,
+    );
   }
   return targetDimensions as { width: number; height: number };
 }
@@ -72,18 +91,22 @@ export class ApplicationWorld {
   currentWindow: Page | undefined; // New state-managed current window
   mockOpenAIServer: MockOpenAIServer | undefined;
   mockOAuthServer: MockOAuthServer | undefined;
+  remoteMemeloopNode: RemoteMemeloopTestNodeHandle | undefined;
   savedWorkspaceId: string | undefined; // For storing workspace ID between steps
-  scenarioName: string = 'default'; // Scenario name from Cucumber pickle
-  scenarioSlug: string = 'default'; // Sanitized scenario name for file paths
-  providerConfig: import('@services/providerRegistry/interface').AIProviderConfig | undefined; // Scenario-specific AI provider config
-  launchEnvOverrides: Record<string, string> = {};
+  scenarioName: string = "default"; // Scenario name from Cucumber pickle
+  scenarioSlug: string = "default"; // Sanitized scenario name for file paths
+  providerConfig:
+    | import("@services/providerRegistry/interface").AIProviderConfig
+    | undefined; // Scenario-specific AI provider config
 
   // Helper method to check if window is visible
   async isWindowVisible(page: Page): Promise<boolean> {
     if (!this.app) return false;
     try {
       const browserWindow = await this.app.browserWindow(page);
-      return await browserWindow.evaluate((win: Electron.BrowserWindow) => win.isVisible());
+      return await browserWindow.evaluate((win: Electron.BrowserWindow) =>
+        win.isVisible(),
+      );
     } catch {
       return false;
     }
@@ -97,17 +120,16 @@ export class ApplicationWorld {
     if (!this.app) return false;
 
     try {
-      await backOff(
-        async () => {
-          const targetWindow = await this.findWindowByType(windowType);
-          const visible = targetWindow ? await this.isWindowVisible(targetWindow) : false;
+      await backOff(async () => {
+        const targetWindow = await this.findWindowByType(windowType);
+        const visible = targetWindow
+          ? await this.isWindowVisible(targetWindow)
+          : false;
 
-          if (!condition(targetWindow, visible)) {
-            throw new Error('Condition not met');
-          }
-        },
-        BACKOFF_OPTIONS,
-      );
+        if (!condition(targetWindow, visible)) {
+          throw new Error("Condition not met");
+        }
+      }, BACKOFF_OPTIONS);
       return true;
     } catch {
       return false;
@@ -126,7 +148,7 @@ export class ApplicationWorld {
     if (windowName === WindowNames.main) {
       // Main window is the first/primary window, typically showing guide, agent, help, or wiki pages
       // It's the window that opens on app launch
-      const allWindows = pages.filter(page => !page.isClosed());
+      const allWindows = pages.filter((page) => !page.isClosed());
       if (allWindows.length > 0) {
         // Return the first window (main window is always the first one created)
         return allWindows[0];
@@ -138,31 +160,35 @@ export class ApplicationWorld {
       const windowDimensions = checkWindowDimension(windowName);
       try {
         const electronWindowInfo = await this.app.evaluate(
-          async ({ BrowserWindow }, searchParameters: { size: { width: number; height: number }; titleHint: string }) => {
+          async (
+            { BrowserWindow },
+            size: { width: number; height: number },
+          ) => {
             const allWindows = BrowserWindow.getAllWindows();
-            // First try: match by title hint (BrowserWindow.title, set in WindowProperties)
-            const byTitle = allWindows.find(win => win.getTitle().includes(searchParameters.titleHint));
-            if (byTitle) return { id: byTitle.id };
-            // Second try: match by dimensions
-            const bySize = allWindows.find(win => {
+            const tidgiMiniWindow = allWindows.find((win) => {
               const bounds = win.getBounds();
-              return bounds.width === searchParameters.size.width && bounds.height === searchParameters.size.height;
+              return (
+                bounds.width === size.width && bounds.height === size.height
+              );
             });
-            return bySize ? { id: bySize.id } : null;
+            return tidgiMiniWindow ? { id: tidgiMiniWindow.id } : null;
           },
-          { size: windowDimensions, titleHint: 'Mini Window' },
+          windowDimensions,
         );
 
         if (electronWindowInfo) {
-          // Match Playwright page by comparing its underlying BrowserWindow ID.
-          // Title matching is unreliable because the mini window loads the same index.html
-          // as the main window, and document.title may not yet reflect the window type.
-          const nonClosedPages = pages.filter(page => !page.isClosed());
-          for (const page of nonClosedPages) {
+          // Found by dimensions, now match with Playwright page
+          const allWindows = pages.filter((page) => !page.isClosed());
+          for (const page of allWindows) {
             try {
-              const bw = await this.app.browserWindow(page);
-              const bwId = await bw.evaluate((win: Electron.BrowserWindow) => win.id);
-              if (bwId === electronWindowInfo.id) {
+              // Try to match by checking if this page belongs to the found electron window
+              // For now, use title as fallback verification
+              const title = await page.title();
+              if (
+                title.includes("太记小窗") ||
+                title.includes("TidGi Mini Window") ||
+                title.includes("TidGiMiniWindow")
+              ) {
                 return page;
               }
             } catch {
@@ -174,12 +200,16 @@ export class ApplicationWorld {
         // If Electron API fails, fallback to title matching
       }
 
-      // Fallback: Match by window title (covers cases where title IS set by the React app)
-      const allWindows = pages.filter(page => !page.isClosed());
+      // Fallback: Match by window title
+      const allWindows = pages.filter((page) => !page.isClosed());
       for (const page of allWindows) {
         try {
           const title = await page.title();
-          if (title.includes('太记小窗') || title.includes('TidGi Mini Window') || title.includes('TidGiMiniWindow')) {
+          if (
+            title.includes("太记小窗") ||
+            title.includes("TidGi Mini Window") ||
+            title.includes("TidGiMiniWindow")
+          ) {
             return page;
           }
         } catch {
@@ -190,38 +220,40 @@ export class ApplicationWorld {
       return undefined;
     } else {
       // For regular windows (preferences, about, addWorkspace, etc.)
-      return pages.find(page => {
+      return pages.find((page) => {
         if (page.isClosed()) return false;
-        const url = page.url() || '';
+        const url = page.url() || "";
         // Match exact route paths: /#/windowType or ending with /windowType
-        return url.includes(`#/${windowType}`) || url.endsWith(`/${windowType}`);
+        return (
+          url.includes(`#/${windowType}`) || url.endsWith(`/${windowType}`)
+        );
       });
     }
   }
 
-  async getWindow(windowType: string = 'main'): Promise<Page | undefined> {
+  async getWindow(windowType: string = "main"): Promise<Page | undefined> {
     if (!this.app) return undefined;
 
     // Special case for 'current' window
-    if (windowType === 'current') {
+    if (windowType === "current") {
       return this.currentWindow;
     }
 
     // Use the findWindowByType method with retry logic using backoff
     try {
-      return await backOff(
-        async () => {
-          const window = await this.findWindowByType(windowType);
-          if (!window) {
-            throw new Error(`Window ${windowType} not found`);
-          }
-          return window;
-        },
-        BACKOFF_OPTIONS,
-      );
+      return await backOff(async () => {
+        const window = await this.findWindowByType(windowType);
+        if (!window) {
+          throw new Error(`Window ${windowType} not found`);
+        }
+        return window;
+      }, BACKOFF_OPTIONS);
     } catch (error) {
       // If it's an invalid window type error, re-throw it
-      if (error instanceof Error && error.message.includes('is not a valid WindowNames')) {
+      if (
+        error instanceof Error &&
+        error.message.includes("is not a valid WindowNames")
+      ) {
         throw error;
       }
       return undefined;
@@ -238,48 +270,47 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
     executablePath: packedAppPath,
     args: [
       `--test-scenario=${world.scenarioSlug}`,
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--disable-software-rasterizer',
-      '--disable-background-timer-throttling',
-      '--disable-backgrounding-occluded-windows',
-      '--disable-renderer-backgrounding',
-      '--disable-features=TranslateUI',
-      '--disable-ipc-flooding-protection',
-      '--force-device-scale-factor=1',
-      '--high-dpi-support=1',
-      '--force-color-profile=srgb',
-      '--disable-extensions',
-      '--disable-plugins',
-      '--disable-default-apps',
-      '--virtual-time-budget=1000',
-      '--run-all-compositor-stages-before-draw',
-      '--disable-checker-imaging',
-      ...(process.env.CI && process.platform === 'linux'
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--disable-software-rasterizer",
+      "--disable-background-timer-throttling",
+      "--disable-backgrounding-occluded-windows",
+      "--disable-renderer-backgrounding",
+      "--disable-features=TranslateUI",
+      "--disable-ipc-flooding-protection",
+      "--force-device-scale-factor=1",
+      "--high-dpi-support=1",
+      "--force-color-profile=srgb",
+      "--disable-extensions",
+      "--disable-plugins",
+      "--disable-default-apps",
+      "--virtual-time-budget=1000",
+      "--run-all-compositor-stages-before-draw",
+      "--disable-checker-imaging",
+      ...(process.env.CI && process.platform === "linux"
         ? [
-          '--disable-background-mode',
-          '--disable-features=VizDisplayCompositor',
-          '--use-gl=swiftshader',
-          '--disable-accelerated-2d-canvas',
-          '--disable-accelerated-jpeg-decoding',
-          '--disable-accelerated-mjpeg-decode',
-          '--disable-accelerated-video-decode',
-        ]
+            "--disable-background-mode",
+            "--disable-features=VizDisplayCompositor",
+            "--use-gl=swiftshader",
+            "--disable-accelerated-2d-canvas",
+            "--disable-accelerated-jpeg-decoding",
+            "--disable-accelerated-mjpeg-decode",
+            "--disable-accelerated-video-decode",
+          ]
         : []),
     ],
     env: {
       ...process.env,
-      ...world.launchEnvOverrides,
-      NODE_ENV: 'test',
-      E2E_TEST: 'true',
-      LANG: process.env.LANG || 'zh-Hans.UTF-8',
-      LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
-      LC_ALL: process.env.LC_ALL || 'zh-Hans.UTF-8',
-      ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
+      NODE_ENV: "test",
+      E2E_TEST: "true",
+      LANG: process.env.LANG || "zh-Hans.UTF-8",
+      LANGUAGE: process.env.LANGUAGE || "zh-Hans:zh",
+      LC_ALL: process.env.LC_ALL || "zh-Hans.UTF-8",
+      ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
       ...(process.env.CI && {
-        ELECTRON_ENABLE_LOGGING: 'true',
-        ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
+        ELECTRON_ENABLE_LOGGING: "true",
+        ELECTRON_DISABLE_HARDWARE_ACCELERATION: "true",
       }),
     },
     cwd: process.cwd(),
@@ -288,17 +319,10 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
 
   // Do not block launch step on firstWindow; this can exceed Cucumber's 5s step timeout.
   // Window acquisition is handled in "I wait for the page to load completely".
-  const openedWindows = world.app.windows().filter(page => !page.isClosed());
+  const openedWindows = world.app.windows().filter((page) => !page.isClosed());
   world.mainWindow = openedWindows[0];
   world.currentWindow = world.mainWindow;
 }
-
-Given('I mock system palette as {string}', function(this: ApplicationWorld, palette: string) {
-  if (palette !== 'dark' && palette !== 'light') {
-    throw new Error(`Unsupported palette mock value: ${palette}. Use "dark" or "light".`);
-  }
-  this.launchEnvOverrides.TIDGI_E2E_MOCK_SYSTEM_PALETTE = palette;
-});
 
 async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
   // If launch is still in progress, wait it settle before closing.
@@ -317,15 +341,17 @@ async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
       world.app.close(),
       new Promise((_, reject) =>
         setTimeout(() => {
-          reject(new Error('close timeout'));
-        }, 4000)
+          reject(new Error("close timeout"));
+        }, 4000),
       ),
     ]);
   } catch {
     try {
       await Promise.race([
-        world.app.context().close({ reason: 'Relaunch application in scenario' }),
-        new Promise(resolve => setTimeout(resolve, 500)),
+        world.app
+          .context()
+          .close({ reason: "Relaunch application in scenario" }),
+        new Promise((resolve) => setTimeout(resolve, 500)),
       ]);
     } catch {
       // ignore
@@ -338,38 +364,58 @@ async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
   }
 }
 
-AfterStep({ timeout: 3000 }, async function(this: ApplicationWorld, { pickle, pickleStep, result }) {
-  if (!this.app) return;
+AfterStep(
+  { timeout: 3000 },
+  async function (this: ApplicationWorld, { pickle, pickleStep, result }) {
+    if (!this.app) return;
 
-  // Only capture screenshots for failed steps to avoid ~200-500ms IPC overhead per step.
-  // With 1400+ steps, capturing every step adds 4-10 minutes to CI.
-  if (result?.status !== Status.FAILED) return;
+    // Only capture screenshots for failed steps to avoid ~200-500ms IPC overhead per step.
+    // With 1400+ steps, capturing every step adds 4-10 minutes to CI.
+    if (result?.status !== Status.FAILED) return;
 
-  try {
-    const stepText = pickleStep.text;
-    const scenarioName = pickle.name;
-    const cleanScenarioName = makeSlugPath(scenarioName, 60);
-    const cleanStepText = makeSlugPath(stepText, 80);
+    try {
+      const stepText = pickleStep.text;
+      const scenarioName = pickle.name;
+      const cleanScenarioName = makeSlugPath(scenarioName, 60);
+      const cleanStepText = makeSlugPath(stepText, 80);
 
-    const scenarioScreenshotsDirectory = path.resolve(process.cwd(), 'test-artifacts', cleanScenarioName, 'userData-test', 'logs', 'screenshots');
-    await fs.ensureDir(scenarioScreenshotsDirectory);
+      const scenarioScreenshotsDirectory = path.resolve(
+        process.cwd(),
+        "test-artifacts",
+        cleanScenarioName,
+        "userData-test",
+        "logs",
+        "screenshots",
+      );
+      await fs.ensureDir(scenarioScreenshotsDirectory);
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const screenshotPath = path.resolve(scenarioScreenshotsDirectory, `${timestamp}-${cleanStepText}-FAILED.png`);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const screenshotPath = path.resolve(
+        scenarioScreenshotsDirectory,
+        `${timestamp}-${cleanStepText}-FAILED.png`,
+      );
 
-    // Steps operating on BrowserView (WebContentsView) → capture the embedded wiki view
-    // Other steps (main window UI, editWorkspace, preferences, etc.) → capture the current window page
-    const isBrowserViewStep = /browser view|TiddlyWiki code/i.test(stepText);
-    if (isBrowserViewStep) {
-      await captureScreenshot(this.app, screenshotPath);
-    } else if (this.currentWindow && !this.currentWindow.isClosed()) {
-      await captureWindowScreenshot(this.app, this.currentWindow, screenshotPath);
+      // Steps operating on BrowserView (WebContentsView) → capture the embedded wiki view
+      // Other steps (main window UI, editWorkspace, preferences, etc.) → capture the current window page
+      const isBrowserViewStep = /browser view|TiddlyWiki code/i.test(stepText);
+      if (isBrowserViewStep) {
+        await captureScreenshot(this.app, screenshotPath);
+      } else if (this.currentWindow && !this.currentWindow.isClosed()) {
+        await captureWindowScreenshot(
+          this.app,
+          this.currentWindow,
+          screenshotPath,
+        );
+      }
+    } catch (error) {
+      // Screenshot is best-effort diagnostics, never fail a step for it
+      console.warn(
+        "[AfterStep screenshot]",
+        error instanceof Error ? error.message : String(error),
+      );
     }
-  } catch (error) {
-    // Screenshot is best-effort diagnostics, never fail a step for it
-    console.warn('[AfterStep screenshot]', error instanceof Error ? error.message : String(error));
-  }
-});
+  },
+);
 
 // CRITICAL WARNING FOR ALL AI AGENTS:
 // DO NOT MODIFY TIMEOUT VALUES! NEVER!
@@ -377,13 +423,15 @@ AfterStep({ timeout: 3000 }, async function(this: ApplicationWorld, { pickle, pi
 // Timeout is a symptom, not the disease. Fix the root cause.
 // Read docs/Testing.md section "Key E2E Testing Patterns" point 6 before attempting any changes.
 // Maximum allowed timeouts: Local 5s, CI 10s (exactly 2x local, no more)
-When('I launch the TidGi application', async function(this: ApplicationWorld) {
-  this.appLaunchPromise = launchTidGiApplication(this).catch((error: unknown) => {
-    throw error;
-  });
+When("I launch the TidGi application", async function (this: ApplicationWorld) {
+  this.appLaunchPromise = launchTidGiApplication(this).catch(
+    (error: unknown) => {
+      throw error;
+    },
+  );
 });
 
-When('I close the TidGi application', async function(this: ApplicationWorld) {
+When("I close the TidGi application", async function (this: ApplicationWorld) {
   try {
     await closeTidGiApplication(this);
   } catch (error) {
@@ -391,83 +439,106 @@ When('I close the TidGi application', async function(this: ApplicationWorld) {
   }
 });
 
-When('I prepare to select directory in dialog {string}', async function(this: ApplicationWorld, directoryName: string) {
-  if (!this.app) {
-    throw new Error('Application is not launched');
-  }
-  // Use scenario-specific path for isolation
-  const targetPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, directoryName);
-  // Ensure parent directory exists (but do NOT remove target directory - it may be an existing wiki we want to import)
-  await fs.ensureDir(path.dirname(targetPath));
-  // Setup one-time dialog handler that restores after use
-  await this.app.evaluate(({ dialog }, targetDirectory: string) => {
-    // Save original function with proper binding
-    const originalShowOpenDialog = dialog.showOpenDialog.bind(dialog);
-    // Override with one-time mock
-    dialog.showOpenDialog = async () => {
-      // Restore original immediately after first call
-      dialog.showOpenDialog = originalShowOpenDialog;
-      return {
-        canceled: false,
-        filePaths: [targetDirectory],
+When(
+  "I prepare to select directory in dialog {string}",
+  async function (this: ApplicationWorld, directoryName: string) {
+    if (!this.app) {
+      throw new Error("Application is not launched");
+    }
+    // Use scenario-specific path for isolation
+    const targetPath = path.resolve(
+      process.cwd(),
+      "test-artifacts",
+      this.scenarioSlug,
+      directoryName,
+    );
+    // Ensure parent directory exists (but do NOT remove target directory - it may be an existing wiki we want to import)
+    await fs.ensureDir(path.dirname(targetPath));
+    // Setup one-time dialog handler that restores after use
+    await this.app.evaluate(({ dialog }, targetDirectory: string) => {
+      // Save original function with proper binding
+      const originalShowOpenDialog = dialog.showOpenDialog.bind(dialog);
+      // Override with one-time mock
+      dialog.showOpenDialog = async () => {
+        // Restore original immediately after first call
+        dialog.showOpenDialog = originalShowOpenDialog;
+        return {
+          canceled: false,
+          filePaths: [targetDirectory],
+        };
       };
-    };
-  }, targetPath);
-});
+    }, targetPath);
+  },
+);
 
-When('I prepare to select file {string} for file chooser', async function(this: ApplicationWorld, filePath: string) {
-  const page = this.currentWindow;
-  if (!page) {
-    throw new Error('No current window available');
-  }
-  const targetPath = path.resolve(process.cwd(), filePath);
-  if (!await fs.pathExists(targetPath)) {
-    throw new Error(`File does not exist: ${targetPath}`);
-  }
-  // Register a one-shot Playwright filechooser intercept BEFORE the click that
-  // triggers the file input. This prevents the native OS dialog from appearing
-  // and directly resolves the chooser with the supplied file.
-  page.once('filechooser', async (fileChooser) => {
-    await fileChooser.setFiles(targetPath);
-  });
-});
+When(
+  "I prepare to select file {string} for file chooser",
+  async function (this: ApplicationWorld, filePath: string) {
+    const page = this.currentWindow;
+    if (!page) {
+      throw new Error("No current window available");
+    }
+    const targetPath = path.resolve(process.cwd(), filePath);
+    if (!(await fs.pathExists(targetPath))) {
+      throw new Error(`File does not exist: ${targetPath}`);
+    }
+    // Register a one-shot Playwright filechooser intercept BEFORE the click that
+    // triggers the file input. This prevents the native OS dialog from appearing
+    // and directly resolves the chooser with the supplied file.
+    page.once("filechooser", async (fileChooser) => {
+      await fileChooser.setFiles(targetPath);
+    });
+  },
+);
 
-When('I set file {string} to file input with selector {string}', async function(this: ApplicationWorld, filePath: string, selector: string) {
-  const page = this.currentWindow;
-  if (!page) {
-    throw new Error('No current window available');
-  }
+When(
+  "I set file {string} to file input with selector {string}",
+  async function (this: ApplicationWorld, filePath: string, selector: string) {
+    const page = this.currentWindow;
+    if (!page) {
+      throw new Error("No current window available");
+    }
 
-  // Resolve the file path relative to project root
-  const targetPath = path.resolve(process.cwd(), filePath);
+    // Resolve the file path relative to project root
+    const targetPath = path.resolve(process.cwd(), filePath);
 
-  // Verify the file exists
-  if (!await fs.pathExists(targetPath)) {
-    throw new Error(`File does not exist: ${targetPath}`);
-  }
+    // Verify the file exists
+    if (!(await fs.pathExists(targetPath))) {
+      throw new Error(`File does not exist: ${targetPath}`);
+    }
 
-  // Use Playwright's setInputFiles to directly set file to the input element
-  // This works even for hidden inputs
-  await page.locator(selector).setInputFiles(targetPath);
-});
+    // Use Playwright's setInputFiles to directly set file to the input element
+    // This works even for hidden inputs
+    await page.locator(selector).setInputFiles(targetPath);
+  },
+);
 
 /**
  * Hide the main window exactly as `runOnBackground` does when the user presses the close button.
  * Directly hides the Electron BrowserWindow in the main process without going through the
  * renderer IPC proxy (since `hide` is intentionally not exposed to the renderer).
  */
-When('I hide the main window as if closing with runOnBackground', async function(this: ApplicationWorld) {
-  if (!this.app) throw new Error('Application is not launched');
-  await this.app.evaluate(({ BrowserWindow }) => {
-    const windows = BrowserWindow.getAllWindows();
-    // The main window is identified by its index.html URL
-    const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents?.getURL().includes('index.html'));
-    if (!mainWindow) throw new Error('Main window not found for hide');
-    mainWindow.hide();
-  });
-  // Allow the hide and event loop to settle before continuing.
-  await this.app.evaluate(async () => new Promise<void>(resolve => setTimeout(resolve, 300)));
-});
+When(
+  "I hide the main window as if closing with runOnBackground",
+  async function (this: ApplicationWorld) {
+    if (!this.app) throw new Error("Application is not launched");
+    await this.app.evaluate(({ BrowserWindow }) => {
+      const windows = BrowserWindow.getAllWindows();
+      // The main window is identified by its index.html URL
+      const mainWindow = windows.find(
+        (win) =>
+          !win.isDestroyed() &&
+          win.webContents?.getURL().includes("index.html"),
+      );
+      if (!mainWindow) throw new Error("Main window not found for hide");
+      mainWindow.hide();
+    });
+    // Allow the hide and event loop to settle before continuing.
+    await this.app.evaluate(
+      async () => new Promise<void>((resolve) => setTimeout(resolve, 300)),
+    );
+  },
+);
 
 /**
  * Reopen the main window the same way a second-instance launch triggers it.
@@ -475,23 +546,34 @@ When('I hide the main window as if closing with runOnBackground', async function
  * calls `windowService.open(WindowNames.main)` → `existedWindow.show()` → 'show' event
  * → `refreshActiveWorkspaceView()`.
  */
-When('I reopen the main window as second instance would', async function(this: ApplicationWorld) {
-  if (!this.app) throw new Error('Application is not launched');
-  await this.app.evaluate(({ app, BrowserWindow }) => {
-    // Trigger the same handler that a real second-instance launch fires.
-    // Electron event listeners for 'second-instance' receive: (event, argv, workingDirectory, additionalData).
-    // We must pass a fake Event object first so that DeepLinkService's `(_event, commandLine)` handler
-    // receives an empty array as commandLine, not our workingDirectory string.
-    app.emit('second-instance', /* event */ {}, /* argv */ [], /* workingDirectory */ '', /* additionalData */ {});
-    // In test mode, window.open() intentionally skips existedWindow.show() to avoid UI popups.
-    // Show all surviving windows explicitly so the recreated main window is guaranteed visible.
-    // This avoids brittle heuristics that try to distinguish main vs tidgi mini window by size.
-    for (const win of BrowserWindow.getAllWindows()) {
-      if (!win.isDestroyed()) {
-        win.show();
+When(
+  "I reopen the main window as second instance would",
+  async function (this: ApplicationWorld) {
+    if (!this.app) throw new Error("Application is not launched");
+    await this.app.evaluate(({ app, BrowserWindow }) => {
+      // Trigger the same handler that a real second-instance launch fires.
+      // Electron event listeners for 'second-instance' receive: (event, argv, workingDirectory, additionalData).
+      // We must pass a fake Event object first so that DeepLinkService's `(_event, commandLine)` handler
+      // receives an empty array as commandLine, not our workingDirectory string.
+      app.emit(
+        "second-instance",
+        /* event */ {},
+        /* argv */ [],
+        /* workingDirectory */ "",
+        /* additionalData */ {},
+      );
+      // In test mode, window.open() intentionally skips existedWindow.show() to avoid UI popups.
+      // Show all surviving windows explicitly so the recreated main window is guaranteed visible.
+      // This avoids brittle heuristics that try to distinguish main vs tidgi mini window by size.
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (!win.isDestroyed()) {
+          win.show();
+        }
       }
-    }
-  });
-  // Wait for show → refreshActiveWorkspaceView → buildMenu to complete.
-  await this.app.evaluate(async () => new Promise<void>(resolve => setTimeout(resolve, 500)));
-});
+    });
+    // Wait for show → refreshActiveWorkspaceView → buildMenu to complete.
+    await this.app.evaluate(
+      async () => new Promise<void>((resolve) => setTimeout(resolve, 500)),
+    );
+  },
+);
