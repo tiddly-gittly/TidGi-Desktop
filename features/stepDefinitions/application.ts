@@ -1,4 +1,4 @@
-import { AfterStep, setWorldConstructor, Status, When } from '@cucumber/cucumber';
+import { AfterStep, Given, setWorldConstructor, Status, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
@@ -76,6 +76,7 @@ export class ApplicationWorld {
   scenarioName: string = 'default'; // Scenario name from Cucumber pickle
   scenarioSlug: string = 'default'; // Sanitized scenario name for file paths
   providerConfig: import('@services/externalAPI/interface').AIProviderConfig | undefined; // Scenario-specific AI provider config
+  launchEnvOverrides: Record<string, string> = {};
 
   // Helper method to check if window is visible
   async isWindowVisible(page: Page): Promise<boolean> {
@@ -264,6 +265,7 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
     ],
     env: {
       ...process.env,
+      ...world.launchEnvOverrides,
       NODE_ENV: 'test',
       E2E_TEST: 'true',
       LANG: process.env.LANG || 'zh-Hans.UTF-8',
@@ -285,6 +287,13 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
   world.mainWindow = openedWindows[0];
   world.currentWindow = world.mainWindow;
 }
+
+Given('I mock system palette as {string}', function(this: ApplicationWorld, palette: string) {
+  if (palette !== 'dark' && palette !== 'light') {
+    throw new Error(`Unsupported palette mock value: ${palette}. Use "dark" or "light".`);
+  }
+  this.launchEnvOverrides.TIDGI_E2E_MOCK_SYSTEM_PALETTE = palette;
+});
 
 async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
   // If launch is still in progress, wait it settle before closing.

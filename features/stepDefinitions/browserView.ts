@@ -157,6 +157,11 @@ Then('the browser view should be loaded and visible', async function(this: Appli
     throw new Error('No current window available');
   }
 
+  // Use a longer retry window because WebContentsView creation is async and can take
+  // several seconds after workspace activation. Each attempt is fast (< 10ms) when the
+  // view doesn't exist yet, so we need many more attempts to cover the full wait budget.
+  const longRetryAttempts = Math.floor((CUCUMBER_GLOBAL_TIMEOUT - 4000) / BROWSER_VIEW_RETRY_DELAY_MS);
+
   await backOff(
     async () => {
       const content = await getTextContent(this.app!, this.currentWindow);
@@ -166,7 +171,7 @@ Then('the browser view should be loaded and visible', async function(this: Appli
     },
     {
       ...BACKOFF_OPTIONS,
-      numOfAttempts: BROWSER_VIEW_RETRY_ATTEMPTS,
+      numOfAttempts: longRetryAttempts,
       startingDelay: BROWSER_VIEW_RETRY_DELAY_MS,
       maxDelay: BROWSER_VIEW_RETRY_DELAY_MS,
     },
@@ -181,8 +186,8 @@ Then('the browser view should be loaded and visible', async function(this: Appli
       diagnostics = `diagnostics failed: ${String(diagError)}`;
     }
     throw new Error(
-      `Browser view is not loaded or visible after ${BROWSER_VIEW_RETRY_ATTEMPTS} attempts ` +
-        `(~${Math.round((BROWSER_VIEW_RETRY_ATTEMPTS * ESTIMATED_PER_ATTEMPT_MS) / 1000)}s / ${Math.round(CUCUMBER_GLOBAL_TIMEOUT / 1000)}s budget). ${diagnostics}`,
+      `Browser view is not loaded or visible after ${longRetryAttempts} attempts ` +
+        `(budget: ${Math.round(CUCUMBER_GLOBAL_TIMEOUT / 1000)}s). ${diagnostics}`,
     );
   });
 });
