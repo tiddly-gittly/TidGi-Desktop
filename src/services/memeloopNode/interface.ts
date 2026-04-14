@@ -1,13 +1,13 @@
-import { MemeloopNodeChannel } from "@/constants/channels";
-import { ProxyPropertyType } from "electron-ipc-cat/common";
-import type { KnownNodeEntry } from "@memeloop/protocol";
+import { MemeloopNodeChannel } from '@/constants/channels';
+import type { KnownNodeEntry } from '@memeloop/protocol';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 /** Minimal peer info surfaced to UI. */
 export interface IConnectedPeer {
   nodeId: string;
   name: string;
-  type: "desktop" | "node" | "mobile";
-  status: "online" | "offline" | "unknown";
+  type: 'desktop' | 'node' | 'mobile';
+  status: 'online' | 'offline' | 'unknown';
 }
 
 /** A wiki available on a remote node. */
@@ -28,6 +28,27 @@ export interface NodeIdentityStatus {
   /** Whether the node is registered with the cloud registry. */
   cloudNodeRegistered: boolean;
   knownNodeCount: number;
+}
+
+export type CloudNodeWsUrlSource = 'public-ip' | 'frp-address' | 'none';
+
+export interface ICloudNodeCapabilities {
+  listenPort: number | null;
+}
+
+export interface ICloudDiscoveredNode {
+  nodeId: string;
+  name: string;
+  capabilities: ICloudNodeCapabilities | null;
+  frpAddress: string | null;
+  publicIP: string | null;
+  lastSeen: string | number | null;
+  status: string | null;
+  x25519PublicKey: string | null;
+  ed25519PublicKey: string | null;
+  wsUrl: string | null;
+  connectable: boolean;
+  wsUrlSource: CloudNodeWsUrlSource;
 }
 
 export interface IMemeloopNodeService {
@@ -82,6 +103,11 @@ export interface IMemeloopNodeService {
    * List wikis from ALL connected peers in a single call.
    */
   listAllRemoteWikis(): Promise<IRemoteWiki[]>;
+
+  /**
+   * List cloud-discovered nodes with a resolved websocket target when available.
+   */
+  listCloudNodes(): Promise<ICloudDiscoveredNode[]>;
 
   // ── Peer connection management (delegates to worker's PeerConnectionManager) ──
 
@@ -202,8 +228,8 @@ export interface IMemeloopNodeService {
    * Get subscription status from cloud (plan, token usage, renewal date, billing history).
    */
   getSubscriptionStatus(): Promise<{
-    plan: "free" | "pro" | "enterprise";
-    status: "active" | "expired" | "cancelled";
+    plan: 'free' | 'pro' | 'enterprise';
+    status: 'active' | 'expired' | 'cancelled';
     tokenUsed: number;
     tokenTotal: number;
     renewalDate?: string;
@@ -211,7 +237,7 @@ export interface IMemeloopNodeService {
       id: string;
       date: string;
       amount: number;
-      status: "paid" | "pending" | "failed";
+      status: 'paid' | 'pending' | 'failed';
     }>;
   }>;
 
@@ -233,6 +259,7 @@ export const MemeloopNodeServiceIPCDescriptor = {
     getConnectedPeers: ProxyPropertyType.Function,
     listRemoteWikis: ProxyPropertyType.Function,
     listAllRemoteWikis: ProxyPropertyType.Function,
+    listCloudNodes: ProxyPropertyType.Function,
     addPeer: ProxyPropertyType.Function,
     removePeer: ProxyPropertyType.Function,
     syncNow: ProxyPropertyType.Function,
