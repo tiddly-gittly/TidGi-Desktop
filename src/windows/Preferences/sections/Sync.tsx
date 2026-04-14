@@ -1,4 +1,4 @@
-import { Divider, List, Switch, TextField } from '@mui/material';
+import { Button, Divider, List, Switch, TextField } from '@mui/material';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { useTranslation } from 'react-i18next';
 
@@ -33,13 +33,19 @@ export function Sync(props: ICustomSectionProps): React.JSX.Element {
                     color='primary'
                     checked={preference.syncBeforeShutdown}
                     onChange={async (event) => {
-                      await window.service.preference.set('syncBeforeShutdown', event.target.checked);
+                      await window.service.preference.set(
+                        'syncBeforeShutdown',
+                        event.target.checked,
+                      );
                       props.onNeedsRestart();
                     }}
                   />
                 }
               >
-                <ListItemText primary={`${t('Preference.SyncBeforeShutdown')} (Mac/Linux)`} secondary={t('Preference.SyncBeforeShutdownDescription')} />
+                <ListItemText
+                  primary={`${t('Preference.SyncBeforeShutdown')} (Mac/Linux)`}
+                  secondary={t('Preference.SyncBeforeShutdownDescription')}
+                />
               </ListItem>
               <ListItem
                 secondaryAction={
@@ -48,23 +54,42 @@ export function Sync(props: ICustomSectionProps): React.JSX.Element {
                     color='primary'
                     checked={preference.syncOnlyWhenNoDraft}
                     onChange={async (event) => {
-                      await window.service.preference.set('syncOnlyWhenNoDraft', event.target.checked);
+                      await window.service.preference.set(
+                        'syncOnlyWhenNoDraft',
+                        event.target.checked,
+                      );
                     }}
                   />
                 }
               >
-                <ListItemText primary={t('Preference.SyncOnlyWhenNoDraft')} secondary={t('Preference.SyncOnlyWhenNoDraftDescription')} />
+                <ListItemText
+                  primary={t('Preference.SyncOnlyWhenNoDraft')}
+                  secondary={t('Preference.SyncOnlyWhenNoDraftDescription')}
+                />
               </ListItem>
               <Divider />
               <ListItem>
-                <ListItemText primary={t('Preference.SyncInterval')} secondary={t('Preference.SyncIntervalDescription')} />
+                <ListItemText
+                  primary={t('Preference.SyncInterval')}
+                  secondary={t('Preference.SyncIntervalDescription')}
+                />
                 <TimePickerContainer>
                   <TimePicker
                     ampm={false}
                     openTo='hours'
                     views={['hours', 'minutes', 'seconds']}
                     format='HH:mm:ss'
-                    value={new Date(Date.UTC(1970, 0, 1, 0, 0, 0, preference.syncDebounceInterval))}
+                    value={new Date(
+                      Date.UTC(
+                        1970,
+                        0,
+                        1,
+                        0,
+                        0,
+                        0,
+                        preference.syncDebounceInterval,
+                      ),
+                    )}
                     onChange={async (date) => {
                       if (date === null) throw new Error(`date is null`);
                       // Extract hours, minutes, seconds from the date and convert to milliseconds
@@ -73,14 +98,23 @@ export function Sync(props: ICustomSectionProps): React.JSX.Element {
                       const minutes = date.getMinutes();
                       const seconds = date.getSeconds();
                       const intervalMs = (hours * 60 * 60 + minutes * 60 + seconds) * 1000;
-                      await window.service.preference.set('syncDebounceInterval', intervalMs);
+                      await window.service.preference.set(
+                        'syncDebounceInterval',
+                        intervalMs,
+                      );
                       props.onNeedsRestart();
                     }}
                     onClose={async () => {
-                      await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: false });
+                      await window.service.window.updateWindowMeta(
+                        WindowNames.preferences,
+                        { preventClosingWindow: false },
+                      );
                     }}
                     onOpen={async () => {
-                      await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true });
+                      await window.service.window.updateWindowMeta(
+                        WindowNames.preferences,
+                        { preventClosingWindow: true },
+                      );
                     }}
                   />
                 </TimePickerContainer>
@@ -93,30 +127,54 @@ export function Sync(props: ICustomSectionProps): React.JSX.Element {
                     color='primary'
                     checked={preference.aiGenerateBackupTitle}
                     onChange={async (event) => {
-                      await window.service.preference.set('aiGenerateBackupTitle', event.target.checked);
+                      await window.service.preference.set(
+                        'aiGenerateBackupTitle',
+                        event.target.checked,
+                      );
                     }}
                   />
                 }
               >
-                <ListItemText primary={t('Preference.AIGenerateBackupTitle')} secondary={t('Preference.AIGenerateBackupTitleDescription')} />
+                <ListItemText
+                  primary={t('Preference.AIGenerateBackupTitle')}
+                  secondary={t('Preference.AIGenerateBackupTitleDescription')}
+                />
               </ListItem>
               {preference.aiGenerateBackupTitle && (
                 <ListItem>
-                  <ListItemText primary={t('Preference.AIGenerateBackupTitleTimeout')} secondary={t('Preference.AIGenerateBackupTitleTimeoutDescription')} />
+                  <ListItemText
+                    primary={t('Preference.AIGenerateBackupTitleTimeout')}
+                    secondary={t(
+                      'Preference.AIGenerateBackupTitleTimeoutDescription',
+                    )}
+                  />
                   <TextField
                     type='number'
                     value={preference.aiGenerateBackupTitleTimeout / 1000}
                     onChange={async (event) => {
                       const seconds = Number.parseInt(event.target.value, 10);
-                      if (!Number.isNaN(seconds) && seconds > 0 && seconds <= 60) {
-                        await window.service.preference.set('aiGenerateBackupTitleTimeout', seconds * 1000);
+                      if (
+                        !Number.isNaN(seconds) &&
+                        seconds > 0 &&
+                        seconds <= 60
+                      ) {
+                        await window.service.preference.set(
+                          'aiGenerateBackupTitleTimeout',
+                          seconds * 1000,
+                        );
                       }
                     }}
                     onBlur={async (event) => {
                       const seconds = Number.parseInt(event.target.value, 10);
                       // Reset to current preference value if invalid
-                      if (Number.isNaN(seconds) || seconds <= 0 || seconds > 60) {
-                        event.target.value = String(preference.aiGenerateBackupTitleTimeout / 1000);
+                      if (
+                        Number.isNaN(seconds) ||
+                        seconds <= 0 ||
+                        seconds > 60
+                      ) {
+                        event.target.value = String(
+                          preference.aiGenerateBackupTitleTimeout / 1000,
+                        );
                       }
                     }}
                     slotProps={{
@@ -133,10 +191,33 @@ export function Sync(props: ICustomSectionProps): React.JSX.Element {
                 </ListItem>
               )}
               <Divider />
+              <ListItem
+                secondaryAction={
+                  <Button
+                    variant='outlined'
+                    onClick={async () => {
+                      await window.service.window.open(
+                        WindowNames.nodeManagement,
+                      );
+                    }}
+                    data-testid='preferences-sync-open-node-management'
+                  >
+                    Open Node Management
+                  </Button>
+                }
+              >
+                <ListItemText
+                  primary='Cloud Nodes & Node Management'
+                  secondary='Configure memeloop cloud, review cloud identity, discover cloud nodes, and connect them from the existing node management window.'
+                />
+              </ListItem>
+              <Divider />
               <ListItem>
                 <ListItemText
                   primary={`${t('Preference.MoreWorkspaceSyncSettings')} (Mac/Linux)`}
-                  secondary={t('Preference.MoreWorkspaceSyncSettingsDescription')}
+                  secondary={t(
+                    'Preference.MoreWorkspaceSyncSettingsDescription',
+                  )}
                 />
               </ListItem>
             </>
