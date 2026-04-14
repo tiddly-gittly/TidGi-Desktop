@@ -1,40 +1,40 @@
-import { After, Before } from "@cucumber/cucumber";
-import fs from "fs-extra";
-import path from "path";
-import { makeSlugPath } from "../supports/paths";
-import { clearAISettings } from "./agent";
-import { ApplicationWorld } from "./application";
-import { clearTidgiMiniWindowSettings } from "./tidgiMiniWindow";
-import { clearHibernationTestData, clearSubWikiRoutingTestData } from "./wiki";
+import { After, Before } from '@cucumber/cucumber';
+import fs from 'fs-extra';
+import path from 'path';
+import { makeSlugPath } from '../supports/paths';
+import { clearAISettings } from './agent';
+import { ApplicationWorld } from './application';
+import { clearTidgiMiniWindowSettings } from './tidgiMiniWindow';
+import { clearHibernationTestData, clearSubWikiRoutingTestData } from './wiki';
 
-Before(async function (this: ApplicationWorld, { pickle }) {
+Before(async function(this: ApplicationWorld, { pickle }) {
   // Initialize scenario-specific paths
   this.scenarioName = pickle.name;
   this.scenarioSlug = makeSlugPath(pickle.name, 60);
 
   const scenarioRoot = path.resolve(
     process.cwd(),
-    "test-artifacts",
+    'test-artifacts',
     this.scenarioSlug,
   );
-  const logsDirectory = path.resolve(scenarioRoot, "userData-test", "logs");
-  const screenshotsDirectory = path.resolve(logsDirectory, "screenshots");
-  const wikiTestRoot = path.resolve(scenarioRoot, "wiki-test");
+  const logsDirectory = path.resolve(scenarioRoot, 'userData-test', 'logs');
+  const screenshotsDirectory = path.resolve(logsDirectory, 'screenshots');
+  const wikiTestRoot = path.resolve(scenarioRoot, 'wiki-test');
 
   // Create necessary directories for this scenario
   await fs.ensureDir(logsDirectory);
   await fs.ensureDir(screenshotsDirectory);
   await fs.ensureDir(wikiTestRoot); // Ensure wiki-test root exists for default wiki creation
 
-  if (pickle.tags.some((tag) => tag.name === "@ai-setting")) {
+  if (pickle.tags.some((tag) => tag.name === '@ai-setting')) {
     await clearAISettings(scenarioRoot);
   }
-  if (pickle.tags.some((tag) => tag.name === "@tidgi-mini-window")) {
+  if (pickle.tags.some((tag) => tag.name === '@tidgi-mini-window')) {
     await clearTidgiMiniWindowSettings(scenarioRoot);
   }
 });
 
-After(async function (this: ApplicationWorld, { pickle }) {
+After(async function(this: ApplicationWorld, { pickle }) {
   // IMPORTANT: Close app FIRST before cleaning up files
   // This releases file locks so wiki folders can be deleted
   if (this.app) {
@@ -53,8 +53,8 @@ After(async function (this: ApplicationWorld, { pickle }) {
               window.close(),
               new Promise((_, reject) =>
                 setTimeout(() => {
-                  reject(new Error("Window close timeout"));
-                }, 1000),
+                  reject(new Error('Window close timeout'));
+                }, 1000)
               ),
             ]);
           } catch {
@@ -70,8 +70,8 @@ After(async function (this: ApplicationWorld, { pickle }) {
           this.app.close(),
           new Promise((_, reject) =>
             setTimeout(() => {
-              reject(new Error("App close timeout"));
-            }, 1000),
+              reject(new Error('App close timeout'));
+            }, 1000)
           ),
         ]);
       } catch {
@@ -86,7 +86,7 @@ After(async function (this: ApplicationWorld, { pickle }) {
         if (this.app) {
           // Force close browser context - this kills all processes
           await Promise.race([
-            this.app.context().close({ reason: "Force cleanup after test" }),
+            this.app.context().close({ reason: 'Force cleanup after test' }),
             new Promise((resolve) => setTimeout(resolve, 500)), // 500ms max for force close
           ]);
         }
@@ -109,29 +109,37 @@ After(async function (this: ApplicationWorld, { pickle }) {
     }
   }
 
+  if (this.memeloopCloudFixture) {
+    try {
+      await this.memeloopCloudFixture.stop();
+    } finally {
+      this.memeloopCloudFixture = undefined;
+    }
+  }
+
   const scenarioRoot = path.resolve(
     process.cwd(),
-    "test-artifacts",
+    'test-artifacts',
     this.scenarioSlug,
   );
 
   // Clean up settings and test data AFTER app is closed
-  if (pickle.tags.some((tag) => tag.name === "@tidgi-mini-window")) {
+  if (pickle.tags.some((tag) => tag.name === '@tidgi-mini-window')) {
     await clearTidgiMiniWindowSettings(scenarioRoot);
   }
-  if (pickle.tags.some((tag) => tag.name === "@ai-setting")) {
+  if (pickle.tags.some((tag) => tag.name === '@ai-setting')) {
     await clearAISettings(scenarioRoot);
   }
-  if (pickle.tags.some((tag) => tag.name === "@subwiki")) {
+  if (pickle.tags.some((tag) => tag.name === '@subwiki')) {
     await clearSubWikiRoutingTestData(scenarioRoot);
   }
   // Clean up hibernation test data - remove wiki2 folder created during tests
-  if (pickle.tags.some((tag) => tag.name === "@hibernation")) {
+  if (pickle.tags.some((tag) => tag.name === '@hibernation')) {
     await clearHibernationTestData(scenarioRoot);
   }
   // Clean up move workspace test data - remove wiki-test-moved folder
-  if (pickle.tags.some((tag) => tag.name === "@move-workspace")) {
-    const wikiTestMovedPath = path.resolve(scenarioRoot, "wiki-test-moved");
+  if (pickle.tags.some((tag) => tag.name === '@move-workspace')) {
+    const wikiTestMovedPath = path.resolve(scenarioRoot, 'wiki-test-moved');
     if (await fs.pathExists(wikiTestMovedPath)) {
       await fs.remove(wikiTestMovedPath);
     }

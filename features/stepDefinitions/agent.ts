@@ -6,6 +6,7 @@ import fs from 'fs-extra';
 import { isEqual, omit } from 'lodash';
 import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
+import { CLOUD_E2E_NODE, startMemeloopCloudFixture } from '../supports/memeloopCloudFixture';
 import { startRemoteMemeloopTestNode } from '../supports/memeloopRemoteTestNode';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getSettingsPath } from '../supports/paths';
@@ -202,7 +203,7 @@ Given(
 );
 
 Given(
-  'I have connected a remote memeloop test node backed by mock OpenAI',
+  'I have prepared a cloud-discovered remote memeloop test node backed by mock OpenAI',
   async function(this: ApplicationWorld) {
     if (!this.mockOpenAIServer || !this.providerConfig?.baseURL) {
       throw new Error(
@@ -210,13 +211,8 @@ Given(
       );
     }
 
-    const currentWindow = this.currentWindow || (await this.getWindow('main'));
-    if (!currentWindow) {
-      throw new Error('Main window is not available for remote node setup.');
-    }
-
     const remoteNode = await startRemoteMemeloopTestNode(this, {
-      nodeId: 'remote-e2e-node',
+      nodeId: CLOUD_E2E_NODE.name,
       config: {
         providers: [
           {
@@ -232,54 +228,32 @@ Given(
     });
     this.remoteMemeloopNode = remoteNode;
 
-    const addedPeer = await currentWindow.evaluate(async (wsUrl: string) => {
-      const windowWithService = window as unknown as {
-        service: {
-          memeloopNode: {
-            addPeer: (peerUrl: string) => Promise<{ nodeId: string }>;
-          };
-        };
-      };
-
-      return windowWithService.service.memeloopNode.addPeer(wsUrl);
-    }, remoteNode.wsUrl);
-
-    if (addedPeer.nodeId !== remoteNode.nodeId) {
+    const remoteAddress = new URL(remoteNode.wsUrl);
+    const remoteNodePort = Number.parseInt(remoteAddress.port, 10);
+    if (!Number.isFinite(remoteNodePort)) {
       throw new Error(
-        `Expected connected node ${remoteNode.nodeId}, got ${addedPeer.nodeId}`,
+        `Failed to parse remote memeloop node port from ${remoteNode.wsUrl}`,
       );
     }
 
-    await backOff(async () => {
-      const isConnected = await currentWindow.evaluate(
-        async (expectedNodeId: string) => {
-          const windowWithService = window as unknown as {
-            service: {
-              memeloopNode: {
-                getConnectedPeers: () => Promise<
-                  Array<{ nodeId: string; status: string }>
-                >;
-              };
-            };
-          };
-
-          const peers = await windowWithService.service.memeloopNode.getConnectedPeers();
-          return peers.some(
-            (peer) => peer.nodeId === expectedNodeId && peer.status === 'online',
-          );
-        },
-        remoteNode.nodeId,
-      );
-
-      if (!isConnected) {
-        throw new Error(`Remote node ${remoteNode.nodeId} is not online yet.`);
-      }
-    }, BACKOFF_OPTIONS);
+    this.memeloopCloudFixture = await startMemeloopCloudFixture(this, {
+      remoteNodePort,
+    });
   },
 );
 
 // Mock OpenAI server cleanup - for scenarios using mock OpenAI
 After({ tags: '@mockOpenAI' }, async function(this: ApplicationWorld) {
+  if (this.memeloopCloudFixture) {
+    try {
+      await this.memeloopCloudFixture.stop();
+    } catch {
+      // Ignore errors during cleanup
+    } finally {
+      this.memeloopCloudFixture = undefined;
+    }
+  }
+
   // Stop mock OpenAI server with timeout protection
   if (this.mockOpenAIServer) {
     try {

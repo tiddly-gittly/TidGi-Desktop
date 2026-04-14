@@ -81,7 +81,33 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | <tool_use name="file.write">{"path":"remote-output/task-result.txt","content":"created by remote worker"}</tool_use>                                                                        | false  |
       | Remote worker created remote-output/task-result.txt with content "created by remote worker".                                                                                                          | false  |
       | 远程 node 已完成任务，remote-output/task-result.txt 已创建，内容为 created by remote worker。                                                                                                          | false  |
-    And I have connected a remote memeloop test node backed by mock OpenAI
+    And I have prepared a cloud-discovered remote memeloop test node backed by mock OpenAI
+    And I click on a "settings button" element with selector "#open-preferences-button"
+    And I switch to "preferences" window
+    And I click on a "sync section" element with selector "[data-testid='preference-section-sync']"
+    And I click on a "open node management button" element with selector "[data-testid='preferences-sync-open-node-management']"
+    And I switch to "nodeManagement" window
+    And I should see "cloud account card and cloud URL input and cloud login button and cloud load nodes button" elements with selectors:
+      | element description | selector |
+      | cloud account card | [data-testid='node-management-cloud-account'] |
+      | cloud URL input | [data-testid='node-management-cloud-url-input'] |
+      | cloud login button | [data-testid='node-management-cloud-login'] |
+      | cloud load nodes button | [data-testid='node-management-cloud-load-nodes'] |
+    When I type "http://127.0.0.1:43115" in "cloud URL input" element with selector "[data-testid='node-management-cloud-url-input']"
+    And I click on a "save cloud URL button" element with selector "[data-testid='node-management-cloud-url-save']"
+    And I type in "cloud email input and cloud password input" elements with selectors:
+      | text | selector |
+      | cloud-e2e@example.com | [data-testid='node-management-cloud-email-input'] |
+      | cloud-pass-123 | [data-testid='node-management-cloud-password-input'] |
+    And I click on a "cloud login button" element with selector "[data-testid='node-management-cloud-login']"
+    And I click on a "load cloud nodes button" element with selector "[data-testid='node-management-cloud-load-nodes']"
+    Then I should see "discovered cloud node card and discovered cloud node connect button" elements with selectors:
+      | element description | selector |
+      | discovered cloud node card | [data-testid^='node-management-cloud-node-']:has-text('remote-e2e-node') |
+      | discovered cloud node connect button | [data-testid^='node-management-cloud-connect-'] |
+    When I click on a "discovered cloud node connect button" element with selector "[data-testid^='node-management-cloud-connect-']"
+    Then I should see a "pair with PIN button" element with selector "button:has-text('Pair with PIN')"
+    And I switch to "main" window
     And I click on "new tab button and create default agent button" elements with selectors:
       | element description         | selector                                    |
       | new tab button              | [data-tab-id='new-tab-button']              |
