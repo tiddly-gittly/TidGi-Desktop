@@ -34,6 +34,7 @@ Feature: Sub-Wiki Functionality
     # Test SSE is still working - modify a main wiki tiddler
     When I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Main wiki content modified after SubWiki creation"
     Then I wait for tiddler "Index" to be updated by watch-fs
+    When I open tiddler "Index" in browser view
     Then I should see a "Index tiddler" element in browser view with selector "div[data-tiddler-title='Index']"
     Then I should see "Main wiki content modified after SubWiki creation" in the browser view content
     # Test modification in sub-wiki folder

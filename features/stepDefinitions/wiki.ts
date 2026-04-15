@@ -1180,11 +1180,12 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
   // If enableFileSystemWatch or enableHTTPAPI was changed, we need to restart the wiki
   const needsRestart = 'enableFileSystemWatch' in settingsUpdate || 'enableHTTPAPI' in settingsUpdate;
   if (needsRestart) {
-    // Ensure the browser view has loaded (which confirms wiki worker is running) before attempting restart,
-    // otherwise stopWiki() may race with the in-progress boot, causing DoubleWikiInstanceError (E-4).
-    // Wait for VIEW_LOADED since WIKI_WORKER_STARTED is only written on direct startWiki() paths,
-    // not when workspacesView restartWorkspaceViewService is used on initial launch.
-    await waitForLogMarker(this, '[test-id-VIEW_LOADED]', 'view not loaded before restart attempt');
+    // Wait for wiki worker services to be ready before attempting restart.
+    // WorkerServicesReady is emitted by the wiki worker on all startup paths
+    // (including restartWorkspaceViewService used at initial app launch), unlike
+    // WIKI_WORKER_STARTED which is only written on the direct startWiki() path,
+    // and unlike VIEW_LOADED which requires the view to be activated first.
+    await waitForLogMarker(this, 'test-id-WorkerServicesReady', 'wiki worker services not ready before restart attempt');
 
     // Only wait for watch-fs if it was enabled before the update
     // If it was disabled, wiki is ready immediately without watch-fs markers

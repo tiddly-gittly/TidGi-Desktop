@@ -24,17 +24,6 @@ const BACKOFF_OPTIONS = {
 };
 
 const BROWSER_VIEW_RETRY_DELAY_MS = 100;
-/**
- * Each retry iteration takes roughly BROWSER_VIEW_RETRY_DELAY_MS (backoff delay)
- * PLUS the executeInBrowserView timeout (~2000ms worst case for heavy TiddlyWiki pages).
- * Account for both when calculating how many attempts fit within the Cucumber step
- * timeout budget, leaving 4s margin for catch-block diagnostics and Cucumber overhead.
- */
-const ESTIMATED_PER_ATTEMPT_MS = BROWSER_VIEW_RETRY_DELAY_MS + 2000; // delay + executeJavaScript timeout
-const BROWSER_VIEW_RETRY_ATTEMPTS = Math.max(
-  8,
-  Math.floor((CUCUMBER_GLOBAL_TIMEOUT - 4000) / ESTIMATED_PER_ATTEMPT_MS),
-);
 
 type BrowserViewBackgroundMode = 'dark' | 'light';
 
