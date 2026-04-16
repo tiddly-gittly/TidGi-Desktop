@@ -3,8 +3,8 @@ import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.js
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
-import type { AIGlobalSettings, AIStreamResponse } from '@services/providerRegistry/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
+import type { AIGlobalSettings, AIStreamResponse } from '@services/providerRegistry/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { ModelMessage } from 'ai';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

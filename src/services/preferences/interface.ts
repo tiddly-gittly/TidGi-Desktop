@@ -1,8 +1,8 @@
-import { ProxyPropertyType } from "electron-ipc-cat/common";
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
-import { PreferenceChannel } from "@/constants/channels";
-import type { HunspellLanguages } from "@/constants/hunspellLanguages";
-import type { BehaviorSubject } from "rxjs";
+import { PreferenceChannel } from '@/constants/channels';
+import type { HunspellLanguages } from '@/constants/hunspellLanguages';
+import type { BehaviorSubject } from 'rxjs';
 
 /**
  * All user-configurable preferences.
@@ -42,7 +42,7 @@ export interface IPreferences {
   syncBeforeShutdown: boolean;
   syncDebounceInterval: number;
   syncOnlyWhenNoDraft: boolean;
-  themeSource: "system" | "light" | "dark";
+  themeSource: 'system' | 'light' | 'dark';
   tidgiMiniWindow: boolean;
   tidgiMiniWindowAlwaysOnTop: boolean;
   tidgiMiniWindowFixedWorkspaceId?: string;
@@ -55,24 +55,24 @@ export interface IPreferences {
 }
 
 export enum PreferenceSections {
-  developers = "developers",
-  downloads = "downloads",
-  friendLinks = "friendLinks",
-  general = "general",
-  languages = "languages",
-  tidgiMiniWindow = "tidgiMiniWindow",
-  misc = "misc",
-  network = "network",
-  notifications = "notifications",
-  performance = "performance",
-  privacy = "privacy",
-  search = "search",
-  sync = "sync",
-  system = "system",
-  updates = "updates",
-  wiki = "wiki",
-  externalAPI = "externalAPI",
-  aiAgent = "aiAgent",
+  developers = 'developers',
+  downloads = 'downloads',
+  friendLinks = 'friendLinks',
+  general = 'general',
+  languages = 'languages',
+  tidgiMiniWindow = 'tidgiMiniWindow',
+  misc = 'misc',
+  network = 'network',
+  notifications = 'notifications',
+  performance = 'performance',
+  privacy = 'privacy',
+  search = 'search',
+  sync = 'sync',
+  system = 'system',
+  updates = 'updates',
+  wiki = 'wiki',
+  externalAPI = 'externalAPI',
+  aiAgent = 'aiAgent',
 }
 
 /**

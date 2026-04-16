@@ -1,28 +1,24 @@
-import { injectable, inject } from "inversify";
-import type {
-  TerminalSessionInfo,
-  TerminalFollowResult,
-} from "memeloop-node/src/terminal/types.js";
-import { logger } from "@services/libs/log";
-import serviceIdentifier from "@services/serviceIdentifier";
-import type { IMemeloopNodeService } from "@services/memeloopNode/interface";
-import type { IRemoteTerminalService } from "./interface";
+import { logger } from '@services/libs/log';
+import type { IMemeloopNodeService } from '@services/memeloopNode/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
+import { inject, injectable } from 'inversify';
+import type { TerminalFollowResult, TerminalSessionInfo } from 'memeloop-node/src/terminal/types.js';
+import type { IRemoteTerminalService } from './interface';
 
 @injectable()
 export class RemoteTerminalService implements IRemoteTerminalService {
   constructor(
-    @inject(serviceIdentifier.MemeloopNode)
-    private readonly memeloopNodeService: IMemeloopNodeService,
+    @inject(serviceIdentifier.MemeloopNode) private readonly memeloopNodeService: IMemeloopNodeService,
   ) {}
 
   async listSessions(nodeId: string): Promise<TerminalSessionInfo[]> {
     try {
       const result = await this.callRemoteRpc<{
         sessions: TerminalSessionInfo[];
-      }>(nodeId, "memeloop.terminal.list", {});
+      }>(nodeId, 'memeloop.terminal.list', {});
       return result.sessions;
     } catch (error) {
-      logger.error("Failed to list terminal sessions", { nodeId, error });
+      logger.error('Failed to list terminal sessions', { nodeId, error });
       return [];
     }
   }
@@ -37,11 +33,11 @@ export class RemoteTerminalService implements IRemoteTerminalService {
     try {
       return await this.callRemoteRpc<TerminalFollowResult>(
         nodeId,
-        "memeloop.terminal.follow",
+        'memeloop.terminal.follow',
         { sessionId, fromSeq, untilExit, maxWaitMs },
       );
     } catch (error) {
-      logger.error("Failed to follow terminal session", {
+      logger.error('Failed to follow terminal session', {
         nodeId,
         sessionId,
         error,
@@ -58,11 +54,11 @@ export class RemoteTerminalService implements IRemoteTerminalService {
     try {
       return await this.callRemoteRpc<{ ok: boolean }>(
         nodeId,
-        "memeloop.terminal.respond",
+        'memeloop.terminal.respond',
         { sessionId, input },
       );
     } catch (error) {
-      logger.error("Failed to send input to terminal session", {
+      logger.error('Failed to send input to terminal session', {
         nodeId,
         sessionId,
         error,
@@ -78,11 +74,11 @@ export class RemoteTerminalService implements IRemoteTerminalService {
     try {
       return await this.callRemoteRpc<{ ok: boolean; finalStatus?: string }>(
         nodeId,
-        "memeloop.terminal.cancel",
+        'memeloop.terminal.cancel',
         { sessionId },
       );
     } catch (error) {
-      logger.error("Failed to cancel terminal session", {
+      logger.error('Failed to cancel terminal session', {
         nodeId,
         sessionId,
         error,
@@ -99,11 +95,11 @@ export class RemoteTerminalService implements IRemoteTerminalService {
     try {
       return await this.callRemoteRpc<{ ok: boolean }>(
         nodeId,
-        "memeloop.terminal.signal",
+        'memeloop.terminal.signal',
         { sessionId, signal },
       );
     } catch (error) {
-      logger.error("Failed to send signal to terminal session", {
+      logger.error('Failed to send signal to terminal session', {
         nodeId,
         sessionId,
         signal,
