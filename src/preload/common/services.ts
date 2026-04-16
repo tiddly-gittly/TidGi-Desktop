@@ -3,117 +3,36 @@
  * This file should be required by WebContentsView's preload script to work
  */
 
-import { createProxy } from "electron-ipc-cat/client";
-import { AsyncifyProxy } from "electron-ipc-cat/common";
+import { createProxy } from 'electron-ipc-cat/client';
+import { AsyncifyProxy } from 'electron-ipc-cat/common';
 
-import {
-  AgentBrowserServiceIPCDescriptor,
-  type IAgentBrowserService,
-} from "@services/agentBrowser/interface";
-import {
-  AgentDefinitionServiceIPCDescriptor,
-  type IAgentDefinitionService,
-} from "@services/agentDefinition/interface";
-import {
-  AgentInstanceServiceIPCDescriptor,
-  type IAgentInstanceService,
-} from "@services/agentInstance/interface";
-import {
-  AuthenticationServiceIPCDescriptor,
-  type IAuthenticationService,
-} from "@services/auth/interface";
-import {
-  ContextServiceIPCDescriptor,
-  type IContextService,
-} from "@services/context/interface";
-import {
-  DatabaseServiceIPCDescriptor,
-  type IDatabaseService,
-} from "@services/database/interface";
-import {
-  DeepLinkServiceIPCDescriptor,
-  type IDeepLinkService,
-} from "@services/deepLink/interface";
-import {
-  ProviderRegistryServiceIPCDescriptor,
-  type IProviderRegistryService,
-} from "@services/providerRegistry/interface";
-import {
-  GitServiceIPCDescriptor,
-  type IGitService,
-} from "@services/git/interface";
-import {
-  type IMenuService,
-  MenuServiceIPCDescriptor,
-} from "@services/menu/interface";
-import {
-  type IMemeloopNodeService,
-  MemeloopNodeServiceIPCDescriptor,
-} from "@services/memeloopNode/interface";
-import {
-  type INativeService,
-  NativeServiceIPCDescriptor,
-} from "@services/native/interface";
-import {
-  type INotificationService,
-  NotificationServiceIPCDescriptor,
-} from "@services/notifications/interface";
-import {
-  type IPreferenceService,
-  PreferenceServiceIPCDescriptor,
-} from "@services/preferences/interface";
-import {
-  type IRemoteTerminalService,
-  RemoteTerminalServiceIPCDescriptor,
-} from "@services/remoteTerminal/interface";
-import {
-  type ISyncService,
-  SyncServiceIPCDescriptor,
-} from "@services/sync/interface";
-import {
-  type ISystemPreferenceService,
-  SystemPreferenceServiceIPCDescriptor,
-} from "@services/systemPreferences/interface";
-import {
-  type IThemeService,
-  ThemeServiceIPCDescriptor,
-} from "@services/theme/interface";
-import {
-  type IToolPermissionsService,
-  ToolPermissionsServiceIPCDescriptor,
-} from "@services/toolPermissions/interface";
-import {
-  type IUpdaterService,
-  UpdaterServiceIPCDescriptor,
-} from "@services/updater/interface";
-import {
-  type IViewService,
-  ViewServiceIPCDescriptor,
-} from "@services/view/interface";
-import {
-  type IWikiService,
-  WikiServiceIPCDescriptor,
-} from "@services/wiki/interface";
-import {
-  type IWikiEmbeddingService,
-  WikiEmbeddingServiceIPCDescriptor,
-} from "@services/wikiEmbedding/interface";
-import {
-  type IWikiGitWorkspaceService,
-  WikiGitWorkspaceServiceIPCDescriptor,
-} from "@services/wikiGitWorkspace/interface";
-import {
-  type IWindowService,
-  WindowServiceIPCDescriptor,
-} from "@services/windows/interface";
-import {
-  type IWorkspaceService,
-  WorkspaceServiceIPCDescriptor,
-} from "@services/workspaces/interface";
-import {
-  type IWorkspaceViewService,
-  WorkspaceViewServiceIPCDescriptor,
-} from "@services/workspacesView/interface";
+import { AgentBrowserServiceIPCDescriptor, type IAgentBrowserService } from '@services/agentBrowser/interface';
+import { AgentDefinitionServiceIPCDescriptor, type IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { AgentInstanceServiceIPCDescriptor, type IAgentInstanceService } from '@services/agentInstance/interface';
+import { AuthenticationServiceIPCDescriptor, type IAuthenticationService } from '@services/auth/interface';
+import { ContextServiceIPCDescriptor, type IContextService } from '@services/context/interface';
+import { DatabaseServiceIPCDescriptor, type IDatabaseService } from '@services/database/interface';
+import { DeepLinkServiceIPCDescriptor, type IDeepLinkService } from '@services/deepLink/interface';
+import { GitServiceIPCDescriptor, type IGitService } from '@services/git/interface';
+import { type IMemeloopNodeService, MemeloopNodeServiceIPCDescriptor } from '@services/memeloopNode/interface';
+import { type IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
+import { type INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';
+import { type INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
+import { type IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/preferences/interface';
+import { type IProviderRegistryService, ProviderRegistryServiceIPCDescriptor } from '@services/providerRegistry/interface';
+import { type IRemoteTerminalService, RemoteTerminalServiceIPCDescriptor } from '@services/remoteTerminal/interface';
+import { type ISyncService, SyncServiceIPCDescriptor } from '@services/sync/interface';
+import { type ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences/interface';
+import { type IThemeService, ThemeServiceIPCDescriptor } from '@services/theme/interface';
+import { type IToolPermissionsService, ToolPermissionsServiceIPCDescriptor } from '@services/toolPermissions/interface';
+import { type IUpdaterService, UpdaterServiceIPCDescriptor } from '@services/updater/interface';
+import { type IViewService, ViewServiceIPCDescriptor } from '@services/view/interface';
+import { type IWikiService, WikiServiceIPCDescriptor } from '@services/wiki/interface';
+import { type IWikiEmbeddingService, WikiEmbeddingServiceIPCDescriptor } from '@services/wikiEmbedding/interface';
+import { type IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
+import { type IWindowService, WindowServiceIPCDescriptor } from '@services/windows/interface';
+import { type IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
+import { type IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
 export const agentBrowser = createProxy<AsyncifyProxy<IAgentBrowserService>>(
   AgentBrowserServiceIPCDescriptor,
