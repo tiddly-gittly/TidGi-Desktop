@@ -1,7 +1,7 @@
-import http from 'node:http';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Observable } from 'rxjs';
 import type { GitHTTPResponseChunk, IGitServerService } from '@services/gitServer/interface';
+import http from 'node:http';
+import { Observable } from 'rxjs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock inversify container to provide test doubles
 const mockGitServerService: IGitServerService = {

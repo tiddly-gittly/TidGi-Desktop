@@ -3,9 +3,9 @@
  * are consistent with the interface definition. This ensures the IPC proxy
  * will correctly forward all methods from the renderer to the main process.
  */
-import { describe, expect, it } from 'vitest';
-import { MemeloopNodeServiceIPCDescriptor } from '@/services/memeloopNode/interface';
 import { serviceInstances } from '@/__tests__/__mocks__/services-container';
+import { MemeloopNodeServiceIPCDescriptor } from '@/services/memeloopNode/interface';
+import { describe, expect, it } from 'vitest';
 
 describe('MemeloopNode IPC surface', () => {
   const descriptorProps = Object.keys(MemeloopNodeServiceIPCDescriptor.properties);

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
 import { allSections } from '@services/preferences/definitions/registry';
-import { syncableConfigFields, syncableConfigDefaultValues } from '@services/workspaces/syncableConfig';
+import { syncableConfigDefaultValues, syncableConfigFields } from '@services/workspaces/syncableConfig';
+import { describe, expect, it } from 'vitest';
 
 describe('allSections registration', () => {
   it('does not contain removed wikiSync section', () => {
