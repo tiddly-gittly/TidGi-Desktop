@@ -1,21 +1,21 @@
-import fs from "fs-extra";
-import { CloudClient } from "memeloop-node";
-import { spawn } from "node:child_process";
-import path from "path";
-import type { ApplicationWorld } from "../stepDefinitions/application";
-import { getTestArtifactsPath } from "./paths";
+import fs from 'fs-extra';
+import { CloudClient } from 'memeloop-node';
+import { spawn } from 'node:child_process';
+import path from 'path';
+import type { ApplicationWorld } from '../stepDefinitions/application';
+import { getTestArtifactsPath } from './paths';
 
 const CLOUD_PORT = 43115;
 const CLOUD_SERVER_READY_RETRIES = 60;
 const CLOUD_SERVER_READY_DELAY_MS = 250;
 
 export const CLOUD_E2E_USER = {
-  email: "cloud-e2e@example.com",
-  password: "cloud-pass-123",
+  email: 'cloud-e2e@example.com',
+  password: 'cloud-pass-123',
 } as const;
 
 export const CLOUD_E2E_NODE = {
-  name: "remote-e2e-node",
+  name: 'remote-e2e-node',
 } as const;
 
 export interface MemeloopCloudFixtureHandle {
@@ -26,23 +26,23 @@ export interface MemeloopCloudFixtureHandle {
 }
 
 function readJsonObject(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null
+  return typeof value === 'object' && value !== null
     ? (value as Record<string, unknown>)
     : {};
 }
 
 function readString(value: unknown): string | null {
-  return typeof value === "string" && value.trim().length > 0 ? value : null;
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
 }
 
 function decodeJwtPayload(token: string): Record<string, unknown> {
-  const parts = token.split(".");
+  const parts = token.split('.');
   if (parts.length < 2) {
-    throw new Error("Failed to decode cloud access token payload.");
+    throw new Error('Failed to decode cloud access token payload.');
   }
 
   return readJsonObject(
-    JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8")) as unknown,
+    JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')) as unknown,
   );
 }
 
@@ -56,10 +56,10 @@ function buildCloudServerEnvironment(databasePath: string): NodeJS.ProcessEnv {
   const environment: NodeJS.ProcessEnv = {
     ...process.env,
     DATABASE_URL: `sqlite:${databasePath}`,
-    JWT_SECRET: "memeloop-cloud-e2e-secret-32-characters",
-    NODE_ENV: "test",
+    JWT_SECRET: 'memeloop-cloud-e2e-secret-32-characters',
+    NODE_ENV: 'test',
     PORT: String(CLOUD_PORT),
-    HOST: "127.0.0.1",
+    HOST: '127.0.0.1',
   };
 
   delete environment.MEMELOOP_REQUIRE_JWT_SECRET;
@@ -76,7 +76,7 @@ async function waitForCloudServerReady(
   for (let attempt = 0; attempt < CLOUD_SERVER_READY_RETRIES; attempt++) {
     if (childProcess.exitCode !== null) {
       throw new Error(
-        `memeloop-cloud fixture exited early with code ${childProcess.exitCode}. stderr: ${logs.stderr.join("")}`,
+        `memeloop-cloud fixture exited early with code ${childProcess.exitCode}. stderr: ${logs.stderr.join('')}`,
       );
     }
 
@@ -93,15 +93,15 @@ async function waitForCloudServerReady(
   }
 
   throw new Error(
-    `Timed out waiting for memeloop-cloud fixture at ${baseUrl}. stdout: ${logs.stdout.join("")} stderr: ${logs.stderr.join("")}`,
+    `Timed out waiting for memeloop-cloud fixture at ${baseUrl}. stdout: ${logs.stdout.join('')} stderr: ${logs.stderr.join('')}`,
   );
 }
 
 async function ensureCloudE2EUser(baseUrl: string): Promise<void> {
   const response = await fetch(`${baseUrl}/api/auth/register`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       email: CLOUD_E2E_USER.email,
@@ -116,10 +116,9 @@ async function ensureCloudE2EUser(baseUrl: string): Promise<void> {
   const payload = (await response.json().catch(() => null)) as {
     error?: unknown;
   } | null;
-  const errorMessage =
-    typeof payload?.error === "string" ? payload.error : null;
+  const errorMessage = typeof payload?.error === 'string' ? payload.error : null;
 
-  if (response.status === 400 && errorMessage === "email_already_exists") {
+  if (response.status === 400 && errorMessage === 'email_already_exists') {
     return;
   }
 
@@ -133,9 +132,9 @@ async function loginCloudE2EUser(baseUrl: string): Promise<{
   userId: string;
 }> {
   const response = await fetch(`${baseUrl}/api/auth/login`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       email: CLOUD_E2E_USER.email,
@@ -150,14 +149,14 @@ async function loginCloudE2EUser(baseUrl: string): Promise<{
   const payload = readJsonObject((await response.json()) as unknown);
   const accessToken = readString(payload.accessToken);
   if (!accessToken) {
-    throw new Error("Failed to login cloud e2e user: missing access token.");
+    throw new Error('Failed to login cloud e2e user: missing access token.');
   }
 
   const jwtPayload = decodeJwtPayload(accessToken);
   const userId = readString(jwtPayload.userId);
   if (!userId) {
     throw new Error(
-      "Failed to login cloud e2e user: missing userId in access token.",
+      'Failed to login cloud e2e user: missing userId in access token.',
     );
   }
 
@@ -169,7 +168,7 @@ async function requestCloudNodeOtp(
   accessToken: string,
 ): Promise<string> {
   const response = await fetch(`${baseUrl}/api/nodes/otp`, {
-    method: "POST",
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -184,7 +183,7 @@ async function requestCloudNodeOtp(
   const payload = readJsonObject((await response.json()) as unknown);
   const otp = readString(payload.otp);
   if (!otp) {
-    throw new Error("Failed to request cloud node OTP: missing otp.");
+    throw new Error('Failed to request cloud node OTP: missing otp.');
   }
 
   return otp;
@@ -203,21 +202,21 @@ async function registerCloudDiscoveredNode(
 
   if (!nodeId || !nodeSecret) {
     throw new Error(
-      "Failed to register cloud-discovered node: missing node credentials.",
+      'Failed to register cloud-discovered node: missing node credentials.',
     );
   }
 
   const jwtResult = await cloudClient.getJwt(nodeId, nodeSecret);
   const nodeAccessToken = readString(jwtResult.accessToken);
   if (!nodeAccessToken) {
-    throw new Error("Failed to exchange cloud node JWT: missing access token.");
+    throw new Error('Failed to exchange cloud node JWT: missing access token.');
   }
 
   await cloudClient.registerNode(
     {
       nodeId,
       name: CLOUD_E2E_NODE.name,
-      publicIP: "127.0.0.1",
+      publicIP: '127.0.0.1',
       port: options.remoteNodePort,
     },
     nodeAccessToken,
@@ -234,8 +233,8 @@ export async function startMemeloopCloudFixture(
   },
 ): Promise<MemeloopCloudFixtureHandle> {
   const scenarioRoot = getTestArtifactsPath(world);
-  const cloudDirectory = path.resolve(scenarioRoot, "memeloop-cloud");
-  const databasePath = path.resolve(cloudDirectory, "memeloop-cloud.sqlite");
+  const cloudDirectory = path.resolve(scenarioRoot, 'memeloop-cloud');
+  const databasePath = path.resolve(cloudDirectory, 'memeloop-cloud.sqlite');
   const baseUrl = `http://127.0.0.1:${CLOUD_PORT}`;
   const logs = { stdout: [] as string[], stderr: [] as string[] };
 
@@ -244,17 +243,17 @@ export async function startMemeloopCloudFixture(
 
   const serverEntryPath = path.resolve(
     __dirname,
-    "../../../memeloop-cloud/packages/memeloop-cloud/dist/server.js",
+    '../../../memeloop-cloud/packages/memeloop-cloud/dist/server.js',
   );
   const childProcess = spawn(process.execPath, [serverEntryPath], {
     env: buildCloudServerEnvironment(databasePath),
-    stdio: "pipe",
+    stdio: 'pipe',
   });
 
-  childProcess.stdout.on("data", (chunk: Buffer | string) => {
+  childProcess.stdout.on('data', (chunk: Buffer | string) => {
     logs.stdout.push(String(chunk));
   });
-  childProcess.stderr.on("data", (chunk: Buffer | string) => {
+  childProcess.stderr.on('data', (chunk: Buffer | string) => {
     logs.stderr.push(String(chunk));
   });
 
@@ -280,7 +279,7 @@ export async function startMemeloopCloudFixture(
         childProcess.kill();
         await Promise.race([
           new Promise<void>((resolve) => {
-            childProcess.once("exit", () => {
+            childProcess.once('exit', () => {
               resolve();
             });
           }),
