@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { container } from '@services/container';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
+import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { describe, expect, it } from 'vitest';
 
 describe('AgentInstanceService worker cleanup', () => {
   it('cleans reverse worker conversation mapping when a single worker conversation is cleaned up', () => {

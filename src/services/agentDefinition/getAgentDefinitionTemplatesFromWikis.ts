@@ -1,4 +1,5 @@
 import { WikiChannel } from '@/constants/channels';
+import { DEFAULT_AGENT_FRAMEWORK_ID } from '@services/agentInstance/defaultAgentFrameworkId';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -6,7 +7,6 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
-import { DEFAULT_AGENT_FRAMEWORK_ID } from '@services/agentInstance/defaultAgentFrameworkId';
 import { AgentDefinition, AgentToolConfig } from './interface';
 
 /**

@@ -6,10 +6,10 @@
  * 2. Frontend IPC proxy correctness (MemeloopNode → worker → runtime)
  * 3. Bidirectional mapping integrity during conversation lifecycle
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { container } from '@services/container';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
+import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type WorkerInternals = {
   memeLoopNativeWorker?: { terminate: () => Promise<void>; postMessage: (msg: unknown) => void };
