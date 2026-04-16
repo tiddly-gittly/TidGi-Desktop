@@ -1,9 +1,9 @@
+import type { ExtendedFormContext as MemeloopExtendedFormContext } from '@memeloop/prompt-editor/web';
 import { Box, CircularProgress, Paper, Typography } from '@mui/material';
 import { IChangeEvent } from '@rjsf/core';
 import Form, { Theme } from '@rjsf/mui';
 import { ObjectFieldTemplateProps, RJSFSchema, RJSFValidationError } from '@rjsf/utils';
 import validator from '@rjsf/validator-ajv8';
-import type { ExtendedFormContext as MemeloopExtendedFormContext } from '@memeloop/prompt-editor/web';
 
 /** Same as `@memeloop/prompt-editor/web` Theme defaults; use local Theme so bundler resolves one @rjsf/mui + React. */
 const baseTemplates = Theme.templates ?? {};
