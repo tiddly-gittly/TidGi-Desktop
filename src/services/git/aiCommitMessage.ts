@@ -1,8 +1,8 @@
 import { container } from '@services/container';
-import { waitForAIStreamResult } from '@services/providerRegistry/waitForAIStreamResult';
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { IProviderRegistryService } from '@services/providerRegistry/interface';
+import { waitForAIStreamResult } from '@services/providerRegistry/waitForAIStreamResult';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { exec as gitExec } from 'dugite';
 import * as fs from 'node:fs/promises';

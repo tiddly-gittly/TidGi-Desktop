@@ -10,9 +10,9 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { firstValueFrom, toArray } from 'rxjs';
 import { z } from 'zod/v4';
+import { terminalSessionManager } from '../terminal/sessionManager';
 import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
 import { registerWorkerBridgeTool } from './workerToolBridge';
-import { terminalSessionManager } from '../terminal/sessionManager';
 
 export const ZxScriptParameterSchema = z.object({
   toolListPosition: z.object({
@@ -137,8 +137,7 @@ async function executeTerminalExecute(
 
     const timeout = timeoutMs ?? defaultTimeoutMs;
     const wait = waitMode ?? 'until-timeout';
-    const promptRegexes =
-      promptPatterns?.map((p) => ({ name: p.name, regex: safeParseRegExp(p.regex) })).filter((x) => x.regex) ??
+    const promptRegexes = promptPatterns?.map((p) => ({ name: p.name, regex: safeParseRegExp(p.regex) })).filter((x) => x.regex) ??
       [];
 
     // Add a generic fallback prompt detection if user doesn't specify.

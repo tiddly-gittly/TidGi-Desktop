@@ -1,22 +1,19 @@
-import { DatabaseChannel } from "@/constants/channels";
-import type { IUserInfos } from "@services/auth/interface";
-import { AIGlobalSettings } from "@services/providerRegistry/interface";
-import type { IPreferences } from "@services/preferences/interface";
-import type { IToolPermissionEntry } from "@services/toolPermissions/interface";
-import type {
-  ISyncableWikiConfig,
-  IWorkspace,
-} from "@services/workspaces/interface";
-import { ProxyPropertyType } from "electron-ipc-cat/common";
-import { DataSource } from "typeorm";
+import { DatabaseChannel } from '@/constants/channels';
+import type { IUserInfos } from '@services/auth/interface';
+import type { IPreferences } from '@services/preferences/interface';
+import { AIGlobalSettings } from '@services/providerRegistry/interface';
+import type { IToolPermissionEntry } from '@services/toolPermissions/interface';
+import type { ISyncableWikiConfig, IWorkspace } from '@services/workspaces/interface';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import { DataSource } from 'typeorm';
 
 export interface ISettingFile {
   preferences: IPreferences;
   userInfos: IUserInfos;
   workspaces: Record<string, IWorkspace>;
   aiSettings?: AIGlobalSettings;
-  "toolPermissions.blacklist"?: IToolPermissionEntry[];
-  "toolPermissions.whitelist"?: IToolPermissionEntry[];
+  'toolPermissions.blacklist'?: IToolPermissionEntry[];
+  'toolPermissions.whitelist'?: IToolPermissionEntry[];
 }
 
 /**
