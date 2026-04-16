@@ -1,22 +1,22 @@
-import type { HunspellLanguages } from "@/constants/hunspellLanguages";
-import { z } from "zod";
-import { aiAgentSection } from "./aiAgent";
-import { aiModelsSection } from "./aiModels";
-import { developersSection } from "./developers";
-import { downloadsSection } from "./downloads";
-import { externalAPISection } from "./externalAPI";
-import { friendLinksSection } from "./friendLinks";
-import { generalSection } from "./general";
-import { languagesSection } from "./languages";
-import { miscSection } from "./misc";
-import { networkSection } from "./network";
-import { notificationsSection } from "./notifications";
-import { performanceSection } from "./performance";
-import { privacySection } from "./privacy";
-import { searchSection } from "./search";
-import { syncSection } from "./sync";
-import { systemSection } from "./system";
-import { tidgiMiniWindowSection } from "./tidgiMiniWindow";
+import type { HunspellLanguages } from '@/constants/hunspellLanguages';
+import { z } from 'zod';
+import { aiAgentSection } from './aiAgent';
+import { aiModelsSection } from './aiModels';
+import { developersSection } from './developers';
+import { downloadsSection } from './downloads';
+import { externalAPISection } from './externalAPI';
+import { friendLinksSection } from './friendLinks';
+import { generalSection } from './general';
+import { languagesSection } from './languages';
+import { miscSection } from './misc';
+import { networkSection } from './network';
+import { notificationsSection } from './notifications';
+import { performanceSection } from './performance';
+import { privacySection } from './privacy';
+import { searchSection } from './search';
+import { syncSection } from './sync';
+import { systemSection } from './system';
+import { tidgiMiniWindowSection } from './tidgiMiniWindow';
 import type {
   IBooleanPreferenceItem,
   IEnumPreferenceItem,
@@ -25,9 +25,9 @@ import type {
   IStringArrayPreferenceItem,
   IStringPreferenceItem,
   PreferenceItemDefinition,
-} from "./types";
-import { updatesSection } from "./updates";
-import { wikiSection } from "./wiki";
+} from './types';
+import { updatesSection } from './updates';
+import { wikiSection } from './wiki';
 
 /**
  * Ordered list of all sections. Display order matches array order.
@@ -72,7 +72,7 @@ export type PreferenceItem =
 export function isPreferenceItem(
   item: PreferenceItemDefinition,
 ): item is PreferenceItem {
-  return item.type.startsWith("preference-");
+  return item.type.startsWith('preference-');
 }
 
 /**
