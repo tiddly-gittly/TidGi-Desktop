@@ -8,8 +8,8 @@ import { Box, Chip, Divider, List } from '@mui/material';
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { useUserInfoObservable } from '@services/auth/hooks';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
-import { isWikiWorkspace } from '@services/workspaces/interface';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import { ListItemVertical, Paper, SectionTitle, TextField } from '../PreferenceComponents';
 
 function LocalWikiSyncStatus(): React.JSX.Element {
@@ -37,18 +37,16 @@ function LocalWikiSyncStatus(): React.JSX.Element {
             return (
               <Box key={ws.id}>
                 <ListItem
-                  secondaryAction={
-                    registered
-                      ? <Chip label={t('Preference.WikiSync.MobileSyncActive')} color="success" size="small" variant="outlined" />
-                      : <Chip label={t('Preference.WikiSync.MobileSyncInactive')} size="small" variant="outlined" />
-                  }
+                  secondaryAction={registered
+                    ? <Chip label={t('Preference.WikiSync.MobileSyncActive')} color='success' size='small' variant='outlined' />
+                    : <Chip label={t('Preference.WikiSync.MobileSyncInactive')} size='small' variant='outlined' />}
                 >
                   <ListItemText
                     primary={ws.name || ws.id}
                     secondary={isWikiWorkspace(ws) ? ws.wikiFolderLocation : undefined}
                   />
                 </ListItem>
-                <Divider component="li" />
+                <Divider component='li' />
               </Box>
             );
           })}

@@ -53,8 +53,7 @@ export const useAgentFrameworkConfigManagement = ({ agentDefId, agentId }: useAg
           agentFrameworkID = agentDefinition?.agentFrameworkID;
         }
 
-        const resolvedFrameworkId =
-          agentFrameworkID ?? (agentId || agentDefId ? DEFAULT_AGENT_FRAMEWORK_ID : undefined);
+        const resolvedFrameworkId = agentFrameworkID ?? (agentId || agentDefId ? DEFAULT_AGENT_FRAMEWORK_ID : undefined);
         if (resolvedFrameworkId) {
           try {
             const frameworkSchema = await window.service.agentInstance.getFrameworkConfigSchema(resolvedFrameworkId);
