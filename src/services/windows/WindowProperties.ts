@@ -1,50 +1,50 @@
-import type { CreateWorkspaceTabs } from "@/windows/AddWorkspace/constants";
-import type { PreferenceSections } from "@services/preferences/interface";
-import { IWorkspace } from "@services/workspaces/interface";
+import type { CreateWorkspaceTabs } from '@/windows/AddWorkspace/constants';
+import type { PreferenceSections } from '@services/preferences/interface';
+import { IWorkspace } from '@services/workspaces/interface';
 
 export enum WindowNames {
-  about = "about",
-  addWorkspace = "addWorkspace",
+  about = 'about',
+  addWorkspace = 'addWorkspace',
   /**
    * Open any website URL, this is a popup window that user can open a help resource.
    */
-  any = "any",
-  auth = "auth",
-  editWorkspace = "editWorkspace",
+  any = 'any',
+  auth = 'auth',
+  editWorkspace = 'editWorkspace',
   /**
    * Git history viewer window
    */
-  gitHistory = "gitHistory",
+  gitHistory = 'gitHistory',
   /**
    * Window with workspace list and new wiki button on left side bar
    * We only have a single instance of main window, that is the app window.
    */
-  main = "main",
-  tidgiMiniWindow = "tidgiMiniWindow",
-  notifications = "notifications",
-  preferences = "preferences",
+  main = 'main',
+  tidgiMiniWindow = 'tidgiMiniWindow',
+  notifications = 'notifications',
+  preferences = 'preferences',
   /**
    * Remote terminal viewer window
    */
-  remoteTerminal = "remoteTerminal",
+  remoteTerminal = 'remoteTerminal',
   /**
    * Node management window for discovered/connected nodes
    */
-  nodeManagement = "nodeManagement",
+  nodeManagement = 'nodeManagement',
   /**
    * Subscription management window for memeloop cloud
    */
-  subscription = "subscription",
+  subscription = 'subscription',
   /**
    * Second wiki window in a popup window.
    */
-  secondary = "secondary",
-  spellcheck = "spellcheck",
+  secondary = 'secondary',
+  spellcheck = 'spellcheck',
   /**
    * browserView that loads the wiki webpage
    * We will have multiple view window, each main workspace will have one.
    */
-  view = "view",
+  view = 'view',
 }
 
 /**
