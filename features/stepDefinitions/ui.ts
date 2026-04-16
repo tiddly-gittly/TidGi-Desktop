@@ -1,412 +1,631 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
+import fs from 'fs';
+import path from 'path';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getWikiTestRootPath } from '../supports/paths';
 import { PLAYWRIGHT_SHORT_TIMEOUT, PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
+const UI_BACKOFF_OPTIONS = {
+  numOfAttempts: 15,
+  startingDelay: 200,
+  timeMultiple: 1,
+  maxDelay: 200,
+};
+
 When('I wait for {float} seconds', async function(seconds: number) {
-  await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+  await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 });
 
 /**
  * Wait with a reason for documentation and debugging
  * The reason parameter is used in the Gherkin feature file for documentation purposes
  */
-When('I wait for {float} seconds for {string}', async function(seconds: number, _reason: string) {
-  await new Promise(resolve => setTimeout(resolve, seconds * 1000));
-});
+When(
+  'I wait for {float} seconds for {string}',
+  async function(seconds: number, _reason: string) {
+    await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+  },
+);
 
-When('I wait for the page to load completely', async function(this: ApplicationWorld) {
-  if (this.appLaunchPromise) {
-    try {
-      await this.appLaunchPromise;
-    } catch (error) {
-      throw new Error(
-        `Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run test:prepare-e2e\` before running the tests to ensure the app is built, and build with binaries like "dugite" and "tiddlywiki", see scripts/afterPack.js for more details.`,
-      );
-    } finally {
-      this.appLaunchPromise = undefined;
-    }
-  }
-
-  let currentWindow = this.currentWindow;
-  if ((!currentWindow || currentWindow.isClosed()) && this.app) {
-    currentWindow = await this.app.firstWindow({ timeout: PLAYWRIGHT_TIMEOUT });
-    this.mainWindow = this.mainWindow ?? currentWindow;
-    this.currentWindow = currentWindow;
-  }
-  await currentWindow?.waitForLoadState('domcontentloaded', { timeout: PLAYWRIGHT_TIMEOUT });
-  // Short networkidle gives workspace-creation and other startup IPC time to finish
-  // without blocking on long-lived connections. 3s is intentionally different from
-  // PLAYWRIGHT_TIMEOUT — this is just a grace period, not a hard requirement.
-  try {
-    await currentWindow?.waitForLoadState('networkidle', { timeout: 3000 });
-  } catch {
-    // Ignore – DOM is already ready.
-  }
-});
-
-Then('I should see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  let currentWindow = this.currentWindow;
-  if ((!currentWindow || currentWindow.isClosed()) && this.app) {
-    currentWindow = await this.app.firstWindow({ timeout: PLAYWRIGHT_SHORT_TIMEOUT });
-    this.mainWindow = this.mainWindow ?? currentWindow;
-    this.currentWindow = currentWindow;
-  }
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
-
-  try {
-    await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
-    const isVisible = await currentWindow.isVisible(selector);
-    if (!isVisible) {
-      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
-    }
-  } catch (error) {
-    throw new Error(`Failed to find ${elementComment} with selector "${selector}": ${error as Error}`);
-  }
-});
-
-Then('I should see {string} elements with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
-  const currentWindow = this.currentWindow;
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
-
-  const rows = dataTable.raw();
-  const dataRows = parseDataTableRows(rows, 2);
-  const errors: string[] = [];
-
-  if (dataRows[0]?.length !== 2) {
-    throw new Error('Table must have exactly 2 columns: | element description | selector |');
-  }
-
-  // Check all elements in parallel for better performance
-  // Keep this below cucumber step timeout so we can report which selector missed.
-  const ELEMENT_CHECK_TIMEOUT_MS = 20_000;
-  await Promise.all(dataRows.map(async ([elementComment, selector]) => {
-    try {
-      await currentWindow.waitForSelector(selector, { timeout: ELEMENT_CHECK_TIMEOUT_MS });
-      const isVisible = await currentWindow.isVisible(selector);
-      if (!isVisible) {
-        errors.push(`Element "${elementComment}" with selector "${selector}" is not visible`);
-      }
-    } catch (error) {
-      errors.push(`Failed to find "${elementComment}" with selector "${selector}": ${error as Error}`);
-    }
-  }));
-
-  if (errors.length > 0) {
-    throw new Error(`Failed to find elements:\n${errors.join('\n')}`);
-  }
-});
-
-Then('I should not see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  const currentWindow = this.currentWindow;
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
-  try {
-    const element = currentWindow.locator(selector).first();
-    // Wait for element to be hidden/detached (handles race conditions after state changes)
-    await element.waitFor({ state: 'hidden', timeout: PLAYWRIGHT_TIMEOUT });
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('timeout')) {
-      // Element still visible after timeout — get parent HTML for debugging
-      let parentHtml = '';
+When(
+  'I wait for the page to load completely',
+  async function(this: ApplicationWorld) {
+    if (this.appLaunchPromise) {
       try {
-        const element = currentWindow.locator(selector).first();
-        const parent = element.locator('xpath=..');
-        parentHtml = await parent.evaluate((node) => node.outerHTML);
-      } catch {
-        parentHtml = 'Failed to get parent HTML';
+        await this.appLaunchPromise;
+      } catch (error) {
+        throw new Error(
+          `Failed to launch TidGi application: ${error as Error}. You should run \`pnpm run test:prepare-e2e\` before running the tests to ensure the app is built, and build with binaries like "dugite" and "tiddlywiki", see scripts/afterPack.js for more details.`,
+        );
+      } finally {
+        this.appLaunchPromise = undefined;
       }
+    }
+
+    let currentWindow = this.currentWindow;
+    if ((!currentWindow || currentWindow.isClosed()) && this.app) {
+      currentWindow = await this.app.firstWindow({
+        timeout: PLAYWRIGHT_TIMEOUT,
+      });
+      this.mainWindow = this.mainWindow ?? currentWindow;
+      this.currentWindow = currentWindow;
+    }
+    await currentWindow?.waitForLoadState('domcontentloaded', {
+      timeout: PLAYWRIGHT_TIMEOUT,
+    });
+    // Short networkidle gives workspace-creation and other startup IPC time to finish
+    // without blocking on long-lived connections. 3s is intentionally different from
+    // PLAYWRIGHT_TIMEOUT — this is just a grace period, not a hard requirement.
+    try {
+      await currentWindow?.waitForLoadState('networkidle', { timeout: 3000 });
+    } catch {
+      // Ignore – DOM is already ready.
+    }
+
+    const scenarioLogsDirectory = path.resolve(
+      process.cwd(),
+      'test-artifacts',
+      this.scenarioSlug,
+      'userData-test',
+      'logs',
+    );
+    const readyMarker = '[test-id-ALL_WORKSPACE_VIEW_INITIALIZED] All workspace views initialized';
+
+    await backOff(
+      async () => {
+        if (!fs.existsSync(scenarioLogsDirectory)) {
+          throw new Error(
+            `Logs directory not found yet: ${scenarioLogsDirectory}`,
+          );
+        }
+
+        const logFiles = fs
+          .readdirSync(scenarioLogsDirectory)
+          .filter((fileName) => fileName.endsWith('.log'));
+        if (logFiles.length === 0) {
+          throw new Error('No log files available yet');
+        }
+
+        const hasReadyMarker = logFiles.some((fileName) => {
+          try {
+            const content = fs.readFileSync(
+              path.join(scenarioLogsDirectory, fileName),
+              'utf8',
+            );
+            return content.includes(readyMarker);
+          } catch {
+            return false;
+          }
+        });
+
+        if (!hasReadyMarker) {
+          throw new Error(
+            'Workspace initialization marker not found in logs yet',
+          );
+        }
+      },
+      {
+        numOfAttempts: 25,
+        startingDelay: 200,
+        timeMultiple: 1,
+        maxDelay: 200,
+        delayFirstAttempt: true,
+      },
+    ).catch(() => {
+      // The marker is useful when startup fully settles before the step returns,
+      // but packaged test boot can still finish that async tail slightly later.
+      // Subsequent selector-based assertions remain the authoritative readiness check.
+    });
+  },
+);
+
+Then(
+  'I should see a(n) {string} element with selector {string}',
+  async function(
+    this: ApplicationWorld,
+    elementComment: string,
+    selector: string,
+  ) {
+    await backOff(async () => {
+      let currentWindow = this.currentWindow;
+      if ((!currentWindow || currentWindow.isClosed()) && this.app) {
+        currentWindow = await this.app.firstWindow({
+          timeout: PLAYWRIGHT_SHORT_TIMEOUT,
+        });
+        this.mainWindow = this.mainWindow ?? currentWindow;
+        this.currentWindow = currentWindow;
+      }
+      if (!currentWindow) {
+        throw new Error('No current window is available');
+      }
+
+      const element = await currentWindow.$(selector);
+      if (!element) {
+        throw new Error('Element not found yet');
+      }
+      const isVisible = await element.isVisible();
+      if (!isVisible) {
+        throw new Error(
+          `Element "${elementComment}" with selector "${selector}" is not visible`,
+        );
+      }
+    }, UI_BACKOFF_OPTIONS).catch((error: unknown) => {
       throw new Error(
-        `Element "${elementComment}" with selector "${selector}" should not be visible but was found\n` +
-          `Parent element HTML:\n${parentHtml}`,
+        `Failed to find ${elementComment} with selector "${selector}": ${error as Error}`,
+      );
+    });
+  },
+);
+
+Then(
+  'I should see {string} elements with selectors:',
+  async function(
+    this: ApplicationWorld,
+    _elementDescriptions: string,
+    dataTable: DataTable,
+  ) {
+    const currentWindow = this.currentWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
+    }
+
+    const rows = dataTable.raw();
+    const dataRows = parseDataTableRows(rows, 2);
+    const errors: string[] = [];
+
+    if (dataRows[0]?.length !== 2) {
+      throw new Error(
+        'Table must have exactly 2 columns: | element description | selector |',
       );
     }
-    // Other errors (element not in DOM at all) are expected — pass
-  }
-});
 
-Then('I should not see {string} elements with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
-  const currentWindow = this.currentWindow;
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
+    // Check all elements in parallel for better performance
+    // Keep this below cucumber step timeout so we can report which selector missed.
+    const ELEMENT_CHECK_TIMEOUT_MS = 20_000;
+    await Promise.all(
+      dataRows.map(async ([elementComment, selector]) => {
+        try {
+          await currentWindow.waitForSelector(selector, {
+            timeout: ELEMENT_CHECK_TIMEOUT_MS,
+          });
+          const isVisible = await currentWindow.isVisible(selector);
+          if (!isVisible) {
+            errors.push(
+              `Element "${elementComment}" with selector "${selector}" is not visible`,
+            );
+          }
+        } catch (error) {
+          errors.push(
+            `Failed to find "${elementComment}" with selector "${selector}": ${error as Error}`,
+          );
+        }
+      }),
+    );
 
-  const rows = dataTable.raw();
-  const dataRows = parseDataTableRows(rows, 2);
+    if (errors.length > 0) {
+      throw new Error(`Failed to find elements:\n${errors.join('\n')}`);
+    }
+  },
+);
 
-  if (dataRows[0]?.length !== 2) {
-    throw new Error('Table must have exactly 2 columns: | element description | selector |');
-  }
-
-  // Retry to allow UI time to update after state changes
-  await backOff(
-    async () => {
-      const errors: string[] = [];
-      for (const [elementComment, selector] of dataRows) {
+Then(
+  'I should not see a(n) {string} element with selector {string}',
+  async function(
+    this: ApplicationWorld,
+    elementComment: string,
+    selector: string,
+  ) {
+    const currentWindow = this.currentWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
+    }
+    try {
+      const element = currentWindow.locator(selector).first();
+      // Wait for element to be hidden/detached (handles race conditions after state changes)
+      await element.waitFor({ state: 'hidden', timeout: PLAYWRIGHT_TIMEOUT });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('timeout')) {
+        // Element still visible after timeout — get parent HTML for debugging
+        let parentHtml = '';
         try {
           const element = currentWindow.locator(selector).first();
-          const count = await element.count();
-          if (count > 0) {
-            const isVisible = await element.isVisible();
-            if (isVisible) {
-              errors.push(`Element "${elementComment}" with selector "${selector}" should not be visible but was found`);
-            }
-          }
+          const parent = element.locator('xpath=..');
+          parentHtml = await parent.evaluate((node) => node.outerHTML);
         } catch {
-          // Element not found is expected
+          parentHtml = 'Failed to get parent HTML';
         }
+        throw new Error(
+          `Element "${elementComment}" with selector "${selector}" should not be visible but was found\n` +
+            `Parent element HTML:\n${parentHtml}`,
+        );
       }
-      if (errors.length > 0) {
-        throw new Error(`Failed to verify elements are not visible:\n${errors.join('\n')}`);
-      }
-    },
-    {
-      numOfAttempts: 10,
-      startingDelay: 300,
-      timeMultiple: 1,
-      maxDelay: 300,
-    },
-  );
-});
-
-When('I click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  const targetWindow = await this.getWindow('current');
-
-  if (!targetWindow) {
-    throw new Error(`Window "current" is not available`);
-  }
-
-  try {
-    await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
-    const isVisible = await targetWindow.isVisible(selector);
-    if (!isVisible) {
-      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
+      // Other errors (element not in DOM at all) are expected — pass
     }
-    await targetWindow.click(selector);
-  } catch (error) {
-    throw new Error(`Failed to find and click ${elementComment} with selector "${selector}" in current window: ${error as Error}`);
-  }
-});
+  },
+);
 
-When('I click on {string} elements with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
-  const targetWindow = await this.getWindow('current');
+Then(
+  'I should not see {string} elements with selectors:',
+  async function(
+    this: ApplicationWorld,
+    _elementDescriptions: string,
+    dataTable: DataTable,
+  ) {
+    const currentWindow = this.currentWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
+    }
 
-  if (!targetWindow) {
-    throw new Error('Window "current" is not available');
-  }
+    const rows = dataTable.raw();
+    const dataRows = parseDataTableRows(rows, 2);
 
-  const rows = dataTable.raw();
-  const dataRows = parseDataTableRows(rows, 2);
-  const errors: string[] = [];
+    if (dataRows[0]?.length !== 2) {
+      throw new Error(
+        'Table must have exactly 2 columns: | element description | selector |',
+      );
+    }
 
-  if (dataRows[0]?.length !== 2) {
-    throw new Error('Table must have exactly 2 columns: | element description | selector |');
-  }
+    // Retry to allow UI time to update after state changes
+    await backOff(
+      async () => {
+        const errors: string[] = [];
+        for (const [elementComment, selector] of dataRows) {
+          try {
+            const element = currentWindow.locator(selector).first();
+            const count = await element.count();
+            if (count > 0) {
+              const isVisible = await element.isVisible();
+              if (isVisible) {
+                errors.push(
+                  `Element "${elementComment}" with selector "${selector}" should not be visible but was found`,
+                );
+              }
+            }
+          } catch {
+            // Element not found is expected
+          }
+        }
+        if (errors.length > 0) {
+          throw new Error(
+            `Failed to verify elements are not visible:\n${errors.join('\n')}`,
+          );
+        }
+      },
+      {
+        numOfAttempts: 10,
+        startingDelay: 300,
+        timeMultiple: 1,
+        maxDelay: 300,
+      },
+    );
+  },
+);
 
-  // Click elements sequentially (not in parallel) to maintain order and avoid race conditions
-  for (const [elementComment, selector] of dataRows) {
+When(
+  'I click on a(n) {string} element with selector {string}',
+  async function(
+    this: ApplicationWorld,
+    elementComment: string,
+    selector: string,
+  ) {
+    const targetWindow = await this.getWindow('current');
+
+    if (!targetWindow) {
+      throw new Error(`Window "current" is not available`);
+    }
+
     try {
-      await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+      await targetWindow.waitForSelector(selector, {
+        timeout: PLAYWRIGHT_TIMEOUT,
+      });
       const isVisible = await targetWindow.isVisible(selector);
       if (!isVisible) {
-        errors.push(`Element "${elementComment}" with selector "${selector}" is not visible`);
-        continue;
+        throw new Error(
+          `Element "${elementComment}" with selector "${selector}" is not visible`,
+        );
       }
       await targetWindow.click(selector);
     } catch (error) {
-      errors.push(`Failed to find and click "${elementComment}" with selector "${selector}": ${error as Error}`);
+      throw new Error(
+        `Failed to find and click ${elementComment} with selector "${selector}" in current window: ${error as Error}`,
+      );
     }
-  }
+  },
+);
 
-  if (errors.length > 0) {
-    throw new Error(`Failed to click elements:\n${errors.join('\n')}`);
-  }
-});
+When(
+  'I click on {string} elements with selectors:',
+  async function(
+    this: ApplicationWorld,
+    _elementDescriptions: string,
+    dataTable: DataTable,
+  ) {
+    const targetWindow = await this.getWindow('current');
 
-When('I ctrl-click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  const targetWindow = await this.getWindow('current');
-  if (!targetWindow) {
-    throw new Error(`Window "current" is not available`);
-  }
-  try {
-    await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
-    const isVisible = await targetWindow.isVisible(selector);
-    if (!isVisible) {
-      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
+    if (!targetWindow) {
+      throw new Error('Window "current" is not available');
     }
-    await targetWindow.click(selector, { modifiers: ['Control'] });
-  } catch (error) {
-    throw new Error(`Failed to ctrl-click ${elementComment} with selector "${selector}": ${error as Error}`);
-  }
-});
 
-When('I right-click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  const targetWindow = await this.getWindow('current');
+    const rows = dataTable.raw();
+    const dataRows = parseDataTableRows(rows, 2);
+    const errors: string[] = [];
 
-  if (!targetWindow) {
-    throw new Error(`Window "current" is not available`);
-  }
-
-  try {
-    await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
-    const isVisible = await targetWindow.isVisible(selector);
-    if (!isVisible) {
-      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
+    if (dataRows[0]?.length !== 2) {
+      throw new Error(
+        'Table must have exactly 2 columns: | element description | selector |',
+      );
     }
-    await targetWindow.click(selector, { button: 'right' });
-  } catch (error) {
-    throw new Error(`Failed to find and right-click ${elementComment} with selector "${selector}" in current window: ${error as Error}`);
-  }
-});
 
-When('I click all {string} elements matching selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  const win = this.currentWindow;
-  if (!win) throw new Error('No active window available to click elements');
+    // Click elements sequentially (not in parallel) to maintain order and avoid race conditions
+    for (const [elementComment, selector] of dataRows) {
+      try {
+        await targetWindow.waitForSelector(selector, {
+          timeout: PLAYWRIGHT_TIMEOUT,
+        });
+        const isVisible = await targetWindow.isVisible(selector);
+        if (!isVisible) {
+          errors.push(
+            `Element "${elementComment}" with selector "${selector}" is not visible`,
+          );
+          continue;
+        }
+        await targetWindow.click(selector);
+      } catch (error) {
+        errors.push(
+          `Failed to find and click "${elementComment}" with selector "${selector}": ${error as Error}`,
+        );
+      }
+    }
 
-  // Wait for at least one element to appear in DOM (even if hidden)
-  try {
-    await win.locator(selector).first().waitFor({ state: 'attached', timeout: PLAYWRIGHT_TIMEOUT });
-  } catch {
-    throw new Error(`No elements found for ${elementComment} with selector "${selector}" within timeout`);
-  }
+    if (errors.length > 0) {
+      throw new Error(`Failed to click elements:\n${errors.join('\n')}`);
+    }
+  },
+);
 
-  const locator = win.locator(selector);
-  const count = await locator.count();
+When(
+  'I right-click on a(n) {string} element with selector {string}',
+  async function(
+    this: ApplicationWorld,
+    elementComment: string,
+    selector: string,
+  ) {
+    const targetWindow = await this.getWindow('current');
 
-  // Single-pass reverse iteration to avoid index shift issues
-  for (let index = count - 1; index >= 0; index--) {
+    if (!targetWindow) {
+      throw new Error(`Window "current" is not available`);
+    }
+
     try {
-      await locator.nth(index).scrollIntoViewIfNeeded().catch(() => {});
-      await locator.nth(index).click({ force: true, timeout: 3000 });
-      // Brief pause for the UI to settle after each close
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await targetWindow.waitForSelector(selector, {
+        timeout: PLAYWRIGHT_TIMEOUT,
+      });
+      const isVisible = await targetWindow.isVisible(selector);
+      if (!isVisible) {
+        throw new Error(
+          `Element "${elementComment}" with selector "${selector}" is not visible`,
+        );
+      }
+      await targetWindow.click(selector, { button: 'right' });
     } catch (error) {
-      throw new Error(`Failed to click ${elementComment} at index ${index} with selector "${selector}": ${error as Error}`);
+      throw new Error(
+        `Failed to find and right-click ${elementComment} with selector "${selector}" in current window: ${error as Error}`,
+      );
     }
-  }
-});
+  },
+);
 
-When('I type {string} in {string} element with selector {string}', async function(this: ApplicationWorld, text: string, elementComment: string, selector: string) {
-  const currentWindow = this.currentWindow;
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
+When(
+  'I click all {string} elements matching selector {string}',
+  async function(
+    this: ApplicationWorld,
+    elementComment: string,
+    selector: string,
+  ) {
+    const win = this.currentWindow;
+    if (!win) throw new Error('No active window available to click elements');
 
-  const actualText = text.replace('{tmpDir}', getWikiTestRootPath(this));
+    // Wait for at least one element to appear in DOM (even if hidden)
+    try {
+      await win
+        .locator(selector)
+        .first()
+        .waitFor({ state: 'attached', timeout: PLAYWRIGHT_TIMEOUT });
+    } catch {
+      throw new Error(
+        `No elements found for ${elementComment} with selector "${selector}" within timeout`,
+      );
+    }
 
-  try {
-    await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
-    await currentWindow.locator(selector).fill(actualText);
-  } catch (error) {
-    throw new Error(`Failed to type in ${elementComment} element with selector "${selector}": ${error as Error}`);
-  }
-});
+    const locator = win.locator(selector);
+    const count = await locator.count();
 
-When('I type in {string} elements with selectors:', async function(this: ApplicationWorld, elementDescriptions: string, dataTable: DataTable) {
-  const currentWindow = this.currentWindow;
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
+    // Single-pass reverse iteration to avoid index shift issues
+    for (let index = count - 1; index >= 0; index--) {
+      try {
+        await locator
+          .nth(index)
+          .scrollIntoViewIfNeeded()
+          .catch(() => {});
+        await locator.nth(index).click({ force: true, timeout: 3000 });
+        // Brief pause for the UI to settle after each close
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      } catch (error) {
+        throw new Error(
+          `Failed to click ${elementComment} at index ${index} with selector "${selector}": ${error as Error}`,
+        );
+      }
+    }
+  },
+);
 
-  const descriptions = elementDescriptions.split(' and ').map(d => d.trim());
-  const rows = dataTable.raw();
-  const dataRows = parseDataTableRows(rows, 2);
-  const errors: string[] = [];
-
-  if (descriptions.length !== dataRows.length) {
-    throw new Error(`Mismatch: ${descriptions.length} element descriptions but ${dataRows.length} text/selector pairs provided`);
-  }
-
-  // Type in elements sequentially to maintain order
-  for (let index = 0; index < dataRows.length; index++) {
-    const [text, selector] = dataRows[index];
-    const elementComment = descriptions[index];
+When(
+  'I type {string} in {string} element with selector {string}',
+  async function(
+    this: ApplicationWorld,
+    text: string,
+    elementComment: string,
+    selector: string,
+  ) {
+    const currentWindow = this.currentWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
+    }
 
     // Replace {tmpDir} placeholder with actual test root path
     const actualText = text.replace('{tmpDir}', getWikiTestRootPath(this));
 
     try {
-      await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+      await currentWindow.waitForSelector(selector, {
+        timeout: PLAYWRIGHT_TIMEOUT,
+      });
       const element = currentWindow.locator(selector);
       await element.fill(actualText);
     } catch (error) {
-      errors.push(`Failed to type in "${elementComment}" with selector "${selector}": ${error as Error}`);
+      throw new Error(
+        `Failed to type in ${elementComment} element with selector "${selector}": ${error as Error}`,
+      );
     }
-  }
+  },
+);
 
-  if (errors.length > 0) {
-    throw new Error(`Failed to type in some elements:\n${errors.join('\n')}`);
-  }
-});
-
-When('I clear text in {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  const currentWindow = this.currentWindow;
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
-
-  try {
-    await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
-    const element = currentWindow.locator(selector);
-    await element.clear();
-  } catch (error) {
-    throw new Error(`Failed to clear text in ${elementComment} element with selector "${selector}": ${error as Error}`);
-  }
-});
-
-When('the window title should contain {string}', async function(this: ApplicationWorld, expectedTitle: string) {
-  const currentWindow = this.currentWindow;
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
-
-  try {
-    const title = await currentWindow.title();
-    if (!title.includes(expectedTitle)) {
-      throw new Error(`Window title "${title}" does not contain "${expectedTitle}"`);
+When(
+  'I type in {string} elements with selectors:',
+  async function(
+    this: ApplicationWorld,
+    elementDescriptions: string,
+    dataTable: DataTable,
+  ) {
+    const currentWindow = this.currentWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
     }
-  } catch (error) {
-    throw new Error(`Failed to check window title: ${error as Error}`);
-  }
-});
+
+    const descriptions = elementDescriptions
+      .split(' and ')
+      .map((d) => d.trim());
+    const rows = dataTable.raw();
+    const dataRows = parseDataTableRows(rows, 2);
+    const errors: string[] = [];
+
+    if (descriptions.length !== dataRows.length) {
+      throw new Error(
+        `Mismatch: ${descriptions.length} element descriptions but ${dataRows.length} text/selector pairs provided`,
+      );
+    }
+
+    // Type in elements sequentially to maintain order
+    for (let index = 0; index < dataRows.length; index++) {
+      const [text, selector] = dataRows[index];
+      const elementComment = descriptions[index];
+
+      // Replace {tmpDir} placeholder with actual test root path
+      const actualText = text.replace('{tmpDir}', getWikiTestRootPath(this));
+
+      try {
+        await currentWindow.waitForSelector(selector, {
+          timeout: PLAYWRIGHT_TIMEOUT,
+        });
+        const element = currentWindow.locator(selector);
+        await element.fill(actualText);
+      } catch (error) {
+        errors.push(
+          `Failed to type in "${elementComment}" with selector "${selector}": ${error as Error}`,
+        );
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new Error(`Failed to type in some elements:\n${errors.join('\n')}`);
+    }
+  },
+);
+
+When(
+  'I clear text in {string} element with selector {string}',
+  async function(
+    this: ApplicationWorld,
+    elementComment: string,
+    selector: string,
+  ) {
+    const currentWindow = this.currentWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
+    }
+
+    try {
+      await currentWindow.waitForSelector(selector, {
+        timeout: PLAYWRIGHT_TIMEOUT,
+      });
+      const element = currentWindow.locator(selector);
+      await element.clear();
+    } catch (error) {
+      throw new Error(
+        `Failed to clear text in ${elementComment} element with selector "${selector}": ${error as Error}`,
+      );
+    }
+  },
+);
+
+When(
+  'the window title should contain {string}',
+  async function(this: ApplicationWorld, expectedTitle: string) {
+    const currentWindow = this.currentWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
+    }
+
+    try {
+      const title = await currentWindow.title();
+      if (!title.includes(expectedTitle)) {
+        throw new Error(
+          `Window title "${title}" does not contain "${expectedTitle}"`,
+        );
+      }
+    } catch (error) {
+      throw new Error(`Failed to check window title: ${error as Error}`);
+    }
+  },
+);
 
 // Generic keyboard action
-When('I press {string} key', async function(this: ApplicationWorld, key: string) {
-  const currentWindow = this.currentWindow;
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
+When(
+  'I press {string} key',
+  async function(this: ApplicationWorld, key: string) {
+    const currentWindow = this.currentWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
+    }
 
-  await currentWindow.keyboard.press(key);
-});
+    await currentWindow.keyboard.press(key);
+  },
+);
 
 // Generic window switching - sets currentWindow state for subsequent operations
 // You may need to wait a second before switch, otherwise window's URL may not set yet.
-When('I switch to {string} window', async function(this: ApplicationWorld, windowType: string) {
-  if (!this.app) {
-    throw new Error('Application is not available');
-  }
-  const targetWindow = await this.getWindow(windowType);
-  if (targetWindow) {
-    this.currentWindow = targetWindow; // Set currentWindow state
-  } else {
-    throw new Error(`Could not find ${windowType} window`);
-  }
-});
+When(
+  'I switch to {string} window',
+  async function(this: ApplicationWorld, windowType: string) {
+    if (!this.app) {
+      throw new Error('Application is not available');
+    }
+    const targetWindow = await this.getWindow(windowType);
+    if (targetWindow) {
+      this.currentWindow = targetWindow; // Set currentWindow state
+    } else {
+      throw new Error(`Could not find ${windowType} window`);
+    }
+  },
+);
 
 // Switch to the newest/latest window (useful for OAuth popups)
 When('I switch to the newest window', async function(this: ApplicationWorld) {
   if (!this.app) {
     throw new Error('Application is not available');
   }
-  const allWindows = this.app.windows().filter(p => !p.isClosed());
+  const allWindows = this.app.windows().filter((p) => !p.isClosed());
   if (allWindows.length === 0) {
     throw new Error('No windows available');
   }
@@ -416,165 +635,271 @@ When('I switch to the newest window', async function(this: ApplicationWorld) {
 });
 
 // Generic window closing
-When('I close {string} window', async function(this: ApplicationWorld, windowType: string) {
-  if (!this.app) {
-    throw new Error('Application is not available');
-  }
-  const targetWindow = await this.getWindow(windowType);
-  if (targetWindow) {
-    await targetWindow.close();
-  } else {
-    throw new Error(`Could not find ${windowType} window to close`);
-  }
-});
-
-When('I press the key combination {string}', async function(this: ApplicationWorld, keyCombo: string) {
-  const currentWindow = this.currentWindow;
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
-
-  // Convert CommandOrControl to platform-specific key
-  let platformKeyCombo = keyCombo;
-  if (keyCombo.includes('CommandOrControl')) {
-    // Prefer explicit platform detection: use 'Meta' only on macOS (darwin),
-    // otherwise default to 'Control'. This avoids assuming non-Windows/Linux
-    // is always macOS.
-    if (process.platform === 'darwin') {
-      platformKeyCombo = keyCombo.replace('CommandOrControl', 'Meta');
+When(
+  'I close {string} window',
+  async function(this: ApplicationWorld, windowType: string) {
+    if (!this.app) {
+      throw new Error('Application is not available');
+    }
+    const targetWindow = await this.getWindow(windowType);
+    if (targetWindow) {
+      await targetWindow.close();
     } else {
-      platformKeyCombo = keyCombo.replace('CommandOrControl', 'Control');
+      throw new Error(`Could not find ${windowType} window to close`);
     }
-  }
-  // Use dispatchEvent to trigger document-level keydown events
+  },
+);
 
-  // This ensures the event is properly captured by React components listening to document events
-  // The testKeyboardShortcutFallback in test environment expects key to match the format used in shortcuts
-  await currentWindow.evaluate((keyCombo) => {
-    const parts = keyCombo.split('+');
-    let mainKey = parts[parts.length - 1];
-    const modifiers = parts.slice(0, -1);
-
-    // For single letter keys, match the case sensitivity used by the shortcut system
-    // Shift+Key -> uppercase, otherwise lowercase
-    if (mainKey.length === 1) {
-      mainKey = modifiers.includes('Shift') ? mainKey.toUpperCase() : mainKey.toLowerCase();
+When(
+  'I press the key combination {string}',
+  async function(this: ApplicationWorld, keyCombo: string) {
+    const currentWindow = this.currentWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
     }
 
-    const event = new KeyboardEvent('keydown', {
-      key: mainKey,
-      code: mainKey.length === 1 ? `Key${mainKey.toUpperCase()}` : mainKey,
-      ctrlKey: modifiers.includes('Control'),
-      metaKey: modifiers.includes('Meta'),
-      shiftKey: modifiers.includes('Shift'),
-      altKey: modifiers.includes('Alt'),
-      bubbles: true,
-      cancelable: true,
-    });
-
-    document.dispatchEvent(event);
-  }, platformKeyCombo);
-});
-
-When('I select {string} from MUI Select with test id {string}', async function(this: ApplicationWorld, optionValue: string, testId: string) {
-  const currentWindow = this.currentWindow;
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
-
-  try {
-    // Find the element with the test-id (could be input directly, or a wrapper div for MUI TextField)
-    const directInputSelector = `input[data-testid="${testId}"]`;
-    const wrapperSelector = `[data-testid="${testId}"]`;
-
-    // Try input first, then fall back to wrapper
-    const hasDirectInput = await currentWindow.locator(directInputSelector).count() > 0;
-    const containerSelector = hasDirectInput ? directInputSelector : wrapperSelector;
-    await currentWindow.waitForSelector(containerSelector, { timeout: PLAYWRIGHT_TIMEOUT });
-
-    // Click the combobox to open the dropdown
-    const clicked = await currentWindow.evaluate((testId) => {
-      // Try direct input match first
-      const element: Element | null = document.querySelector(`input[data-testid="${testId}"]`);
-      let searchRoot: Element | null = element?.parentElement ?? null;
-
-      // If not found, try wrapper element (MUI TextField with select prop)
-      if (!element) {
-        searchRoot = document.querySelector(`[data-testid="${testId}"]`);
+    // Convert CommandOrControl to platform-specific key
+    let platformKeyCombo = keyCombo;
+    if (keyCombo.includes('CommandOrControl')) {
+      // Prefer explicit platform detection: use 'Meta' only on macOS (darwin),
+      // otherwise default to 'Control'. This avoids assuming non-Windows/Linux
+      // is always macOS.
+      if (process.platform === 'darwin') {
+        platformKeyCombo = keyCombo.replace('CommandOrControl', 'Meta');
+      } else {
+        platformKeyCombo = keyCombo.replace('CommandOrControl', 'Control');
       }
-
-      if (!searchRoot) return { success: false, error: 'Element not found' };
-
-      const combobox = searchRoot.querySelector('[role="combobox"]');
-      if (!combobox) {
-        return {
-          success: false,
-          error: 'Combobox not found',
-          parentHTML: searchRoot.outerHTML.substring(0, 500),
-        };
-      }
-
-      combobox.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-      combobox.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      (combobox as HTMLElement).click();
-
-      return { success: true };
-    }, testId);
-
-    if (!clicked.success) {
-      throw new Error(`Failed to click: ${JSON.stringify(clicked)}`);
     }
+    // Use dispatchEvent to trigger document-level keydown events
 
-    // Wait a bit for the menu to appear
-    await currentWindow.waitForTimeout(500);
+    // This ensures the event is properly captured by React components listening to document events
+    // The testKeyboardShortcutFallback in test environment expects key to match the format used in shortcuts
+    await currentWindow.evaluate((keyCombo) => {
+      const parts = keyCombo.split('+');
+      let mainKey = parts[parts.length - 1];
+      const modifiers = parts.slice(0, -1);
 
-    // Wait for the menu to appear
-    await currentWindow.waitForSelector('[role="listbox"]', { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
-
-    // Try to click on the option with the specified value (data-value attribute)
-    // If not found, try to find by text content
-    const optionClicked = await currentWindow.evaluate((optionValue) => {
-      // First try: Find by data-value attribute
-      const optionByValue = document.querySelector(`[role="option"][data-value="${optionValue}"]`);
-      if (optionByValue) {
-        (optionByValue as HTMLElement).click();
-        return { success: true, method: 'data-value' };
+      // For single letter keys, match the case sensitivity used by the shortcut system
+      // Shift+Key -> uppercase, otherwise lowercase
+      if (mainKey.length === 1) {
+        mainKey = modifiers.includes('Shift')
+          ? mainKey.toUpperCase()
+          : mainKey.toLowerCase();
       }
 
-      // Second try: Find by text content (case-insensitive)
-      const allOptions = Array.from(document.querySelectorAll('[role="option"]'));
-      const optionByText = allOptions.find(option => {
-        const text = option.textContent?.trim().toLowerCase();
-        return text === optionValue.toLowerCase();
+      const event = new KeyboardEvent('keydown', {
+        key: mainKey,
+        code: mainKey.length === 1 ? `Key${mainKey.toUpperCase()}` : mainKey,
+        ctrlKey: modifiers.includes('Control'),
+        metaKey: modifiers.includes('Meta'),
+        shiftKey: modifiers.includes('Shift'),
+        altKey: modifiers.includes('Alt'),
+        bubbles: true,
+        cancelable: true,
       });
 
-      if (optionByText) {
-        (optionByText as HTMLElement).click();
-        return { success: true, method: 'text-content' };
-      }
+      document.dispatchEvent(event);
+    }, platformKeyCombo);
+  },
+);
 
-      // Return available options for debugging
-      return {
-        success: false,
-        availableOptions: allOptions.map(opt => ({
-          text: opt.textContent?.trim(),
-          value: opt.getAttribute('data-value'),
-        })),
-      };
-    }, optionValue);
-
-    if (!optionClicked.success) {
-      throw new Error(
-        `Could not find option "${optionValue}". Available options: ${JSON.stringify(optionClicked.availableOptions)}`,
-      );
+When(
+  'I select {string} from MUI Select with test id {string}',
+  async function(this: ApplicationWorld, optionValue: string, testId: string) {
+    const currentWindow = this.currentWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
     }
 
-    // Wait for the menu to close
-    await currentWindow.waitForSelector('[role="listbox"]', { state: 'hidden', timeout: PLAYWRIGHT_SHORT_TIMEOUT });
-  } catch (error) {
-    throw new Error(`Failed to select option "${optionValue}" from MUI Select with test id "${testId}": ${String(error)}`);
-  }
-});
+    try {
+      // Find the element with the test-id (could be input directly, or a wrapper div for MUI TextField)
+      const directInputSelector = `input[data-testid="${testId}"]`;
+      const wrapperSelector = `[data-testid="${testId}"]`;
+
+      // Try input first, then fall back to wrapper
+      const hasDirectInput = (await currentWindow.locator(directInputSelector).count()) > 0;
+      const containerSelector = hasDirectInput
+        ? directInputSelector
+        : wrapperSelector;
+      await currentWindow.waitForSelector(containerSelector, {
+        timeout: PLAYWRIGHT_TIMEOUT,
+      });
+
+      // Click the combobox to open the dropdown
+      const clicked = await currentWindow.evaluate((testId) => {
+        // Try direct input match first
+        const element: Element | null = document.querySelector(
+          `input[data-testid="${testId}"]`,
+        );
+        let searchRoot: Element | null = element?.parentElement ?? null;
+
+        // If not found, try wrapper element (MUI TextField with select prop)
+        if (!element) {
+          searchRoot = document.querySelector(`[data-testid="${testId}"]`);
+        }
+
+        if (!searchRoot) return { success: false, error: 'Element not found' };
+
+        const combobox = searchRoot.querySelector('[role="combobox"]');
+        if (!combobox) {
+          return {
+            success: false,
+            error: 'Combobox not found',
+            parentHTML: searchRoot.outerHTML.substring(0, 500),
+          };
+        }
+
+        combobox.dispatchEvent(
+          new MouseEvent('mousedown', { bubbles: true, cancelable: true }),
+        );
+        combobox.dispatchEvent(
+          new MouseEvent('click', { bubbles: true, cancelable: true }),
+        );
+        (combobox as HTMLElement).click();
+
+        return { success: true };
+      }, testId);
+
+      if (!clicked.success) {
+        throw new Error(`Failed to click: ${JSON.stringify(clicked)}`);
+      }
+
+      // Wait a bit for the menu to appear
+      await currentWindow.waitForTimeout(500);
+
+      // Wait for the menu to appear
+      await currentWindow.waitForSelector('[role="listbox"]', {
+        timeout: PLAYWRIGHT_SHORT_TIMEOUT,
+      });
+
+      // Try to click on the option with the specified value (data-value attribute)
+      // If not found, try to find by text content
+      const optionClicked = await currentWindow.evaluate((optionValue) => {
+        // First try: Find by data-value attribute
+        const optionByValue = document.querySelector(
+          `[role="option"][data-value="${optionValue}"]`,
+        );
+        if (optionByValue) {
+          (optionByValue as HTMLElement).click();
+          return { success: true, method: 'data-value' };
+        }
+
+        // Second try: Find by text content (case-insensitive)
+        const allOptions = Array.from(
+          document.querySelectorAll('[role="option"]'),
+        );
+        const optionByText = allOptions.find((option) => {
+          const text = option.textContent?.trim().toLowerCase();
+          return text === optionValue.toLowerCase();
+        });
+
+        if (optionByText) {
+          (optionByText as HTMLElement).click();
+          return { success: true, method: 'text-content' };
+        }
+
+        // Return available options for debugging
+        return {
+          success: false,
+          availableOptions: allOptions.map((opt) => ({
+            text: opt.textContent?.trim(),
+            value: opt.getAttribute('data-value'),
+          })),
+        };
+      }, optionValue);
+
+      if (!optionClicked.success) {
+        throw new Error(
+          `Could not find option "${optionValue}". Available options: ${JSON.stringify(optionClicked.availableOptions)}`,
+        );
+      }
+
+      // Wait for the menu to close
+      await currentWindow.waitForSelector('[role="listbox"]', {
+        state: 'hidden',
+        timeout: PLAYWRIGHT_SHORT_TIMEOUT,
+      });
+    } catch (error) {
+      throw new Error(
+        `Failed to select option "${optionValue}" from MUI Select with test id "${testId}": ${String(error)}`,
+      );
+    }
+  },
+);
+
+When(
+  'I set checkbox with selector {string} to {string}',
+  async function(
+    this: ApplicationWorld,
+    selector: string,
+    targetState: string,
+  ) {
+    const currentWindow = this.currentWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
+    }
+
+    const shouldBeChecked = targetState === 'checked' ||
+      targetState === 'on' ||
+      targetState === 'true';
+
+    const locator = currentWindow.locator(selector).first();
+    await currentWindow.waitForSelector(selector, {
+      timeout: PLAYWRIGHT_TIMEOUT,
+    });
+    await backOff(async () => {
+      if (await locator.isDisabled()) {
+        throw new Error(`Checkbox ${selector} is still disabled`);
+      }
+    }, UI_BACKOFF_OPTIONS).catch((error: unknown) => {
+      throw new Error(
+        `Checkbox ${selector} never became enabled: ${String(error)}`,
+      );
+    });
+
+    const currentState = await locator.isChecked();
+    if (currentState !== shouldBeChecked) {
+      try {
+        await locator.setChecked(shouldBeChecked);
+      } catch {
+        await locator.evaluate((input, desiredState) => {
+          const checkbox = input;
+          if (checkbox.checked === desiredState) {
+            return;
+          }
+
+          const clickTarget = checkbox.closest<HTMLElement>('.MuiSwitch-switchBase') ??
+            checkbox.closest<HTMLElement>('.MuiSwitch-root') ??
+            checkbox.closest<HTMLElement>('label') ??
+            checkbox.parentElement ??
+            checkbox;
+
+          if (
+            'click' in clickTarget &&
+            typeof clickTarget.click === 'function'
+          ) {
+            clickTarget.click();
+          }
+        }, shouldBeChecked);
+      }
+    }
+
+    try {
+      await backOff(async () => {
+        const finalState = await locator.isChecked();
+        if (finalState !== shouldBeChecked) {
+          throw new Error(
+            `Checkbox ${selector} is ${finalState ? 'checked' : 'unchecked'} instead of ${targetState}`,
+          );
+        }
+      }, UI_BACKOFF_OPTIONS);
+    } catch (error: unknown) {
+      throw new Error(
+        `Failed to set checkbox ${selector} to ${targetState}: ${String(error)}`,
+      );
+    }
+  },
+);
 
 // Debug step to print current DOM structure
 When('I print current DOM structure', async function(this: ApplicationWorld) {
@@ -593,56 +918,64 @@ When('I print current DOM structure', async function(this: ApplicationWorld) {
 });
 
 // Debug step to print DOM structure of a specific element
-When('I print DOM structure of element with selector {string}', async function(this: ApplicationWorld, selector: string) {
-  const currentWindow = this.currentWindow;
-  if (!currentWindow) {
-    throw new Error('No current window is available');
-  }
+When(
+  'I print DOM structure of element with selector {string}',
+  async function(this: ApplicationWorld, selector: string) {
+    const currentWindow = this.currentWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
+    }
 
-  try {
-    await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+    try {
+      await currentWindow.waitForSelector(selector, {
+        timeout: PLAYWRIGHT_SHORT_TIMEOUT,
+      });
 
-    const elementInfo = await currentWindow.evaluate((sel) => {
-      const element = document.querySelector(sel);
-      if (!element) {
-        return { found: false };
-      }
+      const elementInfo = await currentWindow.evaluate((sel) => {
+        const element = document.querySelector(sel);
+        if (!element) {
+          return { found: false };
+        }
 
-      return {
-        found: true,
-        outerHTML: element.outerHTML,
-        innerHTML: element.innerHTML,
-        attributes: Array.from(element.attributes).map(attribute => ({
-          name: attribute.name,
-          value: attribute.value,
-        })),
-        children: Array.from(element.children).map(child => ({
-          tagName: child.tagName,
-          className: child.className,
-          id: child.id,
-          attributes: Array.from(child.attributes).map(attribute => ({
+        return {
+          found: true,
+          outerHTML: element.outerHTML,
+          innerHTML: element.innerHTML,
+          attributes: Array.from(element.attributes).map((attribute) => ({
             name: attribute.name,
             value: attribute.value,
           })),
-        })),
-      };
-    }, selector);
+          children: Array.from(element.children).map((child) => ({
+            tagName: child.tagName,
+            className: child.className,
+            id: child.id,
+            attributes: Array.from(child.attributes).map((attribute) => ({
+              name: attribute.name,
+              value: attribute.value,
+            })),
+          })),
+        };
+      }, selector);
 
-    if (!elementInfo.found) {
-      console.log(`=== Element "${selector}" not found ===`);
-      return;
+      if (!elementInfo.found) {
+        console.log(`=== Element "${selector}" not found ===`);
+        return;
+      }
+
+      console.log(`=== DOM Structure of "${selector}" ===`);
+      console.log(
+        'Attributes:',
+        JSON.stringify(elementInfo.attributes, null, 2),
+      );
+      console.log('\nChildren:', JSON.stringify(elementInfo.children, null, 2));
+      console.log('\nOuter HTML (first 2000 chars):');
+      console.log((elementInfo.outerHTML ?? '').substring(0, 2000));
+      console.log('=== End DOM Structure ===');
+    } catch (error) {
+      console.log(`Error inspecting element "${selector}": ${String(error)}`);
     }
-
-    console.log(`=== DOM Structure of "${selector}" ===`);
-    console.log('Attributes:', JSON.stringify(elementInfo.attributes, null, 2));
-    console.log('\nChildren:', JSON.stringify(elementInfo.children, null, 2));
-    console.log('\nOuter HTML (first 2000 chars):');
-    console.log((elementInfo.outerHTML ?? '').substring(0, 2000));
-    console.log('=== End DOM Structure ===');
-  } catch (error) {
-    console.log(`Error inspecting element "${selector}": ${String(error)}`);
-  }
-});
+  },
+);
 
 // Debug step to print all window URLs
 When('I print all window URLs', async function(this: ApplicationWorld) {
@@ -659,7 +992,9 @@ When('I print all window URLs', async function(this: ApplicationWorld) {
       const url = win.url();
       const title = await win.title();
       const isClosed = win.isClosed();
-      console.log(`Window ${index}: URL=${url}, Title=${title}, Closed=${isClosed}`);
+      console.log(
+        `Window ${index}: URL=${url}, Title=${title}, Closed=${isClosed}`,
+      );
     } catch (error) {
       console.log(`Window ${index}: Error getting info - ${String(error)}`);
     }
