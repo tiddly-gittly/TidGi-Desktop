@@ -7,14 +7,14 @@
  */
 
 // ── Constants ──────────────────────────────────────────────────────────────────
+export * from '@/constants/auth';
 export * from '@/constants/channels';
 export * from '@/constants/pageTypes';
 export * from '@/constants/wikiCreation';
-export * from '@/constants/auth';
 
 // ── Shared Service Types ───────────────────────────────────────────────────────
-export * from '@services/types';
 export { default as serviceIdentifier } from '@services/serviceIdentifier';
+export * from '@services/types';
 export * from './tidgiGlobal';
 
 // ── Service Interfaces ─────────────────────────────────────────────────────────
@@ -27,13 +27,13 @@ export * from '@services/auth/interface';
 export * from '@services/context/interface';
 export * from '@services/database/interface';
 export * from '@services/deepLink/interface';
-export * from '@services/providerRegistry/interface';
 export * from '@services/git/interface';
 export * from '@services/gitServer/interface';
 export * from '@services/menu/interface';
 export * from '@services/native/interface';
 export * from '@services/notifications/interface';
 export * from '@services/preferences/interface';
+export * from '@services/providerRegistry/interface';
 export * from '@services/sync/interface';
 export * from '@services/systemPreferences/interface';
 export * from '@services/theme/interface';
