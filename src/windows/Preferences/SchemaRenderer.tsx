@@ -9,8 +9,8 @@ import { getActionHandler } from '@services/preferences/definitions/actionHandle
 import { allSections } from '@services/preferences/definitions/registry';
 import { getSideEffect } from '@services/preferences/definitions/sideEffects';
 import type {
-  IActionItem,
   IActionInputItem,
+  IActionItem,
   IBooleanPreferenceItem,
   ICustomItem,
   IEnumPreferenceItem,
@@ -275,7 +275,7 @@ function ActionInputItem({ item }: { item: IActionInputItem }): React.JSX.Elemen
         />
         <Box sx={{ display: 'flex', mt: 1, gap: 1, alignItems: 'center' }}>
           <TextField
-            size="small"
+            size='small'
             fullWidth
             value={value}
             sx={{ flex: 1 }}
@@ -283,7 +283,7 @@ function ActionInputItem({ item }: { item: IActionInputItem }): React.JSX.Elemen
             placeholder={item.placeholderKey ? t(item.placeholderKey, item.ns ? { ns: item.ns } : undefined) : ''}
           />
           <Button
-            variant="contained"
+            variant='contained'
             disableElevation
             sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
             disabled={!value || loading}

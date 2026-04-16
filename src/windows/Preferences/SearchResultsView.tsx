@@ -98,7 +98,7 @@ function collectSearchHits(query: string, t: TFunction<['translation', 'agent']>
     // Also match raw i18n key (contains readable English identifiers like "CheckForUpdates")
     const sectionKeyNorm = section.titleKey.toLowerCase();
     for (const item of section.items) {
-        if (item.type === 'divider') continue;
+      if (item.type === 'divider') continue;
       const title = tx(t, item.titleKey, item.ns).toLowerCase();
       const desc = item.descriptionKey ? tx(t, item.descriptionKey, item.ns).toLowerCase() : '';
       const titleEn = txEn(item.titleKey, item.ns).toLowerCase();

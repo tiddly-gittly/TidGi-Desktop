@@ -36,11 +36,11 @@ import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import type { CreateScheduledTaskInput, ScheduledTask } from '@/services/agentInstance/scheduledTaskManager';
+import { aiAgentSection } from '@services/preferences/definitions/aiAgent';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
+import { usePreferenceObservable } from '@services/preferences/hooks';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import { ItemRenderer } from '../SchemaRenderer';
-import { usePreferenceObservable } from '@services/preferences/hooks';
-import { aiAgentSection } from '@services/preferences/definitions/aiAgent';
 import { ToolApprovalSettingsDialog } from './ExternalAPI/components/ToolApprovalSettingsDialog';
 import { ToolPermissionsDialog } from './ExternalAPI/components/ToolPermissionsDialog';
 
