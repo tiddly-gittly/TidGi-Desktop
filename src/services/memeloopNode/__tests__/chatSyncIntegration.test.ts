@@ -1,7 +1,7 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { ChatSyncEngine, PeerNodeSyncAdapter, type PeerNodeTransport, type ChatSyncPeer } from 'memeloop';
+import type { ChatMessage, ConversationMeta } from '@memeloop/protocol';
+import { ChatSyncEngine, type ChatSyncPeer, PeerNodeSyncAdapter, type PeerNodeTransport } from 'memeloop';
 import type { IAgentStorage } from 'memeloop';
-import type { ConversationMeta, ChatMessage } from '@memeloop/protocol';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * Test the ChatSyncEngine + PeerNodeSyncAdapter integration pattern

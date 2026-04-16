@@ -1,106 +1,91 @@
 /**
  * Don't forget to edit src/preload/common/services.ts to export service to renderer process
  */
-import { registerProxy } from "electron-ipc-cat/server";
+import { registerProxy } from 'electron-ipc-cat/server';
 
-import { container } from "@services/container";
-import serviceIdentifier from "@services/serviceIdentifier";
+import { container } from '@services/container';
+import serviceIdentifier from '@services/serviceIdentifier';
 
-import { AgentBrowserService } from "@services/agentBrowser";
-import { AgentDefinitionService } from "@services/agentDefinition";
-import { AgentInstanceService } from "@services/agentInstance";
-import { Authentication } from "@services/auth";
-import { ContextService } from "@services/context";
-import { DatabaseService } from "@services/database";
-import { DeepLinkService } from "@services/deepLink";
-import { Git } from "@services/git";
-import { GitServerService } from "@services/gitServer";
-import { MemeloopNode } from "@services/memeloopNode";
-import { MenuService } from "@services/menu";
-import { NativeService } from "@services/native";
-import { NotificationService } from "@services/notifications";
-import { Preference } from "@services/preferences";
-import { Sync } from "@services/sync";
-import { SystemPreference } from "@services/systemPreferences";
-import { ThemeService } from "@services/theme";
-import { ToolPermissions } from "@services/toolPermissions";
-import { Updater } from "@services/updater";
-import { View } from "@services/view";
-import { Wiki } from "@services/wiki";
-import { WikiEmbeddingService } from "@services/wikiEmbedding";
-import { WikiGitWorkspace } from "@services/wikiGitWorkspace";
-import { Window } from "@services/windows";
-import { Workspace } from "@services/workspaces";
-import { WorkspaceView } from "@services/workspacesView";
+import { AgentBrowserService } from '@services/agentBrowser';
+import { AgentDefinitionService } from '@services/agentDefinition';
+import { AgentInstanceService } from '@services/agentInstance';
+import { Authentication } from '@services/auth';
+import { ContextService } from '@services/context';
+import { DatabaseService } from '@services/database';
+import { DeepLinkService } from '@services/deepLink';
+import { Git } from '@services/git';
+import { GitServerService } from '@services/gitServer';
+import { MemeloopNode } from '@services/memeloopNode';
+import { MenuService } from '@services/menu';
+import { NativeService } from '@services/native';
+import { NotificationService } from '@services/notifications';
+import { Preference } from '@services/preferences';
+import { Sync } from '@services/sync';
+import { SystemPreference } from '@services/systemPreferences';
+import { ThemeService } from '@services/theme';
+import { ToolPermissions } from '@services/toolPermissions';
+import { Updater } from '@services/updater';
+import { View } from '@services/view';
+import { Wiki } from '@services/wiki';
+import { WikiEmbeddingService } from '@services/wikiEmbedding';
+import { WikiGitWorkspace } from '@services/wikiGitWorkspace';
+import { Window } from '@services/windows';
+import { Workspace } from '@services/workspaces';
+import { WorkspaceView } from '@services/workspacesView';
 
-import {
-  AgentBrowserServiceIPCDescriptor,
-  type IAgentBrowserService,
-} from "@services/agentBrowser/interface";
-import {
-  AgentDefinitionServiceIPCDescriptor,
-  type IAgentDefinitionService,
-} from "@services/agentDefinition/interface";
-import {
-  AgentInstanceServiceIPCDescriptor,
-  type IAgentInstanceService,
-} from "@services/agentInstance/interface";
-import type { IAuthenticationService } from "@services/auth/interface";
-import { AuthenticationServiceIPCDescriptor } from "@services/auth/interface";
-import type { IContextService } from "@services/context/interface";
-import { ContextServiceIPCDescriptor } from "@services/context/interface";
-import type { IDatabaseService } from "@services/database/interface";
-import { DatabaseServiceIPCDescriptor } from "@services/database/interface";
-import type { IDeepLinkService } from "@services/deepLink/interface";
-import { DeepLinkServiceIPCDescriptor } from "@services/deepLink/interface";
-import type { IGitService } from "@services/git/interface";
-import { GitServiceIPCDescriptor } from "@services/git/interface";
-import type { IGitServerService } from "@services/gitServer/interface";
-import { GitServerServiceIPCDescriptor } from "@services/gitServer/interface";
-import type { IMemeloopNodeService } from "@services/memeloopNode/interface";
-import { MemeloopNodeServiceIPCDescriptor } from "@services/memeloopNode/interface";
-import type { IMenuService } from "@services/menu/interface";
-import { MenuServiceIPCDescriptor } from "@services/menu/interface";
-import type { INativeService } from "@services/native/interface";
-import { NativeServiceIPCDescriptor } from "@services/native/interface";
-import type { INotificationService } from "@services/notifications/interface";
-import { NotificationServiceIPCDescriptor } from "@services/notifications/interface";
-import type { IPreferenceService } from "@services/preferences/interface";
-import { PreferenceServiceIPCDescriptor } from "@services/preferences/interface";
-import type { ISyncService } from "@services/sync/interface";
-import { SyncServiceIPCDescriptor } from "@services/sync/interface";
-import type { ISystemPreferenceService } from "@services/systemPreferences/interface";
-import { SystemPreferenceServiceIPCDescriptor } from "@services/systemPreferences/interface";
-import type { IThemeService } from "@services/theme/interface";
-import { ThemeServiceIPCDescriptor } from "@services/theme/interface";
-import type { IToolPermissionsService } from "@services/toolPermissions/interface";
-import { ToolPermissionsServiceIPCDescriptor } from "@services/toolPermissions/interface";
-import type { IUpdaterService } from "@services/updater/interface";
-import { UpdaterServiceIPCDescriptor } from "@services/updater/interface";
-import type { IViewService } from "@services/view/interface";
-import { ViewServiceIPCDescriptor } from "@services/view/interface";
-import type { IWikiService } from "@services/wiki/interface";
-import { WikiServiceIPCDescriptor } from "@services/wiki/interface";
-import type { IWikiEmbeddingService } from "@services/wikiEmbedding/interface";
-import { WikiEmbeddingServiceIPCDescriptor } from "@services/wikiEmbedding/interface";
-import type { IWikiGitWorkspaceService } from "@services/wikiGitWorkspace/interface";
-import { WikiGitWorkspaceServiceIPCDescriptor } from "@services/wikiGitWorkspace/interface";
-import type { IWindowService } from "@services/windows/interface";
-import { WindowServiceIPCDescriptor } from "@services/windows/interface";
-import type { IWorkspaceService } from "@services/workspaces/interface";
-import { WorkspaceServiceIPCDescriptor } from "@services/workspaces/interface";
-import type { IWorkspaceViewService } from "@services/workspacesView/interface";
-import { WorkspaceViewServiceIPCDescriptor } from "@services/workspacesView/interface";
-import { ProviderRegistryService } from "../providerRegistry";
-import {
-  ProviderRegistryServiceIPCDescriptor,
-  type IProviderRegistryService,
-} from "../providerRegistry/interface";
-import { RemoteTerminalService } from "../remoteTerminal";
-import {
-  RemoteTerminalServiceIPCDescriptor,
-  type IRemoteTerminalService,
-} from "../remoteTerminal/interface";
+import { AgentBrowserServiceIPCDescriptor, type IAgentBrowserService } from '@services/agentBrowser/interface';
+import { AgentDefinitionServiceIPCDescriptor, type IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { AgentInstanceServiceIPCDescriptor, type IAgentInstanceService } from '@services/agentInstance/interface';
+import type { IAuthenticationService } from '@services/auth/interface';
+import { AuthenticationServiceIPCDescriptor } from '@services/auth/interface';
+import type { IContextService } from '@services/context/interface';
+import { ContextServiceIPCDescriptor } from '@services/context/interface';
+import type { IDatabaseService } from '@services/database/interface';
+import { DatabaseServiceIPCDescriptor } from '@services/database/interface';
+import type { IDeepLinkService } from '@services/deepLink/interface';
+import { DeepLinkServiceIPCDescriptor } from '@services/deepLink/interface';
+import type { IGitService } from '@services/git/interface';
+import { GitServiceIPCDescriptor } from '@services/git/interface';
+import type { IGitServerService } from '@services/gitServer/interface';
+import { GitServerServiceIPCDescriptor } from '@services/gitServer/interface';
+import type { IMemeloopNodeService } from '@services/memeloopNode/interface';
+import { MemeloopNodeServiceIPCDescriptor } from '@services/memeloopNode/interface';
+import type { IMenuService } from '@services/menu/interface';
+import { MenuServiceIPCDescriptor } from '@services/menu/interface';
+import type { INativeService } from '@services/native/interface';
+import { NativeServiceIPCDescriptor } from '@services/native/interface';
+import type { INotificationService } from '@services/notifications/interface';
+import { NotificationServiceIPCDescriptor } from '@services/notifications/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
+import { PreferenceServiceIPCDescriptor } from '@services/preferences/interface';
+import type { ISyncService } from '@services/sync/interface';
+import { SyncServiceIPCDescriptor } from '@services/sync/interface';
+import type { ISystemPreferenceService } from '@services/systemPreferences/interface';
+import { SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences/interface';
+import type { IThemeService } from '@services/theme/interface';
+import { ThemeServiceIPCDescriptor } from '@services/theme/interface';
+import type { IToolPermissionsService } from '@services/toolPermissions/interface';
+import { ToolPermissionsServiceIPCDescriptor } from '@services/toolPermissions/interface';
+import type { IUpdaterService } from '@services/updater/interface';
+import { UpdaterServiceIPCDescriptor } from '@services/updater/interface';
+import type { IViewService } from '@services/view/interface';
+import { ViewServiceIPCDescriptor } from '@services/view/interface';
+import type { IWikiService } from '@services/wiki/interface';
+import { WikiServiceIPCDescriptor } from '@services/wiki/interface';
+import type { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
+import { WikiEmbeddingServiceIPCDescriptor } from '@services/wikiEmbedding/interface';
+import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
+import { WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
+import type { IWindowService } from '@services/windows/interface';
+import { WindowServiceIPCDescriptor } from '@services/windows/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import { WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import { WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
+import { ProviderRegistryService } from '../providerRegistry';
+import { type IProviderRegistryService, ProviderRegistryServiceIPCDescriptor } from '../providerRegistry/interface';
+import { RemoteTerminalService } from '../remoteTerminal';
+import { type IRemoteTerminalService, RemoteTerminalServiceIPCDescriptor } from '../remoteTerminal/interface';
 
 export function bindServiceAndProxy(): void {
   container
