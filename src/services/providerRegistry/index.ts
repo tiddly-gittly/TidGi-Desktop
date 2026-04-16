@@ -17,8 +17,8 @@ import { generateImageFromProvider } from './callImageGenerationAPI';
 import { streamFromProvider } from './callProviderAPI';
 import { generateSpeechFromProvider } from './callSpeechAPI';
 import { generateTranscriptionFromProvider } from './callTranscriptionsAPI';
-import { extractErrorDetails } from './errorHandlers';
 import defaultProvidersConfig from './defaultProviders';
+import { extractErrorDetails } from './errorHandlers';
 import type {
   AIEmbeddingResponse,
   AIGlobalSettings,
@@ -38,6 +38,48 @@ import { DEFAULT_RETRY_CONFIG, withRetry } from './retryUtility';
 interface AIRequestContext {
   requestId: string;
   controller: AbortController;
+}
+
+function formatMessageContentForDebug(
+  content: ModelMessage['content'] | undefined,
+): string {
+  if (content === undefined) {
+    return '';
+  }
+
+  if (typeof content === 'string') {
+    return content;
+  }
+
+  if (!Array.isArray(content)) {
+    return '';
+  }
+
+  return content
+    .map((part) => {
+      if (typeof part === 'string') {
+        return part;
+      }
+
+      if ('type' in part && part.type === 'text' && 'text' in part) {
+        return typeof part.text === 'string' ? part.text : '';
+      }
+
+      if ('content' in part && typeof part.content === 'string') {
+        return part.content;
+      }
+
+      return '';
+    })
+    .join('');
+}
+
+function truncateDebugPreview(content: string, maxLength = 200): string {
+  if (content.length <= maxLength) {
+    return content;
+  }
+
+  return `${content.slice(0, maxLength)}…`;
 }
 
 @injectable()
@@ -69,8 +111,12 @@ export class ProviderRegistryService implements IProviderRegistryService {
   };
 
   // Observable to emit config changes - will be updated when settings are loaded
-  public defaultConfig$ = new BehaviorSubject<AiAPIConfig>(this.userSettings.defaultConfig);
-  public providers$ = new BehaviorSubject<AIProviderConfig[]>(this.userSettings.providers);
+  public defaultConfig$ = new BehaviorSubject<AiAPIConfig>(
+    this.userSettings.defaultConfig,
+  );
+  public providers$ = new BehaviorSubject<AIProviderConfig[]>(
+    this.userSettings.providers,
+  );
 
   /**
    * Initialize the external API service
@@ -150,7 +196,9 @@ export class ProviderRegistryService implements IProviderRegistryService {
       ) {
         defaultConfig.default = { provider, model: model.name };
         configChanged = true;
-        logger.info(`Auto-filled default language model: ${provider}/${model.name}`);
+        logger.info(
+          `Auto-filled default language model: ${provider}/${model.name}`,
+        );
       }
 
       // Auto-fill embedding model
@@ -160,7 +208,9 @@ export class ProviderRegistryService implements IProviderRegistryService {
       ) {
         defaultConfig.embedding = { provider, model: model.name };
         configChanged = true;
-        logger.info(`Auto-filled default embedding model: ${provider}/${model.name}`);
+        logger.info(
+          `Auto-filled default embedding model: ${provider}/${model.name}`,
+        );
       }
 
       // Auto-fill speech model
@@ -170,27 +220,35 @@ export class ProviderRegistryService implements IProviderRegistryService {
       ) {
         defaultConfig.speech = { provider, model: model.name };
         configChanged = true;
-        logger.info(`Auto-filled default speech model: ${provider}/${model.name}`);
+        logger.info(
+          `Auto-filled default speech model: ${provider}/${model.name}`,
+        );
       }
 
       // Auto-fill image generation model
       if (
         model.features.includes('imageGeneration') &&
-        (!defaultConfig.imageGeneration?.model || !defaultConfig.imageGeneration?.provider)
+        (!defaultConfig.imageGeneration?.model ||
+          !defaultConfig.imageGeneration?.provider)
       ) {
         defaultConfig.imageGeneration = { provider, model: model.name };
         configChanged = true;
-        logger.info(`Auto-filled default image generation model: ${provider}/${model.name}`);
+        logger.info(
+          `Auto-filled default image generation model: ${provider}/${model.name}`,
+        );
       }
 
       // Auto-fill transcriptions model
       if (
         model.features.includes('transcriptions') &&
-        (!defaultConfig.transcriptions?.model || !defaultConfig.transcriptions?.provider)
+        (!defaultConfig.transcriptions?.model ||
+          !defaultConfig.transcriptions?.provider)
       ) {
         defaultConfig.transcriptions = { provider, model: model.name };
         configChanged = true;
-        logger.info(`Auto-filled default transcriptions model: ${provider}/${model.name}`);
+        logger.info(
+          `Auto-filled default transcriptions model: ${provider}/${model.name}`,
+        );
       }
 
       // Auto-fill free model
@@ -200,7 +258,9 @@ export class ProviderRegistryService implements IProviderRegistryService {
       ) {
         defaultConfig.free = { provider, model: model.name };
         configChanged = true;
-        logger.info(`Auto-filled default free model: ${provider}/${model.name}`);
+        logger.info(
+          `Auto-filled default free model: ${provider}/${model.name}`,
+        );
       }
     }
 
@@ -227,7 +287,12 @@ export class ProviderRegistryService implements IProviderRegistryService {
       requestPayload?: Record<string, unknown>;
       responseContent?: string;
       responseMetadata?: ResponseMetadata;
-      errorDetail?: { name: string; code: string; provider: string; message?: string };
+      errorDetail?: {
+        name: string;
+        code: string;
+        provider: string;
+        message?: string;
+      };
     } = {},
   ): Promise<void> {
     try {
@@ -258,13 +323,19 @@ export class ProviderRegistryService implements IProviderRegistryService {
       }
 
       // Try save; on UNIQUE race, fetch existing and merge, then save again
-      const existing = await this.apiLogRepository.findOne({ where: { id: requestId } });
+      const existing = await this.apiLogRepository.findOne({
+        where: { id: requestId },
+      });
       const entity = this.apiLogRepository.create({
         id: requestId,
         callType,
         status,
         agentInstanceId: options.agentInstanceId ?? existing?.agentInstanceId,
-        requestMetadata: options.requestMetadata || existing?.requestMetadata || { provider: 'unknown', model: 'unknown' },
+        requestMetadata: options.requestMetadata ||
+          existing?.requestMetadata || {
+          provider: 'unknown',
+          model: 'unknown',
+        },
         requestPayload: options.requestPayload ?? existing?.requestPayload,
         responseContent: options.responseContent ?? existing?.responseContent,
         responseMetadata: options.responseMetadata ?? existing?.responseMetadata,
@@ -275,14 +346,24 @@ export class ProviderRegistryService implements IProviderRegistryService {
       } catch (error) {
         const message = String((error as Error).message || error);
         if (message.includes('UNIQUE') || message.includes('unique')) {
-          const already = await this.apiLogRepository.findOne({ where: { id: requestId } });
+          const already = await this.apiLogRepository.findOne({
+            where: { id: requestId },
+          });
           if (already) {
             // Merge fields and persist
             already.status = status;
-            if (options.requestMetadata) already.requestMetadata = options.requestMetadata;
-            if (options.requestPayload) already.requestPayload = options.requestPayload;
-            if (options.responseContent !== undefined) already.responseContent = options.responseContent;
-            if (options.responseMetadata) already.responseMetadata = options.responseMetadata;
+            if (options.requestMetadata) {
+              already.requestMetadata = options.requestMetadata;
+            }
+            if (options.requestPayload) {
+              already.requestPayload = options.requestPayload;
+            }
+            if (options.responseContent !== undefined) {
+              already.responseContent = options.responseContent;
+            }
+            if (options.responseMetadata) {
+              already.responseMetadata = options.responseMetadata;
+            }
             if (options.errorDetail) already.errorDetail = options.errorDetail;
             await this.apiLogRepository.save(already);
           } else {
@@ -302,10 +383,16 @@ export class ProviderRegistryService implements IProviderRegistryService {
   private getHydratedProviders(): AIProviderConfig[] {
     const providers = cloneDeep(this.userSettings.providers);
     for (const stored of providers) {
-      const preset = defaultProvidersConfig.providers.find(d => d.provider === stored.provider);
+      const preset = defaultProvidersConfig.providers.find(
+        (d) => d.provider === stored.provider,
+      );
       if (preset) {
-        if (preset.loginUrl && !stored.loginUrl) stored.loginUrl = preset.loginUrl;
-        if (preset.apiKeyUrl && !stored.apiKeyUrl) stored.apiKeyUrl = preset.apiKeyUrl;
+        if (preset.loginUrl && !stored.loginUrl) {
+          stored.loginUrl = preset.loginUrl;
+        }
+        if (preset.apiKeyUrl && !stored.apiKeyUrl) {
+          stored.apiKeyUrl = preset.apiKeyUrl;
+        }
       }
     }
     return providers;
@@ -330,14 +417,17 @@ export class ProviderRegistryService implements IProviderRegistryService {
       }
 
       // Check if the provider has API key configured
-      const providerConfig = await this.getProviderConfig(aiConfig.free.provider);
+      const providerConfig = await this.getProviderConfig(
+        aiConfig.free.provider,
+      );
       if (!providerConfig) {
         return false;
       }
 
       // Some providers like Ollama don't require API keys, check if it's enabled
       // For providers that require API keys (most cloud providers), verify it's not empty
-      const requiresApiKey = providerConfig.providerClass !== 'ollama' && providerConfig.providerClass !== 'comfyui';
+      const requiresApiKey = providerConfig.providerClass !== 'ollama' &&
+        providerConfig.providerClass !== 'comfyui';
       if (requiresApiKey && !providerConfig.apiKey?.trim()) {
         return false;
       }
@@ -351,15 +441,22 @@ export class ProviderRegistryService implements IProviderRegistryService {
   /**
    * Get provider configuration by provider name
    */
-  private async getProviderConfig(providerName: string): Promise<AIProviderConfig | undefined> {
+  private async getProviderConfig(
+    providerName: string,
+  ): Promise<AIProviderConfig | undefined> {
     this.ensureSettingsLoaded();
     const providers = await this.getAIProviders();
-    return providers.find(p => p.provider === providerName);
+    return providers.find((p) => p.provider === providerName);
   }
 
-  async updateProvider(provider: string, config: Partial<AIProviderConfig>): Promise<void> {
+  async updateProvider(
+    provider: string,
+    config: Partial<AIProviderConfig>,
+  ): Promise<void> {
     this.ensureSettingsLoaded();
-    const existingProvider = this.userSettings.providers.find(p => p.provider === provider);
+    const existingProvider = this.userSettings.providers.find(
+      (p) => p.provider === provider,
+    );
 
     if (existingProvider) {
       Object.assign(existingProvider, config);
@@ -380,7 +477,9 @@ export class ProviderRegistryService implements IProviderRegistryService {
 
   async deleteProvider(provider: string): Promise<void> {
     this.ensureSettingsLoaded();
-    const index = this.userSettings.providers.findIndex(p => p.provider === provider);
+    const index = this.userSettings.providers.findIndex(
+      (p) => p.provider === provider,
+    );
     if (index !== -1) {
       this.userSettings.providers.splice(index, 1);
       this.saveSettingsToDatabase();
@@ -456,7 +555,11 @@ export class ProviderRegistryService implements IProviderRegistryService {
     this.activeRequests.delete(requestId);
   }
 
-  streamFromAI(messages: Array<ModelMessage>, config: AiAPIConfig, options?: { agentInstanceId?: string }): Observable<AIStreamResponse> {
+  streamFromAI(
+    messages: Array<ModelMessage>,
+    config: AiAPIConfig,
+    options?: { agentInstanceId?: string },
+  ): Observable<AIStreamResponse> {
     // Use defer to create a new observable stream for each subscription
     return defer(() => {
       // Prepare request context
@@ -466,7 +569,9 @@ export class ProviderRegistryService implements IProviderRegistryService {
       return from(this.generateFromAI(messages, config, options)).pipe(
         // Skip the first 'start' event since we'll emit our own
         // to ensure it happens immediately (AsyncGenerator might delay it)
-        filter((response, index) => !(index === 0 && response.status === 'start')),
+        filter(
+          (response, index) => !(index === 0 && response.status === 'start'),
+        ),
         // Ensure we emit a start event immediately
         startWith({ requestId, content: '', status: 'start' as const }),
         // Ensure cleanup happens on completion, error, or unsubscribe
@@ -506,14 +611,41 @@ export class ProviderRegistryService implements IProviderRegistryService {
       return;
     }
 
+    const systemPrompt = truncateDebugPreview(
+      formatMessageContentForDebug(
+        messages.find((message) => message.role === 'system')?.content,
+      ),
+    );
+    const latestUserPrompt = truncateDebugPreview(
+      formatMessageContentForDebug(
+        [...messages].reverse().find((message) => message.role === 'user')
+          ?.content,
+      ),
+    );
+    const requestConfigSummary = {
+      messageRoles: messages.map((message) => message.role),
+      systemPromptPreview: systemPrompt,
+      latestUserPromptPreview: latestUserPrompt,
+      temperature: config.modelParameters?.temperature ?? 0.7,
+      topP: config.modelParameters?.topP ?? 0.95,
+    };
+
     // Prepare messages for logging - convert Buffer to metadata only for better visibility
-    const messagesForLog = messages.map(message => {
+    const messagesForLog = messages.map((message) => {
       if (Array.isArray(message.content)) {
         return {
           ...message,
-          content: message.content.map(part => {
-            if (typeof part === 'object' && 'type' in part && part.type === 'image' && 'image' in part) {
-              const imagePart = part as { type: 'image'; image: Buffer | Uint8Array };
+          content: message.content.map((part) => {
+            if (
+              typeof part === 'object' &&
+              'type' in part &&
+              part.type === 'image' &&
+              'image' in part
+            ) {
+              const imagePart = part as {
+                type: 'image';
+                image: Buffer | Uint8Array;
+              };
               return {
                 type: 'image',
                 imageSize: imagePart.image.length,
@@ -535,7 +667,12 @@ export class ProviderRegistryService implements IProviderRegistryService {
           provider: modelConfig.provider,
           model: modelConfig.model,
           messageCount: messages.length,
-          hasImageContent: messages.some(m => Array.isArray(m.content) && m.content.some((p: { type?: string }) => p.type === 'image')),
+          hasImageContent: messages.some(
+            (m) =>
+              Array.isArray(m.content) &&
+              m.content.some((p: { type?: string }) => p.type === 'image'),
+          ),
+          configSummary: requestConfigSummary,
         },
         requestPayload: {
           messages: messagesForLog,
@@ -549,7 +686,12 @@ export class ProviderRegistryService implements IProviderRegistryService {
           provider: modelConfig.provider,
           model: modelConfig.model,
           messageCount: messages.length,
-          hasImageContent: messages.some(m => Array.isArray(m.content) && m.content.some((p: { type?: string }) => p.type === 'image')),
+          hasImageContent: messages.some(
+            (m) =>
+              Array.isArray(m.content) &&
+              m.content.some((p: { type?: string }) => p.type === 'image'),
+          ),
+          configSummary: requestConfigSummary,
         },
         requestPayload: {
           messages: messagesForLog,
@@ -563,12 +705,20 @@ export class ProviderRegistryService implements IProviderRegistryService {
       yield { requestId, content: '', status: 'start' };
 
       // Check if request contains images and verify model supports vision
-      const hasImageContent = messages.some(m => Array.isArray(m.content) && m.content.some((p: { type?: string }) => p.type === 'image'));
+      const hasImageContent = messages.some(
+        (m) =>
+          Array.isArray(m.content) &&
+          m.content.some((p: { type?: string }) => p.type === 'image'),
+      );
       if (hasImageContent) {
         // Find the model configuration to check if it supports vision
         const providers = await this.getAIProviders();
-        const provider = providers.find(p => p.provider === modelConfig.provider);
-        const model = provider?.models?.find(m => m.name === modelConfig.model);
+        const provider = providers.find(
+          (p) => p.provider === modelConfig.provider,
+        );
+        const model = provider?.models?.find(
+          (m) => m.name === modelConfig.model,
+        );
 
         if (!model?.features?.includes('vision')) {
           const errorResponse = {
@@ -649,11 +799,18 @@ export class ProviderRegistryService implements IProviderRegistryService {
         );
       } catch (providerError) {
         // Handle provider creation errors directly
-        const errorDetail = extractErrorDetails(providerError, modelConfig.provider);
+        const errorDetail = extractErrorDetails(
+          providerError,
+          modelConfig.provider,
+        );
         if (options?.awaitLogs) {
-          await this.logAPICall(requestId, 'streaming', 'error', { errorDetail });
+          await this.logAPICall(requestId, 'streaming', 'error', {
+            errorDetail,
+          });
         } else {
-          void this.logAPICall(requestId, 'streaming', 'error', { errorDetail });
+          void this.logAPICall(requestId, 'streaming', 'error', {
+            errorDetail,
+          });
         }
 
         yield {
@@ -676,7 +833,9 @@ export class ProviderRegistryService implements IProviderRegistryService {
 
         // Check cancellation after processing chunk so we capture the latest partial content
         if (controller.signal.aborted) {
-          void this.logAPICall(requestId, 'streaming', 'cancel', { responseContent: fullResponse });
+          void this.logAPICall(requestId, 'streaming', 'cancel', {
+            responseContent: fullResponse,
+          });
           yield {
             requestId,
             content: 'Request cancelled',
@@ -699,6 +858,7 @@ export class ProviderRegistryService implements IProviderRegistryService {
         responseContent: fullResponse,
         responseMetadata: {
           duration,
+          responseLength: fullResponse.length,
         },
       });
 
@@ -761,7 +921,9 @@ export class ProviderRegistryService implements IProviderRegistryService {
       };
     }
 
-    logger.debug(`[${requestId}] Starting generateEmbeddings with config`, { inputCount: inputs.length });
+    logger.debug(`[${requestId}] Starting generateEmbeddings with config`, {
+      inputCount: inputs.length,
+    });
 
     try {
       // Get provider configuration
@@ -841,7 +1003,9 @@ export class ProviderRegistryService implements IProviderRegistryService {
       };
     }
 
-    logger.debug(`[${requestId}] Starting generateSpeech with config`, { inputLength: input.length });
+    logger.debug(`[${requestId}] Starting generateSpeech with config`, {
+      inputLength: input.length,
+    });
 
     try {
       // Get provider configuration
@@ -990,7 +1154,9 @@ export class ProviderRegistryService implements IProviderRegistryService {
       };
     }
 
-    logger.debug(`[${requestId}] Starting generateImage with config`, { promptLength: prompt.length });
+    logger.debug(`[${requestId}] Starting generateImage with config`, {
+      promptLength: prompt.length,
+    });
 
     try {
       // Get provider configuration
@@ -1038,18 +1204,26 @@ export class ProviderRegistryService implements IProviderRegistryService {
   /**
    * Get API call logs for debugging purposes
    */
-  async getAPILogs(agentInstanceId?: string, limit = 100, offset = 0): Promise<ExternalAPILogEntity[]> {
+  async getAPILogs(
+    agentInstanceId?: string,
+    limit = 100,
+    offset = 0,
+  ): Promise<ExternalAPILogEntity[]> {
     try {
       // Check if debug logging is enabled
       const externalAPIDebug = await this.preferenceService.get('externalAPIDebug');
       if (!externalAPIDebug) {
-        logger.warn('External API debug logging is disabled, returning empty results');
+        logger.warn(
+          'External API debug logging is disabled, returning empty results',
+        );
         return [];
       }
 
       // Ensure API logging is initialized. If not initialized yet, return empty results and warn.
       if (!this.apiLogRepository) {
-        logger.warn('API log repository not initialized; returning empty log results');
+        logger.warn(
+          'API log repository not initialized; returning empty log results',
+        );
         return [];
       }
 
@@ -1062,7 +1236,9 @@ export class ProviderRegistryService implements IProviderRegistryService {
 
       // Filter by agent instance ID if provided
       if (agentInstanceId) {
-        queryBuilder.where('log.agentInstanceId = :agentInstanceId', { agentInstanceId });
+        queryBuilder.where('log.agentInstanceId = :agentInstanceId', {
+          agentInstanceId,
+        });
       }
 
       // Only return streaming and immediate calls (not embedding)
