@@ -137,7 +137,7 @@ export function ProviderPanel({
 
         {/* Browser login button (for OAuth providers like memeloop) or Get API Key link */}
         {(provider.loginUrl || provider.apiKeyUrl) && (
-            <Button
+          <Button
             variant='outlined'
             size='medium'
             startIcon={provider.loginUrl ? <OpenInBrowserIcon /> : <VpnKeyIcon />}

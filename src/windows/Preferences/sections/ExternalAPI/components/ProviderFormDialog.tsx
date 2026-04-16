@@ -1,20 +1,7 @@
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  FormControlLabel,
-  InputLabel,
-  MenuItem,
-  Select,
-  Switch,
-  TextField,
-} from "@mui/material";
-import { AIProviderConfig } from "@services/providerRegistry/interface";
-import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormControlLabel, InputLabel, MenuItem, Select, Switch, TextField } from '@mui/material';
+import { AIProviderConfig } from '@services/providerRegistry/interface';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ProviderFormDialogProps {
   open: boolean;
@@ -24,13 +11,13 @@ interface ProviderFormDialogProps {
 }
 
 const PROVIDER_CLASSES = [
-  "openai",
-  "openAICompatible",
-  "anthropic",
-  "deepseek",
-  "ollama",
-  "comfyui",
-  "custom",
+  'openai',
+  'openAICompatible',
+  'anthropic',
+  'deepseek',
+  'ollama',
+  'comfyui',
+  'custom',
 ];
 
 export function ProviderFormDialog({
@@ -39,12 +26,12 @@ export function ProviderFormDialog({
   onClose,
   onSave,
 }: ProviderFormDialogProps): React.JSX.Element {
-  const { t } = useTranslation("agent");
+  const { t } = useTranslation('agent');
   const [formData, setFormData] = useState({
-    provider: "",
-    baseURL: "",
-    apiKey: "",
-    providerClass: "openAICompatible",
+    provider: '',
+    baseURL: '',
+    apiKey: '',
+    providerClass: 'openAICompatible',
     enabled: true,
   });
   const [saving, setSaving] = useState(false);
@@ -53,17 +40,17 @@ export function ProviderFormDialog({
     if (provider) {
       setFormData({
         provider: provider.provider,
-        baseURL: provider.baseURL || "",
-        apiKey: provider.apiKey || "",
-        providerClass: provider.providerClass || "openAICompatible",
+        baseURL: provider.baseURL || '',
+        apiKey: provider.apiKey || '',
+        providerClass: provider.providerClass || 'openAICompatible',
         enabled: provider.enabled !== false,
       });
     } else {
       setFormData({
-        provider: "",
-        baseURL: "",
-        apiKey: "",
-        providerClass: "openAICompatible",
+        provider: '',
+        baseURL: '',
+        apiKey: '',
+        providerClass: 'openAICompatible',
         enabled: true,
       });
     }
@@ -98,41 +85,38 @@ export function ProviderFormDialog({
   };
 
   const isEditing = provider !== null;
-  const showBaseURLField =
-    formData.providerClass === "openAICompatible" ||
-    formData.providerClass === "ollama" ||
-    formData.providerClass === "comfyui";
+  const showBaseURLField = formData.providerClass === 'openAICompatible' ||
+    formData.providerClass === 'ollama' ||
+    formData.providerClass === 'comfyui';
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
       <DialogTitle>
         {isEditing
-          ? t("Preference.EditProvider")
-          : t("Preference.AddCustomProvider")}
+          ? t('Preference.EditProvider')
+          : t('Preference.AddCustomProvider')}
       </DialogTitle>
       <DialogContent>
         <TextField
-          label={t("Preference.ProviderName")}
+          label={t('Preference.ProviderName')}
           value={formData.provider}
-          onChange={(e) => handleChange("provider", e.target.value)}
+          onChange={(e) => handleChange('provider', e.target.value)}
           fullWidth
-          margin="normal"
+          margin='normal'
           disabled={isEditing}
           required
-          placeholder="my-custom-provider"
-          helperText={
-            isEditing
-              ? t("Preference.ProviderNameCannotBeChanged")
-              : t("Preference.ProviderNameHelp")
-          }
+          placeholder='my-custom-provider'
+          helperText={isEditing
+            ? t('Preference.ProviderNameCannotBeChanged')
+            : t('Preference.ProviderNameHelp')}
         />
 
-        <FormControl fullWidth margin="normal">
-          <InputLabel>{t("Preference.ProviderClass")}</InputLabel>
+        <FormControl fullWidth margin='normal'>
+          <InputLabel>{t('Preference.ProviderClass')}</InputLabel>
           <Select
             value={formData.providerClass}
-            onChange={(e) => handleChange("providerClass", e.target.value)}
-            label={t("Preference.ProviderClass")}
+            onChange={(e) => handleChange('providerClass', e.target.value)}
+            label={t('Preference.ProviderClass')}
           >
             {PROVIDER_CLASSES.map((cls) => (
               <MenuItem key={cls} value={cls}>
@@ -144,54 +128,52 @@ export function ProviderFormDialog({
 
         {showBaseURLField && (
           <TextField
-            label={t("Preference.BaseURL")}
+            label={t('Preference.BaseURL')}
             value={formData.baseURL}
-            onChange={(e) => handleChange("baseURL", e.target.value)}
+            onChange={(e) => handleChange('baseURL', e.target.value)}
             fullWidth
-            margin="normal"
-            placeholder={
-              formData.providerClass === "ollama"
-                ? "http://localhost:11434"
-                : formData.providerClass === "comfyui"
-                  ? "http://localhost:8188"
-                  : "https://api.example.com/v1"
-            }
-            helperText={t("Preference.BaseURLHelp")}
+            margin='normal'
+            placeholder={formData.providerClass === 'ollama'
+              ? 'http://localhost:11434'
+              : formData.providerClass === 'comfyui'
+              ? 'http://localhost:8188'
+              : 'https://api.example.com/v1'}
+            helperText={t('Preference.BaseURLHelp')}
           />
         )}
 
         <TextField
-          label={t("Preference.APIKey")}
+          label={t('Preference.APIKey')}
           value={formData.apiKey}
-          onChange={(e) => handleChange("apiKey", e.target.value)}
+          onChange={(e) => handleChange('apiKey', e.target.value)}
           fullWidth
-          margin="normal"
-          type="password"
-          placeholder="sk-..."
-          helperText={t("Preference.APIKeyHelp")}
+          margin='normal'
+          type='password'
+          placeholder='sk-...'
+          helperText={t('Preference.APIKeyHelp')}
         />
 
         <FormControlLabel
           control={
             <Switch
               checked={formData.enabled}
-              onChange={(e) => handleChange("enabled", e.target.checked)}
+              onChange={(e) => handleChange('enabled', e.target.checked)}
             />
           }
-          label={t("Preference.EnableProvider")}
+          label={t('Preference.EnableProvider')}
           sx={{ mt: 2 }}
         />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={saving}>
-          {t("Preference.Cancel")}
+          {t('Preference.Cancel')}
         </Button>
         <Button
           onClick={handleSubmit}
-          variant="contained"
+          variant='contained'
           disabled={saving || !formData.provider.trim()}
         >
-          {saving ? t("Preference.Saving") : t("Preference.Save")}
+          {saving ? t('Preference.Saving') : t('Preference.Save')}
         </Button>
       </DialogActions>
     </Dialog>
