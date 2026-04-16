@@ -9,9 +9,21 @@ import type { ISettingFile } from '../../src/services/database/interface';
 import { CLOUD_E2E_NODE, startMemeloopCloudFixture } from '../supports/memeloopCloudFixture';
 import { startRemoteMemeloopTestNode } from '../supports/memeloopRemoteTestNode';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
-import { getSettingsPath } from '../supports/paths';
+import { getLogPath, getSettingsPath } from '../supports/paths';
 import { PLAYWRIGHT_SHORT_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
+
+interface ExternalApiDebugLog {
+  requestMetadata?: {
+    provider?: string;
+    model?: string;
+    configSummary?: {
+      systemPromptPreview?: string;
+      latestUserPromptPreview?: string;
+      messageRoles?: string[];
+    };
+  };
+}
 
 // Backoff configuration for retries
 const BACKOFF_OPTIONS = {
@@ -526,11 +538,290 @@ function createProviderConfig(): AIProviderConfig {
   };
 }
 
+function createSiliconFlowProviderConfig(): AIProviderConfig {
+  const apiKey = process.env.SILICONFLOW_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      'SILICONFLOW_API_KEY environment variable is required for SiliconFlow tests',
+    );
+  }
+
+  return {
+    provider: 'siliconflow',
+    baseURL: 'https://api.siliconflow.cn/v1',
+    apiKey,
+    models: [
+      {
+        name: 'Qwen/Qwen3.5-122B-A10B',
+        features: ['language', 'reasoning'],
+      },
+      {
+        name: 'BAAI/bge-m3',
+        features: ['embedding'],
+      },
+      {
+        name: 'IndexTeam/IndexTTS-2',
+        features: ['speech'],
+      },
+    ],
+    providerClass: 'openAICompatible',
+    isPreset: false,
+    enabled: true,
+  };
+}
+
 const desiredModelParameters = {
   temperature: 0.7,
   systemPrompt: 'You are a helpful assistant.',
   topP: 0.95,
 };
+
+Given(
+  'I add siliconflow test ai settings',
+  async function(this: ApplicationWorld) {
+    const settingsPath = path.resolve(
+      process.cwd(),
+      'test-artifacts',
+      this.scenarioSlug,
+      'userData-test',
+      'settings',
+      'settings.json',
+    );
+    let existing = {} as ISettingFile;
+    if (fs.existsSync(settingsPath)) {
+      existing = fs.readJsonSync(settingsPath) as ISettingFile;
+    } else {
+      fs.ensureDirSync(path.dirname(settingsPath));
+    }
+
+    this.providerConfig = createSiliconFlowProviderConfig();
+    const providerConfig = this.providerConfig;
+    const modelsArray = providerConfig.models;
+    const modelName = modelsArray[0]?.name;
+    const embeddingModelName = modelsArray[1]?.name;
+    const speechModelName = modelsArray[2]?.name;
+
+    const newAi: AIGlobalSettings = {
+      providers: [providerConfig],
+      defaultConfig: {
+        default: {
+          provider: providerConfig.provider,
+          model: modelName,
+        },
+        embedding: {
+          provider: providerConfig.provider,
+          model: embeddingModelName,
+        },
+        speech: {
+          provider: providerConfig.provider,
+          model: speechModelName,
+        },
+        modelParameters: desiredModelParameters,
+      },
+    };
+
+    const newPreferences = {
+      ...(existing.preferences || {}),
+      externalAPIDebug: false,
+    };
+
+    fs.writeJsonSync(
+      settingsPath,
+      {
+        ...existing,
+        aiSettings: newAi,
+        preferences: newPreferences,
+      } as ISettingFile,
+      { spaces: 2 },
+    );
+  },
+);
+
+Then(
+  'the external API debug log should include provider {string} and model {string}',
+  async function(
+    this: ApplicationWorld,
+    expectedProvider: string,
+    expectedModel: string,
+  ) {
+    const logDirectory = getLogPath(this);
+    const logMarker = 'External API logging initialized';
+
+    await backOff(
+      async () => {
+        if (!fs.existsSync(logDirectory)) {
+          throw new Error(`Log directory not found: ${logDirectory}`);
+        }
+
+        const logFiles = fs
+          .readdirSync(logDirectory)
+          .filter((fileName) => fileName.endsWith('.log'));
+        const logMatch = logFiles.some((fileName) => {
+          try {
+            const content = fs.readFileSync(
+              path.join(logDirectory, fileName),
+              'utf8',
+            );
+            return content.includes(logMarker);
+          } catch {
+            return false;
+          }
+        });
+
+        if (!logMatch) {
+          throw new Error(
+            'External API logging initialization marker not found in logs',
+          );
+        }
+      },
+      {
+        numOfAttempts: 20,
+        startingDelay: 200,
+        timeMultiple: 1,
+        maxDelay: 200,
+        delayFirstAttempt: true,
+      },
+    );
+
+    const currentWindow = this.currentWindow || this.mainWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
+    }
+
+    const logs = await backOff(
+      async () => {
+        const result = await currentWindow.evaluate(
+          async (): Promise<ExternalApiDebugLog[]> => {
+            const windowWithService = window as unknown as {
+              service: {
+                externalAPI: {
+                  getAPILogs: (
+                    agentInstanceId?: string,
+                    limit?: number,
+                    offset?: number,
+                  ) => Promise<ExternalApiDebugLog[]>;
+                };
+              };
+            };
+            return await windowWithService.service.externalAPI.getAPILogs(
+              undefined,
+              10,
+              0,
+            );
+          },
+        );
+
+        if (!Array.isArray(result) || result.length === 0) {
+          throw new Error('No external API debug logs available yet');
+        }
+
+        return result;
+      },
+      {
+        numOfAttempts: 20,
+        startingDelay: 250,
+        timeMultiple: 1,
+        maxDelay: 250,
+        delayFirstAttempt: true,
+      },
+    );
+
+    const matchingLog = logs.find((log) => {
+      return (
+        log.requestMetadata?.provider === expectedProvider &&
+        log.requestMetadata?.model === expectedModel
+      );
+    });
+
+    if (!matchingLog) {
+      throw new Error(
+        `Could not find external API log for provider ${expectedProvider} and model ${expectedModel}. Logs: ${JSON.stringify(logs, null, 2)}`,
+      );
+    }
+  },
+);
+
+Then(
+  'the latest external API debug log should show system prompt {string} and user prompt {string}',
+  async function(
+    this: ApplicationWorld,
+    expectedSystemPrompt: string,
+    expectedUserPrompt: string,
+  ) {
+    const currentWindow = this.currentWindow || this.mainWindow;
+    if (!currentWindow) {
+      throw new Error('No current window is available');
+    }
+
+    const logs = await backOff(
+      async () => {
+        const result = await currentWindow.evaluate(
+          async (): Promise<ExternalApiDebugLog[]> => {
+            const windowWithService = window as unknown as {
+              service: {
+                externalAPI: {
+                  getAPILogs: (
+                    agentInstanceId?: string,
+                    limit?: number,
+                    offset?: number,
+                  ) => Promise<ExternalApiDebugLog[]>;
+                };
+              };
+            };
+            return await windowWithService.service.externalAPI.getAPILogs(
+              undefined,
+              10,
+              0,
+            );
+          },
+        );
+
+        if (!Array.isArray(result) || result.length === 0) {
+          throw new Error('No external API debug logs available yet');
+        }
+
+        return result;
+      },
+      {
+        numOfAttempts: 20,
+        startingDelay: 250,
+        timeMultiple: 1,
+        maxDelay: 250,
+        delayFirstAttempt: true,
+      },
+    );
+
+    const latestLog = logs[0];
+    const configSummary = latestLog.requestMetadata?.configSummary;
+
+    if (!configSummary) {
+      throw new Error(
+        `Latest external API log does not include configSummary: ${JSON.stringify(latestLog, null, 2)}`,
+      );
+    }
+
+    if (!configSummary.systemPromptPreview?.includes(expectedSystemPrompt)) {
+      throw new Error(
+        `Expected system prompt preview to include "${expectedSystemPrompt}", got: ${configSummary.systemPromptPreview}`,
+      );
+    }
+
+    if (!configSummary.latestUserPromptPreview?.includes(expectedUserPrompt)) {
+      throw new Error(
+        `Expected latest user prompt preview to include "${expectedUserPrompt}", got: ${configSummary.latestUserPromptPreview}`,
+      );
+    }
+
+    if (
+      !configSummary.messageRoles?.includes('system') ||
+      !configSummary.messageRoles?.includes('user')
+    ) {
+      throw new Error(
+        `Expected configSummary.messageRoles to include both system and user, got: ${JSON.stringify(configSummary.messageRoles)}`,
+      );
+    }
+  },
+);
 
 // Step to remove AI settings for testing config errors
 Given('I remove test ai settings', function(this: ApplicationWorld) {
