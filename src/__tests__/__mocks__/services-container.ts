@@ -1,7 +1,7 @@
-import type { AIStreamResponse } from '@/services/providerRegistry/interface';
-import type { IToolApprovalRequest, IToolPermissionsService } from '@/services/toolPermissions/interface';
 import type { IMemeloopNodeService } from '@/services/memeloopNode/interface';
+import type { AIStreamResponse } from '@/services/providerRegistry/interface';
 import type { IRemoteTerminalService } from '@/services/remoteTerminal/interface';
+import type { IToolApprovalRequest, IToolPermissionsService } from '@/services/toolPermissions/interface';
 import { AgentBrowserService } from '@services/agentBrowser';
 import { AgentDefinitionService } from '@services/agentDefinition';
 import { AgentInstanceService } from '@services/agentInstance';
@@ -147,7 +147,15 @@ export const serviceInstances: {
     syncNow: vi.fn(async () => ({ synced: true })),
     antiEntropy: vi.fn(async () => ({ synced: true })),
     getSyncStatus: vi.fn(async () => ({ versionVector: {}, peerCount: 0, syncRunning: false })),
-    getIdentityStatus: vi.fn(async () => ({ nodeId: '', hasKeypair: false, cloudUrl: null, cloudLoggedIn: false, cloudEmail: null, cloudNodeRegistered: false, knownNodeCount: 0 })),
+    getIdentityStatus: vi.fn(async () => ({
+      nodeId: '',
+      hasKeypair: false,
+      cloudUrl: null,
+      cloudLoggedIn: false,
+      cloudEmail: null,
+      cloudNodeRegistered: false,
+      knownNodeCount: 0,
+    })),
     regenerateKeypair: vi.fn(async () => ({ nodeId: 'new-node-id' })),
     cloudLogin: vi.fn(async () => ({ ok: true })),
     cloudLogout: vi.fn(async () => undefined),
@@ -160,7 +168,11 @@ export const serviceInstances: {
     getLocalPinCode: vi.fn(async () => 'ABCDEF'),
     confirmPeerPin: vi.fn(async () => ({ ok: true })),
     getSubscriptionStatus: vi.fn(async () => ({
-      plan: 'free' as const, status: 'active' as const, tokenUsed: 0, tokenTotal: 10000, billingHistory: [],
+      plan: 'free' as const,
+      status: 'active' as const,
+      tokenUsed: 0,
+      tokenTotal: 10000,
+      billingHistory: [],
     })),
     openBillingPage: vi.fn(async () => undefined),
   } as Partial<IMemeloopNodeService>,
