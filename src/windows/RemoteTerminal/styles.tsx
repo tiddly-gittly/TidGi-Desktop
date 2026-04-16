@@ -1,6 +1,6 @@
-import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
-import { styled } from "@mui/material/styles";
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import { styled } from '@mui/material/styles';
 
 export const Root = styled(Container)`
   width: 100%;
@@ -9,8 +9,7 @@ export const Root = styled(Container)`
   flex-direction: column;
   padding: 16px;
   overflow: hidden;
-  background: ${({ theme }) =>
-    theme.palette.mode === "dark" ? "#0a0a0a" : "#fafafa"};
+  background: ${({ theme }) => theme.palette.mode === 'dark' ? '#0a0a0a' : '#fafafa'};
 `;
 
 export const Header = styled(Box)`
@@ -64,10 +63,8 @@ export const SessionItem = styled(Box)<{ selected?: boolean }>`
   cursor: pointer;
   border-radius: 6px;
   border: 1px solid
-    ${({ theme, selected }) =>
-      selected ? theme.palette.primary.main : theme.palette.divider};
-  background: ${({ theme, selected }) =>
-    selected ? theme.palette.action.selected : "transparent"};
+    ${({ theme, selected }) => selected ? theme.palette.primary.main : theme.palette.divider};
+  background: ${({ theme, selected }) => selected ? theme.palette.action.selected : 'transparent'};
   transition: all 0.2s ease;
 
   &:hover {
@@ -92,8 +89,7 @@ export const TerminalHeader = styled(Box)`
   justify-content: space-between;
   padding: 12px 16px;
   border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
-  background: ${({ theme }) =>
-    theme.palette.mode === "dark" ? "#1a1a1a" : "#f5f5f5"};
+  background: ${({ theme }) => theme.palette.mode === 'dark' ? '#1a1a1a' : '#f5f5f5'};
 `;
 
 export const TerminalOutput = styled(Box)`
@@ -103,10 +99,8 @@ export const TerminalOutput = styled(Box)`
   font-family: "Consolas", "Monaco", "Courier New", monospace;
   font-size: 13px;
   line-height: 1.5;
-  background: ${({ theme }) =>
-    theme.palette.mode === "dark" ? "#0d0d0d" : "#ffffff"};
-  color: ${({ theme }) =>
-    theme.palette.mode === "dark" ? "#e0e0e0" : "#1a1a1a"};
+  background: ${({ theme }) => theme.palette.mode === 'dark' ? '#0d0d0d' : '#ffffff'};
+  color: ${({ theme }) => theme.palette.mode === 'dark' ? '#e0e0e0' : '#1a1a1a'};
   white-space: pre-wrap;
   word-break: break-all;
 `;
@@ -116,8 +110,7 @@ export const TerminalInputWrapper = styled(Box)`
   gap: 8px;
   padding: 12px 16px;
   border-top: 1px solid ${({ theme }) => theme.palette.divider};
-  background: ${({ theme }) =>
-    theme.palette.mode === "dark" ? "#1a1a1a" : "#f5f5f5"};
+  background: ${({ theme }) => theme.palette.mode === 'dark' ? '#1a1a1a' : '#f5f5f5'};
 `;
 
 export const LoadingContainer = styled(Box)`

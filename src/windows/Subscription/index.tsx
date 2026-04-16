@@ -1,26 +1,16 @@
-import { Helmet } from "@dr.pogodin/react-helmet";
-import {
-  Box,
-  Typography,
-  CircularProgress,
-  Alert,
-  Button,
-  Card,
-  CardContent,
-  LinearProgress,
-  Chip,
-} from "@mui/material";
-import { styled } from "@mui/material/styles";
-import React, { useEffect, useState, useCallback } from "react";
-import { useTranslation } from "react-i18next";
-import { format } from "date-fns";
+import { Helmet } from '@dr.pogodin/react-helmet';
+import { Alert, Box, Button, Card, CardContent, Chip, CircularProgress, LinearProgress, Typography } from '@mui/material';
+import { styled } from '@mui/material/styles';
+import { format } from 'date-fns';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const Container = styled(Box)(({ theme }) => ({
-  display: "flex",
-  flexDirection: "column",
-  height: "100vh",
+  display: 'flex',
+  flexDirection: 'column',
+  height: '100vh',
   backgroundColor: theme.palette.background.default,
-  overflow: "hidden",
+  overflow: 'hidden',
 }));
 
 const Header = styled(Box)(({ theme }) => ({
@@ -31,7 +21,7 @@ const Header = styled(Box)(({ theme }) => ({
 
 const Content = styled(Box)(({ theme }) => ({
   flex: 1,
-  overflow: "auto",
+  overflow: 'auto',
   padding: theme.spacing(3),
 }));
 
@@ -45,15 +35,15 @@ const UsageBar = styled(Box)(({ theme }) => ({
 }));
 
 const StatsRow = styled(Box)({
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
   marginBottom: 8,
 });
 
 interface SubscriptionData {
-  plan: "free" | "pro" | "enterprise";
-  status: "active" | "expired" | "cancelled";
+  plan: 'free' | 'pro' | 'enterprise';
+  status: 'active' | 'expired' | 'cancelled';
   tokenUsed: number;
   tokenTotal: number;
   renewalDate?: string;
@@ -61,7 +51,7 @@ interface SubscriptionData {
     id: string;
     date: string;
     amount: number;
-    status: "paid" | "pending" | "failed";
+    status: 'paid' | 'pending' | 'failed';
   }>;
 }
 
@@ -82,7 +72,7 @@ export default function Subscription(): React.JSX.Element {
       setSubscription(data);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load subscription data",
+        err instanceof Error ? err.message : 'Failed to load subscription data',
       );
     } finally {
       setLoading(false);
@@ -98,32 +88,32 @@ export default function Subscription(): React.JSX.Element {
       await window.service.memeloopNode.openBillingPage();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to open billing page",
+        err instanceof Error ? err.message : 'Failed to open billing page',
       );
     }
   }, []);
 
   const getPlanColor = (plan: string) => {
     switch (plan) {
-      case "pro":
-        return "primary";
-      case "enterprise":
-        return "secondary";
+      case 'pro':
+        return 'primary';
+      case 'enterprise':
+        return 'secondary';
       default:
-        return "default";
+        return 'default';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active":
-        return "success";
-      case "expired":
-        return "error";
-      case "cancelled":
-        return "warning";
+      case 'active':
+        return 'success';
+      case 'expired':
+        return 'error';
+      case 'cancelled':
+        return 'warning';
       default:
-        return "default";
+        return 'default';
     }
   };
 
@@ -134,15 +124,15 @@ export default function Subscription(): React.JSX.Element {
   return (
     <Container>
       <Helmet>
-        <title>{t("Subscription.Title")}</title>
+        <title>{t('Subscription.Title')}</title>
       </Helmet>
 
       <Header>
-        <Typography variant="h5" component="h1">
-          {t("Subscription.Title")}
+        <Typography variant='h5' component='h1'>
+          {t('Subscription.Title')}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          {t("Subscription.Description")}
+        <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
+          {t('Subscription.Description')}
         </Typography>
       </Header>
 
@@ -150,10 +140,10 @@ export default function Subscription(): React.JSX.Element {
         {loading && (
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "100%",
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100%',
             }}
           >
             <CircularProgress />
@@ -161,7 +151,7 @@ export default function Subscription(): React.JSX.Element {
         )}
 
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity='error' sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
@@ -172,40 +162,40 @@ export default function Subscription(): React.JSX.Element {
               <CardContent>
                 <Box
                   sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     mb: 2,
                   }}
                 >
-                  <Typography variant="h6">{t("Subscription.CurrentPlan")}</Typography>
+                  <Typography variant='h6'>{t('Subscription.CurrentPlan')}</Typography>
                   <Chip
                     label={subscription.plan.toUpperCase()}
                     color={getPlanColor(subscription.plan)}
-                    size="small"
+                    size='small'
                   />
                 </Box>
 
                 <StatsRow>
-                  <Typography variant="body2" color="text.secondary">
-                    {t("Subscription.Status")}
+                  <Typography variant='body2' color='text.secondary'>
+                    {t('Subscription.Status')}
                   </Typography>
                   <Chip
                     label={subscription.status.toUpperCase()}
                     color={getStatusColor(subscription.status)}
-                    size="small"
+                    size='small'
                   />
                 </StatsRow>
 
                 {subscription.renewalDate && (
                   <StatsRow>
-                    <Typography variant="body2" color="text.secondary">
-                      {t("Subscription.RenewalDate")}
+                    <Typography variant='body2' color='text.secondary'>
+                      {t('Subscription.RenewalDate')}
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant='body2'>
                       {format(
                         new Date(subscription.renewalDate),
-                        "MMM dd, yyyy",
+                        'MMM dd, yyyy',
                       )}
                     </Typography>
                   </StatsRow>
@@ -213,12 +203,12 @@ export default function Subscription(): React.JSX.Element {
 
                 <Box sx={{ mt: 3 }}>
                   <Button
-                    variant="contained"
-                    color="primary"
+                    variant='contained'
+                    color='primary'
                     fullWidth
                     onClick={handleOpenBilling}
                   >
-                    {t("Subscription.ManageBilling")}
+                    {t('Subscription.ManageBilling')}
                   </Button>
                 </Box>
               </CardContent>
@@ -226,36 +216,33 @@ export default function Subscription(): React.JSX.Element {
 
             <StatusCard>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  {t("Subscription.TokenUsage")}
+                <Typography variant='h6' sx={{ mb: 2 }}>
+                  {t('Subscription.TokenUsage')}
                 </Typography>
 
                 <StatsRow>
-                  <Typography variant="body2" color="text.secondary">
-                    {t("Subscription.Used")}
+                  <Typography variant='body2' color='text.secondary'>
+                    {t('Subscription.Used')}
                   </Typography>
-                  <Typography variant="body2">
-                    {subscription.tokenUsed.toLocaleString()} /{" "}
-                    {subscription.tokenTotal.toLocaleString()}
+                  <Typography variant='body2'>
+                    {subscription.tokenUsed.toLocaleString()} / {subscription.tokenTotal.toLocaleString()}
                   </Typography>
                 </StatsRow>
 
                 <UsageBar>
                   <LinearProgress
-                    variant="determinate"
+                    variant='determinate'
                     value={Math.min(usagePercentage, 100)}
-                    color={
-                      usagePercentage > 90
-                        ? "error"
-                        : usagePercentage > 70
-                          ? "warning"
-                          : "primary"
-                    }
+                    color={usagePercentage > 90
+                      ? 'error'
+                      : usagePercentage > 70
+                      ? 'warning'
+                      : 'primary'}
                     sx={{ height: 8, borderRadius: 4 }}
                   />
                 </UsageBar>
 
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant='caption' color='text.secondary'>
                   {usagePercentage.toFixed(1)}% used
                 </Typography>
               </CardContent>
@@ -264,47 +251,45 @@ export default function Subscription(): React.JSX.Element {
             {subscription.billingHistory.length > 0 && (
               <StatusCard>
                 <CardContent>
-                  <Typography variant="h6" sx={{ mb: 2 }}>
-                    {t("Subscription.BillingHistory")}
+                  <Typography variant='h6' sx={{ mb: 2 }}>
+                    {t('Subscription.BillingHistory')}
                   </Typography>
 
                   {subscription.billingHistory.map((invoice) => (
                     <Box
                       key={invoice.id}
                       sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                         py: 1.5,
-                        borderBottom: "1px solid",
-                        borderColor: "divider",
-                        "&:last-child": { borderBottom: "none" },
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        '&:last-child': { borderBottom: 'none' },
                       }}
                     >
                       <Box>
-                        <Typography variant="body2">
-                          {format(new Date(invoice.date), "MMM dd, yyyy")}
+                        <Typography variant='body2'>
+                          {format(new Date(invoice.date), 'MMM dd, yyyy')}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant='caption' color='text.secondary'>
                           Invoice #{invoice.id}
                         </Typography>
                       </Box>
                       <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                        sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
                       >
-                        <Typography variant="body2" fontWeight={600}>
+                        <Typography variant='body2' fontWeight={600}>
                           ${invoice.amount.toFixed(2)}
                         </Typography>
                         <Chip
                           label={invoice.status.toUpperCase()}
-                          color={
-                            invoice.status === "paid"
-                              ? "success"
-                              : invoice.status === "failed"
-                                ? "error"
-                                : "warning"
-                          }
-                          size="small"
+                          color={invoice.status === 'paid'
+                            ? 'success'
+                            : invoice.status === 'failed'
+                            ? 'error'
+                            : 'warning'}
+                          size='small'
                         />
                       </Box>
                     </Box>
@@ -316,12 +301,12 @@ export default function Subscription(): React.JSX.Element {
         )}
 
         {!loading && !error && !subscription && (
-          <Box sx={{ textAlign: "center", py: 8 }}>
-            <Typography variant="h6" color="text.secondary">
-              {t("Subscription.NoData")}
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant='h6' color='text.secondary'>
+              {t('Subscription.NoData')}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              {t("Subscription.NoDataDescription")}
+            <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
+              {t('Subscription.NoDataDescription')}
             </Typography>
           </Box>
         )}
