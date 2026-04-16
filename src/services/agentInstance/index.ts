@@ -1,65 +1,44 @@
-import { inject, injectable } from "inversify";
-import { nanoid } from "nanoid";
-import { BehaviorSubject, Observable } from "rxjs";
-import { DataSource, Repository } from "typeorm";
-import { Worker } from "worker_threads";
-import type {
-  AgentDefinition,
-  AttachmentRef,
-  ChatMessage,
-  ConversationMeta,
-} from "@memeloop/protocol";
+import type { AgentDefinition, AttachmentRef, ChatMessage, ConversationMeta } from '@memeloop/protocol';
+import { createWorkerProxy } from '@services/libs/workerAdapter';
+import { inject, injectable } from 'inversify';
 import {
+  type AgentFrameworkContext as MemeLoopAgentFrameworkContext,
   createMemeLoopRuntime,
   createTaskAgent,
-  type AgentFrameworkContext as MemeLoopAgentFrameworkContext,
   type IAgentStorage,
   type ILLMProvider,
   type IToolRegistry,
   type MemeLoopRuntime,
-} from "memeloop";
-import { DEFAULT_AGENT_FRAMEWORK_ID } from "./defaultAgentFrameworkId";
-import MemeLoopWorkerFactory from "./memeloopWorkerFactory";
-import { createWorkerProxy } from "@services/libs/workerAdapter";
-import type { MemeLoopWorker } from "./memeloopWorker";
+} from 'memeloop';
+import { nanoid } from 'nanoid';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { DataSource, Repository } from 'typeorm';
+import { Worker } from 'worker_threads';
+import { DEFAULT_AGENT_FRAMEWORK_ID } from './defaultAgentFrameworkId';
+import type { MemeLoopWorker } from './memeloopWorker';
+import MemeLoopWorkerFactory from './memeloopWorkerFactory';
 
-import type { AgentHeartbeatConfig } from "@services/agentDefinition/interface";
-import type { IAgentDefinitionService } from "@services/agentDefinition/interface";
-import { basicPromptConcatHandler } from "@services/agentInstance/agentFrameworks/taskAgent";
-import type {
-  AgentFramework,
-  AgentFrameworkContext,
-} from "@services/agentInstance/agentFrameworks/utilities/type";
-import { promptConcatStream } from "@services/agentInstance/promptConcat/promptConcat";
-import type { AgentPromptDescription } from "@services/agentInstance/promptConcat/promptConcatSchema";
-import { getPromptConcatAgentFrameworkConfigJsonSchema } from "@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema";
-import type { PromptConcatStreamState } from "@services/agentInstance/promptConcat/promptConcatTypes";
-import {
-  createHooksWithPlugins,
-  initializePluginSystem,
-} from "@services/agentInstance/tools";
-import { container } from "@services/container";
-import type { IDatabaseService } from "@services/database/interface";
-import {
-  AgentInstanceEntity,
-  AgentInstanceMessageEntity,
-} from "@services/database/schema/agent";
-import type { IGitService } from "@services/git/interface";
-import { logger } from "@services/libs/log";
-import serviceIdentifier from "@services/serviceIdentifier";
-import type { IWorkspaceService } from "@services/workspaces/interface";
-import { isWikiWorkspace } from "@services/workspaces/interface";
+import type { AgentHeartbeatConfig } from '@services/agentDefinition/interface';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { basicPromptConcatHandler } from '@services/agentInstance/agentFrameworks/taskAgent';
+import type { AgentFramework, AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
+import { promptConcatStream } from '@services/agentInstance/promptConcat/promptConcat';
+import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { getPromptConcatAgentFrameworkConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
+import type { PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcatTypes';
+import { createHooksWithPlugins, initializePluginSystem } from '@services/agentInstance/tools';
+import { container } from '@services/container';
+import type { IDatabaseService } from '@services/database/interface';
+import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
+import type { IGitService } from '@services/git/interface';
+import { logger } from '@services/libs/log';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 
-import {
-  createDebouncedMessageUpdater,
-  saveUserMessage as saveUserMessageHelper,
-} from "./agentMessagePersistence";
-import * as repo from "./agentRepository";
-import {
-  getActiveHeartbeatEntries,
-  startHeartbeat,
-  stopHeartbeat,
-} from "./heartbeatManager";
+import { createDebouncedMessageUpdater, saveUserMessage as saveUserMessageHelper } from './agentMessagePersistence';
+import * as repo from './agentRepository';
+import { getActiveHeartbeatEntries, startHeartbeat, stopHeartbeat } from './heartbeatManager';
 import type {
   AgentBackgroundTask,
   AgentInstance,
@@ -68,7 +47,7 @@ import type {
   IAgentInstanceService,
   SetBackgroundAlarmInput,
   SetBackgroundHeartbeatInput,
-} from "./interface";
+} from './interface';
 import {
   addTask as stmAddTask,
   cancelTasksForAgent,
@@ -79,22 +58,11 @@ import {
   removeTask as stmRemoveTask,
   restoreScheduledTasks,
   updateTask as stmUpdateTask,
-} from "./scheduledTaskManager";
-import type {
-  CreateScheduledTaskInput,
-  ScheduledTask,
-  UpdateScheduledTaskInput,
-} from "./scheduledTaskTypes";
-import {
-  cancelAlarm,
-  getActiveAlarmEntries,
-  scheduleAlarmTimer,
-} from "./tools/alarmClock";
-import { cleanupMCPClient } from "./tools/modelContextProtocol";
-import {
-  executeWorkerBridgeTool,
-  listWorkerBridgeTools,
-} from "./tools/workerToolBridge";
+} from './scheduledTaskManager';
+import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskTypes';
+import { cancelAlarm, getActiveAlarmEntries, scheduleAlarmTimer } from './tools/alarmClock';
+import { cleanupMCPClient } from './tools/modelContextProtocol';
+import { executeWorkerBridgeTool, listWorkerBridgeTools } from './tools/workerToolBridge';
 
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {
@@ -105,10 +73,8 @@ export class AgentInstanceService implements IAgentInstanceService {
   private readonly agentDefinitionService!: IAgentDefinitionService;
 
   private dataSource: DataSource | null = null;
-  private agentInstanceRepository: Repository<AgentInstanceEntity> | null =
-    null;
-  private agentMessageRepository: Repository<AgentInstanceMessageEntity> | null =
-    null;
+  private agentInstanceRepository: Repository<AgentInstanceEntity> | null = null;
+  private agentMessageRepository: Repository<AgentInstanceMessageEntity> | null = null;
   private scheduledTaskRepositoryReady = false;
 
   private agentInstanceSubjects: Map<
@@ -126,7 +92,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   private debouncedUpdateFunctions: Map<
     string,
     (
-      message: AgentInstanceLatestStatus["message"] & { id: string },
+      message: AgentInstanceLatestStatus['message'] & { id: string },
       agentId?: string,
     ) => void
   > = new Map();
@@ -142,60 +108,63 @@ export class AgentInstanceService implements IAgentInstanceService {
    */
   async getMemeLoopWorkerProxy(): Promise<MemeLoopWorker> {
     await this.ensureMemeLoopWorkerHealthy();
-    if (!this.memeLoopWorker) throw new Error("MemeLoop worker not available");
+    if (!this.memeLoopWorker) throw new Error('MemeLoop worker not available');
     return this.memeLoopWorker;
   }
 
   private normalizeMultimodalForModelSupport(
-    messages: Array<{ role: "system" | "user" | "assistant"; content: any }>,
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: any }>,
   ): Array<{
-    role: "system" | "user" | "assistant";
+    role: 'system' | 'user' | 'assistant';
     content: any;
   }> {
     // In test runs we use a mock provider that doesn't implement vision.
-    if (process.env.NODE_ENV !== "test") return messages;
+    if (process.env.NODE_ENV !== 'test') return messages;
     return messages.map((msg) => {
       const c = msg.content;
       if (!Array.isArray(c)) return msg;
       const textParts = c
         .map((part) => {
-          if (typeof part === "string") return part;
+          if (typeof part === 'string') return part;
           if (
             part &&
-            typeof part === "object" &&
-            (part as any).type === "text"
+            typeof part === 'object' &&
+            (part as any).type === 'text'
           ) {
-            return String((part as any).text ?? "");
+            return String((part as any).text ?? '');
           }
-          return "";
+          return '';
         })
         .filter(Boolean)
-        .join("\n");
+        .join('\n');
       return {
         ...msg,
-        content: textParts || "[non-text attachment omitted for current model]",
+        content: textParts || '[non-text attachment omitted for current model]',
       };
     });
   }
 
   private extractToolStepText(data: unknown): string {
-    if (typeof data === "string") return data;
-    if (data == null) return "";
-    if (typeof data !== "object") return String(data);
+    if (typeof data === 'string') return data;
+    if (data == null) return '';
+    if (typeof data !== 'object') return String(data);
     const anyData = data as Record<string, unknown>;
-    if (typeof anyData.error === "string" && anyData.error.length > 0)
+    if (typeof anyData.error === 'string' && anyData.error.length > 0) {
       return anyData.error;
-    if (typeof anyData.result === "string" && anyData.result.length > 0)
+    }
+    if (typeof anyData.result === 'string' && anyData.result.length > 0) {
       return anyData.result;
-    if (typeof anyData.message === "string" && anyData.message.length > 0)
+    }
+    if (typeof anyData.message === 'string' && anyData.message.length > 0) {
       return anyData.message;
-    if (typeof anyData.summary === "string" && anyData.summary.length > 0)
+    }
+    if (typeof anyData.summary === 'string' && anyData.summary.length > 0) {
       return anyData.summary;
-    return JSON.stringify(data ?? "");
+    }
+    return JSON.stringify(data ?? '');
   }
   private workerConversationByAgentId: Map<string, string> = new Map();
-  private workerConversationCleanupByAgentId: Map<string, () => void> =
-    new Map();
+  private workerConversationCleanupByAgentId: Map<string, () => void> = new Map();
 
   /** Serializes worker ping/restart so concurrent agent turns do not double-terminate or race proxies. */
   private memeLoopWorkerMutex: Promise<void> = Promise.resolve();
@@ -209,7 +178,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Restore unified ScheduledTaskManager tasks
       await this.restoreScheduledTaskManagerTasks();
     } catch (error) {
-      logger.error("Failed to initialize agent instance service", { error });
+      logger.error('Failed to initialize agent instance service', { error });
       throw error;
     }
   }
@@ -217,23 +186,21 @@ export class AgentInstanceService implements IAgentInstanceService {
   private async initializeDatabase(): Promise<void> {
     try {
       // Database is already initialized in the agent definition service
-      this.dataSource = await this.databaseService.getDatabase("agent");
-      this.agentInstanceRepository =
-        this.dataSource.getRepository(AgentInstanceEntity);
+      this.dataSource = await this.databaseService.getDatabase('agent');
+      this.agentInstanceRepository = this.dataSource.getRepository(AgentInstanceEntity);
       this.agentMessageRepository = this.dataSource.getRepository(
         AgentInstanceMessageEntity,
       );
 
       // Initialize the unified ScheduledTaskManager
-      const { ScheduledTaskEntity } =
-        await import("@services/database/schema/agent");
+      const { ScheduledTaskEntity } = await import('@services/database/schema/agent');
       const stmRepo = this.dataSource.getRepository(ScheduledTaskEntity);
       initScheduledTaskManager(stmRepo, this);
       this.scheduledTaskRepositoryReady = true;
 
-      logger.debug("AgentInstance repositories initialized");
+      logger.debug('AgentInstance repositories initialized');
     } catch (error) {
-      logger.error("Failed to initialize agent instance database", { error });
+      logger.error('Failed to initialize agent instance database', { error });
       throw error;
     }
   }
@@ -243,16 +210,16 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Register tools to global registry once during initialization
       await initializePluginSystem();
       logger.debug(
-        "AgentInstance Tool system initialized and tools registered to global registry",
+        'AgentInstance Tool system initialized and tools registered to global registry',
       );
 
       // Register built-in frameworks
       this.registerBuiltinFrameworks();
       this.initializeMemeLoopRuntimeBridge();
       await this.ensureMemeLoopWorkerHealthy();
-      logger.debug("AgentInstance frameworks registered");
+      logger.debug('AgentInstance frameworks registered');
     } catch (error) {
-      logger.error("Failed to initialize agent instance frameworks", { error });
+      logger.error('Failed to initialize agent instance frameworks', { error });
       throw error;
     }
   }
@@ -261,13 +228,13 @@ export class AgentInstanceService implements IAgentInstanceService {
     // Tools are already registered in initialize(), so we only register frameworks here
     // Register basic prompt concatenation framework with its schema
     this.registerFramework(
-      "basicPromptConcatHandler",
+      'basicPromptConcatHandler',
       basicPromptConcatHandler,
       getPromptConcatAgentFrameworkConfigJsonSchema(),
     );
     // MemeLoop worker framework: run the agent loop in `memeloopWorker.ts` and wait for ask/approval events.
     this.registerFramework(
-      "memeloopTaskAgentWorker",
+      'memeloopTaskAgentWorker',
       this.memeloopTaskAgentWorkerHandler.bind(this),
       getPromptConcatAgentFrameworkConfigJsonSchema(),
     );
@@ -289,27 +256,26 @@ export class AgentInstanceService implements IAgentInstanceService {
     try {
       await this.ensureMemeLoopWorkerHealthy();
     } catch (error) {
-      logger.error("MemeLoop worker unavailable for memeloopTaskAgentWorker", {
+      logger.error('MemeLoop worker unavailable for memeloopTaskAgentWorker', {
         error,
       });
-      yield { state: "failed" };
+      yield { state: 'failed' };
       return;
     }
     const worker = this.memeLoopWorker;
     if (!worker) {
-      yield { state: "failed" };
+      yield { state: 'failed' };
       return;
     }
 
     const agentId = frameworkContext.agent.id;
     const definitionId = frameworkContext.agentDef.id;
 
-    const lastUserMessage =
-      frameworkContext.agent.messages[
-        frameworkContext.agent.messages.length - 1
-      ];
-    if (!lastUserMessage || lastUserMessage.role !== "user") {
-      yield { state: "failed" };
+    const lastUserMessage = frameworkContext.agent.messages[
+      frameworkContext.agent.messages.length - 1
+    ];
+    if (!lastUserMessage || lastUserMessage.role !== 'user') {
+      yield { state: 'failed' };
       return;
     }
 
@@ -318,12 +284,12 @@ export class AgentInstanceService implements IAgentInstanceService {
       definitionId,
     );
     if (!workerConversationId) {
-      yield { state: "failed" };
+      yield { state: 'failed' };
       return;
     }
 
     const terminalStatePromise = new Promise<
-      AgentInstanceLatestStatus["state"]
+      AgentInstanceLatestStatus['state']
     >((resolve) => {
       const subscription = worker
         .subscribeToUpdates(workerConversationId)
@@ -335,27 +301,27 @@ export class AgentInstanceService implements IAgentInstanceService {
             const updateType = raw?.update?.type;
             if (!updateType) return;
 
-            if (updateType === "agent-done") {
+            if (updateType === 'agent-done') {
               subscription.unsubscribe();
-              resolve("completed");
+              resolve('completed');
               return;
             }
-            if (updateType === "agent-error") {
+            if (updateType === 'agent-error') {
               subscription.unsubscribe();
-              resolve("failed");
+              resolve('failed');
               return;
             }
-            if (updateType === "cancelled") {
+            if (updateType === 'cancelled') {
               subscription.unsubscribe();
-              resolve("canceled");
+              resolve('canceled');
               return;
             }
             if (
-              updateType === "ask-question" ||
-              updateType === "tool-approval"
+              updateType === 'ask-question' ||
+              updateType === 'tool-approval'
             ) {
               subscription.unsubscribe();
-              resolve("input-required");
+              resolve('input-required');
               return;
             }
           },
@@ -364,17 +330,17 @@ export class AgentInstanceService implements IAgentInstanceService {
       void subscription;
     });
 
-    logger.warn("MemeLoop worker sendMessage start", {
+    logger.warn('MemeLoop worker sendMessage start', {
       agentId,
       workerConversationId,
     });
     await worker.sendMessage(workerConversationId, lastUserMessage.content);
-    logger.warn("MemeLoop worker sendMessage returned", {
+    logger.warn('MemeLoop worker sendMessage returned', {
       agentId,
       workerConversationId,
     });
     const terminalState = await terminalStatePromise;
-    logger.warn("MemeLoop worker terminal state resolved", {
+    logger.warn('MemeLoop worker terminal state resolved', {
       agentId,
       workerConversationId,
       terminalState,
@@ -390,34 +356,34 @@ export class AgentInstanceService implements IAgentInstanceService {
    */
   private initializeMemeLoopRuntimeBridge(): void {
     if (!this.agentInstanceRepository || !this.agentMessageRepository) {
-      logger.warn("Skip MemeLoopRuntime bridge init: repositories not ready");
+      logger.warn('Skip MemeLoopRuntime bridge init: repositories not ready');
       return;
     }
     if (this.memeLoopRuntime) return;
 
     const toProtocolRole = (
-      role: AgentInstanceMessage["role"],
-    ): ChatMessage["role"] => {
-      if (role === "assistant" || role === "tool" || role === "user")
+      role: AgentInstanceMessage['role'],
+    ): ChatMessage['role'] => {
+      if (role === 'assistant' || role === 'tool' || role === 'user') {
         return role;
-      return "assistant";
+      }
+      return 'assistant';
     };
 
     const storage: IAgentStorage = {
       listConversations: async () => {
         const rows = await this.agentInstanceRepository!.find({
-          order: { modified: "DESC" },
+          order: { modified: 'DESC' },
           take: 200,
         });
         return rows.map(
           (row): ConversationMeta => ({
             conversationId: row.id,
             title: row.name || row.agentDefId,
-            lastMessagePreview: row.status?.message?.content || "",
-            lastMessageTimestamp:
-              row.modified?.getTime() ?? row.created.getTime(),
+            lastMessagePreview: row.status?.message?.content || '',
+            lastMessageTimestamp: row.modified?.getTime() ?? row.created.getTime(),
             messageCount: 0,
-            originNodeId: "desktop",
+            originNodeId: 'desktop',
             definitionId: row.agentDefId,
             isUserInitiated: true,
           }),
@@ -426,13 +392,13 @@ export class AgentInstanceService implements IAgentInstanceService {
       getMessages: async (conversationId: string) => {
         const rows = await this.agentMessageRepository!.find({
           where: { agentId: conversationId },
-          order: { created: "ASC" },
+          order: { created: 'ASC' },
         });
         return rows.map(
           (row): ChatMessage => ({
             messageId: row.id,
             conversationId: row.agentId,
-            originNodeId: "desktop",
+            originNodeId: 'desktop',
             timestamp: row.modified?.getTime() ?? row.created.getTime(),
             lamportClock: 1,
             role: toProtocolRole(row.role),
@@ -444,9 +410,9 @@ export class AgentInstanceService implements IAgentInstanceService {
         const entity = this.agentMessageRepository!.create({
           id: message.messageId || nanoid(),
           agentId: message.conversationId,
-          role: message.role === "assistant" ? "assistant" : message.role,
+          role: message.role === 'assistant' ? 'assistant' : message.role,
           content: message.content,
-          contentType: "text/plain",
+          contentType: 'text/plain',
         });
         await this.agentMessageRepository!.save(entity);
       },
@@ -461,10 +427,10 @@ export class AgentInstanceService implements IAgentInstanceService {
         }
         const created = this.agentInstanceRepository!.create({
           id: meta.conversationId,
-          agentDefId: meta.definitionId || "default",
-          name: meta.title || meta.definitionId || "MemeLoop Agent",
+          agentDefId: meta.definitionId || 'default',
+          name: meta.title || meta.definitionId || 'MemeLoop Agent',
           status: {
-            state: "submitted",
+            state: 'submitted',
             modified: new Date(meta.lastMessageTimestamp),
           },
           created: new Date(meta.lastMessageTimestamp),
@@ -481,9 +447,9 @@ export class AgentInstanceService implements IAgentInstanceService {
             const entity = this.agentMessageRepository!.create({
               id: msg.messageId,
               agentId: msg.conversationId,
-              role: msg.role === "assistant" ? "assistant" : msg.role,
+              role: msg.role === 'assistant' ? 'assistant' : msg.role,
               content: msg.content,
-              contentType: "text/plain",
+              contentType: 'text/plain',
             });
             await this.agentMessageRepository!.save(entity);
           }
@@ -513,11 +479,10 @@ export class AgentInstanceService implements IAgentInstanceService {
         return {
           conversationId: row.id,
           title: row.name || row.agentDefId,
-          lastMessagePreview: row.status?.message?.content || "",
-          lastMessageTimestamp:
-            row.modified?.getTime() ?? row.created.getTime(),
+          lastMessagePreview: row.status?.message?.content || '',
+          lastMessageTimestamp: row.modified?.getTime() ?? row.created.getTime(),
           messageCount: 0,
-          originNodeId: "desktop",
+          originNodeId: 'desktop',
           definitionId: row.agentDefId,
           isUserInitiated: true,
         };
@@ -534,11 +499,11 @@ export class AgentInstanceService implements IAgentInstanceService {
     };
 
     const llmProvider: ILLMProvider = {
-      name: "tidgi-desktop-bridge",
-      chat: async function* (request: unknown) {
+      name: 'tidgi-desktop-bridge',
+      chat: async function*(request: unknown) {
         const req = request as {
           messages?: Array<{
-            role: "system" | "user" | "assistant" | "tool";
+            role: 'system' | 'user' | 'assistant' | 'tool';
             content: unknown;
           }>;
           conversationId?: string;
@@ -549,10 +514,9 @@ export class AgentInstanceService implements IAgentInstanceService {
         const aiConfig = await providerRegistryService.getAIConfig();
         const messages = (req.messages ?? []).map((message) => ({
           role: message.role,
-          content:
-            typeof message.content === "string"
-              ? message.content
-              : JSON.stringify(message.content ?? ""),
+          content: typeof message.content === 'string'
+            ? message.content
+            : JSON.stringify(message.content ?? ''),
         }));
         const generator = await providerRegistryService.generateFromAI(
           messages,
@@ -560,7 +524,7 @@ export class AgentInstanceService implements IAgentInstanceService {
           { agentInstanceId: req.conversationId },
         );
         for await (const event of generator as AsyncIterable<any>) {
-          if (event?.status === "update" || event?.status === "done") {
+          if (event?.status === 'update' || event?.status === 'done') {
             yield event.content;
           }
         }
@@ -580,14 +544,14 @@ export class AgentInstanceService implements IAgentInstanceService {
     runtimeContext.runTaskAgent = createTaskAgent(runtimeContext);
     this.memeLoopRuntime = createMemeLoopRuntime(runtimeContext);
 
-    logger.info("MemeLoopRuntime bridge initialized in AgentInstanceService");
+    logger.info('MemeLoopRuntime bridge initialized in AgentInstanceService');
   }
 
   private async initializeMemeLoopWorker(): Promise<void> {
     if (this.memeLoopWorker) return;
     try {
       const worker = (MemeLoopWorkerFactory as () => Worker)();
-      worker.on("message", (message: unknown) => {
+      worker.on('message', (message: unknown) => {
         const m = message as {
           type?: string;
           id?: string;
@@ -596,16 +560,16 @@ export class AgentInstanceService implements IAgentInstanceService {
           args?: Record<string, unknown>;
         };
 
-        if (m?.type === "memeloop-tool-list" && m.id) {
+        if (m?.type === 'memeloop-tool-list' && m.id) {
           worker.postMessage({
-            type: "memeloop-tool-list-result",
+            type: 'memeloop-tool-list-result',
             id: m.id,
             tools: listWorkerBridgeTools(),
           });
           return;
         }
 
-        if (m?.type === "memeloop-tool-call" && m.id && m.toolId) {
+        if (m?.type === 'memeloop-tool-call' && m.id && m.toolId) {
           void (async () => {
             try {
               const result = await executeWorkerBridgeTool(
@@ -613,17 +577,17 @@ export class AgentInstanceService implements IAgentInstanceService {
                 m.args ?? {},
               );
               worker.postMessage({
-                type: "memeloop-tool-call-result",
+                type: 'memeloop-tool-call-result',
                 id: m.id,
                 result,
               });
             } catch (error) {
               worker.postMessage({
-                type: "memeloop-tool-call-error",
+                type: 'memeloop-tool-call-error',
                 id: m.id,
                 error: {
                   message: (error as any)?.message ?? String(error),
-                  name: (error as any)?.name ?? "Error",
+                  name: (error as any)?.name ?? 'Error',
                   stack: (error as any)?.stack,
                 },
               });
@@ -632,13 +596,13 @@ export class AgentInstanceService implements IAgentInstanceService {
           return;
         }
 
-        if (m?.type === "memeloop-llm-chat" && m.id) {
+        if (m?.type === 'memeloop-llm-chat' && m.id) {
           void (async () => {
             try {
               const req = m.request as {
                 conversationId?: string;
                 messages?: Array<{
-                  role: "system" | "user" | "assistant" | "tool";
+                  role: 'system' | 'user' | 'assistant' | 'tool';
                   content: string;
                 }>;
               };
@@ -648,7 +612,7 @@ export class AgentInstanceService implements IAgentInstanceService {
                 ? this.workerAgentIdByConversationId.get(conversationId)
                 : undefined;
               let modelMessages: Array<{
-                role: "system" | "user" | "assistant";
+                role: 'system' | 'user' | 'assistant';
                 content: any;
               }>;
               if (
@@ -660,16 +624,16 @@ export class AgentInstanceService implements IAgentInstanceService {
                   where: { id: mappedAgentId },
                 });
                 const def = await this.agentDefinitionService.getAgentDef(
-                  agentRow?.agentDefId ?? "task-agent",
+                  agentRow?.agentDefId ?? 'task-agent',
                 );
                 if (!def) {
                   throw new Error(
-                    `Agent definition not found: ${agentRow?.agentDefId ?? "task-agent"}`,
+                    `Agent definition not found: ${agentRow?.agentDefId ?? 'task-agent'}`,
                   );
                 }
                 const rows = await this.agentMessageRepository.find({
                   where: { agentId: mappedAgentId },
-                  order: { created: "ASC" },
+                  order: { created: 'ASC' },
                 });
                 const historyMessages = rows.map((row): any => ({
                   id: row.id,
@@ -680,14 +644,13 @@ export class AgentInstanceService implements IAgentInstanceService {
                   created: row.created,
                   modified: row.modified ?? row.created,
                 }));
-                const { promptConcat } =
-                  await import("./promptConcat/promptConcat");
+                const { promptConcat } = await import('./promptConcat/promptConcat');
                 const frameworkContext: any = {
                   agent: {
                     id: mappedAgentId,
                     messages: historyMessages,
-                    agentDefId: agentRow?.agentDefId ?? "task-agent",
-                    status: { state: "working", modified: new Date() },
+                    agentDefId: agentRow?.agentDefId ?? 'task-agent',
+                    status: { state: 'working', modified: new Date() },
                     created: agentRow?.created ?? new Date(),
                     agentFrameworkConfig: agentRow?.agentFrameworkConfig ?? {},
                   },
@@ -701,25 +664,25 @@ export class AgentInstanceService implements IAgentInstanceService {
                 const concatResult = await promptConcat(
                   {
                     agentFrameworkConfig: def.agentFrameworkConfig ?? {},
-                  } as Pick<AgentPromptDescription, "agentFrameworkConfig">,
+                  } as Pick<AgentPromptDescription, 'agentFrameworkConfig'>,
                   historyMessages,
                   frameworkContext,
                 );
                 modelMessages = (concatResult.flatPrompts as any[]).map(
                   (m_) => ({
-                    role: (m_.role === "tool" ? "assistant" : m_.role) as
-                      | "system"
-                      | "user"
-                      | "assistant",
+                    role: (m_.role === 'tool' ? 'assistant' : m_.role) as
+                      | 'system'
+                      | 'user'
+                      | 'assistant',
                     content: m_.content,
                   }),
                 );
               } else {
                 modelMessages = (req.messages ?? []).map((msg) => ({
-                  role: (msg.role === "tool" ? "assistant" : msg.role) as
-                    | "system"
-                    | "user"
-                    | "assistant",
+                  role: (msg.role === 'tool' ? 'assistant' : msg.role) as
+                    | 'system'
+                    | 'user'
+                    | 'assistant',
                   content: msg.content,
                 }));
               }
@@ -728,12 +691,12 @@ export class AgentInstanceService implements IAgentInstanceService {
                 serviceIdentifier.ProviderRegistry,
               ) as any;
               const aiConfig = await providerRegistryService.getAIConfig();
-              logger.warn("memeloop-llm-chat request prepared", {
+              logger.warn('memeloop-llm-chat request prepared', {
                 conversationId,
                 agentId: mappedAgentId,
                 messageCount: modelMessages.length,
                 hasNonStringContent: modelMessages.some(
-                  (msg) => typeof msg.content !== "string",
+                  (msg) => typeof msg.content !== 'string',
                 ),
               });
               const generator = await providerRegistryService.generateFromAI(
@@ -743,47 +706,46 @@ export class AgentInstanceService implements IAgentInstanceService {
                   agentInstanceId: conversationId,
                 },
               );
-              let previousSnapshot = "";
+              let previousSnapshot = '';
               for await (const event of generator as AsyncIterable<any>) {
-                logger.warn("memeloop-llm-chat event", {
+                logger.warn('memeloop-llm-chat event', {
                   conversationId,
                   status: event?.status,
-                  hasContent:
-                    event?.content !== undefined && event?.content !== null,
+                  hasContent: event?.content !== undefined && event?.content !== null,
                   contentType: typeof event?.content,
-                  contentPreview:
-                    typeof event?.content === "string"
-                      ? String(event.content).slice(0, 120)
-                      : undefined,
+                  contentPreview: typeof event?.content === 'string'
+                    ? String(event.content).slice(0, 120)
+                    : undefined,
                 });
-                if (event?.status === "error") {
-                  const msg = String(event?.content ?? "AI provider error");
+                if (event?.status === 'error') {
+                  const msg = String(event?.content ?? 'AI provider error');
                   throw new Error(msg);
                 }
-                if (event?.status === "update" || event?.status === "done") {
+                if (event?.status === 'update' || event?.status === 'done') {
                   if (event?.content !== undefined && event?.content !== null) {
                     const snapshot = String(event.content);
                     const delta = snapshot.startsWith(previousSnapshot)
                       ? snapshot.slice(previousSnapshot.length)
                       : snapshot;
                     previousSnapshot = snapshot;
-                    if (delta)
+                    if (delta) {
                       worker.postMessage({
-                        type: "memeloop-llm-chat-delta",
+                        type: 'memeloop-llm-chat-delta',
                         id: m.id,
                         delta,
                       });
+                    }
                   }
                 }
               }
-              worker.postMessage({ type: "memeloop-llm-chat-done", id: m.id });
+              worker.postMessage({ type: 'memeloop-llm-chat-done', id: m.id });
             } catch (error) {
               worker.postMessage({
-                type: "memeloop-llm-chat-error",
+                type: 'memeloop-llm-chat-error',
                 id: m.id,
                 error: {
                   message: (error as any)?.message ?? String(error),
-                  name: (error as any)?.name ?? "Error",
+                  name: (error as any)?.name ?? 'Error',
                   stack: (error as any)?.stack,
                 },
               });
@@ -792,11 +754,11 @@ export class AgentInstanceService implements IAgentInstanceService {
           return;
         }
       });
-      worker.on("error", (error) => {
-        logger.error("MemeLoop native worker thread error", { error });
+      worker.on('error', (error) => {
+        logger.error('MemeLoop native worker thread error', { error });
       });
-      worker.on("exit", (code) => {
-        logger.warn("MemeLoop native worker thread exited", { code });
+      worker.on('exit', (code) => {
+        logger.warn('MemeLoop native worker thread exited', { code });
       });
       this.memeLoopNativeWorker = worker;
       this.memeLoopWorker = createWorkerProxy<MemeLoopWorker>(worker);
@@ -811,35 +773,35 @@ export class AgentInstanceService implements IAgentInstanceService {
               message?: string;
               meta?: unknown;
             };
-            const level = e.level ?? "info";
-            const text = e.message ?? "[memeloop-worker]";
+            const level = e.level ?? 'info';
+            const text = e.message ?? '[memeloop-worker]';
             const meta = e.meta;
-            if (level === "warn") logger.warn(text, meta as any);
-            else if (level === "error") logger.error(text, meta as any);
-            else if (level === "debug") logger.debug(text, meta as any);
+            if (level === 'warn') logger.warn(text, meta as any);
+            else if (level === 'error') logger.error(text, meta as any);
+            else if (level === 'debug') logger.debug(text, meta as any);
             else logger.info(text, meta as any);
           },
           error: (error: unknown) => {
-            logger.error("MemeLoop worker log stream failed", { error });
+            logger.error('MemeLoop worker log stream failed', { error });
           },
         });
         this.memeLoopWorkerLogCleanup = () => sub.unsubscribe();
       } catch (error) {
-        logger.warn("Failed to subscribe MemeLoop worker logs", { error });
+        logger.warn('Failed to subscribe MemeLoop worker logs', { error });
       }
 
       const ping = await Promise.race([
         this.memeLoopWorker.ping(),
         new Promise<never>((_, reject) => {
           setTimeout(
-            () => reject(new Error("MemeLoop worker initial ping timeout")),
+            () => reject(new Error('MemeLoop worker initial ping timeout')),
             8000,
           );
         }),
       ]);
-      logger.info("MemeLoop worker initialized", ping);
+      logger.info('MemeLoop worker initialized', ping);
     } catch (error) {
-      logger.error("Failed to initialize MemeLoop worker", { error });
+      logger.error('Failed to initialize MemeLoop worker', { error });
       throw error;
     }
   }
@@ -865,13 +827,13 @@ export class AgentInstanceService implements IAgentInstanceService {
           this.memeLoopWorker.ping(),
           new Promise<never>((_, reject) => {
             setTimeout(
-              () => reject(new Error("MemeLoop worker ping timeout")),
+              () => reject(new Error('MemeLoop worker ping timeout')),
               5000,
             );
           }),
         ]);
       } catch (error: unknown) {
-        logger.warn("MemeLoop worker unhealthy; restarting worker thread", {
+        logger.warn('MemeLoop worker unhealthy; restarting worker thread', {
           error,
         });
         await this.disposeMemeLoopWorker();
@@ -893,7 +855,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Find all non-closed, non-volatile agent instances with their definitions
       const activeInstances = await this.agentInstanceRepository.find({
         where: { closed: false, volatile: false },
-        relations: ["agentDefinition"],
+        relations: ['agentDefinition'],
       });
 
       let heartbeatsRestored = 0;
@@ -904,7 +866,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         const heartbeatConfig = instance.agentDefinition?.heartbeat;
         if (heartbeatConfig?.enabled) {
           startHeartbeat(instance.id, heartbeatConfig, this, {
-            createdBy: "agent-definition",
+            createdBy: 'agent-definition',
           });
           heartbeatsRestored++;
         }
@@ -923,7 +885,7 @@ export class AgentInstanceService implements IAgentInstanceService {
               alarm.reminderMessage,
               alarm.repeatIntervalMinutes,
               {
-                createdBy: alarm.createdBy ?? "restore",
+                createdBy: alarm.createdBy ?? 'restore',
                 runCount: alarm.runCount,
                 lastRunAtISO: alarm.lastRunAtISO,
               },
@@ -937,7 +899,7 @@ export class AgentInstanceService implements IAgentInstanceService {
               alarm.reminderMessage,
               undefined,
               {
-                createdBy: alarm.createdBy ?? "restore",
+                createdBy: alarm.createdBy ?? 'restore',
                 runCount: alarm.runCount,
                 lastRunAtISO: alarm.lastRunAtISO,
               },
@@ -948,14 +910,14 @@ export class AgentInstanceService implements IAgentInstanceService {
       }
 
       if (heartbeatsRestored > 0 || alarmsRestored > 0) {
-        logger.info("Background tasks restored", {
+        logger.info('Background tasks restored', {
           heartbeatsRestored,
           alarmsRestored,
           totalInstances: activeInstances.length,
         });
       }
     } catch (error) {
-      logger.error("Failed to restore background tasks", { error });
+      logger.error('Failed to restore background tasks', { error });
     }
   }
 
@@ -963,11 +925,11 @@ export class AgentInstanceService implements IAgentInstanceService {
    * Restore unified ScheduledTaskManager tasks from DB after app restart.
    */
   private async restoreScheduledTaskManagerTasks(): Promise<void> {
-    if (!this.scheduledTaskRepositoryReady || !this.agentInstanceRepository)
+    if (!this.scheduledTaskRepositoryReady || !this.agentInstanceRepository) {
       return;
+    }
     try {
-      const { ScheduledTaskEntity } =
-        await import("@services/database/schema/agent");
+      const { ScheduledTaskEntity } = await import('@services/database/schema/agent');
       const stmRepo = this.dataSource!.getRepository(ScheduledTaskEntity);
 
       const isVolatile = async (agentInstanceId: string): Promise<boolean> => {
@@ -979,7 +941,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       await restoreScheduledTasks(stmRepo, isVolatile);
     } catch (error) {
-      logger.error("Failed to restore ScheduledTaskManager tasks", { error });
+      logger.error('Failed to restore ScheduledTaskManager tasks', { error });
     }
   }
 
@@ -1005,7 +967,7 @@ export class AgentInstanceService implements IAgentInstanceService {
    */
   private ensureRepositories(): void {
     if (!this.agentInstanceRepository || !this.agentMessageRepository) {
-      throw new Error("Agent instance repositories not initialized");
+      throw new Error('Agent instance repositories not initialized');
     }
   }
 
@@ -1025,10 +987,12 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
 
     // Cancel and remove all debounced update functions for this agent
-    for (const [
-      key,
-      debouncedFunction,
-    ] of this.debouncedUpdateFunctions.entries()) {
+    for (
+      const [
+        key,
+        debouncedFunction,
+      ] of this.debouncedUpdateFunctions.entries()
+    ) {
       if (key.startsWith(`${agentId}:`)) {
         // Cancel pending writes — agent is being deleted/closed so data would be stale
         (debouncedFunction as unknown as { cancel?: () => void }).cancel?.();
@@ -1054,7 +1018,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       void this.ensureWorkerConversation(created.id, created.agentDefId);
       return created;
     } catch (error) {
-      logger.error("Failed to create agent instance", { error });
+      logger.error('Failed to create agent instance', { error });
       throw error;
     }
   }
@@ -1064,7 +1028,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     try {
       return await repo.getAgent(this.agentInstanceRepository!, agentId);
     } catch (error) {
-      logger.error("Failed to get agent instance", { error });
+      logger.error('Failed to get agent instance', { error });
       throw error;
     }
   }
@@ -1084,7 +1048,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       this.notifyAgentUpdate(agentId, updatedAgent);
       return updatedAgent;
     } catch (error) {
-      logger.error("Failed to update agent instance", { error });
+      logger.error('Failed to update agent instance', { error });
       throw error;
     }
   }
@@ -1106,7 +1070,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       this.cleanupWorkerConversation(agentId);
       this.workerConversationByAgentId.delete(agentId);
     } catch (error) {
-      logger.error("Failed to delete agent instance", { error });
+      logger.error('Failed to delete agent instance', { error });
       throw error;
     }
   }
@@ -1115,7 +1079,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     page: number,
     pageSize: number,
     options?: { closed?: boolean; searchName?: string },
-  ): Promise<Omit<AgentInstance, "messages">[]> {
+  ): Promise<Omit<AgentInstance, 'messages'>[]> {
     this.ensureRepositories();
     try {
       return await repo.getAgents(
@@ -1125,7 +1089,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         options,
       );
     } catch (error) {
-      logger.error("Failed to get agent instances", { error });
+      logger.error('Failed to get agent instances', { error });
       throw error;
     }
   }
@@ -1160,9 +1124,8 @@ export class AgentInstanceService implements IAgentInstanceService {
       }
 
       // Get appropriate framework, fall back to the default when older agent definitions lack this field
-      const agentFrameworkId =
-        agentDefinition.agentFrameworkID ?? DEFAULT_AGENT_FRAMEWORK_ID;
-      logger.warn("Agent framework selected for sendMsgToAgent", {
+      const agentFrameworkId = agentDefinition.agentFrameworkID ?? DEFAULT_AGENT_FRAMEWORK_ID;
+      logger.warn('Agent framework selected for sendMsgToAgent', {
         agentId,
         definitionId: agentDefinition.id,
         agentFrameworkId,
@@ -1180,7 +1143,7 @@ export class AgentInstanceService implements IAgentInstanceService {
           ...agentInstance,
           messages: [...agentInstance.messages],
           status: {
-            state: "working",
+            state: 'working',
             modified: now,
           },
         },
@@ -1209,7 +1172,7 @@ export class AgentInstanceService implements IAgentInstanceService {
           if (isWikiWorkspace(ws)) {
             try {
               const hash = await gitService.callGitOp(
-                "getHeadCommitHash",
+                'getHeadCommitHash',
                 ws.wikiFolderLocation,
               );
               beforeCommitMap[ws.id] = {
@@ -1221,16 +1184,16 @@ export class AgentInstanceService implements IAgentInstanceService {
             }
           }
         }
-        logger.debug("Recorded before-turn commit hashes", {
+        logger.debug('Recorded before-turn commit hashes', {
           agentId,
           workspaceCount: Object.keys(beforeCommitMap).length,
         });
       } catch (error) {
-        logger.warn("Failed to record before-turn commit hashes", { error });
+        logger.warn('Failed to record before-turn commit hashes', { error });
       }
 
       // Trigger userMessageReceived hook with the configured tools
-      logger.warn("sendMsgToAgent before userMessageReceived hook", {
+      logger.warn('sendMsgToAgent before userMessageReceived hook', {
         agentId,
         messageId,
       });
@@ -1240,7 +1203,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         messageId,
         timestamp: now,
       });
-      logger.warn("sendMsgToAgent after userMessageReceived hook", {
+      logger.warn('sendMsgToAgent after userMessageReceived hook', {
         agentId,
         messageId,
       });
@@ -1255,7 +1218,7 @@ export class AgentInstanceService implements IAgentInstanceService {
           userMessage.metadata = { ...userMessage.metadata, beforeCommitMap };
           // Persist the updated metadata
           void this.saveUserMessage(userMessage).catch((error: unknown) => {
-            logger.warn("Failed to persist beforeCommitMap metadata", {
+            logger.warn('Failed to persist beforeCommitMap metadata', {
               error,
               messageId,
             });
@@ -1268,12 +1231,12 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       try {
         // Create async generator
-        logger.warn("sendMsgToAgent before framework generator", {
+        logger.warn('sendMsgToAgent before framework generator', {
           agentId,
           agentFrameworkId,
         });
         const generator = framework(frameworkContext);
-        logger.warn("sendMsgToAgent framework generator created", {
+        logger.warn('sendMsgToAgent framework generator created', {
           agentId,
           agentFrameworkId,
         });
@@ -1310,7 +1273,7 @@ export class AgentInstanceService implements IAgentInstanceService {
           const statusKey = `${agentId}:${lastResult.message.id}`;
           const subject = this.statusSubjects.get(statusKey);
           if (subject) {
-            const finalState = lastResult.state ?? "completed";
+            const finalState = lastResult.state ?? 'completed';
             logger.debug(`[${agentId}] Completing message stream`, {
               messageId: lastResult.message.id,
               finalState,
@@ -1345,12 +1308,12 @@ export class AgentInstanceService implements IAgentInstanceService {
           // Trigger agentStatusChanged hook with actual terminal state (completed, input-required, etc.).
           // This must run even when the framework yields no message (e.g. memeloopTaskAgentWorkerHandler
           // yields { state } without a message; worker-side updates handle message materialization).
-          const terminalState = (lastResult.state ?? "completed") as
-            | "working"
-            | "completed"
-            | "failed"
-            | "canceled"
-            | "input-required";
+          const terminalState = (lastResult.state ?? 'completed') as
+            | 'working'
+            | 'completed'
+            | 'failed'
+            | 'canceled'
+            | 'input-required';
           await frameworkHooks.agentStatusChanged.promise({
             agentFrameworkContext: frameworkContext,
             status: {
@@ -1362,7 +1325,7 @@ export class AgentInstanceService implements IAgentInstanceService {
           // Start heartbeat timer if the agent definition has heartbeat config
           if (agentDefinition.heartbeat?.enabled && !agentInstance.volatile) {
             startHeartbeat(agentId, agentDefinition.heartbeat, this, {
-              createdBy: "agent-definition",
+              createdBy: 'agent-definition',
             });
           }
         }
@@ -1370,8 +1333,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         // Remove cancel token after generator completes
         this.cancelTokenMap.delete(agentId);
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error(`Agent handler execution failed: ${errorMessage}`);
 
         // Clear any pending message subscriptions for this agent
@@ -1381,7 +1343,7 @@ export class AgentInstanceService implements IAgentInstanceService {
             if (subject) {
               try {
                 subject.next({
-                  state: "failed",
+                  state: 'failed',
                   message: {} as AgentInstanceMessage,
                   modified: new Date(),
                 });
@@ -1399,7 +1361,7 @@ export class AgentInstanceService implements IAgentInstanceService {
           .promise({
             agentFrameworkContext: frameworkContext,
             status: {
-              state: "failed",
+              state: 'failed',
               modified: new Date(),
             },
           })
@@ -1412,8 +1374,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         throw error;
       }
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Failed to send message to agent: ${errorMessage}`);
       throw error;
     }
@@ -1425,8 +1386,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
     // Cancel any pending ask-question promises so the agent loop can exit
     try {
-      const { cancelPendingQuestions } =
-        await import("./tools/askQuestionPending");
+      const { cancelPendingQuestions } = await import('./tools/askQuestionPending');
       cancelPendingQuestions(agentId);
     } catch {
       // ignore if module not loaded
@@ -1442,7 +1402,7 @@ export class AgentInstanceService implements IAgentInstanceService {
           return this.memeLoopWorker.cancelAgent(workerConversationId);
         })
         .catch((error: unknown) => {
-          logger.warn("MemeLoop worker cancelAgent failed (non-blocking)", {
+          logger.warn('MemeLoop worker cancelAgent failed (non-blocking)', {
             agentId,
             error,
           });
@@ -1460,7 +1420,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         );
         await this.updateAgent(agentId, {
           status: {
-            state: "canceled",
+            state: 'canceled',
             modified: new Date(),
           },
         });
@@ -1469,26 +1429,26 @@ export class AgentInstanceService implements IAgentInstanceService {
         // Propagate canceled status to any message-specific subscriptions so UI can react
         try {
           logger.debug(
-            "propagating canceled status to message-specific subscriptions",
-            { function: "cancelAgent", agentId },
+            'propagating canceled status to message-specific subscriptions',
+            { function: 'cancelAgent', agentId },
           );
           const agent = await this.getAgent(agentId);
           if (agent && agent.messages) {
             for (const key of Array.from(this.statusSubjects.keys())) {
               if (key.startsWith(`${agentId}:`)) {
-                const parts = key.split(":");
+                const parts = key.split(':');
                 const messageId = parts[1];
                 const subject = this.statusSubjects.get(key);
                 const message = agent.messages.find((m) => m.id === messageId);
                 if (subject) {
                   try {
                     const message_ = message || ({} as AgentInstanceMessage);
-                    logger.debug("propagate canceled to subscription", {
-                      function: "cancelAgent",
+                    logger.debug('propagate canceled to subscription', {
+                      function: 'cancelAgent',
                       subscriptionKey: key,
                     });
                     subject.next({
-                      state: "canceled",
+                      state: 'canceled',
                       message: message_,
                       modified: new Date(),
                     });
@@ -1507,23 +1467,22 @@ export class AgentInstanceService implements IAgentInstanceService {
           }
         } catch (error) {
           logger.warn(
-            "Failed to propagate cancel status to message subscriptions",
-            { function: "cancelAgent", error },
+            'Failed to propagate cancel status to message subscriptions',
+            { function: 'cancelAgent', error },
           );
         }
 
         // Remove cancel token from map
         this.cancelTokenMap.delete(agentId);
 
-        logger.info("Canceled agent instance", {
-          function: "cancelAgent",
+        logger.info('Canceled agent instance', {
+          function: 'cancelAgent',
           agentId,
         });
       } catch (error: unknown) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        logger.error("Failed to cancel agent instance", {
-          function: "cancelAgent",
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('Failed to cancel agent instance', {
+          function: 'cancelAgent',
           error: errorMessage,
         });
         throw error;
@@ -1570,15 +1529,14 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Clean up subscriptions
       this.cleanupAgentSubscriptions(agentId);
 
-      logger.info("Closed agent instance", {
-        function: "closeAgent",
+      logger.info('Closed agent instance', {
+        function: 'closeAgent',
         agentId,
       });
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      logger.error("Failed to close agent instance", {
-        function: "closeAgent",
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to close agent instance', {
+        function: 'closeAgent',
         error: errorMessage,
       });
       throw error;
@@ -1592,7 +1550,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     try {
       await this.ensureMemeLoopWorkerHealthy();
     } catch (error) {
-      logger.error("Failed to ensure MemeLoop worker for conversation", {
+      logger.error('Failed to ensure MemeLoop worker for conversation', {
         agentId,
         definitionId,
         error,
@@ -1610,7 +1568,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         return created.conversationId;
       }
     } catch (error) {
-      logger.error("Failed to create MemeLoop worker conversation", {
+      logger.error('Failed to create MemeLoop worker conversation', {
         agentId,
         definitionId,
         error,
@@ -1626,14 +1584,14 @@ export class AgentInstanceService implements IAgentInstanceService {
     if (!this.memeLoopWorker) return;
     if (this.workerConversationCleanupByAgentId.has(agentId)) return;
     try {
-      logger.warn("MemeLoop bindWorkerConversation subscribed", {
+      logger.warn('MemeLoop bindWorkerConversation subscribed', {
         agentId,
         conversationId,
       });
       this.workerAgentIdByConversationId.set(conversationId, agentId);
       // Keep a stable assistant message id while streaming text deltas.
       let assistantMessageId: string | undefined;
-      let assistantBuffer = "";
+      let assistantBuffer = '';
       let lastWasAssistantMessage = false;
 
       const subscription = this.memeLoopWorker
@@ -1653,7 +1611,7 @@ export class AgentInstanceService implements IAgentInstanceService {
             if (!updateType) return;
             // Debug hook: verify whether MemeLoop emits ask-question/tool-approval updates.
             // Keep this log short to avoid huge log files in e2e.
-            logger.warn("MemeLoop worker update received", {
+            logger.warn('MemeLoop worker update received', {
               agentId,
               conversationId,
               updateType,
@@ -1661,25 +1619,25 @@ export class AgentInstanceService implements IAgentInstanceService {
               stepType: raw?.update?.step?.type,
             });
 
-            if (updateType === "ask-question") {
+            if (updateType === 'ask-question') {
               const payload_ = raw.update?.payload as
                 | {
-                    type: "ask-question";
-                    questionId?: string;
-                    question: string;
-                    inputType?: "single-select" | "multi-select" | "text";
-                    options?: Array<{ label: string; description?: string }>;
-                    allowFreeform?: boolean;
-                  }
+                  type: 'ask-question';
+                  questionId?: string;
+                  question: string;
+                  inputType?: 'single-select' | 'multi-select' | 'text';
+                  options?: Array<{ label: string; description?: string }>;
+                  allowFreeform?: boolean;
+                }
                 | undefined;
               if (!payload_?.question) return;
 
               const questionId = payload_.questionId ?? `unknown-${Date.now()}`;
               const askPrompt = {
-                type: "ask-question",
+                type: 'ask-question',
                 questionId,
                 question: payload_.question,
-                inputType: payload_.inputType ?? "text",
+                inputType: payload_.inputType ?? 'text',
                 options: payload_.options,
                 allowFreeform: payload_.allowFreeform ?? true,
               };
@@ -1693,7 +1651,7 @@ Result: ${JSON.stringify(askPrompt)}
               const message = {
                 id: `worker-ask-${questionId}`,
                 agentId,
-                role: "agent" as const,
+                role: 'agent' as const,
                 content,
                 modified: new Date(),
               };
@@ -1701,7 +1659,7 @@ Result: ${JSON.stringify(askPrompt)}
               const statusKey = `${agentId}:${message.id}`;
               void this.updateAgent(agentId, {
                 status: {
-                  state: "input-required",
+                  state: 'input-required',
                   modified: new Date(),
                 },
                 messages: [message],
@@ -1709,7 +1667,7 @@ Result: ${JSON.stringify(askPrompt)}
 
               if (this.statusSubjects.has(statusKey)) {
                 this.statusSubjects.get(statusKey)?.next({
-                  state: "input-required",
+                  state: 'input-required',
                   message,
                   modified: new Date(),
                 });
@@ -1717,19 +1675,19 @@ Result: ${JSON.stringify(askPrompt)}
               return;
             }
 
-            if (updateType === "tool-approval") {
+            if (updateType === 'tool-approval') {
               const payload_ = raw.update?.payload as
                 | {
-                    type: "tool-approval";
-                    approvalId: string;
-                    toolName: string;
-                    parameters: Record<string, unknown>;
-                  }
+                  type: 'tool-approval';
+                  approvalId: string;
+                  toolName: string;
+                  parameters: Record<string, unknown>;
+                }
                 | undefined;
               if (!payload_?.approvalId || !payload_?.toolName) return;
 
               const approvalPrompt = {
-                type: "tool-approval",
+                type: 'tool-approval',
                 approvalId: payload_.approvalId,
                 toolName: payload_.toolName,
                 parameters: payload_.parameters ?? {},
@@ -1744,7 +1702,7 @@ Result: ${JSON.stringify(approvalPrompt)}
               const message = {
                 id: `worker-approval-${payload_.approvalId}`,
                 agentId,
-                role: "agent" as const,
+                role: 'agent' as const,
                 content,
                 modified: new Date(),
               };
@@ -1752,7 +1710,7 @@ Result: ${JSON.stringify(approvalPrompt)}
               const statusKey = `${agentId}:${message.id}`;
               void this.updateAgent(agentId, {
                 status: {
-                  state: "input-required",
+                  state: 'input-required',
                   modified: new Date(),
                 },
                 messages: [message],
@@ -1760,7 +1718,7 @@ Result: ${JSON.stringify(approvalPrompt)}
 
               if (this.statusSubjects.has(statusKey)) {
                 this.statusSubjects.get(statusKey)?.next({
-                  state: "input-required",
+                  state: 'input-required',
                   message,
                   modified: new Date(),
                 });
@@ -1768,22 +1726,21 @@ Result: ${JSON.stringify(approvalPrompt)}
               return;
             }
 
-            if (updateType === "agent-step") {
+            if (updateType === 'agent-step') {
               const step = raw.update?.step;
               const stepType = step?.type;
               if (!stepType) return;
-              if (stepType === "message") {
+              if (stepType === 'message') {
                 const data = step.data as unknown;
-                const delta =
-                  typeof data === "string"
-                    ? data
-                    : data &&
-                        typeof data === "object" &&
-                        "content" in (data as any) &&
-                        typeof (data as any).content === "string"
-                      ? String((data as any).content)
-                      : JSON.stringify(data ?? "");
-                logger.warn("MemeLoop worker assistant delta", {
+                const delta = typeof data === 'string'
+                  ? data
+                  : data &&
+                      typeof data === 'object' &&
+                      'content' in (data as any) &&
+                      typeof (data as any).content === 'string'
+                  ? String((data as any).content)
+                  : JSON.stringify(data ?? '');
+                logger.warn('MemeLoop worker assistant delta', {
                   agentId,
                   conversationId,
                   deltaPreview: delta.slice(0, 120),
@@ -1795,19 +1752,18 @@ Result: ${JSON.stringify(approvalPrompt)}
                   assistantBuffer += delta;
                 }
                 lastWasAssistantMessage = true;
-                const messageId =
-                  assistantMessageId ?? `worker-assistant-${Date.now()}`;
+                const messageId = assistantMessageId ?? `worker-assistant-${Date.now()}`;
                 const message = {
                   id: messageId,
                   agentId,
-                  role: "assistant" as const,
+                  role: 'assistant' as const,
                   content: assistantBuffer,
                   modified: new Date(),
                 };
                 const statusKey = `${agentId}:${message.id}`;
                 void this.updateAgent(agentId, {
                   status: {
-                    state: "working",
+                    state: 'working',
                     modified: new Date(),
                   },
                   messages: [message],
@@ -1815,21 +1771,21 @@ Result: ${JSON.stringify(approvalPrompt)}
                 if (this.statusSubjects.has(statusKey)) {
                   this.statusSubjects
                     .get(statusKey)
-                    ?.next({ state: "working", message, modified: new Date() });
+                    ?.next({ state: 'working', message, modified: new Date() });
                 }
                 return;
               }
-              if (stepType === "thinking") {
+              if (stepType === 'thinking') {
                 // Do not materialize hidden "step" messages into the chat history.
                 // The UI may still render hidden messages in the DOM, which breaks E2E
                 // that expects exactly user+assistant bubbles for a plain-text turn.
                 lastWasAssistantMessage = false;
               }
-              if (stepType === "tool") {
+              if (stepType === 'tool') {
                 lastWasAssistantMessage = false;
                 const data = step.data as unknown;
                 const content = this.extractToolStepText(data);
-                logger.warn("MemeLoop tool step materialized", {
+                logger.warn('MemeLoop tool step materialized', {
                   agentId,
                   conversationId,
                   contentPreview: content.slice(0, 200),
@@ -1837,26 +1793,26 @@ Result: ${JSON.stringify(approvalPrompt)}
                 const message = {
                   id: `worker-tool-${Date.now()}`,
                   agentId,
-                  role: "tool" as const,
+                  role: 'tool' as const,
                   content,
                   modified: new Date(),
                 };
                 void this.updateAgent(agentId, {
-                  status: { state: "working", modified: new Date() },
+                  status: { state: 'working', modified: new Date() },
                   messages: [message],
                 }).catch(() => undefined);
               }
               return;
             }
-            if (updateType === "cancelled") {
+            if (updateType === 'cancelled') {
               const finalMessageId = assistantMessageId;
               const finalContent = assistantBuffer;
               lastWasAssistantMessage = false;
               assistantMessageId = undefined;
-              assistantBuffer = "";
+              assistantBuffer = '';
               void this.updateAgent(agentId, {
                 status: {
-                  state: "canceled",
+                  state: 'canceled',
                   modified: new Date(),
                 },
               }).catch(() => undefined);
@@ -1864,13 +1820,13 @@ Result: ${JSON.stringify(approvalPrompt)}
                 const message = {
                   id: finalMessageId,
                   agentId,
-                  role: "assistant" as const,
+                  role: 'assistant' as const,
                   content: finalContent,
                 };
                 const statusKey = `${agentId}:${finalMessageId}`;
                 if (this.statusSubjects.has(statusKey)) {
                   this.statusSubjects.get(statusKey)?.next({
-                    state: "canceled",
+                    state: 'canceled',
                     message,
                     modified: new Date(),
                   });
@@ -1878,15 +1834,15 @@ Result: ${JSON.stringify(approvalPrompt)}
               }
               return;
             }
-            if (updateType === "agent-done") {
+            if (updateType === 'agent-done') {
               const finalMessageId = assistantMessageId;
               const finalContent = assistantBuffer;
               lastWasAssistantMessage = false;
               assistantMessageId = undefined;
-              assistantBuffer = "";
+              assistantBuffer = '';
               void this.updateAgent(agentId, {
                 status: {
-                  state: "completed",
+                  state: 'completed',
                   modified: new Date(),
                 },
               }).catch(() => undefined);
@@ -1894,13 +1850,13 @@ Result: ${JSON.stringify(approvalPrompt)}
                 const message = {
                   id: finalMessageId,
                   agentId,
-                  role: "assistant" as const,
+                  role: 'assistant' as const,
                   content: finalContent,
                 };
                 const statusKey = `${agentId}:${finalMessageId}`;
                 if (this.statusSubjects.has(statusKey)) {
                   this.statusSubjects.get(statusKey)?.next({
-                    state: "completed",
+                    state: 'completed',
                     message,
                     modified: new Date(),
                   });
@@ -1908,19 +1864,19 @@ Result: ${JSON.stringify(approvalPrompt)}
               }
               return;
             }
-            if (updateType === "agent-error") {
+            if (updateType === 'agent-error') {
               lastWasAssistantMessage = false;
               const message = {
                 id: `worker-error-${Date.now()}`,
                 agentId,
-                role: "error" as const,
-                content: raw?.update?.error || "MemeLoop worker error",
+                role: 'error' as const,
+                content: raw?.update?.error || 'MemeLoop worker error',
                 modified: new Date(),
               };
               const statusKey = `${agentId}:${message.id}`;
               void this.updateAgent(agentId, {
                 status: {
-                  state: "failed",
+                  state: 'failed',
                   modified: new Date(),
                 },
                 messages: [message],
@@ -1928,23 +1884,21 @@ Result: ${JSON.stringify(approvalPrompt)}
               if (this.statusSubjects.has(statusKey)) {
                 this.statusSubjects
                   .get(statusKey)
-                  ?.next({ state: "failed", message, modified: new Date() });
+                  ?.next({ state: 'failed', message, modified: new Date() });
               }
             }
           },
           error: (error: unknown) => {
-            logger.warn("MemeLoop worker update stream failed", {
+            logger.warn('MemeLoop worker update stream failed', {
               agentId,
               conversationId,
               error,
             });
           },
         });
-      this.workerConversationCleanupByAgentId.set(agentId, () =>
-        subscription.unsubscribe(),
-      );
+      this.workerConversationCleanupByAgentId.set(agentId, () => subscription.unsubscribe());
     } catch (error) {
-      logger.warn("Failed to bind MemeLoop worker update stream", {
+      logger.warn('Failed to bind MemeLoop worker update stream', {
         agentId,
         conversationId,
         error,
@@ -1981,7 +1935,7 @@ Result: ${JSON.stringify(approvalPrompt)}
       await this.memeLoopWorker.cancelAgent(workerConversationId);
     } catch (error) {
       logger.warn(
-        "Failed to cancel MemeLoop worker conversation during cleanup",
+        'Failed to cancel MemeLoop worker conversation during cleanup',
         { agentId, workerConversationId, error },
       );
     }
@@ -1989,7 +1943,7 @@ Result: ${JSON.stringify(approvalPrompt)}
 
   public async resolveToolApproval(
     approvalId: string,
-    decision: "allow" | "deny",
+    decision: 'allow' | 'deny',
   ): Promise<void> {
     try {
       await this.ensureMemeLoopWorkerHealthy();
@@ -2002,13 +1956,13 @@ Result: ${JSON.stringify(approvalPrompt)}
         return;
       } catch (error) {
         logger.warn(
-          "MemeLoop worker resolveToolApproval failed, fallback to legacy",
+          'MemeLoop worker resolveToolApproval failed, fallback to legacy',
           { approvalId, error },
         );
       }
     }
 
-    const { resolveApproval } = await import("./tools/approval");
+    const { resolveApproval } = await import('./tools/approval');
     resolveApproval(approvalId, decision);
   }
 
@@ -2023,7 +1977,7 @@ Result: ${JSON.stringify(approvalPrompt)}
         await this.ensureMemeLoopWorkerHealthy();
       } catch (error) {
         logger.warn(
-          "MemeLoop worker unavailable for resolveAskQuestion; using legacy path",
+          'MemeLoop worker unavailable for resolveAskQuestion; using legacy path',
           { agentId, error },
         );
         await this.resolveAskQuestionAsync(agentId, questionId, answer);
@@ -2056,12 +2010,12 @@ Result: ${JSON.stringify(approvalPrompt)}
       // The UI will display it as a regular message (not a tool result).
       // This is the simplest approach that works with the existing framework architecture.
       await this.sendMsgToAgent(agentId, { text: answer });
-      logger.debug("Ask-question resolved via sendMsgToAgent", {
+      logger.debug('Ask-question resolved via sendMsgToAgent', {
         questionId,
         agentId,
       });
     } catch (error) {
-      logger.error("Failed to resolve ask-question", { questionId, error });
+      logger.error('Failed to resolve ask-question', { questionId, error });
     }
   }
 
@@ -2070,7 +2024,7 @@ Result: ${JSON.stringify(approvalPrompt)}
     messageIds: string[],
   ): Promise<void> {
     if (!this.agentMessageRepository || !this.agentInstanceRepository) {
-      throw new Error("Database not initialized");
+      throw new Error('Database not initialized');
     }
     if (messageIds.length === 0) return;
 
@@ -2079,7 +2033,7 @@ Result: ${JSON.stringify(approvalPrompt)}
     // Also update the in-memory agent messages list
     const agent = await this.agentInstanceRepository.findOne({
       where: { id: agentId },
-      relations: ["messages"],
+      relations: ['messages'],
     });
     if (agent) {
       const deletedSet = new Set(messageIds);
@@ -2114,13 +2068,15 @@ Result: ${JSON.stringify(approvalPrompt)}
     const allChangedFiles: Array<{ path: string; status: string }> = [];
     const gitService = container.get<IGitService>(serviceIdentifier.Git);
 
-    for (const [
-      _workspaceId,
-      { wikiFolderLocation, commitHash },
-    ] of Object.entries(beforeCommitMap)) {
+    for (
+      const [
+        _workspaceId,
+        { wikiFolderLocation, commitHash },
+      ] of Object.entries(beforeCommitMap)
+    ) {
       try {
         const changedFiles = await gitService.callGitOp(
-          "getChangedFilesBetweenCommits",
+          'getChangedFilesBetweenCommits',
           wikiFolderLocation,
           commitHash,
         );
@@ -2128,7 +2084,7 @@ Result: ${JSON.stringify(approvalPrompt)}
           allChangedFiles.push({ path: file.path, status: file.status });
         }
       } catch (error) {
-        logger.warn("Failed to get changed files for workspace", {
+        logger.warn('Failed to get changed files for workspace', {
           wikiFolderLocation,
           error,
         });
@@ -2158,7 +2114,7 @@ Result: ${JSON.stringify(approvalPrompt)}
     if (!beforeCommitMap || Object.keys(beforeCommitMap).length === 0) {
       return {
         rolledBack: 0,
-        errors: ["No commit snapshot recorded for this turn"],
+        errors: ['No commit snapshot recorded for this turn'],
       };
     }
 
@@ -2166,14 +2122,16 @@ Result: ${JSON.stringify(approvalPrompt)}
     const errors: string[] = [];
     const gitService = container.get<IGitService>(serviceIdentifier.Git);
 
-    for (const [
-      _workspaceId,
-      { wikiFolderLocation, commitHash },
-    ] of Object.entries(beforeCommitMap)) {
+    for (
+      const [
+        _workspaceId,
+        { wikiFolderLocation, commitHash },
+      ] of Object.entries(beforeCommitMap)
+    ) {
       try {
         // Get the list of files that changed since the beforeCommitHash
         const changedFiles = await gitService.callGitOp(
-          "getChangedFilesBetweenCommits",
+          'getChangedFilesBetweenCommits',
           wikiFolderLocation,
           commitHash,
         );
@@ -2184,27 +2142,25 @@ Result: ${JSON.stringify(approvalPrompt)}
         for (const file of changedFiles) {
           try {
             await gitService.callGitOp(
-              "restoreFileFromCommit",
+              'restoreFileFromCommit',
               wikiFolderLocation,
               commitHash,
               file.path,
             );
             rolledBack++;
           } catch (error) {
-            const errorMessage =
-              error instanceof Error ? error.message : String(error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
             errors.push(`Failed to restore ${file.path}: ${errorMessage}`);
           }
         }
 
-        logger.info("Rolled back files for workspace", {
+        logger.info('Rolled back files for workspace', {
           wikiFolderLocation,
           fileCount: changedFiles.length,
           rolledBack,
         });
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
         errors.push(
           `Failed to get changed files for ${wikiFolderLocation}: ${errorMessage}`,
         );
@@ -2239,7 +2195,7 @@ Result: ${JSON.stringify(approvalPrompt)}
       tasks.push({
         agentId,
         agentName: agent?.name ?? agentDefinition?.name,
-        type: "heartbeat",
+        type: 'heartbeat',
         intervalSeconds: heartbeatConfig?.intervalSeconds,
         activeHoursStart: heartbeatConfig?.activeHoursStart,
         activeHoursEnd: heartbeatConfig?.activeHoursEnd,
@@ -2259,7 +2215,7 @@ Result: ${JSON.stringify(approvalPrompt)}
       tasks.push({
         agentId,
         agentName: agent?.name,
-        type: "alarm",
+        type: 'alarm',
         wakeAtISO: alarmEntry.wakeAtISO,
         nextWakeAtISO: alarmEntry.nextWakeAtISO,
         message: alarmEntry.reminderMessage,
@@ -2275,14 +2231,14 @@ Result: ${JSON.stringify(approvalPrompt)}
 
   public async cancelBackgroundTask(
     agentId: string,
-    type: "heartbeat" | "alarm",
+    type: 'heartbeat' | 'alarm',
   ): Promise<void> {
-    if (type === "heartbeat") {
+    if (type === 'heartbeat') {
       stopHeartbeat(agentId);
-    } else if (type === "alarm") {
+    } else if (type === 'alarm') {
       cancelAlarm(agentId);
     }
-    logger.info("Background task cancelled from UI", { agentId, type });
+    logger.info('Background task cancelled from UI', { agentId, type });
   }
 
   public async setBackgroundAlarm(
@@ -2303,10 +2259,9 @@ Result: ${JSON.stringify(approvalPrompt)}
       throw new Error(`Invalid wakeAtISO: ${alarm.wakeAtISO}`);
     }
 
-    const repeatIntervalMinutes =
-      alarm.repeatIntervalMinutes && alarm.repeatIntervalMinutes > 0
-        ? alarm.repeatIntervalMinutes
-        : undefined;
+    const repeatIntervalMinutes = alarm.repeatIntervalMinutes && alarm.repeatIntervalMinutes > 0
+      ? alarm.repeatIntervalMinutes
+      : undefined;
     const wakeAtISO = parsedWakeAt.toISOString();
 
     scheduleAlarmTimer(
@@ -2315,7 +2270,7 @@ Result: ${JSON.stringify(approvalPrompt)}
       alarm.message,
       repeatIntervalMinutes,
       {
-        createdBy: "settings-ui",
+        createdBy: 'settings-ui',
         runCount: 0,
       },
     );
@@ -2325,12 +2280,12 @@ Result: ${JSON.stringify(approvalPrompt)}
         wakeAtISO,
         reminderMessage: alarm.message,
         repeatIntervalMinutes,
-        createdBy: "settings-ui",
+        createdBy: 'settings-ui',
         runCount: 0,
       },
     });
 
-    logger.info("Background alarm upserted from UI", {
+    logger.info('Background alarm upserted from UI', {
       agentId,
       wakeAtISO,
       repeatIntervalMinutes,
@@ -2366,9 +2321,8 @@ Result: ${JSON.stringify(approvalPrompt)}
         60,
         Math.round(heartbeat.intervalSeconds || 60),
       ),
-      message:
-        heartbeat.message?.trim() ||
-        "[Heartbeat] Periodic check-in. Review your tasks and take any pending actions.",
+      message: heartbeat.message?.trim() ||
+        '[Heartbeat] Periodic check-in. Review your tasks and take any pending actions.',
       activeHoursStart: heartbeat.activeHoursStart || undefined,
       activeHoursEnd: heartbeat.activeHoursEnd || undefined,
     };
@@ -2380,13 +2334,13 @@ Result: ${JSON.stringify(approvalPrompt)}
 
     if (normalizedHeartbeat.enabled && !entity.volatile) {
       startHeartbeat(agentId, normalizedHeartbeat, this, {
-        createdBy: "settings-ui",
+        createdBy: 'settings-ui',
       });
     } else {
       stopHeartbeat(agentId);
     }
 
-    logger.info("Background heartbeat upserted from UI", {
+    logger.info('Background heartbeat upserted from UI', {
       agentId,
       enabled: normalizedHeartbeat.enabled,
       intervalSeconds: normalizedHeartbeat.intervalSeconds,
@@ -2472,8 +2426,8 @@ Result: ${JSON.stringify(approvalPrompt)}
             }
           })
           .catch((error: unknown) => {
-            logger.error("Failed to get initial status for message", {
-              function: "subscribeToAgentUpdates",
+            logger.error('Failed to get initial status for message', {
+              function: 'subscribeToAgentUpdates',
               error,
             });
           });
@@ -2495,8 +2449,8 @@ Result: ${JSON.stringify(approvalPrompt)}
           this.agentInstanceSubjects.get(agentId)?.next(agent);
         })
         .catch((error: unknown) => {
-          logger.error("Failed to get initial agent data", {
-            function: "subscribeToAgentUpdates",
+          logger.error('Failed to get initial agent data', {
+            function: 'subscribeToAgentUpdates',
             error,
           });
         });
@@ -2518,8 +2472,7 @@ Result: ${JSON.stringify(approvalPrompt)}
         this.agentInstanceSubjects.get(agentId)?.next(agentData);
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Failed to notify agent update: ${errorMessage}`);
     }
   }
@@ -2531,7 +2484,7 @@ Result: ${JSON.stringify(approvalPrompt)}
     try {
       await saveUserMessageHelper(this.agentMessageRepository!, userMessage);
     } catch (error) {
-      logger.error("Failed to save user message", {
+      logger.error('Failed to save user message', {
         error,
         messageId: userMessage.id,
         agentId: userMessage.agentId,
@@ -2554,7 +2507,7 @@ Result: ${JSON.stringify(approvalPrompt)}
       const statusKey = `${agentId}:${messageId}`;
       if (this.statusSubjects.has(statusKey)) {
         this.statusSubjects.get(statusKey)?.next({
-          state: "working",
+          state: 'working',
           message,
           modified: message.modified ?? new Date(),
         });
@@ -2574,7 +2527,7 @@ Result: ${JSON.stringify(approvalPrompt)}
             logger.debug(
               `Notified agent subscribers of new message: ${messageId}`,
               {
-                method: "debounceUpdateMessage",
+                method: 'debounceUpdateMessage',
                 agentId: aid,
               },
             );
@@ -2591,10 +2544,10 @@ Result: ${JSON.stringify(approvalPrompt)}
   }
 
   public concatPrompt(
-    promptDescription: Pick<AgentPromptDescription, "agentFrameworkConfig">,
+    promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>,
     messages: AgentInstanceMessage[],
   ): Observable<PromptConcatStreamState> {
-    logger.debug("AgentInstanceService.concatPrompt called", {
+    logger.debug('AgentInstanceService.concatPrompt called', {
       hasPromptConfig: !!promptDescription.agentFrameworkConfig,
       promptConfigKeys: Object.keys(
         promptDescription.agentFrameworkConfig || {},
@@ -2608,18 +2561,17 @@ Result: ${JSON.stringify(approvalPrompt)}
           // Create a minimal framework context for prompt concatenation
           const frameworkContext = {
             agent: {
-              id: "temp",
+              id: 'temp',
               messages,
-              agentDefId: "temp",
-              status: { state: "working" as const, modified: new Date() },
+              agentDefId: 'temp',
+              status: { state: 'working' as const, modified: new Date() },
               created: new Date(),
               agentFrameworkConfig: {},
             },
             agentDef: {
-              id: "temp",
-              name: "temp",
-              agentFrameworkConfig:
-                promptDescription.agentFrameworkConfig || {},
+              id: 'temp',
+              name: 'temp',
+              agentFrameworkConfig: promptDescription.agentFrameworkConfig || {},
             },
             isCancelled: () => false,
           };
@@ -2637,7 +2589,7 @@ Result: ${JSON.stringify(approvalPrompt)}
             }
           }
         } catch (error) {
-          logger.error("Error in AgentInstanceService.concatPrompt", {
+          logger.error('Error in AgentInstanceService.concatPrompt', {
             error,
             promptDescriptionId: (promptDescription as AgentPromptDescription)
               .id,
@@ -2656,9 +2608,11 @@ Result: ${JSON.stringify(approvalPrompt)}
   public async disposeMemeLoopWorker(): Promise<void> {
     this.memeLoopWorkerLogCleanup?.();
     this.memeLoopWorkerLogCleanup = undefined;
-    for (const [agentId, cleanup] of [
-      ...this.workerConversationCleanupByAgentId.entries(),
-    ]) {
+    for (
+      const [agentId, cleanup] of [
+        ...this.workerConversationCleanupByAgentId.entries(),
+      ]
+    ) {
       try {
         cleanup();
       } catch {
@@ -2673,7 +2627,7 @@ Result: ${JSON.stringify(approvalPrompt)}
       try {
         await this.memeLoopNativeWorker.terminate();
       } catch (error) {
-        logger.warn("Failed to terminate MemeLoop native worker", { error });
+        logger.warn('Failed to terminate MemeLoop native worker', { error });
       }
       this.memeLoopNativeWorker = undefined;
     }
@@ -2684,7 +2638,7 @@ Result: ${JSON.stringify(approvalPrompt)}
     frameworkId: string,
   ): Record<string, unknown> {
     try {
-      logger.debug("AgentInstanceService.getFrameworkConfigSchema called", {
+      logger.debug('AgentInstanceService.getFrameworkConfigSchema called', {
         frameworkId,
       });
       // Check if we have a schema for this framework
@@ -2694,9 +2648,9 @@ Result: ${JSON.stringify(approvalPrompt)}
       }
       // If no schema found, return an empty schema
       logger.warn(`No schema found for framework: ${frameworkId}`);
-      return { type: "object", properties: {} };
+      return { type: 'object', properties: {} };
     } catch (error) {
-      logger.error("Error in AgentInstanceService.getFrameworkConfigSchema", {
+      logger.error('Error in AgentInstanceService.getFrameworkConfigSchema', {
         error,
         frameworkId,
       });

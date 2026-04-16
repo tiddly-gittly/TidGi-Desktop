@@ -9,7 +9,7 @@
  * Implementation is adapted from memeloop-node's terminal module.
  */
 
-export type TerminalSessionStatus = "running" | "exited" | "killed" | "failed";
+export type TerminalSessionStatus = 'running' | 'exited' | 'killed' | 'failed';
 
 export interface TerminalSessionInfo {
   sessionId: string;
@@ -24,7 +24,7 @@ export interface TerminalSessionInfo {
 export interface TerminalOutputChunk {
   sessionId: string;
   seq: number;
-  stream: "stdout" | "stderr";
+  stream: 'stdout' | 'stderr';
   data: string;
   ts: number;
 }
@@ -48,4 +48,3 @@ export interface TerminalFollowResult {
   done: boolean;
   chunks: TerminalOutputChunk[];
 }
-

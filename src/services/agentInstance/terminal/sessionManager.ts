@@ -5,17 +5,11 @@
  * Implementation is adapted from memeloop-node's terminal module, but packaged for TidGi Desktop.
  */
 
-import { spawn, type ChildProcess } from "node:child_process";
-import { EventEmitter } from "node:events";
-import * as crypto from "node:crypto";
+import { type ChildProcess, spawn } from 'node:child_process';
+import * as crypto from 'node:crypto';
+import { EventEmitter } from 'node:events';
 
-import type {
-  TerminalInteractionPrompt,
-  TerminalFollowResult,
-  TerminalOutputChunk,
-  TerminalSessionInfo,
-  TerminalSessionStatus,
-} from "./types";
+import type { TerminalFollowResult, TerminalInteractionPrompt, TerminalOutputChunk, TerminalSessionInfo, TerminalSessionStatus } from './types';
 
 export interface StartSessionOptions {
   command: string;
@@ -86,10 +80,7 @@ interface SessionState {
   nextSeq: number;
 }
 
-export class TerminalSessionManager
-  extends EventEmitter
-  implements ITerminalSessionManager
-{
+export class TerminalSessionManager extends EventEmitter implements ITerminalSessionManager {
   private sessions = new Map<string, SessionState>();
   private outputListeners = new Set<(chunk: TerminalOutputChunk) => void>();
   private statusListeners = new Set<
@@ -130,49 +121,49 @@ export class TerminalSessionManager
       cwd,
       env,
       shell: true,
-      stdio: ["pipe", "pipe", "pipe"],
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
 
     const state: SessionState = {
       sessionId,
-      command: [options.command, ...args].join(" "),
+      command: [options.command, ...args].join(' '),
       cwd,
-      status: "running",
+      status: 'running',
       exitCode: null,
       startedAt: Date.now(),
       process: proc,
       promptPatterns: options.promptPatterns,
       idleTimeoutMs: options.idleTimeoutMs,
-      buffer: "",
+      buffer: '',
       chunks: [],
       nextSeq: 1,
     };
 
     this.sessions.set(sessionId, state);
 
-    proc.stdout?.on("data", (data: Buffer) => {
+    proc.stdout?.on('data', (data: Buffer) => {
       const text = data.toString();
-      this.pushOutput(sessionId, "stdout", text, state);
+      this.pushOutput(sessionId, 'stdout', text, state);
     });
 
-    proc.stderr?.on("data", (data: Buffer) => {
+    proc.stderr?.on('data', (data: Buffer) => {
       const text = data.toString();
-      this.pushOutput(sessionId, "stderr", text, state);
+      this.pushOutput(sessionId, 'stderr', text, state);
     });
 
-    proc.on("exit", (code, signal) => {
+    proc.on('exit', (code, signal) => {
       const s = this.sessions.get(sessionId);
       if (!s) return;
-      s.status = signal ? "killed" : "exited";
+      s.status = signal ? 'killed' : 'exited';
       s.exitCode = code;
       if (s.idleTimer) clearTimeout(s.idleTimer);
       this.emitStatusUpdate(sessionId, s.status, s.exitCode);
     });
 
-    proc.on("error", () => {
+    proc.on('error', () => {
       const s = this.sessions.get(sessionId);
       if (s) {
-        s.status = "failed";
+        s.status = 'failed';
         this.emitStatusUpdate(sessionId, s.status, s.exitCode);
       }
     });
@@ -186,7 +177,7 @@ export class TerminalSessionManager
 
   private pushOutput(
     sessionId: string,
-    stream: "stdout" | "stderr",
+    stream: 'stdout' | 'stderr',
     text: string,
     state: SessionState,
   ): void {
@@ -224,7 +215,7 @@ export class TerminalSessionManager
             timestamp: ts,
           };
           for (const fn of this.promptListeners) fn(prompt);
-          state.buffer = "";
+          state.buffer = '';
           break;
         }
       }
@@ -236,12 +227,12 @@ export class TerminalSessionManager
   }
 
   private scheduleIdlePrompt(sessionId: string, state: SessionState): void {
-    if (state.status !== "running" || !state.idleTimeoutMs) return;
+    if (state.status !== 'running' || !state.idleTimeoutMs) return;
     state.idleTimer = setTimeout(() => {
       state.idleTimer = undefined;
       const prompt: TerminalInteractionPrompt = {
         sessionId,
-        promptText: state.buffer || "(no output yet)",
+        promptText: state.buffer || '(no output yet)',
         timestamp: Date.now(),
       };
       for (const fn of this.promptListeners) fn(prompt);
@@ -278,10 +269,10 @@ export class TerminalSessionManager
   async respond(sessionId: string, input: string): Promise<void> {
     const s = this.sessions.get(sessionId);
     if (!s) throw new Error(`Session not found: ${sessionId}`);
-    if (s.status !== "running" || !s.process.stdin?.writable) {
+    if (s.status !== 'running' || !s.process.stdin?.writable) {
       throw new Error(`Session not writable: ${sessionId}`);
     }
-    s.process.stdin.write(input + "\n");
+    s.process.stdin.write(input + '\n');
   }
 
   async cancel(sessionId: string): Promise<void> {
@@ -291,8 +282,8 @@ export class TerminalSessionManager
       clearTimeout(s.idleTimer);
       s.idleTimer = undefined;
     }
-    s.process.kill("SIGTERM");
-    s.status = "killed";
+    s.process.kill('SIGTERM');
+    s.status = 'killed';
     this.emitStatusUpdate(sessionId, s.status, s.exitCode);
   }
 
@@ -303,15 +294,14 @@ export class TerminalSessionManager
     const fromSeq = Math.max(1, options?.fromSeq ?? 1);
     const untilExit = options?.untilExit === true;
     const maxWaitMs = options?.maxWaitMs ?? 30_000;
-    const maxUntil =
-      maxWaitMs > 0 ? Date.now() + maxWaitMs : Number.POSITIVE_INFINITY;
+    const maxUntil = maxWaitMs > 0 ? Date.now() + maxWaitMs : Number.POSITIVE_INFINITY;
 
     while (true) {
       const state = this.sessions.get(sessionId);
       if (!state) throw new Error(`Session not found: ${sessionId}`);
 
       const chunks = state.chunks.filter((chunk) => chunk.seq >= fromSeq);
-      const done = state.status !== "running";
+      const done = state.status !== 'running';
 
       if (!untilExit || done || chunks.length > 0 || Date.now() >= maxUntil) {
         return {
@@ -365,14 +355,14 @@ export class TerminalSessionManager
     opts?: { tailLines?: number; tailChars?: number },
   ): string {
     const s = this.sessions.get(sessionId);
-    if (!s) return "";
-    const fullText = s.chunks.map((c) => c.data).join("");
+    if (!s) return '';
+    const fullText = s.chunks.map((c) => c.data).join('');
     if (opts?.tailChars) {
       return fullText.slice(-opts.tailChars);
     }
     if (opts?.tailLines) {
-      const lines = fullText.split("\n");
-      return lines.slice(-opts.tailLines).join("\n");
+      const lines = fullText.split('\n');
+      return lines.slice(-opts.tailLines).join('\n');
     }
     return fullText;
   }
