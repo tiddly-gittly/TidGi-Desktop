@@ -1193,9 +1193,6 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
       await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs not ready before restart', LOG_MARKER_WAIT_TIMEOUT);
     }
 
-    // Clear log markers to ensure we wait for fresh ones after restart
-    await clearLogLinesContaining(this, '[test-id-WATCH_FS_STABILIZED]');
-
     // Restart the wiki using the runtime-resolved workspace ID
     const restartResult = await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
       const windows = BrowserWindow.getAllWindows();
@@ -1220,7 +1217,14 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
       throw new Error(`Failed to restart wiki: ${restartResult.error ?? 'Unknown error'}`);
     }
 
-    // Wait for wiki to restart and watch-fs to stabilize
+    // Clear stale markers AFTER restart to wait for fresh ones
+    await clearLogLinesContaining(this, 'test-id-WorkerServicesReady');
+    await clearLogLinesContaining(this, '[test-id-WATCH_FS_STABILIZED]');
+
+    // Wait for wiki to restart and services to be ready again
+    await waitForLogMarker(this, 'test-id-WorkerServicesReady', 'wiki worker services not ready after restart');
+
+    // Wait for watch-fs to stabilize after restart
     // Only wait if enableFileSystemWatch was set to true
     if (settingsUpdate.enableFileSystemWatch === true) {
       await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not stabilize after restart', LOG_MARKER_WAIT_TIMEOUT);
