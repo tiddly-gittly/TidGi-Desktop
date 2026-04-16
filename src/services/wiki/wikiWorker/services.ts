@@ -19,7 +19,7 @@ import { type IMenuService, MenuServiceIPCDescriptor } from '@services/menu/inte
 import { type INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';
 import { type INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
 import { type IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/preferences/interface';
-import { ProviderRegistryServiceIPCDescriptor, type IProviderRegistryService } from '@services/providerRegistry/interface';
+import { type IProviderRegistryService, ProviderRegistryServiceIPCDescriptor } from '@services/providerRegistry/interface';
 import { type ISyncService, SyncServiceIPCDescriptor } from '@services/sync/interface';
 import { type ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences/interface';
 import { type IThemeService, ThemeServiceIPCDescriptor } from '@services/theme/interface';

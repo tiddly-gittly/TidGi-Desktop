@@ -1,12 +1,12 @@
-import { ProxyPropertyType } from "electron-ipc-cat/common";
-import type { BehaviorSubject } from "rxjs";
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import type { BehaviorSubject } from 'rxjs';
 
-import { ToolPermissionsChannel } from "@/constants/channels";
+import { ToolPermissionsChannel } from '@/constants/channels';
 
 export interface IToolPermissionEntry {
   toolName: string;
   /** 'blacklist' or 'whitelist' */
-  listType: "blacklist" | "whitelist";
+  listType: 'blacklist' | 'whitelist';
   /** Optional pattern for matching tool parameters */
   pattern?: string;
   /** When this entry was added */
@@ -31,10 +31,10 @@ export interface IToolApprovalRequest {
 }
 
 export type ToolApprovalDecision =
-  | "allow-once"
-  | "allow-session"
-  | "allow-always"
-  | "deny";
+  | 'allow-once'
+  | 'allow-session'
+  | 'allow-always'
+  | 'deny';
 
 export interface IToolPermissionsService {
   /**
@@ -45,20 +45,20 @@ export interface IToolPermissionsService {
   /**
    * Add a tool to blacklist or whitelist
    */
-  addPermission(entry: Omit<IToolPermissionEntry, "addedAt">): Promise<void>;
+  addPermission(entry: Omit<IToolPermissionEntry, 'addedAt'>): Promise<void>;
 
   /**
    * Remove a tool permission entry
    */
   removePermission(
     toolName: string,
-    listType: "blacklist" | "whitelist",
+    listType: 'blacklist' | 'whitelist',
   ): Promise<void>;
 
   /**
    * Clear all entries from blacklist or whitelist
    */
-  clearList(listType: "blacklist" | "whitelist"): Promise<void>;
+  clearList(listType: 'blacklist' | 'whitelist'): Promise<void>;
 
   /**
    * Check if a tool is allowed to execute
@@ -74,7 +74,7 @@ export interface IToolPermissionsService {
    * Returns a promise that resolves when user makes a decision
    */
   requestApproval(
-    request: Omit<IToolApprovalRequest, "id" | "requestedAt">,
+    request: Omit<IToolApprovalRequest, 'id' | 'requestedAt'>,
   ): Promise<ToolApprovalDecision>;
 
   /**
