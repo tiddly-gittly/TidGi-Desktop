@@ -1,27 +1,15 @@
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import ErrorIcon from "@mui/icons-material/Error";
-import {
-  Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Typography,
-} from "@mui/material";
-import React, { useCallback, useEffect, useState } from "react";
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
+import React, { useCallback, useEffect, useState } from 'react';
 
-import type {
-  IToolApprovalRequest,
-  ToolApprovalDecision,
-} from "@/services/toolPermissions/interface";
+import type { IToolApprovalRequest, ToolApprovalDecision } from '@/services/toolPermissions/interface';
 
 export function ToolApprovalDialog(): React.JSX.Element {
   const [pendingRequests, setPendingRequests] = useState<
     IToolApprovalRequest[]
   >([]);
-  const [currentRequest, setCurrentRequest] =
-    useState<IToolApprovalRequest | null>(null);
+  const [currentRequest, setCurrentRequest] = useState<IToolApprovalRequest | null>(null);
 
   useEffect(() => {
     const observable = window.observables.toolPermissions?.pendingApprovals$;
@@ -60,8 +48,8 @@ export function ToolApprovalDialog(): React.JSX.Element {
         }
       } catch (error) {
         void window.service.native.log(
-          "error",
-          "ToolApproval: resolve failed",
+          'error',
+          'ToolApproval: resolve failed',
           { error },
         );
       }
@@ -82,31 +70,30 @@ export function ToolApprovalDialog(): React.JSX.Element {
   return (
     <Dialog
       open={Boolean(currentRequest)}
-      maxWidth="sm"
+      maxWidth='sm'
       fullWidth
       disableEscapeKeyDown
     >
       <DialogTitle>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <ErrorIcon color="warning" />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ErrorIcon color='warning' />
           Tool Execution Approval Required
         </Box>
       </DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          An agent is requesting permission to execute a tool. Review the
-          details and choose how to proceed.
+        <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
+          An agent is requesting permission to execute a tool. Review the details and choose how to proceed.
         </Typography>
 
         <Box sx={{ mb: 2 }}>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant='caption' color='text.secondary'>
             Tool Name
           </Typography>
           <Typography
-            variant="body1"
+            variant='body1'
             sx={{
-              fontFamily: "monospace",
-              bgcolor: "action.hover",
+              fontFamily: 'monospace',
+              bgcolor: 'action.hover',
               p: 1,
               borderRadius: 1,
               fontWeight: 600,
@@ -117,14 +104,14 @@ export function ToolApprovalDialog(): React.JSX.Element {
         </Box>
 
         <Box sx={{ mb: 2 }}>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant='caption' color='text.secondary'>
             Agent ID
           </Typography>
           <Typography
-            variant="body2"
+            variant='body2'
             sx={{
-              fontFamily: "monospace",
-              bgcolor: "action.hover",
+              fontFamily: 'monospace',
+              bgcolor: 'action.hover',
               p: 1,
               borderRadius: 1,
             }}
@@ -135,14 +122,14 @@ export function ToolApprovalDialog(): React.JSX.Element {
 
         {currentRequest.nodeId && (
           <Box sx={{ mb: 2 }}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant='caption' color='text.secondary'>
               Remote Node ID
             </Typography>
             <Typography
-              variant="body2"
+              variant='body2'
               sx={{
-                fontFamily: "monospace",
-                bgcolor: "action.hover",
+                fontFamily: 'monospace',
+                bgcolor: 'action.hover',
                 p: 1,
                 borderRadius: 1,
               }}
@@ -153,20 +140,20 @@ export function ToolApprovalDialog(): React.JSX.Element {
         )}
 
         <Box sx={{ mb: 2 }}>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant='caption' color='text.secondary'>
             Parameters
           </Typography>
           <Box
             sx={{
-              fontFamily: "monospace",
-              fontSize: "0.75rem",
-              bgcolor: "action.hover",
+              fontFamily: 'monospace',
+              fontSize: '0.75rem',
+              bgcolor: 'action.hover',
               p: 1,
               borderRadius: 1,
               maxHeight: 200,
-              overflow: "auto",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
+              overflow: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
             }}
           >
             {parametersDisplay}
@@ -174,52 +161,52 @@ export function ToolApprovalDialog(): React.JSX.Element {
         </Box>
 
         {pendingRequests.length > 1 && (
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant='caption' color='text.secondary'>
             {pendingRequests.length - 1} more approval
-            {pendingRequests.length > 2 ? "s" : ""} pending
+            {pendingRequests.length > 2 ? 's' : ''} pending
           </Typography>
         )}
       </DialogContent>
-      <DialogActions sx={{ flexDirection: "column", gap: 1, p: 2 }}>
-        <Box sx={{ display: "flex", gap: 1, width: "100%" }}>
+      <DialogActions sx={{ flexDirection: 'column', gap: 1, p: 2 }}>
+        <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
           <Button
             fullWidth
-            variant="contained"
-            color="success"
+            variant='contained'
+            color='success'
             startIcon={<CheckCircleIcon />}
             onClick={() => {
-              void handleDecision("allow-once");
+              void handleDecision('allow-once');
             }}
           >
             Allow Once
           </Button>
           <Button
             fullWidth
-            variant="contained"
-            color="primary"
+            variant='contained'
+            color='primary'
             onClick={() => {
-              void handleDecision("allow-session");
+              void handleDecision('allow-session');
             }}
           >
             Allow for Session
           </Button>
         </Box>
-        <Box sx={{ display: "flex", gap: 1, width: "100%" }}>
+        <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
           <Button
             fullWidth
-            variant="outlined"
+            variant='outlined'
             onClick={() => {
-              void handleDecision("allow-always");
+              void handleDecision('allow-always');
             }}
           >
             Allow Always
           </Button>
           <Button
             fullWidth
-            variant="outlined"
-            color="error"
+            variant='outlined'
+            color='error'
             onClick={() => {
-              void handleDecision("deny");
+              void handleDecision('deny');
             }}
           >
             Deny
